@@ -338,6 +338,58 @@ function SettingsCard({
   );
 }
 
+/* ── Eval Token Estimate ─────────────────────────────────────────── */
+
+/** WHY: Claude vision tiles images into 512×512 blocks (~170 tokens each).
+ *  This lets the user see the cost jump at tile boundaries (512 → 1024 → 1536). */
+const TILE_SIZE = 512;
+const TOKENS_PER_TILE = 170;
+
+const TILE_BRACKETS: readonly { max: number; label: string }[] = [
+  { max: 512,  label: '1–512' },
+  { max: 1024, label: '513–1024' },
+  { max: 1536, label: '1025–1536' },
+];
+
+function EvalTokenEstimate({ size }: { size: number }) {
+  const clamped = Math.max(256, Math.min(1536, size));
+  const tilesPerSide = Math.ceil(clamped / TILE_SIZE);
+  const tiles = tilesPerSide * tilesPerSide;
+  const tokensPerImage = tiles * TOKENS_PER_TILE;
+
+  // Find the current bracket and the ceiling (max size at same tile cost)
+  const ceiling = tilesPerSide * TILE_SIZE;
+
+  return (
+    <div className="sf-surface-elevated border sf-border-soft rounded p-3 space-y-2">
+      <div className="text-[10px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-1">Token Estimate</div>
+      <div className="space-y-1 text-[11px]">
+        <div className="flex justify-between">
+          <span className="sf-text-muted">Thumbnail</span>
+          <span className="sf-text-primary font-medium">{clamped}&times;{clamped} px</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="sf-text-muted">Tiles ({TILE_SIZE}px each)</span>
+          <span className="sf-text-primary font-medium">{tiles} ({tilesPerSide}&times;{tilesPerSide})</span>
+        </div>
+        <div className="flex justify-between border-t sf-border-soft pt-1">
+          <span className="sf-text-muted">~Tokens / image</span>
+          <span className="sf-text-primary font-semibold">{tokensPerImage.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="sf-text-muted">~Tokens / 4 candidates</span>
+          <span className="sf-text-primary font-semibold">{(tokensPerImage * 4).toLocaleString()}</span>
+        </div>
+      </div>
+      {clamped < ceiling && (
+        <p className="text-[9px] sf-text-muted leading-snug italic pt-0.5">
+          Same cost up to {ceiling}px &mdash; {ceiling} uses the same {tiles}-tile grid.
+        </p>
+      )}
+    </div>
+  );
+}
+
 /* ── PIF Settings ────────────────────────────────────────────────── */
 
 function PifSettingsForm({
@@ -555,6 +607,32 @@ function PifSettingsForm({
               />
             </div>
           </div>
+        </div>
+      </SettingsCard>
+
+      {/* ── Vision Evaluation ── */}
+      <SettingsCard title="Vision Evaluation" subtitle="Thumbnail size for carousel builder eval calls">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+          <div>
+            <label className="block text-[11px] font-semibold sf-text-primary mb-1.5">
+              Eval Thumbnail Size
+            </label>
+            <input
+              type="number"
+              value={settings.evalThumbSize ?? '768'}
+              onChange={(e) => onSave('evalThumbSize', e.target.value)}
+              disabled={isSaving}
+              className="sf-input w-full px-2 py-1.5 rounded sf-text-label text-[12px]"
+              min="256"
+              max="1536"
+              step="128"
+            />
+            <p className="mt-1.5 text-[10px] sf-text-muted leading-snug">
+              Max dimension (px) for thumbnails sent to the vision model.
+              Larger captures finer watermarks &amp; sharpness but costs more tokens.
+            </p>
+          </div>
+          <EvalTokenEstimate size={parseInt(settings.evalThumbSize || '768', 10) || 768} />
         </div>
       </SettingsCard>
 

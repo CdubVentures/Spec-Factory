@@ -1,6 +1,6 @@
 {
   "hfToken": "",
-  "viewConfig": "[{\"key\":\"top\",\"description\":\"Bird's-eye shot looking directly down at the mouse from above — camera is directly overhead, mouse flat on surface, showing full shape outline\"},{\"key\":\"left\",\"description\":\"Strict side profile from the left at eye level — camera level with the mouse, no tilt, showing the full side silhouette, button profile, and scroll wheel\"},{\"key\":\"angle\",\"description\":\"Rear/top 3/4 angle showing the mouse from above and behind at roughly 30–45 degrees — common press/marketing hero shot\"}]",
+  "viewConfig": "",
   "minWidth": "800",
   "minHeight": "600",
   "minFileSize": "50000",

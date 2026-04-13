@@ -1,52 +1,37 @@
 /**
- * Carousel Builder — top-level orchestrator.
+ * Carousel Builder — thin per-view and per-hero evaluation functions.
  *
- * Reads existing PIF images, groups by variant + view, evaluates each
- * view group via vision LLM, picks hero shots, persists results.
- * One pass per variant — no loop, no re-calling.
+ * Each function handles ONE LLM call: either evaluate candidates for a single
+ * view, or pick heroes from the view winners. The GUI fires N+1 of these in
+ * parallel — the LLM queue serializes them.
  */
 
-import fs from 'node:fs';
 import path from 'node:path';
-import { buildVariantList } from './productImageFinder.js';
 import { readProductImages } from './productImageStore.js';
-import { GENERIC_VIEW_DESCRIPTIONS } from './productImageLlmAdapter.js';
+import { resolveViewConfig, resolveViewEvalCriteria, resolveHeroEvalCriteria } from './productImageLlmAdapter.js';
 import {
   evaluateViewCandidates,
   mergeEvaluation,
-  buildHeroSelectionPrompt,
+  appendEvalRecord,
+  withProductLock,
+  createImageEvaluatorCallLlm,
+  createHeroEvalCallLlm,
+  createThumbnailBase64,
 } from './imageEvaluator.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
+import { buildLlmCallDeps } from '../../core/llm/buildLlmCallDeps.js';
 
 /**
- * Run the Carousel Builder for a product.
- *
- * @param {object} opts
- * @param {object} opts.product — { product_id, category, brand, model, base_model, variant }
- * @param {object} opts.specDb — category-scoped DB
- * @param {object} opts.config — global config
- * @param {object} [opts.logger]
- * @param {string} [opts.variantKey] — filter to single variant (null = all)
- * @param {string} [opts.productRoot] — override product root path
- * @param {AbortSignal} [opts.signal]
- * @param {Function} [opts.onStageAdvance] — (stageName) => void
- * @param {Function} [opts.onModelResolved] — (info) => void
- * @param {Function} [opts.onStreamChunk] — (delta) => void
- * @param {Function} [opts.onQueueWait] — (ms) => void
- * @param {Function} [opts.onLlmCallComplete] — (call) => void
- * @param {Function} [opts.onVariantProgress] — (index, total, variantKey) => void
- * @param {Function} [opts._readCefFn] — test seam: read CEF data
- * @param {Function} [opts._readImagesFn] — test seam: read PIF images
- * @param {Function} [opts._evalViewFn] — test seam: evaluateViewCandidates
- * @param {Function} [opts._mergeFn] — test seam: mergeEvaluation
- * @param {Function} [opts._heroCallFn] — test seam: hero LLM call
+ * Evaluate candidates for ONE view of ONE variant.
+ * One LLM call. One operation in the tracker.
  */
-export async function runCarouselBuild({
+export async function runEvalView({
   product,
   specDb,
   config = {},
   logger = null,
-  variantKey = null,
+  variantKey,
+  view,
   productRoot,
   signal,
   onStageAdvance = null,
@@ -54,145 +39,258 @@ export async function runCarouselBuild({
   onStreamChunk = null,
   onQueueWait = null,
   onLlmCallComplete = null,
-  onVariantProgress = null,
   // Test seams
-  _readCefFn = null,
-  _readImagesFn = null,
   _evalViewFn = null,
   _mergeFn = null,
-  _heroCallFn = null,
 }) {
   const root = productRoot || defaultProductRoot();
   const finderStore = specDb?.getFinderStore?.('productImageFinder');
-
-  // Gate: eval must be enabled
-  const evalEnabled = finderStore?.getSetting?.('evalEnabled') || 'true';
-  if (evalEnabled === 'false') {
-    return { rejected: true, rejections: [{ reason_code: 'eval_disabled', message: 'Carousel Builder is disabled in settings' }], variantsProcessed: 0 };
-  }
-
-  // Read settings
   const thumbSize = parseInt(finderStore?.getSetting?.('evalThumbSize') || '512', 10) || 512;
   const evalPromptOverride = finderStore?.getSetting?.('evalPromptOverride') || '';
-  const heroPromptOverride = finderStore?.getSetting?.('heroEvalPromptOverride') || '';
 
-  // Read CEF data
-  const readCef = _readCefFn || (() => {
-    const cefPath = path.join(root, product.product_id, 'color_edition.json');
-    try { return JSON.parse(fs.readFileSync(cefPath, 'utf8')); }
-    catch { return null; }
-  });
+  onStageAdvance?.('Evaluating');
 
-  const cefData = readCef();
-  if (!cefData) {
-    return { rejected: true, rejections: [{ reason_code: 'no_cef_data', message: 'Run CEF first — no color data found' }], variantsProcessed: 0 };
-  }
-
-  const colors = cefData?.selected?.colors || [];
-  if (colors.length === 0) {
-    return { rejected: true, rejections: [{ reason_code: 'no_colors', message: 'No colors discovered — run CEF first' }], variantsProcessed: 0 };
-  }
-
-  const colorNames = cefData?.selected?.color_names || {};
-  const editions = cefData?.selected?.editions || {};
-  const allVariants = buildVariantList({ colors, colorNames, editions });
-
-  // Filter to single variant if requested
-  const variants = variantKey
-    ? allVariants.filter(v => v.key === variantKey)
-    : allVariants;
-
-  // Read existing images
-  const readImages = _readImagesFn || (() => readProductImages({ productId: product.product_id, productRoot: root }));
-  const pifDoc = readImages();
+  // Read existing images, filter to this variant + view
+  const pifDoc = readProductImages({ productId: product.product_id, productRoot: root });
   const allImages = pifDoc?.selected?.images || [];
+  const viewImages = allImages.filter(img => img.variant_key === variantKey && img.view === view);
 
-  // Resolve callables
-  const evalView = _evalViewFn || evaluateViewCandidates;
-  const merge = _mergeFn || mergeEvaluation;
-  const heroCall = _heroCallFn || null;
+  if (viewImages.length === 0) {
+    onStageAdvance?.('Complete');
+    return { rankings: [], skipped: true };
+  }
+
+  // Build LLM caller — capture model name for eval history
+  let callLlm = null;
+  let resolvedModelName = '';
+  if (!_evalViewFn) {
+    const wrappedOnModelResolved = (info) => {
+      if (info?.model) resolvedModelName = info.model;
+      onModelResolved?.(info);
+    };
+    const llmDeps = buildLlmCallDeps({ config, logger, onModelResolved: wrappedOnModelResolved, onStreamChunk, onQueueWait, signal });
+    callLlm = createImageEvaluatorCallLlm(llmDeps);
+  }
 
   const imagesDir = path.join(root, product.product_id, 'images');
-  let variantsProcessed = 0;
+  const imagePaths = viewImages.map(img => path.join(imagesDir, img.filename));
+  const imageMetadata = viewImages.map(img => ({ width: img.width, height: img.height, bytes: img.bytes }));
 
-  for (let vi = 0; vi < variants.length; vi++) {
-    if (signal?.aborted) break;
+  // WHY: Category-specific view description + eval criteria.
+  // DB override (finder setting) wins over code default.
+  const viewConfig = resolveViewConfig('', product.category);
+  const viewEntry = viewConfig.find(v => v.key === view);
+  const viewDescription = viewEntry?.description || `${view} view of the product`;
 
-    const variant = variants[vi];
+  const dbCriteria = finderStore?.getSetting?.(`evalViewCriteria_${view}`) || '';
+  const evalCriteria = dbCriteria || resolveViewEvalCriteria(product.category, view);
 
-    // Filter images for this variant
-    const variantImages = allImages.filter(img => img.variant_key === variant.key);
-    if (variantImages.length === 0) {
-      onVariantProgress?.(vi, variants.length, variant.key);
-      continue;
-    }
+  const evalFn = _evalViewFn || evaluateViewCandidates;
+  const result = await evalFn({
+    imagePaths,
+    imageMetadata,
+    view,
+    viewDescription,
+    product,
+    variantLabel: viewImages[0]?.variant_label || variantKey,
+    variantType: viewImages[0]?.variant_type || 'color',
+    size: thumbSize,
+    promptOverride: evalPromptOverride,
+    evalCriteria,
+    callLlm,
+  });
 
-    onStageAdvance?.('Evaluating');
-    onVariantProgress?.(vi, variants.length, variant.key);
-
-    // Group by view
-    const viewGroups = new Map();
-    for (const img of variantImages) {
-      if (!viewGroups.has(img.view)) viewGroups.set(img.view, []);
-      viewGroups.get(img.view).push(img);
-    }
-
-    // Evaluate each view
-    const viewResults = new Map();
-    for (const [view, images] of viewGroups) {
-      if (signal?.aborted) break;
-
-      const imagePaths = images.map(img => path.join(imagesDir, img.filename));
-      const viewDescription = GENERIC_VIEW_DESCRIPTIONS[view] || `${view} view of the product`;
-
-      const result = await evalView({
-        imagePaths,
-        view,
-        viewDescription,
-        product,
-        variantLabel: variant.label,
-        variantType: variant.type,
-        size: thumbSize,
-        promptOverride: evalPromptOverride,
-        callLlm: _evalViewFn ? undefined : null,
-      });
-
-      viewResults.set(view, result);
-    }
-
-    // Collect winners for hero selection
-    const winners = [];
-    for (const [view, result] of viewResults) {
-      const best = (result.rankings || []).find(r => r.best);
-      if (best) winners.push({ view, filename: best.filename });
-    }
-
-    // Hero selection
-    let heroResults = null;
-    if (winners.length > 0 && heroCall) {
-      onStageAdvance?.('Heroes');
-      heroResults = await heroCall({
-        product,
-        variantLabel: variant.label,
-        variantType: variant.type,
-        viewWinners: winners,
-        promptOverride: heroPromptOverride,
-      });
-    }
-
-    // Persist
+  // WHY: Serialize JSON writes per product — multiple view evals fire simultaneously
+  // and all read/modify/write the same product_images.json file.
+  const merge = _mergeFn || mergeEvaluation;
+  await withProductLock(product.product_id, () => {
+    const viewResults = new Map([[view, result]]);
     merge({
       productId: product.product_id,
       productRoot: root,
-      variantKey: variant.key,
+      variantKey,
       viewResults,
+      heroResults: null,
+    });
+
+    // Persist eval history (prompt + response for audit trail)
+    if (result._prompt) {
+      appendEvalRecord({
+        productId: product.product_id,
+        productRoot: root,
+        variantKey,
+        type: 'view',
+        view,
+        model: resolvedModelName,
+        prompt: result._prompt,
+        response: result._response,
+        result: { rankings: result.rankings },
+      });
+    }
+  });
+
+  onStageAdvance?.('Complete');
+  return result;
+}
+
+/**
+ * Evaluate hero/marketing image candidates for ONE variant.
+ *
+ * WHY: Hero images are full-scene 16:9 marketing shots (view === 'hero').
+ * They're evaluated with vision just like view candidates — the LLM sees
+ * the actual thumbnails and ranks the best ones for the carousel.
+ *
+ * Skip logic mirrors view eval:
+ * - 0 candidates → skip (no LLM call)
+ * - 1 candidate → auto-elect as hero_rank: 1 (no LLM call)
+ * - 2+ candidates → create thumbnails, call vision LLM, rank
+ */
+export async function runEvalHero({
+  product,
+  specDb,
+  config = {},
+  logger = null,
+  variantKey,
+  productRoot,
+  signal,
+  onStageAdvance = null,
+  onModelResolved = null,
+  onStreamChunk = null,
+  onQueueWait = null,
+  onLlmCallComplete = null,
+  // Test seams
+  _heroCallFn = null,
+  _mergeFn = null,
+}) {
+  const root = productRoot || defaultProductRoot();
+  const finderStore = specDb?.getFinderStore?.('productImageFinder');
+  const heroPromptOverride = finderStore?.getSetting?.('heroEvalPromptOverride') || '';
+
+  onStageAdvance?.('Heroes');
+
+  // Read hero-view candidates for this variant
+  const pifDoc = readProductImages({ productId: product.product_id, productRoot: root });
+  const allImages = pifDoc?.selected?.images || [];
+  const heroCandidates = allImages.filter(img => img.variant_key === variantKey && img.view === 'hero');
+
+  if (heroCandidates.length === 0) {
+    onStageAdvance?.('Complete');
+    return { heroes: [], skipped: true };
+  }
+
+  // WHY: Single candidate = auto-elect, no LLM call (same pattern as view eval)
+  if (heroCandidates.length === 1) {
+    const autoResult = {
+      heroes: [{
+        filename: heroCandidates[0].filename,
+        hero_rank: 1,
+        reasoning: 'auto-elected: sole hero candidate for this variant',
+      }],
+    };
+    const merge = _mergeFn || mergeEvaluation;
+    await withProductLock(product.product_id, () => {
+      merge({
+        productId: product.product_id,
+        productRoot: root,
+        variantKey,
+        viewResults: new Map(),
+        heroResults: autoResult,
+      });
+    });
+    onStageAdvance?.('Complete');
+    return autoResult;
+  }
+
+  // Build LLM caller — capture model name for eval history
+  let heroCall = _heroCallFn;
+  let resolvedModelName = '';
+  if (!heroCall) {
+    const wrappedOnModelResolved = (info) => {
+      if (info?.model) resolvedModelName = info.model;
+      onModelResolved?.(info);
+    };
+    const llmDeps = buildLlmCallDeps({ config, logger, onModelResolved: wrappedOnModelResolved, onStreamChunk, onQueueWait, signal });
+    heroCall = createHeroEvalCallLlm(llmDeps);
+  }
+
+  // WHY: Category-specific hero criteria. DB override wins over code default.
+  const dbHeroCriteria = finderStore?.getSetting?.('heroEvalCriteria') || '';
+  const heroCriteria = dbHeroCriteria || resolveHeroEvalCriteria(product.category);
+  const heroCount = parseInt(finderStore?.getSetting?.('evalHeroCount') || '3', 10) || 3;
+
+  const variantLabel = allImages.find(img => img.variant_key === variantKey)?.variant_label || variantKey;
+  const variantType = allImages.find(img => img.variant_key === variantKey)?.variant_type || 'color';
+
+  // Build thumbnails for vision evaluation
+  const thumbSize = parseInt(finderStore?.getSetting?.('evalThumbSize') || '512', 10) || 512;
+  const imagesDir = path.join(root, product.product_id, 'images');
+  const candidates = [];
+  const images = [];
+  const lines = [];
+  for (let i = 0; i < heroCandidates.length; i++) {
+    const img = heroCandidates[i];
+    candidates.push({ filename: img.filename });
+    const imgPath = path.join(imagesDir, img.filename);
+    try {
+      const b64 = await createThumbnailBase64({ imagePath: imgPath, size: thumbSize });
+      images.push({
+        id: `img-${i + 1}`,
+        file_uri: `data:image/png;base64,${b64}`,
+        mime_type: 'image/png',
+      });
+    } catch {
+      // Image file missing or unreadable — still include in text list
+    }
+    const meta = img.width && img.height
+      ? ` (${img.width}×${img.height}px${img.bytes ? `, ${Math.round(img.bytes / 1024)}KB` : ''})`
+      : '';
+    lines.push(`Image ${i + 1}: ${img.filename}${meta}`);
+  }
+  const userText = lines.join('\n');
+
+  const heroResults = await heroCall({
+    product,
+    variantLabel,
+    variantType,
+    candidates,
+    promptOverride: heroPromptOverride,
+    heroCriteria,
+    heroCount,
+    userText,
+    images,
+  });
+
+  // WHY: Serialize JSON writes per product — concurrent eval operations.
+  const merge = _mergeFn || mergeEvaluation;
+  await withProductLock(product.product_id, async () => {
+    merge({
+      productId: product.product_id,
+      productRoot: root,
+      variantKey,
+      viewResults: new Map(),
       heroResults,
     });
 
-    variantsProcessed++;
-  }
+    // Persist eval history
+    if (!_heroCallFn) {
+      const { buildHeroSelectionPrompt } = await import('./imageEvaluator.js');
+      const heroSystemPrompt = buildHeroSelectionPrompt({
+        product, variantLabel, variantType, candidates,
+        promptOverride: heroPromptOverride, heroCriteria, heroCount,
+      });
+      appendEvalRecord({
+        productId: product.product_id,
+        productRoot: root,
+        variantKey,
+        type: 'hero',
+        model: resolvedModelName,
+        prompt: { system: heroSystemPrompt, user: userText },
+        response: heroResults,
+        result: heroResults,
+      });
+    }
+  });
 
   onStageAdvance?.('Complete');
-
-  return { rejected: false, variantsProcessed };
+  return heroResults;
 }

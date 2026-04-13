@@ -212,9 +212,17 @@ export function createFinderSqlStore({ db, category, module: mod }) {
     stmts._deleteSetting.run(key);
   }
 
+  // WHY: Targeted single-column update for lightweight writes (e.g. carousel_slots).
+  // Avoids full upsert which would require supplying every column.
+  function updateSummaryField(productId, field, value) {
+    if (!customColNames.includes(field)) return;
+    db.prepare(`UPDATE ${tableName} SET ${field} = ? WHERE category = ? AND product_id = ?`).run(value, category, productId);
+  }
+
   return {
     upsert, get, listByCategory, remove,
     insertRun, listRuns, getLatestRun, removeRun, removeAllRuns,
     getSetting, setSetting, getAllSettings, deleteSetting,
+    updateSummaryField,
   };
 }

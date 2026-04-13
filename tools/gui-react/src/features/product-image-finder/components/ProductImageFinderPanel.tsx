@@ -42,8 +42,13 @@ import {
   useDeleteProductImageMutation,
   useProcessProductImageMutation,
   useProcessAllProductImagesMutation,
+  useCarouselSlotMutation,
+  useDeleteEvalRecordMutation,
 } from '../api/productImageFinderQueries.ts';
-import type { ProductImageEntry, ProductImageFinderRun, VariantInfo, CarouselProgress } from '../types.ts';
+import type { ProductImageEntry, ProductImageFinderRun, VariantInfo, CarouselProgress, ResolvedSlot, EvalRecord } from '../types.ts';
+// WHY: Native HTML drag-and-drop for gallery→slot interaction.
+// @dnd-kit requires DndContext to wrap both source and target, but gallery
+// and slot strip are in separate DOM sections. Native DnD works across any DOM.
 
 /* ── Helpers ──────────────────────────────────────────────────────── */
 
@@ -387,7 +392,9 @@ function GalleryCard({
 
   return (
     <div
-      className={`sf-surface-elevated rounded-lg border overflow-hidden flex flex-col ${passesQuality ? 'sf-border-soft' : 'border-red-400/50'}`}
+      draggable
+      onDragStart={(e) => { e.dataTransfer.setData('text/plain', img.filename); e.dataTransfer.effectAllowed = 'copy'; }}
+      className={`sf-surface-elevated rounded-lg border overflow-hidden flex flex-col cursor-grab active:cursor-grabbing ${passesQuality ? 'sf-border-soft' : 'border-red-400/50'}`}
       style={{ width: 160, opacity: (!passesQuality || img.eval_flags?.includes('watermark') || img.eval_flags?.includes('wrong_product')) ? 0.4 : 1 }}
     >
       {/* Thumbnail — clickable */}
@@ -481,6 +488,205 @@ function GalleryCard({
             {img.run_number}
           </span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Carousel Slot Strip ─────────────────────────────────────────── */
+
+function resolveSlots(
+  viewBudget: string[],
+  heroCount: number,
+  variantKey: string,
+  carouselSlots: Record<string, Record<string, string | null>>,
+  images: ProductImageEntry[],
+): ResolvedSlot[] {
+  const varSlots = carouselSlots[variantKey] ?? {};
+  const result: ResolvedSlot[] = [];
+
+  for (const view of viewBudget) {
+    const userOverride = varSlots[view];
+    if (userOverride) {
+      result.push({ slot: view, filename: userOverride, source: 'user' });
+    } else {
+      const evalWinner = images.find(img => img.view === view && img.eval_best === true);
+      result.push(evalWinner
+        ? { slot: view, filename: evalWinner.filename, source: 'eval' }
+        : { slot: view, filename: null, source: 'empty' });
+    }
+  }
+
+  const heroes = images
+    .filter(img => img.hero === true && img.hero_rank != null)
+    .sort((a, b) => (a.hero_rank ?? 99) - (b.hero_rank ?? 99));
+
+  for (let i = 0; i < heroCount; i++) {
+    const slotKey = `hero_${i + 1}`;
+    const userOverride = varSlots[slotKey];
+    if (userOverride) {
+      result.push({ slot: slotKey, filename: userOverride, source: 'user' });
+    } else if (heroes[i]) {
+      result.push({ slot: slotKey, filename: heroes[i].filename, source: 'eval' });
+    } else {
+      result.push({ slot: slotKey, filename: null, source: 'empty' });
+    }
+  }
+
+  return result;
+}
+
+function SlotCard({ slot, img, source, category, productId, onClear, onDrop }: {
+  readonly slot: ResolvedSlot;
+  readonly img: ProductImageEntry | null;
+  readonly source: 'user' | 'eval' | 'empty';
+  readonly category: string;
+  readonly productId: string;
+  readonly onClear: () => void;
+  readonly onDrop: (filename: string) => void;
+}) {
+  const [isOver, setIsOver] = useState(false);
+  const filename = slot.filename;
+  const src = filename ? imageServeUrl(category, productId, filename) : '';
+  const isHero = slot.slot.startsWith('hero_');
+  const label = isHero ? slot.slot.replace('_', ' ').toUpperCase() : slot.slot.toUpperCase();
+  const dims = img ? formatDims(img.width, img.height) : '';
+
+  return (
+    <div
+      className={`shrink-0 rounded-lg border overflow-hidden flex flex-col transition-colors ${
+        isOver ? 'border-blue-400 ring-2 ring-blue-200' :
+        filename ? 'sf-border-soft sf-surface-elevated' : 'border-dashed sf-border-soft'
+      }`}
+      style={{ width: 160, opacity: filename ? 1 : 0.5 }}
+      onDragOver={(e) => { e.preventDefault(); setIsOver(true); }}
+      onDragLeave={() => setIsOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setIsOver(false);
+        const droppedFilename = e.dataTransfer.getData('text/plain');
+        if (droppedFilename) onDrop(droppedFilename);
+      }}
+    >
+      {/* Thumbnail — same h-28 as GalleryCard */}
+      <div
+        className="relative w-full h-28 flex items-center justify-center p-2"
+        style={{ backgroundColor: 'var(--sf-surface-bg)' }}
+      >
+        {filename ? (
+          <img src={src} alt={`${label} slot`} className="max-w-full max-h-full object-contain" loading="lazy" />
+        ) : (
+          <span className="text-[11px] font-bold uppercase tracking-wider sf-text-muted">{label}</span>
+        )}
+      </div>
+
+      {/* Meta — matches GalleryCard: label row, size row, pixel row, source row, actions */}
+      <div className="px-2.5 py-2 flex flex-col gap-1 border-t sf-border-soft">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[9px] font-bold uppercase tracking-wider sf-text-muted">{label}</span>
+          {source === 'user' && <Chip label="USR" className="sf-chip-info" />}
+          {source === 'eval' && <Chip label="LLM" className="sf-chip-success" />}
+          {img?.eval_best && <Chip label="BEST" className="sf-chip-success" />}
+          {img?.hero && <Chip label={`H${img.hero_rank ?? ''}`} className="sf-chip-accent" />}
+        </div>
+        {img ? (
+          <>
+            <span className="text-[8px] font-mono sf-text-subtle">
+              {formatBytes(img.bytes)}
+            </span>
+            {dims && (
+              <span className="text-[8px] font-mono sf-text-subtle">
+                {dims}px
+              </span>
+            )}
+            {img.url && (
+              <a
+                href={img.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[8px] font-mono sf-text-link truncate hover:underline"
+                title={img.url}
+              >
+                {(() => { try { return new URL(img.url).hostname; } catch { return 'source'; } })()}
+              </a>
+            )}
+          </>
+        ) : (
+          <span className="text-[8px] sf-text-subtle italic">drop image here</span>
+        )}
+        <div className="flex items-center gap-2 mt-0.5">
+          {filename && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onClear(); }}
+              className="text-[9px] sf-btn-ghost px-1 py-0.5 rounded"
+              style={{ color: 'var(--sf-danger, #ef4444)' }}
+              title={source === 'user' ? 'Clear user override' : 'Remove from carousel'}
+            >
+              clear
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CarouselSlotRow({
+  variantKey,
+  viewBudget,
+  heroCount,
+  carouselSlots,
+  images,
+  category,
+  productId,
+}: {
+  readonly variantKey: string;
+  readonly viewBudget: string[];
+  readonly heroCount: number;
+  readonly carouselSlots: Record<string, Record<string, string | null>>;
+  readonly images: readonly ProductImageEntry[];
+  readonly category: string;
+  readonly productId: string;
+}) {
+  const slotMutation = useCarouselSlotMutation(category, productId);
+  const slots = resolveSlots(viewBudget, heroCount, variantKey, carouselSlots, images as ProductImageEntry[]);
+  // WHY: Build filename→image lookup so SlotCard can show full meta (size, dims, source)
+  const imageByFilename = useMemo(() => {
+    const map = new Map<string, ProductImageEntry>();
+    for (const img of images) map.set(img.filename, img);
+    return map;
+  }, [images]);
+
+  const handleDropOnSlot = useCallback((slotKey: string, filename: string) => {
+    slotMutation.mutate({ variant_key: variantKey, slot: slotKey, filename });
+  }, [slotMutation, variantKey]);
+
+  const handleClearSlot = useCallback((slotKey: string) => {
+    // WHY: Always use '__cleared__' so the slot stays empty — no fallback to eval.
+    slotMutation.mutate({ variant_key: variantKey, slot: slotKey, filename: '__cleared__' });
+  }, [slotMutation, variantKey]);
+
+  const filled = slots.filter(s => s.filename).length;
+
+  return (
+    <div className="mb-3">
+      <div className="flex items-center gap-2 mb-1.5">
+        <span className="text-[9px] font-bold uppercase tracking-wider sf-text-muted">Carousel</span>
+        <span className="text-[9px] sf-text-muted font-mono">{filled}/{slots.length}</span>
+      </div>
+      <div className="flex gap-2 flex-wrap mb-2">
+        {slots.map((slot) => (
+          <SlotCard
+            key={slot.slot}
+            slot={slot}
+            img={slot.filename ? (imageByFilename.get(slot.filename) ?? null) : null}
+            source={slot.source}
+            category={category}
+            productId={productId}
+            onClear={() => handleClearSlot(slot.slot)}
+            onDrop={(fn) => handleDropOnSlot(slot.slot, fn)}
+          />
+        ))}
       </div>
     </div>
   );
@@ -770,7 +976,68 @@ function PifRunHistoryRow({
   );
 }
 
-/* ── Loop Group (collapsible wrapper for loop runs) ──────────────── */
+/* ── Eval History Row ──────────────────────────────────────────── */
+
+function EvalHistoryRow({ evalRecord, onDelete }: { readonly evalRecord: EvalRecord; readonly onDelete: (evalNumber: number) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const isHero = evalRecord.type === 'hero';
+  const label = isHero ? 'Hero Selection' : `${(evalRecord.view ?? '').toUpperCase()} View Eval`;
+
+  return (
+    <div className="sf-surface-panel rounded-lg overflow-hidden">
+      <div
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-3 px-4 py-2.5 cursor-pointer select-none hover:opacity-80"
+      >
+        <span className="text-[10px] sf-text-muted shrink-0" style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
+          {'\u25B6'}
+        </span>
+        <span className="text-[13px] font-mono font-bold text-[var(--sf-token-accent-strong)]">
+          #{evalRecord.eval_number}
+        </span>
+        <span className="font-mono text-[10px] sf-text-muted">{evalRecord.ran_at?.split('T')[0] ?? '--'}</span>
+        {evalRecord.duration_ms != null && (
+          <span className="text-[9px] sf-text-muted font-mono">{(evalRecord.duration_ms / 1000).toFixed(1)}s</span>
+        )}
+        {evalRecord.model && (
+          <Chip label={evalRecord.model} className="sf-chip-purple" />
+        )}
+        <Chip label={label} className={isHero ? 'sf-chip-accent' : 'sf-chip-info'} />
+        <span className="text-[10px] sf-text-muted font-mono">{evalRecord.variant_key}</span>
+        <div className="flex-1" />
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete(evalRecord.eval_number); }}
+          className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded sf-status-text-danger border sf-border-soft opacity-50 hover:opacity-100"
+        >
+          Del
+        </button>
+      </div>
+
+      {expanded && (
+        <div className="px-4 pb-4 pt-1 border-t sf-border-soft flex flex-col gap-3">
+          {/* Result summary */}
+          {evalRecord.result && (
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-1">Result</div>
+              <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text" style={{ maxHeight: '200px' }}>
+                {JSON.stringify(evalRecord.result, null, 2)}
+              </pre>
+            </div>
+          )}
+
+          {/* System prompt + user message + response — identical to run history */}
+          <FinderRunPromptDetails
+            systemPrompt={evalRecord.prompt?.system}
+            userMessage={evalRecord.prompt?.user}
+            response={evalRecord.response}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Loop Group (collapsible wrapper for loop runs) ─────────────��── */
 
 function PifLoopGroup({
   group,
@@ -903,6 +1170,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   const deleteRunsBatchMut = useDeleteProductImageFinderRunsBatchMutation(category, productId);
   const deleteAllMut = useDeleteProductImageFinderAllMutation(category, productId);
   const deleteImageMut = useDeleteProductImageMutation(category, productId);
+  const deleteEvalMut = useDeleteEvalRecordMutation(category, productId);
   const processImageMut = useProcessProductImageMutation(category, productId);
   const processAllMut = useProcessAllProductImagesMutation(category, productId);
   const [processingFilename, setProcessingFilename] = useState<string | null>(null);
@@ -1002,7 +1270,8 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   const fire = useFireAndForget({ type: 'pif', category, productId });
   const pifRunUrl = `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`;
   const pifLoopUrl = `${pifRunUrl}/loop`;
-  const pifEvalUrl = `${pifRunUrl}/evaluate`;
+  const pifEvalViewUrl = `${pifRunUrl}/evaluate-view`;
+  const pifEvalHeroUrl = `${pifRunUrl}/evaluate-hero`;
 
   const handleRunVariantView = useCallback((variantKey: string) => {
     fire(pifRunUrl, { variant_key: variantKey, mode: 'view' }, { subType: 'view', variantKey });
@@ -1026,15 +1295,49 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
     }
   }, [fire, pifLoopUrl, loopingVariants]);
 
+  // WHY: Stagger eval calls 500ms apart to avoid overwhelming the server.
+  // Each view eval + hero eval fires as its own operation tracker entry.
+  // Returns the number of calls scheduled so callers can chain delays.
+  const EVAL_STAGGER_MS = 500;
+
+  const fireEvalForVariant = useCallback((variantKey: string, startDelay = 0): number => {
+    const images = pifData?.selected?.images ?? [];
+    const variantImages = images.filter((img) => img.variant_key === variantKey);
+    // WHY: 'hero' view is handled by evaluate-hero (vision eval of hero candidates).
+    // View eval handles the 8 canonical views only.
+    const viewSet = [...new Set(variantImages.map((img) => img.view))];
+    const canonicalViews = viewSet.filter((v) => v !== 'hero');
+    const hasHeroes = viewSet.includes('hero');
+
+    canonicalViews.forEach((view, i) => {
+      setTimeout(() => {
+        fire(pifEvalViewUrl, { variant_key: variantKey, view }, { subType: 'evaluate', variantKey });
+      }, startDelay + i * EVAL_STAGGER_MS);
+    });
+
+    // Hero eval fires after canonical views — evaluates view='hero' candidates with vision
+    if (hasHeroes) {
+      setTimeout(() => {
+        fire(pifEvalHeroUrl, { variant_key: variantKey }, { subType: 'evaluate', variantKey });
+      }, startDelay + canonicalViews.length * EVAL_STAGGER_MS);
+    }
+
+    return canonicalViews.length + (hasHeroes ? 1 : 0);
+  }, [fire, pifEvalViewUrl, pifEvalHeroUrl, pifData]);
+
   const handleEvalAll = useCallback(() => {
-    fire(pifEvalUrl, {}, { subType: 'evaluate' });
-  }, [fire, pifEvalUrl]);
+    let totalDelay = 0;
+    for (const v of variants) {
+      const callCount = fireEvalForVariant(v.key, totalDelay);
+      totalDelay += callCount * EVAL_STAGGER_MS;
+    }
+  }, [fireEvalForVariant, variants, EVAL_STAGGER_MS]);
 
   const handleEvalVariant = useCallback((variantKey: string) => {
     if (!evaluatingVariants.has(variantKey)) {
-      fire(pifEvalUrl, { variant_key: variantKey }, { subType: 'evaluate', variantKey });
+      fireEvalForVariant(variantKey);
     }
-  }, [fire, pifEvalUrl, evaluatingVariants]);
+  }, [fireEvalForVariant, evaluatingVariants]);
 
   const heroEnabled = pifData?.carouselSettings?.heroEnabled ?? true;
 
@@ -1229,6 +1532,16 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                       </div>
                       {isOpen && (
                         <div className="px-3 pb-3">
+                          {/* Carousel Slots — inside variant group, same card size */}
+                          <CarouselSlotRow
+                            variantKey={group.key}
+                            viewBudget={pifData?.carouselSettings?.viewBudget ?? ['top', 'left', 'angle']}
+                            heroCount={pifData?.carouselSettings?.heroEnabled ? 3 : 0}
+                            carouselSlots={pifData?.carousel_slots ?? {}}
+                            images={group.images}
+                            category={category}
+                            productId={productId}
+                          />
                           <div className="flex gap-2 flex-wrap">
                             {group.images.map((img, i) => (
                               <GalleryCard
@@ -1314,6 +1627,25 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                       onDelete={(rn) => setDeleteTarget({ kind: 'run', runNumber: rn })}
                     />
                   )
+                ))}
+              </div>
+            </FinderSectionCard>
+          )}
+
+          {/* Eval History — separate from run history, shows prompt + response per eval call */}
+          {(pifData?.evaluations?.length ?? 0) > 0 && (
+            <FinderSectionCard
+              title="Eval History"
+              count={`${pifData?.evaluations?.length ?? 0} eval${(pifData?.evaluations?.length ?? 0) !== 1 ? 's' : ''}`}
+              storeKey={`pif:eval-history:${productId}`}
+            >
+              <div className="space-y-1.5">
+                {[...(pifData?.evaluations ?? [])].reverse().map((ev) => (
+                  <EvalHistoryRow
+                    key={ev.eval_number}
+                    evalRecord={ev}
+                    onDelete={(n) => deleteEvalMut.mutate(n)}
+                  />
                 ))}
               </div>
             </FinderSectionCard>

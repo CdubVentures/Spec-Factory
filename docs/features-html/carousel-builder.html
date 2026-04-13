@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory - Carousel Builder Reference</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --surface-alt: #f1f3f5;
+    --border: #dee2e6;
+    --border-light: #e9ecef;
+    --text: #212529;
+    --text-muted: #6c757d;
+    --accent: #4263eb;
+    --accent-light: #edf2ff;
+    --green: #2b8a3e;
+    --green-bg: #ebfbee;
+    --red: #c92a2a;
+    --red-bg: #fff5f5;
+    --orange: #e67700;
+    --orange-bg: #fff9db;
+    --purple: #7048e8;
+    --purple-bg: #f3f0ff;
+    --teal: #0c8599;
+    --teal-bg: #e6fcf5;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.6; }
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 32px 0; text-align: center; }
+  .header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  .header p { color: var(--text-muted); font-size: 15px; margin-top: 6px; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  .section-title { font-size: 20px; font-weight: 700; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); display: flex; align-items: center; gap: 10px; }
+  .section-title .num { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+  .card-header { padding: 14px 20px; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-light); }
+  .card-body { padding: 16px 20px; font-size: 14px; }
+  .card-body p { margin-bottom: 10px; }
+  .card-body p:last-child { margin-bottom: 0; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .tag-green { background: var(--green-bg); color: var(--green); }
+  .tag-orange { background: var(--orange-bg); color: var(--orange); }
+  .tag-accent { background: var(--accent-light); color: var(--accent); }
+  .tag-purple { background: var(--purple-bg); color: var(--purple); }
+  .tag-teal { background: var(--teal-bg); color: var(--teal); }
+  .tag-red { background: var(--red-bg); color: var(--red); }
+  .detail-grid { display: grid; grid-template-columns: 170px 1fr; gap: 4px 12px; font-size: 13px; background: var(--surface-alt); padding: 12px 14px; border-radius: 6px; margin-top: 6px; }
+  .detail-grid dt { font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+  .detail-grid dd { color: var(--text); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border-light); }
+  th { background: var(--surface-alt); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
+  tr:last-child td { border-bottom: none; }
+  td code { font-family: var(--mono); font-size: 12px; background: var(--surface-alt); padding: 2px 6px; border-radius: 3px; color: var(--accent); }
+  .flow-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 24px 0; flex-wrap: wrap; }
+  .flow-box { padding: 12px 20px; border-radius: var(--radius); font-weight: 600; font-size: 13px; text-align: center; border: 2px solid; min-width: 140px; }
+  .flow-arrow { font-size: 20px; color: var(--text-muted); }
+  .flow-pass { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+  .flow-fail { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+  .flow-neutral { background: var(--surface-alt); border-color: var(--border); color: var(--text); }
+  .flow-accent { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .flow-teal { background: var(--teal-bg); border-color: var(--teal); color: var(--teal); }
+  .flow-purple { background: var(--purple-bg); border-color: var(--purple); color: var(--purple); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+  pre.json-block { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 6px; padding: 16px 20px; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; overflow-x: auto; color: var(--text); margin-top: 8px; }
+  .step-list { list-style: none; padding: 0; counter-reset: step; }
+  .step-list li { padding: 12px 16px; margin-bottom: 8px; background: var(--surface-alt); border-radius: 6px; border-left: 3px solid var(--accent); font-size: 13.5px; counter-increment: step; }
+  .step-list li::before { content: counter(step); display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: white; font-size: 11px; font-weight: 700; margin-right: 10px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Carousel Builder Reference</h1>
+  <p>Vision-based image evaluator &mdash; selects the best product image per view and picks hero carousel shots</p>
+</div>
+
+<div class="container">
+
+<!-- 1. Overview -->
+<div class="section-title"><span class="num">1</span> Overview</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--accent-light);">What It Does</div>
+  <div class="card-body">
+    <p>The Carousel Builder takes <strong>already-downloaded PIF images</strong>, groups them by variant + view, sends each group to a vision-capable LLM, and picks the best image per view + hero shots for the product carousel.</p>
+    <p>It is a <strong>sub-feature of PIF</strong> &mdash; not a separate finder module. It lives inside the PIF panel and writes eval results directly onto existing <code>ProductImageEntry</code> objects.</p>
+    <p><strong>No loop, no orchestrator.</strong> The GUI fires one operation per view group + one for hero &mdash; all simultaneously. The LLM queue serializes the actual calls. Each operation shows individually in the tracker. Re-running clears old eval data and produces fresh results.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Key Design Decisions</div>
+  <div class="card-body">
+    <dl class="detail-grid">
+      <dt>LLM Phase</dt>
+      <dd><code>imageEvaluator</code> &mdash; separate from <code>imageFinder</code> (discovery), own model config in LLM Config GUI</dd>
+      <dt>Persistence</dt>
+      <dd>No new DB tables or JSON files. Eval fields written directly onto <code>selected.images[]</code> in existing <code>product_images.json</code></dd>
+      <dt>Re-runnable</dt>
+      <dd>Full re-evaluation every time. Clear all eval fields for the variant, then apply fresh results. LLM always sees the complete current candidate pool.</dd>
+      <dt>Vision Input</dt>
+      <dd>512&times;512 PNG thumbnails via <code>sharp</code>, base64-encoded as <code>data:image/png;base64,...</code> in <code>image_url</code> content parts</dd>
+      <dt>Skip Logic</dt>
+      <dd>0 candidates = skip. 1 candidate = auto-elect (no LLM call). 2+ candidates = send to LLM.</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- 2. End-to-End Flow -->
+<div class="section-title"><span class="num">2</span> End-to-End Flow: User Clicks "Eval"</div>
+
+<div class="flow-row">
+  <div class="flow-box flow-accent">Click "Eval" Button</div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-neutral">POST /evaluate</div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-teal">Register Operation</div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-accent">202 Accepted</div>
+</div>
+<div class="flow-row">
+  <div class="flow-box flow-teal">Read CEF + Images</div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-purple">Eval Each View</div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-purple">Pick Heroes</div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-pass">Merge &amp; Persist</div>
+</div>
+
+<div class="card">
+  <div class="card-header">Step-by-Step Trace</div>
+  <div class="card-body">
+    <ol class="step-list">
+      <li><strong>GUI groups images by view:</strong> User clicks <span class="tag tag-accent">Eval</span> on a variant row. The GUI reads the current images from React Query cache, groups them by <code>view</code> field, and determines which views exist for this variant (e.g., top, left, angle, front).</li>
+      <li><strong>GUI fires N+1 POSTs simultaneously:</strong> One <code>POST /evaluate-view</code> per view group + one <code>POST /evaluate-hero</code>. Each uses <code>useFireAndForget</code> &mdash; all N+1 optimistic stubs appear in the operations tracker instantly.</li>
+      <li><strong>Each route handler registers its own operation:</strong> <code>type: 'pif'</code>, <code>subType: 'evaluate'</code>. View ops show progress text like <code>"top view"</code>. Hero op shows <code>"hero selection"</code>. Returns <strong>202 Accepted</strong> immediately.</li>
+      <li><strong>LLM queue serializes:</strong> All N+1 operations hit the LLM queue. The queue processes them one at a time. Single-candidate views auto-elect instantly (no LLM call) and go to <span class="tag tag-green">Done</span> within milliseconds.</li>
+      <li><strong>Per-view evaluation (runEvalView):</strong> Reads images for this variant+view from <code>product_images.json</code>. Creates 512px thumbnails. Calls vision LLM with view-specific prompt. LLM returns rankings with <code>best: true</code> on the winner. Flags: <code>watermark</code>, <code>badge</code>, <code>cropped</code>, <code>wrong_product</code>. Persists via <code>mergeEvaluation</code> (clear-then-write for this view).</li>
+      <li><strong>Hero selection (runEvalHero):</strong> Reads all <code>eval_best: true</code> winners for this variant. Sends them to hero selection LLM. LLM picks heroes with <code>hero_rank</code>. Persists via <code>mergeEvaluation</code>.</li>
+      <li><strong>Each operation completes independently:</strong> Data-change event <code>product-image-finder-evaluate</code> broadcast per completion. GUI refreshes as each finishes &mdash; badges appear progressively.</li>
+      <li><strong>GUI Refresh:</strong> WS event bridge receives data-change &rarr; invalidates React Query cache &rarr; gallery cards show <span class="tag tag-green">BEST</span> / <span class="tag tag-purple">H1</span> / <span class="tag tag-red">WM</span> badges as each view completes.</li>
+    </ol>
+  </div>
+</div>
+
+<!-- 3. Operations Tracker -->
+<div class="section-title"><span class="num">3</span> Operations Tracker During Eval</div>
+
+<div class="card">
+  <div class="card-header">What the User Sees</div>
+  <div class="card-body">
+    <p>Example: variant has images across top (3), left (2), angle (1), front (1). User clicks Eval:</p>
+    <table>
+      <thead><tr><th>Operation</th><th>Status</th><th>LLM Call?</th><th>Details</th></tr></thead>
+      <tbody>
+        <tr><td>PIF evaluate &mdash; <strong>top view</strong></td><td><span class="tag tag-accent">Running</span> &rarr; <span class="tag tag-green">Done</span></td><td>Yes (3 candidates)</td><td>Vision LLM picks best of 3 top images</td></tr>
+        <tr><td>PIF evaluate &mdash; <strong>left view</strong></td><td><span class="tag tag-accent">Running</span> &rarr; <span class="tag tag-green">Done</span></td><td>Yes (2 candidates)</td><td>Vision LLM picks best of 2 left images</td></tr>
+        <tr><td>PIF evaluate &mdash; <strong>angle view</strong></td><td><span class="tag tag-green">Done</span></td><td>No (auto-elect)</td><td>1 candidate = instant winner, no LLM call</td></tr>
+        <tr><td>PIF evaluate &mdash; <strong>front view</strong></td><td><span class="tag tag-green">Done</span></td><td>No (auto-elect)</td><td>1 candidate = instant winner, no LLM call</td></tr>
+        <tr><td>PIF evaluate &mdash; <strong>hero selection</strong></td><td><span class="tag tag-accent">Running</span> &rarr; <span class="tag tag-green">Done</span></td><td>Yes</td><td>Picks heroes from eval_best winners across all views</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top: 12px; font-size: 13px; color: var(--text-muted);">All 5 operations appear in the tracker instantly. Auto-elect operations complete in milliseconds. LLM calls are queued and processed one at a time. Gallery badges update progressively as each operation finishes.</p>
+  </div>
+</div>
+
+<!-- 4. Image Entry Fields -->
+<div class="section-title"><span class="num">4</span> Eval Fields on ProductImageEntry</div>
+
+<div class="card">
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>eval_best</code></td><td><code>boolean?</code></td><td>True = LLM chose this as the best image for its view</td></tr>
+        <tr><td><code>eval_flags</code></td><td><code>string[]?</code></td><td>Quality flags: <code>'watermark'</code>, <code>'badge'</code>, <code>'cropped'</code>, <code>'wrong_product'</code></td></tr>
+        <tr><td><code>eval_reasoning</code></td><td><code>string?</code></td><td>LLM explanation for the ranking decision</td></tr>
+        <tr><td><code>eval_source</code></td><td><code>string?</code></td><td>Source URL of the evaluated image</td></tr>
+        <tr><td><code>hero</code></td><td><code>boolean?</code></td><td>Selected as a hero shot by carousel builder</td></tr>
+        <tr><td><code>hero_rank</code></td><td><code>number?</code></td><td>Order among heroes (1 = primary hero)</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top: 12px; font-size: 13px; color: var(--text-muted);">All fields are optional and absent on pre-eval images. Re-running clears and re-applies all fields for the target variant.</p>
+  </div>
+</div>
+
+<!-- 5. Gallery Card Badges -->
+<div class="section-title"><span class="num">5</span> Gallery Card Visual Feedback</div>
+
+<div class="card">
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Badge</th><th>Chip Class</th><th>Condition</th><th>Visual</th></tr></thead>
+      <tbody>
+        <tr><td><strong>BEST</strong></td><td><code>sf-chip-success</code></td><td><code>eval_best === true</code></td><td>Green chip &mdash; winner for this view</td></tr>
+        <tr><td><strong>H1</strong> / <strong>H2</strong></td><td><code>sf-chip-accent</code></td><td><code>hero === true</code></td><td>Purple chip with hero rank number</td></tr>
+        <tr><td><strong>WM</strong></td><td><code>sf-chip-danger</code></td><td><code>eval_flags.includes('watermark')</code></td><td>Red chip + card dimmed to 40% opacity</td></tr>
+        <tr><td><strong>BDG</strong></td><td><code>sf-chip-danger</code></td><td><code>eval_flags.includes('badge')</code></td><td>Red chip &mdash; retailer badge detected</td></tr>
+        <tr><td><strong>CROP</strong></td><td><code>sf-chip-neutral</code></td><td><code>eval_flags.includes('cropped')</code></td><td>Gray chip &mdash; product cropped at edges</td></tr>
+        <tr><td><strong>WRONG</strong></td><td><code>sf-chip-danger</code></td><td><code>eval_flags.includes('wrong_product')</code></td><td>Red chip + card dimmed to 40% opacity</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top: 12px; font-size: 13px; color: var(--text-muted);">Eval reasoning is shown as a truncated italic line below badges, with full text on hover (title attribute).</p>
+  </div>
+</div>
+
+<!-- 6. Evaluation Criteria -->
+<div class="section-title"><span class="num">6</span> LLM Evaluation Criteria</div>
+
+<div class="card">
+  <div class="card-header">View Evaluation (per-view prompt)</div>
+  <div class="card-body">
+    <p>Each view gets its own LLM call with <strong>view-specific instructions</strong>. The prompt tells the LLM what the correct angle should look like (e.g., "Bird's-eye shot looking directly down" for top, "Strict side profile from the left" for left).</p>
+    <table>
+      <thead><tr><th>Criterion</th><th>What LLM Checks</th><th>Impact</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Watermarks</strong></td><td>Getty, Shutterstock, retailer logos, "SAMPLE" text</td><td>Disqualify &mdash; <code>flag: 'watermark'</code></td></tr>
+        <tr><td><strong>Badges / overlays</strong></td><td>Sale stickers, "NEW" badges, retailer branding</td><td>Disqualify &mdash; <code>flag: 'badge'</code></td></tr>
+        <tr><td><strong>Cropping</strong></td><td>Product cut off at edges, missing parts, tight framing</td><td>Penalty &mdash; <code>flag: 'cropped'</code></td></tr>
+        <tr><td><strong>Wrong product</strong></td><td>Different model, wrong color, accessory</td><td>Disqualify &mdash; <code>flag: 'wrong_product'</code></td></tr>
+        <tr><td><strong>Sharpness</strong></td><td>Blur, compression artifacts, noise</td><td>Affects ranking</td></tr>
+        <tr><td><strong>Composition</strong></td><td>View angle match, product centered, clean bg</td><td>Affects ranking</td></tr>
+        <tr><td><strong>BG removal quality</strong></td><td>Halo artifacts, missing parts, jagged edges</td><td>Affects ranking</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Hero Selection (cross-view prompt)</div>
+  <div class="card-body">
+    <p>After view evaluation, the <code>eval_best: true</code> winners from each view are sent together to the LLM. It picks the best images for a product page carousel based on: design showcase, attractiveness, sharpness, and perspective diversity.</p>
+  </div>
+</div>
+
+<!-- 7. API -->
+<div class="section-title"><span class="num">7</span> API Endpoint</div>
+
+<div class="card">
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Method</th><th>Path</th><th>Body</th><th>Response</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>POST</code></td>
+          <td><code>/product-image-finder/{category}/{productId}/evaluate-view</code></td>
+          <td><code>{ variant_key: string, view: string }</code></td>
+          <td><code>202 { ok: true, operationId }</code></td>
+        </tr>
+        <tr>
+          <td><code>POST</code></td>
+          <td><code>/product-image-finder/{category}/{productId}/evaluate-hero</code></td>
+          <td><code>{ variant_key: string }</code></td>
+          <td><code>202 { ok: true, operationId }</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="margin-top: 12px; font-size: 13px;">Each endpoint handles ONE operation = ONE LLM call. The GUI fires N view calls + 1 hero call simultaneously per variant. The LLM queue serializes actual execution.</p>
+  </div>
+</div>
+
+<!-- 8. Response Schemas -->
+<div class="section-title"><span class="num">8</span> LLM Response Schemas</div>
+
+<div class="two-col">
+  <div class="card">
+    <div class="card-header">View Eval Response</div>
+    <div class="card-body">
+<pre class="json-block">{
+  "rankings": [
+    {
+      "filename": "top-black.png",
+      "rank": 1,
+      "best": true,
+      "flags": [],
+      "reasoning": "Sharp, centered, clean bg"
+    },
+    {
+      "filename": "top-black-2.png",
+      "rank": 2,
+      "best": false,
+      "flags": ["watermark"],
+      "reasoning": "Getty watermark detected"
+    }
+  ]
+}</pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Hero Selection Response</div>
+    <div class="card-body">
+<pre class="json-block">{
+  "heroes": [
+    {
+      "filename": "top-black.png",
+      "hero_rank": 1,
+      "reasoning": "Best product showcase"
+    },
+    {
+      "filename": "angle-black.png",
+      "hero_rank": 2,
+      "reasoning": "Attractive 3/4 angle"
+    }
+  ]
+}</pre>
+    </div>
+  </div>
+</div>
+
+<!-- 9. LLM Config -->
+<div class="section-title"><span class="num">9</span> LLM Configuration</div>
+
+<div class="card">
+  <div class="card-body">
+    <dl class="detail-grid">
+      <dt>Phase ID</dt>
+      <dd><code>imageEvaluator</code></dd>
+      <dt>GUI Label</dt>
+      <dd>"Carousel Builder" under Discovery section</dd>
+      <dt>Default Model</dt>
+      <dd>Inherits from global <code>llmModelPlan</code> (vision-capable required)</dd>
+      <dt>JSON Mode</dt>
+      <dd>Strict by default &mdash; structured ranking output</dd>
+      <dt>Prompt Preview</dt>
+      <dd>Tabbed view in LLM Config: one tab per canonical view (top, bottom, left, right, front, rear, sangle, angle) + hero + schema</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- 10. Settings -->
+<div class="section-title"><span class="num">10</span> Per-Category Settings</div>
+
+<div class="card">
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Key</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>evalEnabled</code></td><td><code>'true'</code></td><td>Enable/disable the carousel builder</td></tr>
+        <tr><td><code>evalThumbSize</code></td><td><code>'512'</code></td><td>Thumbnail dimension for LLM vision calls (px)</td></tr>
+        <tr><td><code>evalPromptOverride</code></td><td><code>''</code></td><td>Custom view evaluation prompt (empty = built-in)</td></tr>
+        <tr><td><code>heroEvalPromptOverride</code></td><td><code>''</code></td><td>Custom hero selection prompt (empty = built-in)</td></tr>
+        <tr><td><code>evalHeroCount</code></td><td><code>'3'</code></td><td>Target number of hero selections per variant</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top: 12px; font-size: 13px; color: var(--text-muted);">Settings stored in <code>product_image_finder_settings</code> table (existing PIF settings table, not a new table).</p>
+  </div>
+</div>
+
+<!-- 11. File Map -->
+<div class="section-title"><span class="num">11</span> File Map</div>
+
+<div class="card">
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Layer</th><th>File</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>Per-view/hero runners</td><td><code>src/features/product-image/carouselBuild.js</code></td><td><code>runEvalView</code> (one view) + <code>runEvalHero</code> (pick heroes). Thin functions &mdash; one LLM call each.</td></tr>
+        <tr><td>Evaluator</td><td><code>src/features/product-image/imageEvaluator.js</code></td><td>Prompt builders, thumbnail pipeline, evaluateViewCandidates, mergeEvaluation</td></tr>
+        <tr><td>Schema</td><td><code>src/features/product-image/imageEvaluatorSchema.js</code></td><td>Zod schemas for view eval + hero selection responses</td></tr>
+        <tr><td>Routes</td><td><code>src/features/product-image/api/productImageFinderRoutes.js</code></td><td>POST .../evaluate endpoint</td></tr>
+        <tr><td>Context</td><td><code>src/features/product-image/api/productImageFinderRouteContext.js</code></td><td>DI container &mdash; exports runCarouselBuild</td></tr>
+        <tr><td>Phase Def</td><td><code>src/core/config/llmPhaseDefs.js</code></td><td><code>imageEvaluator</code> entry in LLM_PHASE_DEFS</td></tr>
+        <tr><td>Registry</td><td><code>src/core/finder/finderModuleRegistry.js</code></td><td>Eval settings in PIF settingsDefaults + evaluate data-change event</td></tr>
+        <tr><td>Phase Schema</td><td><code>src/features/indexing/pipeline/shared/phaseSchemaRegistry.js</code></td><td>Per-view prompt preview + response schemas for LLM Config GUI</td></tr>
+        <tr><td>GUI Panel</td><td><code>tools/gui-react/src/features/product-image-finder/components/ProductImageFinderPanel.tsx</code></td><td>Eval/Eval All buttons, eval badges, evaluatingVariants tracking</td></tr>
+        <tr><td>GUI Types</td><td><code>tools/gui-react/src/features/product-image-finder/types.ts</code></td><td>eval_best, eval_flags, eval_reasoning, hero, hero_rank on ProductImageEntry</td></tr>
+        <tr><td>Settings UI</td><td><code>tools/gui-react/src/features/pipeline-settings/components/ModuleSettingsPanel.tsx</code></td><td>Eval prompt override editors</td></tr>
+        <tr><td>LLM Config UI</td><td><code>tools/gui-react/src/features/llm-config/sections/LlmPhaseSection.tsx</code></td><td>ViewPromptTabs component for per-view prompt preview</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 12. Tests -->
+<div class="section-title"><span class="num">12</span> Test Coverage</div>
+
+<div class="card">
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Test File</th><th>Tests</th><th>Coverage</th></tr></thead>
+      <tbody>
+        <tr><td><code>imageEvaluatorSchema.test.js</code></td><td>23</td><td>Zod schema validation: happy path, missing fields, invalid types, flag enums</td></tr>
+        <tr><td><code>imageEvaluator.test.js</code></td><td>11</td><td>Thumbnail pipeline: resize, aspect ratio, base64, error cases</td></tr>
+        <tr><td><code>imageEvaluator.viewEval.test.js</code></td><td>37</td><td>Prompt builders, orchestrator skip logic, persistence clear-then-write</td></tr>
+        <tr><td><code>carouselBuild.test.js</code></td><td>6</td><td>runEvalView + runEvalHero: per-view eval, skip logic, hero selection, persistence, stage callbacks</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top: 12px; font-size: 13px; color: var(--text-muted);">Total: 77 tests. All use <code>node --test</code> runner with table-driven patterns and injectable test seams.</p>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

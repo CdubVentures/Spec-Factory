@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   SettingGroupBlock,
   SettingRow,
@@ -13,6 +13,8 @@ import { AlertBanner } from '../../../shared/ui/feedback/AlertBanner.tsx';
 import { resolveProviderForModel, parseModelKey } from '../state/llmProviderRegistryBridge.ts';
 import { ModelSelectDropdown, GlobalDefaultIcon } from '../components/ModelSelectDropdown.tsx';
 import { extractEffortFromModelName } from '../state/llmEffortFromModelName.ts';
+import { useModuleSettingsAuthority } from '../../pipeline-settings/state/moduleSettingsAuthority.ts';
+import { usePersistedTab } from '../../../stores/tabStore.ts';
 
 /** Small lock icon shown next to disabled effort selects when the level is baked into the model name. */
 function LockedEffortIcon() {
@@ -43,7 +45,7 @@ interface LlmPhaseSectionProps {
   registry: LlmProviderEntry[];
   globalDraft: GlobalDraftSlice;
   apiKeyFilter?: (provider: LlmProviderEntry) => boolean;
-  phaseSchema?: { system_prompt: string; hero_system_prompt?: string; response_schema: Record<string, unknown>; hero_response_schema?: Record<string, unknown>; view_prompts?: Record<string, string> } | null;
+  phaseSchema?: { system_prompt: string; hero_system_prompt?: string; response_schema: Record<string, unknown>; hero_response_schema?: Record<string, unknown>; view_prompts?: Record<string, string>; eval_criteria_defaults?: Record<string, Record<string, string>>; eval_criteria_categories?: readonly string[] } | null;
 }
 
 export const LlmPhaseSection = memo(function LlmPhaseSection({
@@ -464,7 +466,9 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
 
     {phaseSchema && (
       <SettingGroupBlock title="LLM Call Contract">
-        {phaseSchema.view_prompts ? (
+        {phaseSchema.eval_criteria_defaults && phaseSchema.eval_criteria_categories ? (
+          <CategoryViewPromptTabs phaseSchema={phaseSchema as CategoryViewPromptTabsPhaseSchema} />
+        ) : phaseSchema.view_prompts ? (
           <ViewPromptTabs phaseSchema={phaseSchema} />
         ) : phaseSchema.hero_system_prompt ? (
           /* Two-column layout: View prompt (left) + Hero prompt (right) */
@@ -587,6 +591,183 @@ function ViewPromptTabs({ phaseSchema }: {
           <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text" style={{ minHeight: '300px' }}>
             {String(activePrompt)}
           </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Category View Prompt Tabs (Carousel Builder — editable per-category) ── */
+
+const VIEW_TABS = ['top', 'bottom', 'left', 'right', 'front', 'rear', 'sangle', 'angle', 'hero', 'schema'] as const;
+type ViewTab = typeof VIEW_TABS[number];
+
+function settingKeyForView(view: ViewTab): string {
+  return view === 'hero' ? 'heroEvalCriteria' : `evalViewCriteria_${view}`;
+}
+
+interface CategoryViewPromptTabsPhaseSchema {
+  readonly response_schema: Record<string, unknown>;
+  readonly hero_response_schema?: Record<string, unknown>;
+  readonly eval_criteria_defaults: Record<string, Record<string, string>>;
+  readonly eval_criteria_categories: readonly string[];
+}
+
+function CategoryViewPromptTabs({ phaseSchema }: { readonly phaseSchema: CategoryViewPromptTabsPhaseSchema }) {
+  const categories = phaseSchema.eval_criteria_categories;
+  const defaults = phaseSchema.eval_criteria_defaults;
+
+  const [activeCategory, setActiveCategory] = usePersistedTab<string>(
+    'llm-config:eval-category',
+    categories[0] ?? 'mouse',
+    { validValues: categories as unknown as readonly string[] },
+  );
+  const [activeView, setActiveView] = usePersistedTab<string>(
+    'llm-config:eval-view',
+    'top',
+    { validValues: VIEW_TABS as unknown as readonly string[] },
+  );
+
+  const { settings, saveSetting, isLoading } = useModuleSettingsAuthority({
+    category: activeCategory,
+    moduleId: 'productImageFinder',
+  });
+
+  const dbValue = settings[settingKeyForView(activeView as ViewTab)] ?? '';
+  const defaultValue = defaults[activeCategory]?.[activeView] ?? '';
+  const displayValue = dbValue || defaultValue;
+  const isOverridden = dbValue.length > 0;
+
+  // WHY: Local draft prevents re-render flicker while typing.
+  const [draft, setDraft] = useState(displayValue);
+  const prevDisplayRef = useRef(displayValue);
+  useEffect(() => {
+    if (prevDisplayRef.current !== displayValue) {
+      prevDisplayRef.current = displayValue;
+      setDraft(displayValue);
+    }
+  }, [displayValue]);
+
+  // WHY: Reset draft when switching tabs.
+  const tabKey = `${activeCategory}:${activeView}`;
+  const prevTabKeyRef = useRef(tabKey);
+  useEffect(() => {
+    if (prevTabKeyRef.current !== tabKey) {
+      prevTabKeyRef.current = tabKey;
+      setDraft(displayValue);
+    }
+  }, [tabKey, displayValue]);
+
+  const handleSave = useCallback(() => {
+    const trimmed = draft.trim();
+    if (trimmed === defaultValue.trim()) {
+      saveSetting(settingKeyForView(activeView as ViewTab), '');
+    } else {
+      saveSetting(settingKeyForView(activeView as ViewTab), trimmed);
+    }
+  }, [draft, defaultValue, activeView, saveSetting]);
+
+  const handleReset = useCallback(() => {
+    saveSetting(settingKeyForView(activeView as ViewTab), '');
+    setDraft(defaultValue);
+  }, [activeView, defaultValue, saveSetting]);
+
+  const isDirty = draft.trim() !== displayValue.trim();
+
+  return (
+    <div className="space-y-2">
+      {/* Category tabs */}
+      <div className="flex flex-wrap gap-1 mb-1">
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setActiveCategory(cat)}
+            className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded cursor-pointer transition-opacity ${
+              activeCategory === cat
+                ? 'sf-primary-button'
+                : 'sf-btn-ghost sf-text-muted hover:opacity-80'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {/* View tabs */}
+      <div className="flex flex-wrap gap-1">
+        {VIEW_TABS.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveView(tab)}
+            className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide rounded cursor-pointer transition-opacity ${
+              activeView === tab
+                ? 'sf-primary-button'
+                : 'sf-btn-ghost sf-text-muted hover:opacity-80'
+            }`}
+          >
+            {tab === 'schema' ? 'Schema' : tab === 'hero' ? 'Hero' : tab}
+          </button>
+        ))}
+      </div>
+
+      {activeView === 'schema' ? (
+        <div className="space-y-3">
+          <div>
+            <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">View Eval Response Schema</div>
+            <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
+              {JSON.stringify(phaseSchema.response_schema, null, 2)}
+            </pre>
+          </div>
+          {phaseSchema.hero_response_schema && (
+            <div>
+              <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Hero Selection Response Schema</div>
+              <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
+                {JSON.stringify(phaseSchema.hero_response_schema, null, 2)}
+              </pre>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted">
+              {activeCategory} &mdash; {activeView === 'hero' ? 'Hero Selection' : `${activeView} View`} Eval Criteria
+            </div>
+            <div className="flex items-center gap-2">
+              {isOverridden && (
+                <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded sf-chip-warning">Customized</span>
+              )}
+              {isLoading && (
+                <span className="text-[10px] sf-text-muted">Loading...</span>
+              )}
+            </div>
+          </div>
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={handleSave}
+            className="sf-pre-block sf-text-caption font-mono rounded p-3 w-full overflow-auto whitespace-pre-wrap leading-relaxed resize-y"
+            style={{ minHeight: '300px' }}
+            spellCheck={false}
+          />
+          <div className="flex items-center gap-2">
+            {isDirty && (
+              <button
+                onClick={handleSave}
+                className="sf-primary-button px-3 py-1 text-[10px] font-bold uppercase tracking-wide rounded cursor-pointer"
+              >
+                Save
+              </button>
+            )}
+            {isOverridden && (
+              <button
+                onClick={handleReset}
+                className="sf-btn-ghost sf-text-muted px-3 py-1 text-[10px] font-bold uppercase tracking-wide rounded cursor-pointer hover:opacity-80"
+              >
+                Reset to Default
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>

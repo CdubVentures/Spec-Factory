@@ -27,6 +27,8 @@ export const api = {
     request<T>(path, { method: 'PUT', body: body ? JSON.stringify(body) : undefined }),
   del: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: 'DELETE', body: body ? JSON.stringify(body) : undefined }),
+  patch: <T>(path: string, body?: unknown) =>
+    request<T>(path, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined }),
 
   // WHY: Validated variants — use when silent shape mismatch is unacceptable.
   // The parse function validates the raw response and throws on wrong shape.

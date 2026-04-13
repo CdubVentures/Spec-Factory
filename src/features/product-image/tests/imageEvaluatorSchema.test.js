@@ -2,7 +2,7 @@
  * imageEvaluatorSchema contract tests.
  *
  * Exhaustive boundary tests for the Zod schemas that validate
- * LLM vision evaluator responses (view ranking + hero selection).
+ * LLM vision evaluator responses (view winner + hero selection).
  */
 
 import { describe, it } from 'node:test';
@@ -12,124 +12,136 @@ import { viewEvalResponseSchema, heroEvalResponseSchema } from '../imageEvaluato
 /* ── viewEvalResponseSchema ─────────────────────────────────────── */
 
 describe('viewEvalResponseSchema', () => {
-  const validRanking = {
+  const validWinner = {
     filename: 'top-black.png',
-    rank: 1,
-    best: true,
-    flags: [],
     reasoning: 'Clean cutout, sharp edges, product centered.',
   };
 
-  it('accepts a valid rankings array', () => {
-    const input = { rankings: [validRanking] };
+  it('accepts a valid winner with no rejected', () => {
+    const input = { winner: validWinner };
     const result = viewEvalResponseSchema.safeParse(input);
     assert.equal(result.success, true);
-    assert.deepStrictEqual(result.data.rankings[0].filename, 'top-black.png');
+    assert.equal(result.data.winner.filename, 'top-black.png');
   });
 
-  it('accepts an empty rankings array', () => {
-    const result = viewEvalResponseSchema.safeParse({ rankings: [] });
-    assert.equal(result.success, true);
-    assert.deepStrictEqual(result.data.rankings, []);
-  });
-
-  it('accepts multiple rankings', () => {
+  it('accepts winner with rejected array', () => {
     const input = {
-      rankings: [
-        { ...validRanking, rank: 1, best: true },
-        { ...validRanking, filename: 'top-black-2.png', rank: 2, best: false },
-        { ...validRanking, filename: 'top-black-3.png', rank: 3, best: false, flags: ['watermark'] },
-      ],
+      winner: validWinner,
+      rejected: [{ filename: 'top-black-2.png', flags: ['watermark'] }],
     };
     const result = viewEvalResponseSchema.safeParse(input);
     assert.equal(result.success, true);
-    assert.equal(result.data.rankings.length, 3);
+    assert.equal(result.data.rejected.length, 1);
   });
 
-  it('accepts all 4 valid flag values', () => {
+  it('accepts winner with empty rejected array', () => {
+    const input = { winner: validWinner, rejected: [] };
+    const result = viewEvalResponseSchema.safeParse(input);
+    assert.equal(result.success, true);
+  });
+
+  it('accepts winner with omitted rejected (optional)', () => {
+    const input = { winner: validWinner };
+    const result = viewEvalResponseSchema.safeParse(input);
+    assert.equal(result.success, true);
+    assert.equal(result.data.rejected, undefined);
+  });
+
+  it('accepts all 4 valid flag values in rejected', () => {
     const input = {
-      rankings: [{
-        ...validRanking,
+      winner: validWinner,
+      rejected: [{
+        filename: 'bad.png',
         flags: ['watermark', 'badge', 'cropped', 'wrong_product'],
       }],
     };
     const result = viewEvalResponseSchema.safeParse(input);
     assert.equal(result.success, true);
-    assert.equal(result.data.rankings[0].flags.length, 4);
+    assert.equal(result.data.rejected[0].flags.length, 4);
+  });
+
+  it('accepts multiple rejected entries', () => {
+    const input = {
+      winner: validWinner,
+      rejected: [
+        { filename: 'a.png', flags: ['watermark'] },
+        { filename: 'b.png', flags: ['wrong_product'] },
+        { filename: 'c.png', flags: ['cropped', 'badge'] },
+      ],
+    };
+    const result = viewEvalResponseSchema.safeParse(input);
+    assert.equal(result.success, true);
+    assert.equal(result.data.rejected.length, 3);
   });
 
   // --- Missing required fields ---
 
-  it('rejects missing filename', () => {
-    const { filename: _, ...noFilename } = validRanking;
-    const result = viewEvalResponseSchema.safeParse({ rankings: [noFilename] });
+  it('rejects missing winner', () => {
+    const result = viewEvalResponseSchema.safeParse({ rejected: [] });
     assert.equal(result.success, false);
   });
 
-  it('rejects missing rank', () => {
-    const { rank: _, ...noRank } = validRanking;
-    const result = viewEvalResponseSchema.safeParse({ rankings: [noRank] });
+  it('rejects missing winner filename', () => {
+    const result = viewEvalResponseSchema.safeParse({
+      winner: { reasoning: 'no filename' },
+    });
     assert.equal(result.success, false);
   });
 
-  it('rejects missing best', () => {
-    const { best: _, ...noBest } = validRanking;
-    const result = viewEvalResponseSchema.safeParse({ rankings: [noBest] });
+  it('rejects missing winner reasoning', () => {
+    const result = viewEvalResponseSchema.safeParse({
+      winner: { filename: 'top.png' },
+    });
     assert.equal(result.success, false);
   });
 
-  it('rejects missing reasoning', () => {
-    const { reasoning: _, ...noReasoning } = validRanking;
-    const result = viewEvalResponseSchema.safeParse({ rankings: [noReasoning] });
+  it('rejects rejected entry missing filename', () => {
+    const result = viewEvalResponseSchema.safeParse({
+      winner: validWinner,
+      rejected: [{ flags: ['watermark'] }],
+    });
+    assert.equal(result.success, false);
+  });
+
+  it('rejects rejected entry missing flags', () => {
+    const result = viewEvalResponseSchema.safeParse({
+      winner: validWinner,
+      rejected: [{ filename: 'bad.png' }],
+    });
     assert.equal(result.success, false);
   });
 
   // --- Invalid types ---
 
-  it('rejects rank as string', () => {
+  it('rejects unknown flag value in rejected', () => {
     const result = viewEvalResponseSchema.safeParse({
-      rankings: [{ ...validRanking, rank: '1' }],
-    });
-    assert.equal(result.success, false);
-  });
-
-  it('rejects best as number', () => {
-    const result = viewEvalResponseSchema.safeParse({
-      rankings: [{ ...validRanking, best: 1 }],
-    });
-    assert.equal(result.success, false);
-  });
-
-  it('rejects non-integer rank', () => {
-    const result = viewEvalResponseSchema.safeParse({
-      rankings: [{ ...validRanking, rank: 1.5 }],
-    });
-    assert.equal(result.success, false);
-  });
-
-  // --- Flag validation ---
-
-  it('rejects unknown flag value', () => {
-    const result = viewEvalResponseSchema.safeParse({
-      rankings: [{ ...validRanking, flags: ['blurry'] }],
+      winner: validWinner,
+      rejected: [{ filename: 'bad.png', flags: ['blurry'] }],
     });
     assert.equal(result.success, false);
   });
 
   // --- Edge cases ---
 
-  it('accepts rank = 0', () => {
+  it('accepts very long reasoning string', () => {
     const result = viewEvalResponseSchema.safeParse({
-      rankings: [{ ...validRanking, rank: 0 }],
+      winner: { ...validWinner, reasoning: 'x'.repeat(10000) },
     });
     assert.equal(result.success, true);
   });
 
-  it('accepts very long reasoning string', () => {
-    const result = viewEvalResponseSchema.safeParse({
-      rankings: [{ ...validRanking, reasoning: 'x'.repeat(10000) }],
-    });
+  it('accepts null winner (all candidates rejected)', () => {
+    const input = {
+      winner: null,
+      rejected: [
+        { filename: 'bad1.png', flags: ['watermark'] },
+        { filename: 'bad2.png', flags: ['wrong_product'] },
+      ],
+    };
+    const result = viewEvalResponseSchema.safeParse(input);
     assert.equal(result.success, true);
+    assert.equal(result.data.winner, null);
+    assert.equal(result.data.rejected.length, 2);
   });
 });
 

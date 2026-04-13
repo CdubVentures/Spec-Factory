@@ -3,7 +3,7 @@
  */
 
 import { runProductImageFinder, runCarouselLoop } from '../productImageFinder.js';
-import { runCarouselBuild } from '../carouselBuild.js';
+import { runEvalView, runEvalHero } from '../carouselBuild.js';
 import { deleteProductImageFinderRun, deleteProductImageFinderRuns, deleteProductImageFinderAll } from '../productImageStore.js';
 
 export function createProductImageFinderRouteContext(options = {}) {
@@ -15,7 +15,7 @@ export function createProductImageFinderRouteContext(options = {}) {
 
   return {
     jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
-    logger, runProductImageFinder, runCarouselLoop, runCarouselBuild,
+    logger, runProductImageFinder, runCarouselLoop, runEvalView, runEvalHero,
     deleteProductImageFinderRun, deleteProductImageFinderRuns, deleteProductImageFinderAll,
   };
 }

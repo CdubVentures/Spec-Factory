@@ -1,31 +1,19 @@
 /**
- * Carousel Builder orchestrator contract tests.
+ * Carousel Builder — runEvalView + runEvalHero contract tests.
  *
- * Tests the top-level runCarouselBuild function which:
- * - Reads CEF data to discover variants
- * - Groups existing images by variant + view
- * - Evaluates each view group via evaluateViewCandidates
- * - Picks hero shots from winners
- * - Persists via mergeEvaluation
+ * Each function handles ONE LLM call. The GUI fires N+1 of these
+ * in parallel — one per view group + one for hero.
  */
 
-import { describe, it } from 'node:test';
+import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { runCarouselBuild } from '../carouselBuild.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import { runEvalView, runEvalHero } from '../carouselBuild.js';
 
-/* ── Factories ──────────────────────────────────────────────────── */
-
-function makeProduct(overrides = {}) {
-  return {
-    product_id: 'p1',
-    category: 'mouse',
-    brand: 'Razer',
-    model: 'DeathAdder V3',
-    base_model: 'DeathAdder V3',
-    variant: '',
-    ...overrides,
-  };
-}
+const TMP = path.join(os.tmpdir(), `eval-build-test-${Date.now()}`);
+const PRODUCT_ID = 'p1';
 
 function makeImage(overrides = {}) {
   return {
@@ -40,266 +28,282 @@ function makeImage(overrides = {}) {
   };
 }
 
-function makeSpecDb({ settings = {}, cefData = null } = {}) {
+function writeTestDoc(images) {
+  const doc = {
+    product_id: PRODUCT_ID,
+    category: 'mouse',
+    selected: { images },
+    cooldown_until: '',
+    last_ran_at: '',
+    run_count: 1,
+    next_run_number: 2,
+    runs: [],
+  };
+  const dir = path.join(TMP, PRODUCT_ID);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'product_images.json'), JSON.stringify(doc, null, 2));
+}
+
+function makeSpecDb(settings = {}) {
   return {
     getFinderStore: () => ({
       getSetting: (key) => settings[key] ?? '',
     }),
-    getProduct: () => ({ brand: 'Razer', model: 'DeathAdder V3', base_model: 'DeathAdder V3' }),
   };
 }
 
-function makeCefData({ colors = ['black'], colorNames = {}, editions = {} } = {}) {
-  return {
-    selected: { colors, color_names: colorNames, editions },
-    runs: [],
-  };
-}
+before(() => fs.mkdirSync(TMP, { recursive: true }));
+after(() => { try { fs.rmSync(TMP, { recursive: true, force: true }); } catch { /* */ } });
 
-/* ── Helpers ─────────────────────────────────────────────────────── */
+/* ── runEvalView ────────────────────────────────────────────────── */
 
-function makeEvalViewFn(rankings = []) {
-  const calls = [];
-  const fn = async (opts) => {
-    calls.push(opts);
-    // Return provided rankings filtered to filenames in this call
-    const basenames = (opts.imagePaths || []).map(p => p.split('/').pop());
-    const relevant = rankings.filter(r => basenames.includes(r.filename));
-    if (relevant.length > 0) return { rankings: relevant };
-    // Auto-elect single candidate
-    if (basenames.length === 1) return { rankings: [{ filename: basenames[0], rank: 1, best: true, flags: [], reasoning: 'auto' }] };
-    return { rankings: basenames.map((f, i) => ({ filename: f, rank: i + 1, best: i === 0, flags: [], reasoning: 'ok' })) };
-  };
-  fn.calls = calls;
-  return fn;
-}
-
-function makeMergeFn() {
-  const calls = [];
-  const fn = (opts) => {
-    calls.push(opts);
-    return { selected: { images: [] } };
-  };
-  fn.calls = calls;
-  return fn;
-}
-
-/* ── Tests ───────────────────────────────────────────────────────── */
-
-describe('runCarouselBuild', () => {
-  const baseOpts = () => ({
-    product: makeProduct(),
-    specDb: makeSpecDb({ settings: { evalEnabled: 'true', evalThumbSize: '512', evalPromptOverride: '', heroEvalPromptOverride: '', evalHeroCount: '3' } }),
-    config: {},
-    logger: null,
-    productRoot: '/fake/root',
-  });
-
-  it('evaluates all views for a single variant', async () => {
-    const evalFn = makeEvalViewFn();
-    const mergeFn = makeMergeFn();
-    const result = await runCarouselBuild({
-      ...baseOpts(),
-      _readCefFn: () => makeCefData({ colors: ['black'] }),
-      _readImagesFn: () => ({
-        selected: {
-          images: [
-            makeImage({ view: 'top', filename: 'top-black.png' }),
-            makeImage({ view: 'top', filename: 'top-black-2.png' }),
-            makeImage({ view: 'left', filename: 'left-black.png' }),
-          ],
-        },
+describe('runEvalView', () => {
+  it('evaluates candidates for one view and persists', async () => {
+    writeTestDoc([
+      makeImage({ filename: 'top-black.png', view: 'top' }),
+      makeImage({ filename: 'top-black-2.png', view: 'top' }),
+    ]);
+    let merged = false;
+    const result = await runEvalView({
+      product: { product_id: PRODUCT_ID, category: 'mouse', brand: 'Razer', model: 'V3' },
+      specDb: makeSpecDb({ evalThumbSize: '512' }),
+      config: {},
+      variantKey: 'color:black',
+      view: 'top',
+      productRoot: TMP,
+      _evalViewFn: async ({ imagePaths, view }) => ({
+        rankings: imagePaths.map((p, i) => ({
+          filename: path.basename(p),
+          rank: i + 1,
+          best: i === 0,
+          flags: [],
+          reasoning: 'test',
+        })),
       }),
-      _evalViewFn: evalFn,
-      _mergeFn: mergeFn,
-      _heroCallFn: async () => ({ heroes: [] }),
+      _mergeFn: (opts) => { merged = true; return { selected: { images: [] } }; },
     });
-    // Should have called evalView for 'top' (2 images) and 'left' (1 image)
-    assert.equal(evalFn.calls.length, 2);
-    const views = evalFn.calls.map(c => c.view).sort();
-    assert.deepStrictEqual(views, ['left', 'top']);
-    assert.equal(mergeFn.calls.length, 1);
-    assert.equal(result.variantsProcessed, 1);
+    assert.equal(result.rankings.length, 2);
+    assert.equal(result.rankings[0].best, true);
+    assert.equal(merged, true);
   });
 
-  it('groups images by view correctly', async () => {
-    const evalFn = makeEvalViewFn();
-    await runCarouselBuild({
-      ...baseOpts(),
-      _readCefFn: () => makeCefData({ colors: ['black'] }),
-      _readImagesFn: () => ({
-        selected: {
-          images: [
-            makeImage({ view: 'top', filename: 'top-black.png' }),
-            makeImage({ view: 'top', filename: 'top-black-2.png' }),
-            makeImage({ view: 'top', filename: 'top-black-3.png' }),
-            makeImage({ view: 'left', filename: 'left-black.png' }),
-          ],
-        },
-      }),
-      _evalViewFn: evalFn,
-      _mergeFn: makeMergeFn(),
-      _heroCallFn: async () => ({ heroes: [] }),
+  it('skips when no images match variant+view', async () => {
+    writeTestDoc([
+      makeImage({ filename: 'left-black.png', view: 'left' }),
+    ]);
+    const result = await runEvalView({
+      product: { product_id: PRODUCT_ID, category: 'mouse', brand: 'Razer', model: 'V3' },
+      specDb: makeSpecDb(),
+      config: {},
+      variantKey: 'color:black',
+      view: 'top',
+      productRoot: TMP,
+      _evalViewFn: async () => { throw new Error('should not call'); },
+      _mergeFn: () => ({}),
     });
-    const topCall = evalFn.calls.find(c => c.view === 'top');
-    const leftCall = evalFn.calls.find(c => c.view === 'left');
-    assert.equal(topCall.imagePaths.length, 3);
-    assert.equal(leftCall.imagePaths.length, 1);
+    assert.equal(result.skipped, true);
   });
 
-  it('skips variants with no images', async () => {
-    const evalFn = makeEvalViewFn();
-    const mergeFn = makeMergeFn();
-    const result = await runCarouselBuild({
-      ...baseOpts(),
-      _readCefFn: () => makeCefData({ colors: ['black', 'white'] }),
-      _readImagesFn: () => ({
-        selected: {
-          images: [
-            makeImage({ view: 'top', filename: 'top-black.png', variant_key: 'color:black' }),
-          ],
-        },
-      }),
-      _evalViewFn: evalFn,
-      _mergeFn: mergeFn,
-      _heroCallFn: async () => ({ heroes: [] }),
-    });
-    // Only black has images, white is skipped
-    assert.equal(mergeFn.calls.length, 1);
-    assert.equal(mergeFn.calls[0].variantKey, 'color:black');
-  });
-
-  it('collects winners and runs hero selection', async () => {
-    let heroCalled = false;
-    let heroArgs = null;
-    await runCarouselBuild({
-      ...baseOpts(),
-      _readCefFn: () => makeCefData({ colors: ['black'] }),
-      _readImagesFn: () => ({
-        selected: {
-          images: [
-            makeImage({ view: 'top', filename: 'top-black.png' }),
-            makeImage({ view: 'top', filename: 'top-black-2.png' }),
-            makeImage({ view: 'left', filename: 'left-black.png' }),
-          ],
-        },
-      }),
-      _evalViewFn: makeEvalViewFn(),
-      _mergeFn: makeMergeFn(),
-      _heroCallFn: async (args) => {
-        heroCalled = true;
-        heroArgs = args;
-        return { heroes: [{ filename: 'top-black.png', hero_rank: 1, reasoning: 'best' }] };
-      },
-    });
-    assert.equal(heroCalled, true);
-    // Hero call should receive the winners from view evals
-    assert.ok(heroArgs);
-  });
-
-  it('calls onStageAdvance with expected stages', async () => {
+  it('calls onStageAdvance', async () => {
+    writeTestDoc([makeImage()]);
     const stages = [];
-    await runCarouselBuild({
-      ...baseOpts(),
-      onStageAdvance: (name) => stages.push(name),
-      _readCefFn: () => makeCefData({ colors: ['black'] }),
-      _readImagesFn: () => ({
-        selected: { images: [makeImage()] },
+    await runEvalView({
+      product: { product_id: PRODUCT_ID, category: 'mouse', brand: 'Razer', model: 'V3' },
+      specDb: makeSpecDb(),
+      config: {},
+      variantKey: 'color:black',
+      view: 'top',
+      productRoot: TMP,
+      onStageAdvance: (s) => stages.push(s),
+      _evalViewFn: async ({ imagePaths }) => ({
+        rankings: [{ filename: path.basename(imagePaths[0]), rank: 1, best: true, flags: [], reasoning: 'ok' }],
       }),
-      _evalViewFn: makeEvalViewFn(),
-      _mergeFn: makeMergeFn(),
-      _heroCallFn: async () => ({ heroes: [] }),
+      _mergeFn: () => ({}),
     });
     assert.ok(stages.includes('Evaluating'));
     assert.ok(stages.includes('Complete'));
   });
 
-  it('calls onVariantProgress with index and total', async () => {
-    const progress = [];
-    await runCarouselBuild({
-      ...baseOpts(),
-      onVariantProgress: (idx, total, key) => progress.push({ idx, total, key }),
-      _readCefFn: () => makeCefData({ colors: ['black', 'white'] }),
-      _readImagesFn: () => ({
-        selected: {
-          images: [
-            makeImage({ variant_key: 'color:black', filename: 'top-black.png' }),
-            makeImage({ variant_key: 'color:white', filename: 'top-white.png' }),
-          ],
-        },
-      }),
-      _evalViewFn: makeEvalViewFn(),
-      _mergeFn: makeMergeFn(),
-      _heroCallFn: async () => ({ heroes: [] }),
-    });
-    assert.equal(progress.length, 2);
-    assert.equal(progress[0].idx, 0);
-    assert.equal(progress[0].total, 2);
-    assert.equal(progress[1].idx, 1);
-  });
-
-  it('handles no images at all gracefully', async () => {
-    const result = await runCarouselBuild({
-      ...baseOpts(),
-      _readCefFn: () => makeCefData({ colors: ['black'] }),
-      _readImagesFn: () => ({ selected: { images: [] } }),
-      _evalViewFn: makeEvalViewFn(),
-      _mergeFn: makeMergeFn(),
-      _heroCallFn: async () => ({ heroes: [] }),
-    });
-    assert.equal(result.variantsProcessed, 0);
-  });
-
-  it('rejects when CEF data missing', async () => {
-    const result = await runCarouselBuild({
-      ...baseOpts(),
-      _readCefFn: () => null,
-      _readImagesFn: () => ({ selected: { images: [] } }),
-      _evalViewFn: makeEvalViewFn(),
-      _mergeFn: makeMergeFn(),
-      _heroCallFn: async () => ({ heroes: [] }),
-    });
-    assert.equal(result.rejected, true);
-    assert.ok(result.rejections.some(r => r.reason_code === 'no_cef_data'));
-  });
-
-  it('respects evalEnabled=false and skips entirely', async () => {
-    const evalFn = makeEvalViewFn();
-    const result = await runCarouselBuild({
-      ...baseOpts(),
-      specDb: makeSpecDb({ settings: { evalEnabled: 'false' } }),
-      _readCefFn: () => makeCefData({ colors: ['black'] }),
-      _readImagesFn: () => ({
-        selected: { images: [makeImage()] },
-      }),
-      _evalViewFn: evalFn,
-      _mergeFn: makeMergeFn(),
-      _heroCallFn: async () => ({ heroes: [] }),
-    });
-    assert.equal(evalFn.calls.length, 0);
-    assert.equal(result.rejected, true);
-    assert.ok(result.rejections.some(r => r.reason_code === 'eval_disabled'));
-  });
-
-  it('filters to single variant when variantKey specified', async () => {
-    const mergeFn = makeMergeFn();
-    await runCarouselBuild({
-      ...baseOpts(),
+  it('passes category-specific evalCriteria to eval function', async () => {
+    writeTestDoc([
+      makeImage({ filename: 'top-black.png', view: 'top' }),
+      makeImage({ filename: 'top-black-2.png', view: 'top' }),
+    ]);
+    let capturedCriteria = null;
+    await runEvalView({
+      product: { product_id: PRODUCT_ID, category: 'mouse', brand: 'Razer', model: 'V3' },
+      specDb: makeSpecDb(),
+      config: {},
       variantKey: 'color:black',
-      _readCefFn: () => makeCefData({ colors: ['black', 'white'] }),
-      _readImagesFn: () => ({
-        selected: {
-          images: [
-            makeImage({ variant_key: 'color:black', filename: 'top-black.png' }),
-            makeImage({ variant_key: 'color:white', filename: 'top-white.png' }),
-          ],
-        },
-      }),
-      _evalViewFn: makeEvalViewFn(),
-      _mergeFn: mergeFn,
-      _heroCallFn: async () => ({ heroes: [] }),
+      view: 'top',
+      productRoot: TMP,
+      _evalViewFn: async (opts) => {
+        capturedCriteria = opts.evalCriteria;
+        return { rankings: [{ filename: 'top-black.png', rank: 1, best: true, flags: [], reasoning: 'ok' }] };
+      },
+      _mergeFn: () => ({}),
     });
-    assert.equal(mergeFn.calls.length, 1);
-    assert.equal(mergeFn.calls[0].variantKey, 'color:black');
+    assert.ok(capturedCriteria, 'evalCriteria should be passed');
+    assert.ok(capturedCriteria.includes('MOUSE'), 'should contain mouse-specific criteria');
+    assert.ok(capturedCriteria.includes('TOP'), 'should reference top view');
+  });
+
+  it('uses DB override criteria when finder setting is set', async () => {
+    writeTestDoc([
+      makeImage({ filename: 'top-black.png', view: 'top' }),
+      makeImage({ filename: 'top-black-2.png', view: 'top' }),
+    ]);
+    let capturedCriteria = null;
+    await runEvalView({
+      product: { product_id: PRODUCT_ID, category: 'mouse', brand: 'Razer', model: 'V3' },
+      specDb: makeSpecDb({ evalViewCriteria_top: 'CUSTOM DB CRITERIA' }),
+      config: {},
+      variantKey: 'color:black',
+      view: 'top',
+      productRoot: TMP,
+      _evalViewFn: async (opts) => {
+        capturedCriteria = opts.evalCriteria;
+        return { rankings: [{ filename: 'top-black.png', rank: 1, best: true, flags: [], reasoning: 'ok' }] };
+      },
+      _mergeFn: () => ({}),
+    });
+    assert.equal(capturedCriteria, 'CUSTOM DB CRITERIA');
+  });
+
+  it('passes category-specific viewDescription (not generic)', async () => {
+    writeTestDoc([
+      makeImage({ filename: 'top-black.png', view: 'top' }),
+      makeImage({ filename: 'top-black-2.png', view: 'top' }),
+    ]);
+    let capturedDesc = null;
+    await runEvalView({
+      product: { product_id: PRODUCT_ID, category: 'mouse', brand: 'Razer', model: 'V3' },
+      specDb: makeSpecDb(),
+      config: {},
+      variantKey: 'color:black',
+      view: 'top',
+      productRoot: TMP,
+      _evalViewFn: async (opts) => {
+        capturedDesc = opts.viewDescription;
+        return { rankings: [{ filename: 'top-black.png', rank: 1, best: true, flags: [], reasoning: 'ok' }] };
+      },
+      _mergeFn: () => ({}),
+    });
+    assert.ok(capturedDesc, 'viewDescription should be passed');
+    // Mouse top description should mention mouse-specific details (button layout, shape outline)
+    assert.ok(capturedDesc.includes('button'), 'mouse top should mention button layout');
+  });
+});
+
+/* ── runEvalHero ────────────────────────────────────────────────── */
+
+describe('runEvalHero', () => {
+  it('evaluates hero-view candidates and persists', async () => {
+    writeTestDoc([
+      makeImage({ filename: 'hero-black.png', view: 'hero' }),
+      makeImage({ filename: 'hero-black-2.png', view: 'hero' }),
+      makeImage({ filename: 'top-black.png', view: 'top' }),
+    ]);
+    let mergedHeroes = null;
+    const result = await runEvalHero({
+      product: { product_id: PRODUCT_ID, category: 'mouse', brand: 'Razer', model: 'V3' },
+      specDb: makeSpecDb(),
+      config: {},
+      variantKey: 'color:black',
+      productRoot: TMP,
+      _heroCallFn: async ({ candidates }) => ({
+        heroes: candidates.map((c, i) => ({
+          filename: c.filename,
+          hero_rank: i + 1,
+          reasoning: 'hero test',
+        })),
+      }),
+      _mergeFn: (opts) => { mergedHeroes = opts.heroResults; return {}; },
+    });
+    assert.equal(result.heroes.length, 2);
+    assert.equal(result.heroes[0].hero_rank, 1);
+    assert.equal(result.heroes[0].filename, 'hero-black.png');
+    assert.ok(mergedHeroes);
+  });
+
+  it('skips when no hero-view images exist', async () => {
+    writeTestDoc([
+      makeImage({ filename: 'top-black.png', view: 'top' }),
+    ]);
+    const result = await runEvalHero({
+      product: { product_id: PRODUCT_ID, category: 'mouse', brand: 'Razer', model: 'V3' },
+      specDb: makeSpecDb(),
+      config: {},
+      variantKey: 'color:black',
+      productRoot: TMP,
+      _heroCallFn: async () => { throw new Error('should not call'); },
+      _mergeFn: () => ({}),
+    });
+    assert.equal(result.skipped, true);
+  });
+
+  it('auto-elects single hero candidate without LLM call', async () => {
+    writeTestDoc([
+      makeImage({ filename: 'hero-black.png', view: 'hero' }),
+    ]);
+    let llmCalled = false;
+    const result = await runEvalHero({
+      product: { product_id: PRODUCT_ID, category: 'mouse', brand: 'Razer', model: 'V3' },
+      specDb: makeSpecDb(),
+      config: {},
+      variantKey: 'color:black',
+      productRoot: TMP,
+      _heroCallFn: async () => { llmCalled = true; return { heroes: [] }; },
+      _mergeFn: () => ({}),
+    });
+    assert.equal(llmCalled, false, 'single candidate should auto-elect without LLM');
+    assert.equal(result.heroes.length, 1);
+    assert.equal(result.heroes[0].filename, 'hero-black.png');
+    assert.equal(result.heroes[0].hero_rank, 1);
+    assert.ok(result.heroes[0].reasoning.includes('auto'));
+  });
+
+  it('passes category-specific heroCriteria to hero call', async () => {
+    writeTestDoc([
+      makeImage({ filename: 'hero-black.png', view: 'hero' }),
+      makeImage({ filename: 'hero-black-2.png', view: 'hero' }),
+    ]);
+    let capturedCriteria = null;
+    await runEvalHero({
+      product: { product_id: PRODUCT_ID, category: 'mouse', brand: 'Razer', model: 'V3' },
+      specDb: makeSpecDb(),
+      config: {},
+      variantKey: 'color:black',
+      productRoot: TMP,
+      _heroCallFn: async (opts) => {
+        capturedCriteria = opts.heroCriteria;
+        return { heroes: [{ filename: 'hero-black.png', hero_rank: 1, reasoning: 'ok' }] };
+      },
+      _mergeFn: () => ({}),
+    });
+    assert.ok(capturedCriteria, 'heroCriteria should be passed');
+    assert.ok(capturedCriteria.includes('MOUSE'), 'should contain mouse-specific hero criteria');
+  });
+
+  it('calls onStageAdvance', async () => {
+    writeTestDoc([
+      makeImage({ filename: 'hero-black.png', view: 'hero' }),
+      makeImage({ filename: 'hero-black-2.png', view: 'hero' }),
+    ]);
+    const stages = [];
+    await runEvalHero({
+      product: { product_id: PRODUCT_ID, category: 'mouse', brand: 'Razer', model: 'V3' },
+      specDb: makeSpecDb(),
+      config: {},
+      variantKey: 'color:black',
+      productRoot: TMP,
+      onStageAdvance: (s) => stages.push(s),
+      _heroCallFn: async ({ candidates }) => ({
+        heroes: [{ filename: candidates[0].filename, hero_rank: 1, reasoning: 'ok' }],
+      }),
+      _mergeFn: () => ({}),
+    });
+    assert.ok(stages.includes('Heroes'));
+    assert.ok(stages.includes('Complete'));
   });
 });

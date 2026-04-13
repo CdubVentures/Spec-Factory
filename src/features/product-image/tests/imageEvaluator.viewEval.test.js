@@ -109,7 +109,7 @@ describe('buildViewEvalPrompt', () => {
 
   it('describes the JSON response format', () => {
     const result = buildViewEvalPrompt(defaults);
-    assert.ok(result.includes('rankings'));
+    assert.ok(result.includes('winner'));
   });
 
   it('uses edition phrasing for variantType=edition', () => {
@@ -129,6 +129,26 @@ describe('buildViewEvalPrompt', () => {
     assert.ok(!result.includes('Evaluation criteria'));
   });
 
+  it('evalCriteria replaces default criteria when no promptOverride', () => {
+    const result = buildViewEvalPrompt({ ...defaults, evalCriteria: 'CATEGORY SPECIFIC CRITERIA' });
+    assert.ok(result.includes('CATEGORY SPECIFIC CRITERIA'));
+  });
+
+  it('promptOverride beats evalCriteria', () => {
+    const result = buildViewEvalPrompt({
+      ...defaults,
+      promptOverride: 'OVERRIDE WINS',
+      evalCriteria: 'CATEGORY CRITERIA LOSES',
+    });
+    assert.ok(result.includes('OVERRIDE WINS'));
+    assert.ok(!result.includes('CATEGORY CRITERIA LOSES'));
+  });
+
+  it('falls back to default criteria when neither override nor evalCriteria', () => {
+    const result = buildViewEvalPrompt({ ...defaults, promptOverride: '', evalCriteria: '' });
+    assert.ok(result.toLowerCase().includes('watermark'));
+  });
+
   it('tolerates missing product fields', () => {
     const result = buildViewEvalPrompt({ ...defaults, product: {} });
     assert.equal(typeof result, 'string');
@@ -143,10 +163,10 @@ describe('buildHeroSelectionPrompt', () => {
     product: makeProduct(),
     variantLabel: 'Black',
     variantType: 'color',
-    viewWinners: [
-      { view: 'top', filename: 'top-black.png' },
-      { view: 'left', filename: 'left-black.png' },
-      { view: 'angle', filename: 'angle-black.png' },
+    candidates: [
+      { filename: 'hero-black.png' },
+      { filename: 'hero-black-2.png' },
+      { filename: 'hero-black-3.png' },
     ],
     promptOverride: '',
   };
@@ -158,24 +178,23 @@ describe('buildHeroSelectionPrompt', () => {
     assert.ok(result.includes('DeathAdder V3'));
   });
 
-  it('lists view winner filenames', () => {
+  it('contains candidate count in prompt', () => {
     const result = buildHeroSelectionPrompt(defaults);
-    assert.ok(result.includes('top-black.png'));
-    assert.ok(result.includes('left-black.png'));
-    assert.ok(result.includes('angle-black.png'));
+    // WHY: Filenames are sent in the user message (userText), not the system prompt.
+    // The system prompt contains the count so the LLM knows how many to expect.
+    assert.ok(result.includes('3'), 'should reference 3 candidates');
+    assert.ok(result.includes('evaluating'), 'should describe evaluation task');
   });
 
-  it('lists view names', () => {
-    const result = buildHeroSelectionPrompt(defaults);
-    assert.ok(result.includes('top'));
-    assert.ok(result.includes('left'));
-    assert.ok(result.includes('angle'));
-  });
-
-  it('contains hero/carousel language', () => {
+  it('contains hero/marketing language', () => {
     const result = buildHeroSelectionPrompt(defaults);
     assert.ok(result.includes('hero') || result.includes('Hero'));
-    assert.ok(result.includes('carousel') || result.includes('Carousel'));
+    assert.ok(result.includes('marketing') || result.includes('Marketing'));
+  });
+
+  it('contains candidate count', () => {
+    const result = buildHeroSelectionPrompt(defaults);
+    assert.ok(result.includes('3'));
   });
 
   it('promptOverride replaces default criteria', () => {
@@ -183,8 +202,23 @@ describe('buildHeroSelectionPrompt', () => {
     assert.ok(result.includes('MY HERO RULES'));
   });
 
-  it('handles empty viewWinners', () => {
-    const result = buildHeroSelectionPrompt({ ...defaults, viewWinners: [] });
+  it('heroCriteria replaces default criteria when no promptOverride', () => {
+    const result = buildHeroSelectionPrompt({ ...defaults, heroCriteria: 'CATEGORY HERO CRITERIA' });
+    assert.ok(result.includes('CATEGORY HERO CRITERIA'));
+  });
+
+  it('promptOverride beats heroCriteria', () => {
+    const result = buildHeroSelectionPrompt({
+      ...defaults,
+      promptOverride: 'OVERRIDE WINS',
+      heroCriteria: 'CATEGORY HERO LOSES',
+    });
+    assert.ok(result.includes('OVERRIDE WINS'));
+    assert.ok(!result.includes('CATEGORY HERO LOSES'));
+  });
+
+  it('handles empty candidates', () => {
+    const result = buildHeroSelectionPrompt({ ...defaults, candidates: [] });
     assert.equal(typeof result, 'string');
     assert.ok(result.length > 0);
   });
@@ -192,6 +226,11 @@ describe('buildHeroSelectionPrompt', () => {
   it('tolerates missing product fields', () => {
     const result = buildHeroSelectionPrompt({ ...defaults, product: {} });
     assert.equal(typeof result, 'string');
+  });
+
+  it('respects heroCount parameter', () => {
+    const result = buildHeroSelectionPrompt({ ...defaults, heroCount: 5 });
+    assert.ok(result.includes('5'));
   });
 });
 
@@ -246,10 +285,8 @@ describe('evaluateViewCandidates', () => {
   it('2+ candidates calls callLlm', async () => {
     let called = false;
     const mockResponse = {
-      rankings: [
-        { filename: 'top-black.png', rank: 1, best: true, flags: [], reasoning: 'Best shot' },
-        { filename: 'top-black-2.png', rank: 2, best: false, flags: ['cropped'], reasoning: 'Cropped edges' },
-      ],
+      winner: { filename: 'top-black.png', reasoning: 'Best shot' },
+      rejected: [{ filename: 'top-black-2.png', flags: ['cropped'] }],
     };
     await evaluateViewCandidates({
       ...baseOpts,
@@ -267,10 +304,7 @@ describe('evaluateViewCandidates', () => {
       callLlm: async (args) => {
         capturedArgs = args;
         return {
-          rankings: [
-            { filename: 'top-black.png', rank: 1, best: true, flags: [], reasoning: 'ok' },
-            { filename: 'top-black-2.png', rank: 2, best: false, flags: [], reasoning: 'ok' },
-          ],
+          winner: { filename: 'top-black.png', reasoning: 'ok' },
         };
       },
     });
@@ -281,30 +315,30 @@ describe('evaluateViewCandidates', () => {
     assert.equal(capturedArgs.images[0].mime_type, 'image/png');
   });
 
-  it('2+ candidates parses LLM response into rankings', async () => {
+  it('2+ candidates: winner gets eval_best=true, rejected get flags', async () => {
     const mockResponse = {
-      rankings: [
-        { filename: 'top-black.png', rank: 1, best: true, flags: ['watermark'], reasoning: 'Has watermark but best angle' },
-        { filename: 'top-black-2.png', rank: 2, best: false, flags: [], reasoning: 'Clean but blurry' },
-      ],
+      winner: { filename: 'top-black.png', reasoning: 'Sharp and well-composed' },
+      rejected: [{ filename: 'top-black-2.png', flags: ['watermark'] }],
     };
     const result = await evaluateViewCandidates({
       ...baseOpts,
       imagePaths: ['/images/top-black.png', '/images/top-black-2.png'],
       callLlm: async () => mockResponse,
     });
-    assert.equal(result.rankings.length, 2);
-    assert.equal(result.rankings[0].filename, 'top-black.png');
-    assert.equal(result.rankings[0].best, true);
-    assert.deepStrictEqual(result.rankings[0].flags, ['watermark']);
+    const winner = result.rankings.find(r => r.filename === 'top-black.png');
+    const rejected = result.rankings.find(r => r.filename === 'top-black-2.png');
+    assert.ok(winner);
+    assert.equal(winner.best, true);
+    assert.equal(winner.reasoning, 'Sharp and well-composed');
+    assert.ok(rejected);
+    assert.equal(rejected.best, false);
+    assert.deepStrictEqual(rejected.flags, ['watermark']);
   });
 
-  it('LLM returns unknown filename: that entry is dropped', async () => {
+  it('candidates not in winner or rejected are absent from rankings', async () => {
     const mockResponse = {
-      rankings: [
-        { filename: 'top-black.png', rank: 1, best: true, flags: [], reasoning: 'ok' },
-        { filename: 'UNKNOWN.png', rank: 2, best: false, flags: [], reasoning: 'mystery' },
-      ],
+      winner: { filename: 'top-black.png', reasoning: 'Best' },
+      // top-black-2.png not rejected — just lower quality, no flags
     };
     const result = await evaluateViewCandidates({
       ...baseOpts,
@@ -313,15 +347,49 @@ describe('evaluateViewCandidates', () => {
     });
     assert.equal(result.rankings.length, 1);
     assert.equal(result.rankings[0].filename, 'top-black.png');
+    assert.equal(result.rankings[0].best, true);
   });
 
-  it('LLM returns empty rankings', async () => {
+  it('LLM returns unknown winner filename: dropped', async () => {
+    const mockResponse = {
+      winner: { filename: 'UNKNOWN.png', reasoning: 'ghost' },
+    };
     const result = await evaluateViewCandidates({
       ...baseOpts,
       imagePaths: ['/images/top-black.png', '/images/top-black-2.png'],
-      callLlm: async () => ({ rankings: [] }),
+      callLlm: async () => mockResponse,
     });
-    assert.deepStrictEqual(result, { rankings: [] });
+    assert.deepStrictEqual(result.rankings, []);
+  });
+
+  it('LLM returns no winner: empty rankings', async () => {
+    const result = await evaluateViewCandidates({
+      ...baseOpts,
+      imagePaths: ['/images/top-black.png', '/images/top-black-2.png'],
+      callLlm: async () => ({}),
+    });
+    assert.deepStrictEqual(result.rankings, []);
+  });
+
+  it('LLM returns null winner (all rejected): flags applied, no eval_best', async () => {
+    const mockResponse = {
+      winner: null,
+      rejected: [
+        { filename: 'top-black.png', flags: ['watermark'] },
+        { filename: 'top-black-2.png', flags: ['wrong_product'] },
+      ],
+    };
+    const result = await evaluateViewCandidates({
+      ...baseOpts,
+      imagePaths: ['/images/top-black.png', '/images/top-black-2.png'],
+      callLlm: async () => mockResponse,
+    });
+    // No winner — no eval_best=true in rankings
+    assert.ok(!result.rankings.some(r => r.best));
+    // Both rejected with flags
+    assert.equal(result.rankings.length, 2);
+    assert.deepStrictEqual(result.rankings[0].flags, ['watermark']);
+    assert.deepStrictEqual(result.rankings[1].flags, ['wrong_product']);
   });
 });
 
@@ -371,16 +439,18 @@ describe('mergeEvaluation', () => {
   before(() => fs.mkdirSync(TMP, { recursive: true }));
   after(() => { try { fs.rmSync(TMP, { recursive: true, force: true }); } catch { /* */ } });
 
-  it('clears old eval fields on matching variant', () => {
+  it('clears old eval fields on matching variant+view', () => {
     writeTestDoc([
       makeImage({ eval_best: true, eval_flags: ['watermark'], eval_reasoning: 'old', hero: true, hero_rank: 1 }),
     ]);
+    // WHY: Pass the view in viewResults so the clear targets it.
+    // Hero fields are cleared when heroResults is provided.
     const result = mergeEvaluation({
       productId: PRODUCT_ID,
       productRoot: PRODUCT_ROOT,
       variantKey: 'color:black',
-      viewResults: new Map(),
-      heroResults: null,
+      viewResults: new Map([['top', { rankings: [] }]]),
+      heroResults: { heroes: [] },
     });
     const img = result.selected.images[0];
     assert.equal(img.eval_best, undefined);
@@ -398,8 +468,8 @@ describe('mergeEvaluation', () => {
     const viewResults = new Map([
       ['top', {
         rankings: [
-          { filename: 'top-black.png', rank: 1, best: true, flags: [], reasoning: 'Sharp and clean' },
-          { filename: 'top-black-2.png', rank: 2, best: false, flags: ['cropped'], reasoning: 'Edges cut off' },
+          { filename: 'top-black.png', best: true, flags: [], reasoning: 'Sharp and clean' },
+          { filename: 'top-black-2.png', best: false, flags: ['cropped'], reasoning: '' },
         ],
       }],
     ]);
@@ -479,7 +549,7 @@ describe('mergeEvaluation', () => {
     const viewResults = new Map([
       ['top', {
         rankings: [
-          { filename: 'NOPE.png', rank: 1, best: true, flags: [], reasoning: 'ghost' },
+          { filename: 'NOPE.png', best: true, flags: [], reasoning: 'ghost' },
         ],
       }],
     ]);
@@ -510,7 +580,7 @@ describe('mergeEvaluation', () => {
     const viewResults = new Map([
       ['top', {
         rankings: [
-          { filename: 'top-black.png', rank: 1, best: true, flags: [], reasoning: 'good' },
+          { filename: 'top-black.png', best: true, flags: [], reasoning: 'good' },
         ],
       }],
     ]);
@@ -533,8 +603,8 @@ describe('mergeEvaluation', () => {
       makeImage({ filename: 'left-black.png', view: 'left' }),
     ]);
     const viewResults = new Map([
-      ['top', { rankings: [{ filename: 'top-black.png', rank: 1, best: true, flags: [], reasoning: 'top winner' }] }],
-      ['left', { rankings: [{ filename: 'left-black.png', rank: 1, best: true, flags: ['badge'], reasoning: 'left winner' }] }],
+      ['top', { rankings: [{ filename: 'top-black.png', best: true, flags: [], reasoning: 'top winner' }] }],
+      ['left', { rankings: [{ filename: 'left-black.png', best: true, flags: ['badge'], reasoning: 'left winner' }] }],
     ]);
     const result = mergeEvaluation({
       productId: PRODUCT_ID,
@@ -554,7 +624,7 @@ describe('mergeEvaluation', () => {
   it('idempotent: running twice produces same result', () => {
     writeTestDoc([makeImage({ filename: 'top-black.png' })]);
     const viewResults = new Map([
-      ['top', { rankings: [{ filename: 'top-black.png', rank: 1, best: true, flags: [], reasoning: 'winner' }] }],
+      ['top', { rankings: [{ filename: 'top-black.png', best: true, flags: [], reasoning: 'winner' }] }],
     ]);
     const opts = { productId: PRODUCT_ID, productRoot: PRODUCT_ROOT, variantKey: 'color:black', viewResults, heroResults: null };
     mergeEvaluation(opts);

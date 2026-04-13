@@ -45,6 +45,8 @@ export const MIGRATIONS = [
   `ALTER TABLE color_edition_finder_runs ADD COLUMN access_mode TEXT DEFAULT ''`,
   `ALTER TABLE product_image_finder_runs ADD COLUMN effort_level TEXT DEFAULT ''`,
   `ALTER TABLE product_image_finder_runs ADD COLUMN access_mode TEXT DEFAULT ''`,
+  // WHY: Carousel Builder stores user slot overrides. Existing DBs need the column.
+  `ALTER TABLE product_image_finder ADD COLUMN carousel_slots TEXT DEFAULT '{}'`,
 ];
 
 export const SECONDARY_INDEXES = `

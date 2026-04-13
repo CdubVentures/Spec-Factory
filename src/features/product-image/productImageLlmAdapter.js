@@ -125,6 +125,338 @@ export const GENERIC_VIEW_DESCRIPTIONS = Object.freeze({
   angle:  'Rear/top 3/4 angle — showing the product from above and behind at roughly 30–45 degrees',
 });
 
+/* ── Category-specific view eval criteria ─────────────────────────── */
+
+/**
+ * Generic eval criteria — fallback for unknown categories/views.
+ * Extracted from the former defaultCriteria in buildViewEvalPrompt.
+ */
+export const GENERIC_VIEW_EVAL_CRITERIA = `Evaluation criteria — pick the BEST candidate as winner:
+- Resolution: Each image label includes original dimensions and file size. Higher resolution originals are preferred — the thumbnails shown are downscaled so you cannot judge resolution visually.
+- Background removal: Product alpha must be solid throughout — no transparent holes in the product body, no halo or fringing at edges, no remnant background pixels. These images display on white and black backgrounds where any artifact is visible.
+- Single product: Image must contain exactly one product — not two color variants side-by-side, not product + accessories combo.
+- Identity: Must be the correct model and correct color/edition variant.
+- Watermarks: Getty, Shutterstock, retailer logos, "SAMPLE" text, copyright overlays → disqualify (flag: "watermark")
+- Badges / overlays: Sale stickers, "NEW" badges, retailer branding, promotional text → disqualify (flag: "badge")
+- Cropping: Product cut off at edges, missing parts, too tight framing → penalty (flag: "cropped")
+- Wrong product: Different model, wrong color, accessory instead of product → disqualify (flag: "wrong_product")
+- Sharpness: Blur, compression artifacts, noise → prefer the better candidate
+- Composition: View angle matches the requested view, product centered, clean background → prefer the better candidate`;
+
+// WHY: Uncommon views get a lighter criteria block — fewer candidates expected,
+// so we want basic quality gates without over-filtering.
+const UNCOMMON_VIEW_CRITERIA = `Evaluation criteria — pick the BEST candidate (lighter bar — uncommon view):
+- Resolution: Check the original dimensions in image labels. Higher resolution preferred.
+- Background removal: Product alpha must be solid — no transparent holes, no halo or fringing at edges, no remnant background pixels.
+- Single product: Exactly one product, not a multi-product composite.
+- Identity: Correct model and color/edition variant.
+- Watermarks / badges / overlays → disqualify (flag: "watermark" or "badge")
+- Wrong product → disqualify (flag: "wrong_product")
+- Cropping: Product significantly cut off → penalty (flag: "cropped")
+- Angle: Approximately matches the requested view — does not need to be geometrically perfect.
+- Sharpness and composition → prefer the better candidate but apply a lenient bar. Having the shot matters more than perfection.`;
+
+/**
+ * Per-category, per-view eval criteria for the vision LLM.
+ * Common views (per category view budget) get detailed criteria with
+ * category-specific BG removal traps. Uncommon views get lighter criteria.
+ */
+export const CATEGORY_VIEW_EVAL_CRITERIA = Object.freeze({
+
+  /* ── Mouse ──────────────────────────────────────────────────────── */
+  mouse: Object.freeze({
+    top: `Evaluation criteria — pick the BEST candidate for MOUSE — TOP (bird's-eye overhead):
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
+- Expected geometry: Portrait-oriented overhead shot. Camera directly above. Full mouse outline visible including scroll wheel, side buttons, and grip edges.
+- Background removal: Product alpha must be solid throughout — no transparent holes in the mouse body. The scroll wheel gap between wheel and shell must NOT be transparent. RGB underglow strip edges must be cleanly preserved.
+- Single product: Exactly one mouse — not two color variants side-by-side.
+- Identity: Correct model and color/edition variant.
+- Watermarks / badges / overlays → disqualify (flag: "watermark" or "badge")
+- Wrong product → disqualify (flag: "wrong_product")
+- Cropping: Full mouse outline must be visible — no edges cut off → penalty (flag: "cropped")
+- Sharpness: Sharp detail on button seams, scroll wheel texture, surface finish → prefer the better candidate
+- Composition: Mouse centered, fills most of the frame, minimal dead space → prefer the better candidate`,
+
+    left: `Evaluation criteria — pick the BEST candidate for MOUSE — LEFT (side profile):
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
+- Expected geometry: Landscape-oriented strict side profile from the left at eye level. Full silhouette from nose to rear, scroll wheel profile visible, side buttons on left side visible.
+- Background removal: Product alpha must be solid. RGB underglow strip edges and thumb rest area where grip texture meets background must be clean — no eaten edges, no halo. Thin cable/dongle area must not have remnant pixels.
+- Single product: Exactly one mouse.
+- Identity: Correct model and color/edition variant.
+- Watermarks / badges / overlays → disqualify (flag: "watermark" or "badge")
+- Wrong product → disqualify (flag: "wrong_product")
+- Cropping: Full silhouette nose-to-rear must be visible → penalty (flag: "cropped")
+- Sharpness: Side button detail, scroll wheel profile, grip texture visible → prefer the better candidate
+- Composition: Full side profile at eye level, no tilt → prefer the better candidate`,
+
+    sangle: `Evaluation criteria — pick the BEST candidate for MOUSE — S-ANGLE (front/side 3/4):
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
+- Expected geometry: Front/side 3/4 angle at roughly 30–45 degrees, camera slightly elevated. This is the primary showcase angle — mouse should fill the frame with logo/branding visible.
+- Background removal: Product alpha must be solid. Shadow remnants under the product must be fully removed. Edge between mouse body and removed background must be clean.
+- Single product: Exactly one mouse.
+- Identity: Correct model and color/edition variant.
+- Watermarks / badges / overlays → disqualify (flag: "watermark" or "badge")
+- Wrong product → disqualify (flag: "wrong_product")
+- Cropping: Full mouse visible from this angle → penalty (flag: "cropped")
+- Sharpness: Surface detail, logo, RGB lighting crisp → prefer the better candidate
+- Composition: Product fills frame, attractive angle showing design → prefer the better candidate`,
+
+    angle: `Evaluation criteria — pick the BEST candidate for MOUSE — ANGLE (rear/top 3/4):
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
+- Expected geometry: Rear/top 3/4 angle showing the mouse from above and behind at roughly 30–45 degrees. Shows the palm rest curvature and rear design.
+- Background removal: Product alpha must be solid. Shadow remnants and edge artifacts must be clean.
+- Single product: Exactly one mouse.
+- Identity: Correct model and color/edition variant.
+- Watermarks / badges / overlays → disqualify (flag: "watermark" or "badge")
+- Wrong product → disqualify (flag: "wrong_product")
+- Cropping: Full mouse visible → penalty (flag: "cropped")
+- Sharpness and composition → prefer the better candidate`,
+
+    front: `Evaluation criteria — pick the BEST candidate for MOUSE — FRONT (head-on):
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
+- Expected geometry: Head-on front view — camera faces the nose of the mouse. Scroll wheel, primary buttons, and front profile visible. USB-C/micro-USB port may be visible.
+- Background removal: Product alpha must be solid. Scroll wheel gap between wheel and shell must NOT be transparent. Cable/dongle exit area must be clean.
+- Single product: Exactly one mouse.
+- Identity: Correct model and color/edition variant.
+- Watermarks / badges / overlays → disqualify (flag: "watermark" or "badge")
+- Wrong product → disqualify (flag: "wrong_product")
+- Cropping: Full front profile visible → penalty (flag: "cropped")
+- Sharpness and composition → prefer the better candidate`,
+
+    bottom: `Evaluation criteria — pick the BEST candidate for MOUSE — BOTTOM (underside):
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
+- Expected geometry: Underside/belly view showing the base — sensor opening, mouse feet/skates, DPI switch, and any bottom labels.
+- Background removal: Product alpha must be solid. Sensor opening is a real feature of the product and must NOT be treated as a transparent hole. Mouse feet at edges must be cleanly preserved.
+- Single product: Exactly one mouse.
+- Identity: Correct model and color/edition variant.
+- Watermarks / badges / overlays → disqualify (flag: "watermark" or "badge")
+- Wrong product → disqualify (flag: "wrong_product")
+- Cropping: Full underside visible → penalty (flag: "cropped")
+- Sharpness and composition → prefer the better candidate`,
+
+    right: UNCOMMON_VIEW_CRITERIA,
+    rear: UNCOMMON_VIEW_CRITERIA,
+  }),
+
+  /* ── Keyboard ───────────────────────────────────────────────────── */
+  keyboard: Object.freeze({
+    top: `Evaluation criteria — pick the BEST candidate for KEYBOARD — TOP (bird's-eye overhead):
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
+- Expected geometry: Ultra-wide landscape-oriented overhead shot. Camera directly above. Full key layout visible, keycap legends readable, wrist rest if present.
+- Background removal: Product alpha must be solid throughout — gaps between keys must NOT be transparent. The keyboard body/plate visible between keys is part of the product. RGB lighting bleed at edges must be cleanly contained. Cable exit area must be clean.
+- Single product: Exactly one keyboard (wrist rest counts as part of the keyboard).
+- Identity: Correct model and color/edition variant.
+- Watermarks / badges / overlays → disqualify (flag: "watermark" or "badge")
+- Wrong product → disqualify (flag: "wrong_product")
+- Cropping: Full keyboard layout visible — no keys cut off at edges → penalty (flag: "cropped")
+- Sharpness: Keycap legends readable, switch/stabilizer detail visible → prefer the better candidate
+- Composition: Keyboard centered, fills frame width → prefer the better candidate`,
+
+    left: `Evaluation criteria — pick the BEST candidate for KEYBOARD — LEFT (side profile):
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
+- Expected geometry: Wide landscape side profile showing height/thickness, key travel distance, wrist rest if present. Camera at eye level with the keyboard edge.
+- Background removal: Product alpha must be solid. Thin rubber feet/risers at base edge must be preserved. Cable exit area must be clean.
+- Single product: Exactly one keyboard.
+- Identity: Correct model and color/edition variant.
+- Watermarks / badges / overlays → disqualify (flag: "watermark" or "badge")
+- Wrong product → disqualify (flag: "wrong_product")
+- Cropping: Full side visible → penalty (flag: "cropped")
+- Sharpness and composition → prefer the better candidate`,
+
+    angle: `Evaluation criteria — pick the BEST candidate for KEYBOARD — ANGLE (elevated front 3/4):
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
+- Expected geometry: Front/top 3/4 angle showing the keyboard from above and slightly in front at roughly 30–45 degrees. Shows keycaps with depth perspective.
+- Background removal: Product alpha must be solid. Thin profile edges must not be eaten by BG removal.
+- Single product: Exactly one keyboard.
+- Identity: Correct model and color/edition variant.
+- Watermarks / badges / overlays → disqualify (flag: "watermark" or "badge")
+- Wrong product → disqualify (flag: "wrong_product")
+- Cropping: Full keyboard visible → penalty (flag: "cropped")
+- Sharpness and composition → prefer the better candidate`,
+
+    sangle: `Evaluation criteria — pick the BEST candidate for KEYBOARD — S-ANGLE (front/side 3/4):
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
+- Expected geometry: Front/side 3/4 angle showing the keyboard from the front-left at roughly 30–45 degrees, slightly above. Shows keycaps and side profile together.
+- Background removal: Product alpha must be solid. Edge artifacts at thin profile sections must be clean.
+- Single product: Exactly one keyboard.
+- Identity: Correct model and color/edition variant.
+- Watermarks / badges / overlays → disqualify (flag: "watermark" or "badge")
+- Wrong product → disqualify (flag: "wrong_product")
+- Cropping: Full keyboard visible → penalty (flag: "cropped")
+- Sharpness and composition → prefer the better candidate`,
+
+    bottom: UNCOMMON_VIEW_CRITERIA,
+    right: UNCOMMON_VIEW_CRITERIA,
+    front: UNCOMMON_VIEW_CRITERIA,
+    rear: UNCOMMON_VIEW_CRITERIA,
+  }),
+
+  /* ── Monitor ────────────────────────────────────────────────────── */
+  monitor: Object.freeze({
+    front: `Evaluation criteria — pick the BEST candidate for MONITOR — FRONT (head-on):
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
+- Expected geometry: Landscape head-on front view. Full screen, bezels, and stand visible. Camera centered on the display.
+- Background removal: Product alpha must be solid. CRITICAL: The black/dark screen area is part of the product and must NOT be removed — a transparent screen is a BG removal failure. Thin bezels must be cleanly preserved. Stand base edges must be clean.
+- Single product: Exactly one monitor — not a dual-monitor setup.
+- Identity: Correct model and color/edition variant.
+- Watermarks / badges / overlays → disqualify (flag: "watermark" or "badge")
+- Wrong product → disqualify (flag: "wrong_product")
+- Cropping: Full monitor including stand visible → penalty (flag: "cropped")
+- Sharpness: Bezel detail, stand design visible → prefer the better candidate
+- Composition: Monitor centered, fills frame → prefer the better candidate`,
+
+    angle: `Evaluation criteria — pick the BEST candidate for MONITOR — ANGLE (rear/top 3/4):
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
+- Expected geometry: Rear/top 3/4 angle showing the back panel design, stand mount, and overall form factor from behind and slightly above.
+- Background removal: Product alpha must be solid. Stand joint/hinge area must be cleanly preserved. Thin profile sections must not be partially eaten.
+- Single product: Exactly one monitor.
+- Identity: Correct model and color/edition variant.
+- Watermarks / badges / overlays → disqualify (flag: "watermark" or "badge")
+- Wrong product → disqualify (flag: "wrong_product")
+- Cropping: Full monitor and stand visible → penalty (flag: "cropped")
+- Sharpness and composition → prefer the better candidate`,
+
+    rear: `Evaluation criteria — pick the BEST candidate for MONITOR — REAR (back panel):
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
+- Expected geometry: Head-on rear view showing the back panel, port layout, VESA mount area, ventilation, and cable management features.
+- Background removal: Product alpha must be solid. Dark port openings and ventilation grilles are features of the product — they must NOT appear as transparent holes.
+- Single product: Exactly one monitor.
+- Identity: Correct model and color/edition variant.
+- Watermarks / badges / overlays → disqualify (flag: "watermark" or "badge")
+- Wrong product → disqualify (flag: "wrong_product")
+- Cropping: Full back panel visible → penalty (flag: "cropped")
+- Sharpness and composition → prefer the better candidate`,
+
+    left: `Evaluation criteria — pick the BEST candidate for MONITOR — LEFT (side profile):
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
+- Expected geometry: Strict side profile from the left showing panel thickness, stand profile, and overall depth. Monitors are very thin — this is a narrow/tall shot.
+- Background removal: Product alpha must be solid. Very thin panel profile must be fully preserved — BG removal must not eat into the thin edge. Stand arm must be clean.
+- Single product: Exactly one monitor.
+- Identity: Correct model and color/edition variant.
+- Watermarks / badges / overlays → disqualify (flag: "watermark" or "badge")
+- Wrong product → disqualify (flag: "wrong_product")
+- Cropping: Full side profile and stand visible → penalty (flag: "cropped")
+- Sharpness and composition → prefer the better candidate`,
+
+    right: UNCOMMON_VIEW_CRITERIA,
+    top: UNCOMMON_VIEW_CRITERIA,
+    bottom: UNCOMMON_VIEW_CRITERIA,
+    sangle: UNCOMMON_VIEW_CRITERIA,
+  }),
+
+  /* ── Mousepad ───────────────────────────────────────────────────── */
+  mousepad: Object.freeze({
+    top: `Evaluation criteria — pick the BEST candidate for MOUSEPAD — TOP (overhead):
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
+- Expected geometry: Overhead shot showing the full pad surface, edge stitching, logo/branding, and surface texture.
+- Background removal: Product alpha must be solid. Thin pad edges are tricky for BG removal — the full rectangular outline must be preserved without eaten corners or edges.
+- Single product: Exactly one mousepad.
+- Identity: Correct model and color/edition variant.
+- Watermarks / badges / overlays → disqualify (flag: "watermark" or "badge")
+- Wrong product → disqualify (flag: "wrong_product")
+- Cropping: Full pad visible → penalty (flag: "cropped")
+- Sharpness and composition → prefer the better candidate`,
+
+    angle: `Evaluation criteria — pick the BEST candidate for MOUSEPAD — ANGLE (elevated perspective):
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
+- Expected geometry: Elevated 3/4 angle showing the pad surface and slight thickness/edge profile.
+- Background removal: Product alpha must be solid. Thin edges must be preserved.
+- Single product: Exactly one mousepad.
+- Identity: Correct model and color/edition variant.
+- Watermarks / badges / overlays → disqualify (flag: "watermark" or "badge")
+- Wrong product → disqualify (flag: "wrong_product")
+- Cropping: Full pad visible → penalty (flag: "cropped")
+- Sharpness and composition → prefer the better candidate`,
+
+    bottom: UNCOMMON_VIEW_CRITERIA,
+    left: UNCOMMON_VIEW_CRITERIA,
+    right: UNCOMMON_VIEW_CRITERIA,
+    front: UNCOMMON_VIEW_CRITERIA,
+    rear: UNCOMMON_VIEW_CRITERIA,
+    sangle: UNCOMMON_VIEW_CRITERIA,
+  }),
+});
+
+/* ── Category-specific hero eval criteria ─────────────────────────── */
+
+/**
+ * Generic hero eval criteria — fallback for unknown categories.
+ */
+export const GENERIC_HERO_EVAL_CRITERIA = `Hero selection criteria for a product page carousel:
+- Product must be the CLEAR STAR of the image — it should be the obvious focal point, not a tiny item in a busy desk scene.
+- No dual-product images — do not select images showing two color variants side by side.
+- Source quality: Only accept brand, manufacturer, or authorized retailer photography. Reject editorial/review site photos (these are copyrighted — PC Gamer, Tom's Hardware, TechRadar, etc.).
+- Cropped images are acceptable if the product remains clearly identifiable and prominent.
+- Prefer images with perspective diversity — a good hero set covers different angles.
+- Prefer lifestyle/contextual shots with real environments, dramatic or atmospheric lighting.
+- No text overlays, watermarks, or promotional graphics.
+- Sharp, well-composed, free of defects.`;
+
+/**
+ * Per-category hero evaluation criteria.
+ */
+export const CATEGORY_HERO_EVAL_CRITERIA = Object.freeze({
+  mouse: `Hero selection criteria for MOUSE product page carousel:
+- Product must be the CLEAR STAR — the mouse should be the obvious focal point. Reject desk overview shots where the mouse is one of many peripherals and hard to identify.
+- No dual-product images — reject images showing two color variants side by side.
+- Source: Only brand/manufacturer/retailer photography. Reject editorial review site photos (copyrighted).
+- Close-up dramatic angles showing the mouse on a desk or mousepad are ideal.
+- Desk/mousepad context is great as long as the mouse is prominent and identifiable.
+- Prefer dramatic or atmospheric lighting that showcases the product design and RGB effects.
+- Cropped is OK if the mouse remains clearly identifiable and prominent.
+- Perspective diversity — a good hero set covers different angles, not all the same shot.
+- No text overlays, watermarks, or promotional graphics.`,
+
+  keyboard: `Hero selection criteria for KEYBOARD product page carousel:
+- Product must be the CLEAR STAR — the keyboard should dominate the frame. Reject desk overview shots where the keyboard is just one item among many.
+- No dual-product images — reject images showing multiple keyboards.
+- Source: Only brand/manufacturer/retailer photography. Reject editorial review site photos (copyrighted).
+- RGB lighting in-situ shots on a desk surface are ideal hero material.
+- Prefer shots where keycaps and lighting are clearly visible in a real environment.
+- Cropped is OK if the keyboard remains clearly identifiable.
+- Perspective diversity — different angles for the hero set.
+- No text overlays, watermarks, or promotional graphics.`,
+
+  monitor: `Hero selection criteria for MONITOR product page carousel:
+- Product must be the CLEAR STAR — the monitor should dominate the image. Reject full-room or multi-monitor shots where the target is hard to identify.
+- No dual-product images — exactly one monitor prominent in the scene.
+- Source: Only brand/manufacturer/retailer photography. Reject editorial review site photos (copyrighted).
+- Screen-on lifestyle shots showing the display in context (desk, gaming setup) are ideal.
+- Screen content should be tasteful — game scenes, abstract visuals, or the product's own marketing imagery.
+- Cropped is OK if the monitor remains clearly identifiable.
+- Perspective diversity preferred.
+- No text overlays, watermarks, or promotional graphics.`,
+
+  mousepad: `Hero selection criteria for MOUSEPAD product page carousel:
+- Product must be clearly visible and identifiable — full pad visible in desk context or close-up showing surface texture and branding.
+- No dual-product images.
+- Source: Only brand/manufacturer/retailer photography. Reject editorial review site photos (copyrighted).
+- Desk context with the mousepad as the prominent surface is ideal.
+- Cropped is OK if branding and surface design remain visible.
+- No text overlays, watermarks, or promotional graphics.`,
+});
+
+/* ── Resolvers ────────────────────────────────────────────────────── */
+
+/**
+ * Resolve eval criteria for a specific category + view.
+ * @param {string} category
+ * @param {string} view — canonical view key
+ * @returns {string} — criteria text (category-specific or generic fallback)
+ */
+export function resolveViewEvalCriteria(category, view) {
+  return CATEGORY_VIEW_EVAL_CRITERIA[category]?.[view] || GENERIC_VIEW_EVAL_CRITERIA;
+}
+
+/**
+ * Resolve hero eval criteria for a specific category.
+ * @param {string} category
+ * @returns {string} — criteria text (category-specific or generic fallback)
+ */
+export function resolveHeroEvalCriteria(category) {
+  return CATEGORY_HERO_EVAL_CRITERIA[category] || GENERIC_HERO_EVAL_CRITERIA;
+}
+
 /**
  * Ensure a view config contains ALL 8 canonical views.
  * Missing views are filled from category defaults or generic descriptions

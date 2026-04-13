@@ -10,13 +10,14 @@ import { z } from 'zod';
 const evalFlagEnum = z.enum(['watermark', 'badge', 'cropped', 'wrong_product']);
 
 export const viewEvalResponseSchema = z.object({
-  rankings: z.array(z.object({
+  winner: z.object({
     filename: z.string(),
-    rank: z.number().int(),
-    best: z.boolean(),
-    flags: z.array(evalFlagEnum),
     reasoning: z.string(),
-  })),
+  }).nullable(),
+  rejected: z.array(z.object({
+    filename: z.string(),
+    flags: z.array(evalFlagEnum),
+  })).optional(),
 });
 
 export const heroEvalResponseSchema = z.object({

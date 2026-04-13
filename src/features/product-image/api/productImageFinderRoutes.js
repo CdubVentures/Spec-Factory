@@ -16,6 +16,8 @@ import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js
 import { readImageDimensions, buildVariantList, imageStem } from '../productImageFinder.js';
 import { evaluateCarousel } from '../carouselStrategy.js';
 import { resolveViewBudget } from '../productImageLlmAdapter.js';
+import { readProductImages } from '../productImageStore.js';
+import { writeCarouselSlot, resolveCarouselSlots, deleteEvalRecord } from '../imageEvaluator.js';
 
 export function registerProductImageFinderRoutes(ctx) {
   const store = (specDb) => specDb.getFinderStore('productImageFinder');
@@ -51,11 +53,34 @@ export function registerProductImageFinderRoutes(ctx) {
         }
         return img;
       };
+
+      // WHY: Carousel Builder writes eval fields to JSON selected.images.
+      // Read from JSON SSOT and build a filename→eval overlay so badges
+      // appear on gallery cards (which render from runs, not selected).
+      const jsonDoc = readProductImages({ productId: row.product_id, productRoot });
+      const evalByFilename = new Map();
+      for (const img of (jsonDoc?.selected?.images || [])) {
+        if (img.eval_best !== undefined || img.eval_flags || img.hero !== undefined) {
+          evalByFilename.set(img.filename, {
+            eval_best: img.eval_best,
+            eval_flags: img.eval_flags,
+            eval_reasoning: img.eval_reasoning,
+            eval_source: img.eval_source,
+            hero: img.hero,
+            hero_rank: img.hero_rank,
+          });
+        }
+      }
+      const overlayEval = (img) => {
+        const evalData = evalByFilename.get(img.filename);
+        return evalData ? { ...img, ...evalData } : img;
+      };
+
       const enrichedSelected = selected?.images
-        ? { ...selected, images: selected.images.map(enrichImage) }
+        ? { ...selected, images: selected.images.map(enrichImage).map(overlayEval) }
         : selected;
       const enrichedRuns = runs.map(r => r.selected?.images
-        ? { ...r, selected: { ...r.selected, images: r.selected.images.map(enrichImage) } }
+        ? { ...r, selected: { ...r.selected, images: r.selected.images.map(enrichImage).map(overlayEval) } }
         : r,
       );
       // Compute per-variant carousel progress from selected images
@@ -97,7 +122,9 @@ export function registerProductImageFinderRoutes(ctx) {
         selected: enrichedSelected,
         runs: enrichedRuns,
         carouselProgress,
-        carouselSettings: { viewAttemptBudget, heroAttemptBudget, heroEnabled },
+        carouselSettings: { viewAttemptBudget, heroAttemptBudget, heroEnabled, viewBudget },
+        carousel_slots: typeof row.carousel_slots === 'string' ? JSON.parse(row.carousel_slots || '{}') : (row.carousel_slots || {}),
+        evaluations: jsonDoc?.evaluations || [],
       };
     },
 
@@ -582,9 +609,11 @@ export function registerProductImageFinderRoutes(ctx) {
       }
     }
 
-    // ── Carousel Builder: evaluate images ─────────────────────────
-    // POST /product-image-finder/:category/:productId/evaluate
-    if (method === 'POST' && category && productId && parts[3] === 'evaluate') {
+    // ── Carousel Builder: evaluate one view ───────────────────────
+    // POST /product-image-finder/:category/:productId/evaluate-view
+    // Body: { variant_key, view }
+    // GUI fires N of these in parallel — one per view group. LLM queue serializes.
+    if (method === 'POST' && category && productId && parts[3] === 'evaluate-view') {
       let op = null;
       let batcher = null;
       try {
@@ -595,7 +624,9 @@ export function registerProductImageFinderRoutes(ctx) {
         if (!productRow) return jsonRes(res, 404, { error: 'product not found', product_id: productId, category });
 
         const body = await readJsonBody(req).catch(() => ({}));
-        const variantKey = body?.variant_key || null;
+        const variantKey = body?.variant_key || '';
+        const view = body?.view || '';
+        if (!view) return jsonRes(res, 400, { error: 'view is required' });
 
         op = registerOperation({
           type: 'pif',
@@ -603,9 +634,10 @@ export function registerProductImageFinderRoutes(ctx) {
           category,
           productId,
           productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
-          variantKey: variantKey || '',
-          stages: ['Evaluating', 'Heroes', 'Complete'],
+          variantKey,
+          stages: ['Evaluating', 'Complete'],
         });
+        updateProgressText({ id: op.id, text: `${view} view` });
 
         batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
         const signal = getOperationSignal(op.id);
@@ -623,7 +655,7 @@ export function registerProductImageFinderRoutes(ctx) {
             entities: { productIds: [productId] },
             meta: { productId },
           },
-          asyncWork: () => ctx.runCarouselBuild({
+          asyncWork: () => ctx.runEvalView({
             product: {
               product_id: productId,
               category,
@@ -632,7 +664,85 @@ export function registerProductImageFinderRoutes(ctx) {
               base_model: productRow.base_model || '',
               variant: productRow.variant || '',
             },
-            appDb,
+            specDb,
+            config,
+            logger: logger || null,
+            variantKey,
+            view,
+            signal,
+            onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
+            onModelResolved: (info) => updateModelInfo({ id: op.id, ...info }),
+            onStreamChunk: (delta) => {
+              if (delta?.reasoning) batcher?.push(delta.reasoning);
+              if (delta?.content) batcher?.push(delta.content);
+            },
+            onQueueWait: (ms) => updateQueueDelay({ id: op.id, queueDelayMs: ms }),
+            onLlmCallComplete: (call) => appendLlmCall({ id: op.id, call }),
+          }),
+          completeOperation,
+          failOperation,
+          cancelOperation,
+          emitDataChange,
+        });
+      } catch (err) {
+        if (batcher) batcher.dispose();
+        if (op) failOperation({ id: op.id, error: err instanceof Error ? err.message : String(err) });
+        return jsonRes(res, 500, { error: 'evaluate-view failed', message: err instanceof Error ? err.message : String(err) });
+      }
+    }
+
+    // ── Carousel Builder: pick heroes from winners ─────────────────
+    // POST /product-image-finder/:category/:productId/evaluate-hero
+    // Body: { variant_key }
+    if (method === 'POST' && category && productId && parts[3] === 'evaluate-hero') {
+      let op = null;
+      let batcher = null;
+      try {
+        const specDb = getSpecDb(category);
+        if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+
+        const productRow = specDb.getProduct(productId);
+        if (!productRow) return jsonRes(res, 404, { error: 'product not found', product_id: productId, category });
+
+        const body = await readJsonBody(req).catch(() => ({}));
+        const variantKey = body?.variant_key || '';
+
+        op = registerOperation({
+          type: 'pif',
+          subType: 'evaluate',
+          category,
+          productId,
+          productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
+          variantKey,
+          stages: ['Heroes', 'Complete'],
+        });
+        updateProgressText({ id: op.id, text: 'hero selection' });
+
+        batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
+        const signal = getOperationSignal(op.id);
+
+        return fireAndForget({
+          res,
+          jsonRes,
+          op,
+          batcher,
+          broadcastWs,
+          signal,
+          emitArgs: {
+            event: 'product-image-finder-evaluate',
+            category,
+            entities: { productIds: [productId] },
+            meta: { productId },
+          },
+          asyncWork: () => ctx.runEvalHero({
+            product: {
+              product_id: productId,
+              category,
+              brand: productRow.brand || '',
+              model: productRow.model || '',
+              base_model: productRow.base_model || '',
+              variant: productRow.variant || '',
+            },
             specDb,
             config,
             logger: logger || null,
@@ -646,9 +756,6 @@ export function registerProductImageFinderRoutes(ctx) {
             },
             onQueueWait: (ms) => updateQueueDelay({ id: op.id, queueDelayMs: ms }),
             onLlmCallComplete: (call) => appendLlmCall({ id: op.id, call }),
-            onVariantProgress: (idx, total, vk) => {
-              updateProgressText({ id: op.id, text: `Variant ${idx + 1}/${total}: ${vk}` });
-            },
           }),
           completeOperation,
           failOperation,
@@ -658,7 +765,59 @@ export function registerProductImageFinderRoutes(ctx) {
       } catch (err) {
         if (batcher) batcher.dispose();
         if (op) failOperation({ id: op.id, error: err instanceof Error ? err.message : String(err) });
-        return jsonRes(res, 500, { error: 'evaluate failed', message: err instanceof Error ? err.message : String(err) });
+        return jsonRes(res, 500, { error: 'evaluate-hero failed', message: err instanceof Error ? err.message : String(err) });
+      }
+    }
+
+    // ── Carousel Builder: set/clear a slot override ──────────────
+    // PATCH /product-image-finder/:category/:productId/carousel-slot
+    if (method === 'PATCH' && category && productId && parts[3] === 'carousel-slot') {
+      try {
+        const specDb = getSpecDb(category);
+        if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+
+        const body = await readJsonBody(req).catch(() => ({}));
+        const variantKey = body?.variant_key;
+        const slot = body?.slot;
+        if (!variantKey || !slot) return jsonRes(res, 400, { error: 'variant_key and slot are required' });
+
+        const filename = body?.filename ?? null;
+        const productRoot = defaultProductRoot();
+
+        // Dual-write: JSON first (durable), then SQL projection
+        const updatedSlots = writeCarouselSlot({ productId, productRoot, variantKey, slot, filename });
+
+        // Project to SQL
+        const finderStore = store(specDb);
+        finderStore.updateSummaryField(productId, 'carousel_slots', JSON.stringify(updatedSlots));
+
+        return jsonRes(res, 200, { ok: true, carousel_slots: updatedSlots });
+      } catch (err) {
+        return jsonRes(res, 500, { error: 'carousel-slot failed', message: err instanceof Error ? err.message : String(err) });
+      }
+    }
+
+    // ── Carousel Builder: delete an eval record ─────────────────
+    // DELETE /product-image-finder/:category/:productId/evaluations/:evalNumber
+    if (method === 'DELETE' && category && productId && parts[3] === 'evaluations' && parts[4]) {
+      try {
+        const evalNumber = parseInt(parts[4], 10);
+        if (isNaN(evalNumber)) return jsonRes(res, 400, { error: 'invalid eval number' });
+
+        const productRoot = defaultProductRoot();
+        const result = deleteEvalRecord({ productId, productRoot, evalNumber });
+        if (!result) return jsonRes(res, 404, { error: 'eval record not found' });
+
+        emitDataChange({
+          event: 'product-image-finder-evaluate',
+          category,
+          entities: { productIds: [productId] },
+          meta: { productId },
+        });
+
+        return jsonRes(res, 200, { ok: true, remaining: result.evaluations?.length ?? 0 });
+      } catch (err) {
+        return jsonRes(res, 500, { error: 'delete eval failed', message: err instanceof Error ? err.message : String(err) });
       }
     }
 

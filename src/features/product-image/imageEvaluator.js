@@ -12,8 +12,9 @@ import { readProductImages, writeProductImages } from './productImageStore.js';
  * Create a base64-encoded PNG thumbnail from a master image.
  *
  * WHY: Vision LLM calls need images as base64 data URIs.
- * 512×512 is enough for judging composition, watermarks, and sharpness
- * while keeping token cost low (~80-100K per call).
+ * Default controlled by evalThumbSize setting (registry default 768).
+ * 768 uses 4 tiles (same as 1024) — good sharpness/watermark detection
+ * without jumping to the 9-tile bracket (1025+).
  *
  * @param {object} opts
  * @param {string} opts.imagePath - absolute path to source image
@@ -48,6 +49,7 @@ export function buildViewEvalPrompt({
   viewDescription = '',
   candidateCount = 0,
   promptOverride = '',
+  evalCriteria = '',
 }) {
   const brand = product.brand || '';
   const model = product.model || '';
@@ -59,55 +61,60 @@ export function buildViewEvalPrompt({
   const viewLine = `View: "${view}" — ${viewDescription || view}`;
   const countLine = `You are evaluating ${candidateCount} candidate image${candidateCount !== 1 ? 's' : ''} for this view.`;
 
-  const defaultCriteria = `Evaluation criteria (judge each image against ALL of these):
+  const defaultCriteria = `Evaluation criteria — pick the BEST candidate:
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
 - Watermarks: Getty, Shutterstock, retailer logos, "SAMPLE" text, copyright overlays → disqualify (flag: "watermark")
 - Badges / overlays: Sale stickers, "NEW" badges, retailer branding, promotional text → disqualify (flag: "badge")
 - Cropping: Product cut off at edges, missing parts, too tight framing → penalty (flag: "cropped")
 - Wrong product: Different model, wrong color, accessory instead of product → disqualify (flag: "wrong_product")
-- Sharpness: Blur, compression artifacts, noise, low resolution appearance → affects ranking
-- Composition: View angle matches the requested view above, product centered, clean background → affects ranking
-- Background removal quality: Halo artifacts, missing parts, jagged edges → affects ranking`;
+- Sharpness: Blur, compression artifacts, noise → prefer the better candidate
+- Composition: View angle matches the requested view above, product centered, clean background → prefer the better candidate
+- Background removal quality: Halo artifacts, missing parts, jagged edges → prefer the better candidate`;
 
-  const criteria = promptOverride.trim() || defaultCriteria;
+  const criteria = promptOverride.trim() || evalCriteria || defaultCriteria;
 
   return `${identity}
 ${viewLine}
 ${countLine}
 
 Images are labeled Image 1, Image 2, etc. matching the order of image content parts.
+Each label includes the original dimensions and file size — use these to judge resolution quality since the thumbnails shown are downscaled.
 
 ${criteria}
 
 Respond with JSON matching this schema:
 {
-  "rankings": [
-    {
-      "filename": "the candidate filename",
-      "rank": 1,
-      "best": true,
-      "flags": [],
-      "reasoning": "short explanation"
-    }
+  "winner": {
+    "filename": "the best candidate filename",
+    "reasoning": "1-2 sentences: why this image won and how it compares to the others"
+  },
+  "rejected": [
+    { "filename": "a disqualified candidate", "flags": ["watermark"] }
   ]
 }
 
 Rules:
-- Rank ALL candidates from best (rank 1) to worst.
-- Set "best": true on exactly one image (the winner for this view).
-- Set "best": false on all others.
-- "flags" is an array of zero or more: "watermark", "badge", "cropped", "wrong_product".
-- "reasoning" should be 1-2 sentences explaining your ranking decision.`;
+- "winner": Pick exactly one best image for this view. Explain why it won over the others. Set to null if NO candidate is acceptable.
+- "rejected": List ONLY candidates with disqualifying issues. Each gets a "flags" array of one or more: "watermark", "badge", "cropped", "wrong_product".
+- Candidates that are simply lower quality than the winner (but not disqualified) do NOT need to appear in "rejected".
+- If ALL candidates are disqualified, set "winner" to null and list every candidate in "rejected" with their flags. Do NOT force-pick a bad image.`;
 }
 
 /**
- * Build the system prompt for selecting hero shots from view winners.
+ * Build the system prompt for evaluating hero/marketing image candidates.
+ *
+ * WHY: Hero images are full-scene 16:9 marketing shots (not cutouts).
+ * They're evaluated as vision candidates — same pattern as view eval —
+ * and ranked for the carousel hero section.
  */
 export function buildHeroSelectionPrompt({
   product = {},
   variantLabel = '',
   variantType = 'color',
-  viewWinners = [],
+  candidates = [],
   promptOverride = '',
+  heroCriteria = '',
+  heroCount = 3,
 }) {
   const brand = product.brand || '';
   const model = product.model || '';
@@ -116,25 +123,24 @@ export function buildHeroSelectionPrompt({
     : `the "${variantLabel}" color variant`;
 
   const identity = `Product: ${brand} ${model} — ${variantDesc}`.trim();
+  const countLine = `You are evaluating ${candidates.length} hero/marketing image candidate${candidates.length !== 1 ? 's' : ''}.`;
 
-  const winnerList = viewWinners.length > 0
-    ? viewWinners.map((w, i) => `Image ${i + 1}: ${w.filename} (${w.view} view)`).join('\n')
-    : '(no view winners available)';
+  const defaultCriteria = `Hero image evaluation criteria:
+- Watermarks: Getty, Shutterstock, retailer logos, "SAMPLE" text → disqualify
+- Badges / overlays: Sale stickers, "NEW" badges, retailer branding → disqualify
+- Wrong product: Different model, wrong color, unrelated product → disqualify
+- Composition: Product should be the clear focus, well-framed, attractive presentation
+- Image quality: Sharp, good lighting, no heavy compression artifacts
+- Marketing appeal: Which shots best showcase the product's design and features for a buyer?
+- Variety: A good hero set covers different perspectives (not all the same angle)`;
 
-  const defaultCriteria = `Hero selection criteria for a product page carousel:
-- Which images best showcase the product's design and features?
-- Which angles are most attractive and informative for a buyer?
-- Prefer images that are sharp, well-composed, and free of defects.
-- A good hero set covers different perspectives (not all the same angle).`;
-
-  const criteria = promptOverride.trim() || defaultCriteria;
+  const criteria = promptOverride.trim() || heroCriteria || defaultCriteria;
 
   return `${identity}
+${countLine}
 
-You are selecting hero images for the product page carousel.
-These are the best images from each evaluated view:
-
-${winnerList}
+Images are labeled Image 1, Image 2, etc. matching the order of image content parts.
+These are full-scene hero/marketing shots (typically 16:9) — NOT cutout product images.
 
 ${criteria}
 
@@ -142,7 +148,7 @@ Respond with JSON matching this schema:
 {
   "heroes": [
     {
-      "filename": "the winner filename",
+      "filename": "the best candidate filename",
       "hero_rank": 1,
       "reasoning": "short explanation"
     }
@@ -150,9 +156,11 @@ Respond with JSON matching this schema:
 }
 
 Rules:
-- Pick the best images for a product page carousel hero section.
-- hero_rank 1 = primary hero (most prominent placement).
-- "reasoning" should be 1-2 sentences explaining why this image is a good hero shot.`;
+- Pick up to ${heroCount} images for the product page carousel hero section.
+- hero_rank 1 = primary hero (most prominent placement), 2 = secondary, etc.
+- "reasoning" should be 1-2 sentences explaining why this image is a good hero shot.
+- You may pick FEWER than ${heroCount} if not enough candidates are hero-worthy.
+- Return an empty "heroes" array if ALL candidates are disqualified (watermarks, wrong product, etc.).`;
 }
 
 /* ── LLM caller factories (Phase 2) ────────────────────────────── */
@@ -169,6 +177,7 @@ const VIEW_EVAL_SPEC = {
     viewDescription: domainArgs.viewDescription,
     candidateCount: domainArgs.candidateCount,
     promptOverride: domainArgs.promptOverride,
+    evalCriteria: domainArgs.evalCriteria,
   }),
   jsonSchema: zodToLlmSchema(viewEvalResponseSchema),
 };
@@ -181,8 +190,10 @@ const HERO_EVAL_SPEC = {
     product: domainArgs.product,
     variantLabel: domainArgs.variantLabel,
     variantType: domainArgs.variantType,
-    viewWinners: domainArgs.viewWinners,
+    candidates: domainArgs.candidates,
     promptOverride: domainArgs.promptOverride,
+    heroCriteria: domainArgs.heroCriteria,
+    heroCount: domainArgs.heroCount,
   }),
   jsonSchema: zodToLlmSchema(heroEvalResponseSchema),
 };
@@ -235,12 +246,14 @@ export function createHeroEvalCallLlm(deps) {
  */
 export async function evaluateViewCandidates({
   imagePaths,
+  imageMetadata = [],
   view,
   product,
   variantLabel,
   variantType,
   size = 512,
   promptOverride = '',
+  evalCriteria = '',
   callLlm,
   createThumbnail = createThumbnailBase64,
 }) {
@@ -262,6 +275,8 @@ export async function evaluateViewCandidates({
   }
 
   // Build thumbnails + image payloads for vision call
+  // WHY: Include real dimensions so the LLM can factor resolution into its decision.
+  // The thumbnails are downscaled to ${size}px — the LLM cannot judge actual resolution from pixels alone.
   const images = [];
   const lines = [];
   for (let i = 0; i < imagePaths.length; i++) {
@@ -271,11 +286,20 @@ export async function evaluateViewCandidates({
       file_uri: `data:image/png;base64,${b64}`,
       mime_type: 'image/png',
     });
-    lines.push(`Image ${i + 1}: ${filenames[i]}`);
+    const meta = imageMetadata[i];
+    const dimStr = meta?.width && meta?.height ? ` (${meta.width}×${meta.height}px` + (meta.bytes ? `, ${Math.round(meta.bytes / 1024)}KB` : '') + ')' : '';
+    lines.push(`Image ${i + 1}: ${filenames[i]}${dimStr}`);
   }
 
   const userText = lines.join('\n');
   const knownFilenames = new Set(filenames);
+
+  // WHY: Build system prompt text for eval history audit trail
+  const systemPrompt = buildViewEvalPrompt({
+    product, variantLabel, variantType, view,
+    viewDescription: '', candidateCount: imagePaths.length,
+    promptOverride, evalCriteria,
+  });
 
   const response = await callLlm({
     product,
@@ -284,15 +308,36 @@ export async function evaluateViewCandidates({
     view,
     candidateCount: imagePaths.length,
     promptOverride,
+    evalCriteria,
     userText,
     images,
   });
 
-  // WHY: Filter out unknown filenames — LLM may hallucinate entries
-  const rankings = (response.rankings || [])
-    .filter((r) => knownFilenames.has(r.filename));
+  // WHY: Convert { winner, rejected } → internal rankings array for mergeEvaluation.
+  // Winner gets eval_best=true + reasoning. Rejected entries get flags only.
+  const rankings = [];
 
-  return { rankings };
+  if (response.winner && knownFilenames.has(response.winner.filename)) {
+    rankings.push({
+      filename: response.winner.filename,
+      best: true,
+      flags: [],
+      reasoning: response.winner.reasoning || '',
+    });
+  }
+
+  for (const rej of (response.rejected || [])) {
+    if (knownFilenames.has(rej.filename)) {
+      rankings.push({
+        filename: rej.filename,
+        best: false,
+        flags: rej.flags || [],
+        reasoning: '',
+      });
+    }
+  }
+
+  return { rankings, _prompt: { system: systemPrompt, user: userText }, _response: response };
 }
 
 /* ── Eval persistence (Phase 2) ─────────────────────────────────── */
@@ -300,6 +345,18 @@ export async function evaluateViewCandidates({
 // WHY: Eval fields to clear before applying fresh results.
 // This list must match the TypeScript ProductImageEntry eval fields.
 const EVAL_FIELDS = ['eval_best', 'eval_flags', 'eval_reasoning', 'eval_source', 'hero', 'hero_rank'];
+
+// WHY: Multiple eval operations fire simultaneously (one per view).
+// Each reads/modifies/writes the same JSON file. Without serialization,
+// later writes overwrite earlier ones (last-writer-wins race condition).
+// This per-product lock queue ensures sequential JSON file access.
+const _productLocks = new Map();
+export function withProductLock(productId, fn) {
+  const prev = _productLocks.get(productId) || Promise.resolve();
+  const next = prev.then(fn, fn);
+  _productLocks.set(productId, next);
+  return next;
+}
 
 /**
  * Persist evaluation results onto existing image entries.
@@ -321,10 +378,24 @@ export function mergeEvaluation({ productId, productRoot, variantKey, viewResult
 
   const images = doc.selected?.images || [];
 
-  // Step 1: Clear all eval fields on matching variant
+  // Step 1: Clear eval fields ONLY on images whose view is being re-evaluated.
+  // WHY: Each view eval fires as a separate operation. Clearing the entire variant
+  // would wipe results from other views that already completed.
+  // Hero merges (heroResults !== null) clear hero fields on the whole variant.
+  const viewsBeingUpdated = new Set(viewResults.keys());
   for (const img of images) {
-    if (img.variant_key === variantKey) {
-      for (const field of EVAL_FIELDS) delete img[field];
+    if (img.variant_key !== variantKey) continue;
+    if (viewsBeingUpdated.has(img.view)) {
+      // Clear view-eval fields for this view
+      delete img.eval_best;
+      delete img.eval_flags;
+      delete img.eval_reasoning;
+      delete img.eval_source;
+    }
+    if (heroResults) {
+      // Clear hero fields for re-evaluation
+      delete img.hero;
+      delete img.hero_rank;
     }
   }
 
@@ -359,6 +430,183 @@ export function mergeEvaluation({ productId, productRoot, variantKey, viewResult
       if (!hero) continue;
       img.hero = true;
       img.hero_rank = hero.hero_rank;
+    }
+  }
+
+  writeProductImages({ productId, productRoot, data: doc });
+  return doc;
+}
+
+/* ── Carousel slot persistence ──────────────────────────────────── */
+
+/**
+ * Write a single carousel slot override to JSON.
+ *
+ * @param {object} opts
+ * @param {string} opts.productId
+ * @param {string} opts.productRoot
+ * @param {string} opts.variantKey — e.g. 'color:black'
+ * @param {string} opts.slot — e.g. 'top', 'hero_1'
+ * @param {string|null} opts.filename — image filename or null to clear
+ * @returns {object} — updated carousel_slots object (all variants)
+ */
+export function writeCarouselSlot({ productId, productRoot, variantKey, slot, filename }) {
+  const doc = readProductImages({ productId, productRoot });
+  if (!doc) return {};
+
+  if (!doc.carousel_slots) doc.carousel_slots = {};
+  if (!doc.carousel_slots[variantKey]) doc.carousel_slots[variantKey] = {};
+  doc.carousel_slots[variantKey][slot] = filename;
+
+  writeProductImages({ productId, productRoot, data: doc });
+  return doc.carousel_slots;
+}
+
+/**
+ * Resolve carousel slot contents for one variant.
+ *
+ * Precedence: user override (carousel_slots) > eval_best/hero > empty.
+ *
+ * @param {object} opts
+ * @param {string[]} opts.viewBudget — canonical views in priority order
+ * @param {number} opts.heroCount — number of hero slots
+ * @param {string} opts.variantKey
+ * @param {object} opts.carouselSlots — full carousel_slots from JSON/SQL
+ * @param {Array} opts.images — all images (with eval fields overlayed)
+ * @returns {Array<{slot, filename, source}>} — resolved slots in order
+ */
+export function resolveCarouselSlots({ viewBudget, heroCount, variantKey, carouselSlots, images }) {
+  const variantSlots = carouselSlots?.[variantKey] || {};
+  const variantImages = (images || []).filter(img => img.variant_key === variantKey);
+
+  const result = [];
+
+  // View slots — in category priority order
+  // WHY: '__cleared__' means "user explicitly emptied this slot — don't auto-fill from eval"
+  for (const view of viewBudget) {
+    const override = variantSlots[view];
+    if (override === '__cleared__') {
+      result.push({ slot: view, filename: null, source: 'empty' });
+    } else if (override) {
+      result.push({ slot: view, filename: override, source: 'user' });
+    } else {
+      const evalWinner = variantImages.find(img => img.view === view && img.eval_best === true);
+      if (evalWinner) {
+        result.push({ slot: view, filename: evalWinner.filename, source: 'eval' });
+      } else {
+        result.push({ slot: view, filename: null, source: 'empty' });
+      }
+    }
+  }
+
+  // Hero slots
+  const heroImages = variantImages
+    .filter(img => img.hero === true && img.hero_rank != null)
+    .sort((a, b) => (a.hero_rank || 99) - (b.hero_rank || 99));
+
+  for (let i = 0; i < heroCount; i++) {
+    const slotKey = `hero_${i + 1}`;
+    const override = variantSlots[slotKey];
+    if (override === '__cleared__') {
+      result.push({ slot: slotKey, filename: null, source: 'empty' });
+    } else if (override) {
+      result.push({ slot: slotKey, filename: override, source: 'user' });
+    } else if (heroImages[i]) {
+      result.push({ slot: slotKey, filename: heroImages[i].filename, source: 'eval' });
+    } else {
+      result.push({ slot: slotKey, filename: null, source: 'empty' });
+    }
+  }
+
+  return result;
+}
+
+/* ── Eval history persistence ───────────────────────────────────── */
+
+/**
+ * Append an eval record to the evaluations array in JSON.
+ *
+ * WHY: Eval calls don't create PIF runs — they mutate existing images.
+ * But users need to inspect the system prompt + LLM response for each
+ * eval call. The evaluations array stores this audit trail separately.
+ *
+ * @param {object} opts
+ * @param {string} opts.productId
+ * @param {string} opts.productRoot
+ * @param {string} opts.variantKey
+ * @param {string} opts.type — 'view' or 'hero'
+ * @param {string} [opts.view] — canonical view key (for view evals)
+ * @param {string} opts.model — LLM model used
+ * @param {object} opts.prompt — { system, user }
+ * @param {object} opts.response — raw LLM response
+ * @param {object} opts.result — parsed result (rankings or heroes)
+ * @param {number} [opts.durationMs] — call duration
+ * @returns {object} — the appended eval record
+ */
+export function appendEvalRecord({ productId, productRoot, variantKey, type, view, model, prompt, response, result, durationMs }) {
+  const doc = readProductImages({ productId, productRoot });
+  if (!doc) return null;
+
+  if (!doc.evaluations) doc.evaluations = [];
+
+  const record = {
+    eval_number: doc.evaluations.length + 1,
+    type,
+    view: view || null,
+    variant_key: variantKey,
+    model: model || 'unknown',
+    ran_at: new Date().toISOString(),
+    duration_ms: durationMs || null,
+    prompt: prompt || {},
+    response: response || {},
+    result: result || {},
+  };
+
+  doc.evaluations.push(record);
+  writeProductImages({ productId, productRoot, data: doc });
+  return record;
+}
+
+/**
+ * Delete an eval record and clear eval fields it produced on images.
+ *
+ * WHY: If the user deletes an eval, the images it selected should no
+ * longer be marked as winners. Clears eval fields for the view (or hero
+ * fields for hero evals) on matching variant images.
+ *
+ * @param {object} opts
+ * @param {string} opts.productId
+ * @param {string} opts.productRoot
+ * @param {number} opts.evalNumber
+ * @returns {object|null} — updated doc, or null if not found
+ */
+export function deleteEvalRecord({ productId, productRoot, evalNumber }) {
+  const doc = readProductImages({ productId, productRoot });
+  if (!doc || !doc.evaluations) return null;
+
+  const idx = doc.evaluations.findIndex(e => e.eval_number === evalNumber);
+  if (idx === -1) return null;
+
+  const record = doc.evaluations[idx];
+  doc.evaluations.splice(idx, 1);
+
+  // Clear eval fields from images that this eval produced
+  const images = doc.selected?.images || [];
+  if (record.type === 'view' && record.view) {
+    for (const img of images) {
+      if (img.variant_key === record.variant_key && img.view === record.view) {
+        delete img.eval_best;
+        delete img.eval_flags;
+        delete img.eval_reasoning;
+        delete img.eval_source;
+      }
+    }
+  } else if (record.type === 'hero') {
+    for (const img of images) {
+      if (img.variant_key === record.variant_key) {
+        delete img.hero;
+        delete img.hero_rank;
+      }
     }
   }
 

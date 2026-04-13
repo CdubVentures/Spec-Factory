@@ -13,7 +13,12 @@ import { repairResponseJsonSchema } from '../../../publisher/repair-adapter/repa
 import { FINDER_PHASE_SCHEMAS } from './phaseSchemaRegistry.generated.js';
 import { buildViewEvalPrompt, buildHeroSelectionPrompt } from '../../../product-image/imageEvaluator.js';
 import { viewEvalResponseSchema, heroEvalResponseSchema } from '../../../product-image/imageEvaluatorSchema.js';
-import { GENERIC_VIEW_DESCRIPTIONS } from '../../../product-image/productImageLlmAdapter.js';
+import {
+  GENERIC_VIEW_DESCRIPTIONS,
+  CANONICAL_VIEW_KEYS,
+  resolveViewEvalCriteria,
+  resolveHeroEvalCriteria,
+} from '../../../product-image/productImageLlmAdapter.js';
 
 const NON_FINDER_PHASES = Object.freeze({
   'needset': {
@@ -40,6 +45,22 @@ const NON_FINDER_PHASES = Object.freeze({
 
 // WHY: Carousel Builder has per-view prompts — one system prompt per canonical view + hero.
 // Stored as view_prompts map so the LLM Config GUI can render each individually.
+// eval_criteria_defaults provides category-specific criteria text for the editable UI.
+const EVAL_CRITERIA_CATEGORIES = ['mouse', 'keyboard', 'monitor', 'mousepad'];
+
+function buildEvalCriteriaDefaults() {
+  const defaults = {};
+  for (const cat of EVAL_CRITERIA_CATEGORIES) {
+    const catDefaults = {};
+    for (const view of CANONICAL_VIEW_KEYS) {
+      catDefaults[view] = resolveViewEvalCriteria(cat, view);
+    }
+    catDefaults.hero = resolveHeroEvalCriteria(cat);
+    defaults[cat] = catDefaults;
+  }
+  return defaults;
+}
+
 const CAROUSEL_BUILDER_PHASE = Object.freeze({
   'image-evaluator': {
     system_prompt: buildViewEvalPrompt({ product: { brand: '{brand}', model: '{model}' }, view: 'top', viewDescription: GENERIC_VIEW_DESCRIPTIONS.top, candidateCount: 3 }),
@@ -54,6 +75,8 @@ const CAROUSEL_BUILDER_PHASE = Object.freeze({
         ]),
       ),
     ),
+    eval_criteria_defaults: Object.freeze(buildEvalCriteriaDefaults()),
+    eval_criteria_categories: EVAL_CRITERIA_CATEGORIES,
   },
 });
 

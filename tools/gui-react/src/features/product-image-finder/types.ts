@@ -92,6 +92,26 @@ export interface CarouselSettings {
   viewAttemptBudget: number;
   heroAttemptBudget: number;
   heroEnabled: boolean;
+  viewBudget?: string[];
+}
+
+export interface ResolvedSlot {
+  slot: string;
+  filename: string | null;
+  source: 'user' | 'eval' | 'empty';
+}
+
+export interface EvalRecord {
+  eval_number: number;
+  type: 'view' | 'hero';
+  view: string | null;
+  variant_key: string;
+  model: string;
+  ran_at: string;
+  duration_ms: number | null;
+  prompt: { system: string; user: string };
+  response: Record<string, unknown>;
+  result: Record<string, unknown>;
 }
 
 export interface ProductImageFinderResult {
@@ -107,6 +127,8 @@ export interface ProductImageFinderResult {
   runs: ProductImageFinderRun[];
   carouselProgress?: Record<string, CarouselProgress>;
   carouselSettings?: CarouselSettings;
+  carousel_slots?: Record<string, Record<string, string | null>>;
+  evaluations?: EvalRecord[];
 }
 
 /** 202 Accepted response — returned immediately by fire-and-forget POST handlers. */

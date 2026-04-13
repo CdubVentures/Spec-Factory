@@ -127,3 +127,34 @@ export function useDeleteProductImageFinderAllMutation(category: string, product
     onSuccess: resetQuery,
   });
 }
+
+export function useCarouselSlotMutation(category: string, productId: string) {
+  const queryClient = useQueryClient();
+
+  const invalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['product-image-finder', category, productId] });
+  }, [queryClient, category, productId]);
+
+  return useMutation<{ ok: boolean; carousel_slots: Record<string, Record<string, string | null>> }, Error, { variant_key: string; slot: string; filename: string | null }>({
+    mutationFn: (body) => api.patch<{ ok: boolean; carousel_slots: Record<string, Record<string, string | null>> }>(
+      `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/carousel-slot`,
+      body,
+    ),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteEvalRecordMutation(category: string, productId: string) {
+  const queryClient = useQueryClient();
+
+  const invalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['product-image-finder', category, productId] });
+  }, [queryClient, category, productId]);
+
+  return useMutation<{ ok: boolean; remaining: number }, Error, number>({
+    mutationFn: (evalNumber: number) => api.del<{ ok: boolean; remaining: number }>(
+      `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/evaluations/${evalNumber}`,
+    ),
+    onSuccess: invalidate,
+  });
+}

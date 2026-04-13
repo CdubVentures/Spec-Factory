@@ -96,6 +96,7 @@ export const FINDER_MODULES = Object.freeze([
     summaryColumns: [
       { name: 'images', type: 'TEXT', default: "'[]'" },
       { name: 'image_count', type: 'INTEGER', default: '0' },
+      { name: 'carousel_slots', type: 'TEXT', default: "'{}'" },
     ],
     summaryIndexes: [
       { name: 'idx_pif_cooldown', columns: ['cooldown_until'] },
@@ -141,10 +142,20 @@ export const FINDER_MODULES = Object.freeze([
       heroPromptOverride: '',         // custom hero prompt instructions; empty = built-in template
       // Carousel Builder (vision evaluator) settings
       evalEnabled: 'true',             // enable/disable the vision evaluator
-      evalThumbSize: '512',            // thumbnail dimension for LLM vision calls
+      evalThumbSize: '768',            // thumbnail dimension for LLM vision calls (512px tile boundary — 768 uses 4 tiles like 1024)
       evalPromptOverride: '',          // custom view evaluation prompt; empty = built-in template
       heroEvalPromptOverride: '',      // custom hero selection prompt; empty = built-in template
       evalHeroCount: '3',             // target number of hero selections per variant
+      // Per-view eval criteria overrides (empty = use code defaults from CATEGORY_VIEW_EVAL_CRITERIA)
+      evalViewCriteria_top: '',
+      evalViewCriteria_bottom: '',
+      evalViewCriteria_left: '',
+      evalViewCriteria_right: '',
+      evalViewCriteria_front: '',
+      evalViewCriteria_rear: '',
+      evalViewCriteria_sangle: '',
+      evalViewCriteria_angle: '',
+      heroEvalCriteria: '',           // per-category hero eval criteria override
     },
 
     // LLM phase schema (codegen: phaseSchemaRegistry.generated.js)
