@@ -8,7 +8,7 @@ export interface Operation {
   readonly productLabel: string;
   readonly stages: readonly string[];
   readonly currentStageIndex: number;
-  readonly status: 'running' | 'done' | 'error';
+  readonly status: 'running' | 'done' | 'error' | 'cancelled';
   readonly startedAt: string;
   readonly endedAt: string | null;
   readonly error: string | null;
@@ -19,6 +19,7 @@ export interface Operation {
     readonly accessMode: string;
     readonly thinking: boolean;
     readonly webSearch: boolean;
+    readonly effortLevel: string;
   } | null;
   readonly subType?: string;
   readonly variantKey?: string;
@@ -53,7 +54,6 @@ export interface Operation {
   readonly queuedAt?: string;
   /** Frozen ms from optimistic insert to first WS broadcast. Stays visible. */
   readonly queueDelayMs?: number;
-  readonly streamText: string;
   /** Accumulated LLM call records — prompt, response, model per call. */
   readonly llmCalls: ReadonlyArray<LlmCallRecord>;
 }
@@ -70,32 +70,38 @@ export interface LlmCallRecord {
 
 interface OperationsState {
   readonly operations: ReadonlyMap<string, Operation>;
+  /** WHY: Separated from operations so stream appends don't clone the operations Map. */
+  readonly streamTexts: ReadonlyMap<string, string>;
   upsert: (op: Operation) => void;
   remove: (id: string) => void;
   clear: () => void;
   appendStreamText: (id: string, text: string) => void;
+  batchAppendStreamText: (chunks: ReadonlyMap<string, string>) => void;
   appendLlmCall: (id: string, call: LlmCallRecord) => void;
   updateLlmCall: (id: string, callIndex: number, call: LlmCallRecord) => void;
 }
 
 export const useOperationsStore = create<OperationsState>((set) => ({
   operations: new Map<string, Operation>(),
+  streamTexts: new Map<string, string>(),
 
   upsert: (op: Operation) =>
     set((state) => {
       const next = new Map(state.operations);
       const existing = state.operations.get(op.id);
-      // WHY: Clear streamText when operation reaches terminal state to free memory.
-      const streamText = (op.status === 'done' || op.status === 'error')
-        ? ''
-        : (existing?.streamText ?? '');
       // WHY: queueDelayMs is reported by the server (actual lab queue wait time).
       // Preserve across upserts — once set, it stays.
       const queueDelayMs = op.queueDelayMs ?? existing?.queueDelayMs;
       // WHY: llmCalls are broadcast separately (llm-call-append action), not in regular WS upsert.
       // Preserve accumulated calls from store. For hydration (GET /operations), use incoming data.
       const llmCalls = existing?.llmCalls?.length ? existing.llmCalls : (op.llmCalls ?? []);
-      next.set(op.id, { ...op, streamText, queueDelayMs, llmCalls });
+      next.set(op.id, { ...op, queueDelayMs, llmCalls });
+      // WHY: Clear stream text when operation reaches terminal state to free memory.
+      if (op.status === 'done' || op.status === 'error' || op.status === 'cancelled') {
+        const nextStreams = new Map(state.streamTexts);
+        nextStreams.delete(op.id);
+        return { operations: next, streamTexts: nextStreams };
+      }
       return { operations: next };
     }),
 
@@ -103,18 +109,36 @@ export const useOperationsStore = create<OperationsState>((set) => ({
     set((state) => {
       const next = new Map(state.operations);
       next.delete(id);
-      return { operations: next };
+      const nextStreams = new Map(state.streamTexts);
+      nextStreams.delete(id);
+      return { operations: next, streamTexts: nextStreams };
     }),
 
-  clear: () => set({ operations: new Map() }),
+  clear: () => set({ operations: new Map(), streamTexts: new Map() }),
 
+  // WHY: Only mutates streamTexts, never touches operations — so (s) => s.operations
+  // subscribers are NOT notified by stream text appends.
   appendStreamText: (id: string, text: string) =>
     set((state) => {
       const existing = state.operations.get(id);
       if (!existing || existing.status !== 'running') return state;
-      const next = new Map(state.operations);
-      next.set(id, { ...existing, streamText: existing.streamText + text });
-      return { operations: next };
+      const next = new Map(state.streamTexts);
+      next.set(id, (state.streamTexts.get(id) ?? '') + text);
+      return { streamTexts: next };
+    }),
+
+  batchAppendStreamText: (chunks: ReadonlyMap<string, string>) =>
+    set((state) => {
+      if (chunks.size === 0) return state;
+      const next = new Map(state.streamTexts);
+      let changed = false;
+      for (const [id, text] of chunks) {
+        const existing = state.operations.get(id);
+        if (!existing || existing.status !== 'running') continue;
+        next.set(id, (next.get(id) ?? '') + text);
+        changed = true;
+      }
+      return changed ? { streamTexts: next } : state;
     }),
 
   appendLlmCall: (id: string, call: LlmCallRecord) =>

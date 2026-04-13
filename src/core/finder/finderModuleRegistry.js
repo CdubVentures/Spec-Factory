@@ -56,7 +56,9 @@ export const FINDER_MODULES = Object.freeze([
     rebuildFnKey: 'rebuildColorEditionFinderFromJson',
 
     // Per-category settings (stored in {tableName}_settings table)
-    settingsDefaults: {},
+    settingsDefaults: {
+      cooldownDays: '30',              // days before finder can re-run on the same product (0 = no cooldown)
+    },
 
     // LLM phase schema (codegen: phaseSchemaRegistry.generated.js)
     promptBuilderExport: 'buildColorEditionFinderPrompt',
@@ -124,6 +126,7 @@ export const FINDER_MODULES = Object.freeze([
     // viewConfig: JSON array of {key, description} in priority order.
     // Empty string = use category defaults from CATEGORY_VIEW_DEFAULTS.
     settingsDefaults: {
+      hfToken: '',                     // HuggingFace access token for RMBG 2.0 model download (gated model)
       viewConfig: '', minWidth: '800', minHeight: '600', minFileSize: '50000',
       rmbgConcurrency: '0',            // 0 = auto-detect from system RAM; >0 = fixed ONNX inference slot count
       viewQualityConfig: '',           // JSON { [view]: { minWidth, minHeight, minFileSize } }; empty = category defaults
@@ -136,6 +139,12 @@ export const FINDER_MODULES = Object.freeze([
       heroAttemptBudget: '3',         // max hero LLM calls per variant
       viewPromptOverride: '',         // custom view prompt instructions; empty = built-in template
       heroPromptOverride: '',         // custom hero prompt instructions; empty = built-in template
+      // Carousel Builder (vision evaluator) settings
+      evalEnabled: 'true',             // enable/disable the vision evaluator
+      evalThumbSize: '512',            // thumbnail dimension for LLM vision calls
+      evalPromptOverride: '',          // custom view evaluation prompt; empty = built-in template
+      heroEvalPromptOverride: '',      // custom hero selection prompt; empty = built-in template
+      evalHeroCount: '3',             // target number of hero selections per variant
     },
 
     // LLM phase schema (codegen: phaseSchemaRegistry.generated.js)
@@ -156,6 +165,7 @@ export const FINDER_MODULES = Object.freeze([
       'image-processed': [],
       'image-deleted': [],
       'batch-processed': [],
+      'evaluate': [],
     },
 
     // Module Settings (codegen: moduleSettingsSections.generated.ts)

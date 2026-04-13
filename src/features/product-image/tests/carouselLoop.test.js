@@ -38,6 +38,7 @@ function makeFinderStoreStub(settingsOverrides = {}) {
     heroCount: '1',
     viewAttemptBudget: '3',
     heroAttemptBudget: '2',
+    reRunBudget: '0',
     ...settingsOverrides,
   };
   const runs = [];
@@ -257,9 +258,14 @@ describe('runCarouselLoop', () => {
     });
 
     assert.ok(progressEvents.length > 0, 'should have progress events');
-    assert.equal(progressEvents[0].callNumber, 1);
+    // First event is the initial pre-call emission (callNumber 0)
+    assert.equal(progressEvents[0].callNumber, 0);
     assert.equal(progressEvents[0].variant, 'color:black');
     assert.ok(typeof progressEvents[0].estimatedRemaining === 'number');
+    // Second event is after the first LLM call completes
+    if (progressEvents.length > 1) {
+      assert.equal(progressEvents[1].callNumber, 1);
+    }
   });
 
   it('rejects when no CEF data', async () => {
@@ -282,8 +288,8 @@ describe('runCarouselLoop', () => {
     assert.equal(result.totalLlmCalls, 0);
   });
 
-  it('forced cycle: runs 1 call per budget view + 1 hero when already complete', async () => {
-    const pid = 'loop-forced';
+  it('re-run budget: satisfied views get reRunBudget calls, not viewAttemptBudget', async () => {
+    const pid = 'loop-rerun';
     writeCefData(pid, SIMPLE_CEF);
     const finderStore = makeFinderStoreStub({
       satisfactionThreshold: '1',
@@ -291,6 +297,7 @@ describe('runCarouselLoop', () => {
       heroCount: '1',
       viewAttemptBudget: '3',
       heroAttemptBudget: '2',
+      reRunBudget: '1',
     });
     const specDb = makeSpecDbStub(finderStore);
 
@@ -303,26 +310,26 @@ describe('runCarouselLoop', () => {
       _modelDirOverride: path.join(TMP_ROOT, 'no-model'),
     });
 
-    // Second loop: carousel already complete → forced cycle
-    const forcedCalls = [];
-    const forcedLlm = async (args) => {
-      forcedCalls.push(args);
+    // Second loop: all views satisfied → each gets reRunBudget=1 call
+    const rerunCalls = [];
+    const rerunLlm = async (args) => {
+      rerunCalls.push(args);
       return {
-        images: [{ view: 'top', url: `http://localhost:${serverPort}/forced-${forcedCalls.length}.png`, source_page: '', alt_text: '' }],
-        discovery_log: { urls_checked: [`http://forced-${forcedCalls.length}`], queries_run: [], notes: [] },
+        images: [{ view: 'top', url: `http://localhost:${serverPort}/rerun-${rerunCalls.length}.png`, source_page: '', alt_text: '' }],
+        discovery_log: { urls_checked: [`http://rerun-${rerunCalls.length}`], queries_run: [], notes: [] },
       };
     };
 
     const result = await runCarouselLoop({
       product: { ...PRODUCT, product_id: pid },
       specDb, config: {}, productRoot: PRODUCT_ROOT,
-      _callLlmOverride: forcedLlm,
+      _callLlmOverride: rerunLlm,
       _modelDirOverride: path.join(TMP_ROOT, 'no-model'),
     });
 
-    // mouse budget = 6 views + 1 hero = 7 forced calls
+    // 6 views × 1 re-run + 1 hero × 1 re-run = 7 calls
     assert.equal(result.rejected, false);
-    assert.equal(forcedCalls.length, 7, `expected 7 forced calls (6 views + 1 hero), got ${forcedCalls.length}`);
+    assert.equal(rerunCalls.length, 7, `expected 7 re-run calls (6 views + 1 hero), got ${rerunCalls.length}`);
     assert.equal(result.totalLlmCalls, 7);
   });
 });

@@ -19,13 +19,16 @@ function makeBatcher() {
 function makeTracker() {
   const completed = [];
   const failed = [];
+  const cancelled = [];
   const emitted = [];
   return {
     completeOperation: ({ id }) => completed.push(id),
     failOperation: ({ id, error }) => failed.push({ id, error }),
+    cancelOperation: ({ id }) => cancelled.push(id),
     emitDataChange: (args) => emitted.push(args),
     completed,
     failed,
+    cancelled,
     emitted,
   };
 }
@@ -254,5 +257,119 @@ describe('fireAndForget', () => {
 
     await flush();
     assert.equal(batcher.disposed, true);
+  });
+
+  // ── Cancellation ───────────────────────────────────────────────
+
+  it('calls cancelOperation (not failOperation) when asyncWork throws AbortError', async () => {
+    const { jsonRes } = makeJsonCapture();
+    const tracker = makeTracker();
+    const op = { id: 'op-cancel-1' };
+
+    fireAndForget({
+      res: {},
+      jsonRes,
+      op,
+      asyncWork: async () => { throw new DOMException('Operation cancelled', 'AbortError'); },
+      completeOperation: tracker.completeOperation,
+      failOperation: tracker.failOperation,
+      cancelOperation: tracker.cancelOperation,
+    });
+
+    await flush();
+    assert.equal(tracker.cancelled.length, 1);
+    assert.equal(tracker.cancelled[0], 'op-cancel-1');
+    assert.equal(tracker.failed.length, 0);
+    assert.equal(tracker.completed.length, 0);
+  });
+
+  it('calls cancelOperation when asyncWork resolves but signal was aborted (loop graceful exit)', async () => {
+    const { jsonRes } = makeJsonCapture();
+    const tracker = makeTracker();
+    const op = { id: 'op-cancel-2' };
+    const controller = new AbortController();
+    controller.abort();
+
+    fireAndForget({
+      res: {},
+      jsonRes,
+      op,
+      signal: controller.signal,
+      asyncWork: async () => ({ rejected: false }),
+      completeOperation: tracker.completeOperation,
+      failOperation: tracker.failOperation,
+      cancelOperation: tracker.cancelOperation,
+    });
+
+    await flush();
+    assert.equal(tracker.cancelled.length, 1);
+    assert.equal(tracker.cancelled[0], 'op-cancel-2');
+    assert.equal(tracker.completed.length, 0);
+  });
+
+  it('emits data-change on cancel when emitArgs provided', async () => {
+    const { jsonRes } = makeJsonCapture();
+    const tracker = makeTracker();
+    const op = { id: 'op-cancel-3' };
+    const broadcastWs = () => {};
+    const emitArgs = { event: 'test-cancel', category: 'cat' };
+
+    fireAndForget({
+      res: {},
+      jsonRes,
+      op,
+      broadcastWs,
+      emitArgs,
+      asyncWork: async () => { throw new DOMException('Aborted', 'AbortError'); },
+      completeOperation: tracker.completeOperation,
+      failOperation: tracker.failOperation,
+      cancelOperation: tracker.cancelOperation,
+      emitDataChange: tracker.emitDataChange,
+    });
+
+    await flush();
+    assert.equal(tracker.emitted.length, 1);
+    assert.equal(tracker.emitted[0].event, 'test-cancel');
+  });
+
+  it('disposes batcher on cancel', async () => {
+    const { jsonRes } = makeJsonCapture();
+    const tracker = makeTracker();
+    const batcher = makeBatcher();
+    const op = { id: 'op-cancel-4' };
+
+    fireAndForget({
+      res: {},
+      jsonRes,
+      op,
+      batcher,
+      asyncWork: async () => { throw new DOMException('Aborted', 'AbortError'); },
+      completeOperation: tracker.completeOperation,
+      failOperation: tracker.failOperation,
+      cancelOperation: tracker.cancelOperation,
+    });
+
+    await flush();
+    assert.equal(batcher.disposed, true);
+    assert.equal(tracker.cancelled.length, 1);
+  });
+
+  it('existing behavior unchanged when no signal or cancelOperation provided', async () => {
+    const { jsonRes } = makeJsonCapture();
+    const tracker = makeTracker();
+    const op = { id: 'op-compat' };
+
+    fireAndForget({
+      res: {},
+      jsonRes,
+      op,
+      asyncWork: async () => ({ rejected: false }),
+      completeOperation: tracker.completeOperation,
+      failOperation: tracker.failOperation,
+    });
+
+    await flush();
+    assert.equal(tracker.completed.length, 1);
+    assert.equal(tracker.failed.length, 0);
   });
 });

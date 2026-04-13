@@ -12,11 +12,13 @@ import {
   FinderDeleteConfirmModal,
   DiscoverySummaryBar,
   FinderRunPromptDetails,
+  FinderRunModelBadge,
   FinderRunTimestamp,
   FinderSectionCard,
   useResolvedFinderModel,
   deriveCooldownState,
   deriveFinderStatusChip,
+  ColorSwatch,
 } from '../../../shared/ui/finder/index.ts';
 import type { DeleteTarget } from '../../../shared/ui/finder/types.ts';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
@@ -37,37 +39,12 @@ import type { ColorRegistryEntry } from '../types.ts';
 import { useOperationsStore } from '../../../stores/operationsStore.ts';
 import { useFireAndForget } from '../../operations/hooks/useFireAndForget.ts';
 
-/* ── Color circle (mirrors site's getCircleStyle gradient logic) ──── */
-
-function colorCircleStyle(hexParts: readonly string[]): React.CSSProperties {
-  const colors = hexParts.filter(Boolean);
-  if (colors.length === 0) return { backgroundColor: 'var(--sf-text-muted)' };
-  if (colors.length === 1) return { backgroundColor: colors[0] };
-  if (colors.length === 2) {
-    return { background: `linear-gradient(45deg, ${colors[0]} 50%, ${colors[1]} 50%)` };
-  }
-  const angle = 360 / colors.length;
-  const stops = colors.map((c, i) => `${c} ${i * angle}deg ${(i + 1) * angle}deg`);
-  const from = colors.length === 3 ? 240 : (270 - angle / 2);
-  return { background: `conic-gradient(from ${from}deg, ${stops.join(', ')})` };
-}
-
-function ColorSwatch({ hexParts, size = 'md' }: { readonly hexParts: readonly string[]; readonly size?: 'sm' | 'md' }) {
-  const sizeClass = size === 'sm' ? 'w-3 h-3' : 'w-4 h-4';
-  return (
-    <span
-      className={`inline-block ${sizeClass} rounded-sm border sf-border-soft shadow-[0_0_0_0.5px_rgba(0,0,0,0.15)] shrink-0`}
-      style={colorCircleStyle(hexParts)}
-    />
-  );
-}
-
 /* ── CEF-specific sub-components ──────────────────────────────────── */
 
 function ColorPillInline({ pill }: { readonly pill: ColorPill }) {
   return (
     <span className="inline-flex items-center gap-1.5 px-2 py-1 sf-surface-panel border sf-border-soft rounded-md text-[11px] font-semibold sf-text-primary">
-      <ColorSwatch hexParts={pill.hexParts} />
+      <ColorSwatch hexParts={pill.hexParts} size="md" />
       {pill.displayName && (
         <span className="sf-text-primary">{pill.displayName}</span>
       )}
@@ -274,8 +251,14 @@ function CefRunHistoryRow({
         </span>
         <span className="font-mono text-[10px] sf-text-muted">{row.ranAt?.split('T')[0] ?? ''}</span>
         <FinderRunTimestamp startedAt={row.startedAt} durationMs={row.durationMs} />
-        {row.model && <Chip label={row.model} className="sf-chip-neutral" />}
-        {row.fallbackUsed && <Chip label="Fallback" className="sf-chip-warning" />}
+        {row.model && (
+          <FinderRunModelBadge
+            model={row.model}
+            accessMode={row.accessMode}
+            effortLevel={row.effortLevel}
+            fallbackUsed={row.fallbackUsed}
+          />
+        )}
         <Chip label={`${row.colorCount} colors`} className="sf-chip-accent" />
         <Chip label={`${row.editionCount} editions`} className="sf-chip-purple" />
         <div className="flex-1" />
@@ -361,7 +344,7 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
   const cefRunUrl = `/color-edition-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`;
   const deleteRunMut = useDeleteColorEditionFinderRunMutation(category, productId);
   const deleteAllMut = useDeleteColorEditionFinderAllMutation(category, productId);
-  const { model: resolvedModel, accessMode: resolvedAccessMode, modelDisplay } = useResolvedFinderModel('colorFinder');
+  const { model: resolvedModel, accessMode: resolvedAccessMode, modelDisplay, effortLevel } = useResolvedFinderModel('colorFinder');
 
   const { data: colorRegistry = [] } = useQuery<ColorRegistryEntry[]>({
     queryKey: ['colors'],
@@ -421,6 +404,7 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold tracking-[0.04em] sf-chip-purple border-[1.5px] border-current">
           <ModelBadgeGroup {...badgeProps} />
           {modelDisplay}
+          {effortLevel && <span className="sf-text-muted font-normal">{effortLevel}</span>}
         </span>
       </FinderPanelHeader>
 
@@ -484,6 +468,7 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
               <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold sf-text-subtle">
                 <ModelBadgeGroup {...badgeProps} />
                 {modelDisplay}
+                {effortLevel && <span className="sf-text-muted font-normal">{effortLevel}</span>}
               </span>
             }
           >

@@ -19,8 +19,11 @@ import path from 'node:path';
 import https from 'node:https';
 import http from 'node:http';
 import { buildLlmCallDeps } from '../../core/llm/buildLlmCallDeps.js';
-import { resolvePhaseModel } from '../../core/llm/client/routing.js';
-import { stripCompositeKey } from '../../core/llm/routeResolver.js';
+import {
+  resolveModelTracking,
+  resolveAmbiguityContext,
+  buildFinderLlmCaller,
+} from '../../core/finder/finderOrchestrationHelpers.js';
 import {
   buildProductImageFinderPrompt,
   buildHeroImageFinderPrompt,
@@ -38,10 +41,8 @@ import { resolveIdentityAmbiguitySnapshot } from '../indexing/orchestration/shar
 import { readProductImages, mergeProductImageDiscovery } from './productImageStore.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 import { configInt } from '../../shared/settingsAccessor.js';
-import { processImage, loadModel, releaseModel, setInferenceConcurrency } from './imageProcessor.js';
+import { processImage, processHeroImage, loadModel, releaseModel, setInferenceConcurrency } from './imageProcessor.js';
 import { ensureModelReady } from './modelDownloader.js';
-
-const COOLDOWN_DAYS = 30;
 
 /* ── Image dimension reader (header-only) ─────────────────────────── */
 
@@ -414,11 +415,9 @@ async function runSingleVariant({
         const masterFilename = finalFilename.replace(/\.\w+$/, '.png');
         const masterPath = path.join(imagesDir, masterFilename);
 
-        const procResult = await processImage({
-          inputPath: originalPath,
-          outputPath: masterPath,
-          session: skipRmbg ? null : rmbgSession,
-        });
+        const procResult = skipRmbg
+          ? await processHeroImage({ inputPath: originalPath, outputPath: masterPath })
+          : await processImage({ inputPath: originalPath, outputPath: masterPath, session: rmbgSession });
 
         // Update metadata from processed result
         const masterBytes = procResult.ok ? procResult.bytes : result.bytes;
@@ -440,7 +439,7 @@ async function runSingleVariant({
           variant_type: variant.type,
           downloaded_at: new Date().toISOString(),
           original_filename: finalFilename,
-          bg_removed: procResult.ok ? procResult.bg_removed : false,
+          bg_removed: skipRmbg ? true : (procResult.ok ? procResult.bg_removed : false),
           original_format: originalExt || 'unknown',
         });
       } else {
@@ -486,17 +485,11 @@ export async function runProductImageFinder({
   onQueueWait = null,
   onLlmCallComplete = null,
   onVariantProgress = null,
+  signal,
 }) {
   productRoot = productRoot || defaultProductRoot();
-  const configModel = resolvePhaseModel(config, 'imageFinder') || String(config.llmModelPlan || 'unknown');
-  let actualModel = stripCompositeKey(configModel);
-  let actualFallbackUsed = false;
-
-  const wrappedOnModelResolved = (info) => {
-    if (info.model) actualModel = info.model;
-    if (info.isFallback) actualFallbackUsed = true;
-    onModelResolved?.(info);
-  };
+  const _mt = resolveModelTracking({ config, phaseKey: 'imageFinder', onModelResolved });
+  const wrappedOnModelResolved = _mt.wrappedOnModelResolved;
 
   // Read per-category settings
   const finderStore = specDb.getFinderStore('productImageFinder');
@@ -539,21 +532,10 @@ export async function runProductImageFinder({
     return { images: [], rejected: true, rejections: [{ reason_code: 'hero_disabled', message: 'Hero search is disabled for this category' }] };
   }
 
-  // Resolve identity ambiguity from product family
-  let familyModelCount = 1;
-  let ambiguityLevel = 'easy';
-  try {
-    const ambiguitySnapshot = await resolveIdentityAmbiguitySnapshot({
-      config,
-      category: product.category,
-      identityLock: { brand: product.brand, base_model: product.base_model },
-      specDb,
-    });
-    familyModelCount = ambiguitySnapshot.family_model_count || 1;
-    ambiguityLevel = ambiguitySnapshot.ambiguity_level || 'easy';
-  } catch {
-    // Non-fatal — fall back to easy
-  }
+  const { familyModelCount, ambiguityLevel } = await resolveAmbiguityContext({
+    config, category: product.category, brand: product.brand,
+    baseModel: product.base_model, specDb, resolveFn: resolveIdentityAmbiguitySnapshot,
+  });
 
   // Read CEF data — gate: must have colors
   const cefPath = path.join(productRoot, product.product_id, 'color_edition.json');
@@ -601,16 +583,15 @@ export async function runProductImageFinder({
     onModelResolved: wrappedOnModelResolved,
     onStreamChunk,
     onQueueWait,
+    signal,
   });
-  const callLlm = _callLlmOverride
-    ? (domainArgs) => _callLlmOverride(domainArgs, { onModelResolved: wrappedOnModelResolved })
-    : mode === 'hero'
-      ? createHeroImageFinderCallLlm(llmDeps)
-      : createProductImageFinderCallLlm(llmDeps);
+  const callLlmFactory = mode === 'hero' ? createHeroImageFinderCallLlm : createProductImageFinderCallLlm;
+  const callLlm = buildFinderLlmCaller({ _callLlmOverride, wrappedOnModelResolved, createCallLlm: callLlmFactory, llmDeps });
 
   // Load RMBG model (once before variant loop)
   const modelDir = _modelDirOverride || path.join(productRoot, '..', 'models', 'rmbg-2.0');
-  const modelStatus = await ensureModelReady({ modelDir });
+  const hfToken = finderStore.getSetting('hfToken') || '';
+  const modelStatus = await ensureModelReady({ modelDir, token: hfToken });
   let rmbgSession = null;
   if (modelStatus.ready) {
     rmbgSession = await loadModel({ modelDir });
@@ -623,9 +604,7 @@ export async function runProductImageFinder({
   if (rmbgConcurrency > 0) setInferenceConcurrency(rmbgConcurrency);
 
   // Fire all variants concurrently with 1s stagger
-  const now = new Date();
-  const cooldownUntil = new Date(now.getTime() + COOLDOWN_DAYS * 24 * 60 * 60 * 1000).toISOString();
-  const ranAt = now.toISOString();
+  const ranAt = new Date().toISOString();
   const STAGGER_MS = 1000;
 
   // Fire all variants with 1s stagger, persist each as it completes
@@ -680,14 +659,14 @@ export async function runProductImageFinder({
         onLlmCallComplete?.({
           prompt: { system: systemPrompt, user: userMsg },
           response: null,
-          model: actualModel,
+          model: _mt.actualModel,
           variant: variant.label,
           mode,
         });
 
         const result = await runSingleVariant({
           product, variant, viewConfig: effectiveViewConfig, viewQualityMap,
-          callLlm, productRoot, specDb, actualModel, actualFallbackUsed, logger,
+          callLlm, productRoot, specDb, actualModel: _mt.actualModel, actualFallbackUsed: _mt.actualFallbackUsed, logger,
           siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery,
           rmbgSession,
           promptOverride: mode === 'hero' ? heroPromptOverride : viewPromptOverride,
@@ -707,7 +686,7 @@ export async function runProductImageFinder({
         onLlmCallComplete?.({
           prompt: { system: systemPrompt, user: userMsg },
           response: responsePayload,
-          model: actualModel,
+          model: _mt.actualModel,
           variant: variant.label,
           mode,
         });
@@ -715,13 +694,15 @@ export async function runProductImageFinder({
         const merged = mergeProductImageDiscovery({
           productId: product.product_id,
           productRoot,
-          newDiscovery: { category: product.category, cooldown_until: cooldownUntil, last_ran_at: ranAt },
+          newDiscovery: { category: product.category, cooldown_until: '', last_ran_at: ranAt },
           run: {
             mode,
             started_at: variantStartedAt,
             duration_ms: variantDurationMs,
-            model: actualModel,
-            fallback_used: actualFallbackUsed,
+            model: _mt.actualModel,
+            fallback_used: _mt.actualFallbackUsed,
+            effort_level: _mt.actualEffortLevel,
+            access_mode: _mt.actualAccessMode,
             selected,
             prompt: { system: systemPrompt, user: userMsg },
             response: responsePayload,
@@ -735,9 +716,11 @@ export async function runProductImageFinder({
           product_id: product.product_id,
           run_number: latestRun.run_number,
           ran_at: ranAt,
-          model: actualModel,
-          fallback_used: actualFallbackUsed,
-          cooldown_until: cooldownUntil,
+          model: _mt.actualModel,
+          fallback_used: _mt.actualFallbackUsed,
+          effort_level: _mt.actualEffortLevel,
+          access_mode: _mt.actualAccessMode,
+          cooldown_until: '',
           selected,
           prompt: latestRun.prompt,
           response: latestRun.response,
@@ -748,7 +731,7 @@ export async function runProductImageFinder({
           product_id: product.product_id,
           images: merged.selected.images.map(img => ({ view: img.view, filename: img.filename, variant_key: img.variant_key })),
           image_count: merged.selected.images.length,
-          cooldown_until: cooldownUntil,
+          cooldown_until: '',
           latest_ran_at: ranAt,
           run_count: merged.run_count,
         });
@@ -782,7 +765,7 @@ export async function runProductImageFinder({
     images: allImages,
     download_errors: allErrors,
     variants_processed: variants.length,
-    fallbackUsed: actualFallbackUsed,
+    fallbackUsed: _mt.actualFallbackUsed,
     rejected: false,
     carouselProgress,
     carouselSettings: { viewAttemptBudget, heroAttemptBudget, heroEnabled },
@@ -816,18 +799,12 @@ export async function runCarouselLoop({
   onQueueWait = null,
   onLlmCallComplete = null,
   onLoopProgress = null,
+  signal,
 }) {
   productRoot = productRoot || defaultProductRoot();
   const loopId = `loop-${Date.now()}`;
-  const configModel = resolvePhaseModel(config, 'imageFinder') || String(config.llmModelPlan || 'unknown');
-  let actualModel = stripCompositeKey(configModel);
-  let actualFallbackUsed = false;
-
-  const wrappedOnModelResolved = (info) => {
-    if (info.model) actualModel = info.model;
-    if (info.isFallback) actualFallbackUsed = true;
-    onModelResolved?.(info);
-  };
+  const _mtLoop = resolveModelTracking({ config, phaseKey: 'imageFinder', onModelResolved });
+  const wrappedOnModelResolved = _mtLoop.wrappedOnModelResolved;
 
   // Read per-category settings
   const finderStore = specDb.getFinderStore('productImageFinder');
@@ -859,21 +836,15 @@ export async function runCarouselLoop({
   const heroCount = parseInt(finderStore.getSetting('heroCount'), 10) || 3;
   const viewAttemptBudget = parseInt(finderStore.getSetting('viewAttemptBudget'), 10) || 5;
   const heroAttemptBudget = parseInt(finderStore.getSetting('heroAttemptBudget'), 10) || 3;
+  const reRunBudgetRaw = parseInt(finderStore.getSetting('reRunBudget'), 10);
+  const reRunBudget = Number.isNaN(reRunBudgetRaw) ? 1 : reRunBudgetRaw;
   const viewPromptOverride = finderStore.getSetting('viewPromptOverride') || '';
   const heroPromptOverride = finderStore.getSetting('heroPromptOverride') || '';
 
-  // Resolve identity ambiguity
-  let familyModelCount = 1;
-  let ambiguityLevel = 'easy';
-  try {
-    const snap = await resolveIdentityAmbiguitySnapshot({
-      config, category: product.category,
-      identityLock: { brand: product.brand, base_model: product.base_model },
-      specDb,
-    });
-    familyModelCount = snap.family_model_count || 1;
-    ambiguityLevel = snap.ambiguity_level || 'easy';
-  } catch { /* non-fatal */ }
+  const { familyModelCount, ambiguityLevel } = await resolveAmbiguityContext({
+    config, category: product.category, brand: product.brand,
+    baseModel: product.base_model, specDb, resolveFn: resolveIdentityAmbiguitySnapshot,
+  });
 
   // Read CEF data
   const cefPath = path.join(productRoot, product.product_id, 'color_edition.json');
@@ -910,22 +881,21 @@ export async function runCarouselLoop({
 
   // Load RMBG model once
   const modelDir = _modelDirOverride || path.join(productRoot, '..', 'models', 'rmbg-2.0');
-  const modelStatus = await ensureModelReady({ modelDir });
+  const hfTokenLoop = finderStore.getSetting('hfToken') || '';
+  const modelStatus = await ensureModelReady({ modelDir, token: hfTokenLoop });
   let rmbgSession = null;
   if (modelStatus.ready) {
     rmbgSession = await loadModel({ modelDir });
   }
 
-  const now = new Date();
-  const cooldownUntil = new Date(now.getTime() + COOLDOWN_DAYS * 24 * 60 * 60 * 1000).toISOString();
-  const ranAt = now.toISOString();
+  const ranAt = new Date().toISOString();
 
   const allImages = [];
   const allErrors = [];
   let totalLlmCalls = 0;
 
   // Shared: execute one LLM call, persist, report progress
-  async function executeOneCall({ variant, callMode, focusView, estimatedRemaining, variantIndex, variantTotal }) {
+  async function executeOneCall({ variant, callMode, focusView, estimatedRemaining, variantIndex, variantTotal, viewAttemptCounts: vatCounts, heroAttemptCount: haCnt }) {
     // WHY: Cycle stage back to Discovery on each new call so the sidebar
     // pipeline animates Discovery → Download → Processing → (next call) Discovery → ...
     onStageAdvance?.('Discovery');
@@ -947,13 +917,11 @@ export async function runCarouselLoop({
       onModelResolved: wrappedOnModelResolved,
       onStreamChunk,
       onQueueWait,
+      signal,
     });
 
-    const callLlm = _callLlmOverride
-      ? (domainArgs) => _callLlmOverride(domainArgs, { onModelResolved: wrappedOnModelResolved })
-      : callMode === 'hero'
-        ? createHeroImageFinderCallLlm(llmDeps)
-        : createProductImageFinderCallLlm(llmDeps);
+    const callLlmFactory = callMode === 'hero' ? createHeroImageFinderCallLlm : createProductImageFinderCallLlm;
+    const callLlm = buildFinderLlmCaller({ _callLlmOverride, wrappedOnModelResolved, createCallLlm: callLlmFactory, llmDeps });
 
     let effectiveViewConfig = viewConfig;
     if (callMode === 'view' && focusView) {
@@ -978,14 +946,14 @@ export async function runCarouselLoop({
     onLlmCallComplete?.({
       prompt: { system: systemPrompt, user: userMsg },
       response: null,
-      model: actualModel,
+      model: _mtLoop.actualModel,
       variant: variant.label,
       mode: callMode,
     });
 
     const result = await runSingleVariant({
       product, variant, viewConfig: effectiveViewConfig, viewQualityMap,
-      callLlm, productRoot, specDb, actualModel, actualFallbackUsed, logger,
+      callLlm, productRoot, specDb, actualModel: _mtLoop.actualModel, actualFallbackUsed: _mtLoop.actualFallbackUsed, logger,
       siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery,
       rmbgSession,
       promptOverride: callMode === 'hero' ? heroPromptOverride : viewPromptOverride,
@@ -1013,7 +981,7 @@ export async function runCarouselLoop({
     onLlmCallComplete?.({
       prompt: { system: systemPrompt, user: userMsg },
       response: responsePayload,
-      model: actualModel,
+      model: _mtLoop.actualModel,
       variant: variant.label,
       mode: callMode,
     });
@@ -1021,14 +989,16 @@ export async function runCarouselLoop({
     const merged = mergeProductImageDiscovery({
       productId: product.product_id,
       productRoot,
-      newDiscovery: { category: product.category, cooldown_until: cooldownUntil, last_ran_at: ranAt },
+      newDiscovery: { category: product.category, cooldown_until: '', last_ran_at: ranAt },
       run: {
         mode: callMode,
         loop_id: loopId,
         started_at: callStartedAt,
         duration_ms: callDurationMs,
-        model: actualModel,
-        fallback_used: actualFallbackUsed,
+        model: _mtLoop.actualModel,
+        fallback_used: _mtLoop.actualFallbackUsed,
+        effort_level: _mtLoop.actualEffortLevel,
+        access_mode: _mtLoop.actualAccessMode,
         selected,
         prompt: { system: systemPrompt, user: userMsg },
         response: responsePayload,
@@ -1042,9 +1012,11 @@ export async function runCarouselLoop({
       product_id: product.product_id,
       run_number: latestRun.run_number,
       ran_at: ranAt,
-      model: actualModel,
-      fallback_used: actualFallbackUsed,
-      cooldown_until: cooldownUntil,
+      model: _mtLoop.actualModel,
+      fallback_used: _mtLoop.actualFallbackUsed,
+      effort_level: _mtLoop.actualEffortLevel,
+      access_mode: _mtLoop.actualAccessMode,
+      cooldown_until: '',
       selected,
       prompt: latestRun.prompt,
       response: latestRun.response,
@@ -1055,7 +1027,7 @@ export async function runCarouselLoop({
       product_id: product.product_id,
       images: merged.selected.images.map(img => ({ view: img.view, filename: img.filename, variant_key: img.variant_key })),
       image_count: merged.selected.images.length,
-      cooldown_until: cooldownUntil,
+      cooldown_until: '',
       latest_ran_at: ranAt,
       run_count: merged.run_count,
     });
@@ -1067,8 +1039,10 @@ export async function runCarouselLoop({
     const postCallStrategy = evaluateCarousel({
       collectedImages: postCallImages, viewBudget, satisfactionThreshold,
       heroEnabled, heroCount, variantKey: variant.key,
+      viewAttemptBudget, viewAttemptCounts: vatCounts,
+      heroAttemptBudget, heroAttemptCount: haCnt,
+      reRunBudget,
     });
-
     onLoopProgress?.({
       callNumber: totalLlmCalls,
       estimatedRemaining: Math.max(0, estimatedRemaining - 1),
@@ -1083,17 +1057,29 @@ export async function runCarouselLoop({
   }
 
   // Process variants sequentially for clean progress reporting
+  // WHY: try/catch around the loop catches AbortError from cancellation.
+  // Completed iterations already persisted — we keep that data and exit gracefully.
+  try {
   for (let vi = 0; vi < variants.length; vi++) {
+    if (signal?.aborted) break;
     const variant = variants[vi];
 
-    // Check if carousel is already complete for this variant
+    // Unified loop: evaluateCarousel handles per-view budgets via reRunBudget.
+    // Unsatisfied views get viewAttemptBudget; satisfied views get reRunBudget.
     const initialDoc = readProductImages({ productId: product.product_id, productRoot });
     const initialImages = (initialDoc?.selected?.images || []).map((img) => ({
       view: img.view, variant_key: img.variant_key, quality_pass: img.quality_pass !== false,
     }));
+
+    const viewAttemptCounts = {};
+    let heroAttemptCount = 0;
+
     const initialStrategy = evaluateCarousel({
       collectedImages: initialImages, viewBudget, satisfactionThreshold,
       heroEnabled, heroCount, variantKey: variant.key,
+      viewAttemptBudget, viewAttemptCounts,
+      heroAttemptBudget, heroAttemptCount,
+      reRunBudget,
     });
 
     // WHY: Emit initial progress before first call so the sidebar shows
@@ -1110,47 +1096,41 @@ export async function runCarouselLoop({
       carouselProgress: initialStrategy.carouselProgress,
     });
 
-    if (initialStrategy.isComplete) {
-      // Forced cycle: 1 call per budget view + 1 hero call to accumulate more candidates
-      const forcedTotal = viewBudget.length + (heroEnabled ? 1 : 0);
-      for (const view of viewBudget) {
-        await executeOneCall({ variant, callMode: 'view', focusView: view, estimatedRemaining: forcedTotal - totalLlmCalls, variantIndex: vi, variantTotal: variants.length });
+    while (true) {
+      if (signal?.aborted) break;
+      const pifDoc = readProductImages({ productId: product.product_id, productRoot });
+      const collectedImages = (pifDoc?.selected?.images || []).map((img) => ({
+        view: img.view, variant_key: img.variant_key, quality_pass: img.quality_pass !== false,
+      }));
+
+      const strategy = evaluateCarousel({
+        collectedImages, viewBudget, satisfactionThreshold,
+        heroEnabled, heroCount, variantKey: variant.key,
+        viewAttemptBudget, viewAttemptCounts,
+        heroAttemptBudget, heroAttemptCount,
+        reRunBudget,
+      });
+
+      if (strategy.isComplete) break;
+
+      const focusView = strategy.focusView;
+      const callMode = strategy.mode;
+
+      // WHY: Increment BEFORE the call so the progress emission inside
+      // executeOneCall reflects this call as counted.
+      if (callMode === 'view' && focusView) {
+        viewAttemptCounts[focusView] = (viewAttemptCounts[focusView] || 0) + 1;
+      } else if (callMode === 'hero') {
+        heroAttemptCount++;
       }
-      if (heroEnabled) {
-        await executeOneCall({ variant, callMode: 'hero', focusView: null, estimatedRemaining: 0, variantIndex: vi, variantTotal: variants.length });
-      }
-    } else {
-      // Normal loop: views (focused) → heroes → done
-      const viewAttemptCounts = {};
-      let heroAttemptCount = 0;
 
-      while (true) {
-        const pifDoc = readProductImages({ productId: product.product_id, productRoot });
-        const collectedImages = (pifDoc?.selected?.images || []).map((img) => ({
-          view: img.view, variant_key: img.variant_key, quality_pass: img.quality_pass !== false,
-        }));
-
-        const strategy = evaluateCarousel({
-          collectedImages, viewBudget, satisfactionThreshold,
-          heroEnabled, heroCount, variantKey: variant.key,
-          viewAttemptBudget, viewAttemptCounts,
-          heroAttemptBudget, heroAttemptCount,
-        });
-
-        if (strategy.isComplete) break;
-
-        const focusView = strategy.focusView;
-        const callMode = strategy.mode;
-
-        await executeOneCall({ variant, callMode, focusView, estimatedRemaining: strategy.estimatedCallsRemaining, variantIndex: vi, variantTotal: variants.length });
-
-        if (callMode === 'view' && focusView) {
-          viewAttemptCounts[focusView] = (viewAttemptCounts[focusView] || 0) + 1;
-        } else if (callMode === 'hero') {
-          heroAttemptCount++;
-        }
-      }
+      await executeOneCall({ variant, callMode, focusView, estimatedRemaining: strategy.estimatedCallsRemaining, variantIndex: vi, variantTotal: variants.length, viewAttemptCounts, heroAttemptCount });
     }
+  }
+  } catch (err) {
+    // WHY: AbortError from in-flight LLM call during cancellation. Completed iterations
+    // already persisted — fall through to return accumulated results.
+    if (err.name !== 'AbortError' && !signal?.aborted) throw err;
   }
 
   onStageAdvance?.('Complete');
@@ -1166,6 +1146,7 @@ export async function runCarouselLoop({
       collectedImages: finalImages,
       viewBudget, satisfactionThreshold, heroEnabled, heroCount,
       variantKey: v.key,
+      viewAttemptBudget, heroAttemptBudget, reRunBudget,
     }).carouselProgress;
   }
 
@@ -1174,7 +1155,7 @@ export async function runCarouselLoop({
     download_errors: allErrors,
     variants_processed: variants.length,
     totalLlmCalls,
-    fallbackUsed: actualFallbackUsed,
+    fallbackUsed: _mtLoop.actualFallbackUsed,
     rejected: false,
     carouselProgress,
     carouselSettings: { viewAttemptBudget, heroAttemptBudget, heroEnabled },

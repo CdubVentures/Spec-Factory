@@ -20,6 +20,18 @@ export interface ProductImageEntry {
   original_format?: string;
   /** True when RMBG succeeded but trim produced empty canvas. */
   trim_failed?: boolean;
+  /** True = LLM vision evaluator chose this as the best image for its view. */
+  eval_best?: boolean;
+  /** Vision evaluator flags: 'watermark' | 'badge' | 'cropped' | 'wrong_product'. */
+  eval_flags?: string[];
+  /** LLM vision evaluator explanation for the ranking. */
+  eval_reasoning?: string;
+  /** Source URL of the evaluated image. */
+  eval_source?: string;
+  /** Selected as a hero shot by the carousel builder. */
+  hero?: boolean;
+  /** Order among hero shots (1 = primary). */
+  hero_rank?: number | null;
 }
 
 export interface ProductImageFinderRun {
@@ -27,6 +39,8 @@ export interface ProductImageFinderRun {
   ran_at: string;
   model: string;
   fallback_used: boolean;
+  effort_level?: string;
+  access_mode?: string;
   /** Run mode: 'view' for angle-based, 'hero' for studio product shots. Absent on legacy runs. */
   mode?: 'view' | 'hero';
   /** Shared ID across all runs in a single loop invocation. Absent on non-loop runs. */

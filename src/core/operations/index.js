@@ -9,6 +9,8 @@ export {
   appendLlmCall,
   completeOperation,
   failOperation,
+  cancelOperation,
+  getOperationSignal,
   dismissOperation,
   listOperations,
 } from './operationsRegistry.js';

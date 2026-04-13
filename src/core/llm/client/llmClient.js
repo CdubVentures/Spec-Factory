@@ -506,14 +506,14 @@ async function requestChatCompletion({
   baseUrl,
   apiKey,
   body,
-  controller,
+  signal,
   onStreamChunk,
 }) {
   const parsedBody = await providerClient.request({
     baseUrl,
     apiKey,
     body,
-    signal: controller.signal,
+    signal,
     onDelta: onStreamChunk,
   });
 
@@ -559,6 +559,9 @@ export async function callLlmProvider({
   providerHealth,
   logger,
   onStreamChunk,
+  // WHY: External abort signal from operation cancellation. Combined with
+  // the internal timeout controller so both cancellation and timeout work.
+  signal: externalSignal,
 }) {
   const model = route.model || flatModel || '';
   const apiKey = route.apiKey || flatApiKey || '';
@@ -802,6 +805,10 @@ export async function callLlmProvider({
   try {
     controller = new AbortController();
     timer = setTimeout(() => controller.abort(), timeoutMs);
+    // WHY: Compose external cancel signal with internal timeout so both work.
+    const effectiveSignal = externalSignal
+      ? AbortSignal.any([externalSignal, controller.signal])
+      : controller.signal;
     callStartMs = Date.now();
     const useJsonSchema = Boolean(jsonSchemaRequested);
     const firstBody = buildBody({ useJsonSchema });
@@ -810,7 +817,7 @@ export async function callLlmProvider({
       baseUrl: baseUrlNormalized,
       apiKey,
       body: firstBody,
-      controller,
+      signal: effectiveSignal,
       onStreamChunk,
     });
     const firstUsage = await emitUsage({
@@ -852,7 +859,7 @@ export async function callLlmProvider({
         baseUrl: baseUrlNormalized,
         apiKey,
         body: retryBody,
-        controller,
+        signal: effectiveSignal,
         onStreamChunk,
       });
       const retryUsage = await emitUsage({

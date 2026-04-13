@@ -2,7 +2,7 @@
  * RMBG 2.0 model downloader.
  *
  * Downloads the ONNX model weights from HuggingFace to .workspace/models/rmbg-2.0/.
- * Requires HF_TOKEN env var for authenticated download (model is gated).
+ * Requires hfToken setting (via GUI settings) for authenticated download (model is gated).
  * Atomic: writes to .tmp first, renames on completion.
  */
 
@@ -18,11 +18,11 @@ const HF_DOWNLOAD_URL = 'https://huggingface.co/briaai/RMBG-2.0/resolve/main/onn
  *
  * @param {object} opts
  * @param {string} opts.modelDir — directory for model files
+ * @param {string} [opts.token=''] — HuggingFace token (from config.hfToken)
  * @param {Function} [opts._fetchOverride] — DI seam for testing: (url, destPath) => Promise<void>
- * @param {string} [opts._tokenOverride] — DI seam for testing: override HF_TOKEN
  * @returns {Promise<{ready: boolean, path?: string, error?: string}>}
  */
-export async function ensureModelReady({ modelDir, _fetchOverride = null, _tokenOverride = undefined }) {
+export async function ensureModelReady({ modelDir, token = '', _fetchOverride = null }) {
   try {
     const modelPath = path.join(modelDir, MODEL_FILENAME);
 
@@ -46,14 +46,12 @@ export async function ensureModelReady({ modelDir, _fetchOverride = null, _token
       }
     }
 
-    // Check for HF token
-    const token = _tokenOverride !== undefined ? _tokenOverride : (process.env.HF_TOKEN || '');
     if (!token) {
       return {
         ready: false,
         error: `RMBG 2.0 model not found at ${modelPath}. To download:\n` +
           `  1. Create a HuggingFace account and accept the RMBG 2.0 license at https://huggingface.co/briaai/RMBG-2.0\n` +
-          `  2. Set HF_TOKEN env var with your access token for auto-download\n` +
+          `  2. Set hfToken in Product Image Finder settings with your access token\n` +
           `  3. Or manually download model_int8.onnx from the onnx/ folder to ${modelDir}`,
       };
     }

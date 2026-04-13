@@ -299,6 +299,64 @@ async function runPipeline(inputPath, outputPath, session) {
   };
 }
 
+/* ── Hero image processing: center-crop to 16:9 ─────────────────── */
+
+const HERO_ASPECT = 16 / 9;
+
+/**
+ * Process a hero image: center-crop to 16:9 aspect ratio, save as PNG.
+ *
+ * @param {object} opts
+ * @param {string} opts.inputPath — source image
+ * @param {string} opts.outputPath — destination PNG path
+ * @returns {Promise<{ok, width, height, bytes, error?}>}
+ */
+export async function processHeroImage({ inputPath, outputPath }) {
+  try {
+    if (!fs.existsSync(inputPath)) {
+      return { ok: false, width: 0, height: 0, bytes: 0, error: 'input not found' };
+    }
+
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+
+    const meta = await sharp(inputPath).metadata();
+    const srcW = meta.width;
+    const srcH = meta.height;
+    const srcAspect = srcW / srcH;
+
+    let cropW, cropH, left, top;
+
+    if (Math.abs(srcAspect - HERO_ASPECT) < 0.01) {
+      // Already 16:9 — no crop needed
+      cropW = srcW;
+      cropH = srcH;
+      left = 0;
+      top = 0;
+    } else if (srcAspect > HERO_ASPECT) {
+      // Wider than 16:9 — crop width
+      cropH = srcH;
+      cropW = Math.round(srcH * HERO_ASPECT);
+      left = Math.round((srcW - cropW) / 2);
+      top = 0;
+    } else {
+      // Taller than 16:9 — crop height
+      cropW = srcW;
+      cropH = Math.round(srcW / HERO_ASPECT);
+      left = 0;
+      top = Math.round((srcH - cropH) / 2);
+    }
+
+    const info = await sharp(inputPath)
+      .extract({ left, top, width: cropW, height: cropH })
+      .png()
+      .toFile(outputPath);
+
+    return { ok: true, width: info.width, height: info.height, bytes: info.size };
+  } catch (err) {
+    return { ok: false, width: 0, height: 0, bytes: 0, error: err.message };
+  }
+}
+
 /* ── Tensor helpers ──────────────────────────────────────────────── */
 
 /**

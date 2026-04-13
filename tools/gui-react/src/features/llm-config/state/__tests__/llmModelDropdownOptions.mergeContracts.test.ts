@@ -33,8 +33,8 @@ describe('buildModelDropdownOptions merge contracts', () => {
           }),
         ],
         expected: [
-          { value: 'p1:gpt-4o', label: 'gpt-4o', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
-          { value: 'p1:gpt-4o-mini', label: 'gpt-4o-mini', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+          { value: 'p1:gpt-4o', label: 'gpt-4o', providerId: 'p1', providerName: 'OpenAI', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+          { value: 'p1:gpt-4o-mini', label: 'gpt-4o-mini', providerId: 'p1', providerName: 'OpenAI', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
         ],
       },
       {
@@ -48,7 +48,7 @@ describe('buildModelDropdownOptions merge contracts', () => {
           }),
         ],
         expected: [
-          { value: 'p1:gpt-4o', label: 'gpt-4o', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+          { value: 'p1:gpt-4o', label: 'gpt-4o', providerId: 'p1', providerName: 'OpenAI', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
           { value: 'other-model', label: 'other-model', providerId: null },
         ],
       },
@@ -68,12 +68,12 @@ describe('buildModelDropdownOptions merge contracts', () => {
           }),
         ],
         expected: [
-          { value: 'p1:shared-model', label: 'shared-model', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
-          { value: 'p2:shared-model', label: 'shared-model', providerId: 'p2', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+          { value: 'p1:shared-model', label: 'shared-model', providerId: 'p1', providerName: 'Provider A', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+          { value: 'p2:shared-model', label: 'shared-model', providerId: 'p2', providerName: 'Provider B', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
         ],
       },
       {
-        name: 'providerless registry labels fall back to the bare model id',
+        name: 'providerless registry labels fall back to the provider id',
         flat: [],
         registry: [
           makeProvider({
@@ -83,7 +83,7 @@ describe('buildModelDropdownOptions merge contracts', () => {
           }),
         ],
         expected: [
-          { value: 'p1:gpt-4o', label: 'gpt-4o', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+          { value: 'p1:gpt-4o', label: 'gpt-4o', providerId: 'p1', providerName: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
         ],
       },
     ];
@@ -115,11 +115,11 @@ describe('buildModelDropdownOptions merge contracts', () => {
         ],
         roleFilter: 'embedding' as const,
         expected: [
-          { value: 'p1:embed-v1', label: 'embed-v1', providerId: 'p1', role: 'embedding', costInputPer1M: 0, maxContextTokens: null },
+          { value: 'p1:embed-v1', label: 'embed-v1', providerId: 'p1', providerName: 'Anthropic', role: 'embedding', costInputPer1M: 0, maxContextTokens: null },
         ],
       },
       {
-        name: 'multi-role filter keeps the union sorted by role priority',
+        name: 'multi-role filter keeps the union sorted by cost ascending',
         flat: [],
         registry: [
           makeProvider({
@@ -134,8 +134,8 @@ describe('buildModelDropdownOptions merge contracts', () => {
         ],
         roleFilter: ['primary', 'reasoning'] as const,
         expected: [
-          { value: 'p1:model-reasoning', label: 'model-reasoning', providerId: 'p1', role: 'reasoning', costInputPer1M: 0, maxContextTokens: null },
-          { value: 'p1:model-base', label: 'model-base', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+          { value: 'p1:model-base', label: 'model-base', providerId: 'p1', providerName: 'Mixed', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+          { value: 'p1:model-reasoning', label: 'model-reasoning', providerId: 'p1', providerName: 'Mixed', role: 'reasoning', costInputPer1M: 0, maxContextTokens: null },
         ],
       },
       {
@@ -150,7 +150,7 @@ describe('buildModelDropdownOptions merge contracts', () => {
         ],
         roleFilter: 'embedding' as const,
         expected: [
-          { value: 'p1:embed-model', label: 'embed-model', providerId: 'p1', role: 'embedding', costInputPer1M: 0, maxContextTokens: null },
+          { value: 'p1:embed-model', label: 'embed-model', providerId: 'p1', providerName: 'Provider', role: 'embedding', costInputPer1M: 0, maxContextTokens: null },
         ],
       },
       {
@@ -165,7 +165,7 @@ describe('buildModelDropdownOptions merge contracts', () => {
         ],
         roleFilter: 'embedding' as const,
         expected: [
-          { value: 'p1:shared-embed', label: 'shared-embed', providerId: 'p1', role: 'embedding', costInputPer1M: 0, maxContextTokens: null },
+          { value: 'p1:shared-embed', label: 'shared-embed', providerId: 'p1', providerName: 'Provider', role: 'embedding', costInputPer1M: 0, maxContextTokens: null },
         ],
       },
     ];
@@ -253,8 +253,8 @@ describe('buildModelDropdownOptions merge contracts', () => {
     deepStrictEqual(
       buildModelDropdownOptions([], registry),
       [
-        { value: 'p1:model-a', label: 'model-a', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
-        { value: 'p2:model-b', label: 'model-b', providerId: 'p2', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+        { value: 'p1:model-a', label: 'model-a', providerId: 'p1', providerName: 'Provider A', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+        { value: 'p2:model-b', label: 'model-b', providerId: 'p2', providerName: 'Provider B', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
       ],
     );
   });

@@ -147,6 +147,90 @@ describe('finderJsonStore — generic factory', () => {
     assert.equal(result.run_count, 1);
   });
 
+  // ── deleteRuns (batch) ────────────────────────────────────────────
+
+  it('deleteRuns removes subset, recalculates selected from remaining', () => {
+    const store = makeStore('del_batch');
+    store.write({
+      productId: 'batch-1', productRoot: TMP_ROOT,
+      data: {
+        product_id: 'batch-1', category: 'cat',
+        selected: { items: ['c'], label: 'C' },
+        cooldown_until: '', last_ran_at: '', run_count: 3, next_run_number: 4,
+        runs: [
+          { run_number: 1, ran_at: '2026-04-01', selected: { items: ['a'], label: 'A' }, cooldown_until: '' },
+          { run_number: 2, ran_at: '2026-04-02', selected: { items: ['b'], label: 'B' }, cooldown_until: '' },
+          { run_number: 3, ran_at: '2026-04-03', selected: { items: ['c'], label: 'C' }, cooldown_until: '2026-05-03' },
+        ],
+      },
+    });
+    const result = store.deleteRuns({ productId: 'batch-1', productRoot: TMP_ROOT, runNumbers: [2, 3] });
+    assert.equal(result.run_count, 1);
+    assert.deepEqual(result.selected, { items: ['a'], label: 'A' });
+    // WHY: recalculateFromRuns derives next_run_number from max remaining + 1
+    assert.equal(result.next_run_number, 2);
+  });
+
+  it('deleteRuns all runs → returns null, file removed', () => {
+    const store = makeStore('del_batch_all');
+    store.write({
+      productId: 'batch-all', productRoot: TMP_ROOT,
+      data: {
+        product_id: 'batch-all', category: 'cat',
+        selected: { items: ['x'], label: 'X' },
+        cooldown_until: '', last_ran_at: '', run_count: 2, next_run_number: 3,
+        runs: [
+          { run_number: 1, ran_at: '2026-04-01', selected: { items: ['x'], label: 'X' }, cooldown_until: '' },
+          { run_number: 2, ran_at: '2026-04-02', selected: { items: ['y'], label: 'Y' }, cooldown_until: '' },
+        ],
+      },
+    });
+    const result = store.deleteRuns({ productId: 'batch-all', productRoot: TMP_ROOT, runNumbers: [1, 2] });
+    assert.equal(result, null);
+    assert.equal(store.read({ productId: 'batch-all', productRoot: TMP_ROOT }), null);
+  });
+
+  it('deleteRuns with non-existent run numbers → no-op', () => {
+    const store = makeStore('del_batch_noop');
+    store.write({
+      productId: 'batch-noop', productRoot: TMP_ROOT,
+      data: {
+        product_id: 'batch-noop', category: 'cat',
+        selected: { items: ['a'], label: 'A' },
+        cooldown_until: '', last_ran_at: '', run_count: 1, next_run_number: 2,
+        runs: [
+          { run_number: 1, ran_at: '2026-04-01', selected: { items: ['a'], label: 'A' }, cooldown_until: '' },
+        ],
+      },
+    });
+    const result = store.deleteRuns({ productId: 'batch-noop', productRoot: TMP_ROOT, runNumbers: [99, 100] });
+    assert.equal(result.run_count, 1, 'no runs should be removed');
+    assert.deepEqual(result.selected, { items: ['a'], label: 'A' });
+  });
+
+  it('deleteRuns with empty array → no-op', () => {
+    const store = makeStore('del_batch_empty');
+    store.write({
+      productId: 'batch-empty', productRoot: TMP_ROOT,
+      data: {
+        product_id: 'batch-empty', category: 'cat',
+        selected: { items: ['a'], label: 'A' },
+        cooldown_until: '', last_ran_at: '', run_count: 1, next_run_number: 2,
+        runs: [
+          { run_number: 1, ran_at: '2026-04-01', selected: { items: ['a'], label: 'A' }, cooldown_until: '' },
+        ],
+      },
+    });
+    const result = store.deleteRuns({ productId: 'batch-empty', productRoot: TMP_ROOT, runNumbers: [] });
+    assert.equal(result.run_count, 1);
+  });
+
+  it('deleteRuns on missing product → returns null', () => {
+    const store = makeStore('del_batch_missing');
+    const result = store.deleteRuns({ productId: 'ghost', productRoot: TMP_ROOT, runNumbers: [1, 2] });
+    assert.equal(result, null);
+  });
+
   // ── deleteAll ─────────────────────────────────────────────────────
 
   it('deleteAll removes file', () => {

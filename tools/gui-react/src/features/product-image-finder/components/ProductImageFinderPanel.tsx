@@ -13,16 +13,17 @@ import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import {
   FinderPanelHeader,
   FinderKpiCard,
-  FinderCooldownStrip,
   FinderPanelFooter,
   FinderDeleteConfirmModal,
   FinderRunPromptDetails,
+  FinderRunModelBadge,
   FinderRunTimestamp,
   FinderSectionCard,
   useResolvedFinderModel,
-  deriveCooldownState,
   deriveFinderStatusChip,
   formatAtomLabel,
+  ColorSwatch,
+  colorCircleStyle,
 } from '../../../shared/ui/finder/index.ts';
 import type { KpiCard, DeleteTarget } from '../../../shared/ui/finder/types.ts';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
@@ -37,6 +38,7 @@ import {
   useProductImageFinderQuery,
   useDeleteProductImageFinderAllMutation,
   useDeleteProductImageFinderRunMutation,
+  useDeleteProductImageFinderRunsBatchMutation,
   useDeleteProductImageMutation,
   useProcessProductImageMutation,
   useProcessAllProductImagesMutation,
@@ -56,37 +58,13 @@ function formatDims(w: number, h: number): string {
   return `${w}\u00D7${h}`;
 }
 
-function imageServeUrl(category: string, productId: string, filename: string): string {
-  return `/api/v1/product-image-finder/${category}/${productId}/images/${encodeURIComponent(filename)}`;
+function imageServeUrl(category: string, productId: string, filename: string, cacheBust?: number): string {
+  const base = `/api/v1/product-image-finder/${category}/${productId}/images/${encodeURIComponent(filename)}`;
+  return cacheBust ? `${base}?v=${cacheBust}` : base;
 }
 
 function originalImageServeUrl(category: string, productId: string, filename: string): string {
   return `/api/v1/product-image-finder/${category}/${productId}/images/originals/${encodeURIComponent(filename)}`;
-}
-
-/* ── Color swatch (shared pattern from CEF) ──────────────────────── */
-
-function colorCircleStyle(hexParts: readonly string[]): React.CSSProperties {
-  const colors = hexParts.filter(Boolean);
-  if (colors.length === 0) return { backgroundColor: 'var(--sf-text-muted)' };
-  if (colors.length === 1) return { backgroundColor: colors[0] };
-  if (colors.length === 2) {
-    return { background: `linear-gradient(45deg, ${colors[0]} 50%, ${colors[1]} 50%)` };
-  }
-  const angle = 360 / colors.length;
-  const stops = colors.map((c, i) => `${c} ${i * angle}deg ${(i + 1) * angle}deg`);
-  const from = colors.length === 3 ? 240 : (270 - angle / 2);
-  return { background: `conic-gradient(from ${from}deg, ${stops.join(', ')})` };
-}
-
-function ColorSwatch({ hexParts, size = 'sm' }: { readonly hexParts: readonly string[]; readonly size?: 'sm' | 'md' }) {
-  const sizeClass = size === 'sm' ? 'w-3 h-3' : 'w-4 h-4';
-  return (
-    <span
-      className={`inline-block ${sizeClass} rounded-sm border sf-border-soft shadow-[0_0_0_0.5px_rgba(0,0,0,0.15)] shrink-0`}
-      style={colorCircleStyle(hexParts)}
-    />
-  );
 }
 
 /** Convert hex (#rrggbb) to rgba at given opacity. */
@@ -286,7 +264,7 @@ function ImageLightbox({
     ? originalImageServeUrl(category, productId, img.original_filename ?? '')
     : '';
 
-  const checkerboard = img.bg_removed
+  const checkerboard = img.bg_removed && img.view !== 'hero'
     ? 'repeating-conic-gradient(#808080 0% 25%, #606060 0% 50%) 0 0 / 20px 20px'
     : 'none';
 
@@ -320,7 +298,9 @@ function ImageLightbox({
         >
           {/* Processed (left) */}
           <div className="flex-1 flex flex-col items-center gap-2 max-h-full">
-            <span className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">Processed</span>
+            <span className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">
+              {img.view === 'hero' ? 'Cropped 16:9' : 'Processed'}
+            </span>
             <div
               className="flex items-center justify-center flex-1 rounded-lg overflow-hidden"
               style={{ background: checkerboard }}
@@ -350,7 +330,7 @@ function ImageLightbox({
       >
         <Chip label={`Run #${img.run_number}`} className="sf-chip-info" />
         <Chip label={img.view} className="sf-chip-neutral" />
-        {hasOriginal && <Chip label={img.bg_removed ? 'BG Removed' : 'RAW'} className={img.bg_removed ? 'sf-chip-success' : 'sf-chip-neutral'} />}
+        {hasOriginal && <Chip label={img.bg_removed ? (img.view === 'hero' ? 'Cropped' : 'BG Removed') : 'RAW'} className={img.bg_removed ? 'sf-chip-success' : 'sf-chip-neutral'} />}
         <span className="text-[12px] text-white/80 font-mono">{formatBytes(img.bytes)}</span>
         {dims && <span className="text-[12px] text-white/60 font-mono">{dims}px</span>}
         <span className="text-[12px] text-white/50">{img.variant_label || img.variant_key}</span>
@@ -386,7 +366,6 @@ function GalleryCard({
   img,
   category,
   productId,
-  hexParts,
   onOpen,
   onDelete,
   onProcess,
@@ -395,14 +374,13 @@ function GalleryCard({
   readonly img: GalleryImage;
   readonly category: string;
   readonly productId: string;
-  readonly hexParts: readonly string[];
   readonly onOpen: () => void;
   readonly onDelete: (filename: string) => void;
   readonly onProcess: (filename: string) => void;
   readonly isProcessing: boolean;
 }) {
   const [errored, setErrored] = useState(false);
-  const src = img.filename ? imageServeUrl(category, productId, img.filename) : '';
+  const src = img.filename ? imageServeUrl(category, productId, img.filename, img.bytes) : '';
   const dims = formatDims(img.width, img.height);
 
   const passesQuality = img.quality_pass !== false; // undefined (old data) treated as pass
@@ -410,7 +388,7 @@ function GalleryCard({
   return (
     <div
       className={`sf-surface-elevated rounded-lg border overflow-hidden flex flex-col ${passesQuality ? 'sf-border-soft' : 'border-red-400/50'}`}
-      style={{ width: 160, opacity: passesQuality ? 1 : 0.6 }}
+      style={{ width: 160, opacity: (!passesQuality || img.eval_flags?.includes('watermark') || img.eval_flags?.includes('wrong_product')) ? 0.4 : 1 }}
     >
       {/* Thumbnail — clickable */}
       <button
@@ -438,11 +416,21 @@ function GalleryCard({
       {/* Meta */}
       <div className="px-2.5 py-2 flex flex-col gap-1 border-t sf-border-soft">
         <div className="flex items-center gap-1.5">
-          <ColorSwatch hexParts={hexParts} />
           <span className="text-[9px] font-bold uppercase tracking-wider sf-text-muted">{img.view}</span>
           {!passesQuality && <Chip label="low" className="sf-chip-danger" />}
           {img.bg_removed === false && img.original_filename && <Chip label="RAW" className="sf-chip-neutral" />}
+          {img.eval_best && <Chip label="BEST" className="sf-chip-success" />}
+          {img.hero && <Chip label={`H${img.hero_rank ?? ''}`} className="sf-chip-accent" />}
+          {img.eval_flags?.includes('watermark') && <Chip label="WM" className="sf-chip-danger" />}
+          {img.eval_flags?.includes('badge') && <Chip label="BDG" className="sf-chip-danger" />}
+          {img.eval_flags?.includes('cropped') && <Chip label="CROP" className="sf-chip-neutral" />}
+          {img.eval_flags?.includes('wrong_product') && <Chip label="WRONG" className="sf-chip-danger" />}
         </div>
+        {img.eval_reasoning && (
+          <span className="text-[8px] sf-text-subtle italic truncate" title={img.eval_reasoning}>
+            {img.eval_reasoning}
+          </span>
+        )}
         <span className="text-[8px] font-mono sf-text-subtle">
           {formatBytes(img.bytes)}
         </span>
@@ -469,9 +457,9 @@ function GalleryCard({
               disabled={isProcessing}
               className="text-[9px] sf-btn-ghost px-1 py-0.5 rounded"
               style={{ color: 'var(--sf-accent, #4263eb)' }}
-              title="Remove background with RMBG 2.0"
+              title={img.view === 'hero' ? 'Center-crop to 16:9' : 'Remove background with RMBG 2.0'}
             >
-              {isProcessing ? 'processing...' : 'process'}
+              {isProcessing ? 'processing...' : img.view === 'hero' ? 'crop' : 'process'}
             </button>
           )}
           {img.filename && (
@@ -506,18 +494,22 @@ function VariantRow({
   progress,
   heroEnabled,
   loopBusy,
+  evalBusy,
   onRunView,
   onRunHero,
   onLoop,
+  onEval,
 }: {
   readonly variant: VariantInfo;
   readonly imageCount: number;
   readonly progress: CarouselProgress | undefined;
   readonly heroEnabled: boolean;
   readonly loopBusy: boolean;
+  readonly evalBusy: boolean;
   readonly onRunView: () => void;
   readonly onRunHero: () => void;
   readonly onLoop: () => void;
+  readonly onEval: () => void;
 }) {
   const progressLabel = progress
     ? `${progress.viewsFilled}/${progress.viewsTotal} views · ${progress.heroCount}/${progress.heroTarget} heroes`
@@ -564,6 +556,14 @@ function VariantRow({
           title="Loop: views then heroes until carousel complete"
         >
           Loop
+        </button>
+        <button
+          onClick={onEval}
+          disabled={evalBusy || imageCount === 0}
+          className="px-2 py-1 text-[9px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed"
+          title="Carousel Builder: evaluate images and pick best per view"
+        >
+          Eval
         </button>
       </div>
     </div>
@@ -672,7 +672,14 @@ function PifRunHistoryRow({
           startedAt={run.started_at || run.response?.started_at}
           durationMs={run.duration_ms ?? run.response?.duration_ms}
         />
-        {run.model && <Chip label={run.model} className="sf-chip-neutral" />}
+        {run.model && (
+          <FinderRunModelBadge
+            model={run.model}
+            accessMode={run.access_mode}
+            effortLevel={run.effort_level}
+            fallbackUsed={run.fallback_used}
+          />
+        )}
         <span
           className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] sf-text-primary font-medium"
           style={variantBadgeBgStyle(hexParts)}
@@ -770,11 +777,13 @@ function PifLoopGroup({
   hexMap,
   editions,
   onDeleteRun,
+  onDeleteLoop,
 }: {
   readonly group: RunGroup;
   readonly hexMap: Map<string, string>;
   readonly editions: Record<string, { display_name?: string; colors?: string[] }>;
   readonly onDeleteRun: (runNumber: number) => void;
+  readonly onDeleteLoop: (runNumbers: readonly number[]) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const totalImages = group.runs.reduce((sum, r) => sum + (r.selected?.images?.length || 0), 0);
@@ -809,7 +818,14 @@ function PifLoopGroup({
           startedAt={firstRun?.started_at || firstRun?.response?.started_at}
           durationMs={firstRun?.duration_ms ?? firstRun?.response?.duration_ms}
         />
-        {firstRun?.model && <Chip label={firstRun.model} className="sf-chip-neutral" />}
+        {firstRun?.model && (
+          <FinderRunModelBadge
+            model={firstRun.model}
+            accessMode={firstRun.access_mode}
+            effortLevel={firstRun.effort_level}
+            fallbackUsed={firstRun.fallback_used}
+          />
+        )}
         <span
           className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] sf-text-primary font-medium"
           style={variantBadgeBgStyle(hexParts)}
@@ -821,6 +837,12 @@ function PifLoopGroup({
         <div className="flex-1" />
         <Chip label={`${totalImages} img`} className={totalImages > 0 ? 'sf-chip-success' : 'sf-chip-neutral'} />
         {totalErrors > 0 && <Chip label={`${totalErrors} err`} className="sf-chip-danger" />}
+        <button
+          onClick={(e) => { e.stopPropagation(); onDeleteLoop(runNumbers); }}
+          className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded sf-status-text-danger border sf-border-soft opacity-50 hover:opacity-100"
+        >
+          Del
+        </button>
       </div>
 
       {expanded && (
@@ -854,7 +876,8 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   const [expandedImageGroups, setExpandedImageGroups] = useState<Set<string>>(new Set());
 
   // LLM model for imageFinder phase (shared hook, parameterized by phase ID)
-  const { model: resolvedModel, accessMode: resolvedAccessMode, modelDisplay } = useResolvedFinderModel('imageFinder');
+  const { model: resolvedModel, accessMode: resolvedAccessMode, modelDisplay, effortLevel } = useResolvedFinderModel('imageFinder');
+  const { model: evalModel, accessMode: evalAccessMode, modelDisplay: evalModelDisplay, effortLevel: evalEffortLevel } = useResolvedFinderModel('imageEvaluator');
 
   // Color registry for hex lookup in run history badges
   const { data: colorRegistry = [] } = useQuery<ColorRegistryEntry[]>({
@@ -877,6 +900,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   const { data: pifData, isLoading, isError } = useProductImageFinderQuery(category, productId);
 
   const deleteRunMut = useDeleteProductImageFinderRunMutation(category, productId);
+  const deleteRunsBatchMut = useDeleteProductImageFinderRunsBatchMutation(category, productId);
   const deleteAllMut = useDeleteProductImageFinderAllMutation(category, productId);
   const deleteImageMut = useDeleteProductImageMutation(category, productId);
   const processImageMut = useProcessProductImageMutation(category, productId);
@@ -903,6 +927,15 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
     for (const o of ops.values()) {
       if (o.type === 'pif' && o.productId === productId && o.status === 'running' && o.variantKey && o.subType === 'loop') {
         set.add(o.variantKey);
+      }
+    }
+    return set;
+  }, [ops, productId]);
+  const evaluatingVariants = useMemo(() => {
+    const set = new Set<string>();
+    for (const o of ops.values()) {
+      if (o.type === 'pif' && o.productId === productId && o.status === 'running' && o.subType === 'evaluate') {
+        if (o.variantKey) set.add(o.variantKey);
       }
     }
     return set;
@@ -969,6 +1002,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   const fire = useFireAndForget({ type: 'pif', category, productId });
   const pifRunUrl = `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`;
   const pifLoopUrl = `${pifRunUrl}/loop`;
+  const pifEvalUrl = `${pifRunUrl}/evaluate`;
 
   const handleRunVariantView = useCallback((variantKey: string) => {
     fire(pifRunUrl, { variant_key: variantKey, mode: 'view' }, { subType: 'view', variantKey });
@@ -992,23 +1026,34 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
     }
   }, [fire, pifLoopUrl, loopingVariants]);
 
+  const handleEvalAll = useCallback(() => {
+    fire(pifEvalUrl, {}, { subType: 'evaluate' });
+  }, [fire, pifEvalUrl]);
+
+  const handleEvalVariant = useCallback((variantKey: string) => {
+    if (!evaluatingVariants.has(variantKey)) {
+      fire(pifEvalUrl, { variant_key: variantKey }, { subType: 'evaluate', variantKey });
+    }
+  }, [fire, pifEvalUrl, evaluatingVariants]);
+
   const heroEnabled = pifData?.carouselSettings?.heroEnabled ?? true;
 
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
     if (deleteTarget.kind === 'run' && deleteTarget.runNumber) {
       deleteRunMut.mutate(deleteTarget.runNumber, { onSuccess: () => setDeleteTarget(null) });
+    } else if (deleteTarget.kind === 'loop' && deleteTarget.runNumbers?.length) {
+      deleteRunsBatchMut.mutate(deleteTarget.runNumbers, { onSuccess: () => setDeleteTarget(null) });
     } else {
       deleteAllMut.mutate(undefined, { onSuccess: () => setDeleteTarget(null) });
     }
-  }, [deleteTarget, deleteRunMut, deleteAllMut]);
+  }, [deleteTarget, deleteRunMut, deleteRunsBatchMut, deleteAllMut]);
 
   if (!productId || !category) return null;
 
   const hasCefData = Boolean(variants.length);
   const effectiveResult = isError ? null : pifData;
   const statusChip = deriveFinderStatusChip(effectiveResult ?? null);
-  const cooldown = deriveCooldownState(effectiveResult ?? null);
   const imageCount = galleryImages.length;
   const runCount = effectiveResult?.run_count ?? 0;
   const runs = effectiveResult?.runs || [];
@@ -1043,6 +1088,12 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
     thinking: resolvedModel?.thinking ?? false,
     webSearch: resolvedModel?.webSearch ?? false,
   };
+  const evalBadgeProps = {
+    accessMode: evalAccessMode,
+    role: (evalModel?.useReasoning ? 'reasoning' : 'primary') as 'reasoning' | 'primary',
+    thinking: evalModel?.thinking ?? false,
+    webSearch: evalModel?.webSearch ?? false,
+  };
 
   return (
     <div className="sf-surface-panel p-0 flex flex-col">
@@ -1053,13 +1104,38 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
         title="Product Image Finder"
         tip="Finds and downloads high-resolution product images per color variant and edition. Requires CEF data."
         isRunning={isRunning}
-        runDisabled={!hasCefData || (variants.length > 0 && variants.every((v) => loopingVariants.has(v.key)))}
+        runDisabled={false}
         runLabel="Loop"
         onRun={handleLoopAll}
+        actionSlot={
+          <div className="ml-auto flex items-center gap-1.5">
+            <button
+              onClick={(e) => { e.stopPropagation(); handleEvalAll(); }}
+              disabled={!hasCefData || imageCount === 0 || evaluatingVariants.size > 0}
+              className="w-28 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed text-center"
+              title="Carousel Builder: evaluate all variants"
+            >
+              Eval All
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleLoopAll(); }}
+              disabled={!hasCefData || (variants.length > 0 && variants.every((v) => loopingVariants.has(v.key)))}
+              className="w-28 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-primary-button disabled:opacity-40 disabled:cursor-not-allowed text-center"
+            >
+              Loop
+            </button>
+          </div>
+        }
       >
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold tracking-[0.04em] sf-chip-purple border-[1.5px] border-current">
           <ModelBadgeGroup {...badgeProps} />
           {modelDisplay}
+          {effortLevel && <span className="sf-text-muted font-normal">{effortLevel}</span>}
+        </span>
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold tracking-[0.04em] sf-chip-accent border-[1.5px] border-current">
+          <ModelBadgeGroup {...evalBadgeProps} />
+          {evalModelDisplay}
+          {evalEffortLevel && <span className="sf-text-muted font-normal">{evalEffortLevel}</span>}
         </span>
       </FinderPanelHeader>
 
@@ -1080,9 +1156,6 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
               <FinderKpiCard key={card.label} value={card.value} label={card.label} tone={card.tone} />
             ))}
           </div>
-
-          {/* Cooldown Strip */}
-          {runCount > 0 && <FinderCooldownStrip cooldown={cooldown} />}
 
           {/* All Images — grouped by variant, each group collapsible */}
           {imageGroups.length > 0 && (
@@ -1144,6 +1217,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                         >
                           {'\u25B6'}
                         </span>
+                        <ColorSwatch hexParts={groupHexParts} />
                         <span className="text-[12px] font-semibold sf-text-primary truncate min-w-0 flex-1">
                           {group.label}
                         </span>
@@ -1162,7 +1236,6 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                                 img={img}
                                 category={category}
                                 productId={productId}
-                                hexParts={groupHexParts}
                                 onOpen={() => setLightboxImg(img)}
                                 onDelete={(filename) => deleteImageMut.mutate(filename)}
                                 onProcess={handleProcessImage}
@@ -1194,9 +1267,11 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                     progress={carouselProgressMap[v.key]}
                     heroEnabled={heroEnabled}
                     loopBusy={loopingVariants.has(v.key)}
+                    evalBusy={evaluatingVariants.has(v.key)}
                     onRunView={() => handleRunVariantView(v.key)}
                     onRunHero={() => handleRunVariantHero(v.key)}
                     onLoop={() => handleLoopVariant(v.key)}
+                    onEval={() => handleEvalVariant(v.key)}
                   />
                 </div>
               ))}
@@ -1228,6 +1303,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                       hexMap={hexMap}
                       editions={editions}
                       onDeleteRun={(rn) => setDeleteTarget({ kind: 'run', runNumber: rn })}
+                      onDeleteLoop={(rns) => setDeleteTarget({ kind: 'loop', runNumbers: rns })}
                     />
                   ) : (
                     <PifRunHistoryRow
@@ -1257,6 +1333,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
               <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold sf-text-subtle">
                 <ModelBadgeGroup {...badgeProps} />
                 {modelDisplay}
+                {effortLevel && <span className="sf-text-muted font-normal">{effortLevel}</span>}
               </span>
             }
           />
@@ -1268,7 +1345,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
           target={deleteTarget}
           onConfirm={handleConfirmDelete}
           onCancel={() => setDeleteTarget(null)}
-          isPending={deleteRunMut.isPending || deleteAllMut.isPending}
+          isPending={deleteRunMut.isPending || deleteRunsBatchMut.isPending || deleteAllMut.isPending}
           moduleLabel="PIF"
         />
       )}
@@ -1277,7 +1354,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
       {lightboxImg && (
         <ImageLightbox
           img={lightboxImg}
-          src={lightboxImg.filename ? imageServeUrl(category, productId, lightboxImg.filename) : ''}
+          src={lightboxImg.filename ? imageServeUrl(category, productId, lightboxImg.filename, lightboxImg.bytes) : ''}
           category={category}
           productId={productId}
           onClose={() => setLightboxImg(null)}

@@ -57,6 +57,22 @@ export function useDeleteProductImageFinderRunMutation(category: string, product
   });
 }
 
+export function useDeleteProductImageFinderRunsBatchMutation(category: string, productId: string) {
+  const queryClient = useQueryClient();
+
+  const resetQuery = useCallback(() => {
+    queryClient.removeQueries({ queryKey: ['product-image-finder', category, productId] });
+  }, [queryClient, category, productId]);
+
+  return useMutation<ProductImageFinderDeleteResponse, Error, readonly number[]>({
+    mutationFn: (runNumbers: readonly number[]) => api.del<ProductImageFinderDeleteResponse>(
+      `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/runs/batch`,
+      { runNumbers },
+    ),
+    onSuccess: resetQuery,
+  });
+}
+
 export function useDeleteProductImageMutation(category: string, productId: string) {
   const queryClient = useQueryClient();
 

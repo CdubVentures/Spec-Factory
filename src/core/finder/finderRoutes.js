@@ -9,7 +9,7 @@
  */
 
 import { emitDataChange } from '../events/dataChangeContract.js';
-import { registerOperation, updateStage, updateModelInfo, updateQueueDelay, appendLlmCall, completeOperation, failOperation, fireAndForget } from '../operations/index.js';
+import { registerOperation, getOperationSignal, updateStage, updateModelInfo, updateQueueDelay, appendLlmCall, completeOperation, failOperation, cancelOperation, fireAndForget } from '../operations/index.js';
 import { createStreamBatcher } from '../llm/streamBatcher.js';
 import { defaultProductRoot } from '../config/runtimeArtifactRoots.js';
 import fs from 'node:fs';
@@ -247,6 +247,7 @@ export function createFinderRouteHandler(finderConfig) {
           });
 
           batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
+          const signal = getOperationSignal(op.id);
 
           return fireAndForget({
             res,
@@ -254,6 +255,7 @@ export function createFinderRouteHandler(finderConfig) {
             op,
             batcher,
             broadcastWs,
+            signal,
             emitArgs: {
               event: `${routePrefix}-run`,
               category,
@@ -272,6 +274,7 @@ export function createFinderRouteHandler(finderConfig) {
               specDb,
               config,
               logger: logger || null,
+              signal,
               onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
               onModelResolved: (info) => updateModelInfo({ id: op.id, ...info }),
               onStreamChunk: (delta) => { if (delta.reasoning) batcher.push(delta.reasoning); if (delta.content) batcher.push(delta.content); },
@@ -280,6 +283,7 @@ export function createFinderRouteHandler(finderConfig) {
             }),
             completeOperation,
             failOperation,
+            cancelOperation,
             emitDataChange,
           });
         } catch (err) {
@@ -289,6 +293,56 @@ export function createFinderRouteHandler(finderConfig) {
           console.error(`[${routePrefix}] POST failed:`, message);
           return jsonRes(res, 500, { error: 'finder failed', message });
         }
+      }
+
+      // ── DELETE /:prefix/:category/:productId/runs/batch ──────────
+      if (method === 'DELETE' && category && productId && parts[3] === 'runs' && parts[4] === 'batch') {
+        const body = await ctx.readJsonBody(req);
+        const { runNumbers } = body || {};
+        if (!Array.isArray(runNumbers) || runNumbers.length === 0) {
+          return jsonRes(res, 400, { error: 'runNumbers must be a non-empty array' });
+        }
+
+        const specDb = getSpecDb(category);
+        if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+
+        for (const rn of runNumbers) deleteRunSql(specDb, productId, rn);
+
+        const deleteRunsFn = finderConfig.deleteRuns || deleteRun;
+        const updated = finderConfig.deleteRuns
+          ? deleteRunsFn({ productId, runNumbers })
+          : (() => {
+            let last = null;
+            for (const rn of runNumbers) last = deleteRun({ productId, runNumber: rn });
+            return last;
+          })();
+
+        if (updated) {
+          const summaryRow = {
+            category,
+            product_id: productId,
+            cooldown_until: updated.cooldown_until || '',
+            latest_ran_at: updated.last_ran_at || '',
+            run_count: updated.run_count || 0,
+          };
+          if (!finderConfig.skipSelectedOnDelete) {
+            Object.assign(summaryRow, updated.selected || {});
+          }
+          upsertSummary(specDb, summaryRow);
+        } else {
+          deleteAllRunsSql(specDb, productId);
+          deleteOneSql(specDb, productId);
+        }
+
+        emitDataChange({
+          broadcastWs,
+          event: `${routePrefix}-run-deleted`,
+          category,
+          entities: { productIds: [productId] },
+          meta: { productId, deletedRuns: runNumbers, remainingRuns: updated?.run_count || 0 },
+        });
+
+        return jsonRes(res, 200, { ok: true, remaining_runs: updated?.run_count || 0 });
       }
 
       // ── DELETE /:prefix/:category/:productId/runs/:runNumber ────

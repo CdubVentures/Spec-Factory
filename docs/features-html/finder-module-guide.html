@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory - How to Build a New Finder Module</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --surface-alt: #f1f3f5;
+    --border: #dee2e6;
+    --border-light: #e9ecef;
+    --text: #212529;
+    --text-muted: #6c757d;
+    --accent: #4263eb;
+    --accent-light: #edf2ff;
+    --green: #2b8a3e;
+    --green-bg: #ebfbee;
+    --red: #c92a2a;
+    --red-bg: #fff5f5;
+    --orange: #e67700;
+    --orange-bg: #fff9db;
+    --purple: #7048e8;
+    --purple-bg: #f3f0ff;
+    --teal: #0c8599;
+    --teal-bg: #e6fcf5;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.6; }
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 32px 0; text-align: center; }
+  .header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  .header p { color: var(--text-muted); font-size: 15px; margin-top: 6px; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  .section-title { font-size: 20px; font-weight: 700; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); display: flex; align-items: center; gap: 10px; }
+  .section-title .num { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+  .card-header { padding: 14px 20px; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-light); }
+  .card-body { padding: 16px 20px; font-size: 14px; }
+  .card-body p { margin-bottom: 10px; }
+  .card-body p:last-child { margin-bottom: 0; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .tag-green { background: var(--green-bg); color: var(--green); }
+  .tag-accent { background: var(--accent-light); color: var(--accent); }
+  .tag-purple { background: var(--purple-bg); color: var(--purple); }
+  .tag-teal { background: var(--teal-bg); color: var(--teal); }
+  .tag-orange { background: var(--orange-bg); color: var(--orange); }
+  .tag-red { background: var(--red-bg); color: var(--red); }
+  .detail-grid { display: grid; grid-template-columns: 170px 1fr; gap: 4px 12px; font-size: 13px; background: var(--surface-alt); padding: 12px 14px; border-radius: 6px; margin-top: 6px; }
+  .detail-grid dt { font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+  .detail-grid dd { color: var(--text); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border-light); }
+  th { background: var(--surface-alt); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
+  tr:last-child td { border-bottom: none; }
+  td code { font-family: var(--mono); font-size: 12px; background: var(--surface-alt); padding: 2px 6px; border-radius: 3px; color: var(--accent); }
+  .flow-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 24px 0; flex-wrap: wrap; }
+  .flow-box { padding: 12px 20px; border-radius: var(--radius); font-weight: 600; font-size: 13px; text-align: center; border: 2px solid; min-width: 130px; }
+  .flow-arrow { font-size: 20px; color: var(--text-muted); }
+  .flow-pass { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+  .flow-neutral { background: var(--surface-alt); border-color: var(--border); color: var(--text); }
+  .flow-accent { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .flow-teal { background: var(--teal-bg); border-color: var(--teal); color: var(--teal); }
+  .flow-repair { background: var(--purple-bg); border-color: var(--purple); color: var(--purple); }
+  pre.code-block { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 6px; padding: 16px 20px; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; overflow-x: auto; color: var(--text); margin-top: 8px; }
+  .step-list { list-style: none; counter-reset: step; padding: 0; margin: 0; }
+  .step-list li { counter-increment: step; padding: 10px 0; border-bottom: 1px solid var(--border-light); font-size: 13.5px; display: flex; align-items: flex-start; gap: 10px; }
+  .step-list li:last-child { border-bottom: none; }
+  .step-list li::before { content: counter(step); display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: white; font-size: 12px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>How to Build a New Finder Module</h1>
+  <p>Step-by-step guide for adding a third (or Nth) LLM-driven discovery module to the Spec Factory finder framework</p>
+</div>
+
+<div class="container">
+
+<!-- 1. What you get for free -->
+<div class="section-title"><span class="num">1</span> What the Framework Gives You for Free</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--green-bg);">Auto-Wired from One Registry Entry</div>
+  <div class="card-body">
+    <p>Adding one object to <code>finderModuleRegistry.js</code> auto-generates or auto-wires <strong>all</strong> of the following. You write zero boilerplate for these:</p>
+    <table>
+      <thead><tr><th>Concern</th><th>Mechanism</th></tr></thead>
+      <tbody>
+        <tr><td>SQL DDL (summary + runs + settings tables)</td><td><code>finderSqlDdl.js</code> reads registry at boot</td></tr>
+        <tr><td>SQL store instance (CRUD + runs)</td><td><code>specDb.js</code> loops <code>FINDER_MODULES</code>, creates <code>finderSqlStore</code> per module</td></tr>
+        <tr><td>Data-change events + invalidation domains</td><td><code>FINDER_DATA_CHANGE_EVENTS</code> derived from <code>dataChangeEvents</code></td></tr>
+        <tr><td>Operations Tracker chip style + label</td><td>Codegen: <code>finderModuleRegistry.generated.ts</code></td></tr>
+        <tr><td>Indexing Lab panel (lazy-loaded)</td><td>Codegen: <code>finderPanelRegistry.generated.ts</code></td></tr>
+        <tr><td>Pipeline Settings sidebar section</td><td>Codegen: <code>moduleSettingsSections.generated.ts</code></td></tr>
+        <tr><td>Phase schema preview (prompt + response)</td><td>Codegen: <code>phaseSchemaRegistry.generated.js</code></td></tr>
+        <tr><td>Frontend query invalidation routing</td><td><code>invalidationResolver.js</code> reads <code>FINDER_DATA_CHANGE_EVENTS</code></td></tr>
+        <tr><td>Reseed / rebuild from JSON</td><td><code>seedRegistry.js</code> reads <code>reseedKey</code> + <code>rebuildFnKey</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 2. What you must write -->
+<div class="section-title"><span class="num">2</span> What You Must Write</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--accent-light);">Per-Module Files (Feature Folder)</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>File</th><th>Purpose</th><th>Reference</th></tr></thead>
+      <tbody>
+        <tr><td><code>myFinderSchema.js</code></td><td>Zod schema for LLM response validation</td><td>CEF: <code>colorEditionSchema.js</code></td></tr>
+        <tr><td><code>myFinderLlmAdapter.js</code></td><td>Prompt builder(s), LLM caller factory, SPEC object</td><td>CEF: <code>colorEditionLlmAdapter.js</code></td></tr>
+        <tr><td><code>myFinderStore.js</code></td><td>JSON store (thin wrapper around <code>createFinderJsonStore</code>)</td><td>CEF: <code>colorEditionStore.js</code></td></tr>
+        <tr><td><code>myFinder.js</code></td><td>Main orchestrator</td><td>CEF: <code>colorEditionFinder.js</code></td></tr>
+        <tr><td><code>api/myFinderRoutes.js</code></td><td>Route handler (thin config over <code>createFinderRouteHandler</code>)</td><td>CEF: <code>colorEditionFinderRoutes.js</code></td></tr>
+        <tr><td><code>api/myFinderRouteContext.js</code></td><td>DI context factory</td><td>CEF: <code>colorEditionFinderRouteContext.js</code></td></tr>
+        <tr><td><code>tests/*.test.js</code></td><td>Unit + characterization tests</td><td>Any existing finder</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:12px;"><strong>Frontend:</strong></p>
+    <table>
+      <thead><tr><th>File</th><th>Purpose</th><th>Reference</th></tr></thead>
+      <tbody>
+        <tr><td><code>types.ts</code></td><td>TypeScript interfaces for API response</td><td>CEF: <code>color-edition-finder/types.ts</code></td></tr>
+        <tr><td><code>api/myFinderQueries.ts</code></td><td>React Query hooks (GET, POST, DELETE)</td><td>CEF: <code>colorEditionFinderQueries.ts</code></td></tr>
+        <tr><td><code>components/MyFinderPanel.tsx</code></td><td>Indexing Lab panel component</td><td>CEF: <code>ColorEditionFinderPanel.tsx</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 3. Step-by-step checklist -->
+<div class="section-title"><span class="num">3</span> Step-by-Step Checklist</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--teal-bg);">Backend Steps</div>
+  <div class="card-body">
+    <ol class="step-list">
+      <li>
+        <div>
+          <strong>Add LLM phase definition</strong><br>
+          <code>src/core/config/llmPhaseDefs.js</code> &mdash; add one entry:
+          <pre class="code-block">{ id: 'myFinder', uiId: 'my-finder', label: 'My Finder',
+  subtitle: 'Discovery', tip: '...',
+  roles: ['triage'], group: 'discovery',
+  globalModel: 'llmModelPlan',
+  groupToggle: 'llmPlanUseReasoning', ... }</pre>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Create feature folder</strong><br>
+          <code>src/features/my-feature/</code> with <code>api/</code> and <code>tests/</code> subdirs
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Write Zod schema</strong><br>
+          <code>myFinderSchema.js</code> &mdash; export <code>myFinderResponseSchema</code>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Write LLM adapter</strong><br>
+          <code>myFinderLlmAdapter.js</code> &mdash; export prompt builder(s), <code>createMyFinderCallLlm(deps)</code>, and the SPEC object:
+          <pre class="code-block">export const MY_FINDER_SPEC = {
+  phase: 'myFinder',
+  reason: 'my_finding',
+  role: 'triage',
+  jsonSchema: zodToLlmSchema(myFinderResponseSchema),
+};</pre>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Write JSON store</strong><br>
+          <code>myFinderStore.js</code> &mdash; thin wrapper:
+          <pre class="code-block">import { createFinderJsonStore } from '../../core/finder/finderJsonStore.js';
+
+const store = createFinderJsonStore({
+  filePrefix: 'my_feature',
+  emptySelected: () => ({ items: [] }),
+  // Optional: override recalculateSelected for accumulation (like PIF)
+});
+
+export const readMyFinder = store.read;
+export const writeMyFinder = store.write;
+export const mergeMyFinderDiscovery = store.merge;
+export const deleteMyFinderRun = store.deleteRun;
+export const deleteMyFinderAll = store.deleteAll;</pre>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Write orchestrator</strong><br>
+          <code>myFinder.js</code> &mdash; import shared helpers to avoid boilerplate:
+          <pre class="code-block">import { buildLlmCallDeps } from '../../core/llm/buildLlmCallDeps.js';
+import {
+  computeCooldownUntil,
+  resolveModelTracking,
+  resolveAmbiguityContext,
+  buildFinderLlmCaller,
+} from '../../core/finder/finderOrchestrationHelpers.js';
+import { resolveIdentityAmbiguitySnapshot }
+  from '../indexing/orchestration/shared/identityHelpers.js';
+
+export async function runMyFinder({ product, specDb, config, ... }) {
+  // 1. Model tracking (1 line instead of 12)
+  const mt = resolveModelTracking({
+    config, phaseKey: 'myFinder', onModelResolved,
+  });
+
+  // 2. Identity ambiguity (1 line instead of 15)
+  const { familyModelCount, ambiguityLevel } =
+    await resolveAmbiguityContext({
+      config, category: product.category,
+      brand: product.brand, baseModel: product.base_model,
+      specDb, resolveFn: resolveIdentityAmbiguitySnapshot,
+    });
+
+  // 3. LLM caller (1 line instead of 12)
+  const callLlm = buildFinderLlmCaller({
+    _callLlmOverride,
+    wrappedOnModelResolved: mt.wrappedOnModelResolved,
+    createCallLlm: createMyFinderCallLlm,
+    llmDeps: buildLlmCallDeps({ config, logger,
+      onPhaseChange: onStageAdvance ? (phase) =&gt; {
+        if (phase === 'writer') onStageAdvance('Writer');
+      } : undefined,
+      onModelResolved: mt.wrappedOnModelResolved,
+      onStreamChunk, onQueueWait,
+    }),
+  });
+
+  // 4. Call LLM
+  const response = await callLlm({ product, ... });
+
+  // 5. Cooldown (1 line instead of 3)
+  const { cooldownUntil, ranAt } = computeCooldownUntil();
+
+  // 6. Persist: JSON first, then SQL projection
+  // WHY: effort_level + access_mode come from resolveModelTracking.
+  // They power the FinderRunModelBadge in run history.
+  const merged = mergeMyFinderDiscovery({
+    ..., run: { model: mt.actualModel, fallback_used: mt.actualFallbackUsed,
+                effort_level: mt.actualEffortLevel,
+                access_mode: mt.actualAccessMode, ... },
+  });
+  const store = specDb.getFinderStore('myFinder');
+  store.insertRun({ ..., effort_level: mt.actualEffortLevel,
+                         access_mode: mt.actualAccessMode });
+  store.upsert({ ... });
+
+  return { ... };
+}</pre>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Write route handler</strong><br>
+          <code>api/myFinderRoutes.js</code> &mdash; thin config over the generic handler:
+          <pre class="code-block">import { createFinderRouteHandler }
+  from '../../../core/finder/finderRoutes.js';
+
+export function registerMyFinderRoutes(ctx) {
+  return createFinderRouteHandler({
+    routePrefix: 'my-finder',
+    moduleType: 'myf',
+    phase: 'myFinder',
+    fieldKeys: ['my_field'],
+
+    runFinder: ctx.runMyFinder,
+    deleteRun: ctx.deleteMyFinderRun,
+    deleteAll: ctx.deleteMyFinderAll,
+
+    getOne: (specDb, pid) =&gt;
+      specDb.getFinderStore('myFinder').get(pid),
+    listByCategory: (specDb, cat) =&gt;
+      specDb.getFinderStore('myFinder').listByCategory(cat),
+    listRuns: (specDb, pid) =&gt;
+      specDb.getFinderStore('myFinder').listRuns(pid),
+    upsertSummary: (specDb, row) =&gt;
+      specDb.getFinderStore('myFinder').upsert(row),
+    deleteOneSql: (specDb, pid) =&gt;
+      specDb.getFinderStore('myFinder').remove(pid),
+    deleteRunSql: (specDb, pid, rn) =&gt;
+      specDb.getFinderStore('myFinder').removeRun(pid, rn),
+    deleteAllRunsSql: (specDb, pid) =&gt;
+      specDb.getFinderStore('myFinder').removeAllRuns(pid),
+  });
+}</pre>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Write route context factory</strong><br>
+          <code>api/myFinderRouteContext.js</code>:
+          <pre class="code-block">import { runMyFinder } from '../myFinder.js';
+import { deleteMyFinderRun, deleteMyFinderAll }
+  from '../myFinderStore.js';
+
+export function createMyFinderRouteContext(options = {}) {
+  const { jsonRes, readJsonBody, config, appDb,
+    getSpecDb, broadcastWs, logger } = options;
+  return {
+    jsonRes, readJsonBody, config, appDb,
+    getSpecDb, broadcastWs, logger,
+    runMyFinder, deleteMyFinderRun, deleteMyFinderAll,
+  };
+}</pre>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Register in the manifest</strong><br>
+          <code>src/core/finder/finderModuleRegistry.js</code> &mdash; add one entry to <code>FINDER_MODULES</code>. See Section 4 for the full schema.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Add static imports to guiServerRuntime.js</strong><br>
+          Until <code>wireFinderRoutes</code> is wired up, add 2 imports + 1 context + 1 route definition to <code>src/app/api/guiServerRuntime.js</code>.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Run codegen</strong><br>
+          <code>node tools/gui-react/scripts/generateLlmPhaseRegistry.js</code><br>
+          This regenerates 4 files: <code>finderModuleRegistry.generated.ts</code>, <code>finderPanelRegistry.generated.ts</code>, <code>moduleSettingsSections.generated.ts</code>, <code>phaseSchemaRegistry.generated.js</code>.
+        </div>
+      </li>
+    </ol>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--purple-bg);">Frontend Steps</div>
+  <div class="card-body">
+    <ol class="step-list">
+      <li>
+        <div>
+          <strong>Create feature folder</strong><br>
+          <code>tools/gui-react/src/features/my-finder/</code> with <code>api/</code>, <code>components/</code>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Define types</strong><br>
+          <code>types.ts</code> &mdash; interfaces matching your API response shape. Derive from backend schema.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Write React Query hooks</strong><br>
+          <code>api/myFinderQueries.ts</code> &mdash; pattern:
+          <pre class="code-block">useMyFinderQuery(category, productId)  // GET
+useMyFinderRunMutation(...)            // POST (202)
+useDeleteMyFinderRunMutation(...)      // DELETE /runs/:n
+useDeleteMyFinderAllMutation(...)      // DELETE all</pre>
+          POST mutations do NOT invalidate on success &mdash; WS data-change events handle it.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Write panel component</strong><br>
+          <code>components/MyFinderPanel.tsx</code> &mdash; import shared chrome:
+          <pre class="code-block">import {
+  FinderPanelHeader, FinderKpiCard,
+  FinderCooldownStrip, FinderPanelFooter,
+  FinderDeleteConfirmModal, FinderSectionCard,
+  FinderRunModelBadge,
+  FinderRunPromptDetails, FinderRunTimestamp,
+  ColorSwatch,
+  useResolvedFinderModel,
+  deriveCooldownState, deriveFinderStatusChip,
+  formatAtomLabel,
+} from '../../../shared/ui/finder/index.ts';
+import { useFireAndForget }
+  from '../../operations/hooks/useFireAndForget.ts';
+
+// Header badge (lowercase effort):
+// &lt;ModelBadgeGroup {...badgeProps} /&gt;
+// {modelDisplay}
+// {effortLevel &amp;&amp; &lt;span&gt;{effortLevel}&lt;/span&gt;}
+
+// Run history rows (use FinderRunModelBadge):
+// &lt;FinderRunModelBadge model={run.model}
+//   accessMode={run.access_mode}
+//   effortLevel={run.effort_level}
+//   fallbackUsed={run.fallback_used} /&gt;</pre>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Export panel from feature</strong><br>
+          The codegen-generated <code>finderPanelRegistry.generated.ts</code> lazy-imports your panel by the path declared in the registry&rsquo;s <code>panelFeaturePath</code> + <code>panelExport</code>.
+        </div>
+      </li>
+    </ol>
+  </div>
+</div>
+
+<!-- 4. Registry Entry Schema -->
+<div class="section-title"><span class="num">4</span> Registry Entry Schema (Full Reference)</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--accent-light);">finderModuleRegistry.js Entry</div>
+  <div class="card-body">
+<pre class="code-block">{
+  // ── Identity ──
+  id: 'myFinder',                    // camelCase module ID (used as key everywhere)
+  routePrefix: 'my-finder',          // kebab-case URL prefix
+  moduleType: 'myf',                 // short code (operations tracker, data-change events)
+  moduleLabel: 'MYF',                // chip label in UI
+  chipStyle: 'sf-chip-warning',      // Tailwind chip class
+
+  // ── DB Schema (auto-generated DDL) ──
+  tableName: 'my_finder',
+  runsTableName: 'my_finder_runs',
+  summaryColumns: [
+    { name: 'items', type: 'TEXT', default: "'[]'" },
+    { name: 'item_count', type: 'INTEGER', default: '0' },
+  ],
+  summaryIndexes: [
+    { name: 'idx_myf_cooldown', columns: ['cooldown_until'] },
+  ],
+
+  // ── Field Studio Integration ──
+  fieldKeys: ['my_field'],           // candidate cleanup on delete-all
+  requiredFields: ['my_field'],      // field studio gate (POST returns 403 if disabled)
+
+  // ── LLM Phase ──
+  phase: 'myFinder',                 // must match llmPhaseDefs entry
+
+  // ── Feature Module Paths (for route auto-wiring) ──
+  featurePath: 'my-feature',         // src/features/{featurePath}/
+  routeFile: 'myFinderRoutes',       // api/{routeFile}.js
+  contextFile: 'myFinderRouteContext',
+  registrarExport: 'registerMyFinderRoutes',
+  contextExport: 'createMyFinderRouteContext',
+
+  // ── JSON Store ──
+  filePrefix: 'my_feature',          // .workspace/products/{pid}/{filePrefix}.json
+
+  // ── Reseed ──
+  reseedKey: 'my_feature',
+  rebuildFnKey: 'rebuildMyFinderFromJson',
+
+  // ── Per-Category Settings ──
+  settingsDefaults: {
+    mySettingA: '100',
+    mySettingB: 'true',
+  },
+
+  // ── Codegen: Phase Schema Preview ──
+  promptBuilderExport: 'buildMyFinderPrompt',
+  responseSchemaExport: 'myFinderResponseSchema',
+
+  // ── Codegen: GUI Panel ──
+  panelFeaturePath: 'my-finder',     // tools/gui-react/src/features/{panelFeaturePath}/
+  panelExport: 'MyFinderPanel',
+
+  // ── Data-Change Events ──
+  dataChangeEvents: {
+    'run': [],                       // suffix &rarr; extra domains to invalidate
+    'run-deleted': [],
+    'deleted': [],
+  },
+
+  // ── Codegen: Pipeline Settings UI ──
+  settingsLabel: 'My Finder',
+  settingsSubtitle: 'MYF module settings',
+  settingsTip: 'Per-category settings for My Finder.',
+}</pre>
+  </div>
+</div>
+
+<!-- 5. Shared Helpers -->
+<div class="section-title"><span class="num">5</span> Shared Helpers Reference</div>
+
+<div class="two-col">
+<div class="card">
+  <div class="card-header" style="background:var(--teal-bg);">Backend (<code>core/finder/</code>)</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Helper</th><th>Replaces</th></tr></thead>
+      <tbody>
+        <tr><td><code>resolveModelTracking()</code></td><td>12 lines: <code>resolvePhaseModel</code> + <code>stripCompositeKey</code> + <code>wrappedOnModelResolved</code> callback</td></tr>
+        <tr><td><code>resolveAmbiguityContext()</code></td><td>15 lines: <code>resolveIdentityAmbiguitySnapshot</code> try/catch</td></tr>
+        <tr><td><code>buildFinderLlmCaller()</code></td><td>12 lines: <code>_callLlmOverride</code> vs factory pattern</td></tr>
+        <tr><td><code>computeCooldownUntil()</code></td><td>3 lines: Date math + <code>COOLDOWN_DAYS</code></td></tr>
+        <tr><td><code>createFinderRouteHandler()</code></td><td>5 REST endpoints + operations lifecycle + data-change emit</td></tr>
+        <tr><td><code>createFinderJsonStore()</code></td><td>JSON read/write/merge/delete + run lifecycle</td></tr>
+        <tr><td><code>specDb.getFinderStore(id)</code></td><td>SQL CRUD + runs table operations</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--purple-bg);">Frontend (<code>shared/ui/finder/</code>)</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Component</th><th>Usage</th></tr></thead>
+      <tbody>
+        <tr><td><code>FinderPanelHeader</code></td><td>Collapse, title, chip, run button</td></tr>
+        <tr><td><code>FinderKpiCard</code></td><td>Metric cards</td></tr>
+        <tr><td><code>FinderCooldownStrip</code></td><td>30-day progress bar</td></tr>
+        <tr><td><code>FinderPanelFooter</code></td><td>Last run, model, count</td></tr>
+        <tr><td><code>FinderDeleteConfirmModal</code></td><td>Delete confirmation</td></tr>
+        <tr><td><code>FinderSectionCard</code></td><td>Collapsible body sections</td></tr>
+        <tr><td><code>FinderRunPromptDetails</code></td><td>Prompt/response viewer</td></tr>
+        <tr><td><code>FinderRunModelBadge</code></td><td>Run history model badge: access mode icon + model name + effort tag</td></tr>
+        <tr><td><code>FinderRunTimestamp</code></td><td>PST time + duration</td></tr>
+        <tr><td><code>DiscoverySummaryBar</code></td><td>Discovery log summary</td></tr>
+        <tr><td><code>ColorSwatch</code></td><td>Multi-color gradient circle</td></tr>
+        <tr><td><code>useResolvedFinderModel</code></td><td>LLM model + access mode + effort level</td></tr>
+        <tr><td><code>deriveCooldownState</code></td><td>Pure: days remaining, progress</td></tr>
+        <tr><td><code>deriveFinderStatusChip</code></td><td>Pure: "Not Run" vs "Run N"</td></tr>
+        <tr><td><code>formatAtomLabel</code></td><td>Titlecase raw atoms</td></tr>
+        <tr><td><code>useFireAndForget</code></td><td>202 pattern + optimistic insert</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- 6. Data Flow -->
+<div class="section-title"><span class="num">6</span> Data Flow (Every Finder Follows This)</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--green-bg);">Universal Finder Data Flow</div>
+  <div class="card-body">
+    <div class="flow-row">
+      <div class="flow-box flow-accent">POST /:cat/:pid<br><small>client fires</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-neutral">Register Op<br><small>operations registry</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-pass">202 Accepted<br><small>{ operationId }</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-teal">LLM Call<br><small>async background</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-repair">JSON Write<br><small>durable SSOT</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-accent">SQL Write<br><small>frontend projection</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-pass">WS Broadcast<br><small>data-change</small></div>
+    </div>
+    <dl class="detail-grid" style="grid-template-columns: 140px 1fr;">
+      <dt>JSON first</dt><dd>Durable memory written before SQL. Crash-safe: SQL can be rebuilt from JSON.</dd>
+      <dt>SQL projection</dt><dd><code>specDb.getFinderStore(id).insertRun()</code> + <code>.upsert()</code>. Runs table includes <code>effort_level</code> and <code>access_mode</code> columns for badge rendering in run history.</dd>
+      <dt>WS invalidation</dt><dd>Data-change event broadcast &rarr; frontend <code>invalidationResolver</code> &rarr; React Query refetch</dd>
+      <dt>Operations</dt><dd>Registered before 202. Stage/model/stream callbacks update it in real-time. Complete/fail on finish.</dd>
+      <dt>Cooldown</dt><dd>30 days from successful run. Rejected runs: no cooldown set.</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- 7. Common Patterns -->
+<div class="section-title"><span class="num">7</span> Common Patterns &amp; Decisions</div>
+
+<div class="two-col">
+<div class="card">
+  <div class="card-header" style="background:var(--teal-bg);">Accumulation Strategy</div>
+  <div class="card-body">
+    <dl class="detail-grid" style="grid-template-columns: 100px 1fr;">
+      <dt>Latest-wins</dt><dd>Default. <code>selected</code> = most recent non-rejected run. Used by CEF (colors/editions overwrite).</dd>
+      <dt>Accumulate</dt><dd>Override <code>recalculateSelected</code> in <code>createFinderJsonStore</code>. Used by PIF (images union across runs).</dd>
+    </dl>
+    <p style="margin-top:8px;">Choose based on domain: does a new run <em>replace</em> the answer or <em>add to</em> it?</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--orange-bg);">Candidate Validation</div>
+  <div class="card-body">
+    <p>If your finder populates Field Studio fields (<code>fieldKeys</code> is non-empty), you should validate LLM output through the candidate gate before writing:</p>
+    <dl class="detail-grid" style="grid-template-columns: 80px 1fr;">
+      <dt>Gate</dt><dd><code>validateField()</code> from <code>publisher/index.js</code></dd>
+      <dt>Submit</dt><dd><code>submitCandidate()</code> with <code>sourceMeta: { source: moduleType }</code></dd>
+      <dt>Reject</dt><dd>Persist rejected run to JSON + SQL with <code>status: 'rejected'</code></dd>
+    </dl>
+    <p style="margin-top:8px;">See CEF&rsquo;s <code>storeFailureAndReturn()</code> for the full rejection pattern. PIF skips this because images are artifacts, not field candidates.</p>
+  </div>
+</div>
+</div>
+
+<!-- 8. Checklist Summary -->
+<div class="section-title"><span class="num">8</span> Quick Checklist</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--surface-alt);">Files to Create / Modify</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th></th><th>File</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>src/features/my-feature/*.js</code></td><td>Schema, adapter, store, orchestrator (6 files)</td></tr>
+        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>src/features/my-feature/api/*.js</code></td><td>Routes + context (2 files)</td></tr>
+        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>src/features/my-feature/tests/*.test.js</code></td><td>Tests</td></tr>
+        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>tools/gui-react/src/features/my-finder/</code></td><td>Types, queries, panel (3 files)</td></tr>
+        <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>src/core/finder/finderModuleRegistry.js</code></td><td>Add 1 entry to <code>FINDER_MODULES</code></td></tr>
+        <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>src/core/config/llmPhaseDefs.js</code></td><td>Add 1 phase entry</td></tr>
+        <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>src/app/api/guiServerRuntime.js</code></td><td>Add imports + context + route def (temp, until wireFinderRoutes)</td></tr>
+        <tr><td><span class="tag tag-purple">CODEGEN</span></td><td><code>node tools/gui-react/scripts/generateLlmPhaseRegistry.js</code></td><td>Regenerates 4 files</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div style="text-align:center; padding:32px 0; color:var(--text-muted); font-size:13px;">
+  Spec Factory Finder Module Guide<br>
+  Registry-driven &bull; O(1) scaling &bull; shared helpers &bull; dual-state persistence &bull; fire-and-forget
+</div>
+
+</div>
+</body>
+</html>

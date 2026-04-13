@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
+import { useOperationsStore } from '../state/operationsStore.ts';
 import type { Operation, LlmCallRecord } from '../state/operationsStore.ts';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
 import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTypes.ts';
+import { extractEffortFromModelName } from '../../llm-config/state/llmEffortFromModelName.ts';
 import {
   MODULE_STYLES as FINDER_STYLES,
   MODULE_LABELS as FINDER_LABELS,
@@ -75,7 +77,7 @@ function formatElapsed(startedAt: string, endedAt: string | null): string {
 function DetailStagePipeline({ stages, currentIndex, status }: {
   readonly stages: readonly string[];
   readonly currentIndex: number;
-  readonly status: 'running' | 'done' | 'error';
+  readonly status: 'running' | 'done' | 'error' | 'cancelled';
 }) {
   return (
     <div className="flex items-center gap-0.5 flex-wrap">
@@ -86,6 +88,9 @@ function DetailStagePipeline({ stages, currentIndex, status }: {
         if (status === 'done') {
           cls += ' sf-text-success';
           label = `${name} \u2713`;
+        } else if (status === 'cancelled' && i === currentIndex) {
+          cls += ' sf-text-subtle opacity-60';
+          label = `${name} \u25A0`;
         } else if (status === 'error' && i === currentIndex) {
           cls += ' text-[var(--sf-state-danger-fg)] bg-[var(--sf-state-danger-bg)] border-[var(--sf-state-danger-border)]';
           label = i === stages.length - 1 ? 'Rejected' : name;
@@ -194,7 +199,13 @@ function LlmCallRow({ call }: { readonly call: LlmCallRecord }) {
           Call #{call.callIndex + 1}
         </span>
         {call.model && (
-          <span className="text-[9px] font-mono sf-text-muted">{call.model}</span>
+          <span className="text-[9px] font-mono sf-text-muted">
+            {call.model}
+            {(() => {
+              const e = extractEffortFromModelName(call.model);
+              return e ? <span className="sf-text-subtle font-normal"> {e}</span> : null;
+            })()}
+          </span>
         )}
         {call.variant && (
           <span className="text-[9px] font-mono sf-text-subtle">{call.variant}</span>
@@ -271,8 +282,9 @@ export function OperationDetailModal({ op, onClose }: Props) {
 
   /* ── Auto-scroll stream ───────────────────────────────────── */
   const streamRef = useRef<HTMLDivElement>(null);
-  const streamSegments = useMemo(() => parseStreamSegments(op.streamText), [op.streamText]);
-  const hasContent = useMemo(() => hasStreamContent(op.streamText), [op.streamText]);
+  const streamText = useOperationsStore((s) => s.streamTexts.get(op.id) ?? '');
+  const streamSegments = useMemo(() => parseStreamSegments(streamText), [streamText]);
+  const hasContent = useMemo(() => hasStreamContent(streamText), [streamText]);
   useEffect(() => {
     if (streamRef.current) streamRef.current.scrollTop = streamRef.current.scrollHeight;
   }, [streamSegments]);
@@ -284,18 +296,23 @@ export function OperationDetailModal({ op, onClose }: Props) {
   const isRunning = op.status === 'running';
   const isDone = op.status === 'done';
   const isError = op.status === 'error';
+  const isCancelled = op.status === 'cancelled';
 
   const statusCls = isRunning
     ? 'text-[rgb(var(--sf-color-accent-strong-rgb))] bg-[rgb(var(--sf-color-accent-rgb)/0.12)]'
     : isError
       ? 'text-[var(--sf-state-danger-fg)] bg-[var(--sf-state-danger-bg)]'
-      : 'sf-text-success bg-[rgb(var(--sf-color-surface-elevated-rgb)/0.5)]';
+      : isCancelled
+        ? 'sf-text-subtle bg-[rgb(var(--sf-color-surface-elevated-rgb)/0.5)]'
+        : 'sf-text-success bg-[rgb(var(--sf-color-surface-elevated-rgb)/0.5)]';
 
   const statusText = isRunning
     ? formatElapsed(op.startedAt, null)
     : isDone
       ? 'Completed'
-      : 'Failed';
+      : isCancelled
+        ? 'Cancelled'
+        : 'Failed';
 
   return (
     <div
@@ -354,34 +371,6 @@ export function OperationDetailModal({ op, onClose }: Props) {
             </section>
           )}
 
-          {/* Model info */}
-          {op.modelInfo && (
-            <section>
-              <div className="text-[10px] font-semibold sf-text-subtle uppercase tracking-[0.06em] mb-2">
-                Model
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <ModelBadgeGroup
-                  accessMode={(op.modelInfo.accessMode || 'api') as LlmAccessMode}
-                  thinking={op.modelInfo.thinking}
-                  webSearch={op.modelInfo.webSearch}
-                />
-                <span className={`text-[11px] font-mono truncate ${
-                  op.modelInfo.isFallback
-                    ? 'text-[var(--sf-state-warning-fg)]'
-                    : 'sf-text-subtle'
-                }`}>
-                  {op.modelInfo.isFallback ? '\u26A0 ' : ''}{op.modelInfo.model}
-                </span>
-                {op.modelInfo.provider && (
-                  <span className="text-[10px] sf-text-subtle opacity-60">
-                    via {op.modelInfo.provider}
-                  </span>
-                )}
-              </div>
-            </section>
-          )}
-
           {/* Error banner */}
           {isError && op.error && (
             <section className="rounded-sm border border-[rgba(248,113,113,0.3)] bg-[rgba(248,113,113,0.06)] px-3 py-2">
@@ -394,8 +383,29 @@ export function OperationDetailModal({ op, onClose }: Props) {
 
           {/* Live output stream */}
           <section className="flex flex-col min-h-0">
-            <div className="text-[10px] font-semibold sf-text-subtle uppercase tracking-[0.06em] mb-2">
-              {isRunning ? 'Live Output' : 'Output'}
+            <div className="flex items-center gap-3 text-[10px] sf-text-muted mb-2">
+              <span className="font-semibold sf-text-subtle uppercase tracking-[0.06em]">
+                {isRunning ? 'Live Output' : 'Output'}
+              </span>
+              {op.modelInfo && (
+                <>
+                  <span>&middot;</span>
+                  <span className="inline-flex items-center gap-1">
+                    Model:{' '}
+                    <span className="inline-flex items-center gap-1 font-mono font-bold sf-text-subtle">
+                      <ModelBadgeGroup
+                        accessMode={(op.modelInfo.accessMode || 'api') as LlmAccessMode}
+                        thinking={op.modelInfo.thinking}
+                        webSearch={op.modelInfo.webSearch}
+                      />
+                      {op.modelInfo.isFallback ? '\u26A0 ' : ''}{op.modelInfo.model}
+                      {op.modelInfo.effortLevel && (
+                        <span className="sf-text-muted font-normal">{op.modelInfo.effortLevel}</span>
+                      )}
+                    </span>
+                  </span>
+                </>
+              )}
             </div>
             <div
               ref={streamRef}

@@ -1271,6 +1271,24 @@ html[data-sf-theme-mode='dark'] .sf-custom-select-panel {
   font-weight: 600;
 }
 
+.sf-custom-select-group-label {
+  padding: var(--sf-space-1) var(--sf-space-1-5) var(--sf-space-0-5);
+  font-family: var(--sf-font-family-ui);
+  font-size: var(--sf-token-font-size-micro);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgb(var(--sf-color-text-secondary-rgb) / 0.7);
+  user-select: none;
+  pointer-events: none;
+}
+
+.sf-custom-select-group-label:not(:first-child) {
+  margin-top: var(--sf-space-1);
+  border-top: 1px solid rgb(var(--sf-color-border-subtle-rgb) / 0.3);
+  padding-top: var(--sf-space-1);
+}
+
 .sf-custom-select-badge {
   display: inline-flex;
   align-items: center;
@@ -1809,6 +1827,51 @@ html[data-sf-theme-mode='dark'] .sf-review-candidate-debug-id {
 
 html[data-sf-theme-mode='dark'] .sf-review-model-badge {
   background: rgb(var(--sf-color-run-ai-rgb) / 0.24);
+}
+
+/* ── 10-step confidence color scale (candidate badges in FieldReviewDrawer) ── */
+.conf-100 { background: var(--sf-conf-100-bg, #dafbe1); color: var(--sf-conf-100-text, #1a7f37); }
+.conf-90  { background: var(--sf-conf-90-bg, #d6f5d6);  color: var(--sf-conf-90-text, #1e6f2e); }
+.conf-80  { background: var(--sf-conf-80-bg, #e2f7c9);  color: var(--sf-conf-80-text, #3b7a1a); }
+.conf-70  { background: var(--sf-conf-70-bg, #f0f4c3);  color: var(--sf-conf-70-text, #5f6b1a); }
+.conf-60  { background: var(--sf-conf-60-bg, #fff8c5);  color: var(--sf-conf-60-text, #7a6200); }
+.conf-50  { background: var(--sf-conf-50-bg, #ffeeba);  color: var(--sf-conf-50-text, #8a5700); }
+.conf-40  { background: var(--sf-conf-40-bg, #ffd9a0);  color: var(--sf-conf-40-text, #8a4500); }
+.conf-30  { background: var(--sf-conf-30-bg, #ffc5a0);  color: var(--sf-conf-30-text, #8a3000); }
+.conf-20  { background: var(--sf-conf-20-bg, #ffb0a0);  color: var(--sf-conf-20-text, #8a1a00); }
+.conf-10  { background: var(--sf-conf-10-bg, #ffebe9);  color: var(--sf-conf-10-text, #cf222e); }
+
+html[data-sf-theme-mode='dark'] .conf-100 { background: rgba(26, 127, 55, 0.22); color: #7ee2a8; }
+html[data-sf-theme-mode='dark'] .conf-90  { background: rgba(30, 111, 46, 0.22); color: #6dd89e; }
+html[data-sf-theme-mode='dark'] .conf-80  { background: rgba(59, 122, 26, 0.22); color: #a4d65c; }
+html[data-sf-theme-mode='dark'] .conf-70  { background: rgba(95, 107, 26, 0.22); color: #c4cc5c; }
+html[data-sf-theme-mode='dark'] .conf-60  { background: rgba(122, 98, 0, 0.22);  color: #e6c84a; }
+html[data-sf-theme-mode='dark'] .conf-50  { background: rgba(138, 87, 0, 0.22);  color: #e0b54a; }
+html[data-sf-theme-mode='dark'] .conf-40  { background: rgba(138, 69, 0, 0.22);  color: #e0a050; }
+html[data-sf-theme-mode='dark'] .conf-30  { background: rgba(138, 48, 0, 0.22);  color: #e08860; }
+html[data-sf-theme-mode='dark'] .conf-20  { background: rgba(138, 26, 0, 0.22);  color: #e07060; }
+html[data-sf-theme-mode='dark'] .conf-10  { background: rgba(207, 34, 46, 0.18); color: #f08080; }
+
+/* Resolved candidate card in FieldReviewDrawer */
+.sf-candidate-resolved {
+  background: var(--sf-candidate-resolved-bg, #edf8ee);
+  border-color: var(--sf-candidate-resolved-border, #a7d8b0);
+}
+html[data-sf-theme-mode='dark'] .sf-candidate-resolved {
+  background: rgba(26, 127, 55, 0.10);
+  border-color: rgba(26, 127, 55, 0.30);
+}
+
+/* Review placeholder button in FieldReviewDrawer */
+.sf-review-source-button {
+  border: 1px solid rgb(var(--sf-color-border-default-rgb));
+  background: transparent;
+  color: rgb(var(--sf-color-text-muted-rgb));
+}
+.sf-review-source-button:hover {
+  border-color: rgb(var(--sf-color-run-ai-rgb) / 0.5);
+  background: rgb(var(--sf-color-run-ai-rgb) / 0.08);
+  color: rgb(var(--sf-color-run-ai-rgb));
 }
 
 .sf-review-accepted-button {

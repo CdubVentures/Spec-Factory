@@ -9,7 +9,8 @@ export type LlmPhaseId =
   | 'serp-selector'
   | 'validate'
   | 'color-finder'
-  | 'image-finder';
+  | 'image-finder'
+  | 'image-evaluator';
 
 export type LlmPhaseGroup =
   | 'global'

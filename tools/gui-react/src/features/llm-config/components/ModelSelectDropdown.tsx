@@ -57,9 +57,9 @@ export const ModelSelectDropdown = memo(function ModelSelectDropdown({
 
   const missingOption = useMemo(() => ensureValueInOptions(options, value), [options, value]);
 
-  // Build the full item list (none + missing + options)
+  // Build the full item list (none + missing + options), with provider group labels
   const items = useMemo(() => {
-    const list: Array<{ key: string; value: string; label: string; role?: LlmModelRole; muted?: boolean; accessMode?: LlmAccessMode; thinking?: boolean; webSearch?: boolean; isDefault?: boolean }> = [];
+    const list: Array<{ key: string; value: string; label: string; role?: LlmModelRole; muted?: boolean; accessMode?: LlmAccessMode; thinking?: boolean; webSearch?: boolean; isDefault?: boolean; groupLabel?: string }> = [];
     const derivedNoneOption = noneModelId
       ? (options.find((o) => o.value === noneModelId) ?? options.find((o) => o.value.endsWith(`:${noneModelId}`)))
       : undefined;
@@ -67,7 +67,11 @@ export const ModelSelectDropdown = memo(function ModelSelectDropdown({
     const defaultCompositeKey = derivedNoneOption?.value ?? noneModelId ?? '';
     if (allowNone) list.push({ key: '__none__', value: '', label: noneLabel, role: derivedNoneOption?.role, accessMode: derivedNoneOption?.accessMode, thinking: derivedNoneOption?.thinking, webSearch: derivedNoneOption?.webSearch });
     if (missingOption) list.push({ key: `missing-${missingOption.value}`, value: missingOption.value, label: missingOption.label, muted: true });
+    // WHY: Detect provider boundaries to render group headers in the dropdown.
+    let lastProviderId: string | null = null;
     for (const o of options) {
+      const isNewGroup = o.providerId != null && o.providerId !== lastProviderId;
+      if (isNewGroup) lastProviderId = o.providerId;
       list.push({
         key: o.providerId ? `reg-${o.providerId}-${o.value}` : o.value,
         value: o.value,
@@ -77,6 +81,7 @@ export const ModelSelectDropdown = memo(function ModelSelectDropdown({
         thinking: o.thinking,
         webSearch: o.webSearch,
         isDefault: defaultCompositeKey !== '' && o.value === defaultCompositeKey,
+        ...(isNewGroup ? { groupLabel: o.providerName ?? o.providerId ?? undefined } : {}),
       });
     }
     return list;
@@ -190,26 +195,32 @@ export const ModelSelectDropdown = memo(function ModelSelectDropdown({
       {open && (
         <div ref={listRef} className="sf-custom-select-panel" role="listbox">
           {items.map((item, idx) => (
-            <div
-              key={item.key}
-              role="option"
-              aria-selected={item.value === value}
-              className={`sf-custom-select-item${idx === focusIdx ? ' sf-custom-select-item-focused' : ''}${item.value === value ? ' sf-custom-select-item-selected' : ''}`}
-              style={item.muted ? { opacity: 0.5 } : undefined}
-              onMouseEnter={() => setFocusIdx(idx)}
-              onMouseDown={(e) => { e.preventDefault(); handleSelect(item.value); }}
-            >
-              <ModelBadgeGroup accessMode={item.accessMode} role={item.role} thinking={item.thinking} webSearch={item.webSearch} />
-              <span>{item.label}</span>
-              {item.isDefault && (
-                <span
-                  className="sf-custom-select-badge"
-                  style={{ color: 'var(--sf-state-success-fg)', backgroundColor: 'var(--sf-state-success-bg)', marginLeft: 'auto' }}
-                  title="Current global default"
-                >
-                  DEFAULT
-                </span>
+            <div key={item.key}>
+              {item.groupLabel && (
+                <div className="sf-custom-select-group-label" aria-hidden="true">
+                  {item.groupLabel}
+                </div>
               )}
+              <div
+                role="option"
+                aria-selected={item.value === value}
+                className={`sf-custom-select-item${idx === focusIdx ? ' sf-custom-select-item-focused' : ''}${item.value === value ? ' sf-custom-select-item-selected' : ''}`}
+                style={item.muted ? { opacity: 0.5 } : undefined}
+                onMouseEnter={() => setFocusIdx(idx)}
+                onMouseDown={(e) => { e.preventDefault(); handleSelect(item.value); }}
+              >
+                <ModelBadgeGroup accessMode={item.accessMode} role={item.role} thinking={item.thinking} webSearch={item.webSearch} />
+                <span>{item.label}</span>
+                {item.isDefault && (
+                  <span
+                    className="sf-custom-select-badge"
+                    style={{ color: 'var(--sf-state-success-fg)', backgroundColor: 'var(--sf-state-success-bg)', marginLeft: 'auto' }}
+                    title="Current global default"
+                  >
+                    DEFAULT
+                  </span>
+                )}
+              </div>
             </div>
           ))}
         </div>

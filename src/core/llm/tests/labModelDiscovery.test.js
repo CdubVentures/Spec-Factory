@@ -29,7 +29,7 @@ describe('transformLabRegistryToModels', () => {
     assert.equal(m.modelId, 'gpt-5.4');
     assert.equal(m.thinking, true);
     assert.deepEqual(m.thinkingEffortOptions, ['low', 'medium', 'high', 'xhigh']);
-    assert.equal(m.role, 'primary');
+    assert.equal(m.role, 'reasoning');
     assert.equal(m.accessMode, 'lab');
   });
 
@@ -79,10 +79,10 @@ describe('transformLabRegistryToModels', () => {
     assert.ok(result[0].id.startsWith('lab-oai-'));
   });
 
-  test('compound model gpt-5.4-pro → primary role', () => {
+  test('compound model gpt-5.4-pro with efforts → reasoning role', () => {
     const pro = { ...BASE_MODEL, id: 'gpt-5.4-pro', efforts: ['medium', 'high', 'xhigh'] };
     const result = transformLabRegistryToModels({ models: [pro] }, 'oai');
-    assert.equal(result[0].role, 'primary');
+    assert.equal(result[0].role, 'reasoning');
     assert.equal(result[0].modelId, 'gpt-5.4-pro');
   });
 

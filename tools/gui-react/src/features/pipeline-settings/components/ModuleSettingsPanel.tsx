@@ -373,6 +373,28 @@ function PifSettingsForm({
 
   return (
     <div className="space-y-4">
+      {/* ── Authentication ── */}
+      <SettingsCard title="Authentication" subtitle="Credentials for gated model downloads">
+        <div>
+          <label className="block text-[11px] font-semibold sf-text-primary mb-1.5">
+            HuggingFace Token
+          </label>
+          <input
+            type="password"
+            value={settings.hfToken ?? ''}
+            onChange={(e) => onSave('hfToken', e.target.value)}
+            disabled={isSaving}
+            placeholder="hf_..."
+            autoComplete="off"
+            className="sf-input w-full px-2 py-1.5 rounded sf-text-label text-[12px] font-mono"
+          />
+          <p className="mt-1.5 text-[10px] sf-text-muted leading-snug">
+            Access token for downloading the RMBG 2.0 background-removal model from HuggingFace (gated).
+            Get one at <span className="sf-text-accent">huggingface.co/settings/tokens</span>.
+          </p>
+        </div>
+      </SettingsCard>
+
       {/* ── View Configuration ── */}
       <SettingsCard
         title="View Configuration"
@@ -486,7 +508,7 @@ function PifSettingsForm({
         {/* Safety Caps */}
         <div className="pt-3 mt-1 border-t sf-border-soft">
           <div className="text-[10px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-3">Attempt Budgets</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-[11px] font-semibold sf-text-primary mb-1.5">
                 View Attempt Budget
@@ -515,6 +537,23 @@ function PifSettingsForm({
                 max="10"
               />
             </div>
+            <div>
+              <label
+                className="block text-[11px] font-semibold sf-text-primary mb-1.5"
+                title="LLM calls per view when re-running a variant that already has all views satisfied. Applies to both view and hero calls."
+              >
+                Re-run Budget
+              </label>
+              <input
+                type="number"
+                value={settings.reRunBudget ?? '1'}
+                onChange={(e) => onSave('reRunBudget', e.target.value)}
+                disabled={isSaving}
+                className="sf-input w-full px-2 py-1.5 rounded sf-text-label text-[12px]"
+                min="1"
+                max="5"
+              />
+            </div>
           </div>
         </div>
       </SettingsCard>
@@ -532,6 +571,18 @@ function PifSettingsForm({
           value={settings.heroPromptOverride || ''}
           isSaving={isSaving}
           onSave={(val) => onSave('heroPromptOverride', val)}
+        />
+        <PromptOverrideEditor
+          label="Eval View Prompt Instructions"
+          value={settings.evalPromptOverride || ''}
+          isSaving={isSaving}
+          onSave={(val) => onSave('evalPromptOverride', val)}
+        />
+        <PromptOverrideEditor
+          label="Eval Hero Prompt Instructions"
+          value={settings.heroEvalPromptOverride || ''}
+          isSaving={isSaving}
+          onSave={(val) => onSave('heroEvalPromptOverride', val)}
         />
       </SettingsCard>
     </div>
@@ -856,13 +907,39 @@ function PromptOverrideEditor({
   );
 }
 
-/* ── CEF Settings (placeholder) ──────────────────────────────────── */
+/* ── CEF Settings ────────────────────────────────────────────────── */
 
-function CefSettingsForm() {
+function CefSettingsForm({
+  settings,
+  isSaving,
+  onSave,
+}: {
+  settings: Record<string, string>;
+  isSaving: boolean;
+  onSave: (key: string, value: string) => void;
+}) {
   return (
-    <p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>
-      No per-category settings for Color & Edition Finder yet.
-    </p>
+    <div className="space-y-4">
+      <SettingsCard title="Cooldown">
+        <div className="max-w-xs">
+          <label className="block text-[11px] font-semibold sf-text-primary mb-1.5">
+            Cooldown Days
+          </label>
+          <input
+            type="number"
+            value={settings.cooldownDays ?? '30'}
+            onChange={(e) => onSave('cooldownDays', e.target.value)}
+            disabled={isSaving}
+            className="sf-input w-full px-2 py-1.5 rounded sf-text-label text-[12px]"
+            min="0"
+            max="90"
+          />
+          <p className="mt-1.5 text-[10px] sf-text-muted leading-snug">
+            Days before the finder can re-run on the same product. Set to 0 to disable cooldown.
+          </p>
+        </div>
+      </SettingsCard>
+    </div>
   );
 }
 
@@ -909,5 +986,11 @@ export function ModuleSettingsPanel({ moduleId }: { moduleId: 'colorEditionFinde
     );
   }
 
-  return <CefSettingsForm />;
+  return (
+    <CefSettingsForm
+      settings={settings}
+      isSaving={isSaving}
+      onSave={handleSave}
+    />
+  );
 }

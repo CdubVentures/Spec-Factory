@@ -18,8 +18,10 @@
  * @param {Function} [opts.broadcastWs] — WebSocket broadcast function
  * @param {object} [opts.emitArgs] — { event, category, entities, meta } for data-change
  * @param {Function} opts.asyncWork — () => Promise<result>
+ * @param {AbortSignal} [opts.signal] — from getOperationSignal; when aborted, routes to cancelOperation
  * @param {Function} opts.completeOperation — ({ id }) => void
  * @param {Function} opts.failOperation — ({ id, error }) => void
+ * @param {Function} [opts.cancelOperation] — ({ id }) => void
  * @param {Function} [opts.emitDataChange] — (args) => void
  */
 export function fireAndForget({
@@ -30,13 +32,30 @@ export function fireAndForget({
   broadcastWs,
   emitArgs,
   asyncWork,
+  signal,
   completeOperation,
   failOperation,
+  cancelOperation,
   emitDataChange,
 }) {
+  const emitChange = () => {
+    if (emitArgs && broadcastWs && emitDataChange) {
+      emitDataChange({ broadcastWs, ...emitArgs });
+    }
+  };
+
   asyncWork()
     .then((result) => {
       if (batcher) batcher.dispose();
+
+      // WHY: Loop orchestrators catch AbortError internally and return
+      // accumulated results. The signal is aborted but asyncWork resolved.
+      if (signal?.aborted && cancelOperation) {
+        cancelOperation({ id: op.id });
+        emitChange();
+        return;
+      }
+
       if (result?.rejected) {
         const reason = result.rejections?.[0]?.reason_code === 'llm_error'
           ? 'LLM call failed'
@@ -47,12 +66,19 @@ export function fireAndForget({
       }
       // WHY: Emit data-change for BOTH success and rejection.
       // Rejected runs still update state (persisted run history, cooldown).
-      if (emitArgs && broadcastWs && emitDataChange) {
-        emitDataChange({ broadcastWs, ...emitArgs });
-      }
+      emitChange();
     })
     .catch((err) => {
       if (batcher) batcher.dispose();
+
+      // WHY: AbortError means the operation was cancelled via cancelOperation.
+      // Route to cancelOperation instead of failOperation.
+      if ((err.name === 'AbortError' || signal?.aborted) && cancelOperation) {
+        cancelOperation({ id: op.id });
+        emitChange();
+        return;
+      }
+
       failOperation({ id: op.id, error: err instanceof Error ? err.message : String(err) });
       // WHY: No data-change on throw — state is unchanged.
     });

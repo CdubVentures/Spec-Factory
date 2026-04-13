@@ -462,8 +462,8 @@ describe('evaluateCarousel: attempt tracking', () => {
       heroAttemptBudget: 3,
       heroAttemptCount: 0,
     });
-    // top: min(5-1, 3-1) = 2, left: min(5-0, 3-0) = 3, hero: min(3-0, 2-0) = 2 → total 7
-    assert.equal(result.estimatedCallsRemaining, 7);
+    // top: 5-1 = 4, left: 5-0 = 5, hero: 3-0 = 3 → total 12
+    assert.equal(result.estimatedCallsRemaining, 12);
   });
 
   it('omitting new params → identical behavior (Infinity budget)', () => {

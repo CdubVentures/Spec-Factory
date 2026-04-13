@@ -23,11 +23,13 @@ export function transformLabRegistryToModels(labRegistry, providerPrefix) {
     const hasEfforts = efforts.length > 0;
     const isMinimal = modelId.endsWith('-minimal');
     const thinking = isMinimal ? false : (hasEfforts || Boolean(bakedEffort));
+    // WHY: Models with effort options or baked-in effort are reasoning-capable.
+    const isReasoning = hasEfforts || Boolean(bakedEffort);
     const normalized = modelId.replace(/[^a-z0-9]/gi, '');
     return {
       id: `lab-${providerPrefix}-${normalized}`,
       modelId,
-      role: bakedEffort === 'xhigh' ? 'reasoning' : 'primary',
+      role: isReasoning ? 'reasoning' : 'primary',
       accessMode: 'lab',
       costInputPer1M: Number(m.costInputPer1M || 0),
       costOutputPer1M: Number(m.costOutputPer1M || 0),

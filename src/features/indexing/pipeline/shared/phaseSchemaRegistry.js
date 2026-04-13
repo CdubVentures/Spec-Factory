@@ -11,6 +11,9 @@ import { SERP_SELECT_URLS_SYSTEM_PROMPT } from '../resultProcessing/serpSelector
 import { REPAIR_SYSTEM_PROMPT, HALLUCINATION_PATTERNS } from '../../../publisher/repair-adapter/promptBuilder.js';
 import { repairResponseJsonSchema } from '../../../publisher/repair-adapter/repairResponseSchema.js';
 import { FINDER_PHASE_SCHEMAS } from './phaseSchemaRegistry.generated.js';
+import { buildViewEvalPrompt, buildHeroSelectionPrompt } from '../../../product-image/imageEvaluator.js';
+import { viewEvalResponseSchema, heroEvalResponseSchema } from '../../../product-image/imageEvaluatorSchema.js';
+import { GENERIC_VIEW_DESCRIPTIONS } from '../../../product-image/productImageLlmAdapter.js';
 
 const NON_FINDER_PHASES = Object.freeze({
   'needset': {
@@ -35,7 +38,27 @@ const NON_FINDER_PHASES = Object.freeze({
   },
 });
 
+// WHY: Carousel Builder has per-view prompts — one system prompt per canonical view + hero.
+// Stored as view_prompts map so the LLM Config GUI can render each individually.
+const CAROUSEL_BUILDER_PHASE = Object.freeze({
+  'image-evaluator': {
+    system_prompt: buildViewEvalPrompt({ product: { brand: '{brand}', model: '{model}' }, view: 'top', viewDescription: GENERIC_VIEW_DESCRIPTIONS.top, candidateCount: 3 }),
+    hero_system_prompt: buildHeroSelectionPrompt({ product: { brand: '{brand}', model: '{model}' }, viewWinners: [{ view: 'top', filename: 'top-black.png' }, { view: 'left', filename: 'left-black.png' }] }),
+    response_schema: zodToLlmSchema(viewEvalResponseSchema),
+    hero_response_schema: zodToLlmSchema(heroEvalResponseSchema),
+    view_prompts: Object.freeze(
+      Object.fromEntries(
+        Object.entries(GENERIC_VIEW_DESCRIPTIONS).map(([view, desc]) => [
+          view,
+          buildViewEvalPrompt({ product: { brand: '{brand}', model: '{model}' }, view, viewDescription: desc, candidateCount: 3 }),
+        ]),
+      ),
+    ),
+  },
+});
+
 export const PHASE_SCHEMA_REGISTRY = Object.freeze({
   ...NON_FINDER_PHASES,
   ...FINDER_PHASE_SCHEMAS,
+  ...CAROUSEL_BUILDER_PHASE,
 });

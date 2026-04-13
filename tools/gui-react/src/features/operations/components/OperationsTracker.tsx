@@ -7,6 +7,8 @@ import {
   MODULE_LABELS as FINDER_LABELS,
 } from '../state/finderModuleRegistry.generated.ts';
 import { OperationDetailModal } from './OperationDetailModal.tsx';
+import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
+import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTypes.ts';
 
 /* ── Module chip color map ─────────────────────────────────────────── */
 // WHY: Finder modules are auto-generated from the backend registry.
@@ -30,7 +32,7 @@ const MODULE_LABELS: Readonly<Record<string, string>> = {
 
 /* ── Sort: running (newest-first) → error → done ──────────────────── */
 
-const STATUS_ORDER: Readonly<Record<string, number>> = { running: 0, error: 1, done: 2 };
+const STATUS_ORDER: Readonly<Record<string, number>> = { running: 0, error: 1, cancelled: 2, done: 3 };
 
 function sortOperations(ops: ReadonlyMap<string, Operation>): Operation[] {
   return [...ops.values()].sort((a, b) => {
@@ -56,7 +58,7 @@ function formatElapsed(startedAt: string, endedAt: string | null): string {
 function StagePipeline({ stages, currentIndex, status }: {
   readonly stages: readonly string[];
   readonly currentIndex: number;
-  readonly status: 'running' | 'done' | 'error';
+  readonly status: 'running' | 'done' | 'error' | 'cancelled';
 }) {
   return (
     <span className="grid grid-cols-4 gap-x-1 gap-y-0.5 w-full">
@@ -65,6 +67,8 @@ function StagePipeline({ stages, currentIndex, status }: {
 
         if (status === 'done') {
           cls += ' sf-text-success';
+        } else if (status === 'cancelled' && i === currentIndex) {
+          cls += ' sf-text-subtle opacity-60';
         } else if (status === 'error' && i === currentIndex) {
           cls += ' text-[var(--sf-state-danger-fg)]';
         } else if (i < currentIndex) {
@@ -77,11 +81,13 @@ function StagePipeline({ stages, currentIndex, status }: {
 
         const icon = (status === 'done' || i < currentIndex)
           ? '\u2713 '
-          : (status === 'error' && i === currentIndex)
-            ? '\u2717 '
-            : (i === currentIndex)
-              ? '\u25B8 '
-              : '  ';
+          : (status === 'cancelled' && i === currentIndex)
+            ? '\u25A0 '
+            : (status === 'error' && i === currentIndex)
+              ? '\u2717 '
+              : (i === currentIndex)
+                ? '\u25B8 '
+                : '  ';
 
         return (
           <span key={name} className={cls}>
@@ -179,16 +185,20 @@ function StreamPanel({ text }: { readonly text: string }) {
 
 /* ── Single operation card ─────────────────────────────────────────── */
 
-function OpCard({ op, onClick, onDismiss }: {
+function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
   readonly op: Operation;
   readonly onClick: () => void;
   readonly onDismiss: (e: React.MouseEvent) => void;
+  readonly onStop: (e: React.MouseEvent) => void;
+  readonly confirming: boolean;
 }) {
+  const streamText = useOperationsStore((s) => s.streamTexts.get(op.id) ?? '');
   const chipCls = MODULE_STYLES[op.type] ?? 'sf-chip-neutral';
   const baseLabel = MODULE_LABELS[op.type] ?? op.type.toUpperCase().slice(0, 3);
   const label = op.subType ? `${baseLabel}.${op.subType[0]?.toUpperCase() ?? ''}` : baseLabel;
   const isDone = op.status === 'done';
   const isError = op.status === 'error';
+  const isCancelled = op.status === 'cancelled';
 
   return (
     <div
@@ -198,7 +208,7 @@ function OpCard({ op, onClick, onDismiss }: {
         border border-[rgb(var(--sf-color-border-subtle-rgb)/0.3)]
         hover:bg-[rgb(var(--sf-color-surface-elevated-rgb)/0.85)]
         hover:border-[rgb(var(--sf-color-border-subtle-rgb)/0.6)]
-        ${isDone ? 'opacity-60' : ''}
+        ${isDone || isCancelled ? 'opacity-60' : ''}
         ${isError ? 'border-[rgba(248,113,113,0.25)] bg-[rgba(248,113,113,0.04)]' : ''}
       `}
       onClick={onClick}
@@ -229,14 +239,30 @@ function OpCard({ op, onClick, onDismiss }: {
           <span className={`text-[9px] font-mono ${
             op.status === 'running' ? 'text-[rgb(var(--sf-color-accent-strong-rgb))]'
             : op.status === 'error' ? 'text-[var(--sf-state-danger-fg)]'
+            : op.status === 'cancelled' ? 'sf-text-subtle'
             : 'sf-text-success'
           }`}>
-            {op.status === 'done' ? 'done' : op.status === 'error' ? 'failed' : formatElapsed(op.startedAt, op.endedAt)}
+            {op.status === 'done' ? 'done' : op.status === 'error' ? 'failed' : op.status === 'cancelled' ? 'cancelled' : formatElapsed(op.startedAt, op.endedAt)}
           </span>
           {op.queueDelayMs != null && op.queueDelayMs > 0 && (
             <span className="text-[6px] font-mono sf-text-subtle leading-none">q {op.queueDelayMs >= 1000 ? `${(op.queueDelayMs / 1000).toFixed(1)}s` : `${op.queueDelayMs}ms`}</span>
           )}
         </span>
+        {/* Inline stop button — always visible for running ops */}
+        {op.status === 'running' && (
+          <button
+            type="button"
+            onClick={onStop}
+            className={`flex items-center justify-center rounded-[3px] text-[8px] font-bold leading-none shrink-0 border transition-all ${
+              confirming
+                ? 'h-[16px] px-1.5 text-[var(--sf-state-danger-fg)] border-[var(--sf-state-danger-fg)] bg-[var(--sf-state-danger-bg)]'
+                : 'w-[16px] h-[16px] sf-text-subtle border-[rgb(var(--sf-color-border-subtle-rgb)/0.5)] hover:text-[var(--sf-state-danger-fg)] hover:border-[var(--sf-state-danger-fg)]'
+            }`}
+            title={confirming ? 'Click again to confirm' : 'Stop operation'}
+          >
+            {confirming ? 'Stop?' : '\u25A0'}
+          </button>
+        )}
       </span>
 
       {/* Row 2–3: stage pipeline grid */}
@@ -249,9 +275,25 @@ function OpCard({ op, onClick, onDismiss }: {
         <span className="text-[9px] font-mono sf-text-subtle whitespace-pre-wrap leading-[1.4]">{op.progressText}</span>
       ) : null}
 
-      {/* Live stream preview — only while running and has content */}
-      {op.status === 'running' && op.streamText && (
-        <StreamPanel text={op.streamText} />
+      {/* Model line + live stream preview */}
+      {op.modelInfo && (
+        <span className="flex items-center gap-1 text-[8px] sf-text-muted">
+          Model:{' '}
+          <span className="inline-flex items-center gap-0.5 font-mono font-bold sf-text-subtle">
+            <ModelBadgeGroup
+              accessMode={(op.modelInfo.accessMode || 'api') as LlmAccessMode}
+              thinking={op.modelInfo.thinking}
+              webSearch={op.modelInfo.webSearch}
+            />
+            {op.modelInfo.isFallback ? '\u26A0 ' : ''}{op.modelInfo.model}
+            {op.modelInfo.effortLevel && (
+              <span className="sf-text-muted font-normal">{op.modelInfo.effortLevel}</span>
+            )}
+          </span>
+        </span>
+      )}
+      {op.status === 'running' && streamText && (
+        <StreamPanel text={streamText} />
       )}
     </div>
   );
@@ -263,6 +305,8 @@ export function OperationsTracker() {
   const operations = useOperationsStore((s) => s.operations);
   const [isOpen, toggleOpen] = usePersistedToggle('sidebar:ops-tracker', true);
   const [selectedOpId, setSelectedOpId] = useState<string | null>(null);
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
+  const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const sorted = useMemo(() => sortOperations(operations), [operations]);
   const runningCount = useMemo(() => sorted.filter((o) => o.status === 'running').length, [sorted]);
@@ -279,6 +323,9 @@ export function OperationsTracker() {
     return () => clearInterval(interval);
   }, [runningCount]);
 
+  // Clear confirm timer on unmount
+  useEffect(() => () => { if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current); }, []);
+
   const handleCardClick = useCallback((op: Operation) => {
     setSelectedOpId(op.id);
   }, []);
@@ -290,6 +337,21 @@ export function OperationsTracker() {
     if (selectedOpId === op.id) setSelectedOpId(null);
     api.del(`/operations/${op.id}`).catch(() => {});
   }, [remove, selectedOpId]);
+
+  const handleStop = useCallback((e: React.MouseEvent, op: Operation) => {
+    e.stopPropagation();
+    if (confirmCancelId === op.id) {
+      // Second click — confirmed, fire cancel
+      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+      setConfirmCancelId(null);
+      api.post(`/operations/${op.id}/cancel`).catch(() => {});
+    } else {
+      // First click — show confirmation, auto-reset after 3s
+      setConfirmCancelId(op.id);
+      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+      confirmTimerRef.current = setTimeout(() => setConfirmCancelId(null), 3000);
+    }
+  }, [confirmCancelId]);
 
   return (
     <div className={`flex flex-col ${isOpen ? 'flex-1' : 'flex-none'}`} style={{ minHeight: 0 }}>
@@ -327,7 +389,7 @@ export function OperationsTracker() {
             </div>
           ) : (
             sorted.map((op) => (
-              <OpCard key={op.id} op={op} onClick={() => handleCardClick(op)} onDismiss={(e) => handleDismiss(e, op)} />
+              <OpCard key={op.id} op={op} onClick={() => handleCardClick(op)} onDismiss={(e) => handleDismiss(e, op)} onStop={(e) => handleStop(e, op)} confirming={confirmCancelId === op.id} />
             ))
           )}
         </div>

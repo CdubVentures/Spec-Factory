@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import {
   SettingGroupBlock,
   SettingRow,
@@ -43,7 +43,7 @@ interface LlmPhaseSectionProps {
   registry: LlmProviderEntry[];
   globalDraft: GlobalDraftSlice;
   apiKeyFilter?: (provider: LlmProviderEntry) => boolean;
-  phaseSchema?: { system_prompt: string; hero_system_prompt?: string; response_schema: Record<string, unknown> } | null;
+  phaseSchema?: { system_prompt: string; hero_system_prompt?: string; response_schema: Record<string, unknown>; hero_response_schema?: Record<string, unknown>; view_prompts?: Record<string, string> } | null;
 }
 
 export const LlmPhaseSection = memo(function LlmPhaseSection({
@@ -464,7 +464,9 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
 
     {phaseSchema && (
       <SettingGroupBlock title="LLM Call Contract">
-        {phaseSchema.hero_system_prompt ? (
+        {phaseSchema.view_prompts ? (
+          <ViewPromptTabs phaseSchema={phaseSchema} />
+        ) : phaseSchema.hero_system_prompt ? (
           /* Two-column layout: View prompt (left) + Hero prompt (right) */
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-4">
@@ -516,3 +518,77 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
   </>
   );
 });
+
+/* ── View Prompt Tabs (Carousel Builder) ────────────────────────── */
+
+function ViewPromptTabs({ phaseSchema }: {
+  readonly phaseSchema: {
+    system_prompt: string;
+    hero_system_prompt?: string;
+    response_schema: Record<string, unknown>;
+    hero_response_schema?: Record<string, unknown>;
+    view_prompts?: Record<string, string>;
+  };
+}) {
+  const viewEntries = Object.entries(phaseSchema.view_prompts ?? {});
+  const tabs = [
+    ...viewEntries.map(([view]) => view),
+    ...(phaseSchema.hero_system_prompt ? ['hero'] : []),
+    'schema',
+  ];
+  const [activeTab, setActiveTab] = useState(tabs[0] ?? 'schema');
+
+  const activePrompt = activeTab === 'hero'
+    ? phaseSchema.hero_system_prompt ?? ''
+    : activeTab === 'schema'
+      ? null
+      : (phaseSchema.view_prompts?.[activeTab] ?? '');
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1">
+        {tabs.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide rounded cursor-pointer transition-opacity ${
+              activeTab === tab
+                ? 'sf-primary-button'
+                : 'sf-btn-ghost sf-text-muted hover:opacity-80'
+            }`}
+          >
+            {tab === 'schema' ? 'Schema' : tab === 'hero' ? 'Hero' : tab}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'schema' ? (
+        <div className="space-y-3">
+          <div>
+            <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">View Eval Response Schema</div>
+            <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
+              {JSON.stringify(phaseSchema.response_schema, null, 2)}
+            </pre>
+          </div>
+          {phaseSchema.hero_response_schema && (
+            <div>
+              <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Hero Selection Response Schema</div>
+              <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
+                {JSON.stringify(phaseSchema.hero_response_schema, null, 2)}
+              </pre>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div>
+          <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">
+            {activeTab === 'hero' ? 'Hero Selection' : `${activeTab} View`} System Prompt
+          </div>
+          <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text" style={{ minHeight: '300px' }}>
+            {String(activePrompt)}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}

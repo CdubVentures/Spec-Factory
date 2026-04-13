@@ -5,7 +5,7 @@ import { zodToLlmSchema } from '../../../../core/llm/zodToLlmSchema.js';
 
 import { buildColorEditionFinderPrompt } from '../../../color-edition/colorEditionLlmAdapter.js';
 import { colorEditionFinderResponseSchema } from '../../../color-edition/colorEditionSchema.js';
-import { buildProductImageFinderPrompt, buildHeroImageFinderPrompt } from '../../../product-image/productImageLlmAdapter.js';
+import { buildProductImageFinderPrompt } from '../../../product-image/productImageLlmAdapter.js';
 import { productImageFinderResponseSchema } from '../../../product-image/productImageSchema.js';
 
 export const FINDER_PHASE_SCHEMAS = Object.freeze({
@@ -15,7 +15,6 @@ export const FINDER_PHASE_SCHEMAS = Object.freeze({
   },
   'image-finder': {
     system_prompt: buildProductImageFinderPrompt({ product: { brand: '{brand}', model: '{model}' } }),
-    hero_system_prompt: buildHeroImageFinderPrompt({ product: { brand: '{brand}', model: '{model}' } }),
     response_schema: zodToLlmSchema(productImageFinderResponseSchema),
   },
 });

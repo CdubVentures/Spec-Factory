@@ -5,7 +5,7 @@ import { useUiStore } from '../../../stores/uiStore.ts';
 import { useReviewStore, selectSelectedField, selectSelectedProductId } from '../state/reviewStore.ts';
 import type { SortMode } from '../state/reviewStore.ts';
 import { ReviewMatrix } from './ReviewMatrix.tsx';
-import { CellDrawer } from '../../../shared/ui/overlay/CellDrawer.tsx';
+import { FieldReviewDrawer } from './FieldReviewDrawer.tsx';
 import { BrandFilterBar } from './BrandFilterBar.tsx';
 import { MetricRow } from '../../../shared/ui/data-display/MetricRow.tsx';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
@@ -175,21 +175,28 @@ export function ReviewPage() {
     return sorted;
   }, [indexData?.products, brandFilter, sortMode]);
 
-  // Single click = select + edit + open drawer.
+  // First click = select + open drawer. Second click on same cell = start editing.
   // Uses getState() / getQueryData() to avoid stale closure deps that would cause
   // unnecessary ReviewMatrix re-renders (and potential virtualizer remounts).
   const handleCellClick = useCallback((productId: string, field: string) => {
     const { activeCell: currentCell, cellMode: currentMode } = useReviewStore.getState();
-    if (currentCell?.productId === productId && currentCell?.field === field && currentMode === 'editing') {
+    const isSameCell = currentCell?.productId === productId && currentCell?.field === field;
+
+    // Already editing this cell — no-op
+    if (isSameCell && currentMode === 'editing') return;
+
+    // Cell is selected but not editing — second click unlocks inline editor
+    if (isSameCell && currentMode === 'selected') {
+      const cached = queryClient.getQueryData<ProductsIndexResponse>(['reviewProductsIndex', category]);
+      const product = cached?.products?.find(p => p.product_id === productId);
+      const currentValue = product?.fields[field]?.selected.value;
+      startEditing(currentValue != null ? String(currentValue) : '');
       return;
     }
+
+    // Different cell or no cell selected — select + open drawer (no editing yet)
     selectCell(productId, field);
     openDrawer(productId, field);
-    // Read current value from the query cache directly (no dep on indexData)
-    const cached = queryClient.getQueryData<ProductsIndexResponse>(['reviewProductsIndex', category]);
-    const product = cached?.products?.find(p => p.product_id === productId);
-    const currentValue = product?.fields[field]?.selected.value;
-    startEditing(currentValue != null ? String(currentValue) : '');
   }, [selectCell, openDrawer, startEditing, queryClient, category]);
 
   // Start editing from keydown (typing in selected cell)
@@ -197,27 +204,6 @@ export function ReviewPage() {
     selectCell(productId, field);
     startEditing(initialValue);
   }, [selectCell, startEditing]);
-
-  // Override mutation
-  const overrideMut = useMutation({
-    mutationFn: (body: {
-      productId: string;
-      field: string;
-      candidateId?: string;
-      value?: string;
-      candidateSource?: string;
-      candidateMethod?: string;
-      candidateTier?: number | null;
-      candidateConfidence?: number;
-      candidateEvidence?: ReviewCandidate['evidence'];
-    }) =>
-      api.post(`/review/${category}/override`, body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
-      queryClient.invalidateQueries({ queryKey: ['catalog', category] });
-      queryClient.invalidateQueries({ queryKey: ['product', category] });
-    },
-  });
 
   // Manual override mutation (for inline edits)
   const manualOverrideMut = useMutation({
@@ -415,7 +401,7 @@ export function ReviewPage() {
             || candidateSourceLabel(drawerCandidates.find((candidate) => candidateSourceLabel(candidate)) ?? drawerCandidates[0]);
 
           return (
-            <CellDrawer
+            <FieldReviewDrawer
               title={getLabel(selectedField)}
               subtitle={`${activeProduct.identity.brand} ${activeProduct.identity.model}${activeProduct.identity.id ? ` #${activeProduct.identity.id}` : ''}`}
               onClose={closeDrawer}
@@ -426,9 +412,7 @@ export function ReviewPage() {
                 source: currentSource,
                 sourceTimestamp: activeFieldState.source_timestamp,
                 overridden: activeFieldState.overridden,
-                acceptedCandidateId: activeFieldState.accepted_candidate_id ?? null,
               }}
-              badges={[]}
               onManualOverride={(value) => {
                 optimisticUpdateField(
                   selectedProductId,
@@ -442,35 +426,16 @@ export function ReviewPage() {
                   value,
                 });
               }}
-              isPending={overrideMut.isPending || manualOverrideMut.isPending}
+              isPending={manualOverrideMut.isPending}
               candidates={drawerCandidates}
               candidatesLoading={candidatesLoading}
-              onAcceptCandidate={(candidateId, candidate) => {
-                optimisticUpdateField(
-                  selectedProductId,
-                  selectedField,
-                  String(candidate.value ?? ''),
-                  {
-                    source: candidate.source || '',
-                    method: candidate.method || undefined,
-                    tier: candidate.tier,
-                    acceptedCandidateId: candidateId,
-                  },
-                );
-                overrideMut.mutate({
-                  productId: selectedProductId,
-                  field: selectedField,
-                  candidateId,
-                  value: String(candidate.value ?? ''),
-                  candidateSource: candidate.source_id || candidate.source || '',
-                  candidateMethod: candidate.method || undefined,
-                  candidateTier: candidate.tier,
-                  candidateConfidence: Number(candidate.score ?? 0),
-                  candidateEvidence: candidate.evidence,
-                });
+              publishedValue={activeFieldState.selected.value}
+              onReviewSource={(candidateId) => {
+                console.log('Review source:', candidateId, selectedProductId, selectedField);
               }}
-              onRunAIReview={() => runGridAiReviewMut.mutate()}
-              aiReviewPending={runGridAiReviewMut.isPending}
+              onRunAIReview={() => {
+                console.log('Review all:', selectedProductId, selectedField);
+              }}
             />
           );
         })()}

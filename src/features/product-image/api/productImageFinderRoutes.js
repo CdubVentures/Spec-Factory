@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createFinderRouteHandler } from '../../../core/finder/finderRoutes.js';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
-import { registerOperation, updateStage, updateModelInfo, updateProgressText, updateLoopProgress, updateQueueDelay, appendLlmCall, completeOperation, failOperation, fireAndForget } from '../../../core/operations/index.js';
+import { registerOperation, getOperationSignal, updateStage, updateModelInfo, updateProgressText, updateLoopProgress, updateQueueDelay, appendLlmCall, completeOperation, failOperation, cancelOperation, fireAndForget } from '../../../core/operations/index.js';
 import { createStreamBatcher } from '../../../core/llm/streamBatcher.js';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
 import { readImageDimensions, buildVariantList, imageStem } from '../productImageFinder.js';
@@ -29,6 +29,7 @@ export function registerProductImageFinderRoutes(ctx) {
 
     runFinder: ctx.runProductImageFinder,
     deleteRun: ctx.deleteProductImageFinderRun,
+    deleteRuns: ctx.deleteProductImageFinderRuns,
     deleteAll: ctx.deleteProductImageFinderAll,
 
     getOne: (specDb, pid) => store(specDb).get(pid),
@@ -134,21 +135,9 @@ export function registerProductImageFinderRoutes(ctx) {
       const imagesDir = path.join(productRoot, productId, 'images');
       const masterPath = path.join(imagesDir, filename);
 
-      // Find the source image — either in originals/ (if already moved) or images/ (pre-RMBG)
+      // Find the source image — either in originals/ (if already moved) or images/ (pre-processing)
       const originalsDir = path.join(imagesDir, 'originals');
-      const { processImage, loadModel, releaseModel } = await import('../imageProcessor.js');
-      const { ensureModelReady } = await import('../modelDownloader.js');
-
-      // Resolve model
-      const modelDir = path.join(productRoot, '..', 'models', 'rmbg-2.0');
-      const modelStatus = await ensureModelReady({ modelDir });
-      if (!modelStatus.ready) {
-        return jsonRes(res, 503, { error: 'RMBG model not available', details: modelStatus.error });
-      }
-      const session = await loadModel({ modelDir });
-      if (!session) {
-        return jsonRes(res, 503, { error: 'Failed to load RMBG model' });
-      }
+      const { processImage, processHeroImage, loadModel } = await import('../imageProcessor.js');
 
       // Determine source: check originals/ first, fall back to master on disk
       let sourcePath;
@@ -206,10 +195,32 @@ export function registerProductImageFinderRoutes(ctx) {
         stages: ['Processing'],
       });
 
-      // Process
+      // Process — hero images get 16:9 center-crop, view images get RMBG
+      const isHero = existingEntry?.view === 'hero';
       const masterFilename = stemPng;
       const masterOut = path.join(imagesDir, masterFilename);
-      const result = await processImage({ inputPath: sourcePath, outputPath: masterOut, session });
+      let result;
+
+      if (isHero) {
+        result = await processHeroImage({ inputPath: sourcePath, outputPath: masterOut });
+        // WHY: bg_removed is the universal "processed" flag the UI checks to hide RAW badge / process button
+        result.bg_removed = true;
+      } else {
+        const { ensureModelReady } = await import('../modelDownloader.js');
+        const modelDir = path.join(productRoot, '..', 'models', 'rmbg-2.0');
+        const pifStore = getSpecDb(category)?.getFinderStore('productImageFinder');
+        const modelStatus = await ensureModelReady({ modelDir, token: pifStore?.getSetting('hfToken') || '' });
+        if (!modelStatus.ready) {
+          failOperation({ id: op.id, error: 'RMBG model not available' });
+          return jsonRes(res, 503, { error: 'RMBG model not available', details: modelStatus.error });
+        }
+        const session = await loadModel({ modelDir });
+        if (!session) {
+          failOperation({ id: op.id, error: 'Failed to load RMBG model' });
+          return jsonRes(res, 503, { error: 'Failed to load RMBG model' });
+        }
+        result = await processImage({ inputPath: sourcePath, outputPath: masterOut, session });
+      }
 
       if (!result.ok) {
         failOperation({ id: op.id, error: result.error || 'processing failed' });
@@ -319,11 +330,10 @@ export function registerProductImageFinderRoutes(ctx) {
       const imagesDir = path.join(productRoot, productId, 'images');
       const originalsDir = path.join(imagesDir, 'originals');
 
-      const { processImage, loadModel } = await import('../imageProcessor.js');
-      const { ensureModelReady } = await import('../modelDownloader.js');
+      const { processImage, processHeroImage, loadModel } = await import('../imageProcessor.js');
       const { readProductImages, writeProductImages, recalculateProductImagesFromRuns } = await import('../productImageStore.js');
 
-      // Find unprocessed images
+      // Find unprocessed images (heroes need crop, views need RMBG)
       const doc = readProductImages({ productId, productRoot });
       const unprocessed = [];
       if (doc?.runs) {
@@ -338,15 +348,21 @@ export function registerProductImageFinderRoutes(ctx) {
         return jsonRes(res, 200, { ok: true, processed: 0, message: 'no unprocessed images' });
       }
 
-      // Load model
-      const modelDir = path.join(productRoot, '..', 'models', 'rmbg-2.0');
-      const modelStatus = await ensureModelReady({ modelDir });
-      if (!modelStatus.ready) {
-        return jsonRes(res, 503, { error: 'RMBG model not available', details: modelStatus.error });
-      }
-      const session = await loadModel({ modelDir });
-      if (!session) {
-        return jsonRes(res, 503, { error: 'Failed to load RMBG model' });
+      // Only load RMBG model if there are non-hero images to process
+      const hasViewImages = unprocessed.some(img => img.view !== 'hero');
+      let session = null;
+      if (hasViewImages) {
+        const { ensureModelReady } = await import('../modelDownloader.js');
+        const modelDir = path.join(productRoot, '..', 'models', 'rmbg-2.0');
+        const batchPifStore = getSpecDb(category)?.getFinderStore('productImageFinder');
+        const modelStatus = await ensureModelReady({ modelDir, token: batchPifStore?.getSetting('hfToken') || '' });
+        if (!modelStatus.ready) {
+          return jsonRes(res, 503, { error: 'RMBG model not available', details: modelStatus.error });
+        }
+        session = await loadModel({ modelDir });
+        if (!session) {
+          return jsonRes(res, 503, { error: 'Failed to load RMBG model' });
+        }
       }
 
       // Register operation
@@ -360,12 +376,14 @@ export function registerProductImageFinderRoutes(ctx) {
       });
 
       const total = unprocessed.length;
+      const signal = getOperationSignal(op.id);
 
       return fireAndForget({
         res,
         jsonRes,
         op,
         broadcastWs,
+        signal,
         emitArgs: {
           event: 'product-image-finder-batch-processed',
           category,
@@ -393,7 +411,13 @@ export function registerProductImageFinderRoutes(ctx) {
 
             const masterFilename = img.filename.replace(/\.\w+$/, '.png');
             const masterOut = path.join(imagesDir, masterFilename);
-            const result = await processImage({ inputPath: sourcePath, outputPath: masterOut, session });
+            let result;
+            if (img.view === 'hero') {
+              result = await processHeroImage({ inputPath: sourcePath, outputPath: masterOut });
+              result.bg_removed = true;
+            } else {
+              result = await processImage({ inputPath: sourcePath, outputPath: masterOut, session });
+            }
 
             if (result.ok) {
               const originalFormat = path.extname(img.original_filename || img.filename).toLowerCase().replace('.', '');
@@ -452,6 +476,7 @@ export function registerProductImageFinderRoutes(ctx) {
         },
         completeOperation,
         failOperation,
+        cancelOperation,
         emitDataChange,
       });
     }
@@ -485,6 +510,7 @@ export function registerProductImageFinderRoutes(ctx) {
           stages: ['Discovery', 'Download', 'Processing', 'Complete'],
         });
         batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
+        const signal = getOperationSignal(op.id);
 
         return fireAndForget({
           res,
@@ -492,6 +518,7 @@ export function registerProductImageFinderRoutes(ctx) {
           op,
           batcher,
           broadcastWs,
+          signal,
           emitArgs: {
             event: 'product-image-finder-loop',
             category,
@@ -512,6 +539,7 @@ export function registerProductImageFinderRoutes(ctx) {
             config,
             logger: logger || null,
             variantKey,
+            signal,
             onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
             onModelResolved: (info) => updateModelInfo({ id: op.id, ...info }),
             onStreamChunk: (delta) => { if (delta.reasoning) batcher.push(delta.reasoning); if (delta.content) batcher.push(delta.content); },
@@ -531,12 +559,12 @@ export function registerProductImageFinderRoutes(ctx) {
                   views: carouselProgress?.viewDetails
                     ? Object.entries(carouselProgress.viewDetails).map(([view, d]) => ({
                       view, count: d.count, target: loopThreshold, satisfied: d.satisfied, exhausted: d.exhausted,
-                      attempts: d.attempts ?? 0, attemptBudget: viewAttemptBudget,
+                      attempts: d.attempts ?? 0, attemptBudget: d.attemptBudget ?? viewAttemptBudget,
                     }))
                     : [],
                   hero: carouselProgress?.heroTarget > 0
                     ? { count: carouselProgress.heroCount, target: carouselProgress.heroTarget, satisfied: carouselProgress.heroSatisfied, exhausted: carouselProgress.heroExhausted,
-                        attempts: carouselProgress.heroAttempts ?? 0, attemptBudget: heroAttemptBudget }
+                        attempts: carouselProgress.heroAttempts ?? 0, attemptBudget: carouselProgress.heroAttemptBudget ?? heroAttemptBudget }
                     : null,
                 },
               });
@@ -544,12 +572,93 @@ export function registerProductImageFinderRoutes(ctx) {
           }),
           completeOperation,
           failOperation,
+          cancelOperation,
           emitDataChange,
         });
       } catch (err) {
         if (batcher) batcher.dispose();
         if (op) failOperation({ id: op.id, error: err instanceof Error ? err.message : String(err) });
         return jsonRes(res, 500, { error: 'loop failed', message: err instanceof Error ? err.message : String(err) });
+      }
+    }
+
+    // ── Carousel Builder: evaluate images ─────────────────────────
+    // POST /product-image-finder/:category/:productId/evaluate
+    if (method === 'POST' && category && productId && parts[3] === 'evaluate') {
+      let op = null;
+      let batcher = null;
+      try {
+        const specDb = getSpecDb(category);
+        if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+
+        const productRow = specDb.getProduct(productId);
+        if (!productRow) return jsonRes(res, 404, { error: 'product not found', product_id: productId, category });
+
+        const body = await readJsonBody(req).catch(() => ({}));
+        const variantKey = body?.variant_key || null;
+
+        op = registerOperation({
+          type: 'pif',
+          subType: 'evaluate',
+          category,
+          productId,
+          productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
+          variantKey: variantKey || '',
+          stages: ['Evaluating', 'Heroes', 'Complete'],
+        });
+
+        batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
+        const signal = getOperationSignal(op.id);
+
+        return fireAndForget({
+          res,
+          jsonRes,
+          op,
+          batcher,
+          broadcastWs,
+          signal,
+          emitArgs: {
+            event: 'product-image-finder-evaluate',
+            category,
+            entities: { productIds: [productId] },
+            meta: { productId },
+          },
+          asyncWork: () => ctx.runCarouselBuild({
+            product: {
+              product_id: productId,
+              category,
+              brand: productRow.brand || '',
+              model: productRow.model || '',
+              base_model: productRow.base_model || '',
+              variant: productRow.variant || '',
+            },
+            appDb,
+            specDb,
+            config,
+            logger: logger || null,
+            variantKey,
+            signal,
+            onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
+            onModelResolved: (info) => updateModelInfo({ id: op.id, ...info }),
+            onStreamChunk: (delta) => {
+              if (delta?.reasoning) batcher?.push(delta.reasoning);
+              if (delta?.content) batcher?.push(delta.content);
+            },
+            onQueueWait: (ms) => updateQueueDelay({ id: op.id, queueDelayMs: ms }),
+            onLlmCallComplete: (call) => appendLlmCall({ id: op.id, call }),
+            onVariantProgress: (idx, total, vk) => {
+              updateProgressText({ id: op.id, text: `Variant ${idx + 1}/${total}: ${vk}` });
+            },
+          }),
+          completeOperation,
+          failOperation,
+          cancelOperation,
+          emitDataChange,
+        });
+      } catch (err) {
+        if (batcher) batcher.dispose();
+        if (op) failOperation({ id: op.id, error: err instanceof Error ? err.message : String(err) });
+        return jsonRes(res, 500, { error: 'evaluate failed', message: err instanceof Error ? err.message : String(err) });
       }
     }
 
@@ -580,6 +689,7 @@ export function registerProductImageFinderRoutes(ctx) {
           stages,
         });
         batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
+        const signal = getOperationSignal(op.id);
 
         return fireAndForget({
           res,
@@ -587,6 +697,7 @@ export function registerProductImageFinderRoutes(ctx) {
           op,
           batcher,
           broadcastWs,
+          signal,
           emitArgs: {
             event: 'product-image-finder-run',
             category,
@@ -608,6 +719,7 @@ export function registerProductImageFinderRoutes(ctx) {
             logger: logger || null,
             variantKey,
             mode,
+            signal,
             onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
             onModelResolved: (info) => updateModelInfo({ id: op.id, ...info }),
             onStreamChunk: (delta) => { if (delta.reasoning) batcher.push(delta.reasoning); if (delta.content) batcher.push(delta.content); },
@@ -616,6 +728,7 @@ export function registerProductImageFinderRoutes(ctx) {
           }),
           completeOperation,
           failOperation,
+          cancelOperation,
           emitDataChange,
         });
       } catch (err) {
@@ -778,7 +891,7 @@ export function registerProductImageFinderRoutes(ctx) {
     const mimeMap = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif', '.avif': 'image/avif' };
     const contentType = mimeMap[ext] || 'application/octet-stream';
     const stat = fs.statSync(filePath);
-    res.writeHead(200, { 'Content-Type': contentType, 'Content-Length': stat.size, 'Cache-Control': 'public, max-age=86400' });
+    res.writeHead(200, { 'Content-Type': contentType, 'Content-Length': stat.size, 'Cache-Control': 'no-cache', 'ETag': `"${stat.mtimeMs.toString(36)}-${stat.size.toString(36)}"` });
     fs.createReadStream(filePath).pipe(res);
     return true;
   }

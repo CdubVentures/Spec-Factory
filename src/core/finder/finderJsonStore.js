@@ -168,6 +168,31 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
   }
 
   /**
+   * Delete multiple runs by run_number. Recalculates selected once from remaining.
+   * Returns updated doc, or null if no runs remain (file deleted).
+   */
+  function deleteRuns({ productId, productRoot, runNumbers }) {
+    const existing = read({ productId, productRoot });
+    if (!existing) return null;
+
+    const toRemove = new Set(runNumbers);
+    const existingRuns = Array.isArray(existing.runs) ? existing.runs : [];
+    const remaining = existingRuns.filter(r => !toRemove.has(r.run_number));
+
+    if (remaining.length === existingRuns.length) return existing;
+
+    if (remaining.length === 0) {
+      const filePath = resolvePath(productId, productRoot);
+      try { fs.unlinkSync(filePath); } catch { /* */ }
+      return null;
+    }
+
+    const recalculated = recalculateFromRuns(remaining, existing.product_id || productId, existing.category);
+    write({ productId, productRoot, data: recalculated });
+    return recalculated;
+  }
+
+  /**
    * Delete all finder data for a product. Removes the JSON file.
    */
   function deleteAll({ productId, productRoot }) {
@@ -176,5 +201,5 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
     return { deleted: true };
   }
 
-  return { read, write, recalculateFromRuns, merge, deleteRun, deleteAll };
+  return { read, write, recalculateFromRuns, merge, deleteRun, deleteRuns, deleteAll };
 }

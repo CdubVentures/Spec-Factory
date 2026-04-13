@@ -15,7 +15,18 @@ function makeSpecDbStub(finderRow = null, listRows = [], productRow = null, runR
   const candidateDeleteCalls = [];
   const candidateDeleteByValueCalls = [];
   const candidateUpsertCalls = [];
+  const finderStore = {
+    get: () => finderRow,
+    listByCategory: () => listRows,
+    listRuns: () => runRows,
+    upsert: () => {},
+    remove: () => {},
+    removeRun: () => {},
+    removeAllRuns: () => {},
+    insertRun: () => {},
+  };
   return {
+    getFinderStore: () => finderStore,
     getColorEditionFinder: () => finderRow,
     listColorEditionFinderByCategory: () => listRows,
     listColorEditionFinderRuns: () => runRows,

@@ -52,6 +52,13 @@ export interface ReviewCandidate {
   llm_extract_provider?: string | null;
   llm_validate_model?: string | null;
   llm_validate_provider?: string | null;
+  // Fan-out fields (per-source candidate data from sources_json)
+  status?: 'candidate' | 'resolved';
+  model?: string | null;
+  run_id?: string | null;
+  submitted_at?: string | null;
+  evidence_url?: string | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface FieldState {

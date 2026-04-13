@@ -490,6 +490,7 @@ export async function callLlmWithRouting({
   onModelResolved,
   onStreamChunk,
   onQueueWait,
+  signal,
 }) {
   const resolvedRole = role || routeRoleFromReason(reason);
   const primary = resolveLlmRoute(config, {
@@ -568,7 +569,7 @@ export async function callLlmWithRouting({
         const waitMs = Date.now() - enqueueAt;
         onQueueWait?.(waitMs);
         return callFn();
-      }, labQueueDelayMs);
+      }, labQueueDelayMs, signal);
     }
     return callFn();
   };
@@ -613,7 +614,8 @@ export async function callLlmWithRouting({
     maxTokens: Number(resolvedMaxTokens || 0),
     timeoutMs: resolvedTimeoutMs,
     logger,
-    onStreamChunk
+    onStreamChunk,
+    signal,
   };
 
   // Cost flow-through: prefer registry costs over flat config keys
@@ -649,8 +651,8 @@ export async function callLlmWithRouting({
         : fallbackTokenCap);
     const fbWebSearch = resolvePhaseFlag(config, phase, 'FallbackWebSearch');
     const fbThinking = resolvePhaseFlag(config, phase, 'FallbackThinking');
-    onModelResolved?.({ model: fallback.model, provider: fallback.provider, isFallback: true, accessMode: fallback._registryEntry?.accessMode || 'api', thinking: Boolean(fbThinking), webSearch: Boolean(fbWebSearch) });
     const fbThinkingEffort = resolvePhaseString(config, phase, 'FallbackThinkingEffort');
+    onModelResolved?.({ model: fallback.model, provider: fallback.provider, isFallback: true, accessMode: fallback._registryEntry?.accessMode || 'api', thinking: Boolean(fbThinking), webSearch: Boolean(fbWebSearch), effortLevel: extractEffortFromModelName(fallback.model) || fbThinkingEffort || '' });
     const capFb = capitalize(String(phase || '').trim());
     const fbReasoning = capFb ? Boolean(config[`_resolved${capFb}FallbackUseReasoning`]) : false;
     const fallbackBakedEffort = extractEffortFromModelName(fallback.model);
@@ -688,7 +690,7 @@ export async function callLlmWithRouting({
   const useWriterPhase = !jsonStrictEnabled && jsonSchema;
 
   if (useWriterPhase) {
-    onModelResolved?.({ model: primary.model, provider: primary.provider, isFallback: false, accessMode: primary._registryEntry?.accessMode || 'api', thinking: Boolean(phaseThinking), webSearch: Boolean(phaseWebSearch) });
+    onModelResolved?.({ model: primary.model, provider: primary.provider, isFallback: false, accessMode: primary._registryEntry?.accessMode || 'api', thinking: Boolean(phaseThinking), webSearch: Boolean(phaseWebSearch), effortLevel: primaryBakedEffort || phaseThinkingEffort || '' });
     let researchText;
     try {
       researchText = await wrapLabQueue(primary, () => callLlmProvider({
@@ -764,7 +766,7 @@ export async function callLlmWithRouting({
   }
 
   // Existing single-call behavior (jsonStrict: true or no jsonSchema)
-  onModelResolved?.({ model: primary.model, provider: primary.provider, isFallback: false, accessMode: primary._registryEntry?.accessMode || 'api', thinking: Boolean(phaseThinking), webSearch: Boolean(phaseWebSearch) });
+  onModelResolved?.({ model: primary.model, provider: primary.provider, isFallback: false, accessMode: primary._registryEntry?.accessMode || 'api', thinking: Boolean(phaseThinking), webSearch: Boolean(phaseWebSearch), effortLevel: primaryBakedEffort || phaseThinkingEffort || '' });
   try {
     return await wrapLabQueue(primary, () => callLlmProvider({
       ...effectiveSharedParams,

@@ -36,6 +36,13 @@ Generic infrastructure for LLM-driven finder modules. Any module that discovers 
 ### `finderRouteWiring.js` — dynamic route auto-wiring (for future async server boot)
 - `wireFinderRoutes(deps)` — dynamically imports and wires all registered modules
 
+### `finderOrchestrationHelpers.js` — shared orchestrator boilerplate
+- `COOLDOWN_DAYS` — canonical 30-day cooldown default
+- `computeCooldownUntil({ days?, now? })` — returns `{ cooldownUntil, ranAt, now }` (days=0 → no cooldown)
+- `resolveModelTracking({ config, phaseKey, onModelResolved })` — returns tracking object with `actualModel`, `actualFallbackUsed`, `wrappedOnModelResolved`
+- `resolveAmbiguityContext({ config, category, brand, baseModel, specDb, resolveFn })` — returns `{ familyModelCount, ambiguityLevel }` (non-fatal fallback)
+- `buildFinderLlmCaller({ _callLlmOverride, wrappedOnModelResolved, createCallLlm, llmDeps })` — returns callLlm function
+
 ## Dependencies
 
 - **Allowed**: `src/core/config/` (runtimeArtifactRoots), `src/core/events/` (dataChangeContract), `src/core/operations/` (operationsRegistry), `src/core/llm/` (streamBatcher)

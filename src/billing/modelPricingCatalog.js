@@ -21,6 +21,7 @@ export const LLM_PRICING_AS_OF = '2026-02-19';
 
 export const LLM_PRICING_SOURCES = {
   openai: 'https://platform.openai.com/docs/pricing',
+  anthropic: 'https://www.anthropic.com/pricing',
   gemini: 'https://ai.google.dev/gemini-api/docs/pricing',
   deepseek: 'https://api-docs.deepseek.com/quick_start/pricing'
 };
@@ -36,6 +37,10 @@ const CANONICAL_MODEL_PRICING = {
   'gpt-5.2-mini': { inputPer1M: 0.35, outputPer1M: 2.8, cachedInputPer1M: 0.035 },
   'gpt-5.2-nano': { inputPer1M: 0.07, outputPer1M: 0.56, cachedInputPer1M: 0.007 },
   'gpt-5.2-pro': { inputPer1M: 21, outputPer1M: 168, cachedInputPer1M: 2.1 },
+  'gpt-5.3-codex': { inputPer1M: 1.75, outputPer1M: 14, cachedInputPer1M: 0.175 },
+  'gpt-5.3-codex-spark': { inputPer1M: 0, outputPer1M: 0, cachedInputPer1M: 0 },
+  'gpt-5.4': { inputPer1M: 2.5, outputPer1M: 15, cachedInputPer1M: 1.25 },
+  'gpt-5.4-mini': { inputPer1M: 0.75, outputPer1M: 4.5, cachedInputPer1M: 0.375 },
   'gpt-5-chat-latest': { inputPer1M: 1.25, outputPer1M: 10, cachedInputPer1M: 0.125 },
   'gpt-5.1-chat-latest': { inputPer1M: 1.25, outputPer1M: 10, cachedInputPer1M: 0.125 },
   'gpt-5.2-chat-latest': { inputPer1M: 1.75, outputPer1M: 14, cachedInputPer1M: 0.175 },
@@ -49,6 +54,12 @@ const CANONICAL_MODEL_PRICING = {
   'gpt-4o-mini': { inputPer1M: 0.15, outputPer1M: 0.6, cachedInputPer1M: 0.075 },
   'gemini-2.5-flash': { inputPer1M: 0.3, outputPer1M: 2.5, cachedInputPer1M: 0.03 },
   'gemini-2.5-flash-lite': { inputPer1M: 0.1, outputPer1M: 0.4, cachedInputPer1M: 0.01 },
+  'claude-opus-4-6': { inputPer1M: 5, outputPer1M: 25, cachedInputPer1M: 0.5 },
+  'claude-sonnet-4-6': { inputPer1M: 3, outputPer1M: 15, cachedInputPer1M: 0.3 },
+  'claude-opus-4-5': { inputPer1M: 3, outputPer1M: 15, cachedInputPer1M: 0.3 },
+  'claude-sonnet-4-5': { inputPer1M: 3, outputPer1M: 15, cachedInputPer1M: 0.3 },
+  'claude-opus-4-1': { inputPer1M: 15, outputPer1M: 75, cachedInputPer1M: 1.5 },
+  'claude-haiku-4-5': { inputPer1M: 1, outputPer1M: 5, cachedInputPer1M: 0.1 },
   'deepseek-chat': { inputPer1M: 0.27, outputPer1M: 1.1, cachedInputPer1M: 0.07 },
   'deepseek-reasoner': { inputPer1M: 0.55, outputPer1M: 2.19, cachedInputPer1M: 0.14 }
 };

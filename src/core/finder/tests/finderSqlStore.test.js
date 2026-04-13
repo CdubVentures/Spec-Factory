@@ -127,4 +127,31 @@ describe('createFinderSqlStore — generic SQL store', () => {
     store.removeAllRuns('p-clear');
     assert.equal(store.listRuns('p-clear').length, 0);
   });
+
+  // ── Effort + access_mode persistence ──────────────────────────────
+
+  it('insertRun persists effort_level and access_mode', () => {
+    store.insertRun({
+      category: 'cat', product_id: 'p-effort', run_number: 1,
+      ran_at: '2026-04-12', model: 'gpt-5.4-xhigh', fallback_used: false,
+      cooldown_until: '', effort_level: 'xhigh', access_mode: 'lab',
+      selected: {}, prompt: {}, response: {},
+    });
+    const runs = store.listRuns('p-effort');
+    assert.equal(runs.length, 1);
+    assert.equal(runs[0].effort_level, 'xhigh');
+    assert.equal(runs[0].access_mode, 'lab');
+  });
+
+  it('effort_level and access_mode default to empty string when omitted', () => {
+    store.insertRun({
+      category: 'cat', product_id: 'p-no-effort', run_number: 1,
+      ran_at: '', model: 'gpt-4o', fallback_used: false,
+      cooldown_until: '',
+      selected: {}, prompt: {}, response: {},
+    });
+    const runs = store.listRuns('p-no-effort');
+    assert.equal(runs[0].effort_level, '');
+    assert.equal(runs[0].access_mode, '');
+  });
 });

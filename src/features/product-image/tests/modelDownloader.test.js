@@ -52,12 +52,12 @@ describe('ensureModelReady', () => {
 
     const result = await ensureModelReady({
       modelDir: dir,
-      _tokenOverride: '',
+      token: '',
     });
 
     assert.equal(result.ready, false);
     assert.ok(result.error);
-    assert.ok(result.error.includes('manual') || result.error.includes('download') || result.error.includes('HF_TOKEN'));
+    assert.ok(result.error.includes('hfToken'), 'error should reference hfToken setting');
   });
 
   it('cleans up partial download on fetch failure', async () => {

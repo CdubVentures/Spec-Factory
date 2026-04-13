@@ -54,6 +54,13 @@ describe('generateFinderDdl', () => {
     assert.ok(joined.includes('UNIQUE'));
   });
 
+  it('runs table includes effort_level and access_mode columns', () => {
+    const ddl = generateFinderDdl([CEF_MODULE]);
+    const joined = ddl.join('\n');
+    assert.ok(joined.includes("effort_level TEXT DEFAULT ''"), 'missing effort_level column');
+    assert.ok(joined.includes("access_mode TEXT DEFAULT ''"), 'missing access_mode column');
+  });
+
   it('generates indexes from summaryIndexes', () => {
     const ddl = generateFinderDdl([CEF_MODULE]);
     const joined = ddl.join('\n');

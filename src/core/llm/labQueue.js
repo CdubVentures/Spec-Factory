@@ -17,9 +17,10 @@ let _tail = Promise.resolve();
  *
  * @param {() => Promise<T>} fn — async function to execute
  * @param {number} delayMs — ms to wait before dispatching (after previous dispatch)
+ * @param {AbortSignal} [signal] — if aborted, rejects with AbortError without calling fn
  * @returns {Promise<T>} — result of fn()
  */
-export function enqueueLabCall(fn, delayMs) {
+export function enqueueLabCall(fn, delayMs, signal) {
   // WHY: Separate the dispatch gate from the call result.
   // _tail tracks when the NEXT call is allowed to fire (delay only).
   // The caller gets fn()'s result independently — calls overlap freely.
@@ -29,10 +30,14 @@ export function enqueueLabCall(fn, delayMs) {
   const prev = _tail;
   _tail = prev
     .catch(() => {})
-    .then(() => sleep(delayMs))
+    .then(() => abortableSleep(delayMs, signal))
+    .catch(() => {})
     .then(() => { dispatch(); });
 
-  return gate.then(() => fn());
+  return gate.then(() => {
+    if (signal?.aborted) throw new DOMException('Operation cancelled', 'AbortError');
+    return fn();
+  });
 }
 
 /** Reset queue state. Test-only — not part of public API. */
@@ -40,7 +45,14 @@ export function _resetForTest() {
   _tail = Promise.resolve();
 }
 
-function sleep(ms) {
-  if (ms <= 0) return Promise.resolve();
-  return new Promise((r) => setTimeout(r, ms));
+function abortableSleep(ms, signal) {
+  if (ms <= 0) return signal?.aborted ? Promise.reject(new DOMException('Operation cancelled', 'AbortError')) : Promise.resolve();
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) { reject(new DOMException('Operation cancelled', 'AbortError')); return; }
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener('abort', () => {
+      clearTimeout(timer);
+      reject(new DOMException('Operation cancelled', 'AbortError'));
+    }, { once: true });
+  });
 }

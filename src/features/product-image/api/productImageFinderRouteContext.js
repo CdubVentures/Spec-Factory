@@ -3,7 +3,8 @@
  */
 
 import { runProductImageFinder, runCarouselLoop } from '../productImageFinder.js';
-import { deleteProductImageFinderRun, deleteProductImageFinderAll } from '../productImageStore.js';
+import { runCarouselBuild } from '../carouselBuild.js';
+import { deleteProductImageFinderRun, deleteProductImageFinderRuns, deleteProductImageFinderAll } from '../productImageStore.js';
 
 export function createProductImageFinderRouteContext(options = {}) {
   if (!options || typeof options !== 'object' || Array.isArray(options)) {
@@ -14,7 +15,7 @@ export function createProductImageFinderRouteContext(options = {}) {
 
   return {
     jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
-    logger, runProductImageFinder, runCarouselLoop,
-    deleteProductImageFinderRun, deleteProductImageFinderAll,
+    logger, runProductImageFinder, runCarouselLoop, runCarouselBuild,
+    deleteProductImageFinderRun, deleteProductImageFinderRuns, deleteProductImageFinderAll,
   };
 }

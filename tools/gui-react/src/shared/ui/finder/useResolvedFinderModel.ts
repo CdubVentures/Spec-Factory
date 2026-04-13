@@ -13,11 +13,14 @@ import type { LlmPhaseOverrides, LlmOverridePhaseId } from '../../../features/ll
 import { assembleLlmPolicyFromFlat } from '../../../features/llm-config/state/llmPolicyAdapter.generated.ts';
 import { resolveProviderForModel } from '../../../features/llm-config/state/llmProviderRegistryBridge.ts';
 import type { LlmAccessMode, LlmProviderEntry } from '../../../features/llm-config/types/llmProviderRegistryTypes.ts';
+import { extractEffortFromModelName } from '../../../features/llm-config/state/llmEffortFromModelName.ts';
 
 export interface ResolvedFinderModel {
   model: ReturnType<typeof resolvePhaseModel>;
   accessMode: LlmAccessMode;
   modelDisplay: string;
+  /** Resolved effort level — baked from model name suffix or configured per-phase. Empty when none. */
+  effortLevel: string;
   registry: LlmProviderEntry[];
 }
 
@@ -36,7 +39,7 @@ function resolveAccessModeForModel(registry: LlmProviderEntry[], modelKey: strin
 export function useResolvedFinderModel(phaseId: LlmOverridePhaseId): ResolvedFinderModel {
   const storeValues = useRuntimeSettingsValueStore((s) => s.values);
   return useMemo(() => {
-    const empty: ResolvedFinderModel = { model: null, accessMode: 'api' as LlmAccessMode, modelDisplay: 'not configured', registry: [] };
+    const empty: ResolvedFinderModel = { model: null, accessMode: 'api' as LlmAccessMode, modelDisplay: 'not configured', effortLevel: '', registry: [] };
     if (!storeValues) return empty;
     const policy = assembleLlmPolicyFromFlat(storeValues as Record<string, unknown>);
     const globalDraft: GlobalDraftSlice = {
@@ -59,6 +62,9 @@ export function useResolvedFinderModel(phaseId: LlmOverridePhaseId): ResolvedFin
       : (phaseOverride?.baseModel || globalDraft.llmModelPlan);
     const accessMode = resolveAccessModeForModel(registry, rawModelKey);
     const modelDisplay = resolved?.effectiveModel || 'not configured';
-    return { model: resolved, accessMode, modelDisplay, registry };
+    // WHY: Baked effort (e.g. gpt-5.4-xhigh) takes priority over configured effort.
+    const bakedEffort = extractEffortFromModelName(modelDisplay);
+    const effortLevel = bakedEffort || resolved?.thinkingEffort || '';
+    return { model: resolved, accessMode, modelDisplay, effortLevel, registry };
   }, [storeValues, phaseId]);
 }

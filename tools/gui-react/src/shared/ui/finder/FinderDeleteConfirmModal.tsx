@@ -11,11 +11,15 @@ interface FinderDeleteConfirmModalProps {
 export function FinderDeleteConfirmModal({ target, onConfirm, onCancel, isPending, moduleLabel = 'Finder' }: FinderDeleteConfirmModalProps) {
   const title = target.kind === 'all'
     ? `Delete all ${moduleLabel} data?`
-    : `Delete run #${target.runNumber}?`;
+    : target.kind === 'loop'
+      ? `Delete loop (${target.runNumbers?.length ?? 0} runs)?`
+      : `Delete run #${target.runNumber}?`;
 
   const description = target.kind === 'all'
     ? `This will permanently remove all ${target.count ?? 0} run(s) and reset the ${moduleLabel} state for this product.`
-    : `This will permanently remove run #${target.runNumber} and recalculate the selected state from remaining runs.`;
+    : target.kind === 'loop'
+      ? `This will permanently remove all ${target.runNumbers?.length ?? 0} run(s) from this loop and recalculate the selected state from remaining runs.`
+      : `This will permanently remove run #${target.runNumber} and recalculate the selected state from remaining runs.`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">

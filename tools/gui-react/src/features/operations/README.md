@@ -5,7 +5,7 @@ Frontend sidebar widget that displays all active long-running operations (LLM ca
 ## Public API (The Contract)
 
 - `OperationsTracker` — React component, renders in Sidebar below category selector
-- `useOperationsStore` — Zustand store: `{ operations, upsert, remove, clear }`
+- `useOperationsStore` — Zustand store: `{ operations, streamTexts, upsert, remove, clear, appendStreamText, batchAppendStreamText }`
 - `useOperationsHydration` — Hook: fetches GET /api/operations on mount, seeds store
 
 ## Dependencies

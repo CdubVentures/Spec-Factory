@@ -73,8 +73,8 @@ export function createFinderSqlStore({ db, category, module: mod }) {
       `DELETE FROM ${tableName} WHERE category = ? AND product_id = ?`
     ),
     _insertRun: db.prepare(
-      `INSERT OR REPLACE INTO ${runsTableName} (category, product_id, run_number, ran_at, model, fallback_used, cooldown_until, selected_json, prompt_json, response_json)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT OR REPLACE INTO ${runsTableName} (category, product_id, run_number, ran_at, model, fallback_used, effort_level, access_mode, cooldown_until, selected_json, prompt_json, response_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ),
     _listRuns: db.prepare(
       `SELECT * FROM ${runsTableName} WHERE category = ? AND product_id = ? ORDER BY run_number ASC`
@@ -157,6 +157,8 @@ export function createFinderSqlStore({ db, category, module: mod }) {
       row.ran_at || '',
       row.model || 'unknown',
       row.fallback_used ? 1 : 0,
+      row.effort_level || '',
+      row.access_mode || '',
       row.cooldown_until || '',
       JSON.stringify(row.selected || {}),
       JSON.stringify(row.prompt || {}),

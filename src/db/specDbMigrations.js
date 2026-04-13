@@ -39,6 +39,12 @@ export const MIGRATIONS = [
   // and doesn't require field rule lookup to display.
   `ALTER TABLE field_candidates ADD COLUMN unit TEXT DEFAULT NULL`,
   `ALTER TABLE component_values ADD COLUMN unit TEXT DEFAULT NULL`,
+  // WHY: Finder runs now persist effort_level and access_mode for LLM badge
+  // rendering in run history. Existing DBs need the columns added.
+  `ALTER TABLE color_edition_finder_runs ADD COLUMN effort_level TEXT DEFAULT ''`,
+  `ALTER TABLE color_edition_finder_runs ADD COLUMN access_mode TEXT DEFAULT ''`,
+  `ALTER TABLE product_image_finder_runs ADD COLUMN effort_level TEXT DEFAULT ''`,
+  `ALTER TABLE product_image_finder_runs ADD COLUMN access_mode TEXT DEFAULT ''`,
 ];
 
 export const SECONDARY_INDEXES = `
@@ -55,7 +61,7 @@ export const SECONDARY_INDEXES = `
 export function applyMigrations(db) {
   for (const sql of MIGRATIONS) {
     try { db.exec(sql); } catch (e) {
-      if (!e.message.includes('duplicate column') && !e.message.includes('no such column')) throw e;
+      if (!e.message.includes('duplicate column') && !e.message.includes('no such column') && !e.message.includes('no such table')) throw e;
     }
   }
   db.exec(SECONDARY_INDEXES);

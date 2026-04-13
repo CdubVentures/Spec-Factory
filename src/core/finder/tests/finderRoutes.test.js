@@ -26,6 +26,7 @@ function makeFinderConfig(overrides = {}) {
     fieldKeys: ['field_a', 'field_b'],
     runFinder: overrides.runFinder || (async () => ({ rejected: false })),
     deleteRun: overrides.deleteRun || (() => null),
+    deleteRuns: overrides.deleteRuns || undefined,
     deleteAll: overrides.deleteAll || (() => ({ deleted: true })),
     getOne: overrides.getOne || (() => ({ product_id: 'p1', category: 'cat', cooldown_until: '', latest_ran_at: '', run_count: 1 })),
     listByCategory: overrides.listByCategory || (() => []),
@@ -159,6 +160,64 @@ describe('createFinderRouteHandler — generic', () => {
     assert.ok(allDeleted);
     // Candidates cleaned for each fieldKey
     assert.equal(specDb._candidateDeleteCalls.length, 2);
+  });
+
+  // ── DELETE batch runs ────────────────────────────────────────────
+
+  it('DELETE batch returns remaining count after removing specified runs', async () => {
+    const deletedNumbers = [];
+    const { ctx, calls } = makeCtx();
+    ctx.readJsonBody = async () => ({ runNumbers: [2, 3] });
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      deleteRuns: ({ runNumbers }) => { deletedNumbers.push(...runNumbers); return { run_count: 1, selected: {}, cooldown_until: '', last_ran_at: '' }; },
+      deleteRunSql: () => {},
+    }))(ctx);
+    await handler(['test-finder', 'cat', 'p1', 'runs', 'batch'], new Map(), 'DELETE', {}, {});
+    assert.equal(calls[0].status, 200);
+    assert.equal(calls[0].body.remaining_runs, 1);
+    assert.deepEqual(deletedNumbers, [2, 3]);
+  });
+
+  it('DELETE batch returns 400 for missing runNumbers', async () => {
+    const { ctx, calls } = makeCtx();
+    ctx.readJsonBody = async () => ({});
+    const handler = createFinderRouteHandler(makeFinderConfig())(ctx);
+    await handler(['test-finder', 'cat', 'p1', 'runs', 'batch'], new Map(), 'DELETE', {}, {});
+    assert.equal(calls[0].status, 400);
+  });
+
+  it('DELETE batch returns 400 for non-array runNumbers', async () => {
+    const { ctx, calls } = makeCtx();
+    ctx.readJsonBody = async () => ({ runNumbers: 'not-array' });
+    const handler = createFinderRouteHandler(makeFinderConfig())(ctx);
+    await handler(['test-finder', 'cat', 'p1', 'runs', 'batch'], new Map(), 'DELETE', {}, {});
+    assert.equal(calls[0].status, 400);
+  });
+
+  it('DELETE batch returns 400 for empty runNumbers array', async () => {
+    const { ctx, calls } = makeCtx();
+    ctx.readJsonBody = async () => ({ runNumbers: [] });
+    const handler = createFinderRouteHandler(makeFinderConfig())(ctx);
+    await handler(['test-finder', 'cat', 'p1', 'runs', 'batch'], new Map(), 'DELETE', {}, {});
+    assert.equal(calls[0].status, 400);
+  });
+
+  it('DELETE batch when all runs removed → cleans up SQL rows', async () => {
+    let sqlDeletedAll = false;
+    let sqlDeletedOne = false;
+    const { ctx, calls } = makeCtx();
+    ctx.readJsonBody = async () => ({ runNumbers: [1, 2] });
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      deleteRuns: () => null,
+      deleteRunSql: () => {},
+      deleteAllRunsSql: () => { sqlDeletedAll = true; },
+      deleteOneSql: () => { sqlDeletedOne = true; },
+    }))(ctx);
+    await handler(['test-finder', 'cat', 'p1', 'runs', 'batch'], new Map(), 'DELETE', {}, {});
+    assert.equal(calls[0].status, 200);
+    assert.equal(calls[0].body.remaining_runs, 0);
+    assert.ok(sqlDeletedAll, 'should delete all SQL runs');
+    assert.ok(sqlDeletedOne, 'should delete summary row');
   });
 
   it('DELETE single run does NOT delete candidates', async () => {

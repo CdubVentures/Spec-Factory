@@ -45,6 +45,8 @@ export function generateFinderDdl(modules) {
       `  ran_at TEXT DEFAULT '',`,
       `  model TEXT DEFAULT 'unknown',`,
       `  fallback_used INTEGER DEFAULT 0,`,
+      `  effort_level TEXT DEFAULT '',`,
+      `  access_mode TEXT DEFAULT '',`,
       `  cooldown_until TEXT DEFAULT '',`,
       `  selected_json TEXT DEFAULT '{}',`,
       `  prompt_json TEXT DEFAULT '{}',`,

@@ -193,16 +193,16 @@ export function ReviewMatrix({
                             key={p.product_id}
                             data-product-id={p.product_id}
                             data-field-key={row.key}
-                            className={`absolute top-0 flex items-center sf-review-matrix-cell cursor-pointer ${
+                            className={`absolute top-0 flex items-center sf-review-matrix-cell ${
                               isEditing
-                                ? 'sf-review-matrix-cell-editing'
+                                ? 'sf-review-matrix-cell-editing cursor-text'
                                 : isSelected
-                                  ? 'ring-2 ring-accent ring-inset sf-review-matrix-cell-active'
+                                  ? 'ring-2 ring-accent ring-inset sf-review-matrix-cell-active cursor-text'
                                   : isActive
-                                    ? 'ring-2 ring-accent ring-inset sf-review-matrix-cell-active'
+                                    ? 'ring-2 ring-accent ring-inset sf-review-matrix-cell-active cursor-text'
                                     : dimmed
-                                      ? 'sf-review-matrix-cell-dimmed'
-                                      : ''
+                                      ? 'sf-review-matrix-cell-dimmed cursor-pointer'
+                                      : 'cursor-pointer'
                             }`}
                             style={{ width: vCol.size, left: vCol.start, height: ROW_HEIGHT }}
                             onClick={() => onCellClick(p.product_id, row.key)}

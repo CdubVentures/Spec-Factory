@@ -70,7 +70,7 @@ export function rebuildColorEditionFinderFromJson({ specDb, productRoot }) {
 
     const productId = data.product_id || entry.name;
 
-    specDb.upsertColorEditionFinder({
+    specDb.getFinderStore('colorEditionFinder').upsert({
       category: data.category,
       product_id: productId,
       colors,
@@ -84,7 +84,7 @@ export function rebuildColorEditionFinderFromJson({ specDb, productRoot }) {
     // Seed per-run history into SQL projection
     const runs = Array.isArray(data.runs) ? data.runs : [];
     for (const run of runs) {
-      specDb.insertColorEditionFinderRun({
+      specDb.getFinderStore('colorEditionFinder').insertRun({
         category: data.category,
         product_id: productId,
         run_number: run.run_number,

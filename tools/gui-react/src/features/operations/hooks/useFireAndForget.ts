@@ -55,7 +55,6 @@ function makeStub(
     endedAt: null,
     error: null,
     modelInfo: null,
-    streamText: '',
     llmCalls: [] as readonly never[],
   };
 }

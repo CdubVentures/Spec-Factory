@@ -41,6 +41,8 @@ export interface RunHistoryRow {
   readonly ranAt: string;
   readonly model: string;
   readonly fallbackUsed: boolean;
+  readonly effortLevel: string;
+  readonly accessMode: string;
   readonly colorCount: number;
   readonly editionCount: number;
   readonly isLatest: boolean;
@@ -266,6 +268,8 @@ export function deriveRunHistoryRows(
         ranAt: run.ran_at,
         model: run.model,
         fallbackUsed: run.fallback_used,
+        effortLevel: run.effort_level ?? '',
+        accessMode: run.access_mode ?? '',
         colorCount: run.selected?.colors?.length ?? 0,
         editionCount: Object.keys(run.selected?.editions ?? {}).length,
         isLatest: run.run_number === maxRunNumber,

@@ -88,6 +88,40 @@ describe('enqueueLabCall', () => {
     const result = await enqueueLabCall(() => 42, 0);
     assert.equal(result, 42);
   });
+
+  // ── Signal-aware cancellation ─────────────────────────────────
+
+  test('pre-aborted signal throws AbortError without calling fn', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    let fnCalled = false;
+    await assert.rejects(
+      () => enqueueLabCall(() => { fnCalled = true; return 42; }, 0, controller.signal),
+      { name: 'AbortError' },
+    );
+    assert.equal(fnCalled, false);
+  });
+
+  test('signal aborted during queue sleep throws AbortError', async () => {
+    const controller = new AbortController();
+    // First call holds the queue for 200ms
+    const first = enqueueLabCall(() => sleep(10).then(() => 'first'), 200);
+    // Second call enters queue — will wait for 200ms delay
+    const second = enqueueLabCall(() => 'second', 200, controller.signal);
+    // Abort after 50ms (while second is waiting in queue)
+    setTimeout(() => controller.abort(), 50);
+    // WHY: Settle both in parallel to avoid unhandled-rejection window
+    const [r1, r2] = await Promise.allSettled([first, second]);
+    assert.equal(r1.status, 'fulfilled');
+    assert.equal(r1.value, 'first');
+    assert.equal(r2.status, 'rejected');
+    assert.equal(r2.reason.name, 'AbortError');
+  });
+
+  test('no signal — existing behavior unchanged', async () => {
+    const result = await enqueueLabCall(() => Promise.resolve('ok'), 0);
+    assert.equal(result, 'ok');
+  });
 });
 
 function sleep(ms) {

@@ -4,6 +4,7 @@ export interface DropdownModelOption {
   value: string;
   label: string;
   providerId: string | null;
+  providerName?: string;
   role?: LlmModelRole;
   costInputPer1M?: number;
   maxContextTokens?: number | null;
@@ -100,6 +101,14 @@ export function buildModelDropdownOptions(
     }
   }
 
+  // WHY: Build provider rank map from registry order for grouped sorting.
+  const providerRank = new Map<string, number>();
+  const providerNameMap = new Map<string, string>();
+  for (let i = 0; i < registry.length; i++) {
+    providerRank.set(registry[i].id, i);
+    providerNameMap.set(registry[i].id, registry[i].name || registry[i].id);
+  }
+
   // 1. Collect enabled registry models matching role filter
   for (const provider of registry) {
     if (apiKeyFilter && !apiKeyFilter(provider)) continue;
@@ -114,6 +123,7 @@ export function buildModelDropdownOptions(
         value: `${provider.id}:${model.modelId}`,
         label: buildLabel(model.modelId),
         providerId: provider.id,
+        providerName: providerNameMap.get(provider.id),
         role: model.role,
         costInputPer1M: model.costInputPer1M,
         maxContextTokens: model.maxContextTokens,
@@ -139,8 +149,16 @@ export function buildModelDropdownOptions(
     }
   }
 
-  // 3. Sort using 3-tier comparator (stable sort preserves insertion order for equal keys)
-  result.sort(compareModelsByRoleTokensCost);
+  // 3. Sort: group by provider (registry order), then cost ascending within group (worst→best)
+  result.sort((a, b) => {
+    const aRank = providerRank.get(a.providerId ?? '') ?? 999;
+    const bRank = providerRank.get(b.providerId ?? '') ?? 999;
+    if (aRank !== bRank) return aRank - bRank;
+    // Within same provider: cost ascending (cheapest/worst first)
+    const aCost = a.costInputPer1M ?? 999;
+    const bCost = b.costInputPer1M ?? 999;
+    return aCost - bCost;
+  });
 
   return result;
 }

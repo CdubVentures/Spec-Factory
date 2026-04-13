@@ -6,9 +6,14 @@
  */
 
 import { buildLlmCallDeps } from '../../core/llm/buildLlmCallDeps.js';
-import { resolvePhaseModel } from '../../core/llm/client/routing.js';
 import { resolveIdentityAmbiguitySnapshot } from '../indexing/orchestration/shared/identityHelpers.js';
-import { stripCompositeKey } from '../../core/llm/routeResolver.js';
+import {
+  COOLDOWN_DAYS,
+  computeCooldownUntil,
+  resolveModelTracking,
+  resolveAmbiguityContext,
+  buildFinderLlmCaller,
+} from '../../core/finder/finderOrchestrationHelpers.js';
 import {
   buildColorEditionFinderPrompt,
   createColorEditionFinderCallLlm,
@@ -16,8 +21,6 @@ import {
 import { readColorEdition, mergeColorEditionDiscovery } from './colorEditionStore.js';
 import { submitCandidate, validateField } from '../publisher/index.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
-
-const COOLDOWN_DAYS = 30;
 
 /**
  * Merge edition-exclusive colors into the master colors array.
@@ -71,7 +74,7 @@ function storeFailureAndReturn({ specDb, product, existing, model, fallbackUsed,
   });
 
   const latestRun = merged.runs[merged.runs.length - 1];
-  specDb.insertColorEditionFinderRun({
+  specDb.getFinderStore('colorEditionFinder').insertRun({
     category: product.category,
     product_id: product.product_id,
     run_number: latestRun.run_number,
@@ -85,7 +88,7 @@ function storeFailureAndReturn({ specDb, product, existing, model, fallbackUsed,
   });
 
   // Update SQL summary with correct run_count (includes rejected)
-  specDb.upsertColorEditionFinder({
+  specDb.getFinderStore('colorEditionFinder').upsert({
     category: product.category,
     product_id: product.product_id,
     colors: merged.selected?.colors || [],
@@ -125,36 +128,18 @@ export async function runColorEditionFinder({
   onStreamChunk = null,
   onQueueWait = null,
   onLlmCallComplete = null,
+  signal,
 }) {
   productRoot = productRoot || defaultProductRoot();
-  const configModel = resolvePhaseModel(config, 'colorFinder') || String(config.llmModelPlan || 'unknown');
-  // WHY: Config stores composite keys ("provider:model"). Strip for display/storage.
-  let actualModel = stripCompositeKey(configModel);
-  let actualFallbackUsed = false;
+  const finderStore = specDb.getFinderStore('colorEditionFinder');
+  const cooldownDays = parseInt(finderStore.getSetting('cooldownDays'), 10) || COOLDOWN_DAYS;
+  const modelTracking = resolveModelTracking({ config, phaseKey: 'colorFinder', onModelResolved });
+  const { wrappedOnModelResolved } = modelTracking;
 
-  // WHY: Wrap onModelResolved so we capture the ACTUAL model used (including fallback).
-  // routing.js fires this callback for primary AND fallback; last call wins.
-  const wrappedOnModelResolved = (info) => {
-    if (info.model) actualModel = info.model;
-    if (info.isFallback) actualFallbackUsed = true;
-    onModelResolved?.(info);
-  };
-
-  // Resolve identity ambiguity from product family
-  let familyModelCount = 1;
-  let ambiguityLevel = 'easy';
-  try {
-    const ambiguitySnapshot = await resolveIdentityAmbiguitySnapshot({
-      config,
-      category: product.category,
-      identityLock: { brand: product.brand, base_model: product.base_model },
-      specDb,
-    });
-    familyModelCount = ambiguitySnapshot.family_model_count || 1;
-    ambiguityLevel = ambiguitySnapshot.ambiguity_level || 'easy';
-  } catch {
-    // Non-fatal — fall back to easy
-  }
+  const { familyModelCount, ambiguityLevel } = await resolveAmbiguityContext({
+    config, category: product.category, brand: product.brand,
+    baseModel: product.base_model, specDb, resolveFn: resolveIdentityAmbiguitySnapshot,
+  });
 
   const allColors = appDb.listColors();
   const colorNames = allColors.map(c => c.name);
@@ -164,12 +149,11 @@ export async function runColorEditionFinder({
   const previousRuns = Array.isArray(existing?.runs) ? existing.runs : [];
 
   // Build or use overridden LLM caller
-  // WHY: onPhaseChange fires inside callLlmWithRouting when transitioning
-  // from research to writer phase (jsonStrict off). Maps to onStageAdvance
-  // so the operations tracker shows the Writer stage.
-  const callLlm = _callLlmOverride
-    ? (domainArgs) => _callLlmOverride(domainArgs, { onModelResolved: wrappedOnModelResolved })
-    : createColorEditionFinderCallLlm(buildLlmCallDeps({
+  const callLlm = buildFinderLlmCaller({
+    _callLlmOverride,
+    wrappedOnModelResolved,
+    createCallLlm: createColorEditionFinderCallLlm,
+    llmDeps: buildLlmCallDeps({
       config,
       logger,
       onPhaseChange: onStageAdvance ? (phase) => {
@@ -178,7 +162,9 @@ export async function runColorEditionFinder({
       onModelResolved: wrappedOnModelResolved,
       onStreamChunk,
       onQueueWait,
-    }));
+      signal,
+    }),
+  });
 
   // Capture prompt snapshot BEFORE call so the operations modal shows it immediately
   const systemPrompt = buildColorEditionFinderPrompt({
@@ -199,12 +185,14 @@ export async function runColorEditionFinder({
   onLlmCallComplete?.({
     prompt: { system: systemPrompt, user: userMessage },
     response: null,
-    model: actualModel,
+    model: modelTracking.actualModel,
   });
 
   // WHY: callLlmWithRouting (via createPhaseCallLlm) already handles
   // primary→fallback internally. A single try/catch is sufficient —
   // if both primary and fallback fail, the error propagates here.
+  if (signal?.aborted) throw new DOMException('Operation cancelled', 'AbortError');
+
   let response;
   try {
     response = await callLlm({ colorNames, colors: allColors, product, previousRuns, familyModelCount, ambiguityLevel });
@@ -250,7 +238,7 @@ export async function runColorEditionFinder({
   if (fieldRules && fieldRules.colors) {
     const cefRunId = `cef-${Date.now()}`;
     const nextRunNumber = existing?.next_run_number || (previousRuns.length + 1);
-    const cefSourceMeta = { source: 'cef', model: actualModel, run_id: cefRunId, run_number: nextRunNumber };
+    const cefSourceMeta = { source: 'cef', model: modelTracking.actualModel, run_id: cefRunId, run_number: nextRunNumber };
 
     // Step 1: Validate colors (pure — no writes yet)
     const colorsValidation = validateField({
@@ -261,7 +249,7 @@ export async function runColorEditionFinder({
     const colorsHardRejects = colorsValidation.rejections.filter(r => r.reason_code !== 'unknown_enum_prefer_known');
 
     if (colorsHardRejects.length > 0) {
-      return storeFailureAndReturn({ specDb, product, existing, model: actualModel, fallbackUsed: actualFallbackUsed, rejections: colorsValidation.rejections, raw: { colors, editions, default_color: defaultColor }, productRoot });
+      return storeFailureAndReturn({ specDb, product, existing, model: modelTracking.actualModel, fallbackUsed: modelTracking.actualFallbackUsed, rejections: colorsValidation.rejections, raw: { colors, editions, default_color: defaultColor }, productRoot });
     }
 
     // Step 2: Build repair map from colors validation
@@ -295,7 +283,7 @@ export async function runColorEditionFinder({
       const editionsHardRejects = editionsValidation.rejections.filter(r => r.reason_code !== 'unknown_enum_prefer_known');
 
       if (editionsHardRejects.length > 0) {
-        return storeFailureAndReturn({ specDb, product, existing, model: actualModel, fallbackUsed: actualFallbackUsed, rejections: editionsValidation.rejections, raw: { colors, editions, default_color: defaultColor }, productRoot });
+        return storeFailureAndReturn({ specDb, product, existing, model: modelTracking.actualModel, fallbackUsed: modelTracking.actualFallbackUsed, rejections: editionsValidation.rejections, raw: { colors, editions, default_color: defaultColor }, productRoot });
       }
     }
 
@@ -341,16 +329,13 @@ export async function runColorEditionFinder({
     discovery_log: response?.discovery_log || emptyLog,
   };
 
-  // Cooldown: 30 days from now
-  const now = new Date();
-  const cooldownUntil = new Date(now.getTime() + COOLDOWN_DAYS * 24 * 60 * 60 * 1000).toISOString();
-  const ranAt = now.toISOString();
+  const { cooldownUntil, ranAt } = computeCooldownUntil({ days: cooldownDays });
 
   // Update operations tracker with response (smart update — fills in the pending entry)
   onLlmCallComplete?.({
     prompt: { system: systemPrompt, user: userMessage },
     response: storedResponse,
-    model: actualModel,
+    model: modelTracking.actualModel,
   });
 
   // Merge into JSON (durable memory — write first)
@@ -365,8 +350,10 @@ export async function runColorEditionFinder({
     run: {
       started_at: cefStartedAt,
       duration_ms: Date.now() - cefStartMs,
-      model: actualModel,
-      fallback_used: actualFallbackUsed,
+      model: modelTracking.actualModel,
+      fallback_used: modelTracking.actualFallbackUsed,
+      effort_level: modelTracking.actualEffortLevel,
+      access_mode: modelTracking.actualAccessMode,
       selected,
       prompt: { system: systemPrompt, user: userMessage },
       response: storedResponse,
@@ -375,13 +362,15 @@ export async function runColorEditionFinder({
 
   // Project run into SQL (frontend reads from DB, not JSON)
   const latestRun = merged.runs[merged.runs.length - 1];
-  specDb.insertColorEditionFinderRun({
+  specDb.getFinderStore('colorEditionFinder').insertRun({
     category: product.category,
     product_id: product.product_id,
     run_number: latestRun.run_number,
     ran_at: ranAt,
-    model: actualModel,
-    fallback_used: actualFallbackUsed,
+    model: modelTracking.actualModel,
+    fallback_used: modelTracking.actualFallbackUsed,
+    effort_level: modelTracking.actualEffortLevel,
+    access_mode: modelTracking.actualAccessMode,
     cooldown_until: cooldownUntil,
     selected,
     prompt: { system: systemPrompt, user: userMessage },
@@ -389,7 +378,7 @@ export async function runColorEditionFinder({
   });
 
   // Upsert SQL summary
-  specDb.upsertColorEditionFinder({
+  specDb.getFinderStore('colorEditionFinder').upsert({
     category: product.category,
     product_id: product.product_id,
     colors: gateColors,

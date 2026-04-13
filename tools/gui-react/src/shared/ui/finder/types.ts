@@ -31,7 +31,8 @@ export interface RunDiscoveryLog {
 }
 
 export interface DeleteTarget {
-  readonly kind: 'run' | 'all';
+  readonly kind: 'run' | 'loop' | 'all';
   readonly runNumber?: number;
+  readonly runNumbers?: readonly number[];
   readonly count?: number;
 }

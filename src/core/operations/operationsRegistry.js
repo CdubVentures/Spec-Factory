@@ -7,15 +7,19 @@
  *
  * Invariants:
  * - id is a UUID (globally unique)
- * - status transitions: running → done | error (terminal, no re-entry)
+ * - status transitions: running → done | error | cancelled (terminal, no re-entry)
  * - currentStageIndex ∈ [0, stages.length)
  * - Lost on server restart (acceptable — see plan CQRS exception)
  */
 
 import crypto from 'node:crypto';
+import { extractEffortFromModelName } from '../../shared/effortFromModelName.js';
 
 /** @type {Map<string, object>} */
 const ops = new Map();
+
+/** @type {Map<string, AbortController>} */
+const controllers = new Map();
 
 /** @type {Function|null} */
 let _broadcastWs = null;
@@ -85,6 +89,7 @@ export function registerOperation({ type, subType, category, productId, productL
     llmCalls: [],
   };
   ops.set(id, operation);
+  controllers.set(id, new AbortController());
   broadcast(operation);
   return { id };
 }
@@ -180,16 +185,19 @@ export function appendLlmCall({ id, call }) {
  * Attach resolved model info to a running operation.
  * Replaces on repeat calls (primary → fallback).
  */
-export function updateModelInfo({ id, model, provider, isFallback, accessMode, thinking, webSearch }) {
+export function updateModelInfo({ id, model, provider, isFallback, accessMode, thinking, webSearch, effortLevel }) {
   const op = ops.get(id);
   if (!op || op.status !== 'running') return;
+  const modelStr = typeof model === 'string' ? model : '';
   op.modelInfo = {
-    model: typeof model === 'string' ? model : '',
+    model: modelStr,
     provider: typeof provider === 'string' ? provider : '',
     isFallback: Boolean(isFallback),
     accessMode: typeof accessMode === 'string' ? accessMode : 'api',
     thinking: Boolean(thinking),
     webSearch: Boolean(webSearch),
+    // WHY: Effort can be baked into the model name suffix or passed explicitly.
+    effortLevel: typeof effortLevel === 'string' ? effortLevel : (extractEffortFromModelName(modelStr) || ''),
   };
   broadcast(op);
 }
@@ -203,6 +211,7 @@ export function completeOperation({ id }) {
   if (!op || op.status !== 'running') return;
   op.status = 'done';
   op.endedAt = new Date().toISOString();
+  controllers.delete(id);
   broadcast(op);
 }
 
@@ -216,7 +225,30 @@ export function failOperation({ id, error }) {
   op.status = 'error';
   op.error = typeof error === 'string' ? error.slice(0, 200) : 'Unknown error';
   op.endedAt = new Date().toISOString();
+  controllers.delete(id);
   broadcast(op);
+}
+
+/**
+ * Cancel a running operation. Aborts the AbortController signal so in-flight
+ * fetch() calls terminate immediately. Idempotent on non-running ops.
+ */
+export function cancelOperation({ id }) {
+  const op = ops.get(id);
+  if (!op || op.status !== 'running') return;
+  controllers.get(id)?.abort();
+  controllers.delete(id);
+  op.status = 'cancelled';
+  op.endedAt = new Date().toISOString();
+  broadcast(op);
+}
+
+/**
+ * Get the AbortSignal for a running operation.
+ * Returns null if id not found or controller already cleaned up.
+ */
+export function getOperationSignal(id) {
+  return controllers.get(id)?.signal ?? null;
 }
 
 /**
@@ -224,6 +256,9 @@ export function failOperation({ id, error }) {
  */
 export function dismissOperation({ id }) {
   if (!ops.has(id)) return;
+  // WHY: Defensive abort in case dismiss is called on a running op
+  controllers.get(id)?.abort();
+  controllers.delete(id);
   ops.delete(id);
   if (evictionTimers.has(id)) {
     clearTimeout(evictionTimers.get(id));
@@ -247,6 +282,8 @@ export function listOperations() {
  */
 export function _resetForTest() {
   ops.clear();
+  for (const ctrl of controllers.values()) ctrl.abort();
+  controllers.clear();
   _broadcastWs = null;
   _seq = 0;
   for (const timer of evictionTimers.values()) clearTimeout(timer);

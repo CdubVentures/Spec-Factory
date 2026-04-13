@@ -9,6 +9,8 @@ import {
   appendLlmCall,
   completeOperation,
   failOperation,
+  cancelOperation,
+  getOperationSignal,
   listOperations,
   _resetForTest,
 } from '../operationsRegistry.js';
@@ -227,7 +229,7 @@ describe('updateModelInfo', () => {
     const op = registerOperation(VALID_OP);
     updateModelInfo({ id: op.id, model: 'gpt-4o', provider: 'openai', isFallback: false });
     const ops = listOperations();
-    assert.deepEqual(ops[0].modelInfo, { model: 'gpt-4o', provider: 'openai', isFallback: false, accessMode: 'api', thinking: false, webSearch: false });
+    assert.deepEqual(ops[0].modelInfo, { model: 'gpt-4o', provider: 'openai', isFallback: false, accessMode: 'api', thinking: false, webSearch: false, effortLevel: '' });
   });
 
   it('replaces modelInfo on second call (fallback scenario)', () => {
@@ -235,7 +237,7 @@ describe('updateModelInfo', () => {
     updateModelInfo({ id: op.id, model: 'gpt-4o', provider: 'openai', isFallback: false });
     updateModelInfo({ id: op.id, model: 'claude-3.5-sonnet', provider: 'anthropic', isFallback: true, accessMode: 'lab', thinking: true, webSearch: true });
     const ops = listOperations();
-    assert.deepEqual(ops[0].modelInfo, { model: 'claude-3.5-sonnet', provider: 'anthropic', isFallback: true, accessMode: 'lab', thinking: true, webSearch: true });
+    assert.deepEqual(ops[0].modelInfo, { model: 'claude-3.5-sonnet', provider: 'anthropic', isFallback: true, accessMode: 'lab', thinking: true, webSearch: true, effortLevel: '' });
   });
 
   it('no-ops on nonexistent id (no crash)', () => {
@@ -386,7 +388,7 @@ describe('broadcastWs integration', () => {
     updateModelInfo({ id: op.id, model: 'gpt-4o', provider: 'openai', isFallback: false });
     assert.equal(spy.calls.length, 1);
     assert.equal(spy.calls[0].data.action, 'upsert');
-    assert.deepEqual(spy.calls[0].data.operation.modelInfo, { model: 'gpt-4o', provider: 'openai', isFallback: false, accessMode: 'api', thinking: false, webSearch: false });
+    assert.deepEqual(spy.calls[0].data.operation.modelInfo, { model: 'gpt-4o', provider: 'openai', isFallback: false, accessMode: 'api', thinking: false, webSearch: false, effortLevel: '' });
   });
 
   it('mutations succeed silently when broadcastWs not initialized', () => {
@@ -396,6 +398,99 @@ describe('broadcastWs integration', () => {
       updateStage({ id: op.id, stageIndex: 1 });
       completeOperation({ id: op.id });
     });
+  });
+});
+
+// ── concurrent operations ────────────────────────────────────────────
+
+// ── cancelOperation ─────────────────────────────────────────────────
+
+describe('cancelOperation', () => {
+  beforeEach(() => _resetForTest());
+
+  it('sets status=cancelled and endedAt on a running op', () => {
+    const op = registerOperation(VALID_OP);
+    cancelOperation({ id: op.id });
+    const ops = listOperations();
+    assert.equal(ops[0].status, 'cancelled');
+    assert.ok(ops[0].endedAt);
+    assert.equal(ops[0].error, null);
+  });
+
+  it('aborts the AbortController signal', () => {
+    const op = registerOperation(VALID_OP);
+    const signal = getOperationSignal(op.id);
+    assert.equal(signal.aborted, false);
+    cancelOperation({ id: op.id });
+    assert.equal(signal.aborted, true);
+  });
+
+  it('is idempotent on already-cancelled op', () => {
+    const op = registerOperation(VALID_OP);
+    cancelOperation({ id: op.id });
+    const first = listOperations()[0].endedAt;
+    cancelOperation({ id: op.id });
+    assert.equal(listOperations()[0].endedAt, first);
+    assert.equal(listOperations()[0].status, 'cancelled');
+  });
+
+  it('no-ops on done op', () => {
+    const op = registerOperation(VALID_OP);
+    completeOperation({ id: op.id });
+    cancelOperation({ id: op.id });
+    assert.equal(listOperations()[0].status, 'done');
+  });
+
+  it('no-ops on error op', () => {
+    const op = registerOperation(VALID_OP);
+    failOperation({ id: op.id, error: 'boom' });
+    cancelOperation({ id: op.id });
+    assert.equal(listOperations()[0].status, 'error');
+  });
+
+  it('no-ops on nonexistent id (no crash)', () => {
+    assert.doesNotThrow(() => cancelOperation({ id: 'ghost' }));
+  });
+
+  it('broadcasts upsert with cancelled status', () => {
+    const spy = makeBroadcastSpy();
+    initOperationsRegistry({ broadcastWs: spy });
+    const op = registerOperation(VALID_OP);
+    spy.calls.length = 0;
+    cancelOperation({ id: op.id });
+    assert.equal(spy.calls[0].data.action, 'upsert');
+    assert.equal(spy.calls[0].data.operation.status, 'cancelled');
+  });
+});
+
+// ─��� getOperationSignal ──────────────────────────────────────────────
+
+describe('getOperationSignal', () => {
+  beforeEach(() => _resetForTest());
+
+  it('returns AbortSignal for a running operation', () => {
+    const op = registerOperation(VALID_OP);
+    const signal = getOperationSignal(op.id);
+    assert.ok(signal instanceof AbortSignal);
+    assert.equal(signal.aborted, false);
+  });
+
+  it('returns null for nonexistent id', () => {
+    assert.equal(getOperationSignal('ghost'), null);
+  });
+
+  it('returns null after completeOperation cleans up controller', () => {
+    const op = registerOperation(VALID_OP);
+    assert.ok(getOperationSignal(op.id));
+    completeOperation({ id: op.id });
+    assert.equal(getOperationSignal(op.id), null);
+  });
+
+  it('returns null after failOperation cleans up controller', () => {
+    const op = registerOperation(VALID_OP);
+    assert.ok(getOperationSignal(op.id));
+    failOperation({ id: op.id, error: 'boom' });
+    assert.equal(getOperationSignal(op.id), null);
   });
 });
 

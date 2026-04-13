@@ -39,5 +39,6 @@ export const readProductImages = store.read;
 export const writeProductImages = store.write;
 export const mergeProductImageDiscovery = store.merge;
 export const deleteProductImageFinderRun = store.deleteRun;
+export const deleteProductImageFinderRuns = store.deleteRuns;
 export const deleteProductImageFinderAll = store.deleteAll;
 export const recalculateProductImagesFromRuns = store.recalculateFromRuns;

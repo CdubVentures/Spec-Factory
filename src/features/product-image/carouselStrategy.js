@@ -21,6 +21,7 @@
  * @param {Record<string,number>} [opts.viewAttemptCounts={}] — calls made per view so far
  * @param {number}   [opts.heroAttemptBudget=Infinity] — max hero LLM calls
  * @param {number}   [opts.heroAttemptCount=0] — hero calls made so far
+ * @param {number}   [opts.reRunBudget=0] — extra calls for already-satisfied views (0 = skip satisfied views)
  *
  * @returns {{
  *   mode: 'view' | 'hero' | 'complete',
@@ -51,6 +52,7 @@ export function evaluateCarousel({
   viewAttemptCounts = {},
   heroAttemptBudget = Infinity,
   heroAttemptCount = 0,
+  reRunBudget = 0,
 }) {
   // Filter to matching variant + quality-passing images only.
   // quality_pass undefined treated as true for backward compat.
@@ -59,28 +61,34 @@ export function evaluateCarousel({
   );
 
   // Count per budgeted view + track attempts and exhaustion
+  // WHY: Each view gets its own effective budget — unsatisfied views use viewAttemptBudget,
+  // already-satisfied views use reRunBudget (so they still get searched, just fewer times).
   const viewDetails = {};
   for (const view of viewBudget) {
     const count = qualifying.filter((img) => img.view === view).length;
     const satisfied = count >= satisfactionThreshold;
     const attempts = viewAttemptCounts[view] || 0;
-    const exhausted = !satisfied && attempts >= viewAttemptBudget;
-    viewDetails[view] = { count, satisfied, attempts, exhausted };
+    const effectiveBudget = satisfied ? reRunBudget : viewAttemptBudget;
+    const exhausted = attempts >= effectiveBudget;
+    viewDetails[view] = { count, satisfied, attempts, exhausted, attemptBudget: effectiveBudget };
   }
 
   const viewsFilled = Object.values(viewDetails).filter((d) => d.satisfied).length;
   const viewsTotal = viewBudget.length;
-  // A view is "done" if satisfied OR exhausted
-  const allViewsDone = viewBudget.every((v) => viewDetails[v].satisfied || viewDetails[v].exhausted);
+  // A view is "done" if exhausted (budget reached — works for both satisfied and unsatisfied views)
+  const allViewsDone = viewBudget.every((v) => viewDetails[v].exhausted);
 
   // Count hero images + track exhaustion
   const heroImageCount = qualifying.filter((img) => img.view === 'hero').length;
   const heroSatisfied = !heroEnabled || heroImageCount >= heroCount;
-  const heroExhausted = !heroSatisfied && heroAttemptCount >= heroAttemptBudget;
-  const heroDone = heroSatisfied || heroExhausted;
+  const effectiveHeroBudget = heroSatisfied ? reRunBudget : heroAttemptBudget;
+  const heroExhausted = heroAttemptCount >= effectiveHeroBudget;
+  const heroDone = heroExhausted;
 
-  // Unsatisfied non-exhausted views (for viewsToSearch and focusView)
-  const actionableViews = viewBudget.filter((v) => !viewDetails[v].satisfied && !viewDetails[v].exhausted);
+  // Actionable views: not yet exhausted their budget, in budget order
+  // WHY: Follow the view budget array order naturally — each view runs until
+  // its per-view budget is exhausted, then the loop moves to the next view.
+  const actionableViews = viewBudget.filter((v) => !viewDetails[v].exhausted);
 
   // Decide mode
   let mode;
@@ -95,20 +103,16 @@ export function evaluateCarousel({
   // focusView = highest-priority actionable view (budget array order)
   const focusView = mode === 'view' && actionableViews.length > 0 ? actionableViews[0] : null;
 
-  // Estimate remaining calls
+  // Remaining calls = sum of (budget - attempts) for all non-exhausted views + hero
   let estimatedCallsRemaining = 0;
   for (const view of viewBudget) {
     const d = viewDetails[view];
-    if (!d.satisfied && !d.exhausted) {
-      const attemptsLeft = Math.max(0, viewAttemptBudget - d.attempts);
-      const imagesNeeded = Math.max(0, satisfactionThreshold - d.count);
-      estimatedCallsRemaining += Math.min(attemptsLeft, imagesNeeded);
+    if (!d.exhausted) {
+      estimatedCallsRemaining += Math.max(0, d.attemptBudget - d.attempts);
     }
   }
-  if (heroEnabled && !heroSatisfied && !heroExhausted) {
-    const heroAttemptsLeft = Math.max(0, heroAttemptBudget - heroAttemptCount);
-    const heroImagesNeeded = Math.max(0, heroCount - heroImageCount);
-    estimatedCallsRemaining += Math.min(heroAttemptsLeft, heroImagesNeeded);
+  if (heroEnabled && !heroExhausted) {
+    estimatedCallsRemaining += Math.max(0, effectiveHeroBudget - heroAttemptCount);
   }
 
   return {
@@ -124,6 +128,7 @@ export function evaluateCarousel({
       heroSatisfied,
       heroAttempts: heroAttemptCount,
       heroExhausted,
+      heroAttemptBudget: effectiveHeroBudget,
     },
     isComplete: mode === 'complete',
     estimatedCallsRemaining,

@@ -39,6 +39,8 @@ export interface ColorEditionFinderRunEntry {
   readonly ran_at: string;
   readonly model: string;
   readonly fallback_used: boolean;
+  readonly effort_level?: string;
+  readonly access_mode?: string;
   readonly cooldown_until: string;
   readonly started_at?: string;
   readonly duration_ms?: number | null;

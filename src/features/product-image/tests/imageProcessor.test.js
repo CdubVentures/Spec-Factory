@@ -13,6 +13,7 @@ import os from 'node:os';
 import sharp from 'sharp';
 import {
   processImage,
+  processHeroImage,
   loadModel,
   isModelLoaded,
   releaseModel,
@@ -341,6 +342,87 @@ describe('alpha-skip: images with existing transparency bypass RMBG', () => {
     // Should preserve close to original dimensions (just trim padding)
     assert.ok(result.width > 400, `width ${result.width} should be close to original`);
     assert.ok(result.height > 800, `height ${result.height} should be close to original`);
+  });
+});
+
+/* ── processHeroImage: center-crop to 16:9 ───────────────────────── */
+
+describe('processHeroImage', () => {
+  it('landscape wider than 16:9: crops width, keeps height', async () => {
+    // 1800x900 = 2:1 ratio → crop to 1600x900 (16:9) centered
+    const w = 1800, h = 900;
+    const input = path.join(INPUT_DIR, 'hero-wide.png');
+    const output = path.join(OUTPUT_DIR, 'hero-wide-out.png');
+    await sharp(noisyPixels(w, h), { raw: { width: w, height: h, channels: 3 } }).png().toFile(input);
+
+    const result = await processHeroImage({ inputPath: input, outputPath: output });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.width, 1600);
+    assert.equal(result.height, 900);
+    assert.ok(fs.existsSync(output));
+    const meta = await sharp(output).metadata();
+    assert.equal(meta.format, 'png');
+  });
+
+  it('portrait/tall image: crops height, keeps width', async () => {
+    // 800x800 = 1:1 → crop to 800x450 (16:9) centered
+    const w = 800, h = 800;
+    const input = path.join(INPUT_DIR, 'hero-square.png');
+    const output = path.join(OUTPUT_DIR, 'hero-square-out.png');
+    await sharp(noisyPixels(w, h), { raw: { width: w, height: h, channels: 3 } }).png().toFile(input);
+
+    const result = await processHeroImage({ inputPath: input, outputPath: output });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.width, 800);
+    assert.equal(result.height, 450);
+  });
+
+  it('already 16:9: no crop needed, still saves as PNG', async () => {
+    const w = 1920, h = 1080;
+    const input = path.join(INPUT_DIR, 'hero-exact.jpg');
+    const output = path.join(OUTPUT_DIR, 'hero-exact-out.png');
+    await sharp(noisyPixels(w, h), { raw: { width: w, height: h, channels: 3 } }).jpeg().toFile(input);
+
+    const result = await processHeroImage({ inputPath: input, outputPath: output });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.width, 1920);
+    assert.equal(result.height, 1080);
+    const meta = await sharp(output).metadata();
+    assert.equal(meta.format, 'png');
+  });
+
+  it('WebP input: converts to PNG', async () => {
+    const w = 1600, h = 900;
+    const input = path.join(INPUT_DIR, 'hero.webp');
+    const output = path.join(OUTPUT_DIR, 'hero-webp-out.png');
+    await sharp(noisyPixels(w, h), { raw: { width: w, height: h, channels: 3 } }).webp().toFile(input);
+
+    const result = await processHeroImage({ inputPath: input, outputPath: output });
+
+    assert.equal(result.ok, true);
+    const meta = await sharp(output).metadata();
+    assert.equal(meta.format, 'png');
+  });
+
+  it('input not found: returns error', async () => {
+    const result = await processHeroImage({ inputPath: '/tmp/nope.png', outputPath: path.join(OUTPUT_DIR, 'nope.png') });
+    assert.equal(result.ok, false);
+    assert.ok(result.error);
+  });
+
+  it('creates output directory if missing', async () => {
+    const w = 1600, h = 900;
+    const input = path.join(INPUT_DIR, 'hero-mkdir.png');
+    const output = path.join(OUTPUT_DIR, 'nested', 'hero', 'out.png');
+    await sharp(noisyPixels(w, h), { raw: { width: w, height: h, channels: 3 } }).png().toFile(input);
+
+    const result = await processHeroImage({ inputPath: input, outputPath: output });
+
+    assert.equal(result.ok, true);
+    assert.ok(fs.existsSync(output));
   });
 });
 

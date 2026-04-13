@@ -383,7 +383,7 @@
   <table>
     <thead><tr><th>#</th><th>Phase</th><th>Detail</th></tr></thead>
     <tbody>
-      <tr><td>1</td><td><strong>Setup</strong></td><td>Resolve model via <code>resolvePhaseModel(config, 'colorFinder')</code>. Read existing runs for historical context. Resolve identity ambiguity snapshot.</td></tr>
+      <tr><td>1</td><td><strong>Setup</strong></td><td>Resolve model via <code>resolveModelTracking({ phaseKey: 'colorFinder' })</code> and ambiguity via <code>resolveAmbiguityContext()</code> (both from shared <code>finderOrchestrationHelpers.js</code>). Read existing runs for historical context.</td></tr>
       <tr><td>2</td><td><strong>Prompt Build</strong></td><td><code>buildColorEditionFinderPrompt()</code> constructs system prompt with product identity, known inputs from prior runs, color/edition output rules, and identity warning blocks.</td></tr>
       <tr><td>3</td><td><strong>LLM Call</strong></td><td>Call LLM via <code>createColorEditionFinderCallLlm()</code>. Supports two-phase dispatch (research + writer) when <code>jsonStrict=false</code>. Streams reasoning tokens via <code>onStreamChunk</code>.</td></tr>
       <tr><td>4</td><td><strong>Candidate Gate</strong></td><td>5-step validation pipeline (see Section 6). All-or-nothing: any hard reject fails the entire run.</td></tr>
@@ -589,6 +589,7 @@
     <thead><tr><th>Module</th><th>Location</th><th>Usage</th></tr></thead>
     <tbody>
       <tr><td><code>finderModuleRegistry</code></td><td><code>src/core/finder/</code></td><td>CEF registered as O(1) entry. Drives DDL, routes, operations labels, data-change events.</td></tr>
+      <tr><td><code>finderOrchestrationHelpers</code></td><td><code>src/core/finder/</code></td><td>Shared orchestrator boilerplate: <code>resolveModelTracking</code>, <code>resolveAmbiguityContext</code>, <code>buildFinderLlmCaller</code>, <code>computeCooldownUntil</code>, <code>COOLDOWN_DAYS</code>.</td></tr>
       <tr><td><code>finderJsonStore</code></td><td><code>src/core/finder/</code></td><td>Generic JSON store factory. CEF uses default latest-wins semantics.</td></tr>
       <tr><td><code>finderSqlStore</code></td><td><code>src/core/finder/</code></td><td>Generic SQL store factory for summary + runs tables.</td></tr>
       <tr><td><code>createFinderRouteHandler</code></td><td><code>src/core/finder/finderRoutes.js</code></td><td>Generic 5-endpoint route handler (GET list, GET one, POST run, DELETE run, DELETE all).</td></tr>

@@ -39,12 +39,14 @@
  * Canonical template: ProductImageFinderPanel.tsx
  */
 
+export { ColorSwatch, colorCircleStyle } from './ColorSwatch.tsx';
 export { FinderKpiCard } from './FinderKpiCard.tsx';
 export { FinderPanelHeader } from './FinderPanelHeader.tsx';
 export { FinderCooldownStrip } from './FinderCooldownStrip.tsx';
 export { FinderPanelFooter } from './FinderPanelFooter.tsx';
 export { FinderDeleteConfirmModal } from './FinderDeleteConfirmModal.tsx';
 export { DiscoverySummaryBar } from './DiscoverySummaryBar.tsx';
+export { FinderRunModelBadge } from './FinderRunModelBadge.tsx';
 export { FinderRunPromptDetails } from './FinderRunPromptDetails.tsx';
 export { FinderRunTimestamp } from './FinderRunTimestamp.tsx';
 export { FinderSectionCard } from './FinderSectionCard.tsx';

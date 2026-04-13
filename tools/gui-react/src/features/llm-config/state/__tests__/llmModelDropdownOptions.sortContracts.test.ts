@@ -5,57 +5,43 @@ import { buildModelDropdownOptions } from '../llmModelDropdownOptions.ts';
 import { makeModel, makeProvider } from './fixtures/llmModelDropdownFixtures.ts';
 
 describe('buildModelDropdownOptions sort and label contracts', () => {
-  it('sorts options by role, then context window, then input cost, with flat options after registry entries', () => {
+  it('sorts options by provider group (registry order), then cost ascending within group', () => {
     const cases = [
       {
-        name: 'role priority wins first',
+        name: 'provider registry order determines group order',
         registry: [
           makeProvider({
+            id: 'p2',
+            name: 'Provider B',
+            models: [{ ...makeModel('b-model', 'primary'), costInputPer1M: 5 }],
+          }),
+          makeProvider({
             id: 'p1',
-            name: 'P',
-            models: [
-              makeModel('embed-m', 'embedding'),
-              makeModel('base-m', 'primary'),
-              makeModel('reason-m', 'reasoning'),
-            ],
+            name: 'Provider A',
+            models: [{ ...makeModel('a-model', 'primary'), costInputPer1M: 1 }],
           }),
         ],
         flat: [],
-        expectedValues: ['p1:reason-m', 'p1:base-m', 'p1:embed-m'],
+        expectedValues: ['p2:b-model', 'p1:a-model'],
       },
       {
-        name: 'larger context windows sort ahead of smaller and null windows',
-        registry: [
-          makeProvider({
-            id: 'p1',
-            name: 'P',
-            models: [
-              { ...makeModel('small', 'primary'), maxContextTokens: 8000 },
-              { ...makeModel('big', 'primary'), maxContextTokens: 128000 },
-              { ...makeModel('unknown', 'primary'), maxContextTokens: null },
-            ],
-          }),
-        ],
-        flat: [],
-        expectedValues: ['p1:big', 'p1:small', 'p1:unknown'],
-      },
-      {
-        name: 'lower input cost wins when role and context match',
+        name: 'cost ascending within same provider regardless of role or context',
         registry: [
           makeProvider({
             id: 'p1',
             name: 'P',
             models: [
               { ...makeModel('expensive', 'primary'), maxContextTokens: 128000, costInputPer1M: 10 },
-              { ...makeModel('cheap', 'primary'), maxContextTokens: 128000, costInputPer1M: 1 },
+              { ...makeModel('cheap', 'reasoning'), maxContextTokens: 8000, costInputPer1M: 1 },
+              { ...makeModel('mid', 'embedding'), maxContextTokens: 1000000, costInputPer1M: 5 },
             ],
           }),
         ],
         flat: [],
-        expectedValues: ['p1:cheap', 'p1:expensive'],
+        expectedValues: ['p1:cheap', 'p1:mid', 'p1:expensive'],
       },
       {
-        name: 'flat entries sort after registry entries in the same role group',
+        name: 'flat entries sort after all provider-grouped entries',
         registry: [
           makeProvider({
             id: 'p1',
@@ -77,13 +63,13 @@ describe('buildModelDropdownOptions sort and label contracts', () => {
     }
   });
 
-  it('carries registry role and metadata onto the emitted option shape', () => {
+  it('carries registry role, metadata, and providerName onto the emitted option shape', () => {
     const result = buildModelDropdownOptions(
       [],
       [
         makeProvider({
           id: 'p1',
-          name: 'P',
+          name: 'DeepSeek',
           models: [
             { ...makeModel('m1', 'reasoning'), costInputPer1M: 5, maxContextTokens: 200000 },
           ],
@@ -94,6 +80,7 @@ describe('buildModelDropdownOptions sort and label contracts', () => {
     strictEqual(result[0].role, 'reasoning');
     strictEqual(result[0].costInputPer1M, 5);
     strictEqual(result[0].maxContextTokens, 200000);
+    strictEqual(result[0].providerName, 'DeepSeek');
   });
 
   it('labels are bare modelId regardless of provider name', () => {

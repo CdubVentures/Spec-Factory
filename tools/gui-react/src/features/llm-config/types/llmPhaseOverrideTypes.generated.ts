@@ -26,7 +26,7 @@ export interface LlmPhaseOverride {
   writerThinkingEffort: string;
 }
 
-export type LlmOverridePhaseId = 'needset' | 'searchPlanner' | 'brandResolver' | 'serpSelector' | 'validate' | 'colorFinder' | 'imageFinder';
+export type LlmOverridePhaseId = 'needset' | 'searchPlanner' | 'brandResolver' | 'serpSelector' | 'validate' | 'colorFinder' | 'imageFinder' | 'imageEvaluator';
 
 export type LlmPhaseOverrides = {
   [K in LlmOverridePhaseId]?: Partial<LlmPhaseOverride>;

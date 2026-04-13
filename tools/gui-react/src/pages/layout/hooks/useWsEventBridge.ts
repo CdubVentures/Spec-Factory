@@ -31,6 +31,28 @@ export function useWsEventBridge({ category, queryClient }: { category: string; 
     queryClient.invalidateQueries({ queryKey: ['indexing', 'domain-checklist'] });
   }, [activeRunId, queryClient]);
 
+  // ── Stream text buffer ───────────────────────────────────────────
+  // WHY: Coalesce rapid stream chunks (100ms server cadence) into fewer Zustand writes.
+  // 150ms chosen: above server batch interval, below human perception threshold.
+  const STREAM_FLUSH_MS = 150;
+  const streamBufRef = useRef(new Map<string, string>());
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const buf = streamBufRef.current;
+      if (buf.size === 0) return;
+      useOperationsStore.getState().batchAppendStreamText(buf);
+      streamBufRef.current = new Map();
+    }, STREAM_FLUSH_MS);
+    return () => {
+      clearInterval(timer);
+      const buf = streamBufRef.current;
+      if (buf.size > 0) {
+        useOperationsStore.getState().batchAppendStreamText(buf);
+        streamBufRef.current = new Map();
+      }
+    };
+  }, []);
+
   // ── Data change invalidation scheduler ────────────────────────────
   const dataChangeSchedulerRef = useRef<ReturnType<typeof createDataChangeInvalidationScheduler> | null>(null);
   useEffect(() => {
@@ -84,7 +106,8 @@ export function useWsEventBridge({ category, queryClient }: { category: string; 
     if (channel === 'llm-stream' && data && typeof data === 'object') {
       const msg = data as { operationId?: string; text?: string };
       if (msg.operationId && msg.text) {
-        useOperationsStore.getState().appendStreamText(msg.operationId, msg.text);
+        const buf = streamBufRef.current;
+        buf.set(msg.operationId, (buf.get(msg.operationId) ?? '') + msg.text);
       }
     }
     if (channel === 'data-change' && data && typeof data === 'object') {

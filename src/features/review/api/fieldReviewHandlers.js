@@ -5,6 +5,7 @@
 
 import { resolveProductIdentity } from '../../catalog/index.js';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
+import { fanOutCandidates } from '../domain/candidateFanOut.js';
 
 async function applyCatalogIdentity(payload, category, productId, { catalogEntry = null, specDb = null, config }) {
   if (!payload || typeof payload !== 'object') return payload;
@@ -235,35 +236,9 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
     const requestedField = decodeURIComponent(String(field || ''));
 
     // field_candidates is the sole SSOT for candidates.
+    // Fan out sources_json: 1 SQL row with N sources → N candidate objects.
     const fcRows = specDb?.getFieldCandidatesByProductAndField?.(productId, requestedField) || [];
-    const allCandidates = fcRows.map((c) => {
-      const meta = c.metadata_json && typeof c.metadata_json === 'object' ? c.metadata_json : {};
-      const sources = Array.isArray(c.sources_json) ? c.sources_json : [];
-      const firstSource = sources[0] && typeof sources[0] === 'object' ? sources[0] : {};
-      const sourceToken = String(meta.source || firstSource.source || '').trim().toLowerCase();
-      return {
-        candidate_id: `fc_${c.id}`,
-        value: c.value,
-        score: Math.max(0, Math.min(1, Number(c.confidence) || 0)),
-        source_id: sourceToken || '',
-        source: sourceToken || '',
-        tier: null,
-        method: String(meta.method || sourceToken || '').trim() || null,
-        status: c.status || 'candidate',
-        evidence: {
-          url: String(meta.evidence?.url || '').trim(),
-          quote: String(meta.evidence?.quote || meta.reason || '').trim(),
-          source_id: sourceToken || '',
-        },
-      };
-    });
-
-    allCandidates.sort((a, b) => {
-      const left = Number.isFinite(a.score) ? a.score : 0;
-      const right = Number.isFinite(b.score) ? b.score : 0;
-      if (right !== left) return right - left;
-      return String(a.candidate_id || '').localeCompare(String(b.candidate_id || ''));
-    });
+    const allCandidates = fanOutCandidates(fcRows);
 
     return jsonRes(res, 200, {
       product_id: productId,

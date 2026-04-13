@@ -50,6 +50,22 @@ export const sourceBadgeDarkClass: Record<string, string> = {
 export const SOURCE_BADGE_FALLBACK = 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300';
 export const SOURCE_BADGE_DARK_FALLBACK = 'bg-gray-700 text-gray-300';
 
+// ── 10-step confidence color scale (candidate badges in drawer) ──
+
+export function confidenceColorClass(score: number): string {
+  const pct = Math.round(score * 100);
+  if (pct >= 95) return 'conf-100';
+  if (pct >= 85) return 'conf-90';
+  if (pct >= 75) return 'conf-80';
+  if (pct >= 65) return 'conf-70';
+  if (pct >= 55) return 'conf-60';
+  if (pct >= 45) return 'conf-50';
+  if (pct >= 35) return 'conf-40';
+  if (pct >= 25) return 'conf-30';
+  if (pct >= 15) return 'conf-20';
+  return 'conf-10';
+}
+
 export function statusBg(status: string): string {
   switch (status) {
     case 'complete': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
