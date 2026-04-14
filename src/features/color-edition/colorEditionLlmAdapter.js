@@ -269,33 +269,36 @@ ${registryLines || '  (none)'}
 NEW CEF DISCOVERIES (from this run):
 ${allNewLines || '  (none)'}
 
-For EACH new discovery, determine if it matches an existing variant or is genuinely new.
+For EACH new discovery, determine if it matches an existing variant, is genuinely new, or is hallucinated/garbage.
 
 Matching rules:
-- A color RENAME is the SAME variant (e.g. "Ocean Blue" → "Deep Ocean Blue" for the same product color). Map to existing ID.
-- Color atoms gaining or losing a modifier for the same base color is the SAME variant (e.g. "blue" → "light-blue"). Map to existing ID.
-- An edition gaining extra color detail in its combo is the SAME variant (e.g. "black+orange" → "black+orange+gold" for the same edition). Map to existing ID.
-- A completely different color that never existed before is a NEW variant. Set match to null.
-- A completely different edition slug with no relationship to existing editions is NEW.
+- A color RENAME is the SAME variant (e.g. "Ocean Blue" → "Deep Ocean Blue" for the same product color). Use "match" with the existing variant_id.
+- Color atoms gaining or losing a modifier for the same base color is the SAME variant (e.g. "blue" → "light-blue"). Use "match".
+- An edition gaining extra color detail in its combo is the SAME variant (e.g. "black+orange" → "black+orange+gold" for the same edition). Use "match".
+- A completely different color that never existed before is genuinely NEW. Set action to "new", match to null.
+- A completely different edition slug with no relationship to existing editions is "new".
+- A discovery that looks hallucinated, has impossible color combos, or duplicates an edition's colors as a standalone color should be REJECTED. Set action to "reject", match to null.
 - Existing variants NOT present in the new discoveries may be RETIRED — list their variant_ids in "retired" if they appear to be discontinued. Do NOT retire variants just because the LLM missed them in one run — only retire if you have evidence the product no longer comes in that color/edition.
 
 Respond with JSON:
 {
   "mappings": [
-    { "new_key": "color:black", "match": "v_existing_id", "action": "update", "reason": "same color" },
-    { "new_key": "color:crimson-red", "match": null, "action": "create", "reason": "genuinely new color" }
+    { "new_key": "color:black", "match": "v_existing_id", "action": "match", "reason": "same color" },
+    { "new_key": "color:crimson-red", "match": null, "action": "new", "reason": "genuinely new color" },
+    { "new_key": "color:light-olive+black+red", "match": null, "action": "reject", "reason": "hallucinated color, atoms overlap with DOOM edition" }
   ],
   "retired": ["v_id_of_discontinued_variant"]
 }
 
 Rules:
 - Every new discovery MUST appear in "mappings" — do not skip any.
-- "action" must be "update" (match found) or "create" (genuinely new).
-- "match" must be an existing variant_id for updates, null for creates.
+- "action" must be "match" (same variant), "new" (genuinely new), or "reject" (hallucinated/garbage).
+- "match" must be an existing variant_id for "match" actions, null for "new" and "reject".
 - "reason" should be 1 sentence explaining the decision.
 - "retired" is an array of variant_ids — empty if nothing retired.
-- NEVER map a color to an edition or an edition to a color. They are fundamentally different variant types. A standalone color combo (e.g. "olive+black+red") is NOT the same as an edition (e.g. "DOOM: The Dark Ages Edition") even if their atoms overlap. If a color has similar atoms to an edition, they are STILL separate variants — set action to "create" for the color.
-- When in doubt between two variants of the SAME type, prefer "update" (preserving existing identity) over "create" (orphaning old data).`;
+- Each existing variant_id may appear at most ONCE across all mappings. Do not map two discoveries to the same variant.
+- Edition slugs must NOT change. If matching an edition, use the EXISTING slug in new_key (e.g. if the registry has "edition:cod-bo6", your new_key must be "edition:cod-bo6", NOT "edition:cod-bo6-edition").
+- NEVER map a color to an edition or an edition to a color. They are fundamentally different variant types. A standalone color combo (e.g. "olive+black+red") is NOT the same as an edition (e.g. "DOOM: The Dark Ages Edition") even if their atoms overlap. If a color has similar atoms to an edition, they are STILL separate variants — use "reject" for the suspicious color or "new" if it genuinely exists.`;
 }
 
 export const VARIANT_IDENTITY_CHECK_SPEC = {

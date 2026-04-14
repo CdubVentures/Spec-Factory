@@ -49,6 +49,7 @@ function makeSpecDb(settings = {}) {
   return {
     getFinderStore: () => ({
       getSetting: (key) => settings[key] ?? '',
+      updateSummaryField: () => {},
     }),
   };
 }
@@ -243,25 +244,44 @@ describe('runEvalHero', () => {
     assert.equal(result.skipped, true);
   });
 
-  it('auto-elects single hero candidate without LLM call', async () => {
+  it('single hero candidate calls LLM for quality evaluation', async () => {
     writeTestDoc([
       makeImage({ filename: 'hero-black.png', view: 'hero' }),
     ]);
     let llmCalled = false;
+    const heroResponse = {
+      heroes: [{ filename: 'hero-black.png', hero_rank: 1, reasoning: 'Good lifestyle shot' }],
+    };
     const result = await runEvalHero({
       product: { product_id: PRODUCT_ID, category: 'mouse', brand: 'Razer', model: 'V3' },
       specDb: makeSpecDb(),
       config: {},
       variantKey: 'color:black',
       productRoot: TMP,
-      _heroCallFn: async () => { llmCalled = true; return { result: { heroes: [] }, usage: null }; },
+      _heroCallFn: async () => { llmCalled = true; return { result: heroResponse, usage: null }; },
       _mergeFn: () => ({}),
     });
-    assert.equal(llmCalled, false, 'single candidate should auto-elect without LLM');
+    assert.equal(llmCalled, true, 'LLM must be called even for single hero candidate');
     assert.equal(result.heroes.length, 1);
-    assert.equal(result.heroes[0].filename, 'hero-black.png');
-    assert.equal(result.heroes[0].hero_rank, 1);
-    assert.ok(result.heroes[0].reasoning.includes('auto'));
+    assert.equal(result.heroes[0].reasoning, 'Good lifestyle shot');
+  });
+
+  it('single hero candidate rejected by LLM returns empty heroes', async () => {
+    writeTestDoc([
+      makeImage({ filename: 'hero-black.png', view: 'hero' }),
+    ]);
+    let mergeCalled = false;
+    const result = await runEvalHero({
+      product: { product_id: PRODUCT_ID, category: 'mouse', brand: 'Razer', model: 'V3' },
+      specDb: makeSpecDb(),
+      config: {},
+      variantKey: 'color:black',
+      productRoot: TMP,
+      _heroCallFn: async () => ({ result: { heroes: [] }, usage: null }),
+      _mergeFn: () => { mergeCalled = true; },
+    });
+    assert.equal(result.heroes.length, 0, 'rejected single hero must not appear');
+    assert.equal(mergeCalled, true, 'merge must still be called with empty heroes');
   });
 
   it('passes category-specific heroCriteria to hero call', async () => {

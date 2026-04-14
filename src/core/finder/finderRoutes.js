@@ -47,6 +47,120 @@ function cleanProductJsonPublishedFields(productId, fieldKeys) {
 }
 
 /**
+ * Run-scoped candidate cleanup — strips source entries for specific run(s) from candidates.
+ *
+ * WHY: When a single run is deleted, its candidate contributions must be cleaned up
+ * across all 4 data stores: JSON runs, SQL runs, SQL candidates, and product.json.
+ * Without this, deleting a run orphans its candidate entries.
+ *
+ * For each candidate row: remove source entries matching `sourceType` + `runNumber`.
+ * If no sources remain → delete the row. Otherwise update with remaining sources.
+ * After stripping, re-publishes the latest remaining candidate or cleans product.json.
+ */
+function stripRunSourceFromCandidates(specDb, productId, fieldKeys, sourceType, runNumbers) {
+  if (!specDb.getFieldCandidatesByProductAndField) return;
+  const runSet = new Set(Array.isArray(runNumbers) ? runNumbers : [runNumbers]);
+
+  for (const fieldKey of fieldKeys) {
+    const rows = specDb.getFieldCandidatesByProductAndField(productId, fieldKey);
+    for (const row of rows) {
+      const sources = Array.isArray(row.sources_json) ? row.sources_json : [];
+      const remaining = sources.filter(s => !(s.source === sourceType && runSet.has(s.run_number)));
+
+      if (remaining.length === sources.length) continue; // nothing to strip
+
+      if (remaining.length === 0) {
+        if (specDb.deleteFieldCandidateByValue) {
+          specDb.deleteFieldCandidateByValue(productId, fieldKey, row.value);
+        }
+      } else {
+        const maxConfidence = remaining.reduce((max, s) => Math.max(max, s.confidence ?? 0), 0);
+        specDb.upsertFieldCandidate({
+          productId, fieldKey,
+          value: row.value,
+          unit: row.unit,
+          confidence: maxConfidence,
+          sourceCount: remaining.length,
+          sourcesJson: remaining,
+          validationJson: row.validation_json,
+          metadataJson: row.metadata_json,
+          status: row.status,
+        });
+      }
+    }
+  }
+
+  // WHY: After stripping, re-publish from remaining candidates or clean stale state.
+  const productPath = path.join(defaultProductRoot(), productId, 'product.json');
+  try {
+    const data = JSON.parse(fs.readFileSync(productPath, 'utf8'));
+    let changed = false;
+
+    // Strip deleted run sources from product.json candidates[]
+    if (data.candidates) {
+      for (const key of fieldKeys) {
+        if (!Array.isArray(data.candidates[key])) continue;
+        const filtered = [];
+        for (const entry of data.candidates[key]) {
+          if (!Array.isArray(entry.sources)) { filtered.push(entry); continue; }
+          const remaining = entry.sources.filter(s => !(s.source === sourceType && runSet.has(s.run_number)));
+          if (remaining.length === 0) { changed = true; continue; }
+          if (remaining.length < entry.sources.length) changed = true;
+          entry.sources = remaining;
+          filtered.push(entry);
+        }
+        data.candidates[key] = filtered;
+      }
+    }
+
+    // WHY: If no candidates remain for a field, the published value in fields[] is stale.
+    // If candidates remain, re-resolve the latest one as the winner.
+    if (data.fields) {
+      for (const key of fieldKeys) {
+        const remaining = specDb.getFieldCandidatesByProductAndField(productId, key);
+        if (remaining.length === 0 && data.fields[key]) {
+          delete data.fields[key];
+          changed = true;
+        } else if (remaining.length > 0 && data.fields[key]) {
+          // WHY: Demote all, then resolve the latest candidate as the new winner.
+          specDb.demoteResolvedCandidates(productId, key);
+          const latest = remaining.sort((a, b) => (b.submitted_at || '').localeCompare(a.submitted_at || ''))[0];
+          specDb.markFieldCandidateResolved(productId, key, latest.value);
+
+          // Update product.json fields[] with the new winner
+          let parsedValue;
+          try { parsedValue = typeof latest.value === 'string' ? JSON.parse(latest.value) : latest.value; }
+          catch { parsedValue = latest.value; }
+          const latestSources = Array.isArray(latest.sources_json) ? latest.sources_json : [];
+          data.fields[key] = {
+            value: parsedValue,
+            confidence: latest.confidence ?? 0,
+            source: 'pipeline',
+            resolved_at: new Date().toISOString(),
+            sources: latestSources,
+            linked_candidates: remaining.map(r => ({
+              candidate_id: r.id,
+              value: r.value,
+              confidence: r.confidence,
+              source_count: r.source_count,
+              sources: Array.isArray(r.sources_json) ? r.sources_json : [],
+              status: r.status,
+              submitted_at: r.submitted_at,
+            })),
+          };
+          changed = true;
+        }
+      }
+    }
+
+    if (changed) {
+      data.updated_at = new Date().toISOString();
+      fs.writeFileSync(productPath, JSON.stringify(data, null, 2));
+    }
+  } catch { /* product.json may not exist */ }
+}
+
+/**
  * Source-aware candidate cleanup — strips a specific source type from candidates
  * instead of blanket-deleting all candidates for a field.
  *
@@ -279,17 +393,6 @@ export function createFinderRouteHandler(finderConfig) {
               onStreamChunk: (delta) => { if (delta.reasoning) batcher.push(delta.reasoning); if (delta.content) batcher.push(delta.content); },
               onQueueWait: (ms) => updateQueueDelay({ id: op.id, queueDelayMs: ms }),
               onLlmCallComplete: (call) => appendLlmCall({ id: op.id, call }),
-              // WHY: When identity check renames variants, PIF data is updated server-side
-              // but the GUI cache is stale. Emit a data-change event so the frontend invalidates.
-              ...(finderConfig.variantRenamedEvent ? {
-                onVariantRenamed: ({ productId: pid, category: cat }) => emitDataChange({
-                  broadcastWs,
-                  event: finderConfig.variantRenamedEvent,
-                  category: cat,
-                  entities: { productIds: [pid] },
-                  meta: { productId: pid },
-                }),
-              } : {}),
             }),
             completeOperation,
             failOperation,
@@ -326,6 +429,11 @@ export function createFinderRouteHandler(finderConfig) {
             for (const rn of runNumbers) last = deleteRun({ productId, runNumber: rn });
             return last;
           })();
+
+        // WHY: Candidate cleanup on batch delete — strip deleted runs' source entries
+        if (finderConfig.candidateSourceType && fieldKeys.length > 0) {
+          stripRunSourceFromCandidates(specDb, productId, fieldKeys, finderConfig.candidateSourceType, runNumbers);
+        }
 
         if (updated) {
           const summaryRow = {
@@ -367,6 +475,13 @@ export function createFinderRouteHandler(finderConfig) {
 
         deleteRunSql(specDb, productId, runNumber);
         const updated = deleteRun({ productId, runNumber });
+
+        // WHY: Candidate cleanup on single-run delete — strip the deleted run's
+        // source entries from candidates, delete empty candidates, re-publish
+        // from remaining candidates, and update product.json.
+        if (finderConfig.candidateSourceType && fieldKeys.length > 0) {
+          stripRunSourceFromCandidates(specDb, productId, fieldKeys, finderConfig.candidateSourceType, [runNumber]);
+        }
 
         if (updated) {
           const summaryRow = {

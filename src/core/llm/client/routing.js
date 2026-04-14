@@ -605,7 +605,9 @@ export async function callLlmWithRouting({
       route_role: resolvedRole,
       model_token_profile_map: config?.llmModelOutputTokenMap || {},
       default_output_token_cap: primaryTokenCap,
-      deepseek_default_max_output_tokens: 8192
+      deepseek_default_max_output_tokens: 8192,
+      effort_level: primaryBakedEffort || (phaseThinking ? (phaseThinkingEffort || 'medium') : ''),
+      web_search_enabled: Boolean(phaseWebSearch),
     },
     costRates,
     onUsage,
@@ -679,7 +681,9 @@ export async function callLlmWithRouting({
         ...sharedParams.usageContext,
         default_output_token_cap: fallbackTokenCap,
         fallback_attempt: true,
-        fallback_from_model: primary.model || null
+        fallback_from_model: primary.model || null,
+        effort_level: fallbackBakedEffort || (fbThinking ? (fbThinkingEffort || 'medium') : ''),
+        web_search_enabled: Boolean(fbWebSearch),
       }
     }));
   };
@@ -761,6 +765,8 @@ export async function callLlmWithRouting({
         ...sharedParams.usageContext,
         writer_phase: true,
         research_model: primary.model,
+        effort_level: writerBakedEffort || (writerThinking ? (writerThinkingEffort || 'medium') : ''),
+        web_search_enabled: false,
       },
     }));
   }

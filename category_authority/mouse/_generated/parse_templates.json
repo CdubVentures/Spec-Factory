@@ -1,6 +1,6 @@
 {
   "category": "mouse",
-  "generated_at": "2026-04-11T04:58:16.608Z",
+  "generated_at": "2026-04-14T08:47:51.590Z",
   "template_library": {
     "boolean_yes_no_unk": {
       "description": "Parse yes/no/true/false/1/0 tokens. Output boolean or 'unk'.",

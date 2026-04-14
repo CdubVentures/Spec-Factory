@@ -367,7 +367,7 @@ describe('characterization: runProductImageFinder', () => {
       'view', 'filename', 'url', 'source_page', 'alt_text',
       'bytes', 'width', 'height', 'quality_pass',
       'variant_id', 'variant_key', 'variant_label', 'variant_type', 'downloaded_at',
-      'original_filename', 'bg_removed', 'original_format',
+      'original_filename', 'bg_removed', 'original_format', 'content_hash',
     ];
     assert.deepEqual(Object.keys(img).sort(), expectedKeys.sort());
 

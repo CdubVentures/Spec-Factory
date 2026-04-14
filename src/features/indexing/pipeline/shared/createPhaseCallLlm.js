@@ -12,7 +12,7 @@
  * @property {boolean} estimated_usage - true when API didn't return tokens (fallback estimate)
  */
 
-export function createPhaseCallLlm({ callRoutedLlmFn, config, logger, onPhaseChange, onModelResolved, onStreamChunk, onQueueWait, signal }, { phase, reason, role, system, jsonSchema }, mapArgs) {
+export function createPhaseCallLlm({ callRoutedLlmFn, config, logger, onPhaseChange, onModelResolved, onStreamChunk, onQueueWait, signal, onUsage: depsOnUsage }, { phase, reason, role, system, jsonSchema }, mapArgs) {
   return async (domainArgs) => {
     const resolvedSystem = typeof system === 'function' ? system(domainArgs) : system;
     const resolvedSchema = typeof jsonSchema === 'function' ? jsonSchema() : jsonSchema;
@@ -34,7 +34,7 @@ export function createPhaseCallLlm({ callRoutedLlmFn, config, logger, onPhaseCha
         capturedUsage.estimated_usage = capturedUsage.estimated_usage || Boolean(u.estimated_usage);
       }
     };
-    const originalOnUsage = mapped.onUsage;
+    const originalOnUsage = mapped.onUsage || depsOnUsage;
     const composedOnUsage = originalOnUsage
       ? async (u) => { await originalOnUsage(u); captureUsage(u); }
       : captureUsage;

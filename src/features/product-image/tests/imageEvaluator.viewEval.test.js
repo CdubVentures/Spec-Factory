@@ -187,10 +187,9 @@ describe('buildHeroSelectionPrompt', () => {
     assert.ok(result.includes('evaluating'), 'should describe evaluation task');
   });
 
-  it('contains hero/marketing language', () => {
+  it('contains hero language', () => {
     const result = buildHeroSelectionPrompt(defaults);
     assert.ok(result.includes('hero') || result.includes('Hero'));
-    assert.ok(result.includes('marketing') || result.includes('Marketing'));
   });
 
   it('contains candidate count', () => {
@@ -234,24 +233,83 @@ describe('buildHeroSelectionPrompt', () => {
     assert.ok(result.includes('5'));
   });
 
-  it('contains explicit diversity rule — selected heroes must be different shots', () => {
+  // — Source safety: the primary gate —
+
+  it('rejects editorial/review site photos as copyright risk', () => {
     const result = buildHeroSelectionPrompt(defaults);
     const lower = result.toLowerCase();
-    const hasDiversity = lower.includes('different') && (lower.includes('perspective') || lower.includes('angle') || lower.includes('composition') || lower.includes('shot'));
-    assert.ok(hasDiversity, 'prompt must explicitly require selected heroes to be different shots/perspectives');
+    assert.ok(lower.includes('review site') || lower.includes('editorial'),
+      'must explicitly reject review site / editorial photos');
+    assert.ok(lower.includes('copyright') || lower.includes('copyrighted'),
+      'must explain WHY review site photos are rejected — copyright');
   });
 
-  it('contains disqualification criteria matching view eval rigor', () => {
+  it('requires manufacturer/official source provenance', () => {
+    const result = buildHeroSelectionPrompt(defaults);
+    const lower = result.toLowerCase();
+    assert.ok(lower.includes('manufacturer') || lower.includes('official') || lower.includes('press kit') || lower.includes('brand'),
+      'must describe what a safe source looks like — manufacturer/official/press kit');
+  });
+
+  it('describes editorial photo tells so LLM can visually identify them', () => {
+    const result = buildHeroSelectionPrompt(defaults);
+    const lower = result.toLowerCase();
+    assert.ok(lower.includes('lab') || lower.includes('test environment') || lower.includes('desk clutter') || lower.includes('hands'),
+      'must describe visual tells of editorial photos so LLM can spot them');
+  });
+
+  // — Cleanliness gate —
+
+  it('rejects watermarks and overlays', () => {
     const result = buildHeroSelectionPrompt(defaults);
     const lower = result.toLowerCase();
     assert.ok(lower.includes('watermark'), 'must mention watermarks as disqualification');
-    assert.ok(lower.includes('wrong') || lower.includes('identity'), 'must mention wrong product / identity check');
+    assert.ok(lower.includes('badge') || lower.includes('overlay') || lower.includes('sticker'),
+      'must mention badges/overlays as disqualification');
   });
 
-  it('contains resolution quality guidance', () => {
+  // — Quality gate —
+
+  it('contains image quality criteria', () => {
     const result = buildHeroSelectionPrompt(defaults);
     const lower = result.toLowerCase();
-    assert.ok(lower.includes('resolution'), 'must mention resolution as quality factor');
+    assert.ok(lower.includes('blur') || lower.includes('sharp') || lower.includes('resolution') || lower.includes('compress'),
+      'must mention image quality requirements');
+  });
+
+  // — Identity gate —
+
+  it('requires correct product identity', () => {
+    const result = buildHeroSelectionPrompt(defaults);
+    const lower = result.toLowerCase();
+    assert.ok(lower.includes('wrong') || lower.includes('correct model') || lower.includes('identity'),
+      'must require correct product identity');
+  });
+
+  // — Diversity as tiebreaker, not art direction —
+
+  it('prefers diverse shots when picking multiple heroes', () => {
+    const result = buildHeroSelectionPrompt(defaults);
+    const lower = result.toLowerCase();
+    const hasDiversity = lower.includes('different') || lower.includes('duplicate') || lower.includes('diversity');
+    assert.ok(hasDiversity, 'should prefer diverse shots when multiple heroes selected');
+  });
+
+  // — NOT an art director —
+
+  it('does not play art director with composition rules', () => {
+    const result = buildHeroSelectionPrompt(defaults);
+    const lower = result.toLowerCase();
+    assert.ok(!lower.includes('clear star'), 'should not impose composition requirements');
+    assert.ok(!lower.includes('obvious focal point'), 'should not impose focal point requirements');
+    assert.ok(!lower.includes('well-framed'), 'should not impose framing requirements');
+  });
+
+  it('accepts any image type — cutouts, lifestyle, renders, kits', () => {
+    const result = buildHeroSelectionPrompt(defaults);
+    const lower = result.toLowerCase();
+    assert.ok(!lower.includes('not cutout'), 'should not reject cutouts');
+    assert.ok(!lower.includes('not product image'), 'should not reject product images');
   });
 });
 
@@ -279,28 +337,54 @@ describe('evaluateViewCandidates', () => {
     assert.equal(called, false);
   });
 
-  it('1 candidate auto-elects without LLM call', async () => {
+  it('1 candidate calls LLM for quality evaluation', async () => {
     let called = false;
+    const mockResponse = {
+      winner: { filename: 'top-black.png', reasoning: 'Clean shot, no issues' },
+    };
     const result = await evaluateViewCandidates({
       ...baseOpts,
       imagePaths: ['/images/top-black.png'],
-      callLlm: async () => { called = true; return {}; },
+      callLlm: async () => { called = true; return { result: mockResponse, usage: {} }; },
     });
-    assert.equal(called, false);
+    assert.equal(called, true, 'LLM must be called even for single candidate');
     assert.equal(result.rankings.length, 1);
     assert.equal(result.rankings[0].best, true);
-    assert.equal(result.rankings[0].rank, 1);
-    assert.deepStrictEqual(result.rankings[0].flags, []);
-    assert.ok(result.rankings[0].reasoning.includes('auto'));
+    assert.equal(result.rankings[0].reasoning, 'Clean shot, no issues');
   });
 
-  it('1 candidate uses path.basename for filename', async () => {
+  it('1 candidate rejected by LLM returns no winner', async () => {
+    const mockResponse = {
+      winner: null,
+      rejected: [{ filename: 'top-black.png', flags: ['wrong_product'] }],
+    };
     const result = await evaluateViewCandidates({
       ...baseOpts,
-      imagePaths: ['/some/deep/path/top-black.png'],
-      callLlm: async () => ({}),
+      imagePaths: ['/images/top-black.png'],
+      callLlm: async () => ({ result: mockResponse, usage: {} }),
     });
-    assert.equal(result.rankings[0].filename, 'top-black.png');
+    assert.ok(!result.rankings.some(r => r.best), 'rejected single candidate must not be eval_best');
+    assert.equal(result.rankings.length, 1);
+    assert.deepStrictEqual(result.rankings[0].flags, ['wrong_product']);
+  });
+
+  it('1 candidate passes thumbnail to LLM as base64 data URI', async () => {
+    let capturedArgs = null;
+    await evaluateViewCandidates({
+      ...baseOpts,
+      imagePaths: ['/images/top-black.png'],
+      callLlm: async (args) => {
+        capturedArgs = args;
+        return {
+          result: { winner: { filename: 'top-black.png', reasoning: 'ok' } },
+          usage: {},
+        };
+      },
+    });
+    assert.ok(capturedArgs, 'callLlm must receive args');
+    assert.ok(Array.isArray(capturedArgs.images));
+    assert.equal(capturedArgs.images.length, 1);
+    assert.ok(capturedArgs.images[0].file_uri.startsWith('data:image/png;base64,'));
   });
 
   it('2+ candidates calls callLlm', async () => {
@@ -337,10 +421,10 @@ describe('evaluateViewCandidates', () => {
     assert.equal(capturedArgs.images[0].mime_type, 'image/png');
   });
 
-  it('2+ candidates: winner gets eval_best=true, rejected get flags', async () => {
+  it('2+ candidates: winner gets eval_best=true, rejected get flags + reasoning', async () => {
     const mockResponse = {
       winner: { filename: 'top-black.png', reasoning: 'Sharp and well-composed' },
-      rejected: [{ filename: 'top-black-2.png', flags: ['watermark'] }],
+      rejected: [{ filename: 'top-black-2.png', flags: ['watermark'], reasoning: 'Has visible watermark overlay' }],
     };
     const result = await evaluateViewCandidates({
       ...baseOpts,
@@ -355,6 +439,7 @@ describe('evaluateViewCandidates', () => {
     assert.ok(rejected);
     assert.equal(rejected.best, false);
     assert.deepStrictEqual(rejected.flags, ['watermark']);
+    assert.equal(rejected.reasoning, 'Has visible watermark overlay');
   });
 
   it('candidates not in winner or rejected are absent from rankings', async () => {
@@ -393,12 +478,12 @@ describe('evaluateViewCandidates', () => {
     assert.deepStrictEqual(result.rankings, []);
   });
 
-  it('LLM returns null winner (all rejected): flags applied, no eval_best', async () => {
+  it('LLM returns null winner (all rejected): flags + reasoning applied, no eval_best', async () => {
     const mockResponse = {
       winner: null,
       rejected: [
-        { filename: 'top-black.png', flags: ['watermark'] },
-        { filename: 'top-black-2.png', flags: ['wrong_product'] },
+        { filename: 'top-black.png', flags: ['watermark'], reasoning: 'Getty watermark visible' },
+        { filename: 'top-black-2.png', flags: ['wrong_product'], reasoning: 'Shows different mouse model' },
       ],
     };
     const result = await evaluateViewCandidates({
@@ -408,10 +493,12 @@ describe('evaluateViewCandidates', () => {
     });
     // No winner — no eval_best=true in rankings
     assert.ok(!result.rankings.some(r => r.best));
-    // Both rejected with flags
+    // Both rejected with flags + reasoning
     assert.equal(result.rankings.length, 2);
     assert.deepStrictEqual(result.rankings[0].flags, ['watermark']);
+    assert.equal(result.rankings[0].reasoning, 'Getty watermark visible');
     assert.deepStrictEqual(result.rankings[1].flags, ['wrong_product']);
+    assert.equal(result.rankings[1].reasoning, 'Shows different mouse model');
   });
 });
 

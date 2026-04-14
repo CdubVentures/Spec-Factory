@@ -35,12 +35,16 @@ export const colorEditionFinderResponseSchema = z.object({
 
 /**
  * LLM response for variant identity check (Run 2+).
- * Maps each new discovery to an existing variant_id or marks it as genuinely new.
+ *
+ * Actions:
+ * - match: Same variant — confirm identity, optionally update mutable fields. match = existing variant_id.
+ * - new: Genuinely new variant — create with new hash. match = null.
+ * - reject: Hallucinated/garbage discovery — skip entirely. match = null.
  */
 const variantMappingSchema = z.object({
   new_key: z.string(),
   match: z.string().nullable(),
-  action: z.enum(['update', 'create']),
+  action: z.enum(['match', 'new', 'reject']),
   reason: z.string(),
 });
 

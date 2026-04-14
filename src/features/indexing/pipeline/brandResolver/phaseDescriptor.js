@@ -18,6 +18,7 @@ export const brandResolverPhase = {
       storage: ctx.storage,
       logger: ctx.logger,
       categoryConfig: ctx.categoryConfig,
+      llmContext: ctx.llmContext || null,
       resolveBrandDomainFn: ctx._di?.resolveBrandDomainFn || resolveBrandDomain,
     });
     return { brandResolution: result.brandResolution };

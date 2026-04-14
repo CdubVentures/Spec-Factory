@@ -480,7 +480,7 @@ describe('carouselBuild — passes enriched fields through', () => {
     let capturedLabel = null;
     await runEvalView({
       product: { product_id: PRODUCT_ID, category: 'mouse', brand: 'Razer', model: 'V3' },
-      specDb: { getFinderStore: () => ({ getSetting: () => '' }) },
+      specDb: { getFinderStore: () => ({ getSetting: () => '', updateSummaryField: () => {} }) },
       config: {},
       variantKey: 'color:black',
       view: 'top',

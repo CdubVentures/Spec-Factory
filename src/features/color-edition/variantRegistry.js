@@ -5,7 +5,9 @@
  * The hash never changes, even if the variant's name, color atoms, or display
  * label are updated in later CEF runs.
  *
- * Phase 1: write-once registry. Phase 2 adds LLM validation for updates.
+ * Two-gate validation:
+ * - Gate 1 (validateColorsAgainstPalette): every atom must exist in registered palette
+ * - Gate 2 (validateIdentityMappings): no duplicate matches, no slug changes, valid atoms
  */
 
 import crypto from 'node:crypto';
@@ -105,13 +107,128 @@ export function buildVariantRegistry({ productId, colors = [], colorNames = {}, 
   return registry;
 }
 
+/* ── Gate 1: Palette validation ────────────────────────────────── */
+
+/**
+ * Validate that every color atom in colors and edition combos exists
+ * in the registered color palette. One unknown atom → invalid (tainted batch).
+ *
+ * @param {object} opts
+ * @param {string[]} opts.colors — color atom strings from LLM 1
+ * @param {Record<string, {colors?: string[]}>} opts.editions — edition objects
+ * @param {string[]} opts.palette — registered color names from appDb.listColors()
+ * @returns {{ valid: boolean, reason: string | null, unknownAtoms: string[] }}
+ */
+export function validateColorsAgainstPalette({ colors = [], editions = {}, palette = [] }) {
+  const paletteSet = new Set(palette.map((n) => n.toLowerCase()));
+  const unknownAtoms = [];
+
+  const checkAtoms = (atomStr) => {
+    for (const atom of atomStr.split('+').filter(Boolean)) {
+      if (!paletteSet.has(atom.toLowerCase())) {
+        unknownAtoms.push(atom);
+      }
+    }
+  };
+
+  for (const color of colors) checkAtoms(color);
+  for (const ed of Object.values(editions)) {
+    for (const combo of ed.colors || []) checkAtoms(combo);
+  }
+
+  if (unknownAtoms.length > 0) {
+    const unique = [...new Set(unknownAtoms)];
+    return {
+      valid: false,
+      reason: `Unknown color atom "${unique[0]}" — not in registered palette`,
+      unknownAtoms: unique,
+    };
+  }
+
+  return { valid: true, reason: null, unknownAtoms: [] };
+}
+
+/* ── Gate 2: Identity check validation ─────────────────────────── */
+
+/**
+ * Validate identity check mappings before applying them to the registry.
+ * Any failure → whole run rejected.
+ *
+ * @param {object} opts
+ * @param {Array<{new_key, match, action, reason}>} opts.mappings
+ * @param {Array} opts.existingRegistry — current variant_registry entries
+ * @param {string[]} opts.palette — registered color names
+ * @returns {{ valid: boolean, reason: string | null }}
+ */
+export function validateIdentityMappings({ mappings = [], existingRegistry = [], palette = [] }) {
+  const paletteSet = new Set(palette.map((n) => n.toLowerCase()));
+  const byId = new Map(existingRegistry.map((e) => [e.variant_id, e]));
+  const matchTargets = new Set();
+
+  for (const m of mappings) {
+    // WHY: match action must have a non-null match field (variant_id reference)
+    if (m.action === 'match') {
+      if (!m.match) {
+        return { valid: false, reason: `match action missing variant_id for "${m.new_key}"` };
+      }
+
+      // WHY: No two match actions may reference the same variant_id
+      if (matchTargets.has(m.match)) {
+        return { valid: false, reason: `Duplicate match target: ${m.match} claimed by 2 discoveries` };
+      }
+      matchTargets.add(m.match);
+
+      // WHY: Edition slugs are structural identity — they must never change
+      const existingEntry = byId.get(m.match);
+      if (existingEntry && existingEntry.variant_type === 'edition' && m.new_key.startsWith('edition:')) {
+        const newSlug = m.new_key.replace('edition:', '');
+        if (existingEntry.edition_slug && newSlug !== existingEntry.edition_slug) {
+          return { valid: false, reason: `Edition slug change blocked: ${existingEntry.edition_slug} → ${newSlug}` };
+        }
+      }
+
+      // WHY: If match changes color atoms, new atoms must be in palette
+      if (existingEntry && m.new_key !== existingEntry.variant_key) {
+        const atomStr = m.new_key.replace(/^(color|edition):/, '');
+        for (const atom of atomStr.split('+').filter(Boolean)) {
+          if (!paletteSet.has(atom.toLowerCase())) {
+            return { valid: false, reason: `Unknown color atom "${atom}" in identity check mapping` };
+          }
+        }
+      }
+    }
+
+    // WHY: new/reject actions must have null match field
+    if ((m.action === 'new' || m.action === 'reject') && m.match != null) {
+      return { valid: false, reason: `${m.action} action must have null match for "${m.new_key}"` };
+    }
+
+    // WHY: new entries must also have valid palette atoms
+    if (m.action === 'new') {
+      const atomStr = m.new_key.replace(/^(color|edition):/, '');
+      for (const atom of atomStr.split('+').filter(Boolean)) {
+        if (!paletteSet.has(atom.toLowerCase())) {
+          return { valid: false, reason: `Unknown color atom "${atom}" in new mapping "${m.new_key}"` };
+        }
+      }
+    }
+  }
+
+  return { valid: true, reason: null };
+}
+
+/* ── Apply identity mappings ───────────────────────────────────── */
+
 /**
  * Apply LLM identity check mappings to an existing variant registry.
  *
  * WHY: On Run 2+, the LLM compares new discoveries against the existing
- * registry. Each mapping says "this new key matches existing variant X"
- * (update) or "this is genuinely new" (create). Retired entries are marked
- * but never removed — PIF images may still reference them.
+ * registry. Each mapping classifies a discovery as:
+ * - match: same variant (update mutable fields if changed, preserve hash)
+ * - new: genuinely new (create entry with new hash)
+ * - reject: hallucinated/garbage (skip entirely)
+ *
+ * By the time this runs, both validation gates have passed — inputs are trusted.
  *
  * @param {object} opts
  * @param {Array} opts.existingRegistry — current variant_registry array
@@ -128,52 +245,68 @@ export function applyIdentityMappings({ existingRegistry, mappings, retired, pro
   const registry = existingRegistry.map((e) => ({ ...e }));
   const byId = new Map(registry.map((e) => [e.variant_id, e]));
 
-  // WHY: Same reverse lookup as buildVariantRegistry — maps edition combo → slug
-  const comboToEdition = new Map();
-  for (const [slug, ed] of Object.entries(editions)) {
-    const combo = (ed.colors || [])[0];
-    if (combo) comboToEdition.set(combo, { slug, displayName: ed.display_name || slug });
-  }
-
   for (const mapping of mappings) {
-    if (mapping.action === 'update' && mapping.match) {
+    // ── reject: skip entirely ──
+    if (mapping.action === 'reject') continue;
+
+    // ── match: confirm identity, optionally update mutable fields ──
+    if (mapping.action === 'match' && mapping.match) {
       const entry = byId.get(mapping.match);
       if (!entry) continue;
 
       // WHY: Type guard — a color and an edition are never the same variant.
-      // If the LLM maps across types, force a create instead of corrupting the registry.
+      // If the LLM maps across types, force to new instead of corrupting the registry.
       const newKey = mapping.new_key;
       const newType = newKey.startsWith('edition:') ? 'edition' : 'color';
       if (entry.variant_type !== newType) {
-        // Cross-type mapping rejected — treat as create
-        mapping.action = 'create';
+        mapping.action = 'new';
         mapping.match = null;
-        // Fall through to the create branch below
+        // Fall through to the new branch below
       } else {
-        // WHY: Update mutable fields, preserve variant_id + variant_type + created_at
-        entry.variant_key = newKey;
-        entry.updated_at = now;
+        // WHY: Only update mutable fields if something actually changed.
+        // Preserve variant_id + variant_type + created_at always.
+        const keyChanged = newKey !== entry.variant_key;
 
         if (newKey.startsWith('edition:')) {
-          const slug = newKey.replace('edition:', '');
+          const slug = entry.edition_slug; // WHY: slug never changes (Gate 2 enforces)
           const ed = editions[slug];
           const combo = (ed?.colors || [])[0] || '';
-          entry.variant_label = ed?.display_name || slug;
-          entry.color_atoms = combo ? combo.split('+').filter(Boolean) : [];
-          entry.edition_slug = slug;
-          entry.edition_display_name = ed?.display_name || slug;
+          const newLabel = ed?.display_name || slug;
+          const newAtoms = combo ? combo.split('+').filter(Boolean) : [];
+          const labelChanged = newLabel !== entry.variant_label;
+          const atomsChanged = JSON.stringify(newAtoms) !== JSON.stringify(entry.color_atoms);
+
+          if (keyChanged || labelChanged || atomsChanged) {
+            if (keyChanged) entry.variant_key = newKey;
+            if (labelChanged) {
+              entry.variant_label = newLabel;
+              entry.edition_display_name = newLabel;
+            }
+            if (atomsChanged) entry.color_atoms = newAtoms;
+            entry.updated_at = now;
+          }
         } else {
           const atom = newKey.replace('color:', '');
           const name = colorNames[atom];
           const hasName = name && name.toLowerCase() !== atom.toLowerCase();
-          entry.variant_label = hasName ? name : atom;
-          entry.color_atoms = atom.split('+').filter(Boolean);
+          const newLabel = hasName ? name : atom;
+          const newAtoms = atom.split('+').filter(Boolean);
+          const labelChanged = newLabel !== entry.variant_label;
+          const atomsChanged = JSON.stringify(newAtoms) !== JSON.stringify(entry.color_atoms);
+
+          if (keyChanged || labelChanged || atomsChanged) {
+            if (keyChanged) entry.variant_key = newKey;
+            if (labelChanged) entry.variant_label = newLabel;
+            if (atomsChanged) entry.color_atoms = newAtoms;
+            entry.updated_at = now;
+          }
         }
         continue;
       }
     }
 
-    if (mapping.action === 'create') {
+    // ── new: genuinely new variant ──
+    if (mapping.action === 'new') {
       const newKey = mapping.new_key;
       const variantId = generateVariantId(productId, newKey);
 

@@ -54,6 +54,7 @@ export async function enhanceQueryRows({
   identityLock = {},
   config = {},
   logger = null,
+  llmContext = null,
   // DI seams for testing
   callLlmFn = null,
   hasApiKeyFn = (cfg) => hasLlmRouteApiKey(cfg, { role: 'plan' }),
@@ -61,6 +62,7 @@ export async function enhanceQueryRows({
 } = {}) {
   const effectiveCallLlm = callLlmFn || createQueryEnhancerCallLlm({
     callRoutedLlmFn: callLlmWithRouting, config, logger,
+    onUsage: llmContext?.recordUsage,
   });
   const rows = Array.isArray(queryRows) ? queryRows : [];
   if (rows.length === 0) return buildDeterministicFallback(rows);

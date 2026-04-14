@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import useEmblaCarousel from 'embla-carousel-react';
+import { ActionTooltip } from '../../../shared/ui/feedback/ActionTooltip.tsx';
 import type { CarouselSlide } from '../types.ts';
 
 /* ── Helpers ──────────────────────────────────────────────────────── */
@@ -173,15 +174,15 @@ export function CarouselPreviewPopup({
                 <span className="text-[12px] font-bold uppercase tracking-wider text-white/85">
                   {current.slotLabel}
                 </span>
-                {/* Source dot: green = LLM, blue = user */}
-                <span
-                  className="shrink-0 rounded-full"
-                  style={{
-                    width: 7, height: 7,
-                    backgroundColor: current.source === 'eval' ? '#16a34a' : '#38bdf8',
-                  }}
-                  title={current.source === 'eval' ? 'LLM selected' : 'User override'}
-                />
+                <ActionTooltip text={current.source === 'eval' ? 'LLM selected' : 'User override'}>
+                  <span
+                    className="shrink-0 rounded-full"
+                    style={{
+                      width: 7, height: 7,
+                      backgroundColor: current.source === 'eval' ? '#16a34a' : '#38bdf8',
+                    }}
+                  />
+                </ActionTooltip>
                 <div className="flex-1" />
                 {current.width > 0 && (
                   <span className="text-[11px] text-white/40 font-mono">
@@ -196,24 +197,25 @@ export function CarouselPreviewPopup({
                 <span className="text-[11px] text-white/30 font-mono">
                   {selectedIndex + 1} / {slides.length}
                 </span>
-                {/* Reasoning tooltip */}
                 {current.reasoning && (
-                  <span
-                    className="flex items-center justify-center rounded-full font-mono shrink-0 cursor-help"
-                    style={{ width: 16, height: 16, fontSize: 9, color: 'rgba(255,255,255,0.5)', backgroundColor: 'rgba(255,255,255,0.08)' }}
-                    title={current.reasoning}
-                  >
-                    R
-                  </span>
+                  <ActionTooltip text={current.reasoning} side="left">
+                    <span
+                      className="flex items-center justify-center rounded-full font-mono shrink-0 cursor-help"
+                      style={{ width: 16, height: 16, fontSize: 9, color: 'rgba(255,255,255,0.5)', backgroundColor: 'rgba(255,255,255,0.08)' }}
+                    >
+                      R
+                    </span>
+                  </ActionTooltip>
                 )}
                 {current.runNumber != null && (
-                  <span
-                    className="flex items-center justify-center rounded-full font-mono shrink-0"
-                    style={{ width: 16, height: 16, fontSize: 9, color: 'rgba(255,255,255,0.5)', backgroundColor: 'rgba(255,255,255,0.08)' }}
-                    title={`Run ${current.runNumber}`}
-                  >
-                    {current.runNumber}
-                  </span>
+                  <ActionTooltip text={`Run ${current.runNumber}`}>
+                    <span
+                      className="flex items-center justify-center rounded-full font-mono shrink-0"
+                      style={{ width: 16, height: 16, fontSize: 9, color: 'rgba(255,255,255,0.5)', backgroundColor: 'rgba(255,255,255,0.08)' }}
+                    >
+                      {current.runNumber}
+                    </span>
+                  </ActionTooltip>
                 )}
               </>
             )}

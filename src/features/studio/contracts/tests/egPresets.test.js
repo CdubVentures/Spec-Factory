@@ -153,9 +153,9 @@ describe('buildEgColorFieldRule', () => {
     assert.ok(rule.search_hints.domain_hints.length > 0, 'domain_hints should be populated');
   });
 
-  it('has set_union item_union for cross-source merge', () => {
+  it('has winner_only item_union for complete-list submissions', () => {
     const rule = buildEgColorFieldRule();
-    assert.equal(rule.contract.list_rules.item_union, 'set_union');
+    assert.equal(rule.contract.list_rules.item_union, 'winner_only');
   });
 
   it('returns a new object each call (no shared mutation)', () => {

@@ -13,13 +13,17 @@ import {
   evaluateViewCandidates,
   mergeEvaluation,
   appendEvalRecord,
+  extractEvalState,
   withProductLock,
   createImageEvaluatorCallLlm,
   createHeroEvalCallLlm,
   createThumbnailBase64,
+  buildViewEvalPrompt,
+  buildHeroSelectionPrompt,
 } from './imageEvaluator.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 import { buildLlmCallDeps } from '../../core/llm/buildLlmCallDeps.js';
+import { buildBillingOnUsage } from '../../billing/costLedger.js';
 import { matchVariant } from './variantMatch.js';
 
 /**
@@ -28,6 +32,7 @@ import { matchVariant } from './variantMatch.js';
  */
 export async function runEvalView({
   product,
+  appDb = null,
   specDb,
   config = {},
   logger = null,
@@ -77,7 +82,10 @@ export async function runEvalView({
       if (info?.isFallback) resolvedFallbackUsed = true;
       onModelResolved?.(info);
     };
-    const llmDeps = buildLlmCallDeps({ config, logger, onModelResolved: wrappedOnModelResolved, onStreamChunk, onQueueWait, signal });
+    const llmDeps = buildLlmCallDeps({
+      config, logger, onModelResolved: wrappedOnModelResolved, onStreamChunk, onQueueWait, signal,
+      onUsage: appDb ? buildBillingOnUsage({ config, appDb, category: product.category, productId: product.product_id }) : undefined,
+    });
     callLlm = createImageEvaluatorCallLlm(llmDeps);
   }
 
@@ -95,7 +103,14 @@ export async function runEvalView({
   const evalCriteria = dbCriteria || resolveViewEvalCriteria(product.category, view);
 
   const evalFn = _evalViewFn || evaluateViewCandidates;
-  onLlmCallComplete?.({ prompt: { system: '(view eval)', user: `${view} view — ${viewImages.length} candidates` }, response: null, model: resolvedModelName, variant: variantKey, mode: 'view-eval' });
+  const viewLabel = `Evaluate ${view.charAt(0).toUpperCase() + view.slice(1)}`;
+  const preEvalPrompt = buildViewEvalPrompt({
+    product, variantLabel: viewImages[0]?.variant_label || variantKey,
+    variantType: viewImages[0]?.variant_type || 'color', view,
+    viewDescription, candidateCount: viewImages.length,
+    promptOverride: evalPromptOverride, evalCriteria,
+  });
+  onLlmCallComplete?.({ prompt: { system: preEvalPrompt, user: `${view} view — ${viewImages.length} candidates` }, response: null, model: resolvedModelName, variant: variantKey, mode: 'view-eval', label: viewLabel });
   const result = await evalFn({
     imagePaths,
     imageMetadata,
@@ -109,14 +124,14 @@ export async function runEvalView({
     evalCriteria,
     callLlm,
   });
-  onLlmCallComplete?.({ prompt: { system: result._prompt || '(view eval)', user: `${view} view — ${viewImages.length} candidates` }, response: result._response, model: resolvedModelName, variant: variantKey, mode: 'view-eval', usage: result.usage || null });
+  onLlmCallComplete?.({ prompt: { system: result._prompt || '(view eval)', user: `${view} view — ${viewImages.length} candidates` }, response: result._response, model: resolvedModelName, variant: variantKey, mode: 'view-eval', usage: result.usage || null, label: viewLabel });
 
   // WHY: Serialize JSON writes per product — multiple view evals fire simultaneously
   // and all read/modify/write the same product_images.json file.
   const merge = _mergeFn || mergeEvaluation;
   await withProductLock(product.product_id, () => {
     const viewResults = new Map([[view, result]]);
-    merge({
+    const doc = merge({
       productId: product.product_id,
       productRoot: root,
       variantKey,
@@ -124,6 +139,11 @@ export async function runEvalView({
       viewResults,
       heroResults: null,
     });
+
+    // SQL projection — dual-write eval_state
+    if (doc && finderStore) {
+      finderStore.updateSummaryField(product.product_id, 'eval_state', JSON.stringify(extractEvalState(doc)));
+    }
 
     // Persist eval history (prompt + response for audit trail)
     if (result._prompt) {
@@ -170,6 +190,7 @@ export async function runEvalView({
  */
 export async function runEvalHero({
   product,
+  appDb = null,
   specDb,
   config = {},
   logger = null,
@@ -203,29 +224,6 @@ export async function runEvalHero({
     return { heroes: [], skipped: true };
   }
 
-  // WHY: Single candidate = auto-elect, no LLM call (same pattern as view eval)
-  if (heroCandidates.length === 1) {
-    const autoResult = {
-      heroes: [{
-        filename: heroCandidates[0].filename,
-        hero_rank: 1,
-        reasoning: 'auto-elected: sole hero candidate for this variant',
-      }],
-    };
-    const merge = _mergeFn || mergeEvaluation;
-    await withProductLock(product.product_id, () => {
-      merge({
-        productId: product.product_id,
-        productRoot: root,
-        variantKey,
-        viewResults: new Map(),
-        heroResults: autoResult,
-      });
-    });
-    onStageAdvance?.('Complete');
-    return autoResult;
-  }
-
   // Build LLM caller — capture model info for eval history
   let heroCall = _heroCallFn;
   let resolvedModelName = '';
@@ -240,7 +238,10 @@ export async function runEvalHero({
       if (info?.isFallback) resolvedFallbackUsed = true;
       onModelResolved?.(info);
     };
-    const llmDeps = buildLlmCallDeps({ config, logger, onModelResolved: wrappedOnModelResolved, onStreamChunk, onQueueWait, signal });
+    const llmDeps = buildLlmCallDeps({
+      config, logger, onModelResolved: wrappedOnModelResolved, onStreamChunk, onQueueWait, signal,
+      onUsage: appDb ? buildBillingOnUsage({ config, appDb, category: product.category, productId: product.product_id }) : undefined,
+    });
     heroCall = createHeroEvalCallLlm(llmDeps);
   }
 
@@ -279,7 +280,11 @@ export async function runEvalHero({
   }
   const userText = lines.join('\n');
 
-  onLlmCallComplete?.({ prompt: { system: '(hero eval)', user: `${heroCandidates.length} candidates` }, response: null, model: resolvedModelName, variant: variantKey, mode: 'hero-eval' });
+  const heroSystemPrompt = buildHeroSelectionPrompt({
+    product, variantLabel, variantType, candidates,
+    promptOverride: heroPromptOverride, heroCriteria, heroCount,
+  });
+  onLlmCallComplete?.({ prompt: { system: heroSystemPrompt, user: userText }, response: null, model: resolvedModelName, variant: variantKey, mode: 'hero-eval', label: 'Evaluate Hero' });
   const { result: heroResults, usage: heroUsage } = await heroCall({
     product,
     variantLabel,
@@ -291,12 +296,12 @@ export async function runEvalHero({
     userText,
     images,
   });
-  onLlmCallComplete?.({ prompt: { system: '(hero eval)', user: `${heroCandidates.length} candidates` }, response: heroResults, model: resolvedModelName, variant: variantKey, mode: 'hero-eval', usage: heroUsage || null });
+  onLlmCallComplete?.({ prompt: { system: heroSystemPrompt, user: userText }, response: heroResults, model: resolvedModelName, variant: variantKey, mode: 'hero-eval', usage: heroUsage || null, label: 'Evaluate Hero' });
 
   // WHY: Serialize JSON writes per product — concurrent eval operations.
   const merge = _mergeFn || mergeEvaluation;
   await withProductLock(product.product_id, async () => {
-    merge({
+    const doc = merge({
       productId: product.product_id,
       productRoot: root,
       variantKey,
@@ -305,13 +310,13 @@ export async function runEvalHero({
       heroResults,
     });
 
+    // SQL projection — dual-write eval_state
+    if (doc && finderStore) {
+      finderStore.updateSummaryField(product.product_id, 'eval_state', JSON.stringify(extractEvalState(doc)));
+    }
+
     // Persist eval history
     if (!_heroCallFn) {
-      const { buildHeroSelectionPrompt } = await import('./imageEvaluator.js');
-      const heroSystemPrompt = buildHeroSelectionPrompt({
-        product, variantLabel, variantType, candidates,
-        promptOverride: heroPromptOverride, heroCriteria, heroCount,
-      });
       const durationMs = Date.now() - new Date(evalStartedAt).getTime();
       appendEvalRecord({
         productId: product.product_id,

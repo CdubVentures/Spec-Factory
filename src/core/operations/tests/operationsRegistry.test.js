@@ -218,6 +218,21 @@ describe('appendLlmCall', () => {
   it('no-ops on nonexistent id', () => {
     assert.doesNotThrow(() => appendLlmCall({ id: 'ghost', call: { prompt: { system: '', user: '' }, response: {} } }));
   });
+
+  it('preserves label field on append', () => {
+    const op = registerOperation(VALID_OP);
+    appendLlmCall({ id: op.id, call: { prompt: { system: 's', user: 'u' }, response: {}, label: 'Discovery' } });
+    assert.equal(listOperations()[0].llmCalls[0].label, 'Discovery');
+  });
+
+  it('preserves label from incoming call through smart update', () => {
+    const op = registerOperation(VALID_OP);
+    appendLlmCall({ id: op.id, call: { prompt: { system: 's', user: 'u' }, response: null, label: 'Discovery' } });
+    appendLlmCall({ id: op.id, call: { prompt: { system: 's', user: 'u' }, response: { ok: true }, label: 'Discovery' } });
+    assert.equal(listOperations()[0].llmCalls.length, 1);
+    assert.equal(listOperations()[0].llmCalls[0].label, 'Discovery');
+    assert.deepEqual(listOperations()[0].llmCalls[0].response, { ok: true });
+  });
 });
 
 // ── updateModelInfo ──────────────────────────────────────────────────

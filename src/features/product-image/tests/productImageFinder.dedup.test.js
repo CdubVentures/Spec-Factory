@@ -1,0 +1,290 @@
+/**
+ * Deduplication contract tests for Product Image Finder.
+ *
+ * WHY: The download loop has two dedup layers:
+ *   1. URL dedup — blocks re-downloading the exact same normalized URL
+ *   2. Content hash — blocks byte-identical files served at different URLs
+ *
+ * These tests verify both layers independently and together.
+ */
+
+import { describe, it, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import http from 'node:http';
+import sharp from 'sharp';
+import { runProductImageFinder } from '../productImageFinder.js';
+import { writeProductImages } from '../productImageStore.js';
+
+/* ── Helpers ──────────────────────────────────────────────────────── */
+
+const TMP_ROOT = path.join(os.tmpdir(), `pif-dedup-test-${Date.now()}`);
+const PRODUCT_ROOT = path.join(TMP_ROOT, 'products');
+
+function cleanup(dir) {
+  try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* */ }
+}
+
+function writeCefData(productId, cefData) {
+  const dir = path.join(PRODUCT_ROOT, productId);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'color_edition.json'), JSON.stringify(cefData));
+}
+
+function makeFinderStoreStub() {
+  const settings = {};
+  const runs = [];
+  const upserts = [];
+  return {
+    getSetting: (key) => settings[key] || '',
+    insertRun: (run) => runs.push(run),
+    upsert: (data) => upserts.push(data),
+    _settings: settings,
+    _runs: runs,
+    _upserts: upserts,
+  };
+}
+
+function makeSpecDbStub(finderStore) {
+  return {
+    getFinderStore: () => finderStore,
+    getAllProducts: () => [],
+  };
+}
+
+const PRODUCT = {
+  product_id: 'mouse-dedup-001',
+  category: 'mouse',
+  brand: 'TestBrand',
+  model: 'DedupModel X',
+  base_model: 'DedupModel',
+};
+
+// WHY: sharp compresses solid-color PNGs to <15KB, which fails the default
+// 50KB minFileSize quality gate. Random noise doesn't compress well.
+function createNoisyPixels(width, height, channels = 3) {
+  const buf = Buffer.alloc(width * height * channels);
+  for (let i = 0; i < buf.length; i++) buf[i] = (Math.random() * 255) | 0;
+  return buf;
+}
+
+function makeLlmOverride(images) {
+  return async () => ({
+    result: {
+      images,
+      discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+    },
+    usage: null,
+  });
+}
+
+/* ── Test image creation + HTTP server ────────────────────────────── */
+
+let bufferA;   // 1000x800 noisy PNG (passes quality gate)
+let bufferB;   // 1000x800 DIFFERENT noisy PNG (different hash)
+let testServer;
+let port;
+
+/* ── Tests ────────────────────────────────────────────────────────── */
+
+describe('dedup: URL dedup self-heal + content hash gate', () => {
+  before(async () => {
+    fs.mkdirSync(PRODUCT_ROOT, { recursive: true });
+
+    bufferA = await sharp(createNoisyPixels(1000, 800), { raw: { width: 1000, height: 800, channels: 3 } }).png().toBuffer();
+    bufferB = await sharp(createNoisyPixels(1000, 800), { raw: { width: 1000, height: 800, channels: 3 } }).png().toBuffer();
+
+    testServer = http.createServer((req, res) => {
+      if (req.url === '/img-a.png' || req.url === '/img-a-alias.png') {
+        res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': bufferA.length });
+        res.end(bufferA);
+      } else if (req.url === '/img-b.png') {
+        res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': bufferB.length });
+        res.end(bufferB);
+      } else {
+        res.writeHead(404);
+        res.end();
+      }
+    });
+
+    await new Promise((resolve) => {
+      testServer.listen(0, '127.0.0.1', () => {
+        port = testServer.address().port;
+        resolve();
+      });
+    });
+  });
+
+  after(() => {
+    testServer?.close();
+    cleanup(TMP_ROOT);
+  });
+
+  it('URL dedup self-heals from disk: rejects previously downloaded URL', async () => {
+    const pid = 'url-selfheal';
+    writeCefData(pid, { selected: { colors: ['black'], color_names: {}, editions: {} } });
+
+    // Pre-populate product_images.json with an existing image at the URL the LLM will suggest
+    const existingUrl = `http://127.0.0.1:${port}/img-a.png`;
+    writeProductImages({
+      productId: pid,
+      productRoot: PRODUCT_ROOT,
+      data: {
+        product_id: pid,
+        category: 'mouse',
+        selected: {
+          images: [{
+            view: 'top', filename: 'top-black.png', url: existingUrl,
+            source_page: '', alt_text: '', bytes: 1000, width: 1000, height: 800,
+            quality_pass: true, variant_key: 'color:black', variant_label: 'black',
+            variant_type: 'color', downloaded_at: new Date().toISOString(),
+            original_filename: 'top-black.png', bg_removed: false, original_format: 'png',
+          }],
+        },
+        runs: [],
+        run_count: 1,
+        next_run_number: 2,
+      },
+    });
+
+    const store = makeFinderStoreStub();
+    const result = await runProductImageFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: {},
+      specDb: makeSpecDbStub(store),
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmOverride([
+        { view: 'top', url: existingUrl },
+      ]),
+    });
+
+    assert.equal(result.images.length, 0, 'should download 0 images (URL dedup)');
+    assert.ok(result.download_errors.length > 0, 'should have download errors');
+    assert.ok(
+      result.download_errors[0].error.includes('duplicate URL'),
+      `expected "duplicate URL" error, got: ${result.download_errors[0].error}`,
+    );
+  });
+
+  it('content hash rejects byte-identical file at different URL', async () => {
+    const pid = 'hash-dedup';
+    writeCefData(pid, { selected: { colors: ['black'], color_names: {}, editions: {} } });
+
+    const store = makeFinderStoreStub();
+    const result = await runProductImageFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: {},
+      specDb: makeSpecDbStub(store),
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmOverride([
+        { view: 'top', url: `http://127.0.0.1:${port}/img-a.png` },
+        { view: 'top', url: `http://127.0.0.1:${port}/img-a-alias.png` },
+      ]),
+    });
+
+    assert.equal(result.images.length, 1, 'only first image should survive');
+    assert.ok(
+      result.download_errors.some(e => e.error.includes('duplicate content')),
+      `expected "duplicate content" error, got: ${JSON.stringify(result.download_errors)}`,
+    );
+  });
+
+  it('content_hash field is stored on downloaded image entries', async () => {
+    const pid = 'hash-stored';
+    writeCefData(pid, { selected: { colors: ['black'], color_names: {}, editions: {} } });
+
+    const store = makeFinderStoreStub();
+    const result = await runProductImageFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: {},
+      specDb: makeSpecDbStub(store),
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmOverride([
+        { view: 'top', url: `http://127.0.0.1:${port}/img-a.png` },
+      ]),
+    });
+
+    assert.equal(result.images.length, 1);
+    const img = result.images[0];
+    assert.equal(typeof img.content_hash, 'string', 'content_hash should be a string');
+    assert.equal(img.content_hash.length, 64, 'content_hash should be 64-char SHA-256 hex');
+    assert.match(img.content_hash, /^[0-9a-f]{64}$/, 'content_hash should be lowercase hex');
+  });
+
+  it('different file content passes both dedup gates', async () => {
+    const pid = 'hash-different';
+    writeCefData(pid, { selected: { colors: ['black'], color_names: {}, editions: {} } });
+
+    const store = makeFinderStoreStub();
+    const result = await runProductImageFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: {},
+      specDb: makeSpecDbStub(store),
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmOverride([
+        { view: 'top', url: `http://127.0.0.1:${port}/img-a.png` },
+        { view: 'top', url: `http://127.0.0.1:${port}/img-b.png` },
+      ]),
+    });
+
+    assert.equal(result.images.length, 2, 'both genuinely different images should download');
+    assert.notEqual(
+      result.images[0].content_hash,
+      result.images[1].content_hash,
+      'different images should have different content_hash values',
+    );
+  });
+
+  it('old images without content_hash are skipped during hash set construction', async () => {
+    const pid = 'hash-legacy';
+    writeCefData(pid, { selected: { colors: ['black'], color_names: {}, editions: {} } });
+
+    // Pre-populate with an image entry that has NO content_hash field
+    // and serve the same bytes at a new URL — should download (no hash to match)
+    writeProductImages({
+      productId: pid,
+      productRoot: PRODUCT_ROOT,
+      data: {
+        product_id: pid,
+        category: 'mouse',
+        selected: {
+          images: [{
+            view: 'top', filename: 'top-black.png', url: `http://127.0.0.1:${port}/img-a.png`,
+            source_page: '', alt_text: '', bytes: 1000, width: 1000, height: 800,
+            quality_pass: true, variant_key: 'color:black', variant_label: 'black',
+            variant_type: 'color', downloaded_at: new Date().toISOString(),
+            original_filename: 'top-black.png', bg_removed: false, original_format: 'png',
+            // NOTE: no content_hash field — simulates pre-hash era image
+          }],
+        },
+        runs: [],
+        run_count: 1,
+        next_run_number: 2,
+      },
+    });
+
+    const store = makeFinderStoreStub();
+    const result = await runProductImageFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: {},
+      specDb: makeSpecDbStub(store),
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmOverride([
+        // Different URL serving same bytes — URL dedup won't catch it,
+        // and hash set has nothing to compare against (old entry has no hash)
+        { view: 'top', url: `http://127.0.0.1:${port}/img-a-alias.png` },
+      ]),
+    });
+
+    assert.equal(result.images.length, 1, 'should download (no stored hash to match against)');
+    assert.equal(typeof result.images[0].content_hash, 'string', 'new download should have content_hash');
+    assert.equal(result.images[0].content_hash.length, 64, 'content_hash should be 64-char hex');
+  });
+});

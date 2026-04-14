@@ -10,6 +10,7 @@ import { useMemo, useCallback, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
+import { ActionTooltip } from '../../../shared/ui/feedback/ActionTooltip.tsx';
 import {
   FinderPanelHeader,
   FinderKpiCard,
@@ -391,6 +392,7 @@ function GalleryCard({
   const dims = formatDims(img.width, img.height);
 
   const passesQuality = img.quality_pass !== false; // undefined (old data) treated as pass
+  const isRejected = !!(img.eval_flags?.length);
 
   return (
     <div
@@ -398,19 +400,17 @@ function GalleryCard({
       onDragStart={(e) => { e.dataTransfer.setData('text/plain', img.filename); e.dataTransfer.effectAllowed = 'copy'; }}
       className={`sf-surface-elevated rounded-lg border overflow-hidden flex flex-col cursor-grab active:cursor-grabbing ${passesQuality ? 'sf-border-soft' : 'border-red-400/50'}`}
       style={{ width: 160, opacity: (!passesQuality || img.eval_flags?.includes('watermark') || img.eval_flags?.includes('wrong_product')) ? 0.4 : 1 }}
-      title={img.eval_reasoning || undefined}
     >
       <button
         onClick={onOpen}
-        className="relative w-full h-32 flex items-center justify-center p-2 cursor-pointer hover:opacity-80 transition-opacity"
-        style={{ backgroundColor: 'var(--sf-surface-bg)' }}
-        title={img.eval_reasoning || 'Click to view full size'}
+        className={`relative w-full h-32 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity ${img.bg_removed ? 'p-2' : ''}`}
+        style={{ backgroundColor: isRejected ? 'var(--sf-state-danger-bg)' : 'var(--sf-surface-bg)' }}
       >
         {src && !errored ? (
           <img
             src={src}
             alt={img.alt_text || `${img.view} view`}
-            className="max-w-full max-h-full object-contain"
+            className={img.bg_removed ? 'max-w-full max-h-full object-contain' : 'w-full h-full object-cover'}
             onError={() => setErrored(true)}
             loading="lazy"
           />
@@ -431,36 +431,49 @@ function GalleryCard({
             {(() => { try { return new URL(img.url).hostname; } catch { return 'source'; } })()}
           </a>
         )}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {img.filename && !img.bg_removed && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onProcess(img.filename); }}
-              disabled={isProcessing}
-              className="text-[9px] leading-none"
-              style={{ color: 'var(--sf-accent, #4263eb)' }}
-              title={img.view === 'hero' ? 'Center-crop to 16:9' : 'Remove background with RMBG 2.0'}
-            >
-              {isProcessing ? 'processing...' : img.view === 'hero' ? 'crop' : 'process'}
-            </button>
+            <ActionTooltip text={img.view === 'hero' ? 'Center-crop to 16:9' : 'Remove background with RMBG 2.0'}>
+              <button
+                onClick={(e) => { e.stopPropagation(); onProcess(img.filename); }}
+                disabled={isProcessing}
+                className="text-[9px] leading-none"
+                style={{ color: 'var(--sf-accent, #4263eb)' }}
+              >
+                {isProcessing ? 'processing...' : img.view === 'hero' ? 'crop' : 'process'}
+              </button>
+            </ActionTooltip>
           )}
           {img.filename && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onDelete(img.filename); }}
-              className="text-[9px] leading-none"
-              style={{ color: 'var(--sf-danger, #ef4444)' }}
-              title={`Delete ${img.filename}`}
-            >
-              delete
-            </button>
+            <ActionTooltip text={`Delete ${img.filename}`}>
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete(img.filename); }}
+                className="text-[9px] leading-none"
+                style={{ color: 'var(--sf-danger, #ef4444)' }}
+              >
+                delete
+              </button>
+            </ActionTooltip>
           )}
           <div className="flex-1" />
-          <span
-            className="flex items-center justify-center rounded-full font-mono pointer-events-none"
-            style={{ width: 14, height: 14, fontSize: 8, color: '#999', backgroundColor: 'rgba(0,0,0,0.05)' }}
-            title={`Run ${img.run_number}`}
-          >
-            {img.run_number}
-          </span>
+          {img.eval_reasoning && (
+            <ActionTooltip text={img.eval_reasoning} side="left">
+              <span
+                className="flex items-center justify-center rounded-full font-mono shrink-0 cursor-help"
+                style={{ width: 14, height: 14, fontSize: 8, color: '#999', backgroundColor: 'rgba(0,0,0,0.05)' }}
+              >
+                R
+              </span>
+            </ActionTooltip>
+          )}
+          <ActionTooltip text={`Run ${img.run_number}`}>
+            <span
+              className="flex items-center justify-center rounded-full font-mono shrink-0"
+              style={{ width: 14, height: 14, fontSize: 8, color: '#999', backgroundColor: 'rgba(0,0,0,0.05)' }}
+            >
+              {img.run_number}
+            </span>
+          </ActionTooltip>
         </div>
       </div>
     </div>
@@ -536,7 +549,6 @@ function SlotCard({ slot, img, source, category, productId, onClear, onDrop }: {
         filename ? 'sf-border-soft sf-surface-elevated' : 'border-dashed sf-border-soft'
       }`}
       style={{ width: 160, opacity: filename ? 1 : 0.5 }}
-      title={img?.eval_reasoning || undefined}
       onDragOver={(e) => { e.preventDefault(); setIsOver(true); }}
       onDragLeave={() => setIsOver(false)}
       onDrop={(e) => {
@@ -547,11 +559,16 @@ function SlotCard({ slot, img, source, category, productId, onClear, onDrop }: {
       }}
     >
       <div
-        className="relative w-full h-32 flex items-center justify-center p-2"
+        className={`relative w-full h-32 flex items-center justify-center ${img?.bg_removed ? 'p-2' : ''}`}
         style={{ backgroundColor: 'var(--sf-surface-bg)' }}
       >
         {filename ? (
-          <img src={src} alt={`${label} slot`} className="max-w-full max-h-full object-contain" loading="lazy" />
+          <img
+            src={src}
+            alt={`${label} slot`}
+            className={img?.bg_removed ? 'max-w-full max-h-full object-contain' : 'w-full h-full object-cover'}
+            loading="lazy"
+          />
         ) : (
           <span className="text-[11px] font-bold uppercase tracking-wider sf-text-muted">{label}</span>
         )}
@@ -570,45 +587,48 @@ function SlotCard({ slot, img, source, category, productId, onClear, onDrop }: {
         )}
         <div className="flex items-center gap-1.5">
           {filename && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onClear(); }}
-              className="text-[9px] leading-none"
-              style={{ color: 'var(--sf-danger, #ef4444)' }}
-              title={source === 'user' ? 'Clear user override' : 'Remove from carousel'}
-            >
-              clear
-            </button>
+            <ActionTooltip text={source === 'user' ? 'Clear user override' : 'Remove from carousel'}>
+              <button
+                onClick={(e) => { e.stopPropagation(); onClear(); }}
+                className="text-[9px] leading-none"
+                style={{ color: 'var(--sf-danger, #ef4444)' }}
+              >
+                clear
+              </button>
+            </ActionTooltip>
           )}
           <div className="flex-1" />
           {/* Source dot: green = LLM, blue = user */}
           {filename && source !== 'empty' && (
-            <span
-              className="shrink-0 rounded-full"
-              style={{
-                width: 6, height: 6,
-                backgroundColor: source === 'eval' ? 'var(--sf-state-success-fg, #16a34a)' : 'var(--sf-state-info-fg, #38bdf8)',
-              }}
-              title={source === 'eval' ? 'LLM selected' : 'User override'}
-            />
+            <ActionTooltip text={source === 'eval' ? 'LLM selected' : 'User override'}>
+              <span
+                className="shrink-0 rounded-full"
+                style={{
+                  width: 6, height: 6,
+                  backgroundColor: source === 'eval' ? 'var(--sf-state-success-fg, #16a34a)' : 'var(--sf-state-info-fg, #38bdf8)',
+                }}
+              />
+            </ActionTooltip>
           )}
-          {/* Reasoning circle */}
           {img?.eval_reasoning && (
-            <span
-              className="flex items-center justify-center rounded-full font-mono shrink-0 cursor-help"
-              style={{ width: 14, height: 14, fontSize: 8, color: '#999', backgroundColor: 'rgba(0,0,0,0.05)' }}
-              title={img.eval_reasoning}
-            >
-              R
-            </span>
+            <ActionTooltip text={img.eval_reasoning} side="left">
+              <span
+                className="flex items-center justify-center rounded-full font-mono shrink-0 cursor-help"
+                style={{ width: 14, height: 14, fontSize: 8, color: '#999', backgroundColor: 'rgba(0,0,0,0.05)' }}
+              >
+                R
+              </span>
+            </ActionTooltip>
           )}
           {runNumber != null && (
-            <span
-              className="flex items-center justify-center rounded-full font-mono pointer-events-none shrink-0"
-              style={{ width: 14, height: 14, fontSize: 8, color: '#999', backgroundColor: 'rgba(0,0,0,0.05)' }}
-              title={`Run ${runNumber}`}
-            >
-              {runNumber}
-            </span>
+            <ActionTooltip text={`Run ${runNumber}`}>
+              <span
+                className="flex items-center justify-center rounded-full font-mono shrink-0"
+                style={{ width: 14, height: 14, fontSize: 8, color: '#999', backgroundColor: 'rgba(0,0,0,0.05)' }}
+              >
+                {runNumber}
+              </span>
+            </ActionTooltip>
           )}
         </div>
       </div>
@@ -675,13 +695,10 @@ function CarouselPreviewCard({
       </div>
 
       {/* Meta */}
-      <div className="px-2.5 py-2 flex flex-col gap-1 border-t sf-border-soft">
-        <div className="flex items-center gap-1.5">
-          <span className="text-[9px] font-bold uppercase tracking-wider sf-text-muted">Carousel</span>
-          {enabled && <Chip label={`${slides.length}`} className="sf-chip-success" />}
-        </div>
-        <span className="text-[8px] sf-text-subtle italic">
-          {enabled ? 'click to preview' : 'run eval first'}
+      <div className="px-2 py-1.5 flex flex-col gap-0.5 border-t sf-border-soft text-[8px]">
+        <span className="text-[9px] font-bold uppercase tracking-wider sf-text-muted">Carousel</span>
+        <span className="font-mono sf-text-subtle">
+          {enabled ? `${slides.length} slot${slides.length !== 1 ? 's' : ''}` : 'run eval first'}
         </span>
       </div>
     </div>
@@ -1627,24 +1644,32 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
 
   // Aggregate carousel progress across all variants
   const carouselProgressMap = effectiveResult?.carouselProgress ?? {};
+  // Slots per variant = viewBudget views + hero slots
+  const slotsPerVariant = (pifData?.carouselSettings?.viewBudget ?? ['top', 'left', 'angle']).length
+    + (pifData?.carouselSettings?.heroEnabled ? 3 : 0);
+
   const carouselAgg = useMemo(() => {
-    const entries = Object.values(carouselProgressMap);
-    if (entries.length === 0) return { viewsFilled: 0, viewsTotal: 0, heroCount: 0, heroTarget: 0, allComplete: false };
-    const viewsFilled = entries.reduce((s, e) => s + e.viewsFilled, 0);
-    const viewsTotal = entries.reduce((s, e) => s + e.viewsTotal, 0);
-    const heroCount = entries.reduce((s, e) => s + e.heroCount, 0);
-    const heroTarget = entries.reduce((s, e) => s + e.heroTarget, 0);
-    const allComplete = entries.every((e) => e.viewsFilled >= e.viewsTotal && e.heroSatisfied);
-    return { viewsFilled, viewsTotal, heroCount, heroTarget, allComplete };
-  }, [carouselProgressMap]);
+    if (variants.length === 0 || slotsPerVariant === 0) return { filled: 0, total: 0, allComplete: false };
+    // Count filled slots across all variant groups
+    const vb = pifData?.carouselSettings?.viewBudget ?? ['top', 'left', 'angle'];
+    const hc = pifData?.carouselSettings?.heroEnabled ? 3 : 0;
+    const cSlots = pifData?.carousel_slots ?? {};
+    let filled = 0;
+    for (const group of imageGroups) {
+      const slots = resolveSlots(vb, hc, group.key, cSlots, group.images as ProductImageEntry[]);
+      filled += slots.filter(s => s.filename && s.filename !== '__cleared__').length;
+    }
+    const total = variants.length * slotsPerVariant;
+    return { filled, total, allComplete: filled >= total };
+  }, [imageGroups, variants, slotsPerVariant, pifData]);
 
   const kpiCards: KpiCard[] = [
     { label: 'Images', value: String(imageCount), tone: 'accent' },
     { label: 'Variants', value: String(variants.length), tone: 'purple' },
     { label: 'Runs', value: String(runCount), tone: 'success' },
     {
-      label: 'Carousel',
-      value: carouselAgg.viewsTotal > 0 ? `${carouselAgg.viewsFilled}/${carouselAgg.viewsTotal}` : '--',
+      label: 'Carousel Images',
+      value: carouselAgg.total > 0 ? `${carouselAgg.filled}/${carouselAgg.total}` : '--',
       tone: carouselAgg.allComplete ? 'success' : 'info',
     },
   ];
@@ -1768,6 +1793,14 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                   const isOpen = expandedImageGroups.has(group.key);
                   const groupColorAtoms = resolveVariantColorAtoms(group.key, editions);
                   const groupHexParts = groupColorAtoms.map(a => hexMap.get(a.trim()) || '');
+                  const groupSlots = resolveSlots(
+                    pifData?.carouselSettings?.viewBudget ?? ['top', 'left', 'angle'],
+                    pifData?.carouselSettings?.heroEnabled ? 3 : 0,
+                    group.key,
+                    pifData?.carousel_slots ?? {},
+                    group.images as ProductImageEntry[],
+                  );
+                  const groupFilled = groupSlots.filter(s => s.filename && s.filename !== '__cleared__').length;
                   return (
                     <div key={group.key} className="break-inside-avoid mb-3 sf-surface-panel rounded-lg overflow-hidden">
                       <div
@@ -1791,6 +1824,10 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                         <Chip
                           label={group.type === 'edition' ? 'ED' : 'CLR'}
                           className={group.type === 'edition' ? 'sf-chip-accent' : 'sf-chip-info'}
+                        />
+                        <Chip
+                          label={`Car ${groupFilled}/${slotsPerVariant}`}
+                          className={groupFilled >= slotsPerVariant ? 'sf-chip-success' : 'sf-chip-neutral'}
                         />
                         <Chip label={`${group.images.length} img`} className="sf-chip-success" />
                       </div>

@@ -16,6 +16,7 @@ export async function runSearchPlanner({
   logger,
   identityLock,
   missingFields,
+  llmContext = null,
 }) {
   const queryRows = toArray(searchProfileBase?.query_rows);
   // WHY: Query history should include actual prior-round queries from frontier
@@ -36,6 +37,7 @@ export async function runSearchPlanner({
     identityLock,
     config,
     logger,
+    llmContext,
   });
 
   const llmCount = result.rows.filter((r) => String(r.hint_source || '').endsWith('_llm')).length;

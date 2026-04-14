@@ -19,6 +19,7 @@ import path from 'node:path';
 import https from 'node:https';
 import http from 'node:http';
 import { buildLlmCallDeps } from '../../core/llm/buildLlmCallDeps.js';
+import { buildBillingOnUsage } from '../../billing/costLedger.js';
 import {
   resolveModelTracking,
   resolveAmbiguityContext,
@@ -45,6 +46,7 @@ import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 import { configInt } from '../../shared/settingsAccessor.js';
 import { processImage, processHeroImage, loadModel, releaseModel, setInferenceConcurrency } from './imageProcessor.js';
 import { ensureModelReady } from './modelDownloader.js';
+import { computeFileContentHash } from '../../shared/contentHash.js';
 
 /* ── Image dimension reader (header-only) ─────────────────────────── */
 
@@ -306,6 +308,36 @@ async function runSingleVariant({
   onPhaseChange = null,
   alreadyDownloadedUrls = new Set(),
 }) {
+  // WHY: Self-heal dedup sets when caller did not provide them.
+  // The carousel loop path (executeOneCall) does not pass alreadyDownloadedUrls,
+  // so every call would start empty. Instead of fixing every caller, reconstruct
+  // from disk: read product_images.json, filter to this variant, build both sets.
+  const alreadyDownloadedHashes = new Set();
+  const hashToFilename = new Map();
+  {
+    let variantImages = [];
+    try {
+      const existingDoc = readProductImages({ productId: product.product_id, productRoot });
+      const existingImages = existingDoc?.selected?.images || [];
+      variantImages = existingImages.filter(img =>
+        matchVariant(img, { variantId: variant.variant_id, variantKey: variant.key })
+      );
+    } catch { /* no existing images — empty sets are correct */ }
+
+    if (alreadyDownloadedUrls.size === 0) {
+      for (const img of variantImages) {
+        if (img.url) alreadyDownloadedUrls.add(normalizeImageUrl(img.url));
+      }
+    }
+
+    for (const img of variantImages) {
+      if (img.content_hash) {
+        alreadyDownloadedHashes.add(img.content_hash);
+        hashToFilename.set(img.content_hash, img.filename || img.original_filename || 'unknown');
+      }
+    }
+  }
+
   // WHY: hero mode needs hero-specific quality thresholds in the prompt,
   // not the top-view thresholds. The quality gate at download time already
   // uses per-view thresholds, but the prompt should tell the LLM the right minimums.
@@ -413,6 +445,23 @@ async function runSingleVariant({
           continue;
         }
 
+        // Content hash gate: reject byte-identical files before expensive RMBG.
+        // WHY: CDN resize params (e.g., ?width=1946 vs ?width=1445) produce
+        // different URLs but serve identical bytes. Hash the downloaded file
+        // and check against known hashes for this variant.
+        const fileBuffer = fs.readFileSync(finalPath);
+        const fileHash = computeFileContentHash(fileBuffer);
+        if (fileHash && alreadyDownloadedHashes.has(fileHash)) {
+          try { fs.unlinkSync(finalPath); } catch { /* */ }
+          const existingFile = hashToFilename.get(fileHash) || 'unknown';
+          errors.push({ view, url: img.url, error: `duplicate content: identical to ${existingFile}` });
+          continue;
+        }
+        if (fileHash) {
+          alreadyDownloadedHashes.add(fileHash);
+          hashToFilename.set(fileHash, finalFilename);
+        }
+
         // WHY: Hero images are contextual/lifestyle shots where the background
         // is intentional. RMBG would destroy the scene. Skip bg removal entirely.
         const skipRmbg = view === 'hero';
@@ -454,6 +503,7 @@ async function runSingleVariant({
           original_filename: finalFilename,
           bg_removed: skipRmbg ? true : (procResult.ok ? procResult.bg_removed : false),
           original_format: originalExt || 'unknown',
+          content_hash: fileHash || '',
         });
         alreadyDownloadedUrls.add(normUrl);
       } else {
@@ -608,6 +658,7 @@ export async function runProductImageFinder({
     onStreamChunk,
     onQueueWait,
     signal,
+    onUsage: appDb ? buildBillingOnUsage({ config, appDb, category: product.category, productId: product.product_id }) : undefined,
   });
   const callLlmFactory = mode === 'hero' ? createHeroImageFinderCallLlm : createProductImageFinderCallLlm;
   const callLlm = buildFinderLlmCaller({ _callLlmOverride, wrappedOnModelResolved, createCallLlm: callLlmFactory, llmDeps });
@@ -691,6 +742,7 @@ export async function runProductImageFinder({
           model: _mt.actualModel,
           variant: variant.label,
           mode,
+          label: mode === 'hero' ? 'Discovery Hero' : 'Discovery',
         });
 
         const result = await runSingleVariant({
@@ -720,6 +772,7 @@ export async function runProductImageFinder({
           variant: variant.label,
           mode,
           usage: result.usage,
+          label: mode === 'hero' ? 'Discovery Hero' : 'Discovery',
         });
 
         const merged = mergeProductImageDiscovery({
@@ -957,6 +1010,7 @@ export async function runCarouselLoop({
       onStreamChunk,
       onQueueWait,
       signal,
+      onUsage: appDb ? buildBillingOnUsage({ config, appDb, category: product.category, productId: product.product_id }) : undefined,
     });
 
     const callLlmFactory = callMode === 'hero' ? createHeroImageFinderCallLlm : createProductImageFinderCallLlm;
@@ -981,6 +1035,9 @@ export async function runCarouselLoop({
 
     const callStartedAt = new Date().toISOString();
     const callStartMs = Date.now();
+    const callLabel = callMode === 'hero'
+      ? `Discovery Hero ${totalLlmCalls + 1}`
+      : `Discovery ${(focusView || '').charAt(0).toUpperCase() + (focusView || '').slice(1)} ${totalLlmCalls + 1}`;
 
     onLlmCallComplete?.({
       prompt: { system: systemPrompt, user: userMsg },
@@ -988,6 +1045,7 @@ export async function runCarouselLoop({
       model: _mtLoop.actualModel,
       variant: variant.label,
       mode: callMode,
+      label: callLabel,
     });
 
     const result = await runSingleVariant({
@@ -1024,6 +1082,7 @@ export async function runCarouselLoop({
       variant: variant.label,
       mode: callMode,
       usage: result.usage,
+      label: callLabel,
     });
 
     const merged = mergeProductImageDiscovery({

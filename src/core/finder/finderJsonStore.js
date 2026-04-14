@@ -191,17 +191,25 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
       response: run.response || emptySelected(),
     };
 
+    // WHY: Rejected runs must not overwrite selected or cooldown.
+    // WHY: recalculateSelected hook lets modules accumulate across runs
+    // instead of latest-wins (e.g. PIF unions images per variant).
+    const newSelected = run.status === 'rejected'
+      ? (existing.selected || emptySelected())
+      : (recalculateSelected
+          ? recalculateSelected([...existingRuns, runEntry].filter(r => r.status !== 'rejected'))
+          : runEntry.selected);
+
+    // WHY: recalculateSelected rebuilds from per-run images which lack eval fields.
+    // Re-overlay eval fields from the existing doc so carousel builder results survive.
+    if (run.status !== 'rejected' && existing.selected) {
+      overlayEvalFields(newSelected, existing.selected);
+    }
+
     const merged = {
       product_id: existing.product_id || productId || '',
       category: existing.category || newDiscovery.category || '',
-      // WHY: Rejected runs must not overwrite selected or cooldown.
-      // WHY: recalculateSelected hook lets modules accumulate across runs
-      // instead of latest-wins (e.g. PIF unions images per variant).
-      selected: run.status === 'rejected'
-        ? (existing.selected || emptySelected())
-        : (recalculateSelected
-            ? recalculateSelected([...existingRuns, runEntry].filter(r => r.status !== 'rejected'))
-            : runEntry.selected),
+      selected: newSelected,
       cooldown_until: run.status === 'rejected' ? (existing.cooldown_until || '') : (newDiscovery.cooldown_until || existing.cooldown_until || ''),
       last_ran_at: newDiscovery.last_ran_at || existing.last_ran_at || '',
       run_count: existingRuns.length + 1,

@@ -17,6 +17,7 @@ export const viewEvalResponseSchema = z.object({
   rejected: z.array(z.object({
     filename: z.string(),
     flags: z.array(evalFlagEnum),
+    reasoning: z.string().optional(),
   })).optional(),
 });
 

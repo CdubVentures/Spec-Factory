@@ -18,7 +18,7 @@ import { evaluateCarousel } from '../carouselStrategy.js';
 import { resolveViewBudget } from '../productImageLlmAdapter.js';
 import { resolveViewAttemptBudgets } from '../viewAttemptDefaults.js';
 import { readProductImages } from '../productImageStore.js';
-import { writeCarouselSlot, resolveCarouselSlots, deleteEvalRecord } from '../imageEvaluator.js';
+import { writeCarouselSlot, resolveCarouselSlots, deleteEvalRecord, extractEvalState } from '../imageEvaluator.js';
 
 export function registerProductImageFinderRoutes(ctx) {
   const store = (specDb) => specDb.getFinderStore('productImageFinder');
@@ -55,27 +55,15 @@ export function registerProductImageFinderRoutes(ctx) {
         return img;
       };
 
-      // WHY: Carousel Builder writes eval fields to JSON selected.images.
-      // Read from JSON SSOT and build a filename→eval overlay so badges
-      // appear on gallery cards (which render from runs, not selected).
-      const jsonDoc = readProductImages({ productId: row.product_id, productRoot });
-      const evalByFilename = new Map();
-      for (const img of (jsonDoc?.selected?.images || [])) {
-        if (img.eval_best !== undefined || img.eval_flags || img.hero !== undefined) {
-          evalByFilename.set(img.filename, {
-            eval_best: img.eval_best,
-            eval_flags: img.eval_flags,
-            eval_reasoning: img.eval_reasoning,
-            eval_source: img.eval_source,
-            hero: img.hero,
-            hero_rank: img.hero_rank,
-          });
-        }
-      }
+      // WHY: Eval fields are dual-written to the eval_state SQL column.
+      // Read from SQL projection instead of parsing JSON on every GET.
+      const evalState = typeof row.eval_state === 'string' ? JSON.parse(row.eval_state || '{}') : (row.eval_state || {});
       const overlayEval = (img) => {
-        const evalData = evalByFilename.get(img.filename);
+        const evalData = evalState[img.filename];
         return evalData ? { ...img, ...evalData } : img;
       };
+      // WHY: evaluations array is still JSON-only (not projected to SQL yet).
+      const jsonDoc = readProductImages({ productId: row.product_id, productRoot });
 
       const enrichedSelected = selected?.images
         ? { ...selected, images: selected.images.map(enrichImage).map(overlayEval) }
@@ -634,6 +622,7 @@ export function registerProductImageFinderRoutes(ctx) {
 
         const body = await readJsonBody(req).catch(() => ({}));
         const variantKey = body?.variant_key || '';
+        const variantId = body?.variant_id || null;
         const view = body?.view || '';
         if (!view) return jsonRes(res, 400, { error: 'view is required' });
 
@@ -673,10 +662,12 @@ export function registerProductImageFinderRoutes(ctx) {
               base_model: productRow.base_model || '',
               variant: productRow.variant || '',
             },
+            appDb,
             specDb,
             config,
             logger: logger || null,
             variantKey,
+            variantId,
             view,
             signal,
             onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
@@ -715,6 +706,7 @@ export function registerProductImageFinderRoutes(ctx) {
 
         const body = await readJsonBody(req).catch(() => ({}));
         const variantKey = body?.variant_key || '';
+        const variantId = body?.variant_id || null;
 
         op = registerOperation({
           type: 'pif',
@@ -752,10 +744,12 @@ export function registerProductImageFinderRoutes(ctx) {
               base_model: productRow.base_model || '',
               variant: productRow.variant || '',
             },
+            appDb,
             specDb,
             config,
             logger: logger || null,
             variantKey,
+            variantId,
             signal,
             onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
             onModelResolved: (info) => updateModelInfo({ id: op.id, ...info }),
@@ -816,6 +810,13 @@ export function registerProductImageFinderRoutes(ctx) {
         const productRoot = defaultProductRoot();
         const result = deleteEvalRecord({ productId, productRoot, evalNumber });
         if (!result) return jsonRes(res, 404, { error: 'eval record not found' });
+
+        // SQL projection — update eval_state after eval deletion
+        const specDb = getSpecDb(category);
+        if (specDb) {
+          const finderStore = store(specDb);
+          finderStore.updateSummaryField(productId, 'eval_state', JSON.stringify(extractEvalState(result)));
+        }
 
         emitDataChange({
           event: 'product-image-finder-evaluate',

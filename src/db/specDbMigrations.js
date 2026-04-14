@@ -49,6 +49,8 @@ export const MIGRATIONS = [
   `ALTER TABLE product_image_finder ADD COLUMN carousel_slots TEXT DEFAULT '{}'`,
   // WHY: Variant registry stores stable variant hashes for CEF. Existing DBs need the column.
   `ALTER TABLE color_edition_finder ADD COLUMN variant_registry TEXT DEFAULT '[]'`,
+  // WHY: Eval state stores per-image eval fields as a JSON blob for SQL projection.
+  `ALTER TABLE product_image_finder ADD COLUMN eval_state TEXT DEFAULT '{}'`,
 ];
 
 export const SECONDARY_INDEXES = `

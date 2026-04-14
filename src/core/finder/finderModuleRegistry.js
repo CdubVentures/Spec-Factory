@@ -99,6 +99,7 @@ export const FINDER_MODULES = Object.freeze([
       { name: 'images', type: 'TEXT', default: "'[]'" },
       { name: 'image_count', type: 'INTEGER', default: '0' },
       { name: 'carousel_slots', type: 'TEXT', default: "'{}'" },
+      { name: 'eval_state', type: 'TEXT', default: "'{}'" },
     ],
     summaryIndexes: [
       { name: 'idx_pif_cooldown', columns: ['cooldown_until'] },
@@ -180,7 +181,6 @@ export const FINDER_MODULES = Object.freeze([
       'image-deleted': [],
       'batch-processed': [],
       'evaluate': [],
-      'variant-renamed': [],
     },
 
     // Module Settings (codegen: moduleSettingsSections.generated.ts)

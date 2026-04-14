@@ -166,6 +166,25 @@ describe('operationsStore (characterization)', () => {
     });
   });
 
+  describe('label field passthrough', () => {
+    it('appendLlmCall preserves label field', () => {
+      useOperationsStore.getState().upsert(makeOp());
+      const call = { callIndex: 0, timestamp: '', prompt: { system: 's', user: 'u' }, response: null, label: 'Discovery' };
+      useOperationsStore.getState().appendLlmCall('op-1', call);
+      assert.equal(getOps().get('op-1')?.llmCalls[0]?.label, 'Discovery');
+    });
+
+    it('updateLlmCall preserves label field', () => {
+      useOperationsStore.getState().upsert(makeOp());
+      const call = { callIndex: 0, timestamp: '', prompt: { system: '', user: '' }, response: null, label: 'Identity Check' };
+      useOperationsStore.getState().appendLlmCall('op-1', call);
+      const updated = { ...call, response: 'done' };
+      useOperationsStore.getState().updateLlmCall('op-1', 0, updated);
+      assert.equal(getOps().get('op-1')?.llmCalls[0]?.label, 'Identity Check');
+      assert.equal(getOps().get('op-1')?.llmCalls[0]?.response, 'done');
+    });
+  });
+
   describe('usage field passthrough', () => {
     it('appendLlmCall preserves usage field', () => {
       useOperationsStore.getState().upsert(makeOp());

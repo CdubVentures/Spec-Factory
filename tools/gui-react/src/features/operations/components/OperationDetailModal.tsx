@@ -5,27 +5,9 @@ import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.t
 import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTypes.ts';
 import { extractEffortFromModelName } from '../../llm-config/state/llmEffortFromModelName.ts';
 import {
-  MODULE_STYLES as FINDER_STYLES,
-  MODULE_LABELS as FINDER_LABELS,
-} from '../state/finderModuleRegistry.generated.ts';
-
-/* ── Module chip map (mirrors OperationsTracker) ─────────────── */
-
-const MODULE_STYLES: Readonly<Record<string, string>> = {
-  ...FINDER_STYLES,
-  'brand-resolver': 'sf-chip-info',
-  'field-audit': 'sf-chip-warning',
-  publisher: 'sf-chip-success',
-  pipeline: 'sf-chip-info',
-};
-
-const MODULE_LABELS: Readonly<Record<string, string>> = {
-  ...FINDER_LABELS,
-  'brand-resolver': 'BR',
-  'field-audit': 'FA',
-  publisher: 'PUB',
-  pipeline: 'PL',
-};
+  MODULE_STYLES,
+  MODULE_LABELS,
+} from '../state/operationTypeRegistry.generated.ts';
 
 /* ── Helpers ─────────────────────────────────────────────────── */
 
@@ -196,7 +178,7 @@ function LlmCallRow({ call }: { readonly call: LlmCallRecord }) {
           {'\u25B6'}
         </span>
         <span className="text-[11px] font-mono font-bold text-[var(--sf-token-accent-strong)]">
-          Call #{call.callIndex + 1}
+          {call.label || call.mode || `Call #${call.callIndex + 1}`}
         </span>
         {call.model && (
           <span className="text-[9px] font-mono sf-text-muted">
@@ -347,7 +329,7 @@ export function OperationDetailModal({ op, onClose }: Props) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[2px]"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="sf-surface-elevated rounded border sf-border-soft shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col mx-4">
+      <div className="sf-surface-elevated rounded border sf-border-soft shadow-2xl w-full max-w-[52rem] max-h-[100vh] flex flex-col mx-4">
 
         {/* ── Header ───────────────────────────────────────────── */}
         <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[rgb(var(--sf-color-border-subtle-rgb)/0.3)]">

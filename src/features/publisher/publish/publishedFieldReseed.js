@@ -66,12 +66,27 @@ export function rebuildPublishedFieldsFromJson({ specDb, productRoot }) {
       const sources = Array.isArray(fieldEntry.sources) ? fieldEntry.sources : [];
       const confidence = fieldEntry.confidence ?? 0;
 
-      // Try to find existing candidate row and mark it resolved
+      // WHY: The published value in product.json may be a merge (set_union) of multiple
+      // candidates. It is derived state, not a candidate itself. On reseed, we find the
+      // real contributing candidates and mark THEM resolved — never create a ghost row
+      // from the merged published value.
       const existing = specDb.getFieldCandidate(productId, fieldKey, serialized);
       if (existing) {
         specDb.markFieldCandidateResolved(productId, fieldKey, serialized);
-      } else {
-        // Upsert with resolved status if no candidate row exists
+      } else if (Array.isArray(fieldEntry.linked_candidates) && fieldEntry.linked_candidates.length > 0) {
+        // WHY: Published value is a merge — no single candidate matches exactly.
+        // Use linked_candidates to find the real contributing candidates and mark them resolved.
+        for (const linked of fieldEntry.linked_candidates) {
+          if (linked.value) {
+            const linkedSerialized = typeof linked.value === 'string' ? linked.value : serializeValue(linked.value);
+            const linkedRow = specDb.getFieldCandidate(productId, fieldKey, linkedSerialized);
+            if (linkedRow) {
+              specDb.markFieldCandidateResolved(productId, fieldKey, linkedSerialized);
+            }
+          }
+        }
+      } else if (fieldEntry.source === 'manual_override') {
+        // WHY: Manual overrides are their own candidate — always reseed.
         specDb.upsertFieldCandidate({
           productId,
           fieldKey,
@@ -81,12 +96,12 @@ export function rebuildPublishedFieldsFromJson({ specDb, productRoot }) {
           sourceCount: sources.length || 1,
           sourcesJson: sources,
           validationJson: { valid: true, repairs: [], rejections: [] },
-          metadataJson: fieldEntry.source === 'manual_override'
-            ? { source: 'manual_override' }
-            : {},
+          metadataJson: { source: 'manual_override' },
           status: 'resolved',
         });
       }
+      // WHY: If no exact match AND no linked_candidates AND not manual override,
+      // skip — don't create a ghost candidate from derived/merged state.
 
       productFieldCount++;
     }

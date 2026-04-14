@@ -3,32 +3,12 @@ import { useOperationsStore, type Operation } from '../state/operationsStore.ts'
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { api } from '../../../api/client.ts';
 import {
-  MODULE_STYLES as FINDER_STYLES,
-  MODULE_LABELS as FINDER_LABELS,
-} from '../state/finderModuleRegistry.generated.ts';
+  MODULE_STYLES,
+  MODULE_LABELS,
+} from '../state/operationTypeRegistry.generated.ts';
 import { OperationDetailModal } from './OperationDetailModal.tsx';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
 import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTypes.ts';
-
-/* ── Module chip color map ─────────────────────────────────────────── */
-// WHY: Finder modules are auto-generated from the backend registry.
-// Non-finder module types (brand-resolver, field-audit, publisher) stay static.
-
-const MODULE_STYLES: Readonly<Record<string, string>> = {
-  ...FINDER_STYLES,
-  'brand-resolver': 'sf-chip-info',
-  'field-audit': 'sf-chip-warning',
-  publisher: 'sf-chip-success',
-  pipeline: 'sf-chip-info',
-};
-
-const MODULE_LABELS: Readonly<Record<string, string>> = {
-  ...FINDER_LABELS,
-  'brand-resolver': 'BR',
-  'field-audit': 'FA',
-  publisher: 'PUB',
-  pipeline: 'PL',
-};
 
 /* ── Sort: running (newest-first) → error → done ──────────────────── */
 

@@ -60,6 +60,26 @@ describe('viewEvalResponseSchema', () => {
     assert.equal(result.data.rejected[0].flags.length, 4);
   });
 
+  it('accepts rejected entry with reasoning', () => {
+    const input = {
+      winner: validWinner,
+      rejected: [{ filename: 'bad.png', flags: ['watermark'], reasoning: 'Visible watermark overlay in corner' }],
+    };
+    const result = viewEvalResponseSchema.safeParse(input);
+    assert.equal(result.success, true);
+    assert.equal(result.data.rejected[0].reasoning, 'Visible watermark overlay in corner');
+  });
+
+  it('accepts rejected entry without reasoning (backward compat)', () => {
+    const input = {
+      winner: validWinner,
+      rejected: [{ filename: 'bad.png', flags: ['watermark'] }],
+    };
+    const result = viewEvalResponseSchema.safeParse(input);
+    assert.equal(result.success, true);
+    assert.equal(result.data.rejected[0].reasoning, undefined);
+  });
+
   it('accepts multiple rejected entries', () => {
     const input = {
       winner: validWinner,

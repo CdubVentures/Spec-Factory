@@ -84,13 +84,17 @@
   .rule-icon-accent { background: var(--accent); }
   .file-tree { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 6px; padding: 14px 18px; font-family: var(--mono); font-size: 12px; line-height: 1.7; white-space: pre; overflow-x: auto; }
   .file-tree .comment { color: var(--text-muted); }
+  .scenario-table { font-size: 12.5px; }
+  .scenario-table th { font-size: 11px; }
+  .scenario-table td { padding: 8px 10px; vertical-align: top; }
+  .scenario-table td:first-child { font-weight: 600; min-width: 180px; }
 </style>
 </head>
 <body>
 
 <div class="header">
   <h1>Color &amp; Edition Finder (CEF) Reference</h1>
-  <p>Discovers standard colorways, marketing names, and special editions via LLM web search with candidate validation</p>
+  <p>Discovers standard colorways, marketing names, and special editions via LLM web search with two-gate validation</p>
 </div>
 
 <div class="container">
@@ -102,21 +106,36 @@
 <div class="card-header" style="background:var(--teal-bg);">What CEF Does</div>
 <div class="card-body">
   <p>The Color &amp; Edition Finder discovers <strong>every color variant and special edition</strong> for a given product. It uses an LLM-driven web search to find all standard colorways, multi-color combos, marketing color names, and named special/limited/collaboration editions.</p>
-  <p>After LLM discovery, results pass through a <strong>candidate validation gate</strong> (Field Studio rules) before being accepted. Validated results are submitted as candidates to the Publisher pipeline.</p>
+  <p>After LLM discovery, results pass through <strong>TWO validation gates</strong>. Gate 1 checks every color atom exists in the registered palette (tainted batch: one bad atom rejects the whole run). Gate 2 validates the identity check output (no duplicate matches, no slug changes, valid atoms). Only after both gates pass are results published.</p>
   <p><strong>Gate:</strong> CEF only runs when Field Studio has <code>colors</code> and/or <code>editions</code> enabled for the category. If neither field is enabled, the module is skipped entirely.</p>
 </div>
 </div>
 
 <div class="flow-row">
-  <div class="flow-box flow-neutral">Field Studio Gate</div>
+  <div class="flow-box flow-teal">LLM 1<br><small>Discovery</small></div>
   <span class="flow-arrow">&rarr;</span>
-  <div class="flow-box flow-teal">LLM Web Search</div>
+  <div class="flow-box flow-repair">Gate 1<br><small>Palette + Field Rules</small></div>
   <span class="flow-arrow">&rarr;</span>
-  <div class="flow-box flow-repair">Candidate Gate<br><small>validate + repair</small></div>
+  <div class="flow-box flow-accent">LLM 2<br><small>Identity Check<br>(Run 2+ only)</small></div>
   <span class="flow-arrow">&rarr;</span>
-  <div class="flow-box flow-pass">Submit Candidates<br><small>colors + editions</small></div>
+  <div class="flow-box flow-fail">Gate 2<br><small>Identity Validation</small></div>
   <span class="flow-arrow">&rarr;</span>
-  <div class="flow-box flow-accent">Persist<br><small>JSON + SQL</small></div>
+  <div class="flow-box flow-pass">Publish<br><small>JSON + SQL</small></div>
+</div>
+
+<div class="card" style="margin-top:4px;">
+<div class="card-header" style="background:var(--surface-alt);">Operations Tracker Stages</div>
+<div class="card-body">
+  <div class="flow-row" style="margin:8px 0;">
+    <div class="flow-box flow-teal" style="min-width:110px;">Discovery</div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box flow-repair" style="min-width:110px;">Validate</div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box flow-accent" style="min-width:110px;">Identity</div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box flow-pass" style="min-width:110px;">Confirm</div>
+  </div>
+</div>
 </div>
 
 <!-- 2. Data Model -->
@@ -249,11 +268,142 @@
 </div>
 </div>
 
-<!-- 5. Identity -->
-<div class="section-title"><span class="num">5</span> Identity &amp; Disambiguation</div>
+<!-- 5. Variant Registry & Two-Gate Validation -->
+<div class="section-title"><span class="num">5</span> Variant Registry &amp; Two-Gate Validation</div>
 
 <div class="card">
-<div class="card-header" style="background:var(--accent-light);">Product Identity &amp; Ambiguity Scaling</div>
+<div class="card-header" style="background:var(--teal-bg);">Variant Registry &mdash; Stable Variant Identity</div>
+<div class="card-body">
+  <p>Each variant (color or edition) gets a permanent hash assigned on first CEF publish. The <code>variant_registry</code> is stored at the <strong>top level</strong> of <code>color_edition.json</code> (not inside <code>selected</code>).</p>
+
+  <dl class="detail-grid" style="grid-template-columns: 170px 1fr;">
+    <dt>Hash format</dt><dd><code>v_&lt;8-hex&gt;</code> from <code>generateVariantId(productId, variantKey)</code> &mdash; SHA-256 of <code>"{productId}:{variantKey}"</code>, first 8 hex chars, prefixed <code>v_</code></dd>
+    <dt>Hash NEVER changes</dt><dd>Once assigned, the <code>variant_id</code> is permanent. It survives atom updates, label changes, and any mutable field modifications.</dd>
+    <dt>Deterministic</dt><dd>Same product + same key always produces the same hash. Product-scoped (no cross-product collisions).</dd>
+    <dt>Registry location</dt><dd><code>variant_registry[]</code> array on <code>color_edition.json</code> (top-level). Projected to SQL <code>color_edition_finder.variant_registry</code> column.</dd>
+  </dl>
+
+  <table style="margin-top:16px;">
+    <thead><tr><th>Field</th><th>Mutability</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>variant_id</code></td><td><span class="tag tag-red">Immutable</span></td><td>Permanent <code>v_&lt;8-hex&gt;</code> hash. Never changes after creation.</td></tr>
+      <tr><td><code>variant_type</code></td><td><span class="tag tag-red">Immutable</span></td><td><code>"color"</code> or <code>"edition"</code>. Set at creation.</td></tr>
+      <tr><td><code>created_at</code></td><td><span class="tag tag-red">Immutable</span></td><td>ISO timestamp of first creation.</td></tr>
+      <tr><td><code>edition_slug</code></td><td><span class="tag tag-red">Immutable</span></td><td>Edition slug. Never changes (slug change = Gate 2 rejection).</td></tr>
+      <tr><td><code>variant_key</code></td><td><span class="tag tag-green">Mutable</span></td><td>Current key (atom or slug). Can be updated if validated.</td></tr>
+      <tr><td><code>variant_label</code></td><td><span class="tag tag-green">Mutable</span></td><td>Display label. Can be updated.</td></tr>
+      <tr><td><code>color_atoms</code></td><td><span class="tag tag-green">Mutable</span></td><td>Array of color atoms. Can be updated if all atoms pass palette check.</td></tr>
+    </tbody>
+  </table>
+
+  <dl class="detail-grid" style="margin-top:12px;">
+    <dt>Retired variants</dt><dd>Marked <code>retired: true</code> but <strong>never removed</strong> from the registry. PIF images may still reference them by <code>variant_id</code>.</dd>
+    <dt>Builder</dt><dd><code>buildVariantRegistry({ productId, colors, colorNames, editions })</code> &mdash; creates fresh registry on Run 1.</dd>
+    <dt>Backfill</dt><dd><code>backfillVariantRegistry({ specDb, productRoot })</code> &mdash; one-time scan for products missing a registry. Idempotent.</dd>
+  </dl>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--purple-bg);">Gate 1: Palette Validation (<code>validateColorsAgainstPalette</code>)</div>
+<div class="card-body">
+  <p>Runs <strong>AFTER</strong> the candidate gate, <strong>BEFORE</strong> the identity check. Enforces the tainted batch principle: one unknown atom rejects the entire run.</p>
+
+  <div class="flow-row" style="margin:12px 0;">
+    <div class="flow-box flow-repair" style="min-width:120px;">Candidate Gate<br><small>passes</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box flow-fail" style="min-width:180px;">Gate 1: Palette Check<br><small>every atom vs. palette</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box flow-pass" style="min-width:120px;">All atoms valid<br><small>proceed to LLM 2</small></div>
+  </div>
+
+  <ul class="rule-list">
+    <li><span class="rule-icon rule-icon-red">!</span> Every color atom (split on <code>+</code>) must exist in the registered palette from <code>appDb.listColors()</code>.</li>
+    <li><span class="rule-icon rule-icon-red">!</span> <strong>One unknown atom &rarr; ENTIRE RUN REJECTED</strong> (tainted batch principle). LLM 2 never runs.</li>
+    <li><span class="rule-icon rule-icon-accent">E</span> Example: <code>light-olive+black+red</code> &rarr; <code>light-olive</code> not in palette &rarr; run rejected.</li>
+  </ul>
+
+  <dl class="detail-grid" style="margin-top:10px;">
+    <dt>Rejection stored as</dt><dd><code>reason_code: 'unknown_color_atom'</code></dd>
+    <dt>LLM 2 behavior</dt><dd>Never fires. Rejected at Gate 1 = identity check is skipped entirely.</dd>
+  </dl>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--red-bg);">Gate 2: Identity Check Validation (<code>validateIdentityMappings</code>)</div>
+<div class="card-body">
+  <p>Runs <strong>AFTER</strong> LLM 2 (identity check), <strong>BEFORE</strong> any writes. Validates the identity check output. Any failure rejects the entire run.</p>
+
+  <table>
+    <thead><tr><th>Rule</th><th>Check</th><th>Rejection Reason Code</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong><code>match</code> must have non-null <code>match</code> field</strong></td>
+        <td>A <code>match</code> action must reference an existing <code>variant_id</code></td>
+        <td><code>identity_check_invalid</code></td>
+      </tr>
+      <tr>
+        <td><strong><code>new</code>/<code>reject</code> must have null <code>match</code> field</strong></td>
+        <td>New/rejected entries must NOT reference a variant</td>
+        <td><code>identity_check_invalid</code></td>
+      </tr>
+      <tr>
+        <td><strong>No duplicate match targets</strong></td>
+        <td>No two <code>match</code> actions may reference the same <code>variant_id</code></td>
+        <td><code>duplicate_match_target</code></td>
+      </tr>
+      <tr>
+        <td><strong>Slug change blocked</strong></td>
+        <td>Edition slugs must NOT change (e.g. <code>cod-bo6</code> &rarr; <code>cod-bo6-edition</code> is blocked)</td>
+        <td><code>slug_change_blocked</code></td>
+      </tr>
+      <tr>
+        <td><strong>Palette check on mappings</strong></td>
+        <td>Any color atoms in new/updated entries must exist in palette</td>
+        <td><code>unknown_atom_in_mapping</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <dl class="detail-grid" style="margin-top:10px;">
+    <dt>Failure behavior</dt><dd>ANY rule failure &rarr; ENTIRE RUN REJECTED. No partial writes.</dd>
+    <dt>Applies to</dt><dd>Run 2+ only (Run 1 has no identity check, so Gate 2 does not fire).</dd>
+  </dl>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--accent-light);">Identity Check Actions (LLM 2 Output)</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Action</th><th>Meaning</th><th><code>match</code> field</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="tag tag-green">match</span></td>
+        <td>Same variant &mdash; confirm identity. Can update mutable fields (atoms, label) if different and valid.</td>
+        <td>Existing <code>variant_id</code> (non-null)</td>
+        <td><code>ocean-blue</code> &rarr; <code>deep-ocean-blue</code> (refined atoms, same variant)</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-accent">new</span></td>
+        <td>Genuinely new variant &mdash; create entry with new hash.</td>
+        <td><code>null</code></td>
+        <td>New color <code>crimson-red</code> never seen before</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-red">reject</span></td>
+        <td>Hallucinated/garbage discovery &mdash; skip entirely. Not written to registry or selected.</td>
+        <td><code>null</code></td>
+        <td>LLM hallucinated a color that does not actually exist for this product</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">Product Identity &amp; Ambiguity Scaling</div>
 <div class="card-body">
 <ul class="rule-list">
   <li><span class="rule-icon rule-icon-accent">1</span> <strong>base_model + variant:</strong> CEF uses both fields together to identify the exact product. A "DeathAdder V3" (wired) and "DeathAdder V3 Pro" (wireless) are separate products with separate color inventories.</li>
@@ -381,18 +531,199 @@
 <div class="card-header" style="background:var(--green-bg);">runColorEditionFinder() &mdash; Step-by-Step</div>
 <div class="card-body">
   <table>
-    <thead><tr><th>#</th><th>Phase</th><th>Detail</th></tr></thead>
+    <thead><tr><th>#</th><th>Phase</th><th>Stage</th><th>Detail</th></tr></thead>
     <tbody>
-      <tr><td>1</td><td><strong>Setup</strong></td><td>Resolve model via <code>resolveModelTracking({ phaseKey: 'colorFinder' })</code> and ambiguity via <code>resolveAmbiguityContext()</code> (both from shared <code>finderOrchestrationHelpers.js</code>). Read existing runs for historical context.</td></tr>
-      <tr><td>2</td><td><strong>Prompt Build</strong></td><td><code>buildColorEditionFinderPrompt()</code> constructs system prompt with product identity, known inputs from prior runs, color/edition output rules, and identity warning blocks.</td></tr>
-      <tr><td>3</td><td><strong>LLM Call</strong></td><td>Call LLM via <code>createColorEditionFinderCallLlm()</code>. Supports two-phase dispatch (research + writer) when <code>jsonStrict=false</code>. Streams reasoning tokens via <code>onStreamChunk</code>.</td></tr>
-      <tr><td>4</td><td><strong>Candidate Gate</strong></td><td>5-step validation pipeline (see Section 6). All-or-nothing: any hard reject fails the entire run.</td></tr>
-      <tr><td>5</td><td><strong>Identity Check (Run 2+)</strong></td><td>If variant registry exists, fire second LLM call (<code>variant_identity_check</code>). Compares new discoveries against existing variants. Decides: update (same variant, renamed) / create (genuinely new) / retire (discontinued).</td></tr>
-      <tr><td>6</td><td><strong>JSON Persist</strong></td><td><code>mergeColorEditionDiscovery()</code> appends run to <code>.workspace/products/{pid}/color_edition.json</code>. Updates selected, sets cooldown.</td></tr>
-      <tr><td>7</td><td><strong>Variant Registry Update</strong></td><td>Run 1: <code>buildVariantRegistry()</code> generates fresh registry with stable <code>v_&lt;8-hex&gt;</code> hashes. Run 2+: <code>applyIdentityMappings()</code> updates/creates/retires entries. Written to JSON + SQL.</td></tr>
-      <tr><td>8</td><td><strong>Propagate Renames</strong></td><td>If any variant key changed, <code>propagateVariantRenames()</code> updates PIF images, carousel slots, eval records, and run responses. JSON + SQL synced immediately.</td></tr>
-      <tr><td>9</td><td><strong>SQL Persist</strong></td><td>Insert run row + upsert summary row into specDb (frontend projection).</td></tr>
-      <tr><td>10</td><td><strong>Return</strong></td><td><code>{ colors, editions, default_color, fallbackUsed, rejected }</code></td></tr>
+      <tr><td>1</td><td><strong>Setup</strong></td><td></td><td>Resolve model via <code>resolveModelTracking({ phaseKey: 'colorFinder' })</code> and ambiguity via <code>resolveAmbiguityContext()</code> (both from shared <code>finderOrchestrationHelpers.js</code>). Read existing runs for historical context.</td></tr>
+      <tr><td>2</td><td><strong>Prompt Build</strong></td><td></td><td><code>buildColorEditionFinderPrompt()</code> constructs system prompt with product identity, known inputs from prior runs, color/edition output rules, and identity warning blocks.</td></tr>
+      <tr><td>3</td><td><strong>LLM 1 (Discovery)</strong></td><td><span class="tag tag-teal">Discovery</span></td><td>Call LLM via <code>createColorEditionFinderCallLlm()</code>. Supports two-phase dispatch (research + writer) when <code>jsonStrict=false</code>. Streams reasoning tokens via <code>onStreamChunk</code>.</td></tr>
+      <tr><td>4</td><td><strong>Candidate Gate</strong></td><td><span class="tag tag-teal">Validate</span></td><td>5-step validation pipeline (see Section 6). All-or-nothing: any hard reject fails the entire run.</td></tr>
+      <tr><td>5</td><td><strong>Gate 1: Palette Validation</strong></td><td><span class="tag tag-teal">Validate</span></td><td>Every color atom checked against registered palette via <code>validateColorsAgainstPalette()</code>. One unknown atom &rarr; <code>storeFailureAndReturn()</code>. LLM 2 never runs on failure.</td></tr>
+      <tr><td>6</td><td><strong>LLM 2: Identity Check</strong></td><td><span class="tag tag-accent">Identity</span></td><td>Run 2+ only. Fire second LLM call (<code>variant_identity_check</code>). Compares new discoveries against existing variant registry. Actions: <code>match</code> (same variant) / <code>new</code> (genuinely new) / <code>reject</code> (hallucinated).</td></tr>
+      <tr><td>7</td><td><strong>Gate 2: Identity Validation</strong></td><td><span class="tag tag-accent">Identity</span></td><td>Validates identity check output: duplicate match detection, slug change protection, palette check on mappings. Any failure &rarr; <code>storeFailureAndReturn()</code>.</td></tr>
+      <tr><td>8</td><td><strong>Variant Registry Update</strong></td><td><span class="tag tag-green">Confirm</span></td><td>Run 1: <code>buildVariantRegistry()</code> generates fresh registry with stable <code>v_&lt;8-hex&gt;</code> hashes. Run 2+: <code>applyIdentityMappings()</code> with validated match/new/reject actions.</td></tr>
+      <tr><td>9</td><td><strong>JSON Persist</strong></td><td><span class="tag tag-green">Confirm</span></td><td><code>mergeColorEditionDiscovery()</code> appends run to <code>.workspace/products/{pid}/color_edition.json</code>. Updates selected, sets cooldown.</td></tr>
+      <tr><td>10</td><td><strong>SQL Persist</strong></td><td><span class="tag tag-green">Confirm</span></td><td>Insert run row + upsert summary row into specDb (frontend projection).</td></tr>
+      <tr><td>11</td><td><strong>Return</strong></td><td></td><td><code>{ colors, editions, default_color, fallbackUsed, rejected }</code></td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<!-- 8b. Scenario Map -->
+<div class="section-title"><span class="num">8b</span> Scenario Map &mdash; Every Possible Outcome</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--green-bg);">Run 1 (No Existing Registry)</div>
+<div class="card-body">
+  <table class="scenario-table">
+    <thead><tr><th>Scenario</th><th>Gate 1</th><th>LLM 2</th><th>Gate 2</th><th>Outcome</th><th>What Changes</th><th>What Doesn't Change</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>1. All colors in palette</td>
+        <td><span class="tag tag-green">Pass</span></td>
+        <td><span class="tag tag-always">N/A</span></td>
+        <td><span class="tag tag-always">N/A</span></td>
+        <td><span class="tag tag-green">Published</span></td>
+        <td>Registry created fresh. <code>selected</code> + SQL written. Candidates submitted.</td>
+        <td>N/A (first run)</td>
+      </tr>
+      <tr>
+        <td>2. Unknown atom (e.g. <code>light-olive</code>)</td>
+        <td><span class="tag tag-red">Reject</span></td>
+        <td><span class="tag tag-always">N/A</span></td>
+        <td><span class="tag tag-always">N/A</span></td>
+        <td><span class="tag tag-red">Run rejected</span></td>
+        <td>Rejection stored in JSON + SQL. Run number incremented.</td>
+        <td>No registry, no selected, no candidates, no cooldown.</td>
+      </tr>
+      <tr>
+        <td>3. Empty colors</td>
+        <td><span class="tag tag-green">Pass</span></td>
+        <td><span class="tag tag-always">N/A</span></td>
+        <td><span class="tag tag-always">N/A</span></td>
+        <td><span class="tag tag-green">Published</span></td>
+        <td>Empty registry created. Empty <code>selected</code> written.</td>
+        <td>N/A (first run)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--accent-light);">Run 2+ (Existing Registry, Identity Check Fires)</div>
+<div class="card-body">
+  <table class="scenario-table">
+    <thead><tr><th>Scenario</th><th>Gate 1</th><th>LLM 2</th><th>Gate 2</th><th>Outcome</th><th>What Changes</th><th>What Doesn't Change</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>4. All match, no changes</td>
+        <td><span class="tag tag-green">Pass</span></td>
+        <td><span class="tag tag-green">All match</span></td>
+        <td><span class="tag tag-green">Pass</span></td>
+        <td><span class="tag tag-green">Published</span></td>
+        <td><code>selected</code> updated. SQL updated. Cooldown set.</td>
+        <td>Registry unchanged (all matched, no mutable field diffs).</td>
+      </tr>
+      <tr>
+        <td>5. Match with atom update (<code>ocean-blue</code> &rarr; <code>deep-ocean-blue</code>, both in palette)</td>
+        <td><span class="tag tag-green">Pass</span></td>
+        <td><span class="tag tag-green">Match</span></td>
+        <td><span class="tag tag-green">Pass</span></td>
+        <td><span class="tag tag-green">Published</span></td>
+        <td>Registry entry updated (atoms, label). <code>variant_id</code> preserved. <code>selected</code> + SQL updated.</td>
+        <td><code>variant_id</code> unchanged. Other registry entries unchanged.</td>
+      </tr>
+      <tr>
+        <td>6. Match + new color discovered</td>
+        <td><span class="tag tag-green">Pass</span></td>
+        <td><span class="tag tag-green">Match + New</span></td>
+        <td><span class="tag tag-green">Pass</span></td>
+        <td><span class="tag tag-green">Published</span></td>
+        <td>Registry grows (new entry with new hash). <code>selected</code> includes new. Candidates for new color submitted.</td>
+        <td>Existing registry entries unchanged.</td>
+      </tr>
+      <tr>
+        <td>7. LLM 2 rejects hallucinated color</td>
+        <td><span class="tag tag-green">Pass</span></td>
+        <td><span class="tag tag-orange">Reject</span></td>
+        <td><span class="tag tag-green">Pass</span></td>
+        <td><span class="tag tag-green">Published</span></td>
+        <td>Rejected color NOT in registry, NOT in <code>selected</code>. Other results published normally.</td>
+        <td>Registry unchanged for rejected item. No phantom entries.</td>
+      </tr>
+      <tr>
+        <td>8. Unknown atom from LLM 1</td>
+        <td><span class="tag tag-red">Reject</span></td>
+        <td><span class="tag tag-always">Never runs</span></td>
+        <td><span class="tag tag-always">Never runs</span></td>
+        <td><span class="tag tag-red">Run rejected</span></td>
+        <td>Rejection stored. Run number incremented.</td>
+        <td>Registry, selected, candidates, cooldown all untouched.</td>
+      </tr>
+      <tr>
+        <td>9. Duplicate match (two discoveries &rarr; same <code>variant_id</code>)</td>
+        <td><span class="tag tag-green">Pass</span></td>
+        <td><span class="tag tag-orange">Dupes</span></td>
+        <td><span class="tag tag-red">Reject</span></td>
+        <td><span class="tag tag-red">Run rejected</span></td>
+        <td>Rejection stored with <code>duplicate_match_target</code>. Run number incremented.</td>
+        <td>Registry, selected, candidates, cooldown all untouched.</td>
+      </tr>
+      <tr>
+        <td>10. Slug change attempted (<code>cod-bo6</code> &rarr; <code>cod-bo6-edition</code>)</td>
+        <td><span class="tag tag-green">Pass</span></td>
+        <td><span class="tag tag-orange">Bad slug</span></td>
+        <td><span class="tag tag-red">Reject</span></td>
+        <td><span class="tag tag-red">Run rejected</span></td>
+        <td>Rejection stored with <code>slug_change_blocked</code>. Run number incremented.</td>
+        <td>Registry, selected, candidates, cooldown all untouched.</td>
+      </tr>
+      <tr>
+        <td>11. Cross-type match (color matched to edition)</td>
+        <td><span class="tag tag-green">Pass</span></td>
+        <td><span class="tag tag-orange">Type mismatch</span></td>
+        <td><span class="tag tag-green">Pass</span></td>
+        <td><span class="tag tag-green">Published</span></td>
+        <td>Type guard forces to <code>new</code> action. New color entry created with new hash.</td>
+        <td>Edition entry untouched. No cross-type contamination.</td>
+      </tr>
+      <tr>
+        <td>12. Identity check LLM call fails</td>
+        <td><span class="tag tag-green">Pass</span></td>
+        <td><span class="tag tag-red">LLM error</span></td>
+        <td><span class="tag tag-always">N/A</span></td>
+        <td><span class="tag tag-orange">Fallthrough</span></td>
+        <td><code>identityCheckResult = null</code>. Existing registry preserved. Discovery data still valid.</td>
+        <td>Registry unchanged. Falls through to write-once behavior.</td>
+      </tr>
+      <tr>
+        <td>13. All discoveries are <code>reject</code></td>
+        <td><span class="tag tag-green">Pass</span></td>
+        <td><span class="tag tag-orange">All reject</span></td>
+        <td><span class="tag tag-green">Pass</span></td>
+        <td><span class="tag tag-green">Published</span></td>
+        <td><code>selected</code> updated (may be empty). SQL updated.</td>
+        <td>Registry unchanged (no new entries, no updates).</td>
+      </tr>
+      <tr>
+        <td>14. LLM returns old <code>update</code>/<code>create</code> actions</td>
+        <td><span class="tag tag-green">Pass</span></td>
+        <td><span class="tag tag-red">Zod fail</span></td>
+        <td><span class="tag tag-always">N/A</span></td>
+        <td><span class="tag tag-orange">Fallthrough</span></td>
+        <td><code>identityCheckResult = null</code> (Zod parse fails). Existing registry preserved.</td>
+        <td>Registry unchanged. Falls through to write-once behavior.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--red-bg);">Rejection Scenarios (Pre-Gate)</div>
+<div class="card-body">
+  <table class="scenario-table">
+    <thead><tr><th>Scenario</th><th>Gate 1</th><th>LLM 2</th><th>Gate 2</th><th>Outcome</th><th>What Changes</th><th>What Doesn't Change</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>15. Candidate gate: hard rejection (field rules)</td>
+        <td><span class="tag tag-always">Never reached</span></td>
+        <td><span class="tag tag-always">Never runs</span></td>
+        <td><span class="tag tag-always">Never runs</span></td>
+        <td><span class="tag tag-red">Run rejected</span></td>
+        <td>Rejection stored with field rule violation. Run number incremented.</td>
+        <td>Registry, selected, candidates, cooldown all untouched. No gates run.</td>
+      </tr>
+      <tr>
+        <td>16. LLM 1 call fails entirely</td>
+        <td><span class="tag tag-always">Never reached</span></td>
+        <td><span class="tag tag-always">Never runs</span></td>
+        <td><span class="tag tag-always">Never runs</span></td>
+        <td><span class="tag tag-red">Run rejected</span></td>
+        <td>Rejection stored with <code>llm_error</code>. Run number incremented.</td>
+        <td>Registry, selected, candidates, cooldown all untouched.</td>
+      </tr>
     </tbody>
   </table>
 </div>
@@ -503,7 +834,7 @@
   </div>
   <dl class="detail-grid">
     <dt>Operation type</dt><dd><code>'cef'</code></dd>
-    <dt>Stages</dt><dd><code>['Research', 'Writer', 'Validate']</code> (two-phase) or <code>['LLM', 'Validate']</code></dd>
+    <dt>Stages</dt><dd><code>['Discovery', 'Validate', 'Identity', 'Confirm']</code></dd>
     <dt>Stream</dt><dd>LLM reasoning tokens streamed via WS <code>'llm-stream'</code> channel to Operations Tracker</dd>
     <dt>Completion</dt><dd>Operation completed/failed &rarr; <code>data-change</code> event broadcast &rarr; frontend query invalidation</dd>
     <dt>Rejected runs</dt><dd>Operation marked as failed; data-change event still emitted (so UI shows rejection)</dd>
@@ -575,7 +906,7 @@
 <div class="card-header" style="background:var(--surface-alt);">Dual-State Architecture</div>
 <div class="card-body">
   <dl class="detail-grid" style="grid-template-columns: 130px 1fr;">
-    <dt>JSON (SSOT)</dt><dd><code>.workspace/products/{pid}/color_edition.json</code> &mdash; durable memory, audit trail, recovery source. Contains <code>selected</code>, all <code>runs[]</code> with prompt/response, <code>next_run_number</code>.</dd>
+    <dt>JSON (SSOT)</dt><dd><code>.workspace/products/{pid}/color_edition.json</code> &mdash; durable memory, audit trail, recovery source. Contains <code>selected</code>, all <code>runs[]</code> with prompt/response, <code>variant_registry</code> (top-level), <code>next_run_number</code>.</dd>
     <dt>SQL (projection)</dt><dd>Summary table: <code>product_id, category, colors (JSON), editions (JSON), default_color, cooldown_until, latest_ran_at, run_count</code>. Runs table: <code>run_number, ran_at, model, fallback_used, selected_json, prompt_json, response_json</code>.</dd>
     <dt>Rebuild</dt><dd><code>rebuildColorEditionFinderFromJson()</code> scans all product dirs, repopulates SQL from JSON. Supports "Deleted-DB Rebuild" contract.</dd>
   </dl>
@@ -727,91 +1058,9 @@
 </div>
 </div>
 
-<!-- 15. Variant Registry -->
-<div class="section-title"><span class="num">15</span> Variant Registry &amp; Identity Check</div>
-
-<div class="card">
-<div class="card-header" style="background:var(--teal-bg);">Stable Variant Identity (variant_id)</div>
-<div class="card-body">
-  <p>Each variant (color or edition) gets a permanent hash (<code>v_&lt;8-hex&gt;</code>) assigned on first CEF publish. The hash never changes even if the variant's name, color atoms, or edition details are updated in later runs.</p>
-  <dl class="detail-grid">
-    <dt>Hash function</dt><dd><code>generateVariantId(productId, variantKey)</code> &mdash; SHA-256 of <code>"{productId}:{variantKey}"</code>, first 8 hex chars, prefixed <code>v_</code></dd>
-    <dt>Deterministic</dt><dd>Same product + same key always produces the same hash. Product-scoped (no cross-product collisions).</dd>
-    <dt>Registry location</dt><dd><code>variant_registry[]</code> array on <code>color_edition.json</code> (top-level, not inside <code>selected</code>). Projected to SQL <code>color_edition_finder.variant_registry</code> column.</dd>
-    <dt>Entry fields</dt><dd><code>variant_id, variant_key, variant_type, variant_label, color_atoms[], edition_slug, edition_display_name, created_at, updated_at?, retired?</code></dd>
-    <dt>Builder</dt><dd><code>buildVariantRegistry({ productId, colors, colorNames, editions })</code> &mdash; mirrors <code>buildVariantList</code> logic but adds stable IDs.</dd>
-    <dt>Backfill</dt><dd><code>backfillVariantRegistry({ specDb, productRoot })</code> &mdash; one-time scan for products missing a registry. Idempotent.</dd>
-  </dl>
-</div>
-</div>
-
-<div class="card">
-<div class="card-header" style="background:var(--purple-bg);">Identity Check (Run 2+ &mdash; Second LLM Call)</div>
-<div class="card-body">
-  <p>Every CEF run after the first fires a <strong>second LLM call</strong> (<code>variant_identity_check</code> reason, same <code>colorFinder</code> phase) that compares new discoveries against the existing variant registry.</p>
-
-  <div class="flow-row" style="margin:16px 0;">
-    <div class="flow-box flow-teal" style="min-width:120px;">LLM Call 1<br><small>discovery</small></div>
-    <span class="flow-arrow">&rarr;</span>
-    <div class="flow-box flow-repair" style="min-width:120px;">Candidate Gate<br><small>validate + repair</small></div>
-    <span class="flow-arrow">&rarr;</span>
-    <div class="flow-box flow-accent" style="min-width:120px;">LLM Call 2<br><small>identity check</small></div>
-    <span class="flow-arrow">&rarr;</span>
-    <div class="flow-box flow-pass" style="min-width:120px;">Apply Mappings<br><small>update / create / retire</small></div>
-    <span class="flow-arrow">&rarr;</span>
-    <div class="flow-box flow-neutral" style="min-width:120px;">Propagate<br><small>to PIF data</small></div>
-  </div>
-
-  <table>
-    <thead><tr><th>Decision</th><th>Action</th><th>Example</th></tr></thead>
-    <tbody>
-      <tr>
-        <td><span class="tag tag-green">Update</span></td>
-        <td>Same variant, renamed key &rarr; preserve <code>variant_id</code>, update mutable fields (key, label, atoms)</td>
-        <td><code>ocean-blue</code> &rarr; <code>deep-ocean-blue</code> (refined name)</td>
-      </tr>
-      <tr>
-        <td><span class="tag tag-accent">Create</span></td>
-        <td>Genuinely new variant &rarr; generate new <code>variant_id</code></td>
-        <td>New color <code>crimson-red</code> never seen before</td>
-      </tr>
-      <tr>
-        <td><span class="tag tag-red">Retire</span></td>
-        <td>Variant no longer in discoveries &rarr; mark <code>retired: true</code> (never removed)</td>
-        <td>Discontinued limited edition</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <dl class="detail-grid" style="margin-top:12px;">
-    <dt>Response schema</dt><dd><code>{ mappings: [{ new_key, match, action, reason }], retired: [variant_id] }</code></dd>
-    <dt>Prompt builder</dt><dd><code>buildVariantIdentityCheckPrompt()</code> &mdash; lists existing registry + new discoveries, asks LLM to match/create/retire</dd>
-    <dt>Apply function</dt><dd><code>applyIdentityMappings()</code> &mdash; updates matched entries (preserving hashes), creates new entries, marks retired</dd>
-    <dt>Failure handling</dt><dd>If identity check LLM call fails, falls back to write-once behavior (no registry modification). Discovery data still valid.</dd>
-    <dt>Prompt nesting</dt><dd>Run 2+: <code>run.prompt = { discovery: {...}, identity_check: {...} }</code>. Run 1: flat <code>{ system, user }</code>.</dd>
-    <dt>LLM Config</dt><dd>Both prompts visible side-by-side in the Color &amp; Edition Finder tab of LLM Config.</dd>
-    <dt>Prompt override</dt><dd><code>identityCheckPromptOverride</code> setting in CEF module settings (per-category).</dd>
-  </dl>
-</div>
-</div>
-
-<div class="card">
-<div class="card-header" style="background:var(--green-bg);">Propagation to PIF (Cross-Feature)</div>
-<div class="card-body">
-  <p>When the identity check renames a variant key (action: <code>update</code>, old key &ne; new key), CEF automatically calls <code>propagateVariantRenames()</code> from the PIF public API (<code>src/features/product-image/index.js</code>).</p>
-  <dl class="detail-grid">
-    <dt>What's updated</dt><dd>PIF images (<code>variant_key</code> + <code>variant_label</code>), run responses, eval records, and carousel slots (re-keyed from old &rarr; new).</dd>
-    <dt>Anchor</dt><dd><code>variant_id</code> &mdash; stable hash used to find matching images. Legacy images without <code>variant_id</code> are not touched.</dd>
-    <dt>SQL sync</dt><dd>SQL projection updated immediately after JSON write (images column + carousel_slots column).</dd>
-    <dt>Data-change</dt><dd><code>product-image-finder-variant-renamed</code> event broadcast for GUI cache invalidation.</dd>
-    <dt>Idempotent</dt><dd>Safe to re-run. No-op if PIF data doesn't exist for the product.</dd>
-  </dl>
-</div>
-</div>
-
 <div style="text-align:center; padding:32px 0; color:var(--text-muted); font-size:13px;">
   Generated from live source audit &mdash; Spec Factory Color &amp; Edition Finder (CEF)<br>
-  LLM discovery &bull; candidate validation gate &bull; variant registry &bull; identity check &bull; PIF propagation &bull; publisher integration &bull; cumulative learning &bull; dual-state persistence
+  LLM discovery &bull; two-gate validation &bull; variant registry &bull; identity check &bull; publisher integration &bull; cumulative learning &bull; dual-state persistence
 </div>
 
 </div>

@@ -24,7 +24,7 @@ export const CATEGORY_VIEW_ATTEMPT_DEFAULTS = Object.freeze({
 
 export const GENERIC_VIEW_ATTEMPT_DEFAULT = 3;
 
-const MIN_ATTEMPTS = 2;
+const MIN_ATTEMPTS = 1;
 
 /**
  * Resolve per-view attempt budgets from setting + category defaults.

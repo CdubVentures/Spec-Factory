@@ -90,13 +90,13 @@ Respond with JSON matching this schema:
     "reasoning": "1-2 sentences: why this image won and how it compares to the others"
   },
   "rejected": [
-    { "filename": "a disqualified candidate", "flags": ["watermark"] }
+    { "filename": "a disqualified candidate", "flags": ["watermark"], "reasoning": "1 sentence why" }
   ]
 }
 
 Rules:
 - "winner": Pick exactly one best image for this view. Explain why it won over the others. Set to null if NO candidate is acceptable.
-- "rejected": List ONLY candidates with disqualifying issues. Each gets a "flags" array of one or more: "watermark", "badge", "cropped", "wrong_product".
+- "rejected": List ONLY candidates with disqualifying issues. Each gets a "flags" array of one or more: "watermark", "badge", "cropped", "wrong_product". Include a brief "reasoning" (1 sentence) explaining the disqualification.
 - Candidates that are simply lower quality than the winner (but not disqualified) do NOT need to appear in "rejected".
 - If ALL candidates are disqualified, set "winner" to null and list every candidate in "rejected" with their flags. Do NOT force-pick a bad image.`;
 }
@@ -127,15 +127,24 @@ export function buildHeroSelectionPrompt({
   const countLine = `You are evaluating ${candidates.length} hero/marketing image candidate${candidates.length !== 1 ? 's' : ''}.`;
 
   const defaultCriteria = `Hero image evaluation criteria:
-- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
-- Product must be the CLEAR STAR — it should be the obvious focal point, not a tiny item in a busy scene.
-- Identity: Must be the correct model and correct color/edition variant. Wrong product or wrong color → skip.
-- Watermarks: Getty, Shutterstock, retailer logos, "SAMPLE" text, copyright overlays → skip, do not select.
-- Badges / overlays: Sale stickers, "NEW" badges, retailer branding, promotional text → skip, do not select.
-- Image quality: Sharp, good lighting, no heavy compression artifacts or blur.
-- Composition: Product should be the clear focus, well-framed, attractive presentation.
-- Marketing appeal: Which shots best showcase the product's design and features for a buyer?
-- Perspective diversity — CRITICAL: Each selected hero MUST show a distinctly different perspective, angle, or composition. Do not pick near-duplicate shots taken from the same angle.`;
+
+Your job is a LEGAL and QUALITY gatekeeper, not an art director. Any image type is acceptable — cutouts, lifestyle desk shots, promotional renders, studio multi-color lineups, unboxing kit layouts, dramatic RGB scenes — as long as it passes these gates:
+
+1. SOURCE SAFETY (copyright gate — most important):
+   - ACCEPT: Manufacturer promotional images, official product pages, press kit photos, retailer CDN images (Amazon A+ content, Best Buy). These are brand assets meant for redistribution.
+   - REJECT: Photos taken by review sites, tech publications, YouTubers, or bloggers (PC Gamer, Tom's Hardware, RTINGS, TechPowerUp, The Verge, LTT, etc.). These are copyrighted editorial content even when they look clean.
+   - How to tell: Editorial/review photos typically show lab environments, test equipment, desk clutter, hands holding the product, inconsistent overhead lighting, measurement setups. Manufacturer promo images have polished studio lighting, consistent brand aesthetics, clean backgrounds, or stylized scenes.
+
+2. CLEANLINESS (usability gate):
+   - REJECT: Watermarks (Getty, Shutterstock, iStock, Alamy), "SAMPLE" text, copyright overlays.
+   - REJECT: Sale stickers, "NEW" badges, retailer branding baked into the image, promotional text overlays.
+
+3. IDENTITY (correct product gate):
+   - The correct model and correct color/edition variant must be visible and identifiable. Wrong product or wrong color → skip.
+
+4. IMAGE QUALITY:
+   - Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled for evaluation.
+   - Must not be blurry, heavily compressed, or look like a low-res screenshot.`;
 
   const criteria = promptOverride.trim() || heroCriteria || defaultCriteria;
 
@@ -143,7 +152,7 @@ export function buildHeroSelectionPrompt({
 ${countLine}
 
 Images are labeled Image 1, Image 2, etc. matching the order of image content parts.
-These are full-scene hero/marketing shots (typically 16:9) — NOT cutout product images.
+These are hero images for a product page. Any style of image is acceptable as long as it is clean and source-safe.
 
 ${criteria}
 
@@ -153,18 +162,18 @@ Respond with JSON matching this schema:
     {
       "filename": "the best candidate filename",
       "hero_rank": 1,
-      "reasoning": "short explanation"
+      "reasoning": "short explanation — why this image is usable"
     }
   ]
 }
 
 Rules:
-- Pick up to ${heroCount} images for the product page carousel hero section.
-- hero_rank 1 = primary hero (most prominent placement), 2 = secondary, etc.
-- "reasoning" should be 1-2 sentences explaining why this image is a good hero shot.
-- Each selected hero MUST show a distinctly different shot — do not pick near-duplicate images from the same angle or composition.
-- You may pick FEWER than ${heroCount} if not enough candidates are hero-worthy or visually distinct.
-- Return an empty "heroes" array if ALL candidates are disqualified (watermarks, wrong product, etc.).`;
+- Pick up to ${heroCount} images for the product page hero section.
+- hero_rank 1 = primary hero, 2 = secondary, etc.
+- "reasoning" should be 1-2 sentences: is the source safe? Is the image clean?
+- When picking multiple heroes, prefer different shots over near-duplicates of the same angle.
+- You may pick FEWER than ${heroCount} if not enough candidates pass the gates.
+- Return an empty "heroes" array if ALL candidates are disqualified.`;
 }
 
 /* ── LLM caller factories (Phase 2) ────────────────────────────── */
@@ -265,19 +274,6 @@ export async function evaluateViewCandidates({
 
   const filenames = imagePaths.map((p) => path.basename(p));
 
-  // WHY: Single candidate = auto-elect, no LLM call needed
-  if (imagePaths.length === 1) {
-    return {
-      rankings: [{
-        filename: filenames[0],
-        rank: 1,
-        best: true,
-        flags: [],
-        reasoning: 'auto-elected: sole candidate for this view',
-      }],
-    };
-  }
-
   // Build thumbnails + image payloads for vision call
   // WHY: Include real dimensions so the LLM can factor resolution into its decision.
   // The thumbnails are downscaled to ${size}px — the LLM cannot judge actual resolution from pixels alone.
@@ -318,7 +314,7 @@ export async function evaluateViewCandidates({
   });
 
   // WHY: Convert { winner, rejected } → internal rankings array for mergeEvaluation.
-  // Winner gets eval_best=true + reasoning. Rejected entries get flags only.
+  // Winner gets eval_best=true + reasoning. Rejected entries get flags + reasoning.
   const rankings = [];
 
   if (response.winner && knownFilenames.has(response.winner.filename)) {
@@ -336,7 +332,7 @@ export async function evaluateViewCandidates({
         filename: rej.filename,
         best: false,
         flags: rej.flags || [],
-        reasoning: '',
+        reasoning: rej.reasoning || '',
       });
     }
   }
@@ -439,6 +435,30 @@ export function mergeEvaluation({ productId, productRoot, variantKey, variantId,
 
   writeProductImages({ productId, productRoot, data: doc });
   return doc;
+}
+
+/* ── Eval state extraction (SQL projection) ─────────────────────── */
+
+/**
+ * Build an eval_state blob from doc.selected.images for SQL dual-write.
+ * Keyed by filename for O(1) lookup. Only includes images that have
+ * at least one eval field set.
+ *
+ * @param {object|null|undefined} doc — product images JSON document
+ * @returns {object} — { [filename]: { eval_best, eval_flags, ... } }
+ */
+export function extractEvalState(doc) {
+  const state = {};
+  for (const img of (doc?.selected?.images || [])) {
+    const hasEval = EVAL_FIELDS.some(f => img[f] !== undefined);
+    if (hasEval) {
+      state[img.filename] = {};
+      for (const f of EVAL_FIELDS) {
+        if (img[f] !== undefined) state[img.filename][f] = img[f];
+      }
+    }
+  }
+  return state;
 }
 
 /* ── Carousel slot persistence ──────────────────────────────────── */

@@ -476,14 +476,86 @@ describe('runColorEditionFinder', () => {
     assert.equal(runs[0].fallback_used, true, 'SQL fallback_used should be true');
   });
 
-  it('onVariantRenamed fires when identity check renames a variant', async () => {
-    const pid = 'mouse-rename-cb';
+  it('Gate 1: unknown color atom rejects entire run before identity check', async () => {
+    const pid = 'mouse-gate1';
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+    ]);
+
+    // Run 1: establish registry
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb, specDb, config: {}, logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({ colors: ['black'], editions: {}, default_color: 'black' }),
+    });
+
+    // Run 2: LLM 1 returns hallucinated color — palette has no 'light-olive'
+    const identityCheckCalled = { count: 0 };
+    const result = await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb, specDb, config: {}, logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({ colors: ['black', 'light-olive+black+red'], editions: {}, default_color: 'black' }),
+      _callIdentityCheckOverride: async () => { identityCheckCalled.count++; return { result: { mappings: [], retired: [] } }; },
+    });
+
+    assert.equal(result.rejected, true, 'run must be rejected');
+    assert.ok(result.rejections.some(r => r.reason_code === 'unknown_color_atom'), 'rejection reason_code');
+    assert.equal(identityCheckCalled.count, 0, 'identity check must NOT run when Gate 1 fails');
+
+    // Registry unchanged from Run 1
+    const json = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
+    assert.ok(json.variant_registry.length > 0, 'registry preserved');
+    assert.ok(!json.variant_registry.find(e => e.variant_key === 'color:light-olive+black+red'), 'hallucinated color NOT in registry');
+  });
+
+  it('Gate 2: duplicate match target rejects entire run', async () => {
+    const pid = 'mouse-gate2-dup';
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+      { name: 'white', hex: '#ffffff', css_var: '--color-white' },
+    ]);
+
+    // Run 1: establish registry
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb, specDb, config: {}, logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({ colors: ['black', 'white'], editions: {}, default_color: 'black' }),
+    });
+
+    const afterRun1 = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
+    const blackId = afterRun1.variant_registry.find(e => e.variant_key === 'color:black').variant_id;
+
+    // Run 2: identity check maps TWO discoveries to the same variant_id (the bug)
+    const result = await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb, specDb, config: {}, logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({ colors: ['black', 'white'], editions: {}, default_color: 'black' }),
+      _callIdentityCheckOverride: makeLlmStub({
+        mappings: [
+          { new_key: 'color:black', match: blackId, action: 'match', reason: 'same' },
+          { new_key: 'color:white', match: blackId, action: 'match', reason: 'also same?' },
+        ],
+        retired: [],
+      }),
+    });
+
+    assert.equal(result.rejected, true, 'run must be rejected');
+    assert.ok(result.rejections.some(r => r.reason_code === 'identity_check_invalid'), 'rejection reason_code');
+  });
+
+  it('identity check with match + new correctly updates registry and selected', async () => {
+    const pid = 'mouse-match-new';
     const appDb = makeAppDbStub([
       { name: 'black', hex: '#000000', css_var: '--color-black' },
       { name: 'deep-ocean-blue', hex: '#003366', css_var: '--color-deep-ocean-blue' },
+      { name: 'gold', hex: '#ffd700', css_var: '--color-gold' },
     ]);
 
-    // Run 1: establish registry with ocean-blue
+    // Run 1: establish registry
     await runColorEditionFinder({
       product: { ...PRODUCT, product_id: pid },
       appDb: makeAppDbStub([
@@ -496,32 +568,85 @@ describe('runColorEditionFinder', () => {
     });
 
     const afterRun1 = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
-    assert.ok(afterRun1.variant_registry.length > 0, 'registry must exist after run 1');
-    const oceanEntry = afterRun1.variant_registry.find(e => e.variant_key === 'color:ocean-blue');
-    assert.ok(oceanEntry, 'ocean-blue must be in registry');
+    const blackId = afterRun1.variant_registry.find(e => e.variant_key === 'color:black').variant_id;
+    const oceanId = afterRun1.variant_registry.find(e => e.variant_key === 'color:ocean-blue').variant_id;
 
-    // Run 2: LLM refines ocean-blue → deep-ocean-blue, identity check maps it
-    const renameCalls = [];
+    // Run 2: identity check matches black, updates ocean-blue → deep-ocean-blue, adds gold
     await runColorEditionFinder({
       product: { ...PRODUCT, product_id: pid },
       appDb, specDb, config: {}, logger: null,
       productRoot: PRODUCT_ROOT,
-      _callLlmOverride: makeLlmStub({ colors: ['black', 'deep-ocean-blue'], editions: {}, default_color: 'black' }),
+      _callLlmOverride: makeLlmStub({ colors: ['black', 'deep-ocean-blue', 'gold'], editions: {}, default_color: 'black' }),
       _callIdentityCheckOverride: makeLlmStub({
         mappings: [
-          { new_key: 'color:black', match: afterRun1.variant_registry.find(e => e.variant_key === 'color:black').variant_id, action: 'update', reason: 'same' },
-          { new_key: 'color:deep-ocean-blue', match: oceanEntry.variant_id, action: 'update', reason: 'refined name' },
+          { new_key: 'color:black', match: blackId, action: 'match', reason: 'same' },
+          { new_key: 'color:deep-ocean-blue', match: oceanId, action: 'match', reason: 'better palette match' },
+          { new_key: 'color:gold', match: null, action: 'new', reason: 'new color' },
         ],
         retired: [],
       }),
-      onVariantRenamed: (info) => renameCalls.push(info),
     });
 
-    assert.ok(renameCalls.length > 0, 'onVariantRenamed must fire when identity check renames a variant');
-    assert.equal(renameCalls[0].productId, pid);
-    assert.ok(renameCalls[0].renames.length > 0, 'must include the rename details');
-    const rename = renameCalls[0].renames.find(r => r.old_variant_key === 'color:ocean-blue');
-    assert.ok(rename, 'must include the ocean-blue → deep-ocean-blue rename');
-    assert.equal(rename.new_variant_key, 'color:deep-ocean-blue');
+    const json = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
+
+    // Registry: black unchanged, ocean-blue updated to deep-ocean-blue (same id), gold created
+    assert.equal(json.variant_registry.find(e => e.variant_id === blackId)?.variant_key, 'color:black');
+    assert.equal(json.variant_registry.find(e => e.variant_id === oceanId)?.variant_key, 'color:deep-ocean-blue');
+    assert.ok(json.variant_registry.find(e => e.variant_key === 'color:gold'), 'gold created');
+    assert.equal(json.variant_registry.length, 3, '2 existing + 1 new');
+  });
+
+  it('emits discovery and identity check as separate labeled LLM calls in correct order', async () => {
+    const pid = 'mouse-call-order';
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+      { name: 'white', hex: '#ffffff', css_var: '--color-white' },
+    ]);
+
+    // Run 1: establish variant registry
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb, specDb, config: {}, logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({ colors: ['black', 'white'], editions: {}, default_color: 'black' }),
+    });
+
+    const afterRun1 = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
+    assert.ok(afterRun1.variant_registry.length > 0, 'registry must exist after run 1');
+
+    // Run 2: triggers identity check path — capture all onLlmCallComplete calls
+    const llmCalls = [];
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb, specDb, config: {}, logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({ colors: ['black', 'white'], editions: {}, default_color: 'black' }),
+      _callIdentityCheckOverride: makeLlmStub({
+        mappings: afterRun1.variant_registry.map(e => ({
+          new_key: e.variant_key, match: e.variant_id, action: 'match', reason: 'same',
+        })),
+        retired: [],
+      }),
+      onLlmCallComplete: (call) => llmCalls.push(call),
+    });
+
+    // Should have 4 emits: discovery pre, discovery post, identity pre, identity post
+    assert.equal(llmCalls.length, 4, `expected 4 emits, got ${llmCalls.length}: ${llmCalls.map(c => `${c.label || 'no-label'}(resp:${c.response === null ? 'null' : 'set'})`).join(', ')}`);
+
+    // Discovery pre-emit (response: null)
+    assert.equal(llmCalls[0].response, null, 'call 0 should be discovery pre-emit (null response)');
+    assert.equal(llmCalls[0].label, 'Discovery', 'call 0 label');
+
+    // Discovery post-emit (response filled)
+    assert.notEqual(llmCalls[1].response, null, 'call 1 should be discovery post-emit (non-null response)');
+    assert.equal(llmCalls[1].label, 'Discovery', 'call 1 label');
+
+    // Identity Check pre-emit (response: null)
+    assert.equal(llmCalls[2].response, null, 'call 2 should be identity pre-emit (null response)');
+    assert.equal(llmCalls[2].label, 'Identity Check', 'call 2 label');
+
+    // Identity Check post-emit (response filled)
+    assert.notEqual(llmCalls[3].response, null, 'call 3 should be identity post-emit (non-null response)');
+    assert.equal(llmCalls[3].label, 'Identity Check', 'call 3 label');
   });
 });

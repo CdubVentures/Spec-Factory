@@ -18,6 +18,7 @@ export async function runBrandResolver({
   storage,
   logger,
   categoryConfig,
+  llmContext = null,
   resolveBrandDomainFn = defaultResolveBrandDomain,
 }) {
   let brandResolution = null;
@@ -31,7 +32,7 @@ export async function runBrandResolver({
     try {
       const canCallBrandLlm = Boolean(hasLlmRouteApiKey(config, { role: 'triage' }));
       const brandCallLlm = canCallBrandLlm
-        ? createBrandResolverCallLlm({ callRoutedLlmFn: callLlmWithRouting, config, logger })
+        ? createBrandResolverCallLlm({ callRoutedLlmFn: callLlmWithRouting, config, logger, onUsage: llmContext?.recordUsage })
         : null;
       brandResolution = await resolveBrandDomainFn({
         brand: brandName,

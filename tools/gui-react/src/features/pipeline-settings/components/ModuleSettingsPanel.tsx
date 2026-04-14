@@ -430,6 +430,28 @@ function PifSettingsForm({
         </div>
       </SettingsCard>
 
+      {/* ── Loop View Budget (Carousel Placeholders) ── */}
+      <SettingsCard
+        title="Loop View Budget"
+        subtitle="Carousel Placeholders"
+      >
+        <ViewBudgetEditor
+          viewBudget={settings.viewBudget || ''}
+          category={category}
+          isSaving={isSaving}
+          onSave={(val) => onSave('viewBudget', val)}
+          viewAttemptBudgets={settings.viewAttemptBudgets ?? ''}
+          viewAttemptBudget={settings.viewAttemptBudget ?? '5'}
+          onAttemptBudgetSave={(val) => onSave('viewAttemptBudgets', val)}
+          heroEnabled={settings.heroEnabled !== 'false'}
+          onHeroEnabledChange={(val) => onSave('heroEnabled', val ? 'true' : 'false')}
+          heroCount={settings.heroCount ?? '3'}
+          onHeroCountChange={(val) => onSave('heroCount', val)}
+          heroAttemptBudget={settings.heroAttemptBudget ?? '3'}
+          onHeroAttemptBudgetChange={(val) => onSave('heroAttemptBudget', val)}
+        />
+      </SettingsCard>
+
       {/* ── View Configuration ── */}
       <SettingsCard
         title="View Configuration"
@@ -470,25 +492,9 @@ function PifSettingsForm({
         />
       </SettingsCard>
 
-      {/* ── View Budget ── */}
-      <SettingsCard
-        title="View Budget"
-        subtitle="Which views to actively search for this category"
-      >
-        <ViewBudgetEditor
-          viewBudget={settings.viewBudget || ''}
-          category={category}
-          isSaving={isSaving}
-          onSave={(val) => onSave('viewBudget', val)}
-          viewAttemptBudgets={settings.viewAttemptBudgets ?? ''}
-          viewAttemptBudget={settings.viewAttemptBudget ?? '5'}
-          onAttemptBudgetSave={(val) => onSave('viewAttemptBudgets', val)}
-        />
-      </SettingsCard>
-
-      {/* ── Search Behavior (merged Carousel + Hero + Safety) ── */}
+      {/* ── Search Behavior ── */}
       <SettingsCard title="Search Behavior">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-[11px] font-semibold sf-text-primary mb-1.5">
               Satisfaction Threshold
@@ -507,83 +513,24 @@ function PifSettingsForm({
             </p>
           </div>
           <div>
-            <label className="block text-[11px] font-semibold sf-text-primary mb-1.5">
-              Hero Search
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer rounded border sf-border-soft px-3 py-2">
-              <input
-                type="checkbox"
-                checked={settings.heroEnabled !== 'false'}
-                onChange={(e) => onSave('heroEnabled', e.target.checked ? 'true' : 'false')}
-                disabled={isSaving}
-                className="sf-checkbox"
-              />
-              <span className="text-[11px] sf-text-primary">Enabled</span>
-            </label>
-            <p className="mt-1.5 text-[10px] sf-text-muted leading-snug">
-              Search for hero / marketing images.
-            </p>
-          </div>
-          <div>
-            <label className="block text-[11px] font-semibold sf-text-primary mb-1.5">
-              Hero Count
+            <label
+              className="block text-[11px] font-semibold sf-text-primary mb-1.5"
+              title="LLM calls per view when re-running a variant that already has all views satisfied. Applies to both view and hero calls."
+            >
+              Re-run Budget
             </label>
             <input
               type="number"
-              value={settings.heroCount ?? '3'}
-              onChange={(e) => onSave('heroCount', e.target.value)}
+              value={settings.reRunBudget ?? '1'}
+              onChange={(e) => onSave('reRunBudget', e.target.value)}
               disabled={isSaving}
               className="sf-input w-full px-2 py-1.5 rounded sf-text-label text-[12px]"
-              min="1"
+              min="0"
               max="5"
             />
             <p className="mt-1.5 text-[10px] sf-text-muted leading-snug">
-              Target hero images per variant.
+              Extra calls for already-satisfied views on re-loop. 0 = skip.
             </p>
-          </div>
-        </div>
-
-        {/* Attempt Budgets */}
-        <div className="pt-3 mt-1 border-t sf-border-soft">
-          <div className="text-[10px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-3">Attempt Budgets</div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-[11px] font-semibold sf-text-primary mb-1.5">
-                Hero Attempt Budget
-              </label>
-              <input
-                type="number"
-                value={settings.heroAttemptBudget ?? '3'}
-                onChange={(e) => onSave('heroAttemptBudget', e.target.value)}
-                disabled={isSaving}
-                className="sf-input w-full px-2 py-1.5 rounded sf-text-label text-[12px]"
-                min="1"
-                max="10"
-              />
-              <p className="mt-1.5 text-[10px] sf-text-muted leading-snug">
-                Max LLM calls for hero images per variant.
-              </p>
-            </div>
-            <div>
-              <label
-                className="block text-[11px] font-semibold sf-text-primary mb-1.5"
-                title="LLM calls per view when re-running a variant that already has all views satisfied. Applies to both view and hero calls."
-              >
-                Re-run Budget
-              </label>
-              <input
-                type="number"
-                value={settings.reRunBudget ?? '1'}
-                onChange={(e) => onSave('reRunBudget', e.target.value)}
-                disabled={isSaving}
-                className="sf-input w-full px-2 py-1.5 rounded sf-text-label text-[12px]"
-                min="0"
-                max="5"
-              />
-              <p className="mt-1.5 text-[10px] sf-text-muted leading-snug">
-                Extra calls for already-satisfied views on re-loop. 0 = skip.
-              </p>
-            </div>
           </div>
         </div>
       </SettingsCard>
@@ -842,6 +789,12 @@ function ViewBudgetEditor({
   viewAttemptBudgets,
   viewAttemptBudget,
   onAttemptBudgetSave,
+  heroEnabled,
+  onHeroEnabledChange,
+  heroCount,
+  onHeroCountChange,
+  heroAttemptBudget: heroAttemptBudgetProp,
+  onHeroAttemptBudgetChange,
 }: {
   viewBudget: string;
   category: string;
@@ -850,6 +803,12 @@ function ViewBudgetEditor({
   viewAttemptBudgets: string;
   viewAttemptBudget: string;
   onAttemptBudgetSave: (val: string) => void;
+  heroEnabled: boolean;
+  onHeroEnabledChange: (val: boolean) => void;
+  heroCount: string;
+  onHeroCountChange: (val: string) => void;
+  heroAttemptBudget: string;
+  onHeroAttemptBudgetChange: (val: string) => void;
 }) {
   const defaultBudget = CATEGORY_VIEW_BUDGET_DEFAULTS[category] || ['top', 'left', 'angle'];
   const isUsingDefaults = !viewBudget || !viewBudget.trim();
@@ -900,18 +859,53 @@ function ViewBudgetEditor({
 
   const budgetedViews = CANONICAL_VIEWS.filter(v => budgetSet.has(v.key));
 
+  const activeCount = budgetSet.size;
+  const totalViews = CANONICAL_VIEWS.length;
+
   return (
-    <div>
-      <div className="flex flex-wrap gap-1.5 mb-3">
+    <div className="space-y-4">
+      {/* Summary bar */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-semibold sf-text-primary">
+            {activeCount} of {totalViews} views active
+          </span>
+          <span className="w-24 h-1.5 rounded-full sf-surface-panel overflow-hidden inline-block">
+            <span
+              className="block h-full rounded-full transition-all duration-300"
+              style={{
+                width: `${(activeCount / totalViews) * 100}%`,
+                background: 'var(--sf-accent, #4263eb)',
+              }}
+            />
+          </span>
+        </div>
+        {isUsingDefaults ? (
+          <span className="text-[10px] px-2 py-0.5 rounded-full sf-text-info sf-surface-elevated">
+            {category} defaults
+          </span>
+        ) : (
+          <button
+            onClick={handleReset}
+            disabled={isSaving}
+            className="text-[10px] px-2 py-0.5 rounded sf-btn-ghost sf-text-muted hover:sf-text-primary"
+          >
+            Reset to defaults
+          </button>
+        )}
+      </div>
+
+      {/* View toggle grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {CANONICAL_VIEWS.map((v) => {
           const active = budgetSet.has(v.key);
           return (
             <label
               key={v.key}
-              className={`flex items-center gap-1.5 cursor-pointer rounded-full px-3 py-1.5 border transition-colors ${
+              className={`flex items-center gap-2 cursor-pointer rounded-lg px-3 py-2 border transition-all ${
                 active
-                  ? 'sf-border-default sf-surface-elevated'
-                  : 'sf-border-soft'
+                  ? 'sf-border-default sf-surface-elevated shadow-sm'
+                  : 'sf-border-soft opacity-60 hover:opacity-80'
               }`}
             >
               <input
@@ -919,9 +913,9 @@ function ViewBudgetEditor({
                 checked={active}
                 onChange={() => handleToggle(v.key)}
                 disabled={isSaving}
-                className="sf-checkbox w-3.5 h-3.5"
+                className="sf-checkbox w-3.5 h-3.5 shrink-0"
               />
-              <span className={`text-[11px] font-medium ${active ? 'sf-text-primary' : 'sf-text-muted'}`}>
+              <span className={`text-[11px] font-medium truncate ${active ? 'sf-text-primary' : 'sf-text-muted'}`}>
                 {v.label}
               </span>
             </label>
@@ -929,20 +923,28 @@ function ViewBudgetEditor({
         })}
       </div>
 
-      {/* Per-view attempt budgets for active views */}
+      {/* Per-view attempt budgets */}
       {budgetedViews.length > 0 && (
-        <div className="mb-3">
-          <div className="text-[10px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-2">Tries per view</div>
-          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+        <div className="rounded-lg border sf-border-soft p-3 space-y-2.5">
+          <div className="flex items-center gap-2">
+            <div className="text-[10px] font-bold uppercase tracking-[0.06em] sf-text-muted">
+              Attempts per View
+            </div>
+            <span className="flex-1 h-px sf-border-soft" style={{ borderTop: '1px solid' }} />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {budgetedViews.map(v => (
-              <div key={v.key} className="flex items-center gap-1.5">
-                <span className="text-[11px] sf-text-primary font-medium min-w-[52px]">{v.label}</span>
+              <div
+                key={v.key}
+                className="flex items-center justify-between gap-2 rounded border sf-border-soft px-2.5 py-1.5"
+              >
+                <span className="text-[11px] sf-text-primary font-medium truncate">{v.label}</span>
                 <input
                   type="number"
                   value={getAttemptVal(v.key)}
                   onChange={(e) => handleAttemptChange(v.key, e.target.value)}
                   disabled={isSaving}
-                  className="sf-input w-[44px] px-1 py-0.5 rounded text-[11px] text-center sf-text-label [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  className="sf-input w-[40px] px-1 py-0.5 rounded text-[11px] text-center font-mono sf-text-label [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   min="1"
                   max="20"
                 />
@@ -952,17 +954,53 @@ function ViewBudgetEditor({
         </div>
       )}
 
-      <div>
-        {isUsingDefaults ? (
-          <span className="text-[10px] sf-text-muted">Using {category} defaults ({defaultBudget.length} views)</span>
-        ) : (
-          <button
-            onClick={handleReset}
-            disabled={isSaving}
-            className="text-[10px] px-1.5 py-0.5 rounded sf-btn-ghost sf-text-muted"
-          >
-            Reset to {category} defaults
-          </button>
+      {/* Hero slots */}
+      <div className="rounded-lg border sf-border-soft p-3 space-y-2.5">
+        <div className="flex items-center gap-2">
+          <div className="text-[10px] font-bold uppercase tracking-[0.06em] sf-text-muted">
+            Hero Slots
+          </div>
+          <span className="flex-1 h-px sf-border-soft" style={{ borderTop: '1px solid' }} />
+          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={heroEnabled}
+              onChange={(e) => onHeroEnabledChange(e.target.checked)}
+              disabled={isSaving}
+              className="sf-checkbox w-3.5 h-3.5"
+            />
+            <span className={`text-[10px] font-semibold ${heroEnabled ? 'sf-text-primary' : 'sf-text-muted'}`}>
+              Enabled
+            </span>
+          </label>
+        </div>
+        {heroEnabled && (
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex items-center justify-between gap-2 rounded border sf-border-soft px-2.5 py-1.5">
+              <span className="text-[11px] sf-text-primary font-medium">Hero Count</span>
+              <input
+                type="number"
+                value={heroCount}
+                onChange={(e) => onHeroCountChange(e.target.value)}
+                disabled={isSaving}
+                className="sf-input w-[40px] px-1 py-0.5 rounded text-[11px] text-center font-mono sf-text-label [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                min="1"
+                max="5"
+              />
+            </div>
+            <div className="flex items-center justify-between gap-2 rounded border sf-border-soft px-2.5 py-1.5">
+              <span className="text-[11px] sf-text-primary font-medium">Attempt Budget</span>
+              <input
+                type="number"
+                value={heroAttemptBudgetProp}
+                onChange={(e) => onHeroAttemptBudgetChange(e.target.value)}
+                disabled={isSaving}
+                className="sf-input w-[40px] px-1 py-0.5 rounded text-[11px] text-center font-mono sf-text-label [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                min="1"
+                max="10"
+              />
+            </div>
+          </div>
         )}
       </div>
     </div>

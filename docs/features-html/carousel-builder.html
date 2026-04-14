@@ -109,7 +109,7 @@
       <dt>Vision Input</dt>
       <dd>512&times;512 PNG thumbnails via <code>sharp</code>, base64-encoded as <code>data:image/png;base64,...</code> in <code>image_url</code> content parts</dd>
       <dt>Skip Logic</dt>
-      <dd>0 candidates = skip. 1 candidate = auto-elect (no LLM call). 2+ candidates = send to LLM.</dd>
+      <dd>0 candidates = skip. 1+ candidates = always send to LLM for quality evaluation (single candidates can be rejected).</dd>
     </dl>
   </div>
 </div>
@@ -143,9 +143,9 @@
       <li><strong>GUI groups images by view:</strong> User clicks <span class="tag tag-accent">Eval</span> on a variant row. The GUI reads the current images from React Query cache, groups them by <code>view</code> field, and determines which views exist for this variant (e.g., top, left, angle, front).</li>
       <li><strong>GUI fires N+1 POSTs simultaneously:</strong> One <code>POST /evaluate-view</code> per view group + one <code>POST /evaluate-hero</code>. Each uses <code>useFireAndForget</code> &mdash; all N+1 optimistic stubs appear in the operations tracker instantly.</li>
       <li><strong>Each route handler registers its own operation:</strong> <code>type: 'pif'</code>, <code>subType: 'evaluate'</code>. View ops show progress text like <code>"top view"</code>. Hero op shows <code>"hero selection"</code>. Returns <strong>202 Accepted</strong> immediately.</li>
-      <li><strong>LLM queue serializes:</strong> All N+1 operations hit the LLM queue. The queue processes them one at a time. Single-candidate views auto-elect instantly (no LLM call) and go to <span class="tag tag-green">Done</span> within milliseconds.</li>
+      <li><strong>LLM queue serializes:</strong> All N+1 operations hit the LLM queue. The queue processes them one at a time. Every candidate &mdash; even single-candidate views &mdash; goes through the vision LLM for quality evaluation.</li>
       <li><strong>Per-view evaluation (runEvalView):</strong> Reads images for this variant+view from <code>product_images.json</code>. Creates 512px thumbnails. Calls vision LLM with view-specific prompt. LLM returns rankings with <code>best: true</code> on the winner. Flags: <code>watermark</code>, <code>badge</code>, <code>cropped</code>, <code>wrong_product</code>. Persists via <code>mergeEvaluation</code> (clear-then-write for this view).</li>
-      <li><strong>Hero selection (runEvalHero):</strong> Reads all <code>eval_best: true</code> winners for this variant. Sends them to hero selection LLM. LLM picks heroes with <code>hero_rank</code>. Persists via <code>mergeEvaluation</code>.</li>
+      <li><strong>Hero selection (runEvalHero):</strong> Reads all hero-view candidates for this variant. Sends them to hero selection LLM. The LLM acts as a <strong>legal/quality gatekeeper</strong> &mdash; checking source safety (no copyrighted editorial photos), cleanliness (no watermarks), and image quality. LLM picks heroes with <code>hero_rank</code> or returns empty array if all fail. Persists via <code>mergeEvaluation</code>.</li>
       <li><strong>Each operation completes independently:</strong> Data-change event <code>product-image-finder-evaluate</code> broadcast per completion. GUI refreshes as each finishes &mdash; badges appear progressively.</li>
       <li><strong>GUI Refresh:</strong> WS event bridge receives data-change &rarr; invalidates React Query cache &rarr; gallery cards show <span class="tag tag-green">BEST</span> / <span class="tag tag-purple">H1</span> / <span class="tag tag-red">WM</span> badges as each view completes.</li>
     </ol>
@@ -164,12 +164,12 @@
       <tbody>
         <tr><td>PIF evaluate &mdash; <strong>top view</strong></td><td><span class="tag tag-accent">Running</span> &rarr; <span class="tag tag-green">Done</span></td><td>Yes (3 candidates)</td><td>Vision LLM picks best of 3 top images</td></tr>
         <tr><td>PIF evaluate &mdash; <strong>left view</strong></td><td><span class="tag tag-accent">Running</span> &rarr; <span class="tag tag-green">Done</span></td><td>Yes (2 candidates)</td><td>Vision LLM picks best of 2 left images</td></tr>
-        <tr><td>PIF evaluate &mdash; <strong>angle view</strong></td><td><span class="tag tag-green">Done</span></td><td>No (auto-elect)</td><td>1 candidate = instant winner, no LLM call</td></tr>
-        <tr><td>PIF evaluate &mdash; <strong>front view</strong></td><td><span class="tag tag-green">Done</span></td><td>No (auto-elect)</td><td>1 candidate = instant winner, no LLM call</td></tr>
+        <tr><td>PIF evaluate &mdash; <strong>angle view</strong></td><td><span class="tag tag-accent">Running</span> &rarr; <span class="tag tag-green">Done</span></td><td>Yes (1 candidate)</td><td>Vision LLM quality-checks single candidate &mdash; can reject</td></tr>
+        <tr><td>PIF evaluate &mdash; <strong>front view</strong></td><td><span class="tag tag-accent">Running</span> &rarr; <span class="tag tag-green">Done</span></td><td>Yes (1 candidate)</td><td>Vision LLM quality-checks single candidate &mdash; can reject</td></tr>
         <tr><td>PIF evaluate &mdash; <strong>hero selection</strong></td><td><span class="tag tag-accent">Running</span> &rarr; <span class="tag tag-green">Done</span></td><td>Yes</td><td>Picks heroes from eval_best winners across all views</td></tr>
       </tbody>
     </table>
-    <p style="margin-top: 12px; font-size: 13px; color: var(--text-muted);">All 5 operations appear in the tracker instantly. Auto-elect operations complete in milliseconds. LLM calls are queued and processed one at a time. Gallery badges update progressively as each operation finishes.</p>
+    <p style="margin-top: 12px; font-size: 13px; color: var(--text-muted);">All 5 operations appear in the tracker instantly. Every candidate goes through the vision LLM &mdash; even single-candidate views (no auto-elect bypass). LLM calls are queued and processed one at a time. Gallery badges update progressively as each operation finishes.</p>
   </div>
 </div>
 
@@ -236,9 +236,43 @@
 </div>
 
 <div class="card">
-  <div class="card-header">Hero Selection (cross-view prompt)</div>
+  <div class="card-header">Hero Selection &mdash; Legal / Quality Gatekeeper (not art director)</div>
   <div class="card-body">
-    <p>After view evaluation, the <code>eval_best: true</code> winners from each view are sent together to the LLM. It picks the best images for a product page carousel based on: design showcase, attractiveness, sharpness, and perspective diversity.</p>
+    <p>The hero eval LLM is a <strong>gatekeeper, not an art director</strong>. It does NOT judge composition, framing, or artistic merit. It checks three gates:</p>
+    <table>
+      <thead><tr><th>Gate</th><th>What LLM Checks</th><th>Impact</th></tr></thead>
+      <tbody>
+        <tr><td><strong>1. Source Safety</strong></td><td>Is this a manufacturer promotional image (official product page, press kit, retailer CDN)? Or a copyrighted editorial photo from a review site (PC Gamer, Tom's Hardware, RTINGS, The Verge, etc.)?</td><td>Editorial = disqualify. This is the <strong>primary gate</strong> &mdash; copyright risk.</td></tr>
+        <tr><td><strong>2. Cleanliness</strong></td><td>Watermarks, badges, "SAMPLE" text, retailer branding baked into the image</td><td>Disqualify</td></tr>
+        <tr><td><strong>3. Quality</strong></td><td>Resolution, blur, heavy compression, screenshot-quality</td><td>Disqualify if unusable</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top: 12px;"><strong>Any image type is acceptable</strong> &mdash; cutouts on white, lifestyle desk shots, promotional renders, studio multi-color lineups, unboxing kit layouts, dramatic RGB scenes, themed collection shots. The image style does not matter. Only usability matters.</p>
+    <p>When picking multiple heroes, the LLM prefers different shots over near-duplicates of the same angle &mdash; but this is a <strong>tiebreaker for ranking</strong>, not a gate for acceptance.</p>
+    <p style="margin-top: 12px; font-size: 13px; color: var(--text-muted);"><strong>How the LLM distinguishes sources:</strong> Editorial/review photos typically show lab environments, test equipment, desk clutter, hands holding the product, inconsistent overhead lighting. Manufacturer promo images have polished studio lighting, consistent brand aesthetics, clean backgrounds, or stylized scenes.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Reference: What Good Hero Images Look Like</div>
+  <div class="card-body">
+    <p>Real examples from the production image library. All of these are acceptable hero images &mdash; notice the variety of styles:</p>
+    <table>
+      <thead><tr><th>Style</th><th>Example</th><th>Path</th></tr></thead>
+      <tbody>
+        <tr><td>Dramatic promo render</td><td>Razer Viper V3 Pro &mdash; mouse floating in green-lit sci-fi scene</td><td><code>EG&nbsp;-&nbsp;HBS/images/mouse/razer/viper-v3-pro/feature-image_xl.webp</code></td></tr>
+        <tr><td>Desk glamour shot</td><td>Razer DeathAdder V3 Pro &mdash; mouse on pad, RGB keyboard bokeh behind</td><td><code>EG&nbsp;-&nbsp;HBS/images/mouse/razer/deathadder-v3-pro/feature-image_xl.webp</code></td></tr>
+        <tr><td>Minimal desk scene</td><td>Logitech Superlight 2 &mdash; mouse on dark mousepad, clean and simple</td><td><code>EG&nbsp;-&nbsp;HBS/images/mouse/logitech-g/pro-x-superlight-2/feature-image_xl.webp</code></td></tr>
+        <tr><td>Themed edition</td><td>ASUS ROG Gladius III EVA-02 &mdash; red/yellow mouse on branded mousepad, dramatic lighting</td><td><code>EG&nbsp;-&nbsp;HBS/images/mouse/asus/rog-gladius-iii-wireless-aimpoint-eva-02/feature-image_xl.webp</code></td></tr>
+        <tr><td>Multi-color studio lineup</td><td>Logitech Superlight 2c &mdash; three colorways on reflective black surface</td><td><code>EG&nbsp;-&nbsp;HBS/images/mouse/logitech-g/pro-x-superlight-2c/feature-image_xl.webp</code></td></tr>
+        <tr><td>Product with box</td><td>Logitech G502 X Plus &mdash; mouse leaning against retail box</td><td><code>EG&nbsp;-&nbsp;HBS/images/mouse/logitech-g/g502-x-plus/feature-image_xl.webp</code></td></tr>
+        <tr><td>Close-up on surface</td><td>Corsair Darkstar &mdash; tight angle showing design details on mousepad</td><td><code>EG&nbsp;-&nbsp;HBS/images/mouse/corsair/darkstar-wireless-rgb/feature-image_xl.webp</code></td></tr>
+        <tr><td>Cutout on black</td><td>NZXT Lift 2 Symm &mdash; mouse on pure black background, wired</td><td><code>EG&nbsp;-&nbsp;HBS/images/mouse/nzxt/lift-2-symm/originals/1708459590-lift-2-symm-hero-white.png</code></td></tr>
+        <tr><td>Pure cutout on white</td><td>Logitech Superlight 2 DEX &mdash; top-down on white background</td><td><code>EG&nbsp;-&nbsp;HBS/images/mouse/logitech-g/pro-x-superlight-2-dex/originals/pro-x-superlight-2-dex-black-gallery-hero.webp</code></td></tr>
+        <tr><td>RGB desk scene</td><td>Acer Cestus 310 &mdash; mouse on pad with purple RGB glow, keyboard behind</td><td><code>EG&nbsp;-&nbsp;HBS/images/mouse/acer/cestus-310/feature-image_xl.webp</code></td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top: 12px; font-size: 13px; color: var(--text-muted);">All paths relative to <code>C:\Users\Chris\Desktop\EG&nbsp;-&nbsp;Convert\</code>. Browse this directory for hundreds more examples across all brands. The common thread: <strong>clean, no watermarks, manufacturer source, looks good on a product page</strong>.</p>
   </div>
 </div>
 
@@ -391,11 +425,11 @@
       <tbody>
         <tr><td><code>imageEvaluatorSchema.test.js</code></td><td>23</td><td>Zod schema validation: happy path, missing fields, invalid types, flag enums</td></tr>
         <tr><td><code>imageEvaluator.test.js</code></td><td>11</td><td>Thumbnail pipeline: resize, aspect ratio, base64, error cases</td></tr>
-        <tr><td><code>imageEvaluator.viewEval.test.js</code></td><td>37</td><td>Prompt builders, orchestrator skip logic, persistence clear-then-write</td></tr>
-        <tr><td><code>carouselBuild.test.js</code></td><td>6</td><td>runEvalView + runEvalHero: per-view eval, skip logic, hero selection, persistence, stage callbacks</td></tr>
+        <tr><td><code>imageEvaluator.viewEval.test.js</code></td><td>55</td><td>Prompt builders (view + hero), evaluateViewCandidates orchestrator, persistence clear-then-write, hero prompt gatekeeper criteria</td></tr>
+        <tr><td><code>carouselBuild.test.js</code></td><td>12</td><td>runEvalView + runEvalHero: per-view eval, single-candidate LLM quality check, hero rejection, persistence, stage callbacks</td></tr>
       </tbody>
     </table>
-    <p style="margin-top: 12px; font-size: 13px; color: var(--text-muted);">Total: 77 tests. All use <code>node --test</code> runner with table-driven patterns and injectable test seams.</p>
+    <p style="margin-top: 12px; font-size: 13px; color: var(--text-muted);">All use <code>node --test</code> runner with table-driven patterns and injectable test seams.</p>
   </div>
 </div>
 

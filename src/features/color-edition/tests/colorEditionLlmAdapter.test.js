@@ -226,12 +226,19 @@ describe('buildVariantIdentityCheckPrompt', () => {
     assert.ok(result.includes('COD BO6 Edition'));
   });
 
-  it('contains matching rules', () => {
+  it('contains matching rules with match/new/reject actions', () => {
     const result = buildVariantIdentityCheckPrompt({ product, existingRegistry, newColors: ['black'], newColorNames: {}, newEditions: {} });
     assert.ok(result.includes('RENAME'));
-    assert.ok(result.includes('update'));
-    assert.ok(result.includes('create'));
+    assert.ok(result.includes('"match"'), 'match action in example');
+    assert.ok(result.includes('"new"'), 'new action in example');
+    assert.ok(result.includes('"reject"'), 'reject action in example');
     assert.ok(result.includes('retired'));
+  });
+
+  it('does NOT contain old update/create actions in JSON examples', () => {
+    const result = buildVariantIdentityCheckPrompt({ product, existingRegistry, newColors: ['black'], newColorNames: {}, newEditions: {} });
+    assert.ok(!result.includes('"action": "update"'), 'no update action in JSON');
+    assert.ok(!result.includes('"action": "create"'), 'no create action in JSON');
   });
 
   it('contains expected JSON response shape', () => {
@@ -240,6 +247,27 @@ describe('buildVariantIdentityCheckPrompt', () => {
     assert.ok(result.includes('"retired"'));
     assert.ok(result.includes('"action"'));
     assert.ok(result.includes('"match"'));
+  });
+
+  it('contains uniqueness rule for variant_ids', () => {
+    const result = buildVariantIdentityCheckPrompt({ product, existingRegistry, newColors: ['black'], newColorNames: {}, newEditions: {} });
+    assert.ok(result.toLowerCase().includes('at most once') || result.toLowerCase().includes('only once'), 'uniqueness rule');
+  });
+
+  it('contains reject guidance for hallucinated discoveries', () => {
+    const result = buildVariantIdentityCheckPrompt({ product, existingRegistry, newColors: ['black'], newColorNames: {}, newEditions: {} });
+    assert.ok(result.toLowerCase().includes('hallucinated') || result.toLowerCase().includes('reject'), 'reject guidance');
+  });
+
+  it('contains slug immutability rule', () => {
+    const result = buildVariantIdentityCheckPrompt({ product, existingRegistry, newColors: ['black'], newColorNames: {}, newEditions: {} });
+    assert.ok(result.toLowerCase().includes('slug'), 'mentions slug protection');
+  });
+
+  it('does NOT contain prefer-update bias', () => {
+    const result = buildVariantIdentityCheckPrompt({ product, existingRegistry, newColors: ['black'], newColorNames: {}, newEditions: {} });
+    assert.ok(!result.includes('prefer "update"'), 'no prefer update bias');
+    assert.ok(!result.includes('prefer "match"'), 'no prefer match bias');
   });
 
   it('promptOverride replaces entire prompt', () => {

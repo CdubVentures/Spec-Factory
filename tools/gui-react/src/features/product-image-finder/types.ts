@@ -19,6 +19,8 @@ export interface ProductImageEntry {
   bg_removed?: boolean;
   /** Source format before PNG conversion (e.g. "jpg", "webp"). Absent on pre-RMBG entries. */
   original_format?: string;
+  /** SHA-256 hex hash of the original downloaded file bytes. Absent on pre-hash entries. */
+  content_hash?: string;
   /** True when RMBG succeeded but trim produced empty canvas. */
   trim_failed?: boolean;
   /** True = LLM vision evaluator chose this as the best image for its view. */

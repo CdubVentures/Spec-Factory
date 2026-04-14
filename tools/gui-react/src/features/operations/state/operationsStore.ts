@@ -67,6 +67,7 @@ export interface LlmCallRecord {
   readonly model?: string;
   readonly variant?: string;
   readonly mode?: string;
+  readonly label?: string;
   // WHY: Mirrors llmClient.js emitUsage wire format (snake_case). No transform needed.
   readonly usage?: {
     readonly prompt_tokens: number;

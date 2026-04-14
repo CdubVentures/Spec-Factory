@@ -207,41 +207,67 @@ describe('variantIdentityCheckResponseSchema', () => {
   const validMapping = {
     new_key: 'color:black',
     match: 'v_a1b2c3d4',
-    action: 'update',
+    action: 'match',
     reason: 'same color, name unchanged',
   };
 
-  it('accepts valid response with update mapping', () => {
+  it('accepts valid response with match mapping', () => {
     const result = variantIdentityCheckResponseSchema.safeParse({
       mappings: [validMapping],
       retired: [],
     });
     assert.ok(result.success);
-    assert.equal(result.data.mappings[0].action, 'update');
+    assert.equal(result.data.mappings[0].action, 'match');
     assert.equal(result.data.mappings[0].match, 'v_a1b2c3d4');
   });
 
-  it('accepts valid response with create mapping (null match)', () => {
+  it('accepts valid response with new mapping (null match)', () => {
     const result = variantIdentityCheckResponseSchema.safeParse({
-      mappings: [{ new_key: 'color:crimson-red', match: null, action: 'create', reason: 'genuinely new color' }],
+      mappings: [{ new_key: 'color:crimson-red', match: null, action: 'new', reason: 'genuinely new color' }],
       retired: [],
     });
     assert.ok(result.success);
-    assert.equal(result.data.mappings[0].action, 'create');
+    assert.equal(result.data.mappings[0].action, 'new');
     assert.equal(result.data.mappings[0].match, null);
   });
 
-  it('accepts mixed update + create mappings', () => {
+  it('accepts valid response with reject mapping (null match)', () => {
+    const result = variantIdentityCheckResponseSchema.safeParse({
+      mappings: [{ new_key: 'color:light-olive+black', match: null, action: 'reject', reason: 'hallucinated' }],
+      retired: [],
+    });
+    assert.ok(result.success);
+    assert.equal(result.data.mappings[0].action, 'reject');
+  });
+
+  it('accepts mixed match + new + reject mappings', () => {
     const result = variantIdentityCheckResponseSchema.safeParse({
       mappings: [
         validMapping,
-        { new_key: 'color:crimson-red', match: null, action: 'create', reason: 'new' },
+        { new_key: 'color:crimson-red', match: null, action: 'new', reason: 'new' },
+        { new_key: 'color:fake', match: null, action: 'reject', reason: 'garbage' },
       ],
       retired: ['v_deadbeef'],
     });
     assert.ok(result.success);
-    assert.equal(result.data.mappings.length, 2);
+    assert.equal(result.data.mappings.length, 3);
     assert.deepStrictEqual(result.data.retired, ['v_deadbeef']);
+  });
+
+  it('rejects old update action', () => {
+    const result = variantIdentityCheckResponseSchema.safeParse({
+      mappings: [{ ...validMapping, action: 'update' }],
+      retired: [],
+    });
+    assert.ok(!result.success, 'update is no longer a valid action');
+  });
+
+  it('rejects old create action', () => {
+    const result = variantIdentityCheckResponseSchema.safeParse({
+      mappings: [{ new_key: 'color:red', match: null, action: 'create', reason: 'new' }],
+      retired: [],
+    });
+    assert.ok(!result.success, 'create is no longer a valid action');
   });
 
   it('accepts empty mappings and retired', () => {

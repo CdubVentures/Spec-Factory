@@ -130,7 +130,7 @@ export function buildEgColorFieldRule(ctx) {
     contract: {
       type: 'string',
       shape: 'list',
-      list_rules: { dedupe: true, sort: 'none', item_union: 'set_union' },
+      list_rules: { dedupe: true, sort: 'none', item_union: 'winner_only' },
     },
     parse: {
       delimiters: [',', '/', '|', ';'],
@@ -201,7 +201,7 @@ export function buildEgEditionFieldRule(ctx) {
     contract: {
       type: 'string',
       shape: 'list',
-      list_rules: { dedupe: true, sort: 'none', item_union: 'set_union' },
+      list_rules: { dedupe: true, sort: 'none', item_union: 'winner_only' },
     },
     parse: {
       delimiters: [','],

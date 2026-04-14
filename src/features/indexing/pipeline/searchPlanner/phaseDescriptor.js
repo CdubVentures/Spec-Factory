@@ -17,6 +17,7 @@ export const searchPlannerPhase = {
       logger: ctx.logger,
       identityLock: ctx.identityLock,
       missingFields: ctx.missingFields,
+      llmContext: ctx.llmContext || null,
     });
     return { enhancedRows: result.enhancedRows };
   },

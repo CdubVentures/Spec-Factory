@@ -721,7 +721,7 @@ export async function callLlmProvider({
     });
   };
 
-  const emitUsage = async ({ usage, content, responseModel, retryWithoutSchema = false }) => {
+  const emitUsage = async ({ usage, content, responseModel, retryWithoutSchema = false, duration_ms = 0 }) => {
     const fallbackUsage = {
       promptTokens: estimateTokensFromText(`${effectiveSystem}\n${String(userMessage.text || '')}`),
       completionTokens: estimateTokensFromText(content),
@@ -758,6 +758,7 @@ export async function callLlmProvider({
       retry_without_schema: Boolean(retryWithoutSchema),
       deepseek_mode_detected: Boolean(deepSeekMode),
       json_schema_requested: Boolean(jsonSchemaRequested),
+      duration_ms,
       ...usageContext
     });
     logger?.info?.('llm_call_usage', {
@@ -823,7 +824,8 @@ export async function callLlmProvider({
     const firstUsage = await emitUsage({
       usage: first.usage,
       content: first.content,
-      responseModel: first.responseModel
+      responseModel: first.responseModel,
+      duration_ms: Date.now() - callStartMs,
     });
     if (rawTextMode) return first.content;
     const parsed = parseStructuredResult(first.content);
@@ -866,7 +868,8 @@ export async function callLlmProvider({
         usage: retry.usage,
         content: retry.content,
         responseModel: retry.responseModel,
-        retryWithoutSchema: true
+        retryWithoutSchema: true,
+        duration_ms: Date.now() - callStartMs,
       });
       if (rawTextMode) return retry.content;
       const parsed = parseStructuredResult(retry.content, { fallbackExtraction: true });

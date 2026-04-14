@@ -25,6 +25,65 @@ function formatTs(ts: string): string {
   }
 }
 
+function formatTokens(value: number): string {
+  if (!value) return '—';
+  return value.toLocaleString();
+}
+
+function formatDuration(ms: number): string {
+  if (!ms || ms <= 0) return '—';
+  if (ms < 1000) return `${ms}ms`;
+  return `${(ms / 1000).toFixed(1)}s`;
+}
+
+interface ParsedBillingMeta {
+  effort_level: string;
+  web_search_enabled: boolean;
+  duration_ms: number;
+  reasoning_mode: boolean;
+  deepseek_mode_detected: boolean;
+}
+
+function parseMeta(raw: string): ParsedBillingMeta {
+  try {
+    const m: Record<string, unknown> = raw ? JSON.parse(raw) : {};
+    return {
+      effort_level: String(m.effort_level || ''),
+      web_search_enabled: Boolean(m.web_search_enabled),
+      duration_ms: Number(m.duration_ms) || 0,
+      reasoning_mode: Boolean(m.reasoning_mode),
+      deepseek_mode_detected: Boolean(m.deepseek_mode_detected),
+    };
+  } catch {
+    return { effort_level: '', web_search_enabled: false, duration_ms: 0, reasoning_mode: false, deepseek_mode_detected: false };
+  }
+}
+
+interface EntryFlag {
+  label: string;
+  cls: string;
+}
+
+function parseFlags(entry: BillingEntry): EntryFlag[] {
+  const flags: EntryFlag[] = [];
+  const provider = entry.provider || '';
+  const host = entry.host || '';
+
+  if (provider.startsWith('lab-') || host.includes('localhost')) {
+    flags.push({ label: 'LAB', cls: 'sf-chip-info' });
+  } else {
+    flags.push({ label: 'API', cls: 'sf-chip-neutral' });
+  }
+
+  const meta = parseMeta(entry.meta);
+
+  if (meta.reasoning_mode || meta.deepseek_mode_detected) {
+    flags.push({ label: 'THINK', cls: 'sf-chip-info-strong' });
+  }
+
+  return flags;
+}
+
 export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryTableProps) {
   const { data, isLoading } = useBillingEntriesQuery({
     limit: PAGE_SIZE,
@@ -38,31 +97,73 @@ export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryT
     {
       accessorKey: 'ts',
       header: 'Timestamp',
-      size: 160,
-      cell: ({ getValue }) => <span className="font-mono text-xs">{formatTs(getValue() as string)}</span>,
+      size: 170,
+      cell: ({ getValue }) => <span className="font-mono text-[11px] whitespace-nowrap">{formatTs(getValue() as string)}</span>,
+    },
+    {
+      accessorKey: 'provider',
+      header: 'Provider',
+      size: 80,
+      cell: ({ getValue }) => <span className="text-[11px] sf-text-muted">{getValue() as string}</span>,
     },
     {
       accessorKey: 'model',
       header: 'Model',
-      size: 160,
-      cell: ({ getValue }) => <span className="font-mono text-xs">{getValue() as string}</span>,
+      size: 150,
+      cell: ({ getValue }) => <span className="font-mono text-[11px]">{getValue() as string}</span>,
+    },
+    {
+      id: 'effort',
+      header: 'Effort',
+      size: 70,
+      cell: ({ row }) => {
+        const meta = parseMeta(row.original.meta);
+        return <span className="text-[11px] sf-text-muted">{meta.effort_level || '—'}</span>;
+      },
+    },
+    {
+      id: 'web',
+      header: 'Web',
+      size: 50,
+      cell: ({ row }) => {
+        const meta = parseMeta(row.original.meta);
+        const host = row.original.host || '';
+        // WHY: backward compat — old rows without explicit meta field fall back to host heuristic
+        const webEnabled = meta.web_search_enabled ||
+          (host !== '' && !host.includes('localhost') && !host.includes('api.'));
+        return (
+          <span className={`text-[11px] ${webEnabled ? 'sf-text-accent' : 'sf-text-muted'}`}>
+            {webEnabled ? 'On' : 'Off'}
+          </span>
+        );
+      },
+    },
+    {
+      id: 'duration',
+      header: 'Duration',
+      size: 70,
+      cell: ({ row }) => {
+        const meta = parseMeta(row.original.meta);
+        return <span className="font-mono text-[11px] sf-text-muted">{formatDuration(meta.duration_ms)}</span>;
+      },
     },
     {
       accessorKey: 'category',
       header: 'Category',
-      size: 90,
+      size: 80,
+      cell: ({ getValue }) => <span className="text-[11px] capitalize">{getValue() as string}</span>,
     },
     {
       accessorKey: 'reason',
       header: 'Call Type',
-      size: 130,
+      size: 120,
       cell: ({ getValue }) => {
         const reason = getValue() as string;
         const entry = resolveBillingCallType(reason);
         return (
           <span
-            className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded"
-            style={{ background: `${chartColor(entry.color)}20`, color: chartColor(entry.color) }}
+            className="sf-billing-tag"
+            style={{ background: `${chartColor(entry.color)}18`, color: chartColor(entry.color) }}
           >
             {entry.label}
           </span>
@@ -72,37 +173,41 @@ export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryT
     {
       accessorKey: 'product_id',
       header: 'Product',
-      size: 180,
+      size: 160,
+      cell: ({ getValue }) => <span className="text-[11px] truncate block max-w-[160px]">{getValue() as string}</span>,
     },
     {
       accessorKey: 'prompt_tokens',
       header: 'In Tokens',
-      size: 90,
-      cell: ({ getValue }) => (
-        <span className="font-mono text-xs sf-text-muted text-right block">
-          {compactNumber(getValue() as number)}
-        </span>
-      ),
+      size: 80,
+      cell: ({ getValue }) => <span className="font-mono text-[11px] sf-text-muted">{formatTokens(getValue() as number)}</span>,
     },
     {
       accessorKey: 'completion_tokens',
       header: 'Out Tokens',
-      size: 90,
-      cell: ({ getValue }) => (
-        <span className="font-mono text-xs sf-text-muted text-right block">
-          {compactNumber(getValue() as number)}
-        </span>
-      ),
+      size: 80,
+      cell: ({ getValue }) => <span className="font-mono text-[11px] sf-text-muted">{formatTokens(getValue() as number)}</span>,
     },
     {
       accessorKey: 'cost_usd',
       header: 'Cost',
       size: 80,
-      cell: ({ getValue }) => (
-        <span className="font-mono font-semibold text-right block">
-          {usd(getValue() as number, 4)}
-        </span>
-      ),
+      cell: ({ getValue }) => <span className="font-mono text-[11px] font-semibold">{usd(getValue() as number, 4)}</span>,
+    },
+    {
+      id: 'flags',
+      header: 'Flags',
+      size: 100,
+      cell: ({ row }) => {
+        const flags = parseFlags(row.original);
+        return (
+          <div className="flex gap-0.5 flex-wrap">
+            {flags.map((f) => (
+              <span key={f.label} className={`sf-billing-flag ${f.cls}`}>{f.label}</span>
+            ))}
+          </div>
+        );
+      },
     },
   ], []);
 
@@ -114,7 +219,7 @@ export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryT
 
   return (
     <div className="sf-surface-card rounded-lg overflow-hidden">
-      <div className="px-5 py-3 border-b sf-border-default flex items-center justify-between">
+      <div className="px-5 py-3 border-b sf-border-default">
         <h3 className="text-sm font-bold">LLM Call Log</h3>
       </div>
 
@@ -126,19 +231,15 @@ export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryT
         persistKey="billing-entries"
       />
 
-      <div className="px-5 py-2.5 flex items-center justify-between text-xs sf-text-muted border-t sf-border-default">
+      <div className="px-4 py-2 flex items-center justify-between text-[11px] sf-text-muted border-t sf-border-default">
         <span>
           {totalEntries > 0
-            ? `Showing ${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, totalEntries)} of ${compactNumber(totalEntries)} entries`
+            ? `Showing ${page * PAGE_SIZE + 1}\u2013${Math.min((page + 1) * PAGE_SIZE, totalEntries)} of ${compactNumber(totalEntries)} entries`
             : 'No entries'}
         </span>
-        <div className="flex gap-1">
-          <button
-            className="sf-filter-chip text-xs"
-            disabled={page === 0}
-            onClick={() => onPageChange(page - 1)}
-          >
-            Prev
+        <div className="flex gap-0.5">
+          <button className="sf-pager-btn" disabled={page === 0} onClick={() => onPageChange(page - 1)}>
+            &larr; Prev
           </button>
           {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
             const p = page < 3 ? i : page - 2 + i;
@@ -146,7 +247,7 @@ export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryT
             return (
               <button
                 key={p}
-                className={p === page ? 'sf-filter-chip sf-filter-chip-active text-xs' : 'sf-filter-chip text-xs'}
+                className={p === page ? 'sf-pager-btn sf-pager-btn-active' : 'sf-pager-btn'}
                 onClick={() => onPageChange(p)}
               >
                 {p + 1}
@@ -156,17 +257,13 @@ export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryT
           {totalPages > 5 && page < totalPages - 3 && (
             <>
               <span className="px-1">...</span>
-              <button className="sf-filter-chip text-xs" onClick={() => onPageChange(totalPages - 1)}>
+              <button className="sf-pager-btn" onClick={() => onPageChange(totalPages - 1)}>
                 {totalPages}
               </button>
             </>
           )}
-          <button
-            className="sf-filter-chip text-xs"
-            disabled={page >= totalPages - 1}
-            onClick={() => onPageChange(page + 1)}
-          >
-            Next
+          <button className="sf-pager-btn" disabled={page >= totalPages - 1} onClick={() => onPageChange(page + 1)}>
+            Next &rarr;
           </button>
         </div>
       </div>

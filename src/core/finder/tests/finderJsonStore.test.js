@@ -114,6 +114,127 @@ describe('finderJsonStore — generic factory', () => {
     assert.equal(merged.cooldown_until, '2026-05-01');
   });
 
+  // ── eval field preservation across merge ─────────────────────────
+
+  it('merge preserves eval fields on selected.images when new run is added', () => {
+    const store = createFinderJsonStore({
+      filePrefix: 'eval_merge',
+      emptySelected: () => ({ images: [] }),
+      // WHY: PIF-style accumulation — union all run images
+      recalculateSelected: (runs) => ({
+        images: runs.flatMap(r => r.selected?.images || []),
+      }),
+    });
+    // Run 1: seed with an image
+    store.merge({
+      productId: 'eval-m1', productRoot: TMP_ROOT,
+      newDiscovery: { category: 'cat', cooldown_until: '', last_ran_at: '2026-04-01' },
+      run: { model: 'gpt', selected: { images: [{ filename: 'top.png', view: 'top', variant_key: 'color:black' }] }, prompt: {}, response: {} },
+    });
+    // Simulate eval: write eval fields directly onto selected.images
+    const doc = store.read({ productId: 'eval-m1', productRoot: TMP_ROOT });
+    doc.selected.images[0].eval_best = true;
+    doc.selected.images[0].eval_reasoning = 'sharpest image';
+    doc.selected.images[0].hero = true;
+    doc.selected.images[0].hero_rank = 1;
+    store.write({ productId: 'eval-m1', productRoot: TMP_ROOT, data: doc });
+
+    // Run 2: new discovery — recalculateSelected rebuilds from runs (no eval fields)
+    const merged = store.merge({
+      productId: 'eval-m1', productRoot: TMP_ROOT,
+      newDiscovery: { category: 'cat', cooldown_until: '', last_ran_at: '2026-04-02' },
+      run: { model: 'gpt', selected: { images: [{ filename: 'left.png', view: 'left', variant_key: 'color:black' }] }, prompt: {}, response: {} },
+    });
+
+    // Eval fields must survive on top.png
+    const topImg = merged.selected.images.find(i => i.filename === 'top.png');
+    assert.ok(topImg, 'top.png must still exist in selected');
+    assert.equal(topImg.eval_best, true, 'eval_best must survive merge');
+    assert.equal(topImg.eval_reasoning, 'sharpest image', 'eval_reasoning must survive merge');
+    assert.equal(topImg.hero, true, 'hero must survive merge');
+    assert.equal(topImg.hero_rank, 1, 'hero_rank must survive merge');
+    // New image must not have eval fields
+    const leftImg = merged.selected.images.find(i => i.filename === 'left.png');
+    assert.ok(leftImg, 'left.png must exist in selected');
+    assert.equal(leftImg.eval_best, undefined, 'new image must not gain eval fields');
+  });
+
+  it('merge preserves eval fields even without recalculateSelected hook', () => {
+    const store = makeStore('eval_no_recalc');
+    // Seed
+    store.merge({
+      productId: 'eval-m2', productRoot: TMP_ROOT,
+      newDiscovery: { category: 'cat', cooldown_until: '', last_ran_at: '2026-04-01' },
+      run: { model: 'gpt', selected: { items: ['a'], label: 'A', images: [{ filename: 'f.png', eval_best: true }] }, prompt: {}, response: {} },
+    });
+    // Manually set eval on selected (simulating what mergeEvaluation does)
+    const doc = store.read({ productId: 'eval-m2', productRoot: TMP_ROOT });
+    doc.selected.images = [{ filename: 'f.png', eval_best: true, hero: true, hero_rank: 2 }];
+    store.write({ productId: 'eval-m2', productRoot: TMP_ROOT, data: doc });
+
+    // New run — latest-wins selected (no recalculateSelected hook)
+    const merged = store.merge({
+      productId: 'eval-m2', productRoot: TMP_ROOT,
+      newDiscovery: { category: 'cat', cooldown_until: '', last_ran_at: '2026-04-02' },
+      run: { model: 'gpt', selected: { items: ['b'], label: 'B', images: [{ filename: 'f.png' }, { filename: 'g.png' }] }, prompt: {}, response: {} },
+    });
+    // f.png should have eval fields overlaid from existing
+    const fImg = merged.selected.images?.find(i => i.filename === 'f.png');
+    assert.ok(fImg, 'f.png must exist');
+    assert.equal(fImg.eval_best, true, 'eval_best must survive');
+    assert.equal(fImg.hero, true, 'hero must survive');
+  });
+
+  it('recalculateFromRuns preserves eval fields from existingDoc', () => {
+    const store = createFinderJsonStore({
+      filePrefix: 'eval_recalc',
+      emptySelected: () => ({ images: [] }),
+      recalculateSelected: (runs) => ({
+        images: runs.flatMap(r => r.selected?.images || []),
+      }),
+    });
+    const existingDoc = {
+      selected: { images: [{ filename: 'top.png', eval_best: true, eval_reasoning: 'crisp', hero: true, hero_rank: 1 }] },
+    };
+    const runs = [
+      { run_number: 1, ran_at: '2026-04-01', cooldown_until: '', selected: { images: [{ filename: 'top.png', view: 'top' }] } },
+    ];
+    const result = store.recalculateFromRuns(runs, 'pid', 'cat', existingDoc);
+    const topImg = result.selected.images.find(i => i.filename === 'top.png');
+    assert.ok(topImg);
+    assert.equal(topImg.eval_best, true);
+    assert.equal(topImg.eval_reasoning, 'crisp');
+    assert.equal(topImg.hero, true);
+    assert.equal(topImg.hero_rank, 1);
+  });
+
+  it('rejected merge does not lose eval fields on existing selected', () => {
+    const store = createFinderJsonStore({
+      filePrefix: 'eval_reject',
+      emptySelected: () => ({ images: [] }),
+      recalculateSelected: (runs) => ({
+        images: runs.flatMap(r => r.selected?.images || []),
+      }),
+    });
+    store.merge({
+      productId: 'eval-rej', productRoot: TMP_ROOT,
+      newDiscovery: { category: 'cat', cooldown_until: '', last_ran_at: '2026-04-01' },
+      run: { model: 'gpt', selected: { images: [{ filename: 'a.png' }] }, prompt: {}, response: {} },
+    });
+    // Add eval fields
+    const doc = store.read({ productId: 'eval-rej', productRoot: TMP_ROOT });
+    doc.selected.images[0].eval_best = true;
+    store.write({ productId: 'eval-rej', productRoot: TMP_ROOT, data: doc });
+
+    // Rejected run — selected should be preserved entirely
+    const merged = store.merge({
+      productId: 'eval-rej', productRoot: TMP_ROOT,
+      newDiscovery: { category: 'cat', cooldown_until: '', last_ran_at: '2026-04-02' },
+      run: { model: 'gpt', status: 'rejected', selected: { images: [] }, prompt: {}, response: {} },
+    });
+    assert.equal(merged.selected.images[0].eval_best, true, 'rejected run must not clear eval fields');
+  });
+
   // ── deleteRun ─────────────────────────────────────────────────────
 
   it('delete only run → returns null, file removed', () => {

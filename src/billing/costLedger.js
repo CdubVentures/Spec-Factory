@@ -364,6 +364,49 @@ export async function appendCostLedgerEntry({
   return { entry: normalized };
 }
 
+// WHY: O(1) composition point for finder/route LLM callers that need billing.
+// Returns an onUsage callback compatible with createPhaseCallLlm deps.
+// Best-effort — billing must never crash LLM calls.
+export function buildBillingOnUsage({ config, appDb, category, productId }) {
+  return async (usageRow) => {
+    try {
+      await appendCostLedgerEntry({
+        config,
+        appDb,
+        entry: {
+          ts: nowIso(),
+          provider: usageRow.provider,
+          model: usageRow.model,
+          category: category || '',
+          productId: productId || '',
+          runId: '',
+          round: usageRow.round || 0,
+          prompt_tokens: usageRow.prompt_tokens || 0,
+          completion_tokens: usageRow.completion_tokens || 0,
+          cached_prompt_tokens: usageRow.cached_prompt_tokens || 0,
+          total_tokens: usageRow.total_tokens || 0,
+          cost_usd: usageRow.cost_usd || 0,
+          reason: usageRow.reason || 'extract',
+          host: usageRow.host || '',
+          url_count: usageRow.url_count || 0,
+          evidence_chars: usageRow.evidence_chars || 0,
+          estimated_usage: Boolean(usageRow.estimated_usage),
+          meta: {
+            retry_without_schema: Boolean(usageRow.retry_without_schema),
+            deepseek_mode_detected: Boolean(usageRow.deepseek_mode_detected),
+            json_schema_requested: Boolean(usageRow.json_schema_requested),
+            effort_level: String(usageRow.effort_level || ''),
+            web_search_enabled: Boolean(usageRow.web_search_enabled),
+            duration_ms: Number(usageRow.duration_ms) || 0,
+          },
+        },
+      });
+    } catch {
+      // best-effort — billing must not crash LLM calls
+    }
+  };
+}
+
 export function readBillingSnapshot({
   month = monthFromTs(nowIso()),
   productId = '',

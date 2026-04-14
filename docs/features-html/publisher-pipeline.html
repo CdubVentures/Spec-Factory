@@ -254,7 +254,7 @@
         <dt>When</dt><dd>Every accepted candidate (if config provided)</dd>
         <dt>Confidence gate</dt><dd><code>confidence &ge; threshold</code> (default 0.7)</dd>
         <dt>Manual lock</dt><dd>Skips if existing published field has <code>source='manual_override'</code></dd>
-        <dt>Set union</dt><dd>If <code>item_union='set_union'</code>: merges with existing published list (dedup)</dd>
+        <dt>List merge strategy</dt><dd><code>item_union</code> controls list publish behavior. <code>winner_only</code> (default for colors/editions): latest winning candidate's array replaces the published value entirely. <code>set_union</code>: merges with existing published list (dedup) &mdash; used when multiple independent sources each contribute partial items.</dd>
         <dt>Source tag</dt><dd><code>'pipeline'</code></dd>
         <dt>Can be auto-overridden</dt><dd>Yes &mdash; next higher-confidence candidate replaces</dd>
       </dl>

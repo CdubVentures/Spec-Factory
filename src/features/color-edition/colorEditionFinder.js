@@ -6,6 +6,7 @@
  */
 
 import { buildLlmCallDeps } from '../../core/llm/buildLlmCallDeps.js';
+import { buildBillingOnUsage } from '../../billing/costLedger.js';
 import { resolveIdentityAmbiguitySnapshot } from '../indexing/orchestration/shared/identityHelpers.js';
 import {
   COOLDOWN_DAYS,
@@ -19,7 +20,7 @@ import {
   createColorEditionFinderCallLlm,
 } from './colorEditionLlmAdapter.js';
 import { readColorEdition, writeColorEdition, mergeColorEditionDiscovery } from './colorEditionStore.js';
-import { buildVariantRegistry, applyIdentityMappings } from './variantRegistry.js';
+import { buildVariantRegistry, applyIdentityMappings, validateColorsAgainstPalette, validateIdentityMappings } from './variantRegistry.js';
 import { createVariantIdentityCheckCallLlm, buildVariantIdentityCheckPrompt } from './colorEditionLlmAdapter.js';
 import { submitCandidate, validateField } from '../publisher/index.js';
 import { propagateVariantRenames } from '../product-image/index.js';
@@ -132,7 +133,6 @@ export async function runColorEditionFinder({
   onStreamChunk = null,
   onQueueWait = null,
   onLlmCallComplete = null,
-  onVariantRenamed = null,
   signal,
 }) {
   productRoot = productRoot || defaultProductRoot();
@@ -167,6 +167,7 @@ export async function runColorEditionFinder({
       onModelResolved: wrappedOnModelResolved,
       onStreamChunk,
       onQueueWait,
+      onUsage: appDb ? buildBillingOnUsage({ config, appDb, category: product.category, productId: product.product_id }) : undefined,
       signal,
     }),
   });
@@ -191,6 +192,7 @@ export async function runColorEditionFinder({
     prompt: { system: systemPrompt, user: userMessage },
     response: null,
     model: modelTracking.actualModel,
+    label: 'Discovery',
   });
 
   // WHY: callLlmWithRouting (via createPhaseCallLlm) already handles
@@ -228,6 +230,20 @@ export async function runColorEditionFinder({
     }
   }
   const defaultColor = response?.default_color || colors[0] || '';
+
+  // WHY: Discovery post-emit must fire BEFORE identity check section.
+  // The smart-update logic in operationsRegistry merges the first non-null
+  // response into the last pending entry. If identity check fires first,
+  // it overwrites the discovery entry.
+  onLlmCallComplete?.({
+    prompt: { system: systemPrompt, user: userMessage },
+    response: { colors, color_names: colorNamesMap, editions, default_color: defaultColor,
+      siblings_excluded: Array.isArray(response?.siblings_excluded) ? response.siblings_excluded : [],
+      discovery_log: response?.discovery_log || {} },
+    model: modelTracking.actualModel,
+    usage,
+    label: 'Discovery',
+  });
 
   // --- Candidate gate: validate ALL fields before any writes ---
   // WHY: If any field fails validation, the entire LLM response is compromised.
@@ -319,10 +335,28 @@ export async function runColorEditionFinder({
   // Idempotent — skips atoms already merged by the gated path above.
   mergeEditionColorsInto(gateColors, gateEditions);
 
+  // ── Gate 1: Palette validation ──────────────────────────────────
+  // WHY: Every color atom must exist in the registered palette. If ANY atom
+  // is unknown, the LLM hallucinated — toss the entire run (tainted batch).
+  const paletteNames = allColors.map(c => c.name);
+  const paletteCheck = validateColorsAgainstPalette({ colors: gateColors, editions: gateEditions, palette: paletteNames });
+  if (!paletteCheck.valid) {
+    return storeFailureAndReturn({
+      specDb, product, existing,
+      model: modelTracking.actualModel,
+      fallbackUsed: modelTracking.actualFallbackUsed,
+      rejections: [{ reason_code: 'unknown_color_atom', message: paletteCheck.reason, unknownAtoms: paletteCheck.unknownAtoms }],
+      raw: { colors: gateColors, editions: gateEditions, default_color: defaultColor },
+      productRoot,
+    });
+  }
+
+  onStageAdvance?.('Validate');
+
   // ── Variant Identity Check (Run 2+) ────────────────────────────
   // WHY: If a variant registry already exists, fire a second LLM call to
   // compare new discoveries against existing variants. The LLM decides:
-  // same variant (update metadata, keep hash) or genuinely new (create hash).
+  // match (same variant), new (genuinely new), or reject (hallucinated).
   let identityCheckResult = null;
   let identityCheckPrompt = null;
   let identityCheckUser = null;
@@ -354,11 +388,21 @@ export async function runColorEditionFinder({
           config, logger,
           onModelResolved: modelTracking.wrappedOnModelResolved,
           onStreamChunk, onQueueWait, signal,
+          onUsage: appDb ? buildBillingOnUsage({ config, appDb, category: product.category, productId: product.product_id }) : undefined,
         });
         callIdentityCheck = createVariantIdentityCheckCallLlm(llmDeps);
       }
 
-      const { result: idResult } = await callIdentityCheck({
+      // WHY: Two-phase emit for identity check — pre-emit shows prompt immediately
+      // in operations modal, post-emit fills in response + tokens.
+      onLlmCallComplete?.({
+        prompt: { system: identityCheckPrompt, user: identityCheckUser },
+        response: null,
+        model: modelTracking.actualModel,
+        label: 'Identity Check',
+      });
+
+      const { result: idResult, usage: idUsage } = await callIdentityCheck({
         product, existingRegistry: existing.variant_registry,
         newColors: gateColors, newColorNames: colorNamesMap, newEditions: gateEditions,
         promptOverride: identityPromptOverride,
@@ -369,6 +413,8 @@ export async function runColorEditionFinder({
         prompt: { system: identityCheckPrompt, user: identityCheckUser },
         response: identityCheckResult,
         model: modelTracking.actualModel,
+        usage: idUsage || null,
+        label: 'Identity Check',
       });
     } catch (err) {
       logger?.error?.('variant_identity_check_failed', {
@@ -379,7 +425,7 @@ export async function runColorEditionFinder({
     }
   }
 
-  onStageAdvance?.('Validate');
+  onStageAdvance?.('Confirm');
 
   const selected = { colors: gateColors, color_names: colorNamesMap, editions: gateEditions, default_color: gateColors[0] || defaultColor };
 
@@ -396,14 +442,6 @@ export async function runColorEditionFinder({
   };
 
   const { cooldownUntil, ranAt } = computeCooldownUntil({ days: cooldownDays });
-
-  // Update operations tracker with response (smart update — fills in the pending entry)
-  onLlmCallComplete?.({
-    prompt: { system: systemPrompt, user: userMessage },
-    response: storedResponse,
-    model: modelTracking.actualModel,
-    usage,
-  });
 
   // WHY: Nest both prompts/responses when identity check ran. On Run 1 (no identity
   // check), keep the flat structure for backward compat with existing GUI/SQL readers.
@@ -436,9 +474,31 @@ export async function runColorEditionFinder({
     },
   });
 
+  // ── Gate 2: Identity check validation ─────────────────────────
+  // WHY: If the identity check produced invalid mappings (duplicate matches,
+  // slug changes, unknown atoms), toss the entire run — data is suspect.
+  if (hasExistingRegistry && identityCheckResult) {
+    const idValidation = validateIdentityMappings({
+      mappings: identityCheckResult.mappings || [],
+      existingRegistry: existing.variant_registry,
+      palette: paletteNames,
+    });
+    if (!idValidation.valid) {
+      logger?.warn?.('variant_identity_check_invalid', { product_id: product.product_id, reason: idValidation.reason });
+      return storeFailureAndReturn({
+        specDb, product, existing,
+        model: modelTracking.actualModel,
+        fallbackUsed: modelTracking.actualFallbackUsed,
+        rejections: [{ reason_code: 'identity_check_invalid', message: idValidation.reason }],
+        raw: { colors: gateColors, editions: gateEditions, default_color: defaultColor },
+        productRoot,
+      });
+    }
+  }
+
   // ── Variant registry update ────────────────────────────────────
   if (hasExistingRegistry && identityCheckResult) {
-    // Run 2+: Apply identity check mappings to existing registry
+    // Run 2+: Apply validated identity check mappings to existing registry
     merged.variant_registry = applyIdentityMappings({
       existingRegistry: existing.variant_registry,
       mappings: identityCheckResult.mappings || [],
@@ -450,25 +510,28 @@ export async function runColorEditionFinder({
     });
     writeColorEdition({ productId: product.product_id, productRoot, data: merged });
 
-    // WHY: Propagate variant renames to PIF data so images, carousel slots,
-    // eval records, and discovery logs stay linked after a key change.
+    // WHY: Both gates passed — propagate validated variant key changes to PIF
+    // so images, carousel slots, and eval records stay linked.
     const registryUpdates = [];
     for (const mapping of (identityCheckResult.mappings || [])) {
-      if (mapping.action === 'update' && mapping.match) {
+      if (mapping.action === 'match' && mapping.match) {
         const oldEntry = existing.variant_registry.find(e => e.variant_id === mapping.match);
-        if (oldEntry && oldEntry.variant_key !== mapping.new_key) {
+        const newEntry = merged.variant_registry.find(e => e.variant_id === mapping.match);
+        if (oldEntry && newEntry && oldEntry.variant_key !== newEntry.variant_key) {
           registryUpdates.push({
             variant_id: mapping.match,
             old_variant_key: oldEntry.variant_key,
-            new_variant_key: mapping.new_key,
-            new_variant_label: merged.variant_registry.find(e => e.variant_id === mapping.match)?.variant_label || '',
+            new_variant_key: newEntry.variant_key,
+            new_variant_label: newEntry.variant_label || '',
           });
         }
       }
     }
     if (registryUpdates.length > 0) {
-      propagateVariantRenames({ productId: product.product_id, productRoot, registryUpdates, specDb });
-      onVariantRenamed?.({ productId: product.product_id, category: product.category, renames: registryUpdates });
+      const propResult = propagateVariantRenames({ productId: product.product_id, productRoot, registryUpdates, specDb });
+      if (!propResult?.updated) {
+        logger?.warn?.('variant_rename_propagation_failed', { product_id: product.product_id, updates: registryUpdates.length });
+      }
     }
   } else if (!merged.variant_registry || merged.variant_registry.length === 0) {
     // Run 1: Generate fresh registry

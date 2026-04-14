@@ -94,25 +94,25 @@ describe('resolveViewAttemptBudgets', () => {
 
   // Floor clamping
 
-  it('JSON override below floor (1) clamped to 2', () => {
+  it('JSON override of 1 respected (floor is 1)', () => {
     const result = resolveViewAttemptBudgets(
       '{"top":1}', 'mouse', ['top'], 5,
     );
-    assert.deepEqual(result, { top: 2 });
+    assert.deepEqual(result, { top: 1 });
   });
 
-  it('JSON override at floor (2) kept as-is', () => {
+  it('JSON override at 2 kept as-is', () => {
     const result = resolveViewAttemptBudgets(
       '{"top":2}', 'mouse', ['top'], 5,
     );
     assert.deepEqual(result, { top: 2 });
   });
 
-  it('flat fallback of 0 clamped to 2', () => {
+  it('flat fallback of 0 clamped to 1', () => {
     const result = resolveViewAttemptBudgets(
       '', 'headset', ['top'], 0,
     );
-    assert.deepEqual(result, { top: 2 });
+    assert.deepEqual(result, { top: 1 });
   });
 
   // Invalid JSON → falls through to category defaults
