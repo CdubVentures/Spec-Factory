@@ -14,6 +14,7 @@ import path from 'node:path';
 import { validateField } from '../validation/validateField.js';
 import { persistDiscoveredValue } from '../persistDiscoveredValues.js';
 import { publishCandidate as autoPublish } from '../publish/publishCandidate.js';
+import { buildSourceId } from './buildSourceId.js';
 
 function safeReadJson(filePath) {
   try { return JSON.parse(fs.readFileSync(filePath, 'utf8')); }
@@ -96,32 +97,29 @@ export function submitCandidate({
     };
   }
 
-  // --- Source merge ---
-  const existing = specDb.getFieldCandidate(productId, fieldKey, serialized);
-  const mergedSources = existing ? [...existing.sources_json, sourceEntry] : [sourceEntry];
-  const sourceCount = mergedSources.length;
-  const maxConfidence = Math.max(confidence, existing?.confidence ?? 0);
-
-  // --- Metadata: merge on conflict, set on new ---
+  // --- Source identity ---
+  const sourceId = buildSourceId(sourceMeta, productId);
+  const sourceType = String(sourceMeta.source || '').trim();
+  const sourceModel = String(sourceMeta.model || '').trim();
   const hasMetadata = metadata && typeof metadata === 'object' && Object.keys(metadata).length > 0;
-  const mergedMetadata = existing
-    ? { ...(existing.metadata_json || {}), ...(hasMetadata ? metadata : {}) }
-    : (hasMetadata ? metadata : undefined);
 
-  // --- DB write ---
-  specDb.upsertFieldCandidate({
-    productId, fieldKey, value: serialized, unit: repairedUnit,
-    confidence: maxConfidence,
-    sourceCount,
-    sourcesJson: mergedSources,
+  // --- DB write (source-centric: one row per extraction, immutable) ---
+  specDb.insertFieldCandidate({
+    productId, fieldKey,
+    sourceId,
+    sourceType,
+    value: serialized,
+    unit: repairedUnit,
+    confidence,
+    model: sourceModel,
     validationJson: validationRecord,
-    metadataJson: mergedMetadata || {},
+    metadataJson: hasMetadata ? metadata : {},
   });
 
-  const candidateRow = specDb.getFieldCandidate(productId, fieldKey, serialized);
+  const candidateRow = specDb.getFieldCandidateBySourceId(productId, fieldKey, sourceId);
   const candidateId = candidateRow?.id ?? null;
 
-  // --- Product.json write ---
+  // --- Product.json write (source-centric: flat entries, no source merge) ---
   const productDir = path.join(productRoot, productId);
   const productPath = path.join(productDir, 'product.json');
   const productJson = safeReadJson(productPath);
@@ -130,18 +128,20 @@ export function submitCandidate({
     if (!productJson.candidates) productJson.candidates = {};
     if (!Array.isArray(productJson.candidates[fieldKey])) productJson.candidates[fieldKey] = [];
 
-    const entries = productJson.candidates[fieldKey];
-    const matchIdx = entries.findIndex(e => serializeValue(e.value) === serialized);
-
-    if (matchIdx >= 0) {
-      entries[matchIdx].sources.push(sourceEntry);
-      entries[matchIdx].validation = validationRecord;
-      if (repairedUnit) entries[matchIdx].unit = repairedUnit;
-      if (hasMetadata) entries[matchIdx].metadata = { ...(entries[matchIdx].metadata || {}), ...metadata };
-    } else {
-      const entry = { value: repairedValue, unit: repairedUnit, validation: validationRecord, sources: [sourceEntry] };
-      if (hasMetadata) entry.metadata = metadata;
-      entries.push(entry);
+    const entry = {
+      value: repairedValue,
+      source_id: sourceId,
+      source_type: sourceType,
+      confidence,
+      model: sourceModel,
+      unit: repairedUnit,
+      validation: validationRecord,
+    };
+    if (hasMetadata) entry.metadata = metadata;
+    // WHY: insertFieldCandidate no-ops on duplicate source_id — JSON must match.
+    const alreadyExists = productJson.candidates[fieldKey].some(e => e.source_id === sourceId);
+    if (!alreadyExists) {
+      productJson.candidates[fieldKey].push(entry);
     }
 
     productJson.updated_at = new Date().toISOString();
@@ -160,7 +160,7 @@ export function submitCandidate({
       specDb, category, productId, fieldKey,
       candidateRow: candidateRow || { id: candidateId },
       value: repairedValue, unit: repairedUnit,
-      confidence: maxConfidence,
+      confidence,
       config, fieldRule, productRoot,
     });
   }

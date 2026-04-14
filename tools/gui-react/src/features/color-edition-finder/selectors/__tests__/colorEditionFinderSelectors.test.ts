@@ -12,20 +12,21 @@ import type { ColorEditionFinderResult, ColorRegistryEntry } from '../../types.t
 const SAMPLE_RESULT: ColorEditionFinderResult = {
   product_id: 'mouse-001',
   category: 'mouse',
-  colors: ['black', 'white', 'black+red'],
-  editions: ['launch-edition'],
-  default_color: 'black',
   cooldown_until: new Date(Date.now() + 20 * 86400000).toISOString(),
   on_cooldown: true,
   run_count: 3,
   last_ran_at: '2026-04-01T12:00:00Z',
-  selected: {
+  published: {
     colors: ['black', 'white', 'black+red'],
-    editions: {
-      'launch-edition': { colors: ['black', 'white'] },
-    },
+    editions: ['launch-edition'],
     default_color: 'black',
+    color_names: {},
+    edition_details: {
+      'launch-edition': { display_name: '', colors: ['black', 'white'] },
+    },
   },
+  variant_registry: [],
+  candidates: { colors: [], editions: [] },
   runs: [
     {
       run_number: 1,
@@ -56,14 +57,6 @@ const SAMPLE_RESULT: ColorEditionFinderResult = {
       },
     },
   ],
-  color_details: {
-    black: { found_run: 1, found_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4' },
-    white: { found_run: 1, found_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4' },
-    'black+red': { found_run: 3, found_at: '2026-07-15T00:00:00Z', model: 'gpt-6' },
-  },
-  edition_details: {
-    'launch-edition': { found_run: 2, found_at: '2026-05-01T00:00:00Z', model: 'gpt-5.4' },
-  },
 };
 
 const REGISTRY: ColorRegistryEntry[] = [
@@ -189,10 +182,11 @@ describe('deriveSelectedStateDisplay', () => {
   it('handles edition with empty colors array', () => {
     const result: ColorEditionFinderResult = {
       ...SAMPLE_RESULT,
-      selected: {
+      published: {
+        ...SAMPLE_RESULT.published,
         colors: ['black'],
-        editions: { 'empty-edition': { colors: [] } },
-        default_color: 'black',
+        editions: ['empty-edition'],
+        edition_details: { 'empty-edition': { colors: [] } },
       },
     };
     const display = deriveSelectedStateDisplay(result, REGISTRY);
@@ -203,10 +197,12 @@ describe('deriveSelectedStateDisplay', () => {
   it('returns empty hex and hexParts for unknown color', () => {
     const result: ColorEditionFinderResult = {
       ...SAMPLE_RESULT,
-      selected: {
+      published: {
+        ...SAMPLE_RESULT.published,
         colors: ['unknown-color'],
-        editions: {},
+        editions: [],
         default_color: 'unknown-color',
+        edition_details: {},
       },
     };
     const display = deriveSelectedStateDisplay(result, REGISTRY);
@@ -218,13 +214,15 @@ describe('deriveSelectedStateDisplay', () => {
   it('populates displayName from color_names and edition display_name', () => {
     const result: ColorEditionFinderResult = {
       ...SAMPLE_RESULT,
-      selected: {
+      published: {
+        ...SAMPLE_RESULT.published,
         colors: ['black', 'white+silver'],
+        editions: ['cod-bo6-edition'],
+        default_color: 'black',
         color_names: { 'white+silver': 'Frost White' },
-        editions: {
+        edition_details: {
           'cod-bo6-edition': { display_name: 'Call of Duty: Black Ops 6 Edition', colors: ['black'] },
         },
-        default_color: 'black',
       },
     };
     const display = deriveSelectedStateDisplay(result, REGISTRY);
@@ -236,10 +234,12 @@ describe('deriveSelectedStateDisplay', () => {
   it('resolves hexParts with partial unknowns in combo', () => {
     const result: ColorEditionFinderResult = {
       ...SAMPLE_RESULT,
-      selected: {
+      published: {
+        ...SAMPLE_RESULT.published,
         colors: ['black+unknown+red'],
-        editions: {},
+        editions: [],
         default_color: 'black+unknown+red',
+        edition_details: {},
       },
     };
     const display = deriveSelectedStateDisplay(result, REGISTRY);

@@ -127,6 +127,15 @@ export function createPipelineCommands({
       specDb = await openSpecDbForCategory(config, category);
     } catch { /* best-effort: pipeline still works without SQL event logging */ }
 
+    // WHY: Pipeline subprocess needs AppDb for billing entries to reach SQLite.
+    // Without this, pipeline billing goes to JSONL only and never shows in the GUI.
+    let appDb = null;
+    try {
+      const { AppDb } = await import('../../../db/appDb.js');
+      const appDbDir = pathNode.resolve(config.specDbDir || '.workspace/db');
+      appDb = new AppDb({ dbPath: pathNode.join(appDbDir, 'app.sqlite') });
+    } catch { /* best-effort: pipeline still works without billing SQL */ }
+
     try {
     // WHY: DB-first job resolution. The products table in spec.sqlite is the SSOT
     // for product identity. This eliminates the "unknown unknown-model" problem
@@ -202,6 +211,7 @@ export function createPipelineCommands({
     const runConfig = {
       ...config,
       specDb,
+      appDb,
       indexLabRoot: outRoot,
       onRuntimeEvent: (row) => bridge.onRuntimeEvent(row),
       onScreencastFrame

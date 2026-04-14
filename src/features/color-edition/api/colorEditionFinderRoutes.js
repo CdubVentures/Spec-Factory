@@ -44,10 +44,11 @@ export function registerColorEditionFinderRoutes(ctx) {
 
       const shapeCandidateRow = (r) => ({
         candidate_id: r.id,
+        source_id: r.source_id || '',
+        source_type: r.source_type || '',
+        model: r.model || '',
         value: r.value,
         confidence: r.confidence,
-        source_count: r.source_count,
-        sources: Array.isArray(r.sources_json) ? r.sources_json : [],
         status: r.status,
         metadata: r.metadata_json || {},
         submitted_at: r.submitted_at,
@@ -68,18 +69,12 @@ export function registerColorEditionFinderRoutes(ctx) {
           color_names: selected.color_names || {},
           edition_details: selected.editions || {},
         },
+        variant_registry: Array.isArray(row.variant_registry) ? row.variant_registry : [],
         // All candidates with evidence chains, sorted by confidence desc
         candidates: {
           colors: colorRows.map(shapeCandidateRow).sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0)),
           editions: editionRows.map(shapeCandidateRow).sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0)),
         },
-        // Deprecated: kept for backward compat during transition
-        colors: row.colors,
-        editions: row.editions,
-        default_color: row.default_color,
-        selected,
-        color_details: selected.color_names || {},
-        edition_details: selected.editions || {},
         runs,
       };
     },

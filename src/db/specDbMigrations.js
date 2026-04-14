@@ -51,6 +51,11 @@ export const MIGRATIONS = [
   `ALTER TABLE color_edition_finder ADD COLUMN variant_registry TEXT DEFAULT '[]'`,
   // WHY: Eval state stores per-image eval fields as a JSON blob for SQL projection.
   `ALTER TABLE product_image_finder ADD COLUMN eval_state TEXT DEFAULT '{}'`,
+  // WHY: Source-centric candidates — each extraction event gets its own row keyed by source_id.
+  // source_id is deterministic for finders (e.g. cef-{productId}-{runNumber}).
+  `ALTER TABLE field_candidates ADD COLUMN source_id TEXT DEFAULT ''`,
+  `ALTER TABLE field_candidates ADD COLUMN source_type TEXT DEFAULT ''`,
+  `ALTER TABLE field_candidates ADD COLUMN model TEXT DEFAULT ''`,
 ];
 
 export const SECONDARY_INDEXES = `
@@ -58,6 +63,7 @@ export const SECONDARY_INDEXES = `
   CREATE INDEX IF NOT EXISTS idx_cv_identity_id ON component_values(component_identity_id);
   CREATE INDEX IF NOT EXISTS idx_lv_list_id ON list_values(list_id);
   CREATE INDEX IF NOT EXISTS idx_prod_brand_id ON products(category, brand_identifier);
+  CREATE INDEX IF NOT EXISTS idx_fc_source_id ON field_candidates(category, product_id, field_key, source_id);
 `;
 
 /**
@@ -71,4 +77,152 @@ export function applyMigrations(db) {
     }
   }
   db.exec(SECONDARY_INDEXES);
+  migrateFieldCandidatesToSourceCentric(db);
+}
+
+/**
+ * Source-centric migration: recreate field_candidates with UNIQUE(source_id)
+ * instead of UNIQUE(value). Explodes multi-source rows into individual rows.
+ *
+ * Idempotent: skips if already migrated (UNIQUE on source_id exists).
+ * Wrapped in a transaction for atomicity.
+ *
+ * @param {import('better-sqlite3').Database} db
+ */
+export function migrateFieldCandidatesToSourceCentric(db) {
+  // WHY: Check if migration is needed — look for old UNIQUE(value) constraint.
+  // If the table already has UNIQUE on source_id, skip.
+  const tableInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='field_candidates'").get();
+  if (!tableInfo) return;
+
+  const hasSrcIdUnique = db.prepare(
+    "SELECT 1 FROM sqlite_master WHERE type='index' AND tbl_name='field_candidates' AND sql LIKE '%UNIQUE%source_id%'"
+  ).get();
+  // WHY: Also check if inline UNIQUE constraint on source_id exists in table DDL
+  if (hasSrcIdUnique || (tableInfo.sql && tableInfo.sql.includes('UNIQUE') && tableInfo.sql.includes('source_id') && !tableInfo.sql.includes('field_key, value'))) return;
+
+  // WHY: Check if old constraint still has value-based UNIQUE
+  const hasOldUnique = tableInfo.sql && tableInfo.sql.includes('field_key, value)');
+  if (!hasOldUnique) return; // Already migrated or unknown schema
+
+  // Read all existing rows
+  const allRows = db.prepare('SELECT * FROM field_candidates').all();
+
+  // Explode multi-source rows
+  const exploded = [];
+  for (const row of allRows) {
+    let sources = [];
+    try { sources = JSON.parse(row.sources_json || '[]'); } catch { sources = []; }
+    if (!Array.isArray(sources)) sources = [];
+
+    // WHY: If row already has source_id populated, keep as-is (already source-centric)
+    if (row.source_id && row.source_id.length > 0) {
+      exploded.push(row);
+      continue;
+    }
+
+    if (sources.length === 0) {
+      // No sources — assign synthetic legacy source_id
+      exploded.push({ ...row, source_id: `legacy-${row.product_id}-${row.field_key}-${row.id}`, source_type: '', model: '' });
+    } else if (sources.length === 1) {
+      // Single source — 1:1 mapping
+      const src = sources[0];
+      const sourceId = src.run_number != null
+        ? `${src.source || 'unknown'}-${row.product_id}-${src.run_number}`
+        : (src.run_id ? `${src.source || 'unknown'}-${src.run_id}` : `legacy-${row.product_id}-${row.field_key}-${row.id}`);
+      exploded.push({
+        ...row,
+        source_id: sourceId,
+        source_type: src.source || '',
+        model: src.model || '',
+        confidence: src.confidence ?? row.confidence,
+      });
+    } else {
+      // Multiple sources — explode into N rows
+      for (let i = 0; i < sources.length; i++) {
+        const src = sources[i];
+        const sourceId = src.run_number != null
+          ? `${src.source || 'unknown'}-${row.product_id}-${src.run_number}`
+          : (src.run_id ? `${src.source || 'unknown'}-${src.run_id}` : `legacy-${row.product_id}-${row.field_key}-${row.id}-${i}`);
+        exploded.push({
+          ...row,
+          id: undefined, // auto-increment on re-insert
+          source_id: sourceId,
+          source_type: src.source || '',
+          model: src.model || '',
+          confidence: src.confidence ?? row.confidence,
+          submitted_at: src.submitted_at || row.submitted_at,
+        });
+      }
+    }
+  }
+
+  // Deduplicate by (category, product_id, field_key, source_id)
+  const seen = new Set();
+  const deduped = exploded.filter(r => {
+    const key = `${r.category}|${r.product_id}|${r.field_key}|${r.source_id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  // Recreate table with new UNIQUE constraint in a transaction
+  const tx = db.transaction(() => {
+    db.exec(`
+      CREATE TABLE field_candidates_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category TEXT NOT NULL,
+        product_id TEXT NOT NULL,
+        field_key TEXT NOT NULL,
+        value TEXT,
+        unit TEXT DEFAULT NULL,
+        confidence REAL DEFAULT 0,
+        source_id TEXT NOT NULL DEFAULT '',
+        source_type TEXT NOT NULL DEFAULT '',
+        model TEXT DEFAULT '',
+        validation_json TEXT DEFAULT '{}',
+        metadata_json TEXT DEFAULT '{}',
+        status TEXT DEFAULT 'candidate' CHECK(status IN ('candidate', 'resolved')),
+        submitted_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        UNIQUE(category, product_id, field_key, source_id)
+      )
+    `);
+
+    const insert = db.prepare(`
+      INSERT OR IGNORE INTO field_candidates_new
+        (category, product_id, field_key, value, unit, confidence, source_id, source_type, model, validation_json, metadata_json, status, submitted_at, updated_at)
+      VALUES
+        (@category, @product_id, @field_key, @value, @unit, @confidence, @source_id, @source_type, @model, @validation_json, @metadata_json, @status, @submitted_at, @updated_at)
+    `);
+
+    for (const r of deduped) {
+      insert.run({
+        category: r.category || '',
+        product_id: r.product_id || '',
+        field_key: r.field_key || '',
+        value: r.value ?? null,
+        unit: r.unit ?? null,
+        confidence: r.confidence ?? 0,
+        source_id: r.source_id || '',
+        source_type: r.source_type || '',
+        model: r.model || '',
+        validation_json: r.validation_json || '{}',
+        metadata_json: r.metadata_json || '{}',
+        status: r.status || 'candidate',
+        submitted_at: r.submitted_at || null,
+        updated_at: r.updated_at || null,
+      });
+    }
+
+    db.exec('DROP TABLE field_candidates');
+    db.exec('ALTER TABLE field_candidates_new RENAME TO field_candidates');
+
+    // Recreate indexes
+    db.exec('CREATE INDEX IF NOT EXISTS idx_fc_product ON field_candidates(product_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_fc_field ON field_candidates(category, product_id, field_key)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_fc_source_id ON field_candidates(category, product_id, field_key, source_id)');
+  });
+
+  tx();
 }

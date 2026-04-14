@@ -47,17 +47,29 @@ describe('viewEvalResponseSchema', () => {
     assert.equal(result.data.rejected, undefined);
   });
 
-  it('accepts all 4 valid flag values in rejected', () => {
+  it('accepts all 5 valid flag values in rejected', () => {
     const input = {
       winner: validWinner,
       rejected: [{
         filename: 'bad.png',
-        flags: ['watermark', 'badge', 'cropped', 'wrong_product'],
+        flags: ['watermark', 'badge', 'cropped', 'wrong_product', 'other'],
+        reasoning: 'Multiple issues',
       }],
     };
     const result = viewEvalResponseSchema.safeParse(input);
     assert.equal(result.success, true);
-    assert.equal(result.data.rejected[0].flags.length, 4);
+    assert.equal(result.data.rejected[0].flags.length, 5);
+  });
+
+  it('accepts view rejected entry without flags (outranked, not disqualified)', () => {
+    const input = {
+      winner: validWinner,
+      rejected: [{ filename: 'ok-but-worse.png', reasoning: 'Lower resolution than winner' }],
+    };
+    const result = viewEvalResponseSchema.safeParse(input);
+    assert.equal(result.success, true);
+    assert.equal(result.data.rejected[0].flags, undefined);
+    assert.equal(result.data.rejected[0].reasoning, 'Lower resolution than winner');
   });
 
   it('accepts rejected entry with reasoning', () => {
@@ -123,12 +135,12 @@ describe('viewEvalResponseSchema', () => {
     assert.equal(result.success, false);
   });
 
-  it('rejects rejected entry missing flags', () => {
+  it('accepts rejected entry with only filename (flags + reasoning both optional)', () => {
     const result = viewEvalResponseSchema.safeParse({
       winner: validWinner,
       rejected: [{ filename: 'bad.png' }],
     });
-    assert.equal(result.success, false);
+    assert.equal(result.success, true);
   });
 
   // --- Invalid types ---
@@ -216,6 +228,45 @@ describe('heroEvalResponseSchema', () => {
     const { reasoning: _, ...noReasoning } = validHero;
     const result = heroEvalResponseSchema.safeParse({ heroes: [noReasoning] });
     assert.equal(result.success, false);
+  });
+
+  // --- Hero rejected entries ---
+
+  it('accepts heroes with rejected array', () => {
+    const input = {
+      heroes: [validHero],
+      rejected: [{ filename: 'bad.png', reasoning: 'Mouse is not the focal point — desk overview shot' }],
+    };
+    const result = heroEvalResponseSchema.safeParse(input);
+    assert.equal(result.success, true);
+    assert.equal(result.data.rejected.length, 1);
+    assert.equal(result.data.rejected[0].reasoning, 'Mouse is not the focal point — desk overview shot');
+  });
+
+  it('accepts heroes without rejected (backward compat)', () => {
+    const result = heroEvalResponseSchema.safeParse({ heroes: [validHero] });
+    assert.equal(result.success, true);
+    assert.equal(result.data.rejected, undefined);
+  });
+
+  it('accepts hero rejected entry with flags + reasoning', () => {
+    const input = {
+      heroes: [],
+      rejected: [{ filename: 'bad.png', flags: ['watermark'], reasoning: 'Getty watermark visible' }],
+    };
+    const result = heroEvalResponseSchema.safeParse(input);
+    assert.equal(result.success, true);
+    assert.deepStrictEqual(result.data.rejected[0].flags, ['watermark']);
+  });
+
+  it('accepts hero rejected entry with reasoning only (no flags)', () => {
+    const input = {
+      heroes: [],
+      rejected: [{ filename: 'bad.png', reasoning: 'Editorial review photo — copyright risk' }],
+    };
+    const result = heroEvalResponseSchema.safeParse(input);
+    assert.equal(result.success, true);
+    assert.equal(result.data.rejected[0].flags, undefined);
   });
 
   // --- Invalid types ---

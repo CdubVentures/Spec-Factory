@@ -340,5 +340,9 @@ export async function runEvalHero({
   });
 
   onStageAdvance?.('Complete');
-  return heroResults;
+  // WHY: Strip 'rejected' from return — fireAndForget interprets any truthy
+  // result.rejected as an operation failure. The rejection data has already
+  // been consumed by mergeEvaluation; callers only need the heroes array.
+  const { rejected: _, ...returnValue } = heroResults;
+  return returnValue;
 }

@@ -649,4 +649,234 @@ describe('runColorEditionFinder', () => {
     assert.notEqual(llmCalls[3].response, null, 'call 3 should be identity post-emit (non-null response)');
     assert.equal(llmCalls[3].label, 'Identity Check', 'call 3 label');
   });
+
+  it('edition slug drift: selected.editions re-keyed to canonical registry slug', async () => {
+    const pid = 'mouse-slug-drift';
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+      { name: 'red', hex: '#ef4444', css_var: '--color-red' },
+      { name: 'light-olive', hex: '#b5b35c', css_var: '--color-light-olive' },
+    ]);
+
+    // Run 1: discovery uses slug 'doom-the-dark-ages-edition'
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb, specDb, config: {}, logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black', 'light-olive+black+red'],
+        editions: { 'doom-the-dark-ages-edition': { display_name: 'DOOM: The Dark Ages', colors: ['light-olive+black+red'] } },
+        default_color: 'black',
+      }),
+    });
+
+    const afterRun1 = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
+    const doomEntry = afterRun1.variant_registry.find(e => e.edition_slug === 'doom-the-dark-ages-edition');
+    assert.ok(doomEntry, 'DOOM variant must exist in registry after Run 1');
+    const blackId = afterRun1.variant_registry.find(e => e.variant_key === 'color:black').variant_id;
+
+    // Run 2: discovery returns DRIFTED slug 'doom-the-dark-ages' (dropped -edition)
+    // Identity check correctly matches it to existing variant
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb, specDb, config: {}, logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black', 'light-olive+black+red'],
+        editions: { 'doom-the-dark-ages': { display_name: 'DOOM: The Dark Ages', colors: ['light-olive+black+red'] } },
+        default_color: 'black',
+      }),
+      _callIdentityCheckOverride: makeLlmStub({
+        mappings: [
+          { new_key: 'color:black', match: blackId, action: 'match', reason: 'same' },
+          { new_key: 'edition:doom-the-dark-ages-edition', match: doomEntry.variant_id, action: 'match', reason: 'same DOOM edition' },
+        ],
+        retired: [],
+      }),
+    });
+
+    const afterRun2 = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
+
+    // selected.editions must use canonical slug, NOT the drifted one
+    assert.ok(afterRun2.selected.editions['doom-the-dark-ages-edition'],
+      'selected.editions must use canonical slug doom-the-dark-ages-edition');
+    assert.equal(afterRun2.selected.editions['doom-the-dark-ages'], undefined,
+      'drifted slug doom-the-dark-ages must NOT appear in selected.editions');
+
+    // Run 2's per-run selected must also use canonical slug
+    const run2 = afterRun2.runs[1];
+    assert.ok(run2.selected.editions['doom-the-dark-ages-edition'],
+      'run 2 selected must use canonical slug');
+
+    // Edition metadata preserved through reconciliation
+    assert.equal(afterRun2.selected.editions['doom-the-dark-ages-edition'].display_name, 'DOOM: The Dark Ages');
+    assert.deepEqual(afterRun2.selected.editions['doom-the-dark-ages-edition'].colors, ['light-olive+black+red']);
+
+    // SQL summary must use canonical slug
+    const sqlRow = specDb.getColorEditionFinder(pid);
+    assert.ok(sqlRow.editions.includes('doom-the-dark-ages-edition'), 'SQL editions must use canonical slug');
+
+    // Registry unchanged — still has original edition_slug
+    const doomAfter = afterRun2.variant_registry.find(e => e.variant_id === doomEntry.variant_id);
+    assert.equal(doomAfter.edition_slug, 'doom-the-dark-ages-edition');
+    // Label should be updated from discovery, not fall back to raw slug
+    assert.equal(doomAfter.variant_label, 'DOOM: The Dark Ages');
+  });
+
+  it('edition slug reconciliation: no-op when slugs already match', async () => {
+    const pid = 'mouse-slug-noop';
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+      { name: 'red', hex: '#ef4444', css_var: '--color-red' },
+    ]);
+
+    // Run 1
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb, specDb, config: {}, logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black', 'black+red'],
+        editions: { 'cod-bo6-edition': { display_name: 'COD BO6', colors: ['black+red'] } },
+        default_color: 'black',
+      }),
+    });
+
+    const afterRun1 = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
+    const codEntry = afterRun1.variant_registry.find(e => e.edition_slug === 'cod-bo6-edition');
+    const blackId = afterRun1.variant_registry.find(e => e.variant_key === 'color:black').variant_id;
+
+    // Run 2: slug matches — no drift
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb, specDb, config: {}, logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black', 'black+red'],
+        editions: { 'cod-bo6-edition': { display_name: 'COD BO6 Edition', colors: ['black+red'] } },
+        default_color: 'black',
+      }),
+      _callIdentityCheckOverride: makeLlmStub({
+        mappings: [
+          { new_key: 'color:black', match: blackId, action: 'match', reason: 'same' },
+          { new_key: 'edition:cod-bo6-edition', match: codEntry.variant_id, action: 'match', reason: 'same' },
+        ],
+        retired: [],
+      }),
+    });
+
+    const afterRun2 = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
+    assert.ok(afterRun2.selected.editions['cod-bo6-edition'], 'slug unchanged when no drift');
+  });
+
+  it('edition slug reconciliation: new edition passes through when not in registry', async () => {
+    const pid = 'mouse-slug-new';
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+      { name: 'gold', hex: '#fbbf24', css_var: '--color-gold' },
+    ]);
+
+    // Run 1: only colors, no editions
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb, specDb, config: {}, logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black'],
+        editions: {},
+        default_color: 'black',
+      }),
+    });
+
+    const afterRun1 = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
+    const blackId = afterRun1.variant_registry.find(e => e.variant_key === 'color:black').variant_id;
+
+    // Run 2: discovers a NEW edition (not in registry yet) — must pass through unchanged
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb, specDb, config: {}, logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black', 'black+gold'],
+        editions: { 'gold-edition': { display_name: 'Gold Edition', colors: ['black+gold'] } },
+        default_color: 'black',
+      }),
+      _callIdentityCheckOverride: makeLlmStub({
+        mappings: [
+          { new_key: 'color:black', match: blackId, action: 'match', reason: 'same' },
+          { new_key: 'edition:gold-edition', match: null, action: 'new', reason: 'new edition' },
+        ],
+        retired: [],
+      }),
+    });
+
+    const afterRun2 = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
+    assert.ok(afterRun2.selected.editions['gold-edition'], 'new edition slug preserved as-is');
+    assert.equal(afterRun2.selected.editions['gold-edition'].display_name, 'Gold Edition');
+  });
+
+  it('edition slug drift: elimination fallback when registry color_atoms are empty', async () => {
+    const pid = 'mouse-slug-elim';
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+      { name: 'red', hex: '#ef4444', css_var: '--color-red' },
+      { name: 'light-olive', hex: '#b5b35c', css_var: '--color-light-olive' },
+    ]);
+
+    // Run 1: seed registry
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb, specDb, config: {}, logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black', 'light-olive+black+red'],
+        editions: { 'doom-the-dark-ages-edition': { display_name: 'DOOM', colors: ['light-olive+black+red'] } },
+        default_color: 'black',
+      }),
+    });
+
+    // Corrupt the registry to simulate the prior bug — empty color_atoms on DOOM entry
+    const json = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
+    const doomEntry = json.variant_registry.find(e => e.edition_slug === 'doom-the-dark-ages-edition');
+    assert.ok(doomEntry);
+    doomEntry.color_atoms = []; // simulate corruption from prior slug drift
+    const blackId = json.variant_registry.find(e => e.variant_key === 'color:black').variant_id;
+    fs.writeFileSync(
+      path.join(PRODUCT_ROOT, pid, 'color_edition.json'),
+      JSON.stringify(json, null, 2), 'utf8',
+    );
+
+    // Run 2: discovery returns drifted slug + identity check matches correctly
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb, specDb, config: {}, logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black', 'light-olive+black+red'],
+        editions: { 'doom-the-dark-ages': { display_name: 'DOOM: The Dark Ages', colors: ['light-olive+black+red'] } },
+        default_color: 'black',
+      }),
+      _callIdentityCheckOverride: makeLlmStub({
+        mappings: [
+          { new_key: 'color:black', match: blackId, action: 'match', reason: 'same' },
+          { new_key: 'edition:doom-the-dark-ages-edition', match: doomEntry.variant_id, action: 'match', reason: 'same DOOM' },
+        ],
+        retired: [],
+      }),
+    });
+
+    const afterRun2 = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
+
+    // Elimination fallback should re-key despite empty color_atoms
+    assert.ok(afterRun2.selected.editions['doom-the-dark-ages-edition'],
+      'elimination fallback must re-key to canonical slug');
+    assert.equal(afterRun2.selected.editions['doom-the-dark-ages'], undefined,
+      'drifted slug must not appear');
+    assert.equal(afterRun2.selected.editions['doom-the-dark-ages-edition'].display_name, 'DOOM: The Dark Ages');
+
+    // Registry color_atoms should be repaired now that applyIdentityMappings can look up the edition
+    const doomAfter = afterRun2.variant_registry.find(e => e.variant_id === doomEntry.variant_id);
+    assert.deepEqual(doomAfter.color_atoms, ['light-olive', 'black', 'red'],
+      'color_atoms should be repaired after reconciliation fixes the lookup');
+  });
 });

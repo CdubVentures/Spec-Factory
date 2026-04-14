@@ -28,19 +28,22 @@ function readProductJson(productId) {
   catch { return null; }
 }
 
+let _seedCounter = 0;
 function seedCandidate(specDb, productId, fieldKey, value, confidence, extra = {}) {
   const serialized = typeof value === 'object' ? JSON.stringify(value) : String(value);
-  specDb.upsertFieldCandidate({
+  const sourceId = extra.sourceId || `test-${productId}-${fieldKey}-${++_seedCounter}`;
+  specDb.insertFieldCandidate({
     productId, fieldKey, value: serialized,
+    sourceId,
+    sourceType: extra.sourceType || 'test',
     unit: extra.unit ?? null,
     confidence,
-    sourceCount: 1,
-    sourcesJson: [{ source: 'test', confidence, submitted_at: new Date().toISOString() }],
+    model: extra.model || '',
     validationJson: { valid: true, repairs: [], rejections: [] },
     metadataJson: extra.metadataJson ?? {},
     status: extra.status ?? 'candidate',
   });
-  return specDb.getFieldCandidate(productId, fieldKey, serialized);
+  return specDb.getFieldCandidateBySourceId(productId, fieldKey, sourceId);
 }
 
 const fieldRule = { contract: { shape: 'scalar', type: 'number' }, parse: {}, enum: { policy: 'open' }, priority: {} };
@@ -174,6 +177,89 @@ describe('publishCandidate', () => {
     });
 
     assert.equal(result.status, 'published');
+  });
+
+  // WHY: Source-centric linked_candidates shape — each entry has source_id, source_type,
+  // model instead of the old sources array and source_count.
+  it('linked_candidates shape: source_id, source_type, model per entry', () => {
+    ensureProductJson('pub-linked');
+    const row = seedCandidate(specDb, 'pub-linked', 'weight', 58, 92);
+
+    publishCandidate({
+      specDb, category: 'mouse', productId: 'pub-linked', fieldKey: 'weight',
+      candidateRow: row, value: 58, unit: null, confidence: 92,
+      config: { publishConfidenceThreshold: 0.7 },
+      fieldRule, productRoot: PRODUCT_ROOT,
+    });
+
+    const pj = readProductJson('pub-linked');
+    const linked = pj.fields.weight.linked_candidates;
+    assert.ok(Array.isArray(linked));
+    assert.ok(linked.length >= 1);
+    const first = linked[0];
+    assert.equal(typeof first.candidate_id, 'number', 'linked entry must have candidate_id');
+    assert.equal(typeof first.source_id, 'string', 'linked entry must have source_id');
+    assert.equal(typeof first.source_type, 'string', 'linked entry must have source_type');
+    assert.equal(typeof first.model, 'string', 'linked entry must have model');
+    assert.ok(first.value !== undefined, 'linked entry must have value');
+    assert.equal(typeof first.confidence, 'number', 'linked entry must have confidence');
+    assert.ok(['candidate', 'resolved'].includes(first.status), 'linked entry must have valid status');
+    // Old fields should NOT be present
+    assert.equal(first.sources, undefined, 'sources array should be removed');
+    assert.equal(first.source_count, undefined, 'source_count should be removed');
+  });
+
+  // WHY: Captures set_union linked_candidates behavior — all overlapping candidates are linked.
+  it('[CHAR] set_union linked_candidates includes all overlapping source rows', () => {
+    ensureProductJson('pub-union-linked');
+    // Seed two candidates with overlapping array items
+    seedCandidate(specDb, 'pub-union-linked', 'colors', ['black', 'white'], 100);
+    const row2 = seedCandidate(specDb, 'pub-union-linked', 'colors', ['white', 'red'], 90);
+
+    publishCandidate({
+      specDb, category: 'mouse', productId: 'pub-union-linked', fieldKey: 'colors',
+      candidateRow: row2, value: ['white', 'red'], unit: null, confidence: 90,
+      config: { publishConfidenceThreshold: 0.7 },
+      fieldRule: listFieldRule, productRoot: PRODUCT_ROOT,
+    });
+
+    const pj = readProductJson('pub-union-linked');
+    const linked = pj.fields.colors.linked_candidates;
+    // Both candidates share items with published value → both linked
+    assert.ok(linked.length >= 2, `expected >=2 linked, got ${linked.length}`);
+  });
+
+  // ── Source-centric linked_candidates (Phase 4) ──────────────────────
+
+  it('linked_candidates entries have source_id instead of sources array', () => {
+    ensureProductJson('pub-src-linked');
+    specDb.insertFieldCandidate({
+      productId: 'pub-src-linked', fieldKey: 'weight',
+      sourceId: 'cef-pub-src-linked-1', sourceType: 'cef',
+      value: '58', confidence: 92, model: 'gemini',
+      validationJson: {}, metadataJson: {},
+    });
+
+    const row = specDb.getFieldCandidateBySourceId('pub-src-linked', 'weight', 'cef-pub-src-linked-1');
+
+    publishCandidate({
+      specDb, category: 'mouse', productId: 'pub-src-linked', fieldKey: 'weight',
+      candidateRow: row, value: 58, unit: null, confidence: 92,
+      config: { publishConfidenceThreshold: 0.7 },
+      fieldRule, productRoot: PRODUCT_ROOT,
+    });
+
+    const pj = readProductJson('pub-src-linked');
+    const linked = pj.fields.weight.linked_candidates;
+    assert.ok(Array.isArray(linked));
+    assert.ok(linked.length >= 1);
+    const first = linked[0];
+    assert.equal(first.source_id, 'cef-pub-src-linked-1');
+    assert.equal(first.source_type, 'cef');
+    assert.equal(typeof first.model, 'string');
+    // Should NOT have old sources array or source_count
+    assert.equal(first.sources, undefined);
+    assert.equal(first.source_count, undefined);
   });
 
   it('returns skipped when product.json does not exist', () => {

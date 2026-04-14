@@ -1,10 +1,8 @@
 /**
- * Fan out field_candidates SQL rows into individual candidate objects.
+ * Map field_candidates SQL rows into candidate objects for the review grid.
  *
- * Each SQL row may contain multiple source entries in `sources_json`.
- * This function produces one candidate object per source entry, inheriting
- * value and status from the parent row while using per-source fields
- * (confidence, model, run_id, submitted_at).
+ * Source-centric rows (have source_id column): 1 row = 1 card, direct mapping.
+ * Legacy rows (have sources_json array): fan out into N cards per source entry.
  *
  * Contract:
  *   Input:  Array of hydrated field_candidate rows
@@ -12,9 +10,6 @@
  *   Invariants:
  *     - score always 0-1 (clamped)
  *     - status always 'candidate' or 'resolved'
- *     - empty sources_json still produces 1 fallback card
- *   Backward compat:
- *     - output includes source_id, evidence object, method, tier for existing consumers
  */
 
 function clampScore(raw) {
@@ -23,17 +18,46 @@ function clampScore(raw) {
   return Math.max(0, Math.min(1, n));
 }
 
+function extractMeta(c) {
+  const meta = c.metadata_json && typeof c.metadata_json === 'object' ? c.metadata_json : {};
+  const evidenceUrl = String(meta.evidence?.url || '').trim() || null;
+  const evidenceQuote = String(meta.evidence?.quote || meta.reason || '').trim() || '';
+  const metaMethod = String(meta.method || '').trim() || null;
+  const hasMetadata = Object.keys(meta).length > 0;
+  return { meta, evidenceUrl, evidenceQuote, metaMethod, hasMetadata };
+}
+
 export function fanOutCandidates(fcRows) {
   const all = [];
 
   for (const c of fcRows) {
-    const sources = Array.isArray(c.sources_json) ? c.sources_json : [];
-    const meta = c.metadata_json && typeof c.metadata_json === 'object' ? c.metadata_json : {};
+    const { meta, evidenceUrl, evidenceQuote, metaMethod, hasMetadata } = extractMeta(c);
     const status = c.status || 'candidate';
-    const evidenceUrl = String(meta.evidence?.url || '').trim() || null;
-    const evidenceQuote = String(meta.evidence?.quote || meta.reason || '').trim() || '';
-    const metaMethod = String(meta.method || '').trim() || null;
-    const hasMetadata = Object.keys(meta).length > 0;
+
+    // WHY: Source-centric rows have source_id column — 1 row = 1 card, direct mapping.
+    if (c.source_id) {
+      const sourceToken = String(c.source_type || '').trim().toLowerCase();
+      all.push({
+        candidate_id: `fc_${c.id}`,
+        value: c.value,
+        status,
+        score: clampScore(c.confidence),
+        source: sourceToken,
+        source_id: c.source_id,
+        model: String(c.model || '').trim() || null,
+        run_id: null,
+        submitted_at: c.submitted_at || null,
+        evidence_url: evidenceUrl,
+        evidence: { url: evidenceUrl || '', quote: evidenceQuote, source_id: sourceToken },
+        metadata: hasMetadata ? meta : null,
+        method: metaMethod || sourceToken || null,
+        tier: null,
+      });
+      continue;
+    }
+
+    // Legacy path: fan out sources_json array into N cards
+    const sources = Array.isArray(c.sources_json) ? c.sources_json : [];
 
     if (sources.length === 0) {
       const sourceToken = String(meta.source || '').trim().toLowerCase();

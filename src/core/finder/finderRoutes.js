@@ -12,6 +12,7 @@ import { emitDataChange } from '../events/dataChangeContract.js';
 import { registerOperation, getOperationSignal, updateStage, updateModelInfo, updateQueueDelay, appendLlmCall, completeOperation, failOperation, cancelOperation, fireAndForget } from '../operations/index.js';
 import { createStreamBatcher } from '../llm/streamBatcher.js';
 import { defaultProductRoot } from '../config/runtimeArtifactRoots.js';
+import { normalizeConfidence } from '../../features/publisher/publish/publishCandidate.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -47,193 +48,215 @@ function cleanProductJsonPublishedFields(productId, fieldKeys) {
 }
 
 /**
- * Run-scoped candidate cleanup — strips source entries for specific run(s) from candidates.
+ * Run-scoped candidate cleanup — deletes source-centric rows for specific run(s).
  *
- * WHY: When a single run is deleted, its candidate contributions must be cleaned up
- * across all 4 data stores: JSON runs, SQL runs, SQL candidates, and product.json.
- * Without this, deleting a run orphans its candidate entries.
- *
- * For each candidate row: remove source entries matching `sourceType` + `runNumber`.
- * If no sources remain → delete the row. Otherwise update with remaining sources.
- * After stripping, re-publishes the latest remaining candidate or cleans product.json.
+ * WHY: Source-centric model — each extraction event has its own row keyed by source_id.
+ * Deleting a run = DELETE rows with deterministic source_id pattern.
+ * Then re-publish from remaining candidates or clean stale product.json.
  */
-function stripRunSourceFromCandidates(specDb, productId, fieldKeys, sourceType, runNumbers) {
+function stripRunSourceFromCandidates(specDb, productId, fieldKeys, sourceType, runNumbers, config) {
   if (!specDb.getFieldCandidatesByProductAndField) return;
   const runSet = new Set(Array.isArray(runNumbers) ? runNumbers : [runNumbers]);
 
+  // WHY: Source-centric rows have source_id = `{sourceType}-{productId}-{runNumber}`.
+  // Delete by source_id when available; fall back to old sources_json splicing for legacy rows.
   for (const fieldKey of fieldKeys) {
+    // Try source-centric delete first
+    if (specDb.deleteFieldCandidateBySourceId) {
+      for (const rn of runSet) {
+        const sourceId = `${sourceType}-${productId}-${rn}`;
+        specDb.deleteFieldCandidateBySourceId(productId, fieldKey, sourceId);
+      }
+    }
+
+    // Fall back: strip from legacy rows that still have sources_json
     const rows = specDb.getFieldCandidatesByProductAndField(productId, fieldKey);
     for (const row of rows) {
+      if (row.source_id) continue; // source-centric row already handled above
       const sources = Array.isArray(row.sources_json) ? row.sources_json : [];
       const remaining = sources.filter(s => !(s.source === sourceType && runSet.has(s.run_number)));
-
-      if (remaining.length === sources.length) continue; // nothing to strip
-
+      if (remaining.length === sources.length) continue;
       if (remaining.length === 0) {
-        if (specDb.deleteFieldCandidateByValue) {
-          specDb.deleteFieldCandidateByValue(productId, fieldKey, row.value);
-        }
+        if (specDb.deleteFieldCandidateByValue) specDb.deleteFieldCandidateByValue(productId, fieldKey, row.value);
       } else {
-        const maxConfidence = remaining.reduce((max, s) => Math.max(max, s.confidence ?? 0), 0);
         specDb.upsertFieldCandidate({
-          productId, fieldKey,
-          value: row.value,
-          unit: row.unit,
-          confidence: maxConfidence,
-          sourceCount: remaining.length,
-          sourcesJson: remaining,
-          validationJson: row.validation_json,
-          metadataJson: row.metadata_json,
-          status: row.status,
+          productId, fieldKey, value: row.value, unit: row.unit,
+          confidence: remaining.reduce((max, s) => Math.max(max, s.confidence ?? 0), 0),
+          sourceCount: remaining.length, sourcesJson: remaining,
+          validationJson: row.validation_json, metadataJson: row.metadata_json, status: row.status,
         });
       }
     }
   }
 
-  // WHY: After stripping, re-publish from remaining candidates or clean stale state.
-  const productPath = path.join(defaultProductRoot(), productId, 'product.json');
-  try {
-    const data = JSON.parse(fs.readFileSync(productPath, 'utf8'));
-    let changed = false;
-
-    // Strip deleted run sources from product.json candidates[]
-    if (data.candidates) {
-      for (const key of fieldKeys) {
-        if (!Array.isArray(data.candidates[key])) continue;
-        const filtered = [];
-        for (const entry of data.candidates[key]) {
-          if (!Array.isArray(entry.sources)) { filtered.push(entry); continue; }
-          const remaining = entry.sources.filter(s => !(s.source === sourceType && runSet.has(s.run_number)));
-          if (remaining.length === 0) { changed = true; continue; }
-          if (remaining.length < entry.sources.length) changed = true;
-          entry.sources = remaining;
-          filtered.push(entry);
-        }
-        data.candidates[key] = filtered;
-      }
-    }
-
-    // WHY: If no candidates remain for a field, the published value in fields[] is stale.
-    // If candidates remain, re-resolve the latest one as the winner.
-    if (data.fields) {
-      for (const key of fieldKeys) {
-        const remaining = specDb.getFieldCandidatesByProductAndField(productId, key);
-        if (remaining.length === 0 && data.fields[key]) {
-          delete data.fields[key];
-          changed = true;
-        } else if (remaining.length > 0 && data.fields[key]) {
-          // WHY: Demote all, then resolve the latest candidate as the new winner.
-          specDb.demoteResolvedCandidates(productId, key);
-          const latest = remaining.sort((a, b) => (b.submitted_at || '').localeCompare(a.submitted_at || ''))[0];
-          specDb.markFieldCandidateResolved(productId, key, latest.value);
-
-          // Update product.json fields[] with the new winner
-          let parsedValue;
-          try { parsedValue = typeof latest.value === 'string' ? JSON.parse(latest.value) : latest.value; }
-          catch { parsedValue = latest.value; }
-          const latestSources = Array.isArray(latest.sources_json) ? latest.sources_json : [];
-          data.fields[key] = {
-            value: parsedValue,
-            confidence: latest.confidence ?? 0,
-            source: 'pipeline',
-            resolved_at: new Date().toISOString(),
-            sources: latestSources,
-            linked_candidates: remaining.map(r => ({
-              candidate_id: r.id,
-              value: r.value,
-              confidence: r.confidence,
-              source_count: r.source_count,
-              sources: Array.isArray(r.sources_json) ? r.sources_json : [],
-              status: r.status,
-              submitted_at: r.submitted_at,
-            })),
-          };
-          changed = true;
-        }
-      }
-    }
-
-    if (changed) {
-      data.updated_at = new Date().toISOString();
-      fs.writeFileSync(productPath, JSON.stringify(data, null, 2));
-    }
-  } catch { /* product.json may not exist */ }
+  // WHY: After deleting, re-publish from remaining candidates or clean stale state.
+  republishAfterDelete(specDb, productId, fieldKeys, sourceType, runSet, config);
 }
 
 /**
- * Source-aware candidate cleanup — strips a specific source type from candidates
- * instead of blanket-deleting all candidates for a field.
+ * Source-type candidate cleanup — deletes all rows from a specific source type.
  *
- * For each candidate row: remove source entries matching `sourceType`.
- * If no sources remain → delete the row. Otherwise update with remaining sources.
- *
- * Also strips from product.json candidates[].
+ * WHY: Source-centric model — DELETE by source_type column instead of splicing arrays.
  */
-function stripSourceFromCandidates(specDb, productId, fieldKeys, sourceType) {
+function stripSourceFromCandidates(specDb, productId, fieldKeys, sourceType, config) {
   if (!specDb.getFieldCandidatesByProductAndField) return;
+
   for (const fieldKey of fieldKeys) {
+    // Source-centric: bulk delete by source_type
+    if (specDb.deleteFieldCandidatesBySourceType) {
+      specDb.deleteFieldCandidatesBySourceType(productId, fieldKey, sourceType);
+    }
+
+    // Fall back: strip from legacy rows that still have sources_json
     const rows = specDb.getFieldCandidatesByProductAndField(productId, fieldKey);
     for (const row of rows) {
+      if (row.source_id) continue;
       const sources = Array.isArray(row.sources_json) ? row.sources_json : [];
       const remaining = sources.filter(s => s.source !== sourceType);
-
       if (remaining.length === 0) {
-        // No sources left — delete the candidate row entirely
-        if (specDb.deleteFieldCandidateByValue) {
-          specDb.deleteFieldCandidateByValue(productId, fieldKey, row.value);
-        }
-      } else {
-        // Update with remaining sources
-        const maxConfidence = remaining.reduce((max, s) => Math.max(max, s.confidence ?? 0), 0);
+        if (specDb.deleteFieldCandidateByValue) specDb.deleteFieldCandidateByValue(productId, fieldKey, row.value);
+      } else if (remaining.length < sources.length) {
         specDb.upsertFieldCandidate({
-          productId, fieldKey,
-          value: row.value,
-          unit: row.unit,
-          confidence: maxConfidence,
-          sourceCount: remaining.length,
-          sourcesJson: remaining,
-          validationJson: row.validation_json,
-          metadataJson: row.metadata_json,
-          status: row.status,
+          productId, fieldKey, value: row.value, unit: row.unit,
+          confidence: remaining.reduce((max, s) => Math.max(max, s.confidence ?? 0), 0),
+          sourceCount: remaining.length, sourcesJson: remaining,
+          validationJson: row.validation_json, metadataJson: row.metadata_json, status: row.status,
         });
       }
     }
   }
 
-  // After stripping, check which fields have no candidates remaining.
-  // If a field lost all candidates, the published value in fields[] is stale — clear it.
+  // Clean product.json after source-type deletion
+  republishAfterDelete(specDb, productId, fieldKeys, sourceType, null, config);
+}
+
+/**
+ * Shared post-delete cleanup: update product.json candidates[] and fields[].
+ */
+function republishAfterDelete(specDb, productId, fieldKeys, sourceType, runSet, config) {
   const productPath = path.join(defaultProductRoot(), productId, 'product.json');
   try {
     const data = JSON.parse(fs.readFileSync(productPath, 'utf8'));
     let changed = false;
 
-    // Clean product.json candidates[]
+    // Clean product.json candidates[] — filter by source_id or source_type
     if (data.candidates) {
       for (const key of fieldKeys) {
         if (!Array.isArray(data.candidates[key])) continue;
-        const filtered = [];
-        for (const entry of data.candidates[key]) {
-          if (!Array.isArray(entry.sources)) { filtered.push(entry); continue; }
-          const remaining = entry.sources.filter(s => s.source !== sourceType);
-          if (remaining.length === 0) { changed = true; continue; }
+        const before = data.candidates[key].length;
+        data.candidates[key] = data.candidates[key].filter(entry => {
+          // New format: match by source_id or source_type
+          if (entry.source_id) {
+            if (runSet) {
+              for (const rn of runSet) {
+                if (entry.source_id === `${sourceType}-${productId}-${rn}`) return false;
+              }
+              return true;
+            }
+            return entry.source_type !== sourceType;
+          }
+          // Old format: filter sources array
+          if (!Array.isArray(entry.sources)) return true;
+          const remaining = runSet
+            ? entry.sources.filter(s => !(s.source === sourceType && runSet.has(s.run_number)))
+            : entry.sources.filter(s => s.source !== sourceType);
+          if (remaining.length === 0) return false;
           entry.sources = remaining;
-          filtered.push(entry);
-          changed = true;
-        }
-        data.candidates[key] = filtered;
+          return true;
+        });
+        if (data.candidates[key].length !== before) changed = true;
       }
     }
 
-    // WHY: If no candidates remain for a field after source stripping, the published
-    // value in fields[] is stale (set_union would merge into it on next run).
-    // Clear it so the next publish starts fresh.
+    // Re-publish or clean stale fields[]
     if (data.fields) {
+      const compiled = specDb.getCompiledRules?.();
+      const compiledFields = compiled?.fields || {};
+      const threshold = config?.publishConfidenceThreshold ?? 0.7;
+
       for (const key of fieldKeys) {
         const remaining = specDb.getFieldCandidatesByProductAndField(productId, key);
         if (remaining.length === 0 && data.fields[key]) {
           delete data.fields[key];
           changed = true;
+          continue;
         }
+        if (remaining.length === 0 || !data.fields[key]) continue;
+
+        // WHY: Only republish from candidates that meet the confidence threshold.
+        const aboveThreshold = remaining.filter(c => normalizeConfidence(c.confidence) >= threshold);
+        if (aboveThreshold.length === 0) {
+          // Nothing meets threshold — unpublish
+          specDb.demoteResolvedCandidates(productId, key);
+          delete data.fields[key];
+          changed = true;
+          continue;
+        }
+
+        specDb.demoteResolvedCandidates(productId, key);
+        const fieldRule = compiledFields[key] || null;
+        const itemUnion = fieldRule?.contract?.list_rules?.item_union;
+
+        let publishedValue;
+        let publishedConfidence;
+        let winner;
+
+        if (itemUnion === 'set_union') {
+          // WHY: set_union — merge ALL above-threshold candidates' arrays (dedupe).
+          const merged = [];
+          const seen = new Set();
+          let bestConfidence = 0;
+          let bestRow = null;
+          for (const row of aboveThreshold) {
+            let items;
+            try { items = typeof row.value === 'string' ? JSON.parse(row.value) : row.value; }
+            catch { items = null; }
+            if (!Array.isArray(items)) continue;
+            for (const item of items) {
+              const s = typeof item === 'object' ? JSON.stringify(item) : String(item);
+              if (!seen.has(s)) { seen.add(s); merged.push(item); }
+            }
+            specDb.markFieldCandidateResolved(productId, key, row.value);
+            if ((row.confidence ?? 0) > bestConfidence) {
+              bestConfidence = row.confidence ?? 0;
+              bestRow = row;
+            }
+          }
+          publishedValue = merged;
+          publishedConfidence = bestConfidence;
+          winner = bestRow || aboveThreshold[0];
+        } else {
+          // Scalar — pick highest confidence above threshold
+          winner = aboveThreshold.sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0))[0];
+          specDb.markFieldCandidateResolved(productId, key, winner.value);
+          try { publishedValue = typeof winner.value === 'string' ? JSON.parse(winner.value) : winner.value; }
+          catch { publishedValue = winner.value; }
+          publishedConfidence = winner.confidence ?? 0;
+        }
+
+        // WHY: Source-centric rows have no sources_json — build from row columns.
+        const sources = winner.source_id
+          ? [{ source: winner.source_type || '', source_id: winner.source_id, model: winner.model || '', confidence: winner.confidence ?? 0 }]
+          : (Array.isArray(winner.sources_json) ? winner.sources_json : []);
+
+        data.fields[key] = {
+          value: publishedValue,
+          confidence: publishedConfidence,
+          source: 'pipeline',
+          resolved_at: new Date().toISOString(),
+          sources,
+          linked_candidates: remaining.map(r => ({
+            candidate_id: r.id,
+            source_id: r.source_id || '',
+            source_type: r.source_type || '',
+            model: r.model || '',
+            value: r.value,
+            confidence: r.confidence,
+            status: r.status,
+            submitted_at: r.submitted_at,
+          })),
+        };
+        changed = true;
       }
     }
 
@@ -432,7 +455,7 @@ export function createFinderRouteHandler(finderConfig) {
 
         // WHY: Candidate cleanup on batch delete — strip deleted runs' source entries
         if (finderConfig.candidateSourceType && fieldKeys.length > 0) {
-          stripRunSourceFromCandidates(specDb, productId, fieldKeys, finderConfig.candidateSourceType, runNumbers);
+          stripRunSourceFromCandidates(specDb, productId, fieldKeys, finderConfig.candidateSourceType, runNumbers, config);
         }
 
         if (updated) {
@@ -480,7 +503,7 @@ export function createFinderRouteHandler(finderConfig) {
         // source entries from candidates, delete empty candidates, re-publish
         // from remaining candidates, and update product.json.
         if (finderConfig.candidateSourceType && fieldKeys.length > 0) {
-          stripRunSourceFromCandidates(specDb, productId, fieldKeys, finderConfig.candidateSourceType, [runNumber]);
+          stripRunSourceFromCandidates(specDb, productId, fieldKeys, finderConfig.candidateSourceType, [runNumber], config);
         }
 
         if (updated) {
@@ -527,7 +550,7 @@ export function createFinderRouteHandler(finderConfig) {
         // from candidate rows. Candidates from other sources (pipeline, review,
         // manual override) survive with their remaining sources intact.
         if (finderConfig.candidateSourceType && fieldKeys.length > 0) {
-          stripSourceFromCandidates(specDb, productId, fieldKeys, finderConfig.candidateSourceType);
+          stripSourceFromCandidates(specDb, productId, fieldKeys, finderConfig.candidateSourceType, config);
         } else {
           for (const key of fieldKeys) {
             specDb.deleteFieldCandidatesByProductAndField(productId, key);

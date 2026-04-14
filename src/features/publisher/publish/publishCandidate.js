@@ -57,10 +57,11 @@ export function buildLinkedCandidates(specDb, productId, fieldKey, publishedValu
     .sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0))
     .map(row => ({
       candidate_id: row.id,
+      source_id: row.source_id || '',
+      source_type: row.source_type || '',
+      model: row.model || '',
       value: row.value,
       confidence: row.confidence,
-      source_count: row.source_count,
-      sources: Array.isArray(row.sources_json) ? row.sources_json : [],
       status: row.status,
       submitted_at: row.submitted_at,
     }));
@@ -115,7 +116,11 @@ export function publishCandidate({
 
   const serialized = serializeValue(publishedValue);
   const now = new Date().toISOString();
-  const sources = Array.isArray(candidateRow?.sources_json) ? candidateRow.sources_json : [];
+  // WHY: Source-centric rows have no sources_json — the row IS the source.
+  // Build a source entry from the triggering row's own fields for backward compat.
+  const sources = candidateRow?.source_id
+    ? [{ source: candidateRow.source_type || '', source_id: candidateRow.source_id, model: candidateRow.model || '', confidence, submitted_at: candidateRow.submitted_at || now }]
+    : (Array.isArray(candidateRow?.sources_json) ? candidateRow.sources_json : []);
 
   // --- SQL: demote previous winners, mark contributing candidates resolved ---
   specDb.demoteResolvedCandidates(productId, fieldKey);
@@ -164,9 +169,13 @@ export function publishCandidate({
 
 // WHY: Persist the publish decision in the candidate's metadata_json so the
 // publisher GUI can display published vs rejected and the rejection reason.
+// WHY: Persist publish decision in existing row's metadata_json.
+// Uses the row's own source_id to upsert without creating a new row.
 function persistPublishResult(specDb, productId, fieldKey, serializedValue, result) {
   try {
-    const row = specDb.getFieldCandidate(productId, fieldKey, serializedValue);
+    // WHY: Try value-based lookup first (may match multiple source-centric rows — pick first).
+    const rows = specDb.getFieldCandidatesByValue?.(productId, fieldKey, serializedValue) || [];
+    const row = rows[0] || specDb.getFieldCandidate?.(productId, fieldKey, serializedValue);
     if (!row) return;
     const meta = row.metadata_json && typeof row.metadata_json === 'object' ? { ...row.metadata_json } : {};
     meta.publish_result = result;
@@ -175,8 +184,9 @@ function persistPublishResult(specDb, productId, fieldKey, serializedValue, resu
       value: serializedValue,
       unit: row.unit,
       confidence: row.confidence,
-      sourceCount: row.source_count,
-      sourcesJson: row.sources_json,
+      sourceId: row.source_id || '',
+      sourceType: row.source_type || '',
+      model: row.model || '',
       validationJson: row.validation_json,
       metadataJson: meta,
       status: row.status,

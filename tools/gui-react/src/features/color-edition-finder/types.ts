@@ -1,15 +1,3 @@
-export interface ColorEditionFinderColorDetail {
-  readonly found_run: number;
-  readonly found_at: string;
-  readonly model: string;
-}
-
-export interface ColorEditionFinderEditionDetail {
-  readonly found_run: number;
-  readonly found_at: string;
-  readonly model: string;
-}
-
 /** The paired selected state: colors + editions with their colors + default. */
 export interface ColorEditionFinderSelected {
   readonly colors: readonly string[];
@@ -58,23 +46,14 @@ export interface ColorEditionFinderRunEntry {
   };
 }
 
-/** A source entry from a candidate submission. */
-export interface CefSourceEntry {
-  readonly source: string;
-  readonly model?: string;
-  readonly run_id?: string;
-  readonly run_number?: number;
-  readonly confidence: number;
-  readonly submitted_at: string;
-}
-
-/** A single candidate row with its evidence chain. */
+/** A single candidate row — one per extraction event (source-centric). */
 export interface CefCandidateEntry {
   readonly candidate_id: number;
+  readonly source_id: string;
+  readonly source_type: string;
+  readonly model: string;
   readonly value: string;
   readonly confidence: number;
-  readonly source_count: number;
-  readonly sources: readonly CefSourceEntry[];
   readonly status: 'candidate' | 'resolved';
   readonly metadata: Readonly<Record<string, unknown>>;
   readonly submitted_at: string;
@@ -89,6 +68,19 @@ export interface CefPublishedState {
   readonly edition_details?: Readonly<Record<string, { readonly display_name?: string; readonly colors?: readonly string[] }>>;
 }
 
+export interface CefVariantRegistryEntry {
+  readonly variant_id: string;
+  readonly variant_key: string;
+  readonly variant_type: 'color' | 'edition';
+  readonly variant_label: string;
+  readonly color_atoms: readonly string[];
+  readonly edition_slug: string | null;
+  readonly edition_display_name: string | null;
+  readonly created_at: string;
+  readonly updated_at?: string;
+  readonly retired?: boolean;
+}
+
 export interface ColorEditionFinderResult {
   readonly product_id: string;
   readonly category: string;
@@ -96,20 +88,13 @@ export interface ColorEditionFinderResult {
   readonly on_cooldown: boolean;
   readonly run_count: number;
   readonly last_ran_at: string;
-  // Published truth from field_candidates
-  readonly published?: CefPublishedState;
+  readonly published: CefPublishedState;
+  readonly variant_registry: readonly CefVariantRegistryEntry[];
   readonly candidates?: {
     readonly colors: readonly CefCandidateEntry[];
     readonly editions: readonly CefCandidateEntry[];
   };
   readonly runs: readonly ColorEditionFinderRunEntry[];
-  // Deprecated: kept for backward compat
-  readonly colors: readonly string[];
-  readonly editions: readonly string[];
-  readonly default_color: string;
-  readonly selected: ColorEditionFinderSelected;
-  readonly color_details: Readonly<Record<string, ColorEditionFinderColorDetail>>;
-  readonly edition_details: Readonly<Record<string, ColorEditionFinderEditionDetail>>;
 }
 
 /** 202 Accepted response — returned immediately by fire-and-forget POST handlers. */

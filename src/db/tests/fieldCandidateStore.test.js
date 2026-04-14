@@ -13,8 +13,9 @@ function sampleCandidate(overrides = {}) {
     fieldKey: 'weight',
     value: '58',
     confidence: 92,
-    sourceCount: 1,
-    sourcesJson: [{ artifact: '2db2b3f0...', url: 'https://www.razer.com/...', confidence: 92, run_id: 'run-1', submitted_at: '2026-04-05T18:00:00.000Z' }],
+    sourceId: overrides.sourceId || `test-mouse-001-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    sourceType: 'test',
+    model: '',
     validationJson: { valid: true, repairs: [], rejections: [] },
     ...overrides,
   };
@@ -45,61 +46,42 @@ describe('fieldCandidateStore', () => {
     assert.equal(row.field_key, 'weight');
     assert.equal(row.value, '58');
     assert.equal(row.confidence, 92);
-    assert.equal(row.source_count, 1);
+    assert.ok(row.source_id);
     assert.ok(row.id > 0);
     assert.ok(row.submitted_at);
     assert.ok(row.updated_at);
   });
 
   it('JSON columns survive roundtrip', () => {
-    db.upsertFieldCandidate(sampleCandidate({
+    db.insertFieldCandidate({
       productId: 'mouse-json',
       fieldKey: 'colors',
+      sourceId: 'cef-mouse-json-1',
+      sourceType: 'cef',
       value: '["black","white"]',
-      sourcesJson: [
-        { model: 'gemini-2.5-flash', confidence: 100, run_id: 'cef-1', submitted_at: '2026-04-04T00:00:00Z' },
-        { model: 'gemini-2.5-flash-lite', confidence: 100, run_id: 'cef-2', submitted_at: '2026-04-05T00:00:00Z' },
-      ],
+      confidence: 100,
+      model: 'gemini-2.5-flash',
       validationJson: { valid: true, repairs: [{ step: 'normalize', before: 'Grey', after: 'gray', rule: 'token_map' }], rejections: [] },
-    }));
+      metadataJson: { color_names: { black: 'Black' } },
+    });
 
-    const row = db.getFieldCandidate('mouse-json', 'colors', '["black","white"]');
+    const row = db.getFieldCandidateBySourceId('mouse-json', 'colors', 'cef-mouse-json-1');
     assert.ok(row);
-    assert.ok(Array.isArray(row.sources_json));
-    assert.equal(row.sources_json.length, 2);
-    assert.equal(row.sources_json[0].model, 'gemini-2.5-flash');
     assert.ok(typeof row.validation_json === 'object');
     assert.equal(row.validation_json.valid, true);
     assert.equal(row.validation_json.repairs.length, 1);
     assert.equal(row.validation_json.repairs[0].step, 'normalize');
+    assert.equal(row.metadata_json.color_names.black, 'Black');
   });
 
-  it('upsert conflict: same (product, field, value) updates existing row', () => {
-    db.upsertFieldCandidate(sampleCandidate({
-      productId: 'mouse-conflict',
-      confidence: 80,
-      sourceCount: 1,
-    }));
+  it('upsert conflict: same source_id updates confidence via MAX', () => {
+    const sid = 'test-mouse-conflict-1';
+    db.upsertFieldCandidate({ productId: 'mouse-conflict', fieldKey: 'weight', value: '58', confidence: 80, sourceId: sid, sourceType: 'test', model: '', validationJson: {}, metadataJson: {} });
+    db.upsertFieldCandidate({ productId: 'mouse-conflict', fieldKey: 'weight', value: '58', confidence: 95, sourceId: sid, sourceType: 'test', model: '', validationJson: {}, metadataJson: {} });
 
-    db.upsertFieldCandidate(sampleCandidate({
-      productId: 'mouse-conflict',
-      confidence: 95,
-      sourceCount: 2,
-      sourcesJson: [
-        { artifact: 'aaa', confidence: 80, run_id: 'run-1', submitted_at: '2026-04-05T00:00:00Z' },
-        { artifact: 'bbb', confidence: 95, run_id: 'run-2', submitted_at: '2026-04-06T00:00:00Z' },
-      ],
-    }));
-
-    const row = db.getFieldCandidate('mouse-conflict', 'weight', '58');
-    assert.ok(row);
-    assert.equal(row.confidence, 95);
-    assert.equal(row.source_count, 2);
-    assert.equal(row.sources_json.length, 2);
-
-    // Verify single row, not duplicate
     const all = db.getFieldCandidatesByProductAndField('mouse-conflict', 'weight');
     assert.equal(all.length, 1);
+    assert.equal(all[0].confidence, 95); // MAX(80, 95)
   });
 
   it('get returns null for unknown product', () => {
@@ -178,41 +160,24 @@ describe('fieldCandidateStore', () => {
     kbDb.close();
   });
 
-  it('source merge on re-upsert: confidence takes MAX', () => {
-    db.upsertFieldCandidate(sampleCandidate({
-      productId: 'mouse-merge',
-      confidence: 80,
-      sourceCount: 1,
-      sourcesJson: [{ artifact: 'aaa', confidence: 80, run_id: 'run-1' }],
-    }));
+  it('upsert re-insert: confidence takes MAX', () => {
+    const sid = 'test-mouse-merge-1';
+    db.upsertFieldCandidate({ productId: 'mouse-merge', fieldKey: 'weight', value: '58', confidence: 80, sourceId: sid, sourceType: 'test', model: '', validationJson: {}, metadataJson: {} });
+    db.upsertFieldCandidate({ productId: 'mouse-merge', fieldKey: 'weight', value: '58', confidence: 60, sourceId: sid, sourceType: 'test', model: '', validationJson: {}, metadataJson: {} });
 
-    // Second upsert with lower confidence — MAX should keep 80
-    db.upsertFieldCandidate(sampleCandidate({
-      productId: 'mouse-merge',
-      confidence: 60,
-      sourceCount: 2,
-      sourcesJson: [
-        { artifact: 'aaa', confidence: 80, run_id: 'run-1' },
-        { artifact: 'bbb', confidence: 60, run_id: 'run-2' },
-      ],
-    }));
-
-    const row = db.getFieldCandidate('mouse-merge', 'weight', '58');
-    assert.ok(row);
-    assert.equal(row.confidence, 80); // MAX(80, 60) = 80
-    assert.equal(row.source_count, 2);
-    assert.equal(row.sources_json.length, 2);
+    const rows = db.getFieldCandidatesByProductAndField('mouse-merge', 'weight');
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].confidence, 80); // MAX(80, 60) = 80
   });
 
-  it('status defaults to candidate, can be set to resolved', () => {
-    // Default status
-    db.upsertFieldCandidate(sampleCandidate({ productId: 'mouse-status', value: '58' }));
-    const candidateRow = db.getFieldCandidate('mouse-status', 'weight', '58');
+  it('status defaults to candidate, can be set to resolved via upsert', () => {
+    const sid = 'test-mouse-status-1';
+    db.upsertFieldCandidate({ productId: 'mouse-status', fieldKey: 'weight', value: '58', confidence: 80, sourceId: sid, sourceType: 'test', model: '', validationJson: {}, metadataJson: {} });
+    const candidateRow = db.getFieldCandidateBySourceId('mouse-status', 'weight', sid);
     assert.equal(candidateRow.status, 'candidate');
 
-    // Set to resolved
-    db.upsertFieldCandidate(sampleCandidate({ productId: 'mouse-status', value: '58', status: 'resolved' }));
-    const resolvedRow = db.getFieldCandidate('mouse-status', 'weight', '58');
+    db.upsertFieldCandidate({ productId: 'mouse-status', fieldKey: 'weight', value: '58', confidence: 80, sourceId: sid, sourceType: 'test', model: '', validationJson: {}, metadataJson: {}, status: 'resolved' });
+    const resolvedRow = db.getFieldCandidateBySourceId('mouse-status', 'weight', sid);
     assert.equal(resolvedRow.status, 'resolved');
   });
 
@@ -236,21 +201,20 @@ describe('fieldCandidateStore', () => {
   });
 
   it('getPaginated hydrates JSON columns', () => {
-    db.upsertFieldCandidate(sampleCandidate({
-      productId: 'mouse-page-json',
-      fieldKey: 'weight',
-      value: '99',
-      sourcesJson: [{ artifact: 'abc', confidence: 80, run_id: 'run-1' }],
+    db.insertFieldCandidate({
+      productId: 'mouse-page-json', fieldKey: 'weight',
+      sourceId: 'test-mouse-page-json-1', sourceType: 'test',
+      value: '99', confidence: 80, model: 'gemini',
       validationJson: { valid: true, repairs: [{ step: 'unit', before: '99g', after: '99', rule: 'strip_unit' }], rejections: [] },
-    }));
+      metadataJson: {},
+    });
 
     const rows = db.getFieldCandidatesPaginated({ limit: 100, offset: 0 });
     const match = rows.find(r => r.product_id === 'mouse-page-json' && r.value === '99');
     assert.ok(match);
-    assert.ok(Array.isArray(match.sources_json));
-    assert.equal(match.sources_json[0].artifact, 'abc');
     assert.ok(typeof match.validation_json === 'object');
     assert.equal(match.validation_json.repairs[0].step, 'unit');
+    assert.equal(match.source_id, 'test-mouse-page-json-1');
   });
 
   it('count returns total number of candidates for category', () => {
@@ -289,11 +253,236 @@ describe('fieldCandidateStore', () => {
     assert.ok(stats.products >= 1, 'should have at least 1 product');
   });
 
-  it('validation_json with llmRepair roundtrips through upsert', () => {
-    db.upsertFieldCandidate(sampleCandidate({
-      productId: 'mouse-llm',
-      fieldKey: 'sensor',
-      value: 'pixart-3395',
+  // ── Source-centric API (Phase 1 — new methods) ─────────────────────
+
+  it('insertFieldCandidate creates a row with source_id', () => {
+    db.insertFieldCandidate({
+      productId: 'mouse-src-ins',
+      fieldKey: 'weight',
+      sourceId: 'cef-mouse-src-ins-1',
+      sourceType: 'cef',
+      value: '58',
+      unit: null,
+      confidence: 92,
+      model: 'gemini-2.5-flash',
+      validationJson: { valid: true, repairs: [], rejections: [] },
+      metadataJson: {},
+    });
+
+    const row = db.getFieldCandidateBySourceId('mouse-src-ins', 'weight', 'cef-mouse-src-ins-1');
+    assert.ok(row);
+    assert.equal(row.source_id, 'cef-mouse-src-ins-1');
+    assert.equal(row.source_type, 'cef');
+    assert.equal(row.value, '58');
+    assert.equal(row.confidence, 92);
+    assert.equal(row.model, 'gemini-2.5-flash');
+    assert.equal(row.status, 'candidate');
+  });
+
+  it('insertFieldCandidate duplicate source_id is idempotent (no-op)', () => {
+    db.insertFieldCandidate({
+      productId: 'mouse-src-dup',
+      fieldKey: 'weight',
+      sourceId: 'cef-mouse-src-dup-1',
+      sourceType: 'cef',
+      value: '58',
+      confidence: 80,
+      model: 'gemini-2.5-flash',
+      validationJson: {},
+      metadataJson: {},
+    });
+
+    // Second insert with same source_id — should be no-op, not throw
+    db.insertFieldCandidate({
+      productId: 'mouse-src-dup',
+      fieldKey: 'weight',
+      sourceId: 'cef-mouse-src-dup-1',
+      sourceType: 'cef',
+      value: '59',
+      confidence: 99,
+      model: 'gpt-5',
+      validationJson: {},
+      metadataJson: {},
+    });
+
+    // Original row preserved, not overwritten
+    const row = db.getFieldCandidateBySourceId('mouse-src-dup', 'weight', 'cef-mouse-src-dup-1');
+    assert.equal(row.value, '58');
+    assert.equal(row.confidence, 80);
+  });
+
+  it('same value + different source_id creates two rows', () => {
+    db.insertFieldCandidate({
+      productId: 'mouse-src-2row',
+      fieldKey: 'weight',
+      sourceId: 'cef-mouse-src-2row-1',
+      sourceType: 'cef',
+      value: '58',
+      confidence: 80,
+      model: 'gemini-2.5-flash',
+      validationJson: {},
+      metadataJson: {},
+    });
+
+    db.insertFieldCandidate({
+      productId: 'mouse-src-2row',
+      fieldKey: 'weight',
+      sourceId: 'cef-mouse-src-2row-2',
+      sourceType: 'cef',
+      value: '58',
+      confidence: 95,
+      model: 'gpt-5',
+      validationJson: {},
+      metadataJson: {},
+    });
+
+    const rows = db.getFieldCandidatesByProductAndField('mouse-src-2row', 'weight');
+    assert.equal(rows.length, 2);
+  });
+
+  it('deleteFieldCandidateBySourceId removes exactly one row', () => {
+    db.insertFieldCandidate({
+      productId: 'mouse-src-del',
+      fieldKey: 'weight',
+      sourceId: 'cef-mouse-src-del-1',
+      sourceType: 'cef',
+      value: '58',
+      confidence: 80,
+      model: 'gemini',
+      validationJson: {},
+      metadataJson: {},
+    });
+
+    db.insertFieldCandidate({
+      productId: 'mouse-src-del',
+      fieldKey: 'weight',
+      sourceId: 'cef-mouse-src-del-2',
+      sourceType: 'cef',
+      value: '59',
+      confidence: 90,
+      model: 'gemini',
+      validationJson: {},
+      metadataJson: {},
+    });
+
+    db.deleteFieldCandidateBySourceId('mouse-src-del', 'weight', 'cef-mouse-src-del-1');
+
+    const rows = db.getFieldCandidatesByProductAndField('mouse-src-del', 'weight');
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].source_id, 'cef-mouse-src-del-2');
+  });
+
+  it('deleteFieldCandidatesBySourceType removes all rows for that type', () => {
+    db.insertFieldCandidate({
+      productId: 'mouse-src-deltype',
+      fieldKey: 'weight',
+      sourceId: 'cef-mouse-src-deltype-1',
+      sourceType: 'cef',
+      value: '58',
+      confidence: 80,
+      model: 'gemini',
+      validationJson: {},
+      metadataJson: {},
+    });
+
+    db.insertFieldCandidate({
+      productId: 'mouse-src-deltype',
+      fieldKey: 'weight',
+      sourceId: 'review-mouse-src-deltype-1',
+      sourceType: 'review',
+      value: '58',
+      confidence: 100,
+      model: '',
+      validationJson: {},
+      metadataJson: {},
+    });
+
+    db.deleteFieldCandidatesBySourceType('mouse-src-deltype', 'weight', 'cef');
+
+    const rows = db.getFieldCandidatesByProductAndField('mouse-src-deltype', 'weight');
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].source_type, 'review');
+  });
+
+  it('markFieldCandidateResolvedByValue marks ALL source-rows for that value', () => {
+    db.insertFieldCandidate({
+      productId: 'mouse-src-resolve',
+      fieldKey: 'weight',
+      sourceId: 'cef-mouse-src-resolve-1',
+      sourceType: 'cef',
+      value: '58',
+      confidence: 80,
+      model: 'gemini',
+      validationJson: {},
+      metadataJson: {},
+    });
+
+    db.insertFieldCandidate({
+      productId: 'mouse-src-resolve',
+      fieldKey: 'weight',
+      sourceId: 'pipeline-mouse-src-resolve-1',
+      sourceType: 'pipeline',
+      value: '58',
+      confidence: 90,
+      model: 'gpt-5',
+      validationJson: {},
+      metadataJson: {},
+    });
+
+    db.markFieldCandidateResolvedByValue('mouse-src-resolve', 'weight', '58');
+
+    const rows = db.getFieldCandidatesByProductAndField('mouse-src-resolve', 'weight');
+    assert.ok(rows.every(r => r.status === 'resolved'));
+  });
+
+  it('getFieldCandidatesByValue returns all source-rows for a value', () => {
+    db.insertFieldCandidate({
+      productId: 'mouse-src-byval',
+      fieldKey: 'weight',
+      sourceId: 'cef-mouse-src-byval-1',
+      sourceType: 'cef',
+      value: '58',
+      confidence: 80,
+      model: 'gemini',
+      validationJson: {},
+      metadataJson: {},
+    });
+
+    db.insertFieldCandidate({
+      productId: 'mouse-src-byval',
+      fieldKey: 'weight',
+      sourceId: 'pipeline-mouse-src-byval-1',
+      sourceType: 'pipeline',
+      value: '58',
+      confidence: 90,
+      model: 'gpt-5',
+      validationJson: {},
+      metadataJson: {},
+    });
+
+    // Different value — should not be returned
+    db.insertFieldCandidate({
+      productId: 'mouse-src-byval',
+      fieldKey: 'weight',
+      sourceId: 'cef-mouse-src-byval-2',
+      sourceType: 'cef',
+      value: '59',
+      confidence: 70,
+      model: 'gemini',
+      validationJson: {},
+      metadataJson: {},
+    });
+
+    const rows = db.getFieldCandidatesByValue('mouse-src-byval', 'weight', '58');
+    assert.equal(rows.length, 2);
+    assert.ok(rows.every(r => r.value === '58'));
+  });
+
+  it('validation_json with llmRepair roundtrips through insert', () => {
+    db.insertFieldCandidate({
+      productId: 'mouse-llm', fieldKey: 'sensor',
+      sourceId: 'test-mouse-llm-1', sourceType: 'test',
+      value: 'pixart-3395', confidence: 90, model: '',
       validationJson: {
         valid: true,
         repairs: [{ step: 'normalize', before: 'PixArt 3395', after: 'pixart-3395', rule: 'normalize_chain' }],
@@ -306,16 +495,15 @@ describe('fieldCandidateStore', () => {
           ],
         },
       },
-    }));
+      metadataJson: {},
+    });
 
-    const row = db.getFieldCandidate('mouse-llm', 'sensor', 'pixart-3395');
+    const row = db.getFieldCandidateBySourceId('mouse-llm', 'sensor', 'test-mouse-llm-1');
     assert.ok(row);
     assert.ok(row.validation_json.llmRepair);
     assert.equal(row.validation_json.llmRepair.promptId, 'P2');
     assert.equal(row.validation_json.llmRepair.status, 'repaired');
     assert.equal(row.validation_json.llmRepair.decisions.length, 1);
     assert.equal(row.validation_json.llmRepair.decisions[0].decision, 'map_to_existing');
-    assert.equal(row.validation_json.llmRepair.decisions[0].resolved_to, 'pixart-3395');
-    assert.equal(row.validation_json.llmRepair.decisions[0].reasoning, 'Matches known PAW3395 variant');
   });
 });

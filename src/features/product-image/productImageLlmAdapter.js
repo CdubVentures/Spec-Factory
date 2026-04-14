@@ -382,71 +382,85 @@ export const CATEGORY_VIEW_EVAL_CRITERIA = Object.freeze({
 /**
  * Generic hero eval criteria — fallback for unknown categories.
  */
-export const GENERIC_HERO_EVAL_CRITERIA = `Hero selection criteria for a product page carousel:
-- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
-- Product must be the CLEAR STAR of the image — it should be the obvious focal point, not a tiny item in a busy desk scene.
-- Identity: Must be the correct model and correct color/edition variant. Wrong product or wrong color → skip.
-- No dual-product images — do not select images showing two color variants side by side.
-- Source quality: Only accept brand, manufacturer, or authorized retailer photography. Reject editorial/review site photos (these are copyrighted — PC Gamer, Tom's Hardware, TechRadar, etc.).
-- Watermarks: Getty, Shutterstock, retailer logos, "SAMPLE" text, copyright overlays → skip, do not select.
-- Badges / overlays: Sale stickers, "NEW" badges, retailer branding, promotional text → skip, do not select.
-- Cropped images are acceptable if the product remains clearly identifiable and prominent.
-- Image quality: Sharp, well-composed, good lighting, no heavy compression artifacts or blur.
-- Perspective diversity — CRITICAL: Each selected hero MUST show a distinctly different perspective, angle, or composition. Do not pick near-duplicate shots taken from the same angle. A good hero set covers different views of the product.
-- Prefer lifestyle/contextual shots with real environments, dramatic or atmospheric lighting.`;
+export const GENERIC_HERO_EVAL_CRITERIA = `Hero image evaluation — you are a LEGAL and QUALITY gatekeeper, not an art director.
+Any image type is acceptable (cutouts, lifestyle, renders, studio lineups, kit layouts, themed scenes) as long as it passes these gates:
+
+1. SOURCE SAFETY (copyright gate — most important):
+   - ACCEPT: Manufacturer promotional images, official product pages, press kit photos, retailer CDN images (Amazon A+, Best Buy).
+   - REJECT: Photos taken by review sites, tech publications, YouTubers, or bloggers (PC Gamer, Tom's Hardware, RTINGS, TechPowerUp, The Verge, LTT, TechRadar, etc.). These are copyrighted editorial content.
+   - How to tell: Editorial photos show lab environments, test equipment, desk clutter, hands holding the product, inconsistent overhead lighting. Manufacturer promo images have polished studio lighting, consistent brand aesthetics, clean backgrounds, or stylized scenes.
+
+2. CLEANLINESS (usability gate):
+   - REJECT: Watermarks (Getty, Shutterstock, iStock, Alamy), "SAMPLE" text, copyright overlays.
+   - REJECT: Sale stickers, "NEW" badges, retailer branding baked into the image, promotional text overlays.
+
+3. IDENTITY (correct product gate):
+   - Must be the correct model and correct color/edition variant, visible and identifiable. Wrong product or wrong color → skip.
+   - Multi-color lineup shots (multiple colorways of the same model) are acceptable.
+
+4. IMAGE QUALITY:
+   - Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
+   - Must not be blurry, heavily compressed, or look like a low-res screenshot.
+
+When picking multiple heroes, prefer different shots over near-duplicates of the same angle.`;
 
 /**
  * Per-category hero evaluation criteria.
  */
 export const CATEGORY_HERO_EVAL_CRITERIA = Object.freeze({
-  mouse: `Hero selection criteria for MOUSE product page carousel:
-- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
-- Product must be the CLEAR STAR — the mouse should be the obvious focal point. Reject desk overview shots where the mouse is one of many peripherals and hard to identify.
-- Identity: Must be the correct mouse model and correct color/edition variant. Wrong product or wrong color → skip.
-- No dual-product images — reject images showing two color variants side by side.
-- Source: Only brand/manufacturer/retailer photography. Reject editorial review site photos (copyrighted).
-- Watermarks: Getty, Shutterstock, retailer logos, "SAMPLE" text, copyright overlays → skip, do not select.
-- Badges / overlays: Sale stickers, "NEW" badges, retailer branding, promotional text → skip, do not select.
-- Close-up dramatic angles showing the mouse on a desk or mousepad are ideal.
-- Desk/mousepad context is great as long as the mouse is prominent and identifiable.
-- Prefer dramatic or atmospheric lighting that showcases the product design and RGB effects.
-- Cropped is OK if the mouse remains clearly identifiable and prominent.
-- Image quality: Sharp, well-composed, good lighting, no heavy compression artifacts.
-- Perspective diversity — CRITICAL: Each selected hero MUST show a distinctly different perspective, angle, or composition. Do not pick near-duplicate shots taken from the same angle. A good hero set covers different views of the mouse.`,
+  mouse: `Hero image evaluation for MOUSE — you are a LEGAL and QUALITY gatekeeper, not an art director.
+Any image type is acceptable (cutouts, desk glamour shots, promotional renders, RGB scenes, themed editions, kit layouts) as long as it passes these gates:
 
-  keyboard: `Hero selection criteria for KEYBOARD product page carousel:
-- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
-- Product must be the CLEAR STAR — the keyboard should dominate the frame. Reject desk overview shots where the keyboard is just one item among many.
-- Identity: Must be the correct keyboard model and correct color/edition variant. Wrong product or wrong color → skip.
-- No dual-product images — reject images showing multiple keyboards.
-- Source: Only brand/manufacturer/retailer photography. Reject editorial review site photos (copyrighted).
-- Watermarks: Getty, Shutterstock, retailer logos, "SAMPLE" text, copyright overlays → skip, do not select.
-- Badges / overlays: Sale stickers, "NEW" badges, retailer branding, promotional text → skip, do not select.
-- RGB lighting in-situ shots on a desk surface are ideal hero material.
-- Prefer shots where keycaps and lighting are clearly visible in a real environment.
-- Cropped is OK if the keyboard remains clearly identifiable.
-- Image quality: Sharp, well-composed, good lighting, no heavy compression artifacts.
-- Perspective diversity — CRITICAL: Each selected hero MUST show a distinctly different perspective, angle, or composition. Do not pick near-duplicate shots taken from the same angle. A good hero set covers different views of the keyboard.`,
+1. SOURCE SAFETY (copyright gate — most important):
+   - ACCEPT: Manufacturer promotional images, official product pages, press kit photos, retailer CDN images.
+   - REJECT: Photos taken by review sites or tech publications (PC Gamer, Tom's Hardware, RTINGS, TechPowerUp, The Verge, etc.). These are copyrighted editorial content.
+   - How to tell: Editorial photos show lab environments, test equipment, desk clutter, hands holding the mouse, inconsistent overhead lighting. Manufacturer promo images have polished studio lighting, consistent brand aesthetics, clean backgrounds, or stylized scenes.
 
-  monitor: `Hero selection criteria for MONITOR product page carousel:
-- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
-- Product must be the CLEAR STAR — the monitor should dominate the image. Reject full-room or multi-monitor shots where the target is hard to identify.
-- Identity: Must be the correct monitor model and correct color/edition variant. Wrong product or wrong color → skip.
-- No dual-product images — exactly one monitor prominent in the scene.
-- Source: Only brand/manufacturer/retailer photography. Reject editorial review site photos (copyrighted).
-- Watermarks: Getty, Shutterstock, retailer logos, "SAMPLE" text, copyright overlays → skip, do not select.
-- Badges / overlays: Sale stickers, "NEW" badges, retailer branding, promotional text → skip, do not select.
-- Screen-on lifestyle shots showing the display in context (desk, gaming setup) are ideal.
-- Screen content should be tasteful — game scenes, abstract visuals, or the product's own marketing imagery.
-- Cropped is OK if the monitor remains clearly identifiable.
-- Image quality: Sharp, well-composed, good lighting, no heavy compression artifacts.
-- Perspective diversity — CRITICAL: Each selected hero MUST show a distinctly different perspective, angle, or composition. Do not pick near-duplicate shots taken from the same angle. A good hero set covers different views of the monitor.`,
+2. CLEANLINESS: REJECT watermarks, "SAMPLE" text, sale stickers, "NEW" badges, retailer branding baked into the image.
+
+3. IDENTITY: Must be the correct mouse model and correct color/edition variant. Wrong product or wrong color → skip. Multi-color lineup shots (multiple colorways of the same model) are acceptable.
+
+4. IMAGE QUALITY: Higher resolution preferred (check dimensions in image labels). Must not be blurry, heavily compressed, or a low-res screenshot.
+
+When picking multiple heroes, prefer different shots over near-duplicates of the same angle.`,
+
+  keyboard: `Hero image evaluation for KEYBOARD — you are a LEGAL and QUALITY gatekeeper, not an art director.
+Any image type is acceptable (cutouts, desk shots, promotional renders, RGB scenes, kit layouts) as long as it passes these gates:
+
+1. SOURCE SAFETY (copyright gate — most important):
+   - ACCEPT: Manufacturer promotional images, official product pages, press kit photos, retailer CDN images.
+   - REJECT: Photos taken by review sites or tech publications (PC Gamer, Tom's Hardware, RTINGS, TechPowerUp, The Verge, etc.). These are copyrighted editorial content.
+   - How to tell: Editorial photos show lab environments, test equipment, desk clutter, hands typing, inconsistent overhead lighting. Manufacturer promo images have polished studio lighting, consistent brand aesthetics, clean backgrounds, or stylized scenes.
+
+2. CLEANLINESS: REJECT watermarks, "SAMPLE" text, sale stickers, "NEW" badges, retailer branding baked into the image.
+
+3. IDENTITY: Must be the correct keyboard model and correct color/edition variant. Wrong product or wrong color → skip. Multi-color lineup shots (multiple colorways of the same model) are acceptable.
+
+4. IMAGE QUALITY: Higher resolution preferred (check dimensions in image labels). Must not be blurry, heavily compressed, or a low-res screenshot.
+
+When picking multiple heroes, prefer different shots over near-duplicates of the same angle.`,
+
+  monitor: `Hero image evaluation for MONITOR — you are a LEGAL and QUALITY gatekeeper, not an art director.
+Any image type is acceptable (cutouts, desk setups, promotional renders, screen-on lifestyle shots) as long as it passes these gates:
+
+1. SOURCE SAFETY (copyright gate — most important):
+   - ACCEPT: Manufacturer promotional images, official product pages, press kit photos, retailer CDN images.
+   - REJECT: Photos taken by review sites or tech publications (PC Gamer, Tom's Hardware, RTINGS, TechPowerUp, The Verge, etc.). These are copyrighted editorial content.
+   - How to tell: Editorial photos show lab environments, colorimeter/calibration equipment, measurement charts on screen, inconsistent overhead lighting. Manufacturer promo images have polished studio lighting, consistent brand aesthetics, clean backgrounds, or stylized scenes.
+
+2. CLEANLINESS: REJECT watermarks, "SAMPLE" text, sale stickers, "NEW" badges, retailer branding baked into the image.
+
+3. IDENTITY: Must be the correct monitor model and correct color/edition variant. Wrong product or wrong color → skip. Multi-color lineup shots (multiple colorways of the same model) are acceptable.
+
+4. IMAGE QUALITY: Higher resolution preferred (check dimensions in image labels). Must not be blurry, heavily compressed, or a low-res screenshot.
+
+When picking multiple heroes, prefer different shots over near-duplicates of the same angle.`,
 
   mousepad: `Hero selection criteria for MOUSEPAD product page carousel:
 - Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
 - Product must be clearly visible and identifiable — full pad visible in desk context or close-up showing surface texture and branding.
 - Identity: Must be the correct mousepad model and correct color/edition variant. Wrong product or wrong color → skip.
-- No dual-product images.
+- Multi-color lineup shots (multiple colorways of the same model) are acceptable.
 - Source: Only brand/manufacturer/retailer photography. Reject editorial review site photos (copyrighted).
 - Watermarks: Getty, Shutterstock, retailer logos, "SAMPLE" text, copyright overlays → skip, do not select.
 - Badges / overlays: Sale stickers, "NEW" badges, retailer branding, promotional text → skip, do not select.

@@ -115,14 +115,15 @@ CREATE TABLE IF NOT EXISTS field_candidates (
   value TEXT,
   unit TEXT DEFAULT NULL,
   confidence REAL DEFAULT 0,
-  source_count INTEGER DEFAULT 1,
-  sources_json TEXT DEFAULT '[]',
+  source_id TEXT NOT NULL DEFAULT '',
+  source_type TEXT NOT NULL DEFAULT '',
+  model TEXT DEFAULT '',
   validation_json TEXT DEFAULT '{}',
   metadata_json TEXT DEFAULT '{}',
   status TEXT DEFAULT 'candidate' CHECK(status IN ('candidate', 'resolved')),
   submitted_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now')),
-  UNIQUE(category, product_id, field_key, value)
+  UNIQUE(category, product_id, field_key, source_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_fc_product ON field_candidates(product_id);

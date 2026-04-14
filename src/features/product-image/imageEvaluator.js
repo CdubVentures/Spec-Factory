@@ -90,14 +90,16 @@ Respond with JSON matching this schema:
     "reasoning": "1-2 sentences: why this image won and how it compares to the others"
   },
   "rejected": [
-    { "filename": "a disqualified candidate", "flags": ["watermark"], "reasoning": "1 sentence why" }
+    { "filename": "disqualified.png", "flags": ["watermark"], "reasoning": "1 sentence why" },
+    { "filename": "outranked.png", "reasoning": "1 sentence why not picked" }
   ]
 }
 
 Rules:
 - "winner": Pick exactly one best image for this view. Explain why it won over the others. Set to null if NO candidate is acceptable.
-- "rejected": List ONLY candidates with disqualifying issues. Each gets a "flags" array of one or more: "watermark", "badge", "cropped", "wrong_product". Include a brief "reasoning" (1 sentence) explaining the disqualification.
-- Candidates that are simply lower quality than the winner (but not disqualified) do NOT need to appear in "rejected".
+- "rejected": List ALL candidates that were not picked as winner. Include a brief "reasoning" (1 sentence) for each.
+- If a rejected candidate has a disqualifying defect, include "flags" with one or more of: "watermark", "badge", "cropped", "wrong_product", "other". Use "other" when the issue doesn't fit standard flags (explain in reasoning).
+- If the candidate was simply outranked (no defects, just lower quality), omit "flags" and explain why in "reasoning".
 - If ALL candidates are disqualified, set "winner" to null and list every candidate in "rejected" with their flags. Do NOT force-pick a bad image.`;
 }
 
@@ -164,6 +166,10 @@ Respond with JSON matching this schema:
       "hero_rank": 1,
       "reasoning": "short explanation — why this image is usable"
     }
+  ],
+  "rejected": [
+    { "filename": "disqualified.png", "flags": ["watermark"], "reasoning": "1 sentence why" },
+    { "filename": "outranked.png", "reasoning": "1 sentence why not picked" }
   ]
 }
 
@@ -173,7 +179,10 @@ Rules:
 - "reasoning" should be 1-2 sentences: is the source safe? Is the image clean?
 - When picking multiple heroes, prefer different shots over near-duplicates of the same angle.
 - You may pick FEWER than ${heroCount} if not enough candidates pass the gates.
-- Return an empty "heroes" array if ALL candidates are disqualified.`;
+- If ALL candidates are disqualified, return an empty "heroes" array.
+- "rejected": List ALL candidates you did NOT pick. Include "reasoning" (1 sentence) for each.
+- If a rejected candidate has a disqualifying defect, include "flags" with one or more of: "watermark", "badge", "cropped", "wrong_product", "other". Use "other" when the issue doesn't fit standard flags (explain in reasoning).
+- If the candidate was simply outranked (no defects), omit "flags" and explain why in "reasoning".`;
 }
 
 /* ── LLM caller factories (Phase 2) ────────────────────────────── */
@@ -396,6 +405,12 @@ export function mergeEvaluation({ productId, productRoot, variantKey, variantId,
       // Clear hero fields for re-evaluation
       delete img.hero;
       delete img.hero_rank;
+      // WHY: Hero-view images may have eval_flags/eval_reasoning from prior hero rejection.
+      // Clear them so fresh hero eval results can be applied cleanly.
+      if (img.view === 'hero') {
+        delete img.eval_flags;
+        delete img.eval_reasoning;
+      }
     }
   }
 
@@ -430,6 +445,15 @@ export function mergeEvaluation({ productId, productRoot, variantKey, variantId,
       if (!hero) continue;
       img.hero = true;
       img.hero_rank = hero.hero_rank;
+      img.eval_reasoning = hero.reasoning || '';
+    }
+
+    // Step 5: Apply hero rejection flags + reasoning
+    for (const rej of (heroResults.rejected || [])) {
+      const img = images.find(i => matchVariant(i, { variantId, variantKey }) && i.filename === rej.filename);
+      if (!img) continue;
+      img.eval_flags = rej.flags || [];
+      img.eval_reasoning = rej.reasoning || '';
     }
   }
 

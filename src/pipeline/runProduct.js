@@ -242,6 +242,7 @@ export async function runProduct({
     },
     frontierDb,
     specDb: config.specDb || null,
+    appDb: config.appDb || null,
   });
   runtimeOverrides = bootstrapConfig.runtimeOverrides;
   console.error(`[TIMING] bootstrapRunConfig: ${Date.now() - _t1}ms`);

@@ -53,6 +53,68 @@ function reconcileEditionColors(editions, repairMap) {
   return result;
 }
 
+// WHY: The discovery LLM may return slightly different edition slugs across runs
+// (e.g. 'doom-the-dark-ages' vs 'doom-the-dark-ages-edition'). The variant
+// registry's edition_slug is immutable (Gate 2 enforces), so it's the authority.
+//
+// Two matching strategies (combo primary, elimination fallback):
+// 1. Match by color combo — edition.colors[0] === registry.color_atoms.join('+')
+// 2. If registry color_atoms were cleared by prior slug drift (the same bug),
+//    fall back to identity check elimination — pair unmatched canonical slugs
+//    with unmatched discovery slugs when the count is 1:1.
+function reconcileEditionSlugsFromRegistry(editions, existingRegistry, identityCheckMappings) {
+  if (!existingRegistry?.length || !editions || Object.keys(editions).length === 0) return editions;
+
+  // Strategy 1: combo → canonical slug
+  const comboToCanonical = new Map();
+  for (const entry of existingRegistry) {
+    if (entry.variant_type !== 'edition' || !entry.edition_slug || entry.retired) continue;
+    const combo = entry.color_atoms.join('+');
+    if (combo) comboToCanonical.set(combo, entry.edition_slug);
+  }
+
+  // Strategy 2: identity check elimination (fallback for empty color_atoms)
+  const eliminationRemap = new Map();
+  if (identityCheckMappings?.length) {
+    const editionKeys = new Set(Object.keys(editions));
+    const allCanonical = new Set();
+    for (const m of identityCheckMappings) {
+      if (m.action === 'match' && m.new_key?.startsWith('edition:')) {
+        allCanonical.add(m.new_key.replace('edition:', ''));
+      }
+    }
+    const unmatchedCanonical = [...allCanonical].filter(s => !editionKeys.has(s));
+    const unmatchedDiscovery = [...editionKeys].filter(k => !allCanonical.has(k));
+
+    // WHY: Only pair when counts match — ambiguous multi-drift is too risky to guess.
+    if (unmatchedCanonical.length > 0 && unmatchedCanonical.length === unmatchedDiscovery.length) {
+      for (let i = 0; i < unmatchedDiscovery.length; i++) {
+        eliminationRemap.set(unmatchedDiscovery[i], unmatchedCanonical[i]);
+      }
+    }
+  }
+
+  if (comboToCanonical.size === 0 && eliminationRemap.size === 0) return editions;
+
+  let changed = false;
+  const reconciled = {};
+  for (const [slug, ed] of Object.entries(editions)) {
+    const combo = (ed.colors || [])[0];
+    const comboCanonical = combo ? comboToCanonical.get(combo) : null;
+    if (comboCanonical && comboCanonical !== slug) {
+      reconciled[comboCanonical] = ed;
+      changed = true;
+    } else if (eliminationRemap.has(slug)) {
+      reconciled[eliminationRemap.get(slug)] = ed;
+      changed = true;
+    } else {
+      reconciled[slug] = ed;
+    }
+  }
+
+  return changed ? reconciled : editions;
+}
+
 function storeFailureAndReturn({ specDb, product, existing, model, fallbackUsed, rejections, raw, productRoot }) {
   const now = new Date();
   const ranAt = now.toISOString();
@@ -256,9 +318,10 @@ export async function runColorEditionFinder({
   let gateEditions = editions;
 
   if (fieldRules && fieldRules.colors) {
-    const cefRunId = `cef-${Date.now()}`;
     const nextRunNumber = existing?.next_run_number || (previousRuns.length + 1);
-    const cefSourceMeta = { source: 'cef', model: modelTracking.actualModel, run_id: cefRunId, run_number: nextRunNumber };
+    // WHY: Deterministic source_id — stable across rebuilds (product_id + run_number).
+    const cefSourceId = `cef-${product.product_id}-${nextRunNumber}`;
+    const cefSourceMeta = { source: 'cef', source_id: cefSourceId, model: modelTracking.actualModel, run_number: nextRunNumber };
 
     // Step 1: Validate colors (pure — no writes yet)
     const colorsValidation = validateField({
@@ -426,6 +489,13 @@ export async function runColorEditionFinder({
   }
 
   onStageAdvance?.('Confirm');
+
+  // WHY: Reconcile edition slugs to canonical registry values before building
+  // selected. Prevents slug drift from breaking PIF variant linking and
+  // applyIdentityMappings display name lookups.
+  if (hasExistingRegistry) {
+    gateEditions = reconcileEditionSlugsFromRegistry(gateEditions, existing.variant_registry, identityCheckResult?.mappings);
+  }
 
   const selected = { colors: gateColors, color_names: colorNamesMap, editions: gateEditions, default_color: gateColors[0] || defaultColor };
 

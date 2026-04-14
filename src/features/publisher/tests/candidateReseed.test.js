@@ -119,7 +119,73 @@ describe('rebuildFieldCandidatesFromJson', () => {
     assert.equal(rowsB[0].value, '70');
   });
 
-  it('multi-source candidate preserves sources_json array', () => {
+  // ── Source-centric reseed (Phase 3) ─────────────────────────────────
+
+  it('new-format: source_id per entry → inserts with source_id on row', () => {
+    writeProduct('mouse-srcfmt', {
+      category: 'mouse', product_id: 'mouse-srcfmt',
+      candidates: {
+        weight: [
+          {
+            value: 62,
+            source_id: 'cef-mouse-srcfmt-1',
+            source_type: 'cef',
+            confidence: 95,
+            model: 'gemini-2.5-flash',
+            validation: { valid: true, repairs: [], rejections: [] },
+          },
+          {
+            value: 63,
+            source_id: 'cef-mouse-srcfmt-2',
+            source_type: 'cef',
+            confidence: 88,
+            model: 'gpt-5',
+            validation: { valid: true, repairs: [], rejections: [] },
+          },
+        ],
+      },
+    });
+
+    rebuildFieldCandidatesFromJson({ specDb, productRoot: PRODUCT_ROOT });
+
+    const row1 = specDb.getFieldCandidateBySourceId('mouse-srcfmt', 'weight', 'cef-mouse-srcfmt-1');
+    assert.ok(row1, 'row with source_id cef-mouse-srcfmt-1 should exist');
+    assert.equal(row1.value, '62');
+    assert.equal(row1.source_type, 'cef');
+    assert.equal(row1.model, 'gemini-2.5-flash');
+    assert.equal(row1.confidence, 95);
+
+    const row2 = specDb.getFieldCandidateBySourceId('mouse-srcfmt', 'weight', 'cef-mouse-srcfmt-2');
+    assert.ok(row2, 'row with source_id cef-mouse-srcfmt-2 should exist');
+    assert.equal(row2.value, '63');
+  });
+
+  it('old-format: sources array → explodes into rows with synthetic source_ids', () => {
+    writeProduct('mouse-oldfmt', {
+      category: 'mouse', product_id: 'mouse-oldfmt',
+      candidates: {
+        sensor: [{
+          value: 'PAW3395',
+          validation: { valid: true, repairs: [], rejections: [] },
+          sources: [
+            { source: 'cef', confidence: 90, model: 'gemini', run_id: 'cef-1', submitted_at: '2026-04-05T00:00:00Z' },
+          ],
+        }],
+      },
+    });
+
+    rebuildFieldCandidatesFromJson({ specDb, productRoot: PRODUCT_ROOT });
+
+    const rows = specDb.getFieldCandidatesByProductAndField('mouse-oldfmt', 'sensor');
+    assert.ok(rows.length >= 1);
+    // Old format rows should get a synthetic source_id (non-empty)
+    assert.ok(rows[0].source_id, 'old-format row should have a synthetic source_id');
+    assert.ok(rows[0].source_id.length > 0);
+  });
+
+  // WHY: Old-format multi-source entries fall back to legacy upsert.
+  // After Phase 8 migration, sources_json column is gone — verify row exists with value.
+  it('old-format multi-source candidate reseeds via legacy upsert', () => {
     writeProduct('mouse-multi', {
       category: 'mouse', product_id: 'mouse-multi',
       candidates: {
@@ -136,11 +202,31 @@ describe('rebuildFieldCandidatesFromJson', () => {
 
     rebuildFieldCandidatesFromJson({ specDb, productRoot: PRODUCT_ROOT });
 
-    const row = specDb.getFieldCandidate('mouse-multi', 'weight', '58');
-    assert.ok(row);
-    assert.equal(row.sources_json.length, 2);
-    assert.equal(row.sources_json[0].artifact, 'aaa');
-    assert.equal(row.sources_json[1].artifact, 'bbb');
-    assert.equal(row.source_count, 2);
+    const rows = specDb.getFieldCandidatesByProductAndField('mouse-multi', 'weight');
+    assert.ok(rows.length >= 1, 'should have at least 1 row for weight');
+    assert.equal(rows[0].value, '58');
+  });
+
+  it('old-format: single source with run_number (no run_id) gets deterministic source_id', () => {
+    writeProduct('mouse-rn-only', {
+      category: 'mouse', product_id: 'mouse-rn-only',
+      candidates: {
+        weight: [{
+          value: 72,
+          validation: { valid: true, repairs: [], rejections: [] },
+          sources: [
+            { source: 'cef', confidence: 88, run_number: 3, model: 'gpt-4o', submitted_at: '2026-04-10T00:00:00Z' },
+          ],
+        }],
+      },
+    });
+
+    rebuildFieldCandidatesFromJson({ specDb, productRoot: PRODUCT_ROOT });
+
+    const rows = specDb.getFieldCandidatesByProductAndField('mouse-rn-only', 'weight');
+    assert.ok(rows.length >= 1, 'should have at least 1 row');
+    // WHY: With run_number=3 and source='cef', deterministic source_id = cef-mouse-rn-only-3
+    assert.equal(rows[0].source_id, 'cef-mouse-rn-only-3', 'should derive deterministic source_id from run_number');
+    assert.equal(rows[0].source_type, 'cef');
   });
 });

@@ -191,7 +191,8 @@ function ExpandedRowContent({ row }: { row: PublisherCandidateRow }) {
   const repairs = row.validation_json?.repairs ?? [];
   const rejections = row.validation_json?.rejections ?? [];
   const llmRepair = row.validation_json?.llmRepair ?? null;
-  const sources = row.sources_json ?? [];
+  const sourceType = row.source_type || '';
+  const sourceId = row.source_id || '';
 
   let formattedValue = row.value ?? '';
   try {
@@ -325,23 +326,25 @@ function ExpandedRowContent({ row }: { row: PublisherCandidateRow }) {
       <div className="flex-1 min-w-0 flex flex-col gap-2.5">
         <div className="sf-surface-elevated rounded border sf-border-default p-3">
           <div className="sf-text-caption sf-status-text-muted uppercase tracking-wider font-bold mb-2" style={{ fontSize: 10 }}>
-            Source History
-            <span className="ml-1.5 px-1 py-0.5 rounded-sm text-[9px]" style={{ background: 'rgb(var(--sf-color-accent-rgb) / 0.12)', color: 'var(--sf-token-accent-strong)' }}>
-              {sources.length} {sources.length === 1 ? 'source' : 'sources'}
-            </span>
+            Source
           </div>
-          {sources.length > 0 ? (
+          {sourceId ? (
             <table className="w-full" style={{ borderCollapse: 'collapse', fontSize: 11 }}>
               <thead>
                 <tr style={detailHeadRowStyle}>
-                  <th className={detailThCls} style={detailThStyle}>Source</th>
-                  <th className={detailThCls} style={detailThStyle}>Conf</th>
-                  <th className={detailThCls} style={detailThStyle}>Run ID</th>
+                  <th className={detailThCls} style={detailThStyle}>Type</th>
+                  <th className={detailThCls} style={detailThStyle}>Model</th>
+                  <th className={detailThCls} style={detailThStyle}>Source ID</th>
                   <th className={detailThCls} style={detailThStyle}>Submitted</th>
                 </tr>
               </thead>
               <tbody>
-                {sources.map((s, i) => <SourceRow key={i} source={s} />)}
+                <tr className="sf-border-subtle" style={{ borderBottom: '1px solid' }}>
+                  <td className="py-1 px-1.5 sf-text-primary">{sourceType || '—'}</td>
+                  <td className="py-1 px-1.5 sf-text-muted" style={{ fontFamily: 'var(--sf-token-font-family-mono)' }}>{row.llm_model || '—'}</td>
+                  <td className="py-1 px-1.5 sf-text-muted" style={{ fontFamily: 'var(--sf-token-font-family-mono)', fontSize: 10, wordBreak: 'break-all' }}>{sourceId}</td>
+                  <td className="py-1 px-1.5 sf-text-muted">{row.submitted_at || '—'}</td>
+                </tr>
               </tbody>
             </table>
           ) : (
@@ -369,8 +372,8 @@ function ExpandedRowContent({ row }: { row: PublisherCandidateRow }) {
               <div className={confidenceClass(row.confidence)} style={{ fontFamily: 'var(--sf-token-font-family-mono)' }}>{row.confidence}</div>
             </div>
             <div>
-              <div className="sf-text-subtle" style={{ fontSize: 10 }}>SOURCE COUNT</div>
-              <div className="sf-text-primary" style={{ fontFamily: 'var(--sf-token-font-family-mono)' }}>{row.source_count}</div>
+              <div className="sf-text-subtle" style={{ fontSize: 10 }}>SOURCE</div>
+              <div className="sf-text-primary" style={{ fontFamily: 'var(--sf-token-font-family-mono)' }}>{row.source_type || '—'}</div>
             </div>
             <div>
               <div className="sf-text-subtle" style={{ fontSize: 10 }}>SUBMITTED</div>
@@ -577,21 +580,11 @@ export function PublisherPage() {
       size: 70,
     },
     {
-      accessorKey: 'source_count',
-      header: 'Src#',
-      cell: ({ getValue }) => (
-        <span className="sf-text-muted" style={{ fontFamily: 'var(--sf-token-font-family-mono)', fontSize: 11, textAlign: 'center', display: 'inline-block', width: '100%' }}>
-          {getValue() as number}
-        </span>
-      ),
-      size: 48,
-    },
-    {
-      id: 'source_type',
+      accessorKey: 'source_type',
       header: 'Source',
-      cell: ({ row }) => {
-        const sources = row.original.sources_json ?? [];
-        return <Chip label={sourceLabel(sources)} className={sourceChipClass(sources)} />;
+      cell: ({ getValue }) => {
+        const st = (getValue() as string) || '';
+        return <Chip label={st || '—'} className={st === 'cef' ? 'sf-chip-accent' : st === 'manual_override' ? 'sf-chip-warn' : 'sf-chip-info'} />;
       },
       size: 76,
     },

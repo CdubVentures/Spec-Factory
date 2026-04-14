@@ -15,7 +15,8 @@ import { CostByCallTypeDonut } from '../../features/billing/components/CostByCal
 import { HorizontalBarSection } from '../../features/billing/components/HorizontalBarSection.tsx';
 import { BillingEntryTable } from '../../features/billing/components/BillingEntryTable.tsx';
 
-const EMPTY_FILTERS: BillingFilterState = { category: '', reason: '', model: '' };
+const EMPTY_FILTERS: BillingFilterState = { category: '', reason: '', model: '', access: '' };
+const NO_FILTERS: BillingFilterState = EMPTY_FILTERS;
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -26,15 +27,18 @@ export function BillingPage() {
   const [filters, setFilters] = useState<BillingFilterState>(EMPTY_FILTERS);
   const [page, setPage] = useState(0);
 
-  const summary = useBillingSummaryQuery();
-  const daily = useBillingDailyQuery();
-  const byModel = useBillingByModelQuery();
-  const byReason = useBillingByReasonQuery();
-  const byCategory = useBillingByCategoryQuery();
+  const summary = useBillingSummaryQuery(filters);
+  const daily = useBillingDailyQuery(filters);
+  const byModel = useBillingByModelQuery(filters);
+  const byReason = useBillingByReasonQuery(filters);
+  const byCategory = useBillingByCategoryQuery(filters);
 
+  // WHY: Filter bar chips must stay stable — use an unfiltered query for the chip list
+  // so selecting a model doesn't remove all other model chips.
+  const allModels = useBillingByModelQuery(NO_FILTERS);
   const modelKeys = useMemo(
-    () => (byModel.data?.models ?? []).map((m) => m.key),
-    [byModel.data],
+    () => (allModels.data?.models ?? []).map((m) => m.key),
+    [allModels.data],
   );
 
   const totalCost = summary.data?.totals?.cost_usd ?? 0;

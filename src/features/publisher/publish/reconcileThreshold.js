@@ -131,7 +131,11 @@ export function reconcileThreshold({
             }
 
             if (productFields) {
-              const sources = Array.isArray(best.sources_json) ? best.sources_json : [];
+              // WHY: Source-centric rows have no sources_json — the row IS the source.
+              // Build a source entry from the row's own columns for backward compat.
+              const sources = best.source_id
+                ? [{ source: best.source_type || '', source_id: best.source_id, model: best.model || '', confidence: best.confidence ?? 0 }]
+                : (Array.isArray(best.sources_json) ? best.sources_json : []);
               const linkedCandidates = buildLinkedCandidates(specDb, productId, fieldKey, parsedValue, fieldRule);
               productFields[fieldKey] = {
                 value: parsedValue,
@@ -145,6 +149,7 @@ export function reconcileThreshold({
             }
 
             // Persist publish result in metadata
+            // WHY: Uses the row's own source_id to upsert without creating a duplicate row.
             try {
               const row = specDb.getFieldCandidate(productId, fieldKey, serialized);
               if (row) {
@@ -153,7 +158,9 @@ export function reconcileThreshold({
                 specDb.upsertFieldCandidate({
                   productId, fieldKey, value: serialized,
                   unit: row.unit, confidence: row.confidence,
-                  sourceCount: row.source_count, sourcesJson: row.sources_json,
+                  sourceId: row.source_id || '',
+                  sourceType: row.source_type || '',
+                  model: row.model || '',
                   validationJson: row.validation_json, metadataJson: meta,
                   status: 'resolved',
                 });

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '../../../shared/ui/data-display/DataTable.tsx';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
@@ -8,7 +8,7 @@ import { chartColor } from '../billingTransforms.ts';
 import { useBillingEntriesQuery } from '../billingQueries.ts';
 import type { BillingEntry, BillingFilterState } from '../billingTypes.ts';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
 interface BillingEntryTableProps {
   filters: BillingFilterState;
@@ -85,13 +85,20 @@ function parseFlags(entry: BillingEntry): EntryFlag[] {
 }
 
 export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryTableProps) {
+  const [pageSize, setPageSize] = useState<number>(20);
   const { data, isLoading } = useBillingEntriesQuery({
-    limit: PAGE_SIZE,
-    offset: page * PAGE_SIZE,
+    limit: pageSize,
+    offset: page * pageSize,
     category: filters.category,
     model: filters.model,
     reason: filters.reason,
+    access: filters.access,
   });
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    onPageChange(0);
+  };
 
   const columns: ColumnDef<BillingEntry, unknown>[] = useMemo(() => [
     {
@@ -212,29 +219,40 @@ export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryT
   ], []);
 
   const totalEntries = data?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(totalEntries / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(totalEntries / pageSize));
   const entries = data?.entries ?? [];
 
   if (isLoading && entries.length === 0) return <Spinner className="h-8 w-8 mx-auto mt-8" />;
 
   return (
-    <div className="sf-surface-card rounded-lg overflow-hidden">
-      <div className="px-5 py-3 border-b sf-border-default">
+    <div className="sf-surface-card rounded-lg overflow-hidden flex flex-col">
+      <div className="px-5 py-3 border-b sf-border-default flex items-center justify-between">
         <h3 className="text-sm font-bold">LLM Call Log</h3>
+        <div className="flex items-center gap-1">
+          <span className="text-[11px] sf-text-muted">Show</span>
+          {PAGE_SIZE_OPTIONS.map((size) => (
+            <button
+              key={size}
+              className={size === pageSize ? 'sf-pager-btn sf-pager-btn-active' : 'sf-pager-btn'}
+              onClick={() => handlePageSizeChange(size)}
+            >
+              {size}
+            </button>
+          ))}
+        </div>
       </div>
 
       <DataTable
         data={entries}
         columns={columns}
         searchable={false}
-        maxHeight="max-h-[480px]"
         persistKey="billing-entries"
       />
 
       <div className="px-4 py-2 flex items-center justify-between text-[11px] sf-text-muted border-t sf-border-default">
         <span>
           {totalEntries > 0
-            ? `Showing ${page * PAGE_SIZE + 1}\u2013${Math.min((page + 1) * PAGE_SIZE, totalEntries)} of ${compactNumber(totalEntries)} entries`
+            ? `Showing ${page * pageSize + 1}\u2013${Math.min((page + 1) * pageSize, totalEntries)} of ${compactNumber(totalEntries)} entries`
             : 'No entries'}
         </span>
         <div className="flex gap-0.5">

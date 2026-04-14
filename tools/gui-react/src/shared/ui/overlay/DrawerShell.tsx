@@ -47,7 +47,7 @@ export function DrawerShell({ title, subtitle, onClose, width, maxHeight, classN
         </div>
         <button onClick={onClose} className="sf-drawer-close text-lg leading-none">&times;</button>
       </div>
-      <div className={scrollContent ? 'sf-drawer-body p-4 space-y-4 flex-1 min-h-0 overflow-y-auto' : 'sf-drawer-body p-4 space-y-4'}>
+      <div className={scrollContent ? 'sf-drawer-body p-4 space-y-4 flex-1 min-h-0 overflow-y-auto overflow-x-hidden' : 'sf-drawer-body p-4 space-y-4'}>
         {children}
       </div>
     </div>

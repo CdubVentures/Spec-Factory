@@ -73,6 +73,9 @@ export function createRunLlmRuntime({
             retry_without_schema: Boolean(usageRow.retry_without_schema),
             deepseek_mode_detected: Boolean(usageRow.deepseek_mode_detected),
             json_schema_requested: Boolean(usageRow.json_schema_requested),
+            effort_level: String(usageRow.effort_level || ''),
+            web_search_enabled: Boolean(usageRow.web_search_enabled),
+            duration_ms: Number(usageRow.duration_ms) || 0,
           },
         },
       });

@@ -108,4 +108,5 @@ export interface BillingFilterState {
   category: string;
   reason: string;
   model: string;
+  access: string;  // '' | 'lab' | 'api'
 }

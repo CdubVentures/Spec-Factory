@@ -4,6 +4,7 @@ import {
   BILLING_CALL_TYPE_REGISTRY,
   BILLING_CALL_TYPE_MAP,
   BILLING_CALL_TYPE_FALLBACK,
+  BILLING_CALL_TYPE_GROUPS,
   resolveBillingCallType,
 } from '../billingCallTypeRegistry.ts';
 import type { BillingCallTypeEntry } from '../billingCallTypeRegistry.ts';
@@ -32,11 +33,12 @@ describe('BILLING_CALL_TYPE_REGISTRY', () => {
     ok(Object.isFrozen(BILLING_CALL_TYPE_REGISTRY));
   });
 
-  it('every entry has non-empty reason, label, and color', () => {
+  it('every entry has non-empty reason, label, color, and group', () => {
     for (const entry of BILLING_CALL_TYPE_REGISTRY) {
       ok(entry.reason.length > 0, `entry has empty reason`);
       ok(entry.label.length > 0, `"${entry.reason}" has empty label`);
       ok(entry.color.length > 0, `"${entry.reason}" has empty color`);
+      ok(entry.group.length > 0, `"${entry.reason}" has empty group`);
     }
   });
 
@@ -91,5 +93,24 @@ describe('BILLING_CALL_TYPE_FALLBACK', () => {
     ok(Object.isFrozen(BILLING_CALL_TYPE_FALLBACK));
     strictEqual(BILLING_CALL_TYPE_FALLBACK.label, 'Other');
     ok(BILLING_CALL_TYPE_FALLBACK.color.startsWith('var(--'));
+    strictEqual(BILLING_CALL_TYPE_FALLBACK.group, 'Other');
+  });
+});
+
+describe('BILLING_CALL_TYPE_GROUPS', () => {
+  it('derives unique ordered groups from registry', () => {
+    ok(Array.isArray(BILLING_CALL_TYPE_GROUPS));
+    ok(BILLING_CALL_TYPE_GROUPS.length > 0);
+    deepStrictEqual(
+      BILLING_CALL_TYPE_GROUPS,
+      ['Pipeline', 'Product Image', 'Color Edition', 'Validation', 'Other'],
+    );
+  });
+
+  it('every registry entry belongs to a known group', () => {
+    const groupSet = new Set(BILLING_CALL_TYPE_GROUPS);
+    for (const entry of BILLING_CALL_TYPE_REGISTRY) {
+      ok(groupSet.has(entry.group), `"${entry.reason}" has unknown group "${entry.group}"`);
+    }
   });
 });

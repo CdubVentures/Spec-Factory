@@ -552,19 +552,19 @@ export function prepareStatements(db) {
 
     // --- Field Candidates ---
 
+    // WHY: Legacy upsert — kept for backward compat during transition (candidateReseed old-format path).
+    // Uses ON CONFLICT(source_id) since value-based UNIQUE was removed in Phase 8 migration.
     _upsertFieldCandidate: db.prepare(`
       INSERT INTO field_candidates (
         category, product_id, field_key, value, unit,
-        confidence, source_count, sources_json, validation_json, metadata_json, status
+        confidence, source_id, source_type, model, validation_json, metadata_json, status
       ) VALUES (
         @category, @product_id, @field_key, @value, @unit,
-        @confidence, @source_count, @sources_json, @validation_json, @metadata_json, @status
+        @confidence, @source_id, @source_type, @model, @validation_json, @metadata_json, @status
       )
-      ON CONFLICT(category, product_id, field_key, value) DO UPDATE SET
+      ON CONFLICT(category, product_id, field_key, source_id) DO UPDATE SET
         confidence = MAX(excluded.confidence, field_candidates.confidence),
         unit = COALESCE(excluded.unit, unit),
-        source_count = excluded.source_count,
-        sources_json = excluded.sources_json,
         validation_json = excluded.validation_json,
         metadata_json = excluded.metadata_json,
         status = excluded.status,
@@ -610,5 +610,35 @@ export function prepareStatements(db) {
         COUNT(DISTINCT product_id) AS products
       FROM field_candidates WHERE category = ?
     `),
+
+    // --- Source-centric field candidate operations ---
+
+    _insertFieldCandidate: db.prepare(`
+      INSERT INTO field_candidates (
+        category, product_id, field_key, source_id, source_type,
+        value, unit, confidence, model,
+        validation_json, metadata_json, status
+      ) VALUES (
+        @category, @product_id, @field_key, @source_id, @source_type,
+        @value, @unit, @confidence, @model,
+        @validation_json, @metadata_json, @status
+      )
+    `),
+
+    _getFieldCandidateBySourceId: db.prepare(
+      'SELECT * FROM field_candidates WHERE category = ? AND product_id = ? AND field_key = ? AND source_id = ?'
+    ),
+
+    _deleteFieldCandidateBySourceId: db.prepare(
+      'DELETE FROM field_candidates WHERE category = ? AND product_id = ? AND field_key = ? AND source_id = ?'
+    ),
+
+    _deleteFieldCandidatesBySourceType: db.prepare(
+      'DELETE FROM field_candidates WHERE category = ? AND product_id = ? AND field_key = ? AND source_type = ?'
+    ),
+
+    _getFieldCandidatesByValue: db.prepare(
+      'SELECT * FROM field_candidates WHERE category = ? AND product_id = ? AND field_key = ? AND value = ? ORDER BY confidence DESC'
+    ),
   };
 }

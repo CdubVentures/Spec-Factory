@@ -145,9 +145,9 @@ function resolveVariantColorAtoms(
  *   3. Titlecased atom/combo (fallback)
  */
 function buildVariantList(cefData: {
-  colors?: string[];
-  color_names?: Record<string, string>;
-  editions?: Record<string, { display_name?: string; colors?: string[] }>;
+  colors?: readonly string[];
+  color_names?: Readonly<Record<string, string>>;
+  editions?: Readonly<Record<string, { display_name?: string; colors?: readonly string[] }>>;
 }): VariantInfo[] {
   const colors = cefData.colors || [];
   const colorNames = cefData.color_names || {};
@@ -378,6 +378,7 @@ function GalleryCard({
   onDelete,
   onProcess,
   isProcessing,
+  carouselSource,
 }: {
   readonly img: GalleryImage;
   readonly category: string;
@@ -386,6 +387,7 @@ function GalleryCard({
   readonly onDelete: (filename: string) => void;
   readonly onProcess: (filename: string) => void;
   readonly isProcessing: boolean;
+  readonly carouselSource?: 'eval' | 'user';
 }) {
   const [errored, setErrored] = useState(false);
   const src = img.filename ? imageServeUrl(category, productId, img.filename, img.bytes) : '';
@@ -456,6 +458,17 @@ function GalleryCard({
             </ActionTooltip>
           )}
           <div className="flex-1" />
+          {carouselSource && (
+            <ActionTooltip text={carouselSource === 'eval' ? 'LLM selected' : 'User override'}>
+              <span
+                className="shrink-0 rounded-full"
+                style={{
+                  width: 6, height: 6,
+                  backgroundColor: carouselSource === 'eval' ? 'var(--sf-state-success-fg, #16a34a)' : 'var(--sf-state-info-fg, #38bdf8)',
+                }}
+              />
+            </ActionTooltip>
+          )}
           {img.eval_reasoning && (
             <ActionTooltip text={img.eval_reasoning} side="left">
               <span
@@ -1410,11 +1423,10 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   const { data: cefData, isError: cefError } = useColorEditionFinderQuery(category, productId);
 
   // Editions map for resolving edition variant_key → color atoms
-  const editions = useMemo(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sel = (cefData?.selected ?? cefData) as any;
-    return (sel?.editions ?? sel?.edition_details ?? {}) as Record<string, { display_name?: string; colors?: string[] }>;
-  }, [cefData]);
+  const editions = useMemo(
+    () => (cefData?.published?.edition_details ?? {}) as Record<string, { display_name?: string; colors?: string[] }>,
+    [cefData],
+  );
 
   // PIF data
   const { data: pifData, isLoading, isError } = useProductImageFinderQuery(category, productId);
@@ -1466,20 +1478,18 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
     [ops, productId],
   );
 
-  // Build variant list from CEF data, enriched with stable variant_id from registry
+  // Build variant list from CEF published data, enriched with stable variant_id from registry
   const variants = useMemo(() => {
     if (cefError) return [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sel = (cefData?.selected ?? cefData) as any;
-    if (!sel?.colors?.length) return [];
+    const pub = cefData?.published;
+    if (!pub?.colors?.length) return [];
     const list = buildVariantList({
-      colors: sel.colors,
-      color_names: sel.color_names ?? sel.color_details,
-      editions: sel.editions ?? sel.edition_details,
+      colors: pub.colors,
+      color_names: pub.color_names,
+      editions: pub.edition_details,
     });
     // Enrich with stable variant_id from CEF registry
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const registry = (cefData as any)?.variant_registry as Array<{ variant_key: string; variant_id: string }> | undefined;
+    const registry = cefData?.variant_registry;
     if (registry?.length) {
       const registryMap = new Map(registry.map((r) => [r.variant_key, r.variant_id]));
       for (const v of list) {
@@ -1845,7 +1855,12 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                             productId={productId}
                           />
                           <div className="flex gap-2 flex-wrap">
-                            {group.images.map((img, i) => (
+                            {(() => {
+                              const slotSourceMap = new Map<string, 'eval' | 'user'>();
+                              for (const s of groupSlots) {
+                                if (s.filename && s.source !== 'empty') slotSourceMap.set(s.filename, s.source as 'eval' | 'user');
+                              }
+                              return group.images.map((img, i) => (
                               <GalleryCard
                                 key={`${img.run_number}-${img.variant_key}-${img.view}-${i}`}
                                 img={img}
@@ -1855,8 +1870,10 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                                 onDelete={(filename) => deleteImageMut.mutate(filename)}
                                 onProcess={handleProcessImage}
                                 isProcessing={processingFilename === img.filename}
+                                carouselSource={slotSourceMap.get(img.filename)}
                               />
-                            ))}
+                            ));
+                            })()}
                           </div>
                         </div>
                       )}

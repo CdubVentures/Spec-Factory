@@ -18,11 +18,11 @@ export function CostByCallTypeDonut({ data, isLoading, totalCost }: CostByCallTy
   if (slices.length === 0) return <p className="sf-text-subtle text-sm text-center py-8">No data</p>;
 
   return (
-    <div className="sf-surface-card rounded-lg overflow-hidden">
+    <div className="sf-surface-card rounded-lg overflow-hidden h-full flex flex-col">
       <div className="px-5 py-3 border-b sf-border-default">
         <h3 className="text-sm font-bold">Cost by Call Type</h3>
       </div>
-      <div className="p-5 flex flex-col items-center gap-3">
+      <div className="p-5 flex-1 flex flex-col items-center justify-center gap-3">
         <div className="relative">
           <ResponsiveContainer width={200} height={200}>
             <PieChart>

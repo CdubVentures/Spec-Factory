@@ -234,4 +234,54 @@ describe('fanOutCandidates', () => {
     const result = fanOutCandidates([row]);
     assert.equal(result[0].submitted_at, '2026-04-11T10:00:00Z');
   });
+
+  // ── Source-centric rows (Phase 6) ───────────────────────────────────
+
+  it('source-centric row: 1 row = 1 card, uses row columns directly', () => {
+    const row = {
+      id: 100,
+      value: '58',
+      confidence: 0.92,
+      status: 'candidate',
+      source_id: 'cef-mouse-001-1',
+      source_type: 'cef',
+      model: 'gemini-2.5-flash',
+      submitted_at: '2026-04-10T12:00:00Z',
+      metadata_json: { evidence: { url: 'https://razer.com', quote: 'Weight: 58g' } },
+    };
+    const result = fanOutCandidates([row]);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].candidate_id, 'fc_100');
+    assert.equal(result[0].source, 'cef');
+    assert.equal(result[0].source_id, 'cef-mouse-001-1');
+    assert.equal(result[0].model, 'gemini-2.5-flash');
+    assert.equal(result[0].score, 0.92);
+    assert.equal(result[0].evidence_url, 'https://razer.com');
+  });
+
+  it('source-centric rows: multiple rows sorted by score DESC', () => {
+    const rows = [
+      { id: 101, value: '58', confidence: 0.80, status: 'resolved', source_id: 'cef-m-1', source_type: 'cef', model: 'gemini', submitted_at: '2026-04-10T12:00:00Z', metadata_json: {} },
+      { id: 102, value: '58', confidence: 0.95, status: 'resolved', source_id: 'pipeline-m-1', source_type: 'pipeline', model: 'gpt-5', submitted_at: '2026-04-09T12:00:00Z', metadata_json: {} },
+    ];
+    const result = fanOutCandidates(rows);
+    assert.equal(result.length, 2);
+    assert.equal(result[0].source_id, 'pipeline-m-1'); // higher confidence
+    assert.equal(result[1].source_id, 'cef-m-1');
+  });
+
+  it('mixed: source-centric + legacy rows processed together', () => {
+    const rows = [
+      // Source-centric row
+      { id: 200, value: '58', confidence: 0.90, status: 'candidate', source_id: 'cef-m-1', source_type: 'cef', model: 'gemini', submitted_at: '2026-04-10T12:00:00Z', metadata_json: {} },
+      // Legacy row with sources_json
+      makeRow({ id: 201, value: '59', confidence: 0.85, sources_json: [{ source: 'pipeline', confidence: 0.85, model: 'gpt-4o' }] }),
+    ];
+    const result = fanOutCandidates(rows);
+    assert.equal(result.length, 2);
+    // Both should be represented
+    const ids = result.map(r => r.candidate_id);
+    assert.ok(ids.includes('fc_200'));
+    assert.ok(ids.includes('fc_201_0'));
+  });
 });

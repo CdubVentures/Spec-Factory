@@ -175,6 +175,11 @@ export class SpecDb {
         _getFieldCandidatesPaginated: this._getFieldCandidatesPaginated,
         _countFieldCandidates: this._countFieldCandidates,
         _getFieldCandidatesStats: this._getFieldCandidatesStats,
+        _insertFieldCandidate: this._insertFieldCandidate,
+        _getFieldCandidateBySourceId: this._getFieldCandidateBySourceId,
+        _deleteFieldCandidateBySourceId: this._deleteFieldCandidateBySourceId,
+        _deleteFieldCandidatesBySourceType: this._deleteFieldCandidatesBySourceType,
+        _getFieldCandidatesByValue: this._getFieldCandidatesByValue,
       },
     });
   }
@@ -522,5 +527,13 @@ export class SpecDb {
   demoteResolvedCandidates(pid, fk) { this._fieldCandidateStore.demoteResolved(pid, fk); }
   getResolvedFieldCandidate(pid, fk) { return this._fieldCandidateStore.getResolved(pid, fk); }
   getDistinctCandidateProducts() { return this._fieldCandidateStore.getDistinctProducts(); }
+
+  // --- Source-centric field candidate methods ---
+  insertFieldCandidate(opts) { this._fieldCandidateStore.insert(opts); }
+  getFieldCandidateBySourceId(pid, fk, sid) { return this._fieldCandidateStore.getBySourceId(pid, fk, sid); }
+  deleteFieldCandidateBySourceId(pid, fk, sid) { this._fieldCandidateStore.deleteBySourceId(pid, fk, sid); }
+  deleteFieldCandidatesBySourceType(pid, fk, st) { this._fieldCandidateStore.deleteBySourceType(pid, fk, st); }
+  getFieldCandidatesByValue(pid, fk, val) { return this._fieldCandidateStore.getByValue(pid, fk, val); }
+  markFieldCandidateResolvedByValue(pid, fk, val) { this._fieldCandidateStore.markResolvedByValue(pid, fk, val); }
 
 }

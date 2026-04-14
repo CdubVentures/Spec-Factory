@@ -2764,6 +2764,30 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
   margin: 0 4px;
 }
 
+.sf-filter-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px 3px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--sf-token-border-default);
+  background: var(--sf-token-surface-base);
+  margin: 0 3px;
+}
+
+.sf-filter-group-label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--sf-token-text-subtle);
+  white-space: nowrap;
+  padding-right: 4px;
+  border-right: 1px solid var(--sf-token-border-default);
+  margin-right: 3px;
+  line-height: 1.6;
+}
+
 /* ── Billing table tags ── */
 
 .sf-billing-tag {

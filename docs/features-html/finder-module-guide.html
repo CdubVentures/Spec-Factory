@@ -73,73 +73,332 @@
   .step-list li::before { content: counter(step); display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: white; font-size: 12px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
   @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+  .callout { border-left: 4px solid; padding: 14px 18px; border-radius: 0 var(--radius) var(--radius) 0; margin: 12px 0; font-size: 13.5px; }
+  .callout-warn { border-color: var(--orange); background: var(--orange-bg); }
+  .callout-info { border-color: var(--accent); background: var(--accent-light); }
+  .callout-ok { border-color: var(--green); background: var(--green-bg); }
+  .callout-danger { border-color: var(--red); background: var(--red-bg); }
+  .callout strong { display: block; margin-bottom: 4px; }
 </style>
 </head>
 <body>
 
 <div class="header">
   <h1>How to Build a New Finder Module</h1>
-  <p>Step-by-step guide for adding a third (or Nth) LLM-driven discovery module to the Spec Factory finder framework</p>
+  <p>Definitive guide for adding an Nth LLM-driven discovery module to the Spec Factory finder framework</p>
 </div>
 
 <div class="container">
 
-<!-- 1. What you get for free -->
-<div class="section-title"><span class="num">1</span> What the Framework Gives You for Free</div>
+<!-- ================================================================== -->
+<!-- 0. BEFORE YOU START -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">0</span> Before You Start &mdash; Framework Prerequisites</div>
 
 <div class="card">
-  <div class="card-header" style="background:var(--green-bg);">Auto-Wired from One Registry Entry</div>
+  <div class="card-header" style="background:var(--red-bg);">Known Hardcodes (Phase&nbsp;1 Fixes)</div>
   <div class="card-body">
-    <p>Adding one object to <code>finderModuleRegistry.js</code> auto-generates or auto-wires <strong>all</strong> of the following. You write zero boilerplate for these:</p>
+    <p>The finder framework is <em>mostly</em> O(1), but several locations still hardcode the two existing modules (CEF&nbsp;+&nbsp;PIF). Before adding a third finder, these must be resolved or manually extended.</p>
+    <table>
+      <thead><tr><th>Severity</th><th>File</th><th>What&rsquo;s Hardcoded</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="tag tag-red">HIGH</span></td>
+          <td><code>src/app/api/guiServerRuntime.js</code><br><small>lines&nbsp;25&ndash;29, 244&ndash;245</small></td>
+          <td>Static imports + manual route definitions for CEF and PIF</td>
+          <td>Call <code>wireFinderRoutes()</code> from <code>src/core/finder/finderRouteWiring.js</code>. The function already exists and is fully implemented &mdash; it dynamically imports all modules from the registry. Or: manually add your imports + route definition in the same pattern.</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-red">HIGH</span></td>
+          <td><code>tools/gui-react/.../PipelineSettingsPage.tsx</code><br><small>line&nbsp;349</small></td>
+          <td><code>moduleId as 'colorEditionFinder' | 'productImageFinder'</code></td>
+          <td>Derive type from the generated <code>MODULE_SETTINGS_SECTIONS</code> array, or widen to <code>string</code>. Or: manually add your module ID to the union.</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-red">HIGH</span></td>
+          <td><code>tools/gui-react/.../ModuleSettingsPanel.tsx</code><br><small>lines&nbsp;1106, 1136&ndash;1153</small></td>
+          <td>Props typed to two-module union <strong>AND</strong> rendering hard-switches: <code>if productImageFinder &rarr; PifSettingsForm</code>, else <code>&rarr; CefSettingsForm</code>. A third module falls through to CefSettingsForm (only shows cooldownDays).</td>
+          <td>Widen props type <strong>and</strong> add a rendering branch for your module&rsquo;s settings form. Or: build a generic schema-driven renderer (see Section&nbsp;4 Settings callout).</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-orange">MED</span></td>
+          <td><code>tools/gui-react/.../PipelineSettingsPageShell.tsx</code><br><small>lines&nbsp;176&ndash;190</small></td>
+          <td>SVG nav icons hardcoded per <code>module-cef</code> / <code>module-pif</code></td>
+          <td>Add an <code>iconPaths</code> field to the registry and codegen an icon map. Or: manually add an <code>{id === 'module-xxx' &amp;&amp; (...)}</code> case for your module.</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-orange">MED</span></td>
+          <td><code>tools/gui-react/.../LlmPhaseSection.tsx</code><br><small>line&nbsp;665</small></td>
+          <td><code>moduleId: 'productImageFinder'</code> hardcoded for eval criteria persistence</td>
+          <td>Only affects you if your finder has editable per-view eval criteria. Otherwise no action needed.</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout callout-warn">
+      <strong>Bottom line</strong>
+      If <code>wireFinderRoutes()</code> is integrated and the frontend union types are widened, a third finder is fully plug-and-play. Until then, you must manually add your module to these 4&ndash;5 locations.
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- 1. DECISION TREE -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">1</span> Decision Tree &mdash; What Type of Finder Are You Building?</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--accent-light);">Three Finder Patterns</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Pattern</th><th>Example</th><th>fieldKeys</th><th>submitCandidate?</th><th>Validation</th><th>Review Grid?</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Field Finder</strong><br><small>Discovers spec field values</small></td>
+          <td>CEF (colors, editions)</td>
+          <td><code>['colors','editions']</code></td>
+          <td>Yes &mdash; every value passes through candidate gate</td>
+          <td>Full: enum, token repair, palette check</td>
+          <td>Yes &mdash; automatic via <code>field_candidates</code> table</td>
+        </tr>
+        <tr>
+          <td><strong>Simple Field Finder</strong><br><small>Discovers a single field, minimal validation</small></td>
+          <td>Release Date finder</td>
+          <td><code>['release_date']</code></td>
+          <td>Yes &mdash; but field rule defines lighter validation (e.g., date format + range only)</td>
+          <td>Depends on field rule: type coerce, format, range. No enum, no palette.</td>
+          <td>Yes &mdash; automatic via <code>field_candidates</code> table</td>
+        </tr>
+        <tr>
+          <td><strong>Artifact Finder</strong><br><small>Discovers assets, not field values</small></td>
+          <td>PIF (product images)</td>
+          <td><code>[]</code></td>
+          <td>No &mdash; images are artifacts, not spec fields</td>
+          <td>None (custom evaluation instead)</td>
+          <td>No &mdash; custom persistence + evaluation</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-info">
+      <strong>How to choose</strong>
+      <p style="margin:0;">Does your LLM discover a <em>value</em> that belongs in a product&rsquo;s spec fields (date, weight, price, dimension)? &rarr; <strong>Field Finder</strong> or <strong>Simple Field Finder</strong>.</p>
+      <p style="margin:4px 0 0;">Does it discover <em>assets</em> (images, videos, documents)? &rarr; <strong>Artifact Finder</strong>.</p>
+      <p style="margin:4px 0 0;">Does it need variant identity tracking (stable hashes, identity check on Run 2+)? &rarr; That is CEF-specific logic. Most new finders will not need this.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- 2. WHAT THE FRAMEWORK GIVES YOU FOR FREE -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">2</span> What the Framework Gives You for Free</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--green-bg);">Auto-Wired from One Registry Entry (17 Systems)</div>
+  <div class="card-body">
+    <p>Adding one object to <code>FINDER_MODULES</code> in <code>finderModuleRegistry.js</code> auto-generates or auto-wires <strong>all</strong> of the following. You write zero code for these:</p>
     <table>
       <thead><tr><th>Concern</th><th>Mechanism</th></tr></thead>
       <tbody>
-        <tr><td>SQL DDL (summary + runs + settings tables)</td><td><code>finderSqlDdl.js</code> reads registry at boot</td></tr>
-        <tr><td>SQL store instance (CRUD + runs)</td><td><code>specDb.js</code> loops <code>FINDER_MODULES</code>, creates <code>finderSqlStore</code> per module</td></tr>
-        <tr><td>Data-change events + invalidation domains</td><td><code>FINDER_DATA_CHANGE_EVENTS</code> derived from <code>dataChangeEvents</code></td></tr>
-        <tr><td>Operations Tracker chip style + label</td><td>Codegen: <code>finderModuleRegistry.generated.ts</code></td></tr>
-        <tr><td>Indexing Lab panel (lazy-loaded)</td><td>Codegen: <code>finderPanelRegistry.generated.ts</code></td></tr>
-        <tr><td>Pipeline Settings sidebar section</td><td>Codegen: <code>moduleSettingsSections.generated.ts</code></td></tr>
-        <tr><td>Phase schema preview (prompt + response)</td><td>Codegen: <code>phaseSchemaRegistry.generated.js</code></td></tr>
+        <tr><td>SQL DDL (summary + runs + settings tables)</td><td><code>finderSqlDdl.js</code> reads <code>summaryColumns</code> + <code>summaryIndexes</code> at boot</td></tr>
+        <tr><td>SQL store instance (all CRUD + runs + settings)</td><td><code>specDb.js</code> loops <code>FINDER_MODULES</code>, calls <code>createFinderSqlStore()</code> per module</td></tr>
+        <tr><td>Settings table with fallback defaults</td><td><code>settingsDefaults</code> in registry &rarr; DDL creates table; store returns default if no DB row</td></tr>
+        <tr><td>Data-change events + invalidation domains</td><td><code>FINDER_DATA_CHANGE_EVENTS</code> derived from <code>dataChangeEvents</code> in registry</td></tr>
         <tr><td>Frontend query invalidation routing</td><td><code>invalidationResolver.js</code> reads <code>FINDER_DATA_CHANGE_EVENTS</code></td></tr>
-        <tr><td>Reseed / rebuild from JSON</td><td><code>seedRegistry.js</code> reads <code>reseedKey</code> + <code>rebuildFnKey</code></td></tr>
+        <tr><td>Operations Tracker chip style + label</td><td>Codegen: <code>operationTypeRegistry.generated.ts</code></td></tr>
+        <tr><td>Indexing Lab panel tab (lazy-loaded)</td><td>Codegen: <code>finderPanelRegistry.generated.ts</code></td></tr>
+        <tr><td>Pipeline Settings sidebar section</td><td>Codegen: <code>moduleSettingsSections.generated.ts</code></td></tr>
+        <tr><td>LLM Config prompt preview</td><td>Codegen: <code>phaseSchemaRegistry.generated.js</code> &mdash; calls your prompt builder with placeholder product</td></tr>
+        <tr><td>LLM Config response schema preview</td><td>Codegen: wraps your Zod schema in <code>zodToLlmSchema()</code></td></tr>
+        <tr><td>Phase type unions + override types</td><td>Codegen: <code>llmPhaseTypes.generated.ts</code> + <code>llmPhaseOverrideTypes.generated.ts</code></td></tr>
+        <tr><td>Phase model resolution bridge</td><td>Codegen: <code>llmPhaseOverridesBridge.generated.ts</code></td></tr>
+        <tr><td>Reseed / rebuild surface</td><td><code>seedRegistry.js</code> reads <code>reseedKey</code> + <code>rebuildFnKey</code></td></tr>
+        <tr><td>Cooldown gate (POST rejected if on cooldown)</td><td>Generic handler checks <code>cooldown_until</code> column</td></tr>
+        <tr><td>Field Studio gate (POST returns 403 if required field disabled)</td><td>Generic handler checks <code>requiredFields</code> vs compiled rules &mdash; <strong>all</strong> must be enabled (AND logic)</td></tr>
+        <tr><td>Candidate cleanup on delete</td><td><code>stripRunSourceFromCandidates()</code> reads <code>fieldKeys</code> + <code>candidateSourceType</code></td></tr>
+        <tr><td>Re-publish after delete</td><td><code>republishAfterDelete()</code> re-thresholds remaining candidates</td></tr>
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- 2. What you must write -->
-<div class="section-title"><span class="num">2</span> What You Must Write</div>
+<!-- ================================================================== -->
+<!-- 3. THE SPLIT CONTROL PLANE -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">3</span> The Split Control Plane &mdash; Registries You Touch</div>
 
 <div class="card">
-  <div class="card-header" style="background:var(--accent-light);">Per-Module Files (Feature Folder)</div>
+  <div class="card-header" style="background:var(--orange-bg);">There Is No Single Manifest</div>
   <div class="card-body">
+    <p>Feature wiring is split across multiple registries. Every new finder touches #1 and #2. The others are conditional.</p>
     <table>
-      <thead><tr><th>File</th><th>Purpose</th><th>Reference</th></tr></thead>
+      <thead><tr><th>#</th><th>Registry</th><th>File</th><th>What It Drives</th><th>When</th></tr></thead>
       <tbody>
-        <tr><td><code>myFinderSchema.js</code></td><td>Zod schema for LLM response validation</td><td>CEF: <code>colorEditionSchema.js</code></td></tr>
-        <tr><td><code>myFinderLlmAdapter.js</code></td><td>Prompt builder(s), LLM caller factory, SPEC object</td><td>CEF: <code>colorEditionLlmAdapter.js</code></td></tr>
-        <tr><td><code>myFinderStore.js</code></td><td>JSON store (thin wrapper around <code>createFinderJsonStore</code>)</td><td>CEF: <code>colorEditionStore.js</code></td></tr>
-        <tr><td><code>myFinder.js</code></td><td>Main orchestrator</td><td>CEF: <code>colorEditionFinder.js</code></td></tr>
-        <tr><td><code>api/myFinderRoutes.js</code></td><td>Route handler (thin config over <code>createFinderRouteHandler</code>)</td><td>CEF: <code>colorEditionFinderRoutes.js</code></td></tr>
-        <tr><td><code>api/myFinderRouteContext.js</code></td><td>DI context factory</td><td>CEF: <code>colorEditionFinderRouteContext.js</code></td></tr>
-        <tr><td><code>tests/*.test.js</code></td><td>Unit + characterization tests</td><td>Any existing finder</td></tr>
+        <tr>
+          <td><strong>1</strong></td>
+          <td>Finder Module Registry</td>
+          <td><code>src/core/finder/finderModuleRegistry.js</code></td>
+          <td>DDL, SQL store, routes, reseed, events, settings, panels, cleanup, codegen</td>
+          <td><strong>Always</strong></td>
+        </tr>
+        <tr>
+          <td><strong>2</strong></td>
+          <td>LLM Phase Definitions</td>
+          <td><code>src/core/config/llmPhaseDefs.js</code></td>
+          <td>Model resolution, token limits, phase UI in LLM config sidebar</td>
+          <td><strong>Always</strong> (one entry, ~8 lines)</td>
+        </tr>
+        <tr>
+          <td><strong>3</strong></td>
+          <td>EG Preset Registry</td>
+          <td><code>src/features/studio/contracts/egPresets.js</code></td>
+          <td>Locked field rules, default toggles, backfill, compile injection</td>
+          <td><strong>Only if</strong> your field needs an EG-locked preset (like colors/editions)</td>
+        </tr>
+        <tr>
+          <td><strong>4</strong></td>
+          <td>Phase Schema Overlays</td>
+          <td><code>src/features/indexing/pipeline/shared/phaseSchemaRegistry.js</code></td>
+          <td>Multi-prompt preview (identity check, per-view eval), editable criteria</td>
+          <td><strong>Only if</strong> your finder has sub-prompts beyond the main discovery call</td>
+        </tr>
+        <tr>
+          <td><strong>5</strong></td>
+          <td>Server Boot (temporary)</td>
+          <td><code>src/app/api/guiServerRuntime.js</code></td>
+          <td>Static imports + route definitions</td>
+          <td><strong>Until</strong> <code>wireFinderRoutes()</code> is integrated (see Section&nbsp;0)</td>
+        </tr>
       </tbody>
     </table>
-    <p style="margin-top:12px;"><strong>Frontend:</strong></p>
+
+    <div class="callout callout-ok">
+      <strong>For a simple field finder (like Release Date)</strong>
+      You touch #1, #2, and #5 only. No EG preset, no schema overlay. Three files modified total (plus your new feature code).
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- 4. AUTO vs CUSTOM CLASSIFICATION -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">4</span> Auto vs Custom &mdash; The Definitive Classification</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--teal-bg);">Tier 1: Zero Code (Auto from Registry + Codegen)</div>
+  <div class="card-body">
+    <p>17 systems listed in Section&nbsp;2. You do nothing beyond writing the registry entry and running codegen.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--accent-light);">Tier 2: Boilerplate (~130 lines &mdash; Copy, Change Values)</div>
+  <div class="card-body">
+    <p>These files follow an <strong>identical pattern</strong> for every finder. Copy from CEF, change the marked values.</p>
     <table>
-      <thead><tr><th>File</th><th>Purpose</th><th>Reference</th></tr></thead>
+      <thead><tr><th>File</th><th>Lines</th><th>Copy From</th><th>What to Change</th></tr></thead>
       <tbody>
-        <tr><td><code>types.ts</code></td><td>TypeScript interfaces for API response</td><td>CEF: <code>color-edition-finder/types.ts</code></td></tr>
-        <tr><td><code>api/myFinderQueries.ts</code></td><td>React Query hooks (GET, POST, DELETE)</td><td>CEF: <code>colorEditionFinderQueries.ts</code></td></tr>
-        <tr><td><code>components/MyFinderPanel.tsx</code></td><td>Indexing Lab panel component</td><td>CEF: <code>ColorEditionFinderPanel.tsx</code></td></tr>
+        <tr><td><code>api/myFinderRoutes.js</code></td><td>~40</td><td><code>colorEditionFinderRoutes.js</code></td><td>Module ID in <code>getFinderStore()</code> calls; <code>buildGetResponse</code> hook (your response shape)</td></tr>
+        <tr><td><code>api/myFinderRouteContext.js</code></td><td>~16</td><td><code>colorEditionFinderRouteContext.js</code></td><td>Import paths to your orchestrator + store functions</td></tr>
+        <tr><td><code>myFinderStore.js</code></td><td>~30</td><td><code>colorEditionStore.js</code></td><td><code>filePrefix</code>, <code>emptySelected()</code> shape</td></tr>
+        <tr><td><code>index.js</code></td><td>~10</td><td><code>color-edition/index.js</code></td><td>Export names</td></tr>
+        <tr><td><code>llmPhaseDefs.js</code> entry</td><td>~8</td><td>Last entry in the array</td><td><code>id</code>, <code>uiId</code>, <code>label</code>, <code>subtitle</code>, <code>tip</code>, <code>group</code></td></tr>
+        <tr><td>Rebuild function</td><td>~25</td><td>CEF&rsquo;s rebuild in store</td><td>JSON file prefix, <code>emptySelected</code> merge logic</td></tr>
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- 3. Step-by-step checklist -->
-<div class="section-title"><span class="num">3</span> Step-by-Step Checklist</div>
+<div class="card">
+  <div class="card-header" style="background:var(--purple-bg);">Tier 3: Custom Domain Code (~560&ndash;1140 lines &mdash; IS the Feature)</div>
+  <div class="card-body">
+    <p>These are <strong>genuinely unique</strong> to your domain. No template can write them for you.</p>
+    <table>
+      <thead><tr><th>File</th><th>Lines</th><th>Why It&rsquo;s Custom</th></tr></thead>
+      <tbody>
+        <tr><td><code>myFinder.js</code> (orchestrator)</td><td>200&ndash;400</td><td>Your LLM loop: call, parse, validate, merge, handle errors</td></tr>
+        <tr><td><code>myFinderLlmAdapter.js</code> (prompt builder)</td><td>100&ndash;200</td><td>Your prompt engineering: what context to inject, formatting rules, examples</td></tr>
+        <tr><td><code>myFinderSchema.js</code> (Zod schema)</td><td>30&ndash;60</td><td>Your LLM response shape: which fields, types, constraints</td></tr>
+        <tr><td><code>MyFinderPanel.tsx</code> (GUI panel)</td><td>200&ndash;400</td><td>Your domain UI: how to display results (dates, weights, prices, etc.)</td></tr>
+        <tr><td><code>types.ts</code> (frontend types)</td><td>30&ndash;80</td><td>TypeScript interfaces matching your GET response shape</td></tr>
+        <tr><td><code>myFinderQueries.ts</code> (React Query)</td><td>30&ndash;60</td><td>GET/POST/DELETE hooks with your route prefix</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--orange-bg);">Tier 4: Configuration (Settings, Field Rules &mdash; NOT Code)</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>What</th><th>Where to Declare</th><th>Auto?</th><th>What You Get</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Settings <strong>storage</strong> (SQL table + read/write + fallback defaults)</td>
+          <td><code>settingsDefaults</code> in your registry entry</td>
+          <td><span class="tag tag-green">AUTO</span></td>
+          <td>DDL creates <code>{tableName}_settings</code> table. <code>getSetting(key)</code> returns DB value or falls back to registry default. No migration needed to add new keys later.</td>
+        </tr>
+        <tr>
+          <td>Settings <strong>JSON mirror</strong> (durable backup)</td>
+          <td>Automatic via <code>moduleSettingsRoutes.js</code></td>
+          <td><span class="tag tag-green">AUTO</span></td>
+          <td>Every PUT also writes to <code>category_authority/{category}/{filePrefix}_settings.json</code>. Useful for seeding and debugging.</td>
+        </tr>
+        <tr>
+          <td>Settings <strong>sidebar entry</strong> (nav link in Pipeline Settings)</td>
+          <td><code>settingsLabel</code> / <code>settingsSubtitle</code> / <code>settingsTip</code> in registry</td>
+          <td><span class="tag tag-green">AUTO</span></td>
+          <td>Codegen creates sidebar link from registry metadata.</td>
+        </tr>
+        <tr>
+          <td>Settings <strong>form UI</strong> (actual controls the user interacts with)</td>
+          <td><code>ModuleSettingsPanel.tsx</code></td>
+          <td><span class="tag tag-red">MANUAL</span></td>
+          <td>You <strong>must</strong> write a settings form component and add a rendering branch in <code>ModuleSettingsPanel</code>. Without this, your sidebar link works but renders the wrong form (defaults to CefSettingsForm, which only shows cooldownDays).</td>
+        </tr>
+        <tr>
+          <td>Field rule (if standard field)</td>
+          <td>Category field studio (via GUI or seed script)</td>
+          <td><span class="tag tag-green">AUTO</span></td>
+          <td>Validation pipeline reads rule at candidate gate time; no code needed.</td>
+        </tr>
+        <tr>
+          <td>EG-locked field rule</td>
+          <td><code>EG_PRESET_REGISTRY</code> in <code>egPresets.js</code> (add one builder function)</td>
+          <td><span class="tag tag-green">AUTO</span></td>
+          <td>Locked toggle, backfill, compile injection, sanitization &mdash; all auto-derived.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-warn">
+      <strong>The settings UI gap</strong>
+      <code>settingsDefaults</code> gives you storage + sidebar + fallback for free, but the <em>form controls</em> (input fields, toggles, text areas) are hand-written per module. Today <code>ModuleSettingsPanel.tsx</code> hard-switches between <code>PifSettingsForm</code> and <code>CefSettingsForm</code> (lines 1136&ndash;1153). Even CEF&rsquo;s form only renders <code>cooldownDays</code> despite having <code>identityCheckPromptOverride</code> in the registry. You must write your own form and add a rendering branch.
+    </div>
+
+    <div class="callout callout-info">
+      <strong>Settings read pattern (backend)</strong>
+      Your orchestrator reads per-category settings via the auto-wired SQL store:
+      <pre class="code-block" style="margin-top:6px;">const store = specDb.getFinderStore('myFinder');
+const cooldown = store.getSetting('cooldownDays'); // returns default if unset
+const override = store.getSetting('promptOverride'); // returns '' if unset</pre>
+      <p style="margin-top:6px;">To add a new setting key later: add it to <code>settingsDefaults</code> in the registry. No migration needed &mdash; the store fallback handles missing rows. But remember: you must also add a UI control in your settings form for the user to actually change it.</p>
+    </div>
+
+    <div class="callout callout-info">
+      <strong>Settings JSON mirror path</strong>
+      Every settings PUT also writes a durable JSON copy to:<br>
+      <code>category_authority/{category}/{filePrefix}_settings.json</code><br>
+      This is automatic via <code>moduleSettingsRoutes.js</code>. Useful for seeding initial values or debugging: you can inspect or pre-populate this file directly.
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- 5. STEP-BY-STEP CHECKLIST (BACKEND) -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">5</span> Step-by-Step Checklist</div>
 
 <div class="card">
   <div class="card-header" style="background:var(--teal-bg);">Backend Steps</div>
@@ -150,10 +409,13 @@
           <strong>Add LLM phase definition</strong><br>
           <code>src/core/config/llmPhaseDefs.js</code> &mdash; add one entry:
           <pre class="code-block">{ id: 'myFinder', uiId: 'my-finder', label: 'My Finder',
-  subtitle: 'Discovery', tip: '...',
+  subtitle: 'Discovery', tip: 'Discovers XYZ for products...',
   roles: ['triage'], group: 'discovery',
   globalModel: 'llmModelPlan',
-  groupToggle: 'llmPlanUseReasoning', ... }</pre>
+  groupToggle: 'llmPlanUseReasoning',
+  globalTokens: 'llmMaxOutputTokensPlan',
+  globalFallbackModel: 'llmPlanFallbackModel',
+  globalTimeout: 'llmTimeoutMs' }</pre>
         </div>
       </li>
       <li>
@@ -165,7 +427,7 @@
       <li>
         <div>
           <strong>Write Zod schema</strong><br>
-          <code>myFinderSchema.js</code> &mdash; export <code>myFinderResponseSchema</code>
+          <code>myFinderSchema.js</code> &mdash; export <code>myFinderResponseSchema</code>. This defines the exact JSON shape the LLM must return.
         </div>
       </li>
       <li>
@@ -178,6 +440,12 @@
   role: 'triage',
   jsonSchema: zodToLlmSchema(myFinderResponseSchema),
 };</pre>
+          <div class="callout callout-info" style="margin-top:8px;">
+            <strong>Naming convention (required by codegen)</strong>
+            The codegen script derives import paths from <code>featurePath</code> using kebab-to-camelCase conversion.<br>
+            <code>featurePath: 'my-feature'</code> &rarr; codegen imports from <code>myFeatureLlmAdapter.js</code> + <code>myFeatureSchema.js</code>.<br>
+            Your files <strong>must</strong> follow this naming or the import will fail at runtime.
+          </div>
         </div>
       </li>
       <li>
@@ -196,7 +464,14 @@ export const readMyFinder = store.read;
 export const writeMyFinder = store.write;
 export const mergeMyFinderDiscovery = store.merge;
 export const deleteMyFinderRun = store.deleteRun;
-export const deleteMyFinderAll = store.deleteAll;</pre>
+export const deleteMyFinderAll = store.deleteAll;
+
+// Rebuild function (required for reseed contract)
+export async function rebuildMyFinderFromJson({ specDb, productRoot }) {
+  // Walk .workspace/products/*/my_feature.json
+  // For each: parse JSON, upsert summary row, insert run rows
+  // See CEF's rebuild for the exact pattern
+}</pre>
         </div>
       </li>
       <li>
@@ -210,55 +485,28 @@ import {
   resolveAmbiguityContext,
   buildFinderLlmCaller,
 } from '../../core/finder/finderOrchestrationHelpers.js';
-import { resolveIdentityAmbiguitySnapshot }
-  from '../indexing/orchestration/shared/identityHelpers.js';
 
 export async function runMyFinder({ product, specDb, config, ... }) {
   // 1. Model tracking (1 line instead of 12)
-  const mt = resolveModelTracking({
-    config, phaseKey: 'myFinder', onModelResolved,
-  });
+  const mt = resolveModelTracking({ config, phaseKey: 'myFinder', onModelResolved });
 
-  // 2. Identity ambiguity (1 line instead of 15)
-  const { familyModelCount, ambiguityLevel } =
-    await resolveAmbiguityContext({
-      config, category: product.category,
-      brand: product.brand, baseModel: product.base_model,
-      specDb, resolveFn: resolveIdentityAmbiguitySnapshot,
-    });
+  // 2. LLM caller (1 line instead of 12)
+  const callLlm = buildFinderLlmCaller({ ... });
 
-  // 3. LLM caller (1 line instead of 12)
-  const callLlm = buildFinderLlmCaller({
-    _callLlmOverride,
-    wrappedOnModelResolved: mt.wrappedOnModelResolved,
-    createCallLlm: createMyFinderCallLlm,
-    llmDeps: buildLlmCallDeps({ config, logger,
-      onPhaseChange: onStageAdvance ? (phase) =&gt; {
-        if (phase === 'writer') onStageAdvance('Writer');
-      } : undefined,
-      onModelResolved: mt.wrappedOnModelResolved,
-      onStreamChunk, onQueueWait,
-    }),
-  });
-
-  // 4. Call LLM
+  // 3. Call LLM
   const response = await callLlm({ product, ... });
+
+  // 4. (Field Finder only) Validate + submit candidate
+  //    See Section 9 for the full candidate integration pattern
 
   // 5. Cooldown (1 line instead of 3)
   const { cooldownUntil, ranAt } = computeCooldownUntil();
 
   // 6. Persist: JSON first, then SQL projection
-  // WHY: effort_level + access_mode come from resolveModelTracking.
-  // They power the FinderRunModelBadge in run history.
-  const merged = mergeMyFinderDiscovery({
-    ..., run: { model: mt.actualModel, fallback_used: mt.actualFallbackUsed,
-                effort_level: mt.actualEffortLevel,
-                access_mode: mt.actualAccessMode, ... },
-  });
-  const store = specDb.getFinderStore('myFinder');
-  store.insertRun({ ..., effort_level: mt.actualEffortLevel,
-                         access_mode: mt.actualAccessMode });
-  store.upsert({ ... });
+  const merged = mergeMyFinderDiscovery({ ... });
+  const sqlStore = specDb.getFinderStore('myFinder');
+  sqlStore.insertRun({ ... });
+  sqlStore.upsert({ ... });
 
   return { ... };
 }</pre>
@@ -268,35 +516,34 @@ export async function runMyFinder({ product, specDb, config, ... }) {
         <div>
           <strong>Write route handler</strong><br>
           <code>api/myFinderRoutes.js</code> &mdash; thin config over the generic handler:
-          <pre class="code-block">import { createFinderRouteHandler }
-  from '../../../core/finder/finderRoutes.js';
+          <pre class="code-block">import { createFinderRouteHandler } from '../../../core/finder/finderRoutes.js';
 
 export function registerMyFinderRoutes(ctx) {
   return createFinderRouteHandler({
-    routePrefix: 'my-finder',
-    moduleType: 'myf',
-    phase: 'myFinder',
-    fieldKeys: ['my_field'],
+    routePrefix: 'my-finder',           // from registry
+    moduleType: 'myf',                   // from registry
+    phase: 'myFinder',                   // from registry
+    fieldKeys: ['my_field'],             // from registry
 
     runFinder: ctx.runMyFinder,
     deleteRun: ctx.deleteMyFinderRun,
     deleteAll: ctx.deleteMyFinderAll,
 
-    getOne: (specDb, pid) =&gt;
-      specDb.getFinderStore('myFinder').get(pid),
-    listByCategory: (specDb, cat) =&gt;
-      specDb.getFinderStore('myFinder').listByCategory(cat),
-    listRuns: (specDb, pid) =&gt;
-      specDb.getFinderStore('myFinder').listRuns(pid),
-    upsertSummary: (specDb, row) =&gt;
-      specDb.getFinderStore('myFinder').upsert(row),
-    deleteOneSql: (specDb, pid) =&gt;
-      specDb.getFinderStore('myFinder').remove(pid),
-    deleteRunSql: (specDb, pid, rn) =&gt;
-      specDb.getFinderStore('myFinder').removeRun(pid, rn),
-    deleteAllRunsSql: (specDb, pid) =&gt;
-      specDb.getFinderStore('myFinder').removeAllRuns(pid),
-  });
+    // Bind generic SQL store via specDb's auto-wired accessor
+    getOne:           (specDb, pid)      =&gt; specDb.getFinderStore('myFinder').get(pid),
+    listByCategory:   (specDb, cat)      =&gt; specDb.getFinderStore('myFinder').listByCategory(cat),
+    listRuns:         (specDb, pid)      =&gt; specDb.getFinderStore('myFinder').listRuns(pid),
+    upsertSummary:    (specDb, row)      =&gt; specDb.getFinderStore('myFinder').upsert(row),
+    deleteOneSql:     (specDb, pid)      =&gt; specDb.getFinderStore('myFinder').remove(pid),
+    deleteRunSql:     (specDb, pid, rn)  =&gt; specDb.getFinderStore('myFinder').removeRun(pid, rn),
+    deleteAllRunsSql: (specDb, pid)      =&gt; specDb.getFinderStore('myFinder').removeAllRuns(pid),
+
+    // CUSTOM: shape the GET response (domain-specific)
+    buildGetResponse: (row, selected, runs, onCooldown, { specDb, productId }) =&gt; ({
+      my_field: row.my_field,
+      // ... your domain shape
+    }),
+  })(ctx);
 }</pre>
         </div>
       </li>
@@ -305,8 +552,7 @@ export function registerMyFinderRoutes(ctx) {
           <strong>Write route context factory</strong><br>
           <code>api/myFinderRouteContext.js</code>:
           <pre class="code-block">import { runMyFinder } from '../myFinder.js';
-import { deleteMyFinderRun, deleteMyFinderAll }
-  from '../myFinderStore.js';
+import { deleteMyFinderRun, deleteMyFinderAll } from '../myFinderStore.js';
 
 export function createMyFinderRouteContext(options = {}) {
   const { jsonRes, readJsonBody, config, appDb,
@@ -321,21 +567,75 @@ export function createMyFinderRouteContext(options = {}) {
       </li>
       <li>
         <div>
-          <strong>Register in the manifest</strong><br>
-          <code>src/core/finder/finderModuleRegistry.js</code> &mdash; add one entry to <code>FINDER_MODULES</code>. See Section 4 for the full schema.
+          <strong>Write README.md</strong><br>
+          <code>src/features/my-feature/README.md</code> &mdash; required domain contract:
+          <pre class="code-block">## Purpose
+One-line: what this feature discovers.
+
+## Public API (The Contract)
+- runMyFinder({ category, productId, specDb, ... }) &rarr; result
+- deleteMyFinderRun({ productId, runNumber }) &rarr; void
+- rebuildMyFinderFromJson({ specDb, productRoot }) &rarr; { seeded }
+
+## Registry Ownership
+- Module: finderModuleRegistry.js entry 'myFinder'
+- Phase: llmPhaseDefs.js entry 'myFinder'
+- Field keys: ['my_field']
+- Settings: cooldownDays (default 30)
+
+## Dependencies
+Allowed: src/core/finder/, src/core/config/, src/features/publisher/
+Forbidden: other feature folders
+
+## Domain Invariants
+- [Your business rules here]</pre>
         </div>
       </li>
       <li>
         <div>
-          <strong>Add static imports to guiServerRuntime.js</strong><br>
-          Until <code>wireFinderRoutes</code> is wired up, add 2 imports + 1 context + 1 route definition to <code>src/app/api/guiServerRuntime.js</code>.
+          <strong>Register in the finder module manifest</strong><br>
+          <code>src/core/finder/finderModuleRegistry.js</code> &mdash; add one entry to <code>FINDER_MODULES</code>. See Section&nbsp;7 for the full schema.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Wire routes at server boot</strong><br>
+          <strong>If <code>wireFinderRoutes()</code> has been integrated</strong>: nothing to do &mdash; auto-wired.<br>
+          <strong>If still using static imports</strong>: add to <code>src/app/api/guiServerRuntime.js</code>:
+          <pre class="code-block">// At top (imports):
+import { registerMyFinderRoutes }
+  from '../../features/my-feature/api/myFinderRoutes.js';
+import { createMyFinderRouteContext }
+  from '../../features/my-feature/api/myFinderRouteContext.js';
+
+// In routeCtx object:
+myFinderRouteContext: createMyFinderRouteContext({
+  jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
+  logger: createRouteLlmLogger('my-finder'),
+}),
+
+// In routeDefinitions array:
+{ key: 'myFinder', registrar: registerMyFinderRoutes },</pre>
         </div>
       </li>
       <li>
         <div>
           <strong>Run codegen</strong><br>
           <code>node tools/gui-react/scripts/generateLlmPhaseRegistry.js</code><br>
-          This regenerates 4 files: <code>finderModuleRegistry.generated.ts</code>, <code>finderPanelRegistry.generated.ts</code>, <code>moduleSettingsSections.generated.ts</code>, <code>phaseSchemaRegistry.generated.js</code>.
+          This regenerates <strong>8 files</strong>:
+          <table style="margin-top:8px;">
+            <thead><tr><th>Generated File</th><th>What It Does</th></tr></thead>
+            <tbody>
+              <tr><td><code>phaseSchemaRegistry.generated.js</code></td><td>System prompt + response schema preview for LLM Config page</td></tr>
+              <tr><td><code>finderPanelRegistry.generated.ts</code></td><td>Lazy-loads your panel component into Indexing Lab tabs</td></tr>
+              <tr><td><code>moduleSettingsSections.generated.ts</code></td><td>Adds your module to Pipeline Settings sidebar</td></tr>
+              <tr><td><code>operationTypeRegistry.generated.ts</code></td><td>Registers your module type for Operations Tracker chips</td></tr>
+              <tr><td><code>llmPhaseTypes.generated.ts</code></td><td>Adds your phase ID to the TypeScript union type</td></tr>
+              <tr><td><code>llmPhaseRegistry.generated.ts</code></td><td>Adds your phase metadata for LLM Config sidebar</td></tr>
+              <tr><td><code>llmPhaseOverrideTypes.generated.ts</code></td><td>Adds your phase to override type definitions</td></tr>
+              <tr><td><code>llmPhaseOverridesBridge.generated.ts</code></td><td>Wires model resolution for your phase</td></tr>
+            </tbody>
+          </table>
         </div>
       </li>
     </ol>
@@ -349,75 +649,144 @@ export function createMyFinderRouteContext(options = {}) {
       <li>
         <div>
           <strong>Create feature folder</strong><br>
-          <code>tools/gui-react/src/features/my-finder/</code> with <code>api/</code>, <code>components/</code>
+          <code>tools/gui-react/src/features/my-finder/</code> with <code>api/</code> and <code>components/</code> subdirs
         </div>
       </li>
       <li>
         <div>
           <strong>Define types</strong><br>
-          <code>types.ts</code> &mdash; interfaces matching your API response shape. Derive from backend schema.
+          <code>types.ts</code> &mdash; interfaces matching your API GET response shape. Derive from your backend Zod schema + <code>buildGetResponse</code> hook.
         </div>
       </li>
       <li>
         <div>
           <strong>Write React Query hooks</strong><br>
           <code>api/myFinderQueries.ts</code> &mdash; pattern:
-          <pre class="code-block">useMyFinderQuery(category, productId)  // GET
-useMyFinderRunMutation(...)            // POST (202)
-useDeleteMyFinderRunMutation(...)      // DELETE /runs/:n
-useDeleteMyFinderAllMutation(...)      // DELETE all</pre>
-          POST mutations do NOT invalidate on success &mdash; WS data-change events handle it.
+          <pre class="code-block">useMyFinderQuery(category, productId)   // GET
+useMyFinderRunMutation(...)             // POST (fire-and-forget, 202)
+useDeleteMyFinderRunMutation(...)       // DELETE /runs/:n
+useDeleteMyFinderAllMutation(...)       // DELETE all</pre>
+          <p style="margin-top:8px;">POST mutations do <strong>not</strong> invalidate on success &mdash; WS data-change events handle it via <code>invalidationResolver</code>.</p>
         </div>
       </li>
       <li>
         <div>
           <strong>Write panel component</strong><br>
-          <code>components/MyFinderPanel.tsx</code> &mdash; import shared chrome:
+          <code>components/MyFinderPanel.tsx</code> &mdash; import shared chrome from <code>shared/ui/finder/</code>:
           <pre class="code-block">import {
   FinderPanelHeader, FinderKpiCard,
   FinderCooldownStrip, FinderPanelFooter,
   FinderDeleteConfirmModal, FinderSectionCard,
   FinderRunModelBadge,
   FinderRunPromptDetails, FinderRunTimestamp,
-  ColorSwatch,
+  DiscoverySummaryBar,
   useResolvedFinderModel,
   deriveCooldownState, deriveFinderStatusChip,
   formatAtomLabel,
 } from '../../../shared/ui/finder/index.ts';
 import { useFireAndForget }
-  from '../../operations/hooks/useFireAndForget.ts';
-
-// Header badge (lowercase effort):
-// &lt;ModelBadgeGroup {...badgeProps} /&gt;
-// {modelDisplay}
-// {effortLevel &amp;&amp; &lt;span&gt;{effortLevel}&lt;/span&gt;}
-
-// Run history rows (use FinderRunModelBadge):
-// &lt;FinderRunModelBadge model={run.model}
-//   accessMode={run.access_mode}
-//   effortLevel={run.effort_level}
-//   fallbackUsed={run.fallback_used} /&gt;</pre>
+  from '../../operations/hooks/useFireAndForget.ts';</pre>
+          <p style="margin-top:8px;">Build domain-specific sub-components for your data display (date cards, price tables, etc.). Keep derivation logic in a separate <code>selectors/</code> file for testability.</p>
         </div>
       </li>
       <li>
         <div>
-          <strong>Export panel from feature</strong><br>
-          The codegen-generated <code>finderPanelRegistry.generated.ts</code> lazy-imports your panel by the path declared in the registry&rsquo;s <code>panelFeaturePath</code> + <code>panelExport</code>.
+          <strong>Export panel</strong><br>
+          The codegen-generated <code>finderPanelRegistry.generated.ts</code> lazy-imports your panel by the path declared in <code>panelFeaturePath</code> + <code>panelExport</code>. No manual wiring needed.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Write settings form (if your module has settings beyond cooldownDays)</strong><br>
+          <code>ModuleSettingsPanel.tsx</code> hard-switches rendering between <code>PifSettingsForm</code> and <code>CefSettingsForm</code> (lines&nbsp;1136&ndash;1153). You must:
+          <ol style="margin:6px 0 0 16px; font-size:13px;">
+            <li>Write a <code>MyFinderSettingsForm</code> component (input controls for each key in <code>settingsDefaults</code>)</li>
+            <li>Add a rendering branch: <code>if (moduleId === 'myFinder') return &lt;MyFinderSettingsForm .../&gt;;</code></li>
+          </ol>
+          <p style="margin-top:6px;">If your module only has <code>cooldownDays</code>, the default <code>CefSettingsForm</code> fallback works &mdash; but only by accident. Prefer an explicit branch.</p>
+          <p style="margin-top:4px;">The settings <em>storage</em> (read/write/default fallback) is auto-wired from the registry. The form <em>UI</em> is not.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Handle frontend hardcodes (if not yet fixed)</strong><br>
+          If the Phase&nbsp;1 fixes from Section&nbsp;0 have <strong>not</strong> been applied, manually add your module to:
+          <table style="margin-top:8px;">
+            <thead><tr><th>File</th><th>What to Add</th></tr></thead>
+            <tbody>
+              <tr><td><code>PipelineSettingsPage.tsx:349</code></td><td>Add <code>'myFinder'</code> to the union type</td></tr>
+              <tr><td><code>ModuleSettingsPanel.tsx:1106</code></td><td>Add <code>'myFinder'</code> to the props union</td></tr>
+              <tr><td><code>ModuleSettingsPanel.tsx:1136</code></td><td>Add rendering branch for your settings form (see step above)</td></tr>
+              <tr><td><code>PipelineSettingsPageShell.tsx:176+</code></td><td>Add an SVG icon case for <code>module-myf</code></td></tr>
+            </tbody>
+          </table>
         </div>
       </li>
     </ol>
   </div>
 </div>
 
-<!-- 4. Registry Entry Schema -->
-<div class="section-title"><span class="num">4</span> Registry Entry Schema (Full Reference)</div>
+<!-- ================================================================== -->
+<!-- 6. CODEGEN DEEP DIVE -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">6</span> Codegen &mdash; How It Works, What Can Break</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--accent-light);">The Chain</div>
+  <div class="card-body">
+    <div class="flow-row">
+      <div class="flow-box flow-neutral">finderModuleRegistry.js<br><small>SSOT</small></div>
+      <span class="flow-arrow">+</span>
+      <div class="flow-box flow-neutral">llmPhaseDefs.js<br><small>phases</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-accent">generateLlmPhaseRegistry.js<br><small>codegen script</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-pass">8 generated files<br><small>frontend + backend</small></div>
+    </div>
+
+    <p><strong>How prompt previews work:</strong> The codegen script reads <code>promptBuilderExport</code> and <code>responseSchemaExport</code> from each <code>FINDER_MODULES</code> entry. It generates <code>phaseSchemaRegistry.generated.js</code> which:</p>
+    <ol style="margin:8px 0 0 20px; font-size:13.5px;">
+      <li>Dynamically imports your prompt builder function from <code>src/features/{featurePath}/{camelCase}LlmAdapter.js</code></li>
+      <li>Calls it with a placeholder: <code>buildMyFinderPrompt({ product: { brand: '{brand}', model: '{model}' } })</code></li>
+      <li>Wraps your Zod schema in <code>zodToLlmSchema()</code></li>
+      <li>Exports both as <code>FINDER_PHASE_SCHEMAS['my-finder']</code></li>
+    </ol>
+    <p style="margin-top:8px;">The backend serves this via <code>GET /api/indexing/llm-config</code>. The frontend <code>LlmPhaseSection.tsx</code> renders the prompt preview (left column) and schema preview (right column) automatically.</p>
+
+    <div class="callout callout-info" style="margin-top:12px;">
+      <strong>Naming convention (critical)</strong>
+      <code>featurePath: 'my-feature'</code> &rarr; codegen derives <code>myFeatureLlmAdapter.js</code> and <code>myFeatureSchema.js</code> using kebab-to-camelCase conversion. If your file is named differently, the import succeeds at codegen time but <strong>fails at runtime</strong>.
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--red-bg);">Codegen Troubleshooting</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td>Runtime: <code>Cannot find module</code></td><td><code>featurePath</code> doesn&rsquo;t match actual folder name, or file isn&rsquo;t named <code>{camelCase}LlmAdapter.js</code></td><td>Verify: <code>featurePath: 'my-feature'</code> &rarr; file must be <code>myFeatureLlmAdapter.js</code></td></tr>
+        <tr><td>Runtime: <code>X is not a function</code></td><td><code>promptBuilderExport</code> or <code>responseSchemaExport</code> string doesn&rsquo;t match actual export name</td><td>Verify the exact export name in your adapter/schema file</td></tr>
+        <tr><td>Panel not showing in Indexing Lab</td><td><code>panelFeaturePath</code> or <code>panelExport</code> doesn&rsquo;t match</td><td>Verify: <code>panelFeaturePath: 'my-finder'</code> &rarr; <code>tools/gui-react/src/features/my-finder/components/MyFinderPanel.tsx</code></td></tr>
+        <tr><td>No prompt preview in LLM Config</td><td>Prompt builder returns empty string or throws with placeholder args</td><td>Ensure your builder handles missing/placeholder product gracefully</td></tr>
+        <tr><td>Settings sidebar missing</td><td>Missing <code>settingsLabel</code> / <code>settingsSubtitle</code> / <code>settingsTip</code> in registry</td><td>Add all three fields to your registry entry</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- 7. REGISTRY ENTRY SCHEMA -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">7</span> Registry Entry Schema (Full Reference)</div>
 
 <div class="card">
   <div class="card-header" style="background:var(--accent-light);">finderModuleRegistry.js Entry</div>
   <div class="card-body">
 <pre class="code-block">{
   // ── Identity ──
-  id: 'myFinder',                    // camelCase module ID (used as key everywhere)
+  id: 'myFinder',                    // camelCase module ID (key everywhere)
   routePrefix: 'my-finder',          // kebab-case URL prefix
   moduleType: 'myf',                 // short code (operations tracker, data-change events)
   moduleLabel: 'MYF',                // chip label in UI
@@ -436,10 +805,11 @@ import { useFireAndForget }
 
   // ── Field Studio Integration ──
   fieldKeys: ['my_field'],           // candidate cleanup on delete-all
-  requiredFields: ['my_field'],      // field studio gate (POST returns 403 if disabled)
+  requiredFields: ['my_field'],      // field studio gate: ALL must be enabled (AND logic)
+                                     // POST returns 403 if any is disabled
 
   // ── LLM Phase ──
-  phase: 'myFinder',                 // must match llmPhaseDefs entry
+  phase: 'myFinder',                 // must match llmPhaseDefs entry id
 
   // ── Feature Module Paths (for route auto-wiring) ──
   featurePath: 'my-feature',         // src/features/{featurePath}/
@@ -457,13 +827,13 @@ import { useFireAndForget }
 
   // ── Per-Category Settings ──
   settingsDefaults: {
-    mySettingA: '100',
-    mySettingB: 'true',
+    cooldownDays: '30',
+    promptOverride: '',
   },
 
   // ── Codegen: Phase Schema Preview ──
-  promptBuilderExport: 'buildMyFinderPrompt',
-  responseSchemaExport: 'myFinderResponseSchema',
+  promptBuilderExport: 'buildMyFinderPrompt',       // must match actual export
+  responseSchemaExport: 'myFinderResponseSchema',    // must match actual export
 
   // ── Codegen: GUI Panel ──
   panelFeaturePath: 'my-finder',     // tools/gui-react/src/features/{panelFeaturePath}/
@@ -472,7 +842,7 @@ import { useFireAndForget }
   // ── Data-Change Events ──
   dataChangeEvents: {
     'run': [],                       // suffix &rarr; extra domains to invalidate
-    'run-deleted': [],
+    'run-deleted': [],               // e.g., CEF adds ['color-registry'] to 'run'
     'deleted': [],
   },
 
@@ -484,8 +854,114 @@ import { useFireAndForget }
   </div>
 </div>
 
-<!-- 5. Shared Helpers -->
-<div class="section-title"><span class="num">5</span> Shared Helpers Reference</div>
+<!-- ================================================================== -->
+<!-- 8. LLM CONFIG PREVIEW -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">8</span> LLM Config Preview &mdash; Prompt &amp; Schema Display</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--teal-bg);">How Your Finder Appears in LLM Config</div>
+  <div class="card-body">
+    <p>After codegen, <code>LlmPhaseSection.tsx</code> renders your finder&rsquo;s prompt and schema preview automatically. The component uses conditional rendering based on the shape of <code>phaseSchema</code>:</p>
+    <table>
+      <thead><tr><th>phaseSchema Shape</th><th>Rendered Layout</th><th>Example Module</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>{ system_prompt, response_schema }</code></td>
+          <td><strong>Single-column:</strong> system prompt (left) + response schema (right)</td>
+          <td>Any simple finder &mdash; <strong>this is what you get by default</strong></td>
+        </tr>
+        <tr>
+          <td><code>{ system_prompt, response_schema, identity_check_prompt, identity_check_response_schema }</code></td>
+          <td><strong>Two-column:</strong> discovery (left) + identity check (right)</td>
+          <td>CEF only (variant identity check on Run 2+)</td>
+        </tr>
+        <tr>
+          <td><code>{ system_prompt, view_prompts, hero_system_prompt, ... }</code></td>
+          <td><strong>Tabbed:</strong> per-view prompt tabs + hero prompt + schemas</td>
+          <td>PIF image evaluator only</td>
+        </tr>
+        <tr>
+          <td><code>{ ..., eval_criteria_defaults, eval_criteria_categories }</code></td>
+          <td><strong>Editable tabs:</strong> per-category, per-view eval criteria with save</td>
+          <td>PIF image evaluator only</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-ok">
+      <strong>For most new finders</strong>
+      You get the single-column layout for free. No overlay, no manual <code>phaseSchemaRegistry.js</code> edits needed. Your prompt builder is called with a placeholder product at codegen time, and the result is displayed in the LLM Config page.
+    </div>
+
+    <div class="callout callout-warn" style="margin-top:8px;">
+      <strong>If your finder has sub-prompts (identity check, evaluation, etc.)</strong>
+      You must manually add an overlay in <code>src/features/indexing/pipeline/shared/phaseSchemaRegistry.js</code> (the non-generated file). Spread your auto-generated entry and add the extra prompt/schema fields. See <code>COLOR_FINDER_IDENTITY_CHECK</code> or <code>CAROUSEL_BUILDER_PHASE</code> as examples.
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- 9. CANDIDATE INTEGRATION -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">9</span> Candidate Integration &mdash; Field Finders Only</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--purple-bg);">submitCandidate() Pattern</div>
+  <div class="card-body">
+    <p>If your finder populates spec fields (<code>fieldKeys</code> is non-empty), you must validate LLM output through the candidate gate before persisting:</p>
+    <pre class="code-block">import { submitCandidate } from '../../publisher/index.js';
+
+// In your orchestrator, after LLM response:
+const result = await submitCandidate({
+  category,
+  productId,
+  fieldKey: 'my_field',
+  value: response.my_field,
+  confidence: 100,                    // direct LLM discovery = 100
+  sourceMeta: {
+    source: 'myf',                    // matches moduleType
+    run_number: runNumber,            // deterministic source_id
+  },
+  fieldRules: compiledRules,
+  knownValues,
+  specDb,
+  productRoot,
+  config,                             // optional: enables auto-publish
+});</pre>
+
+    <p style="margin-top:12px;"><strong>What happens inside <code>submitCandidate()</code>:</strong></p>
+    <ol style="margin:4px 0 0 20px; font-size:13px;">
+      <li>12-step deterministic validation pipeline (reads your field rule &mdash; skips inapplicable steps)</li>
+      <li>Builds deterministic <code>source_id</code>: <code>myf-{productId}-{runNumber}</code></li>
+      <li>SQL write to <code>field_candidates</code> table</li>
+      <li>JSON write to <code>product.json candidates[]</code></li>
+      <li>Optional auto-publish if confidence meets threshold</li>
+    </ol>
+
+    <p style="margin-top:12px;"><strong>On validation failure (hard reject):</strong></p>
+    <pre class="code-block">if (result.status === 'REJECTED') {
+  // Persist rejected run to JSON + SQL (for audit trail)
+  // Set status: 'rejected', no cooldown set
+  // See CEF's storeFailureAndReturn() for the full pattern
+}</pre>
+
+    <div class="callout callout-info" style="margin-top:8px;">
+      <strong>What validation your field gets depends entirely on its field rule</strong>
+      <ul style="margin:4px 0 0 16px; font-size:13px;">
+        <li>Date field with <code>type: 'string'</code> + format check &rarr; only type coerce + format validation</li>
+        <li>Enum field with <code>enum.policy: 'closed'</code> &rarr; full enum + token repair + palette check</li>
+        <li>No field rule defined &rarr; <code>submitCandidate()</code> still works (minimal validation)</li>
+      </ul>
+      The validation pipeline is smart enough to skip steps that don&rsquo;t apply to your field&rsquo;s rule shape.
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- 10. SHARED HELPERS -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">10</span> Shared Helpers Reference</div>
 
 <div class="two-col">
 <div class="card">
@@ -494,13 +970,13 @@ import { useFireAndForget }
     <table>
       <thead><tr><th>Helper</th><th>Replaces</th></tr></thead>
       <tbody>
-        <tr><td><code>resolveModelTracking()</code></td><td>12 lines: <code>resolvePhaseModel</code> + <code>stripCompositeKey</code> + <code>wrappedOnModelResolved</code> callback</td></tr>
-        <tr><td><code>resolveAmbiguityContext()</code></td><td>15 lines: <code>resolveIdentityAmbiguitySnapshot</code> try/catch</td></tr>
+        <tr><td><code>resolveModelTracking()</code></td><td>12 lines: <code>resolvePhaseModel</code> + <code>stripCompositeKey</code> + <code>wrappedOnModelResolved</code></td></tr>
+        <tr><td><code>resolveAmbiguityContext()</code></td><td>15 lines: identity ambiguity snapshot try/catch</td></tr>
         <tr><td><code>buildFinderLlmCaller()</code></td><td>12 lines: <code>_callLlmOverride</code> vs factory pattern</td></tr>
-        <tr><td><code>computeCooldownUntil()</code></td><td>3 lines: Date math + <code>COOLDOWN_DAYS</code></td></tr>
-        <tr><td><code>createFinderRouteHandler()</code></td><td>5 REST endpoints + operations lifecycle + data-change emit</td></tr>
-        <tr><td><code>createFinderJsonStore()</code></td><td>JSON read/write/merge/delete + run lifecycle</td></tr>
-        <tr><td><code>specDb.getFinderStore(id)</code></td><td>SQL CRUD + runs table operations</td></tr>
+        <tr><td><code>computeCooldownUntil()</code></td><td>3 lines: Date math + cooldown days</td></tr>
+        <tr><td><code>createFinderRouteHandler()</code></td><td>5 REST endpoints + operations lifecycle + data-change emit + candidate cleanup</td></tr>
+        <tr><td><code>createFinderJsonStore()</code></td><td>JSON read/write/merge/delete + run lifecycle + recalculate</td></tr>
+        <tr><td><code>specDb.getFinderStore(id)</code></td><td>SQL CRUD + runs + settings (auto-wired from registry)</td></tr>
       </tbody>
     </table>
   </div>
@@ -510,22 +986,22 @@ import { useFireAndForget }
   <div class="card-header" style="background:var(--purple-bg);">Frontend (<code>shared/ui/finder/</code>)</div>
   <div class="card-body">
     <table>
-      <thead><tr><th>Component</th><th>Usage</th></tr></thead>
+      <thead><tr><th>Export</th><th>Usage</th></tr></thead>
       <tbody>
         <tr><td><code>FinderPanelHeader</code></td><td>Collapse, title, chip, run button</td></tr>
-        <tr><td><code>FinderKpiCard</code></td><td>Metric cards</td></tr>
-        <tr><td><code>FinderCooldownStrip</code></td><td>30-day progress bar</td></tr>
+        <tr><td><code>FinderKpiCard</code></td><td>Metric cards grid</td></tr>
+        <tr><td><code>FinderCooldownStrip</code></td><td>Progress bar (configurable days)</td></tr>
         <tr><td><code>FinderPanelFooter</code></td><td>Last run, model, count</td></tr>
-        <tr><td><code>FinderDeleteConfirmModal</code></td><td>Delete confirmation</td></tr>
+        <tr><td><code>FinderDeleteConfirmModal</code></td><td>Delete single/all confirmation</td></tr>
         <tr><td><code>FinderSectionCard</code></td><td>Collapsible body sections</td></tr>
         <tr><td><code>FinderRunPromptDetails</code></td><td>Prompt/response viewer</td></tr>
-        <tr><td><code>FinderRunModelBadge</code></td><td>Run history model badge: access mode icon + model name + effort tag</td></tr>
+        <tr><td><code>FinderRunModelBadge</code></td><td>Model + access mode + effort badge</td></tr>
         <tr><td><code>FinderRunTimestamp</code></td><td>PST time + duration</td></tr>
-        <tr><td><code>DiscoverySummaryBar</code></td><td>Discovery log summary</td></tr>
+        <tr><td><code>DiscoverySummaryBar</code></td><td>Discovery log summary bar</td></tr>
         <tr><td><code>ColorSwatch</code></td><td>Multi-color gradient circle</td></tr>
-        <tr><td><code>useResolvedFinderModel</code></td><td>LLM model + access mode + effort level</td></tr>
-        <tr><td><code>deriveCooldownState</code></td><td>Pure: days remaining, progress</td></tr>
-        <tr><td><code>deriveFinderStatusChip</code></td><td>Pure: "Not Run" vs "Run N"</td></tr>
+        <tr><td><code>useResolvedFinderModel</code></td><td>Hook: LLM model + access mode for a phase</td></tr>
+        <tr><td><code>deriveCooldownState</code></td><td>Pure: days remaining, progress %</td></tr>
+        <tr><td><code>deriveFinderStatusChip</code></td><td>Pure: &ldquo;Not Run&rdquo; vs &ldquo;Run N&rdquo;</td></tr>
         <tr><td><code>formatAtomLabel</code></td><td>Titlecase raw atoms</td></tr>
         <tr><td><code>useFireAndForget</code></td><td>202 pattern + optimistic insert</td></tr>
       </tbody>
@@ -534,11 +1010,13 @@ import { useFireAndForget }
 </div>
 </div>
 
-<!-- 6. Data Flow -->
-<div class="section-title"><span class="num">6</span> Data Flow (Every Finder Follows This)</div>
+<!-- ================================================================== -->
+<!-- 11. DATA FLOW -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">11</span> Universal Finder Data Flow</div>
 
 <div class="card">
-  <div class="card-header" style="background:var(--green-bg);">Universal Finder Data Flow</div>
+  <div class="card-header" style="background:var(--green-bg);">Every Finder Follows This</div>
   <div class="card-body">
     <div class="flow-row">
       <div class="flow-box flow-accent">POST /:cat/:pid<br><small>client fires</small></div>
@@ -555,18 +1033,26 @@ import { useFireAndForget }
       <span class="flow-arrow">&rarr;</span>
       <div class="flow-box flow-pass">WS Broadcast<br><small>data-change</small></div>
     </div>
-    <dl class="detail-grid" style="grid-template-columns: 140px 1fr;">
-      <dt>JSON first</dt><dd>Durable memory written before SQL. Crash-safe: SQL can be rebuilt from JSON.</dd>
-      <dt>SQL projection</dt><dd><code>specDb.getFinderStore(id).insertRun()</code> + <code>.upsert()</code>. Runs table includes <code>effort_level</code> and <code>access_mode</code> columns for badge rendering in run history.</dd>
-      <dt>WS invalidation</dt><dd>Data-change event broadcast &rarr; frontend <code>invalidationResolver</code> &rarr; React Query refetch</dd>
-      <dt>Operations</dt><dd>Registered before 202. Stage/model/stream callbacks update it in real-time. Complete/fail on finish.</dd>
-      <dt>Cooldown</dt><dd>30 days from successful run. Rejected runs: no cooldown set.</dd>
+    <dl class="detail-grid" style="grid-template-columns: 150px 1fr;">
+      <dt>JSON first</dt><dd>Durable memory written before SQL. Crash-safe: SQL can be rebuilt from JSON via the reseed surface.</dd>
+      <dt>SQL projection</dt><dd><code>specDb.getFinderStore(id).insertRun()</code> + <code>.upsert()</code>. Runs table includes <code>effort_level</code> and <code>access_mode</code> columns for badge rendering.</dd>
+      <dt>WS invalidation</dt><dd>Data-change event &rarr; <code>invalidationResolver</code> &rarr; React Query refetch. Domains auto-derived from <code>dataChangeEvents</code> in registry.</dd>
+      <dt>Operations</dt><dd>Registered before 202. Stage/model/stream callbacks update in real-time. Complete/fail on finish.</dd>
+      <dt>Cooldown</dt><dd>Configurable via <code>cooldownDays</code> setting (default 30). Rejected runs: no cooldown set.</dd>
+      <dt>Rebuild contract</dt><dd>If <code>.sqlite</code> is deleted, <code>rebuildMyFinderFromJson()</code> reconstructs all tables from JSON SSOT.</dd>
     </dl>
+
+    <div class="callout callout-info" style="margin-top:12px;">
+      <strong>Field Finder extra step</strong>
+      Between &ldquo;LLM Call&rdquo; and &ldquo;JSON Write,&rdquo; field finders call <code>submitCandidate()</code> to validate + write to <code>field_candidates</code> table. If validation fails, the run is stored as rejected (no JSON selected update, no cooldown).
+    </div>
   </div>
 </div>
 
-<!-- 7. Common Patterns -->
-<div class="section-title"><span class="num">7</span> Common Patterns &amp; Decisions</div>
+<!-- ================================================================== -->
+<!-- 12. COMMON PATTERNS -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">12</span> Common Patterns &amp; Decisions</div>
 
 <div class="two-col">
 <div class="card">
@@ -581,21 +1067,55 @@ import { useFireAndForget }
 </div>
 
 <div class="card">
-  <div class="card-header" style="background:var(--orange-bg);">Candidate Validation</div>
+  <div class="card-header" style="background:var(--orange-bg);">Run Rejection Pattern</div>
   <div class="card-body">
-    <p>If your finder populates Field Studio fields (<code>fieldKeys</code> is non-empty), you should validate LLM output through the candidate gate before writing:</p>
-    <dl class="detail-grid" style="grid-template-columns: 80px 1fr;">
-      <dt>Gate</dt><dd><code>validateField()</code> from <code>publisher/index.js</code></dd>
-      <dt>Submit</dt><dd><code>submitCandidate()</code> with <code>sourceMeta: { source: moduleType }</code></dd>
-      <dt>Reject</dt><dd>Persist rejected run to JSON + SQL with <code>status: 'rejected'</code></dd>
-    </dl>
-    <p style="margin-top:8px;">See CEF&rsquo;s <code>storeFailureAndReturn()</code> for the full rejection pattern. PIF skips this because images are artifacts, not field candidates.</p>
+    <p>When validation fails or LLM output is invalid:</p>
+    <ol style="margin:4px 0 0 16px; font-size:13px;">
+      <li>Persist the run to JSON with <code>status: 'rejected'</code></li>
+      <li>Insert SQL run row with <code>status: 'rejected'</code></li>
+      <li>Do <strong>not</strong> update <code>selected</code> or <code>cooldown_until</code></li>
+      <li>Return result with rejection reason for UI display</li>
+    </ol>
+    <p style="margin-top:8px;">See CEF&rsquo;s <code>storeFailureAndReturn()</code> for the full pattern.</p>
   </div>
 </div>
 </div>
 
-<!-- 8. Checklist Summary -->
-<div class="section-title"><span class="num">8</span> Quick Checklist</div>
+<div class="two-col">
+<div class="card">
+  <div class="card-header" style="background:var(--purple-bg);">buildGetResponse Hook</div>
+  <div class="card-body">
+    <p>The generic route handler calls your <code>buildGetResponse</code> hook to shape the GET response. This is where you add domain-specific fields beyond the standard (cooldown, runs, etc.):</p>
+    <pre class="code-block">buildGetResponse: (row, selected, runs,
+  onCooldown, { specDb, productId }) =&gt; ({
+  // Standard fields are already included
+  // Add your domain-specific shape:
+  my_field: row.my_field,
+  published: { ... },
+  candidates: { ... },
+})</pre>
+    <p style="margin-top:6px;">If omitted, the default response includes only standard fields. CEF uses this for <code>published.colors</code>, <code>published.editions</code>, <code>candidates</code>, and <code>variant_registry</code>.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--accent-light);">dataChangeEvents (Extra Domains)</div>
+  <div class="card-body">
+    <p>By default, three events are emitted: <code>{routePrefix}-run</code>, <code>{routePrefix}-run-deleted</code>, <code>{routePrefix}-deleted</code>. Each invalidates its own <code>routePrefix</code> domain.</p>
+    <p style="margin-top:8px;">Use <code>dataChangeEvents</code> to add <em>extra</em> domains. Example: CEF adds <code>['color-registry']</code> to the <code>'run'</code> event because discovering colors should invalidate the color registry cache:</p>
+    <pre class="code-block">dataChangeEvents: {
+  'run': ['color-registry'],  // extra domain
+  'run-deleted': [],
+  'deleted': [],
+}</pre>
+  </div>
+</div>
+</div>
+
+<!-- ================================================================== -->
+<!-- 13. QUICK CHECKLIST -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">13</span> Quick Checklist</div>
 
 <div class="card">
   <div class="card-header" style="background:var(--surface-alt);">Files to Create / Modify</div>
@@ -603,22 +1123,72 @@ import { useFireAndForget }
     <table>
       <thead><tr><th></th><th>File</th><th>Action</th></tr></thead>
       <tbody>
-        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>src/features/my-feature/*.js</code></td><td>Schema, adapter, store, orchestrator (6 files)</td></tr>
-        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>src/features/my-feature/api/*.js</code></td><td>Routes + context (2 files)</td></tr>
-        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>src/features/my-feature/tests/*.test.js</code></td><td>Tests</td></tr>
-        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>tools/gui-react/src/features/my-finder/</code></td><td>Types, queries, panel (3 files)</td></tr>
+        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>src/features/my-feature/myFinderSchema.js</code></td><td>Zod response schema</td></tr>
+        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>src/features/my-feature/myFinderLlmAdapter.js</code></td><td>Prompt builder + SPEC object</td></tr>
+        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>src/features/my-feature/myFinderStore.js</code></td><td>JSON store wrapper + rebuild function</td></tr>
+        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>src/features/my-feature/myFinder.js</code></td><td>Orchestrator</td></tr>
+        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>src/features/my-feature/api/myFinderRoutes.js</code></td><td>Route handler (thin config)</td></tr>
+        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>src/features/my-feature/api/myFinderRouteContext.js</code></td><td>DI context factory</td></tr>
+        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>src/features/my-feature/index.js</code></td><td>Public exports</td></tr>
+        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>src/features/my-feature/README.md</code></td><td>Domain contract</td></tr>
+        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>src/features/my-feature/tests/*.test.js</code></td><td>Tests (schema, orchestrator, routes)</td></tr>
+        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>tools/gui-react/src/features/my-finder/types.ts</code></td><td>Frontend type interfaces</td></tr>
+        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>tools/gui-react/src/features/my-finder/api/myFinderQueries.ts</code></td><td>React Query hooks</td></tr>
+        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>tools/gui-react/src/features/my-finder/components/MyFinderPanel.tsx</code></td><td>Indexing Lab panel</td></tr>
         <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>src/core/finder/finderModuleRegistry.js</code></td><td>Add 1 entry to <code>FINDER_MODULES</code></td></tr>
-        <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>src/core/config/llmPhaseDefs.js</code></td><td>Add 1 phase entry</td></tr>
-        <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>src/app/api/guiServerRuntime.js</code></td><td>Add imports + context + route def (temp, until wireFinderRoutes)</td></tr>
-        <tr><td><span class="tag tag-purple">CODEGEN</span></td><td><code>node tools/gui-react/scripts/generateLlmPhaseRegistry.js</code></td><td>Regenerates 4 files</td></tr>
+        <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>src/core/config/llmPhaseDefs.js</code></td><td>Add 1 phase entry (~8 lines)</td></tr>
+        <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>ModuleSettingsPanel.tsx</code></td><td>Add settings form component + rendering branch (settings UI is <strong>not</strong> auto-generated)</td></tr>
+        <tr><td><span class="tag tag-orange">TEMP</span></td><td><code>src/app/api/guiServerRuntime.js</code></td><td>Add imports + context + route def (until wireFinderRoutes is integrated)</td></tr>
+        <tr><td><span class="tag tag-orange">TEMP</span></td><td><code>PipelineSettingsPage.tsx</code></td><td>Add module ID to union (until frontend hardcodes are fixed)</td></tr>
+        <tr><td><span class="tag tag-orange">TEMP</span></td><td><code>ModuleSettingsPanel.tsx:1106</code></td><td>Add module ID to props union (until type is widened)</td></tr>
+        <tr><td><span class="tag tag-orange">TEMP</span></td><td><code>PipelineSettingsPageShell.tsx</code></td><td>Add SVG icon case (until icon registry is codegen&rsquo;d)</td></tr>
+        <tr><td><span class="tag tag-purple">CODEGEN</span></td><td><code>node tools/gui-react/scripts/generateLlmPhaseRegistry.js</code></td><td>Regenerates 8 files</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-ok" style="margin-top:12px;">
+      <strong>After Phase 1 fixes are applied</strong>
+      The 4 rows marked <span class="tag tag-orange">TEMP</span> go away entirely. The <span class="tag tag-accent">MODIFY</span> for <code>ModuleSettingsPanel</code> (settings form) is <strong>permanent</strong> &mdash; settings UI is not auto-generated from the registry.
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- 14. KEY TERMS -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">14</span> Key Terms</div>
+
+<div class="card">
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><code>fieldKeys</code></td><td>Array of spec field names this module populates. Used for candidate cleanup on delete. Empty for artifact finders.</td></tr>
+        <tr><td><code>requiredFields</code></td><td>Array of spec fields that must be enabled in Field Studio for this module to run. <strong>AND</strong> logic: all must be active.</td></tr>
+        <tr><td><code>moduleType</code></td><td>Short code used in operations tracker, data-change events, and candidate <code>source_type</code>.</td></tr>
+        <tr><td><code>routePrefix</code></td><td>Kebab-case HTTP URL path prefix. E.g., <code>my-finder</code> &rarr; <code>GET /api/my-finder/:cat/:pid</code>.</td></tr>
+        <tr><td><code>filePrefix</code></td><td>JSON filename prefix. E.g., <code>my_feature</code> &rarr; <code>.workspace/products/{pid}/my_feature.json</code>.</td></tr>
+        <tr><td><code>reseedKey</code></td><td>Registry key for the reseed surface. Used by <code>seedRegistry.js</code> to rebuild SQL from JSON.</td></tr>
+        <tr><td><code>source_id</code></td><td>Deterministic identifier for each extraction event. Finders: <code>{moduleType}-{productId}-{runNumber}</code>. Survives rebuilds.</td></tr>
+        <tr><td><code>effort_level</code></td><td>LLM reasoning effort level (from model tracking). Stored in runs table, powers <code>FinderRunModelBadge</code>.</td></tr>
+        <tr><td><code>access_mode</code></td><td>How the LLM was accessed (direct, cached, queued). Stored in runs table, powers badge icon.</td></tr>
+        <tr><td><code>variant_id</code></td><td>Immutable 8-hex hash (<code>v_&lt;hash&gt;</code>) for product variants. CEF-specific &mdash; most finders won&rsquo;t need this.</td></tr>
       </tbody>
     </table>
   </div>
 </div>
 
+<!-- ================================================================== -->
+<!-- FOOTER -->
+<!-- ================================================================== -->
+
 <div style="text-align:center; padding:32px 0; color:var(--text-muted); font-size:13px;">
-  Spec Factory Finder Module Guide<br>
-  Registry-driven &bull; O(1) scaling &bull; shared helpers &bull; dual-state persistence &bull; fire-and-forget
+  Spec Factory Finder Module Guide &mdash; Updated 2026-04-14<br>
+  Registry-driven &bull; O(1) scaling &bull; 17 auto-wired systems &bull; dual-state persistence &bull; fire-and-forget<br>
+  <span style="margin-top:6px; display:block;">
+    Source: <code>src/core/finder/finderModuleRegistry.js</code> &bull;
+    Codegen: <code>node tools/gui-react/scripts/generateLlmPhaseRegistry.js</code>
+  </span>
 </div>
 
 </div>

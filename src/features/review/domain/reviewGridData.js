@@ -408,14 +408,13 @@ export async function buildProductReviewPayload({
     // Map field_candidates rows → candidate shape.
     let candidates = fieldCandidateRows.map((c) => {
       const meta = isObject(c.metadata_json) ? c.metadata_json : {};
-      const sources = Array.isArray(c.sources_json) ? c.sources_json : [];
-      const firstSource = isObject(sources[0]) ? sources[0] : {};
-      const sourceToken = String(meta.source || firstSource.source || '').trim().toLowerCase();
+      // WHY: Source-centric rows have source_type column; legacy rows fall back to metadata.
+      const sourceToken = String(c.source_type || meta.source || '').trim().toLowerCase();
       return {
         candidate_id: `fc_${c.id}`,
         value: c.value,
         score: Math.max(0, Math.min(1, toNumber(c.confidence, 0))),
-        source_id: sourceToken || '',
+        source_id: c.source_id || sourceToken || '',
         source: dbSourceLabel(sourceToken) || sourceToken || '',
         tier: null,
         method: String(meta.method || sourceToken || '').trim() || null,
@@ -435,7 +434,7 @@ export async function buildProductReviewPayload({
       source = 'user';
       method = 'manual_override';
     } else if (resolvedRow) {
-      const st = String(resolvedRow.metadata_json?.source || '').trim();
+      const st = String(resolvedRow.source_type || resolvedRow.metadata_json?.source || '').trim();
       source = dbSourceLabel(st) || st;
       method = String(resolvedRow.metadata_json?.method || '').trim() || null;
     }

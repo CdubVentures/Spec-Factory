@@ -7,46 +7,63 @@ import type {
   BillingByReasonResponse,
   BillingByCategoryResponse,
   BillingEntriesResponse,
+  BillingFilterState,
 } from './billingTypes.ts';
 
 const BILLING_REFETCH = 30_000;
 
-export function useBillingSummaryQuery() {
+// WHY: Shared param builder so all billing queries apply the same filters.
+function filterParams(filters: BillingFilterState): URLSearchParams {
+  const p = new URLSearchParams();
+  if (filters.category) p.set('category', filters.category);
+  if (filters.model) p.set('model', filters.model);
+  if (filters.reason) p.set('reason', filters.reason);
+  if (filters.access) p.set('access', filters.access);
+  return p;
+}
+
+function withFilters(base: string, filters: BillingFilterState): string {
+  const p = filterParams(filters);
+  const qs = p.toString();
+  return qs ? `${base}${base.includes('?') ? '&' : '?'}${qs}` : base;
+}
+
+export function useBillingSummaryQuery(filters: BillingFilterState) {
   return useQuery<BillingSummaryResponse>({
-    queryKey: ['billing', 'summary'],
-    queryFn: () => api.get<BillingSummaryResponse>('/billing/global/summary'),
+    queryKey: ['billing', 'summary', filters],
+    queryFn: () => api.get<BillingSummaryResponse>(withFilters('/billing/global/summary', filters)),
     refetchInterval: BILLING_REFETCH,
   });
 }
 
-export function useBillingDailyQuery() {
+export function useBillingDailyQuery(filters: BillingFilterState) {
   return useQuery<BillingDailyResponse>({
-    queryKey: ['billing', 'daily'],
-    queryFn: () => api.get<BillingDailyResponse>('/billing/global/daily?months=1'),
+    queryKey: ['billing', 'daily', filters],
+    queryFn: () => api.get<BillingDailyResponse>(withFilters('/billing/global/daily?months=1', filters)),
     refetchInterval: BILLING_REFETCH,
   });
 }
 
-export function useBillingByModelQuery() {
+export function useBillingByModelQuery(filters: BillingFilterState) {
   return useQuery<BillingByModelResponse>({
-    queryKey: ['billing', 'by-model'],
-    queryFn: () => api.get<BillingByModelResponse>('/billing/global/by-model'),
+    queryKey: ['billing', 'by-model', filters],
+    queryFn: () => api.get<BillingByModelResponse>(withFilters('/billing/global/by-model', filters)),
     refetchInterval: BILLING_REFETCH,
   });
 }
 
-export function useBillingByReasonQuery() {
+export function useBillingByReasonQuery(filters: BillingFilterState) {
   return useQuery<BillingByReasonResponse>({
-    queryKey: ['billing', 'by-reason'],
-    queryFn: () => api.get<BillingByReasonResponse>('/billing/global/by-reason'),
+    queryKey: ['billing', 'by-reason', filters],
+    queryFn: () => api.get<BillingByReasonResponse>(withFilters('/billing/global/by-reason', filters)),
     refetchInterval: BILLING_REFETCH,
   });
 }
 
-export function useBillingByCategoryQuery() {
+export function useBillingByCategoryQuery(filters: BillingFilterState) {
   return useQuery<BillingByCategoryResponse>({
-    queryKey: ['billing', 'by-category'],
-    queryFn: () => api.get<BillingByCategoryResponse>('/billing/global/by-category'),
+    queryKey: ['billing', 'by-category', filters],
+    queryFn: () => api.get<BillingByCategoryResponse>(withFilters('/billing/global/by-category', filters)),
     refetchInterval: BILLING_REFETCH,
   });
 }
@@ -57,6 +74,7 @@ interface EntriesQueryOpts {
   category: string;
   model: string;
   reason: string;
+  access: string;
 }
 
 export function useBillingEntriesQuery(opts: EntriesQueryOpts) {
@@ -66,6 +84,7 @@ export function useBillingEntriesQuery(opts: EntriesQueryOpts) {
   if (opts.category) params.set('category', opts.category);
   if (opts.model) params.set('model', opts.model);
   if (opts.reason) params.set('reason', opts.reason);
+  if (opts.access) params.set('access', opts.access);
 
   return useQuery<BillingEntriesResponse>({
     queryKey: ['billing', 'entries', opts],

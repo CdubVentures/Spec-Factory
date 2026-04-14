@@ -80,10 +80,9 @@ export interface StatusChip {
 const COOLDOWN_DAYS = 30;
 
 export function deriveFinderKpiCards(result: ColorEditionFinderResult | null): KpiCard[] {
-  // Prefer published truth from field_candidates; fall back to summary table
-  const colors = result?.published?.colors?.length ?? result?.colors?.length ?? 0;
-  const editions = result?.published?.editions?.length ?? result?.editions?.length ?? 0;
-  const defaultColor = result?.published?.default_color || result?.default_color || '--';
+  const colors = result?.published?.colors?.length ?? 0;
+  const editions = result?.published?.editions?.length ?? 0;
+  const defaultColor = result?.published?.default_color || '--';
   const runCount = result?.run_count ?? 0;
 
   const cooldown = deriveCooldownState(result);
@@ -147,8 +146,8 @@ function toColorPill(name: string, defaultColor: string, hexMap: Map<string, str
 }
 
 /**
- * Find the candidate entry whose array value contains a given item.
- * Returns the source_count from the best-matching candidate, or 0.
+ * Count how many extraction events (source-centric rows) contain a given item.
+ * WHY: Source-centric model — each row is one extraction event, so count = matching rows.
  */
 function findItemSourceCount(candidates: readonly CefCandidateEntry[], item: string): number {
   let total = 0;
@@ -157,7 +156,7 @@ function findItemSourceCount(candidates: readonly CefCandidateEntry[], item: str
     try { items = typeof c.value === 'string' ? JSON.parse(c.value) : []; }
     catch { items = []; }
     if (!Array.isArray(items)) items = [c.value as string];
-    if (items.some(v => String(v) === item)) total += c.source_count;
+    if (items.some(v => String(v) === item)) total += 1;
   }
   return total;
 }
@@ -203,29 +202,7 @@ export function deriveSelectedStateDisplay(
     };
   }
 
-  // Fallback: use deprecated selected (backward compat)
-  if (!result?.selected) {
-    return { colors: [], editions: [], ssotRunNumber: 0, defaultColorHex: '' };
-  }
-
-  const sel = result.selected;
-  const colorNamesMap = sel.color_names ?? {};
-
-  const colors = sel.colors.map(name => toColorPill(name, sel.default_color, hexMap, colorNamesMap[name] || '', 0));
-
-  const editions = Object.entries(sel.editions).map(([slug, ed]) => ({
-    slug,
-    displayName: ed.display_name || '',
-    pairedColors: ed.colors.map(name => toColorPill(name, sel.default_color, hexMap, colorNamesMap[name] || '', 0)),
-    sourceCount: 0,
-  }));
-
-  return {
-    colors,
-    editions,
-    ssotRunNumber: result.run_count,
-    defaultColorHex: resolveHex(sel.default_color, hexMap),
-  };
+  return { colors: [], editions: [], ssotRunNumber: 0, defaultColorHex: '' };
 }
 
 export function deriveRunHistoryRows(

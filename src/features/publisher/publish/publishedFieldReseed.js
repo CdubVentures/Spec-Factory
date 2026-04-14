@@ -77,6 +77,15 @@ export function rebuildPublishedFieldsFromJson({ specDb, productRoot }) {
         // WHY: Published value is a merge — no single candidate matches exactly.
         // Use linked_candidates to find the real contributing candidates and mark them resolved.
         for (const linked of fieldEntry.linked_candidates) {
+          // WHY: Source-centric linked_candidates have source_id — resolve by that first.
+          if (linked.source_id) {
+            const srcRow = specDb.getFieldCandidateBySourceId?.(productId, fieldKey, linked.source_id);
+            if (srcRow) {
+              specDb.markFieldCandidateResolved(productId, fieldKey, srcRow.value);
+              continue;
+            }
+          }
+          // Legacy fallback: resolve by value match
           if (linked.value) {
             const linkedSerialized = typeof linked.value === 'string' ? linked.value : serializeValue(linked.value);
             const linkedRow = specDb.getFieldCandidate(productId, fieldKey, linkedSerialized);
@@ -87,14 +96,17 @@ export function rebuildPublishedFieldsFromJson({ specDb, productRoot }) {
         }
       } else if (fieldEntry.source === 'manual_override') {
         // WHY: Manual overrides are their own candidate — always reseed.
-        specDb.upsertFieldCandidate({
+        // Preserve source_id from product.json sources[] when available.
+        const manualSourceId = sources[0]?.source_id || `manual-${productId}-reseed-${Date.now()}`;
+        specDb.insertFieldCandidate({
           productId,
           fieldKey,
+          sourceId: manualSourceId,
+          sourceType: 'manual_override',
           value: serialized,
           unit: null,
           confidence,
-          sourceCount: sources.length || 1,
-          sourcesJson: sources,
+          model: '',
           validationJson: { valid: true, repairs: [], rejections: [] },
           metadataJson: { source: 'manual_override' },
           status: 'resolved',

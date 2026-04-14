@@ -1,4 +1,4 @@
-import { resolveBillingCallType } from './billingCallTypeRegistry.ts';
+import { resolveBillingCallType, BILLING_CALL_TYPE_REGISTRY } from './billingCallTypeRegistry.ts';
 import type { BillingGroupedItem, PivotedDailyRow, DonutSlice, HorizontalBarItem } from './billingTypes.ts';
 
 /**
@@ -30,14 +30,26 @@ export function computeAvgPerCall(totalCost: number, totalCalls: number): number
   return totalCalls === 0 ? 0 : totalCost / totalCalls;
 }
 
-/** Convert reasons array into donut slices with labels, colors, and percentages. */
+/** Convert reasons array into donut slices with labels, colors, and percentages.
+ *  Sorted by registry order (grouped by feature, light → dark). */
 export function computeDonutSlices(reasons: ReadonlyArray<BillingGroupedItem>): DonutSlice[] {
   const nonZero = reasons.filter((r) => r.cost_usd > 0);
   if (nonZero.length === 0) return [];
 
   const total = nonZero.reduce((sum, r) => sum + r.cost_usd, 0);
 
-  return nonZero.map((r) => {
+  // WHY: Sort slices by registry order so the pie wedges group by feature
+  const reasonMap = new Map(nonZero.map((r) => [r.key, r]));
+  const registryOrder = BILLING_CALL_TYPE_REGISTRY
+    .filter((e) => reasonMap.has(e.reason))
+    .map((e) => e.reason);
+  // Append any unknown reasons at the end
+  for (const r of nonZero) {
+    if (!registryOrder.includes(r.key)) registryOrder.push(r.key);
+  }
+
+  return registryOrder.map((key) => {
+    const r = reasonMap.get(key)!;
     const entry = resolveBillingCallType(r.key);
     return {
       reason: r.key,

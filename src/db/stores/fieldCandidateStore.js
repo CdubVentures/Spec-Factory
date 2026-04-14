@@ -15,7 +15,6 @@ function hydrateRow(row) {
   if (!row) return null;
   return {
     ...row,
-    sources_json: safeParse(row.sources_json, []),
     validation_json: safeParse(row.validation_json, {}),
     metadata_json: safeParse(row.metadata_json, {}),
   };
@@ -26,7 +25,9 @@ function hydrateRow(row) {
  */
 export function createFieldCandidateStore({ db, category, stmts }) {
 
-  function upsert({ productId, fieldKey, value, unit, confidence, sourceCount, sourcesJson, validationJson, metadataJson, status }) {
+  // WHY: Legacy upsert — kept for backward compat (candidateReseed old-format, finderRoutes legacy).
+  // Callers may still pass sourceCount/sourcesJson — these are ignored (columns dropped in Phase 8).
+  function upsert({ productId, fieldKey, value, unit, confidence, sourceId, sourceType, model, validationJson, metadataJson, status }) {
     stmts._upsertFieldCandidate.run({
       category,
       product_id: String(productId || ''),
@@ -34,8 +35,9 @@ export function createFieldCandidateStore({ db, category, stmts }) {
       value: value ?? null,
       unit: unit ?? null,
       confidence: confidence ?? 0,
-      source_count: sourceCount ?? 1,
-      sources_json: JSON.stringify(Array.isArray(sourcesJson) ? sourcesJson : []),
+      source_id: String(sourceId || `legacy-${productId || ''}-${fieldKey || ''}-${Date.now()}`),
+      source_type: String(sourceType || ''),
+      model: String(model || ''),
       validation_json: JSON.stringify(validationJson ?? {}),
       metadata_json: JSON.stringify(metadataJson ?? {}),
       status: status || 'candidate',
@@ -125,5 +127,74 @@ export function createFieldCandidateStore({ db, category, stmts }) {
     ).all(category).map(r => r.product_id);
   }
 
-  return { upsert, get, getByProductAndField, getAllByProduct, deleteByProduct, deleteByProductAndField, deleteByProductFieldValue, getPaginated, count, stats, markResolved, demoteResolved, getResolved, getDistinctProducts };
+  // --- Source-centric methods ---
+
+  // WHY: Idempotent insert — check-before-insert instead of ON CONFLICT because
+  // the UNIQUE(source_id) constraint can't be added until Phase 8 data migration.
+  // Also catches old UNIQUE(value) violations during transition (same value, different source).
+  function insert({ productId, fieldKey, sourceId, sourceType, value, unit, confidence, model, validationJson, metadataJson, status }) {
+    const sid = String(sourceId || '');
+    if (sid) {
+      const existing = getBySourceId(productId, fieldKey, sid);
+      if (existing) return;
+    }
+    try {
+      stmts._insertFieldCandidate.run({
+        category,
+        product_id: String(productId || ''),
+        field_key: String(fieldKey || ''),
+        source_id: sid,
+        source_type: String(sourceType || ''),
+        value: value ?? null,
+        unit: unit ?? null,
+        confidence: confidence ?? 0,
+        model: String(model || ''),
+        validation_json: JSON.stringify(validationJson ?? {}),
+        metadata_json: JSON.stringify(metadataJson ?? {}),
+        status: status || 'candidate',
+      });
+    } catch (e) {
+      // WHY: During transition, old UNIQUE(value) constraint may fire when same value
+      // is submitted from a different source. This is expected until Phase 8 migration
+      // removes the value-based constraint. Silently skip — the value is already tracked.
+      if (e.code === 'SQLITE_CONSTRAINT_UNIQUE') return;
+      throw e;
+    }
+  }
+
+  function getBySourceId(productId, fieldKey, sourceId) {
+    return hydrateRow(
+      stmts._getFieldCandidateBySourceId.get(category, String(productId || ''), String(fieldKey || ''), String(sourceId || ''))
+    );
+  }
+
+  function deleteBySourceId(productId, fieldKey, sourceId) {
+    stmts._deleteFieldCandidateBySourceId.run(
+      category, String(productId || ''), String(fieldKey || ''), String(sourceId || '')
+    );
+  }
+
+  function deleteBySourceType(productId, fieldKey, sourceType) {
+    stmts._deleteFieldCandidatesBySourceType.run(
+      category, String(productId || ''), String(fieldKey || ''), String(sourceType || '')
+    );
+  }
+
+  function getByValue(productId, fieldKey, value) {
+    return stmts._getFieldCandidatesByValue
+      .all(category, String(productId || ''), String(fieldKey || ''), value ?? null)
+      .map(hydrateRow);
+  }
+
+  function markResolvedByValue(productId, fieldKey, value) {
+    db.prepare(
+      `UPDATE field_candidates SET status = 'resolved', updated_at = datetime('now')
+       WHERE category = ? AND product_id = ? AND field_key = ? AND value = ?`
+    ).run(category, String(productId || ''), String(fieldKey || ''), value ?? null);
+  }
+
+  return {
+    upsert, get, getByProductAndField, getAllByProduct, deleteByProduct, deleteByProductAndField, deleteByProductFieldValue, getPaginated, count, stats, markResolved, demoteResolved, getResolved, getDistinctProducts,
+    insert, getBySourceId, deleteBySourceId, deleteBySourceType, getByValue, markResolvedByValue,
+  };
 }

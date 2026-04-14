@@ -7,7 +7,7 @@ import { z } from 'zod';
  * heroEvalResponseSchema: validates hero selection output (cross-view picks).
  */
 
-const evalFlagEnum = z.enum(['watermark', 'badge', 'cropped', 'wrong_product']);
+const evalFlagEnum = z.enum(['watermark', 'badge', 'cropped', 'wrong_product', 'other']);
 
 export const viewEvalResponseSchema = z.object({
   winner: z.object({
@@ -16,7 +16,7 @@ export const viewEvalResponseSchema = z.object({
   }).nullable(),
   rejected: z.array(z.object({
     filename: z.string(),
-    flags: z.array(evalFlagEnum),
+    flags: z.array(evalFlagEnum).optional(),
     reasoning: z.string().optional(),
   })).optional(),
 });
@@ -27,4 +27,9 @@ export const heroEvalResponseSchema = z.object({
     hero_rank: z.number().int(),
     reasoning: z.string(),
   })),
+  rejected: z.array(z.object({
+    filename: z.string(),
+    flags: z.array(evalFlagEnum).optional(),
+    reasoning: z.string(),
+  })).optional(),
 });

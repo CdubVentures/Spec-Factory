@@ -37,16 +37,18 @@ export function publishManualOverride({
   const serialized = serializeValue(value);
   const now = new Date().toISOString();
 
-  // --- SQL: demote previous winner, upsert override candidate as resolved ---
+  // --- SQL: demote previous winner, insert override candidate as resolved ---
+  const sourceId = `manual-${productId}-${Date.now()}`;
   specDb.demoteResolvedCandidates(productId, fieldKey);
-  specDb.upsertFieldCandidate({
+  specDb.insertFieldCandidate({
     productId,
     fieldKey,
+    sourceId,
+    sourceType: 'manual_override',
     value: serialized,
     unit: unit ?? null,
     confidence: 1.0,
-    sourceCount: 1,
-    sourcesJson: [{ source: 'manual_override', reviewer: reviewer || null, submitted_at: now }],
+    model: '',
     validationJson: { valid: true, repairs: [], rejections: [] },
     metadataJson: {
       source: 'manual_override',
@@ -69,7 +71,7 @@ export function publishManualOverride({
       confidence: 1.0,
       source: 'manual_override',
       resolved_at: now,
-      sources: [{ source: 'manual_override', reviewer: reviewer || null }],
+      sources: [{ source: 'manual_override', source_id: sourceId, reviewer: reviewer || null }],
     };
     productJson.updated_at = now;
     fs.writeFileSync(productPath, JSON.stringify(productJson, null, 2));

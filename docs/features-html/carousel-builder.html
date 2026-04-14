@@ -254,6 +254,23 @@
 </div>
 
 <div class="card">
+  <div class="card-header">Prompt Criteria Precedence &amp; File Locations</div>
+  <div class="card-body">
+    <p>Hero eval criteria are resolved with this precedence chain &mdash; first match wins:</p>
+    <table>
+      <thead><tr><th>Priority</th><th>Source</th><th>File</th><th>When Used</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>DB prompt override</td><td><code>heroEvalPromptOverride</code> in finder settings</td><td>User sets custom prompt in Settings GUI</td></tr>
+        <tr><td>2</td><td>Category-specific criteria</td><td><code>productImageLlmAdapter.js</code> &rarr; <code>CATEGORY_HERO_EVAL_CRITERIA[category]</code></td><td>Mouse, keyboard, monitor, mousepad &mdash; <strong>this is what runs for every real product</strong></td></tr>
+        <tr><td>3</td><td>Generic fallback</td><td><code>productImageLlmAdapter.js</code> &rarr; <code>GENERIC_HERO_EVAL_CRITERIA</code></td><td>Unknown categories only</td></tr>
+        <tr><td>4</td><td>Default criteria</td><td><code>imageEvaluator.js</code> &rarr; <code>buildHeroSelectionPrompt</code> defaultCriteria</td><td>Only if no heroCriteria passed at all (never in practice)</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top: 12px; font-size: 13px; color: var(--text-muted);"><strong>Important:</strong> When editing hero eval criteria, edit the category-specific entries in <code>productImageLlmAdapter.js</code> &mdash; that is what actually runs. The default in <code>imageEvaluator.js</code> is a dead-code fallback.</p>
+  </div>
+</div>
+
+<div class="card">
   <div class="card-header">Reference: What Good Hero Images Look Like</div>
   <div class="card-body">
     <p>Real examples from the production image library. All of these are acceptable hero images &mdash; notice the variety of styles:</p>

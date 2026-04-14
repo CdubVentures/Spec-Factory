@@ -53,19 +53,20 @@ describe('rebuildPublishedFieldsFromJson', () => {
     assert.equal(resolved.status, 'resolved');
   });
 
-  it('upserts resolved candidate when no matching row exists', () => {
+  // WHY: When published value has no matching candidate and no linked_candidates,
+  // reseed skips it (don't create ghost rows from derived/merged state).
+  it('skips non-manual-override field when no matching candidate exists', () => {
     writeProduct('rs-new', {
       category: 'mouse', product_id: 'rs-new',
       fields: { sensor: { value: 'PAW3950', confidence: 95, source: 'pipeline', resolved_at: new Date().toISOString(), sources: [{ source: 'test' }] } },
       candidates: {},
     });
 
-    const stats = rebuildPublishedFieldsFromJson({ specDb, productRoot: PRODUCT_ROOT });
+    rebuildPublishedFieldsFromJson({ specDb, productRoot: PRODUCT_ROOT });
 
-    assert.ok(stats.fields_seeded >= 1);
+    // No candidate row was created — the published value is derived state, not a candidate
     const resolved = specDb.getResolvedFieldCandidate('rs-new', 'sensor');
-    assert.ok(resolved);
-    assert.equal(resolved.status, 'resolved');
+    assert.equal(resolved, null);
   });
 
   it('skips products with wrong category', () => {
@@ -91,6 +92,38 @@ describe('rebuildPublishedFieldsFromJson', () => {
     assert.ok(stats.found >= 1);
   });
 
+  // ── Source-centric reseed (Phase 3) ─────────────────────────────────
+
+  it('resolves by source_id from linked_candidates when available', () => {
+    // Seed a source-centric candidate
+    specDb.insertFieldCandidate({
+      productId: 'rs-srcid', fieldKey: 'weight',
+      sourceId: 'cef-rs-srcid-1', sourceType: 'cef',
+      value: '58', confidence: 90, model: 'gemini',
+      validationJson: {}, metadataJson: {},
+    });
+
+    writeProduct('rs-srcid', {
+      category: 'mouse', product_id: 'rs-srcid',
+      fields: {
+        weight: {
+          value: 58, confidence: 90, source: 'pipeline',
+          resolved_at: new Date().toISOString(), sources: [],
+          linked_candidates: [
+            { source_id: 'cef-rs-srcid-1', value: '58', confidence: 90 },
+          ],
+        },
+      },
+      candidates: {},
+    });
+
+    rebuildPublishedFieldsFromJson({ specDb, productRoot: PRODUCT_ROOT });
+
+    const row = specDb.getFieldCandidateBySourceId('rs-srcid', 'weight', 'cef-rs-srcid-1');
+    assert.ok(row);
+    assert.equal(row.status, 'resolved');
+  });
+
   it('handles manual override fields correctly', () => {
     writeProduct('rs-override', {
       category: 'mouse', product_id: 'rs-override',
@@ -104,5 +137,29 @@ describe('rebuildPublishedFieldsFromJson', () => {
     const row = specDb.getFieldCandidate('rs-override', 'weight', '99');
     assert.ok(row);
     assert.equal(row.metadata_json.source, 'manual_override');
+  });
+
+  it('manual override reseed preserves source_id from product.json sources', () => {
+    writeProduct('rs-mansrc', {
+      category: 'mouse', product_id: 'rs-mansrc',
+      fields: {
+        weight: {
+          value: 42, confidence: 1.0, source: 'manual_override',
+          resolved_at: new Date().toISOString(),
+          sources: [{ source: 'manual_override', source_id: 'manual-rs-mansrc-1700000000000' }],
+        },
+      },
+      candidates: {},
+    });
+
+    rebuildPublishedFieldsFromJson({ specDb, productRoot: PRODUCT_ROOT });
+
+    // WHY: The manual override's source_id should be preserved from product.json,
+    // not replaced with a legacy-* synthetic ID.
+    const rows = specDb.getFieldCandidatesByProductAndField('rs-mansrc', 'weight');
+    assert.ok(rows.length >= 1, 'should have at least 1 row');
+    assert.equal(rows[0].source_id, 'manual-rs-mansrc-1700000000000', 'should preserve source_id from sources array');
+    assert.equal(rows[0].source_type, 'manual_override');
+    assert.equal(rows[0].status, 'resolved');
   });
 });

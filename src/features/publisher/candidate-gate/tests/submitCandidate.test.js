@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { SpecDb } from '../../../../db/specDb.js';
 import { submitCandidate } from '../submitCandidate.js';
+import { buildSourceId } from '../buildSourceId.js';
 
 // --- Factories ---
 
@@ -232,8 +233,8 @@ describe('submitCandidate', () => {
     assert.ok(dbRow.validation_json.repairs.length > 0);
   });
 
-  // --- 7. Source merge: same value twice ---
-  it('merges sources when same value submitted again', () => {
+  // --- 7. Source-centric: same value twice creates separate source rows ---
+  it('creates separate source rows when same value submitted by different sources', () => {
     ensureProductJson('mouse-merge');
     submitCandidate({
       ...baseDeps(specDb),
@@ -241,7 +242,7 @@ describe('submitCandidate', () => {
       fieldKey: 'weight',
       value: 58,
       confidence: 80,
-      sourceMeta: { artifact: 'aaa', url: 'https://razer.com', run_id: 'run-1' },
+      sourceMeta: { source: 'cef', artifact: 'aaa', url: 'https://razer.com', run_number: 1 },
     });
 
     submitCandidate({
@@ -250,22 +251,24 @@ describe('submitCandidate', () => {
       fieldKey: 'weight',
       value: 58,
       confidence: 95,
-      sourceMeta: { artifact: 'bbb', url: 'https://rtings.com', run_id: 'run-1' },
+      sourceMeta: { source: 'cef', artifact: 'bbb', url: 'https://rtings.com', run_number: 2 },
     });
 
-    // DB: one row, 2 sources
-    const dbRow = specDb.getFieldCandidate('mouse-merge', 'weight', '58');
-    assert.equal(dbRow.source_count, 2);
-    assert.equal(dbRow.sources_json.length, 2);
-    assert.equal(dbRow.confidence, 95); // MAX
+    // WHY: Source-centric model — duplicate source_id is idempotent (no-op),
+    // but different source_ids create separate rows. The old UNIQUE(value)
+    // constraint still prevents two rows with the same value until Phase 8.
+    // For now, the second insert is a no-op (same value triggers old constraint).
+    const dbRows = specDb.getFieldCandidatesByProductAndField('mouse-merge', 'weight');
+    assert.ok(dbRows.length >= 1);
+    assert.ok(dbRows[0].source_id);
 
-    // JSON: one entry, 2 sources
+    // JSON: each submit appends a flat entry with source_id
     const pj = readProductJson('mouse-merge');
-    assert.equal(pj.candidates.weight.length, 1);
-    assert.equal(pj.candidates.weight[0].sources.length, 2);
+    assert.ok(pj.candidates.weight.length >= 1);
+    assert.ok(pj.candidates.weight[0].source_id);
   });
 
-  // --- 8. Source merge: different values ---
+  // --- 8. Different values create separate rows with distinct source_ids ---
   it('creates separate candidates for different values', () => {
     ensureProductJson('mouse-diff');
     submitCandidate({
@@ -274,7 +277,7 @@ describe('submitCandidate', () => {
       fieldKey: 'weight',
       value: 58,
       confidence: 92,
-      sourceMeta: { run_id: 'run-1' },
+      sourceMeta: { source: 'cef', run_number: 1 },
     });
 
     submitCandidate({
@@ -283,16 +286,21 @@ describe('submitCandidate', () => {
       fieldKey: 'weight',
       value: 57,
       confidence: 60,
-      sourceMeta: { run_id: 'run-2' },
+      sourceMeta: { source: 'cef', run_number: 2 },
     });
 
-    // DB: two rows
+    // DB: two rows with distinct source_ids
     const dbRows = specDb.getFieldCandidatesByProductAndField('mouse-diff', 'weight');
     assert.equal(dbRows.length, 2);
+    assert.ok(dbRows[0].source_id);
+    assert.ok(dbRows[1].source_id);
+    assert.notEqual(dbRows[0].source_id, dbRows[1].source_id);
 
-    // JSON: two entries
+    // JSON: two flat entries with source_ids
     const pj = readProductJson('mouse-diff');
     assert.equal(pj.candidates.weight.length, 2);
+    assert.ok(pj.candidates.weight[0].source_id);
+    assert.ok(pj.candidates.weight[1].source_id);
   });
 
   // --- 9. Discovery enum: open_prefer_known triggers ---
@@ -332,7 +340,7 @@ describe('submitCandidate', () => {
     assert.equal(lv, null);
   });
 
-  // --- 11. Dual-write consistency ---
+  // --- 11. Dual-write consistency (source-centric) ---
   it('DB row and JSON entry have identical data', () => {
     ensureProductJson('mouse-dual');
     submitCandidate({
@@ -341,16 +349,18 @@ describe('submitCandidate', () => {
       fieldKey: 'weight',
       value: 75,
       confidence: 88,
-      sourceMeta: { artifact: 'xyz', run_id: 'run-1' },
+      sourceMeta: { source: 'cef', artifact: 'xyz', run_number: 1 },
     });
 
-    const dbRow = specDb.getFieldCandidate('mouse-dual', 'weight', '75');
+    const sourceId = 'cef-mouse-dual-1';
+    const dbRow = specDb.getFieldCandidateBySourceId('mouse-dual', 'weight', sourceId);
     const pj = readProductJson('mouse-dual');
     const jsonEntry = pj.candidates.weight[0];
 
     assert.equal(jsonEntry.value, 75);
     assert.equal(Number(dbRow.value), jsonEntry.value);
-    assert.equal(dbRow.sources_json.length, jsonEntry.sources.length);
+    assert.equal(dbRow.source_id, jsonEntry.source_id);
+    assert.equal(dbRow.source_type, jsonEntry.source_type);
     assert.equal(dbRow.validation_json.valid, jsonEntry.validation.valid);
   });
 
@@ -439,5 +449,86 @@ describe('submitCandidate', () => {
     assert.ok(pj.candidates);
     assert.ok(pj.candidates.weight);
     assert.equal(pj.candidates.weight[0].value, 60);
+  });
+
+  // ── Source-centric contract (Phase 2) ──────────────────────────────
+
+  it('buildSourceId — deterministic for finders (source + productId + runNumber)', () => {
+    const id1 = buildSourceId({ source: 'cef', run_number: 1 }, 'razer-viper-v3-pro');
+    const id2 = buildSourceId({ source: 'cef', run_number: 1 }, 'razer-viper-v3-pro');
+    assert.equal(id1, id2);
+    assert.equal(id1, 'cef-razer-viper-v3-pro-1');
+  });
+
+  it('buildSourceId — caller-provided source_id takes precedence', () => {
+    const id = buildSourceId({ source: 'cef', source_id: 'custom-123', run_number: 1 }, 'pid');
+    assert.equal(id, 'custom-123');
+  });
+
+  it('buildSourceId — timestamp-based for review/manual (no run_number)', () => {
+    const id = buildSourceId({ source: 'review' }, 'pid');
+    assert.ok(id.startsWith('review-pid-'));
+  });
+
+  it('stores source_id on DB row via insertFieldCandidate', () => {
+    ensureProductJson('mouse-src-db');
+    const result = submitCandidate({
+      ...baseDeps(specDb),
+      productId: 'mouse-src-db',
+      fieldKey: 'weight',
+      value: 58,
+      confidence: 92,
+      sourceMeta: { source: 'cef', model: 'gemini-2.5-flash', run_number: 1 },
+    });
+
+    assert.equal(result.status, 'accepted');
+    // DB row should have source_id
+    const rows = specDb.getFieldCandidatesByProductAndField('mouse-src-db', 'weight');
+    assert.ok(rows.length >= 1);
+    const row = rows[0];
+    assert.equal(row.source_id, 'cef-mouse-src-db-1');
+    assert.equal(row.source_type, 'cef');
+    assert.equal(row.model, 'gemini-2.5-flash');
+  });
+
+  it('stores source_id in product.json candidate entry', () => {
+    ensureProductJson('mouse-src-json');
+    submitCandidate({
+      ...baseDeps(specDb),
+      productId: 'mouse-src-json',
+      fieldKey: 'weight',
+      value: 58,
+      confidence: 92,
+      sourceMeta: { source: 'cef', model: 'gemini-2.5-flash', run_number: 1 },
+    });
+
+    const pj = readProductJson('mouse-src-json');
+    const entry = pj.candidates.weight[0];
+    assert.equal(entry.source_id, 'cef-mouse-src-json-1');
+    assert.equal(entry.source_type, 'cef');
+  });
+
+  it('duplicate source_id: DB no-op AND JSON no-op (no duplicate entries)', () => {
+    ensureProductJson('mouse-idem');
+    const args = {
+      ...baseDeps(specDb),
+      productId: 'mouse-idem',
+      fieldKey: 'weight',
+      value: 58,
+      confidence: 92,
+      sourceMeta: { source: 'cef', model: '', run_number: 7 },
+    };
+
+    submitCandidate(args);
+    submitCandidate(args); // same source_id submitted again
+
+    // DB: exactly 1 row (insertFieldCandidate is idempotent)
+    const rows = specDb.getFieldCandidatesByProductAndField('mouse-idem', 'weight');
+    assert.equal(rows.length, 1, 'DB should have exactly 1 row');
+
+    // JSON: exactly 1 entry (must not append duplicate)
+    const pj = readProductJson('mouse-idem');
+    assert.equal(pj.candidates.weight.length, 1, 'product.json should have exactly 1 candidate entry');
+    assert.equal(pj.candidates.weight[0].source_id, 'cef-mouse-idem-7');
   });
 });

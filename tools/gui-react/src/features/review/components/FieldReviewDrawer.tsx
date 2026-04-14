@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { pct } from '../../../utils/formatting.ts';
 import { confidenceColorClass, trafficColor, trafficTextColor, sourceBadgeClass, SOURCE_BADGE_FALLBACK } from '../../../utils/colors.ts';
-import { hasKnownValue } from '../../../utils/fieldNormalize.ts';
+import { hasKnownValue, tryParseJsonArray } from '../../../utils/fieldNormalize.ts';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import {
   DrawerShell,
@@ -113,9 +113,10 @@ function PublishedSourceTable({ candidates }: { candidates: ReviewCandidate[] })
 
 // ── List value chips ────────────────────────────────────────────────
 
-function ValueChips({ value, publishedValue }: { value: unknown; publishedValue: unknown }) {
-  if (!Array.isArray(value) || value.length === 0) return null;
-  const publishedSet = new Set(Array.isArray(publishedValue) ? publishedValue.map(String) : []);
+function ValueChips({ value, publishedValue }: { value: string[]; publishedValue: unknown }) {
+  if (value.length === 0) return null;
+  const parsedPublished = tryParseJsonArray(publishedValue);
+  const publishedSet = new Set(parsedPublished ?? []);
   const hasPublished = publishedSet.size > 0;
 
   return (
@@ -142,6 +143,61 @@ function ValueChips({ value, publishedValue }: { value: unknown; publishedValue:
   );
 }
 
+// ── Metadata renderers ─────────────────────────────────────────────
+
+const METADATA_FILTER_KEYS = new Set(['evidence', 'method']);
+
+// WHY: Format object metadata values as readable key-value lines instead of
+// inline JSON.stringify. Keeps the same plain-text layout as original but readable.
+function formatMetaValue(key: string, value: unknown): string {
+  if (value == null) return '';
+  if (typeof value !== 'object') return String(value);
+
+  if (key === 'color_names') {
+    const entries = Object.entries(value as Record<string, string>);
+    if (entries.length === 0) return '{}';
+    return entries.map(([atom, name]) => `${atom}: ${String(name)}`).join(', ');
+  }
+
+  if (key === 'publish_result') {
+    const pr = value as Record<string, unknown>;
+    const parts: string[] = [];
+    if (pr.status) parts.push(String(pr.status));
+    if (typeof pr.published_at === 'string') parts.push(formatDate(pr.published_at));
+    if (typeof pr.reason === 'string') parts.push(pr.reason);
+    return parts.join(' · ');
+  }
+
+  if (key === 'edition_details') {
+    const editions = Object.entries(value as Record<string, Record<string, unknown>>);
+    return editions.map(([slug, detail]) => {
+      const name = typeof detail?.display_name === 'string' ? detail.display_name : slug;
+      return name;
+    }).join(', ');
+  }
+
+  return JSON.stringify(value);
+}
+
+function MetadataBlock({ meta }: { meta: Record<string, unknown> | null | undefined }) {
+  const entries = meta
+    ? Object.entries(meta).filter(([k]) => !METADATA_FILTER_KEYS.has(k))
+    : [];
+
+  return (
+    <div className="text-[10px] sf-text-muted leading-relaxed p-1.5 rounded sf-review-evidence-card mt-0.5 break-words">
+      <div className="font-semibold sf-text-subtle uppercase tracking-wide text-[9px] mb-0.5">Metadata</div>
+      {entries.length === 0 ? (
+        <div className="sf-text-subtle">No metadata</div>
+      ) : (
+        entries.map(([k, v]) => (
+          <div key={k} className="font-mono">{k}: {formatMetaValue(k, v)}</div>
+        ))
+      )}
+    </div>
+  );
+}
+
 // ── Candidate card ──────────────────────────────────────────────────
 
 function CandidateCard({
@@ -157,17 +213,15 @@ function CandidateCard({
   const cardClass = isResolved ? 'sf-candidate-resolved' : '';
   const dateStr = formatDate(candidate.submitted_at);
   const host = candidate.evidence_url ? extractHost(candidate.evidence_url) : '';
-  const meta = candidate.metadata;
-  const hasMeta = meta && typeof meta === 'object' && Object.keys(meta).length > 0
-    && !(Object.keys(meta).length === 1 && 'evidence' in meta)
-    && !(Object.keys(meta).length === 2 && 'evidence' in meta && 'method' in meta);
+  const meta = candidate.metadata && typeof candidate.metadata === 'object' ? candidate.metadata as Record<string, unknown> : null;
+  const parsedArray = tryParseJsonArray(candidate.value);
 
   return (
     <DrawerCard className={cardClass}>
       {/* Value + confidence badge */}
       <div className="flex items-center gap-2">
-        <span className="font-mono text-sm font-bold flex-1 truncate" title={String(candidate.value)}>
-          {String(candidate.value)}
+        <span className="font-mono text-sm font-bold flex-1 truncate break-all" title={String(candidate.value)}>
+          {parsedArray ? parsedArray.join(', ') : String(candidate.value)}
         </span>
         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono min-w-[2.2rem] text-center ${confidenceColorClass(candidate.score)}`}>
           {pct(candidate.score)}
@@ -175,8 +229,8 @@ function CandidateCard({
       </div>
 
       {/* List value chips */}
-      {Array.isArray(candidate.value) && (
-        <ValueChips value={candidate.value} publishedValue={publishedValue} />
+      {parsedArray && (
+        <ValueChips value={parsedArray} publishedValue={publishedValue} />
       )}
 
       {/* Method + model */}
@@ -205,15 +259,7 @@ function CandidateCard({
       )}
 
       {/* Metadata block */}
-      {hasMeta && (
-        <div className="text-[10px] sf-text-muted font-mono leading-relaxed p-1.5 rounded sf-review-evidence-card mt-0.5">
-          {Object.entries(meta as Record<string, unknown>)
-            .filter(([k]) => k !== 'evidence' && k !== 'method')
-            .map(([k, v]) => (
-              <div key={k}>{k}: {typeof v === 'object' ? JSON.stringify(v) : String(v)}</div>
-            ))}
-        </div>
-      )}
+      <MetadataBlock meta={meta} />
 
       {/* Artifact link */}
       {candidate.run_id && (
@@ -260,17 +306,25 @@ export function FieldReviewDrawer({
   aiReviewPending,
 }: FieldReviewDrawerProps) {
   const hasCandidates = candidates.length > 0;
+  const publishedParsed = tryParseJsonArray(currentValue.value);
 
   return (
     <DrawerShell title={title} subtitle={subtitle} onClose={onClose}>
       {/* Section 1: Published Value */}
       <DrawerSection title="Published Value">
-        <div className="space-y-0.5">
+        <div className="space-y-1">
+          {/* Header row: dot + source + confidence */}
           <div className="flex items-center gap-2">
-            <span className={`inline-block w-3 h-3 rounded-full ${trafficColor(currentValue.color)}`} />
-            <span className={`font-mono text-sm font-semibold ${trafficTextColor(currentValue.color)}`}>
-              {currentValue.value}
-            </span>
+            <span className={`inline-block w-3 h-3 rounded-full shrink-0 ${trafficColor(currentValue.color)}`} />
+            {publishedParsed ? (
+              <span className={`text-xs font-semibold ${trafficTextColor(currentValue.color)}`}>
+                {publishedParsed.length} values
+              </span>
+            ) : (
+              <span className={`font-mono text-sm font-semibold break-words min-w-0 ${trafficTextColor(currentValue.color)}`}>
+                {currentValue.value}
+              </span>
+            )}
             {currentValue.source && (
               <span className={`sf-text-nano px-1.5 py-0.5 rounded font-medium ${sourceBadgeClass[currentValue.source] || SOURCE_BADGE_FALLBACK}`}>
                 {currentValue.source}
@@ -280,6 +334,16 @@ export function FieldReviewDrawer({
               {pct(currentValue.confidence)}
             </span>
           </div>
+          {/* List values as a 2-column grid */}
+          {publishedParsed && (
+            <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 pl-5">
+              {publishedParsed.map((item, i) => (
+                <span key={`${item}-${i}`} className="font-mono text-[11px] truncate sf-text-muted">
+                  {item}
+                </span>
+              ))}
+            </div>
+          )}
           {currentValue.sourceTimestamp && (
             <div className="sf-text-nano sf-drawer-meta pl-5">
               set {formatDate(currentValue.sourceTimestamp)}

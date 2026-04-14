@@ -25,9 +25,17 @@ export function registerQueueBillingLearningRoutes(ctx) {
     if (parts[0] === 'billing' && parts[1] === 'global' && method === 'GET') {
       if (!appDb) return jsonRes(res, 503, { error: 'billing not available' });
 
+      // WHY: Shared filter extraction — all global endpoints accept the same filters
+      // so the entire billing dashboard updates when the user picks a filter.
+      const category = String(params.get('category') || '').trim();
+      const model = String(params.get('model') || '').trim();
+      const reason = String(params.get('reason') || '').trim();
+      const access = String(params.get('access') || '').trim();
+      const billingFilters = { category, model, reason, access };
+
       if (parts[2] === 'summary') {
         const month = String(params.get('month') || '').trim() || new Date().toISOString().slice(0, 7);
-        const rollup = appDb.getBillingRollup(month);
+        const rollup = appDb.getBillingRollup(month, category, billingFilters);
         return jsonRes(res, 200, {
           month,
           totals: rollup.totals,
@@ -39,35 +47,32 @@ export function registerQueueBillingLearningRoutes(ctx) {
       if (parts[2] === 'daily') {
         const months = toInt(params.get('months'), 1);
         const days = Math.max(1, months * 31);
-        const data = appDb.getGlobalDaily({ days });
+        const data = appDb.getGlobalDaily({ days, ...billingFilters });
         return jsonRes(res, 200, data);
       }
 
       if (parts[2] === 'by-model') {
         const month = String(params.get('month') || '').trim() || new Date().toISOString().slice(0, 7);
-        const rollup = appDb.getBillingRollup(month);
+        const rollup = appDb.getBillingRollup(month, category, billingFilters);
         return jsonRes(res, 200, { month, models: objToSortedArray(rollup.by_model) });
       }
 
       if (parts[2] === 'by-reason') {
         const month = String(params.get('month') || '').trim() || new Date().toISOString().slice(0, 7);
-        const rollup = appDb.getBillingRollup(month);
+        const rollup = appDb.getBillingRollup(month, category, billingFilters);
         return jsonRes(res, 200, { month, reasons: objToSortedArray(rollup.by_reason) });
       }
 
       if (parts[2] === 'by-category') {
         const month = String(params.get('month') || '').trim() || new Date().toISOString().slice(0, 7);
-        const rollup = appDb.getBillingRollup(month);
+        const rollup = appDb.getBillingRollup(month, category, billingFilters);
         return jsonRes(res, 200, { month, categories: objToSortedArray(rollup.by_category) });
       }
 
       if (parts[2] === 'entries') {
         const limit = toInt(params.get('limit'), 100);
         const offset = toInt(params.get('offset'), 0);
-        const category = String(params.get('category') || '').trim();
-        const model = String(params.get('model') || '').trim();
-        const reason = String(params.get('reason') || '').trim();
-        const data = appDb.getGlobalEntries({ limit, offset, category, model, reason });
+        const data = appDb.getGlobalEntries({ limit, offset, ...billingFilters });
         return jsonRes(res, 200, { ...data, limit, offset });
       }
     }

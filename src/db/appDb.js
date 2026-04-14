@@ -341,24 +341,45 @@ export class AppDb {
     this._insertBillingEntriesBatchTx(entries);
   }
 
-  getBillingRollup(month, category = '') {
-    const catFilter = category ? ' AND category = ?' : '';
-    const params = category ? [month, category] : [month];
+  // WHY: Shared filter builder for billing queries — avoids duplicating WHERE logic.
+  // Model keys use "provider:model" format from rollup queries, so split on `:` to filter both columns.
+  _billingFilters({ category = '', model = '', reason = '', access = '' } = {}) {
+    const clauses = [];
+    const params = [];
+    if (category) { clauses.push('category = ?'); params.push(category); }
+    if (model) {
+      const colonIdx = model.indexOf(':');
+      if (colonIdx > 0) {
+        clauses.push('provider = ?'); params.push(model.slice(0, colonIdx));
+        clauses.push('model = ?'); params.push(model.slice(colonIdx + 1));
+      } else {
+        clauses.push('model = ?'); params.push(model);
+      }
+    }
+    if (reason) { clauses.push('reason = ?'); params.push(reason); }
+    if (access === 'lab') { clauses.push("provider LIKE 'lab-%'"); }
+    else if (access === 'api') { clauses.push("provider NOT LIKE 'lab-%'"); }
+    return { sql: clauses.length ? ' AND ' + clauses.join(' AND ') : '', params };
+  }
+
+  getBillingRollup(month, category = '', filters = {}) {
+    const f = this._billingFilters({ category, ...filters });
+    const baseParams = [month, ...f.params];
 
     const totals = this.db.prepare(`
       SELECT COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
              COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
              COALESCE(SUM(completion_tokens), 0) as completion_tokens
-      FROM billing_entries WHERE month = ?${catFilter}
-    `).get(...params) || { calls: 0, cost_usd: 0, prompt_tokens: 0, completion_tokens: 0 };
+      FROM billing_entries WHERE month = ?${f.sql}
+    `).get(...baseParams) || { calls: 0, cost_usd: 0, prompt_tokens: 0, completion_tokens: 0 };
 
     const by_day = {};
     for (const row of this.db.prepare(`
       SELECT day, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
              COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
              COALESCE(SUM(completion_tokens), 0) as completion_tokens
-      FROM billing_entries WHERE month = ?${catFilter} GROUP BY day
-    `).all(...params)) {
+      FROM billing_entries WHERE month = ?${f.sql} GROUP BY day
+    `).all(...baseParams)) {
       by_day[row.day] = { cost_usd: row.cost_usd, prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens, calls: row.calls };
     }
 
@@ -367,8 +388,8 @@ export class AppDb {
       SELECT category, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
              COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
              COALESCE(SUM(completion_tokens), 0) as completion_tokens
-      FROM billing_entries WHERE month = ?${catFilter} GROUP BY category
-    `).all(...params)) {
+      FROM billing_entries WHERE month = ?${f.sql} GROUP BY category
+    `).all(...baseParams)) {
       by_category[row.category || ''] = { cost_usd: row.cost_usd, prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens, calls: row.calls };
     }
 
@@ -377,8 +398,8 @@ export class AppDb {
       SELECT product_id, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
              COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
              COALESCE(SUM(completion_tokens), 0) as completion_tokens
-      FROM billing_entries WHERE month = ?${catFilter} GROUP BY product_id
-    `).all(...params)) {
+      FROM billing_entries WHERE month = ?${f.sql} GROUP BY product_id
+    `).all(...baseParams)) {
       by_product[row.product_id || ''] = { cost_usd: row.cost_usd, prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens, calls: row.calls };
     }
 
@@ -387,8 +408,8 @@ export class AppDb {
       SELECT provider || ':' || model as model_key, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
              COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
              COALESCE(SUM(completion_tokens), 0) as completion_tokens
-      FROM billing_entries WHERE month = ?${catFilter} GROUP BY model_key
-    `).all(...params)) {
+      FROM billing_entries WHERE month = ?${f.sql} GROUP BY model_key
+    `).all(...baseParams)) {
       by_model[row.model_key] = { cost_usd: row.cost_usd, prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens, calls: row.calls };
     }
 
@@ -397,8 +418,8 @@ export class AppDb {
       SELECT reason, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
              COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
              COALESCE(SUM(completion_tokens), 0) as completion_tokens
-      FROM billing_entries WHERE month = ?${catFilter} GROUP BY reason
-    `).all(...params)) {
+      FROM billing_entries WHERE month = ?${f.sql} GROUP BY reason
+    `).all(...baseParams)) {
       by_reason[row.reason || 'extract'] = { cost_usd: row.cost_usd, prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens, calls: row.calls };
     }
 
@@ -440,31 +461,29 @@ export class AppDb {
     return this._countBillingEntries.get().c;
   }
 
-  getGlobalDaily({ days = 30 } = {}) {
+  getGlobalDaily({ days = 30, category = '', model = '', reason = '', access = '' } = {}) {
     const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const f = this._billingFilters({ category, model, reason, access });
 
     const dayRows = this.db.prepare(`
       SELECT day, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
              COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
              COALESCE(SUM(completion_tokens), 0) as completion_tokens
-      FROM billing_entries WHERE day >= ? GROUP BY day ORDER BY day
-    `).all(cutoff);
+      FROM billing_entries WHERE day >= ?${f.sql} GROUP BY day ORDER BY day
+    `).all(cutoff, ...f.params);
 
     const reasonRows = this.db.prepare(`
       SELECT day, reason, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd
-      FROM billing_entries WHERE day >= ? GROUP BY day, reason ORDER BY day, reason
-    `).all(cutoff);
+      FROM billing_entries WHERE day >= ?${f.sql} GROUP BY day, reason ORDER BY day, reason
+    `).all(cutoff, ...f.params);
 
     return { days: dayRows, by_day_reason: reasonRows };
   }
 
-  getGlobalEntries({ limit = 100, offset = 0, category = '', model = '', reason = '' } = {}) {
-    const filters = [];
-    const params = [];
-    if (category) { filters.push('category = ?'); params.push(category); }
-    if (model) { filters.push('model = ?'); params.push(model); }
-    if (reason) { filters.push('reason = ?'); params.push(reason); }
-    const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+  getGlobalEntries({ limit = 100, offset = 0, category = '', model = '', reason = '', access = '' } = {}) {
+    const f = this._billingFilters({ category, model, reason, access });
+    const where = f.sql ? `WHERE 1=1${f.sql}` : '';
+    const params = f.params;
 
     const total = this.db.prepare(`SELECT COUNT(*) as c FROM billing_entries ${where}`).get(...params).c;
 

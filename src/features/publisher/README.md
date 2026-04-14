@@ -7,6 +7,7 @@ Single gate for all field data entering the product record. No field value reach
 ```js
 // src/features/publisher/index.js
 export { submitCandidate } from './candidate-gate/submitCandidate.js';
+export { buildSourceId }   from './candidate-gate/buildSourceId.js';
 export { publishResolved } from './publisher/publishResolved.js';  // TODO: Phase C
 export { validateField }   from './validation/validateField.js';
 export { validateRecord }  from './validation/validateRecord.js';
@@ -30,3 +31,4 @@ export { rebuildFieldCandidatesFromJson } from './candidateReseed.js';
 3. Field Studio rules are the sole source of truth for what is valid.
 4. LLM repair prompts are returned as data — the validator never calls an LLM.
 5. Two-phase write: validated candidates first (per-source), resolved winners second (per-product).
+6. Source-centric candidates: one SQL row per extraction event, keyed by `source_id`. Rows are immutable after insert (only `status` changes). No `sources_json` accumulation.

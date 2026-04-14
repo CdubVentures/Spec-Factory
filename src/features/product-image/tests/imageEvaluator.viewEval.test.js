@@ -442,10 +442,28 @@ describe('evaluateViewCandidates', () => {
     assert.equal(rejected.reasoning, 'Has visible watermark overlay');
   });
 
+  it('outranked losers in rejected (no flags) get reasoning in rankings', async () => {
+    const mockResponse = {
+      winner: { filename: 'top-black.png', reasoning: 'Best' },
+      rejected: [{ filename: 'top-black-2.png', reasoning: 'Lower resolution than winner' }],
+    };
+    const result = await evaluateViewCandidates({
+      ...baseOpts,
+      imagePaths: ['/images/top-black.png', '/images/top-black-2.png'],
+      callLlm: async () => ({ result: mockResponse, usage: {} }),
+    });
+    assert.equal(result.rankings.length, 2);
+    const loser = result.rankings.find(r => r.filename === 'top-black-2.png');
+    assert.ok(loser);
+    assert.equal(loser.best, false);
+    assert.deepStrictEqual(loser.flags, []);
+    assert.equal(loser.reasoning, 'Lower resolution than winner');
+  });
+
   it('candidates not in winner or rejected are absent from rankings', async () => {
     const mockResponse = {
       winner: { filename: 'top-black.png', reasoning: 'Best' },
-      // top-black-2.png not rejected — just lower quality, no flags
+      // top-black-2.png not in rejected at all
     };
     const result = await evaluateViewCandidates({
       ...baseOpts,
@@ -639,6 +657,53 @@ describe('mergeEvaluation', () => {
     assert.equal(top.hero_rank, 1);
     assert.equal(angle.hero, true);
     assert.equal(angle.hero_rank, 2);
+  });
+
+  it('hero rejected entries apply eval_flags + eval_reasoning to matching images', () => {
+    writeTestDoc([
+      makeImage({ filename: 'hero-black.png', view: 'hero' }),
+      makeImage({ filename: 'hero-black-2.png', view: 'hero' }),
+    ]);
+    const result = mergeEvaluation({
+      productId: PRODUCT_ID,
+      productRoot: PRODUCT_ROOT,
+      variantKey: 'color:black',
+      viewResults: new Map(),
+      heroResults: {
+        heroes: [],
+        rejected: [
+          { filename: 'hero-black.png', reasoning: 'Mouse is not the focal point' },
+          { filename: 'hero-black-2.png', flags: ['watermark'], reasoning: 'Getty watermark visible' },
+        ],
+      },
+    });
+    const hero1 = result.selected.images.find(i => i.filename === 'hero-black.png');
+    const hero2 = result.selected.images.find(i => i.filename === 'hero-black-2.png');
+    assert.deepStrictEqual(hero1.eval_flags, []);
+    assert.equal(hero1.eval_reasoning, 'Mouse is not the focal point');
+    assert.equal(hero1.hero, undefined);
+    assert.deepStrictEqual(hero2.eval_flags, ['watermark']);
+    assert.equal(hero2.eval_reasoning, 'Getty watermark visible');
+  });
+
+  it('hero re-eval clears old eval_flags/eval_reasoning on hero-view images', () => {
+    writeTestDoc([
+      makeImage({ filename: 'hero-black.png', view: 'hero', eval_flags: ['watermark'], eval_reasoning: 'old rejection' }),
+    ]);
+    const result = mergeEvaluation({
+      productId: PRODUCT_ID,
+      productRoot: PRODUCT_ROOT,
+      variantKey: 'color:black',
+      viewResults: new Map(),
+      heroResults: { heroes: [{ filename: 'hero-black.png', hero_rank: 1, reasoning: 'Clean and usable' }] },
+    });
+    const img = result.selected.images[0];
+    assert.equal(img.hero, true);
+    assert.equal(img.hero_rank, 1);
+    // Old rejection flags should be cleared since this hero was now accepted
+    assert.equal(img.eval_flags, undefined);
+    // Accepted hero gets fresh reasoning from the hero response
+    assert.equal(img.eval_reasoning, 'Clean and usable');
   });
 
   it('heroResults=null skips hero application', () => {

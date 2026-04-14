@@ -63,8 +63,9 @@ export interface PublisherCandidateRow {
   field_key: string;
   value: string | null;
   confidence: number;
-  source_count: number;
-  sources_json: PublisherSourceEntry[];
+  source_id: string;
+  source_type: string;
+  llm_model: string;
   validation_json: PublisherValidationJson;
   metadata_json: PublisherMetadataJson;
   status: 'candidate' | 'resolved';
