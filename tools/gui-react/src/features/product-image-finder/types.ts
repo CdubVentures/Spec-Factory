@@ -114,6 +114,7 @@ export interface CarouselSlide {
   width: number;
   height: number;
   reasoning: string;
+  runNumber: number | null;
 }
 
 export interface EvalRecord {

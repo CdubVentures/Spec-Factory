@@ -475,4 +475,53 @@ describe('runColorEditionFinder', () => {
     assert.equal(runs[0].model, 'claude-sonnet', 'SQL model should be fallback');
     assert.equal(runs[0].fallback_used, true, 'SQL fallback_used should be true');
   });
+
+  it('onVariantRenamed fires when identity check renames a variant', async () => {
+    const pid = 'mouse-rename-cb';
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+      { name: 'deep-ocean-blue', hex: '#003366', css_var: '--color-deep-ocean-blue' },
+    ]);
+
+    // Run 1: establish registry with ocean-blue
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: makeAppDbStub([
+        { name: 'black', hex: '#000000', css_var: '--color-black' },
+        { name: 'ocean-blue', hex: '#003366', css_var: '--color-ocean-blue' },
+      ]),
+      specDb, config: {}, logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({ colors: ['black', 'ocean-blue'], editions: {}, default_color: 'black' }),
+    });
+
+    const afterRun1 = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
+    assert.ok(afterRun1.variant_registry.length > 0, 'registry must exist after run 1');
+    const oceanEntry = afterRun1.variant_registry.find(e => e.variant_key === 'color:ocean-blue');
+    assert.ok(oceanEntry, 'ocean-blue must be in registry');
+
+    // Run 2: LLM refines ocean-blue → deep-ocean-blue, identity check maps it
+    const renameCalls = [];
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb, specDb, config: {}, logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({ colors: ['black', 'deep-ocean-blue'], editions: {}, default_color: 'black' }),
+      _callIdentityCheckOverride: makeLlmStub({
+        mappings: [
+          { new_key: 'color:black', match: afterRun1.variant_registry.find(e => e.variant_key === 'color:black').variant_id, action: 'update', reason: 'same' },
+          { new_key: 'color:deep-ocean-blue', match: oceanEntry.variant_id, action: 'update', reason: 'refined name' },
+        ],
+        retired: [],
+      }),
+      onVariantRenamed: (info) => renameCalls.push(info),
+    });
+
+    assert.ok(renameCalls.length > 0, 'onVariantRenamed must fire when identity check renames a variant');
+    assert.equal(renameCalls[0].productId, pid);
+    assert.ok(renameCalls[0].renames.length > 0, 'must include the rename details');
+    const rename = renameCalls[0].renames.find(r => r.old_variant_key === 'color:ocean-blue');
+    assert.ok(rename, 'must include the ocean-blue → deep-ocean-blue rename');
+    assert.equal(rename.new_variant_key, 'color:deep-ocean-blue');
+  });
 });

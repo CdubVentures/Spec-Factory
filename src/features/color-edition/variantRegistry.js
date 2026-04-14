@@ -140,27 +140,40 @@ export function applyIdentityMappings({ existingRegistry, mappings, retired, pro
       const entry = byId.get(mapping.match);
       if (!entry) continue;
 
-      // WHY: Update mutable fields, preserve variant_id + variant_type + created_at
+      // WHY: Type guard — a color and an edition are never the same variant.
+      // If the LLM maps across types, force a create instead of corrupting the registry.
       const newKey = mapping.new_key;
-      entry.variant_key = newKey;
-      entry.updated_at = now;
-
-      if (newKey.startsWith('edition:')) {
-        const slug = newKey.replace('edition:', '');
-        const ed = editions[slug];
-        const combo = (ed?.colors || [])[0] || '';
-        entry.variant_label = ed?.display_name || slug;
-        entry.color_atoms = combo ? combo.split('+').filter(Boolean) : [];
-        entry.edition_slug = slug;
-        entry.edition_display_name = ed?.display_name || slug;
+      const newType = newKey.startsWith('edition:') ? 'edition' : 'color';
+      if (entry.variant_type !== newType) {
+        // Cross-type mapping rejected — treat as create
+        mapping.action = 'create';
+        mapping.match = null;
+        // Fall through to the create branch below
       } else {
-        const atom = newKey.replace('color:', '');
-        const name = colorNames[atom];
-        const hasName = name && name.toLowerCase() !== atom.toLowerCase();
-        entry.variant_label = hasName ? name : atom;
-        entry.color_atoms = atom.split('+').filter(Boolean);
+        // WHY: Update mutable fields, preserve variant_id + variant_type + created_at
+        entry.variant_key = newKey;
+        entry.updated_at = now;
+
+        if (newKey.startsWith('edition:')) {
+          const slug = newKey.replace('edition:', '');
+          const ed = editions[slug];
+          const combo = (ed?.colors || [])[0] || '';
+          entry.variant_label = ed?.display_name || slug;
+          entry.color_atoms = combo ? combo.split('+').filter(Boolean) : [];
+          entry.edition_slug = slug;
+          entry.edition_display_name = ed?.display_name || slug;
+        } else {
+          const atom = newKey.replace('color:', '');
+          const name = colorNames[atom];
+          const hasName = name && name.toLowerCase() !== atom.toLowerCase();
+          entry.variant_label = hasName ? name : atom;
+          entry.color_atoms = atom.split('+').filter(Boolean);
+        }
+        continue;
       }
-    } else if (mapping.action === 'create') {
+    }
+
+    if (mapping.action === 'create') {
       const newKey = mapping.new_key;
       const variantId = generateVariantId(productId, newKey);
 

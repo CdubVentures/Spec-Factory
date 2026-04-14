@@ -2691,6 +2691,75 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
   border-radius: var(--sf-radius-chip);
 }
 
+/* ── Billing filter chips ── */
+
+.sf-filter-bar {
+  background: var(--sf-token-surface-elevated);
+  border: 1px solid var(--sf-token-border-default);
+  border-radius: var(--sf-token-radius-lg);
+  padding: 0.875rem 1.125rem;
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.sf-filter-chip {
+  padding: 0.25rem 0.75rem;
+  border-radius: 99px;
+  border: 1px solid var(--sf-token-border-default);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--sf-token-text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--sf-token-surface-elevated);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.sf-filter-chip:hover {
+  border-color: var(--sf-token-accent);
+  color: var(--sf-token-accent);
+}
+
+.sf-filter-chip-active {
+  background: var(--sf-token-accent);
+  color: var(--sf-token-text-inverse);
+  border-color: var(--sf-token-accent);
+}
+
+.sf-filter-chip-active:hover {
+  background: var(--sf-token-accent);
+  color: var(--sf-token-text-inverse);
+  border-color: var(--sf-token-accent);
+}
+
+.sf-filter-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.sf-filter-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sf-token-text-subtle);
+  white-space: nowrap;
+}
+
+.sf-filter-sep {
+  width: 1px;
+  height: 24px;
+  background: var(--sf-token-border-default);
+  flex-shrink: 0;
+}
+
 .sf-success-bg-500 {
   background-color: rgb(34 197 94);
 }

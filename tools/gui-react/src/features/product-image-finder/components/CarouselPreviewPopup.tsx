@@ -7,7 +7,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import useEmblaCarousel from 'embla-carousel-react';
-import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
 import type { CarouselSlide } from '../types.ts';
 
 /* ── Helpers ──────────────────────────────────────────────────────── */
@@ -166,38 +165,55 @@ export function CarouselPreviewPopup({
 
           {/* ── Bottom info bar ── */}
           <div
-            className="shrink-0 px-5 py-2.5"
+            className="shrink-0 flex items-center gap-2.5 px-5 py-2.5"
             style={{ borderTop: '1px solid rgba(255,255,255,0.06)', backgroundColor: 'rgba(12,12,12,1)' }}
           >
             {current && (
               <>
-                <div className="flex items-center gap-3">
-                  <span className="text-[12px] font-bold uppercase tracking-wider text-white/85">
-                    {current.slotLabel}
+                <span className="text-[12px] font-bold uppercase tracking-wider text-white/85">
+                  {current.slotLabel}
+                </span>
+                {/* Source dot: green = LLM, blue = user */}
+                <span
+                  className="shrink-0 rounded-full"
+                  style={{
+                    width: 7, height: 7,
+                    backgroundColor: current.source === 'eval' ? '#16a34a' : '#38bdf8',
+                  }}
+                  title={current.source === 'eval' ? 'LLM selected' : 'User override'}
+                />
+                <div className="flex-1" />
+                {current.width > 0 && (
+                  <span className="text-[11px] text-white/40 font-mono">
+                    {formatDims(current.width, current.height)}
                   </span>
-                  <Chip
-                    label={current.source === 'user' ? 'USR' : 'LLM'}
-                    className={current.source === 'user' ? 'sf-chip-info' : 'sf-chip-success'}
-                  />
-                  <div className="flex-1" />
-                  {current.width > 0 && (
-                    <span className="text-[11px] text-white/40 font-mono">
-                      {formatDims(current.width, current.height)}
-                    </span>
-                  )}
-                  {current.bytes > 0 && (
-                    <span className="text-[11px] text-white/55 font-mono">
-                      {formatBytes(current.bytes)}
-                    </span>
-                  )}
-                  <span className="text-[11px] text-white/30 font-mono">
-                    {selectedIndex + 1} / {slides.length}
+                )}
+                {current.bytes > 0 && (
+                  <span className="text-[11px] text-white/55 font-mono">
+                    {formatBytes(current.bytes)}
                   </span>
-                </div>
+                )}
+                <span className="text-[11px] text-white/30 font-mono">
+                  {selectedIndex + 1} / {slides.length}
+                </span>
+                {/* Reasoning tooltip */}
                 {current.reasoning && (
-                  <p className="text-[10px] text-white/45 italic mt-1 leading-relaxed line-clamp-2">
-                    {current.reasoning}
-                  </p>
+                  <span
+                    className="flex items-center justify-center rounded-full font-mono shrink-0 cursor-help"
+                    style={{ width: 16, height: 16, fontSize: 9, color: 'rgba(255,255,255,0.5)', backgroundColor: 'rgba(255,255,255,0.08)' }}
+                    title={current.reasoning}
+                  >
+                    R
+                  </span>
+                )}
+                {current.runNumber != null && (
+                  <span
+                    className="flex items-center justify-center rounded-full font-mono shrink-0"
+                    style={{ width: 16, height: 16, fontSize: 9, color: 'rgba(255,255,255,0.5)', backgroundColor: 'rgba(255,255,255,0.08)' }}
+                    title={`Run ${current.runNumber}`}
+                  >
+                    {current.runNumber}
+                  </span>
                 )}
               </>
             )}

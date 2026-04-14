@@ -543,50 +543,55 @@ WHERE month = ?</pre>
 </div>
 
 <div class="card">
-  <div class="card-header">Phase 2: Upgrade Existing <code>/billing</code> Page</div>
+  <div class="card-header"><span class="tag tag-green">DONE</span> Phase 2: Upgrade Existing <code>/billing</code> Page</div>
   <div class="card-body">
-    <p><span class="tag tag-orange">UPGRADE</span> Enhance the existing <code>BillingPage.tsx</code> at <code>/billing</code>. No new route, no new page. The existing page already has MetricRow, daily BarChart, model list, and category toggle (<code>all</code> vs selected). We add to it.</p>
+    <p>Completed 2026-04-13. Full rewrite of <code>BillingPage.tsx</code> using 5 global billing query hooks. Removed <code>SingleCategoryBilling</code>, <code>AllCategoriesBilling</code>, and Learning Artifacts section. Added 6 new dashboard section components in <code>features/billing/components/</code>.</p>
     <ol class="step-list">
-      <li>Add filter bar component (call type, model, period) below KPI row &mdash; filters passed as query params to new API endpoints</li>
-      <li>Add 5th KPI: <strong>Avg Cost/Call</strong> (derived from totals)</li>
-      <li>Replace flat daily BarChart with <strong>stacked bar by reason</strong> &mdash; bound to <code>/billing/global/daily</code></li>
-      <li>Add <strong>cost by call type PieChart</strong> (donut) &mdash; bound to <code>/billing/global/by-reason</code></li>
-      <li>Replace flat model list with <strong>horizontal BarChart</strong> &mdash; bound to <code>/billing/global/by-model</code></li>
-      <li>Add <strong>token usage AreaChart</strong> (input vs output trend) &mdash; derived from daily data</li>
-      <li>Add <strong>raw entries DataTable</strong> with pagination, sort, search &mdash; bound to <code>/billing/global/entries</code></li>
-      <li>Remove <strong>Learning Artifacts</strong> section (move to storage page if needed)</li>
-      <li>Refactor <code>AllCategoriesBilling</code> to use new global endpoints instead of N parallel per-category queries</li>
+      <li>5-metric KPI strip (Total Cost, LLM Calls, Input Tokens, Output Tokens, Avg/Call)</li>
+      <li>Filter bar with category, call type (colored dots from registry), and model chips</li>
+      <li>Stacked daily cost BarChart by reason &mdash; bound to <code>/billing/global/daily</code></li>
+      <li>Cost by call type donut PieChart &mdash; bound to <code>/billing/global/by-reason</code></li>
+      <li>Cost by model + cost by category horizontal bar sections &mdash; reusable <code>HorizontalBarSection</code></li>
+      <li>Paginated LLM Call Log DataTable with server-side filtering &mdash; bound to <code>/billing/global/entries</code></li>
+      <li>Removed Learning Artifacts section and legacy per-category query pattern</li>
     </ol>
     <dl class="detail-grid">
-      <dt>File</dt>
-      <dd><code>tools/gui-react/src/pages/billing/BillingPage.tsx</code> (existing, rewrite)</dd>
-      <dt>Chart Library</dt>
-      <dd><code>recharts</code> (already installed) &mdash; BarChart, PieChart, AreaChart, ResponsiveContainer</dd>
-      <dt>Shared Components</dt>
-      <dd>MetricRow, DataTable, Spinner, TabStrip (all exist)</dd>
-      <dt>No new deps</dt>
-      <dd>Everything needed is already in <code>package.json</code></dd>
+      <dt>Files</dt>
+      <dd>10 new, 5 modified &mdash; 30 tests, all green</dd>
+      <dt>Architectural Change</dt>
+      <dd>Page rewired from N parallel per-category queries to 5 global endpoints. Filter state is component-local. Entries table uses server-side pagination.</dd>
     </dl>
   </div>
 </div>
 
 <div class="card">
-  <div class="card-header">Phase 3: Call Type Color Registry</div>
+  <div class="card-header"><span class="tag tag-green">DONE</span> Phase 3: Call Type Color Registry</div>
   <div class="card-body">
-    <p>Single source of truth for mapping <code>reason</code> keys to display labels and chart colors. Used by all visualizations.</p>
-<pre class="json-block">// src/shared/billingCallTypeRegistry.js (new, ~30 lines)
-export const CALL_TYPE_REGISTRY = Object.freeze([
-  { reason: 'needset_search_planner',     label: 'NeedSet',         color: '#4263eb' },
-  { reason: 'brand_resolution',           label: 'Brand',           color: '#0c8599' },
-  { reason: 'search_planner_enhance',     label: 'Search Planner',  color: '#7048e8' },
-  { reason: 'serp_url_selector',          label: 'SERP Selector',   color: '#2b8a3e' },
-  { reason: 'product_image_finding',      label: 'Image Finder',    color: '#e67700' },
-  { reason: 'image_view_evaluation',      label: 'View Eval',       color: '#c92a2a' },
-  { reason: 'image_hero_selection',       label: 'Hero Eval',       color: '#d6336c' },
-  { reason: 'color_edition_finding',      label: 'CEF',             color: '#5c7cfa' },
-  { reason: 'validate_enum_consistency',  label: 'Enum Validator',  color: '#ae3ec9' },
-  { reason: 'validate_component_matches', label: 'Component Match', color: '#f76707' },
+    <p>Completed 2026-04-13. Single source of truth for mapping <code>reason</code> keys to display labels and semantic color tokens. 15 entries (expanded from original 10 to include <code>variant_identity_check</code>, <code>hero_image_finding</code>, <code>field_repair</code>, <code>health</code>, <code>extract</code>). Located in frontend feature folder since backend has no use for display metadata.</p>
+<pre class="json-block">// tools/gui-react/src/features/billing/billingCallTypeRegistry.ts
+export const BILLING_CALL_TYPE_REGISTRY: readonly BillingCallTypeEntry[] = Object.freeze([
+  { reason: 'needset_search_planner',     label: 'NeedSet',         color: 'var(--sf-token-accent)' },
+  { reason: 'brand_resolution',           label: 'Brand',           color: 'var(--sf-teal-fg, #5eead4)' },
+  { reason: 'search_planner_enhance',     label: 'Search Planner',  color: 'var(--sf-purple-fg, #d8b4fe)' },
+  { reason: 'serp_url_selector',          label: 'SERP Selector',   color: 'var(--sf-token-state-success-fg)' },
+  { reason: 'product_image_finding',      label: 'Image Finder',    color: 'var(--sf-token-state-warning-fg)' },
+  { reason: 'image_view_evaluation',      label: 'View Eval',       color: 'var(--sf-token-state-error-fg)' },
+  { reason: 'image_hero_selection',       label: 'Hero Eval',       color: 'var(--sf-pink-fg, #f472b6)' },
+  { reason: 'hero_image_finding',         label: 'Hero Finder',     color: 'var(--sf-orange-fg, #fb923c)' },
+  { reason: 'color_edition_finding',      label: 'CEF',             color: 'var(--sf-indigo-fg, #818cf8)' },
+  { reason: 'variant_identity_check',     label: 'Variant ID',      color: 'var(--sf-cyan-fg, #22d3ee)' },
+  { reason: 'validate_enum_consistency',  label: 'Enum Validator',  color: 'var(--sf-violet-fg, #a78bfa)' },
+  { reason: 'validate_component_matches', label: 'Component Match', color: 'var(--sf-lime-fg, #a3e635)' },
+  { reason: 'field_repair',              label: 'Repair',           color: 'var(--sf-rose-fg, #fb7185)' },
+  { reason: 'health',                    label: 'Health Check',     color: 'var(--sf-token-text-muted)' },
+  { reason: 'extract',                   label: 'Extract',          color: 'var(--sf-token-text-subtle)' },
 ]);</pre>
+    <dl class="detail-grid">
+      <dt>Files Created</dt>
+      <dd>4 new &mdash; registry, tests, index.ts, README.md &mdash; 10 tests, all green</dd>
+      <dt>Architectural Change</dt>
+      <dd>Registry lives in <code>tools/gui-react/src/features/billing/</code> (frontend-only, backend serves raw reason strings). Colors use <code>var(--sf-*, #fallback)</code> semantic tokens per Zero-Drift UI.</dd>
+    </dl>
   </div>
 </div>
 
@@ -610,11 +615,19 @@ export const CALL_TYPE_REGISTRY = Object.freeze([
         <tr><td>1a</td><td><code>src/db/appDb.js</code></td><td>Add getGlobalDaily, getGlobalEntries (paginated)</td><td><span class="tag tag-orange">EXTEND</span></td></tr>
         <tr><td>1b</td><td><code>src/db/tests/appDb.test.js</code></td><td>Tests for new query methods</td><td><span class="tag tag-orange">EXTEND</span></td></tr>
         <tr><td>1c</td><td><code>src/features/indexing/api/queueBillingLearningRoutes.js</code></td><td>Add /billing/global/* routes</td><td><span class="tag tag-orange">EXTEND</span></td></tr>
-        <tr><td colspan="4" style="background: var(--orange-bg); font-weight: 600; color: var(--orange);">Phase 2 &mdash; Frontend Dashboard</td></tr>
-        <tr><td>2a</td><td><code>tools/gui-react/src/pages/billing/BillingPage.tsx</code></td><td>Upgrade: filters, charts, DataTable, stacked bars</td><td><span class="tag tag-orange">REWRITE</span></td></tr>
-        <tr><td>2b</td><td><code>tools/gui-react/src/pages/billing/components/</code></td><td>FilterBar, chart section components</td><td><span class="tag tag-accent">NEW</span></td></tr>
-        <tr><td colspan="4" style="background: var(--purple-bg); font-weight: 600; color: var(--purple);">Phase 3 &mdash; Call Type Registry</td></tr>
-        <tr><td>3a</td><td><code>src/shared/billingCallTypeRegistry.js</code></td><td>Call type &rarr; label + color mapping</td><td><span class="tag tag-accent">NEW</span></td></tr>
+        <tr><td colspan="4" style="background: var(--green-bg); font-weight: 600; color: var(--green);">Phase 2 &mdash; Frontend Dashboard (COMPLETE)</td></tr>
+        <tr><td>2a</td><td><code>tools/gui-react/src/pages/billing/BillingPage.tsx</code></td><td>Full rewrite: thin orchestrator, 5 global query hooks</td><td><span class="tag tag-green">DONE</span></td></tr>
+        <tr><td>2b</td><td><code>tools/gui-react/src/features/billing/billingTypes.ts</code></td><td>API response + chart derived types</td><td><span class="tag tag-green">DONE</span></td></tr>
+        <tr><td>2c</td><td><code>tools/gui-react/src/features/billing/billingTransforms.ts</code></td><td>Pure data transforms (pivot, donut, bars, chartColor)</td><td><span class="tag tag-green">DONE</span></td></tr>
+        <tr><td>2d</td><td><code>tools/gui-react/src/features/billing/billingQueries.ts</code></td><td>6 React Query hooks (30s refetch)</td><td><span class="tag tag-green">DONE</span></td></tr>
+        <tr><td>2e</td><td><code>tools/gui-react/src/features/billing/components/</code></td><td>6 section components (KPI, filter, charts, table)</td><td><span class="tag tag-green">DONE</span></td></tr>
+        <tr><td>2f</td><td><code>tools/gui-react/src/features/billing/__tests__/billingTransforms.test.ts</code></td><td>18 transform contract tests</td><td><span class="tag tag-green">DONE</span></td></tr>
+        <tr><td>2g</td><td><code>tools/gui-react/src/theme.css</code></td><td>Added .sf-filter-chip / .sf-filter-dot / .sf-filter-bar classes</td><td><span class="tag tag-green">DONE</span></td></tr>
+        <tr><td colspan="4" style="background: var(--green-bg); font-weight: 600; color: var(--green);">Phase 3 &mdash; Call Type Registry (COMPLETE)</td></tr>
+        <tr><td>3a</td><td><code>tools/gui-react/src/features/billing/billingCallTypeRegistry.ts</code></td><td>15-entry registry: reason &rarr; label + semantic color token</td><td><span class="tag tag-green">DONE</span></td></tr>
+        <tr><td>3b</td><td><code>tools/gui-react/src/features/billing/__tests__/billingCallTypeRegistry.test.ts</code></td><td>10 contract tests (shape, uniqueness, lookup, fallback, token format)</td><td><span class="tag tag-green">DONE</span></td></tr>
+        <tr><td>3c</td><td><code>tools/gui-react/src/features/billing/index.ts</code></td><td>Barrel export</td><td><span class="tag tag-green">DONE</span></td></tr>
+        <tr><td>3d</td><td><code>tools/gui-react/src/features/billing/README.md</code></td><td>Domain contract</td><td><span class="tag tag-green">DONE</span></td></tr>
       </tbody>
     </table>
   </div>

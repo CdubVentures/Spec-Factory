@@ -174,11 +174,7 @@ function ViewConfigEditor({
     return (
       <div
         key={view.key}
-        className="rounded"
-        style={{
-          border: `1px solid ${isPriority ? 'var(--sf-accent, #3b82f6)' : 'var(--sf-separator)'}`,
-          backgroundColor: isPriority ? 'var(--sf-accent-bg, rgba(59,130,246,0.04))' : undefined,
-        }}
+        className={`rounded border ${isPriority ? 'sf-border-default sf-surface-elevated' : 'sf-border-soft'}`}
       >
         {/* Row header */}
         <div className="flex items-center gap-2 px-3 py-2">
@@ -192,26 +188,17 @@ function ViewConfigEditor({
               checked={isPriority}
               onChange={() => handleTogglePriority(view.key)}
               disabled={isSaving}
-              className="w-4 h-4 accent-[var(--sf-accent,#3b82f6)] cursor-pointer"
+              className="sf-checkbox w-4 h-4 cursor-pointer"
             />
             {isPriority && (
-              <span
-                className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold"
-                style={{ backgroundColor: 'var(--sf-accent)', color: '#fff' }}
-              >
-                {priorityIdx! + 1}
+              <span className="text-[11px] font-semibold sf-text-muted tabular-nums">
+                #{priorityIdx! + 1}
               </span>
             )}
           </label>
 
           {/* View name */}
-          <span
-            className="font-semibold text-[13px] min-w-[60px]"
-            style={{ color: isPriority ? 'var(--sf-text)' : 'var(--sf-muted)' }}
-          >
-            {view.key}
-          </span>
-          <span className="text-[11px]" style={{ color: 'var(--sf-muted)' }}>
+          <span className={`font-semibold text-[13px] ${isPriority ? 'sf-text-primary' : 'sf-text-muted'}`}>
             {canonLabel}
           </span>
 
@@ -221,8 +208,7 @@ function ViewConfigEditor({
               <button
                 onClick={() => handleMovePriority(view.key, -1)}
                 disabled={isSaving || priorityIdx === 0}
-                className="sf-btn-ghost px-1 py-0.5 rounded text-[11px] disabled:opacity-30"
-                style={{ color: 'var(--sf-muted)' }}
+                className="sf-btn-ghost px-1 py-0.5 rounded text-[11px] disabled:opacity-30 sf-text-muted"
                 title="Move up in priority"
               >
                 {'\u25B2'}
@@ -230,8 +216,7 @@ function ViewConfigEditor({
               <button
                 onClick={() => handleMovePriority(view.key, 1)}
                 disabled={isSaving || priorityIdx === priorityViews.length - 1}
-                className="sf-btn-ghost px-1 py-0.5 rounded text-[11px] disabled:opacity-30"
-                style={{ color: 'var(--sf-muted)' }}
+                className="sf-btn-ghost px-1 py-0.5 rounded text-[11px] disabled:opacity-30 sf-text-muted"
                 title="Move down in priority"
               >
                 {'\u25BC'}
@@ -244,8 +229,7 @@ function ViewConfigEditor({
           {/* Expand/collapse description */}
           <button
             onClick={() => setExpandedKey(isExpanded ? null : view.key)}
-            className="sf-btn-ghost px-1.5 py-0.5 rounded text-[11px]"
-            style={{ color: 'var(--sf-muted)' }}
+            className="sf-btn-ghost px-1.5 py-0.5 rounded text-[11px] sf-text-muted"
           >
             {isExpanded ? 'collapse' : 'edit description'}
           </button>
@@ -254,7 +238,7 @@ function ViewConfigEditor({
         {/* Description preview (collapsed) */}
         {!isExpanded && (
           <div className="px-3 pb-2">
-            <p className="text-[11px] truncate" style={{ color: 'var(--sf-muted)' }}>
+            <p className="text-[11px] truncate sf-text-muted">
               {view.description}
             </p>
           </div>
@@ -269,11 +253,10 @@ function ViewConfigEditor({
               onBlur={() => onChange(views)}
               disabled={isSaving}
               rows={3}
-              className="sf-input w-full px-2 py-1.5 rounded sf-text-label text-[12px] resize-y"
+              className="sf-input w-full px-2 py-1.5 rounded sf-text-label text-[12px] resize-y min-h-14"
               placeholder="Describe what this angle looks like so the LLM finds and classifies shots correctly..."
-              style={{ minHeight: 56 }}
             />
-            <p className="mt-1 text-[10px]" style={{ color: 'var(--sf-muted)' }}>
+            <p className="mt-1 text-[10px] sf-text-muted">
               This description is sent to the LLM so it knows how to identify and name this view.
             </p>
           </div>
@@ -288,8 +271,8 @@ function ViewConfigEditor({
       <div className="text-[11px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-1">
         Priority Views
       </div>
-      <p className="sf-text-caption mb-2" style={{ color: 'var(--sf-muted)' }}>
-        The LLM searches for these views first. Click the numbered badge to toggle priority. Reorder with arrows.
+      <p className="sf-text-caption sf-text-muted mb-2">
+        The LLM searches for these views first. Use the checkbox to toggle priority. Reorder with arrows.
       </p>
       <div className="space-y-1.5">
         {priorityViews.map((v, i) => renderViewRow(v, true, i))}
@@ -300,8 +283,8 @@ function ViewConfigEditor({
           <div className="text-[11px] font-bold uppercase tracking-[0.06em] sf-text-muted mt-4 mb-1">
             Additional Views
           </div>
-          <p className="sf-text-caption mb-2" style={{ color: 'var(--sf-muted)' }}>
-            The LLM knows these angles and will include matching product shots it finds while searching. Click the badge to promote to priority.
+          <p className="sf-text-caption sf-text-muted mb-2">
+            These angles are recognized opportunistically. Use the checkbox to promote to priority.
           </p>
           <div className="space-y-1.5">
             {additionalViews.map(v => renderViewRow(v, false))}
@@ -497,6 +480,9 @@ function PifSettingsForm({
           category={category}
           isSaving={isSaving}
           onSave={(val) => onSave('viewBudget', val)}
+          viewAttemptBudgets={settings.viewAttemptBudgets ?? ''}
+          viewAttemptBudget={settings.viewAttemptBudget ?? '5'}
+          onAttemptBudgetSave={(val) => onSave('viewAttemptBudgets', val)}
         />
       </SettingsCard>
 
@@ -557,25 +543,10 @@ function PifSettingsForm({
           </div>
         </div>
 
-        {/* Per-View Attempt Budgets */}
+        {/* Attempt Budgets */}
         <div className="pt-3 mt-1 border-t sf-border-soft">
-          <div className="text-[10px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-1">Per-View Attempt Budgets</div>
-          <p className="text-[10px] sf-text-muted mb-3 leading-snug">
-            Max LLM calls per view before exhaustion. High-availability views get more tries; rare views get fewer. Min 2.
-          </p>
-          <ViewAttemptBudgetGrid
-            viewAttemptBudgets={settings.viewAttemptBudgets ?? ''}
-            viewAttemptBudget={settings.viewAttemptBudget ?? '5'}
-            category={category}
-            isSaving={isSaving}
-            onSave={(val) => onSave('viewAttemptBudgets', val)}
-          />
-        </div>
-
-        {/* Hero + Re-run Budgets */}
-        <div className="pt-3 mt-1 border-t sf-border-soft">
-          <div className="text-[10px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-3">Hero &amp; Re-run Budgets</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="text-[10px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-3">Attempt Budgets</div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-[11px] font-semibold sf-text-primary mb-1.5">
                 Hero Attempt Budget
@@ -589,6 +560,9 @@ function PifSettingsForm({
                 min="1"
                 max="10"
               />
+              <p className="mt-1.5 text-[10px] sf-text-muted leading-snug">
+                Max LLM calls for hero images per variant.
+              </p>
             </div>
             <div>
               <label
@@ -603,9 +577,12 @@ function PifSettingsForm({
                 onChange={(e) => onSave('reRunBudget', e.target.value)}
                 disabled={isSaving}
                 className="sf-input w-full px-2 py-1.5 rounded sf-text-label text-[12px]"
-                min="1"
+                min="0"
                 max="5"
               />
+              <p className="mt-1.5 text-[10px] sf-text-muted leading-snug">
+                Extra calls for already-satisfied views on re-loop. 0 = skip.
+              </p>
             </div>
           </div>
         </div>
@@ -770,49 +747,49 @@ function ViewQualityGrid({
   const handleReset = () => onSave('');
 
   return (
-    <div className="rounded border sf-border-soft overflow-hidden">
-      <table className="w-full text-[11px] border-collapse">
+    <div>
+      <table className="w-full text-[11px]">
         <thead>
-          <tr className="sf-text-muted sf-surface-elevated">
-            <th className="text-left py-2 pl-3 pr-2 font-semibold border-b sf-border-soft">View</th>
-            <th className="text-left py-2 px-2 font-semibold border-b sf-border-soft">Min Width</th>
-            <th className="text-left py-2 px-2 font-semibold border-b sf-border-soft">Min Height</th>
-            <th className="text-left py-2 px-2 font-semibold border-b sf-border-soft">Min File Size</th>
+          <tr className="sf-text-muted">
+            <th className="text-left py-2 pl-2 pr-2 font-semibold border sf-border-soft">View</th>
+            <th className="text-left py-2 px-2 font-semibold border sf-border-soft">Min Width</th>
+            <th className="text-left py-2 px-2 font-semibold border sf-border-soft">Min Height</th>
+            <th className="text-left py-2 px-2 font-semibold border sf-border-soft">Min File Size</th>
           </tr>
         </thead>
         <tbody>
-          {ALL_QUALITY_VIEWS.map((view, idx) => (
-            <tr key={view} className={`sf-text-primary ${idx % 2 === 1 ? 'sf-surface-elevated' : ''}`}>
-              <td className="py-1.5 pl-3 pr-2 font-medium">{VIEW_LABELS[view] ?? view}</td>
-              <td className="py-1.5 px-2">
+          {ALL_QUALITY_VIEWS.map((view) => (
+            <tr key={view} className="sf-text-primary">
+              <td className="py-1.5 pl-2 pr-2 font-medium border sf-border-soft">{VIEW_LABELS[view] ?? view}</td>
+              <td className="py-1.5 px-2 border sf-border-soft">
                 <input
                   type="number"
                   value={getVal(view, 'minWidth')}
                   onChange={(e) => handleChange(view, 'minWidth', e.target.value)}
                   disabled={isSaving}
-                  className="sf-input w-[72px] px-2 py-1 rounded sf-text-label text-[11px]"
+                  className="w-full px-1 py-0.5 sf-text-label text-[11px] bg-transparent outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   min="0"
                   max="4000"
                 />
               </td>
-              <td className="py-1.5 px-2">
+              <td className="py-1.5 px-2 border sf-border-soft">
                 <input
                   type="number"
                   value={getVal(view, 'minHeight')}
                   onChange={(e) => handleChange(view, 'minHeight', e.target.value)}
                   disabled={isSaving}
-                  className="sf-input w-[72px] px-2 py-1 rounded sf-text-label text-[11px]"
+                  className="w-full px-1 py-0.5 sf-text-label text-[11px] bg-transparent outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   min="0"
                   max="4000"
                 />
               </td>
-              <td className="py-1.5 px-2">
+              <td className="py-1.5 px-2 border sf-border-soft">
                 <input
                   type="number"
                   value={getVal(view, 'minFileSize')}
                   onChange={(e) => handleChange(view, 'minFileSize', e.target.value)}
                   disabled={isSaving}
-                  className="sf-input w-[88px] px-2 py-1 rounded sf-text-label text-[11px]"
+                  className="w-full px-1 py-0.5 sf-text-label text-[11px] bg-transparent outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   min="0"
                   max="10000000"
                 />
@@ -821,7 +798,7 @@ function ViewQualityGrid({
           ))}
         </tbody>
       </table>
-      <div className="px-3 py-2 border-t sf-border-soft sf-surface-elevated">
+      <div className="pt-2 mt-1">
         {isUsingDefaults ? (
           <span className="text-[10px] sf-text-muted">Using {category} defaults</span>
         ) : (
@@ -856,105 +833,23 @@ const CATEGORY_VIEW_ATTEMPT_DEFAULTS: Record<string, Record<string, number>> = {
   mousepad: { top: 4, angle: 4 },
 };
 
-const GENERIC_VIEW_ATTEMPT_FALLBACK = 3;
-
-function ViewAttemptBudgetGrid({
-  viewAttemptBudgets,
-  viewAttemptBudget,
-  category,
-  isSaving,
-  onSave,
-}: {
-  viewAttemptBudgets: string;
-  viewAttemptBudget: string;
-  category: string;
-  isSaving: boolean;
-  onSave: (val: string) => void;
-}) {
-  const catDefaults = CATEGORY_VIEW_ATTEMPT_DEFAULTS[category] || {};
-  const flatFallback = parseInt(viewAttemptBudget || '5', 10) || 5;
-  const isUsingDefaults = !viewAttemptBudgets || !viewAttemptBudgets.trim();
-
-  let overrides: Record<string, number>;
-  try {
-    const parsed = JSON.parse(viewAttemptBudgets || '{}');
-    overrides = typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
-  } catch {
-    overrides = {};
-  }
-
-  const getVal = (view: string): number => {
-    const fromOverride = overrides[view];
-    if (fromOverride !== undefined && fromOverride !== null) return Math.max(2, Number(fromOverride));
-    const fromCat = catDefaults[view];
-    if (fromCat !== undefined) return fromCat;
-    return Math.max(2, flatFallback);
-  };
-
-  const handleChange = (view: string, value: string) => {
-    const next = { ...overrides, [view]: Math.max(2, Number(value) || 2) };
-    onSave(JSON.stringify(next));
-  };
-
-  const handleReset = () => onSave('');
-
-  const totalAttempts = CANONICAL_VIEWS.reduce((sum, v) => sum + getVal(v.key), 0);
-
-  return (
-    <div className="rounded border sf-border-soft overflow-hidden">
-      <table className="w-full text-[11px] border-collapse">
-        <thead>
-          <tr className="sf-text-muted sf-surface-elevated">
-            <th className="text-left py-2 pl-3 pr-2 font-semibold border-b sf-border-soft">View</th>
-            <th className="text-left py-2 px-2 font-semibold border-b sf-border-soft">Max Attempts</th>
-          </tr>
-        </thead>
-        <tbody>
-          {CANONICAL_VIEWS.map((v, idx) => (
-            <tr key={v.key} className={`sf-text-primary ${idx % 2 === 1 ? 'sf-surface-elevated' : ''}`}>
-              <td className="py-1.5 pl-3 pr-2 font-medium">{v.label}</td>
-              <td className="py-1.5 px-2">
-                <input
-                  type="number"
-                  value={getVal(v.key)}
-                  onChange={(e) => handleChange(v.key, e.target.value)}
-                  disabled={isSaving}
-                  className="sf-input w-[72px] px-2 py-1 rounded sf-text-label text-[11px]"
-                  min="2"
-                  max="20"
-                />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className="px-3 py-2 border-t sf-border-soft sf-surface-elevated flex items-center gap-3">
-        {isUsingDefaults ? (
-          <span className="text-[10px] sf-text-muted">Using {category} defaults ({totalAttempts} total)</span>
-        ) : (
-          <button
-            onClick={handleReset}
-            disabled={isSaving}
-            className="text-[10px] px-1.5 py-0.5 rounded sf-btn-ghost sf-text-muted"
-          >
-            Reset to {category} defaults
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
 
 function ViewBudgetEditor({
   viewBudget,
   category,
   isSaving,
   onSave,
+  viewAttemptBudgets,
+  viewAttemptBudget,
+  onAttemptBudgetSave,
 }: {
   viewBudget: string;
   category: string;
   isSaving: boolean;
   onSave: (val: string) => void;
+  viewAttemptBudgets: string;
+  viewAttemptBudget: string;
+  onAttemptBudgetSave: (val: string) => void;
 }) {
   const defaultBudget = CATEGORY_VIEW_BUDGET_DEFAULTS[category] || ['top', 'left', 'angle'];
   const isUsingDefaults = !viewBudget || !viewBudget.trim();
@@ -980,6 +875,30 @@ function ViewBudgetEditor({
   };
 
   const handleReset = () => onSave('');
+
+  // Per-view attempt budgets
+  const catAttemptDefaults = CATEGORY_VIEW_ATTEMPT_DEFAULTS[category] || {};
+  const flatAttemptFallback = parseInt(viewAttemptBudget || '5', 10) || 5;
+  let attemptOverrides: Record<string, number> = {};
+  try {
+    const parsed = JSON.parse(viewAttemptBudgets || '{}');
+    attemptOverrides = typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch { /* use empty */ }
+
+  const getAttemptVal = (view: string): number => {
+    const fromOverride = attemptOverrides[view];
+    if (fromOverride !== undefined && fromOverride !== null) return Math.max(1, Number(fromOverride));
+    const fromCat = catAttemptDefaults[view];
+    if (fromCat !== undefined) return fromCat;
+    return Math.max(1, flatAttemptFallback);
+  };
+
+  const handleAttemptChange = (view: string, value: string) => {
+    const next = { ...attemptOverrides, [view]: Math.max(1, Number(value) || 1) };
+    onAttemptBudgetSave(JSON.stringify(next));
+  };
+
+  const budgetedViews = CANONICAL_VIEWS.filter(v => budgetSet.has(v.key));
 
   return (
     <div>
@@ -1009,6 +928,30 @@ function ViewBudgetEditor({
           );
         })}
       </div>
+
+      {/* Per-view attempt budgets for active views */}
+      {budgetedViews.length > 0 && (
+        <div className="mb-3">
+          <div className="text-[10px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-2">Tries per view</div>
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+            {budgetedViews.map(v => (
+              <div key={v.key} className="flex items-center gap-1.5">
+                <span className="text-[11px] sf-text-primary font-medium min-w-[52px]">{v.label}</span>
+                <input
+                  type="number"
+                  value={getAttemptVal(v.key)}
+                  onChange={(e) => handleAttemptChange(v.key, e.target.value)}
+                  disabled={isSaving}
+                  className="sf-input w-[44px] px-1 py-0.5 rounded text-[11px] text-center sf-text-label [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  min="1"
+                  max="20"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div>
         {isUsingDefaults ? (
           <span className="text-[10px] sf-text-muted">Using {category} defaults ({defaultBudget.length} views)</span>
@@ -1138,7 +1081,7 @@ export function ModuleSettingsPanel({ moduleId }: { moduleId: 'colorEditionFinde
 
   if (!category) {
     return (
-      <p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>
+      <p className="sf-text-caption sf-text-muted">
         Select a category to configure module settings.
       </p>
     );
@@ -1146,7 +1089,7 @@ export function ModuleSettingsPanel({ moduleId }: { moduleId: 'colorEditionFinde
 
   if (isLoading) {
     return (
-      <p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>
+      <p className="sf-text-caption sf-text-muted">
         Loading settings...
       </p>
     );

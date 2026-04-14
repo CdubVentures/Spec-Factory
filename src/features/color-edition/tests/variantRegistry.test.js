@@ -353,4 +353,52 @@ describe('applyIdentityMappings', () => {
     assert.equal(result.find(e => e.variant_id === 'v_ccc33333')?.retired, true);
     assert.ok(result.find(e => e.variant_key === 'color:crimson-red'));
   });
+
+  it('type guard: color mapped to edition is rejected and forced to create', () => {
+    const result = applyIdentityMappings({
+      existingRegistry: makeRegistry(),
+      mappings: [
+        // LLM incorrectly maps a color key to an edition variant
+        { new_key: 'color:olive+black+red', match: 'v_ccc33333', action: 'update', reason: 'similar atoms' },
+      ],
+      retired: [],
+      productId: 'mouse-001',
+      colors: ['black', 'ocean-blue', 'olive+black+red'],
+      colorNames: {},
+      editions: { 'cod-bo6': { display_name: 'COD BO6', colors: ['black+orange'] } },
+    });
+    // v_ccc33333 is an edition — mapping a color to it should be rejected
+    const original = result.find(e => e.variant_id === 'v_ccc33333');
+    assert.ok(original, 'original edition entry still exists');
+    assert.equal(original.variant_key, 'edition:cod-bo6', 'edition key unchanged');
+    assert.equal(original.variant_type, 'edition', 'type unchanged');
+
+    // The color should have been created as a new entry instead
+    const created = result.find(e => e.variant_key === 'color:olive+black+red');
+    assert.ok(created, 'cross-type mapping became a create');
+    assert.equal(created.variant_type, 'color');
+    assert.notEqual(created.variant_id, 'v_ccc33333', 'got its own new hash');
+  });
+
+  it('type guard: edition mapped to color is rejected and forced to create', () => {
+    const result = applyIdentityMappings({
+      existingRegistry: makeRegistry(),
+      mappings: [
+        // LLM incorrectly maps an edition key to a color variant
+        { new_key: 'edition:special', match: 'v_aaa11111', action: 'update', reason: 'same product' },
+      ],
+      retired: [],
+      productId: 'mouse-001',
+      colors: ['black'],
+      colorNames: {},
+      editions: { 'special': { display_name: 'Special Edition', colors: ['black+gold'] } },
+    });
+    // v_aaa11111 is a color — mapping an edition to it should be rejected
+    const original = result.find(e => e.variant_id === 'v_aaa11111');
+    assert.equal(original.variant_key, 'color:black', 'color key unchanged');
+
+    const created = result.find(e => e.variant_key === 'edition:special');
+    assert.ok(created, 'cross-type mapping became a create');
+    assert.equal(created.variant_type, 'edition');
+  });
 });

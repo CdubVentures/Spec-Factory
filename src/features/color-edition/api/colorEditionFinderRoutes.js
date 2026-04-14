@@ -29,8 +29,10 @@ export function registerColorEditionFinderRoutes(ctx) {
     deleteRunSql: (specDb, pid, rn) => specDb.getFinderStore('colorEditionFinder').removeRun(pid, rn),
     deleteAllRunsSql: (specDb, pid) => specDb.getFinderStore('colorEditionFinder').removeAllRuns(pid),
 
+    customStages: ['Discovery', 'Identity', 'Validate'],
     skipSelectedOnDelete: true,
     candidateSourceType: 'cef',
+    variantRenamedEvent: 'product-image-finder-variant-renamed',
 
     buildGetResponse: (row, selected, runs, onCooldown, { specDb, productId } = {}) => {
       // WHY: Published values come from the summary table (DB).

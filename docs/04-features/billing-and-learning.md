@@ -8,7 +8,8 @@
 
 | Surface | Path | Role |
 |--------|------|------|
-| Billing page | `tools/gui-react/src/pages/billing/BillingPage.tsx` | cost rollups |
+| Billing page | `tools/gui-react/src/pages/billing/BillingPage.tsx` | dashboard orchestrator (KPI, charts, filters, call log) |
+| Billing feature | `tools/gui-react/src/features/billing/` | registry, transforms, queries, components |
 | Global billing API | `src/features/indexing/api/queueBillingLearningRoutes.js` | 6 global endpoints + legacy per-category |
 | Billing ledger | `src/billing/costLedger.js` | dual-write: SQL (appDb) + JSONL |
 | Billing store | `src/db/appDb.js` | `billing_entries` table in global `app.sqlite` |

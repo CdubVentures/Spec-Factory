@@ -67,7 +67,7 @@ export function FinderPanelHeader({
       {actionSlot ?? (
         <button
           onClick={(e) => { e.stopPropagation(); onRun(); }}
-          disabled={sendBusy || runDisabled}
+          disabled={sendBusy || runDisabled || isRunning}
           className="ml-auto w-28 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-primary-button disabled:opacity-40 disabled:cursor-not-allowed text-center"
         >
           {sendBusy ? (

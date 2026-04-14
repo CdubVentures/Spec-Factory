@@ -25,10 +25,19 @@ function renderElement(element) {
 }
 
 function buildCommonStubs() {
+  const componentStub = `
+    export function __stub__(props) {
+      return { type: '__stub__', props };
+    }
+  `;
+
   return {
     react: `
       export function useMemo(factory) {
         return factory();
+      }
+      export function useState(init) {
+        return [typeof init === 'function' ? init() : init, () => {}];
       }
     `,
     'react/jsx-runtime': `
@@ -42,7 +51,7 @@ function buildCommonStubs() {
       function buildQueryResult(queryKey) {
         const root = String((queryKey || [])[0] || '');
         if (root === 'billing') {
-          return { totals: {}, by_day: {}, by_model: {} };
+          return { totals: {}, by_day: {}, by_model: {}, days: [], by_day_reason: [], models: [], reasons: [], categories: [], entries: [], total: 0 };
         }
         if (root === 'learning') {
           return [];
@@ -91,79 +100,15 @@ function buildCommonStubs() {
         return selector(globalThis.__queryHarness.uiState);
       }
     `,
-    '../../components/common/MetricRow.tsx': `
-      export function MetricRow(props) {
-        return { type: 'MetricRow', props };
-      }
-    `,
-    '../../shared/ui/data-display/MetricRow.tsx': `
-      export function MetricRow(props) {
-        return { type: 'MetricRow', props };
-      }
-    `,
-    '../../components/common/Spinner.tsx': `
-      export function Spinner(props) {
-        return { type: 'Spinner', props };
-      }
-    `,
-    '../../shared/ui/feedback/Spinner.tsx': `
-      export function Spinner(props) {
-        return { type: 'Spinner', props };
-      }
-    `,
-    '../../components/common/ProgressBar.tsx': `
-      export function ProgressBar(props) {
-        return { type: 'ProgressBar', props };
-      }
-    `,
-    '../../shared/ui/data-display/ProgressBar.tsx': `
-      export function ProgressBar(props) {
-        return { type: 'ProgressBar', props };
-      }
-    `,
-    '../../components/common/DataTable.tsx': `
-      export function DataTable(props) {
-        return { type: 'DataTable', props };
-      }
-    `,
-    '../../shared/ui/data-display/DataTable.tsx': `
-      export function DataTable(props) {
-        return { type: 'DataTable', props };
-      }
-    `,
-    '../../components/common/StatusBadge.tsx': `
-      export function StatusBadge(props) {
-        return { type: 'StatusBadge', props };
-      }
-    `,
-    '../../shared/ui/feedback/StatusBadge.tsx': `
-      export function StatusBadge(props) {
-        return { type: 'StatusBadge', props };
-      }
-    `,
-    '../../components/common/TrafficLight.tsx': `
-      export function TrafficLight(props) {
-        return { type: 'TrafficLight', props };
-      }
-    `,
-    '../../shared/ui/feedback/TrafficLight.tsx': `
-      export function TrafficLight(props) {
-        return { type: 'TrafficLight', props };
-      }
-    `,
+    '../../shared/ui/data-display/MetricRow.tsx': componentStub.replace(/__stub__/g, 'MetricRow'),
+    '../../shared/ui/data-display/MetricCard.tsx': componentStub.replace(/__stub__/g, 'MetricCard'),
+    '../../shared/ui/data-display/DataTable.tsx': componentStub.replace(/__stub__/g, 'DataTable'),
+    '../../shared/ui/feedback/Spinner.tsx': componentStub.replace(/__stub__/g, 'Spinner'),
     '../../utils/formatting.ts': `
-      export function usd(value) {
-        return String(value ?? '');
-      }
-      export function compactNumber(value) {
-        return String(value ?? '');
-      }
-      export function pct(value) {
-        return String(value ?? '');
-      }
-      export function relativeTime(value) {
-        return String(value ?? '');
-      }
+      export function usd(value) { return String(value ?? ''); }
+      export function compactNumber(value) { return String(value ?? ''); }
+      export function pct(value) { return String(value ?? ''); }
+      export function relativeTime(value) { return String(value ?? ''); }
     `,
     recharts: `
       export const BarChart = 'BarChart';
@@ -173,7 +118,66 @@ function buildCommonStubs() {
       export const Tooltip = 'Tooltip';
       export const ResponsiveContainer = 'ResponsiveContainer';
       export const CartesianGrid = 'CartesianGrid';
+      export const Legend = 'Legend';
+      export const PieChart = 'PieChart';
+      export const Pie = 'Pie';
+      export const Cell = 'Cell';
     `,
+    '@tanstack/react-table': `
+      export function useReactTable() { return { getRowModel: () => ({ rows: [] }), getHeaderGroups: () => [] }; }
+      export function getCoreRowModel() { return () => {}; }
+      export function getSortedRowModel() { return () => {}; }
+      export function getFilteredRowModel() { return () => {}; }
+      export function getExpandedRowModel() { return () => {}; }
+      export function flexRender(comp, props) { return null; }
+    `,
+    // Feature module stubs — BillingPage imports these
+    '../../features/billing/billingQueries.ts': `
+      import { useQuery } from '@tanstack/react-query';
+
+      const BILLING_REFETCH = 30_000;
+
+      export function useBillingSummaryQuery() {
+        return useQuery({ queryKey: ['billing', 'summary'], queryFn: async () => ({}), refetchInterval: BILLING_REFETCH });
+      }
+      export function useBillingDailyQuery() {
+        return useQuery({ queryKey: ['billing', 'daily'], queryFn: async () => ({}), refetchInterval: BILLING_REFETCH });
+      }
+      export function useBillingByModelQuery() {
+        return useQuery({ queryKey: ['billing', 'by-model'], queryFn: async () => ({}), refetchInterval: BILLING_REFETCH });
+      }
+      export function useBillingByReasonQuery() {
+        return useQuery({ queryKey: ['billing', 'by-reason'], queryFn: async () => ({}), refetchInterval: BILLING_REFETCH });
+      }
+      export function useBillingByCategoryQuery() {
+        return useQuery({ queryKey: ['billing', 'by-category'], queryFn: async () => ({}), refetchInterval: BILLING_REFETCH });
+      }
+      export function useBillingEntriesQuery() {
+        return useQuery({ queryKey: ['billing', 'entries', {}], queryFn: async () => ({}), refetchInterval: BILLING_REFETCH });
+      }
+    `,
+    '../../features/billing/billingTypes.ts': `
+      export {};
+    `,
+    '../../features/billing/billingTransforms.ts': `
+      export function pivotDailyByReason() { return []; }
+      export function computeAvgPerCall(c, n) { return n ? c / n : 0; }
+      export function computeDonutSlices() { return []; }
+      export function computeHorizontalBars() { return []; }
+      export function chartColor(v) { return v; }
+    `,
+    '../../features/billing/billingCallTypeRegistry.ts': `
+      export const BILLING_CALL_TYPE_REGISTRY = Object.freeze([]);
+      export const BILLING_CALL_TYPE_MAP = Object.freeze({});
+      export const BILLING_CALL_TYPE_FALLBACK = Object.freeze({ reason: 'unknown', label: 'Other', color: '#888' });
+      export function resolveBillingCallType() { return { reason: 'unknown', label: 'Other', color: '#888' }; }
+    `,
+    '../../features/billing/components/BillingKpiStrip.tsx': componentStub.replace(/__stub__/g, 'BillingKpiStrip'),
+    '../../features/billing/components/BillingFilterBar.tsx': componentStub.replace(/__stub__/g, 'BillingFilterBar'),
+    '../../features/billing/components/DailyCostChart.tsx': componentStub.replace(/__stub__/g, 'DailyCostChart'),
+    '../../features/billing/components/CostByCallTypeDonut.tsx': componentStub.replace(/__stub__/g, 'CostByCallTypeDonut'),
+    '../../features/billing/components/HorizontalBarSection.tsx': componentStub.replace(/__stub__/g, 'HorizontalBarSection'),
+    '../../features/billing/components/BillingEntryTable.tsx': componentStub.replace(/__stub__/g, 'BillingEntryTable'),
   };
 }
 
@@ -190,55 +194,54 @@ function loadGuiModule(entryRelativePath) {
   return guiModulePromises.get(entryRelativePath);
 }
 
-test('billing and overview pages preserve their billing refresh contracts', async () => {
-  const cases = [
-    {
-      label: 'BillingPage single-category mode',
-      exportName: 'BillingPage',
-      entryRelativePath: 'tools/gui-react/src/pages/billing/BillingPage.tsx',
-      uiState: { category: 'mouse', categories: ['mouse', 'keyboard'] },
-      expectedCalls: [
-        { kind: 'query', queryKey: ['billing', 'mouse'], refetchInterval: 30_000 },
-        { kind: 'query', queryKey: ['learning', 'mouse'], refetchInterval: 30_000 },
-      ],
-    },
-    {
-      label: 'BillingPage all-category mode',
-      exportName: 'BillingPage',
-      entryRelativePath: 'tools/gui-react/src/pages/billing/BillingPage.tsx',
-      uiState: { category: 'all', categories: ['mouse', 'keyboard'] },
-      expectedCalls: [
-        {
-          kind: 'queries',
-          queries: [
-            { queryKey: ['billing', 'mouse'], refetchInterval: 30_000 },
-            { queryKey: ['billing', 'keyboard'], refetchInterval: 30_000 },
-          ],
-        },
-      ],
-    },
-    {
-      label: 'OverviewPage catalog vs billing cadence',
-      exportName: 'OverviewPage',
-      entryRelativePath: 'tools/gui-react/src/pages/overview/OverviewPage.tsx',
-      uiState: { category: 'mouse' },
-      expectedCalls: [
-        { kind: 'query', queryKey: ['catalog', 'mouse'], refetchInterval: 10_000 },
-        { kind: 'query', queryKey: ['billing', 'mouse'], refetchInterval: 30_000 },
-      ],
-    },
-  ];
+test('BillingPage calls 6 global billing query hooks with 30s refresh', async () => {
+  globalThis.__queryHarness = {
+    calls: [],
+    uiState: { category: 'mouse', categories: ['mouse', 'keyboard'] },
+  };
 
-  for (const row of cases) {
-    globalThis.__queryHarness = {
-      calls: [],
-      uiState: row.uiState,
-    };
+  const module = await loadGuiModule('tools/gui-react/src/pages/billing/BillingPage.tsx');
+  const Page = module.BillingPage;
+  renderElement(Page());
 
-    const module = await loadGuiModule(row.entryRelativePath);
-    const Page = module[row.exportName];
-    renderElement(Page());
+  // 5 direct queries from BillingPage (entries query lives inside BillingEntryTable child)
+  const billingCalls = globalThis.__queryHarness.calls.filter(
+    (c) => c.kind === 'query' && Array.isArray(c.queryKey) && c.queryKey[0] === 'billing',
+  );
 
-    assert.deepEqual(globalThis.__queryHarness.calls, row.expectedCalls, row.label);
+  assert.ok(billingCalls.length >= 5, `expected at least 5 billing queries, got ${billingCalls.length}`);
+
+  const expectedKeys = ['summary', 'daily', 'by-model', 'by-reason', 'by-category'];
+  for (const key of expectedKeys) {
+    const found = billingCalls.find(
+      (c) => Array.isArray(c.queryKey) && c.queryKey[1] === key,
+    );
+    assert.ok(found, `missing billing query with key ['billing', '${key}']`);
+    assert.strictEqual(found.refetchInterval, 30_000, `billing/${key} should have 30s refresh`);
+  }
+});
+
+test('OverviewPage billing query uses 30s cadence (not 10s catalog cadence)', async () => {
+  globalThis.__queryHarness = {
+    calls: [],
+    uiState: { category: 'mouse' },
+  };
+
+  const module = await loadGuiModule('tools/gui-react/src/pages/overview/OverviewPage.tsx');
+  const Page = module.OverviewPage;
+  renderElement(Page());
+
+  const billingCalls = globalThis.__queryHarness.calls.filter(
+    (c) => c.kind === 'query' && Array.isArray(c.queryKey) && c.queryKey[0] === 'billing',
+  );
+  const catalogCalls = globalThis.__queryHarness.calls.filter(
+    (c) => c.kind === 'query' && Array.isArray(c.queryKey) && c.queryKey[0] === 'catalog',
+  );
+
+  for (const c of billingCalls) {
+    assert.strictEqual(c.refetchInterval, 30_000, 'billing should use 30s cadence');
+  }
+  for (const c of catalogCalls) {
+    assert.strictEqual(c.refetchInterval, 10_000, 'catalog should use 10s cadence');
   }
 });

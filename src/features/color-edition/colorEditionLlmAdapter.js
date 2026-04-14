@@ -294,7 +294,8 @@ Rules:
 - "match" must be an existing variant_id for updates, null for creates.
 - "reason" should be 1 sentence explaining the decision.
 - "retired" is an array of variant_ids — empty if nothing retired.
-- When in doubt, prefer "update" (preserving existing identity) over "create" (orphaning old data).`;
+- NEVER map a color to an edition or an edition to a color. They are fundamentally different variant types. A standalone color combo (e.g. "olive+black+red") is NOT the same as an edition (e.g. "DOOM: The Dark Ages Edition") even if their atoms overlap. If a color has similar atoms to an edition, they are STILL separate variants — set action to "create" for the color.
+- When in doubt between two variants of the SAME type, prefer "update" (preserving existing identity) over "create" (orphaning old data).`;
 }
 
 export const VARIANT_IDENTITY_CHECK_SPEC = {

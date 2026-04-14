@@ -132,6 +132,7 @@ export async function runColorEditionFinder({
   onStreamChunk = null,
   onQueueWait = null,
   onLlmCallComplete = null,
+  onVariantRenamed = null,
   signal,
 }) {
   productRoot = productRoot || defaultProductRoot();
@@ -200,7 +201,6 @@ export async function runColorEditionFinder({
   let response, usage;
   try {
     ({ result: response, usage } = await callLlm({ colorNames, colors: allColors, product, previousRuns, familyModelCount, ambiguityLevel }));
-    onStageAdvance?.('Validate');
   } catch (err) {
     logger?.error?.('color_edition_finder_llm_failed', {
       product_id: product.product_id,
@@ -332,7 +332,7 @@ export async function runColorEditionFinder({
   // override is provided — test mode without real LLM routing.
   if (hasExistingRegistry && (!_callLlmOverride || _callIdentityCheckOverride)) {
     if (signal?.aborted) throw new DOMException('Operation cancelled', 'AbortError');
-    onStageAdvance?.('Identity Check');
+    onStageAdvance?.('Identity');
 
     const identityPromptOverride = finderStore.getSetting?.('identityCheckPromptOverride') || '';
 
@@ -378,6 +378,8 @@ export async function runColorEditionFinder({
       // (write-once registry). The discovery data is still valid.
     }
   }
+
+  onStageAdvance?.('Validate');
 
   const selected = { colors: gateColors, color_names: colorNamesMap, editions: gateEditions, default_color: gateColors[0] || defaultColor };
 
@@ -466,6 +468,7 @@ export async function runColorEditionFinder({
     }
     if (registryUpdates.length > 0) {
       propagateVariantRenames({ productId: product.product_id, productRoot, registryUpdates, specDb });
+      onVariantRenamed?.({ productId: product.product_id, category: product.category, renames: registryUpdates });
     }
   } else if (!merged.variant_registry || merged.variant_registry.length === 0) {
     // Run 1: Generate fresh registry

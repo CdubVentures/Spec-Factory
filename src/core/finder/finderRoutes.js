@@ -234,9 +234,8 @@ export function createFinderRouteHandler(finderConfig) {
           // WHY: When jsonStrict is off, LLM routing splits into Research + Writer.
           const jsonStrictKey = `_resolved${capitalize(phase)}JsonStrict`;
           const useWriterPhase = config[jsonStrictKey] === false;
-          const stages = useWriterPhase
-            ? ['Research', 'Writer', 'Validate']
-            : ['LLM', 'Validate'];
+          const stages = finderConfig.customStages
+            || (useWriterPhase ? ['Research', 'Writer', 'Validate'] : ['LLM', 'Validate']);
 
           op = registerOperation({
             type: moduleType,
@@ -280,6 +279,17 @@ export function createFinderRouteHandler(finderConfig) {
               onStreamChunk: (delta) => { if (delta.reasoning) batcher.push(delta.reasoning); if (delta.content) batcher.push(delta.content); },
               onQueueWait: (ms) => updateQueueDelay({ id: op.id, queueDelayMs: ms }),
               onLlmCallComplete: (call) => appendLlmCall({ id: op.id, call }),
+              // WHY: When identity check renames variants, PIF data is updated server-side
+              // but the GUI cache is stale. Emit a data-change event so the frontend invalidates.
+              ...(finderConfig.variantRenamedEvent ? {
+                onVariantRenamed: ({ productId: pid, category: cat }) => emitDataChange({
+                  broadcastWs,
+                  event: finderConfig.variantRenamedEvent,
+                  category: cat,
+                  entities: { productIds: [pid] },
+                  meta: { productId: pid },
+                }),
+              } : {}),
             }),
             completeOperation,
             failOperation,
