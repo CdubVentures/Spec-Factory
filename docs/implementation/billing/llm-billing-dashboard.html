@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory — LLM Billing Dashboard Implementation Plan</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --surface-alt: #f1f3f5;
+    --border: #dee2e6;
+    --border-light: #e9ecef;
+    --text: #212529;
+    --text-muted: #6c757d;
+    --accent: #4263eb;
+    --accent-light: #edf2ff;
+    --green: #2b8a3e;
+    --green-bg: #ebfbee;
+    --red: #c92a2a;
+    --red-bg: #fff5f5;
+    --orange: #e67700;
+    --orange-bg: #fff9db;
+    --purple: #7048e8;
+    --purple-bg: #f3f0ff;
+    --teal: #0c8599;
+    --teal-bg: #e6fcf5;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.6; }
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 32px 0; text-align: center; }
+  .header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  .header p { color: var(--text-muted); font-size: 15px; margin-top: 6px; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+  .section-title { font-size: 20px; font-weight: 700; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); display: flex; align-items: center; gap: 10px; }
+  .section-title .num { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+  .card-header { padding: 14px 20px; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-light); }
+  .card-body { padding: 16px 20px; font-size: 14px; }
+  .card-body p { margin-bottom: 10px; }
+  .card-body p:last-child { margin-bottom: 0; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .tag-green { background: var(--green-bg); color: var(--green); }
+  .tag-orange { background: var(--orange-bg); color: var(--orange); }
+  .tag-accent { background: var(--accent-light); color: var(--accent); }
+  .tag-purple { background: var(--purple-bg); color: var(--purple); }
+  .tag-teal { background: var(--teal-bg); color: var(--teal); }
+  .tag-red { background: var(--red-bg); color: var(--red); }
+  .detail-grid { display: grid; grid-template-columns: 180px 1fr; gap: 4px 12px; font-size: 13px; background: var(--surface-alt); padding: 12px 14px; border-radius: 6px; margin-top: 6px; }
+  .detail-grid dt { font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+  .detail-grid dd { color: var(--text); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border-light); }
+  th { background: var(--surface-alt); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
+  tr:last-child td { border-bottom: none; }
+  td code { font-family: var(--mono); font-size: 12px; background: var(--surface-alt); padding: 2px 6px; border-radius: 3px; color: var(--accent); }
+  .flow-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 24px 0; flex-wrap: wrap; }
+  .flow-box { padding: 12px 20px; border-radius: var(--radius); font-weight: 600; font-size: 13px; text-align: center; border: 2px solid; min-width: 140px; }
+  .flow-arrow { font-size: 20px; color: var(--text-muted); }
+  .flow-pass { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+  .flow-neutral { background: var(--surface-alt); border-color: var(--border); color: var(--text); }
+  .flow-accent { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .flow-teal { background: var(--teal-bg); border-color: var(--teal); color: var(--teal); }
+  .flow-purple { background: var(--purple-bg); border-color: var(--purple); color: var(--purple); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 768px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+  pre.json-block { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 6px; padding: 16px 20px; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; overflow-x: auto; color: var(--text); margin-top: 8px; }
+  .step-list { list-style: none; padding: 0; counter-reset: step; }
+  .step-list li { padding: 12px 16px; margin-bottom: 8px; background: var(--surface-alt); border-radius: 6px; border-left: 3px solid var(--accent); font-size: 13.5px; counter-increment: step; }
+  .step-list li::before { content: counter(step); display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: white; font-size: 11px; font-weight: 700; margin-right: 10px; }
+  .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 16px 0; }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; }
+  .kpi .value { font-size: 28px; font-weight: 700; color: var(--accent); }
+  .kpi .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+  @media (max-width: 900px) { .kpi-row { grid-template-columns: repeat(3, 1fr); } }
+  .chart-placeholder { background: var(--surface-alt); border: 2px dashed var(--border); border-radius: var(--radius); padding: 40px; text-align: center; color: var(--text-muted); font-size: 13px; margin: 12px 0; }
+  .filter-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 12px 0; padding: 10px 14px; background: var(--surface-alt); border-radius: 6px; font-size: 13px; }
+  .filter-bar .filter-label { font-weight: 600; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .filter-chip { padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); font-size: 12px; cursor: pointer; }
+  .filter-chip.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .status-exists { background: var(--green-bg); color: var(--green); }
+  .status-new { background: var(--accent-light); color: var(--accent); }
+  .status-upgrade { background: var(--orange-bg); color: var(--orange); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>LLM Billing Dashboard</h1>
+  <p>Implementation Plan &mdash; Centralized cost analytics, token tracking, and model usage across all LLM operations</p>
+</div>
+
+<div class="container">
+
+<!-- ────────────────────────────────────────────────────────────── -->
+<h2 class="section-title"><span class="num">0</span> Current State &amp; Foundation</h2>
+
+<div class="two-col">
+  <div class="card">
+    <div class="card-header"><span class="status-badge status-exists">EXISTS</span> Data Collection Layer</div>
+    <div class="card-body">
+      <dl class="detail-grid">
+        <dt>Central Capture</dt>
+        <dd><code>createPhaseCallLlm</code> &mdash; every LLM call returns <code>{ result, usage }</code></dd>
+        <dt>SQL Table</dt>
+        <dd><code>billing_entries</code> in global <code>app.sqlite</code></dd>
+        <dt>JSON Backup</dt>
+        <dd><code>.workspace/global/billing/ledger/{month}.jsonl</code> (durable memory &mdash; rebuild source)</dd>
+        <dt>Fields per Entry</dt>
+        <dd>ts, provider, model, category, product_id, run_id, prompt_tokens, completion_tokens, cached_prompt_tokens, cost_usd, reason</dd>
+        <dt>Store API</dt>
+        <dd><code>appDb.js</code> &mdash; insertBillingEntry, getBillingRollup, getBillingSnapshot, getBillingEntriesForMonth, insertBillingEntriesBatch, countBillingEntries</dd>
+        <dt>Dual-Write</dt>
+        <dd><code>costLedger.appendCostLedgerEntry()</code> writes to both SQL (appDb) and JSONL simultaneously</dd>
+        <dt>Rate Engine</dt>
+        <dd><code>costRates.js</code> + <code>modelPricingCatalog.js</code> (30+ models)</dd>
+      </dl>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="status-badge status-exists">EXISTS</span> Frontend Baseline</div>
+    <div class="card-body">
+      <dl class="detail-grid">
+        <dt>Existing Page</dt>
+        <dd><code>/billing</code> &mdash; basic MetricRow + BarChart + model list</dd>
+        <dt>Chart Library</dt>
+        <dd><code>recharts@2.15</code> (BarChart, PieChart available)</dd>
+        <dt>Shared UI</dt>
+        <dd>MetricRow, MetricCard, DataTable, Spinner, TabStrip</dd>
+        <dt>Formatting</dt>
+        <dd><code>usd()</code>, <code>compactNumber()</code>, <code>pct()</code></dd>
+        <dt>Data Fetching</dt>
+        <dd>React Query &mdash; <code>api.get('/billing/{cat}/monthly')</code></dd>
+        <dt>Routing</dt>
+        <dd><code>pageRegistry.ts</code> &mdash; O(1) page addition</dd>
+      </dl>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">LLM Call Sources &mdash; All Centralized via <code>createPhaseCallLlm</code></div>
+  <div class="card-body">
+    <table>
+      <thead>
+        <tr><th>Source</th><th>Reason Key</th><th>Module</th><th>Phase</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>NeedSet Search Planner</td><td><code>needset_search_planner</code></td><td>Pipeline</td><td>needset</td></tr>
+        <tr><td>Brand Resolver</td><td><code>brand_resolution</code></td><td>Pipeline</td><td>brandResolver</td></tr>
+        <tr><td>Query Enhancer</td><td><code>search_planner_enhance</code></td><td>Pipeline</td><td>searchPlanner</td></tr>
+        <tr><td>SERP URL Selector</td><td><code>serp_url_selector</code></td><td>Pipeline</td><td>serpSelector</td></tr>
+        <tr><td>Product Image Finder</td><td><code>product_image_finding</code></td><td>PIF</td><td>imageFinder</td></tr>
+        <tr><td>Image View Evaluator</td><td><code>image_view_evaluation</code></td><td>PIF Eval</td><td>imageEvaluator</td></tr>
+        <tr><td>Image Hero Selection</td><td><code>image_hero_selection</code></td><td>PIF Eval</td><td>imageEvaluator</td></tr>
+        <tr><td>Color/Edition Finder</td><td><code>color_edition_finding</code></td><td>CEF</td><td>colorFinder</td></tr>
+        <tr><td>Enum Consistency</td><td><code>validate_enum_consistency</code></td><td>Validator</td><td>validate</td></tr>
+        <tr><td>Component Match</td><td><code>validate_component_matches</code></td><td>Validator</td><td>validate</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ────────────────────────────────────────────────────────────── -->
+<h2 class="section-title"><span class="num">1</span> Data Flow Architecture</h2>
+
+<div class="flow-row">
+  <div class="flow-box flow-accent">createPhaseCallLlm<br><small>captures usage</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-teal">costLedger<br><small>dual-write: SQL + JSONL</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-purple">appDb<br><small>global billing queries</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-neutral">API Endpoints<br><small>/api/v1/billing/*</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-pass">React Dashboard<br><small>recharts + DataTable</small></div>
+</div>
+
+<div class="card">
+  <div class="card-header">Global <code>billing_entries</code> Schema in <code>app.sqlite</code> <span class="tag tag-green">COMPLETE</span></div>
+  <div class="card-body">
+<pre class="json-block">billing_entries
+  id            INTEGER PRIMARY KEY
+  ts            TEXT        -- ISO timestamp
+  month         TEXT        -- "YYYY-MM" (indexed)
+  day           TEXT        -- "YYYY-MM-DD" (indexed)
+  provider      TEXT        -- "openai", "anthropic", "google", "lab-openai"
+  model         TEXT        -- "gpt-5", "claude-opus-4-6", "gemini-2.5-flash-lite"
+  category      TEXT        -- "mouse", "monitor", "keyboard"
+  product_id    TEXT        -- (indexed)
+  run_id        TEXT        -- pipeline run correlation
+  round         INTEGER     -- round within run
+  prompt_tokens INTEGER
+  completion_tokens INTEGER
+  cached_prompt_tokens INTEGER
+  total_tokens  INTEGER
+  cost_usd      REAL
+  reason        TEXT        -- "search_planner_enhance", "serp_url_selector", etc.
+  estimated_usage INTEGER   -- 0/1 boolean
+  meta          TEXT        -- JSON blob for extensibility</pre>
+    <p style="margin-top:10px;"><span class="tag tag-green">READY</span> Schema lives in <code>appDbSchema.js</code>. Billing methods on <code>AppDb</code> class in <code>appDb.js</code>. All 10 call sources write via <code>costLedger.appendCostLedgerEntry({ config, appDb, entry })</code>. Dual-write: SQL to <code>app.sqlite</code> + JSONL to <code>.workspace/global/billing/ledger/{month}.jsonl</code>. Rebuild contract: on bootstrap, <code>seedBillingFromJsonl()</code> restores from JSONL if table is empty.</p>
+  </div>
+</div>
+
+<!-- ────────────────────────────────────────────────────────────── -->
+<h2 class="section-title"><span class="num">2</span> New API Endpoints</h2>
+
+<div class="card">
+  <div class="card-header"><span class="status-badge status-upgrade">UPGRADE</span> Enhanced Billing API</div>
+  <div class="card-body">
+    <p>The existing <code>GET /billing/{category}/monthly</code> returns basic rollup. New endpoints add cross-category aggregation, time-series, and per-call drill-down.</p>
+    <table>
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Purpose</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="tag tag-accent">GET</span></td>
+          <td><code>/billing/global/summary</code></td>
+          <td>KPI totals across all categories for current month</td>
+          <td><span class="tag tag-orange">NEW</span></td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-accent">GET</span></td>
+          <td><code>/billing/global/daily?months=1</code></td>
+          <td>Daily time-series (cost, calls, tokens) for charts</td>
+          <td><span class="tag tag-orange">NEW</span></td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-accent">GET</span></td>
+          <td><code>/billing/global/by-model</code></td>
+          <td>Cost/calls/tokens grouped by provider:model</td>
+          <td><span class="tag tag-orange">NEW</span></td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-accent">GET</span></td>
+          <td><code>/billing/global/by-reason</code></td>
+          <td>Cost/calls/tokens grouped by reason (call type)</td>
+          <td><span class="tag tag-orange">NEW</span></td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-accent">GET</span></td>
+          <td><code>/billing/global/by-category</code></td>
+          <td>Cost/calls/tokens grouped by product category</td>
+          <td><span class="tag tag-orange">NEW</span></td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-accent">GET</span></td>
+          <td><code>/billing/global/entries?limit=100&offset=0</code></td>
+          <td>Paginated raw entries for drill-down DataTable</td>
+          <td><span class="tag tag-orange">NEW</span></td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-accent">GET</span></td>
+          <td><code>/billing/{category}/monthly</code></td>
+          <td>Per-category monthly rollup (existing)</td>
+          <td><span class="tag tag-green">EXISTS</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Backend Implementation</div>
+  <div class="card-body">
+    <dl class="detail-grid">
+      <dt>Route File</dt>
+      <dd><code>src/features/indexing/api/queueBillingLearningRoutes.js</code> (extend existing)</dd>
+      <dt>Store Queries</dt>
+      <dd><code>src/db/appDb.js</code> &mdash; add global aggregation methods (getBillingRollup already supports cross-category)</dd>
+      <dt>Query Pattern</dt>
+      <dd>All aggregations are SQL <code>GROUP BY</code> on <code>billing_entries</code> in global <code>app.sqlite</code> &mdash; no new tables</dd>
+      <dt>Caching</dt>
+      <dd>React Query <code>staleTime: 30s</code> on the frontend. No server cache needed for SQLite.</dd>
+    </dl>
+<pre class="json-block">// Example: appDb.getBillingRollup(month) — already returns global totals
+SELECT
+  COUNT(*) as calls,
+  SUM(cost_usd) as cost_usd,
+  SUM(prompt_tokens) as prompt_tokens,
+  SUM(completion_tokens) as completion_tokens,
+  SUM(cached_prompt_tokens) as cached_prompt_tokens,
+  COUNT(DISTINCT model) as models_used,
+  COUNT(DISTINCT category) as categories
+FROM billing_entries
+WHERE month = ?</pre>
+  </div>
+</div>
+
+<!-- ────────────────────────────────────────────────────────────── -->
+<h2 class="section-title"><span class="num">3</span> Dashboard Layout &mdash; UI Wireframe</h2>
+
+<div class="card">
+  <div class="card-header">KPI Header Row</div>
+  <div class="card-body">
+    <p>Top-level metrics using existing <code>MetricRow</code> component. Always visible.</p>
+    <div class="kpi-row">
+      <div class="kpi"><div class="value">$12.47</div><div class="label">Total Cost (Month)</div></div>
+      <div class="kpi"><div class="value">1,284</div><div class="label">LLM Calls</div></div>
+      <div class="kpi"><div class="value">2.4M</div><div class="label">Input Tokens</div></div>
+      <div class="kpi"><div class="value">342K</div><div class="label">Output Tokens</div></div>
+      <div class="kpi"><div class="value">$0.0097</div><div class="label">Avg Cost/Call</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Filter Bar</div>
+  <div class="card-body">
+    <p>Global filters that apply to all visualizations below. Persisted via <code>tabStore</code>.</p>
+    <div class="filter-bar">
+      <span class="filter-label">Category</span>
+      <span class="filter-chip active">All</span>
+      <span class="filter-chip">Mouse</span>
+      <span class="filter-chip">Monitor</span>
+      <span class="filter-chip">Keyboard</span>
+      <span class="filter-chip">Mousepad</span>
+    </div>
+    <div class="filter-bar">
+      <span class="filter-label">Call Type</span>
+      <span class="filter-chip active">All</span>
+      <span class="filter-chip">NeedSet</span>
+      <span class="filter-chip">Brand</span>
+      <span class="filter-chip">Search Planner</span>
+      <span class="filter-chip">SERP Selector</span>
+      <span class="filter-chip">Image Finder</span>
+      <span class="filter-chip">Eval</span>
+      <span class="filter-chip">CEF</span>
+      <span class="filter-chip">Validator</span>
+    </div>
+    <div class="filter-bar">
+      <span class="filter-label">Model</span>
+      <span class="filter-chip active">All</span>
+      <span class="filter-chip">gemini-2.5-flash-lite</span>
+      <span class="filter-chip">gpt-4o</span>
+      <span class="filter-chip">claude-sonnet-4-6</span>
+    </div>
+    <div class="filter-bar">
+      <span class="filter-label">Period</span>
+      <span class="filter-chip">7 days</span>
+      <span class="filter-chip active">30 days</span>
+      <span class="filter-chip">90 days</span>
+      <span class="filter-chip">All time</span>
+    </div>
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="card">
+    <div class="card-header">Daily Cost Trend <span class="tag tag-accent">BAR CHART</span></div>
+    <div class="card-body">
+      <div class="chart-placeholder">
+        Recharts <code>&lt;BarChart&gt;</code> &mdash; stacked bars by call type<br>
+        X: day, Y: cost_usd<br>
+        Tooltip: day, total cost, calls, tokens<br>
+        <em>Existing pattern from BillingPage.tsx</em>
+      </div>
+      <dl class="detail-grid">
+        <dt>Data Source</dt>
+        <dd><code>GET /billing/global/daily</code></dd>
+        <dt>Stacking</dt>
+        <dd>Stack bars by <code>reason</code> (call type) with distinct colors per type</dd>
+        <dt>Interaction</dt>
+        <dd>Click day to drill down to entries for that day</dd>
+      </dl>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">Cost by Call Type <span class="tag tag-purple">PIE CHART</span></div>
+    <div class="card-body">
+      <div class="chart-placeholder">
+        Recharts <code>&lt;PieChart&gt;</code> &mdash; donut with center total<br>
+        Slices: one per reason key<br>
+        Colors: mapped from call type to semantic palette<br>
+        <em>Labels: percentage + absolute cost</em>
+      </div>
+      <dl class="detail-grid">
+        <dt>Data Source</dt>
+        <dd><code>GET /billing/global/by-reason</code></dd>
+        <dt>Center Label</dt>
+        <dd>Total cost for filtered period</dd>
+        <dt>Hover</dt>
+        <dd>Show calls count + token breakdown per type</dd>
+      </dl>
+    </div>
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="card">
+    <div class="card-header">Cost by Model <span class="tag tag-teal">HORIZONTAL BAR</span></div>
+    <div class="card-body">
+      <div class="chart-placeholder">
+        Recharts <code>&lt;BarChart layout="vertical"&gt;</code><br>
+        Y: model name, X: cost_usd<br>
+        Sorted descending by cost<br>
+        <em>Secondary bar for call count overlay</em>
+      </div>
+      <dl class="detail-grid">
+        <dt>Data Source</dt>
+        <dd><code>GET /billing/global/by-model</code></dd>
+        <dt>Bars</dt>
+        <dd>Primary: cost (accent), Secondary: calls (muted)</dd>
+        <dt>Extra</dt>
+        <dd>Show avg tokens/call as inline metric</dd>
+      </dl>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">Cost by Category <span class="tag tag-green">BAR CHART</span></div>
+    <div class="card-body">
+      <div class="chart-placeholder">
+        Recharts <code>&lt;BarChart&gt;</code><br>
+        X: category, Y: cost_usd<br>
+        Stacked by call type within each category<br>
+        <em>Shows which categories are most expensive</em>
+      </div>
+      <dl class="detail-grid">
+        <dt>Data Source</dt>
+        <dd><code>GET /billing/global/by-category</code></dd>
+        <dt>Stacking</dt>
+        <dd>Same call-type color scheme as daily chart</dd>
+        <dt>Insight</dt>
+        <dd>Click category to filter dashboard</dd>
+      </dl>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Token Usage Trend <span class="tag tag-accent">AREA CHART</span></div>
+  <div class="card-body">
+    <div class="chart-placeholder">
+      Recharts <code>&lt;AreaChart&gt;</code> &mdash; dual area (input vs output tokens)<br>
+      X: day, Y: token count<br>
+      Two areas: prompt_tokens (blue), completion_tokens (purple)<br>
+      <em>Shows input/output ratio over time</em>
+    </div>
+    <dl class="detail-grid">
+      <dt>Data Source</dt>
+      <dd><code>GET /billing/global/daily</code> (same endpoint, different fields)</dd>
+      <dt>Insight</dt>
+      <dd>Spot days with unusually high token usage &mdash; expensive prompts or verbose outputs</dd>
+    </dl>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Raw Entries Table <span class="tag tag-accent">DATA TABLE</span></div>
+  <div class="card-body">
+    <p>Paginated, sortable, searchable table of individual billing entries using existing <code>DataTable</code> component.</p>
+    <table>
+      <thead>
+        <tr><th>Timestamp</th><th>Model</th><th>Category</th><th>Call Type</th><th>In Tokens</th><th>Out Tokens</th><th>Cost</th><th>Product</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>4:58:54 PM</code></td>
+          <td>gemini-2.5-flash-lite</td>
+          <td>mouse</td>
+          <td><span class="tag tag-teal">SEARCH_PLANNER</span></td>
+          <td>2,004</td>
+          <td>202</td>
+          <td>$0.0002</td>
+          <td>Corsair M75 Wireless</td>
+        </tr>
+        <tr>
+          <td><code>4:58:56 PM</code></td>
+          <td>gemini-2.5-flash-lite</td>
+          <td>mouse</td>
+          <td><span class="tag tag-purple">SERP_SELECTOR</span></td>
+          <td>2,183</td>
+          <td>67</td>
+          <td>$0.0002</td>
+          <td>Corsair M75 Wireless</td>
+        </tr>
+      </tbody>
+    </table>
+    <dl class="detail-grid" style="margin-top: 12px;">
+      <dt>Data Source</dt>
+      <dd><code>GET /billing/global/entries?limit=100&offset=0</code></dd>
+      <dt>Features</dt>
+      <dd>Sort by any column, search by product/model, pagination, CSV export</dd>
+      <dt>Component</dt>
+      <dd>Reuse existing <code>DataTable</code> from <code>shared/ui/data-display/</code></dd>
+    </dl>
+  </div>
+</div>
+
+<!-- ────────────────────────────────────────────────────────────── -->
+<h2 class="section-title"><span class="num">4</span> Implementation Phases</h2>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-green">DONE</span> Phase 0: Global Billing Migration</div>
+  <div class="card-body">
+    <p>Completed 2026-04-13. Billing data migrated from per-category <code>specDb</code> (4 sharded SQLite files) to one global <code>billing_entries</code> table in <code>app.sqlite</code>.</p>
+    <ol class="step-list">
+      <li>Added <code>billing_entries</code> table + methods to <code>AppDb</code> class (<code>appDb.js</code>, <code>appDbSchema.js</code>)</li>
+      <li>Restored dual-write in <code>costLedger.js</code>: SQL to <code>app.sqlite</code> + JSONL to <code>.workspace/global/billing/ledger/{month}.jsonl</code></li>
+      <li>Rewired all callers (pipeline, health check, API routes, CLI) from <code>specDb</code> &rarr; <code>appDb</code></li>
+      <li>Removed billing from <code>specDb</code>: schema, statements, store, delegation methods</li>
+      <li>Added rebuild contract in <code>appDbSeed.js</code>: <code>seedBillingFromJsonl()</code> restores from JSONL if table is empty</li>
+      <li>Updated migration command to target <code>appDb</code></li>
+    </ol>
+    <dl class="detail-grid">
+      <dt>Files Changed</dt>
+      <dd>22 modified, 2 deleted, 1 created &mdash; 136 tests, all green</dd>
+      <dt>Key Architectural Change</dt>
+      <dd>Billing is now cross-category by default. <code>appDb.getBillingRollup(month, category?)</code> supports optional category filter.</dd>
+      <dt>Deleted</dt>
+      <dd><code>src/db/stores/billingStore.js</code> (logic moved to <code>appDb.js</code>)</dd>
+    </dl>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-green">DONE</span> Phase 1: Backend API &mdash; Global Billing Endpoints</div>
+  <div class="card-body">
+    <p>Completed 2026-04-13. 6 global endpoints + 2 new appDb query methods + route context wiring fix.</p>
+    <ol class="step-list">
+      <li>Fixed route context wiring &mdash; <code>appDb</code> was missing from <code>queueBillingLearningRouteContext</code></li>
+      <li>Added <code>getGlobalDaily({ days })</code> to <code>appDb.js</code> &mdash; daily time-series + reason breakdown for stacked charts</li>
+      <li>Added <code>getGlobalEntries({ limit, offset, category, model, reason })</code> to <code>appDb.js</code> &mdash; paginated, filtered raw entries</li>
+      <li>Registered 6 route handlers: <code>/billing/global/summary</code>, <code>/daily</code>, <code>/by-model</code>, <code>/by-reason</code>, <code>/by-category</code>, <code>/entries</code></li>
+      <li>4 of 6 handlers are thin wrappers around existing <code>getBillingRollup()</code> (summary, by-model, by-reason, by-category)</li>
+    </ol>
+    <dl class="detail-grid">
+      <dt>Files Changed</dt>
+      <dd>4 modified, 1 created &mdash; 104 tests, all green</dd>
+      <dt>Route Tests</dt>
+      <dd><code>src/features/indexing/api/tests/billingGlobalRoutes.test.js</code> (8 tests)</dd>
+      <dt>Query Tests</dt>
+      <dd><code>src/db/tests/appDb.test.js</code> (12 new billing tests: getGlobalDaily + getGlobalEntries)</dd>
+    </dl>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Phase 2: Upgrade Existing <code>/billing</code> Page</div>
+  <div class="card-body">
+    <p><span class="tag tag-orange">UPGRADE</span> Enhance the existing <code>BillingPage.tsx</code> at <code>/billing</code>. No new route, no new page. The existing page already has MetricRow, daily BarChart, model list, and category toggle (<code>all</code> vs selected). We add to it.</p>
+    <ol class="step-list">
+      <li>Add filter bar component (call type, model, period) below KPI row &mdash; filters passed as query params to new API endpoints</li>
+      <li>Add 5th KPI: <strong>Avg Cost/Call</strong> (derived from totals)</li>
+      <li>Replace flat daily BarChart with <strong>stacked bar by reason</strong> &mdash; bound to <code>/billing/global/daily</code></li>
+      <li>Add <strong>cost by call type PieChart</strong> (donut) &mdash; bound to <code>/billing/global/by-reason</code></li>
+      <li>Replace flat model list with <strong>horizontal BarChart</strong> &mdash; bound to <code>/billing/global/by-model</code></li>
+      <li>Add <strong>token usage AreaChart</strong> (input vs output trend) &mdash; derived from daily data</li>
+      <li>Add <strong>raw entries DataTable</strong> with pagination, sort, search &mdash; bound to <code>/billing/global/entries</code></li>
+      <li>Remove <strong>Learning Artifacts</strong> section (move to storage page if needed)</li>
+      <li>Refactor <code>AllCategoriesBilling</code> to use new global endpoints instead of N parallel per-category queries</li>
+    </ol>
+    <dl class="detail-grid">
+      <dt>File</dt>
+      <dd><code>tools/gui-react/src/pages/billing/BillingPage.tsx</code> (existing, rewrite)</dd>
+      <dt>Chart Library</dt>
+      <dd><code>recharts</code> (already installed) &mdash; BarChart, PieChart, AreaChart, ResponsiveContainer</dd>
+      <dt>Shared Components</dt>
+      <dd>MetricRow, DataTable, Spinner, TabStrip (all exist)</dd>
+      <dt>No new deps</dt>
+      <dd>Everything needed is already in <code>package.json</code></dd>
+    </dl>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Phase 3: Call Type Color Registry</div>
+  <div class="card-body">
+    <p>Single source of truth for mapping <code>reason</code> keys to display labels and chart colors. Used by all visualizations.</p>
+<pre class="json-block">// src/shared/billingCallTypeRegistry.js (new, ~30 lines)
+export const CALL_TYPE_REGISTRY = Object.freeze([
+  { reason: 'needset_search_planner',     label: 'NeedSet',         color: '#4263eb' },
+  { reason: 'brand_resolution',           label: 'Brand',           color: '#0c8599' },
+  { reason: 'search_planner_enhance',     label: 'Search Planner',  color: '#7048e8' },
+  { reason: 'serp_url_selector',          label: 'SERP Selector',   color: '#2b8a3e' },
+  { reason: 'product_image_finding',      label: 'Image Finder',    color: '#e67700' },
+  { reason: 'image_view_evaluation',      label: 'View Eval',       color: '#c92a2a' },
+  { reason: 'image_hero_selection',       label: 'Hero Eval',       color: '#d6336c' },
+  { reason: 'color_edition_finding',      label: 'CEF',             color: '#5c7cfa' },
+  { reason: 'validate_enum_consistency',  label: 'Enum Validator',  color: '#ae3ec9' },
+  { reason: 'validate_component_matches', label: 'Component Match', color: '#f76707' },
+]);</pre>
+  </div>
+</div>
+
+<!-- ────────────────────────────────────────────────────────────── -->
+<h2 class="section-title"><span class="num">5</span> File Inventory</h2>
+
+<div class="card">
+  <div class="card-body">
+    <table>
+      <thead>
+        <tr><th>#</th><th>File</th><th>Change</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="4" style="background: var(--green-bg); font-weight: 600; color: var(--green);">Phase 0 &mdash; Global Migration (COMPLETE)</td></tr>
+        <tr><td>0a</td><td><code>src/db/appDbSchema.js</code></td><td>Added billing_entries DDL</td><td><span class="tag tag-green">DONE</span></td></tr>
+        <tr><td>0b</td><td><code>src/db/appDb.js</code></td><td>Added billing methods (insert, rollup, snapshot, batch, count)</td><td><span class="tag tag-green">DONE</span></td></tr>
+        <tr><td>0c</td><td><code>src/billing/costLedger.js</code></td><td>Rewired specDb&rarr;appDb, restored JSONL dual-write</td><td><span class="tag tag-green">DONE</span></td></tr>
+        <tr><td>0d</td><td><code>src/db/appDbSeed.js</code></td><td>Added seedBillingFromJsonl() rebuild contract</td><td><span class="tag tag-green">DONE</span></td></tr>
+        <tr><td>0e</td><td><code>src/db/stores/billingStore.js</code></td><td>DELETED &mdash; logic moved to appDb.js</td><td><span class="tag tag-red">DELETED</span></td></tr>
+        <tr><td colspan="4" style="background: var(--accent-light); font-weight: 600; color: var(--accent);">Phase 1 &mdash; Backend API</td></tr>
+        <tr><td>1a</td><td><code>src/db/appDb.js</code></td><td>Add getGlobalDaily, getGlobalEntries (paginated)</td><td><span class="tag tag-orange">EXTEND</span></td></tr>
+        <tr><td>1b</td><td><code>src/db/tests/appDb.test.js</code></td><td>Tests for new query methods</td><td><span class="tag tag-orange">EXTEND</span></td></tr>
+        <tr><td>1c</td><td><code>src/features/indexing/api/queueBillingLearningRoutes.js</code></td><td>Add /billing/global/* routes</td><td><span class="tag tag-orange">EXTEND</span></td></tr>
+        <tr><td colspan="4" style="background: var(--orange-bg); font-weight: 600; color: var(--orange);">Phase 2 &mdash; Frontend Dashboard</td></tr>
+        <tr><td>2a</td><td><code>tools/gui-react/src/pages/billing/BillingPage.tsx</code></td><td>Upgrade: filters, charts, DataTable, stacked bars</td><td><span class="tag tag-orange">REWRITE</span></td></tr>
+        <tr><td>2b</td><td><code>tools/gui-react/src/pages/billing/components/</code></td><td>FilterBar, chart section components</td><td><span class="tag tag-accent">NEW</span></td></tr>
+        <tr><td colspan="4" style="background: var(--purple-bg); font-weight: 600; color: var(--purple);">Phase 3 &mdash; Call Type Registry</td></tr>
+        <tr><td>3a</td><td><code>src/shared/billingCallTypeRegistry.js</code></td><td>Call type &rarr; label + color mapping</td><td><span class="tag tag-accent">NEW</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ────────────────────────────────────────────────────────────── -->
+<h2 class="section-title"><span class="num">6</span> Design Constraints</h2>
+
+<div class="three-col">
+  <div class="card">
+    <div class="card-header">Zero-Drift UI</div>
+    <div class="card-body">
+      <p>All colors via semantic tokens. No hardcoded hex in components. Chart colors from <code>CALL_TYPE_REGISTRY</code> only.</p>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">CQRS / Rebuild</div>
+    <div class="card-body">
+      <p><code>billing_entries</code> in <code>app.sqlite</code> is fully rebuildable from JSONL ledger. Delete DB &rarr; <code>seedBillingFromJsonl()</code> re-ingests <code>.workspace/global/billing/ledger/*.jsonl</code> on next bootstrap.</p>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">No New Deps</div>
+    <div class="card-body">
+      <p><code>recharts</code>, <code>@tanstack/react-table</code>, <code>@tanstack/react-query</code> all already installed. Zero new packages.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">O(1) Extensibility</div>
+  <div class="card-body">
+    <p>Adding a new LLM call source requires:</p>
+    <ol class="step-list">
+      <li>Create adapter via <code>createPhaseCallLlm</code> (usage captured automatically)</li>
+      <li>Add one row to <code>CALL_TYPE_REGISTRY</code> (label + color)</li>
+    </ol>
+    <p style="margin-top: 10px;">Dashboard, charts, filters, and DataTable all derive from the registry. <strong>Zero component changes.</strong></p>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

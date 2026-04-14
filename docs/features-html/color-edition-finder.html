@@ -387,9 +387,12 @@
       <tr><td>2</td><td><strong>Prompt Build</strong></td><td><code>buildColorEditionFinderPrompt()</code> constructs system prompt with product identity, known inputs from prior runs, color/edition output rules, and identity warning blocks.</td></tr>
       <tr><td>3</td><td><strong>LLM Call</strong></td><td>Call LLM via <code>createColorEditionFinderCallLlm()</code>. Supports two-phase dispatch (research + writer) when <code>jsonStrict=false</code>. Streams reasoning tokens via <code>onStreamChunk</code>.</td></tr>
       <tr><td>4</td><td><strong>Candidate Gate</strong></td><td>5-step validation pipeline (see Section 6). All-or-nothing: any hard reject fails the entire run.</td></tr>
-      <tr><td>5</td><td><strong>JSON Persist</strong></td><td><code>mergeColorEditionDiscovery()</code> appends run to <code>.workspace/products/{pid}/color_edition.json</code>. Updates selected, sets cooldown.</td></tr>
-      <tr><td>6</td><td><strong>SQL Persist</strong></td><td>Insert run row + upsert summary row into specDb (frontend projection).</td></tr>
-      <tr><td>7</td><td><strong>Return</strong></td><td><code>{ colors, editions, default_color, fallbackUsed, rejected }</code></td></tr>
+      <tr><td>5</td><td><strong>Identity Check (Run 2+)</strong></td><td>If variant registry exists, fire second LLM call (<code>variant_identity_check</code>). Compares new discoveries against existing variants. Decides: update (same variant, renamed) / create (genuinely new) / retire (discontinued).</td></tr>
+      <tr><td>6</td><td><strong>JSON Persist</strong></td><td><code>mergeColorEditionDiscovery()</code> appends run to <code>.workspace/products/{pid}/color_edition.json</code>. Updates selected, sets cooldown.</td></tr>
+      <tr><td>7</td><td><strong>Variant Registry Update</strong></td><td>Run 1: <code>buildVariantRegistry()</code> generates fresh registry with stable <code>v_&lt;8-hex&gt;</code> hashes. Run 2+: <code>applyIdentityMappings()</code> updates/creates/retires entries. Written to JSON + SQL.</td></tr>
+      <tr><td>8</td><td><strong>Propagate Renames</strong></td><td>If any variant key changed, <code>propagateVariantRenames()</code> updates PIF images, carousel slots, eval records, and run responses. JSON + SQL synced immediately.</td></tr>
+      <tr><td>9</td><td><strong>SQL Persist</strong></td><td>Insert run row + upsert summary row into specDb (frontend projection).</td></tr>
+      <tr><td>10</td><td><strong>Return</strong></td><td><code>{ colors, editions, default_color, fallbackUsed, rejected }</code></td></tr>
     </tbody>
   </table>
 </div>
@@ -724,9 +727,91 @@
 </div>
 </div>
 
+<!-- 15. Variant Registry -->
+<div class="section-title"><span class="num">15</span> Variant Registry &amp; Identity Check</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--teal-bg);">Stable Variant Identity (variant_id)</div>
+<div class="card-body">
+  <p>Each variant (color or edition) gets a permanent hash (<code>v_&lt;8-hex&gt;</code>) assigned on first CEF publish. The hash never changes even if the variant's name, color atoms, or edition details are updated in later runs.</p>
+  <dl class="detail-grid">
+    <dt>Hash function</dt><dd><code>generateVariantId(productId, variantKey)</code> &mdash; SHA-256 of <code>"{productId}:{variantKey}"</code>, first 8 hex chars, prefixed <code>v_</code></dd>
+    <dt>Deterministic</dt><dd>Same product + same key always produces the same hash. Product-scoped (no cross-product collisions).</dd>
+    <dt>Registry location</dt><dd><code>variant_registry[]</code> array on <code>color_edition.json</code> (top-level, not inside <code>selected</code>). Projected to SQL <code>color_edition_finder.variant_registry</code> column.</dd>
+    <dt>Entry fields</dt><dd><code>variant_id, variant_key, variant_type, variant_label, color_atoms[], edition_slug, edition_display_name, created_at, updated_at?, retired?</code></dd>
+    <dt>Builder</dt><dd><code>buildVariantRegistry({ productId, colors, colorNames, editions })</code> &mdash; mirrors <code>buildVariantList</code> logic but adds stable IDs.</dd>
+    <dt>Backfill</dt><dd><code>backfillVariantRegistry({ specDb, productRoot })</code> &mdash; one-time scan for products missing a registry. Idempotent.</dd>
+  </dl>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--purple-bg);">Identity Check (Run 2+ &mdash; Second LLM Call)</div>
+<div class="card-body">
+  <p>Every CEF run after the first fires a <strong>second LLM call</strong> (<code>variant_identity_check</code> reason, same <code>colorFinder</code> phase) that compares new discoveries against the existing variant registry.</p>
+
+  <div class="flow-row" style="margin:16px 0;">
+    <div class="flow-box flow-teal" style="min-width:120px;">LLM Call 1<br><small>discovery</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box flow-repair" style="min-width:120px;">Candidate Gate<br><small>validate + repair</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box flow-accent" style="min-width:120px;">LLM Call 2<br><small>identity check</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box flow-pass" style="min-width:120px;">Apply Mappings<br><small>update / create / retire</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box flow-neutral" style="min-width:120px;">Propagate<br><small>to PIF data</small></div>
+  </div>
+
+  <table>
+    <thead><tr><th>Decision</th><th>Action</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="tag tag-green">Update</span></td>
+        <td>Same variant, renamed key &rarr; preserve <code>variant_id</code>, update mutable fields (key, label, atoms)</td>
+        <td><code>ocean-blue</code> &rarr; <code>deep-ocean-blue</code> (refined name)</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-accent">Create</span></td>
+        <td>Genuinely new variant &rarr; generate new <code>variant_id</code></td>
+        <td>New color <code>crimson-red</code> never seen before</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-red">Retire</span></td>
+        <td>Variant no longer in discoveries &rarr; mark <code>retired: true</code> (never removed)</td>
+        <td>Discontinued limited edition</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <dl class="detail-grid" style="margin-top:12px;">
+    <dt>Response schema</dt><dd><code>{ mappings: [{ new_key, match, action, reason }], retired: [variant_id] }</code></dd>
+    <dt>Prompt builder</dt><dd><code>buildVariantIdentityCheckPrompt()</code> &mdash; lists existing registry + new discoveries, asks LLM to match/create/retire</dd>
+    <dt>Apply function</dt><dd><code>applyIdentityMappings()</code> &mdash; updates matched entries (preserving hashes), creates new entries, marks retired</dd>
+    <dt>Failure handling</dt><dd>If identity check LLM call fails, falls back to write-once behavior (no registry modification). Discovery data still valid.</dd>
+    <dt>Prompt nesting</dt><dd>Run 2+: <code>run.prompt = { discovery: {...}, identity_check: {...} }</code>. Run 1: flat <code>{ system, user }</code>.</dd>
+    <dt>LLM Config</dt><dd>Both prompts visible side-by-side in the Color &amp; Edition Finder tab of LLM Config.</dd>
+    <dt>Prompt override</dt><dd><code>identityCheckPromptOverride</code> setting in CEF module settings (per-category).</dd>
+  </dl>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--green-bg);">Propagation to PIF (Cross-Feature)</div>
+<div class="card-body">
+  <p>When the identity check renames a variant key (action: <code>update</code>, old key &ne; new key), CEF automatically calls <code>propagateVariantRenames()</code> from the PIF public API (<code>src/features/product-image/index.js</code>).</p>
+  <dl class="detail-grid">
+    <dt>What's updated</dt><dd>PIF images (<code>variant_key</code> + <code>variant_label</code>), run responses, eval records, and carousel slots (re-keyed from old &rarr; new).</dd>
+    <dt>Anchor</dt><dd><code>variant_id</code> &mdash; stable hash used to find matching images. Legacy images without <code>variant_id</code> are not touched.</dd>
+    <dt>SQL sync</dt><dd>SQL projection updated immediately after JSON write (images column + carousel_slots column).</dd>
+    <dt>Data-change</dt><dd><code>product-image-finder-variant-renamed</code> event broadcast for GUI cache invalidation.</dd>
+    <dt>Idempotent</dt><dd>Safe to re-run. No-op if PIF data doesn't exist for the product.</dd>
+  </dl>
+</div>
+</div>
+
 <div style="text-align:center; padding:32px 0; color:var(--text-muted); font-size:13px;">
   Generated from live source audit &mdash; Spec Factory Color &amp; Edition Finder (CEF)<br>
-  LLM discovery &bull; candidate validation gate &bull; publisher integration &bull; cumulative learning &bull; dual-state persistence
+  LLM discovery &bull; candidate validation gate &bull; variant registry &bull; identity check &bull; PIF propagation &bull; publisher integration &bull; cumulative learning &bull; dual-state persistence
 </div>
 
 </div>

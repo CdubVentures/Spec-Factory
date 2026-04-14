@@ -215,3 +215,65 @@ export function seedAppDb({ appDb, brandRegistryPath, userSettingsPath, unitRegi
     units_seeded,
   };
 }
+
+// WHY: Rebuild contract for billing_entries. If the table is empty (e.g. deleted
+// app.sqlite) but JSONL ledger files exist, re-import them to restore the
+// runtime projection. Append-only data — no hash-gating (hash changes every write).
+export function seedBillingFromJsonl({ appDb, billingLedgerDir }) {
+  if (!appDb || !billingLedgerDir) return { billing_seeded: 0 };
+  if (appDb.countBillingEntries() > 0) return { billing_seeded: 0 };
+
+  let files;
+  try {
+    files = fsSync.readdirSync(billingLedgerDir).filter((f) => f.endsWith('.jsonl'));
+  } catch {
+    return { billing_seeded: 0 };
+  }
+  if (!files.length) return { billing_seeded: 0 };
+
+  let billing_seeded = 0;
+  for (const file of files) {
+    let text;
+    try {
+      text = fsSync.readFileSync(fsSync.realpathSync(`${billingLedgerDir}/${file}`), 'utf8');
+    } catch { continue; }
+
+    const entries = [];
+    for (const line of text.split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      try {
+        const parsed = JSON.parse(trimmed);
+        entries.push({
+          ts: parsed.ts || '',
+          month: parsed.month || String(parsed.ts || '').slice(0, 7),
+          day: parsed.day || String(parsed.ts || '').slice(0, 10),
+          provider: parsed.provider || 'unknown',
+          model: parsed.model || 'unknown',
+          category: parsed.category || '',
+          product_id: parsed.productId || parsed.product_id || '',
+          run_id: parsed.runId || parsed.run_id || '',
+          round: parsed.round ?? 0,
+          prompt_tokens: parsed.prompt_tokens ?? 0,
+          completion_tokens: parsed.completion_tokens ?? 0,
+          cached_prompt_tokens: parsed.cached_prompt_tokens ?? 0,
+          total_tokens: parsed.total_tokens ?? 0,
+          cost_usd: parsed.cost_usd ?? 0,
+          reason: parsed.reason || 'extract',
+          host: parsed.host || '',
+          url_count: parsed.url_count ?? 0,
+          evidence_chars: parsed.evidence_chars ?? 0,
+          estimated_usage: parsed.estimated_usage ? 1 : 0,
+          meta: typeof parsed.meta === 'object' ? JSON.stringify(parsed.meta) : (parsed.meta || '{}'),
+        });
+      } catch { /* skip malformed line */ }
+    }
+    if (entries.length) {
+      try {
+        appDb.insertBillingEntriesBatch(entries);
+        billing_seeded += entries.length;
+      } catch { /* best-effort */ }
+    }
+  }
+  return { billing_seeded };
+}

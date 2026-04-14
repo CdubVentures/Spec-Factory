@@ -557,24 +557,25 @@ function PifSettingsForm({
           </div>
         </div>
 
-        {/* Safety Caps */}
+        {/* Per-View Attempt Budgets */}
         <div className="pt-3 mt-1 border-t sf-border-soft">
-          <div className="text-[10px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-3">Attempt Budgets</div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-[11px] font-semibold sf-text-primary mb-1.5">
-                View Attempt Budget
-              </label>
-              <input
-                type="number"
-                value={settings.viewAttemptBudget ?? '5'}
-                onChange={(e) => onSave('viewAttemptBudget', e.target.value)}
-                disabled={isSaving}
-                className="sf-input w-full px-2 py-1.5 rounded sf-text-label text-[12px]"
-                min="1"
-                max="20"
-              />
-            </div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-1">Per-View Attempt Budgets</div>
+          <p className="text-[10px] sf-text-muted mb-3 leading-snug">
+            Max LLM calls per view before exhaustion. High-availability views get more tries; rare views get fewer. Min 2.
+          </p>
+          <ViewAttemptBudgetGrid
+            viewAttemptBudgets={settings.viewAttemptBudgets ?? ''}
+            viewAttemptBudget={settings.viewAttemptBudget ?? '5'}
+            category={category}
+            isSaving={isSaving}
+            onSave={(val) => onSave('viewAttemptBudgets', val)}
+          />
+        </div>
+
+        {/* Hero + Re-run Budgets */}
+        <div className="pt-3 mt-1 border-t sf-border-soft">
+          <div className="text-[10px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-3">Hero &amp; Re-run Budgets</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-[11px] font-semibold sf-text-primary mb-1.5">
                 Hero Attempt Budget
@@ -845,6 +846,104 @@ const CATEGORY_VIEW_BUDGET_DEFAULTS: Record<string, string[]> = {
   monitor:  ['front', 'angle', 'rear', 'left'],
   mousepad: ['top', 'angle'],
 };
+
+/* ── Per-View Attempt Budget defaults (mirrors backend viewAttemptDefaults.js) ── */
+
+const CATEGORY_VIEW_ATTEMPT_DEFAULTS: Record<string, Record<string, number>> = {
+  mouse:    { top: 4, left: 4, angle: 3, sangle: 3, front: 2, bottom: 2 },
+  keyboard: { top: 4, left: 4, angle: 3, sangle: 3 },
+  monitor:  { front: 4, angle: 4, rear: 3, left: 3 },
+  mousepad: { top: 4, angle: 4 },
+};
+
+const GENERIC_VIEW_ATTEMPT_FALLBACK = 3;
+
+function ViewAttemptBudgetGrid({
+  viewAttemptBudgets,
+  viewAttemptBudget,
+  category,
+  isSaving,
+  onSave,
+}: {
+  viewAttemptBudgets: string;
+  viewAttemptBudget: string;
+  category: string;
+  isSaving: boolean;
+  onSave: (val: string) => void;
+}) {
+  const catDefaults = CATEGORY_VIEW_ATTEMPT_DEFAULTS[category] || {};
+  const flatFallback = parseInt(viewAttemptBudget || '5', 10) || 5;
+  const isUsingDefaults = !viewAttemptBudgets || !viewAttemptBudgets.trim();
+
+  let overrides: Record<string, number>;
+  try {
+    const parsed = JSON.parse(viewAttemptBudgets || '{}');
+    overrides = typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    overrides = {};
+  }
+
+  const getVal = (view: string): number => {
+    const fromOverride = overrides[view];
+    if (fromOverride !== undefined && fromOverride !== null) return Math.max(2, Number(fromOverride));
+    const fromCat = catDefaults[view];
+    if (fromCat !== undefined) return fromCat;
+    return Math.max(2, flatFallback);
+  };
+
+  const handleChange = (view: string, value: string) => {
+    const next = { ...overrides, [view]: Math.max(2, Number(value) || 2) };
+    onSave(JSON.stringify(next));
+  };
+
+  const handleReset = () => onSave('');
+
+  const totalAttempts = CANONICAL_VIEWS.reduce((sum, v) => sum + getVal(v.key), 0);
+
+  return (
+    <div className="rounded border sf-border-soft overflow-hidden">
+      <table className="w-full text-[11px] border-collapse">
+        <thead>
+          <tr className="sf-text-muted sf-surface-elevated">
+            <th className="text-left py-2 pl-3 pr-2 font-semibold border-b sf-border-soft">View</th>
+            <th className="text-left py-2 px-2 font-semibold border-b sf-border-soft">Max Attempts</th>
+          </tr>
+        </thead>
+        <tbody>
+          {CANONICAL_VIEWS.map((v, idx) => (
+            <tr key={v.key} className={`sf-text-primary ${idx % 2 === 1 ? 'sf-surface-elevated' : ''}`}>
+              <td className="py-1.5 pl-3 pr-2 font-medium">{v.label}</td>
+              <td className="py-1.5 px-2">
+                <input
+                  type="number"
+                  value={getVal(v.key)}
+                  onChange={(e) => handleChange(v.key, e.target.value)}
+                  disabled={isSaving}
+                  className="sf-input w-[72px] px-2 py-1 rounded sf-text-label text-[11px]"
+                  min="2"
+                  max="20"
+                />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="px-3 py-2 border-t sf-border-soft sf-surface-elevated flex items-center gap-3">
+        {isUsingDefaults ? (
+          <span className="text-[10px] sf-text-muted">Using {category} defaults ({totalAttempts} total)</span>
+        ) : (
+          <button
+            onClick={handleReset}
+            disabled={isSaving}
+            className="text-[10px] px-1.5 py-0.5 rounded sf-btn-ghost sf-text-muted"
+          >
+            Reset to {category} defaults
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function ViewBudgetEditor({
   viewBudget,

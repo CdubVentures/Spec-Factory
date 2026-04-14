@@ -41,6 +41,7 @@ function makeImage(overrides = {}) {
     width: 800,
     height: 600,
     quality_pass: true,
+    variant_id: 'v_abc12345',
     variant_key: 'color:black',
     variant_label: 'Black',
     variant_type: 'color',
@@ -232,6 +233,26 @@ describe('buildHeroSelectionPrompt', () => {
     const result = buildHeroSelectionPrompt({ ...defaults, heroCount: 5 });
     assert.ok(result.includes('5'));
   });
+
+  it('contains explicit diversity rule — selected heroes must be different shots', () => {
+    const result = buildHeroSelectionPrompt(defaults);
+    const lower = result.toLowerCase();
+    const hasDiversity = lower.includes('different') && (lower.includes('perspective') || lower.includes('angle') || lower.includes('composition') || lower.includes('shot'));
+    assert.ok(hasDiversity, 'prompt must explicitly require selected heroes to be different shots/perspectives');
+  });
+
+  it('contains disqualification criteria matching view eval rigor', () => {
+    const result = buildHeroSelectionPrompt(defaults);
+    const lower = result.toLowerCase();
+    assert.ok(lower.includes('watermark'), 'must mention watermarks as disqualification');
+    assert.ok(lower.includes('wrong') || lower.includes('identity'), 'must mention wrong product / identity check');
+  });
+
+  it('contains resolution quality guidance', () => {
+    const result = buildHeroSelectionPrompt(defaults);
+    const lower = result.toLowerCase();
+    assert.ok(lower.includes('resolution'), 'must mention resolution as quality factor');
+  });
 });
 
 /* ── evaluateViewCandidates ─────────────────────────────────────── */
@@ -291,7 +312,7 @@ describe('evaluateViewCandidates', () => {
     await evaluateViewCandidates({
       ...baseOpts,
       imagePaths: ['/images/top-black.png', '/images/top-black-2.png'],
-      callLlm: async () => { called = true; return mockResponse; },
+      callLlm: async () => { called = true; return { result: mockResponse, usage: {} }; },
     });
     assert.equal(called, true);
   });
@@ -304,7 +325,8 @@ describe('evaluateViewCandidates', () => {
       callLlm: async (args) => {
         capturedArgs = args;
         return {
-          winner: { filename: 'top-black.png', reasoning: 'ok' },
+          result: { winner: { filename: 'top-black.png', reasoning: 'ok' } },
+          usage: {},
         };
       },
     });
@@ -323,7 +345,7 @@ describe('evaluateViewCandidates', () => {
     const result = await evaluateViewCandidates({
       ...baseOpts,
       imagePaths: ['/images/top-black.png', '/images/top-black-2.png'],
-      callLlm: async () => mockResponse,
+      callLlm: async () => ({ result: mockResponse, usage: {} }),
     });
     const winner = result.rankings.find(r => r.filename === 'top-black.png');
     const rejected = result.rankings.find(r => r.filename === 'top-black-2.png');
@@ -343,7 +365,7 @@ describe('evaluateViewCandidates', () => {
     const result = await evaluateViewCandidates({
       ...baseOpts,
       imagePaths: ['/images/top-black.png', '/images/top-black-2.png'],
-      callLlm: async () => mockResponse,
+      callLlm: async () => ({ result: mockResponse, usage: {} }),
     });
     assert.equal(result.rankings.length, 1);
     assert.equal(result.rankings[0].filename, 'top-black.png');
@@ -357,7 +379,7 @@ describe('evaluateViewCandidates', () => {
     const result = await evaluateViewCandidates({
       ...baseOpts,
       imagePaths: ['/images/top-black.png', '/images/top-black-2.png'],
-      callLlm: async () => mockResponse,
+      callLlm: async () => ({ result: mockResponse, usage: {} }),
     });
     assert.deepStrictEqual(result.rankings, []);
   });
@@ -366,7 +388,7 @@ describe('evaluateViewCandidates', () => {
     const result = await evaluateViewCandidates({
       ...baseOpts,
       imagePaths: ['/images/top-black.png', '/images/top-black-2.png'],
-      callLlm: async () => ({}),
+      callLlm: async () => ({ result: {}, usage: {} }),
     });
     assert.deepStrictEqual(result.rankings, []);
   });
@@ -382,7 +404,7 @@ describe('evaluateViewCandidates', () => {
     const result = await evaluateViewCandidates({
       ...baseOpts,
       imagePaths: ['/images/top-black.png', '/images/top-black-2.png'],
-      callLlm: async () => mockResponse,
+      callLlm: async () => ({ result: mockResponse, usage: {} }),
     });
     // No winner — no eval_best=true in rankings
     assert.ok(!result.rankings.some(r => r.best));

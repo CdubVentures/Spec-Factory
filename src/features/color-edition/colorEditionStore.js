@@ -15,6 +15,7 @@ import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 const store = createFinderJsonStore({
   filePrefix: 'color_edition',
   emptySelected: () => ({ colors: [], editions: {}, default_color: '' }),
+  extraFields: ['variant_registry'],
 });
 
 export const readColorEdition = store.read;
@@ -76,6 +77,7 @@ export function rebuildColorEditionFinderFromJson({ specDb, productRoot }) {
       colors,
       editions,
       default_color: defaultColor,
+      variant_registry: data.variant_registry || [],
       cooldown_until: data.cooldown_until || '',
       latest_ran_at: data.last_ran_at || '',
       run_count: data.run_count || 0,

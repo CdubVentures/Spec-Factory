@@ -7,7 +7,9 @@
 
 import { z } from 'zod';
 import { zodToLlmSchema } from '../../../core/llm/zodToLlmSchema.js';
-import { callLlmWithRouting, hasLlmRouteApiKey } from '../../../core/llm/client/routing.js';
+import { hasLlmRouteApiKey } from '../../../core/llm/client/routing.js';
+import { createPhaseCallLlm } from '../../indexing/pipeline/shared/createPhaseCallLlm.js';
+import { callLlmWithRouting } from '../../../core/llm/client/routing.js';
 
 export const componentMatchResponseZodSchema = z.object({
   decisions: z.array(z.object({
@@ -154,25 +156,19 @@ export async function validateComponentMatches({
     }
 
     try {
-      const result = await callLlmWithRouting({
-        config,
-        reason: 'validate_component_matches',
-        role: 'validate',
-        phase: 'validate',
-        system: buildSystemPrompt(reasoningNote),
-        user: buildUserPayload(typeItems),
-        jsonSchema: responseSchema(),
-        usageContext: {
-          reason: 'validate_component_matches',
-          component_type: componentType,
-          item_count: typeItems.length,
-        },
-        costRates,
-        onUsage,
-        logger,
-      });
+      const callLlm = createPhaseCallLlm(
+        { callRoutedLlmFn: callLlmWithRouting, config, logger },
+        { phase: 'validate', reason: 'validate_component_matches', role: 'validate', system: buildSystemPrompt(reasoningNote), jsonSchema: responseSchema() },
+        (args) => ({
+          user: buildUserPayload(args.typeItems),
+          usageContext: { reason: 'validate_component_matches', component_type: args.componentType, item_count: args.typeItems.length },
+          costRates,
+          onUsage,
+        }),
+      );
+      const { result: llmResult } = await callLlm({ typeItems, componentType });
 
-      const parsed = result && typeof result === 'object' ? result : {};
+      const parsed = llmResult && typeof llmResult === 'object' ? llmResult : {};
       const decisions = sanitizeDecisions(parsed, itemIndex);
       allDecisions.push(...decisions);
 

@@ -37,6 +37,7 @@ function makeFinderStoreStub(settingsOverrides = {}) {
     heroEnabled: 'true',
     heroCount: '1',
     viewAttemptBudget: '3',
+    viewAttemptBudgets: '',
     heroAttemptBudget: '2',
     reRunBudget: '0',
     ...settingsOverrides,
@@ -115,7 +116,7 @@ function createMockLlm(viewsPerCall = ['top']) {
   const calls = [];
   const callLlm = async (domainArgs) => {
     calls.push(domainArgs);
-    return {
+    return { result: {
       images: viewsPerCall.map((view) => ({
         view,
         url: `http://localhost:${serverPort}/img-${calls.length}-${view}.png`,
@@ -123,7 +124,7 @@ function createMockLlm(viewsPerCall = ['top']) {
         alt_text: `${view} image`,
       })),
       discovery_log: { urls_checked: [`http://localhost:${serverPort}`], queries_run: ['test query'], notes: [] },
-    };
+    }, usage: null };
   };
   return { callLlm, calls };
 }
@@ -150,10 +151,10 @@ describe('runCarouselLoop', () => {
       calls.push(args);
       const view = viewSequence[callIdx % viewSequence.length];
       callIdx++;
-      return {
+      return { result: {
         images: [{ view, url: `http://localhost:${serverPort}/${view}-${callIdx}.png`, source_page: '', alt_text: '' }],
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
-      };
+      }, usage: null };
     };
 
     const result = await runCarouselLoop({
@@ -204,7 +205,8 @@ describe('runCarouselLoop', () => {
       satisfactionThreshold: '3',
       heroEnabled: 'false',
       viewAttemptBudget: '2',
-      // 2 budget views × 2 attempts each + threshold 3 means exhaustion
+      // Explicit per-view budgets: all views at 2 (overrides category defaults)
+      viewAttemptBudgets: '{"top":2,"left":2,"angle":2,"sangle":2,"front":2,"bottom":2}',
     });
     const specDb = makeSpecDbStub(finderStore);
 
@@ -214,10 +216,10 @@ describe('runCarouselLoop', () => {
       calls.push(args);
       // Find which view is priority in the viewConfig
       const priorityView = (args.viewConfig || []).find(v => v.priority)?.key || 'top';
-      return {
+      return { result: {
         images: [{ view: priorityView, url: `http://localhost:${serverPort}/${priorityView}-${calls.length}.png`, source_page: '', alt_text: '' }],
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
-      };
+      }, usage: null };
     };
 
     const result = await runCarouselLoop({
@@ -280,7 +282,7 @@ describe('runCarouselLoop', () => {
       specDb,
       config: {},
       productRoot: PRODUCT_ROOT,
-      _callLlmOverride: async () => ({ images: [] }),
+      _callLlmOverride: async () => ({ result: { images: [] }, usage: null }),
       _modelDirOverride: path.join(TMP_ROOT, 'no-model'),
     });
 
@@ -314,10 +316,10 @@ describe('runCarouselLoop', () => {
     const rerunCalls = [];
     const rerunLlm = async (args) => {
       rerunCalls.push(args);
-      return {
+      return { result: {
         images: [{ view: 'top', url: `http://localhost:${serverPort}/rerun-${rerunCalls.length}.png`, source_page: '', alt_text: '' }],
         discovery_log: { urls_checked: [`http://rerun-${rerunCalls.length}`], queries_run: [], notes: [] },
-      };
+      }, usage: null };
     };
 
     const result = await runCarouselLoop({
@@ -331,5 +333,43 @@ describe('runCarouselLoop', () => {
     assert.equal(result.rejected, false);
     assert.equal(rerunCalls.length, 7, `expected 7 re-run calls (6 views + 1 hero), got ${rerunCalls.length}`);
     assert.equal(result.totalLlmCalls, 7);
+  });
+
+  it('per-view attempt budgets: different views get different call counts', async () => {
+    const pid = 'loop-perview';
+    writeCefData(pid, {
+      selected: { colors: ['black'], color_names: {}, editions: {} },
+      runs: [],
+    });
+    const finderStore = makeFinderStoreStub({
+      satisfactionThreshold: '100',  // unreachable — forces exhaustion via budget
+      heroEnabled: 'false',
+      viewAttemptBudget: '10',
+      viewAttemptBudgets: '{"top":3,"left":2}',
+      viewBudget: '["top","left"]',
+    });
+    const specDb = makeSpecDbStub(finderStore);
+
+    // Return only the focus view each call (no side catches)
+    const calls = [];
+    const callLlm = async (args) => {
+      calls.push(args);
+      const priorityView = (args.viewConfig || []).find(v => v.priority)?.key || 'top';
+      return { result: {
+        images: [{ view: priorityView, url: `http://localhost:${serverPort}/${priorityView}-${calls.length}.png`, source_page: '', alt_text: '' }],
+        discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+      }, usage: null };
+    };
+
+    const result = await runCarouselLoop({
+      product: { ...PRODUCT, product_id: pid },
+      specDb, config: {}, productRoot: PRODUCT_ROOT,
+      _callLlmOverride: callLlm,
+      _modelDirOverride: path.join(TMP_ROOT, 'no-model'),
+    });
+
+    assert.equal(result.rejected, false);
+    // top: 3 calls, left: 2 calls = 5 total (not 10+10=20 from flat budget)
+    assert.equal(result.totalLlmCalls, 5, `expected 5 calls (top:3 + left:2), got ${result.totalLlmCalls}`);
   });
 });

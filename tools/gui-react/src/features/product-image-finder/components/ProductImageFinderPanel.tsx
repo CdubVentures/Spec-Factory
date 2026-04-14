@@ -45,7 +45,8 @@ import {
   useCarouselSlotMutation,
   useDeleteEvalRecordMutation,
 } from '../api/productImageFinderQueries.ts';
-import type { ProductImageEntry, ProductImageFinderRun, VariantInfo, CarouselProgress, ResolvedSlot, EvalRecord } from '../types.ts';
+import type { ProductImageEntry, ProductImageFinderRun, VariantInfo, CarouselProgress, ResolvedSlot, EvalRecord, CarouselSlide } from '../types.ts';
+import { CarouselPreviewPopup } from './CarouselPreviewPopup.tsx';
 // WHY: Native HTML drag-and-drop for gallery→slot interaction.
 // @dnd-kit requires DndContext to wrap both source and target, but gallery
 // and slot strip are in separate DOM sections. Native DnD works across any DOM.
@@ -199,6 +200,7 @@ interface ImageGroup {
   key: string;
   label: string;
   type: 'color' | 'edition';
+  variant_id?: string;
   images: GalleryImage[];
 }
 
@@ -235,7 +237,7 @@ function groupImagesByVariant(images: GalleryImage[], variants: VariantInfo[], c
   for (const v of variants) {
     const imgs = imageMap.get(v.key);
     if (imgs && imgs.length > 0) {
-      groups.push({ key: v.key, label: v.label, type: v.type, images: sortByPriorityAndSize(imgs, category) });
+      groups.push({ key: v.key, label: v.label, type: v.type, variant_id: v.variant_id, images: sortByPriorityAndSize(imgs, category) });
     }
   }
   for (const [key, imgs] of imageMap) {
@@ -546,7 +548,8 @@ function SlotCard({ slot, img, source, category, productId, onClear, onDrop }: {
   readonly onDrop: (filename: string) => void;
 }) {
   const [isOver, setIsOver] = useState(false);
-  const filename = slot.filename;
+  // WHY: '__cleared__' is a sentinel meaning "user intentionally emptied this slot" — treat as no image.
+  const filename = (slot.filename && slot.filename !== '__cleared__') ? slot.filename : null;
   const src = filename ? imageServeUrl(category, productId, filename) : '';
   const isHero = slot.slot.startsWith('hero_');
   const label = isHero ? slot.slot.replace('_', ' ').toUpperCase() : slot.slot.toUpperCase();
@@ -559,6 +562,7 @@ function SlotCard({ slot, img, source, category, productId, onClear, onDrop }: {
         filename ? 'sf-border-soft sf-surface-elevated' : 'border-dashed sf-border-soft'
       }`}
       style={{ width: 160, opacity: filename ? 1 : 0.5 }}
+      title={img?.eval_reasoning || undefined}
       onDragOver={(e) => { e.preventDefault(); setIsOver(true); }}
       onDragLeave={() => setIsOver(false)}
       onDrop={(e) => {
@@ -589,6 +593,11 @@ function SlotCard({ slot, img, source, category, productId, onClear, onDrop }: {
           {img?.eval_best && <Chip label="BEST" className="sf-chip-success" />}
           {img?.hero && <Chip label={`H${img.hero_rank ?? ''}`} className="sf-chip-accent" />}
         </div>
+        {img?.eval_reasoning && (
+          <span className="text-[8px] sf-text-subtle italic truncate" title={img.eval_reasoning}>
+            {img.eval_reasoning}
+          </span>
+        )}
         {img ? (
           <>
             <span className="text-[8px] font-mono sf-text-subtle">
@@ -631,8 +640,81 @@ function SlotCard({ slot, img, source, category, productId, onClear, onDrop }: {
   );
 }
 
+function CarouselPreviewCard({
+  slides,
+  onClick,
+}: {
+  readonly slides: readonly CarouselSlide[];
+  readonly onClick: () => void;
+}) {
+  const enabled = slides.length > 0;
+  // Show up to 4 thumbnails in a 2x2 mosaic
+  const previews = slides.slice(0, 4);
+
+  return (
+    <div
+      className={`shrink-0 rounded-lg border overflow-hidden flex flex-col transition-all ${
+        enabled
+          ? 'sf-border-soft sf-surface-elevated cursor-pointer hover:shadow-md'
+          : 'border-dashed sf-border-soft pointer-events-none'
+      }`}
+      style={{ width: 160, opacity: enabled ? 1 : 0.3 }}
+      onClick={enabled ? onClick : undefined}
+    >
+      {/* Thumbnail area — mosaic or empty icon */}
+      <div
+        className="relative w-full h-28 overflow-hidden"
+        style={{ backgroundColor: 'var(--sf-surface-bg)' }}
+      >
+        {enabled ? (
+          <>
+            {/* 2x2 mosaic grid of first images */}
+            <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-px" style={{ backgroundColor: 'rgba(0,0,0,0.06)' }}>
+              {previews.map((s, i) => (
+                <div key={i} className="flex items-center justify-center overflow-hidden" style={{ backgroundColor: 'var(--sf-surface-bg)' }}>
+                  <img src={s.src} alt={s.slotLabel} className="w-full h-full object-cover" draggable={false} />
+                </div>
+              ))}
+              {/* Fill remaining grid cells if less than 4 */}
+              {Array.from({ length: Math.max(0, 4 - previews.length) }).map((_, i) => (
+                <div key={`empty-${i}`} style={{ backgroundColor: 'var(--sf-surface-bg)' }} />
+              ))}
+            </div>
+            {/* Frosted overlay with expand icon */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity" style={{ backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(2px)' }}>
+              <span className="text-white text-lg">{'\u26F6'}</span>
+            </div>
+          </>
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-1.5">
+            {/* Stylized empty grid icon */}
+            <div className="grid grid-cols-2 gap-1" style={{ width: 28, height: 28 }}>
+              {[0, 1, 2, 3].map(i => (
+                <div key={i} className="rounded-sm sf-border-soft" style={{ border: '1.5px dashed', borderColor: 'var(--sf-color-border-subtle-rgb, rgba(0,0,0,0.15))' }} />
+              ))}
+            </div>
+            <span className="text-[9px] font-bold uppercase tracking-wider sf-text-muted">N/A</span>
+          </div>
+        )}
+      </div>
+
+      {/* Meta */}
+      <div className="px-2.5 py-2 flex flex-col gap-1 border-t sf-border-soft">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[9px] font-bold uppercase tracking-wider sf-text-muted">Carousel</span>
+          {enabled && <Chip label={`${slides.length}`} className="sf-chip-success" />}
+        </div>
+        <span className="text-[8px] sf-text-subtle italic">
+          {enabled ? 'click to preview' : 'run eval first'}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function CarouselSlotRow({
   variantKey,
+  variantId,
   viewBudget,
   heroCount,
   carouselSlots,
@@ -641,6 +723,7 @@ function CarouselSlotRow({
   productId,
 }: {
   readonly variantKey: string;
+  readonly variantId?: string;
   readonly viewBudget: string[];
   readonly heroCount: number;
   readonly carouselSlots: Record<string, Record<string, string | null>>;
@@ -648,6 +731,7 @@ function CarouselSlotRow({
   readonly category: string;
   readonly productId: string;
 }) {
+  const [previewOpen, setPreviewOpen] = useState(false);
   const slotMutation = useCarouselSlotMutation(category, productId);
   const slots = resolveSlots(viewBudget, heroCount, variantKey, carouselSlots, images as ProductImageEntry[]);
   // WHY: Build filename→image lookup so SlotCard can show full meta (size, dims, source)
@@ -657,24 +741,40 @@ function CarouselSlotRow({
     return map;
   }, [images]);
 
+  const filledSlots = useMemo(() => slots.filter(s => s.filename && s.filename !== '__cleared__'), [slots]);
+
+  const slides: CarouselSlide[] = useMemo(() =>
+    filledSlots.map(s => {
+      const img = imageByFilename.get(s.filename!);
+      const isHero = s.slot.startsWith('hero_');
+      return {
+        slotLabel: isHero ? s.slot.replace('_', ' ').toUpperCase() : s.slot.toUpperCase(),
+        source: s.source as 'user' | 'eval',
+        src: imageServeUrl(category, productId, s.filename!),
+        bytes: img?.bytes ?? 0,
+        width: img?.width ?? 0,
+        height: img?.height ?? 0,
+        reasoning: img?.eval_reasoning ?? '',
+      };
+    }), [filledSlots, imageByFilename, category, productId]);
+
   const handleDropOnSlot = useCallback((slotKey: string, filename: string) => {
-    slotMutation.mutate({ variant_key: variantKey, slot: slotKey, filename });
-  }, [slotMutation, variantKey]);
+    slotMutation.mutate({ variant_key: variantKey, variant_id: variantId, slot: slotKey, filename });
+  }, [slotMutation, variantKey, variantId]);
 
   const handleClearSlot = useCallback((slotKey: string) => {
     // WHY: Always use '__cleared__' so the slot stays empty — no fallback to eval.
-    slotMutation.mutate({ variant_key: variantKey, slot: slotKey, filename: '__cleared__' });
-  }, [slotMutation, variantKey]);
-
-  const filled = slots.filter(s => s.filename).length;
+    slotMutation.mutate({ variant_key: variantKey, variant_id: variantId, slot: slotKey, filename: '__cleared__' });
+  }, [slotMutation, variantKey, variantId]);
 
   return (
     <div className="mb-3">
       <div className="flex items-center gap-2 mb-1.5">
         <span className="text-[9px] font-bold uppercase tracking-wider sf-text-muted">Carousel</span>
-        <span className="text-[9px] sf-text-muted font-mono">{filled}/{slots.length}</span>
+        <span className="text-[9px] sf-text-muted font-mono">{filledSlots.length}/{slots.length}</span>
       </div>
       <div className="flex gap-2 flex-wrap mb-2">
+        <CarouselPreviewCard slides={slides} onClick={() => setPreviewOpen(true)} />
         {slots.map((slot) => (
           <SlotCard
             key={slot.slot}
@@ -688,6 +788,9 @@ function CarouselSlotRow({
           />
         ))}
       </div>
+      {previewOpen && filledSlots.length > 0 && (
+        <CarouselPreviewPopup slides={slides} onClose={() => setPreviewOpen(false)} />
+      )}
     </div>
   );
 }
@@ -976,12 +1079,33 @@ function PifRunHistoryRow({
   );
 }
 
-/* ── Eval History Row ──────────────────────────────────────────── */
+/* ── Eval History Row (matches Run History row visual parity) ──── */
 
-function EvalHistoryRow({ evalRecord, onDelete }: { readonly evalRecord: EvalRecord; readonly onDelete: (evalNumber: number) => void }) {
+function EvalHistoryRow({
+  evalRecord,
+  hexMap,
+  editions,
+  onDelete,
+}: {
+  readonly evalRecord: EvalRecord;
+  readonly hexMap: Map<string, string>;
+  readonly editions: Record<string, { display_name?: string; colors?: string[] }>;
+  readonly onDelete: (evalNumber: number) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
   const isHero = evalRecord.type === 'hero';
-  const label = isHero ? 'Hero Selection' : `${(evalRecord.view ?? '').toUpperCase()} View Eval`;
+  const label = isHero ? 'HERO' : (evalRecord.view ?? '').toUpperCase();
+
+  // Resolve variant color atoms → hex for swatch
+  const variantKey = evalRecord.variant_key || '';
+  const variantLabel = evalRecord.variant_label || variantKey.replace(/^(color|edition):/, '');
+  const colorAtoms = resolveVariantColorAtoms(variantKey, editions);
+  const hexParts = colorAtoms.map(a => hexMap.get(a.trim()) || '');
+
+  // Result summary for chip
+  const resultSummary = isHero
+    ? `${((evalRecord.result as Record<string, unknown[]>)?.heroes ?? []).length} hero${((evalRecord.result as Record<string, unknown[]>)?.heroes ?? []).length !== 1 ? 'es' : ''}`
+    : `${((evalRecord.result as Record<string, unknown[]>)?.rankings ?? []).length} ranked`;
 
   return (
     <div className="sf-surface-panel rounded-lg overflow-hidden">
@@ -996,15 +1120,28 @@ function EvalHistoryRow({ evalRecord, onDelete }: { readonly evalRecord: EvalRec
           #{evalRecord.eval_number}
         </span>
         <span className="font-mono text-[10px] sf-text-muted">{evalRecord.ran_at?.split('T')[0] ?? '--'}</span>
-        {evalRecord.duration_ms != null && (
-          <span className="text-[9px] sf-text-muted font-mono">{(evalRecord.duration_ms / 1000).toFixed(1)}s</span>
-        )}
+        <FinderRunTimestamp
+          startedAt={evalRecord.started_at}
+          durationMs={evalRecord.duration_ms}
+        />
         {evalRecord.model && (
-          <Chip label={evalRecord.model} className="sf-chip-purple" />
+          <FinderRunModelBadge
+            model={evalRecord.model}
+            accessMode={evalRecord.access_mode ?? undefined}
+            effortLevel={evalRecord.effort_level ?? undefined}
+            fallbackUsed={evalRecord.fallback_used}
+          />
         )}
+        <span
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] sf-text-primary font-medium"
+          style={variantBadgeBgStyle(hexParts)}
+        >
+          <ColorSwatch hexParts={hexParts} />
+          {variantLabel}
+        </span>
         <Chip label={label} className={isHero ? 'sf-chip-accent' : 'sf-chip-info'} />
-        <span className="text-[10px] sf-text-muted font-mono">{evalRecord.variant_key}</span>
         <div className="flex-1" />
+        <Chip label={resultSummary} className="sf-chip-success" />
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(evalRecord.eval_number); }}
           className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded sf-status-text-danger border sf-border-soft opacity-50 hover:opacity-100"
@@ -1031,6 +1168,128 @@ function EvalHistoryRow({ evalRecord, onDelete }: { readonly evalRecord: EvalRec
             userMessage={evalRecord.prompt?.user}
             response={evalRecord.response}
           />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Eval Variant Group (collapsible, mirrors PifLoopGroup) ────── */
+
+interface EvalVariantGroup {
+  variantKey: string;
+  evals: EvalRecord[];
+}
+
+/** Group eval records by variant_key, preserving chronological order. */
+function groupEvalsByVariant(evals: EvalRecord[]): EvalVariantGroup[] {
+  const groups: EvalVariantGroup[] = [];
+  const map = new Map<string, EvalRecord[]>();
+  const order: string[] = [];
+
+  for (const ev of evals) {
+    const vk = ev.variant_key || '';
+    if (!map.has(vk)) {
+      map.set(vk, []);
+      order.push(vk);
+    }
+    map.get(vk)!.push(ev);
+  }
+
+  for (const vk of order) {
+    groups.push({ variantKey: vk, evals: map.get(vk)! });
+  }
+  return groups;
+}
+
+function EvalVariantGroupRow({
+  group,
+  hexMap,
+  editions,
+  onDeleteEval,
+  onDeleteVariantEvals,
+}: {
+  readonly group: EvalVariantGroup;
+  readonly hexMap: Map<string, string>;
+  readonly editions: Record<string, { display_name?: string; colors?: string[] }>;
+  readonly onDeleteEval: (evalNumber: number) => void;
+  readonly onDeleteVariantEvals: (evalNumbers: readonly number[]) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const variantKey = group.variantKey;
+  const firstEval = group.evals[0];
+  const variantLabel = firstEval?.variant_label || variantKey.replace(/^(color|edition):/, '');
+  const colorAtoms = resolveVariantColorAtoms(variantKey, editions);
+  const hexParts = colorAtoms.map(a => hexMap.get(a.trim()) || '');
+
+  const evalNumbers = group.evals.map(e => e.eval_number);
+  const viewCount = group.evals.filter(e => e.type === 'view').length;
+  const heroEvalCount = group.evals.filter(e => e.type === 'hero').length;
+  const countParts: string[] = [];
+  if (viewCount > 0) countParts.push(`${viewCount} view`);
+  if (heroEvalCount > 0) countParts.push(`${heroEvalCount} hero`);
+
+  const rangeLabel = evalNumbers.length > 0
+    ? `#${evalNumbers[0]}\u2013#${evalNumbers[evalNumbers.length - 1]}`
+    : '';
+  const date = firstEval?.ran_at?.split('T')[0] ?? '--';
+
+  return (
+    <div className="sf-surface-elevated rounded-lg overflow-hidden border sf-border-soft">
+      <div
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-3 px-4 py-2.5 cursor-pointer select-none hover:opacity-80"
+      >
+        <span className="text-[10px] sf-text-muted shrink-0" style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
+          {'\u25B6'}
+        </span>
+        <span className="text-[13px] font-mono font-bold text-[var(--sf-token-accent-strong)]">
+          {rangeLabel}
+        </span>
+        <span className="font-mono text-[10px] sf-text-muted">{date}</span>
+        <FinderRunTimestamp
+          startedAt={firstEval?.started_at}
+          durationMs={firstEval?.duration_ms}
+        />
+        {firstEval?.model && (
+          <FinderRunModelBadge
+            model={firstEval.model}
+            accessMode={firstEval.access_mode ?? undefined}
+            effortLevel={firstEval.effort_level ?? undefined}
+            fallbackUsed={firstEval.fallback_used}
+          />
+        )}
+        <span
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] sf-text-primary font-medium"
+          style={variantBadgeBgStyle(hexParts)}
+        >
+          <ColorSwatch hexParts={hexParts} />
+          {variantLabel}
+        </span>
+        <Chip label={`EVAL \u00B7 ${group.evals.length} calls`} className="sf-chip-accent" />
+        <div className="flex-1" />
+        {countParts.length > 0 && (
+          <Chip label={countParts.join(' · ')} className="sf-chip-success" />
+        )}
+        <button
+          onClick={(e) => { e.stopPropagation(); onDeleteVariantEvals(evalNumbers); }}
+          className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded sf-status-text-danger border sf-border-soft opacity-50 hover:opacity-100"
+        >
+          Del
+        </button>
+      </div>
+
+      {expanded && (
+        <div className="px-3 pb-3 pt-1 border-t sf-border-soft space-y-1.5">
+          {group.evals.map((ev) => (
+            <EvalHistoryRow
+              key={ev.eval_number}
+              evalRecord={ev}
+              hexMap={hexMap}
+              editions={editions}
+              onDelete={onDeleteEval}
+            />
+          ))}
         </div>
       )}
     </div>
@@ -1213,17 +1472,27 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
     [ops, productId],
   );
 
-  // Build variant list from CEF data
+  // Build variant list from CEF data, enriched with stable variant_id from registry
   const variants = useMemo(() => {
     if (cefError) return [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sel = (cefData?.selected ?? cefData) as any;
     if (!sel?.colors?.length) return [];
-    return buildVariantList({
+    const list = buildVariantList({
       colors: sel.colors,
       color_names: sel.color_names ?? sel.color_details,
       editions: sel.editions ?? sel.edition_details,
     });
+    // Enrich with stable variant_id from CEF registry
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const registry = (cefData as any)?.variant_registry as Array<{ variant_key: string; variant_id: string }> | undefined;
+    if (registry?.length) {
+      const registryMap = new Map(registry.map((r) => [r.variant_key, r.variant_id]));
+      for (const v of list) {
+        v.variant_id = registryMap.get(v.key);
+      }
+    }
+    return list;
   }, [cefData, cefError]);
 
   // All images from all runs, ordered by run_number, tagged with run metadata
@@ -1273,57 +1542,75 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   const pifEvalViewUrl = `${pifRunUrl}/evaluate-view`;
   const pifEvalHeroUrl = `${pifRunUrl}/evaluate-hero`;
 
+  const findVariantId = useCallback((variantKey: string) =>
+    variants.find((v) => v.key === variantKey)?.variant_id, [variants]);
+
   const handleRunVariantView = useCallback((variantKey: string) => {
-    fire(pifRunUrl, { variant_key: variantKey, mode: 'view' }, { subType: 'view', variantKey });
-  }, [fire, pifRunUrl]);
+    fire(pifRunUrl, { variant_key: variantKey, variant_id: findVariantId(variantKey), mode: 'view' }, { subType: 'view', variantKey });
+  }, [fire, pifRunUrl, findVariantId]);
 
   const handleRunVariantHero = useCallback((variantKey: string) => {
-    fire(pifRunUrl, { variant_key: variantKey, mode: 'hero' }, { subType: 'hero', variantKey });
-  }, [fire, pifRunUrl]);
+    fire(pifRunUrl, { variant_key: variantKey, variant_id: findVariantId(variantKey), mode: 'hero' }, { subType: 'hero', variantKey });
+  }, [fire, pifRunUrl, findVariantId]);
 
   const handleLoopAll = useCallback(() => {
     for (const v of variants) {
       if (!loopingVariants.has(v.key)) {
-        fire(pifLoopUrl, { variant_key: v.key }, { subType: 'loop', variantKey: v.key });
+        fire(pifLoopUrl, { variant_key: v.key, variant_id: v.variant_id }, { subType: 'loop', variantKey: v.key });
       }
     }
   }, [fire, pifLoopUrl, variants, loopingVariants]);
 
   const handleLoopVariant = useCallback((variantKey: string) => {
     if (!loopingVariants.has(variantKey)) {
-      fire(pifLoopUrl, { variant_key: variantKey }, { subType: 'loop', variantKey });
+      fire(pifLoopUrl, { variant_key: variantKey, variant_id: findVariantId(variantKey) }, { subType: 'loop', variantKey });
     }
-  }, [fire, pifLoopUrl, loopingVariants]);
+  }, [fire, pifLoopUrl, loopingVariants, findVariantId]);
 
   // WHY: Stagger eval calls 500ms apart to avoid overwhelming the server.
   // Each view eval + hero eval fires as its own operation tracker entry.
   // Returns the number of calls scheduled so callers can chain delays.
   const EVAL_STAGGER_MS = 500;
 
+  // WHY: Build a PIF-native variant→views map from accumulated images.
+  // This is keyed by the actual variant_key stored on PIF images, not the
+  // CEF-derived variant key. If CEF re-runs and variant keys shift, eval
+  // still works because we match against PIF's own stored keys.
+  const pifVariantViewMap = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const img of (pifData?.images ?? []) as Array<{ variant_key: string; view: string }>) {
+      const key = img.variant_key || '';
+      if (!map.has(key)) map.set(key, new Set());
+      map.get(key)!.add(img.view);
+    }
+    return map;
+  }, [pifData]);
+
   const fireEvalForVariant = useCallback((variantKey: string, startDelay = 0): number => {
-    const images = pifData?.selected?.images ?? [];
-    const variantImages = images.filter((img) => img.variant_key === variantKey);
-    // WHY: 'hero' view is handled by evaluate-hero (vision eval of hero candidates).
-    // View eval handles the 8 canonical views only.
-    const viewSet = [...new Set(variantImages.map((img) => img.view))];
-    const canonicalViews = viewSet.filter((v) => v !== 'hero');
-    const hasHeroes = viewSet.includes('hero');
+    // WHY: Look up views from PIF's own image data, not by filtering on the
+    // CEF-derived variant key. This decouples eval from CEF state — eval works
+    // even if CEF is mid-run or variant keys have drifted.
+    const viewSet = pifVariantViewMap.get(variantKey);
+    if (!viewSet || viewSet.size === 0) return 0;
+    const canonicalViews = [...viewSet].filter((v) => v !== 'hero');
+    const hasHeroes = viewSet.has('hero');
+    const vid = findVariantId(variantKey);
 
     canonicalViews.forEach((view, i) => {
       setTimeout(() => {
-        fire(pifEvalViewUrl, { variant_key: variantKey, view }, { subType: 'evaluate', variantKey });
+        fire(pifEvalViewUrl, { variant_key: variantKey, variant_id: vid, view }, { subType: 'evaluate', variantKey });
       }, startDelay + i * EVAL_STAGGER_MS);
     });
 
     // Hero eval fires after canonical views — evaluates view='hero' candidates with vision
     if (hasHeroes) {
       setTimeout(() => {
-        fire(pifEvalHeroUrl, { variant_key: variantKey }, { subType: 'evaluate', variantKey });
+        fire(pifEvalHeroUrl, { variant_key: variantKey, variant_id: vid }, { subType: 'evaluate', variantKey });
       }, startDelay + canonicalViews.length * EVAL_STAGGER_MS);
     }
 
     return canonicalViews.length + (hasHeroes ? 1 : 0);
-  }, [fire, pifEvalViewUrl, pifEvalHeroUrl, pifData]);
+  }, [fire, pifEvalViewUrl, pifEvalHeroUrl, pifData, findVariantId]);
 
   const handleEvalAll = useCallback(() => {
     let totalDelay = 0;
@@ -1535,6 +1822,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                           {/* Carousel Slots — inside variant group, same card size */}
                           <CarouselSlotRow
                             variantKey={group.key}
+                            variantId={group.variant_id}
                             viewBudget={pifData?.carouselSettings?.viewBudget ?? ['top', 'left', 'angle']}
                             heroCount={pifData?.carouselSettings?.heroEnabled ? 3 : 0}
                             carouselSlots={pifData?.carousel_slots ?? {}}
@@ -1632,20 +1920,45 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
             </FinderSectionCard>
           )}
 
-          {/* Eval History — separate from run history, shows prompt + response per eval call */}
+          {/* Eval History — separate from run history, grouped by variant */}
           {(pifData?.evaluations?.length ?? 0) > 0 && (
             <FinderSectionCard
               title="Eval History"
               count={`${pifData?.evaluations?.length ?? 0} eval${(pifData?.evaluations?.length ?? 0) !== 1 ? 's' : ''}`}
               storeKey={`pif:eval-history:${productId}`}
+              trailing={
+                <button
+                  onClick={() => {
+                    const allEvalNumbers = (pifData?.evaluations ?? []).map(e => e.eval_number);
+                    for (const n of allEvalNumbers) deleteEvalMut.mutate(n);
+                  }}
+                  disabled={deleteEvalMut.isPending}
+                  className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded sf-action-button sf-status-text-danger border sf-border-soft opacity-60 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  Delete All
+                </button>
+              }
             >
               <div className="space-y-1.5">
-                {[...(pifData?.evaluations ?? [])].reverse().map((ev) => (
-                  <EvalHistoryRow
-                    key={ev.eval_number}
-                    evalRecord={ev}
-                    onDelete={(n) => deleteEvalMut.mutate(n)}
-                  />
+                {groupEvalsByVariant([...(pifData?.evaluations ?? [])].reverse()).map((group) => (
+                  group.evals.length === 1 ? (
+                    <EvalHistoryRow
+                      key={group.evals[0].eval_number}
+                      evalRecord={group.evals[0]}
+                      hexMap={hexMap}
+                      editions={editions}
+                      onDelete={(n) => deleteEvalMut.mutate(n)}
+                    />
+                  ) : (
+                    <EvalVariantGroupRow
+                      key={group.variantKey}
+                      group={group}
+                      hexMap={hexMap}
+                      editions={editions}
+                      onDeleteEval={(n) => deleteEvalMut.mutate(n)}
+                      onDeleteVariantEvals={(nums) => { for (const n of nums) deleteEvalMut.mutate(n); }}
+                    />
+                  )
                 ))}
               </div>
             </FinderSectionCard>

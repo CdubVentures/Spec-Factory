@@ -24,7 +24,7 @@ export async function resolveBrandDomain({
   if (!callLlmFn) return empty;
 
   try {
-    const result = await callLlmFn({
+    const { result } = await callLlmFn({
       brand: brandKey,
       category: categoryKey,
       config

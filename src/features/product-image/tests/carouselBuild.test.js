@@ -20,6 +20,7 @@ function makeImage(overrides = {}) {
     view: 'top',
     filename: 'top-black.png',
     url: 'https://example.com/top.png',
+    variant_id: 'v_abc12345',
     variant_key: 'color:black',
     variant_label: 'Black',
     variant_type: 'color',
@@ -211,13 +212,13 @@ describe('runEvalHero', () => {
       config: {},
       variantKey: 'color:black',
       productRoot: TMP,
-      _heroCallFn: async ({ candidates }) => ({
+      _heroCallFn: async ({ candidates }) => ({ result: {
         heroes: candidates.map((c, i) => ({
           filename: c.filename,
           hero_rank: i + 1,
           reasoning: 'hero test',
         })),
-      }),
+      }, usage: null }),
       _mergeFn: (opts) => { mergedHeroes = opts.heroResults; return {}; },
     });
     assert.equal(result.heroes.length, 2);
@@ -253,7 +254,7 @@ describe('runEvalHero', () => {
       config: {},
       variantKey: 'color:black',
       productRoot: TMP,
-      _heroCallFn: async () => { llmCalled = true; return { heroes: [] }; },
+      _heroCallFn: async () => { llmCalled = true; return { result: { heroes: [] }, usage: null }; },
       _mergeFn: () => ({}),
     });
     assert.equal(llmCalled, false, 'single candidate should auto-elect without LLM');
@@ -277,7 +278,7 @@ describe('runEvalHero', () => {
       productRoot: TMP,
       _heroCallFn: async (opts) => {
         capturedCriteria = opts.heroCriteria;
-        return { heroes: [{ filename: 'hero-black.png', hero_rank: 1, reasoning: 'ok' }] };
+        return { result: { heroes: [{ filename: 'hero-black.png', hero_rank: 1, reasoning: 'ok' }] }, usage: null };
       },
       _mergeFn: () => ({}),
     });
@@ -298,9 +299,9 @@ describe('runEvalHero', () => {
       variantKey: 'color:black',
       productRoot: TMP,
       onStageAdvance: (s) => stages.push(s),
-      _heroCallFn: async ({ candidates }) => ({
+      _heroCallFn: async ({ candidates }) => ({ result: {
         heroes: [{ filename: candidates[0].filename, hero_rank: 1, reasoning: 'ok' }],
-      }),
+      }, usage: null }),
       _mergeFn: () => ({}),
     });
     assert.ok(stages.includes('Heroes'));

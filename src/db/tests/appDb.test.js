@@ -458,3 +458,313 @@ describe('AppDb — lifecycle', () => {
     }
   });
 });
+
+// ── Billing ──
+
+function makeBillingEntry(overrides = {}) {
+  return {
+    ts: '2026-04-10T12:00:00Z',
+    month: '2026-04',
+    day: '2026-04-10',
+    provider: 'openai',
+    model: 'gpt-5',
+    category: 'mouse',
+    product_id: 'prod-1',
+    run_id: 'run-1',
+    round: 0,
+    prompt_tokens: 100,
+    completion_tokens: 50,
+    cached_prompt_tokens: 0,
+    total_tokens: 150,
+    cost_usd: 0.001,
+    reason: 'extract',
+    host: 'example.com',
+    url_count: 1,
+    evidence_chars: 500,
+    estimated_usage: 0,
+    meta: '{}',
+    ...overrides,
+  };
+}
+
+describe('AppDb — billing insertBillingEntry', () => {
+  let db;
+  beforeEach(() => { db = createTestDb(); });
+  afterEach(() => { db.close(); });
+
+  it('inserts a single billing entry', () => {
+    db.insertBillingEntry(makeBillingEntry());
+    assert.equal(db.countBillingEntries(), 1);
+  });
+
+  it('populates all columns correctly', () => {
+    db.insertBillingEntry(makeBillingEntry({ provider: 'anthropic', model: 'claude-sonnet-4-6', cost_usd: 0.005 }));
+    const entries = db.getBillingEntriesForMonth('2026-04');
+    assert.equal(entries[0].provider, 'anthropic');
+    assert.equal(entries[0].model, 'claude-sonnet-4-6');
+    assert.equal(entries[0].cost_usd, 0.005);
+  });
+});
+
+describe('AppDb — billing insertBillingEntriesBatch', () => {
+  let db;
+  beforeEach(() => { db = createTestDb(); });
+  afterEach(() => { db.close(); });
+
+  it('inserts multiple entries in a transaction', () => {
+    db.insertBillingEntriesBatch([makeBillingEntry(), makeBillingEntry({ product_id: 'prod-2' })]);
+    assert.equal(db.countBillingEntries(), 2);
+  });
+});
+
+describe('AppDb — billing getBillingRollup', () => {
+  let db;
+  beforeEach(() => { db = createTestDb(); });
+  afterEach(() => { db.close(); });
+
+  it('returns empty rollup for month with no entries', () => {
+    const rollup = db.getBillingRollup('2026-04');
+    assert.equal(rollup.totals.calls, 0);
+    assert.equal(rollup.totals.cost_usd, 0);
+  });
+
+  it('aggregates totals correctly', () => {
+    db.insertBillingEntry(makeBillingEntry({ cost_usd: 0.01, prompt_tokens: 100, completion_tokens: 50 }));
+    db.insertBillingEntry(makeBillingEntry({ cost_usd: 0.02, prompt_tokens: 200, completion_tokens: 100 }));
+    const rollup = db.getBillingRollup('2026-04');
+    assert.equal(rollup.totals.calls, 2);
+    assert.equal(rollup.totals.prompt_tokens, 300);
+    assert.equal(rollup.totals.completion_tokens, 150);
+  });
+
+  it('groups by_day', () => {
+    db.insertBillingEntry(makeBillingEntry({ day: '2026-04-10' }));
+    db.insertBillingEntry(makeBillingEntry({ day: '2026-04-11' }));
+    const rollup = db.getBillingRollup('2026-04');
+    assert.equal(Object.keys(rollup.by_day).length, 2);
+    assert.ok(rollup.by_day['2026-04-10']);
+    assert.ok(rollup.by_day['2026-04-11']);
+  });
+
+  it('groups by_category', () => {
+    db.insertBillingEntry(makeBillingEntry({ category: 'mouse' }));
+    db.insertBillingEntry(makeBillingEntry({ category: 'keyboard' }));
+    const rollup = db.getBillingRollup('2026-04');
+    assert.ok(rollup.by_category['mouse']);
+    assert.ok(rollup.by_category['keyboard']);
+  });
+
+  it('groups by_product', () => {
+    db.insertBillingEntry(makeBillingEntry({ product_id: 'prod-1' }));
+    db.insertBillingEntry(makeBillingEntry({ product_id: 'prod-2' }));
+    const rollup = db.getBillingRollup('2026-04');
+    assert.ok(rollup.by_product['prod-1']);
+    assert.ok(rollup.by_product['prod-2']);
+  });
+
+  it('groups by_model with provider:model composite key', () => {
+    db.insertBillingEntry(makeBillingEntry({ provider: 'openai', model: 'gpt-5' }));
+    db.insertBillingEntry(makeBillingEntry({ provider: 'anthropic', model: 'claude-sonnet-4-6' }));
+    const rollup = db.getBillingRollup('2026-04');
+    assert.ok(rollup.by_model['openai:gpt-5']);
+    assert.ok(rollup.by_model['anthropic:claude-sonnet-4-6']);
+  });
+
+  it('groups by_reason', () => {
+    db.insertBillingEntry(makeBillingEntry({ reason: 'extract' }));
+    db.insertBillingEntry(makeBillingEntry({ reason: 'health' }));
+    const rollup = db.getBillingRollup('2026-04');
+    assert.ok(rollup.by_reason['extract']);
+    assert.ok(rollup.by_reason['health']);
+  });
+
+  it('filters by category when provided', () => {
+    db.insertBillingEntry(makeBillingEntry({ category: 'mouse', cost_usd: 0.01 }));
+    db.insertBillingEntry(makeBillingEntry({ category: 'keyboard', cost_usd: 0.02 }));
+    const rollup = db.getBillingRollup('2026-04', 'mouse');
+    assert.equal(rollup.totals.calls, 1);
+  });
+
+  it('ignores entries from other months', () => {
+    db.insertBillingEntry(makeBillingEntry({ month: '2026-04' }));
+    db.insertBillingEntry(makeBillingEntry({ month: '2026-03' }));
+    const rollup = db.getBillingRollup('2026-04');
+    assert.equal(rollup.totals.calls, 1);
+  });
+});
+
+describe('AppDb — billing getBillingEntriesForMonth', () => {
+  let db;
+  beforeEach(() => { db = createTestDb(); });
+  afterEach(() => { db.close(); });
+
+  it('returns empty array for month with no entries', () => {
+    assert.deepEqual(db.getBillingEntriesForMonth('2026-04'), []);
+  });
+
+  it('returns entries ordered by ts', () => {
+    db.insertBillingEntry(makeBillingEntry({ ts: '2026-04-10T14:00:00Z' }));
+    db.insertBillingEntry(makeBillingEntry({ ts: '2026-04-10T12:00:00Z' }));
+    const entries = db.getBillingEntriesForMonth('2026-04');
+    assert.equal(entries[0].ts, '2026-04-10T12:00:00Z');
+    assert.equal(entries[1].ts, '2026-04-10T14:00:00Z');
+  });
+
+  it('hydrates estimated_usage as boolean', () => {
+    db.insertBillingEntry(makeBillingEntry({ estimated_usage: 1 }));
+    db.insertBillingEntry(makeBillingEntry({ estimated_usage: 0 }));
+    const entries = db.getBillingEntriesForMonth('2026-04');
+    assert.equal(entries[0].estimated_usage, true);
+    assert.equal(entries[1].estimated_usage, false);
+  });
+});
+
+describe('AppDb — billing getBillingSnapshot', () => {
+  let db;
+  beforeEach(() => { db = createTestDb(); });
+  afterEach(() => { db.close(); });
+
+  it('returns zeros for empty month', () => {
+    const snap = db.getBillingSnapshot('2026-04', 'prod-1');
+    assert.equal(snap.monthly_cost_usd, 0);
+    assert.equal(snap.product_cost_usd, 0);
+  });
+
+  it('separates monthly vs product costs', () => {
+    db.insertBillingEntry(makeBillingEntry({ product_id: 'prod-1', cost_usd: 0.01 }));
+    db.insertBillingEntry(makeBillingEntry({ product_id: 'prod-2', cost_usd: 0.02 }));
+    const snap = db.getBillingSnapshot('2026-04', 'prod-1');
+    assert.equal(snap.product_calls, 1);
+    assert.equal(snap.monthly_calls, 2);
+  });
+});
+
+describe('AppDb — billing countBillingEntries', () => {
+  let db;
+  beforeEach(() => { db = createTestDb(); });
+  afterEach(() => { db.close(); });
+
+  it('returns 0 for empty table', () => {
+    assert.equal(db.countBillingEntries(), 0);
+  });
+
+  it('returns count after inserts', () => {
+    db.insertBillingEntry(makeBillingEntry());
+    db.insertBillingEntry(makeBillingEntry());
+    assert.equal(db.countBillingEntries(), 2);
+  });
+});
+
+describe('AppDb — billing getGlobalDaily', () => {
+  let db;
+  beforeEach(() => { db = createTestDb(); });
+  afterEach(() => { db.close(); });
+
+  it('returns empty arrays for no data', () => {
+    const result = db.getGlobalDaily({ days: 7 });
+    assert.deepEqual(result.days, []);
+    assert.deepEqual(result.by_day_reason, []);
+  });
+
+  it('aggregates totals by day', () => {
+    db.insertBillingEntry(makeBillingEntry({ day: '2026-04-10', cost_usd: 0.01 }));
+    db.insertBillingEntry(makeBillingEntry({ day: '2026-04-10', cost_usd: 0.02 }));
+    db.insertBillingEntry(makeBillingEntry({ day: '2026-04-11', cost_usd: 0.05 }));
+    const result = db.getGlobalDaily({ days: 30 });
+    assert.equal(result.days.length, 2);
+    const day10 = result.days.find((d) => d.day === '2026-04-10');
+    assert.equal(day10.calls, 2);
+  });
+
+  it('returns by_day_reason breakdown for stacked charts', () => {
+    db.insertBillingEntry(makeBillingEntry({ day: '2026-04-10', reason: 'extract', cost_usd: 0.01 }));
+    db.insertBillingEntry(makeBillingEntry({ day: '2026-04-10', reason: 'health', cost_usd: 0.02 }));
+    const result = db.getGlobalDaily({ days: 30 });
+    assert.equal(result.by_day_reason.length, 2);
+    const extract = result.by_day_reason.find((r) => r.reason === 'extract');
+    assert.ok(extract);
+    assert.equal(extract.day, '2026-04-10');
+  });
+
+  it('filters to recent N days', () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const oldDay = '2020-01-01';
+    db.insertBillingEntry(makeBillingEntry({ day: today, ts: `${today}T12:00:00Z`, month: today.slice(0, 7) }));
+    db.insertBillingEntry(makeBillingEntry({ day: oldDay, ts: `${oldDay}T12:00:00Z`, month: oldDay.slice(0, 7) }));
+    const result = db.getGlobalDaily({ days: 7 });
+    assert.equal(result.days.length, 1);
+    assert.equal(result.days[0].day, today);
+  });
+});
+
+describe('AppDb — billing getGlobalEntries', () => {
+  let db;
+  beforeEach(() => { db = createTestDb(); });
+  afterEach(() => { db.close(); });
+
+  it('returns empty for no data', () => {
+    const result = db.getGlobalEntries({ limit: 10, offset: 0 });
+    assert.deepEqual(result.entries, []);
+    assert.equal(result.total, 0);
+  });
+
+  it('paginates with limit and offset', () => {
+    for (let i = 0; i < 5; i++) {
+      db.insertBillingEntry(makeBillingEntry({ ts: `2026-04-10T1${i}:00:00Z` }));
+    }
+    const page1 = db.getGlobalEntries({ limit: 2, offset: 0 });
+    assert.equal(page1.entries.length, 2);
+    assert.equal(page1.total, 5);
+    const page2 = db.getGlobalEntries({ limit: 2, offset: 2 });
+    assert.equal(page2.entries.length, 2);
+    assert.equal(page2.total, 5);
+  });
+
+  it('returns entries newest first', () => {
+    db.insertBillingEntry(makeBillingEntry({ ts: '2026-04-10T10:00:00Z' }));
+    db.insertBillingEntry(makeBillingEntry({ ts: '2026-04-10T14:00:00Z' }));
+    const result = db.getGlobalEntries({ limit: 10, offset: 0 });
+    assert.equal(result.entries[0].ts, '2026-04-10T14:00:00Z');
+    assert.equal(result.entries[1].ts, '2026-04-10T10:00:00Z');
+  });
+
+  it('filters by category', () => {
+    db.insertBillingEntry(makeBillingEntry({ category: 'mouse' }));
+    db.insertBillingEntry(makeBillingEntry({ category: 'keyboard' }));
+    const result = db.getGlobalEntries({ limit: 10, offset: 0, category: 'mouse' });
+    assert.equal(result.entries.length, 1);
+    assert.equal(result.total, 1);
+    assert.equal(result.entries[0].category, 'mouse');
+  });
+
+  it('filters by model', () => {
+    db.insertBillingEntry(makeBillingEntry({ model: 'gpt-5' }));
+    db.insertBillingEntry(makeBillingEntry({ model: 'claude-sonnet-4-6' }));
+    const result = db.getGlobalEntries({ limit: 10, offset: 0, model: 'gpt-5' });
+    assert.equal(result.entries.length, 1);
+    assert.equal(result.entries[0].model, 'gpt-5');
+  });
+
+  it('filters by reason', () => {
+    db.insertBillingEntry(makeBillingEntry({ reason: 'extract' }));
+    db.insertBillingEntry(makeBillingEntry({ reason: 'health' }));
+    const result = db.getGlobalEntries({ limit: 10, offset: 0, reason: 'extract' });
+    assert.equal(result.entries.length, 1);
+    assert.equal(result.entries[0].reason, 'extract');
+  });
+
+  it('combines multiple filters', () => {
+    db.insertBillingEntry(makeBillingEntry({ category: 'mouse', reason: 'extract' }));
+    db.insertBillingEntry(makeBillingEntry({ category: 'mouse', reason: 'health' }));
+    db.insertBillingEntry(makeBillingEntry({ category: 'keyboard', reason: 'extract' }));
+    const result = db.getGlobalEntries({ limit: 10, offset: 0, category: 'mouse', reason: 'extract' });
+    assert.equal(result.entries.length, 1);
+    assert.equal(result.total, 1);
+  });
+
+  it('hydrates estimated_usage as boolean', () => {
+    db.insertBillingEntry(makeBillingEntry({ estimated_usage: 1 }));
+    const result = db.getGlobalEntries({ limit: 10, offset: 0 });
+    assert.equal(result.entries[0].estimated_usage, true);
+  });
+});

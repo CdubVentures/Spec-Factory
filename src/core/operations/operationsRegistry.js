@@ -66,7 +66,7 @@ export function initOperationsRegistry({ broadcastWs }) {
 /**
  * Register a new operation. Returns { id }.
  */
-export function registerOperation({ type, subType, category, productId, productLabel, variantKey, stages }) {
+export function registerOperation({ type, subType, category, productId, productLabel, variantKey, variantId, stages }) {
   if (!type) throw new Error('type is required');
   const id = crypto.randomUUID();
   const operation = {
@@ -77,6 +77,7 @@ export function registerOperation({ type, subType, category, productId, productL
     productId: productId || '',
     productLabel: productLabel || '',
     variantKey: variantKey || '',
+    variantId: variantId || '',
     stages: Array.isArray(stages) ? stages : [],
     currentStageIndex: 0,
     status: 'running',
@@ -165,7 +166,9 @@ export function appendLlmCall({ id, call }) {
   // Update last entry if it's a pending prompt awaiting response
   const last = op.llmCalls[op.llmCalls.length - 1];
   if (last && last.response === null && call.response != null) {
-    const updated = { ...last, response: call.response, timestamp: new Date().toISOString() };
+    // WHY: Merge all fields from the incoming call (response, usage, model, etc.)
+    // while preserving the original callIndex and prompt from the pending entry.
+    const updated = { ...last, ...call, callIndex: last.callIndex, timestamp: new Date().toISOString() };
     op.llmCalls[op.llmCalls.length - 1] = updated;
     if (_broadcastWs) {
       _broadcastWs('operations', { action: 'llm-call-update', id, callIndex: updated.callIndex, call: updated });

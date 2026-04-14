@@ -80,7 +80,7 @@ function stubCallLlm(result) {
   let callCount = 0;
   const fn = async () => {
     callCount++;
-    return result;
+    return { result, usage: null };
   };
   fn.callCount = () => callCount;
   return fn;
@@ -99,7 +99,7 @@ function stubCallLlmFailThenSucceed(result) {
   const fn = async () => {
     callCount++;
     if (callCount === 1) throw new Error('transient failure');
-    return result;
+    return { result, usage: null };
   };
   fn.callCount = () => callCount;
   return fn;

@@ -383,57 +383,77 @@ export const CATEGORY_VIEW_EVAL_CRITERIA = Object.freeze({
  * Generic hero eval criteria — fallback for unknown categories.
  */
 export const GENERIC_HERO_EVAL_CRITERIA = `Hero selection criteria for a product page carousel:
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
 - Product must be the CLEAR STAR of the image — it should be the obvious focal point, not a tiny item in a busy desk scene.
+- Identity: Must be the correct model and correct color/edition variant. Wrong product or wrong color → skip.
 - No dual-product images — do not select images showing two color variants side by side.
 - Source quality: Only accept brand, manufacturer, or authorized retailer photography. Reject editorial/review site photos (these are copyrighted — PC Gamer, Tom's Hardware, TechRadar, etc.).
+- Watermarks: Getty, Shutterstock, retailer logos, "SAMPLE" text, copyright overlays → skip, do not select.
+- Badges / overlays: Sale stickers, "NEW" badges, retailer branding, promotional text → skip, do not select.
 - Cropped images are acceptable if the product remains clearly identifiable and prominent.
-- Prefer images with perspective diversity — a good hero set covers different angles.
-- Prefer lifestyle/contextual shots with real environments, dramatic or atmospheric lighting.
-- No text overlays, watermarks, or promotional graphics.
-- Sharp, well-composed, free of defects.`;
+- Image quality: Sharp, well-composed, good lighting, no heavy compression artifacts or blur.
+- Perspective diversity — CRITICAL: Each selected hero MUST show a distinctly different perspective, angle, or composition. Do not pick near-duplicate shots taken from the same angle. A good hero set covers different views of the product.
+- Prefer lifestyle/contextual shots with real environments, dramatic or atmospheric lighting.`;
 
 /**
  * Per-category hero evaluation criteria.
  */
 export const CATEGORY_HERO_EVAL_CRITERIA = Object.freeze({
   mouse: `Hero selection criteria for MOUSE product page carousel:
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
 - Product must be the CLEAR STAR — the mouse should be the obvious focal point. Reject desk overview shots where the mouse is one of many peripherals and hard to identify.
+- Identity: Must be the correct mouse model and correct color/edition variant. Wrong product or wrong color → skip.
 - No dual-product images — reject images showing two color variants side by side.
 - Source: Only brand/manufacturer/retailer photography. Reject editorial review site photos (copyrighted).
+- Watermarks: Getty, Shutterstock, retailer logos, "SAMPLE" text, copyright overlays → skip, do not select.
+- Badges / overlays: Sale stickers, "NEW" badges, retailer branding, promotional text → skip, do not select.
 - Close-up dramatic angles showing the mouse on a desk or mousepad are ideal.
 - Desk/mousepad context is great as long as the mouse is prominent and identifiable.
 - Prefer dramatic or atmospheric lighting that showcases the product design and RGB effects.
 - Cropped is OK if the mouse remains clearly identifiable and prominent.
-- Perspective diversity — a good hero set covers different angles, not all the same shot.
-- No text overlays, watermarks, or promotional graphics.`,
+- Image quality: Sharp, well-composed, good lighting, no heavy compression artifacts.
+- Perspective diversity — CRITICAL: Each selected hero MUST show a distinctly different perspective, angle, or composition. Do not pick near-duplicate shots taken from the same angle. A good hero set covers different views of the mouse.`,
 
   keyboard: `Hero selection criteria for KEYBOARD product page carousel:
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
 - Product must be the CLEAR STAR — the keyboard should dominate the frame. Reject desk overview shots where the keyboard is just one item among many.
+- Identity: Must be the correct keyboard model and correct color/edition variant. Wrong product or wrong color → skip.
 - No dual-product images — reject images showing multiple keyboards.
 - Source: Only brand/manufacturer/retailer photography. Reject editorial review site photos (copyrighted).
+- Watermarks: Getty, Shutterstock, retailer logos, "SAMPLE" text, copyright overlays → skip, do not select.
+- Badges / overlays: Sale stickers, "NEW" badges, retailer branding, promotional text → skip, do not select.
 - RGB lighting in-situ shots on a desk surface are ideal hero material.
 - Prefer shots where keycaps and lighting are clearly visible in a real environment.
 - Cropped is OK if the keyboard remains clearly identifiable.
-- Perspective diversity — different angles for the hero set.
-- No text overlays, watermarks, or promotional graphics.`,
+- Image quality: Sharp, well-composed, good lighting, no heavy compression artifacts.
+- Perspective diversity — CRITICAL: Each selected hero MUST show a distinctly different perspective, angle, or composition. Do not pick near-duplicate shots taken from the same angle. A good hero set covers different views of the keyboard.`,
 
   monitor: `Hero selection criteria for MONITOR product page carousel:
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
 - Product must be the CLEAR STAR — the monitor should dominate the image. Reject full-room or multi-monitor shots where the target is hard to identify.
+- Identity: Must be the correct monitor model and correct color/edition variant. Wrong product or wrong color → skip.
 - No dual-product images — exactly one monitor prominent in the scene.
 - Source: Only brand/manufacturer/retailer photography. Reject editorial review site photos (copyrighted).
+- Watermarks: Getty, Shutterstock, retailer logos, "SAMPLE" text, copyright overlays → skip, do not select.
+- Badges / overlays: Sale stickers, "NEW" badges, retailer branding, promotional text → skip, do not select.
 - Screen-on lifestyle shots showing the display in context (desk, gaming setup) are ideal.
 - Screen content should be tasteful — game scenes, abstract visuals, or the product's own marketing imagery.
 - Cropped is OK if the monitor remains clearly identifiable.
-- Perspective diversity preferred.
-- No text overlays, watermarks, or promotional graphics.`,
+- Image quality: Sharp, well-composed, good lighting, no heavy compression artifacts.
+- Perspective diversity — CRITICAL: Each selected hero MUST show a distinctly different perspective, angle, or composition. Do not pick near-duplicate shots taken from the same angle. A good hero set covers different views of the monitor.`,
 
   mousepad: `Hero selection criteria for MOUSEPAD product page carousel:
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
 - Product must be clearly visible and identifiable — full pad visible in desk context or close-up showing surface texture and branding.
+- Identity: Must be the correct mousepad model and correct color/edition variant. Wrong product or wrong color → skip.
 - No dual-product images.
 - Source: Only brand/manufacturer/retailer photography. Reject editorial review site photos (copyrighted).
+- Watermarks: Getty, Shutterstock, retailer logos, "SAMPLE" text, copyright overlays → skip, do not select.
+- Badges / overlays: Sale stickers, "NEW" badges, retailer branding, promotional text → skip, do not select.
 - Desk context with the mousepad as the prominent surface is ideal.
 - Cropped is OK if branding and surface design remain visible.
-- No text overlays, watermarks, or promotional graphics.`,
+- Image quality: Sharp, well-composed, good lighting, no heavy compression artifacts.
+- Perspective diversity — CRITICAL: Each selected hero MUST show a distinctly different perspective, angle, or composition. Do not pick near-duplicate shots. A good hero set covers different views of the mousepad.`,
 });
 
 /* ── Resolvers ────────────────────────────────────────────────────── */
@@ -544,14 +564,16 @@ export function migrateFromLegacyViews(view1, view2, category) {
  * @param {string} variantKey — e.g. "color:black" or "edition:cod-bo6"
  * @returns {{ urlsChecked: string[], queriesRun: string[] }}
  */
-export function accumulateVariantDiscoveryLog(previousRuns, variantKey) {
+export function accumulateVariantDiscoveryLog(previousRuns, variantKey, variantId) {
   const urlSet = new Set();
   const querySet = new Set();
 
   for (const run of previousRuns) {
-    // Only accumulate from runs that match this variant
+    // WHY: Match by variant_id first (survives renames), fall back to variant_key
+    const rId = run.response?.variant_id;
     const rKey = run.response?.variant_key;
-    if (rKey !== variantKey) continue;
+    const matches = (variantId && rId) ? rId === variantId : rKey === variantKey;
+    if (!matches) continue;
 
     const log = run.response?.discovery_log;
     if (!log) continue;

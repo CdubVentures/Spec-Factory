@@ -21,7 +21,7 @@ function makeAppDbStub(colors = []) {
 }
 
 function makeLlmStub(response) {
-  return async () => response;
+  return async () => ({ result: response, usage: null });
 }
 
 const REGISTERED_COLORS = [

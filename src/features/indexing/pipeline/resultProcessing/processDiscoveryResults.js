@@ -116,12 +116,12 @@ export async function processDiscoveryResults({
   let selectorOutput = null;
   let validation = { valid: false, reason: '' };
   try {
-    selectorOutput = await callSelector({ selectorInput, llmContext: {
+    ({ result: selectorOutput } = await callSelector({ selectorInput, llmContext: {
       category: categoryConfig.category,
       productId: job.productId,
       runId,
       ...llmContext,
-    }});
+    }}));
     validation = validateSelectorOutput({
       selectorOutput,
       candidateIds: sentCandidateIds,

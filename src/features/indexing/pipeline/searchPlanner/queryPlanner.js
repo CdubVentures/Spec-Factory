@@ -104,7 +104,7 @@ export async function enhanceQueryRows({
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const result = await effectiveCallLlm({
+      const { result } = await effectiveCallLlm({
         payload: payloadJson,
         rowCount: rows.length,
         usageContext: {

@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CEF Variant Identity &amp; Validation — Implementation Plan</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --surface-alt: #f1f3f5;
+    --border: #dee2e6;
+    --border-light: #e9ecef;
+    --text: #212529;
+    --text-muted: #6c757d;
+    --accent: #4263eb;
+    --accent-light: #edf2ff;
+    --green: #2b8a3e;
+    --green-bg: #ebfbee;
+    --red: #c92a2a;
+    --red-bg: #fff5f5;
+    --orange: #e67700;
+    --orange-bg: #fff9db;
+    --purple: #7048e8;
+    --purple-bg: #f3f0ff;
+    --teal: #0c8599;
+    --teal-bg: #e6fcf5;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.6; }
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 32px 0; text-align: center; }
+  .header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  .header p { color: var(--text-muted); font-size: 15px; margin-top: 6px; }
+  .header .subtitle { font-size: 13px; color: var(--accent); font-weight: 600; margin-top: 4px; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  .section-title { font-size: 20px; font-weight: 700; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); display: flex; align-items: center; gap: 10px; }
+  .section-title .num { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+  .phase-title { font-size: 22px; font-weight: 700; margin: 48px 0 8px; padding: 16px 24px; border-radius: var(--radius); display: flex; align-items: center; gap: 12px; }
+  .phase-title .phase-num { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; font-size: 16px; font-weight: 700; flex-shrink: 0; }
+  .phase-1 { background: var(--accent-light); border-left: 4px solid var(--accent); }
+  .phase-1 .phase-num { background: var(--accent); color: white; }
+  .phase-2 { background: var(--purple-bg); border-left: 4px solid var(--purple); }
+  .phase-2 .phase-num { background: var(--purple); color: white; }
+  .phase-3 { background: var(--teal-bg); border-left: 4px solid var(--teal); }
+  .phase-3 .phase-num { background: var(--teal); color: white; }
+  .phase-desc { font-size: 14px; color: var(--text-muted); margin: 0 0 20px 0; padding-left: 4px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+  .card-header { padding: 14px 20px; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-light); }
+  .card-body { padding: 16px 20px; font-size: 14px; }
+  .card-body p { margin-bottom: 10px; }
+  .card-body p:last-child { margin-bottom: 0; }
+  .card-body ul { margin: 8px 0 10px 20px; }
+  .card-body li { margin-bottom: 4px; font-size: 13.5px; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .tag-green { background: var(--green-bg); color: var(--green); }
+  .tag-orange { background: var(--orange-bg); color: var(--orange); }
+  .tag-accent { background: var(--accent-light); color: var(--accent); }
+  .tag-purple { background: var(--purple-bg); color: var(--purple); }
+  .tag-teal { background: var(--teal-bg); color: var(--teal); }
+  .tag-red { background: var(--red-bg); color: var(--red); }
+  .detail-grid { display: grid; grid-template-columns: 170px 1fr; gap: 4px 12px; font-size: 13px; background: var(--surface-alt); padding: 12px 14px; border-radius: 6px; margin-top: 6px; }
+  .detail-grid dt { font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+  .detail-grid dd { color: var(--text); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border-light); }
+  th { background: var(--surface-alt); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
+  tr:last-child td { border-bottom: none; }
+  td code { font-family: var(--mono); font-size: 12px; background: var(--surface-alt); padding: 2px 6px; border-radius: 3px; color: var(--accent); }
+  .flow-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 24px 0; flex-wrap: wrap; }
+  .flow-box { padding: 12px 20px; border-radius: var(--radius); font-weight: 600; font-size: 13px; text-align: center; border: 2px solid; min-width: 140px; }
+  .flow-arrow { font-size: 20px; color: var(--text-muted); }
+  .flow-pass { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+  .flow-fail { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+  .flow-neutral { background: var(--surface-alt); border-color: var(--border); color: var(--text); }
+  .flow-accent { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .flow-teal { background: var(--teal-bg); border-color: var(--teal); color: var(--teal); }
+  .flow-purple { background: var(--purple-bg); border-color: var(--purple); color: var(--purple); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+  pre.json-block { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 6px; padding: 16px 20px; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; overflow-x: auto; color: var(--text); margin-top: 8px; }
+  .step-list { list-style: none; padding: 0; counter-reset: step; }
+  .step-list li { padding: 12px 16px; margin-bottom: 8px; background: var(--surface-alt); border-radius: 6px; border-left: 3px solid var(--accent); font-size: 13.5px; counter-increment: step; }
+  .step-list li::before { content: counter(step); display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: white; font-size: 11px; font-weight: 700; margin-right: 10px; }
+  .callout { padding: 14px 18px; border-radius: var(--radius); font-size: 13.5px; margin: 16px 0; }
+  .callout-warn { background: var(--orange-bg); border-left: 4px solid var(--orange); }
+  .callout-info { background: var(--accent-light); border-left: 4px solid var(--accent); }
+  .callout-success { background: var(--green-bg); border-left: 4px solid var(--green); }
+  .callout strong { font-weight: 700; }
+  .rule-box { background: var(--red-bg); border: 2px solid var(--red); border-radius: var(--radius); padding: 16px 20px; margin: 16px 0; font-size: 14px; }
+  .rule-box strong { color: var(--red); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>CEF Variant Identity &amp; Validation</h1>
+  <p>Stable variant hashes, LLM-validated publishing, and PIF decoupling</p>
+  <div class="subtitle">Implementation Plan &mdash; 3 Phases</div>
+</div>
+
+<div class="container">
+
+<!-- ================================================================== -->
+<!-- PROBLEM STATEMENT                                                   -->
+<!-- ================================================================== -->
+
+<h2 class="section-title"><span class="num">!</span> The Problem</h2>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-red">Fragile</span> Current Variant Identity</div>
+  <div class="card-body">
+    <p>Today, variant identity is a <strong>computed string</strong> derived on-the-fly from CEF data:</p>
+    <ul>
+      <li>Colors: <code>color:black</code>, <code>color:light-blue+blue+silver</code></li>
+      <li>Editions: <code>edition:cod-bo6</code></li>
+    </ul>
+    <p>There is no stable ID. The variant_key is recomputed every time from <code>buildVariantList()</code> using CEF's live <code>selected.colors</code> and <code>selected.editions</code>. This creates three failure modes:</p>
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="card">
+    <div class="card-header"><span class="tag tag-red">Drift</span> Color Name Refinement</div>
+    <div class="card-body">
+      <p>A user refines "Ocean Blue" to "Deep Ocean Blue" in a new CEF run. The color atom changes from <code>ocean-blue</code> to <code>deep-ocean-blue</code>.</p>
+      <p>Result: <code>color:ocean-blue</code> &rarr; <code>color:deep-ocean-blue</code>. All PIF images tagged with the old key become orphans.</p>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="tag tag-red">Drift</span> Edition Color Atom Changes</div>
+    <div class="card-body">
+      <p>An edition's color combo grows from <code>["black+orange"]</code> to <code>["black+orange+gold"]</code> as more detail is discovered.</p>
+      <p>Result: The edition no longer maps to the old combo entry in the colors array. The variant_key may shift or the variant may appear as both a color and an edition.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-red">Coupling</span> PIF Live Dependency on CEF</div>
+  <div class="card-body">
+    <p>The PIF panel derives its variant list from the CEF query <strong>on every render</strong>. When a new CEF run fires (even without publishing), the WS data-change event invalidates the CEF cache. During refetch or if the new run changes <code>selected</code>, the PIF variant list shifts — breaking eval buttons, carousel slots, and hero assignments.</p>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- SOLUTION OVERVIEW                                                   -->
+<!-- ================================================================== -->
+
+<h2 class="section-title"><span class="num">&rarr;</span> Solution Overview</h2>
+
+<div class="card">
+  <div class="card-body">
+    <p>Each variant gets a <strong>permanent hash ID</strong> (<code>v_&lt;8-hex&gt;</code>) assigned once at publish time. The hash never changes, even if the variant's name, color atoms, or display label are updated later. PIF stores this hash on every image, decoupling it from CEF's live state.</p>
+  </div>
+</div>
+
+<div class="rule-box">
+  <strong>The Golden Rule:</strong> CEF Run 1 auto-publishes freely and creates initial variant hashes. CEF Run 2+ MUST be validated against the existing variant registry by an LLM call before publishing. No exceptions.
+</div>
+
+<div class="flow-row">
+  <div class="flow-box flow-accent">CEF Run 1<br><small>Auto-publish</small></div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box flow-pass">Variant Registry<br><small>Hashes assigned</small></div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box flow-neutral">CEF Run 2+</div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box flow-purple">LLM Validation<br><small>Identity resolution</small></div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-box flow-pass">Registry Updated<br><small>Hashes preserved</small></div>
+</div>
+
+<!-- ================================================================== -->
+<!-- DATA MODEL                                                          -->
+<!-- ================================================================== -->
+
+<h2 class="section-title"><span class="num">D</span> Variant Registry Data Model</h2>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-accent">Schema</span> Variant Registry Entry</div>
+  <div class="card-body">
+    <pre class="json-block">{
+  "variant_id": "v_a1b2c3d4",          // permanent hash, never changes
+  "variant_key": "color:black",         // current computed key (can update)
+  "variant_type": "color",              // "color" or "edition"
+  "variant_label": "Black",             // current display name (can update)
+  "color_atoms": ["black"],             // current color atoms (can update)
+  "edition_slug": null,                 // for editions: "cod-bo6" (can update)
+  "edition_display_name": null,         // for editions: "Call of Duty BO6" (can update)
+  "created_at": "2026-04-13T...",       // when first published
+  "updated_at": "2026-04-13T..."        // last metadata update
+}</pre>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-accent">Schema</span> Updated <code>color_edition.json</code></div>
+  <div class="card-body">
+    <pre class="json-block">{
+  "product_id": "mouse-b794700f",
+  "category": "mouse",
+  "selected": {
+    "colors": ["black", "white", "light-blue"],
+    "color_names": {"light-blue": "Glacier Blue"},
+    "editions": {
+      "cod-bo6": {"display_name": "COD BO6 Edition", "colors": ["black+orange"]}
+    },
+    "default_color": "black"
+  },
+  <strong>"variant_registry": [</strong>
+    <strong>{"variant_id": "v_a1b2c3d4", "variant_key": "color:black", "variant_type": "color", "variant_label": "Black", "color_atoms": ["black"], "created_at": "2026-04-13T..."},</strong>
+    <strong>{"variant_id": "v_e5f6a7b8", "variant_key": "color:white", "variant_type": "color", "variant_label": "White", "color_atoms": ["white"], "created_at": "2026-04-13T..."},</strong>
+    <strong>{"variant_id": "v_c9d0e1f2", "variant_key": "color:light-blue", "variant_type": "color", "variant_label": "Glacier Blue", "color_atoms": ["light-blue"], "created_at": "2026-04-13T..."},</strong>
+    <strong>{"variant_id": "v_f3a4b5c6", "variant_key": "edition:cod-bo6", "variant_type": "edition", "variant_label": "COD BO6 Edition", "edition_slug": "cod-bo6", "color_atoms": ["black+orange"], "created_at": "2026-04-13T..."}</strong>
+  <strong>],</strong>
+  "cooldown_until": "",
+  "runs": [...]
+}</pre>
+    <p>The <code>variant_registry</code> array is the stable SSOT for variant identity. The <code>selected</code> block remains unchanged for backward compatibility &mdash; it still represents what CEF discovered. The registry is what PIF and other downstream consumers reference.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-teal">Key Insight</span> What Can Change vs What Cannot</div>
+  <div class="card-body">
+    <table>
+      <tr><th>Field</th><th>Mutable?</th><th>Notes</th></tr>
+      <tr><td><code>variant_id</code></td><td><span class="tag tag-red">Never</span></td><td>Permanent. Assigned once at creation.</td></tr>
+      <tr><td><code>variant_key</code></td><td><span class="tag tag-orange">On Update</span></td><td>Recomputed from current atoms. Used for display, not linkage.</td></tr>
+      <tr><td><code>variant_label</code></td><td><span class="tag tag-orange">On Update</span></td><td>"Ocean Blue" &rarr; "Deep Ocean Blue" is fine.</td></tr>
+      <tr><td><code>color_atoms</code></td><td><span class="tag tag-orange">On Update</span></td><td>Atoms can be refined. Hash stays the same.</td></tr>
+      <tr><td><code>edition_slug</code></td><td><span class="tag tag-orange">On Update</span></td><td>Slug can be refined. Hash stays the same.</td></tr>
+      <tr><td><code>variant_type</code></td><td><span class="tag tag-red">Never</span></td><td>A color doesn't become an edition.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- PHASE 1                                                             -->
+<!-- ================================================================== -->
+
+<div class="phase-title phase-1">
+  <span class="phase-num">1</span>
+  Variant Registry Foundation
+</div>
+<p class="phase-desc">Create the variant registry, hash generation, and storage. First CEF run auto-publishes and assigns hashes. No validation yet &mdash; just establishing the identity layer.</p>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-accent">Task</span> Hash Generation Function</div>
+  <div class="card-body">
+    <p>Create <code>generateVariantId()</code> &mdash; produces a <code>v_&lt;8-hex&gt;</code> hash from the variant's original key at creation time.</p>
+    <pre class="json-block">import crypto from 'node:crypto';
+
+// WHY: 8 hex chars = 4 billion combinations. Combined with
+// product_id scoping, collision is effectively impossible.
+export function generateVariantId(productId, variantKey) {
+  const input = `${productId}:${variantKey}`;
+  return 'v_' + crypto.createHash('sha256')
+    .update(input).digest('hex').slice(0, 8);
+}</pre>
+    <p>The hash is deterministic &mdash; same product + same original key always produces the same ID. This enables idempotent first-run publishing.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-accent">Task</span> <code>buildVariantRegistry()</code></div>
+  <div class="card-body">
+    <p>New function that takes CEF <code>selected</code> data and produces the full variant registry array. Called on first publish to create initial entries.</p>
+    <dl class="detail-grid">
+      <dt>Input</dt><dd><code>{ colors, color_names, editions, productId }</code></dd>
+      <dt>Output</dt><dd>Array of variant registry entries with generated <code>variant_id</code></dd>
+      <dt>Location</dt><dd><code>src/features/color-edition/variantRegistry.js</code> (new file)</dd>
+    </dl>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-accent">Task</span> Write Registry to <code>color_edition.json</code></div>
+  <div class="card-body">
+    <p>Modify the CEF store write path to include <code>variant_registry</code> in the JSON. On first publish (no existing registry), call <code>buildVariantRegistry()</code> and write the result.</p>
+    <ul>
+      <li>Read existing <code>color_edition.json</code></li>
+      <li>If <code>variant_registry</code> is absent or empty &rarr; first publish, generate all hashes</li>
+      <li>If <code>variant_registry</code> exists &rarr; Phase 2 handles validation (skip for now)</li>
+      <li>Write <code>variant_registry</code> alongside <code>selected</code></li>
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-accent">Task</span> SQL Projection</div>
+  <div class="card-body">
+    <p>Add a <code>variant_registry</code> column (JSON text) to the <code>color_edition_finder</code> SQL table. The rebuild contract reads from JSON SSOT. The GUI can query variants by product without parsing JSON files.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-green">Deliverable</span> Phase 1 Completion Proof</div>
+  <div class="card-body">
+    <ul>
+      <li>First CEF publish writes <code>variant_registry</code> to JSON with stable hashes</li>
+      <li>Re-running the same first publish produces identical hashes (idempotent)</li>
+      <li>SQL projection includes variant_registry</li>
+      <li>Existing <code>selected</code> block unchanged &mdash; full backward compatibility</li>
+      <li>Migration script backfills <code>variant_registry</code> for all existing products</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- PHASE 2                                                             -->
+<!-- ================================================================== -->
+
+<div class="phase-title phase-2">
+  <span class="phase-num">2</span>
+  LLM Validation Gate (Run 2+)
+</div>
+<p class="phase-desc">Every CEF run after the first MUST pass through an LLM validation call that resolves variant identity against the existing registry. The LLM decides: same variant (update metadata) or genuinely new (create new hash).</p>
+
+<div class="rule-box">
+  <strong>No Exception Rule:</strong> CEF Run 2+ cannot publish without LLM validation. The system must never silently create a duplicate variant or orphan existing PIF images by changing a hash.
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-purple">Task</span> LLM Validation Prompt</div>
+  <div class="card-body">
+    <p>The LLM receives the existing variant registry and the new CEF discoveries. For each new discovery, it must classify:</p>
+    <table>
+      <tr><th>Classification</th><th>Action</th><th>Example</th></tr>
+      <tr>
+        <td><span class="tag tag-green">Same Variant</span></td>
+        <td>Keep existing <code>variant_id</code>. Update label, atoms, slug if changed.</td>
+        <td>"Ocean Blue" &rarr; "Deep Ocean Blue" &mdash; same product, better name.</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-accent">New Variant</span></td>
+        <td>Generate new <code>variant_id</code>. Add to registry.</td>
+        <td>A brand new color "Crimson Red" that never existed before.</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-orange">Retired</span></td>
+        <td>Keep in registry with <code>retired: true</code>. Never delete.</td>
+        <td>Old limited edition no longer sold. PIF images still linked.</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-purple">Task</span> Prompt Structure</div>
+  <div class="card-body">
+    <pre class="json-block">System prompt:
+  You are validating a Color Edition Finder update for: {brand} {model}
+
+  EXISTING VARIANT REGISTRY (published):
+  {variant_id} | {type} | {variant_key} | {label} | atoms: {color_atoms}
+  v_a1b2c3d4   | color  | color:black   | Black   | atoms: [black]
+  v_e5f6a7b8   | color  | color:ocean-blue | Ocean Blue | atoms: [ocean-blue]
+  v_f3a4b5c6   | edition | edition:cod-bo6 | COD BO6 | atoms: [black+orange]
+
+  NEW CEF DISCOVERIES:
+  color:black (label: "Jet Black", atoms: [black])
+  color:deep-ocean-blue (label: "Deep Ocean Blue", atoms: [deep-ocean-blue])
+  color:crimson-red (label: "Crimson Red", atoms: [crimson-red])
+  edition:cod-bo6 (label: "COD Black Ops 6", atoms: [black+orange+gold])
+
+  For EACH new discovery, respond:
+  {
+    "mappings": [
+      {"new_key": "color:black", "match": "v_a1b2c3d4", "action": "update", "reason": "same color, name refined"},
+      {"new_key": "color:deep-ocean-blue", "match": "v_e5f6a7b8", "action": "update", "reason": "same blue variant, name refined"},
+      {"new_key": "color:crimson-red", "match": null, "action": "create", "reason": "genuinely new color"},
+      {"new_key": "edition:cod-bo6", "match": "v_f3a4b5c6", "action": "update", "reason": "same edition, color atoms expanded"}
+    ],
+    "retired": []
+  }
+
+Rules:
+- A color rename (Ocean Blue &rarr; Deep Ocean Blue) is the SAME variant.
+- Color atoms gaining/losing modifiers for the same base color is the SAME variant.
+- An edition gaining extra color detail in its combo is the SAME variant.
+- A completely different color or product line is a NEW variant.
+- Existing variants not in the new discoveries are NOT deleted &mdash; list them in "retired" if they appear discontinued.</pre>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-purple">Task</span> Validation Response Schema (Zod)</div>
+  <div class="card-body">
+    <pre class="json-block">const variantMappingSchema = z.object({
+  new_key: z.string(),
+  match: z.string().nullable(),   // existing variant_id or null
+  action: z.enum(['update', 'create']),
+  reason: z.string(),
+});
+
+const variantValidationResponseSchema = z.object({
+  mappings: z.array(variantMappingSchema),
+  retired: z.array(z.string()),   // variant_ids no longer in discoveries
+});</pre>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-purple">Task</span> Registry Update Logic</div>
+  <div class="card-body">
+    <p>After the LLM returns mappings, apply them to the registry:</p>
+    <ol class="step-list">
+      <li><strong>Update matches:</strong> For each <code>action: "update"</code>, find the entry by <code>variant_id</code>. Update <code>variant_key</code>, <code>variant_label</code>, <code>color_atoms</code>, <code>edition_slug</code>, <code>edition_display_name</code>, <code>updated_at</code>. Hash stays the same.</li>
+      <li><strong>Create new:</strong> For each <code>action: "create"</code>, generate a new <code>variant_id</code> via <code>generateVariantId()</code>, create a full registry entry.</li>
+      <li><strong>Mark retired:</strong> For each variant_id in <code>retired</code>, set <code>retired: true</code> on the entry. Never remove from the array.</li>
+      <li><strong>Write:</strong> Save updated <code>variant_registry</code> to JSON and SQL.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-purple">Task</span> Integration with Publisher Pipeline</div>
+  <div class="card-body">
+    <dl class="detail-grid">
+      <dt>Where</dt><dd>After <code>submitCandidate</code> validation, before writing <code>selected</code></dd>
+      <dt>Condition</dt><dd><code>variant_registry</code> already exists in JSON (i.e., not first publish)</dd>
+      <dt>LLM Phase</dt><dd>New phase: <code>variantValidator</code> in <code>llmPhaseDefs</code></dd>
+      <dt>Failure mode</dt><dd>If LLM call fails, the CEF run is rejected (not published). Existing registry untouched.</dd>
+    </dl>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-green">Deliverable</span> Phase 2 Completion Proof</div>
+  <div class="card-body">
+    <ul>
+      <li>CEF Run 2+ triggers LLM validation before publishing</li>
+      <li>Renaming "Ocean Blue" to "Deep Ocean Blue" keeps the same <code>variant_id</code></li>
+      <li>Adding a genuinely new color creates a new hash and new registry entry</li>
+      <li>Changing an edition's color combo (e.g., adding +gold) keeps the same hash</li>
+      <li>Validation failure rejects the run &mdash; existing registry is never corrupted</li>
+      <li>Retired variants remain in registry with <code>retired: true</code></li>
+    </ul>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- PHASE 3                                                             -->
+<!-- ================================================================== -->
+
+<div class="phase-title phase-3">
+  <span class="phase-num">3</span>
+  PIF Decoupling &amp; Migration
+</div>
+<p class="phase-desc">PIF stores <code>variant_id</code> on every image. The GUI reads the variant registry directly, decoupled from CEF's live query state. Eval, hero selection, and carousel slots all use the stable hash.</p>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-teal">Task</span> PIF Image Model Update</div>
+  <div class="card-body">
+    <p>Add <code>variant_id</code> to every PIF image entry in <code>product_images.json</code>:</p>
+    <pre class="json-block">{
+  "filename": "top-black.png",
+  "view": "top",
+  <strong>"variant_id": "v_a1b2c3d4",</strong>
+  "variant_key": "color:black",       // kept for display, but not used for linkage
+  "variant_label": "Black",
+  "variant_type": "color",
+  ...
+}</pre>
+    <p>At image download time, PIF looks up the <code>variant_id</code> from the variant registry. All downstream operations (eval, hero, carousel slots) use <code>variant_id</code> for grouping and linkage.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-teal">Task</span> PIF Variant List from Registry</div>
+  <div class="card-body">
+    <p>The PIF panel currently derives its variant list from CEF's live query:</p>
+    <pre class="json-block">// BEFORE (fragile — breaks when CEF re-runs)
+const variants = buildVariantList(cefData.selected);</pre>
+    <p>After Phase 3:</p>
+    <pre class="json-block">// AFTER (stable — reads from variant registry, independent of CEF state)
+const variants = pifData.variantRegistry
+  .filter(v => !v.retired)
+  .map(v => ({ key: v.variant_id, label: v.variant_label, type: v.variant_type }));</pre>
+    <p>The PIF GET endpoint includes the variant registry in its response (read from <code>color_edition.json</code>). CEF can re-run freely without affecting PIF's variant display or eval functionality.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-teal">Task</span> Eval &amp; Hero Linkage by <code>variant_id</code></div>
+  <div class="card-body">
+    <p>All eval and hero operations switch from <code>variant_key</code> to <code>variant_id</code>:</p>
+    <ul>
+      <li><code>POST /evaluate-view</code>: body uses <code>variant_id</code> instead of <code>variant_key</code></li>
+      <li><code>POST /evaluate-hero</code>: body uses <code>variant_id</code></li>
+      <li><code>mergeEvaluation()</code>: matches images by <code>variant_id</code></li>
+      <li><code>carousel_slots</code>: keyed by <code>variant_id</code> instead of <code>variant_key</code></li>
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-teal">Task</span> Migration Script</div>
+  <div class="card-body">
+    <p>One-time migration for existing data:</p>
+    <ol class="step-list">
+      <li><strong>Backfill variant_registry:</strong> For every product with a <code>color_edition.json</code> but no <code>variant_registry</code>, generate the registry from current <code>selected</code> data (same as first-publish logic).</li>
+      <li><strong>Backfill PIF images:</strong> For every image in <code>product_images.json</code>, look up the <code>variant_key</code> in the registry and stamp the <code>variant_id</code>. If no match, create a new registry entry.</li>
+      <li><strong>Backfill carousel_slots:</strong> Re-key <code>carousel_slots</code> from <code>variant_key</code> to <code>variant_id</code>.</li>
+      <li><strong>SQL rebuild:</strong> Trigger a full rebuild of SQL projections from the updated JSON.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-teal">Task</span> GUI TypeScript Types</div>
+  <div class="card-body">
+    <pre class="json-block">interface VariantRegistryEntry {
+  variant_id: string;
+  variant_key: string;
+  variant_type: 'color' | 'edition';
+  variant_label: string;
+  color_atoms: string[];
+  edition_slug: string | null;
+  edition_display_name: string | null;
+  retired: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// Added to ProductImageFinderResult
+interface ProductImageFinderResult {
+  // ... existing fields ...
+  variantRegistry: VariantRegistryEntry[];
+}
+
+// Added to ProductImageEntry
+interface ProductImageEntry {
+  // ... existing fields ...
+  variant_id: string;
+}</pre>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-green">Deliverable</span> Phase 3 Completion Proof</div>
+  <div class="card-body">
+    <ul>
+      <li>PIF images carry <code>variant_id</code> &mdash; linkage survives CEF re-runs</li>
+      <li>PIF variant list comes from registry, not live CEF query</li>
+      <li>Eval buttons work regardless of CEF state (mid-run, re-run, error)</li>
+      <li>Carousel slots keyed by stable hash</li>
+      <li>All existing products migrated with no data loss</li>
+      <li>GUI types updated, no <code>any</code> escapes</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- SUMMARY FLOW                                                        -->
+<!-- ================================================================== -->
+
+<h2 class="section-title"><span class="num">&sum;</span> End-to-End Flow After All Phases</h2>
+
+<div class="card">
+  <div class="card-body">
+    <div class="flow-row">
+      <div class="flow-box flow-accent">CEF Run 1</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box flow-pass">Auto-publish<br><small>Hashes created</small></div>
+    </div>
+    <div class="flow-row">
+      <div class="flow-box flow-accent">CEF Run 2+</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box flow-purple">LLM Validation<br><small>Identity resolved</small></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box flow-pass">Registry Updated<br><small>Hashes stable</small></div>
+    </div>
+    <div class="flow-row">
+      <div class="flow-box flow-teal">PIF Discovery</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box flow-neutral">Reads Registry<br><small>Gets variant_id</small></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box flow-pass">Images stamped<br><small>with variant_id</small></div>
+    </div>
+    <div class="flow-row">
+      <div class="flow-box flow-teal">PIF Eval</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box flow-neutral">Groups by<br><small>variant_id</small></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box flow-pass">Always works<br><small>CEF-independent</small></div>
+    </div>
+  </div>
+</div>
+
+<div class="callout callout-success">
+  <strong>Result:</strong> Variants have permanent identity. CEF can re-run freely without breaking PIF. Color name refinements, atom changes, and edition updates are handled gracefully by the LLM validation gate. No orphaned images. No duplicate variants.
+</div>
+
+</div>
+
+</body>
+</html>

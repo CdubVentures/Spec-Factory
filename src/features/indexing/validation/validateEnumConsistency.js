@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { zodToLlmSchema } from '../../../core/llm/zodToLlmSchema.js';
-import { callLlmWithRouting, hasLlmRouteApiKey, resolvePhaseModel } from '../../../core/llm/client/routing.js';
+import { hasLlmRouteApiKey, resolvePhaseModel } from '../../../core/llm/client/routing.js';
+import { createPhaseCallLlm } from '../../indexing/pipeline/shared/createPhaseCallLlm.js';
+import { callLlmWithRouting } from '../../../core/llm/client/routing.js';
 import { normalizeToken, clamp01 } from '../../../shared/primitives.js';
 
 function hasMeaningfulValue(value) {
@@ -245,30 +247,17 @@ export async function runEnumConsistencyReview({
   }
 
   try {
-    const raw = await callLlmWithRouting({
-      config,
-      reason: 'validate_enum_consistency',
-      role: 'validate',
-      phase: 'validate',
-      system: buildSystemPrompt(effectiveFormatGuidance),
-      user: buildUserPayload({
-        fieldKey,
-        enumPolicy,
-        canonicalValues: normalizedCanonical,
-        pendingValues: normalizedPending,
+    const callLlm = createPhaseCallLlm(
+      { callRoutedLlmFn: callLlmWithRouting, config, logger },
+      { phase: 'validate', reason: 'validate_enum_consistency', role: 'validate', system: buildSystemPrompt(effectiveFormatGuidance), jsonSchema: responseSchema() },
+      (args) => ({
+        user: buildUserPayload({ fieldKey: args.fieldKey, enumPolicy: args.enumPolicy, canonicalValues: args.canonicalValues, pendingValues: args.pendingValues }),
+        usageContext: { reason: 'validate_enum_consistency', field_key: args.fieldKey, enum_policy: args.enumPolicy, pending_count: args.pendingValues.length, canonical_count: args.canonicalValues.length },
+        costRates,
+        onUsage,
       }),
-      jsonSchema: responseSchema(),
-      usageContext: {
-        reason: 'validate_enum_consistency',
-        field_key: fieldKey,
-        enum_policy: enumPolicy,
-        pending_count: normalizedPending.length,
-        canonical_count: normalizedCanonical.length,
-      },
-      costRates,
-      onUsage,
-      logger,
-    });
+    );
+    const { result: raw } = await callLlm({ fieldKey, enumPolicy, canonicalValues: normalizedCanonical, pendingValues: normalizedPending });
 
     return {
       enabled: true,

@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
 import { runLlmHealthCheck } from '../healthCheck.js';
 
 function makeMemoryStorage() {
@@ -23,8 +26,9 @@ function makeMemoryStorage() {
   };
 }
 
-test('runLlmHealthCheck validates response and writes billing ledger', async () => {
+test('runLlmHealthCheck validates response and writes billing JSONL', async () => {
   const storage = makeMemoryStorage();
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'llm-health-'));
   const originalFetch = global.fetch;
   global.fetch = async () => ({
     ok: true,
@@ -60,6 +64,7 @@ test('runLlmHealthCheck validates response and writes billing ledger', async () 
       provider: 'deepseek',
       model: 'deepseek-reasoner',
       config: {
+        specDbDir: tmpDir,
         deepseekApiKey: 'ds-test',
         llmProvider: 'deepseek',
         llmBaseUrl: 'https://api.deepseek.com',
@@ -79,11 +84,13 @@ test('runLlmHealthCheck validates response and writes billing ledger', async () 
     assert.equal(result.prompt_tokens > 0, true);
     assert.equal(result.cost_usd >= 0, true);
 
-    // WHY: Step 17 — billing writes are SQL-only. healthCheck doesn't pass
-    // specDb, so no billing persistence. Verify no NDJSON files created.
-    const hasLedger = [...storage.map.keys()].some((key) => key.includes('_billing/ledger/'));
-    assert.equal(hasLedger, false, 'no NDJSON billing files without specDb');
+    // WHY: Health check now writes billing JSONL (dual-state mandate).
+    const ledgerDir = path.join(tmpDir, 'global', 'billing', 'ledger');
+    const month = new Date().toISOString().slice(0, 7);
+    const jsonlPath = path.join(ledgerDir, `${month}.jsonl`);
+    assert.ok(fs.existsSync(jsonlPath), 'JSONL billing file should be created for health check');
   } finally {
     global.fetch = originalFetch;
+    fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });

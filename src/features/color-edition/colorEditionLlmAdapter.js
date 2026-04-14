@@ -12,7 +12,7 @@
 
 import { zodToLlmSchema } from '../../core/llm/zodToLlmSchema.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
-import { colorEditionFinderResponseSchema } from './colorEditionSchema.js';
+import { colorEditionFinderResponseSchema, variantIdentityCheckResponseSchema } from './colorEditionSchema.js';
 
 /**
  * Accumulate urls_checked from all previous runs' discovery_logs.
@@ -205,6 +205,124 @@ export function createColorEditionFinderCallLlm(deps) {
       base_model: domainArgs.product?.base_model || '',
       model: domainArgs.product?.model || '',
       variant: domainArgs.product?.variant || '',
+    }),
+  }));
+}
+
+/* ── Variant Identity Check (Run 2+) ─────────────────────────── */
+
+/**
+ * Build the system prompt for the variant identity check.
+ *
+ * WHY: On Run 2+, new discoveries may rename colors, refine atoms,
+ * or add new variants. This prompt asks the LLM to compare each new
+ * discovery against the existing registry and decide: same variant
+ * (update metadata, keep hash) or genuinely new (create new hash).
+ *
+ * @param {object} opts
+ * @param {object} opts.product — { brand, model }
+ * @param {Array} opts.existingRegistry — current variant_registry entries
+ * @param {string[]} opts.newColors — colors from discovery call
+ * @param {Record<string, string>} opts.newColorNames — color_names from discovery
+ * @param {Record<string, object>} opts.newEditions — editions from discovery
+ * @param {string} [opts.promptOverride] — user override from settings
+ * @returns {string} system prompt
+ */
+export function buildVariantIdentityCheckPrompt({ product = {}, existingRegistry = [], newColors = [], newColorNames = {}, newEditions = {}, promptOverride = '' }) {
+  if (promptOverride.trim()) return promptOverride.trim();
+
+  const brand = product.brand || '';
+  const model = product.model || '';
+
+  const registryLines = existingRegistry
+    .filter((e) => !e.retired)
+    .map((e) => `  ${e.variant_id} | ${e.variant_type} | ${e.variant_key} | label: "${e.variant_label}" | atoms: [${e.color_atoms.join(', ')}]${e.edition_slug ? ` | edition: ${e.edition_slug}` : ''}`)
+    .join('\n');
+
+  const newColorLines = newColors.map((c) => {
+    const name = newColorNames[c];
+    const hasName = name && name.toLowerCase() !== c.toLowerCase();
+    const edition = Object.entries(newEditions).find(([, ed]) => (ed.colors || [])[0] === c);
+    if (edition) {
+      return `  edition:${edition[0]} — label: "${edition[1].display_name || edition[0]}", atoms: [${c.split('+').join(', ')}]`;
+    }
+    return `  color:${c}${hasName ? ` — label: "${name}"` : ''}, atoms: [${c.split('+').join(', ')}]`;
+  }).join('\n');
+
+  // WHY: Editions not in the colors array still need to be listed
+  const listedCombos = new Set(newColors);
+  const extraEditionLines = Object.entries(newEditions)
+    .filter(([, ed]) => !(ed.colors || []).some((c) => listedCombos.has(c)))
+    .map(([slug, ed]) => {
+      const combo = (ed.colors || [])[0] || '';
+      return `  edition:${slug} — label: "${ed.display_name || slug}", atoms: [${combo.split('+').join(', ')}]`;
+    })
+    .join('\n');
+
+  const allNewLines = [newColorLines, extraEditionLines].filter(Boolean).join('\n');
+
+  return `You are validating a Color & Edition Finder update for: ${brand} ${model}
+
+EXISTING VARIANT REGISTRY (published, with stable IDs):
+${registryLines || '  (none)'}
+
+NEW CEF DISCOVERIES (from this run):
+${allNewLines || '  (none)'}
+
+For EACH new discovery, determine if it matches an existing variant or is genuinely new.
+
+Matching rules:
+- A color RENAME is the SAME variant (e.g. "Ocean Blue" → "Deep Ocean Blue" for the same product color). Map to existing ID.
+- Color atoms gaining or losing a modifier for the same base color is the SAME variant (e.g. "blue" → "light-blue"). Map to existing ID.
+- An edition gaining extra color detail in its combo is the SAME variant (e.g. "black+orange" → "black+orange+gold" for the same edition). Map to existing ID.
+- A completely different color that never existed before is a NEW variant. Set match to null.
+- A completely different edition slug with no relationship to existing editions is NEW.
+- Existing variants NOT present in the new discoveries may be RETIRED — list their variant_ids in "retired" if they appear to be discontinued. Do NOT retire variants just because the LLM missed them in one run — only retire if you have evidence the product no longer comes in that color/edition.
+
+Respond with JSON:
+{
+  "mappings": [
+    { "new_key": "color:black", "match": "v_existing_id", "action": "update", "reason": "same color" },
+    { "new_key": "color:crimson-red", "match": null, "action": "create", "reason": "genuinely new color" }
+  ],
+  "retired": ["v_id_of_discontinued_variant"]
+}
+
+Rules:
+- Every new discovery MUST appear in "mappings" — do not skip any.
+- "action" must be "update" (match found) or "create" (genuinely new).
+- "match" must be an existing variant_id for updates, null for creates.
+- "reason" should be 1 sentence explaining the decision.
+- "retired" is an array of variant_ids — empty if nothing retired.
+- When in doubt, prefer "update" (preserving existing identity) over "create" (orphaning old data).`;
+}
+
+export const VARIANT_IDENTITY_CHECK_SPEC = {
+  phase: 'colorFinder',
+  reason: 'variant_identity_check',
+  role: 'triage',
+  system: (domainArgs) => buildVariantIdentityCheckPrompt({
+    product: domainArgs.product,
+    existingRegistry: domainArgs.existingRegistry,
+    newColors: domainArgs.newColors,
+    newColorNames: domainArgs.newColorNames,
+    newEditions: domainArgs.newEditions,
+    promptOverride: domainArgs.promptOverride || '',
+  }),
+  jsonSchema: zodToLlmSchema(variantIdentityCheckResponseSchema),
+};
+
+/**
+ * Factory: create a bound LLM caller for the variant identity check.
+ */
+export function createVariantIdentityCheckCallLlm(deps) {
+  return createPhaseCallLlm(deps, VARIANT_IDENTITY_CHECK_SPEC, (domainArgs) => ({
+    user: JSON.stringify({
+      brand: domainArgs.product?.brand || '',
+      model: domainArgs.product?.model || '',
+      existing_variants: (domainArgs.existingRegistry || []).length,
+      new_colors: domainArgs.newColors?.length || 0,
+      new_editions: Object.keys(domainArgs.newEditions || {}).length,
     }),
   }));
 }

@@ -19,7 +19,6 @@ import {
 import { createItemStateStore } from './stores/itemStateStore.js';
 import { createComponentStore } from './stores/componentStore.js';
 import { createEnumListStore } from './stores/enumListStore.js';
-import { createBillingStore } from './stores/billingStore.js';
 import { createSourceIntelStore } from './stores/sourceIntelStore.js';
 import { createQueueProductStore } from './stores/queueProductStore.js';
 import { createLlmRouteSourceStore } from './stores/llmRouteSourceStore.js';
@@ -69,10 +68,6 @@ export class SpecDb {
       stmts: { _upsertItemComponentLink: this._upsertItemComponentLink, _upsertItemListLink: this._upsertItemListLink },
       expandListLinkValues,
       getListValueByFieldAndValue: (...args) => this._enumListStore.getListValueByFieldAndValue(...args)
-    });
-    this._billingStore = createBillingStore({
-      db: this.db,
-      stmts: { _insertBillingEntry: this._insertBillingEntry }
     });
     this._sourceIntelStore = createSourceIntelStore({
       db: this.db, category: this.category,
@@ -398,7 +393,6 @@ export class SpecDb {
       'component_aliases', 'enum_lists', 'list_values', 'item_component_links',
       'item_list_links', 'products',
       'llm_route_matrix',
-      'billing_entries',
       'color_edition_finder',
       'color_edition_finder_runs'
     ];
@@ -424,14 +418,6 @@ export class SpecDb {
     } catch { /* Phase 2 table may not exist yet */ }
     return false;
   }
-
-  // --- Billing ---
-
-  insertBillingEntry(e) { this._billingStore.insertBillingEntry(e); }
-  insertBillingEntriesBatch(es) { this._billingStore.insertBillingEntriesBatch(es); }
-  getBillingRollup(m, cat) { return this._billingStore.getBillingRollup(m, cat); }
-  getBillingEntriesForMonth(m) { return this._billingStore.getBillingEntriesForMonth(m); }
-  getBillingSnapshot(m, pid) { return this._billingStore.getBillingSnapshot(m, pid); }
 
   // --- Telemetry Indexes ---
   insertKnobSnapshot(row) { this._telemetryIndexStore.insertKnobSnapshot(row); }

@@ -45,7 +45,8 @@ export async function runLlmHealthCheck({
   provider = '',
   model = '',
   providerHealth,
-  logger = null
+  logger = null,
+  appDb = null,
 }) {
   const explicitModel = normalized(model);
   const route = resolveLlmRoute(config, {
@@ -99,8 +100,8 @@ export async function runLlmHealthCheck({
     onUsage: async (usageRow) => {
       Object.assign(usage, usageRow || {});
       await appendCostLedgerEntry({
-        storage,
         config,
+        appDb,
         entry: {
           ts: new Date().toISOString(),
           provider: usageRow.provider,

@@ -102,6 +102,38 @@ describe('resolveHeroEvalCriteria', () => {
       assert.ok(result.length > 0, `${cat} hero criteria should be non-empty`);
     }
   });
+
+  it('all category hero criteria contain disqualification gates matching view eval rigor', () => {
+    for (const cat of KNOWN_CATEGORIES) {
+      const result = resolveHeroEvalCriteria(cat);
+      const lower = result.toLowerCase();
+      assert.ok(lower.includes('watermark'), `${cat} hero criteria must mention watermarks`);
+      assert.ok(lower.includes('wrong') || lower.includes('identity'), `${cat} hero criteria must mention wrong product / identity`);
+      assert.ok(lower.includes('resolution'), `${cat} hero criteria must mention resolution`);
+    }
+  });
+
+  it('all category hero criteria contain explicit diversity requirement', () => {
+    for (const cat of KNOWN_CATEGORIES) {
+      const result = resolveHeroEvalCriteria(cat);
+      const lower = result.toLowerCase();
+      const hasDiversity = lower.includes('different') && (lower.includes('perspective') || lower.includes('angle') || lower.includes('composition') || lower.includes('shot'));
+      assert.ok(hasDiversity, `${cat} hero criteria must require different perspectives/shots`);
+    }
+  });
+
+  it('generic hero criteria contain disqualification gates', () => {
+    const lower = GENERIC_HERO_EVAL_CRITERIA.toLowerCase();
+    assert.ok(lower.includes('watermark'), 'generic hero criteria must mention watermarks');
+    assert.ok(lower.includes('wrong') || lower.includes('identity'), 'generic hero criteria must mention wrong product / identity');
+    assert.ok(lower.includes('resolution'), 'generic hero criteria must mention resolution');
+  });
+
+  it('generic hero criteria contain explicit diversity requirement', () => {
+    const lower = GENERIC_HERO_EVAL_CRITERIA.toLowerCase();
+    const hasDiversity = lower.includes('different') && (lower.includes('perspective') || lower.includes('angle') || lower.includes('composition') || lower.includes('shot'));
+    assert.ok(hasDiversity, 'generic hero criteria must require different perspectives/shots');
+  });
 });
 
 /* ── Data shape guards ───────────────────────────────────────────── */

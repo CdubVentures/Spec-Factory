@@ -2,27 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildLlmMetrics } from '../costLedger.js';
 
-function makeMockStorage(data = {}) {
+function makeMockAppDb(entries = []) {
   return {
-    resolveOutputKey(...parts) {
-      return `legacy/${parts.join('/')}`;
+    getBillingEntriesForMonth(month) {
+      return entries.filter((e) => (e.month || String(e.ts || '').slice(0, 7)) === month);
     },
-    async readJsonOrNull(key) {
-      return data[key] || null;
-    },
-    async readTextOrNull(key) {
-      return data[key] || null;
-    },
-    async writeObject() {},
-    async listKeys(prefix) {
-      return Object.keys(data).filter((k) => k.startsWith(prefix));
-    }
   };
 }
 
-test('buildLlmMetrics: empty ledger', async () => {
-  const storage = makeMockStorage();
-  const result = await buildLlmMetrics({ storage });
+test('buildLlmMetrics: empty ledger', () => {
+  const result = buildLlmMetrics({ appDb: makeMockAppDb() });
   assert.equal(result.total_calls, 0);
   assert.equal(result.total_cost_usd, 0);
   assert.equal(result.unique_products, 0);
@@ -31,16 +20,14 @@ test('buildLlmMetrics: empty ledger', async () => {
   assert.ok(result.by_run);
 });
 
-test('buildLlmMetrics: aggregates by model and provider', async () => {
+test('buildLlmMetrics: aggregates by model and provider', () => {
   const ts = new Date().toISOString();
   const month = ts.slice(0, 7);
-  const ledger = [
-    JSON.stringify({ ts, provider: 'openai', model: 'gpt-4', cost_usd: 0.01, prompt_tokens: 100, completion_tokens: 50, product_id: 'p1' }),
-    JSON.stringify({ ts, provider: 'openai', model: 'gpt-4', cost_usd: 0.02, prompt_tokens: 200, completion_tokens: 100, product_id: 'p2' })
-  ].join('\n');
-  // WHY: buildLlmMetrics reads month-sharded ledger files via readLedgerMonth
-  const storage = makeMockStorage({ [`_billing/ledger/${month}.jsonl`]: ledger });
-  const result = await buildLlmMetrics({ storage, period: 'month' });
+  const entries = [
+    { ts, month, provider: 'openai', model: 'gpt-4', cost_usd: 0.01, prompt_tokens: 100, completion_tokens: 50, product_id: 'p1', productId: 'p1' },
+    { ts, month, provider: 'openai', model: 'gpt-4', cost_usd: 0.02, prompt_tokens: 200, completion_tokens: 100, product_id: 'p2', productId: 'p2' },
+  ];
+  const result = buildLlmMetrics({ appDb: makeMockAppDb(entries), period: 'month' });
   assert.equal(result.total_calls, 2);
   assert.ok(result.total_cost_usd > 0);
   assert.equal(result.by_model.length, 1);

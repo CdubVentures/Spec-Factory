@@ -20,6 +20,7 @@ import {
 } from './imageEvaluator.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 import { buildLlmCallDeps } from '../../core/llm/buildLlmCallDeps.js';
+import { matchVariant } from './variantMatch.js';
 
 /**
  * Evaluate candidates for ONE view of ONE variant.
@@ -31,6 +32,7 @@ export async function runEvalView({
   config = {},
   logger = null,
   variantKey,
+  variantId,
   view,
   productRoot,
   signal,
@@ -48,24 +50,31 @@ export async function runEvalView({
   const thumbSize = parseInt(finderStore?.getSetting?.('evalThumbSize') || '512', 10) || 512;
   const evalPromptOverride = finderStore?.getSetting?.('evalPromptOverride') || '';
 
+  const evalStartedAt = new Date().toISOString();
   onStageAdvance?.('Evaluating');
 
   // Read existing images, filter to this variant + view
   const pifDoc = readProductImages({ productId: product.product_id, productRoot: root });
   const allImages = pifDoc?.selected?.images || [];
-  const viewImages = allImages.filter(img => img.variant_key === variantKey && img.view === view);
+  const viewImages = allImages.filter(img => matchVariant(img, { variantId, variantKey }) && img.view === view);
 
   if (viewImages.length === 0) {
     onStageAdvance?.('Complete');
     return { rankings: [], skipped: true };
   }
 
-  // Build LLM caller — capture model name for eval history
+  // Build LLM caller — capture model info for eval history
   let callLlm = null;
   let resolvedModelName = '';
+  let resolvedAccessMode = '';
+  let resolvedEffortLevel = '';
+  let resolvedFallbackUsed = false;
   if (!_evalViewFn) {
     const wrappedOnModelResolved = (info) => {
       if (info?.model) resolvedModelName = info.model;
+      if (info?.accessMode) resolvedAccessMode = info.accessMode;
+      if (info?.effortLevel) resolvedEffortLevel = info.effortLevel;
+      if (info?.isFallback) resolvedFallbackUsed = true;
       onModelResolved?.(info);
     };
     const llmDeps = buildLlmCallDeps({ config, logger, onModelResolved: wrappedOnModelResolved, onStreamChunk, onQueueWait, signal });
@@ -86,6 +95,7 @@ export async function runEvalView({
   const evalCriteria = dbCriteria || resolveViewEvalCriteria(product.category, view);
 
   const evalFn = _evalViewFn || evaluateViewCandidates;
+  onLlmCallComplete?.({ prompt: { system: '(view eval)', user: `${view} view — ${viewImages.length} candidates` }, response: null, model: resolvedModelName, variant: variantKey, mode: 'view-eval' });
   const result = await evalFn({
     imagePaths,
     imageMetadata,
@@ -99,6 +109,7 @@ export async function runEvalView({
     evalCriteria,
     callLlm,
   });
+  onLlmCallComplete?.({ prompt: { system: result._prompt || '(view eval)', user: `${view} view — ${viewImages.length} candidates` }, response: result._response, model: resolvedModelName, variant: variantKey, mode: 'view-eval', usage: result.usage || null });
 
   // WHY: Serialize JSON writes per product — multiple view evals fire simultaneously
   // and all read/modify/write the same product_images.json file.
@@ -109,19 +120,31 @@ export async function runEvalView({
       productId: product.product_id,
       productRoot: root,
       variantKey,
+      variantId,
       viewResults,
       heroResults: null,
     });
 
     // Persist eval history (prompt + response for audit trail)
     if (result._prompt) {
+      const variantLabel = viewImages[0]?.variant_label || variantKey;
+      const variantType = viewImages[0]?.variant_type || 'color';
+      const durationMs = Date.now() - new Date(evalStartedAt).getTime();
       appendEvalRecord({
         productId: product.product_id,
         productRoot: root,
         variantKey,
+        variantId,
         type: 'view',
         view,
         model: resolvedModelName,
+        startedAt: evalStartedAt,
+        effortLevel: resolvedEffortLevel || null,
+        accessMode: resolvedAccessMode || null,
+        fallbackUsed: resolvedFallbackUsed,
+        variantLabel,
+        variantType,
+        durationMs,
         prompt: result._prompt,
         response: result._response,
         result: { rankings: result.rankings },
@@ -151,6 +174,7 @@ export async function runEvalHero({
   config = {},
   logger = null,
   variantKey,
+  variantId,
   productRoot,
   signal,
   onStageAdvance = null,
@@ -165,13 +189,14 @@ export async function runEvalHero({
   const root = productRoot || defaultProductRoot();
   const finderStore = specDb?.getFinderStore?.('productImageFinder');
   const heroPromptOverride = finderStore?.getSetting?.('heroEvalPromptOverride') || '';
+  const evalStartedAt = new Date().toISOString();
 
   onStageAdvance?.('Heroes');
 
   // Read hero-view candidates for this variant
   const pifDoc = readProductImages({ productId: product.product_id, productRoot: root });
   const allImages = pifDoc?.selected?.images || [];
-  const heroCandidates = allImages.filter(img => img.variant_key === variantKey && img.view === 'hero');
+  const heroCandidates = allImages.filter(img => matchVariant(img, { variantId, variantKey }) && img.view === 'hero');
 
   if (heroCandidates.length === 0) {
     onStageAdvance?.('Complete');
@@ -201,12 +226,18 @@ export async function runEvalHero({
     return autoResult;
   }
 
-  // Build LLM caller — capture model name for eval history
+  // Build LLM caller — capture model info for eval history
   let heroCall = _heroCallFn;
   let resolvedModelName = '';
+  let resolvedAccessMode = '';
+  let resolvedEffortLevel = '';
+  let resolvedFallbackUsed = false;
   if (!heroCall) {
     const wrappedOnModelResolved = (info) => {
       if (info?.model) resolvedModelName = info.model;
+      if (info?.accessMode) resolvedAccessMode = info.accessMode;
+      if (info?.effortLevel) resolvedEffortLevel = info.effortLevel;
+      if (info?.isFallback) resolvedFallbackUsed = true;
       onModelResolved?.(info);
     };
     const llmDeps = buildLlmCallDeps({ config, logger, onModelResolved: wrappedOnModelResolved, onStreamChunk, onQueueWait, signal });
@@ -218,8 +249,8 @@ export async function runEvalHero({
   const heroCriteria = dbHeroCriteria || resolveHeroEvalCriteria(product.category);
   const heroCount = parseInt(finderStore?.getSetting?.('evalHeroCount') || '3', 10) || 3;
 
-  const variantLabel = allImages.find(img => img.variant_key === variantKey)?.variant_label || variantKey;
-  const variantType = allImages.find(img => img.variant_key === variantKey)?.variant_type || 'color';
+  const variantLabel = allImages.find(img => matchVariant(img, { variantId, variantKey }))?.variant_label || variantKey;
+  const variantType = allImages.find(img => matchVariant(img, { variantId, variantKey }))?.variant_type || 'color';
 
   // Build thumbnails for vision evaluation
   const thumbSize = parseInt(finderStore?.getSetting?.('evalThumbSize') || '512', 10) || 512;
@@ -248,7 +279,8 @@ export async function runEvalHero({
   }
   const userText = lines.join('\n');
 
-  const heroResults = await heroCall({
+  onLlmCallComplete?.({ prompt: { system: '(hero eval)', user: `${heroCandidates.length} candidates` }, response: null, model: resolvedModelName, variant: variantKey, mode: 'hero-eval' });
+  const { result: heroResults, usage: heroUsage } = await heroCall({
     product,
     variantLabel,
     variantType,
@@ -259,6 +291,7 @@ export async function runEvalHero({
     userText,
     images,
   });
+  onLlmCallComplete?.({ prompt: { system: '(hero eval)', user: `${heroCandidates.length} candidates` }, response: heroResults, model: resolvedModelName, variant: variantKey, mode: 'hero-eval', usage: heroUsage || null });
 
   // WHY: Serialize JSON writes per product — concurrent eval operations.
   const merge = _mergeFn || mergeEvaluation;
@@ -267,6 +300,7 @@ export async function runEvalHero({
       productId: product.product_id,
       productRoot: root,
       variantKey,
+      variantId,
       viewResults: new Map(),
       heroResults,
     });
@@ -278,12 +312,21 @@ export async function runEvalHero({
         product, variantLabel, variantType, candidates,
         promptOverride: heroPromptOverride, heroCriteria, heroCount,
       });
+      const durationMs = Date.now() - new Date(evalStartedAt).getTime();
       appendEvalRecord({
         productId: product.product_id,
         productRoot: root,
         variantKey,
+        variantId,
         type: 'hero',
         model: resolvedModelName,
+        startedAt: evalStartedAt,
+        effortLevel: resolvedEffortLevel || null,
+        accessMode: resolvedAccessMode || null,
+        fallbackUsed: resolvedFallbackUsed,
+        variantLabel,
+        variantType,
+        durationMs,
         prompt: { system: heroSystemPrompt, user: userText },
         response: heroResults,
         result: heroResults,

@@ -289,7 +289,7 @@ export async function buildSearchPlan({
 
   let llmResult;
   try {
-    llmResult = await callPlanner({
+    ({ result: llmResult } = await callPlanner({
       payloadJson,
       llmContext,
       usageContext: {
@@ -301,7 +301,7 @@ export async function buildSearchPlan({
         evidence_chars: payloadJson.length,
         trace_context: { purpose: 'needset_search_plan', target_groups: activeGroupKeys },
       },
-    });
+    }));
   } catch (error) {
     logger?.warn?.('search_plan_builder_llm_failed', { message: error.message });
     return makeErrorResult(ctx, error);

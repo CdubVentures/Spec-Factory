@@ -40,8 +40,8 @@ function buildMinimalDeps() {
         calls.push({ fn: 'loadPipelineBootConfig', category: cat });
         return categoryConfig;
       },
-      readBillingSnapshotFn: async (opts) => {
-        calls.push({ fn: 'readBillingSnapshot', hasStorage: !!opts.storage });
+      readBillingSnapshotFn: (opts) => {
+        calls.push({ fn: 'readBillingSnapshot', hasAppDb: opts.appDb !== undefined });
         return billingSnapshot;
       },
       createRunLlmRuntimeFn: (opts) => {

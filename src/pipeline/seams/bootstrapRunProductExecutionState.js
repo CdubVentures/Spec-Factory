@@ -43,6 +43,7 @@ export async function bootstrapRunConfig({
   syncRuntimeOverrides,
   frontierDb,
   specDb = null,
+  appDb = null,
   deps = {},
 } = {}) {
   const runtimeDeps = { ...DEFAULT_DEPS, ...deps };
@@ -59,7 +60,7 @@ export async function bootstrapRunConfig({
   logger.info('bootstrap_step', { step: 'billing', progress: 40 });
   const [runtimeOverrides, billingSnapshot] = await Promise.all([
     syncRuntimeOverrides({ force: true }),
-    runtimeDeps.readBillingSnapshotFn({ storage, month: billingMonth, productId, specDb }),
+    runtimeDeps.readBillingSnapshotFn({ month: billingMonth, productId, appDb }),
   ]);
   const blockedHosts = new Set(runtimeOverrides?.blocked_domains || []);
 
@@ -77,6 +78,7 @@ export async function bootstrapRunConfig({
     runtimeMode,
     runtimeOverrides,
     specDb,
+    appDb,
     billingSnapshot,
     stableHashFn: stableHash,
     normalizeCostRatesFn: runtimeDeps.normalizeCostRatesFn,

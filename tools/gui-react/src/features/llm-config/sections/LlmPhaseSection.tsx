@@ -45,7 +45,7 @@ interface LlmPhaseSectionProps {
   registry: LlmProviderEntry[];
   globalDraft: GlobalDraftSlice;
   apiKeyFilter?: (provider: LlmProviderEntry) => boolean;
-  phaseSchema?: { system_prompt: string; hero_system_prompt?: string; response_schema: Record<string, unknown>; hero_response_schema?: Record<string, unknown>; view_prompts?: Record<string, string>; eval_criteria_defaults?: Record<string, Record<string, string>>; eval_criteria_categories?: readonly string[] } | null;
+  phaseSchema?: { system_prompt: string; hero_system_prompt?: string; identity_check_prompt?: string; response_schema: Record<string, unknown>; hero_response_schema?: Record<string, unknown>; identity_check_response_schema?: Record<string, unknown>; view_prompts?: Record<string, string>; eval_criteria_defaults?: Record<string, Record<string, string>>; eval_criteria_categories?: readonly string[] } | null;
 }
 
 export const LlmPhaseSection = memo(function LlmPhaseSection({
@@ -470,6 +470,38 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
           <CategoryViewPromptTabs phaseSchema={phaseSchema as CategoryViewPromptTabsPhaseSchema} />
         ) : phaseSchema.view_prompts ? (
           <ViewPromptTabs phaseSchema={phaseSchema} />
+        ) : phaseSchema.identity_check_prompt ? (
+          /* Two-column layout: Discovery prompt (left) + Identity Check prompt (right) */
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Discovery System Prompt</div>
+                <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text" style={{ maxHeight: '500px' }}>
+                  {String(phaseSchema.system_prompt)}
+                </pre>
+              </div>
+              <div>
+                <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Identity Check Prompt (Run 2+)</div>
+                <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text" style={{ maxHeight: '500px' }}>
+                  {String(phaseSchema.identity_check_prompt)}
+                </pre>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Discovery Response Schema</div>
+                <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
+                  {JSON.stringify(phaseSchema.response_schema, null, 2)}
+                </pre>
+              </div>
+              <div>
+                <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Identity Check Response Schema</div>
+                <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
+                  {JSON.stringify(phaseSchema.identity_check_response_schema, null, 2)}
+                </pre>
+              </div>
+            </div>
+          </div>
         ) : phaseSchema.hero_system_prompt ? (
           /* Two-column layout: View prompt (left) + Hero prompt (right) */
           <div className="space-y-3">

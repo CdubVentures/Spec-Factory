@@ -5,11 +5,11 @@ export function createQueueBillingLearningRouteContext(options = {}) {
 
   const {
     jsonRes, readJsonBody, toInt, config, storage, OUTPUT_ROOT, path,
-    getSpecDb, broadcastWs, safeReadJson, safeStat, listFiles,
+    getSpecDb, appDb, broadcastWs, safeReadJson, safeStat, listFiles,
   } = options;
 
   return {
     jsonRes, readJsonBody, toInt, config, storage, OUTPUT_ROOT, path,
-    getSpecDb, broadcastWs, safeReadJson, safeStat, listFiles,
+    getSpecDb, appDb, broadcastWs, safeReadJson, safeStat, listFiles,
   };
 }

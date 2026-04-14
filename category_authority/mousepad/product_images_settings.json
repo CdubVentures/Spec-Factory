@@ -11,6 +11,7 @@
   "heroEnabled": "true",
   "heroCount": "3",
   "viewAttemptBudget": "5",
+  "viewAttemptBudgets": "",
   "heroAttemptBudget": "3",
   "viewPromptOverride": "",
   "heroPromptOverride": "",

@@ -2,37 +2,59 @@
 
 > **Purpose:** Document the verified cost artifact surfaces exposed after indexing activity completes.
 > **Prerequisites:** [indexing-lab.md](./indexing-lab.md), [../03-architecture/data-model.md](../03-architecture/data-model.md)
-> **Last validated:** 2026-04-10
+> **Last validated:** 2026-04-13
 
 ## Entry Points
 
 | Surface | Path | Role |
 |--------|------|------|
 | Billing page | `tools/gui-react/src/pages/billing/BillingPage.tsx` | cost rollups |
-| Queue/Billing API | `src/features/indexing/api/queueBillingLearningRoutes.js` | `/billing/:category/monthly` |
-| Billing ledger | `src/billing/costLedger.js` | aggregates LLM billing rows |
+| Global billing API | `src/features/indexing/api/queueBillingLearningRoutes.js` | 6 global endpoints + legacy per-category |
+| Billing ledger | `src/billing/costLedger.js` | dual-write: SQL (appDb) + JSONL |
+| Billing store | `src/db/appDb.js` | `billing_entries` table in global `app.sqlite` |
 
 ## Dependencies
 
-- `src/db/specDb.js`
-- `src/billing/costLedger.js`
-- output folder `_billing/{category}` beneath the output root
+- `src/db/appDb.js` (global `app.sqlite` — billing_entries table)
+- `src/billing/costLedger.js` (dual-write entry point)
+- `.workspace/global/billing/ledger/{month}.jsonl` (durable memory / rebuild source)
+- `.workspace/global/billing/monthly/{month}.txt` (digest artifacts)
+
+## API Endpoints
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/api/v1/billing/global/summary?month=` | KPI totals + model/category counts |
+| GET | `/api/v1/billing/global/daily?months=1` | Daily time-series for charts |
+| GET | `/api/v1/billing/global/by-model?month=` | Cost grouped by provider:model |
+| GET | `/api/v1/billing/global/by-reason?month=` | Cost grouped by call type (reason) |
+| GET | `/api/v1/billing/global/by-category?month=` | Cost grouped by product category |
+| GET | `/api/v1/billing/global/entries?limit=&offset=&category=&model=&reason=` | Paginated raw entries |
+| GET | `/api/v1/billing/{category}/monthly` | Per-category rollup (legacy) |
 
 ## Flow
 
-1. Indexing or review-related LLM work records cost/billing details into `billing_entries` and/or monthly JSON artifacts.
-2. `tools/gui-react/src/pages/billing/BillingPage.tsx` requests `/api/v1/billing/:category/monthly`.
-3. `src/features/indexing/api/queueBillingLearningRoutes.js` reads the latest monthly billing JSON.
-4. The GUI renders aggregate totals and per-model cost.
+1. LLM calls complete and invoke `onUsage` callback.
+2. `costLedger.appendCostLedgerEntry({ config, appDb, entry })` dual-writes:
+   - SQL: `appDb.insertBillingEntry()` into global `app.sqlite`
+   - JSONL: append to `.workspace/global/billing/ledger/{month}.jsonl`
+3. Frontend queries `/api/v1/billing/global/*` endpoints.
+4. Route handlers call `appDb.getBillingRollup()`, `appDb.getGlobalDaily()`, or `appDb.getGlobalEntries()`.
+5. GUI renders KPIs, charts, and data table.
+
+## Rebuild Contract
+
+If `app.sqlite` is deleted, `seedBillingFromJsonl()` in `appDbSeed.js` restores `billing_entries` from JSONL on next bootstrap.
 
 ## Side Effects
 
-- Runtime generation writes or updates `billing_entries` and output-root artifact files.
+- Runtime LLM calls write to both `app.sqlite` and JSONL (dual-state mandate).
 - The GUI/API read path is read-only.
 
 ## Error Paths
 
-- Missing billing files: route returns `{ totals: {} }` rather than failing.
+- Missing appDb: route returns `503 { error: 'billing not available' }`.
+- Empty data: route returns `{ totals: {} }` or empty arrays.
 
 ## State Transitions
 
@@ -53,22 +75,24 @@ sequenceDiagram
     participant Routes as queueBillingLearningRoutes<br/>(src/features/indexing/api/queueBillingLearningRoutes.js)
   end
   box Storage
-    participant Output as Output Root<br/>(_billing)
-    participant SpecDb as SpecDb<br/>(src/db/specDb.js)
+    participant AppDb as AppDb<br/>(src/db/appDb.js — app.sqlite)
+    participant JSONL as JSONL Ledger<br/>(.workspace/global/billing/ledger/)
   end
-  BillingPage->>Routes: GET /api/v1/billing/:category/monthly
-  Routes->>Output: read latest billing JSON
-  Routes-->>BillingPage: totals
+  BillingPage->>Routes: GET /api/v1/billing/global/summary
+  Routes->>AppDb: getBillingRollup(month)
+  AppDb-->>Routes: { totals, by_day, by_model, by_reason, by_category }
+  Routes-->>BillingPage: { month, totals, models_used, categories_used }
 ```
 
 ## Validated Against
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `src/features/indexing/api/queueBillingLearningRoutes.js` | billing read endpoint |
-| source | `src/billing/costLedger.js` | cost ledger ownership |
+| source | `src/features/indexing/api/queueBillingLearningRoutes.js` | 6 global + 1 legacy billing endpoints |
+| source | `src/billing/costLedger.js` | dual-write (SQL + JSONL) |
+| source | `src/db/appDb.js` | billing methods on global AppDb |
+| source | `src/db/appDbSchema.js` | `billing_entries` table DDL |
 | source | `tools/gui-react/src/pages/billing/BillingPage.tsx` | GUI usage of billing endpoint |
-| schema | `src/db/specDbSchema.js` | `billing_entries` table |
 
 ## Related Documents
 

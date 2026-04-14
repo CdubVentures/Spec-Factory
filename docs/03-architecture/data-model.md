@@ -162,6 +162,34 @@ Table constraints: primary key on `id`; `canonical` is unique.
 | `conversions_json` | `TEXT` | `NOT NULL DEFAULT '[]'` | serialized conversion array |
 | `updated_at` | `TEXT` | `NOT NULL DEFAULT (datetime('now'))` | timestamp |
 
+### `billing_entries`
+
+Global LLM cost tracking. Dual-written to SQL + `.workspace/global/billing/ledger/{month}.jsonl`. Rebuild contract: `seedBillingFromJsonl()` restores from JSONL if table is empty.
+
+| Field | Type | Constraints | Notes |
+|-------|------|-------------|-------|
+| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | row id |
+| `ts` | `TEXT` | `NOT NULL` | event timestamp |
+| `month` | `TEXT` | `NOT NULL` | billing month bucket (indexed) |
+| `day` | `TEXT` | `NOT NULL` | billing day bucket (indexed) |
+| `provider` | `TEXT` | `NOT NULL DEFAULT 'unknown'` | provider id |
+| `model` | `TEXT` | `NOT NULL DEFAULT 'unknown'` | model id |
+| `category` | `TEXT` | `DEFAULT ''` | category slug |
+| `product_id` | `TEXT` | `DEFAULT ''` | product identifier (indexed) |
+| `run_id` | `TEXT` | `DEFAULT ''` | run identifier |
+| `round` | `INTEGER` | `DEFAULT 0` | round index |
+| `prompt_tokens` | `INTEGER` | `DEFAULT 0` | token count |
+| `completion_tokens` | `INTEGER` | `DEFAULT 0` | token count |
+| `cached_prompt_tokens` | `INTEGER` | `DEFAULT 0` | cached token count |
+| `total_tokens` | `INTEGER` | `DEFAULT 0` | total tokens |
+| `cost_usd` | `REAL` | `DEFAULT 0` | spend |
+| `reason` | `TEXT` | `DEFAULT 'extract'` | usage reason |
+| `host` | `TEXT` | `DEFAULT ''` | source host |
+| `url_count` | `INTEGER` | `DEFAULT 0` | URL count |
+| `evidence_chars` | `INTEGER` | `DEFAULT 0` | evidence character count |
+| `estimated_usage` | `INTEGER` | `DEFAULT 0` | boolean: tokens estimated (not from API) |
+| `meta` | `TEXT` | `DEFAULT '{}'` | serialized metadata |
+
 ## SpecDb: Review State And Normalized Entity Tables
 
 Each category gets its own SpecDb at `.workspace/db/<category>/spec.sqlite`.
@@ -557,31 +585,7 @@ Important uniqueness rules are enforced by indexes in `src/db/specDbSchema.js` a
 
 ## SpecDb: Operational, Artifact, And Telemetry Tables
 
-### `billing_entries`
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | row id |
-| `ts` | `TEXT` | `NOT NULL` | event timestamp |
-| `month` | `TEXT` | `NOT NULL` | billing month bucket |
-| `day` | `TEXT` | `NOT NULL` | billing day bucket |
-| `provider` | `TEXT` | `NOT NULL DEFAULT 'unknown'` | provider id |
-| `model` | `TEXT` | `NOT NULL DEFAULT 'unknown'` | model id |
-| `category` | `TEXT` | `DEFAULT ''` | category slug |
-| `product_id` | `TEXT` | `DEFAULT ''` | product identifier |
-| `run_id` | `TEXT` | `DEFAULT ''` | run identifier |
-| `round` | `INTEGER` | `DEFAULT 0` | round index |
-| `prompt_tokens` | `INTEGER` | `DEFAULT 0` | token count |
-| `completion_tokens` | `INTEGER` | `DEFAULT 0` | token count |
-| `cached_prompt_tokens` | `INTEGER` | `DEFAULT 0` | cached token count |
-| `total_tokens` | `INTEGER` | `DEFAULT 0` | total tokens |
-| `cost_usd` | `REAL` | `DEFAULT 0` | spend |
-| `reason` | `TEXT` | `DEFAULT 'extract'` | usage reason |
-| `host` | `TEXT` | `DEFAULT ''` | source host |
-| `url_count` | `INTEGER` | `DEFAULT 0` | URL count |
-| `evidence_chars` | `INTEGER` | `DEFAULT 0` | evidence character count |
-| `estimated_usage` | `INTEGER` | `DEFAULT 0` | estimated usage value |
-| `meta` | `TEXT` | `DEFAULT '{}'` | serialized metadata |
+> **Note:** `billing_entries` moved to global AppDb (`app.sqlite`) as of 2026-04-13. See AppDb section above.
 
 ### `data_authority_sync`
 
@@ -920,7 +924,6 @@ Table constraints: primary key on `category`. Lifecycle: rebuild=yes, source_edi
 | Store module | Primary tables touched |
 |-------------|----------------------|
 | `artifactStore` | `crawl_sources`, `source_screenshots`, `source_videos` |
-| `billingStore` | `billing_entries` |
 | `colorEditionFinderStore` | `color_edition_finder`, `color_edition_finder_runs` |
 | `componentStore` | `component_identity`, `component_values`, `component_aliases`, `item_component_links` |
 | `crawlLedgerStore` | `url_crawl_ledger` |
@@ -959,7 +962,7 @@ SSOT for which columns are boolean per table, used by `hydrateRow`/`hydrateRows`
 | `ITEM_FIELD_STATE_BOOLEAN_KEYS` | `item_field_state` | `overridden`, `needs_ai_review`, `ai_review_complete` |
 | `KEY_REVIEW_STATE_BOOLEAN_KEYS` | `key_review_state` | `ai_confirm_primary_interrupted`, `ai_confirm_shared_interrupted`, `user_override_ai_primary`, `user_override_ai_shared` |
 | `PRODUCT_RUN_BOOLEAN_KEYS` | `product_runs` | `is_latest`, `validated` |
-| `BILLING_ENTRY_BOOLEAN_KEYS` | `billing_entries` | `estimated_usage` |
+| `BILLING_ENTRY_BOOLEAN_KEYS` | `billing_entries` (AppDb) | `estimated_usage` |
 
 ### `COMPONENT_IDENTITY_PROPERTY_KEYS`
 

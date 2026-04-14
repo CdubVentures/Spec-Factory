@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { nowIso, normalizeToken } from '../shared/primitives.js';
 
 function round(value, digits = 8) {
@@ -22,20 +24,14 @@ function dayFromTs(ts = nowIso()) {
   return String(ts).slice(0, 10);
 }
 
-function ledgerKey(_storage, month) {
-  return `_billing/ledger/${month}.jsonl`;
+// WHY: Resolve the billing ledger directory from config.
+// Dual-state mandate: JSONL in .workspace/global/billing/ledger/ is the durable memory.
+function resolveBillingLedgerDir(config = {}) {
+  return path.resolve(config.specDbDir || '.workspace', 'global', 'billing', 'ledger');
 }
 
-function monthlyRollupKey(_storage, month) {
-  return `_billing/monthly/${month}.json`;
-}
-
-function monthlyDigestKey(_storage, month) {
-  return `_billing/monthly/${month}.txt`;
-}
-
-function latestDigestKey(_storage) {
-  return '_billing/latest.txt';
+function resolveBillingDigestDir(config = {}) {
+  return path.resolve(config.specDbDir || '.workspace', 'global', 'billing', 'monthly');
 }
 
 function formatUsd(value) {
@@ -101,7 +97,7 @@ function toDbEntry(normalized) {
   };
 }
 
-function parseLedgerText(text) {
+export function parseLedgerText(text) {
   const rows = [];
   for (const raw of String(text || '').split(/\r?\n/)) {
     const line = raw.trim();
@@ -284,12 +280,11 @@ function buildBillingDigestText({
   return `${lines.join('\n')}\n`;
 }
 
-async function writeBillingDigest({
-  storage,
+function writeBillingDigest({
+  config = {},
   month,
   rollup,
   rows,
-  config = {}
 }) {
   const text = buildBillingDigestText({
     month,
@@ -297,96 +292,95 @@ async function writeBillingDigest({
     rows,
     config
   });
-  const digestKey = monthlyDigestKey(storage, month);
-  const latestKey = latestDigestKey(storage);
-  await storage.writeObject(
-    digestKey,
-    Buffer.from(text, 'utf8'),
-    { contentType: 'text/plain; charset=utf-8' }
-  );
-  await storage.writeObject(
-    latestKey,
-    Buffer.from(text, 'utf8'),
-    { contentType: 'text/plain; charset=utf-8' }
-  );
-  return { digestKey, latestDigestKey: latestKey };
+  const digestDir = resolveBillingDigestDir(config);
+  fs.mkdirSync(digestDir, { recursive: true });
+  const digestPath = path.join(digestDir, `${month}.txt`);
+  const latestPath = path.join(digestDir, 'latest.txt');
+  fs.writeFileSync(digestPath, text, 'utf8');
+  fs.writeFileSync(latestPath, text, 'utf8');
+  return { digestKey: digestPath, latestDigestKey: latestPath };
 }
 
-export async function readMonthlyRollup({ storage, month, specDb = null }) {
-  if (specDb) {
+export function readMonthlyRollup({ month, appDb = null }) {
+  if (appDb) {
     try {
-      const result = specDb.getBillingRollup(month);
+      const result = appDb.getBillingRollup(month);
       if (result) {
         return result;
       }
     } catch {
-      // fall through to JSON path
+      // fall through to empty rollup
     }
   }
-  const key = monthlyRollupKey(storage, month);
-  return (await storage.readJsonOrNull(key)) ||
-    emptyRollup(month);
+  return emptyRollup(month);
 }
 
-export async function readLedgerMonth({ storage, month, specDb = null }) {
-  if (specDb) {
+export function readLedgerMonth({ month, appDb = null }) {
+  if (appDb) {
     try {
-      const entries = specDb.getBillingEntriesForMonth(month);
+      const entries = appDb.getBillingEntriesForMonth(month);
       if (entries) {
         return entries;
       }
     } catch {
-      // fall through to JSON path
+      // fall through to empty
     }
   }
-  const key = ledgerKey(storage, month);
-  const text = await storage.readTextOrNull(key);
-  return parseLedgerText(text);
+  return [];
 }
 
 export async function appendCostLedgerEntry({
-  storage,
   config,
   entry,
-  specDb = null
+  appDb = null,
 }) {
-  if (!storage || !config || !entry) {
+  if (!config || !entry) {
     return { entry: null };
   }
 
   const normalized = normalizeEntry(entry);
 
-  // WHY: SQL is the sole write target for billing entries.
-  // Callers without specDb (e.g. CLI healthCheck) silently skip persistence.
-  if (specDb) {
+  // WHY: Dual-state mandate — write to both SQL (runtime SSOT) and JSONL (durable memory).
+  if (appDb) {
     try {
-      specDb.insertBillingEntry(toDbEntry(normalized));
+      appDb.insertBillingEntry(toDbEntry(normalized));
     } catch {
       // best-effort — billing must not crash the pipeline
     }
   }
 
+  try {
+    const ledgerDir = resolveBillingLedgerDir(config);
+    fs.mkdirSync(ledgerDir, { recursive: true });
+    fs.appendFileSync(
+      path.join(ledgerDir, `${normalized.month}.jsonl`),
+      JSON.stringify(normalized) + '\n',
+      'utf8'
+    );
+  } catch {
+    // best-effort — JSONL write must not crash the pipeline
+  }
+
   return { entry: normalized };
 }
 
-export async function readBillingSnapshot({
-  storage,
+export function readBillingSnapshot({
   month = monthFromTs(nowIso()),
   productId = '',
-  specDb = null
+  appDb = null
 }) {
-  if (specDb) {
+  if (appDb) {
     try {
-      const result = specDb.getBillingSnapshot(month, productId);
+      const result = appDb.getBillingSnapshot(month, productId);
       if (result) {
         return result;
       }
     } catch {
-      // fall through to JSON path
+      // fall through
     }
   }
 
-  const monthly = await readMonthlyRollup({ storage, month, specDb });
+  const monthly = readMonthlyRollup({ month, appDb });
   const product = monthly.by_product?.[productId] || {
     cost_usd: 0,
     calls: 0,
@@ -404,58 +398,22 @@ export async function readBillingSnapshot({
   };
 }
 
-export async function buildBillingReport({
-  storage,
+export function buildBillingReport({
   month = monthFromTs(nowIso()),
   config = {},
-  specDb = null
+  appDb = null
 }) {
-  if (specDb) {
-    try {
-      const rollup = specDb.getBillingRollup(month);
-      const rows = specDb.getBillingEntriesForMonth(month);
-      if (rollup) {
-        const digest = await writeBillingDigest({
-          storage,
-          month,
-          rollup,
-          rows: rows || [],
-          config
-        });
-        return {
-          month,
-          totals: rollup.totals,
-          by_day: rollup.by_day,
-          by_category: rollup.by_category,
-          by_product: rollup.by_product,
-          by_model: rollup.by_model,
-          by_reason: rollup.by_reason,
-          digest_key: digest.digestKey,
-          latest_digest_key: digest.latestDigestKey
-        };
-      }
-    } catch {
-      // fall through to JSON path
-    }
-  }
-
-  const monthly = await readMonthlyRollup({ storage, month, specDb });
-  const rows = await readLedgerMonth({ storage, month, specDb });
-  const digest = await writeBillingDigest({
-    storage,
-    month,
-    rollup: monthly,
-    rows,
-    config
-  });
+  const rollup = readMonthlyRollup({ month, appDb });
+  const rows = readLedgerMonth({ month, appDb });
+  const digest = writeBillingDigest({ config, month, rollup, rows });
   return {
     month,
-    totals: monthly.totals,
-    by_day: monthly.by_day,
-    by_category: monthly.by_category,
-    by_product: monthly.by_product,
-    by_model: monthly.by_model,
-    by_reason: monthly.by_reason,
+    totals: rollup.totals,
+    by_day: rollup.by_day,
+    by_category: rollup.by_category,
+    by_product: rollup.by_product,
+    by_model: rollup.by_model,
+    by_reason: rollup.by_reason,
     digest_key: digest.digestKey,
     latest_digest_key: digest.latestDigestKey
   };
@@ -487,14 +445,13 @@ function monthsInRange(cutoffMs) {
   return months;
 }
 
-export async function buildLlmMetrics({
-  storage,
+export function buildLlmMetrics({
   config = {},
   period = 'week',
   model = '',
   category = '',
   runLimit = 120,
-  specDb = null,
+  appDb = null,
 }) {
   const days = parsePeriodDays(period, 7);
   const cutoff = Date.now() - (days * 24 * 60 * 60 * 1000);
@@ -503,7 +460,7 @@ export async function buildLlmMetrics({
 
   const allRows = [];
   for (const month of months) {
-    const monthRows = await readLedgerMonth({ storage, month, specDb });
+    const monthRows = readLedgerMonth({ month, appDb });
     allRows.push(...monthRows);
   }
 

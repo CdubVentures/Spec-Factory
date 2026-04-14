@@ -18,8 +18,11 @@ import {
   buildColorEditionFinderPrompt,
   createColorEditionFinderCallLlm,
 } from './colorEditionLlmAdapter.js';
-import { readColorEdition, mergeColorEditionDiscovery } from './colorEditionStore.js';
+import { readColorEdition, writeColorEdition, mergeColorEditionDiscovery } from './colorEditionStore.js';
+import { buildVariantRegistry, applyIdentityMappings } from './variantRegistry.js';
+import { createVariantIdentityCheckCallLlm, buildVariantIdentityCheckPrompt } from './colorEditionLlmAdapter.js';
 import { submitCandidate, validateField } from '../publisher/index.js';
+import { propagateVariantRenames } from '../product-image/index.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 
 /**
@@ -123,6 +126,7 @@ export async function runColorEditionFinder({
   logger = null,
   productRoot,
   _callLlmOverride = null,
+  _callIdentityCheckOverride = null,
   onStageAdvance = null,
   onModelResolved = null,
   onStreamChunk = null,
@@ -193,9 +197,9 @@ export async function runColorEditionFinder({
   // if both primary and fallback fail, the error propagates here.
   if (signal?.aborted) throw new DOMException('Operation cancelled', 'AbortError');
 
-  let response;
+  let response, usage;
   try {
-    response = await callLlm({ colorNames, colors: allColors, product, previousRuns, familyModelCount, ambiguityLevel });
+    ({ result: response, usage } = await callLlm({ colorNames, colors: allColors, product, previousRuns, familyModelCount, ambiguityLevel }));
     onStageAdvance?.('Validate');
   } catch (err) {
     logger?.error?.('color_edition_finder_llm_failed', {
@@ -315,6 +319,66 @@ export async function runColorEditionFinder({
   // Idempotent — skips atoms already merged by the gated path above.
   mergeEditionColorsInto(gateColors, gateEditions);
 
+  // ── Variant Identity Check (Run 2+) ────────────────────────────
+  // WHY: If a variant registry already exists, fire a second LLM call to
+  // compare new discoveries against existing variants. The LLM decides:
+  // same variant (update metadata, keep hash) or genuinely new (create hash).
+  let identityCheckResult = null;
+  let identityCheckPrompt = null;
+  let identityCheckUser = null;
+  const hasExistingRegistry = existing?.variant_registry?.length > 0;
+
+  // WHY: Skip identity check when _callLlmOverride is set but no identity check
+  // override is provided — test mode without real LLM routing.
+  if (hasExistingRegistry && (!_callLlmOverride || _callIdentityCheckOverride)) {
+    if (signal?.aborted) throw new DOMException('Operation cancelled', 'AbortError');
+    onStageAdvance?.('Identity Check');
+
+    const identityPromptOverride = finderStore.getSetting?.('identityCheckPromptOverride') || '';
+
+    identityCheckPrompt = buildVariantIdentityCheckPrompt({
+      product, existingRegistry: existing.variant_registry,
+      newColors: gateColors, newColorNames: colorNamesMap, newEditions: gateEditions,
+      promptOverride: identityPromptOverride,
+    });
+    identityCheckUser = JSON.stringify({
+      brand: product.brand || '', model: product.model || '',
+      existing_variants: existing.variant_registry.length,
+      new_colors: gateColors.length, new_editions: Object.keys(gateEditions).length,
+    });
+
+    try {
+      let callIdentityCheck = _callIdentityCheckOverride;
+      if (!callIdentityCheck) {
+        const llmDeps = buildLlmCallDeps({
+          config, logger,
+          onModelResolved: modelTracking.wrappedOnModelResolved,
+          onStreamChunk, onQueueWait, signal,
+        });
+        callIdentityCheck = createVariantIdentityCheckCallLlm(llmDeps);
+      }
+
+      const { result: idResult } = await callIdentityCheck({
+        product, existingRegistry: existing.variant_registry,
+        newColors: gateColors, newColorNames: colorNamesMap, newEditions: gateEditions,
+        promptOverride: identityPromptOverride,
+      });
+      identityCheckResult = idResult;
+
+      onLlmCallComplete?.({
+        prompt: { system: identityCheckPrompt, user: identityCheckUser },
+        response: identityCheckResult,
+        model: modelTracking.actualModel,
+      });
+    } catch (err) {
+      logger?.error?.('variant_identity_check_failed', {
+        product_id: product.product_id, error: err.message,
+      });
+      // WHY: Identity check failure is not fatal — fall back to Phase 1 behavior
+      // (write-once registry). The discovery data is still valid.
+    }
+  }
+
   const selected = { colors: gateColors, color_names: colorNamesMap, editions: gateEditions, default_color: gateColors[0] || defaultColor };
 
   // WHY: siblings_excluded and discovery_log are per-run audit data.
@@ -336,7 +400,17 @@ export async function runColorEditionFinder({
     prompt: { system: systemPrompt, user: userMessage },
     response: storedResponse,
     model: modelTracking.actualModel,
+    usage,
   });
+
+  // WHY: Nest both prompts/responses when identity check ran. On Run 1 (no identity
+  // check), keep the flat structure for backward compat with existing GUI/SQL readers.
+  const runPrompt = hasExistingRegistry && identityCheckPrompt
+    ? { discovery: { system: systemPrompt, user: userMessage }, identity_check: { system: identityCheckPrompt, user: identityCheckUser } }
+    : { system: systemPrompt, user: userMessage };
+  const runResponse = hasExistingRegistry && identityCheckResult
+    ? { discovery: storedResponse, identity_check: identityCheckResult }
+    : storedResponse;
 
   // Merge into JSON (durable memory — write first)
   const merged = mergeColorEditionDiscovery({
@@ -355,10 +429,54 @@ export async function runColorEditionFinder({
       effort_level: modelTracking.actualEffortLevel,
       access_mode: modelTracking.actualAccessMode,
       selected,
-      prompt: { system: systemPrompt, user: userMessage },
-      response: storedResponse,
+      prompt: runPrompt,
+      response: runResponse,
     },
   });
+
+  // ── Variant registry update ────────────────────────────────────
+  if (hasExistingRegistry && identityCheckResult) {
+    // Run 2+: Apply identity check mappings to existing registry
+    merged.variant_registry = applyIdentityMappings({
+      existingRegistry: existing.variant_registry,
+      mappings: identityCheckResult.mappings || [],
+      retired: identityCheckResult.retired || [],
+      productId: product.product_id,
+      colors: gateColors,
+      colorNames: colorNamesMap,
+      editions: gateEditions,
+    });
+    writeColorEdition({ productId: product.product_id, productRoot, data: merged });
+
+    // WHY: Propagate variant renames to PIF data so images, carousel slots,
+    // eval records, and discovery logs stay linked after a key change.
+    const registryUpdates = [];
+    for (const mapping of (identityCheckResult.mappings || [])) {
+      if (mapping.action === 'update' && mapping.match) {
+        const oldEntry = existing.variant_registry.find(e => e.variant_id === mapping.match);
+        if (oldEntry && oldEntry.variant_key !== mapping.new_key) {
+          registryUpdates.push({
+            variant_id: mapping.match,
+            old_variant_key: oldEntry.variant_key,
+            new_variant_key: mapping.new_key,
+            new_variant_label: merged.variant_registry.find(e => e.variant_id === mapping.match)?.variant_label || '',
+          });
+        }
+      }
+    }
+    if (registryUpdates.length > 0) {
+      propagateVariantRenames({ productId: product.product_id, productRoot, registryUpdates, specDb });
+    }
+  } else if (!merged.variant_registry || merged.variant_registry.length === 0) {
+    // Run 1: Generate fresh registry
+    merged.variant_registry = buildVariantRegistry({
+      productId: product.product_id,
+      colors: gateColors,
+      colorNames: colorNamesMap,
+      editions: gateEditions,
+    });
+    writeColorEdition({ productId: product.product_id, productRoot, data: merged });
+  }
 
   // Project run into SQL (frontend reads from DB, not JSON)
   const latestRun = merged.runs[merged.runs.length - 1];
@@ -373,8 +491,8 @@ export async function runColorEditionFinder({
     access_mode: modelTracking.actualAccessMode,
     cooldown_until: cooldownUntil,
     selected,
-    prompt: { system: systemPrompt, user: userMessage },
-    response: storedResponse,
+    prompt: runPrompt,
+    response: runResponse,
   });
 
   // Upsert SQL summary
@@ -384,6 +502,7 @@ export async function runColorEditionFinder({
     colors: gateColors,
     editions: Object.keys(gateEditions),
     default_color: selected.default_color,
+    variant_registry: merged.variant_registry || [],
     cooldown_until: cooldownUntil,
     latest_ran_at: ranAt,
     run_count: merged.run_count,

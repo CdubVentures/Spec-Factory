@@ -166,7 +166,7 @@ export function createGuiServerRuntime({
       }),
       queueBillingLearningRouteContext: createQueueBillingLearningRouteContext({
         jsonRes, readJsonBody, toInt, config, storage, OUTPUT_ROOT, path,
-        getSpecDb, broadcastWs, safeReadJson, safeStat, listFiles,
+        getSpecDb, appDb, broadcastWs, safeReadJson, safeStat, listFiles,
       }),
       brandRouteContext: createBrandRouteContext({
         jsonRes, readJsonBody, config, storage,

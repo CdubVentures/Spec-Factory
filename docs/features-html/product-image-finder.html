@@ -153,6 +153,65 @@
     <dl class="detail-grid" style="margin-top:12px;">
       <dt>Variant key format</dt><dd><code>color:{atom}</code> for standard colors, <code>edition:{slug}</code> for editions</dd>
       <dt>Variant type</dt><dd><code>"color"</code> or <code>"edition"</code> &mdash; used for chip styling (CLR/ED)</dd>
+      <dt>Variant ID</dt><dd>Stable <code>v_&lt;8-hex&gt;</code> hash from CEF variant registry. Enriched onto each variant after <code>buildVariantList()</code>. <code>null</code> if no registry exists.</dd>
+    </dl>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--teal-bg);">Variant ID Linkage (Phase 3)</div>
+  <div class="card-body">
+    <p style="margin-bottom:12px;">
+      <strong>Problem:</strong> <code>variant_key</code> is mutable &mdash; CEF can rename it across runs (e.g. <code>ocean-blue</code> &rarr; <code>deep-ocean-blue</code>).
+      When this happens, PIF images tagged with the old key become orphaned.
+    </p>
+    <p style="margin-bottom:12px;">
+      <strong>Solution:</strong> Every image carries a <code>variant_id</code> (stable hash from CEF registry) alongside <code>variant_key</code>.
+      All filtering uses <code>matchVariant()</code> &mdash; a centralized predicate that matches by <code>variant_id</code> when both sides have it, falling back to <code>variant_key</code> for legacy data.
+    </p>
+
+    <div class="flow-row" style="margin:16px 0;">
+      <div class="flow-box flow-accent" style="min-width:120px;">CEF Registry<br><small>variant_id</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-teal" style="min-width:120px;">Enrich Variants<br><small>after buildVariantList</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-pass" style="min-width:120px;">Stamp on Images<br><small>at download time</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-repair" style="min-width:120px;">matchVariant()<br><small>all filter sites</small></div>
+    </div>
+
+    <dl class="detail-grid">
+      <dt>matchVariant(img, opts)</dt><dd>Both have <code>variant_id</code> &rarr; match on <code>variant_id</code> (wins over <code>variant_key</code>). Either missing &rarr; fall back to <code>variant_key</code>.</dd>
+      <dt>Filter sites</dt><dd>15+ locations across <code>imageEvaluator.js</code> (6), <code>carouselBuild.js</code> (3), <code>carouselStrategy.js</code> (1), <code>productImageLlmAdapter.js</code> (1), <code>productImageFinder.js</code> (3). All delegate to <code>matchVariant()</code>.</dd>
+      <dt>Stamping</dt><dd>New images get <code>variant_id</code> at download time. Run response payloads also carry <code>variant_id</code>.</dd>
+      <dt>Backfill</dt><dd><code>backfillPifVariantIds({ specDb, productRoot })</code> stamps <code>variant_id</code> on existing images + run responses from CEF registry. Idempotent.</dd>
+      <dt>carousel_slots</dt><dd>Keyed by <code>variant_key</code> (human-readable). Re-keyed by propagation on rename.</dd>
+    </dl>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--green-bg);">Propagation (CEF Rename &rarr; PIF Update)</div>
+  <div class="card-body">
+    <p style="margin-bottom:12px;">
+      When CEF's identity check renames a variant key, <code>propagateVariantRenames()</code> walks <code>product_images.json</code> and updates every occurrence, using <code>variant_id</code> as the stable anchor.
+    </p>
+    <table>
+      <thead><tr><th>Data Structure</th><th>What Changes</th></tr></thead>
+      <tbody>
+        <tr><td><code>selected.images[]</code></td><td><code>variant_key</code> + <code>variant_label</code> updated where <code>variant_id</code> matches</td></tr>
+        <tr><td><code>runs[].selected.images[]</code></td><td>Same</td></tr>
+        <tr><td><code>runs[].response.variant_key</code></td><td>Top-level run response key updated</td></tr>
+        <tr><td><code>runs[].response.images[]</code></td><td>Per-image <code>variant_key</code> updated where <code>variant_id</code> matches</td></tr>
+        <tr><td><code>evaluations[]</code></td><td><code>variant_key</code> + <code>variant_label</code> updated where old key matches</td></tr>
+        <tr><td><code>carousel_slots</code></td><td>Re-keyed: <code>[oldKey]</code> &rarr; <code>[newKey]</code> (slot values preserved)</td></tr>
+      </tbody>
+    </table>
+    <dl class="detail-grid" style="margin-top:12px;">
+      <dt>Trigger</dt><dd>Automatic &mdash; called from CEF orchestrator after <code>applyIdentityMappings()</code> when <code>old_variant_key &ne; new_variant_key</code></dd>
+      <dt>SQL sync</dt><dd>Images column + carousel_slots column updated immediately after JSON write</dd>
+      <dt>Data-change</dt><dd><code>product-image-finder-variant-renamed</code> event broadcast</dd>
+      <dt>Public API</dt><dd>Exported from <code>src/features/product-image/index.js</code> (cross-feature import via public contract)</dd>
     </dl>
   </div>
 </div>
@@ -280,7 +339,7 @@
     <dl class="detail-grid">
       <dt>Per-view focus</dt><dd>Each LLM call has ONE unsatisfied view as priority. All 8 views remain in the prompt for side-catches.</dd>
       <dt>Satisfaction</dt><dd>A view is "satisfied" when it has <code>&ge; satisfactionThreshold</code> quality-passing images (default: 3)</dd>
-      <dt>Budget exhaustion</dt><dd>A view is "exhausted" when it has used <code>&ge; viewAttemptBudget</code> LLM calls without reaching satisfaction (default: 5)</dd>
+      <dt>Budget exhaustion</dt><dd>A view is "exhausted" when it has used <code>&ge;</code> its per-view attempt budget. Budgets are category-aware (e.g. mouse: top=4, left=4, angle=3, sangle=3, front=2, bottom=2). Flat <code>viewAttemptBudget</code> (default: 5) is a fallback for views without category defaults.</dd>
       <dt>View done</dt><dd>Satisfied OR exhausted. Move to next unsatisfied view in budget priority order.</dd>
       <dt>Mode transitions</dt><dd>Unsatisfied views remain &rarr; <code>view</code> mode. All views done &rarr; <code>hero</code> mode. Hero done &rarr; <code>complete</code>.</dd>
       <dt>Variants</dt><dd>Processed sequentially (not concurrent) for clean progress reporting</dd>
@@ -301,8 +360,11 @@
         <tr><td><code>satisfactionThreshold</code></td><td>int</td><td>Images per view to be satisfied</td></tr>
         <tr><td><code>heroEnabled</code></td><td>boolean</td><td>Whether hero phase is active</td></tr>
         <tr><td><code>heroCount</code></td><td>int</td><td>Target hero image count</td></tr>
-        <tr><td><code>variantKey</code></td><td>string</td><td>Current variant identifier</td></tr>
-        <tr><td><code>viewAttemptBudget / heroAttemptBudget</code></td><td>int</td><td>Max attempts per view/hero</td></tr>
+        <tr><td><code>variantKey</code></td><td>string</td><td>Current variant identifier (mutable key)</td></tr>
+        <tr><td><code>variantId</code></td><td>string|undefined</td><td>Stable <code>v_&lt;8-hex&gt;</code> hash from CEF registry. Used by <code>matchVariant()</code> for filtering.</td></tr>
+        <tr><td><code>viewAttemptBudget</code></td><td>int</td><td>Flat fallback max attempts per view (default: 5)</td></tr>
+        <tr><td><code>viewAttemptBudgets</code></td><td>object|null</td><td>Per-view attempt map (e.g. <code>{top:4, left:4, angle:3}</code>). Overrides flat budget per view.</td></tr>
+        <tr><td><code>heroAttemptBudget</code></td><td>int</td><td>Max hero LLM calls per variant</td></tr>
       </tbody>
     </table>
     <table style="margin-top:12px;">
@@ -608,7 +670,8 @@
         <tr><td><code>minFileSize</code></td><td><code>50000</code></td><td>Fallback file size gate (bytes) when dimensions unreadable</td></tr>
         <tr><td><code>rmbgConcurrency</code></td><td><em>auto</em></td><td>Override RMBG inference slot count (auto = 10% RAM / 500MB, capped at CPU cores)</td></tr>
         <tr><td><code>satisfactionThreshold</code></td><td><code>3</code></td><td>Quality images per view to consider that view "satisfied"</td></tr>
-        <tr><td><code>viewAttemptBudget</code></td><td><code>5</code></td><td>Max LLM calls per view before moving on (exhaustion)</td></tr>
+        <tr><td><code>viewAttemptBudget</code></td><td><code>5</code></td><td>Flat fallback max LLM calls per view (used when no per-view budget exists)</td></tr>
+        <tr><td><code>viewAttemptBudgets</code></td><td><em>empty</em></td><td>JSON per-view attempt budget <code>{"top":4,"left":3}</code>. Empty = category defaults (mouse: 4,4,3,3,2,2). Min 2 per view.</td></tr>
         <tr><td><code>heroEnabled</code></td><td><code>true</code></td><td>Whether hero search phase is active</td></tr>
         <tr><td><code>heroCount</code></td><td><code>3</code></td><td>Target hero images per variant</td></tr>
         <tr><td><code>heroAttemptBudget</code></td><td><code>3</code></td><td>Max hero LLM calls per variant</td></tr>
@@ -825,7 +888,7 @@
       <tbody>
         <tr>
           <td><code>ProductImageEntry</code></td>
-          <td><code>view, filename, url, source_page, alt_text, bytes, width, height, quality_pass, variant_key, variant_label, variant_type, downloaded_at, original_filename?, bg_removed?, original_format?, trim_failed?</code></td>
+          <td><code>view, filename, url, source_page, alt_text, bytes, width, height, quality_pass, variant_id?, variant_key, variant_label, variant_type, downloaded_at, original_filename?, bg_removed?, original_format?, trim_failed?, eval_best?, eval_flags?, eval_reasoning?, hero?, hero_rank?</code></td>
         </tr>
         <tr>
           <td><code>ProductImageFinderRun</code></td>
@@ -836,12 +899,20 @@
           <td>Per-variant carousel state: views filled, heroes collected, attempt counts</td>
         </tr>
         <tr>
+          <td><code>EvalRecord</code></td>
+          <td><code>eval_number, type, view, variant_id?, variant_key, model, ran_at, duration_ms, started_at?, effort_level?, access_mode?, fallback_used?, variant_label?, variant_type?, prompt, response, result</code></td>
+        </tr>
+        <tr>
+          <td><code>VariantRegistryEntry</code></td>
+          <td><code>variant_id, variant_key, variant_type, variant_label, color_atoms[], edition_slug, edition_display_name, created_at, updated_at?, retired?</code></td>
+        </tr>
+        <tr>
           <td><code>ProductImageFinderResult</code></td>
-          <td>GET response: <code>images, image_count, cooldown, run_count, selected, runs, carouselProgress</code></td>
+          <td>GET response: <code>images, image_count, cooldown, run_count, selected, runs, variantRegistry?, carouselProgress, carousel_slots, evaluations</code></td>
         </tr>
         <tr>
           <td><code>VariantInfo</code></td>
-          <td><code>key, label, type</code> &mdash; variant metadata derived from CEF</td>
+          <td><code>key, label, type, variant_id?</code> &mdash; variant metadata derived from CEF, enriched with stable ID from registry</td>
         </tr>
       </tbody>
     </table>
@@ -850,7 +921,7 @@
 
 <div style="text-align:center; padding:32px 0; color:var(--text-muted); font-size:13px;">
   Generated from live source audit &mdash; Spec Factory Product Image Finder (PIF)<br>
-  Carousel loop &bull; per-view focus &bull; cumulative learning &bull; RMBG 2.0 &bull; 8-view vocabulary &bull; fire-and-forget &bull; 7 data-change events
+  Carousel loop &bull; per-view focus &bull; cumulative learning &bull; RMBG 2.0 &bull; 8-view vocabulary &bull; variant_id linkage &bull; fire-and-forget &bull; 8 data-change events
 </div>
 
 </div>

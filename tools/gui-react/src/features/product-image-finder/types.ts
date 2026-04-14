@@ -8,6 +8,7 @@ export interface ProductImageEntry {
   width: number;
   height: number;
   quality_pass: boolean;
+  variant_id?: string;
   variant_key: string;
   variant_label: string;
   variant_type: 'color' | 'edition';
@@ -55,6 +56,7 @@ export interface ProductImageFinderRun {
     images: ProductImageEntry[];
     download_errors: Array<{ view: string; url: string; error: string }>;
     discovery_log: { urls_checked: string[]; queries_run: string[]; notes: string[] };
+    variant_id?: string;
     variant_key: string;
     variant_label: string;
     /** Run mode (duplicated from run level for SQL blob access). */
@@ -75,6 +77,7 @@ export interface CarouselViewDetail {
   satisfied: boolean;
   attempts: number;
   exhausted: boolean;
+  attemptBudget?: number;
 }
 
 export interface CarouselProgress {
@@ -90,6 +93,7 @@ export interface CarouselProgress {
 
 export interface CarouselSettings {
   viewAttemptBudget: number;
+  viewAttemptBudgets?: Record<string, number>;
   heroAttemptBudget: number;
   heroEnabled: boolean;
   viewBudget?: string[];
@@ -101,23 +105,60 @@ export interface ResolvedSlot {
   source: 'user' | 'eval' | 'empty';
 }
 
+/** Pre-built slide data for the carousel preview popup. */
+export interface CarouselSlide {
+  slotLabel: string;
+  source: 'user' | 'eval';
+  src: string;
+  bytes: number;
+  width: number;
+  height: number;
+  reasoning: string;
+}
+
 export interface EvalRecord {
   eval_number: number;
   type: 'view' | 'hero';
   view: string | null;
+  variant_id?: string;
   variant_key: string;
   model: string;
   ran_at: string;
   duration_ms: number | null;
+  /** ISO timestamp when the eval started. Absent on legacy records. */
+  started_at?: string | null;
+  /** LLM effort level (e.g. "high", "xhigh"). Absent on legacy records. */
+  effort_level?: string | null;
+  /** LLM access mode ("lab" or "api"). Absent on legacy records. */
+  access_mode?: string | null;
+  /** Whether a fallback model was used. Absent on legacy records. */
+  fallback_used?: boolean;
+  /** Human-readable variant label. Absent on legacy records. */
+  variant_label?: string | null;
+  /** Variant type: "color" or "edition". Absent on legacy records. */
+  variant_type?: 'color' | 'edition' | null;
   prompt: { system: string; user: string };
   response: Record<string, unknown>;
   result: Record<string, unknown>;
 }
 
+export interface VariantRegistryEntry {
+  variant_id: string;
+  variant_key: string;
+  variant_type: 'color' | 'edition';
+  variant_label: string;
+  color_atoms: string[];
+  edition_slug: string | null;
+  edition_display_name: string | null;
+  created_at: string;
+  updated_at?: string;
+  retired?: boolean;
+}
+
 export interface ProductImageFinderResult {
   product_id: string;
   category: string;
-  images: Array<{ view: string; filename: string; variant_key: string }>;
+  images: Array<{ view: string; filename: string; variant_key: string; variant_id?: string }>;
   image_count: number;
   cooldown_until: string;
   on_cooldown: boolean;
@@ -125,6 +166,7 @@ export interface ProductImageFinderResult {
   last_ran_at: string;
   selected: { images: ProductImageEntry[] };
   runs: ProductImageFinderRun[];
+  variantRegistry?: VariantRegistryEntry[];
   carouselProgress?: Record<string, CarouselProgress>;
   carouselSettings?: CarouselSettings;
   carousel_slots?: Record<string, Record<string, string | null>>;
@@ -171,4 +213,5 @@ export interface VariantInfo {
   key: string;
   label: string;
   type: 'color' | 'edition';
+  variant_id?: string;
 }

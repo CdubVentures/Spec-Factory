@@ -182,34 +182,6 @@ CREATE INDEX IF NOT EXISTS idx_products_cat ON products(category);
 -- WHY: idx_lrm_cat_scope moved to SECONDARY_INDEXES (runs after migrations that add the scope column)
 
 
--- Migration Phase 2: Billing entries
-CREATE TABLE IF NOT EXISTS billing_entries (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  ts TEXT NOT NULL,
-  month TEXT NOT NULL,
-  day TEXT NOT NULL,
-  provider TEXT NOT NULL DEFAULT 'unknown',
-  model TEXT NOT NULL DEFAULT 'unknown',
-  category TEXT DEFAULT '',
-  product_id TEXT DEFAULT '',
-  run_id TEXT DEFAULT '',
-  round INTEGER DEFAULT 0,
-  prompt_tokens INTEGER DEFAULT 0,
-  completion_tokens INTEGER DEFAULT 0,
-  cached_prompt_tokens INTEGER DEFAULT 0,
-  total_tokens INTEGER DEFAULT 0,
-  cost_usd REAL DEFAULT 0,
-  reason TEXT DEFAULT 'extract',
-  host TEXT DEFAULT '',
-  url_count INTEGER DEFAULT 0,
-  evidence_chars INTEGER DEFAULT 0,
-  estimated_usage INTEGER DEFAULT 0,
-  meta TEXT DEFAULT '{}'
-);
-CREATE INDEX IF NOT EXISTS idx_be_month ON billing_entries(month);
-CREATE INDEX IF NOT EXISTS idx_be_product ON billing_entries(product_id);
-CREATE INDEX IF NOT EXISTS idx_be_day ON billing_entries(day);
-
 -- Data authority sync state
 CREATE TABLE IF NOT EXISTS data_authority_sync (
   category TEXT PRIMARY KEY,
@@ -567,7 +539,7 @@ export const LLM_ROUTE_BOOLEAN_KEYS = LLM_ROUTE_COLUMN_REGISTRY
 // Used by hydrateRow/hydrateRows in specDbHelpers.js to convert 0/1 → true/false on read.
 export const COMPONENT_VALUE_BOOLEAN_KEYS = Object.freeze(['needs_review', 'overridden']);
 export const LIST_VALUE_BOOLEAN_KEYS = Object.freeze(['needs_review', 'overridden']);
-export const BILLING_ENTRY_BOOLEAN_KEYS = Object.freeze(['estimated_usage']);
+// WHY: BILLING_ENTRY_BOOLEAN_KEYS moved to appDb.js — billing is now global.
 
 // WHY: SSOT for component identity property keys (synthetic __-prefixed keys).
 // Used by features/review contract shapes.

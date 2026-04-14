@@ -18,6 +18,7 @@ export function createIndexingMetricsHandler({
   buildIndexingDomainChecklist,
   buildReviewMetrics,
   getSpecDb,
+  appDb,
 }) {
   return async function handleIndexingMetrics(parts, params, method, _req, res) {
     if (parts[0] !== 'indexing' || method !== 'GET') return false;
@@ -92,13 +93,13 @@ export function createIndexingMetricsHandler({
         const model = String(params.get('model') || '').trim();
         const category = String(params.get('category') || '').trim();
         const runLimit = Math.max(10, toInt(params.get('runLimit'), 120));
-        const result = await buildLlmMetrics({
-          storage,
+        const result = buildLlmMetrics({
           config,
           period,
           model,
           category,
-          runLimit
+          runLimit,
+          appDb,
         });
         return jsonRes(res, 200, {
           command: 'llm-metrics',

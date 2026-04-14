@@ -172,7 +172,17 @@ export function createPipelineCommands({
         if (row && row.__screencast) {
           try { process.send(row); } catch { /* ignore IPC errors */ }
         } else if (row) {
-          try { process.send({ __runtime_event: true, run_id: row.run_id || '', stage: row.stage || '', stage_cursor: row.stage_cursor || '', event: row.event || '' }); } catch { /* ignore IPC errors */ }
+          const msg = { __runtime_event: true, run_id: row.run_id || '', stage: row.stage || '', stage_cursor: row.stage_cursor || '', event: row.event || '' };
+          // WHY: Thread LLM call metadata so the parent process can append
+          // LLM call records (with token usage) to the pipeline operation.
+          // Bridge emit() uses event names 'llm_started'/'llm_finished'/'llm_failed'
+          // and nests LLM data inside row.payload (not at top level).
+          const ev = row.event;
+          if (ev === 'llm_started' || ev === 'llm_finished' || ev === 'llm_failed') {
+            const p = row.payload || {};
+            msg.__llm_call = { event: ev, model: p.model || '', reason: p.reason || '', prompt_tokens: p.prompt_tokens ?? null, completion_tokens: p.completion_tokens ?? null, total_tokens: p.total_tokens ?? null, cost_usd: p.estimated_cost ?? null, estimated_usage: Boolean(p.estimated_usage), duration_ms: p.duration_ms ?? null };
+          }
+          try { process.send(msg); } catch { /* ignore IPC errors */ }
         }
       };
       process.on('message', (msg) => {

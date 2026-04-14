@@ -1,8 +1,13 @@
 ## Purpose
 
-SQLite-backed persistence layer for review state, component identity, billing, and queue management. Single `SpecDb` class provides a unified facade over 13 domain-specific store modules. Schema: 39 tables.
+SQLite-backed persistence layer for review state, component identity, and queue management.
 
-Additionally, `AppDb` (`appDb.js`) provides a shared cross-category database at `.workspace/db/app.sqlite` for global state: brands (34+), brand categories, brand renames, user settings (~170 keys), studio maps, and seed hash tracking. Opened once at bootstrap, shared across all categories.
+**SpecDb** (`specDb.js`): Per-category facade over 12 domain-specific store modules. One instance per category, located at `.workspace/db/{category}/spec.sqlite`.
+
+**AppDb** (`appDb.js`): Shared cross-category database at `.workspace/db/app.sqlite` for global state: brands (34+), brand categories, brand renames, user settings (~170 keys), studio maps, color registry, unit registry, billing entries, and seed hash tracking. Opened once at bootstrap, shared across all categories.
+  - Billing: `insertBillingEntry`, `getBillingRollup(month, category?)`, `getBillingEntriesForMonth`, `getBillingSnapshot`, `getGlobalDaily`, `getGlobalEntries`, `countBillingEntries`
+  - Dual-state: billing entries are dual-written to SQL + `.workspace/global/billing/ledger/{month}.jsonl` via `costLedger.js`
+  - Rebuild: `seedBillingFromJsonl()` restores from JSONL if table is empty
   - `getSeedHash(sourceKey)` / `setSeedHash(sourceKey, hash)` — hash-gated reconciliation state stored in settings table under `_seed_hashes` section
 
 ## Public API (The Contract)
@@ -12,8 +17,11 @@ Additionally, `AppDb` (`appDb.js`) provides a shared cross-category database at 
   - Item state: `getItemState`, `setItemState`
   - Enum policy: `getEnumPolicy`, `setEnumPolicy`
   - Key review: `getKeyReviewState`, `setKeyReviewState`
-  - Billing / source intel / product stores
+  - Source intel / product / telemetry stores
   - `close()` — cleanup
+- `appDb.js` → `class AppDb({ dbPath })` — global singleton
+  - Brands, settings, studio maps, color registry, unit registry
+  - Billing: insert, rollup, snapshot, daily, entries, count
 - `specDbSchema.js` → `SCHEMA` — DDL string for table/index creation
 - `specDbHelpers.js` → `normalizeListLinkToken`, `expandListLinkValues`, `toPositiveInteger`, `toBoolInt`, `toBand`, `buildDefaultLlmRoutes`
 - `specDbMigrations.js` → `applyMigrations(db)`, `MIGRATIONS`, `SECONDARY_INDEXES`
@@ -33,15 +41,17 @@ Additionally, `AppDb` (`appDb.js`) provides a shared cross-category database at 
 
 ## Mutation Boundaries
 
-- SQLite database files (one per category, located under INDEXLAB_ROOT)
-- 39 tables across domains: component_identity, enum/list, key_review, billing, queue/product, llm_route, telemetry indexes, crawl artifacts, runs, field_candidates
-- 12 store modules: componentStore, enumListStore, itemStateStore, keyReviewStore, queueProductStore, llmRouteSourceStore, sourceIntelStore, artifactStore, runMetaStore, runArtifactStore, billingStore, telemetryIndexStore, purgeStore, fieldCandidateStore
-- Write access is through `SpecDb` methods only — consumers must not use raw SQL
+- SQLite database files: one per category (`spec.sqlite`), plus one global (`app.sqlite`)
+- SpecDb: component_identity, enum/list, key_review, queue/product, llm_route, telemetry indexes, crawl artifacts, runs, field_candidates
+- AppDb: brands, brand_categories, brand_renames, settings, studio_maps, color_registry, unit_registry, billing_entries
+- 12 SpecDb store modules: componentStore, enumListStore, itemStateStore, keyReviewStore, queueProductStore, llmRouteSourceStore, sourceIntelStore, artifactStore, runMetaStore, runArtifactStore, telemetryIndexStore, purgeStore, fieldCandidateStore
+- Write access is through `SpecDb`/`AppDb` methods only — consumers must not use raw SQL
 
 ## Domain Invariants
 
 - One `SpecDb` instance per category. Never share instances across categories.
-- All writes go through prepared statements (`specDbStatements.js`).
+- One `AppDb` instance globally. Billing is cross-category by design.
+- All writes go through prepared statements.
 - Migrations are applied automatically on `SpecDb` construction — always forward-only.
 - `normalizeListLinkToken()` is the canonical normalizer for all token comparisons.
 - Store modules receive `db` and `stmts` via constructor injection — no module-level state.

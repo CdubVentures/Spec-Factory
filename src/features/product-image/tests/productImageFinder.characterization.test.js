@@ -240,6 +240,9 @@ describe('characterization: runProductImageFinder', () => {
       } else if (req.url === '/text-page.html') {
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end('<html>not an image</html>');
+      } else if (req.url === '/good-image-2.png') {
+        res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': testPngBuffer.length });
+        res.end(testPngBuffer);
       } else if (req.url === '/redirect-image.png') {
         res.writeHead(302, { Location: '/good-image.png' });
         res.end();
@@ -274,7 +277,7 @@ describe('characterization: runProductImageFinder', () => {
       specDb: makeSpecDbStub(store),
       config: {},
       productRoot: PRODUCT_ROOT,
-      _callLlmOverride: async () => ({ images: [] }),
+      _callLlmOverride: async () => ({ result: { images: [] }, usage: null }),
     });
 
     assert.equal(result.rejected, true);
@@ -291,7 +294,7 @@ describe('characterization: runProductImageFinder', () => {
       specDb: makeSpecDbStub(store),
       config: {},
       productRoot: PRODUCT_ROOT,
-      _callLlmOverride: async () => ({ images: [] }),
+      _callLlmOverride: async () => ({ result: { images: [] }, usage: null }),
     });
 
     assert.equal(result.rejected, true);
@@ -309,7 +312,7 @@ describe('characterization: runProductImageFinder', () => {
       config: {},
       productRoot: PRODUCT_ROOT,
       variantKey: 'color:nonexistent',
-      _callLlmOverride: async () => ({ images: [] }),
+      _callLlmOverride: async () => ({ result: { images: [] }, usage: null }),
     });
 
     assert.equal(result.rejected, true);
@@ -329,12 +332,12 @@ describe('characterization: runProductImageFinder', () => {
       specDb: makeSpecDbStub(finderStore),
       config: {},
       productRoot: PRODUCT_ROOT,
-      _callLlmOverride: async () => ({
+      _callLlmOverride: async () => ({ result: {
         images: [
           { view: 'top', url: `http://127.0.0.1:${serverPort}/good-image.png`, source_page: 'https://example.com', alt_text: 'top view' },
         ],
         discovery_log: { urls_checked: ['https://example.com'], queries_run: ['test brand mouse'], notes: [] },
-      }),
+      }, usage: null }),
     });
 
     assert.equal(result.rejected, false);
@@ -363,7 +366,7 @@ describe('characterization: runProductImageFinder', () => {
     const expectedKeys = [
       'view', 'filename', 'url', 'source_page', 'alt_text',
       'bytes', 'width', 'height', 'quality_pass',
-      'variant_key', 'variant_label', 'variant_type', 'downloaded_at',
+      'variant_id', 'variant_key', 'variant_label', 'variant_type', 'downloaded_at',
       'original_filename', 'bg_removed', 'original_format',
     ];
     assert.deepEqual(Object.keys(img).sort(), expectedKeys.sort());
@@ -384,12 +387,12 @@ describe('characterization: runProductImageFinder', () => {
       specDb: makeSpecDbStub(store),
       config: {},
       productRoot: PRODUCT_ROOT,
-      _callLlmOverride: async () => ({
+      _callLlmOverride: async () => ({ result: {
         images: [
           { view: 'top', url: `http://127.0.0.1:${serverPort}/small-image.png` },
         ],
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
-      }),
+      }, usage: null }),
     });
 
     // Image should be rejected (100x50 < 800x600 defaults)
@@ -413,12 +416,12 @@ describe('characterization: runProductImageFinder', () => {
       specDb: makeSpecDbStub(store),
       config: {},
       productRoot: PRODUCT_ROOT,
-      _callLlmOverride: async () => ({
+      _callLlmOverride: async () => ({ result: {
         images: [
           { view: 'top', url: `http://127.0.0.1:${serverPort}/not-found.png` },
         ],
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
-      }),
+      }, usage: null }),
     });
 
     assert.equal(result.images.length, 0);
@@ -437,12 +440,12 @@ describe('characterization: runProductImageFinder', () => {
       specDb: makeSpecDbStub(store),
       config: {},
       productRoot: PRODUCT_ROOT,
-      _callLlmOverride: async () => ({
+      _callLlmOverride: async () => ({ result: {
         images: [
           { view: 'top', url: `http://127.0.0.1:${serverPort}/text-page.html` },
         ],
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
-      }),
+      }, usage: null }),
     });
 
     assert.equal(result.images.length, 0);
@@ -461,12 +464,12 @@ describe('characterization: runProductImageFinder', () => {
       specDb: makeSpecDbStub(store),
       config: {},
       productRoot: PRODUCT_ROOT,
-      _callLlmOverride: async () => ({
+      _callLlmOverride: async () => ({ result: {
         images: [
           { view: 'diagonal', url: `http://127.0.0.1:${serverPort}/good-image.png` },
         ],
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
-      }),
+      }, usage: null }),
     });
 
     assert.equal(result.images.length, 0);
@@ -484,13 +487,13 @@ describe('characterization: runProductImageFinder', () => {
       specDb: makeSpecDbStub(store),
       config: {},
       productRoot: PRODUCT_ROOT,
-      _callLlmOverride: async () => ({
+      _callLlmOverride: async () => ({ result: {
         images: [
           { view: 'top', url: `http://127.0.0.1:${serverPort}/good-image.png` },
-          { view: 'top', url: `http://127.0.0.1:${serverPort}/good-image.png` },
+          { view: 'top', url: `http://127.0.0.1:${serverPort}/good-image.jpg` },
         ],
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
-      }),
+      }, usage: null }),
     });
 
     assert.equal(result.images.length, 2);
@@ -517,12 +520,12 @@ describe('characterization: runProductImageFinder', () => {
       specDb: makeSpecDbStub(store),
       config: {},
       productRoot: PRODUCT_ROOT,
-      _callLlmOverride: async () => ({
+      _callLlmOverride: async () => ({ result: {
         images: [
           { view: 'top', url: `http://127.0.0.1:${serverPort}/good-image.png` },
         ],
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
-      }),
+      }, usage: null }),
     });
 
     assert.equal(result.images.length, 1);
@@ -543,12 +546,12 @@ describe('characterization: runProductImageFinder', () => {
       specDb: makeSpecDbStub(store),
       config: {},
       productRoot: PRODUCT_ROOT,
-      _callLlmOverride: async () => ({
+      _callLlmOverride: async () => ({ result: {
         images: [
           { view: 'left', url: `http://127.0.0.1:${serverPort}/good-image.png` },
         ],
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
-      }),
+      }, usage: null }),
     });
 
     // Should have called insertRun
@@ -585,12 +588,12 @@ describe('characterization: runProductImageFinder', () => {
       specDb: makeSpecDbStub(store),
       config: {},
       productRoot: PRODUCT_ROOT,
-      _callLlmOverride: async () => ({
+      _callLlmOverride: async () => ({ result: {
         images: [
           { view: 'top', url: `http://127.0.0.1:${serverPort}/good-image.png` },
         ],
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
-      }),
+      }, usage: null }),
     });
 
     // Verify JSON file written
@@ -639,12 +642,12 @@ describe('characterization: runProductImageFinder', () => {
       specDb: makeSpecDbStub(store),
       config: {},
       productRoot: PRODUCT_ROOT,
-      _callLlmOverride: async () => ({
+      _callLlmOverride: async () => ({ result: {
         images: [
           { view: 'top', url: `http://127.0.0.1:${serverPort}/redirect-image.png` },
         ],
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
-      }),
+      }, usage: null }),
     });
 
     assert.equal(result.images.length, 1);
@@ -672,12 +675,12 @@ describe('characterization: runProductImageFinder', () => {
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: async (args) => {
         callCount++;
-        return {
+        return { result: {
           images: [
             { view: 'top', url: `http://127.0.0.1:${serverPort}/good-image.png` },
           ],
           discovery_log: { urls_checked: [], queries_run: [], notes: [] },
-        };
+        }, usage: null };
       },
     });
 
@@ -719,10 +722,10 @@ describe('characterization: runProductImageFinder', () => {
       variantKey: 'color:white',
       _callLlmOverride: async () => {
         callCount++;
-        return {
+        return { result: {
           images: [{ view: 'top', url: `http://127.0.0.1:${serverPort}/good-image.png` }],
           discovery_log: { urls_checked: [], queries_run: [], notes: [] },
-        };
+        }, usage: null };
       },
     });
 
@@ -743,10 +746,10 @@ describe('characterization: runProductImageFinder', () => {
       specDb: makeSpecDbStub(store),
       config: {},
       productRoot: PRODUCT_ROOT,
-      _callLlmOverride: async () => ({
+      _callLlmOverride: async () => ({ result: {
         images: [],
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
-      }),
+      }, usage: null }),
     });
 
     assert.ok('images' in result);
@@ -770,7 +773,7 @@ describe('characterization: runProductImageFinder', () => {
       specDb: makeSpecDbStub(store),
       config: {},
       productRoot: PRODUCT_ROOT,
-      _callLlmOverride: async () => ({
+      _callLlmOverride: async () => ({ result: {
         images: [
           { view: 'top', url: '' },
           { view: '', url: `http://127.0.0.1:${serverPort}/good-image.png` },
@@ -778,7 +781,7 @@ describe('characterization: runProductImageFinder', () => {
           { view: 'top' },
         ],
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
-      }),
+      }, usage: null }),
     });
 
     // All should be skipped (empty url or missing view)
@@ -802,10 +805,10 @@ describe('characterization: runProductImageFinder', () => {
       specDb: makeSpecDbStub(store),
       config: {},
       productRoot: PRODUCT_ROOT,
-      _callLlmOverride: async () => ({
+      _callLlmOverride: async () => ({ result: {
         images: [{ view: 'top', url: `http://127.0.0.1:${serverPort}/good-image.png` }],
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
-      }),
+      }, usage: null }),
     });
 
     assert.equal(result.images.length, 1);
@@ -813,5 +816,83 @@ describe('characterization: runProductImageFinder', () => {
     assert.equal(result.images[0].filename, 'top-call-of-duty-bo6-edition.png');
     assert.equal(result.images[0].variant_key, 'edition:cod-bo6');
     assert.equal(result.images[0].variant_type, 'edition');
+  });
+
+  it('URL dedup gate: rejects same URL returned twice in single LLM response', async () => {
+    const pid = 'url-dedup-intra-product';
+    writeCefData(pid, { selected: { colors: ['black'], color_names: {}, editions: {} } });
+
+    const store = makeFinderStoreStub();
+    const result = await runProductImageFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: {},
+      specDb: makeSpecDbStub(store),
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: async () => ({ result: {
+        images: [
+          { view: 'top', url: `http://127.0.0.1:${serverPort}/good-image.png` },
+          { view: 'left', url: `http://127.0.0.1:${serverPort}/good-image.png` },
+        ],
+        discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+      }, usage: null }),
+    });
+
+    // First download succeeds, second rejected as duplicate URL
+    assert.equal(result.images.length, 1);
+    assert.equal(result.images[0].view, 'top');
+    assert.ok(result.download_errors.some(e => e.error.includes('duplicate URL')));
+  });
+
+  it('URL dedup gate: rejects URL already downloaded in previous run', async () => {
+    const pid = 'url-dedup-cross-product';
+    writeCefData(pid, { selected: { colors: ['black'], color_names: {}, editions: {} } });
+
+    // Pre-populate product_images.json with a previous run containing this URL
+    const pifDir = path.join(PRODUCT_ROOT, pid);
+    fs.mkdirSync(pifDir, { recursive: true });
+    fs.writeFileSync(path.join(pifDir, 'product_images.json'), JSON.stringify({
+      runs: [{
+        run_number: 1,
+        status: 'completed',
+        selected: { images: [{
+          view: 'top',
+          filename: 'top-black.png',
+          url: `http://127.0.0.1:${serverPort}/good-image.png`,
+          variant_key: 'color:black',
+          quality_pass: true,
+        }] },
+      }],
+      selected: { images: [{
+        view: 'top',
+        filename: 'top-black.png',
+        url: `http://127.0.0.1:${serverPort}/good-image.png`,
+        variant_key: 'color:black',
+        quality_pass: true,
+      }] },
+      run_count: 1,
+      cooldown_until: new Date().toISOString(),
+    }));
+
+    const store = makeFinderStoreStub();
+    const result = await runProductImageFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: {},
+      specDb: makeSpecDbStub(store),
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: async () => ({ result: {
+        images: [
+          { view: 'top', url: `http://127.0.0.1:${serverPort}/good-image.png` },
+          { view: 'left', url: `http://127.0.0.1:${serverPort}/good-image-2.png` },
+        ],
+        discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+      }, usage: null }),
+    });
+
+    // Same URL as previous run rejected, new URL succeeds
+    assert.equal(result.images.length, 1);
+    assert.equal(result.images[0].view, 'left');
+    assert.ok(result.download_errors.some(e => e.error.includes('duplicate URL')));
   });
 });

@@ -66,4 +66,31 @@ CREATE TABLE IF NOT EXISTS unit_registry (
   conversions_json TEXT NOT NULL DEFAULT '[]',
   updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS billing_entries (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts TEXT NOT NULL,
+  month TEXT NOT NULL,
+  day TEXT NOT NULL,
+  provider TEXT NOT NULL DEFAULT 'unknown',
+  model TEXT NOT NULL DEFAULT 'unknown',
+  category TEXT DEFAULT '',
+  product_id TEXT DEFAULT '',
+  run_id TEXT DEFAULT '',
+  round INTEGER DEFAULT 0,
+  prompt_tokens INTEGER DEFAULT 0,
+  completion_tokens INTEGER DEFAULT 0,
+  cached_prompt_tokens INTEGER DEFAULT 0,
+  total_tokens INTEGER DEFAULT 0,
+  cost_usd REAL DEFAULT 0,
+  reason TEXT DEFAULT 'extract',
+  host TEXT DEFAULT '',
+  url_count INTEGER DEFAULT 0,
+  evidence_chars INTEGER DEFAULT 0,
+  estimated_usage INTEGER DEFAULT 0,
+  meta TEXT DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_be_month ON billing_entries(month);
+CREATE INDEX IF NOT EXISTS idx_be_product ON billing_entries(product_id);
+CREATE INDEX IF NOT EXISTS idx_be_day ON billing_entries(day);
 `;

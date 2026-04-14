@@ -20,7 +20,7 @@ export function useProductImageFinderQuery(category: string, productId: string) 
 // WHY: No onSuccess invalidation — 202 means work is queued, not complete.
 // WS data-change events invalidate queries when background work finishes.
 export function useProductImageFinderRunMutation(category: string, productId: string) {
-  return useMutation<AcceptedResponse, Error, { variant_key?: string; mode?: 'view' | 'hero' }>({
+  return useMutation<AcceptedResponse, Error, { variant_key?: string; variant_id?: string; mode?: 'view' | 'hero' }>({
     mutationFn: (body) => api.post<AcceptedResponse>(
       `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`,
       body,
@@ -31,7 +31,7 @@ export function useProductImageFinderRunMutation(category: string, productId: st
 // WHY: No onSuccess invalidation — 202 means work is queued, not complete.
 // WS data-change events invalidate queries when background work finishes.
 export function useProductImageFinderLoopMutation(category: string, productId: string) {
-  return useMutation<AcceptedResponse, Error, { variant_key?: string }>({
+  return useMutation<AcceptedResponse, Error, { variant_key?: string; variant_id?: string }>({
     mutationFn: (body) => api.post<AcceptedResponse>(
       `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/loop`,
       body,
@@ -135,7 +135,7 @@ export function useCarouselSlotMutation(category: string, productId: string) {
     queryClient.invalidateQueries({ queryKey: ['product-image-finder', category, productId] });
   }, [queryClient, category, productId]);
 
-  return useMutation<{ ok: boolean; carousel_slots: Record<string, Record<string, string | null>> }, Error, { variant_key: string; slot: string; filename: string | null }>({
+  return useMutation<{ ok: boolean; carousel_slots: Record<string, Record<string, string | null>> }, Error, { variant_key: string; variant_id?: string; slot: string; filename: string | null }>({
     mutationFn: (body) => api.patch<{ ok: boolean; carousel_slots: Record<string, Record<string, string | null>> }>(
       `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/carousel-slot`,
       body,

@@ -4,6 +4,8 @@ import {
   buildColorEditionFinderPrompt,
   accumulateUrlsChecked,
   COLOR_EDITION_FINDER_SPEC,
+  buildVariantIdentityCheckPrompt,
+  VARIANT_IDENTITY_CHECK_SPEC,
 } from '../colorEditionLlmAdapter.js';
 
 describe('buildColorEditionFinderPrompt', () => {
@@ -187,5 +189,88 @@ describe('COLOR_EDITION_FINDER_SPEC', () => {
     assert.ok(COLOR_EDITION_FINDER_SPEC.jsonSchema.properties.editions);
     assert.ok(COLOR_EDITION_FINDER_SPEC.jsonSchema.properties.siblings_excluded);
     assert.ok(COLOR_EDITION_FINDER_SPEC.jsonSchema.properties.discovery_log);
+  });
+});
+
+/* ── buildVariantIdentityCheckPrompt ───────────────────────────── */
+
+describe('buildVariantIdentityCheckPrompt', () => {
+  const product = { brand: 'Corsair', model: 'M75 Air Wireless' };
+  const existingRegistry = [
+    { variant_id: 'v_aaa11111', variant_key: 'color:black', variant_type: 'color', variant_label: 'black', color_atoms: ['black'], edition_slug: null, created_at: '2026-01-01T00:00:00Z' },
+    { variant_id: 'v_bbb22222', variant_key: 'color:ocean-blue', variant_type: 'color', variant_label: 'Ocean Blue', color_atoms: ['ocean-blue'], edition_slug: null, created_at: '2026-01-01T00:00:00Z' },
+  ];
+
+  it('contains product identity', () => {
+    const result = buildVariantIdentityCheckPrompt({ product, existingRegistry, newColors: ['black'], newColorNames: {}, newEditions: {} });
+    assert.ok(result.includes('Corsair'));
+    assert.ok(result.includes('M75 Air Wireless'));
+  });
+
+  it('contains existing registry variant_ids', () => {
+    const result = buildVariantIdentityCheckPrompt({ product, existingRegistry, newColors: ['black'], newColorNames: {}, newEditions: {} });
+    assert.ok(result.includes('v_aaa11111'));
+    assert.ok(result.includes('v_bbb22222'));
+  });
+
+  it('contains new discovery colors', () => {
+    const result = buildVariantIdentityCheckPrompt({ product, existingRegistry, newColors: ['black', 'deep-ocean-blue'], newColorNames: { 'deep-ocean-blue': 'Deep Ocean Blue' }, newEditions: {} });
+    assert.ok(result.includes('color:black'));
+    assert.ok(result.includes('color:deep-ocean-blue'));
+    assert.ok(result.includes('Deep Ocean Blue'));
+  });
+
+  it('contains new discovery editions', () => {
+    const result = buildVariantIdentityCheckPrompt({ product, existingRegistry, newColors: ['black+orange'], newColorNames: {}, newEditions: { 'cod-bo6': { display_name: 'COD BO6 Edition', colors: ['black+orange'] } } });
+    assert.ok(result.includes('edition:cod-bo6'));
+    assert.ok(result.includes('COD BO6 Edition'));
+  });
+
+  it('contains matching rules', () => {
+    const result = buildVariantIdentityCheckPrompt({ product, existingRegistry, newColors: ['black'], newColorNames: {}, newEditions: {} });
+    assert.ok(result.includes('RENAME'));
+    assert.ok(result.includes('update'));
+    assert.ok(result.includes('create'));
+    assert.ok(result.includes('retired'));
+  });
+
+  it('contains expected JSON response shape', () => {
+    const result = buildVariantIdentityCheckPrompt({ product, existingRegistry, newColors: ['black'], newColorNames: {}, newEditions: {} });
+    assert.ok(result.includes('"mappings"'));
+    assert.ok(result.includes('"retired"'));
+    assert.ok(result.includes('"action"'));
+    assert.ok(result.includes('"match"'));
+  });
+
+  it('promptOverride replaces entire prompt', () => {
+    const result = buildVariantIdentityCheckPrompt({ product, existingRegistry, newColors: ['black'], newColorNames: {}, newEditions: {}, promptOverride: 'CUSTOM PROMPT' });
+    assert.equal(result, 'CUSTOM PROMPT');
+  });
+
+  it('excludes retired entries from registry listing', () => {
+    const regWithRetired = [
+      ...existingRegistry,
+      { variant_id: 'v_rrr99999', variant_key: 'color:red', variant_type: 'color', variant_label: 'Red', color_atoms: ['red'], edition_slug: null, retired: true, created_at: '2026-01-01T00:00:00Z' },
+    ];
+    const result = buildVariantIdentityCheckPrompt({ product, existingRegistry: regWithRetired, newColors: ['black'], newColorNames: {}, newEditions: {} });
+    assert.ok(!result.includes('v_rrr99999'), 'retired entries should not appear in registry listing');
+  });
+
+  it('handles empty registry gracefully', () => {
+    const result = buildVariantIdentityCheckPrompt({ product, existingRegistry: [], newColors: ['black'], newColorNames: {}, newEditions: {} });
+    assert.ok(result.includes('(none)'));
+  });
+});
+
+describe('VARIANT_IDENTITY_CHECK_SPEC', () => {
+  it('reuses colorFinder phase with distinct reason', () => {
+    assert.equal(VARIANT_IDENTITY_CHECK_SPEC.phase, 'colorFinder');
+    assert.equal(VARIANT_IDENTITY_CHECK_SPEC.reason, 'variant_identity_check');
+    assert.equal(VARIANT_IDENTITY_CHECK_SPEC.role, 'triage');
+  });
+
+  it('jsonSchema has mappings and retired properties', () => {
+    assert.ok(VARIANT_IDENTITY_CHECK_SPEC.jsonSchema.properties.mappings);
+    assert.ok(VARIANT_IDENTITY_CHECK_SPEC.jsonSchema.properties.retired);
   });
 });

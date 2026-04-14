@@ -16,6 +16,31 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { defaultProductRoot } from '../config/runtimeArtifactRoots.js';
 
+// WHY: On Windows, fs.unlinkSync can fail with EBUSY/EPERM when the file is
+// transiently locked by antivirus, search indexer, or editor file watchers.
+// A short synchronous retry avoids silent data resurrection via reseed cycles.
+const RETRY_CODES = new Set(['EBUSY', 'EPERM', 'EACCES']);
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 80;
+
+function unlinkWithRetry(filePath) {
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      fs.unlinkSync(filePath);
+      return;
+    } catch (err) {
+      if (err.code === 'ENOENT') return; // already gone — success
+      if (RETRY_CODES.has(err.code) && attempt < MAX_RETRIES) {
+        // WHY: synchronous spin-wait — acceptable on a rare deletion codepath
+        const deadline = Date.now() + RETRY_DELAY_MS;
+        while (Date.now() < deadline) { /* spin */ }
+        continue;
+      }
+      throw err; // non-retryable or exhausted retries — caller must handle
+    }
+  }
+}
+
 /**
  * @param {object} opts
  * @param {string} opts.filePrefix — e.g. 'color_edition' → reads/writes 'color_edition.json'
@@ -23,7 +48,7 @@ import { defaultProductRoot } from '../config/runtimeArtifactRoots.js';
  * @param {Function} [opts.recalculateSelected] — (validRuns) => selected object. Override for
  *   modules that accumulate across runs instead of latest-wins (e.g. PIF).
  */
-export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSelected }) {
+export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSelected, extraFields }) {
   const fileName = `${filePrefix}.json`;
 
   function resolvePath(productId, productRoot) {
@@ -60,13 +85,52 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
   }
 
+  // WHY: Extra fields live alongside runs on the doc but are NOT derived from runs.
+  // recalculateFromRuns must carry them forward from the existing doc.
+  // Default: PIF's evaluations + carousel_slots. CEF passes ['variant_registry'].
+  const EXTRA_FIELDS = extraFields || ['evaluations', 'carousel_slots'];
+
+  function pickExtraFields(doc) {
+    if (!doc) return {};
+    const extras = {};
+    for (const key of EXTRA_FIELDS) {
+      if (doc[key] !== undefined) extras[key] = doc[key];
+    }
+    return extras;
+  }
+
+  // WHY: Eval fields (eval_best, eval_flags, hero, hero_rank, etc.) are written
+  // onto selected.images by the carousel builder, not by runs. When we
+  // recalculate selected from runs, those fields are lost. Re-overlay them
+  // from the existing doc by filename match so they survive recalculation.
+  const EVAL_IMAGE_FIELDS = ['eval_best', 'eval_flags', 'eval_reasoning', 'eval_source', 'hero', 'hero_rank'];
+
+  function overlayEvalFields(newSelected, existingSelected) {
+    if (!existingSelected?.images?.length || !newSelected?.images?.length) return;
+    const evalMap = new Map();
+    for (const img of existingSelected.images) {
+      const hasEval = EVAL_IMAGE_FIELDS.some(f => img[f] !== undefined);
+      if (hasEval) evalMap.set(img.filename, img);
+    }
+    if (evalMap.size === 0) return;
+    for (const img of newSelected.images) {
+      const existing = evalMap.get(img.filename);
+      if (existing) {
+        for (const f of EVAL_IMAGE_FIELDS) {
+          if (existing[f] !== undefined) img[f] = existing[f];
+        }
+      }
+    }
+  }
+
   /**
    * Recalculate all derived state from a runs array.
    * Pure function — selected = latest non-rejected run's selected values.
+   * Optional existingDoc preserves non-run fields (evaluations, carousel_slots).
    */
-  function recalculateFromRuns(runs, productId, category) {
+  function recalculateFromRuns(runs, productId, category, existingDoc) {
     if (!runs || runs.length === 0) {
-      return { ...emptyTemplate(productId, category), runs: [] };
+      return { ...emptyTemplate(productId, category), runs: [], ...pickExtraFields(existingDoc) };
     }
 
     const sorted = [...runs].sort((a, b) => a.run_number - b.run_number);
@@ -77,17 +141,23 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
     const validRuns = sorted.filter(r => r.status !== 'rejected');
     const latestValid = validRuns.length > 0 ? validRuns[validRuns.length - 1] : null;
 
+    const selected = recalculateSelected
+      ? recalculateSelected(validRuns)
+      : (latestValid?.selected || emptySelected());
+
+    // Re-overlay eval fields from existing doc so carousel builder results survive
+    if (existingDoc?.selected) overlayEvalFields(selected, existingDoc.selected);
+
     return {
       product_id: productId || '',
       category: category || '',
-      selected: recalculateSelected
-        ? recalculateSelected(validRuns)
-        : (latestValid?.selected || emptySelected()),
+      selected,
       cooldown_until: latestValid?.cooldown_until || '',
       last_ran_at: overallLatest.ran_at || '',
       run_count: runs.length,
       next_run_number: maxRunNumber + 1,
       runs: sorted,
+      ...pickExtraFields(existingDoc),
     };
   }
 
@@ -137,6 +207,7 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
       run_count: existingRuns.length + 1,
       next_run_number: runNumber + 1,
       runs: [...existingRuns, runEntry],
+      ...pickExtraFields(existing),
     };
 
     write({ productId, productRoot, data: merged });
@@ -157,12 +228,11 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
     if (remaining.length === existingRuns.length) return existing;
 
     if (remaining.length === 0) {
-      const filePath = resolvePath(productId, productRoot);
-      try { fs.unlinkSync(filePath); } catch { /* */ }
+      unlinkWithRetry(resolvePath(productId, productRoot));
       return null;
     }
 
-    const recalculated = recalculateFromRuns(remaining, existing.product_id || productId, existing.category);
+    const recalculated = recalculateFromRuns(remaining, existing.product_id || productId, existing.category, existing);
     write({ productId, productRoot, data: recalculated });
     return recalculated;
   }
@@ -182,12 +252,11 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
     if (remaining.length === existingRuns.length) return existing;
 
     if (remaining.length === 0) {
-      const filePath = resolvePath(productId, productRoot);
-      try { fs.unlinkSync(filePath); } catch { /* */ }
+      unlinkWithRetry(resolvePath(productId, productRoot));
       return null;
     }
 
-    const recalculated = recalculateFromRuns(remaining, existing.product_id || productId, existing.category);
+    const recalculated = recalculateFromRuns(remaining, existing.product_id || productId, existing.category, existing);
     write({ productId, productRoot, data: recalculated });
     return recalculated;
   }
@@ -196,8 +265,7 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
    * Delete all finder data for a product. Removes the JSON file.
    */
   function deleteAll({ productId, productRoot }) {
-    const filePath = resolvePath(productId, productRoot);
-    try { fs.unlinkSync(filePath); } catch { /* */ }
+    unlinkWithRetry(resolvePath(productId, productRoot));
     return { deleted: true };
   }
 

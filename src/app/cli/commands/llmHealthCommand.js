@@ -9,6 +9,7 @@
       config,
       provider,
       model,
+      appDb: config.appDb || null,
     });
     return {
       command: 'llm-health',

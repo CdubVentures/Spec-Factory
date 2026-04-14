@@ -28,8 +28,8 @@ function makeLlmStub(response) {
   let callCount = 0;
   const stub = async () => {
     callCount++;
-    if (typeof response === 'function') return response(callCount);
-    return response;
+    const raw = typeof response === 'function' ? response(callCount) : response;
+    return { result: raw, usage: null };
   };
   stub.callCount = () => callCount;
   return stub;
@@ -463,7 +463,7 @@ describe('runColorEditionFinder', () => {
       _callLlmOverride: async (_domainArgs, { onModelResolved: notify } = {}) => {
         // Simulate routing calling onModelResolved with fallback model
         notify?.({ model: 'claude-sonnet', provider: 'anthropic', isFallback: true });
-        return { colors: ['black'], editions: {}, default_color: 'black' };
+        return { result: { colors: ['black'], editions: {}, default_color: 'black' }, usage: null };
       },
     });
 

@@ -93,16 +93,6 @@ function seedRun(specDb, { runId, productId, url, contentHash }) {
     file_path: 'fetch-1.webm', captured_at: now,
   });
 
-  // billing_entries
-  specDb.insertBillingEntry({
-    provider: 'google', model: 'gemini-2.5-pro', category: cat,
-    product_id: productId, run_id: runId, round: 1,
-    prompt_tokens: 100, completion_tokens: 50, cached_prompt_tokens: 0,
-    total_tokens: 150, cost_usd: 0.01, reason: 'extraction',
-    host: '', url_count: 1, evidence_chars: 500, estimated_usage: false,
-    meta: '{}',
-  });
-
   // bridge_events
   specDb.insertBridgeEvent({ run_id: runId, category: cat, product_id: productId, ts: now, stage: 'crawl', event: 'start', payload: '{}' });
 
@@ -224,7 +214,6 @@ test('deleteRun — deletes all SQL rows for a single run', () => {
     assert.equal(countRows(h.specDb.db, 'crawl_sources', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'source_screenshots', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'source_videos', 'run_id = ?', [RUN_1]), 0);
-    assert.equal(countRows(h.specDb.db, 'billing_entries', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'bridge_events', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'knob_snapshots', 'run_id = ?', [RUN_1]), 0);
     assert.equal(countRows(h.specDb.db, 'query_index', 'run_id = ?', [RUN_1]), 0);
@@ -512,7 +501,6 @@ test('deleteProductHistory — clears all run data but preserves product identit
     assert.equal(countRows(h.specDb.db, 'crawl_sources', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'source_screenshots', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'source_videos', 'product_id = ?', [PID_A]), 0);
-    assert.equal(countRows(h.specDb.db, 'billing_entries', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'query_cooldowns', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'url_crawl_ledger', 'product_id = ?', [PID_A]), 0);
     assert.equal(countRows(h.specDb.db, 'bridge_events', 'run_id IN (?, ?)', [RUN_1, RUN_2]), 0);

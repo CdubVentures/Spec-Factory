@@ -7,30 +7,83 @@ export function registerQueueBillingLearningRoutes(ctx) {
     OUTPUT_ROOT,
     path,
     getSpecDb,
+    appDb,
     safeReadJson,
     safeStat,
     listFiles,
   } = ctx;
 
+  function objToSortedArray(obj) {
+    return Object.entries(obj || {})
+      .map(([key, val]) => ({ key, ...val }))
+      .sort((a, b) => (b.cost_usd || 0) - (a.cost_usd || 0));
+  }
+
   return async function handleQueueBillingLearningRoutes(parts, params, method, req, res) {
-    // Billing
+    // ── Global billing endpoints ──
+
+    if (parts[0] === 'billing' && parts[1] === 'global' && method === 'GET') {
+      if (!appDb) return jsonRes(res, 503, { error: 'billing not available' });
+
+      if (parts[2] === 'summary') {
+        const month = String(params.get('month') || '').trim() || new Date().toISOString().slice(0, 7);
+        const rollup = appDb.getBillingRollup(month);
+        return jsonRes(res, 200, {
+          month,
+          totals: rollup.totals,
+          models_used: Object.keys(rollup.by_model).length,
+          categories_used: Object.keys(rollup.by_category).length,
+        });
+      }
+
+      if (parts[2] === 'daily') {
+        const months = toInt(params.get('months'), 1);
+        const days = Math.max(1, months * 31);
+        const data = appDb.getGlobalDaily({ days });
+        return jsonRes(res, 200, data);
+      }
+
+      if (parts[2] === 'by-model') {
+        const month = String(params.get('month') || '').trim() || new Date().toISOString().slice(0, 7);
+        const rollup = appDb.getBillingRollup(month);
+        return jsonRes(res, 200, { month, models: objToSortedArray(rollup.by_model) });
+      }
+
+      if (parts[2] === 'by-reason') {
+        const month = String(params.get('month') || '').trim() || new Date().toISOString().slice(0, 7);
+        const rollup = appDb.getBillingRollup(month);
+        return jsonRes(res, 200, { month, reasons: objToSortedArray(rollup.by_reason) });
+      }
+
+      if (parts[2] === 'by-category') {
+        const month = String(params.get('month') || '').trim() || new Date().toISOString().slice(0, 7);
+        const rollup = appDb.getBillingRollup(month);
+        return jsonRes(res, 200, { month, categories: objToSortedArray(rollup.by_category) });
+      }
+
+      if (parts[2] === 'entries') {
+        const limit = toInt(params.get('limit'), 100);
+        const offset = toInt(params.get('offset'), 0);
+        const category = String(params.get('category') || '').trim();
+        const model = String(params.get('model') || '').trim();
+        const reason = String(params.get('reason') || '').trim();
+        const data = appDb.getGlobalEntries({ limit, offset, category, model, reason });
+        return jsonRes(res, 200, { ...data, limit, offset });
+      }
+    }
+
+    // ── Per-category billing (existing) ──
+
     if (parts[0] === 'billing' && parts[1] && parts[2] === 'monthly' && method === 'GET') {
       const category = parts[1];
-      const specDb = getSpecDb(category);
       const month = new Date().toISOString().slice(0, 7);
-      if (specDb) {
+      if (appDb) {
         try {
-          const data = specDb.getBillingRollup(month, category);
+          const data = appDb.getBillingRollup(month, category);
           return jsonRes(res, 200, data || { totals: {} });
-        } catch { /* fall through to JSON */ }
+        } catch { /* fall through */ }
       }
-      // WHY: fallback for pre-migration data when SQL is empty
-      const billingDir = path.join(OUTPUT_ROOT, '_billing', category);
-      const files = await listFiles(billingDir, '.json');
-      if (files.length === 0) return jsonRes(res, 200, { totals: {} });
-      const latest = files[files.length - 1];
-      const data = await safeReadJson(path.join(billingDir, latest));
-      return jsonRes(res, 200, data || { totals: {} });
+      return jsonRes(res, 200, { totals: {} });
     }
 
     // Learning artifacts

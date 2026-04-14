@@ -165,6 +165,27 @@ describe('operationsStore (characterization)', () => {
       assert.equal(getOps().get('op-1')?.llmCalls[0]?.response, 'done');
     });
   });
+
+  describe('usage field passthrough', () => {
+    it('appendLlmCall preserves usage field', () => {
+      useOperationsStore.getState().upsert(makeOp());
+      const usage = { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150, cost_usd: 0.003, estimated_usage: false };
+      const call = { callIndex: 0, timestamp: '', prompt: { system: 's', user: 'u' }, response: { ok: true }, usage };
+      useOperationsStore.getState().appendLlmCall('op-1', call);
+      const stored = getOps().get('op-1')?.llmCalls[0];
+      assert.deepEqual(stored?.usage, usage);
+    });
+
+    it('updateLlmCall preserves usage field', () => {
+      useOperationsStore.getState().upsert(makeOp());
+      const call = { callIndex: 0, timestamp: '', prompt: { system: '', user: '' }, response: null };
+      useOperationsStore.getState().appendLlmCall('op-1', call);
+      const usage = { prompt_tokens: 200, completion_tokens: 80, total_tokens: 280, cost_usd: 0.005, estimated_usage: true };
+      const updated = { ...call, response: 'done', usage };
+      useOperationsStore.getState().updateLlmCall('op-1', 0, updated);
+      assert.deepEqual(getOps().get('op-1')?.llmCalls[0]?.usage, usage);
+    });
+  });
 });
 
 /* ── New behavior tests — streamTexts isolation ─────────────────── */

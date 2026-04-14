@@ -17,6 +17,13 @@ Exported from `index.js`:
 - `buildColorEditionFinderPrompt({ colorNames, colors, product, previousRuns? })` — Dynamic system prompt with historical context
 - `createColorEditionFinderCallLlm(deps)` — Factory: creates bound LLM caller
 - `runColorEditionFinder({ product, appDb, specDb, config, ... })` — Full orchestrator: LLM call → capture prompt/response → merge → persist
+- `generateVariantId(productId, variantKey)` — Deterministic hash: `v_` + 8 hex chars from SHA-256. Product-scoped, never changes once assigned.
+- `buildVariantRegistry({ productId, colors, colorNames, editions })` — Builds full variant registry array from CEF selected data. Each entry has stable `variant_id`, current `variant_key`/`variant_label`/`color_atoms`.
+- `backfillVariantRegistry({ specDb, productRoot? })` — One-time backfill: scans all products, generates registry for those missing one, writes JSON + SQL. Idempotent.
+- `variantIdentityCheckResponseSchema` — Zod schema: `{ mappings: [{new_key, match, action, reason}], retired: string[] }`
+- `buildVariantIdentityCheckPrompt({ product, existingRegistry, newColors, newColorNames, newEditions })` — System prompt for Run 2+ identity check. Compares new discoveries against existing variant registry.
+- `createVariantIdentityCheckCallLlm(deps)` — Factory: creates bound LLM caller for identity check (same `colorFinder` phase, `variant_identity_check` reason).
+- `applyIdentityMappings({ existingRegistry, mappings, retired, productId, ... })` — Applies LLM identity check results to registry: updates matched entries (preserving hashes), creates new entries, marks retired entries.
 
 SQL store (wired through specDb, not imported directly):
 
@@ -53,3 +60,5 @@ SQL store (wired through specDb, not imported directly):
 - **Run history as source log**: each LLM call stored in `runs` array with full prompt + response
 - **Cooldown derived from latest run**: deleting the latest run recalculates cooldown from the new latest
 - **Candidate gate (all-or-nothing)**: Before CEF writes anything, `submitCandidate()` validates `colors` against Field Studio rules. If validation fails, the entire run is rejected — no CEF writes, no candidates, no cooldown. Failure stored in `color_edition_finder_runs` with `response.status = 'rejected'`. On success, repaired values (not raw LLM output) flow to CEF tables and `field_candidates`. Gate skipped gracefully if compiled rules not available (test environments).
+- **Variant registry**: Each variant gets a permanent `v_<8-hex>` hash (`variant_id`) assigned on first CEF publish. Hash never changes even if variant name, color atoms, or edition details are updated. Stored as `variant_registry` array on `color_edition.json` (top-level, not inside `selected`). Projected to SQL `color_edition_finder.variant_registry` column.
+- **Identity check (Run 2+)**: Every CEF run after the first fires a second LLM call (`variant_identity_check` reason, same `colorFinder` phase) that compares new discoveries against the existing registry. The LLM decides: same variant (update metadata, keep hash) or genuinely new (create new hash). Retired variants are marked `retired: true` but never removed. If the identity check call fails, falls back to write-once behavior (no registry modification). Run prompt/response is nested: `{ discovery: {...}, identity_check: {...} }` on Run 2+, flat `{ system, user }` on Run 1.

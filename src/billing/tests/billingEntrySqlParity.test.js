@@ -1,30 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
 import { appendCostLedgerEntry } from '../costLedger.js';
-
-function makeMemoryStorage() {
-  const map = new Map();
-  const writeCalls = [];
-  return {
-    map,
-    writeCalls,
-    resolveOutputKey(...parts) {
-      return ['specs/outputs', ...parts].join('/');
-    },
-    async readTextOrNull(key) {
-      const row = map.get(key);
-      return row ? row.toString('utf8') : null;
-    },
-    async readJsonOrNull(key) {
-      const row = map.get(key);
-      return row ? JSON.parse(row.toString('utf8')) : null;
-    },
-    async writeObject(key, body, opts) {
-      writeCalls.push({ key, opts });
-      map.set(key, Buffer.isBuffer(body) ? body : Buffer.from(body));
-    },
-  };
-}
 
 function makeEntry(overrides = {}) {
   return {
@@ -49,64 +28,71 @@ function makeEntry(overrides = {}) {
   };
 }
 
-test('appendCostLedgerEntry writes to SQL when specDb is provided', async () => {
-  const storage = makeMemoryStorage();
+function makeTmpConfig() {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'billing-parity-'));
+  return { config: { specDbDir: tmpDir }, tmpDir };
+}
+
+test('appendCostLedgerEntry writes to SQL when appDb is provided', async () => {
   const inserted = [];
-  const specDb = {
+  const appDb = {
     insertBillingEntry(entry) { inserted.push(entry); },
   };
+  const { config, tmpDir } = makeTmpConfig();
 
-  await appendCostLedgerEntry({
-    storage,
-    config: {},
-    entry: makeEntry(),
-    specDb,
-  });
+  try {
+    await appendCostLedgerEntry({ config, entry: makeEntry(), appDb });
 
-  assert.equal(inserted.length, 1, 'insertBillingEntry should be called once');
-  const row = inserted[0];
-  assert.equal(row.ts, '2026-03-27T10:00:00.000Z');
-  assert.equal(row.month, '2026-03');
-  assert.equal(row.day, '2026-03-27');
-  assert.equal(row.provider, 'deepseek');
-  assert.equal(row.model, 'deepseek-reasoner');
-  assert.equal(row.category, 'mouse');
-  assert.equal(row.product_id, 'mouse-test');
-  assert.equal(row.run_id, 'run-parity-001');
-  assert.equal(row.prompt_tokens, 500);
-  assert.equal(row.completion_tokens, 200);
-  assert.equal(row.cost_usd, 0.00042);
-  assert.equal(row.reason, 'extract');
-  assert.equal(row.estimated_usage, 0);
+    assert.equal(inserted.length, 1, 'insertBillingEntry should be called once');
+    const row = inserted[0];
+    assert.equal(row.ts, '2026-03-27T10:00:00.000Z');
+    assert.equal(row.month, '2026-03');
+    assert.equal(row.day, '2026-03-27');
+    assert.equal(row.provider, 'deepseek');
+    assert.equal(row.model, 'deepseek-reasoner');
+    assert.equal(row.category, 'mouse');
+    assert.equal(row.product_id, 'mouse-test');
+    assert.equal(row.run_id, 'run-parity-001');
+    assert.equal(row.prompt_tokens, 500);
+    assert.equal(row.completion_tokens, 200);
+    assert.equal(row.cost_usd, 0.00042);
+    assert.equal(row.reason, 'extract');
+    assert.equal(row.estimated_usage, 0);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
 });
 
-test('appendCostLedgerEntry skips NDJSON when specDb is provided', async () => {
-  const storage = makeMemoryStorage();
-  const specDb = {
-    insertBillingEntry() {},
-  };
+test('appendCostLedgerEntry writes JSONL alongside SQL', async () => {
+  const appDb = { insertBillingEntry() {} };
+  const { config, tmpDir } = makeTmpConfig();
 
-  const result = await appendCostLedgerEntry({
-    storage,
-    config: {},
-    entry: makeEntry(),
-    specDb,
-  });
+  try {
+    await appendCostLedgerEntry({ config, entry: makeEntry(), appDb });
 
-  assert.equal(storage.writeCalls.length, 0, 'no storage writes when specDb is present');
-  assert.ok(result.entry, 'normalized entry should still be returned');
+    const ledgerDir = path.join(tmpDir, 'global', 'billing', 'ledger');
+    const jsonlPath = path.join(ledgerDir, '2026-03.jsonl');
+    assert.ok(fs.existsSync(jsonlPath), 'JSONL file should exist');
+    const content = fs.readFileSync(jsonlPath, 'utf8').trim();
+    const parsed = JSON.parse(content);
+    assert.equal(parsed.provider, 'deepseek');
+    assert.equal(parsed.productId, 'mouse-test');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
 });
 
-test('appendCostLedgerEntry is a no-op when specDb is null (no NDJSON fallback)', async () => {
-  const storage = makeMemoryStorage();
+test('appendCostLedgerEntry writes JSONL even without appDb', async () => {
+  const { config, tmpDir } = makeTmpConfig();
 
-  const result = await appendCostLedgerEntry({
-    storage,
-    config: {},
-    entry: makeEntry(),
-    specDb: null,
-  });
+  try {
+    const result = await appendCostLedgerEntry({ config, entry: makeEntry(), appDb: null });
 
-  assert.equal(storage.writeCalls.length, 0, 'no storage writes without specDb');
-  assert.ok(result.entry, 'normalized entry should still be returned');
+    assert.ok(result.entry, 'normalized entry should still be returned');
+    const ledgerDir = path.join(tmpDir, 'global', 'billing', 'ledger');
+    const jsonlPath = path.join(ledgerDir, '2026-03.jsonl');
+    assert.ok(fs.existsSync(jsonlPath), 'JSONL should be written even without appDb');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
 });

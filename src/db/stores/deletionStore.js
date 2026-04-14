@@ -67,7 +67,6 @@ export function createDeletionStore({ db, category: defaultCategory }) {
     // Step 2: SQL transaction
     const tx = db.transaction(() => {
       // Phase 1 — Leaf tables
-      totalDeleted += db.prepare('DELETE FROM billing_entries WHERE run_id = ?').run(rid).changes;
       try { totalDeleted += db.prepare('DELETE FROM bridge_events WHERE run_id = ?').run(rid).changes; } catch { /* table may not exist */ }
       totalDeleted += db.prepare('DELETE FROM knob_snapshots WHERE run_id = ?').run(rid).changes;
       totalDeleted += db.prepare('DELETE FROM query_index WHERE run_id = ?').run(rid).changes;
@@ -263,7 +262,6 @@ export function createDeletionStore({ db, category: defaultCategory }) {
     // Step 2: SQL transaction
     const tx = db.transaction(() => {
       // Phase 1 — Leaf/telemetry tables
-      totalDeleted += db.prepare('DELETE FROM billing_entries WHERE product_id = ?').run(pid).changes;
       totalDeleted += db.prepare('DELETE FROM query_index WHERE product_id = ?').run(pid).changes;
       totalDeleted += db.prepare('DELETE FROM query_cooldowns WHERE product_id = ?').run(pid).changes;
       totalDeleted += db.prepare('DELETE FROM url_crawl_ledger WHERE product_id = ?').run(pid).changes;

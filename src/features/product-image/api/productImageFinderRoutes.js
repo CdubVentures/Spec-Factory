@@ -16,6 +16,7 @@ import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js
 import { readImageDimensions, buildVariantList, imageStem } from '../productImageFinder.js';
 import { evaluateCarousel } from '../carouselStrategy.js';
 import { resolveViewBudget } from '../productImageLlmAdapter.js';
+import { resolveViewAttemptBudgets } from '../viewAttemptDefaults.js';
 import { readProductImages } from '../productImageStore.js';
 import { writeCarouselSlot, resolveCarouselSlots, deleteEvalRecord } from '../imageEvaluator.js';
 
@@ -90,6 +91,9 @@ export function registerProductImageFinderRoutes(ctx) {
       const heroEnabled = (finderStore?.getSetting?.('heroEnabled') || 'true') !== 'false';
       const heroCount = parseInt(finderStore?.getSetting?.('heroCount') || '3', 10) || 3;
       const viewAttemptBudget = parseInt(finderStore?.getSetting?.('viewAttemptBudget') || '5', 10) || 5;
+      const viewAttemptBudgets = resolveViewAttemptBudgets(
+        finderStore?.getSetting?.('viewAttemptBudgets') || '', row.category, viewBudget, viewAttemptBudget,
+      );
       const heroAttemptBudget = parseInt(finderStore?.getSetting?.('heroAttemptBudget') || '3', 10) || 3;
 
       // WHY: Use row.images (accumulated SQL summary) not enrichedSelected
@@ -107,6 +111,7 @@ export function registerProductImageFinderRoutes(ctx) {
           collectedImages: allImages,
           viewBudget, satisfactionThreshold, heroEnabled, heroCount,
           variantKey: vk,
+          viewAttemptBudgets,
         }).carouselProgress;
       }
 
@@ -122,7 +127,7 @@ export function registerProductImageFinderRoutes(ctx) {
         selected: enrichedSelected,
         runs: enrichedRuns,
         carouselProgress,
-        carouselSettings: { viewAttemptBudget, heroAttemptBudget, heroEnabled, viewBudget },
+        carouselSettings: { viewAttemptBudget, viewAttemptBudgets, heroAttemptBudget, heroEnabled, viewBudget },
         carousel_slots: typeof row.carousel_slots === 'string' ? JSON.parse(row.carousel_slots || '{}') : (row.carousel_slots || {}),
         evaluations: jsonDoc?.evaluations || [],
       };
@@ -283,7 +288,7 @@ export function registerProductImageFinderRoutes(ctx) {
             }
           }
         }
-        const recalculated = recalculateProductImagesFromRuns(doc.runs, productId, category);
+        const recalculated = recalculateProductImagesFromRuns(doc.runs, productId, category, doc);
 
         // WHY: recalculation may pick a different entry for the same view/variant
         // (dedup numbering). Ensure the processed entry's RMBG fields propagate.
@@ -474,7 +479,7 @@ export function registerProductImageFinderRoutes(ctx) {
               }
             }
 
-            const recalculated = recalculateProductImagesFromRuns(doc.runs, productId, category);
+            const recalculated = recalculateProductImagesFromRuns(doc.runs, productId, category, doc);
             writeProductImages({ productId, productRoot, data: recalculated });
 
             const finderStore = specDb.getFinderStore('productImageFinder');
@@ -525,6 +530,10 @@ export function registerProductImageFinderRoutes(ctx) {
         const finderStore = specDb.getFinderStore?.('productImageFinder');
         const loopThreshold = parseInt(finderStore?.getSetting?.('satisfactionThreshold') || '3', 10) || 3;
         const viewAttemptBudget = parseInt(finderStore?.getSetting?.('viewAttemptBudget') || '5', 10) || 5;
+        const loopViewBudget = resolveViewBudget(finderStore?.getSetting?.('viewBudget') || '', category);
+        const viewAttemptBudgets = resolveViewAttemptBudgets(
+          finderStore?.getSetting?.('viewAttemptBudgets') || '', category, loopViewBudget, viewAttemptBudget,
+        );
         const heroAttemptBudget = parseInt(finderStore?.getSetting?.('heroAttemptBudget') || '3', 10) || 3;
 
         op = registerOperation({
@@ -943,7 +952,7 @@ export function registerProductImageFinderRoutes(ctx) {
           }
         }
         // Recalculate selected from modified runs
-        const recalculated = recalculateProductImagesFromRuns(doc.runs, productId, category);
+        const recalculated = recalculateProductImagesFromRuns(doc.runs, productId, category, doc);
         writeProductImages({ productId, productRoot, data: recalculated });
 
         // Update SQL summary + runs

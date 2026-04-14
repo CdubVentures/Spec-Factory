@@ -1,12 +1,12 @@
 ﻿export function createBillingReportCommand({
   buildBillingReport,
 }) {
-  return async function commandBillingReport(config, storage, args) {
+  return function commandBillingReport(config, storage, args) {
     const month = args.month || new Date().toISOString().slice(0, 7);
-    const report = await buildBillingReport({
-      storage,
+    const report = buildBillingReport({
       month,
       config,
+      appDb: config.appDb || null,
     });
     return {
       command: 'billing-report',

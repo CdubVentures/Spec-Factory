@@ -10,6 +10,7 @@ import {
 import {
   registerOperation,
   updateStage,
+  appendLlmCall,
   completeOperation,
   failOperation,
   listOperations,
@@ -297,6 +298,22 @@ export function createProcessRuntime({
       } else if (msg && msg.__runtime_event) {
         if (typeof invalidateEventCache === 'function') invalidateEventCache(msg.run_id || '');
         broadcastWs('indexlab-event', [{ type: 'runtime-update', run_id: msg.run_id || '', stage: msg.stage, stage_cursor: msg.stage_cursor || '', event: msg.event }]);
+        // ── Pipeline LLM call tracking ─────────────────────────────
+        // WHY: Only append on llm_finished/llm_failed — never on llm_started.
+        // Pipeline phases run in parallel (needset + brand_resolver), so
+        // started/finished events interleave. The smart-update in appendLlmCall
+        // assumes sequential pre/post calls and breaks with interleaving
+        // (orphan pending entries, duplicate completions).
+        if (pipelineOpId && msg.__llm_call) {
+          try {
+            const lc = msg.__llm_call;
+            if (lc.event === 'llm_finished') {
+              appendLlmCall({ id: pipelineOpId, call: { prompt: { system: `(${lc.reason || 'llm'})`, user: '' }, response: '(completed)', model: lc.model || '', mode: lc.reason || '', usage: { prompt_tokens: lc.prompt_tokens || 0, completion_tokens: lc.completion_tokens || 0, total_tokens: lc.total_tokens || 0, cost_usd: lc.cost_usd || 0, estimated_usage: Boolean(lc.estimated_usage) } } });
+            } else if (lc.event === 'llm_failed') {
+              appendLlmCall({ id: pipelineOpId, call: { prompt: { system: `(${lc.reason || 'llm'})`, user: '' }, response: '(failed)', model: lc.model || '', mode: lc.reason || '' } });
+            }
+          } catch { /* operations registry may not be ready */ }
+        }
         // ── Pipeline operation stage advancement ──────────────────
         if (pipelineOpId && msg.stage_cursor) {
           const stageIdx = PIPELINE_STAGE_MAP[msg.stage_cursor];

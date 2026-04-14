@@ -23,6 +23,7 @@ export interface Operation {
   } | null;
   readonly subType?: string;
   readonly variantKey?: string;
+  readonly variantId?: string;
   readonly progressText?: string;
   readonly loopProgress?: {
     readonly variantLabel: string;
@@ -66,6 +67,14 @@ export interface LlmCallRecord {
   readonly model?: string;
   readonly variant?: string;
   readonly mode?: string;
+  // WHY: Mirrors llmClient.js emitUsage wire format (snake_case). No transform needed.
+  readonly usage?: {
+    readonly prompt_tokens: number;
+    readonly completion_tokens: number;
+    readonly total_tokens: number;
+    readonly cost_usd: number;
+    readonly estimated_usage?: boolean;
+  } | null;
 }
 
 interface OperationsState {

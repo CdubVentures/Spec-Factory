@@ -37,8 +37,10 @@ import {
 } from './productImageLlmAdapter.js';
 import { evaluateCarousel } from './carouselStrategy.js';
 import { resolveViewQualityConfig } from './viewQualityDefaults.js';
+import { resolveViewAttemptBudgets } from './viewAttemptDefaults.js';
 import { resolveIdentityAmbiguitySnapshot } from '../indexing/orchestration/shared/identityHelpers.js';
 import { readProductImages, mergeProductImageDiscovery } from './productImageStore.js';
+import { matchVariant } from './variantMatch.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 import { configInt } from '../../shared/settingsAccessor.js';
 import { processImage, processHeroImage, loadModel, releaseModel, setInferenceConcurrency } from './imageProcessor.js';
@@ -302,6 +304,7 @@ async function runSingleVariant({
   promptOverride = '',
   mode = 'view',
   onPhaseChange = null,
+  alreadyDownloadedUrls = new Set(),
 }) {
   // WHY: hero mode needs hero-specific quality thresholds in the prompt,
   // not the top-view thresholds. The quality gate at download time already
@@ -310,9 +313,9 @@ async function runSingleVariant({
   const promptMinWidth = viewQualityMap[qualityKey]?.minWidth || 600;
   const promptMinHeight = viewQualityMap[qualityKey]?.minHeight || 400;
 
-  let response;
+  let response, usage;
   try {
-    response = await callLlm({
+    ({ result: response, usage } = await callLlm({
       product,
       variantLabel: variant.label,
       variantType: variant.type,
@@ -325,7 +328,7 @@ async function runSingleVariant({
       ambiguityLevel: ambiguityLevel || 'easy',
       previousDiscovery: previousDiscovery || { urlsChecked: [], queriesRun: [] },
       promptOverride,
-    });
+    }));
   } catch (err) {
     logger?.error?.('pif_llm_failed', { product_id: product.product_id, variant: variant.key, error: err.message });
     return { images: [], errors: [{ view: '*', url: '', error: err.message }], variant };
@@ -357,6 +360,15 @@ async function runSingleVariant({
     const view = (img.view || '').toLowerCase().trim();
     if (!CANONICAL_VIEW_KEYS.includes(view) && view !== 'hero') {
       errors.push({ view: img.view, url: img.url, error: `non-canonical view "${img.view}" skipped` });
+      continue;
+    }
+
+    // WHY: Hard URL dedup gate. The LLM ignores prompt hints to avoid
+    // previously-downloaded URLs. This rejects at the download boundary
+    // so the same image is never fetched twice for the same variant.
+    const normUrl = normalizeImageUrl(img.url);
+    if (alreadyDownloadedUrls.has(normUrl)) {
+      errors.push({ view, url: img.url, error: 'duplicate URL: already downloaded for this variant' });
       continue;
     }
 
@@ -434,6 +446,7 @@ async function runSingleVariant({
           width: masterWidth,
           height: masterHeight,
           quality_pass: true,
+          variant_id: variant.variant_id || null,
           variant_key: variant.key,
           variant_label: variant.label,
           variant_type: variant.type,
@@ -442,6 +455,7 @@ async function runSingleVariant({
           bg_removed: skipRmbg ? true : (procResult.ok ? procResult.bg_removed : false),
           original_format: originalExt || 'unknown',
         });
+        alreadyDownloadedUrls.add(normUrl);
       } else {
         errors.push({ view, url: img.url, error: result.error });
       }
@@ -455,6 +469,7 @@ async function runSingleVariant({
     errors,
     variant,
     discovery_log: response?.discovery_log || { urls_checked: [], queries_run: [], notes: [] },
+    usage,
   };
 }
 
@@ -523,6 +538,9 @@ export async function runProductImageFinder({
   const heroEnabled = finderStore.getSetting('heroEnabled') !== 'false';
   const heroCount = parseInt(finderStore.getSetting('heroCount'), 10) || 3;
   const viewAttemptBudget = parseInt(finderStore.getSetting('viewAttemptBudget'), 10) || 5;
+  const viewAttemptBudgets = resolveViewAttemptBudgets(
+    finderStore.getSetting('viewAttemptBudgets'), product.category, viewBudget, viewAttemptBudget,
+  );
   const heroAttemptBudget = parseInt(finderStore.getSetting('heroAttemptBudget'), 10) || 3;
   const viewPromptOverride = finderStore.getSetting('viewPromptOverride') || '';
   const heroPromptOverride = finderStore.getSetting('heroPromptOverride') || '';
@@ -554,6 +572,12 @@ export async function runProductImageFinder({
   const colorNames = cefData?.selected?.color_names || {};
   const editions = cefData?.selected?.editions || {};
   const allVariants = buildVariantList({ colors, colorNames, editions });
+
+  // WHY: Enrich variants with stable variant_id from CEF registry.
+  // variant_id is the permanent join key; variant_key can change on rename.
+  const variantRegistry = cefData?.variant_registry || [];
+  const registryMap = new Map(variantRegistry.map(r => [r.variant_key, r.variant_id]));
+  for (const v of allVariants) v.variant_id = registryMap.get(v.key) || null;
 
   // Read siblings from CEF runs (identity context)
   const siblingsExcluded = [];
@@ -619,7 +643,11 @@ export async function runProductImageFinder({
 
       try {
         // Accumulate discovery logs from previous runs for this specific variant
-        const previousDiscovery = accumulateVariantDiscoveryLog(previousPifRuns, variant.key);
+        const previousDiscovery = accumulateVariantDiscoveryLog(previousPifRuns, variant.key, variant.variant_id);
+
+        // Build hard URL dedup set from all previously downloaded images for this variant
+        const variantImages = (pifDoc?.selected?.images || []).filter(img => matchVariant(img, { variantId: variant.variant_id, variantKey: variant.key }));
+        const alreadyDownloadedUrls = new Set(variantImages.map(img => normalizeImageUrl(img.url)).filter(Boolean));
 
         // Strategy engine: determine which views still need images (view mode only)
         let effectiveViewConfig = viewConfig;
@@ -630,7 +658,8 @@ export async function runProductImageFinder({
           const strategy = evaluateCarousel({
             collectedImages: allSelectedImages,
             viewBudget, satisfactionThreshold, heroEnabled, heroCount,
-            variantKey: variant.key,
+            variantKey: variant.key, variantId: variant.variant_id,
+            viewAttemptBudgets,
           });
           // Filter viewConfig to only include unsatisfied views from strategy
           if (strategy.viewsToSearch.length > 0) {
@@ -672,6 +701,7 @@ export async function runProductImageFinder({
           promptOverride: mode === 'hero' ? heroPromptOverride : viewPromptOverride,
           mode,
           onPhaseChange: onStageAdvance,
+          alreadyDownloadedUrls,
         });
 
         const variantDurationMs = Date.now() - variantStartMs;
@@ -680,7 +710,7 @@ export async function runProductImageFinder({
         allErrors.push(...result.errors);
 
         const selected = { images: result.images };
-        const responsePayload = { mode, started_at: variantStartedAt, duration_ms: variantDurationMs, images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_key: variant.key, variant_label: variant.label };
+        const responsePayload = { mode, started_at: variantStartedAt, duration_ms: variantDurationMs, images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_id: variant.variant_id || null, variant_key: variant.key, variant_label: variant.label };
 
         // Smart update — fills response into the pending prompt entry
         onLlmCallComplete?.({
@@ -689,6 +719,7 @@ export async function runProductImageFinder({
           model: _mt.actualModel,
           variant: variant.label,
           mode,
+          usage: result.usage,
         });
 
         const merged = mergeProductImageDiscovery({
@@ -757,7 +788,7 @@ export async function runProductImageFinder({
     carouselProgress[v.key] = evaluateCarousel({
       collectedImages: updatedImages,
       viewBudget, satisfactionThreshold, heroEnabled, heroCount,
-      variantKey: v.key,
+      variantKey: v.key, variantId: v.variant_id,
     }).carouselProgress;
   }
 
@@ -768,7 +799,7 @@ export async function runProductImageFinder({
     fallbackUsed: _mt.actualFallbackUsed,
     rejected: false,
     carouselProgress,
-    carouselSettings: { viewAttemptBudget, heroAttemptBudget, heroEnabled },
+    carouselSettings: { viewAttemptBudget, viewAttemptBudgets, heroAttemptBudget, heroEnabled },
   };
 }
 
@@ -835,6 +866,9 @@ export async function runCarouselLoop({
   const heroEnabled = finderStore.getSetting('heroEnabled') !== 'false';
   const heroCount = parseInt(finderStore.getSetting('heroCount'), 10) || 3;
   const viewAttemptBudget = parseInt(finderStore.getSetting('viewAttemptBudget'), 10) || 5;
+  const viewAttemptBudgets = resolveViewAttemptBudgets(
+    finderStore.getSetting('viewAttemptBudgets'), product.category, viewBudget, viewAttemptBudget,
+  );
   const heroAttemptBudget = parseInt(finderStore.getSetting('heroAttemptBudget'), 10) || 3;
   const reRunBudgetRaw = parseInt(finderStore.getSetting('reRunBudget'), 10);
   const reRunBudget = Number.isNaN(reRunBudgetRaw) ? 1 : reRunBudgetRaw;
@@ -863,6 +897,11 @@ export async function runCarouselLoop({
   const colorNames = cefData?.selected?.color_names || {};
   const editions = cefData?.selected?.editions || {};
   const allVariants = buildVariantList({ colors, colorNames, editions });
+
+  // WHY: Enrich variants with stable variant_id from CEF registry.
+  const variantRegistryLoop = cefData?.variant_registry || [];
+  const registryMapLoop = new Map(variantRegistryLoop.map(r => [r.variant_key, r.variant_id]));
+  for (const v of allVariants) v.variant_id = registryMapLoop.get(v.key) || null;
 
   const siblingsExcluded = [];
   for (const run of (cefData?.runs || [])) {
@@ -909,7 +948,7 @@ export async function runCarouselLoop({
     // Re-read fresh state from disk (discovery log accumulates across all calls)
     const pifDoc = readProductImages({ productId: product.product_id, productRoot });
     const previousPifRuns = Array.isArray(pifDoc?.runs) ? pifDoc.runs : [];
-    const previousDiscovery = accumulateVariantDiscoveryLog(previousPifRuns, variant.key);
+    const previousDiscovery = accumulateVariantDiscoveryLog(previousPifRuns, variant.key, variant.variant_id);
 
     const llmDeps = buildLlmCallDeps({
       config, logger,
@@ -975,7 +1014,7 @@ export async function runCarouselLoop({
     onStreamChunk?.({ content: summary });
 
     const selected = { images: result.images };
-    const responsePayload = { mode: callMode, loop_id: loopId, started_at: callStartedAt, duration_ms: callDurationMs, images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_key: variant.key, variant_label: variant.label };
+    const responsePayload = { mode: callMode, loop_id: loopId, started_at: callStartedAt, duration_ms: callDurationMs, images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_id: variant.variant_id || null, variant_key: variant.key, variant_label: variant.label };
 
     // Smart update — fills response into the pending prompt entry
     onLlmCallComplete?.({
@@ -984,6 +1023,7 @@ export async function runCarouselLoop({
       model: _mtLoop.actualModel,
       variant: variant.label,
       mode: callMode,
+      usage: result.usage,
     });
 
     const merged = mergeProductImageDiscovery({
@@ -1038,8 +1078,8 @@ export async function runCarouselLoop({
     }));
     const postCallStrategy = evaluateCarousel({
       collectedImages: postCallImages, viewBudget, satisfactionThreshold,
-      heroEnabled, heroCount, variantKey: variant.key,
-      viewAttemptBudget, viewAttemptCounts: vatCounts,
+      heroEnabled, heroCount, variantKey: variant.key, variantId: variant.variant_id,
+      viewAttemptBudget, viewAttemptBudgets, viewAttemptCounts: vatCounts,
       heroAttemptBudget, heroAttemptCount: haCnt,
       reRunBudget,
     });
@@ -1076,8 +1116,8 @@ export async function runCarouselLoop({
 
     const initialStrategy = evaluateCarousel({
       collectedImages: initialImages, viewBudget, satisfactionThreshold,
-      heroEnabled, heroCount, variantKey: variant.key,
-      viewAttemptBudget, viewAttemptCounts,
+      heroEnabled, heroCount, variantKey: variant.key, variantId: variant.variant_id,
+      viewAttemptBudget, viewAttemptBudgets, viewAttemptCounts,
       heroAttemptBudget, heroAttemptCount,
       reRunBudget,
     });
@@ -1105,8 +1145,8 @@ export async function runCarouselLoop({
 
       const strategy = evaluateCarousel({
         collectedImages, viewBudget, satisfactionThreshold,
-        heroEnabled, heroCount, variantKey: variant.key,
-        viewAttemptBudget, viewAttemptCounts,
+        heroEnabled, heroCount, variantKey: variant.key, variantId: variant.variant_id,
+        viewAttemptBudget, viewAttemptBudgets, viewAttemptCounts,
         heroAttemptBudget, heroAttemptCount,
         reRunBudget,
       });
@@ -1145,8 +1185,8 @@ export async function runCarouselLoop({
     carouselProgress[v.key] = evaluateCarousel({
       collectedImages: finalImages,
       viewBudget, satisfactionThreshold, heroEnabled, heroCount,
-      variantKey: v.key,
-      viewAttemptBudget, heroAttemptBudget, reRunBudget,
+      variantKey: v.key, variantId: v.variant_id,
+      viewAttemptBudget, viewAttemptBudgets, heroAttemptBudget, reRunBudget,
     }).carouselProgress;
   }
 
@@ -1158,6 +1198,6 @@ export async function runCarouselLoop({
     fallbackUsed: _mtLoop.actualFallbackUsed,
     rejected: false,
     carouselProgress,
-    carouselSettings: { viewAttemptBudget, heroAttemptBudget, heroEnabled },
+    carouselSettings: { viewAttemptBudget, viewAttemptBudgets, heroAttemptBudget, heroEnabled },
   };
 }

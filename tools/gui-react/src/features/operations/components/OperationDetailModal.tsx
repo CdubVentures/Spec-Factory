@@ -216,6 +216,13 @@ function LlmCallRow({ call }: { readonly call: LlmCallRecord }) {
           </span>
         )}
         <span className="flex-1" />
+        {call.usage && (
+          <span className="text-[9px] font-mono sf-text-subtle whitespace-nowrap">
+            {call.usage.prompt_tokens.toLocaleString()} in / {call.usage.completion_tokens.toLocaleString()} out
+            {call.usage.cost_usd > 0 && <span className="ml-1 sf-text-muted">${call.usage.cost_usd.toFixed(4)}</span>}
+            {call.usage.estimated_usage && <span className="ml-0.5 opacity-50">(est)</span>}
+          </span>
+        )}
         {isPending && (
           <span className="text-[8px] font-bold uppercase tracking-wide text-[rgb(var(--sf-color-accent-strong-rgb))] animate-pulse">
             Awaiting response...
@@ -241,10 +248,31 @@ function LlmCallRow({ call }: { readonly call: LlmCallRecord }) {
 /* ── LLM Calls section ─────────────────────────────────────── */
 
 function LlmCallsSection({ calls }: { readonly calls: ReadonlyArray<LlmCallRecord> }) {
+  const totals = useMemo(() => {
+    let promptTokens = 0;
+    let completionTokens = 0;
+    let costUsd = 0;
+    let counted = 0;
+    for (const c of calls) {
+      if (!c.usage) continue;
+      promptTokens += c.usage.prompt_tokens;
+      completionTokens += c.usage.completion_tokens;
+      costUsd += c.usage.cost_usd;
+      counted++;
+    }
+    return counted > 0 ? { promptTokens, completionTokens, costUsd } : null;
+  }, [calls]);
+
   return (
     <section>
       <div className="text-[10px] font-semibold sf-text-subtle uppercase tracking-[0.06em] mb-2">
         LLM Calls ({calls.length})
+        {totals && (
+          <span className="font-mono font-normal ml-2 tracking-normal normal-case">
+            · {totals.promptTokens.toLocaleString()} in · {totals.completionTokens.toLocaleString()} out
+            {totals.costUsd > 0 && <span> · ${totals.costUsd.toFixed(4)}</span>}
+          </span>
+        )}
       </div>
       <div className="space-y-1.5 max-h-[50vh] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
         {calls.map((call) => (

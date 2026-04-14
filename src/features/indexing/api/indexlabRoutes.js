@@ -39,6 +39,7 @@ export function registerIndexlabRoutes(ctx) {
     computeCompoundCurve,
     aggregateCrossRunMetrics,
     aggregateHostHealth,
+    appDb,
   } = ctx;
 
   // WHY: Dynamic resolution so run discovery tracks live storage settings.
@@ -300,12 +301,14 @@ export function registerIndexlabRoutes(ctx) {
       const runIdSet = new Set(productRunsMeta.map((r) => r.run_id));
 
       // WHY: Billing cost per run from billing_entries (the actual cost source).
+      // Uses global appDb (billing is cross-category in app.sqlite).
       const months = [...new Set(
         productRunsMeta.map((r) => String(r.started_at || '').slice(0, 7)).filter(Boolean)
       )];
       const costByRun = new Map();
+      const billingDb = appDb || null;
       for (const m of months) {
-        const entries = specDb.getBillingEntriesForMonth(m);
+        const entries = billingDb ? billingDb.getBillingEntriesForMonth(m) : [];
         for (const be of entries) {
           if (be.product_id !== productId) continue;
           costByRun.set(be.run_id, (costByRun.get(be.run_id) || 0) + (Number(be.cost_usd) || 0));

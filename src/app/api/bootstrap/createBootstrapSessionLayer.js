@@ -5,7 +5,7 @@ import { createCategoryAliasResolver } from '../categoryAlias.js';
 import { createSpecDbRuntime } from '../specDbRuntime.js';
 import { SpecDb } from '../../../db/specDb.js';
 import { AppDb } from '../../../db/appDb.js';
-import { seedAppDb } from '../../../db/appDbSeed.js';
+import { seedAppDb, seedBillingFromJsonl } from '../../../db/appDbSeed.js';
 import { seedColorRegistry } from '../../../features/color-registry/index.js';
 import {
   applyRuntimeSettingsToConfig,
@@ -66,6 +66,11 @@ export function createBootstrapSessionLayer({
 
   const colorRegistryPath = path.resolve(HELPER_ROOT, '_global', 'color_registry.json');
   seedColorRegistry(appDb, colorRegistryPath);
+
+  // WHY: Rebuild contract — if billing_entries is empty but JSONL ledger files
+  // exist (e.g. after app.sqlite was deleted), restore from durable memory.
+  const billingLedgerDir = path.resolve(config.specDbDir || '.workspace', 'global', 'billing', 'ledger');
+  seedBillingFromJsonl({ appDb, billingLedgerDir });
 
   return {
     sessionCache, resolveCategoryAlias,

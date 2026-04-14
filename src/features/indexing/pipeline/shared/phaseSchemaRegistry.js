@@ -11,6 +11,8 @@ import { SERP_SELECT_URLS_SYSTEM_PROMPT } from '../resultProcessing/serpSelector
 import { REPAIR_SYSTEM_PROMPT, HALLUCINATION_PATTERNS } from '../../../publisher/repair-adapter/promptBuilder.js';
 import { repairResponseJsonSchema } from '../../../publisher/repair-adapter/repairResponseSchema.js';
 import { FINDER_PHASE_SCHEMAS } from './phaseSchemaRegistry.generated.js';
+import { buildVariantIdentityCheckPrompt } from '../../../color-edition/colorEditionLlmAdapter.js';
+import { variantIdentityCheckResponseSchema } from '../../../color-edition/colorEditionSchema.js';
 import { buildViewEvalPrompt, buildHeroSelectionPrompt } from '../../../product-image/imageEvaluator.js';
 import { viewEvalResponseSchema, heroEvalResponseSchema } from '../../../product-image/imageEvaluatorSchema.js';
 import {
@@ -80,8 +82,28 @@ const CAROUSEL_BUILDER_PHASE = Object.freeze({
   },
 });
 
+// WHY: Identity check is a sub-call within the colorFinder phase (Run 2+).
+// Overlay adds the second prompt/schema to the auto-generated color-finder entry
+// so the LLM Config GUI renders both side by side.
+const COLOR_FINDER_IDENTITY_CHECK = Object.freeze({
+  'color-finder': {
+    ...FINDER_PHASE_SCHEMAS['color-finder'],
+    identity_check_prompt: buildVariantIdentityCheckPrompt({
+      product: { brand: '{brand}', model: '{model}' },
+      existingRegistry: [
+        { variant_id: 'v_example1', variant_key: 'color:black', variant_type: 'color', variant_label: 'black', color_atoms: ['black'] },
+      ],
+      newColors: ['black', 'deep-ocean-blue'],
+      newColorNames: { 'deep-ocean-blue': 'Deep Ocean Blue' },
+      newEditions: {},
+    }),
+    identity_check_response_schema: zodToLlmSchema(variantIdentityCheckResponseSchema),
+  },
+});
+
 export const PHASE_SCHEMA_REGISTRY = Object.freeze({
   ...NON_FINDER_PHASES,
   ...FINDER_PHASE_SCHEMAS,
+  ...COLOR_FINDER_IDENTITY_CHECK,
   ...CAROUSEL_BUILDER_PHASE,
 });

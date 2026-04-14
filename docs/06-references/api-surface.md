@@ -194,7 +194,13 @@
 | POST | `/api/v1/queue/:category/pause` | pause one product | none | `{ productId }` | pause result |
 | POST | `/api/v1/queue/:category/priority` | update queue priority | none | `{ productId, priority }` | priority result |
 | POST | `/api/v1/queue/:category/requeue-exhausted` | requeue failed/exhausted products | none | none | `{ ok, requeued_count, productIds }` |
-| GET | `/api/v1/billing/:category/monthly` | latest monthly billing summary | none | none | billing summary |
+| GET | `/api/v1/billing/global/summary` | global monthly billing KPIs | none | `month` (optional) | `{ month, totals, models_used, categories_used }` |
+| GET | `/api/v1/billing/global/daily` | daily time-series for charts | none | `months` (default 1) | `{ days: [...], by_day_reason: [...] }` |
+| GET | `/api/v1/billing/global/by-model` | cost grouped by provider:model | none | `month` (optional) | `{ month, models: [...] }` |
+| GET | `/api/v1/billing/global/by-reason` | cost grouped by call type | none | `month` (optional) | `{ month, reasons: [...] }` |
+| GET | `/api/v1/billing/global/by-category` | cost grouped by category | none | `month` (optional) | `{ month, categories: [...] }` |
+| GET | `/api/v1/billing/global/entries` | paginated raw billing entries | none | `limit`, `offset`, `category`, `model`, `reason` | `{ entries, total, limit, offset }` |
+| GET | `/api/v1/billing/:category/monthly` | per-category monthly billing rollup (legacy) | none | none | billing summary |
 | GET | `/api/v1/learning/:category/artifacts` | list learning artifact files | none | none | artifact rows |
 | GET | `/api/v1/source-strategy?category=:category` | read source strategy entries | none | none | source entries |
 | POST | `/api/v1/source-strategy?category=:category` | create source strategy entry | none | source entry body | `{ ok, sourceId }` |

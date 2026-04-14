@@ -97,23 +97,22 @@ describe('createPhaseCallLlm', () => {
     assert.equal(getCaptured().user, '{"brand":"Razer"}');
   });
 
-  it('forwards optional fields (usageContext, costRates, onUsage) when mapArgs returns them', async () => {
+  it('forwards optional fields (usageContext, costRates) when mapArgs returns them', async () => {
     const { deps, getCaptured } = makeDeps();
-    const onUsageFn = async () => {};
     const fn = createPhaseCallLlm(deps, MINIMAL_SPEC, () => ({
       user: 'x',
       usageContext: { reason: 'test' },
       costRates: { llmCostInputPer1M: 3 },
-      onUsage: onUsageFn,
     }));
     await fn({});
     const c = getCaptured();
     assert.deepEqual(c.usageContext, { reason: 'test' });
     assert.deepEqual(c.costRates, { llmCostInputPer1M: 3 });
-    assert.equal(c.onUsage, onUsageFn);
+    // WHY: onUsage is always composed by createPhaseCallLlm (usage capture), so it's always a function
+    assert.equal(typeof c.onUsage, 'function');
   });
 
-  it('does not inject usageContext/costRates/onUsage when mapArgs returns only { user }', async () => {
+  it('does not inject usageContext/costRates when mapArgs returns only { user }', async () => {
     const { deps, getCaptured } = makeDeps();
     const fn = createPhaseCallLlm(deps, MINIMAL_SPEC, () => ({ user: 'x' }));
     await fn({});
@@ -121,7 +120,8 @@ describe('createPhaseCallLlm', () => {
     assert.equal(c.user, 'x');
     assert.ok(!Object.hasOwn(c, 'usageContext'), 'usageContext should not be present');
     assert.ok(!Object.hasOwn(c, 'costRates'), 'costRates should not be present');
-    assert.ok(!Object.hasOwn(c, 'onUsage'), 'onUsage should not be present');
+    // WHY: onUsage is always injected by createPhaseCallLlm for usage capture
+    assert.equal(typeof c.onUsage, 'function');
   });
 
   // ── mapArgs receives config ──
@@ -139,11 +139,12 @@ describe('createPhaseCallLlm', () => {
 
   // ── Return value and error propagation ──
 
-  it('returns the callRoutedLlmFn result transparently', async () => {
+  it('returns { result, usage } wrapping the callRoutedLlmFn result', async () => {
     const { deps } = makeDeps();
     const fn = createPhaseCallLlm(deps, MINIMAL_SPEC, () => ({ user: 'x' }));
-    const result = await fn({});
-    assert.deepEqual(result, { mock: true });
+    const out = await fn({});
+    assert.deepEqual(out.result, { mock: true });
+    assert.equal(out.usage, null);
   });
 
   it('forwards onModelResolved from deps to callRoutedLlmFn', async () => {
@@ -170,5 +171,73 @@ describe('createPhaseCallLlm', () => {
     };
     const fn = createPhaseCallLlm(deps, MINIMAL_SPEC, () => ({ user: 'x' }));
     await assert.rejects(() => fn({}), { message: 'LLM_FAIL' });
+  });
+
+  // ── Usage capture ──
+
+  it('returns { result, usage } when onUsage fires', async () => {
+    const callRoutedLlmFn = async (args) => {
+      await args.onUsage?.({ prompt_tokens: 100, completion_tokens: 50, total_tokens: 150, cost_usd: 0.003, estimated_usage: false });
+      return { answer: 'hello' };
+    };
+    const deps = { callRoutedLlmFn, config: {}, logger: null };
+    const fn = createPhaseCallLlm(deps, MINIMAL_SPEC, () => ({ user: 'x' }));
+    const out = await fn({});
+    assert.deepEqual(out.result, { answer: 'hello' });
+    assert.deepEqual(out.usage, { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150, cost_usd: 0.003, estimated_usage: false });
+  });
+
+  it('usage is null when onUsage never fires', async () => {
+    const callRoutedLlmFn = async () => { return { answer: 'hi' }; };
+    const deps = { callRoutedLlmFn, config: {}, logger: null };
+    const fn = createPhaseCallLlm(deps, MINIMAL_SPEC, () => ({ user: 'x' }));
+    const out = await fn({});
+    assert.deepEqual(out.result, { answer: 'hi' });
+    assert.equal(out.usage, null);
+  });
+
+  it('composes with existing onUsage from mapArgs — both fire', async () => {
+    let originalCalled = false;
+    const originalOnUsage = async (u) => { originalCalled = u; };
+    const usageData = { prompt_tokens: 200, completion_tokens: 80, total_tokens: 280, cost_usd: 0.005, estimated_usage: false };
+    const callRoutedLlmFn = async (args) => {
+      await args.onUsage?.(usageData);
+      return { ok: true };
+    };
+    const deps = { callRoutedLlmFn, config: {}, logger: null };
+    const fn = createPhaseCallLlm(deps, MINIMAL_SPEC, () => ({ user: 'x', onUsage: originalOnUsage }));
+    const out = await fn({});
+    // Original onUsage must still fire (cost ledger)
+    assert.deepEqual(originalCalled, usageData, 'original onUsage from mapArgs must fire');
+    // Captured usage must also be present
+    assert.deepEqual(out.usage, usageData);
+  });
+
+  it('accumulates usage across multiple onUsage firings (two-phase writer)', async () => {
+    const callRoutedLlmFn = async (args) => {
+      await args.onUsage?.({ prompt_tokens: 100, completion_tokens: 40, total_tokens: 140, cost_usd: 0.002, estimated_usage: false });
+      await args.onUsage?.({ prompt_tokens: 80, completion_tokens: 60, total_tokens: 140, cost_usd: 0.003, estimated_usage: false });
+      return { combined: true };
+    };
+    const deps = { callRoutedLlmFn, config: {}, logger: null };
+    const fn = createPhaseCallLlm(deps, MINIMAL_SPEC, () => ({ user: 'x' }));
+    const out = await fn({});
+    assert.equal(out.usage.prompt_tokens, 180);
+    assert.equal(out.usage.completion_tokens, 100);
+    assert.equal(out.usage.total_tokens, 280);
+    assert.equal(out.usage.cost_usd, 0.005);
+    assert.equal(out.usage.estimated_usage, false);
+  });
+
+  it('estimated_usage is true if ANY firing is estimated', async () => {
+    const callRoutedLlmFn = async (args) => {
+      await args.onUsage?.({ prompt_tokens: 100, completion_tokens: 40, total_tokens: 140, cost_usd: 0.002, estimated_usage: false });
+      await args.onUsage?.({ prompt_tokens: 80, completion_tokens: 60, total_tokens: 140, cost_usd: 0.003, estimated_usage: true });
+      return {};
+    };
+    const deps = { callRoutedLlmFn, config: {}, logger: null };
+    const fn = createPhaseCallLlm(deps, MINIMAL_SPEC, () => ({ user: 'x' }));
+    const out = await fn({});
+    assert.equal(out.usage.estimated_usage, true);
   });
 });

@@ -32,7 +32,7 @@ export async function repairField({ validationResult, fieldKey, fieldRule, known
   // Step 3: Call LLM
   let llmRaw;
   try {
-    llmRaw = await callLlm({ system: prompt.system, user: prompt.user, jsonSchema: prompt.jsonSchema, promptId: prompt.promptId, fieldKey });
+    ({ result: llmRaw } = await callLlm({ system: prompt.system, user: prompt.user, jsonSchema: prompt.jsonSchema, promptId: prompt.promptId, fieldKey }));
   } catch (err) {
     return stillFailed(validationResult.value, prompt.promptId, err.message);
   }
@@ -107,7 +107,7 @@ export async function repairCrossField({ crossFieldFailures, fields, productName
 
   let llmRaw;
   try {
-    llmRaw = await callLlm({ system: prompt.system, user: prompt.user, jsonSchema: prompt.jsonSchema, promptId: 'P6', fieldKey: 'cross_field' });
+    ({ result: llmRaw } = await callLlm({ system: prompt.system, user: prompt.user, jsonSchema: prompt.jsonSchema, promptId: 'P6', fieldKey: 'cross_field' }));
   } catch (err) {
     return { status: 'still_failed', repairs: null, revalidation: null, promptId: 'P6', error: err.message };
   }

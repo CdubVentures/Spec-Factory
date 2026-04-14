@@ -5,6 +5,7 @@ import { createPhaseCallLlm } from '../../features/indexing/pipeline/shared/crea
 import { zodToLlmSchema } from '../../core/llm/zodToLlmSchema.js';
 import { viewEvalResponseSchema, heroEvalResponseSchema } from './imageEvaluatorSchema.js';
 import { readProductImages, writeProductImages } from './productImageStore.js';
+import { matchVariant } from './variantMatch.js';
 
 /* ── Thumbnail pipeline (Phase 1) ───────────────────────────────── */
 
@@ -126,13 +127,15 @@ export function buildHeroSelectionPrompt({
   const countLine = `You are evaluating ${candidates.length} hero/marketing image candidate${candidates.length !== 1 ? 's' : ''}.`;
 
   const defaultCriteria = `Hero image evaluation criteria:
-- Watermarks: Getty, Shutterstock, retailer logos, "SAMPLE" text → disqualify
-- Badges / overlays: Sale stickers, "NEW" badges, retailer branding → disqualify
-- Wrong product: Different model, wrong color, unrelated product → disqualify
-- Composition: Product should be the clear focus, well-framed, attractive presentation
-- Image quality: Sharp, good lighting, no heavy compression artifacts
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
+- Product must be the CLEAR STAR — it should be the obvious focal point, not a tiny item in a busy scene.
+- Identity: Must be the correct model and correct color/edition variant. Wrong product or wrong color → skip.
+- Watermarks: Getty, Shutterstock, retailer logos, "SAMPLE" text, copyright overlays → skip, do not select.
+- Badges / overlays: Sale stickers, "NEW" badges, retailer branding, promotional text → skip, do not select.
+- Image quality: Sharp, good lighting, no heavy compression artifacts or blur.
+- Composition: Product should be the clear focus, well-framed, attractive presentation.
 - Marketing appeal: Which shots best showcase the product's design and features for a buyer?
-- Variety: A good hero set covers different perspectives (not all the same angle)`;
+- Perspective diversity — CRITICAL: Each selected hero MUST show a distinctly different perspective, angle, or composition. Do not pick near-duplicate shots taken from the same angle.`;
 
   const criteria = promptOverride.trim() || heroCriteria || defaultCriteria;
 
@@ -159,7 +162,8 @@ Rules:
 - Pick up to ${heroCount} images for the product page carousel hero section.
 - hero_rank 1 = primary hero (most prominent placement), 2 = secondary, etc.
 - "reasoning" should be 1-2 sentences explaining why this image is a good hero shot.
-- You may pick FEWER than ${heroCount} if not enough candidates are hero-worthy.
+- Each selected hero MUST show a distinctly different shot — do not pick near-duplicate images from the same angle or composition.
+- You may pick FEWER than ${heroCount} if not enough candidates are hero-worthy or visually distinct.
 - Return an empty "heroes" array if ALL candidates are disqualified (watermarks, wrong product, etc.).`;
 }
 
@@ -301,7 +305,7 @@ export async function evaluateViewCandidates({
     promptOverride, evalCriteria,
   });
 
-  const response = await callLlm({
+  const { result: response, usage } = await callLlm({
     product,
     variantLabel,
     variantType,
@@ -337,7 +341,7 @@ export async function evaluateViewCandidates({
     }
   }
 
-  return { rankings, _prompt: { system: systemPrompt, user: userText }, _response: response };
+  return { rankings, _prompt: { system: systemPrompt, user: userText }, _response: response, usage };
 }
 
 /* ── Eval persistence (Phase 2) ─────────────────────────────────── */
@@ -372,7 +376,7 @@ export function withProductLock(productId, fn) {
  * @param {{heroes: Array}|null} opts.heroResults — null to skip hero application
  * @returns {object|null} — updated document, or null if file not found
  */
-export function mergeEvaluation({ productId, productRoot, variantKey, viewResults, heroResults }) {
+export function mergeEvaluation({ productId, productRoot, variantKey, variantId, viewResults, heroResults }) {
   const doc = readProductImages({ productId, productRoot });
   if (!doc) return null;
 
@@ -384,7 +388,7 @@ export function mergeEvaluation({ productId, productRoot, variantKey, viewResult
   // Hero merges (heroResults !== null) clear hero fields on the whole variant.
   const viewsBeingUpdated = new Set(viewResults.keys());
   for (const img of images) {
-    if (img.variant_key !== variantKey) continue;
+    if (!matchVariant(img, { variantId, variantKey })) continue;
     if (viewsBeingUpdated.has(img.view)) {
       // Clear view-eval fields for this view
       delete img.eval_best;
@@ -409,7 +413,7 @@ export function mergeEvaluation({ productId, productRoot, variantKey, viewResult
 
   // Step 3: Apply eval results by filename match
   for (const img of images) {
-    if (img.variant_key !== variantKey) continue;
+    if (!matchVariant(img, { variantId, variantKey })) continue;
     const ranking = rankingByFilename.get(img.filename);
     if (!ranking) continue;
     img.eval_best = ranking.best;
@@ -425,7 +429,7 @@ export function mergeEvaluation({ productId, productRoot, variantKey, viewResult
       heroByFilename.set(hero.filename, hero);
     }
     for (const img of images) {
-      if (img.variant_key !== variantKey) continue;
+      if (!matchVariant(img, { variantId, variantKey })) continue;
       const hero = heroByFilename.get(img.filename);
       if (!hero) continue;
       img.hero = true;
@@ -475,9 +479,9 @@ export function writeCarouselSlot({ productId, productRoot, variantKey, slot, fi
  * @param {Array} opts.images — all images (with eval fields overlayed)
  * @returns {Array<{slot, filename, source}>} — resolved slots in order
  */
-export function resolveCarouselSlots({ viewBudget, heroCount, variantKey, carouselSlots, images }) {
+export function resolveCarouselSlots({ viewBudget, heroCount, variantKey, variantId, carouselSlots, images }) {
   const variantSlots = carouselSlots?.[variantKey] || {};
-  const variantImages = (images || []).filter(img => img.variant_key === variantKey);
+  const variantImages = (images || []).filter(img => matchVariant(img, { variantId, variantKey }));
 
   const result = [];
 
@@ -543,7 +547,7 @@ export function resolveCarouselSlots({ viewBudget, heroCount, variantKey, carous
  * @param {number} [opts.durationMs] — call duration
  * @returns {object} — the appended eval record
  */
-export function appendEvalRecord({ productId, productRoot, variantKey, type, view, model, prompt, response, result, durationMs }) {
+export function appendEvalRecord({ productId, productRoot, variantKey, variantId, type, view, model, prompt, response, result, durationMs, startedAt, effortLevel, accessMode, fallbackUsed, variantLabel, variantType }) {
   const doc = readProductImages({ productId, productRoot });
   if (!doc) return null;
 
@@ -553,10 +557,17 @@ export function appendEvalRecord({ productId, productRoot, variantKey, type, vie
     eval_number: doc.evaluations.length + 1,
     type,
     view: view || null,
+    variant_id: variantId || null,
     variant_key: variantKey,
     model: model || 'unknown',
     ran_at: new Date().toISOString(),
     duration_ms: durationMs || null,
+    started_at: startedAt || null,
+    effort_level: effortLevel || null,
+    access_mode: accessMode || null,
+    fallback_used: fallbackUsed ?? false,
+    variant_label: variantLabel || null,
+    variant_type: variantType || null,
     prompt: prompt || {},
     response: response || {},
     result: result || {},
@@ -592,9 +603,10 @@ export function deleteEvalRecord({ productId, productRoot, evalNumber }) {
 
   // Clear eval fields from images that this eval produced
   const images = doc.selected?.images || [];
+  const delSelector = { variantId: record.variant_id, variantKey: record.variant_key };
   if (record.type === 'view' && record.view) {
     for (const img of images) {
-      if (img.variant_key === record.variant_key && img.view === record.view) {
+      if (matchVariant(img, delSelector) && img.view === record.view) {
         delete img.eval_best;
         delete img.eval_flags;
         delete img.eval_reasoning;
@@ -603,7 +615,7 @@ export function deleteEvalRecord({ productId, productRoot, evalNumber }) {
     }
   } else if (record.type === 'hero') {
     for (const img of images) {
-      if (img.variant_key === record.variant_key) {
+      if (matchVariant(img, delSelector)) {
         delete img.hero;
         delete img.hero_rank;
       }

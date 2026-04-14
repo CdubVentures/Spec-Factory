@@ -47,6 +47,8 @@ export const MIGRATIONS = [
   `ALTER TABLE product_image_finder_runs ADD COLUMN access_mode TEXT DEFAULT ''`,
   // WHY: Carousel Builder stores user slot overrides. Existing DBs need the column.
   `ALTER TABLE product_image_finder ADD COLUMN carousel_slots TEXT DEFAULT '{}'`,
+  // WHY: Variant registry stores stable variant hashes for CEF. Existing DBs need the column.
+  `ALTER TABLE color_edition_finder ADD COLUMN variant_registry TEXT DEFAULT '[]'`,
 ];
 
 export const SECONDARY_INDEXES = `

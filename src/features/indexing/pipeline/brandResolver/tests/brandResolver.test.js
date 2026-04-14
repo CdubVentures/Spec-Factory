@@ -17,7 +17,7 @@ function makeResolveArgs(overrides = {}) {
     category: 'mouse',
     config: { llmModelPlan: 'test-model' },
     storage: {},
-    callLlmFn: async () => makeResolvedDomain(),
+    callLlmFn: async () => ({ result: makeResolvedDomain(), usage: null }),
     ...overrides,
   };
 }

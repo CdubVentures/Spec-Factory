@@ -26,6 +26,7 @@ export const FINDER_MODULES = Object.freeze([
       { name: 'colors', type: 'TEXT', default: "'[]'" },
       { name: 'editions', type: 'TEXT', default: "'[]'" },
       { name: 'default_color', type: 'TEXT', default: "''" },
+      { name: 'variant_registry', type: 'TEXT', default: "'[]'" },
     ],
     summaryIndexes: [
       { name: 'idx_cef_cooldown', columns: ['cooldown_until'] },
@@ -58,6 +59,7 @@ export const FINDER_MODULES = Object.freeze([
     // Per-category settings (stored in {tableName}_settings table)
     settingsDefaults: {
       cooldownDays: '30',              // days before finder can re-run on the same product (0 = no cooldown)
+      identityCheckPromptOverride: '', // custom prompt for variant identity check (Run 2+)
     },
 
     // LLM phase schema (codegen: phaseSchemaRegistry.generated.js)
@@ -136,7 +138,8 @@ export const FINDER_MODULES = Object.freeze([
       satisfactionThreshold: '3',     // quality images per view to be "satisfied"
       heroEnabled: 'true',            // whether hero search is active
       heroCount: '3',                 // target hero images per variant
-      viewAttemptBudget: '5',         // max LLM calls per view before moving on
+      viewAttemptBudget: '5',         // max LLM calls per view before moving on (flat fallback)
+      viewAttemptBudgets: '',         // JSON { [view]: attempts }; empty = CATEGORY_VIEW_ATTEMPT_DEFAULTS
       heroAttemptBudget: '3',         // max hero LLM calls per variant
       viewPromptOverride: '',         // custom view prompt instructions; empty = built-in template
       heroPromptOverride: '',         // custom hero prompt instructions; empty = built-in template
@@ -177,6 +180,7 @@ export const FINDER_MODULES = Object.freeze([
       'image-deleted': [],
       'batch-processed': [],
       'evaluate': [],
+      'variant-renamed': [],
     },
 
     // Module Settings (codegen: moduleSettingsSections.generated.ts)

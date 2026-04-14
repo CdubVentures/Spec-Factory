@@ -15,6 +15,9 @@ export function createMigrateToSqliteCommand({
       const results = {};
 
       if (!phase || phase === 2) {
+        // WHY: Phase 2 billing migration now reads legacy JSONL from storage
+        // and writes to global appDb + new JSONL path (.workspace/global/billing/ledger/).
+        const appDb = config.appDb || null;
         let imported = 0;
         const billingPrefix = toPosixKey(OUTPUT_KEY_PREFIX, '_billing');
         const keys = await storage.listKeys(billingPrefix);
@@ -28,7 +31,7 @@ export function createMigrateToSqliteCommand({
             try {
               const entry = JSON.parse(trimmed);
               const ts = String(entry.ts || '');
-              specDb.insertBillingEntry({
+              const row = {
                 ts,
                 month: ts.slice(0, 7),
                 day: ts.slice(0, 10),
@@ -49,7 +52,8 @@ export function createMigrateToSqliteCommand({
                 evidence_chars: entry.evidence_chars || 0,
                 estimated_usage: entry.estimated_usage ? 1 : 0,
                 meta: JSON.stringify(entry.meta || {}),
-              });
+              };
+              if (appDb) appDb.insertBillingEntry(row);
               imported += 1;
             } catch {
               // skip malformed lines

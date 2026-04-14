@@ -19,6 +19,7 @@ function makeImage(overrides = {}) {
     view: 'top',
     filename: 'top-black.png',
     url: 'https://example.com/top.png',
+    variant_id: 'v_abc12345',
     variant_key: 'color:black',
     variant_label: 'Black',
     variant_type: 'color',

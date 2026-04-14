@@ -128,6 +128,25 @@ export class AppDb {
     this._listUnits = this.db.prepare('SELECT * FROM unit_registry ORDER BY canonical');
     this._deleteUnit = this.db.prepare('DELETE FROM unit_registry WHERE canonical = ?');
 
+    // ── Billing ──
+
+    this._insertBillingEntry = this.db.prepare(`
+      INSERT INTO billing_entries (
+        ts, month, day, provider, model, category, product_id, run_id, round,
+        prompt_tokens, completion_tokens, cached_prompt_tokens, total_tokens,
+        cost_usd, reason, host, url_count, evidence_chars, estimated_usage, meta
+      ) VALUES (
+        @ts, @month, @day, @provider, @model, @category, @product_id, @run_id, @round,
+        @prompt_tokens, @completion_tokens, @cached_prompt_tokens, @total_tokens,
+        @cost_usd, @reason, @host, @url_count, @evidence_chars, @estimated_usage, @meta
+      )
+    `);
+    this._countBillingEntries = this.db.prepare('SELECT COUNT(*) as c FROM billing_entries');
+
+    this._insertBillingEntriesBatchTx = this.db.transaction((entries) => {
+      for (const entry of entries) { this._insertBillingEntry.run(entry); }
+    });
+
     // WHY: transaction for setBrandCategories (delete + re-insert atomically)
     this._setBrandCategoriesTx = this.db.transaction((identifier, categories) => {
       this._deleteBrandCategories.run(identifier);
@@ -291,6 +310,174 @@ export class AppDb {
     return this._deleteUnit.run(canonical).changes;
   }
 
+  // ── Billing ──
+
+  insertBillingEntry(entry) {
+    this._insertBillingEntry.run({
+      ts: entry.ts || new Date().toISOString(),
+      month: entry.month || String(entry.ts || '').slice(0, 7),
+      day: entry.day || String(entry.ts || '').slice(0, 10),
+      provider: entry.provider || 'unknown',
+      model: entry.model || 'unknown',
+      category: entry.category || '',
+      product_id: entry.product_id || entry.productId || '',
+      run_id: entry.run_id || entry.runId || '',
+      round: entry.round ?? 0,
+      prompt_tokens: entry.prompt_tokens ?? 0,
+      completion_tokens: entry.completion_tokens ?? 0,
+      cached_prompt_tokens: entry.cached_prompt_tokens ?? 0,
+      total_tokens: entry.total_tokens ?? 0,
+      cost_usd: entry.cost_usd ?? 0,
+      reason: entry.reason || 'extract',
+      host: entry.host || '',
+      url_count: entry.url_count ?? 0,
+      evidence_chars: entry.evidence_chars ?? 0,
+      estimated_usage: entry.estimated_usage ? 1 : 0,
+      meta: typeof entry.meta === 'object' ? JSON.stringify(entry.meta) : (entry.meta || '{}'),
+    });
+  }
+
+  insertBillingEntriesBatch(entries) {
+    this._insertBillingEntriesBatchTx(entries);
+  }
+
+  getBillingRollup(month, category = '') {
+    const catFilter = category ? ' AND category = ?' : '';
+    const params = category ? [month, category] : [month];
+
+    const totals = this.db.prepare(`
+      SELECT COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
+             COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
+             COALESCE(SUM(completion_tokens), 0) as completion_tokens
+      FROM billing_entries WHERE month = ?${catFilter}
+    `).get(...params) || { calls: 0, cost_usd: 0, prompt_tokens: 0, completion_tokens: 0 };
+
+    const by_day = {};
+    for (const row of this.db.prepare(`
+      SELECT day, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
+             COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
+             COALESCE(SUM(completion_tokens), 0) as completion_tokens
+      FROM billing_entries WHERE month = ?${catFilter} GROUP BY day
+    `).all(...params)) {
+      by_day[row.day] = { cost_usd: row.cost_usd, prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens, calls: row.calls };
+    }
+
+    const by_category = {};
+    for (const row of this.db.prepare(`
+      SELECT category, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
+             COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
+             COALESCE(SUM(completion_tokens), 0) as completion_tokens
+      FROM billing_entries WHERE month = ?${catFilter} GROUP BY category
+    `).all(...params)) {
+      by_category[row.category || ''] = { cost_usd: row.cost_usd, prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens, calls: row.calls };
+    }
+
+    const by_product = {};
+    for (const row of this.db.prepare(`
+      SELECT product_id, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
+             COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
+             COALESCE(SUM(completion_tokens), 0) as completion_tokens
+      FROM billing_entries WHERE month = ?${catFilter} GROUP BY product_id
+    `).all(...params)) {
+      by_product[row.product_id || ''] = { cost_usd: row.cost_usd, prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens, calls: row.calls };
+    }
+
+    const by_model = {};
+    for (const row of this.db.prepare(`
+      SELECT provider || ':' || model as model_key, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
+             COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
+             COALESCE(SUM(completion_tokens), 0) as completion_tokens
+      FROM billing_entries WHERE month = ?${catFilter} GROUP BY model_key
+    `).all(...params)) {
+      by_model[row.model_key] = { cost_usd: row.cost_usd, prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens, calls: row.calls };
+    }
+
+    const by_reason = {};
+    for (const row of this.db.prepare(`
+      SELECT reason, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
+             COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
+             COALESCE(SUM(completion_tokens), 0) as completion_tokens
+      FROM billing_entries WHERE month = ?${catFilter} GROUP BY reason
+    `).all(...params)) {
+      by_reason[row.reason || 'extract'] = { cost_usd: row.cost_usd, prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens, calls: row.calls };
+    }
+
+    return {
+      month,
+      generated_at: new Date().toISOString(),
+      totals,
+      by_day,
+      by_category,
+      by_product,
+      by_model,
+      by_reason,
+    };
+  }
+
+  getBillingEntriesForMonth(month) {
+    const rows = this.db.prepare('SELECT * FROM billing_entries WHERE month = ? ORDER BY ts').all(month);
+    return rows.map((row) => {
+      const out = { ...row };
+      out.estimated_usage = Number(out.estimated_usage) === 1;
+      return out;
+    });
+  }
+
+  getBillingSnapshot(month, productId) {
+    const monthly = this.getBillingRollup(month);
+    const product = monthly.by_product[productId] || { cost_usd: 0, calls: 0, prompt_tokens: 0, completion_tokens: 0 };
+    return {
+      month,
+      monthly_cost_usd: monthly.totals.cost_usd,
+      monthly_calls: monthly.totals.calls,
+      product_cost_usd: product.cost_usd,
+      product_calls: product.calls,
+      monthly,
+    };
+  }
+
+  countBillingEntries() {
+    return this._countBillingEntries.get().c;
+  }
+
+  getGlobalDaily({ days = 30 } = {}) {
+    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+    const dayRows = this.db.prepare(`
+      SELECT day, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
+             COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
+             COALESCE(SUM(completion_tokens), 0) as completion_tokens
+      FROM billing_entries WHERE day >= ? GROUP BY day ORDER BY day
+    `).all(cutoff);
+
+    const reasonRows = this.db.prepare(`
+      SELECT day, reason, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd
+      FROM billing_entries WHERE day >= ? GROUP BY day, reason ORDER BY day, reason
+    `).all(cutoff);
+
+    return { days: dayRows, by_day_reason: reasonRows };
+  }
+
+  getGlobalEntries({ limit = 100, offset = 0, category = '', model = '', reason = '' } = {}) {
+    const filters = [];
+    const params = [];
+    if (category) { filters.push('category = ?'); params.push(category); }
+    if (model) { filters.push('model = ?'); params.push(model); }
+    if (reason) { filters.push('reason = ?'); params.push(reason); }
+    const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+
+    const total = this.db.prepare(`SELECT COUNT(*) as c FROM billing_entries ${where}`).get(...params).c;
+
+    const entries = this.db.prepare(
+      `SELECT * FROM billing_entries ${where} ORDER BY ts DESC LIMIT ? OFFSET ?`
+    ).all(...params, Math.max(1, limit), Math.max(0, offset));
+
+    return {
+      entries: entries.map((row) => ({ ...row, estimated_usage: Number(row.estimated_usage) === 1 })),
+      total,
+    };
+  }
+
   // ── Seed Hash Tracking ──
   // WHY: Hash-gated reconcile stores SHA256 of source files in the settings
   // table under a reserved '_seed_hashes' section. On startup, if the hash
@@ -324,6 +511,7 @@ export class AppDb {
       settings: this._countSettings.get().c,
       studio_maps: this._countStudioMaps.get().c,
       color_registry: this._countColors.get().c,
+      billing_entries: this._countBillingEntries.get().c,
     };
   }
 

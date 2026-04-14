@@ -7,6 +7,8 @@
  * by the LLM is kept regardless of budget.
  */
 
+import { matchVariant } from './variantMatch.js';
+
 /**
  * Evaluate carousel completion for a single variant and decide next action.
  *
@@ -48,7 +50,9 @@ export function evaluateCarousel({
   heroEnabled = true,
   heroCount = 3,
   variantKey,
+  variantId,
   viewAttemptBudget = Infinity,
+  viewAttemptBudgets = null,
   viewAttemptCounts = {},
   heroAttemptBudget = Infinity,
   heroAttemptCount = 0,
@@ -57,7 +61,7 @@ export function evaluateCarousel({
   // Filter to matching variant + quality-passing images only.
   // quality_pass undefined treated as true for backward compat.
   const qualifying = collectedImages.filter(
-    (img) => img.variant_key === variantKey && img.quality_pass !== false,
+    (img) => matchVariant(img, { variantId, variantKey }) && img.quality_pass !== false,
   );
 
   // Count per budgeted view + track attempts and exhaustion
@@ -68,7 +72,8 @@ export function evaluateCarousel({
     const count = qualifying.filter((img) => img.view === view).length;
     const satisfied = count >= satisfactionThreshold;
     const attempts = viewAttemptCounts[view] || 0;
-    const effectiveBudget = satisfied ? reRunBudget : viewAttemptBudget;
+    const perViewBudget = viewAttemptBudgets?.[view] ?? viewAttemptBudget;
+    const effectiveBudget = satisfied ? reRunBudget : perViewBudget;
     const exhausted = attempts >= effectiveBudget;
     viewDetails[view] = { count, satisfied, attempts, exhausted, attemptBudget: effectiveBudget };
   }

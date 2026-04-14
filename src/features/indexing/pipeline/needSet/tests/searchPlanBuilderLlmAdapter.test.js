@@ -130,7 +130,7 @@ describe('createSearchPlannerCallLlm', () => {
 
     await fn({ payloadJson: '{}', llmContext: {}, usageContext: {} });
 
-    assert.equal(capturedArgs.onUsage, undefined);
+    assert.equal(typeof capturedArgs.onUsage, 'function');
   });
 
   it('exports plannerResponseZodSchema', () => {

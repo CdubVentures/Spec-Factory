@@ -25,6 +25,7 @@ function makeImage(view, variantKey, filename) {
     view,
     filename,
     url: `https://example.com/${filename}`,
+    variant_id: 'v_abc12345',
     variant_key: variantKey,
     variant_label: variantKey.split(':')[1] || variantKey,
     variant_type: 'color',

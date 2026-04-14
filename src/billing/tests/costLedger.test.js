@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
 import {
   appendCostLedgerEntry,
   buildBillingReport,
@@ -7,33 +10,11 @@ import {
 } from '../costLedger.js';
 import { computeLlmCostUsd, normalizeUsage } from '../costRates.js';
 
-function makeMemoryStorage() {
-  const map = new Map();
-
-  return {
-    map,
-    resolveOutputKey(...parts) {
-      return ['specs/outputs', ...parts].join('/');
-    },
-    async readTextOrNull(key) {
-      const row = map.get(key);
-      return row ? row.toString('utf8') : null;
-    },
-    async readJsonOrNull(key) {
-      const row = map.get(key);
-      return row ? JSON.parse(row.toString('utf8')) : null;
-    },
-    async writeObject(key, body) {
-      map.set(key, Buffer.isBuffer(body) ? body : Buffer.from(body));
-    }
-  };
-}
-
 function round8(value) {
   return Number.parseFloat(Number(value || 0).toFixed(8));
 }
 
-function makeMockSpecDb() {
+function makeMockAppDb() {
   const entries = [];
   return {
     entries,
@@ -85,139 +66,136 @@ function makeMockSpecDb() {
   };
 }
 
+function makeTmpConfig() {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'billing-test-'));
+  return { config: { specDbDir: tmpDir }, tmpDir };
+}
+
 test('cost ledger appends entries via SQL and rolls up month totals', async () => {
-  const storage = makeMemoryStorage();
-  const config = {};
-  const specDb = makeMockSpecDb();
+  const appDb = makeMockAppDb();
+  const { config, tmpDir } = makeTmpConfig();
 
-  const usage1 = normalizeUsage({
-    prompt_tokens: 1200,
-    completion_tokens: 400
-  });
-  const usage2 = normalizeUsage({
-    prompt_tokens: 1000,
-    completion_tokens: 300
-  });
+  try {
+    const usage1 = normalizeUsage({ prompt_tokens: 1200, completion_tokens: 400 });
+    const usage2 = normalizeUsage({ prompt_tokens: 1000, completion_tokens: 300 });
 
-  const cost1 = computeLlmCostUsd({
-    usage: usage1,
-    rates: {
-      llmCostInputPer1M: 0.28,
-      llmCostOutputPer1M: 0.42
-    }
-  }).costUsd;
-  const cost2 = computeLlmCostUsd({
-    usage: usage2,
-    rates: {
-      llmCostInputPer1M: 0.28,
-      llmCostOutputPer1M: 0.42
-    }
-  }).costUsd;
+    const cost1 = computeLlmCostUsd({
+      usage: usage1,
+      rates: { llmCostInputPer1M: 0.28, llmCostOutputPer1M: 0.42 }
+    }).costUsd;
+    const cost2 = computeLlmCostUsd({
+      usage: usage2,
+      rates: { llmCostInputPer1M: 0.28, llmCostOutputPer1M: 0.42 }
+    }).costUsd;
 
-  await appendCostLedgerEntry({
-    storage,
-    config,
-    specDb,
-    entry: {
-      ts: '2026-02-09T01:00:00.000Z',
-      provider: 'deepseek',
-      model: 'deepseek-reasoner',
-      category: 'mouse',
+    await appendCostLedgerEntry({
+      config,
+      appDb,
+      entry: {
+        ts: '2026-02-09T01:00:00.000Z',
+        provider: 'deepseek',
+        model: 'deepseek-reasoner',
+        category: 'mouse',
+        productId: 'mouse-a',
+        runId: 'run-a',
+        reason: 'extract',
+        prompt_tokens: usage1.promptTokens,
+        completion_tokens: usage1.completionTokens,
+        total_tokens: usage1.totalTokens,
+        cost_usd: cost1
+      }
+    });
+    await appendCostLedgerEntry({
+      config,
+      appDb,
+      entry: {
+        ts: '2026-02-09T01:30:00.000Z',
+        provider: 'deepseek',
+        model: 'deepseek-reasoner',
+        category: 'mouse',
+        productId: 'mouse-a',
+        runId: 'run-b',
+        reason: 'plan',
+        prompt_tokens: usage2.promptTokens,
+        completion_tokens: usage2.completionTokens,
+        total_tokens: usage2.totalTokens,
+        cost_usd: cost2
+      }
+    });
+
+    assert.equal(appDb.entries.length, 2, 'two entries persisted via SQL');
+
+    const snapshot = readBillingSnapshot({
+      month: '2026-02',
       productId: 'mouse-a',
-      runId: 'run-a',
-      reason: 'extract',
-      prompt_tokens: usage1.promptTokens,
-      completion_tokens: usage1.completionTokens,
-      total_tokens: usage1.totalTokens,
-      cost_usd: cost1
-    }
-  });
-  await appendCostLedgerEntry({
-    storage,
-    config,
-    specDb,
-    entry: {
-      ts: '2026-02-09T01:30:00.000Z',
-      provider: 'deepseek',
-      model: 'deepseek-reasoner',
-      category: 'mouse',
-      productId: 'mouse-a',
-      runId: 'run-b',
-      reason: 'plan',
-      prompt_tokens: usage2.promptTokens,
-      completion_tokens: usage2.completionTokens,
-      total_tokens: usage2.totalTokens,
-      cost_usd: cost2
-    }
-  });
+      appDb,
+    });
+    assert.equal(snapshot.monthly_calls, 2);
+    assert.equal(snapshot.product_calls, 2);
+    assert.equal(snapshot.monthly_cost_usd > 0, true);
+    assert.equal(snapshot.product_cost_usd > 0, true);
 
-  assert.equal(specDb.entries.length, 2, 'two entries persisted via SQL');
-
-  const snapshot = await readBillingSnapshot({
-    storage,
-    month: '2026-02',
-    productId: 'mouse-a',
-    specDb,
-  });
-  assert.equal(snapshot.monthly_calls, 2);
-  assert.equal(snapshot.product_calls, 2);
-  assert.equal(snapshot.monthly_cost_usd > 0, true);
-  assert.equal(snapshot.product_cost_usd > 0, true);
-
-  const report = await buildBillingReport({
-    storage,
-    month: '2026-02',
-    config,
-    specDb,
-  });
-  assert.equal(report.totals.calls, 2);
-  assert.equal(report.by_category.mouse.calls, 2);
-  assert.equal(report.by_product['mouse-a'].calls, 2);
-  assert.equal(report.by_reason.extract.calls, 1);
-  assert.equal(report.by_reason.plan.calls, 1);
-  assert.equal(typeof report.digest_key, 'string');
-  assert.equal(typeof report.latest_digest_key, 'string');
-  const digest = storage.map.get(report.digest_key)?.toString('utf8') || '';
-  assert.equal(digest.includes('Run Totals (Newest First)'), true);
+    const report = buildBillingReport({
+      month: '2026-02',
+      config,
+      appDb,
+    });
+    assert.equal(report.totals.calls, 2);
+    assert.equal(report.by_category.mouse.calls, 2);
+    assert.equal(report.by_product['mouse-a'].calls, 2);
+    assert.equal(report.by_reason.extract.calls, 1);
+    assert.equal(report.by_reason.plan.calls, 1);
+    assert.equal(typeof report.digest_key, 'string');
+    assert.equal(typeof report.latest_digest_key, 'string');
+    const digest = fs.readFileSync(report.digest_key, 'utf8');
+    assert.equal(digest.includes('Run Totals (Newest First)'), true);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
 });
 
-test('writeBillingDigest writes exactly 2 keys (no legacy duplicates)', async () => {
-  const storage = makeMemoryStorage();
-  const specDb = makeMockSpecDb();
-  const config = { llmProvider: 'anthropic' };
-  const entry = {
-    ts: '2026-02-15T10:00:00Z',
-    provider: 'anthropic',
-    model: 'claude-3',
-    category: 'mouse',
-    productId: 'mouse-a',
-    runId: 'run-1',
-    round: 1,
-    prompt_tokens: 100,
-    completion_tokens: 50,
-    total_tokens: 150,
-    cost_usd: 0.001,
-    reason: 'extract',
-  };
+test('writeBillingDigest writes exactly 2 files', () => {
+  const appDb = makeMockAppDb();
+  const { config, tmpDir } = makeTmpConfig();
 
-  await appendCostLedgerEntry({ storage, config, entry, specDb });
-  const keysBefore = [...storage.map.keys()];
+  try {
+    const entry = {
+      ts: '2026-02-15T10:00:00Z',
+      provider: 'anthropic',
+      model: 'claude-3',
+      category: 'mouse',
+      productId: 'mouse-a',
+      runId: 'run-1',
+      round: 1,
+      prompt_tokens: 100,
+      completion_tokens: 50,
+      total_tokens: 150,
+      cost_usd: 0.001,
+      reason: 'extract',
+    };
 
-  const report = await buildBillingReport({
-    storage,
-    month: '2026-02',
-    config,
-    specDb,
-  });
+    appDb.insertBillingEntry({
+      ...entry,
+      month: '2026-02',
+      day: '2026-02-15',
+      product_id: entry.productId,
+      run_id: entry.runId,
+      estimated_usage: 0,
+      meta: '{}',
+    });
 
-  const keysAfter = [...storage.map.keys()];
-  const newKeys = keysAfter.filter((k) => !keysBefore.includes(k));
+    const report = buildBillingReport({
+      month: '2026-02',
+      config: { ...config, llmProvider: 'anthropic' },
+      appDb,
+    });
 
-  assert.equal(newKeys.length, 2, `expected 2 new keys, got ${newKeys.length}: ${JSON.stringify(newKeys)}`);
-  assert.ok(newKeys.some((k) => k === '_billing/monthly/2026-02.txt'), 'missing monthly digest key');
-  assert.ok(newKeys.some((k) => k === '_billing/latest.txt'), 'missing latest digest key');
-
-  for (const k of newKeys) {
-    assert.ok(!k.startsWith('specs/outputs/'), `legacy-prefixed key should not be written: ${k}`);
+    const digestDir = path.join(tmpDir, 'global', 'billing', 'monthly');
+    const monthlyDigest = path.join(digestDir, '2026-02.txt');
+    const latestDigest = path.join(digestDir, 'latest.txt');
+    assert.ok(fs.existsSync(monthlyDigest), 'monthly digest should exist');
+    assert.ok(fs.existsSync(latestDigest), 'latest digest should exist');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });

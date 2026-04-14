@@ -27,7 +27,7 @@ describe('discoveryLlmAdapters', () => {
         callRoutedLlmFn: makeCallRoutedLlm(expected),
         config: { llmModelTriage: 'test-model' }
       });
-      const result = await callLlm({ brand: 'Cougar', category: 'mouse' });
+      const { result } = await callLlm({ brand: 'Cougar', category: 'mouse' });
       assert.deepEqual(result, expected);
     });
 
@@ -41,7 +41,7 @@ describe('discoveryLlmAdapters', () => {
         callRoutedLlmFn: makeCallRoutedLlm(expected),
         config: { llmModelTriage: 'test-model' }
       });
-      const result = await callLlm({ brand: 'Test', category: 'mouse' });
+      const { result } = await callLlm({ brand: 'Test', category: 'mouse' });
       assert.deepEqual(result, expected);
     });
 

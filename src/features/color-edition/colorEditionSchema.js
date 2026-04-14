@@ -30,3 +30,21 @@ export const colorEditionFinderResponseSchema = z.object({
     queries_run: [],
   }),
 });
+
+/* ── Variant identity check response schema ───────────────────── */
+
+/**
+ * LLM response for variant identity check (Run 2+).
+ * Maps each new discovery to an existing variant_id or marks it as genuinely new.
+ */
+const variantMappingSchema = z.object({
+  new_key: z.string(),
+  match: z.string().nullable(),
+  action: z.enum(['update', 'create']),
+  reason: z.string(),
+});
+
+export const variantIdentityCheckResponseSchema = z.object({
+  mappings: z.array(variantMappingSchema),
+  retired: z.array(z.string()),
+});

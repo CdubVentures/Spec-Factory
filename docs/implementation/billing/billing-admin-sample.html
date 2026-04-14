@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory &mdash; LLM Billing Admin</title>
+<style>
+:root {
+  --bg: #f8fafc; --s1: #ffffff; --s2: #f1f5f9; --s3: #e2e8f0;
+  --border: rgba(15,23,42,0.08); --border-f: rgba(15,23,42,0.15);
+  --text: #0f172a; --t2: #475569; --t3: #94a3b8;
+  --accent: #2563eb; --accent-s: rgba(37,99,235,0.08);
+  --green: #16a34a; --green-s: rgba(22,163,74,0.08);
+  --amber: #d97706; --amber-s: rgba(217,119,6,0.08);
+  --violet: #7c3aed; --violet-s: rgba(124,58,237,0.08);
+  --rose: #e11d48; --rose-s: rgba(225,29,72,0.08);
+  --cyan: #0891b2; --cyan-s: rgba(8,145,178,0.08);
+  --teal: #0d9488; --teal-s: rgba(13,148,136,0.08);
+  --orange: #ea580c; --orange-s: rgba(234,88,12,0.08);
+  --pink: #d946ef; --pink-s: rgba(217,70,239,0.08);
+  --mono: "SF Mono","Cascadia Code","Fira Code","JetBrains Mono",Consolas,monospace;
+  --sans: "Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;-webkit-font-smoothing:antialiased}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.page{max-width:1360px;margin:0 auto;padding:40px 24px 96px}
+
+/* Header */
+.header{margin-bottom:32px;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.header h1{font-size:1.75rem;font-weight:700;letter-spacing:-0.03em}
+.header .subtitle{color:var(--t2);font-size:0.88rem;margin-top:4px}
+.header-right{display:flex;gap:8px;align-items:center}
+.period-btn{padding:6px 14px;border-radius:8px;border:1px solid var(--border-f);background:var(--s1);font-size:0.78rem;font-weight:600;color:var(--t2);cursor:pointer;transition:all 0.15s}
+.period-btn:hover{border-color:var(--accent);color:var(--accent)}
+.period-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* Stats strip */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border-radius:12px;overflow:hidden;margin-bottom:24px}
+.stat{background:var(--s1);padding:20px 24px;display:flex;flex-direction:column;gap:2px}
+.stat .n{font-size:1.65rem;font-weight:700;letter-spacing:-0.02em;color:var(--text)}
+.stat .l{font-size:0.7rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;font-weight:600}
+.stat .delta{font-size:0.72rem;font-weight:600;margin-top:2px}
+.stat .delta.up{color:var(--rose)}
+.stat .delta.down{color:var(--green)}
+@media(max-width:900px){.stats{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}}
+
+/* Filter bar */
+.filters{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:24px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.filter-group{display:flex;align-items:center;gap:6px}
+.filter-label{font-size:0.68rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--t3);white-space:nowrap;margin-right:2px}
+.chip{padding:4px 12px;border-radius:99px;border:1px solid var(--border-f);font-size:0.75rem;font-weight:500;color:var(--t2);cursor:pointer;transition:all 0.15s;background:var(--s1);white-space:nowrap;user-select:none}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.chip-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle}
+.filter-sep{width:1px;height:24px;background:var(--s3);flex-shrink:0}
+
+/* Cards */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color 0.15s}
+.card:hover{border-color:var(--border-f)}
+.card-head{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.card-head h3{font-size:0.88rem;font-weight:700;letter-spacing:-0.01em}
+.card-body{padding:20px}
+.chart-area{width:100%;display:flex;align-items:center;justify-content:center;min-height:220px}
+
+/* Grid layouts */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.grid-3-1{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:900px){.grid-2,.grid-3-1{grid-template-columns:1fr}}
+
+/* Table */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin-bottom:16px}
+.tbl{width:100%;border-collapse:collapse;font-size:0.82rem}
+.tbl th{text-align:left;padding:10px 14px;font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--t3);border-bottom:1px solid var(--border);background:var(--s2);position:sticky;top:0;white-space:nowrap;cursor:pointer;user-select:none}
+.tbl th:hover{color:var(--accent)}
+.tbl th .sort{color:var(--accent);font-size:0.72rem;margin-left:3px}
+.tbl td{padding:9px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(37,99,235,0.03)}
+.tbl code{font-family:var(--mono);font-size:0.78rem}
+.tbl .mono{font-family:var(--mono);font-size:0.78rem}
+.tbl .cost{font-weight:600;color:var(--text);font-family:var(--mono)}
+.tbl .tokens{color:var(--t2);font-family:var(--mono)}
+
+/* Tags */
+.tag{font-size:0.65rem;font-weight:700;letter-spacing:0.04em;padding:3px 8px;border-radius:6px;text-transform:uppercase;white-space:nowrap;display:inline-block}
+.tag-needset{background:var(--accent-s);color:var(--accent)}
+.tag-brand{background:var(--cyan-s);color:var(--cyan)}
+.tag-planner{background:var(--violet-s);color:var(--violet)}
+.tag-serp{background:var(--green-s);color:var(--green)}
+.tag-imgfind{background:var(--orange-s);color:var(--orange)}
+.tag-vieweval{background:var(--rose-s);color:var(--rose)}
+.tag-heroeval{background:var(--pink-s);color:var(--pink)}
+.tag-cef{background:var(--accent-s);color:var(--accent)}
+.tag-enum{background:var(--amber-s);color:var(--amber)}
+.tag-comp{background:var(--teal-s);color:var(--teal)}
+
+/* Pagination */
+.pager{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;font-size:0.78rem;color:var(--t2)}
+.pager-btns{display:flex;gap:4px}
+.pager-btn{padding:5px 12px;border-radius:6px;border:1px solid var(--border-f);background:var(--s1);font-size:0.75rem;font-weight:600;color:var(--t2);cursor:pointer}
+.pager-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pager-btn:hover:not(.active){background:var(--s2)}
+
+/* Legend */
+.legend{display:flex;gap:14px;flex-wrap:wrap;padding:8px 0;font-size:0.75rem;color:var(--t2)}
+.legend-item{display:flex;align-items:center;gap:5px}
+.legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+
+/* Search */
+.search-box{padding:7px 14px;border-radius:8px;border:1px solid var(--border-f);font-size:0.8rem;color:var(--text);background:var(--s1);width:240px;outline:none;transition:border-color 0.15s}
+.search-box:focus{border-color:var(--accent)}
+.search-box::placeholder{color:var(--t3)}
+
+/* Mini sparkline */
+.spark{display:inline-flex;align-items:flex-end;gap:1px;height:18px;vertical-align:middle;margin-left:6px}
+.spark span{width:3px;background:var(--accent);border-radius:1px;opacity:0.5}
+
+/* Model flags (web, thinking, effort) */
+.model-flags{white-space:nowrap}
+.mf{font-size:0.6rem;font-weight:700;letter-spacing:0.04em;padding:2px 5px;border-radius:4px;text-transform:uppercase;display:inline-block;margin-right:2px}
+.mf-api{background:var(--s2);color:var(--t3)}
+.mf-web{background:var(--cyan-s);color:var(--cyan)}
+.mf-think{background:var(--violet-s);color:var(--violet)}
+.mf-effort{background:var(--amber-s);color:var(--amber);text-transform:lowercase;font-weight:600;letter-spacing:0}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ═══════════════════════ HEADER ═══════════════════════ -->
+<div class="header">
+  <div>
+    <h1>LLM Billing</h1>
+    <div class="subtitle">Cost analytics, token usage, and model performance across all operations</div>
+  </div>
+  <div class="header-right">
+    <button class="period-btn">7d</button>
+    <button class="period-btn active">30d</button>
+    <button class="period-btn">90d</button>
+    <button class="period-btn">All</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════ KPI STRIP ═══════════════════════ -->
+<div class="stats">
+  <div class="stat">
+    <div class="n">$14.27</div>
+    <div class="l">Total Cost</div>
+    <div class="delta up">+18% vs prev</div>
+  </div>
+  <div class="stat">
+    <div class="n">1,847</div>
+    <div class="l">LLM Calls</div>
+    <div class="delta up">+24%</div>
+  </div>
+  <div class="stat">
+    <div class="n">3.2M</div>
+    <div class="l">Input Tokens</div>
+  </div>
+  <div class="stat">
+    <div class="n">418K</div>
+    <div class="l">Output Tokens</div>
+  </div>
+  <div class="stat">
+    <div class="n">$0.0077</div>
+    <div class="l">Avg / Call</div>
+    <div class="delta down">-6%</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ FILTERS ═══════════════════════ -->
+<div class="filters">
+  <div class="filter-group">
+    <span class="filter-label">Category</span>
+    <span class="chip on">All</span>
+    <span class="chip">Mouse</span>
+    <span class="chip">Monitor</span>
+    <span class="chip">Keyboard</span>
+    <span class="chip">Mousepad</span>
+  </div>
+  <div class="filter-sep"></div>
+  <div class="filter-group">
+    <span class="filter-label">Call Type</span>
+    <span class="chip on">All</span>
+    <span class="chip"><span class="chip-dot" style="background:var(--accent)"></span>NeedSet</span>
+    <span class="chip"><span class="chip-dot" style="background:var(--cyan)"></span>Brand</span>
+    <span class="chip"><span class="chip-dot" style="background:var(--violet)"></span>Planner</span>
+    <span class="chip"><span class="chip-dot" style="background:var(--green)"></span>SERP</span>
+    <span class="chip"><span class="chip-dot" style="background:var(--orange)"></span>Image</span>
+    <span class="chip"><span class="chip-dot" style="background:var(--rose)"></span>Eval</span>
+    <span class="chip"><span class="chip-dot" style="background:#5c7cfa"></span>CEF</span>
+  </div>
+  <div class="filter-sep"></div>
+  <div class="filter-group">
+    <span class="filter-label">Model</span>
+    <span class="chip on">All</span>
+    <span class="chip">gemini-2.5-flash-lite</span>
+    <span class="chip">gpt-4o</span>
+    <span class="chip">claude-sonnet-4-6</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════ CHARTS ROW 1 ═══════════════════════ -->
+<div class="grid-3-1">
+  <!-- Daily Cost (stacked bar) -->
+  <div class="card">
+    <div class="card-head">
+      <h3>Daily Cost</h3>
+      <div class="legend">
+        <span class="legend-item"><span class="legend-dot" style="background:var(--accent)"></span>NeedSet</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--cyan)"></span>Brand</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--violet)"></span>Planner</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--green)"></span>SERP</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--orange)"></span>Image</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--rose)"></span>Eval</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#5c7cfa"></span>CEF</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="chart-area">
+        <svg viewBox="0 0 640 200" width="100%" height="200" style="max-width:640px">
+          <!-- Y axis labels -->
+          <text x="28" y="22" font-size="9" fill="#94a3b8" text-anchor="end" font-family="var(--mono)">$0.80</text>
+          <text x="28" y="62" font-size="9" fill="#94a3b8" text-anchor="end" font-family="var(--mono)">$0.60</text>
+          <text x="28" y="102" font-size="9" fill="#94a3b8" text-anchor="end" font-family="var(--mono)">$0.40</text>
+          <text x="28" y="142" font-size="9" fill="#94a3b8" text-anchor="end" font-family="var(--mono)">$0.20</text>
+          <text x="28" y="182" font-size="9" fill="#94a3b8" text-anchor="end" font-family="var(--mono)">$0.00</text>
+          <!-- Grid lines -->
+          <line x1="36" y1="18" x2="620" y2="18" stroke="#e2e8f0" stroke-width="0.5"/>
+          <line x1="36" y1="58" x2="620" y2="58" stroke="#e2e8f0" stroke-width="0.5"/>
+          <line x1="36" y1="98" x2="620" y2="98" stroke="#e2e8f0" stroke-width="0.5"/>
+          <line x1="36" y1="138" x2="620" y2="138" stroke="#e2e8f0" stroke-width="0.5"/>
+          <line x1="36" y1="178" x2="620" y2="178" stroke="#e2e8f0" stroke-width="0.5"/>
+          <!-- Stacked bars (7 days sample) -->
+          <!-- Apr 7 -->
+          <rect x="56" y="98" width="28" height="30" rx="2" fill="#2563eb" opacity="0.85"/>
+          <rect x="56" y="128" width="28" height="15" rx="0" fill="#0891b2" opacity="0.85"/>
+          <rect x="56" y="143" width="28" height="20" rx="0" fill="#7c3aed" opacity="0.85"/>
+          <rect x="56" y="163" width="28" height="15" rx="0" fill="#16a34a" opacity="0.7"/>
+          <text x="70" y="195" font-size="8" fill="#94a3b8" text-anchor="middle" font-family="var(--mono)">Apr 7</text>
+          <!-- Apr 8 -->
+          <rect x="120" y="58" width="28" height="30" rx="2" fill="#2563eb" opacity="0.85"/>
+          <rect x="120" y="88" width="28" height="20" rx="0" fill="#0891b2" opacity="0.85"/>
+          <rect x="120" y="108" width="28" height="25" rx="0" fill="#7c3aed" opacity="0.85"/>
+          <rect x="120" y="133" width="28" height="15" rx="0" fill="#16a34a" opacity="0.7"/>
+          <rect x="120" y="148" width="28" height="18" rx="0" fill="#ea580c" opacity="0.7"/>
+          <rect x="120" y="166" width="28" height="12" rx="0" fill="#e11d48" opacity="0.7"/>
+          <text x="134" y="195" font-size="8" fill="#94a3b8" text-anchor="middle" font-family="var(--mono)">Apr 8</text>
+          <!-- Apr 9 -->
+          <rect x="184" y="78" width="28" height="25" rx="2" fill="#2563eb" opacity="0.85"/>
+          <rect x="184" y="103" width="28" height="15" rx="0" fill="#0891b2" opacity="0.85"/>
+          <rect x="184" y="118" width="28" height="30" rx="0" fill="#ea580c" opacity="0.7"/>
+          <rect x="184" y="148" width="28" height="20" rx="0" fill="#e11d48" opacity="0.7"/>
+          <rect x="184" y="168" width="28" height="10" rx="0" fill="#5c7cfa" opacity="0.7"/>
+          <text x="198" y="195" font-size="8" fill="#94a3b8" text-anchor="middle" font-family="var(--mono)">Apr 9</text>
+          <!-- Apr 10 -->
+          <rect x="248" y="118" width="28" height="20" rx="2" fill="#2563eb" opacity="0.85"/>
+          <rect x="248" y="138" width="28" height="15" rx="0" fill="#7c3aed" opacity="0.85"/>
+          <rect x="248" y="153" width="28" height="15" rx="0" fill="#16a34a" opacity="0.7"/>
+          <rect x="248" y="168" width="28" height="10" rx="0" fill="#5c7cfa" opacity="0.7"/>
+          <text x="262" y="195" font-size="8" fill="#94a3b8" text-anchor="middle" font-family="var(--mono)">Apr 10</text>
+          <!-- Apr 11 -->
+          <rect x="312" y="38" width="28" height="35" rx="2" fill="#2563eb" opacity="0.85"/>
+          <rect x="312" y="73" width="28" height="20" rx="0" fill="#0891b2" opacity="0.85"/>
+          <rect x="312" y="93" width="28" height="20" rx="0" fill="#7c3aed" opacity="0.85"/>
+          <rect x="312" y="113" width="28" height="15" rx="0" fill="#16a34a" opacity="0.7"/>
+          <rect x="312" y="128" width="28" height="25" rx="0" fill="#ea580c" opacity="0.7"/>
+          <rect x="312" y="153" width="28" height="15" rx="0" fill="#e11d48" opacity="0.7"/>
+          <rect x="312" y="168" width="28" height="10" rx="0" fill="#5c7cfa" opacity="0.7"/>
+          <text x="326" y="195" font-size="8" fill="#94a3b8" text-anchor="middle" font-family="var(--mono)">Apr 11</text>
+          <!-- Apr 12 -->
+          <rect x="376" y="68" width="28" height="30" rx="2" fill="#2563eb" opacity="0.85"/>
+          <rect x="376" y="98" width="28" height="20" rx="0" fill="#ea580c" opacity="0.7"/>
+          <rect x="376" y="118" width="28" height="30" rx="0" fill="#e11d48" opacity="0.7"/>
+          <rect x="376" y="148" width="28" height="18" rx="0" fill="#5c7cfa" opacity="0.7"/>
+          <rect x="376" y="166" width="28" height="12" rx="0" fill="#d97706" opacity="0.7"/>
+          <text x="390" y="195" font-size="8" fill="#94a3b8" text-anchor="middle" font-family="var(--mono)">Apr 12</text>
+          <!-- Apr 13 (today, accent) -->
+          <rect x="440" y="48" width="28" height="30" rx="2" fill="#2563eb"/>
+          <rect x="440" y="78" width="28" height="20" rx="0" fill="#0891b2"/>
+          <rect x="440" y="98" width="28" height="25" rx="0" fill="#7c3aed"/>
+          <rect x="440" y="123" width="28" height="15" rx="0" fill="#16a34a"/>
+          <rect x="440" y="138" width="28" height="20" rx="0" fill="#ea580c"/>
+          <rect x="440" y="158" width="28" height="10" rx="0" fill="#e11d48"/>
+          <rect x="440" y="168" width="28" height="10" rx="0" fill="#5c7cfa"/>
+          <text x="454" y="195" font-size="8" fill="#2563eb" text-anchor="middle" font-weight="700" font-family="var(--mono)">Today</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cost by Call Type (donut) -->
+  <div class="card">
+    <div class="card-head"><h3>Cost by Call Type</h3></div>
+    <div class="card-body">
+      <div class="chart-area" style="flex-direction:column;gap:12px">
+        <svg viewBox="0 0 200 200" width="180" height="180">
+          <!-- Donut segments -->
+          <circle cx="100" cy="100" r="70" fill="none" stroke="#2563eb" stroke-width="28" stroke-dasharray="110 330" stroke-dashoffset="0" opacity="0.9"/>
+          <circle cx="100" cy="100" r="70" fill="none" stroke="#ea580c" stroke-width="28" stroke-dasharray="88 352" stroke-dashoffset="-110" opacity="0.85"/>
+          <circle cx="100" cy="100" r="70" fill="none" stroke="#e11d48" stroke-width="28" stroke-dasharray="66 374" stroke-dashoffset="-198" opacity="0.85"/>
+          <circle cx="100" cy="100" r="70" fill="none" stroke="#7c3aed" stroke-width="28" stroke-dasharray="55 385" stroke-dashoffset="-264" opacity="0.8"/>
+          <circle cx="100" cy="100" r="70" fill="none" stroke="#0891b2" stroke-width="28" stroke-dasharray="44 396" stroke-dashoffset="-319" opacity="0.8"/>
+          <circle cx="100" cy="100" r="70" fill="none" stroke="#16a34a" stroke-width="28" stroke-dasharray="33 407" stroke-dashoffset="-363" opacity="0.75"/>
+          <circle cx="100" cy="100" r="70" fill="none" stroke="#5c7cfa" stroke-width="28" stroke-dasharray="22 418" stroke-dashoffset="-396" opacity="0.75"/>
+          <circle cx="100" cy="100" r="70" fill="none" stroke="#d97706" stroke-width="28" stroke-dasharray="22 418" stroke-dashoffset="-418" opacity="0.7"/>
+          <!-- Center text -->
+          <text x="100" y="95" text-anchor="middle" font-size="16" font-weight="700" fill="#0f172a">$14.27</text>
+          <text x="100" y="112" text-anchor="middle" font-size="8" fill="#94a3b8" text-transform="uppercase" letter-spacing="0.08em" font-weight="600">TOTAL</text>
+        </svg>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:0.72rem;width:100%">
+          <span class="legend-item"><span class="legend-dot" style="background:#2563eb"></span>NeedSet 25%</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#ea580c"></span>Image 20%</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#e11d48"></span>Eval 15%</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#7c3aed"></span>Planner 12%</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#0891b2"></span>Brand 10%</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#16a34a"></span>SERP 8%</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#5c7cfa"></span>CEF 5%</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#d97706"></span>Validator 5%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ CHARTS ROW 2 ═══════════════════════ -->
+<div class="grid-2">
+  <!-- Cost by Model (horizontal bar) -->
+  <div class="card">
+    <div class="card-head"><h3>Cost by Model</h3></div>
+    <div class="card-body" style="padding:16px 20px">
+      <!-- Horizontal bar items -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px">
+            <span style="font-family:var(--mono);font-weight:600">gemini-2.5-flash-lite</span>
+            <span style="color:var(--t2)">$8.42 &middot; 1,204 calls</span>
+          </div>
+          <div style="height:8px;background:var(--s2);border-radius:4px;overflow:hidden">
+            <div style="width:100%;height:100%;background:var(--accent);border-radius:4px;opacity:0.8"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px">
+            <span style="font-family:var(--mono);font-weight:600">gpt-4o</span>
+            <span style="color:var(--t2)">$3.18 &middot; 389 calls</span>
+          </div>
+          <div style="height:8px;background:var(--s2);border-radius:4px;overflow:hidden">
+            <div style="width:38%;height:100%;background:var(--violet);border-radius:4px;opacity:0.8"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px">
+            <span style="font-family:var(--mono);font-weight:600">claude-sonnet-4-6</span>
+            <span style="color:var(--t2)">$1.84 &middot; 178 calls</span>
+          </div>
+          <div style="height:8px;background:var(--s2);border-radius:4px;overflow:hidden">
+            <div style="width:22%;height:100%;background:var(--cyan);border-radius:4px;opacity:0.8"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px">
+            <span style="font-family:var(--mono);font-weight:600">gpt-5-mini</span>
+            <span style="color:var(--t2)">$0.62 &middot; 52 calls</span>
+          </div>
+          <div style="height:8px;background:var(--s2);border-radius:4px;overflow:hidden">
+            <div style="width:7%;height:100%;background:var(--green);border-radius:4px;opacity:0.8"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px">
+            <span style="font-family:var(--mono);font-weight:600">deepseek-r1</span>
+            <span style="color:var(--t2)">$0.21 &middot; 24 calls</span>
+          </div>
+          <div style="height:8px;background:var(--s2);border-radius:4px;overflow:hidden">
+            <div style="width:3%;height:100%;background:var(--amber);border-radius:4px;opacity:0.8"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cost by Category -->
+  <div class="card">
+    <div class="card-head"><h3>Cost by Category</h3></div>
+    <div class="card-body" style="padding:16px 20px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px">
+            <span style="font-weight:600;text-transform:capitalize">Mouse</span>
+            <span style="color:var(--t2)">$6.84 &middot; 842 calls</span>
+          </div>
+          <div style="height:8px;background:var(--s2);border-radius:4px;overflow:hidden">
+            <div style="width:100%;height:100%;background:var(--accent);border-radius:4px;opacity:0.75"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px">
+            <span style="font-weight:600;text-transform:capitalize">Monitor</span>
+            <span style="color:var(--t2)">$4.12 &middot; 520 calls</span>
+          </div>
+          <div style="height:8px;background:var(--s2);border-radius:4px;overflow:hidden">
+            <div style="width:60%;height:100%;background:var(--violet);border-radius:4px;opacity:0.75"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px">
+            <span style="font-weight:600;text-transform:capitalize">Keyboard</span>
+            <span style="color:var(--t2)">$2.48 &middot; 348 calls</span>
+          </div>
+          <div style="height:8px;background:var(--s2);border-radius:4px;overflow:hidden">
+            <div style="width:36%;height:100%;background:var(--green);border-radius:4px;opacity:0.75"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px">
+            <span style="font-weight:600;text-transform:capitalize">Mousepad</span>
+            <span style="color:var(--t2)">$0.83 &middot; 137 calls</span>
+          </div>
+          <div style="height:8px;background:var(--s2);border-radius:4px;overflow:hidden">
+            <div style="width:12%;height:100%;background:var(--amber);border-radius:4px;opacity:0.75"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ ENTRIES TABLE ═══════════════════════ -->
+<div class="card" style="margin-bottom:16px">
+  <div class="card-head">
+    <h3>LLM Call Log</h3>
+    <input type="text" class="search-box" placeholder="Search product, model...">
+  </div>
+  <div class="tbl-wrap" style="border:none;border-radius:0;margin:0">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Timestamp <span class="sort">&darr;</span></th>
+          <th>Model</th>
+          <th>Category</th>
+          <th>Call Type</th>
+          <th>Product</th>
+          <th style="text-align:right">In Tokens</th>
+          <th style="text-align:right">Out Tokens</th>
+          <th style="text-align:right">Cost</th>
+          <th>Flags</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">Apr 13, 4:58:56 PM</td>
+          <td class="mono">gemini-2.5-flash-lite</td>
+          <td>mouse</td>
+          <td><span class="tag tag-serp">SERP_SELECTOR</span></td>
+          <td>Corsair M75 Wireless</td>
+          <td class="tokens" style="text-align:right">2,183</td>
+          <td class="tokens" style="text-align:right">67</td>
+          <td class="cost" style="text-align:right">$0.0002</td>
+          <td class="model-flags"><span class="mf mf-api">API</span></td>
+        </tr>
+        <tr>
+          <td class="mono">Apr 13, 4:58:54 PM</td>
+          <td class="mono">gemini-2.5-flash-lite</td>
+          <td>mouse</td>
+          <td><span class="tag tag-planner">SEARCH_PLANNER</span></td>
+          <td>Corsair M75 Wireless</td>
+          <td class="tokens" style="text-align:right">2,004</td>
+          <td class="tokens" style="text-align:right">202</td>
+          <td class="cost" style="text-align:right">$0.0002</td>
+          <td class="model-flags"><span class="mf mf-api">API</span></td>
+        </tr>
+        <tr>
+          <td class="mono">Apr 13, 4:58:53 PM</td>
+          <td class="mono">gemini-2.5-flash-lite</td>
+          <td>mouse</td>
+          <td><span class="tag tag-needset">NEEDSET_PLANNER</span></td>
+          <td>Corsair M75 Wireless</td>
+          <td class="tokens" style="text-align:right">2,695</td>
+          <td class="tokens" style="text-align:right">549</td>
+          <td class="cost" style="text-align:right">$0.0004</td>
+          <td class="model-flags"><span class="mf mf-api">API</span></td>
+        </tr>
+        <tr>
+          <td class="mono">Apr 13, 4:58:52 PM</td>
+          <td class="mono">gemini-2.5-flash-lite</td>
+          <td>mouse</td>
+          <td><span class="tag tag-brand">BRAND_RESOLUTION</span></td>
+          <td>Corsair M75 Wireless</td>
+          <td class="tokens" style="text-align:right">92</td>
+          <td class="tokens" style="text-align:right">83</td>
+          <td class="cost" style="text-align:right">$0.0008</td>
+          <td class="model-flags"><span class="mf mf-api">API</span></td>
+        </tr>
+        <tr>
+          <td class="mono">Apr 13, 4:42:18 PM</td>
+          <td class="mono">gpt-4o</td>
+          <td>mouse</td>
+          <td><span class="tag tag-vieweval">VIEW_EVAL</span></td>
+          <td>Razer DeathAdder V3</td>
+          <td class="tokens" style="text-align:right">4,210</td>
+          <td class="tokens" style="text-align:right">312</td>
+          <td class="cost" style="text-align:right">$0.0134</td>
+          <td class="model-flags"><span class="mf mf-web">WEB</span> <span class="mf mf-think">THINK</span> <span class="mf mf-effort">high</span></td>
+        </tr>
+        <tr>
+          <td class="mono">Apr 13, 4:42:12 PM</td>
+          <td class="mono">gpt-4o</td>
+          <td>mouse</td>
+          <td><span class="tag tag-heroeval">HERO_EVAL</span></td>
+          <td>Razer DeathAdder V3</td>
+          <td class="tokens" style="text-align:right">3,880</td>
+          <td class="tokens" style="text-align:right">245</td>
+          <td class="cost" style="text-align:right">$0.0118</td>
+          <td class="model-flags"><span class="mf mf-think">THINK</span> <span class="mf mf-effort">high</span></td>
+        </tr>
+        <tr>
+          <td class="mono">Apr 13, 4:38:05 PM</td>
+          <td class="mono">gemini-2.5-flash-lite</td>
+          <td>monitor</td>
+          <td><span class="tag tag-cef">CEF</span></td>
+          <td>ASUS ROG Swift PG27AQN</td>
+          <td class="tokens" style="text-align:right">1,640</td>
+          <td class="tokens" style="text-align:right">428</td>
+          <td class="cost" style="text-align:right">$0.0003</td>
+          <td class="model-flags"><span class="mf mf-web">WEB</span></td>
+        </tr>
+        <tr>
+          <td class="mono">Apr 13, 4:35:22 PM</td>
+          <td class="mono">gemini-2.5-flash-lite</td>
+          <td>keyboard</td>
+          <td><span class="tag tag-imgfind">IMAGE_FINDER</span></td>
+          <td>Wooting 80HE</td>
+          <td class="tokens" style="text-align:right">3,120</td>
+          <td class="tokens" style="text-align:right">890</td>
+          <td class="cost" style="text-align:right">$0.0005</td>
+          <td class="model-flags"><span class="mf mf-web">WEB</span></td>
+        </tr>
+        <tr>
+          <td class="mono">Apr 13, 4:32:41 PM</td>
+          <td class="mono">claude-sonnet-4-6</td>
+          <td>mouse</td>
+          <td><span class="tag tag-enum">ENUM_VALIDATOR</span></td>
+          <td>Logitech G Pro X Superlight 2</td>
+          <td class="tokens" style="text-align:right">1,280</td>
+          <td class="tokens" style="text-align:right">156</td>
+          <td class="cost" style="text-align:right">$0.0048</td>
+          <td class="model-flags"><span class="mf mf-api">API</span> <span class="mf mf-think">THINK</span> <span class="mf mf-effort">medium</span></td>
+        </tr>
+        <tr>
+          <td class="mono">Apr 13, 4:28:15 PM</td>
+          <td class="mono">gemini-2.5-flash-lite</td>
+          <td>mousepad</td>
+          <td><span class="tag tag-needset">NEEDSET_PLANNER</span></td>
+          <td>Artisan Hien FX</td>
+          <td class="tokens" style="text-align:right">2,450</td>
+          <td class="tokens" style="text-align:right">480</td>
+          <td class="cost" style="text-align:right">$0.0003</td>
+          <td class="model-flags"><span class="mf mf-api">API</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="pager">
+    <span>Showing 1&ndash;10 of 1,847 entries</span>
+    <div class="pager-btns">
+      <button class="pager-btn active">1</button>
+      <button class="pager-btn">2</button>
+      <button class="pager-btn">3</button>
+      <button class="pager-btn">...</button>
+      <button class="pager-btn">185</button>
+      <button class="pager-btn">Next &rarr;</button>
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

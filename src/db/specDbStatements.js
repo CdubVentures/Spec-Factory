@@ -187,18 +187,6 @@ export function prepareStatements(db) {
     `),
 
 
-    _insertBillingEntry: db.prepare(`
-      INSERT INTO billing_entries (
-        ts, month, day, provider, model, category, product_id, run_id, round,
-        prompt_tokens, completion_tokens, cached_prompt_tokens, total_tokens,
-        cost_usd, reason, host, url_count, evidence_chars, estimated_usage, meta
-      ) VALUES (
-        @ts, @month, @day, @provider, @model, @category, @product_id, @run_id, @round,
-        @prompt_tokens, @completion_tokens, @cached_prompt_tokens, @total_tokens,
-        @cost_usd, @reason, @host, @url_count, @evidence_chars, @estimated_usage, @meta
-      )
-    `),
-
     _upsertDataAuthoritySync: db.prepare(`
       INSERT INTO data_authority_sync (
         category, specdb_sync_version, last_sync_status, last_sync_at, last_sync_meta

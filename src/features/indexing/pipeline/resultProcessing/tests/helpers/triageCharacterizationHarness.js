@@ -83,7 +83,7 @@ export function makeSearchProfilePlanned() {
 export function makeStubSerpSelectorCallFn() {
   return async ({ selectorInput }) => {
     const ids = selectorInput.candidates.map((c) => c.id);
-    return {
+    return { result: {
       schema_version: 'serp_selector_output.v1',
       keep_ids: ids,
       approved_ids: ids.slice(0, 1),
@@ -102,22 +102,22 @@ export function makeStubSerpSelectorCallFn() {
         reason: 'Stub selector',
       })),
       summary: { input_count: ids.length, approved_count: 1, candidate_count: ids.length - 1, reject_count: 0 },
-    };
+    }, usage: null };
   };
 }
 
 export function makeKeepAllSelectorFn() {
-  return async ({ selectorInput }) => ({
+  return async ({ selectorInput }) => ({ result: {
     keep_ids: selectorInput.candidates.map((candidate) => candidate.id),
-  });
+  }, usage: null });
 }
 
 export function makeRejectAllSelectorFn() {
-  return async () => ({ keep_ids: [] });
+  return async () => ({ result: { keep_ids: [] }, usage: null });
 }
 
 export function makeInvalidSelectorFn() {
-  return async () => ({ keep_ids: ['FAKE_UNKNOWN_ID'] });
+  return async () => ({ result: { keep_ids: ['FAKE_UNKNOWN_ID'] }, usage: null });
 }
 
 export function makeThrowingSelectorFn(message = 'timeout') {

@@ -518,3 +518,104 @@ describe('evaluateCarousel: attempt tracking', () => {
     assert.equal(result.focusView, null);
   });
 });
+
+/* ── Per-view attempt budgets (viewAttemptBudgets map) ───────────── */
+
+describe('evaluateCarousel: per-view attempt budgets', () => {
+  it('per-view budgets respected — top exhausted at 2, left at 4', () => {
+    const result = evaluateCarousel({
+      collectedImages: [],
+      viewBudget: SMALL_BUDGET,
+      satisfactionThreshold: 3,
+      heroEnabled: false,
+      heroCount: 0,
+      variantKey: VARIANT,
+      viewAttemptBudget: 5,
+      viewAttemptBudgets: { top: 2, left: 4 },
+      viewAttemptCounts: { top: 2, left: 2 },
+    });
+    assert.equal(result.carouselProgress.viewDetails.top.exhausted, true, 'top: 2 attempts >= budget 2');
+    assert.equal(result.carouselProgress.viewDetails.left.exhausted, false, 'left: 2 attempts < budget 4');
+    assert.equal(result.focusView, 'left');
+  });
+
+  it('missing view in map falls back to flat viewAttemptBudget', () => {
+    const result = evaluateCarousel({
+      collectedImages: [],
+      viewBudget: SMALL_BUDGET,
+      satisfactionThreshold: 3,
+      heroEnabled: false,
+      heroCount: 0,
+      variantKey: VARIANT,
+      viewAttemptBudget: 5,
+      viewAttemptBudgets: { top: 3 },
+      viewAttemptCounts: {},
+    });
+    assert.equal(result.carouselProgress.viewDetails.top.attemptBudget, 3);
+    assert.equal(result.carouselProgress.viewDetails.left.attemptBudget, 5);
+  });
+
+  it('null map = backward compat (identical to flat budget)', () => {
+    const result = evaluateCarousel({
+      collectedImages: [],
+      viewBudget: SMALL_BUDGET,
+      satisfactionThreshold: 3,
+      heroEnabled: false,
+      heroCount: 0,
+      variantKey: VARIANT,
+      viewAttemptBudget: 3,
+      viewAttemptBudgets: null,
+      viewAttemptCounts: {},
+    });
+    assert.equal(result.carouselProgress.viewDetails.top.attemptBudget, 3);
+    assert.equal(result.carouselProgress.viewDetails.left.attemptBudget, 3);
+  });
+
+  it('estimatedCallsRemaining uses per-view budgets', () => {
+    const result = evaluateCarousel({
+      collectedImages: [],
+      viewBudget: SMALL_BUDGET,
+      satisfactionThreshold: 3,
+      heroEnabled: false,
+      heroCount: 0,
+      variantKey: VARIANT,
+      viewAttemptBudget: 5,
+      viewAttemptBudgets: { top: 2, left: 4 },
+      viewAttemptCounts: {},
+    });
+    assert.equal(result.estimatedCallsRemaining, 6, '2 + 4 = 6');
+  });
+
+  it('satisfied view still uses reRunBudget, not per-view budget', () => {
+    const result = evaluateCarousel({
+      collectedImages: [...nImgs('top', 3)],
+      viewBudget: SMALL_BUDGET,
+      satisfactionThreshold: 3,
+      heroEnabled: false,
+      heroCount: 0,
+      variantKey: VARIANT,
+      viewAttemptBudget: 5,
+      viewAttemptBudgets: { top: 10 },
+      reRunBudget: 1,
+      viewAttemptCounts: {},
+    });
+    // top is satisfied → effectiveBudget = reRunBudget (1), not per-view (10)
+    assert.equal(result.carouselProgress.viewDetails.top.attemptBudget, 1);
+  });
+
+  it('viewDetails.attemptBudget reflects per-view value for unsatisfied views', () => {
+    const result = evaluateCarousel({
+      collectedImages: [],
+      viewBudget: SMALL_BUDGET,
+      satisfactionThreshold: 3,
+      heroEnabled: false,
+      heroCount: 0,
+      variantKey: VARIANT,
+      viewAttemptBudget: 5,
+      viewAttemptBudgets: { top: 2, left: 6 },
+      viewAttemptCounts: {},
+    });
+    assert.equal(result.carouselProgress.viewDetails.top.attemptBudget, 2);
+    assert.equal(result.carouselProgress.viewDetails.left.attemptBudget, 6);
+  });
+});

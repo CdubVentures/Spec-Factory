@@ -8,6 +8,7 @@ export function createRunLlmRuntime({
   runtimeMode = 'production',
   runtimeOverrides = {},
   specDb = null,
+  appDb = null,
   normalizeCostRatesFn = () => ({}),
   appendCostLedgerEntryFn = async () => {},
   recordPromptResultFn = () => {},
@@ -48,9 +49,8 @@ export function createRunLlmRuntime({
       }
 
       await appendCostLedgerEntryFn({
-        storage,
         config,
-        specDb,
+        appDb,
         entry: {
           ts: nowIsoFn(),
           provider: usageRow.provider,

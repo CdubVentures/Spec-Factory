@@ -57,7 +57,7 @@ function makeAppDbStub() {
 }
 
 function makeLlmStub(response) {
-  return async () => response;
+  return async () => ({ result: response, usage: null });
 }
 
 const REAL_EDITIONS_FIELD_RULE = {

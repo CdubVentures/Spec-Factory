@@ -111,10 +111,10 @@ describe('runProductImageFinder with RMBG', () => {
       specDb: makeSpecDbStub(makeFinderStoreStub()),
       config: {},
       productRoot: PRODUCT_ROOT,
-      _callLlmOverride: async () => ({
+      _callLlmOverride: async () => ({ result: {
         images: [{ view: 'top', url: `http://127.0.0.1:${serverPort}/image.png` }],
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
-      }),
+      }, usage: null }),
     });
 
     assert.equal(result.images.length, 1);
@@ -151,10 +151,10 @@ describe('runProductImageFinder with RMBG', () => {
       specDb: makeSpecDbStub(makeFinderStoreStub()),
       config: {},
       productRoot: PRODUCT_ROOT,
-      _callLlmOverride: async () => ({
+      _callLlmOverride: async () => ({ result: {
         images: [{ view: 'left', url: `http://127.0.0.1:${serverPort}/image.jpg` }],
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
-      }),
+      }, usage: null }),
     });
 
     assert.equal(result.images.length, 1);
@@ -174,10 +174,10 @@ describe('runProductImageFinder with RMBG', () => {
       specDb: makeSpecDbStub(makeFinderStoreStub()),
       config: {},
       productRoot: PRODUCT_ROOT,
-      _callLlmOverride: async () => ({
+      _callLlmOverride: async () => ({ result: {
         images: [{ view: 'top', url: `http://127.0.0.1:${serverPort}/small.png` }],
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
-      }),
+      }, usage: null }),
     });
 
     // Quality gate rejects (100x50 < 800x600)
@@ -201,10 +201,10 @@ describe('runProductImageFinder with RMBG', () => {
       productRoot: PRODUCT_ROOT,
       // WHY: _modelDirOverride points to empty dir (no model), triggering degradation
       _modelDirOverride: path.join(TMP, 'no-model-here'),
-      _callLlmOverride: async () => ({
+      _callLlmOverride: async () => ({ result: {
         images: [{ view: 'top', url: `http://127.0.0.1:${serverPort}/image.png` }],
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
-      }),
+      }, usage: null }),
     });
 
     assert.equal(result.images.length, 1);
@@ -226,10 +226,10 @@ describe('runProductImageFinder with RMBG', () => {
       specDb: makeSpecDbStub(makeFinderStoreStub()),
       config: {},
       productRoot: PRODUCT_ROOT,
-      _callLlmOverride: async () => ({
+      _callLlmOverride: async () => ({ result: {
         images: [{ view: 'top', url: `http://127.0.0.1:${serverPort}/image.png` }],
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
-      }),
+      }, usage: null }),
     });
 
     const img = result.images[0];

@@ -5,8 +5,7 @@ import { createBillingReportCommand } from '../billingReportCommand.js';
 
 function createDeps(overrides = {}) {
   return {
-    buildBillingReport: async ({ storage, month, config }) => ({
-      storageName: storage?.name || null,
+    buildBillingReport: ({ month, config }) => ({
       month,
       mode: config?.mode || 'unknown',
       total_cost_usd: 12.34,
@@ -43,16 +42,16 @@ async function withMockedDate(isoString, run) {
   }
 }
 
-test('billing-report returns the explicit month in its command payload', async () => {
+test('billing-report returns the explicit month in its command payload', () => {
   const commandBillingReport = createBillingReportCommand(createDeps({
-    buildBillingReport: async ({ month }) => ({
+    buildBillingReport: ({ month }) => ({
       month,
       total_cost_usd: 45.67,
       line_items: 8,
     }),
   }));
 
-  const result = await commandBillingReport(
+  const result = commandBillingReport(
     { mode: 'test' },
     { name: 'stub-storage' },
     { month: '2026-02' },
@@ -69,8 +68,8 @@ test('billing-report returns the explicit month in its command payload', async (
 test('billing-report defaults month when it is not provided', async () => {
   const billingCalls = [];
   const commandBillingReport = createBillingReportCommand(createDeps({
-    buildBillingReport: async ({ storage, month, config }) => {
-      billingCalls.push({ storage, month, config });
+    buildBillingReport: ({ month, config, appDb }) => {
+      billingCalls.push({ month, config, appDb });
       return ({
       month,
       total_cost_usd: 0,
@@ -89,9 +88,7 @@ test('billing-report defaults month when it is not provided', async () => {
     month: '2026-03',
     total_cost_usd: 0,
   });
-  assert.deepEqual(billingCalls, [{
-    storage,
-    month: '2026-03',
-    config,
-  }]);
+  assert.equal(billingCalls.length, 1);
+  assert.equal(billingCalls[0].month, '2026-03');
+  assert.equal(billingCalls[0].config, config);
 });
