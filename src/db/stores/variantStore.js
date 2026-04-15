@@ -75,8 +75,20 @@ export function createVariantStore({ db, category, stmts }) {
    * WHY: Single entry point for both dual-write and reseed paths.
    * Maps registry entry field names to store column names.
    */
-  function syncFromRegistry(productId, registryArray) {
+  function syncFromRegistry(productId, registryArray, { onAfterSync } = {}) {
     if (!Array.isArray(registryArray) || registryArray.length === 0) return;
+
+    // WHY: Full sync — remove stale variants not in the incoming registry.
+    // Without this, variants from rejected runs or removed discoveries
+    // persist in the table and leak into published state via derivePublishedFromVariants.
+    const incomingIds = new Set(registryArray.map(e => e.variant_id));
+    const existing = listByProduct(productId);
+    for (const row of existing) {
+      if (!incomingIds.has(row.variant_id)) {
+        remove(productId, row.variant_id);
+      }
+    }
+
     for (const entry of registryArray) {
       upsert({
         productId,
@@ -92,6 +104,8 @@ export function createVariantStore({ db, category, stmts }) {
         updatedAt: entry.updated_at,
       });
     }
+
+    onAfterSync?.({ productId });
   }
 
   return { upsert, get, listByProduct, listActive, retire, remove, removeByProduct, syncFromRegistry };

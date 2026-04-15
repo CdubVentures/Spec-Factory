@@ -3,6 +3,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 import { createPhaseCallLlm } from '../../features/indexing/pipeline/shared/createPhaseCallLlm.js';
 import { zodToLlmSchema } from '../../core/llm/zodToLlmSchema.js';
+import { resolvePromptTemplate } from '../../core/llm/resolvePromptTemplate.js';
 import { viewEvalResponseSchema, heroEvalResponseSchema } from './imageEvaluatorSchema.js';
 import { readProductImages, writeProductImages } from './productImageStore.js';
 import { matchVariant } from './variantMatch.js';
@@ -42,6 +43,36 @@ export async function createThumbnailBase64({ imagePath, size = 512 }) {
  * Each view gets its own LLM call with all candidates for that angle.
  * The view description tells the LLM what the correct angle looks like.
  */
+// WHY: Default template for view evaluation prompt. {{CRITERIA}} resolves to per-category/per-view
+// eval criteria (already editable in the GUI), so the structural prompt around it is now also editable.
+export const VIEW_EVAL_DEFAULT_TEMPLATE = `{{IDENTITY}}
+{{VIEW_LINE}}
+{{COUNT_LINE}}
+
+Images are labeled Image 1, Image 2, etc. matching the order of image content parts.
+Each label includes the original dimensions and file size — use these to judge resolution quality since the thumbnails shown are downscaled.
+
+{{CRITERIA}}
+
+Respond with JSON matching this schema:
+{
+  "winner": {
+    "filename": "the best candidate filename",
+    "reasoning": "1-2 sentences: why this image won and how it compares to the others"
+  },
+  "rejected": [
+    { "filename": "disqualified.png", "flags": ["watermark"], "reasoning": "1 sentence why" },
+    { "filename": "outranked.png", "reasoning": "1 sentence why not picked" }
+  ]
+}
+
+Rules:
+- "winner": Pick exactly one best image for this view. Explain why it won over the others. Set to null if NO candidate is acceptable.
+- "rejected": List ALL candidates that were not picked as winner. Include a brief "reasoning" (1 sentence) for each.
+- If a rejected candidate has a disqualifying defect, include "flags" with one or more of: "watermark", "badge", "cropped", "wrong_product", "other". Use "other" when the issue doesn't fit standard flags (explain in reasoning).
+- If the candidate was simply outranked (no defects, just lower quality), omit "flags" and explain why in "reasoning".
+- If ALL candidates are disqualified, set "winner" to null and list every candidate in "rejected" with their flags. Do NOT force-pick a bad image.`;
+
 export function buildViewEvalPrompt({
   product = {},
   variantLabel = '',
@@ -51,6 +82,7 @@ export function buildViewEvalPrompt({
   candidateCount = 0,
   promptOverride = '',
   evalCriteria = '',
+  templateOverride = '',
 }) {
   const brand = product.brand || '';
   const model = product.model || '';
@@ -74,33 +106,14 @@ export function buildViewEvalPrompt({
 
   const criteria = promptOverride.trim() || evalCriteria || defaultCriteria;
 
-  return `${identity}
-${viewLine}
-${countLine}
+  const template = templateOverride || VIEW_EVAL_DEFAULT_TEMPLATE;
 
-Images are labeled Image 1, Image 2, etc. matching the order of image content parts.
-Each label includes the original dimensions and file size — use these to judge resolution quality since the thumbnails shown are downscaled.
-
-${criteria}
-
-Respond with JSON matching this schema:
-{
-  "winner": {
-    "filename": "the best candidate filename",
-    "reasoning": "1-2 sentences: why this image won and how it compares to the others"
-  },
-  "rejected": [
-    { "filename": "disqualified.png", "flags": ["watermark"], "reasoning": "1 sentence why" },
-    { "filename": "outranked.png", "reasoning": "1 sentence why not picked" }
-  ]
-}
-
-Rules:
-- "winner": Pick exactly one best image for this view. Explain why it won over the others. Set to null if NO candidate is acceptable.
-- "rejected": List ALL candidates that were not picked as winner. Include a brief "reasoning" (1 sentence) for each.
-- If a rejected candidate has a disqualifying defect, include "flags" with one or more of: "watermark", "badge", "cropped", "wrong_product", "other". Use "other" when the issue doesn't fit standard flags (explain in reasoning).
-- If the candidate was simply outranked (no defects, just lower quality), omit "flags" and explain why in "reasoning".
-- If ALL candidates are disqualified, set "winner" to null and list every candidate in "rejected" with their flags. Do NOT force-pick a bad image.`;
+  return resolvePromptTemplate(template, {
+    IDENTITY: identity,
+    VIEW_LINE: viewLine,
+    COUNT_LINE: countLine,
+    CRITERIA: criteria,
+  });
 }
 
 /**
@@ -110,6 +123,42 @@ Rules:
  * They're evaluated as vision candidates — same pattern as view eval —
  * and ranked for the carousel hero section.
  */
+// WHY: Default template for hero evaluation. {{CRITERIA}} resolves to per-category hero criteria
+// (already editable), {{HERO_COUNT}} controls how many heroes to pick.
+export const HERO_EVAL_DEFAULT_TEMPLATE = `{{IDENTITY}}
+{{COUNT_LINE}}
+
+Images are labeled Image 1, Image 2, etc. matching the order of image content parts.
+These are hero images for a product page. Any style of image is acceptable as long as it is clean and source-safe.
+
+{{CRITERIA}}
+
+Respond with JSON matching this schema:
+{
+  "heroes": [
+    {
+      "filename": "the best candidate filename",
+      "hero_rank": 1,
+      "reasoning": "short explanation — why this image is usable"
+    }
+  ],
+  "rejected": [
+    { "filename": "disqualified.png", "flags": ["watermark"], "reasoning": "1 sentence why" },
+    { "filename": "outranked.png", "reasoning": "1 sentence why not picked" }
+  ]
+}
+
+Rules:
+- Pick up to {{HERO_COUNT}} images for the product page hero section.
+- hero_rank 1 = primary hero, 2 = secondary, etc.
+- "reasoning" should be 1-2 sentences: is the source safe? Is the image clean?
+- When picking multiple heroes, prefer different shots over near-duplicates of the same angle.
+- You may pick FEWER than {{HERO_COUNT}} if not enough candidates pass the gates.
+- If ALL candidates are disqualified, return an empty "heroes" array.
+- "rejected": List ALL candidates you did NOT pick. Include "reasoning" (1 sentence) for each.
+- If a rejected candidate has a disqualifying defect, include "flags" with one or more of: "watermark", "badge", "cropped", "wrong_product", "other". Use "other" when the issue doesn't fit standard flags (explain in reasoning).
+- If the candidate was simply outranked (no defects), omit "flags" and explain why in "reasoning".`;
+
 export function buildHeroSelectionPrompt({
   product = {},
   variantLabel = '',
@@ -118,6 +167,7 @@ export function buildHeroSelectionPrompt({
   promptOverride = '',
   heroCriteria = '',
   heroCount = 3,
+  templateOverride = '',
 }) {
   const brand = product.brand || '';
   const model = product.model || '';
@@ -150,39 +200,14 @@ Your job is a LEGAL and QUALITY gatekeeper, not an art director. Any image type 
 
   const criteria = promptOverride.trim() || heroCriteria || defaultCriteria;
 
-  return `${identity}
-${countLine}
+  const template = templateOverride || HERO_EVAL_DEFAULT_TEMPLATE;
 
-Images are labeled Image 1, Image 2, etc. matching the order of image content parts.
-These are hero images for a product page. Any style of image is acceptable as long as it is clean and source-safe.
-
-${criteria}
-
-Respond with JSON matching this schema:
-{
-  "heroes": [
-    {
-      "filename": "the best candidate filename",
-      "hero_rank": 1,
-      "reasoning": "short explanation — why this image is usable"
-    }
-  ],
-  "rejected": [
-    { "filename": "disqualified.png", "flags": ["watermark"], "reasoning": "1 sentence why" },
-    { "filename": "outranked.png", "reasoning": "1 sentence why not picked" }
-  ]
-}
-
-Rules:
-- Pick up to ${heroCount} images for the product page hero section.
-- hero_rank 1 = primary hero, 2 = secondary, etc.
-- "reasoning" should be 1-2 sentences: is the source safe? Is the image clean?
-- When picking multiple heroes, prefer different shots over near-duplicates of the same angle.
-- You may pick FEWER than ${heroCount} if not enough candidates pass the gates.
-- If ALL candidates are disqualified, return an empty "heroes" array.
-- "rejected": List ALL candidates you did NOT pick. Include "reasoning" (1 sentence) for each.
-- If a rejected candidate has a disqualifying defect, include "flags" with one or more of: "watermark", "badge", "cropped", "wrong_product", "other". Use "other" when the issue doesn't fit standard flags (explain in reasoning).
-- If the candidate was simply outranked (no defects), omit "flags" and explain why in "reasoning".`;
+  return resolvePromptTemplate(template, {
+    IDENTITY: identity,
+    COUNT_LINE: countLine,
+    CRITERIA: criteria,
+    HERO_COUNT: String(heroCount),
+  });
 }
 
 /* ── LLM caller factories (Phase 2) ────────────────────────────── */

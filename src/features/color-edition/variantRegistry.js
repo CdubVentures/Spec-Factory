@@ -203,9 +203,11 @@ export function validateIdentityMappings({ mappings = [], existingRegistry = [],
       return { valid: false, reason: `${m.action} action must have null match for "${m.new_key}"` };
     }
 
-    // WHY: new entries must also have valid palette atoms
-    if (m.action === 'new') {
-      const atomStr = m.new_key.replace(/^(color|edition):/, '');
+    // WHY: new color entries must have valid palette atoms.
+    // Edition slugs are structural identity, not color atoms — Gate 1
+    // already validates the edition's actual color atoms from the editions object.
+    if (m.action === 'new' && !m.new_key.startsWith('edition:')) {
+      const atomStr = m.new_key.replace(/^color:/, '');
       for (const atom of atomStr.split('+').filter(Boolean)) {
         if (!paletteSet.has(atom.toLowerCase())) {
           return { valid: false, reason: `Unknown color atom "${atom}" in new mapping "${m.new_key}"` };

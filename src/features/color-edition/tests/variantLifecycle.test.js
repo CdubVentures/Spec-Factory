@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { SpecDb } from '../../../db/specDb.js';
-import { derivePublishedFromVariants, deleteVariant } from '../variantLifecycle.js';
+import { derivePublishedFromVariants, deleteVariant, deleteAllVariants, deriveColorNamesFromVariants } from '../variantLifecycle.js';
 
 function withEnv(fn) {
   return () => {
@@ -94,6 +94,22 @@ describe('derivePublishedFromVariants', () => {
     assert.ok(result.colors.includes('white'));
   }));
 
+  it('multi-atom color variant publishes combo string, not individual atoms', withEnv(({ specDb, root, ensureProductJson }) => {
+    specDb.variants.syncFromRegistry(PID, [
+      { variant_id: 'v_aa', variant_key: 'color:black', variant_type: 'color', variant_label: 'Black', color_atoms: ['black'], created_at: '2026-04-14T00:00:00Z' },
+      { variant_id: 'v_ws', variant_key: 'color:white+silver', variant_type: 'color', variant_label: 'Frost White', color_atoms: ['white', 'silver'], created_at: '2026-04-14T00:00:00Z' },
+    ]);
+    seedCefSummary(specDb);
+    ensureProductJson(PID);
+
+    const result = derivePublishedFromVariants({ specDb, productId: PID, productRoot: root });
+
+    assert.ok(result.colors.includes('black'), 'single atom preserved');
+    assert.ok(result.colors.includes('white+silver'), 'combo string preserved as-is');
+    assert.ok(!result.colors.includes('white'), 'individual atom "white" must NOT appear');
+    assert.ok(!result.colors.includes('silver'), 'individual atom "silver" must NOT appear');
+  }));
+
   it('active edition variants → editions includes slugs, atoms stay scoped to edition', withEnv(({ specDb, root, ensureProductJson, readProductJson }) => {
     seedVariants(specDb);
     seedCefSummary(specDb);
@@ -177,6 +193,85 @@ describe('derivePublishedFromVariants', () => {
     assert.ok(summary.editions.includes('special-ed'));
     assert.equal(summary.default_color, 'black');
   }));
+});
+
+// ── deriveColorNamesFromVariants (pure function) ───────────────────
+
+describe('deriveColorNamesFromVariants', () => {
+
+  it('maps color combo to variant_label for published colors', () => {
+    const variants = [
+      { variant_type: 'color', variant_key: 'color:black', color_atoms: ['black'], variant_label: 'Black' },
+      { variant_type: 'color', variant_key: 'color:white', color_atoms: ['white'], variant_label: 'White' },
+    ];
+    const { colorNames } = deriveColorNamesFromVariants(variants, ['black', 'white'], []);
+    assert.deepEqual(colorNames, { black: 'Black', white: 'White' });
+  });
+
+  it('skips colors not in publishedColors', () => {
+    const variants = [
+      { variant_type: 'color', variant_key: 'color:black', color_atoms: ['black'], variant_label: 'Black' },
+      { variant_type: 'color', variant_key: 'color:red', color_atoms: ['red'], variant_label: 'Red' },
+    ];
+    const { colorNames } = deriveColorNamesFromVariants(variants, ['black'], []);
+    assert.deepEqual(colorNames, { black: 'Black' });
+  });
+
+  it('skips colors with no variant_label', () => {
+    const variants = [
+      { variant_type: 'color', variant_key: 'color:black', color_atoms: ['black'], variant_label: '' },
+      { variant_type: 'color', variant_key: 'color:white', color_atoms: ['white'], variant_label: 'White' },
+    ];
+    const { colorNames } = deriveColorNamesFromVariants(variants, ['black', 'white'], []);
+    assert.deepEqual(colorNames, { white: 'White' });
+  });
+
+  it('maps edition slugs to { display_name, colors } with combo string', () => {
+    const variants = [
+      { variant_type: 'edition', edition_slug: 'special-ed', edition_display_name: 'Special Edition', color_atoms: ['olive', 'khaki'] },
+    ];
+    const { editionDetails } = deriveColorNamesFromVariants(variants, [], ['special-ed']);
+    // WHY: color_atoms are re-joined into combo string to match selected.editions format
+    assert.deepEqual(editionDetails, {
+      'special-ed': { display_name: 'Special Edition', colors: ['olive+khaki'] },
+    });
+  });
+
+  it('falls back to edition_slug when no display_name', () => {
+    const variants = [
+      { variant_type: 'edition', edition_slug: 'limited-ed', edition_display_name: '', color_atoms: ['red'] },
+    ];
+    const { editionDetails } = deriveColorNamesFromVariants(variants, [], ['limited-ed']);
+    assert.deepEqual(editionDetails, {
+      'limited-ed': { display_name: 'limited-ed', colors: ['red'] },
+    });
+  });
+
+  it('skips edition slugs not in publishedEditions', () => {
+    const variants = [
+      { variant_type: 'edition', edition_slug: 'special-ed', edition_display_name: 'Special', color_atoms: ['olive'] },
+    ];
+    const { editionDetails } = deriveColorNamesFromVariants(variants, [], []);
+    assert.deepEqual(editionDetails, {});
+  });
+
+  it('empty variants → empty colorNames and editionDetails', () => {
+    const { colorNames, editionDetails } = deriveColorNamesFromVariants([], [], []);
+    assert.deepEqual(colorNames, {});
+    assert.deepEqual(editionDetails, {});
+  });
+
+  it('mixed color + edition variants', () => {
+    const variants = [
+      { variant_type: 'color', variant_key: 'color:black', color_atoms: ['black'], variant_label: 'Black' },
+      { variant_type: 'edition', edition_slug: 'special-ed', edition_display_name: 'Special Edition', color_atoms: ['olive', 'khaki'] },
+    ];
+    const { colorNames, editionDetails } = deriveColorNamesFromVariants(variants, ['black'], ['special-ed']);
+    assert.deepEqual(colorNames, { black: 'Black' });
+    assert.deepEqual(editionDetails, {
+      'special-ed': { display_name: 'Special Edition', colors: ['olive+khaki'] },
+    });
+  });
 });
 
 // ── deleteVariant ───────────────────────────────────────────────────
@@ -273,6 +368,156 @@ describe('deleteVariant', () => {
     assert.equal(pif.evaluations.length, 1, 'deleted variant eval removed');
   }));
 
+  it('deletes PIF image files from disk for deleted variant', withEnv(({ specDb, root, ensureProductJson, ensureCefJson, ensurePifJson }) => {
+    seedVariants(specDb);
+    seedCefSummary(specDb);
+    ensureProductJson(PID);
+    ensureCefJson(PID, {
+      product_id: PID, category: 'mouse', selected: {}, variant_registry: [
+        { variant_id: 'v_aa' }, { variant_id: 'v_bb' },
+      ], runs: [], run_count: 1, next_run_number: 2,
+    });
+
+    // Create actual image files on disk
+    const imagesDir = path.join(root, PID, 'images');
+    const originalsDir = path.join(imagesDir, 'originals');
+    fs.mkdirSync(originalsDir, { recursive: true });
+    fs.writeFileSync(path.join(imagesDir, 'black-front-1.png'), 'fake');
+    fs.writeFileSync(path.join(originalsDir, 'black-front-1-orig.png'), 'fake');
+    fs.writeFileSync(path.join(imagesDir, 'white-front-1.png'), 'fake');
+    fs.writeFileSync(path.join(originalsDir, 'white-front-1-orig.png'), 'fake');
+
+    ensurePifJson(PID, {
+      product_id: PID, category: 'mouse',
+      selected: {
+        images: [
+          { filename: 'black-front-1.png', original_filename: 'black-front-1-orig.png', view: 'front', variant_id: 'v_aa', variant_key: 'color:black' },
+          { filename: 'white-front-1.png', original_filename: 'white-front-1-orig.png', view: 'front', variant_id: 'v_bb', variant_key: 'color:white' },
+        ],
+      },
+      carousel_slots: {}, evaluations: [],
+      runs: [
+        {
+          run_number: 1, ran_at: '2026-04-14T00:00:00Z', model: 'test',
+          selected: { images: [{ filename: 'black-front-1.png', original_filename: 'black-front-1-orig.png', view: 'front', variant_id: 'v_aa', variant_key: 'color:black' }] },
+          response: { variant_key: 'color:black', variant_id: 'v_aa', images: [] },
+        },
+        {
+          run_number: 2, ran_at: '2026-04-14T01:00:00Z', model: 'test',
+          selected: { images: [{ filename: 'white-front-1.png', original_filename: 'white-front-1-orig.png', view: 'front', variant_id: 'v_bb', variant_key: 'color:white' }] },
+          response: { variant_key: 'color:white', variant_id: 'v_bb', images: [] },
+        },
+      ],
+    });
+
+    deleteVariant({ specDb, productId: PID, variantId: 'v_aa', productRoot: root });
+
+    // Deleted variant's image files removed from disk
+    assert.ok(!fs.existsSync(path.join(imagesDir, 'black-front-1.png')), 'deleted variant image unlinked');
+    assert.ok(!fs.existsSync(path.join(originalsDir, 'black-front-1-orig.png')), 'deleted variant original unlinked');
+    // Surviving variant's image files preserved
+    assert.ok(fs.existsSync(path.join(imagesDir, 'white-front-1.png')), 'surviving variant image preserved');
+    assert.ok(fs.existsSync(path.join(originalsDir, 'white-front-1-orig.png')), 'surviving variant original preserved');
+  }));
+
+  it('deletes PIF runs belonging to deleted variant', withEnv(({ specDb, root, ensureProductJson, ensureCefJson, ensurePifJson, readPifJson }) => {
+    seedVariants(specDb);
+    seedCefSummary(specDb);
+    ensureProductJson(PID);
+    ensureCefJson(PID, {
+      product_id: PID, category: 'mouse', selected: {}, variant_registry: [
+        { variant_id: 'v_aa' }, { variant_id: 'v_bb' },
+      ], runs: [], run_count: 1, next_run_number: 2,
+    });
+
+    // Seed PIF with 2 runs for different variants
+    const pifStore = specDb.getFinderStore('productImageFinder');
+    pifStore.upsert({
+      category: 'mouse', product_id: PID,
+      images: [], image_count: 2,
+      latest_ran_at: '2026-04-14T01:00:00Z', run_count: 2,
+    });
+    pifStore.insertRun({ category: 'mouse', product_id: PID, run_number: 1, ran_at: '2026-04-14T00:00:00Z', model: 'test', selected: {}, prompt: {}, response: {} });
+    pifStore.insertRun({ category: 'mouse', product_id: PID, run_number: 2, ran_at: '2026-04-14T01:00:00Z', model: 'test', selected: {}, prompt: {}, response: {} });
+
+    ensurePifJson(PID, {
+      product_id: PID, category: 'mouse',
+      selected: {
+        images: [
+          { filename: 'img1.jpg', view: 'front', variant_id: 'v_aa', variant_key: 'color:black' },
+          { filename: 'img2.jpg', view: 'front', variant_id: 'v_bb', variant_key: 'color:white' },
+        ],
+      },
+      carousel_slots: { 'color:black': { front: 'img1.jpg' }, 'color:white': { front: 'img2.jpg' } },
+      evaluations: [],
+      run_count: 2, next_run_number: 3,
+      runs: [
+        {
+          run_number: 1, ran_at: '2026-04-14T00:00:00Z', model: 'test',
+          selected: { images: [{ filename: 'img1.jpg', view: 'front', variant_id: 'v_aa', variant_key: 'color:black' }] },
+          response: { variant_key: 'color:black', variant_id: 'v_aa', images: [{ filename: 'img1.jpg', view: 'front', variant_id: 'v_aa', variant_key: 'color:black' }] },
+        },
+        {
+          run_number: 2, ran_at: '2026-04-14T01:00:00Z', model: 'test',
+          selected: { images: [{ filename: 'img2.jpg', view: 'front', variant_id: 'v_bb', variant_key: 'color:white' }] },
+          response: { variant_key: 'color:white', variant_id: 'v_bb', images: [{ filename: 'img2.jpg', view: 'front', variant_id: 'v_bb', variant_key: 'color:white' }] },
+        },
+      ],
+    });
+
+    deleteVariant({ specDb, productId: PID, variantId: 'v_aa', productRoot: root });
+
+    // JSON: only run 2 remains
+    const pif = readPifJson(PID);
+    assert.equal(pif.runs.length, 1, 'only non-deleted variant run remains');
+    assert.equal(pif.runs[0].run_number, 2, 'run 2 (white) survives');
+    assert.equal(pif.run_count, 1, 'run_count recalculated');
+    assert.equal(pif.next_run_number, 3, 'next_run_number preserved (monotonic)');
+    assert.equal(pif.last_ran_at, '2026-04-14T01:00:00Z', 'last_ran_at from remaining run');
+
+    // SQL: run 1 deleted, bookkeeping updated
+    const sqlRuns = pifStore.listRuns(PID);
+    assert.equal(sqlRuns.length, 1, 'SQL run 1 deleted');
+    const summary = pifStore.get(PID);
+    assert.equal(summary.run_count, 1, 'SQL run_count updated');
+  }));
+
+  it('deletes legacy PIF run with empty images after stripping', withEnv(({ specDb, root, ensureProductJson, ensureCefJson, ensurePifJson, readPifJson }) => {
+    seedVariants(specDb);
+    seedCefSummary(specDb);
+    ensureProductJson(PID);
+    ensureCefJson(PID, {
+      product_id: PID, category: 'mouse', selected: {}, variant_registry: [
+        { variant_id: 'v_aa' },
+      ], runs: [], run_count: 1, next_run_number: 2,
+    });
+
+    // WHY: Legacy run has no response.variant_key or response.variant_id
+    ensurePifJson(PID, {
+      product_id: PID, category: 'mouse',
+      selected: {
+        images: [{ filename: 'img1.jpg', view: 'front', variant_id: 'v_aa', variant_key: 'color:black' }],
+      },
+      carousel_slots: { 'color:black': { front: 'img1.jpg' } },
+      evaluations: [],
+      run_count: 1, next_run_number: 2,
+      runs: [
+        {
+          run_number: 1, ran_at: '2026-04-14T00:00:00Z', model: 'test',
+          selected: { images: [{ filename: 'img1.jpg', view: 'front', variant_id: 'v_aa', variant_key: 'color:black' }] },
+          response: { images: [{ filename: 'img1.jpg', view: 'front', variant_id: 'v_aa', variant_key: 'color:black' }] },
+        },
+      ],
+    });
+
+    deleteVariant({ specDb, productId: PID, variantId: 'v_aa', productRoot: root });
+
+    const pif = readPifJson(PID);
+    assert.equal(pif.runs.length, 0, 'legacy empty-shell run deleted');
+    assert.equal(pif.run_count, 0, 'run_count zeroed');
+    assert.equal(pif.next_run_number, 2, 'next_run_number preserved');
+  }));
+
   it('updates selected.* in CEF JSON for rebuild correctness', withEnv(({ specDb, root, ensureProductJson, ensureCefJson, readCefJson }) => {
     seedVariants(specDb);
     seedCefSummary(specDb);
@@ -300,10 +545,18 @@ describe('deleteVariant', () => {
     assert.ok(cef.selected.editions['special-ed'], 'edition preserved in selected.editions');
   }));
 
-  it('strips deleted variant values from field_candidates', withEnv(({ specDb, root, ensureProductJson, ensureCefJson }) => {
+  it('strips deleted variant values from field_candidates', withEnv(({ specDb, root, ensureProductJson, readProductJson, ensureCefJson }) => {
     seedVariants(specDb);
     seedCefSummary(specDb);
-    ensureProductJson(PID);
+    // WHY: Seed product.json.candidates to verify JSON is also stripped (not just SQL)
+    ensureProductJson(PID, {
+      candidates: {
+        colors: [
+          { value: ['black', 'white'], source_id: 'cef-test-1', source_type: 'cef', confidence: 0.95 },
+          { value: '["black","white","red"]', source_id: 'cef-test-2', source_type: 'cef', confidence: 0.9 },
+        ],
+      },
+    });
     ensureCefJson(PID, {
       product_id: PID, category: 'mouse', selected: { colors: ['black', 'white'], editions: {}, default_color: 'black' },
       variant_registry: [
@@ -312,7 +565,7 @@ describe('deleteVariant', () => {
       ], runs: [], run_count: 1, next_run_number: 2,
     });
 
-    // Seed candidates with arrays containing the variant's color
+    // Seed SQL candidates with arrays containing the variant's color
     specDb.insertFieldCandidate({
       productId: PID, fieldKey: 'colors', sourceId: 'cef-test-1', sourceType: 'cef',
       value: '["black","white"]', confidence: 0.95, model: 'test',
@@ -326,22 +579,35 @@ describe('deleteVariant', () => {
 
     deleteVariant({ specDb, productId: PID, variantId: 'v_aa', productRoot: root });
 
+    // SQL assertions (existing)
     const remaining = specDb.getFieldCandidatesByProductAndField(PID, 'colors');
-    // cef-test-1 had ["black","white"] → ["white"] (still has items)
-    // cef-test-2 had ["black","white","red"] → ["white","red"] (still has items)
     assert.equal(remaining.length, 2, 'both candidates survive (still have values)');
-
     const vals = remaining.map(r => JSON.parse(r.value));
     for (const arr of vals) {
-      assert.ok(!arr.includes('black'), 'black stripped from candidate');
-      assert.ok(arr.includes('white'), 'white preserved in candidate');
+      assert.ok(!arr.includes('black'), 'black stripped from SQL candidate');
+      assert.ok(arr.includes('white'), 'white preserved in SQL candidate');
+    }
+
+    // product.json.candidates assertions (new — Gap 1)
+    const pj = readProductJson(PID);
+    assert.equal(pj.candidates.colors.length, 2, 'both JSON candidate entries survive');
+    for (const entry of pj.candidates.colors) {
+      const v = Array.isArray(entry.value) ? entry.value : JSON.parse(entry.value);
+      assert.ok(!v.includes('black'), 'black stripped from product.json candidate');
+      assert.ok(v.includes('white'), 'white preserved in product.json candidate');
     }
   }));
 
-  it('deletes candidate row when all values stripped', withEnv(({ specDb, root, ensureProductJson, ensureCefJson }) => {
+  it('deletes candidate row when all values stripped', withEnv(({ specDb, root, ensureProductJson, readProductJson, ensureCefJson }) => {
     seedVariants(specDb);
     seedCefSummary(specDb);
-    ensureProductJson(PID);
+    ensureProductJson(PID, {
+      candidates: {
+        colors: [
+          { value: ['black'], source_id: 'cef-only-black', source_type: 'cef', confidence: 0.95 },
+        ],
+      },
+    });
     ensureCefJson(PID, {
       product_id: PID, category: 'mouse', selected: { colors: ['black'], editions: {}, default_color: 'black' },
       variant_registry: [
@@ -358,8 +624,14 @@ describe('deleteVariant', () => {
 
     deleteVariant({ specDb, productId: PID, variantId: 'v_aa', productRoot: root });
 
+    // SQL assertion (existing)
     const remaining = specDb.getFieldCandidatesByProductAndField(PID, 'colors');
-    assert.equal(remaining.length, 0, 'candidate deleted when no values remain');
+    assert.equal(remaining.length, 0, 'SQL candidate deleted when no values remain');
+
+    // product.json.candidates assertion (new — Gap 1)
+    const pj = readProductJson(PID);
+    const jsonColors = pj.candidates?.colors;
+    assert.ok(!jsonColors || jsonColors.length === 0, 'JSON candidate entry removed when all values stripped');
   }));
 
   it('strips edition slug from edition candidates on edition variant delete', withEnv(({ specDb, root, ensureProductJson, ensureCefJson }) => {
@@ -405,5 +677,74 @@ describe('deleteVariant', () => {
   it('returns deleted false for missing variant', withEnv(({ specDb, root }) => {
     const result = deleteVariant({ specDb, productId: PID, variantId: 'v_nonexistent', productRoot: root });
     assert.equal(result.deleted, false);
+  }));
+});
+
+describe('deleteAllVariants', () => {
+  it('deletes all active variants and cascades fully', withEnv(({ specDb, root, ensureProductJson, readProductJson, ensureCefJson, readCefJson, ensurePifJson, readPifJson }) => {
+    seedVariants(specDb);
+    seedCefSummary(specDb);
+    ensureProductJson(PID, {
+      candidates: {
+        colors: [{ value: ['black', 'white'], source_id: 'cef-test-1', source_type: 'cef', confidence: 0.95 }],
+      },
+    });
+    ensureCefJson(PID, {
+      product_id: PID, category: 'mouse',
+      selected: { colors: ['black', 'white'], editions: { 'special-ed': {} }, default_color: 'black' },
+      variant_registry: [
+        { variant_id: 'v_aa', variant_key: 'color:black', variant_type: 'color', color_atoms: ['black'] },
+        { variant_id: 'v_bb', variant_key: 'color:white', variant_type: 'color', color_atoms: ['white'] },
+        { variant_id: 'v_cc', variant_key: 'edition:special-ed', variant_type: 'edition', color_atoms: ['olive', 'khaki'], edition_slug: 'special-ed' },
+      ],
+      runs: [], run_count: 1, next_run_number: 2,
+    });
+
+    // Seed SQL candidates
+    specDb.insertFieldCandidate({
+      productId: PID, fieldKey: 'colors', sourceId: 'cef-test-1', sourceType: 'cef',
+      value: '["black","white"]', confidence: 0.95, model: 'test',
+      validationJson: {}, metadataJson: {},
+    });
+
+    ensurePifJson(PID, {
+      product_id: PID, category: 'mouse',
+      selected: { images: [
+        { filename: 'img1.jpg', view: 'front', variant_id: 'v_aa', variant_key: 'color:black' },
+        { filename: 'img2.jpg', view: 'front', variant_id: 'v_bb', variant_key: 'color:white' },
+      ] },
+      carousel_slots: { 'color:black': {}, 'color:white': {} },
+      evaluations: [], runs: [],
+    });
+
+    const result = deleteAllVariants({ specDb, productId: PID, productRoot: root });
+
+    assert.equal(result.deleted, 3, 'all 3 variants deleted');
+    assert.equal(result.variants.length, 3);
+
+    // All variants gone from SQL
+    assert.equal(specDb.variants.listActive(PID).length, 0);
+
+    // Published state cleared
+    const pj = readProductJson(PID);
+    assert.equal(pj.fields.colors, undefined, 'colors field cleared');
+    assert.equal(pj.fields.editions, undefined, 'editions field cleared');
+
+    // CEF JSON variant_registry empty
+    const cef = readCefJson(PID);
+    assert.equal(cef.variant_registry.length, 0);
+
+    // PIF images cleared
+    const pif = readPifJson(PID);
+    assert.equal(pif.selected.images.length, 0);
+
+    // SQL candidates stripped (all values came from these variants)
+    assert.equal(specDb.getFieldCandidatesByProductAndField(PID, 'colors').length, 0);
+  }));
+
+  it('returns deleted 0 when no variants exist', withEnv(({ specDb, root }) => {
+    const result = deleteAllVariants({ specDb, productId: PID, productRoot: root });
+    assert.equal(result.deleted, 0);
+    assert.deepEqual(result.variants, []);
   }));
 });

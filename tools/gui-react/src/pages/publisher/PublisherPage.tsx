@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback, type ReactNode } from 'react';
+import { useMemo, useCallback, type ReactNode } from 'react';
+import { usePersistedTab, usePersistedNumber } from '../../stores/tabStore.ts';
 import { useQuery } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { api } from '../../api/client.ts';
@@ -403,13 +404,13 @@ const STATUS_FILTERS: StatusFilter[] = ['all', 'candidate', 'resolved'];
 export function PublisherPage() {
   const category = useUiStore((s) => s.category);
 
-  // Filter state
-  const [page, setPage] = useState(1);
-  const [limit] = useState(100);
-  const [dateRange, setDateRange] = useState<DateRange>('7d');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [fieldFilter, setFieldFilter] = useState('');
-  const [searchText, setSearchText] = useState('');
+  // Filter state (persisted)
+  const [page, setPage] = usePersistedNumber('publisher:page', 1);
+  const limit = 100;
+  const [dateRange, setDateRange] = usePersistedTab<DateRange>('publisher:dateRange', '7d');
+  const [statusFilter, setStatusFilter] = usePersistedTab<StatusFilter>('publisher:statusFilter', 'all');
+  const [fieldFilter, setFieldFilter] = usePersistedTab<string>('publisher:fieldFilter', '');
+  const [searchText, setSearchText] = usePersistedTab<string>('publisher:searchText', '');
 
   const { data, isLoading } = useQuery<PublisherCandidatesResponse>({
     queryKey: ['publisher', category, page, limit],

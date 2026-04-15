@@ -689,6 +689,7 @@ useDeleteMyFinderAllMutation(...)       // DELETE all</pre>
   FinderPanelHeader, FinderKpiCard,
   FinderCooldownStrip, FinderPanelFooter,
   FinderDeleteConfirmModal, FinderSectionCard,
+  FinderHowItWorks,
   FinderRunModelBadge,
   FinderRunPromptDetails, FinderRunTimestamp,
   DiscoverySummaryBar,
@@ -697,8 +698,11 @@ useDeleteMyFinderAllMutation(...)       // DELETE all</pre>
   formatAtomLabel,
 } from '../../../shared/ui/finder/index.ts';
 import { useFireAndForget }
-  from '../../operations/hooks/useFireAndForget.ts';</pre>
+  from '../../operations/hooks/useFireAndForget.ts';
+import { myFinderHowItWorksSections }
+  from '../myFinderHowItWorksContent.ts';</pre>
           <p style="margin-top:8px;">Build domain-specific sub-components for your data display (date cards, price tables, etc.). Keep derivation logic in a separate <code>selectors/</code> file for testability.</p>
+          <p style="margin-top:8px;"><strong>&ldquo;How It Works&rdquo; explainer:</strong> Create <code>myFinderHowItWorksContent.ts</code> (pure data, typed <code>HiwSection[]</code>) and drop <code>&lt;FinderHowItWorks&gt;</code> between the KPI grid and first content section. Block types: <code>text</code>, <code>flow</code>, <code>callout</code>, <code>compare</code>, <code>learn-chain</code>, <code>slot-steps</code>, <code>table</code>. Tones: <code>accent</code>, <code>green</code>, <code>purple</code>, <code>teal</code>, <code>orange</code>, <code>amber</code>, <code>neutral</code>, <code>muted</code>. Set <code>span:&nbsp;2</code> on sections that need full width (tables).</p>
         </div>
       </li>
       <li>
@@ -1006,6 +1010,7 @@ const result = await submitCandidate({
         <tr><td><code>FinderPanelFooter</code></td><td>Last run, model, count</td></tr>
         <tr><td><code>FinderDeleteConfirmModal</code></td><td>Delete single/all confirmation</td></tr>
         <tr><td><code>FinderSectionCard</code></td><td>Collapsible body sections</td></tr>
+        <tr><td><code>FinderHowItWorks</code></td><td>Collapsible &ldquo;How It Works&rdquo; explainer (2-col grid, typed content blocks)</td></tr>
         <tr><td><code>FinderRunPromptDetails</code></td><td>Prompt/response viewer</td></tr>
         <tr><td><code>FinderRunModelBadge</code></td><td>Model + access mode + effort badge</td></tr>
         <tr><td><code>FinderRunTimestamp</code></td><td>PST time + duration</td></tr>
@@ -1175,6 +1180,7 @@ const merged = mergeDiscovery({ ... });        // clean write</pre>
         <tr><td><span class="tag tag-green">CREATE</span></td><td><code>tools/gui-react/src/features/my-finder/types.ts</code></td><td>Frontend type interfaces</td></tr>
         <tr><td><span class="tag tag-green">CREATE</span></td><td><code>tools/gui-react/src/features/my-finder/api/myFinderQueries.ts</code></td><td>React Query hooks</td></tr>
         <tr><td><span class="tag tag-green">CREATE</span></td><td><code>tools/gui-react/src/features/my-finder/components/MyFinderPanel.tsx</code></td><td>Indexing Lab panel</td></tr>
+        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>tools/gui-react/src/features/my-finder/myFinderHowItWorksContent.ts</code></td><td>&ldquo;How It Works&rdquo; content (typed <code>HiwSection[]</code>, pure data)</td></tr>
         <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>src/core/finder/finderModuleRegistry.js</code></td><td>Add 1 entry to <code>FINDER_MODULES</code></td></tr>
         <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>src/core/config/llmPhaseDefs.js</code></td><td>Add 1 phase entry (~8 lines)</td></tr>
         <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>ModuleSettingsPanel.tsx</code></td><td>Add settings form component + rendering branch (settings UI is <strong>not</strong> auto-generated)</td></tr>

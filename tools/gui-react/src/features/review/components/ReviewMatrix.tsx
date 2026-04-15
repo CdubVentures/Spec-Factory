@@ -1,10 +1,11 @@
-import { useMemo, useRef, useEffect } from 'react';
+import { useMemo, useRef, useEffect, memo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { pct } from '../../../utils/formatting.ts';
 import { InlineCellEditor } from '../../../shared/ui/forms/InlineCellEditor.tsx';
 import { ReviewValueCell } from '../../../shared/ui/data-display/ReviewValueCell.tsx';
 import { useScrollStore, resolveScrollPosition } from '../../../stores/scrollStore.ts';
+import { useReviewStore, useEditingValue } from '../state/reviewStore.ts';
 import type { ReviewLayout, ProductReviewPayload, CellMode } from '../../../types/review.ts';
 
 interface ReviewMatrixProps {
@@ -13,12 +14,27 @@ interface ReviewMatrixProps {
   onCellClick: (productId: string, field: string) => void;
   activeCell: { productId: string; field: string } | null;
   cellMode: CellMode;
-  editingValue: string;
-  onEditingValueChange: (value: string) => void;
   onCommitEditing: () => void;
   onCancelEditing: () => void;
   onStartEditing: (productId: string, field: string, initialValue: string) => void;
   category: string;
+}
+
+/** Reads editingValue from store — only this component re-renders per keystroke. */
+function EditingCellContent({ onCommit, onCancel }: { onCommit: () => void; onCancel: () => void }) {
+  const editingValue = useEditingValue();
+  const setEditingValue = useReviewStore((s) => s.setEditingValue);
+
+  return (
+    <InlineCellEditor
+      value={editingValue}
+      onChange={setEditingValue}
+      onCommit={onCommit}
+      onCancel={onCancel}
+      className="w-full h-full px-1 text-[11px] sf-review-matrix-inline-editor ring-2 ring-accent"
+      stopClickPropagation
+    />
+  );
 }
 
 const COL_WIDTH = 170;
@@ -26,14 +42,12 @@ const ROW_HEIGHT = 30;
 const FIELD_COL_WIDTH = 190;
 const HEADER_HEIGHT = 56;
 
-export function ReviewMatrix({
+export const ReviewMatrix = memo(function ReviewMatrix({
   layout,
   products,
   onCellClick,
   activeCell,
   cellMode,
-  editingValue,
-  onEditingValueChange,
   onCommitEditing,
   onCancelEditing,
   onStartEditing,
@@ -230,14 +244,7 @@ export function ReviewMatrix({
                             onClick={() => onCellClick(p.product_id, row.key)}
                           >
                             {isEditing ? (
-                              <InlineCellEditor
-                                value={editingValue}
-                                onChange={onEditingValueChange}
-                                onCommit={onCommitEditing}
-                                onCancel={onCancelEditing}
-                                className="w-full h-full px-1 text-[11px] sf-review-matrix-inline-editor ring-2 ring-accent"
-                                stopClickPropagation
-                              />
+                              <EditingCellContent onCommit={onCommitEditing} onCancel={onCancelEditing} />
                             ) : (
                               <ReviewValueCell
                                 state={fieldState}
@@ -263,5 +270,5 @@ export function ReviewMatrix({
       </div>
     </Tooltip.Provider>
   );
-}
+});
 

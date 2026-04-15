@@ -201,6 +201,8 @@ export async function runColorEditionFinder({
   productRoot = productRoot || defaultProductRoot();
   const finderStore = specDb.getFinderStore('colorEditionFinder');
   const reinjectQueriesRun = finderStore.getSetting('reinjectQueriesRun') === 'true';
+  const discoveryPromptTemplate = finderStore.getSetting('discoveryPromptTemplate') || '';
+  const identityCheckPromptTemplate = finderStore.getSetting('identityCheckPromptTemplate') || '';
   const modelTracking = resolveModelTracking({ config, phaseKey: 'colorFinder', onModelResolved });
   const { wrappedOnModelResolved } = modelTracking;
 
@@ -242,6 +244,7 @@ export async function runColorEditionFinder({
     product,
     previousRuns,
     reinjectQueriesRun,
+    templateOverride: discoveryPromptTemplate,
   });
   const userMessage = JSON.stringify({
     brand: product.brand || '',
@@ -312,6 +315,9 @@ export async function runColorEditionFinder({
   // --- Candidate gate: validate ALL fields before any writes ---
   // WHY: If any field fails validation, the entire LLM response is compromised.
   // No candidate writes, no CEF writes, no cooldown. Failure stored for history.
+  // Candidate writes are DEFERRED — the closure is set here but only invoked
+  // after Gate 1 (palette) and Gate 2 (identity check) both pass.
+  let deferredCandidateWrite = null;
   const compiled = specDb.getCompiledRules?.();
   const fieldRules = compiled?.fields || null;
   const knownValues = compiled?.known_values || null;
@@ -334,7 +340,7 @@ export async function runColorEditionFinder({
     const colorsHardRejects = colorsValidation.rejections.filter(r => r.reason_code !== 'unknown_enum_prefer_known');
 
     if (colorsHardRejects.length > 0) {
-      return storeFailureAndReturn({ specDb, product, existing, model: modelTracking.actualModel, fallbackUsed: modelTracking.actualFallbackUsed, thinking: modelTracking.actualThinking, webSearch: modelTracking.actualWebSearch, rejections: colorsValidation.rejections, raw: { colors, editions, default_color: defaultColor }, productRoot });
+      return storeFailureAndReturn({ specDb, product, existing, model: modelTracking.actualModel, fallbackUsed: modelTracking.actualFallbackUsed, thinking: modelTracking.actualThinking, webSearch: modelTracking.actualWebSearch, rejections: colorsValidation.rejections, raw: { colors, editions, default_color: defaultColor, color_names: colorNamesMap }, productRoot });
     }
 
     // Step 2: Build repair map from colors validation
@@ -368,7 +374,7 @@ export async function runColorEditionFinder({
       const editionsHardRejects = editionsValidation.rejections.filter(r => r.reason_code !== 'unknown_enum_prefer_known');
 
       if (editionsHardRejects.length > 0) {
-        return storeFailureAndReturn({ specDb, product, existing, model: modelTracking.actualModel, fallbackUsed: modelTracking.actualFallbackUsed, thinking: modelTracking.actualThinking, webSearch: modelTracking.actualWebSearch, rejections: editionsValidation.rejections, raw: { colors, editions, default_color: defaultColor }, productRoot });
+        return storeFailureAndReturn({ specDb, product, existing, model: modelTracking.actualModel, fallbackUsed: modelTracking.actualFallbackUsed, thinking: modelTracking.actualThinking, webSearch: modelTracking.actualWebSearch, rejections: editionsValidation.rejections, raw: { colors, editions, default_color: defaultColor, color_names: colorNamesMap }, productRoot });
       }
     }
 
@@ -378,21 +384,25 @@ export async function runColorEditionFinder({
     // appended so the publisher validates the complete color inventory.
     mergeEditionColorsInto(gateColors, gateEditions);
 
-    // Step 5: ALL passed → write both candidates
-    const colorsMeta = Object.keys(colorNamesMap).length > 0 ? { color_names: colorNamesMap } : undefined;
-    submitCandidate({
-      category: product.category, productId: product.product_id,
-      fieldKey: 'colors', value: gateColors, confidence: 100,
-      sourceMeta: cefSourceMeta, fieldRules, knownValues, componentDb: null, specDb, productRoot,
-      metadata: colorsMeta, appDb, config,
-    });
-    submitCandidate({
-      category: product.category, productId: product.product_id,
-      fieldKey: 'editions', value: Object.keys(gateEditions), confidence: 100,
-      sourceMeta: cefSourceMeta, fieldRules, knownValues, componentDb: null, specDb, productRoot,
-      metadata: Object.keys(gateEditions).length > 0 ? { edition_details: gateEditions } : undefined,
-      appDb, config,
-    });
+    // WHY: Candidate writes are DEFERRED until after Gate 1 + Gate 2 pass.
+    // Writing here would leak candidates into product.json for runs that
+    // later get rejected by palette validation or identity check validation.
+    deferredCandidateWrite = () => {
+      const colorsMeta = Object.keys(colorNamesMap).length > 0 ? { color_names: colorNamesMap } : undefined;
+      submitCandidate({
+        category: product.category, productId: product.product_id,
+        fieldKey: 'colors', value: gateColors, confidence: 100,
+        sourceMeta: cefSourceMeta, fieldRules, knownValues, componentDb: null, specDb, productRoot,
+        metadata: colorsMeta, appDb, config,
+      });
+      submitCandidate({
+        category: product.category, productId: product.product_id,
+        fieldKey: 'editions', value: Object.keys(gateEditions), confidence: 100,
+        sourceMeta: cefSourceMeta, fieldRules, knownValues, componentDb: null, specDb, productRoot,
+        metadata: Object.keys(gateEditions).length > 0 ? { edition_details: gateEditions } : undefined,
+        appDb, config,
+      });
+    };
   }
   // If no compiled rules available, gate is skipped — CEF proceeds as before
 
@@ -413,7 +423,7 @@ export async function runColorEditionFinder({
       thinking: modelTracking.actualThinking,
       webSearch: modelTracking.actualWebSearch,
       rejections: [{ reason_code: 'unknown_color_atom', message: paletteCheck.reason, unknownAtoms: paletteCheck.unknownAtoms }],
-      raw: { colors: gateColors, editions: gateEditions, default_color: defaultColor },
+      raw: { colors: gateColors, editions: gateEditions, default_color: defaultColor, color_names: colorNamesMap },
       productRoot,
     });
   }
@@ -448,12 +458,10 @@ export async function runColorEditionFinder({
     if (signal?.aborted) throw new DOMException('Operation cancelled', 'AbortError');
     onStageAdvance?.('Identity');
 
-    const identityPromptOverride = '';
-
     identityCheckPrompt = buildVariantIdentityCheckPrompt({
       product, existingRegistry: existing.variant_registry,
       newColors: gateColors, newColorNames: colorNamesMap, newEditions: gateEditions,
-      promptOverride: identityPromptOverride,
+      promptOverride: identityCheckPromptTemplate,
     });
     identityCheckUser = JSON.stringify({
       brand: product.brand || '', model: product.model || '',
@@ -485,7 +493,7 @@ export async function runColorEditionFinder({
       const { result: idResult, usage: idUsage } = await callIdentityCheck({
         product, existingRegistry: existing.variant_registry,
         newColors: gateColors, newColorNames: colorNamesMap, newEditions: gateEditions,
-        promptOverride: identityPromptOverride,
+        promptOverride: identityCheckPromptTemplate,
       });
       identityCheckResult = idResult;
 
@@ -500,8 +508,19 @@ export async function runColorEditionFinder({
       logger?.error?.('variant_identity_check_failed', {
         product_id: product.product_id, error: err.message,
       });
-      // WHY: Identity check failure is not fatal — fall back to Phase 1 behavior
-      // (write-once registry). The discovery data is still valid.
+      // WHY: LLM 2 failure must reject the entire run. Without identity mappings
+      // on Run 2+, we'd silently rebuild the registry from scratch, losing stable
+      // variant_ids and breaking PIF image links.
+      return storeFailureAndReturn({
+        specDb, product, existing,
+        model: modelTracking.actualModel,
+        fallbackUsed: modelTracking.actualFallbackUsed,
+        thinking: modelTracking.actualThinking,
+        webSearch: modelTracking.actualWebSearch,
+        rejections: [{ reason_code: 'identity_check_error', message: err.message }],
+        raw: { colors: gateColors, editions: gateEditions, default_color: defaultColor, color_names: colorNamesMap },
+        productRoot,
+      });
     }
   }
 
@@ -558,11 +577,15 @@ export async function runColorEditionFinder({
         thinking: modelTracking.actualThinking,
         webSearch: modelTracking.actualWebSearch,
         rejections: [{ reason_code: 'identity_check_invalid', message: idValidation.reason }],
-        raw: { colors: gateColors, editions: gateEditions, default_color: defaultColor },
+        raw: { colors: gateColors, editions: gateEditions, default_color: defaultColor, color_names: colorNamesMap },
         productRoot,
       });
     }
   }
+
+  // WHY: All gates passed — safe to commit candidates now.
+  // Deferred from candidate gate to prevent leaking candidates for rejected runs.
+  if (deferredCandidateWrite) deferredCandidateWrite();
 
   // Merge into JSON (durable memory — both gates passed)
   const merged = mergeColorEditionDiscovery({
@@ -653,27 +676,25 @@ export async function runColorEditionFinder({
     response: runResponse,
   });
 
-  // Upsert SQL summary
+  // WHY: Bookkeeping-only upsert — creates the summary row on first run (INSERT)
+  // or updates run metadata on subsequent runs. Published state (colors, editions,
+  // default_color) is NOT written here — derivePublishedFromVariants owns those
+  // columns and fires automatically via the onAfterSync callback below.
   specDb.getFinderStore('colorEditionFinder').upsert({
     category: product.category,
     product_id: product.product_id,
-    colors: standaloneColors,
-    editions: Object.keys(gateEditions),
-    default_color: standaloneColors[0] || selected.default_color,
-    variant_registry: merged.variant_registry || [],
     latest_ran_at: ranAt,
     run_count: merged.run_count,
   });
 
   // WHY: Dual-write — project variant registry into standalone variants table.
+  // onAfterSync triggers derivePublishedFromVariants, which writes the authoritative
+  // published state (colors, editions, default_color) to the summary table and
+  // product.json. This is the single commit point for all downstream derivation.
   if (merged.variant_registry?.length > 0 && specDb.variants) {
-    specDb.variants.syncFromRegistry(product.product_id, merged.variant_registry);
-  }
-
-  // WHY: Variant-derived publishing — overwrite candidate-published values
-  // with authoritative variant-derived state from the variants table.
-  if (specDb.variants) {
-    derivePublishedFromVariants({ specDb, productId: product.product_id, productRoot });
+    specDb.variants.syncFromRegistry(product.product_id, merged.variant_registry, {
+      onAfterSync: () => derivePublishedFromVariants({ specDb, productId: product.product_id, productRoot }),
+    });
   }
 
   return { colors: standaloneColors, editions: gateEditions, default_color: standaloneColors[0] || selected.default_color, fallbackUsed: false, rejected: false };

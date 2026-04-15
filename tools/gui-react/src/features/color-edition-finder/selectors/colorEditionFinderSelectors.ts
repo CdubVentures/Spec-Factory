@@ -21,7 +21,6 @@ export interface EditionBlock {
 export interface SelectedStateDisplay {
   readonly colors: readonly ColorPill[];
   readonly editions: readonly EditionBlock[];
-  readonly ssotRunNumber: number;
   readonly defaultColorHex: string;
 }
 
@@ -163,12 +162,11 @@ export function deriveSelectedStateDisplay(
     return {
       colors,
       editions,
-      ssotRunNumber: result?.run_count ?? 0,
       defaultColorHex: resolveHex(defaultColor, hexMap),
     };
   }
 
-  return { colors: [], editions: [], ssotRunNumber: 0, defaultColorHex: '' };
+  return { colors: [], editions: [], defaultColorHex: '' };
 }
 
 export function deriveRunHistoryRows(

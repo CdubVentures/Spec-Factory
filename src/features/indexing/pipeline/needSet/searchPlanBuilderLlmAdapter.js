@@ -33,7 +33,8 @@ const PLANNER_SPEC = {
   phase: 'needset',
   reason: 'needset_search_planner',
   role: 'plan',
-  system: PLANNER_SYSTEM_PROMPT,
+  system: (_domainArgs, config) =>
+    config?.phaseOverrides?.needset?.systemPromptTemplate || PLANNER_SYSTEM_PROMPT,
   jsonSchema: PLANNER_RESPONSE_SCHEMA,
 };
 

@@ -235,7 +235,7 @@ describe('finderJsonStore — generic factory', () => {
 
   // ── deleteRun ─────────────────────────────────────────────────────
 
-  it('delete only run → returns null, file removed', () => {
+  it('delete only run → doc survives with empty runs, file preserved', () => {
     const store = makeStore();
     store.merge({
       productId: 'del-only', productRoot: TMP_ROOT,
@@ -243,8 +243,11 @@ describe('finderJsonStore — generic factory', () => {
       run: { model: 'gpt', selected: { items: ['x'], label: 'X' }, prompt: {}, response: {} },
     });
     const result = store.deleteRun({ productId: 'del-only', productRoot: TMP_ROOT, runNumber: 1 });
-    assert.equal(result, null);
-    assert.equal(store.read({ productId: 'del-only', productRoot: TMP_ROOT }), null);
+    // WHY: Extra fields survive even when all runs removed — file must not be deleted
+    assert.ok(result, 'doc must survive (not null)');
+    assert.deepEqual(result.runs, []);
+    assert.equal(result.run_count, 0);
+    assert.ok(store.read({ productId: 'del-only', productRoot: TMP_ROOT }), 'file must survive');
   });
 
   it('delete non-latest run recalculates selected from remaining', () => {
@@ -305,8 +308,38 @@ describe('finderJsonStore — generic factory', () => {
       },
     });
     const result = store.deleteRuns({ productId: 'batch-all', productRoot: TMP_ROOT, runNumbers: [1, 2] });
-    assert.equal(result, null);
-    assert.equal(store.read({ productId: 'batch-all', productRoot: TMP_ROOT }), null);
+    // WHY: Even with zero runs remaining, the doc must survive with extra fields preserved.
+    assert.ok(result, 'doc must survive (not null) when all runs removed');
+    assert.equal(result.run_count, 0);
+    assert.deepEqual(result.runs, []);
+    assert.deepEqual(result.selected, emptySelected());
+    // File must still exist on disk
+    assert.ok(store.read({ productId: 'batch-all', productRoot: TMP_ROOT }), 'file must survive');
+  });
+
+  it('deleteRuns removing all runs preserves extra fields', () => {
+    const store = createFinderJsonStore({
+      filePrefix: 'del_batch_extra',
+      emptySelected,
+      extraFields: ['variant_registry'],
+    });
+    store.write({
+      productId: 'batch-extra', productRoot: TMP_ROOT,
+      data: {
+        product_id: 'batch-extra', category: 'cat',
+        selected: { items: ['x'], label: 'X' },
+        variant_registry: [{ variant_id: 'v_bb', variant_key: 'edition:special' }],
+        last_ran_at: '', run_count: 1, next_run_number: 2,
+        runs: [
+          { run_number: 1, ran_at: '2026-04-01', selected: { items: ['x'], label: 'X' } },
+        ],
+      },
+    });
+    const result = store.deleteRuns({ productId: 'batch-extra', productRoot: TMP_ROOT, runNumbers: [1] });
+    assert.ok(result, 'doc must survive');
+    assert.deepEqual(result.runs, []);
+    assert.deepEqual(result.variant_registry, [{ variant_id: 'v_bb', variant_key: 'edition:special' }],
+      'extra fields must be preserved when all runs removed');
   });
 
   it('deleteRuns with non-existent run numbers → no-op', () => {
@@ -352,12 +385,36 @@ describe('finderJsonStore — generic factory', () => {
 
   // ── deleteAll ─────────────────────────────────────────────────────
 
-  it('deleteAll removes file', () => {
-    const store = makeStore();
-    store.write({ productId: 'del-all', productRoot: TMP_ROOT, data: { ok: true } });
+  it('deleteAll clears runs but preserves extra fields and file', () => {
+    const store = createFinderJsonStore({
+      filePrefix: 'del_all_extra',
+      emptySelected,
+      extraFields: ['variant_registry'],
+    });
+    store.write({
+      productId: 'del-all', productRoot: TMP_ROOT,
+      data: {
+        product_id: 'del-all', category: 'cat',
+        selected: { items: ['a'], label: 'A' },
+        variant_registry: [{ variant_id: 'v_aa', variant_key: 'color:black' }],
+        last_ran_at: '2026-04-01', run_count: 2, next_run_number: 3,
+        runs: [
+          { run_number: 1, ran_at: '2026-04-01', selected: { items: ['a'], label: 'A' } },
+          { run_number: 2, ran_at: '2026-04-02', selected: { items: ['b'], label: 'B' } },
+        ],
+      },
+    });
     const result = store.deleteAll({ productId: 'del-all', productRoot: TMP_ROOT });
     assert.equal(result.deleted, true);
-    assert.equal(store.read({ productId: 'del-all', productRoot: TMP_ROOT }), null);
+
+    // File must survive with extra fields preserved
+    const doc = store.read({ productId: 'del-all', productRoot: TMP_ROOT });
+    assert.ok(doc, 'file must survive deleteAll');
+    assert.deepEqual(doc.runs, [], 'runs cleared');
+    assert.equal(doc.run_count, 0);
+    assert.deepEqual(doc.selected, emptySelected(), 'selected reset');
+    assert.deepEqual(doc.variant_registry, [{ variant_id: 'v_aa', variant_key: 'color:black' }],
+      'variant_registry must be preserved');
   });
 
   it('deleteAll succeeds when file already absent', () => {
@@ -367,63 +424,39 @@ describe('finderJsonStore — generic factory', () => {
     assert.equal(result.deleted, true);
   });
 
-  it('deleteAll throws when file exists but cannot be deleted', () => {
+  it('deleteAll writes cleaned doc even when file was corrupt/missing', () => {
     const store = makeStore('del_fail');
-    // WHY: creating a directory at the JSON file path makes unlinkSync throw EPERM
-    const productDir = path.join(TMP_ROOT, 'del-fail-all');
-    fs.mkdirSync(productDir, { recursive: true });
-    const fakePath = path.join(productDir, 'del_fail.json');
-    fs.mkdirSync(fakePath, { recursive: true }); // directory, not file
-    assert.throws(
-      () => store.deleteAll({ productId: 'del-fail-all', productRoot: TMP_ROOT }),
-      (err) => err.code === 'EPERM' || err.code === 'EISDIR',
-    );
-    // cleanup
-    fs.rmdirSync(fakePath);
+    // No file exists — deleteAll should still return success
+    const result = store.deleteAll({ productId: 'del-absent', productRoot: TMP_ROOT });
+    assert.equal(result.deleted, true);
   });
 
-  // ── deleteRun — last run deletion failure ─────────────────────────
-
-  it('deleteRun (last run) throws when file cannot be deleted', () => {
-    const store = makeStore('drun_fail');
-    const productDir = path.join(TMP_ROOT, 'drun-fail');
+  it('deleteRun (last run) preserves file with empty runs', () => {
+    const store = makeStore('drun_last');
+    const productDir = path.join(TMP_ROOT, 'drun-last');
     fs.mkdirSync(productDir, { recursive: true });
-    // Write valid data first so deleteRun has something to read
-    const dataPath = path.join(productDir, 'drun_fail.json');
+    const dataPath = path.join(productDir, 'drun_last.json');
     const data = {
-      product_id: 'drun-fail', category: 'cat',
+      product_id: 'drun-last', category: 'cat',
       selected: { items: ['x'], label: 'X' },
       last_ran_at: '', run_count: 1, next_run_number: 2,
       runs: [{ run_number: 1, ran_at: '2026-04-01', selected: { items: ['x'], label: 'X' } }],
     };
     fs.writeFileSync(dataPath, JSON.stringify(data));
-    // Now replace the file with a directory to make unlink fail
-    fs.unlinkSync(dataPath);
-    // WHY: deleteRun reads the file, sees 0 remaining runs, then tries to unlink.
-    // We need the read to succeed but the unlink to fail.
-    // Strategy: write the file, then after read we can't block unlink in-process.
-    // Instead, test via deleteAll-like approach: create a nested dir blocker.
-    // Actually — simplest: use deleteRuns which also unlinks on remaining === 0.
-    // For deleteRun specifically, we test that errors propagate from the helper.
-    // Write file back for the read step:
-    fs.writeFileSync(dataPath, JSON.stringify(data));
-    // We can't easily make the same path be both a readable file and an un-deletable
-    // file in the same process. Instead, verify the contract indirectly:
-    // deleteRun(last run) must return null AND the file must actually be gone.
-    const result = store.deleteRun({ productId: 'drun-fail', productRoot: TMP_ROOT, runNumber: 1 });
-    assert.equal(result, null);
-    assert.equal(fs.existsSync(dataPath), false, 'file must actually be removed');
+    const result = store.deleteRun({ productId: 'drun-last', productRoot: TMP_ROOT, runNumber: 1 });
+    // WHY: File survives with empty runs — extra fields preserved
+    assert.ok(result, 'doc must survive');
+    assert.deepEqual(result.runs, []);
+    assert.equal(fs.existsSync(dataPath), true, 'file must survive');
   });
 
-  // ── deleteRuns — all runs deletion failure ────────────────────────
-
-  it('deleteRuns (all runs) must actually remove the file', () => {
-    const store = makeStore('druns_fail');
-    const productDir = path.join(TMP_ROOT, 'druns-fail');
+  it('deleteRuns (all runs) preserves file with empty runs', () => {
+    const store = makeStore('druns_all');
+    const productDir = path.join(TMP_ROOT, 'druns-all');
     fs.mkdirSync(productDir, { recursive: true });
-    const dataPath = path.join(productDir, 'druns_fail.json');
+    const dataPath = path.join(productDir, 'druns_all.json');
     const data = {
-      product_id: 'druns-fail', category: 'cat',
+      product_id: 'druns-all', category: 'cat',
       selected: { items: ['a'], label: 'A' },
       last_ran_at: '', run_count: 2, next_run_number: 3,
       runs: [
@@ -432,8 +465,9 @@ describe('finderJsonStore — generic factory', () => {
       ],
     };
     fs.writeFileSync(dataPath, JSON.stringify(data));
-    const result = store.deleteRuns({ productId: 'druns-fail', productRoot: TMP_ROOT, runNumbers: [1, 2] });
-    assert.equal(result, null);
-    assert.equal(fs.existsSync(dataPath), false, 'file must actually be removed');
+    const result = store.deleteRuns({ productId: 'druns-all', productRoot: TMP_ROOT, runNumbers: [1, 2] });
+    assert.ok(result, 'doc must survive');
+    assert.deepEqual(result.runs, []);
+    assert.equal(fs.existsSync(dataPath), true, 'file must survive');
   });
 });

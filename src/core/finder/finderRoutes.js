@@ -55,7 +55,7 @@ function cleanProductJsonPublishedFields(productId, fieldKeys) {
  * Deleting a run = DELETE rows with deterministic source_id pattern.
  * Then re-publish from remaining candidates or clean stale product.json.
  */
-function stripRunSourceFromCandidates(specDb, productId, fieldKeys, sourceType, runNumbers, config) {
+function stripRunSourceFromCandidates(specDb, productId, fieldKeys, sourceType, runNumbers, config, skipRepublish) {
   if (!specDb.getFieldCandidatesByProductAndField) return;
   const runSet = new Set(Array.isArray(runNumbers) ? runNumbers : [runNumbers]);
 
@@ -90,8 +90,8 @@ function stripRunSourceFromCandidates(specDb, productId, fieldKeys, sourceType, 
     }
   }
 
-  // WHY: After deleting, re-publish from remaining candidates or clean stale state.
-  republishAfterDelete(specDb, productId, fieldKeys, sourceType, runSet, config);
+  // WHY: After deleting, clean product.json candidates and optionally re-publish.
+  republishAfterDelete(specDb, productId, fieldKeys, sourceType, runSet, config, skipRepublish);
 }
 
 /**
@@ -99,7 +99,7 @@ function stripRunSourceFromCandidates(specDb, productId, fieldKeys, sourceType, 
  *
  * WHY: Source-centric model — DELETE by source_type column instead of splicing arrays.
  */
-function stripSourceFromCandidates(specDb, productId, fieldKeys, sourceType, config) {
+function stripSourceFromCandidates(specDb, productId, fieldKeys, sourceType, config, skipRepublish) {
   if (!specDb.getFieldCandidatesByProductAndField) return;
 
   for (const fieldKey of fieldKeys) {
@@ -128,13 +128,16 @@ function stripSourceFromCandidates(specDb, productId, fieldKeys, sourceType, con
   }
 
   // Clean product.json after source-type deletion
-  republishAfterDelete(specDb, productId, fieldKeys, sourceType, null, config);
+  republishAfterDelete(specDb, productId, fieldKeys, sourceType, null, config, skipRepublish);
 }
 
 /**
- * Shared post-delete cleanup: update product.json candidates[] and fields[].
+ * Shared post-delete cleanup: update product.json candidates[] and optionally fields[].
+ * WHY: skipRepublish=true when the module handles publish separately (e.g. CEF
+ * re-derives from variants via onAfterRunDelete — republishField would corrupt
+ * candidate statuses and overwrite variant-owned published values).
  */
-function republishAfterDelete(specDb, productId, fieldKeys, sourceType, runSet, config) {
+function republishAfterDelete(specDb, productId, fieldKeys, sourceType, runSet, config, skipRepublish) {
   const productPath = path.join(defaultProductRoot(), productId, 'product.json');
   try {
     const data = JSON.parse(fs.readFileSync(productPath, 'utf8'));
@@ -169,8 +172,8 @@ function republishAfterDelete(specDb, productId, fieldKeys, sourceType, runSet, 
       }
     }
 
-    // Re-publish or clean stale fields[]
-    if (data.fields) {
+    // Re-publish or clean stale fields[] — skip when module handles publish separately
+    if (!skipRepublish && data.fields) {
       for (const key of fieldKeys) {
         const result = republishField({ specDb, productId, fieldKey: key, config, productJson: data });
         if (result.status !== 'unchanged') changed = true;
@@ -421,10 +424,11 @@ export function createFinderRouteHandler(finderConfig) {
         const updated = deleteRun({ productId, runNumber });
 
         // WHY: Candidate cleanup on single-run delete — strip the deleted run's
-        // source entries from candidates, delete empty candidates, re-publish
-        // from remaining candidates, and update product.json.
+        // source entries from candidates, delete empty candidates, and update
+        // product.json.candidates. Skip republish when onAfterRunDelete handles it.
         if (finderConfig.candidateSourceType && fieldKeys.length > 0) {
-          stripRunSourceFromCandidates(specDb, productId, fieldKeys, finderConfig.candidateSourceType, [runNumber], config);
+          const skipRepublish = Boolean(finderConfig.onAfterRunDelete);
+          stripRunSourceFromCandidates(specDb, productId, fieldKeys, finderConfig.candidateSourceType, [runNumber], config, skipRepublish);
         }
 
         // WHY: Post-delete hook lets modules re-derive published state from
@@ -465,27 +469,45 @@ export function createFinderRouteHandler(finderConfig) {
         return jsonRes(res, 200, { ok: true, remaining_runs: updated?.run_count || 0 });
       }
 
-      // ── DELETE /:prefix/:category/:productId — delete all ───────
+      // ── DELETE /:prefix/:category/:productId — delete all runs ───
+      // WHY: "Delete all runs" erases discovery history and its evidence, but
+      // preserves the entity layer (variants, PIF). Extra fields in JSON
+      // (variant_registry, evaluations, carousel_slots) survive. The SQL
+      // summary row is updated (not deleted) so custom columns are preserved.
       if (method === 'DELETE' && category && productId && !parts[3]) {
         const specDb = getSpecDb(category);
         if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
 
         deleteAll({ productId });
         deleteAllRunsSql(specDb, productId);
-        deleteOneSql(specDb, productId);
 
         // WHY: Source-aware cleanup strips only this module's source entries
-        // from candidate rows. Candidates from other sources (pipeline, review,
-        // manual override) survive with their remaining sources intact.
+        // from candidate rows. Skip republish when onAfterRunDelete handles it.
         if (finderConfig.candidateSourceType && fieldKeys.length > 0) {
-          stripSourceFromCandidates(specDb, productId, fieldKeys, finderConfig.candidateSourceType, config);
+          const skipRepublish = Boolean(finderConfig.onAfterRunDelete);
+          stripSourceFromCandidates(specDb, productId, fieldKeys, finderConfig.candidateSourceType, config, skipRepublish);
         } else {
           for (const key of fieldKeys) {
             specDb.deleteFieldCandidatesByProductAndField(productId, key);
           }
           cleanProductJsonCandidates(productId, fieldKeys);
-          // WHY: Blanket delete removes all candidates — published fields[] are now stale.
           cleanProductJsonPublishedFields(productId, fieldKeys);
+        }
+
+        // WHY: Post-delete hook re-derives published state from SSOT (e.g.
+        // CEF re-derives colors/editions from the surviving variants table).
+        if (finderConfig.onAfterRunDelete) {
+          finderConfig.onAfterRunDelete({ specDb, productId, productRoot: defaultProductRoot() });
+        }
+
+        // WHY: Update bookkeeping only — preserve custom columns (colors,
+        // editions, variant_registry). deleteOneSql would nuke the row.
+        if (finderConfig.skipSelectedOnDelete && updateBookkeeping) {
+          updateBookkeeping(specDb, productId, { latest_ran_at: '', run_count: 0 });
+        } else {
+          // Modules without skipSelectedOnDelete: zero out the summary
+          const summaryRow = { category, product_id: productId, latest_ran_at: '', run_count: 0 };
+          upsertSummary(specDb, summaryRow);
         }
 
         emitDataChange({

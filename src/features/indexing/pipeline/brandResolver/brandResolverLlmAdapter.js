@@ -22,7 +22,8 @@ const BRAND_RESOLVER_SPEC = {
   phase: 'brandResolver',
   reason: 'brand_resolution',
   role: 'triage',
-  system: BRAND_RESOLVER_SYSTEM_PROMPT,
+  system: (_domainArgs, config) =>
+    config?.phaseOverrides?.['brand-resolver']?.systemPromptTemplate || BRAND_RESOLVER_SYSTEM_PROMPT,
   jsonSchema: zodToLlmSchema(brandResolverLlmResponseSchema),
 };
 

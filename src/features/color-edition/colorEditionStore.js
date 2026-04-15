@@ -11,6 +11,7 @@
 import fs from 'node:fs';
 import { createFinderJsonStore } from '../../core/finder/finderJsonStore.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
+import { derivePublishedFromVariants } from './variantLifecycle.js';
 
 const store = createFinderJsonStore({
   filePrefix: 'color_edition',
@@ -77,7 +78,6 @@ export function rebuildColorEditionFinderFromJson({ specDb, productRoot }) {
       colors,
       editions,
       default_color: defaultColor,
-      variant_registry: data.variant_registry || [],
       latest_ran_at: data.last_ran_at || '',
       run_count: data.run_count || 0,
     });
@@ -104,9 +104,13 @@ export function rebuildColorEditionFinderFromJson({ specDb, productRoot }) {
     stats.runs_seeded += runs.length;
 
     // WHY: Seed variants table from JSON variant_registry (Phase 1 dual-write).
+    // onAfterSync triggers derivePublishedFromVariants to keep summary columns
+    // and product.json fields in sync — same pattern as the live run path.
     const registry = data.variant_registry || [];
     if (registry.length > 0 && specDb.variants) {
-      specDb.variants.syncFromRegistry(productId, registry);
+      specDb.variants.syncFromRegistry(productId, registry, {
+        onAfterSync: () => derivePublishedFromVariants({ specDb, productId, productRoot: root }),
+      });
       stats.variants_seeded = (stats.variants_seeded || 0) + registry.length;
     }
 

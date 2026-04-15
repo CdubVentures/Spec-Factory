@@ -8,6 +8,8 @@
 import { useCallback, useState, useEffect } from 'react';
 import { useUiStore } from '../../../stores/uiStore.ts';
 import { useModuleSettingsAuthority } from '../state/moduleSettingsAuthority.ts';
+import { usePersistedToggle } from '../../../stores/collapseStore.ts';
+import { usePersistedTab } from '../../../stores/tabStore.ts';
 
 /* ── Canonical views (mirrors backend productImageLlmAdapter.js) ── */
 
@@ -165,7 +167,7 @@ function ViewConfigEditor({
     onChange([...pri, ...add]);
   };
 
-  const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const [expandedKey, setExpandedKey] = usePersistedTab<string>('moduleSettings:expandedView', '');
 
   const renderViewRow = (view: ViewEntry, isPriority: boolean, priorityIdx?: number) => {
     const isExpanded = expandedKey === view.key;
@@ -228,7 +230,7 @@ function ViewConfigEditor({
 
           {/* Expand/collapse description */}
           <button
-            onClick={() => setExpandedKey(isExpanded ? null : view.key)}
+            onClick={() => setExpandedKey(isExpanded ? '' : view.key)}
             className="sf-btn-ghost px-1.5 py-0.5 rounded text-[11px] sf-text-muted"
           >
             {isExpanded ? 'collapse' : 'edit description'}
@@ -565,24 +567,28 @@ function PifSettingsForm({
       <SettingsCard title="Prompt Configuration" subtitle="Override the default LLM instructions">
         <PromptOverrideEditor
           label="View Prompt Instructions"
+          storageKey="moduleSettings:promptOverride:viewPrompt"
           value={settings.viewPromptOverride || ''}
           isSaving={isSaving}
           onSave={(val) => onSave('viewPromptOverride', val)}
         />
         <PromptOverrideEditor
           label="Hero Prompt Instructions"
+          storageKey="moduleSettings:promptOverride:heroPrompt"
           value={settings.heroPromptOverride || ''}
           isSaving={isSaving}
           onSave={(val) => onSave('heroPromptOverride', val)}
         />
         <PromptOverrideEditor
           label="Eval View Prompt Instructions"
+          storageKey="moduleSettings:promptOverride:evalPrompt"
           value={settings.evalPromptOverride || ''}
           isSaving={isSaving}
           onSave={(val) => onSave('evalPromptOverride', val)}
         />
         <PromptOverrideEditor
           label="Eval Hero Prompt Instructions"
+          storageKey="moduleSettings:promptOverride:heroEvalPrompt"
           value={settings.heroEvalPromptOverride || ''}
           isSaving={isSaving}
           onSave={(val) => onSave('heroEvalPromptOverride', val)}
@@ -1011,22 +1017,24 @@ function ViewBudgetEditor({
 
 function PromptOverrideEditor({
   label,
+  storageKey,
   value,
   isSaving,
   onSave,
 }: {
   label: string;
+  storageKey: string;
   value: string;
   isSaving: boolean;
   onSave: (val: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, toggleExpanded] = usePersistedToggle(storageKey, false);
   const hasOverride = Boolean(value.trim());
 
   return (
     <div className="rounded border sf-border-soft overflow-hidden mb-2">
       <button
-        onClick={() => setExpanded(!expanded)}
+        onClick={toggleExpanded}
         type="button"
         className="w-full flex items-center gap-2.5 px-3 py-2.5 cursor-pointer select-none hover:opacity-80"
       >

@@ -59,7 +59,8 @@ const QUERY_ENHANCER_SPEC = {
   phase: 'searchPlanner',
   reason: 'search_planner_enhance',
   role: 'plan',
-  system: (callArgs) => buildEnhancerSystemPrompt(callArgs.rowCount),
+  system: (callArgs, config) =>
+    config?.phaseOverrides?.['search-planner']?.systemPromptTemplate || buildEnhancerSystemPrompt(callArgs.rowCount),
   jsonSchema: QUERY_ENHANCER_SCHEMA,
 };
 

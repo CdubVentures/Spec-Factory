@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { usePersistedToggle } from '../../stores/collapseStore.ts';
 import { usePersistedTab } from '../../stores/tabStore.ts';
 import { TabStrip } from '../../shared/ui/navigation/TabStrip.tsx';
 import { useUiStore } from '../../stores/uiStore.ts';
@@ -96,6 +97,7 @@ export function LlmSettingsPage() {
     `llmSettings:filterEffortBand:${scopeStateKey}`,
     'all',
   );
+  const [promptFlagsOpen, togglePromptFlagsOpen] = usePersistedToggle('llmSettings:panel:promptFlags', false);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<{
     kind: 'idle' | 'ok' | 'partial' | 'error';
@@ -672,21 +674,23 @@ export function LlmSettingsPage() {
                   </div>
                 </div>
 
-                <details className={cardCls}>
-                  <summary className="cursor-pointer sf-text-label sf-status-text-muted">Advanced Prompt Flags</summary>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3">
-                    {PROMPT_FLAG_FIELDS.map((key) => (
-                      <label key={key} className="sf-text-label flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={Boolean(selectedRow[key])}
-                          onChange={(e) => updateSelected({ [key]: e.target.checked } as Partial<LlmRouteRow>)}
-                        />
-                        <span>{flagLabel(key)}</span>
-                      </label>
-                    ))}
-                  </div>
-                </details>
+                <div className={cardCls}>
+                  <button type="button" onClick={togglePromptFlagsOpen} className="cursor-pointer sf-text-label sf-status-text-muted">Advanced Prompt Flags</button>
+                  {promptFlagsOpen && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3">
+                      {PROMPT_FLAG_FIELDS.map((key) => (
+                        <label key={key} className="sf-text-label flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(selectedRow[key])}
+                            onChange={(e) => updateSelected({ [key]: e.target.checked } as Partial<LlmRouteRow>)}
+                          />
+                          <span>{flagLabel(key)}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

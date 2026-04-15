@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { TagPicker } from '../../../shared/ui/forms/TagPicker.tsx';
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
 import {
@@ -51,6 +52,7 @@ export function DepsTab({
   disabled?: boolean;
 }) {
   const { editedRules } = useStudioFieldRulesState();
+  const [matchSettingsOpen, toggleMatchSettingsOpen] = usePersistedToggle('studio:workbench:deps:matchSettings', false);
   const [newConstraint, setNewConstraint] = useState('');
   const constraints = arrN(rule, 'constraints');
   const constraintVariables = extractConstraintVariables(constraints, fieldKey);
@@ -104,9 +106,9 @@ export function DepsTab({
               {' | '}Enum: <span className="font-mono">{strN(rule, 'enum.source')}</span>
             </span>
           </div>
-          <details className="border sf-border-default dark:sf-border-default rounded">
-            <summary className="px-2 py-1 text-xs font-semibold cursor-pointer sf-bg-surface-soft sf-dk-surface-700a50">Match Settings</summary>
-            <div className="p-2 space-y-2">
+          <div className="border sf-border-default dark:sf-border-default rounded">
+            <button type="button" onClick={toggleMatchSettingsOpen} className="px-2 py-1 text-xs font-semibold cursor-pointer sf-bg-surface-soft sf-dk-surface-700a50">Match Settings</button>
+            {matchSettingsOpen && <div className="p-2 space-y-2">
               <div className={SUBHEADING_GRAY_CLASS}>Name Matching</div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -272,8 +274,8 @@ export function DepsTab({
                   })()}
                 </div>
               </div>
-            </div>
-          </details>
+            </div>}
+          </div>
         </>
       )}
       <div>

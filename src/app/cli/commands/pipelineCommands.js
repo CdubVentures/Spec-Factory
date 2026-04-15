@@ -189,7 +189,7 @@ export function createPipelineCommands({
           const ev = row.event;
           if (ev === 'llm_started' || ev === 'llm_finished' || ev === 'llm_failed') {
             const p = row.payload || {};
-            msg.__llm_call = { event: ev, model: p.model || '', reason: p.reason || '', prompt_tokens: p.prompt_tokens ?? null, completion_tokens: p.completion_tokens ?? null, total_tokens: p.total_tokens ?? null, cost_usd: p.estimated_cost ?? null, estimated_usage: Boolean(p.estimated_usage), duration_ms: p.duration_ms ?? null };
+            msg.__llm_call = { event: ev, model: p.model || '', reason: p.reason || '', prompt_tokens: p.prompt_tokens ?? null, completion_tokens: p.completion_tokens ?? null, total_tokens: p.total_tokens ?? null, cost_usd: p.estimated_cost ?? null, estimated_usage: Boolean(p.estimated_usage), duration_ms: p.duration_ms ?? null, prompt_preview: p.prompt_preview || '', response_preview: p.response_preview || '' };
           }
           try { process.send(msg); } catch { /* ignore IPC errors */ }
         }

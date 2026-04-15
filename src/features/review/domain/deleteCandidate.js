@@ -1,11 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { republishField } from '../../publisher/index.js';
 
 /**
  * Delete a single candidate by source_id.
- * Self-isolated: SQL row → product.json candidates[] → republish fields[].
- * Candidates never touch their source's artifacts.
+ * Self-isolated: SQL row → product.json candidates[]. Fields[] untouched.
+ * Candidates never touch their source's artifacts or published state.
+ *
+ * WHY: Published state is managed by source deletion (operations 2/3),
+ * not candidate deletion. Candidates are evidence tracking only.
  *
  * @returns {{ deleted: boolean, republished: boolean, artifacts_cleaned: boolean }}
  */
@@ -18,25 +20,15 @@ export function deleteCandidateBySourceId({ specDb, category, productId, fieldKe
   // Location 1: SQL
   specDb.deleteFieldCandidateBySourceId(productId, fieldKey, sourceId);
 
-  // Locations 2+3: product.json
+  // Location 2: product.json candidates only (NOT fields)
   const productJson = readProductJson(productRoot, productId);
   if (productJson) {
-    // Filter candidates[]
     if (Array.isArray(productJson.candidates?.[fieldKey])) {
       productJson.candidates[fieldKey] = productJson.candidates[fieldKey]
         .filter(e => e.source_id !== sourceId);
     }
-
-    // Republish or unpublish fields[]
-    const result = republishField({ specDb, productId, fieldKey, config, productJson });
     productJson.updated_at = new Date().toISOString();
     writeProductJson(productRoot, productId, productJson);
-
-    return {
-      deleted: true,
-      republished: result.status === 'republished',
-      artifacts_cleaned: false,
-    };
   }
 
   return { deleted: true, republished: false, artifacts_cleaned: false };
@@ -59,11 +51,12 @@ export function deleteAllCandidatesForField({ specDb, category, productId, field
   // Location 1: SQL bulk delete
   specDb.deleteFieldCandidatesByProductAndField(productId, fieldKey);
 
-  // Locations 2+3: product.json
+  // Location 2: product.json candidates only (NOT fields)
   const productJson = readProductJson(productRoot, productId);
   if (productJson) {
     delete productJson.candidates?.[fieldKey];
-    delete productJson.fields?.[fieldKey];
+    // WHY: Do NOT delete productJson.fields — published state is managed by
+    // source deletion, not candidate deletion.
     productJson.updated_at = new Date().toISOString();
     writeProductJson(productRoot, productId, productJson);
   }

@@ -108,7 +108,6 @@ describe('deriveSelectedStateDisplay', () => {
     const display = deriveSelectedStateDisplay(null, REGISTRY);
     assert.deepEqual(display.colors, []);
     assert.deepEqual(display.editions, []);
-    assert.equal(display.ssotRunNumber, 0);
     assert.equal(display.defaultColorHex, '');
   });
 
@@ -212,11 +211,6 @@ describe('deriveSelectedStateDisplay', () => {
     };
     const display = deriveSelectedStateDisplay(result, REGISTRY);
     assert.deepEqual(display.colors[0].hexParts, ['#000000', '', '#ef4444']);
-  });
-
-  it('sets ssotRunNumber to run_count', () => {
-    const display = deriveSelectedStateDisplay(SAMPLE_RESULT, REGISTRY);
-    assert.equal(display.ssotRunNumber, 3);
   });
 
   it('resolves defaultColorHex from registry', () => {

@@ -1,5 +1,10 @@
 import { repairResponseJsonSchema } from './repairResponseSchema.js';
 
+// WHY: Combined system prompt for the validate phase.
+// Exposed so callers can pass an override (from phaseOverrides) without knowing internals.
+export const buildRepairSystemPrompt = (override) =>
+  override || (REPAIR_SYSTEM_PROMPT + '\n\n' + HALLUCINATION_PATTERNS);
+
 // ── Common System Prompt (SSOT Section 14) ───────────────────────────────────
 
 export const REPAIR_SYSTEM_PROMPT = `You are a field value validator for the Spec Factory product database.
@@ -118,7 +123,7 @@ const PROMPT_REGISTRY = {
  * @param {{ rejections: object[]|null, value: *, fieldKey: string, fieldRule: object, knownValues?: object }} opts
  * @returns {{ promptId: string, system: string, user: string, jsonSchema: object, params: object } | null}
  */
-export function buildRepairPrompt({ rejections, value, fieldKey, fieldRule, knownValues }) {
+export function buildRepairPrompt({ rejections, value, fieldKey, fieldRule, knownValues, systemPromptOverride }) {
   if (!rejections || rejections.length === 0 || !fieldKey) return null;
 
   const promptable = rejections.find(r => !EXCLUDED_CODES.has(r.reason_code) && PROMPT_REGISTRY[r.reason_code]);
@@ -127,7 +132,7 @@ export function buildRepairPrompt({ rejections, value, fieldKey, fieldRule, know
   const ctx = { value, fieldKey, fieldRule, knownValues };
   const built = PROMPT_REGISTRY[promptable.reason_code](promptable, ctx);
 
-  const system = REPAIR_SYSTEM_PROMPT + '\n\n' + HALLUCINATION_PATTERNS;
+  const system = buildRepairSystemPrompt(systemPromptOverride);
 
   return {
     promptId: built.promptId,
@@ -143,7 +148,7 @@ export function buildRepairPrompt({ rejections, value, fieldKey, fieldRule, know
  * @param {{ crossFieldFailures: object[]|null, fields: object, productName: string }} opts
  * @returns {{ promptId: string, system: string, user: string, jsonSchema: object, params: object } | null}
  */
-export function buildCrossFieldRepairPrompt({ crossFieldFailures, fields, productName }) {
+export function buildCrossFieldRepairPrompt({ crossFieldFailures, fields, productName, systemPromptOverride }) {
   if (!crossFieldFailures || crossFieldFailures.length === 0) return null;
 
   const constraintList = crossFieldFailures
@@ -173,7 +178,7 @@ Return JSON matching this exact schema:
 }
 Use status "rerun_recommended" if the data is too conflicting to resolve.`;
 
-  const system = REPAIR_SYSTEM_PROMPT + '\n\n' + HALLUCINATION_PATTERNS;
+  const system = buildRepairSystemPrompt(systemPromptOverride);
 
   return {
     promptId: 'P6',

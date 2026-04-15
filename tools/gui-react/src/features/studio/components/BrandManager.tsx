@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../../api/client.ts";
 import { useUiStore } from "../../../stores/uiStore.ts";
 import { usePersistedToggle } from "../../../stores/collapseStore.ts";
-import { usePersistedTab } from "../../../stores/tabStore.ts";
+import { usePersistedTab, usePersistedExpandMap } from "../../../stores/tabStore.ts";
 import { DataTable } from "../../../shared/ui/data-display/DataTable.tsx";
 import { Spinner } from "../../../shared/ui/feedback/Spinner.tsx";
 import { inputCls, labelCls } from "./studioConstants.ts";
@@ -178,6 +178,13 @@ export function BrandManager() {
   const [bulkText, setBulkText] = usePersistedTab<string>(
     "catalog:brands:bulkText",
     "",
+  );
+  const [impactCatExpand, toggleImpactCatExpand] = usePersistedExpandMap(
+    "studio:brands:impact-categories",
+  );
+  const [bulkRunDetailsOpen, toggleBulkRunDetails] = usePersistedToggle(
+    "studio:brands:bulk-run-details",
+    false,
   );
   const hydratedEditSlugRef = useRef("");
   const { data: brands = [], isLoading } = useQuery<Brand[]>({
@@ -926,9 +933,9 @@ export function BrandManager() {
                     const details =
                       (impactData?.product_details ?? {})[cat] ?? [];
                     return (
-                      <details key={cat} className="group">
+                      <div key={cat} className="group">
                         {" "}
-                        <summary className="cursor-pointer select-none flex items-center gap-2 hover:opacity-80">
+                        <button type="button" onClick={() => toggleImpactCatExpand(cat)} className="cursor-pointer select-none flex items-center gap-2 hover:opacity-80">
                           {" "}
                           <span
                             className={`font-medium ${isRename ? textDangerStrongCls : "sf-text-muted "}`}
@@ -940,8 +947,8 @@ export function BrandManager() {
                           >
                             ({count})
                           </span>{" "}
-                        </summary>{" "}
-                        {details.length > 0 ? (
+                        </button>{" "}
+                        {impactCatExpand[cat] && (details.length > 0 ? (
                           <div className="mt-1 ml-1 font-mono text-[10px] sf-surface-card rounded p-1.5 max-h-[160px] overflow-y-auto space-y-px">
                             {" "}
                             {details.map((pid) => (
@@ -971,8 +978,8 @@ export function BrandManager() {
                           >
                             Loading product list...
                           </p>
-                        )}{" "}
-                      </details>
+                        ))}{" "}
+                      </div>
                     );
                   })}{" "}
                   {/* Hint when no changes */}{" "}
@@ -1378,12 +1385,13 @@ export function BrandManager() {
                 </div>
               )}{" "}
               {bulkMut.data?.results && bulkMut.data.results.length > 0 && (
-                <details className={`text-xs border ${borderPanelCls} rounded`}>
+                <div className={`text-xs border ${borderPanelCls} rounded`}>
                   {" "}
-                  <summary className="cursor-pointer px-3 py-2 sf-surface-card font-medium">
+                  <button type="button" onClick={toggleBulkRunDetails} className="cursor-pointer px-3 py-2 sf-surface-card font-medium">
                     {" "}
                     Last run details ({bulkMut.data.results.length} rows){" "}
-                  </summary>{" "}
+                  </button>{" "}
+                  {bulkRunDetailsOpen && (
                   <div className="max-h-40 overflow-auto p-2 space-y-1">
                     {" "}
                     {bulkMut.data.results.slice(0, 50).map((row, idx) => (
@@ -1400,8 +1408,9 @@ export function BrandManager() {
                         Showing first 50 rows.
                       </div>
                     )}{" "}
-                  </div>{" "}
-                </details>
+                  </div>
+                  )}{" "}
+                </div>
               )}{" "}
             </div>{" "}
             <div

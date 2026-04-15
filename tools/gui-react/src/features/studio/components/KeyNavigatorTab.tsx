@@ -113,7 +113,7 @@ export function KeyNavigatorTab({
     `studio:keyNavigator:bulkGroup:${category}`,
     "",
   );
-  const [showFullRuleJson, , setShowFullRuleJson] = usePersistedToggle(
+  const [showFullRuleJson, toggleShowFullRuleJson] = usePersistedToggle(
     `studio:keyNavigator:section:fullRuleJson:${category}`,
     false,
   );
@@ -739,20 +739,16 @@ export function KeyNavigatorTab({
                 saveIfAutoSaveEnabled={saveIfAutoSaveEnabled}
               />
 
-              <details
-                className="mt-2"
-                open={showFullRuleJson}
-                onToggle={(event) =>
-                  setShowFullRuleJson(event.currentTarget.open)
-                }
-              >
-                <summary className="text-xs sf-text-subtle cursor-pointer">
+              <div className="mt-2">
+                <button type="button" onClick={toggleShowFullRuleJson} className="text-xs sf-text-subtle cursor-pointer">
                   Full Rule JSON
-                </summary>
-                <div className="mt-2">
-                  <JsonViewer data={currentRule} maxDepth={3} />
-                </div>
-              </details>
+                </button>
+                {showFullRuleJson && (
+                  <div className="mt-2">
+                    <JsonViewer data={currentRule} maxDepth={3} />
+                  </div>
+                )}
+              </div>
             </div>
             );
           })() : (

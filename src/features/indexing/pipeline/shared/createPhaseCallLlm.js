@@ -14,7 +14,8 @@
 
 export function createPhaseCallLlm({ callRoutedLlmFn, config, logger, onPhaseChange, onModelResolved, onStreamChunk, onQueueWait, signal, onUsage: depsOnUsage }, { phase, reason, role, system, jsonSchema }, mapArgs) {
   return async (domainArgs) => {
-    const resolvedSystem = typeof system === 'function' ? system(domainArgs) : system;
+    // WHY: Pass config as 2nd arg so system functions can read phaseOverrides for prompt template resolution.
+    const resolvedSystem = typeof system === 'function' ? system(domainArgs, config) : system;
     const resolvedSchema = typeof jsonSchema === 'function' ? jsonSchema() : jsonSchema;
     const mapped = mapArgs(domainArgs, config);
 

@@ -1,0 +1,54 @@
+/* ── PIF Component Styles ─────────────────────────────────────────
+ * CSS classes replacing inline styles per ZERO-DRIFT UI rules.
+ * Uses semantic tokens (sf-*) wherever available.
+ * ──────────────────────────────────────────────────────────────── */
+
+/* Lightbox overlay */
+.pif-lightbox-overlay { background-color: rgba(0, 0, 0, 0.92); }
+.pif-lightbox-close { background-color: rgba(255, 255, 255, 0.08); }
+.pif-lightbox-info { background-color: rgba(0, 0, 0, 0.6); }
+
+/* Source indicator dots */
+.pif-source-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.pif-source-dot--eval { background-color: var(--sf-state-success-fg, #16a34a); }
+.pif-source-dot--user { background-color: var(--sf-state-info-fg, #38bdf8); }
+
+/* Reasoning / run-number metadata badges */
+.pif-meta-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  font-family: var(--sf-font-mono, monospace);
+  font-size: 8px;
+  color: #999;
+  background-color: rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+}
+
+/* Carousel mosaic grid gap background */
+.pif-mosaic-gap-bg { background-color: rgba(0, 0, 0, 0.06); }
+
+/* Carousel hover overlay */
+.pif-mosaic-overlay {
+  background-color: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+/* Empty grid placeholder cells */
+.pif-empty-grid-cell {
+  border: 1.5px dashed var(--sf-color-border-subtle-rgb, rgba(0, 0, 0, 0.15));
+}
+
+/* Gallery columns layout */
+.pif-gallery-columns {
+  columns: 2;
+  column-gap: 0.75rem;
+}

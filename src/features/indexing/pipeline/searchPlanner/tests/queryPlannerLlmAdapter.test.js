@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createQueryEnhancerCallLlm, queryEnhancerResponseZodSchema } from '../queryPlannerLlmAdapter.js';
+import { createQueryEnhancerCallLlm, queryEnhancerResponseZodSchema, buildEnhancerSystemPrompt } from '../queryPlannerLlmAdapter.js';
 
 describe('createQueryEnhancerCallLlm', () => {
   it('returns a function', () => {
@@ -103,5 +103,64 @@ describe('createQueryEnhancerCallLlm', () => {
   it('exports queryEnhancerResponseZodSchema', () => {
     assert.ok(queryEnhancerResponseZodSchema);
     assert.equal(typeof queryEnhancerResponseZodSchema.parse, 'function');
+  });
+});
+
+// ── Characterization: buildEnhancerSystemPrompt ───────────────────────────────
+// WHY: Lock down prompt structure before template extraction.
+
+describe('buildEnhancerSystemPrompt — characterization', () => {
+
+  it('is a function that returns a string', () => {
+    const result = buildEnhancerSystemPrompt(10);
+    assert.equal(typeof result, 'string');
+    assert.ok(result.length > 200);
+  });
+
+  it('injects rowCount into the prompt', () => {
+    const result = buildEnhancerSystemPrompt(7);
+    assert.ok(result.includes('7 query rows'));
+    assert.ok(result.includes('Return exactly 7'));
+  });
+
+  it('includes identity lock rules', () => {
+    const result = buildEnhancerSystemPrompt(1);
+    assert.ok(result.includes('IDENTITY LOCK'));
+    assert.ok(result.includes('brand name and model name'));
+  });
+
+  it('includes domain format rules', () => {
+    const result = buildEnhancerSystemPrompt(1);
+    assert.ok(result.includes('DOMAIN FORMAT'));
+    assert.ok(result.includes('NEVER use site: operator'));
+  });
+
+  it('includes all three tiers', () => {
+    const result = buildEnhancerSystemPrompt(1);
+    assert.ok(result.includes('TIER 1'));
+    assert.ok(result.includes('TIER 2'));
+    assert.ok(result.includes('TIER 3'));
+    assert.ok(result.includes('"seed"'));
+    assert.ok(result.includes('"group_search"'));
+    assert.ok(result.includes('"key_search"'));
+  });
+
+  it('includes tier 3 sub-rules by repeat_count', () => {
+    const result = buildEnhancerSystemPrompt(1);
+    assert.ok(result.includes('repeat=0'));
+    assert.ok(result.includes('repeat=1'));
+    assert.ok(result.includes('repeat=2'));
+    assert.ok(result.includes('repeat=3+'));
+  });
+
+  it('includes history awareness section', () => {
+    const result = buildEnhancerSystemPrompt(1);
+    assert.ok(result.includes('HISTORY AWARENESS'));
+    assert.ok(result.includes('query_history'));
+  });
+
+  it('includes output format', () => {
+    const result = buildEnhancerSystemPrompt(1);
+    assert.ok(result.includes('enhanced_queries'));
   });
 });

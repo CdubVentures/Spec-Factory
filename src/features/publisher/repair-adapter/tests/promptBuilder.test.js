@@ -267,9 +267,30 @@ describe('exported constants', () => {
     assert.ok(REPAIR_SYSTEM_PROMPT.length > 50);
   });
 
+  // WHY: Characterization — lock down key phrases before template extraction.
+  it('REPAIR_SYSTEM_PROMPT contains critical instructions', () => {
+    assert.ok(REPAIR_SYSTEM_PROMPT.includes('field value validator'));
+    assert.ok(REPAIR_SYSTEM_PROMPT.includes('valid JSON'));
+    assert.ok(REPAIR_SYSTEM_PROMPT.includes('MUST NOT hallucinate'));
+    assert.ok(REPAIR_SYSTEM_PROMPT.includes('closed enums'));
+    assert.ok(REPAIR_SYSTEM_PROMPT.includes('open_prefer_known'));
+  });
+
   it('HALLUCINATION_PATTERNS is a non-empty string', () => {
     assert.equal(typeof HALLUCINATION_PATTERNS, 'string');
     assert.ok(HALLUCINATION_PATTERNS.length > 50);
+  });
+
+  // WHY: Characterization — lock down key phrases before template extraction.
+  it('HALLUCINATION_PATTERNS contains all 8 red flag categories', () => {
+    assert.ok(HALLUCINATION_PATTERNS.includes('COLOR NAMES'));
+    assert.ok(HALLUCINATION_PATTERNS.includes('SENSOR/SWITCH'));
+    assert.ok(HALLUCINATION_PATTERNS.includes('MEASUREMENTS'));
+    assert.ok(HALLUCINATION_PATTERNS.includes('DATES'));
+    assert.ok(HALLUCINATION_PATTERNS.includes('EDITION NAMES'));
+    assert.ok(HALLUCINATION_PATTERNS.includes('FIELD VALUE = FIELD NAME'));
+    assert.ok(HALLUCINATION_PATTERNS.includes('DIFFERENT PRODUCT'));
+    assert.ok(HALLUCINATION_PATTERNS.includes('ROUND NUMBERS'));
   });
 });
 

@@ -15,6 +15,20 @@ import { ModelSelectDropdown, GlobalDefaultIcon } from '../components/ModelSelec
 import { extractEffortFromModelName } from '../state/llmEffortFromModelName.ts';
 import { useModuleSettingsAuthority } from '../../pipeline-settings/state/moduleSettingsAuthority.ts';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
+import { PromptTemplateEditor } from '../../../shared/ui/prompt-template/PromptTemplateEditor.tsx';
+import type { TemplateVariableDef, UserMessageInjection } from '../../../shared/ui/prompt-template/PromptTemplateEditor.tsx';
+
+/** Shape of a prompt template definition from the backend registry. */
+interface PromptTemplateDef {
+  readonly promptKey: string;
+  readonly label: string;
+  readonly storageScope: 'global' | 'module';
+  readonly moduleId?: string;
+  readonly settingKey?: string;
+  readonly defaultTemplate: string;
+  readonly variables: readonly TemplateVariableDef[];
+  readonly userMessageInfo?: readonly UserMessageInjection[];
+}
 
 /** Small lock icon shown next to disabled effort selects when the level is baked into the model name. */
 function LockedEffortIcon() {
@@ -45,7 +59,7 @@ interface LlmPhaseSectionProps {
   registry: LlmProviderEntry[];
   globalDraft: GlobalDraftSlice;
   apiKeyFilter?: (provider: LlmProviderEntry) => boolean;
-  phaseSchema?: { system_prompt: string; hero_system_prompt?: string; identity_check_prompt?: string; response_schema: Record<string, unknown>; hero_response_schema?: Record<string, unknown>; identity_check_response_schema?: Record<string, unknown>; view_prompts?: Record<string, string>; eval_criteria_defaults?: Record<string, Record<string, string>>; eval_criteria_categories?: readonly string[] } | null;
+  phaseSchema?: { system_prompt: string; hero_system_prompt?: string; identity_check_prompt?: string; response_schema: Record<string, unknown>; hero_response_schema?: Record<string, unknown>; identity_check_response_schema?: Record<string, unknown>; view_prompts?: Record<string, string>; eval_criteria_defaults?: Record<string, Record<string, string>>; eval_criteria_categories?: readonly string[]; prompt_templates?: readonly PromptTemplateDef[] } | null;
 }
 
 export const LlmPhaseSection = memo(function LlmPhaseSection({
@@ -466,70 +480,29 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
 
     {phaseSchema && (
       <SettingGroupBlock title="LLM Call Contract">
-        {phaseSchema.eval_criteria_defaults && phaseSchema.eval_criteria_categories ? (
-          <CategoryViewPromptTabs phaseSchema={phaseSchema as CategoryViewPromptTabsPhaseSchema} />
-        ) : phaseSchema.view_prompts ? (
-          <ViewPromptTabs phaseSchema={phaseSchema} />
-        ) : phaseSchema.identity_check_prompt ? (
-          /* Two-column layout: Discovery prompt (left) + Identity Check prompt (right) */
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Discovery System Prompt</div>
-                <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text" style={{ maxHeight: '500px' }}>
-                  {String(phaseSchema.system_prompt)}
-                </pre>
-              </div>
-              <div>
-                <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Identity Check Prompt (Run 2+)</div>
-                <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text" style={{ maxHeight: '500px' }}>
-                  {String(phaseSchema.identity_check_prompt)}
-                </pre>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Discovery Response Schema</div>
-                <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
-                  {JSON.stringify(phaseSchema.response_schema, null, 2)}
-                </pre>
-              </div>
-              <div>
-                <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Identity Check Response Schema</div>
-                <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
-                  {JSON.stringify(phaseSchema.identity_check_response_schema, null, 2)}
-                </pre>
-              </div>
-            </div>
-          </div>
-        ) : phaseSchema.hero_system_prompt ? (
-          /* Two-column layout: View prompt (left) + Hero prompt (right) */
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">View System Prompt</div>
-                <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text" style={{ maxHeight: '500px' }}>
-                  {String(phaseSchema.system_prompt)}
-                </pre>
-              </div>
-              <div>
-                <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Hero System Prompt</div>
-                <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text" style={{ maxHeight: '500px' }}>
-                  {String(phaseSchema.hero_system_prompt)}
-                </pre>
-              </div>
-            </div>
-            {phaseSchema.response_schema && (
-              <div>
-                <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Response Schema (shared)</div>
-                <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
-                  {JSON.stringify(phaseSchema.response_schema, null, 2)}
-                </pre>
-              </div>
+        {/* Prompt template editors (generic, registry-driven) */}
+        {phaseSchema.prompt_templates && phaseSchema.prompt_templates.length > 0 ? (
+          <div className="space-y-4">
+            <PromptTemplatesSection
+              phaseId={phaseId}
+              promptTemplates={phaseSchema.prompt_templates}
+              phaseOverrides={phaseOverrides}
+              onPhaseOverrideChange={onPhaseOverrideChange}
+              responseSchemas={[
+                phaseSchema.response_schema,
+                ...(phaseSchema.identity_check_response_schema ? [phaseSchema.identity_check_response_schema] : []),
+                ...(phaseSchema.hero_response_schema ? [phaseSchema.hero_response_schema] : []),
+              ]}
+            />
+            {/* Eval criteria per-category editing (preserved for image-evaluator) */}
+            {phaseSchema.eval_criteria_defaults && phaseSchema.eval_criteria_categories && (
+              <CategoryViewPromptTabs phaseSchema={phaseSchema as CategoryViewPromptTabsPhaseSchema} />
             )}
           </div>
+        ) : phaseSchema.eval_criteria_defaults && phaseSchema.eval_criteria_categories ? (
+          <CategoryViewPromptTabs phaseSchema={phaseSchema as CategoryViewPromptTabsPhaseSchema} />
         ) : (
-          /* Single-column layout (default for non-PIF phases) */
+          /* Fallback: read-only display for phases without templates */
           <div className="space-y-3">
             {phaseSchema.system_prompt && (
               <div>
@@ -555,6 +528,144 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
   );
 });
 
+/* ── Global Prompt Template Editor (phaseOverrides storage) ──────── */
+
+function GlobalPromptTemplateEditor({ phaseId, templateDef, phaseOverrides, onPhaseOverrideChange }: {
+  readonly phaseId: LlmPhaseId;
+  readonly templateDef: PromptTemplateDef;
+  readonly phaseOverrides: LlmPhaseOverrides;
+  readonly onPhaseOverrideChange: (overrides: LlmPhaseOverrides) => void;
+}) {
+  const overrideKey = uiPhaseIdToOverrideKey(phaseId);
+  const currentOverride = (overrideKey && (phaseOverrides as Record<string, Record<string, string>>)?.[overrideKey]?.systemPromptTemplate) || '';
+
+  const handleSave = useCallback((value: string) => {
+    if (!overrideKey) return;
+    const prev = (phaseOverrides as Record<string, Record<string, unknown>>)?.[overrideKey] ?? {};
+    onPhaseOverrideChange({
+      ...phaseOverrides,
+      [overrideKey]: { ...prev, systemPromptTemplate: value },
+    } as LlmPhaseOverrides);
+  }, [overrideKey, phaseOverrides, onPhaseOverrideChange]);
+
+  const handleReset = useCallback(() => handleSave(''), [handleSave]);
+
+  return (
+    <PromptTemplateEditor
+      label={templateDef.label}
+      defaultTemplate={templateDef.defaultTemplate}
+      currentOverride={currentOverride}
+      variables={templateDef.variables}
+      onSave={handleSave}
+      onReset={handleReset}
+      userMessageInfo={templateDef.userMessageInfo}
+    />
+  );
+}
+
+/* ── Module Prompt Template Editor (finderSqlStore storage) ──────── */
+
+function ModulePromptTemplateEditor({ templateDef, category }: {
+  readonly templateDef: PromptTemplateDef;
+  readonly category: string;
+}) {
+  const { settings, saveSetting, isLoading } = useModuleSettingsAuthority({
+    category,
+    moduleId: templateDef.moduleId ?? '',
+  });
+
+  const settingKey = templateDef.settingKey ?? `${templateDef.promptKey}PromptTemplate`;
+  const currentOverride = (settings[settingKey] as string) ?? '';
+
+  const handleSave = useCallback((value: string) => {
+    saveSetting(settingKey, value);
+  }, [settingKey, saveSetting]);
+
+  const handleReset = useCallback(() => {
+    saveSetting(settingKey, '');
+  }, [settingKey, saveSetting]);
+
+  return (
+    <PromptTemplateEditor
+      label={templateDef.label}
+      defaultTemplate={templateDef.defaultTemplate}
+      currentOverride={currentOverride}
+      variables={templateDef.variables}
+      onSave={handleSave}
+      onReset={handleReset}
+      isLoading={isLoading}
+      userMessageInfo={templateDef.userMessageInfo}
+    />
+  );
+}
+
+/* ── Prompt Templates Section (generic, driven by prompt_templates array) ── */
+
+function PromptTemplatesSection({ phaseId, promptTemplates, phaseOverrides, onPhaseOverrideChange, responseSchemas }: {
+  readonly phaseId: LlmPhaseId;
+  readonly promptTemplates: readonly PromptTemplateDef[];
+  readonly phaseOverrides: LlmPhaseOverrides;
+  readonly onPhaseOverrideChange: (overrides: LlmPhaseOverrides) => void;
+  readonly responseSchemas: Record<string, unknown>[];
+}) {
+  // WHY: Module-scope templates need a category. Use 'mouse' as default preview category.
+  const hasModuleTemplates = promptTemplates.some(t => t.storageScope === 'module');
+  const categories = hasModuleTemplates ? ['mouse', 'keyboard', 'monitor', 'mousepad'] : [];
+  const [activeCategory, setActiveCategory] = usePersistedTab<string>(`llmPhase:${phaseId}:templateCategory`, categories[0] ?? '');
+
+  return (
+    <div className="space-y-3">
+      {/* Category tabs for module-scope templates */}
+      {categories.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide rounded cursor-pointer transition-opacity ${
+                activeCategory === cat ? 'sf-primary-button' : 'sf-btn-ghost sf-text-muted hover:opacity-80'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Template editors */}
+      <div className={promptTemplates.length > 1 ? 'grid grid-cols-2 gap-4' : ''}>
+        {promptTemplates.map((tmpl) =>
+          tmpl.storageScope === 'global' ? (
+            <GlobalPromptTemplateEditor
+              key={tmpl.promptKey}
+              phaseId={phaseId}
+              templateDef={tmpl}
+              phaseOverrides={phaseOverrides}
+              onPhaseOverrideChange={onPhaseOverrideChange}
+            />
+          ) : (
+            <ModulePromptTemplateEditor
+              key={`${tmpl.promptKey}-${activeCategory}`}
+              templateDef={tmpl}
+              category={activeCategory}
+            />
+          ),
+        )}
+      </div>
+
+      {/* Response schemas (read-only) */}
+      {responseSchemas.map((schema, i) => schema && (
+        <div key={i}>
+          <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Response Schema{responseSchemas.length > 1 ? ` (${i + 1})` : ''}</div>
+          <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
+            {JSON.stringify(schema, null, 2)}
+          </pre>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ── View Prompt Tabs (Carousel Builder) ────────────────────────── */
 
 function ViewPromptTabs({ phaseSchema }: {
@@ -572,7 +683,7 @@ function ViewPromptTabs({ phaseSchema }: {
     ...(phaseSchema.hero_system_prompt ? ['hero'] : []),
     'schema',
   ];
-  const [activeTab, setActiveTab] = useState(tabs[0] ?? 'schema');
+  const [activeTab, setActiveTab] = usePersistedTab<string>('llmPhase:viewPromptTab', tabs[0] ?? 'schema');
 
   const activePrompt = activeTab === 'hero'
     ? phaseSchema.hero_system_prompt ?? ''

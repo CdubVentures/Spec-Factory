@@ -128,6 +128,11 @@ export interface VariantDeleteResponse {
   };
 }
 
+export interface VariantDeleteAllResponse {
+  readonly deleted: number;
+  readonly variants: readonly CefVariantRegistryEntry[];
+}
+
 export interface ColorRegistryEntry {
   readonly name: string;
   readonly hex: string;

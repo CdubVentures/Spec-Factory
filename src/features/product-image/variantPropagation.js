@@ -150,6 +150,59 @@ function removeImagesInPlace(images, variantId, variantKey) {
 }
 
 /**
+ * Collect all filenames belonging to a variant (from selected + all runs).
+ * Must be called BEFORE image stripping so we know which files to check.
+ */
+function collectVariantFilenames(doc, variantId, variantKey) {
+  const files = new Map(); // filename → { original_filename }
+  const collect = (images) => {
+    if (!Array.isArray(images)) return;
+    for (const img of images) {
+      if (img.variant_id === variantId || img.variant_key === variantKey) {
+        if (img.filename) files.set(img.filename, { original_filename: img.original_filename });
+      }
+    }
+  };
+  collect(doc.selected?.images);
+  for (const run of (doc.runs || [])) {
+    collect(run.selected?.images);
+    collect(run.response?.images);
+  }
+  return files;
+}
+
+/**
+ * Delete image files from disk that are no longer referenced after variant removal.
+ * Follows the same pattern as productImageFinderRoutes.js:1022-1030.
+ */
+function unlinkOrphanedImages(productRoot, productId, variantFilenames, doc) {
+  if (variantFilenames.size === 0) return;
+
+  // Build set of filenames still referenced by surviving data
+  const surviving = new Set();
+  for (const img of (doc.selected?.images || [])) {
+    if (img.filename) surviving.add(img.filename);
+  }
+  for (const run of (doc.runs || [])) {
+    for (const img of (run.selected?.images || [])) {
+      if (img.filename) surviving.add(img.filename);
+    }
+    for (const img of (run.response?.images || [])) {
+      if (img.filename) surviving.add(img.filename);
+    }
+  }
+
+  const imagesDir = path.join(productRoot, productId, 'images');
+  for (const [filename, meta] of variantFilenames) {
+    if (surviving.has(filename)) continue;
+    try { fs.unlinkSync(path.join(imagesDir, filename)); } catch { /* file may not exist */ }
+    if (meta.original_filename) {
+      try { fs.unlinkSync(path.join(imagesDir, 'originals', meta.original_filename)); } catch { /* */ }
+    }
+  }
+}
+
+/**
  * Propagate variant deletion across all PIF data for a product.
  *
  * WHY: When a variant is deleted from the registry, all PIF data
@@ -171,16 +224,52 @@ export function propagateVariantDelete({ productId, variantId, variantKey, produ
 
   const counts = { images: 0, runs: 0, evalRecords: 0, carouselSlots: 0 };
 
+  // WHY: Collect variant's filenames BEFORE modifications so we can delete orphaned disk files after.
+  const variantFilenames = collectVariantFilenames(doc, variantId, variantKey);
+
   // 1. selected.images
   counts.images += removeImagesInPlace(doc.selected?.images, variantId, variantKey);
 
-  // 2. runs[].selected.images + runs[].response.images
+  // 2. runs — strip images then delete entire runs belonging to this variant
   const runs = Array.isArray(doc.runs) ? doc.runs : [];
+
+  // Strip images from all runs first (handles cross-references and legacy runs)
   for (const run of runs) {
-    let runTouched = false;
-    if (removeImagesInPlace(run.selected?.images, variantId, variantKey) > 0) runTouched = true;
-    if (removeImagesInPlace(run.response?.images, variantId, variantKey) > 0) runTouched = true;
-    if (runTouched) counts.runs++;
+    removeImagesInPlace(run.selected?.images, variantId, variantKey);
+    removeImagesInPlace(run.response?.images, variantId, variantKey);
+  }
+
+  // Delete entire runs targeting this variant
+  const deletedRunNumbers = [];
+  doc.runs = runs.filter(run => {
+    const rKey = run.response?.variant_key;
+    const rId = run.response?.variant_id;
+    // Primary: match by variant identity (new runs always have these)
+    if (rKey === variantKey || rId === variantId) {
+      deletedRunNumbers.push(run.run_number);
+      return false;
+    }
+    // WHY: Legacy runs may lack variant_key/variant_id (backfillPifVariantIds.js exists for this).
+    // After image stripping, empty-shell runs are orphaned — clean them up.
+    if (!rKey && !rId) {
+      const noImages = (run.selected?.images || []).length === 0
+                    && (run.response?.images || []).length === 0;
+      if (noImages) {
+        deletedRunNumbers.push(run.run_number);
+        return false;
+      }
+    }
+    return true;
+  });
+  counts.runs = deletedRunNumbers.length;
+
+  // WHY: Recalculate bookkeeping. next_run_number stays exactly as-is (monotonic).
+  doc.run_count = doc.runs.length;
+  if (doc.runs.length > 0) {
+    const sorted = [...doc.runs].sort((a, b) => (b.ran_at || '').localeCompare(a.ran_at || ''));
+    doc.last_ran_at = sorted[0].ran_at || '';
+  } else {
+    doc.last_ran_at = '';
   }
 
   // 3. evaluations[] — filter out evals matching variant_key or variant_id
@@ -200,6 +289,9 @@ export function propagateVariantDelete({ productId, variantId, variantKey, produ
 
   writePifJson(productId, productRoot, doc);
 
+  // 5. Delete orphaned image files from disk
+  unlinkOrphanedImages(productRoot, productId, variantFilenames, doc);
+
   // WHY: SQL must stay in sync with JSON (CQRS — UI reads from DB).
   if (specDb) {
     const finderStore = specDb.getFinderStore('productImageFinder');
@@ -213,6 +305,17 @@ export function propagateVariantDelete({ productId, variantId, variantKey, produ
       }));
       finderStore.updateSummaryField(productId, 'images', JSON.stringify(imagesSummary));
       finderStore.updateSummaryField(productId, 'image_count', imagesSummary.length);
+
+      // Delete SQL run rows + update bookkeeping
+      if (deletedRunNumbers.length > 0) {
+        for (const rn of deletedRunNumbers) {
+          finderStore.removeRun(productId, rn);
+        }
+        finderStore.updateBookkeeping(productId, {
+          latest_ran_at: doc.last_ran_at || '',
+          run_count: doc.runs.length,
+        });
+      }
     }
   }
 

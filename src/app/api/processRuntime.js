@@ -308,9 +308,9 @@ export function createProcessRuntime({
           try {
             const lc = msg.__llm_call;
             if (lc.event === 'llm_finished') {
-              appendLlmCall({ id: pipelineOpId, call: { prompt: { system: `(${lc.reason || 'llm'})`, user: '' }, response: '(completed)', model: lc.model || '', mode: lc.reason || '', label: lc.reason || 'LLM', usage: { prompt_tokens: lc.prompt_tokens || 0, completion_tokens: lc.completion_tokens || 0, total_tokens: lc.total_tokens || 0, cost_usd: lc.cost_usd || 0, estimated_usage: Boolean(lc.estimated_usage) } } });
+              appendLlmCall({ id: pipelineOpId, call: { prompt: { system: lc.prompt_preview || `(${lc.reason || 'llm'})`, user: '' }, response: lc.response_preview || '(completed)', model: lc.model || '', mode: lc.reason || '', label: lc.reason || 'LLM', usage: { prompt_tokens: lc.prompt_tokens || 0, completion_tokens: lc.completion_tokens || 0, total_tokens: lc.total_tokens || 0, cost_usd: lc.cost_usd || 0, estimated_usage: Boolean(lc.estimated_usage) } } });
             } else if (lc.event === 'llm_failed') {
-              appendLlmCall({ id: pipelineOpId, call: { prompt: { system: `(${lc.reason || 'llm'})`, user: '' }, response: '(failed)', model: lc.model || '', mode: lc.reason || '', label: lc.reason || 'LLM' } });
+              appendLlmCall({ id: pipelineOpId, call: { prompt: { system: lc.prompt_preview || `(${lc.reason || 'llm'})`, user: '' }, response: lc.response_preview || '(failed)', model: lc.model || '', mode: lc.reason || '', label: lc.reason || 'LLM' } });
             }
           } catch { /* operations registry may not be ready */ }
         }

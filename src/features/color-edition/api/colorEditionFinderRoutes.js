@@ -12,7 +12,7 @@
 import { createFinderRouteHandler } from '../../../core/finder/finderRoutes.js';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
-import { derivePublishedFromVariants } from '../variantLifecycle.js';
+import { deriveColorNamesFromVariants, derivePublishedFromVariants, deleteAllVariants } from '../variantLifecycle.js';
 
 export function registerColorEditionFinderRoutes(ctx) {
   const { jsonRes, getSpecDb, broadcastWs } = ctx;
@@ -71,18 +71,22 @@ export function registerColorEditionFinderRoutes(ctx) {
         submitted_at: r.submitted_at,
       });
 
+      // WHY: Derive display names from variants (SSOT), not selected (run snapshot).
+      // selected shifts when runs are deleted; variants are stable.
+      const activeVariants = specDb?.variants?.listActive(productId) || [];
+      const { colorNames, editionDetails } = deriveColorNamesFromVariants(activeVariants, publishedColors, publishedEditions);
+
       return {
         product_id: row.product_id,
         category: row.category,
         run_count: row.run_count,
         last_ran_at: row.latest_ran_at,
-        // Published values from summary table + detail from latest run
         published: {
           colors: publishedColors,
           editions: publishedEditions,
           default_color: row.default_color || publishedColors[0] || '',
-          color_names: selected.color_names || {},
-          edition_details: selected.editions || {},
+          color_names: colorNames,
+          edition_details: editionDetails,
         },
         // WHY: Read from variants table (SSOT) instead of summary blob column.
         variant_registry: specDb?.variants?.listByProduct(productId) || [],
@@ -107,6 +111,30 @@ export function registerColorEditionFinderRoutes(ctx) {
   return async function handleCefRoutes(parts, params, method, req, res) {
     const handled = await genericHandler(parts, params, method, req, res);
     if (handled !== false) return handled;
+
+    // ── DELETE /color-edition-finder/:category/:productId/variants — delete ALL variants
+    if (parts[0] === 'color-edition-finder' && method === 'DELETE' && parts[3] === 'variants' && !parts[4]) {
+      const category = parts[1] || '';
+      const productId = parts[2] || '';
+
+      const specDb = getSpecDb(category);
+      if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+
+      const result = deleteAllVariants({
+        specDb, productId,
+        productRoot: defaultProductRoot(),
+      });
+
+      emitDataChange({
+        broadcastWs,
+        event: 'color-edition-finder-variants-deleted-all',
+        category,
+        entities: { productIds: [productId] },
+        meta: { productId, deleted: result.deleted },
+      });
+
+      return jsonRes(res, 200, result);
+    }
 
     // ── DELETE /color-edition-finder/:category/:productId/variants/:variantId
     if (parts[0] === 'color-edition-finder' && method === 'DELETE' && parts[3] === 'variants' && parts[4]) {

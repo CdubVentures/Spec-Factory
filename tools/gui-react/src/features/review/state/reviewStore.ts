@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 import type { CellMode, SaveStatus, BrandFilter } from '../../../types/review.ts';
 
 export type SortMode = 'brand' | 'recent' | 'confidence';
@@ -211,3 +212,30 @@ export function selectSelectedField(state: ReviewState): string {
 export function selectSelectedProductId(state: ReviewState): string {
   return state.activeCell?.productId ?? '';
 }
+
+// ── Focused state selectors (each subscribes to ONE field) ──
+export const useActiveCell = () => useReviewStore((s) => s.activeCell);
+export const useDrawerOpen = () => useReviewStore((s) => s.drawerOpen);
+export const useCellMode = () => useReviewStore((s) => s.cellMode);
+export const useEditingValue = () => useReviewStore((s) => s.editingValue);
+export const useOriginalEditingValue = () => useReviewStore((s) => s.originalEditingValue);
+export const useSaveStatus = () => useReviewStore((s) => s.saveStatus);
+export const useBrandFilter = () => useReviewStore((s) => s.brandFilter);
+export const useSortMode = () => useReviewStore((s) => s.sortMode);
+
+// ── Actions (stable refs, grouped with useShallow to prevent object identity re-renders) ──
+export const useReviewActions = () => useReviewStore(useShallow((s) => ({
+  openDrawer: s.openDrawer,
+  closeDrawer: s.closeDrawer,
+  selectCell: s.selectCell,
+  startEditing: s.startEditing,
+  cancelEditing: s.cancelEditing,
+  setEditingValue: s.setEditingValue,
+  commitEditing: s.commitEditing,
+  setSaveStatus: s.setSaveStatus,
+  setAvailableBrands: s.setAvailableBrands,
+  setBrandFilterMode: s.setBrandFilterMode,
+  setBrandFilterSelection: s.setBrandFilterSelection,
+  setSortMode: s.setSortMode,
+  toggleBrand: s.toggleBrand,
+})));

@@ -26,6 +26,49 @@ function writeProductJson(productRoot, productId, data) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
 
+// ── Derive display names from variant table (pure) ─────────────────
+
+/**
+ * Build color_names and edition_details maps from the variants table.
+ *
+ * WHY: GET response must derive these from variants (SSOT), not from
+ * selected (run snapshot). selected is audit/LLM feed-forward only.
+ *
+ * @param {object[]} variants — rows from variants.listActive or listByProduct
+ * @param {string[]} publishedColors — atoms currently in the summary table
+ * @param {string[]} publishedEditions — slugs currently in the summary table
+ * @returns {{ colorNames: Record<string, string>, editionDetails: Record<string, { display_name: string, colors: string[] }> }}
+ */
+export function deriveColorNamesFromVariants(variants, publishedColors, publishedEditions) {
+  const colorSet = new Set(publishedColors);
+  const editionSet = new Set(publishedEditions);
+  const colorNames = {};
+  const editionDetails = {};
+
+  for (const v of variants) {
+    if (v.variant_type === 'color' && v.variant_label) {
+      // WHY: Use combo string from variant_key, not individual atoms.
+      // Published colors are combo strings (e.g. "white+silver"), not split atoms.
+      const combo = v.variant_key.replace(/^color:/, '');
+      if (combo && colorSet.has(combo)) {
+        colorNames[combo] = v.variant_label;
+      }
+    } else if (v.variant_type === 'edition' && v.edition_slug && editionSet.has(v.edition_slug)) {
+      // WHY: color_atoms stores split atoms ["black","gray","orange"], but
+      // selected.editions stored combo strings ["black+gray+orange"].
+      // Frontend iterates .colors and renders each entry as a color pill,
+      // so we must re-join to preserve the combo display.
+      const atoms = v.color_atoms || [];
+      editionDetails[v.edition_slug] = {
+        display_name: v.edition_display_name || v.edition_slug,
+        colors: atoms.length > 0 ? [atoms.join('+')] : [],
+      };
+    }
+  }
+
+  return { colorNames, editionDetails };
+}
+
 // ── Derive published state from variants ────────────────────────────
 
 /**
@@ -47,9 +90,11 @@ export function derivePublishedFromVariants({ specDb, productId, productRoot }) 
 
   for (const v of variants) {
     if (v.variant_type === 'color') {
-      for (const atom of v.color_atoms) {
-        if (!colors.includes(atom)) colors.push(atom);
-      }
+      // WHY: Publish the combo string (e.g. "white+silver"), not individual atoms.
+      // Atom splitting is only for palette validation. The combo is the variant key
+      // and the contract buildVariantList / PIF depend on.
+      const combo = v.variant_key.replace(/^color:/, '');
+      if (combo && !colors.includes(combo)) colors.push(combo);
     } else if (v.variant_type === 'edition') {
       if (v.edition_slug && !editions.includes(v.edition_slug)) {
         editions.push(v.edition_slug);
@@ -158,7 +203,7 @@ function removeVariantFromJson({ productId, variantId, productRoot }) {
  *
  * @param {{ specDb, productId: string, variant: object }} opts
  */
-function stripVariantFromCandidates({ specDb, productId, variant }) {
+function stripVariantFromCandidates({ specDb, productId, variant, productRoot }) {
   // Determine which fields and values this variant contributes
   const strips = [];
 
@@ -196,6 +241,43 @@ function stripVariantFromCandidates({ specDb, productId, variant }) {
       }
     }
   }
+
+  // WHY: product.json.candidates must stay in sync with SQL (dual-write).
+  // Candidate values can be parsed arrays or stringified JSON strings.
+  const productJson = readProductJson(productRoot, productId);
+  if (productJson?.candidates) {
+    let jsonChanged = false;
+    for (const { fieldKey, values } of strips) {
+      if (values.length === 0) continue;
+      const removeSet = new Set(values);
+      const entries = productJson.candidates[fieldKey];
+      if (!Array.isArray(entries)) continue;
+
+      for (let i = entries.length - 1; i >= 0; i--) {
+        const entry = entries[i];
+        let parsed;
+        try { parsed = typeof entry.value === 'string' ? JSON.parse(entry.value) : entry.value; }
+        catch { continue; }
+        if (!Array.isArray(parsed)) continue;
+
+        const filtered = parsed.filter(item => !removeSet.has(item));
+        if (filtered.length === parsed.length) continue;
+        jsonChanged = true;
+
+        if (filtered.length === 0) {
+          entries.splice(i, 1);
+        } else {
+          entry.value = filtered;
+        }
+      }
+
+      if (entries.length === 0) delete productJson.candidates[fieldKey];
+    }
+    if (jsonChanged) {
+      productJson.updated_at = new Date().toISOString();
+      writeProductJson(productRoot, productId, productJson);
+    }
+  }
 }
 
 // ── Delete variant + cascade ────────────────────────────────────────
@@ -221,8 +303,8 @@ export function deleteVariant({ specDb, productId, variantId, productRoot }) {
   // 1. Remove from variants table
   specDb.variants.remove(productId, variantId);
 
-  // 2. Strip variant's values from all field_candidates
-  stripVariantFromCandidates({ specDb, productId, variant });
+  // 2. Strip variant's values from all field_candidates (SQL + JSON)
+  stripVariantFromCandidates({ specDb, productId, variant, productRoot });
 
   // 3. Remove from JSON SSOT
   removeVariantFromJson({ productId, variantId, productRoot });
@@ -240,4 +322,30 @@ export function deleteVariant({ specDb, productId, variantId, productRoot }) {
   });
 
   return { deleted: true, variant, published, pif: pifResult };
+}
+
+// ── Delete all variants + cascade ─────────────────────────────────
+
+/**
+ * Delete all active variants for a product. Loops deleteVariant per variant.
+ *
+ * WHY: "Delete all variants" is a separate operation from "delete all runs".
+ * Runs = discovery history. Variants = the entity layer. This deletes the
+ * entity layer and everything downstream (candidates, PIF, published state).
+ *
+ * @param {{ specDb, productId: string, productRoot?: string }} opts
+ * @returns {{ deleted: number, variants: object[] }}
+ */
+export function deleteAllVariants({ specDb, productId, productRoot }) {
+  productRoot = productRoot || defaultProductRoot();
+  const active = specDb.variants.listActive(productId);
+  if (active.length === 0) return { deleted: 0, variants: [] };
+
+  const deleted = [];
+  for (const v of active) {
+    const result = deleteVariant({ specDb, productId, variantId: v.variant_id, productRoot });
+    if (result.deleted) deleted.push(result.variant);
+  }
+
+  return { deleted: deleted.length, variants: deleted };
 }

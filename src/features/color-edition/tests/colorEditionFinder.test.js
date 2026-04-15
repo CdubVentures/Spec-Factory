@@ -483,6 +483,41 @@ describe('runColorEditionFinder', () => {
     assert.ok(!json.variant_registry.find(e => e.variant_key === 'color:light-olive+black+red'), 'hallucinated color NOT in registry');
   });
 
+  it('LLM 2 (identity check) error rejects entire run', async () => {
+    const pid = 'mouse-idcheck-llm-error';
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+      { name: 'white', hex: '#ffffff', css_var: '--color-white' },
+    ]);
+
+    // Run 1: establish registry
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb, specDb, config: {}, logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({ colors: ['black', 'white'], editions: {}, default_color: 'black' }),
+    });
+
+    const afterRun1 = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
+    assert.ok(afterRun1.variant_registry.length > 0, 'Run 1 built registry');
+
+    // Run 2: identity check LLM throws (network error, timeout, parse failure)
+    const result = await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb, specDb, config: {}, logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({ colors: ['black', 'white'], editions: {}, default_color: 'black' }),
+      _callIdentityCheckOverride: async () => { throw new Error('LLM 2 network timeout'); },
+    });
+
+    assert.equal(result.rejected, true, 'run must be rejected when LLM 2 fails');
+    assert.ok(result.rejections.some(r => r.reason_code === 'identity_check_error'), 'rejection reason_code');
+
+    // Registry unchanged from Run 1
+    const afterRun2 = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
+    assert.deepStrictEqual(afterRun2.variant_registry, afterRun1.variant_registry, 'registry must not change');
+  });
+
   it('Gate 2: duplicate match target rejects entire run', async () => {
     const pid = 'mouse-gate2-dup';
     const appDb = makeAppDbStub([

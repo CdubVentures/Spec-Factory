@@ -2,7 +2,12 @@ import { useMemo, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
 import { useUiStore } from '../../../stores/uiStore.ts';
-import { useReviewStore, selectSelectedField, selectSelectedProductId } from '../state/reviewStore.ts';
+import {
+  useReviewStore, selectSelectedField, selectSelectedProductId,
+  useActiveCell, useDrawerOpen, useCellMode, useEditingValue,
+  useOriginalEditingValue, useSaveStatus, useBrandFilter, useSortMode,
+  useReviewActions,
+} from '../state/reviewStore.ts';
 import type { SortMode } from '../state/reviewStore.ts';
 import { ReviewMatrix } from './ReviewMatrix.tsx';
 import { FieldReviewDrawer } from './FieldReviewDrawer.tsx';
@@ -47,15 +52,24 @@ function candidateSourceLabel(candidate: ReviewCandidate | null | undefined): st
 export function ReviewPage() {
   const category = useUiStore((s) => s.category);
   const { getLabel } = useFieldLabels(category);
-  const {
-    activeCell, drawerOpen, openDrawer, closeDrawer,
-    cellMode, editingValue, originalEditingValue, saveStatus,
-    selectCell, startEditing, cancelEditing, setEditingValue, commitEditing, setSaveStatus,
-    brandFilter, setAvailableBrands, setBrandFilterMode, setBrandFilterSelection,
-    sortMode, setSortMode,
-  } = useReviewStore();
+  // State selectors (each re-renders only when its field changes)
+  const activeCell = useActiveCell();
+  const drawerOpen = useDrawerOpen();
+  const cellMode = useCellMode();
+  const editingValue = useEditingValue();
+  const originalEditingValue = useOriginalEditingValue();
+  const saveStatus = useSaveStatus();
+  const brandFilter = useBrandFilter();
+  const sortMode = useSortMode();
   const selectedField = useReviewStore(selectSelectedField);
   const selectedProductId = useReviewStore(selectSelectedProductId);
+
+  // Actions (stable refs, never cause re-renders)
+  const {
+    openDrawer, closeDrawer, selectCell, startEditing, cancelEditing,
+    setEditingValue, commitEditing, setSaveStatus,
+    setAvailableBrands, setBrandFilterMode, setBrandFilterSelection, setSortMode,
+  } = useReviewActions();
   const queryClient = useQueryClient();
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reviewGridHydratedRef = useRef<string>('');
@@ -408,8 +422,6 @@ export function ReviewPage() {
           onCellClick={handleCellClick}
           activeCell={activeCell}
           cellMode={cellMode}
-          editingValue={editingValue}
-          onEditingValueChange={setEditingValue}
           onCommitEditing={handleCommitEditing}
           onCancelEditing={handleCancelEditing}
           onStartEditing={handleStartEditing}

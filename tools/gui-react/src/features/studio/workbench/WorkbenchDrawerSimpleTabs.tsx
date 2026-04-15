@@ -1,4 +1,5 @@
 import { JsonViewer } from '../../../shared/ui/data-display/JsonViewer.tsx';
+import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
 import { EnumConfigurator } from '../components/EnumConfigurator.tsx';
 import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
@@ -198,6 +199,7 @@ export function PreviewTab({
   componentDb: ComponentDbResponse;
   enumLists: EnumEntry[];
 }) {
+  const [fullJsonOpen, toggleFullJsonOpen] = usePersistedToggle('studio:workbench:preview:fullRuleJson', false);
   const kv = knownValues[fieldKey] || [];
   const compType = strN(rule, 'component.type');
   const compEntities = compType && componentDb[compType] ? componentDb[compType] : [];
@@ -265,10 +267,12 @@ export function PreviewTab({
         </div>
       )}
 
-      <details>
-        <summary className={`${MUTED_TEXT_XS_CLASS} cursor-pointer`}>Full Rule JSON</summary>
-        <div className="mt-2"><JsonViewer data={rule} maxDepth={3} /></div>
-      </details>
+      <div>
+        <button type="button" onClick={toggleFullJsonOpen} className={`${MUTED_TEXT_XS_CLASS} cursor-pointer`}>Full Rule JSON</button>
+        {fullJsonOpen && (
+          <div className="mt-2"><JsonViewer data={rule} maxDepth={3} /></div>
+        )}
+      </div>
     </div>
   );
 }

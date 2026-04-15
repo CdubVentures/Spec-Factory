@@ -25,6 +25,7 @@ function makeSpecDbStub(finderRow = null, listRows = [], productRow = null, runR
     removeAllRuns: () => {},
     insertRun: () => {},
     updateBookkeeping: () => {},
+    updateSummaryField: () => {},
   };
   return {
     getFinderStore: () => finderStore,
@@ -44,7 +45,7 @@ function makeSpecDbStub(finderRow = null, listRows = [], productRow = null, runR
     ],
     deleteFieldCandidateByValue: (...args) => { candidateDeleteByValueCalls.push(args); },
     upsertFieldCandidate: (...args) => { candidateUpsertCalls.push(args); },
-    variants: { listByProduct: () => [] },
+    variants: { listActive: () => [], listByProduct: () => [] },
     _candidateDeleteCalls: candidateDeleteCalls,
     _candidateDeleteByValueCalls: candidateDeleteByValueCalls,
     _candidateUpsertCalls: candidateUpsertCalls,
@@ -213,6 +214,145 @@ describe('colorEditionFinderRoutes', () => {
         specDb._candidateDeleteByValueCalls.length > 0,
         'CEF-only candidates MUST be deleted on delete-all via source-aware cleanup',
       );
+    });
+  });
+
+  describe('GET published.color_names / edition_details derived from variants', () => {
+    // WHY: color_names and edition_details must come from the variants table,
+    // not from selected (run snapshot). This prevents drift when runs are deleted.
+
+    it('A: GET returns variant-derived color_names, not run-derived', async () => {
+      const finderRow = {
+        category: 'mouse', product_id: 'mouse-001',
+        colors: ['black', 'white'], editions: [],
+        default_color: 'black', latest_ran_at: '2026-04-01T00:00:00Z', run_count: 1,
+      };
+      const runRows = [{
+        run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4', fallback_used: false,
+        // WHY: selected has WRONG color_names — the bug we're fixing
+        selected: { colors: ['black', 'white'], editions: {}, default_color: 'black', color_names: { black: 'WRONG-FROM-RUN' } },
+        prompt: {}, response: {},
+      }];
+      const { ctx, calls, specDb } = makeCtx({ finderRow, runRows });
+      // Stub variants with correct labels
+      specDb.variants.listActive = () => [
+        { variant_type: 'color', variant_key: 'color:black', color_atoms: ['black'], variant_label: 'Black', edition_slug: null },
+        { variant_type: 'color', variant_key: 'color:white', color_atoms: ['white'], variant_label: 'White', edition_slug: null },
+      ];
+      const handler = registerColorEditionFinderRoutes(ctx);
+      await handler(['color-edition-finder', 'mouse', 'mouse-001'], new Map(), 'GET', {}, {});
+
+      assert.equal(calls[0].status, 200);
+      assert.deepEqual(calls[0].body.published.color_names, { black: 'Black', white: 'White' });
+    });
+
+    it('B: GET returns variant-derived edition_details, not run-derived', async () => {
+      const finderRow = {
+        category: 'mouse', product_id: 'mouse-001',
+        colors: ['black'], editions: ['special-ed'],
+        default_color: 'black', latest_ran_at: '2026-04-01T00:00:00Z', run_count: 1,
+      };
+      const runRows = [{
+        run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4', fallback_used: false,
+        // WHY: selected has WRONG edition details — the bug we're fixing
+        selected: { colors: ['black'], editions: { 'special-ed': { display_name: 'WRONG-FROM-RUN', colors: [] } }, default_color: 'black' },
+        prompt: {}, response: {},
+      }];
+      const { ctx, calls, specDb } = makeCtx({ finderRow, runRows });
+      specDb.variants.listActive = () => [
+        { variant_type: 'color', variant_key: 'color:black', color_atoms: ['black'], variant_label: 'Black', edition_slug: null },
+        { variant_type: 'edition', color_atoms: ['olive', 'khaki'], variant_label: 'Special Edition', edition_slug: 'special-ed', edition_display_name: 'Special Edition' },
+      ];
+      const handler = registerColorEditionFinderRoutes(ctx);
+      await handler(['color-edition-finder', 'mouse', 'mouse-001'], new Map(), 'GET', {}, {});
+
+      assert.equal(calls[0].status, 200);
+      assert.deepEqual(calls[0].body.published.edition_details, {
+        'special-ed': { display_name: 'Special Edition', colors: ['olive+khaki'] },
+      });
+    });
+
+    it('C: after run deletion, color_names/edition_details remain stable', async () => {
+      const finderRow = {
+        category: 'mouse', product_id: 'mouse-001',
+        colors: ['black'], editions: ['special-ed'],
+        default_color: 'black', latest_ran_at: '2026-04-01T00:00:00Z', run_count: 1,
+      };
+      // WHY: Simulate post-deletion state: selected is empty/stale, but variants are intact
+      const runRows = [{
+        run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4', fallback_used: false,
+        selected: { colors: [], editions: {}, default_color: '', color_names: {} },
+        prompt: {}, response: {},
+      }];
+      const { ctx, calls, specDb } = makeCtx({ finderRow, runRows });
+      specDb.variants.listActive = () => [
+        { variant_type: 'color', variant_key: 'color:black', color_atoms: ['black'], variant_label: 'Black', edition_slug: null },
+        { variant_type: 'edition', color_atoms: ['olive'], variant_label: 'Special', edition_slug: 'special-ed', edition_display_name: 'Special Edition' },
+      ];
+      const handler = registerColorEditionFinderRoutes(ctx);
+      await handler(['color-edition-finder', 'mouse', 'mouse-001'], new Map(), 'GET', {}, {});
+
+      assert.equal(calls[0].status, 200);
+      assert.deepEqual(calls[0].body.published.color_names, { black: 'Black' });
+      assert.deepEqual(calls[0].body.published.edition_details, {
+        'special-ed': { display_name: 'Special Edition', colors: ['olive'] },
+      });
+      // WHY: single atom = no '+' join needed, stays as ['olive']
+    });
+
+    it('D: no variants → empty color_names/edition_details', async () => {
+      const finderRow = {
+        category: 'mouse', product_id: 'mouse-001',
+        colors: [], editions: [],
+        default_color: '', latest_ran_at: '2026-04-01T00:00:00Z', run_count: 1,
+      };
+      const runRows = [{
+        run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4', fallback_used: false,
+        selected: { colors: [], editions: {}, default_color: '' },
+        prompt: {}, response: {},
+      }];
+      const { ctx, calls, specDb } = makeCtx({ finderRow, runRows });
+      specDb.variants.listActive = () => [];
+      const handler = registerColorEditionFinderRoutes(ctx);
+      await handler(['color-edition-finder', 'mouse', 'mouse-001'], new Map(), 'GET', {}, {});
+
+      assert.equal(calls[0].status, 200);
+      assert.deepEqual(calls[0].body.published.color_names, {});
+      assert.deepEqual(calls[0].body.published.edition_details, {});
+    });
+  });
+
+  describe('DELETE /color-edition-finder/:category/:productId/variants', () => {
+    it('deletes all variants and returns count', async () => {
+      const removedIds = [];
+      const { ctx, calls, specDb } = makeCtx();
+      const variantData = [
+        { variant_id: 'v_aa', variant_key: 'color:black', variant_type: 'color', color_atoms: ['black'] },
+        { variant_id: 'v_bb', variant_key: 'color:white', variant_type: 'color', color_atoms: ['white'] },
+      ];
+      // WHY: deleteAllVariants calls deleteVariant which calls specDb.variants.get/remove
+      specDb.variants.listActive = () => [...variantData];
+      specDb.variants.get = (pid, vid) => variantData.find(v => v.variant_id === vid) || null;
+      specDb.variants.remove = (pid, vid) => { removedIds.push(vid); };
+      // Stub remaining methods used by deleteVariant cascade
+      specDb.getFieldCandidatesByProductAndField = () => [];
+      specDb.deleteFieldCandidateBySourceId = () => {};
+      const handler = registerColorEditionFinderRoutes(ctx);
+      const result = await handler(['color-edition-finder', 'mouse', 'mouse-001', 'variants'], new Map(), 'DELETE', {}, {});
+      assert.equal(result, true);
+      assert.equal(calls[0].status, 200);
+      assert.equal(calls[0].body.deleted, 2);
+      assert.deepEqual(removedIds, ['v_aa', 'v_bb']);
+    });
+
+    it('returns 200 with deleted 0 when no variants exist', async () => {
+      const { ctx, calls, specDb } = makeCtx();
+      specDb.variants.listActive = () => [];
+      const handler = registerColorEditionFinderRoutes(ctx);
+      const result = await handler(['color-edition-finder', 'mouse', 'mouse-001', 'variants'], new Map(), 'DELETE', {}, {});
+      assert.equal(result, true);
+      assert.equal(calls[0].status, 200);
+      assert.equal(calls[0].body.deleted, 0);
     });
   });
 });

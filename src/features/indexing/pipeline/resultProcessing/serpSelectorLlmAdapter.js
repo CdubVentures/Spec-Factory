@@ -38,7 +38,8 @@ const SERP_SELECTOR_SPEC = {
   phase: 'serpSelector',
   reason: 'serp_url_selector',
   role: 'triage',
-  system: SERP_SELECT_URLS_SYSTEM_PROMPT,
+  system: (_domainArgs, config) =>
+    config?.phaseOverrides?.['serp-selector']?.systemPromptTemplate || SERP_SELECT_URLS_SYSTEM_PROMPT,
   jsonSchema: serpSelectorOutputSchema,
 };
 

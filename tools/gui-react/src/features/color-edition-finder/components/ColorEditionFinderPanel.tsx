@@ -14,6 +14,7 @@ import {
   FinderRunModelBadge,
   FinderRunTimestamp,
   FinderSectionCard,
+  FinderHowItWorks,
   useResolvedFinderModel,
   deriveFinderStatusChip,
   ColorSwatch,
@@ -30,6 +31,7 @@ import {
   useColorEditionFinderQuery,
   useDeleteColorEditionFinderRunMutation,
   useDeleteColorEditionFinderAllMutation,
+  useDeleteAllVariantsMutation,
   useDeleteVariantMutation,
 } from '../api/colorEditionFinderQueries.ts';
 import {
@@ -37,6 +39,7 @@ import {
   deriveSelectedStateDisplay,
   deriveRunHistoryRows,
 } from '../selectors/colorEditionFinderSelectors.ts';
+import { cefHowItWorksSections } from '../cefHowItWorksContent.ts';
 import type { RunHistoryRow, RunDiscoveryLog, ColorPill } from '../selectors/colorEditionFinderSelectors.ts';
 import type { ColorRegistryEntry } from '../types.ts';
 import { useOperationsStore } from '../../../stores/operationsStore.ts';
@@ -73,48 +76,66 @@ function VariantDeleteButton({ variantId, variantLabel, onDelete, isPending }: {
   if (!variantId) return null;
   return (
     <button
-      onClick={() => {
+      onClick={(e) => {
+        e.stopPropagation();
         const confirmed = window.confirm(
           `Delete variant "${variantLabel}"?\n\n`
           + 'This will permanently:\n'
-          + '- Remove this variant from the registry\n'
-          + '- Remove its color/edition from published values\n'
-          + '- Strip its values from all discovery candidates\n'
-          + '- Delete all product images linked to this variant\n'
-          + '- Remove carousel slots and evaluations for this variant\n\n'
+          + '- Strip this variant\'s values from all field candidates (CEF table & JSON, field_candidates table & JSON)\n'
+          + '- Strip its color/edition from published values\n'
+          + '- Delete all Product Image Finder data for this variant: run history, eval history, and images\n'
+          + '- Remove carousel slots for this variant\n\n'
           + 'This cannot be undone.',
         );
         if (confirmed) onDelete(variantId);
       }}
       disabled={isPending}
-      className="ml-auto w-4 h-4 flex items-center justify-center rounded-full sf-text-muted hover:bg-red-100 hover:text-red-600 transition-colors disabled:opacity-40"
-      title="Delete variant"
+      className="ml-auto px-1.5 py-0.5 text-[9px] font-bold uppercase rounded sf-status-text-danger border sf-border-soft opacity-50 hover:opacity-100 disabled:opacity-40"
     >
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" className="w-[8px] h-[8px]">
-        <path d="M4 4l8 8M12 4l-8 8" />
-      </svg>
+      Del
     </button>
   );
 }
 
-function SelectedStateCard({ display, isPublished, onDeleteVariant, deleteVariantPending }: {
+function SelectedStateCard({ display, isPublished, onDeleteVariant, deleteVariantPending, onDeleteAllVariants, deleteAllVariantsPending }: {
   readonly display: ReturnType<typeof deriveSelectedStateDisplay>;
   readonly isPublished: (fieldKey: string) => boolean;
   readonly onDeleteVariant?: (variantId: string) => void;
   readonly deleteVariantPending?: boolean;
+  readonly onDeleteAllVariants?: () => void;
+  readonly deleteAllVariantsPending?: boolean;
 }) {
   if (display.colors.length === 0 && display.editions.length === 0) return null;
+
+  const variantCount = display.colors.length + display.editions.length;
 
   return (
     <div className="sf-surface-elevated border sf-border-soft rounded-lg p-5 flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-bold uppercase tracking-[0.08em] sf-text-muted">
-          Selected State
+          Published State
         </span>
         <div className="flex items-center gap-3">
           <PubLegend />
-          {display.ssotRunNumber > 0 && (
-            <Chip label={`SSOT \u00B7 Run #${display.ssotRunNumber}`} className="sf-chip-teal-strong" />
+          {onDeleteAllVariants && variantCount > 0 && (
+            <button
+              onClick={() => {
+                const confirmed = window.confirm(
+                  `Delete all ${variantCount} variant${variantCount !== 1 ? 's' : ''}?\n\n`
+                  + 'For each variant this will permanently:\n'
+                  + '- Strip variant values from all field candidates (CEF table & JSON, field_candidates table & JSON)\n'
+                  + '- Strip all colors/editions from published values\n'
+                  + '- Delete all Product Image Finder data: run history, eval history, and images\n'
+                  + '- Remove all carousel slots\n\n'
+                  + 'This cannot be undone.',
+                );
+                if (confirmed) onDeleteAllVariants();
+              }}
+              disabled={deleteAllVariantsPending || deleteVariantPending}
+              className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded sf-action-button sf-status-text-danger border sf-border-soft opacity-60 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              Delete All
+            </button>
           )}
         </div>
       </div>
@@ -291,7 +312,7 @@ function CefRunHistoryRow({
   const selEditions = row.selected?.editions ?? {};
 
   return (
-    <div className={`sf-surface-panel rounded-lg overflow-hidden${row.isLatest ? ' border-l-2 border-[var(--sf-token-accent-strong)]' : ''}`}>
+    <div className="sf-surface-panel rounded-lg overflow-hidden">
       <div
         onClick={onToggle}
         className="flex items-center gap-3 px-4 py-2.5 cursor-pointer select-none hover:opacity-80"
@@ -322,7 +343,7 @@ function CefRunHistoryRow({
         ) : (
           <Chip label="Valid" className="sf-chip-success" />
         )}
-        {row.isLatest && <Chip label={`LATEST \u00B7 SSOT`} className="sf-chip-teal-strong" />}
+        {row.isLatest && <Chip label="LATEST" className="sf-chip-teal-strong" />}
         {row.rejectionSummary && (
           <span className="text-[9px] font-mono sf-text-muted truncate max-w-[180px]" title={row.rejectionSummary}>
             {row.rejectionSummary}
@@ -400,6 +421,7 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
   const cefRunUrl = `/color-edition-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`;
   const deleteRunMut = useDeleteColorEditionFinderRunMutation(category, productId);
   const deleteAllMut = useDeleteColorEditionFinderAllMutation(category, productId);
+  const deleteAllVariantsMut = useDeleteAllVariantsMutation(category, productId);
   const deleteVariantMut = useDeleteVariantMutation(category, productId);
   const { model: resolvedModel, accessMode: resolvedAccessMode, modelDisplay, effortLevel } = useResolvedFinderModel('colorFinder');
 
@@ -484,12 +506,21 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
             ))}
           </div>
 
+          {/* How It Works — collapsed by default */}
+          <FinderHowItWorks
+            storeKey={`cef:${productId}`}
+            subtitle="Color & edition discovery"
+            sections={cefHowItWorksSections}
+          />
+
           {/* Selected State */}
           <SelectedStateCard
             display={selectedState}
             isPublished={isPublished}
             onDeleteVariant={(variantId) => deleteVariantMut.mutate(variantId)}
             deleteVariantPending={deleteVariantMut.isPending}
+            onDeleteAllVariants={() => deleteAllVariantsMut.mutate(undefined)}
+            deleteAllVariantsPending={deleteAllVariantsMut.isPending}
           />
 
           {/* Run History — collapsible, default closed */}
@@ -539,12 +570,6 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
               </span>
             }
           >
-            {selectedState.ssotRunNumber > 0 && (
-              <>
-                <span>&middot;</span>
-                <span>SSOT source: <strong className="sf-text-subtle">Run #{selectedState.ssotRunNumber}</strong></span>
-              </>
-            )}
           </FinderPanelFooter>
         </div>
       )}
@@ -556,6 +581,11 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
           onCancel={() => setDeleteTarget(null)}
           isPending={isAnyDeletePending}
           moduleLabel="CEF"
+          descriptionOverrides={{
+            run: `This will delete discovery source (run #${deleteTarget.runNumber ?? ''}). Deletes all candidates (evidence) in all fields. Touches CEF table & JSON and field_candidates table & JSON.`,
+            loop: `This will delete all runs in this loop. Deletes all candidates (evidence) in all fields. Touches CEF table & JSON and field_candidates table & JSON.`,
+            all: `This will delete all ${deleteTarget.count ?? 0} run(s) and all discovery sources. Deletes all candidates (evidence) in all fields. Touches CEF table & JSON and field_candidates table & JSON.`,
+          }}
         />
       )}
     </div>

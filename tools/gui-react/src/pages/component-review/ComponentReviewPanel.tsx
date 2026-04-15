@@ -138,6 +138,8 @@ function ReviewItemCard({
 
 export function ComponentReviewPanel({ category, queryClient, componentType }: ComponentReviewPanelProps) {
   const [expanded, toggleExpanded] = usePersistedToggle('componentReview:panel:expanded', false);
+  const [aliasesOpen, toggleAliasesOpen] = usePersistedToggle('componentReview:panel:aliases', false);
+  const [rejectedOpen, toggleRejectedOpen] = usePersistedToggle('componentReview:panel:rejected', false);
 
   const reviewQuery = useQuery({
     queryKey: ['componentReview', category],
@@ -243,44 +245,48 @@ export function ComponentReviewPanel({ category, queryClient, componentType }: C
           )}
 
           {acceptedAlias.length > 0 && (
-            <details>
-              <summary className="text-xs font-semibold sf-status-text-success cursor-pointer">
+            <div>
+              <button type="button" onClick={toggleAliasesOpen} className="text-xs font-semibold sf-status-text-success cursor-pointer">
                 AI Added Aliases ({acceptedAlias.length})
-              </summary>
-              <div className="mt-2 space-y-1">
-                {acceptedAlias.map((item) => (
-                  <div key={item.review_id} className="sf-text-nano sf-text-muted flex items-center gap-2">
-                    <span className="font-mono">{item.raw_query}</span>
-                    <span className="sf-text-subtle">-&gt;</span>
-                    <span className="font-mono">{item.matched_component}</span>
-                    {item.ai_decision?.reasoning && (
-                      <span className="italic sf-text-subtle truncate max-w-[300px]">{item.ai_decision.reasoning}</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </details>
+              </button>
+              {aliasesOpen && (
+                <div className="mt-2 space-y-1">
+                  {acceptedAlias.map((item) => (
+                    <div key={item.review_id} className="sf-text-nano sf-text-muted flex items-center gap-2">
+                      <span className="font-mono">{item.raw_query}</span>
+                      <span className="sf-text-subtle">-&gt;</span>
+                      <span className="font-mono">{item.matched_component}</span>
+                      {item.ai_decision?.reasoning && (
+                        <span className="italic sf-text-subtle truncate max-w-[300px]">{item.ai_decision.reasoning}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
 
           {rejected.length > 0 && (
-            <details>
-              <summary className="text-xs font-semibold sf-text-subtle cursor-pointer">
+            <div>
+              <button type="button" onClick={toggleRejectedOpen} className="text-xs font-semibold sf-text-subtle cursor-pointer">
                 Rejected / Dismissed ({rejected.length})
-              </summary>
-              <div className="mt-2 space-y-1">
-                {rejected.map((item) => (
-                  <div key={item.review_id} className="sf-text-nano sf-text-subtle flex items-center gap-2">
-                    <span className="font-mono">{item.raw_query}</span>
-                    <span className={`px-1 py-0.5 rounded sf-text-nano ${statusBadge(item.status).className}`}>
-                      {statusBadge(item.status).label}
-                    </span>
-                    {item.ai_decision?.reasoning && (
-                      <span className="italic truncate max-w-[300px]">{item.ai_decision.reasoning}</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </details>
+              </button>
+              {rejectedOpen && (
+                <div className="mt-2 space-y-1">
+                  {rejected.map((item) => (
+                    <div key={item.review_id} className="sf-text-nano sf-text-subtle flex items-center gap-2">
+                      <span className="font-mono">{item.raw_query}</span>
+                      <span className={`px-1 py-0.5 rounded sf-text-nano ${statusBadge(item.status).className}`}>
+                        {statusBadge(item.status).label}
+                      </span>
+                      {item.ai_decision?.reasoning && (
+                        <span className="italic truncate max-w-[300px]">{item.ai_decision.reasoning}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
 
           {pendingAI.length > 0 && pendingHuman.length === 0 && acceptedAlias.length === 0 && rejected.length === 0 && (

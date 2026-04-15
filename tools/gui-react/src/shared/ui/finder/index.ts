@@ -11,6 +11,10 @@
  *   FinderDeleteConfirmModal — confirmation for single-run or delete-all
  *   FinderRunPromptDetails   — expandable system prompt / user message / LLM response
  *   FinderSectionCard        — collapsible card for body sections (images, variants, history)
+ *   FinderHowItWorks         — collapsible "How It Works" explainer (2-col grid layout)
+ *                              Content via typed HiwSection[] from feature-specific content file.
+ *                              Block types: text, flow, callout, compare, learn-chain, slot-steps, table.
+ *                              Place between KPI grid and first content section.
  *
  * Required hooks / selectors:
  *   useResolvedFinderModel(phaseId) — LLM model resolution, parameterized by phase
@@ -38,6 +42,7 @@
  */
 
 export { ColorSwatch, colorCircleStyle } from './ColorSwatch.tsx';
+export { DataIntegrityBanner } from './DataIntegrityBanner.tsx';
 export { FinderKpiCard } from './FinderKpiCard.tsx';
 export { FinderPanelHeader } from './FinderPanelHeader.tsx';
 export { FinderPanelFooter } from './FinderPanelFooter.tsx';
@@ -56,3 +61,15 @@ export { computePagination } from './paginationLogic.ts';
 export { usePagination } from './usePagination.ts';
 export { PagerSizeSelector } from './PagerSizeSelector.tsx';
 export { PagerNavFooter } from './PagerNavFooter.tsx';
+export { useShowMore } from './useShowMore.ts';
+export { FinderHowItWorks } from './FinderHowItWorks.tsx';
+export type {
+  FinderHowItWorksProps,
+  HiwSection,
+  HiwBlock,
+  HiwTone,
+  HiwFlowBox,
+  HiwCompareCard,
+  HiwLearnCell,
+  HiwSlotStep,
+} from './FinderHowItWorks.tsx';

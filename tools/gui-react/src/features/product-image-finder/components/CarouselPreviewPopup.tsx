@@ -9,19 +9,7 @@ import { createPortal } from 'react-dom';
 import useEmblaCarousel from 'embla-carousel-react';
 import { ActionTooltip } from '../../../shared/ui/feedback/ActionTooltip.tsx';
 import type { CarouselSlide } from '../types.ts';
-
-/* ── Helpers ──────────────────────────────────────────────────────── */
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function formatDims(w: number, h: number): string {
-  if (!w && !h) return '';
-  return `${w}\u00D7${h}`;
-}
+import { formatBytes, formatDims } from '../helpers/pifFormatUtils.ts';
 
 /* ── Main popup ───────────────────────────────────────────────────── */
 

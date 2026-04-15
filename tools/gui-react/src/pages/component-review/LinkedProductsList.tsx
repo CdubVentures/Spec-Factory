@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { usePersistedToggle } from '../../stores/collapseStore.ts';
 import type { LinkedProduct } from '../../types/componentReview.ts';
 
 interface CatalogEntry {
@@ -19,6 +19,8 @@ interface LinkedProductsListProps {
   maxHeight?: number;
   /** Start in expanded state (default: false) */
   defaultExpanded?: boolean;
+  /** Storage key for persisting expand state */
+  storageKey?: string;
 }
 
 function resolveDisplay(
@@ -30,8 +32,9 @@ function resolveDisplay(
   return { brand: '', model: productId };
 }
 
-export function LinkedProductsList({ products, headerLabel, catalog, maxHeight = 200, defaultExpanded = false }: LinkedProductsListProps) {
-  const [expanded, setExpanded] = useState(defaultExpanded);
+export function LinkedProductsList({ products, headerLabel, catalog, maxHeight = 200, defaultExpanded = false, storageKey }: LinkedProductsListProps) {
+  const resolvedKey = storageKey || `componentReview:linkedProducts:${headerLabel}`;
+  const [expanded, toggleExpanded] = usePersistedToggle(resolvedKey, defaultExpanded);
 
   if (!products || products.length === 0) return null;
 
@@ -43,7 +46,7 @@ export function LinkedProductsList({ products, headerLabel, catalog, maxHeight =
   return (
     <div className="mt-2">
       <button
-        onClick={() => setExpanded(!expanded)}
+        onClick={toggleExpanded}
         className="w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-medium text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors"
       >
         <span className="truncate">

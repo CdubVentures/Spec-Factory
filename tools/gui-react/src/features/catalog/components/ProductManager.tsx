@@ -62,6 +62,8 @@ export function ProductManager() {
   const [confirmInput, setConfirmInput] = useState('');
   // Bulk paste modal state
   const [bulkOpen, , setBulkOpen] = usePersistedToggle(`catalog:products:bulkOpen:${category}`, false);
+  const [affectedFilesOpen, toggleAffectedFiles] = usePersistedToggle('catalog:products:affectedFiles', false);
+  const [bulkRunDetailsOpen, toggleBulkRunDetails] = usePersistedToggle('catalog:products:bulkRunDetails', false);
   const [bulkBrand, setBulkBrand] = usePersistedTab<string>(`catalog:products:bulkBrand:${category}`, '');
   const [bulkGridRows, setBulkGridRows] = useState<BulkGridRow[]>([]);
   const [bulkResult, setBulkResult] = useState<BulkImportResult | null>(null);
@@ -617,10 +619,11 @@ export function ProductManager() {
                 )}
 
                 {/* Expandable: affected files */}
-                <details className="group">
-                  <summary className="cursor-pointer select-none text-[11px] font-medium hover:opacity-80 sf-text-muted sf-text-subtle">
+                <div className="group">
+                  <button type="button" onClick={toggleAffectedFiles} className="cursor-pointer select-none text-[11px] font-medium hover:opacity-80 sf-text-muted sf-text-subtle">
                     Affected files
-                  </summary>
+                  </button>
+                  {affectedFilesOpen && (
                   <div className="mt-1 font-mono text-[10px] rounded p-1.5 space-y-0.5 overflow-x-auto bg-white/60 sf-bg-surface-soft/60">
                     <div>specs/inputs/{category}/products/<span className="font-semibold">{editPid}</span>.json</div>
                     <div>*/latest/, */runs/, */review/ under <span className="font-semibold">{editPid}</span></div>
@@ -628,7 +631,8 @@ export function ProductManager() {
                     <div>category_authority/{category}/_overrides/overrides.json &rarr; products[<span className="font-semibold">{editPid}</span>]</div>
                     <div>_queue/{category}/state.json &rarr; products[<span className="font-semibold">{editPid}</span>]</div>
                   </div>
-                </details>
+                  )}
+                </div>
 
                 {/* Hint when no changes */}
                 {!hasAnyChange && (
@@ -836,10 +840,11 @@ export function ProductManager() {
               )}
 
               {bulkMut.data?.results && bulkMut.data.results.length > 0 && (
-                <details className="text-xs border sf-border-default sf-border-default rounded">
-                  <summary className="cursor-pointer px-3 py-2 sf-bg-surface-soft sf-dk-surface-900a50 font-medium">
+                <div className="text-xs border sf-border-default sf-border-default rounded">
+                  <button type="button" onClick={toggleBulkRunDetails} className="cursor-pointer px-3 py-2 sf-bg-surface-soft sf-dk-surface-900a50 font-medium w-full text-left">
                     Last run details ({bulkMut.data.results.length} rows)
-                  </summary>
+                  </button>
+                  {bulkRunDetailsOpen && (
                   <div className="max-h-40 overflow-auto p-2 space-y-1">
                     {bulkMut.data.results.slice(0, 50).map((row, idx) => (
                       <div key={`${idx}-${row.index}-${row.productId || ''}`} className="font-mono text-[11px] sf-text-muted sf-text-subtle">
@@ -850,7 +855,8 @@ export function ProductManager() {
                       <div className="sf-text-muted">Showing first 50 rows.</div>
                     )}
                   </div>
-                </details>
+                  )}
+                </div>
               )}
             </div>
 

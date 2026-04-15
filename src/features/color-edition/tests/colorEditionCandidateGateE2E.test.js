@@ -220,6 +220,83 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
     assert.ok(!pj.candidates || !pj.candidates.colors, 'no candidates in product.json');
   });
 
+  it('Gate 2 rejection must not leave orphaned candidates from that run', async () => {
+    const pid = 'mouse-gate2-leak';
+    ensureProductJson(pid);
+
+    // Run 1: establish registry with basic colors + one edition
+    const run1Result = await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: makeAppDbStub(),
+      specDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black', 'white'],
+        editions: {},
+        default_color: 'black',
+      }),
+    });
+    assert.equal(run1Result.rejected, false, 'Run 1 accepted');
+
+    // Snapshot: count candidates after Run 1
+    const run1ColorCandidates = specDb.getFieldCandidatesByProductAndField(pid, 'colors');
+    const run1EditionCandidates = specDb.getFieldCandidatesByProductAndField(pid, 'editions');
+    const run1ColorCount = run1ColorCandidates.length;
+    const run1EditionCount = run1EditionCandidates.length;
+
+    const pjAfterRun1 = readProductJson(pid);
+    const run1JsonColorCount = pjAfterRun1?.candidates?.colors?.length || 0;
+    const run1JsonEditionCount = pjAfterRun1?.candidates?.editions?.length || 0;
+
+    // Run 2: valid colors+editions pass candidate gate, but identity check
+    // has duplicate match → Gate 2 rejects the run
+    const { readColorEdition } = await import('../colorEditionStore.js');
+    const afterRun1 = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
+    const blackId = afterRun1.variant_registry.find(e => e.variant_key === 'color:black')?.variant_id;
+
+    const run2Result = await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: makeAppDbStub(),
+      specDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black', 'white', 'red'],
+        editions: { 'doom-edition': { display_name: 'DOOM Edition', colors: ['black+red'] } },
+        default_color: 'black',
+      }),
+      _callIdentityCheckOverride: makeLlmStub({
+        mappings: [
+          { new_key: 'color:black', match: blackId, action: 'match', reason: 'same' },
+          { new_key: 'color:white', match: blackId, action: 'match', reason: 'also same?' },
+          { new_key: 'color:red', match: null, action: 'new', reason: 'new' },
+          { new_key: 'edition:doom-edition', match: null, action: 'new', reason: 'new' },
+        ],
+        retired: [],
+      }),
+    });
+
+    assert.equal(run2Result.rejected, true, 'Run 2 must be rejected (duplicate match)');
+
+    // Candidates must NOT have grown — Run 2's candidates must not leak
+    const run2ColorCandidates = specDb.getFieldCandidatesByProductAndField(pid, 'colors');
+    const run2EditionCandidates = specDb.getFieldCandidatesByProductAndField(pid, 'editions');
+    assert.equal(run2ColorCandidates.length, run1ColorCount,
+      'DB color candidates must not grow from rejected run');
+    assert.equal(run2EditionCandidates.length, run1EditionCount,
+      'DB edition candidates must not grow from rejected run');
+
+    // product.json candidates must not grow either
+    const pjAfterRun2 = readProductJson(pid);
+    const run2JsonColorCount = pjAfterRun2?.candidates?.colors?.length || 0;
+    const run2JsonEditionCount = pjAfterRun2?.candidates?.editions?.length || 0;
+    assert.equal(run2JsonColorCount, run1JsonColorCount,
+      'JSON color candidates must not grow from rejected run');
+    assert.equal(run2JsonEditionCount, run1JsonEditionCount,
+      'JSON edition candidates must not grow from rejected run');
+  });
+
   it('multi-color atom (black+red) passes validation', async () => {
     const pid = 'mouse-multi-atom';
     ensureProductJson(pid);

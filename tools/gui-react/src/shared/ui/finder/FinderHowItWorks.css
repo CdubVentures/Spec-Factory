@@ -1,0 +1,365 @@
+/* ── Tone system (CSS custom property cascade) ────────────────── */
+/* Each tone sets --hiw-fg, --hiw-bg, --hiw-border.               */
+/* Element classes (flow-box, callout, etc.) read those vars.      */
+
+.hiw-tone-accent {
+  --hiw-fg: var(--sf-token-accent, #3b82f6);
+  --hiw-bg: rgba(59, 130, 246, 0.08);
+  --hiw-border: rgba(59, 130, 246, 0.25);
+}
+.hiw-tone-green {
+  --hiw-fg: var(--sf-token-state-success-fg, #16a34a);
+  --hiw-bg: var(--sf-token-state-success-bg, rgba(34, 197, 94, 0.08));
+  --hiw-border: var(--sf-token-state-success-border, rgba(34, 197, 94, 0.25));
+}
+.hiw-tone-purple {
+  --hiw-fg: var(--sf-token-state-run-ai-fg, #7c3aed);
+  --hiw-bg: rgba(124, 58, 237, 0.08);
+  --hiw-border: rgba(124, 58, 237, 0.25);
+}
+.hiw-tone-teal {
+  --hiw-fg: #0891b2;
+  --hiw-bg: rgba(8, 145, 178, 0.08);
+  --hiw-border: rgba(8, 145, 178, 0.25);
+}
+.hiw-tone-orange {
+  --hiw-fg: var(--sf-token-state-confirm-fg, #ea580c);
+  --hiw-bg: var(--sf-token-state-confirm-bg, rgba(234, 88, 12, 0.08));
+  --hiw-border: var(--sf-token-state-confirm-border, rgba(234, 88, 12, 0.25));
+}
+.hiw-tone-amber {
+  --hiw-fg: var(--sf-token-state-warning-fg, #d97706);
+  --hiw-bg: var(--sf-token-state-warning-bg, rgba(217, 119, 6, 0.08));
+  --hiw-border: var(--sf-token-state-warning-border, rgba(217, 119, 6, 0.25));
+}
+.hiw-tone-neutral {
+  --hiw-fg: var(--sf-token-text-muted, #54617a);
+  --hiw-bg: var(--sf-token-surface-base, #f8fafc);
+  --hiw-border: var(--sf-token-border-default, #d7e0f1);
+}
+.hiw-tone-muted {
+  --hiw-fg: var(--sf-token-text-subtle, #64748b);
+  --hiw-bg: var(--sf-token-surface-base, #f1f5f9);
+  --hiw-border: var(--sf-token-border-default, #d7e0f1);
+}
+
+/* ── Layout: 2-column grid ────────────────────────────────────── */
+
+.hiw-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.hiw-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hiw-span-full {
+  grid-column: 1 / -1;
+}
+
+/* ── Section heading + number badge ───────────────────────────── */
+
+.hiw-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--sf-token-border-default, #e2e8f0);
+}
+
+.hiw-heading h3 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sf-token-text-primary, #0b1220);
+}
+
+.hiw-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: var(--sf-token-font-size-caption, 11px);
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+  background: var(--hiw-fg);
+}
+
+/* ── Text block ───────────────────────────────────────────────── */
+
+.hiw-text {
+  font-size: 12.5px;
+  color: var(--sf-token-text-muted, #54617a);
+  line-height: 1.6;
+}
+
+.hiw-text strong {
+  color: var(--sf-token-text-primary, #0b1220);
+  font-weight: 600;
+}
+
+.hiw-text code {
+  font-family: var(--sf-token-font-family-mono);
+  font-size: var(--sf-token-font-size-caption, 11px);
+  background: var(--sf-token-surface-base, #f1f5f9);
+  padding: 1px 5px;
+  border-radius: var(--sf-token-radius-sm, 3px);
+  color: var(--sf-token-accent, #3b82f6);
+}
+
+/* ── Flow diagram ─────────────────────────────────────────────── */
+
+.hiw-flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0;
+  padding: 14px 12px;
+  background: var(--sf-token-surface-base, #f1f5f9);
+  border-radius: var(--sf-token-radius-lg, 0.5rem);
+  border: 1px solid var(--sf-token-border-default, #e2e8f0);
+}
+
+.hiw-flow-box {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+  border: 1.5px solid var(--hiw-border);
+  background: var(--hiw-bg);
+  color: var(--hiw-fg);
+  min-width: 70px;
+  line-height: 1.35;
+}
+
+.hiw-flow-box small {
+  display: block;
+  font-size: var(--sf-token-font-size-nano, 9px);
+  font-weight: 400;
+  opacity: 0.8;
+  margin-top: 1px;
+}
+
+.hiw-flow-arrow {
+  font-size: 14px;
+  color: var(--sf-token-text-subtle, #64748b);
+  padding: 0 3px;
+  flex-shrink: 0;
+}
+
+/* ── Callout ──────────────────────────────────────────────────── */
+
+.hiw-callout {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--hiw-border);
+  background: var(--hiw-bg);
+  font-size: 11.5px;
+  line-height: 1.5;
+  align-items: flex-start;
+}
+
+.hiw-callout-icon {
+  font-size: 13px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ── Compare grid ─────────────────────────────────────────────── */
+
+.hiw-compare-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.hiw-compare-card {
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--hiw-border);
+  background: var(--hiw-bg);
+}
+
+.hiw-compare-title {
+  font-size: var(--sf-token-font-size-caption, 11px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--hiw-fg);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hiw-compare-badge {
+  display: inline-block;
+  font-size: var(--sf-token-font-size-nano, 9px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: var(--sf-token-radius-sm, 3px);
+  background: var(--hiw-fg);
+  color: white;
+}
+
+.hiw-compare-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: var(--sf-token-font-size-caption, 11px);
+  color: var(--sf-token-text-muted, #54617a);
+  line-height: 1.6;
+}
+
+.hiw-compare-list li {
+  padding: 1px 0 1px 12px;
+  position: relative;
+}
+
+.hiw-compare-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--hiw-fg);
+}
+
+/* ── Learn chain ──────────────────────────────────────────────── */
+
+.hiw-learn-chain {
+  display: flex;
+  flex-direction: column;
+  font-size: var(--sf-token-font-size-caption, 11px);
+}
+
+.hiw-learn-cell {
+  padding: 8px 12px;
+  border: 1px solid var(--sf-token-border-default, #e2e8f0);
+  background: var(--hiw-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hiw-learn-cell:first-child {
+  border-radius: 6px 6px 0 0;
+}
+
+.hiw-learn-cell:last-child {
+  border-radius: 0 0 6px 6px;
+}
+
+.hiw-learn-label {
+  font-weight: 700;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--hiw-fg);
+}
+
+.hiw-learn-detail {
+  font-size: 10.5px;
+  color: var(--sf-token-text-muted, #54617a);
+  line-height: 1.45;
+}
+
+.hiw-learn-arrow {
+  display: flex;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--sf-token-text-subtle, #64748b);
+  padding: 1px 0;
+  transform: rotate(90deg);
+}
+
+/* ── Slot steps ───────────────────────────────────────────────── */
+
+.hiw-slot-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hiw-slot-step {
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--hiw-border);
+  background: var(--hiw-bg);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hiw-slot-label {
+  font-size: var(--sf-token-font-size-caption, 11px);
+  font-weight: 700;
+  color: var(--hiw-fg);
+  white-space: nowrap;
+}
+
+.hiw-slot-detail {
+  font-size: var(--sf-token-font-size-caption, 11px);
+  color: var(--sf-token-text-muted, #54617a);
+}
+
+/* ── Table ────────────────────────────────────────────────────── */
+
+.hiw-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--sf-token-font-size-caption, 11px);
+  border-radius: var(--sf-token-radius-lg, 0.5rem);
+  overflow: hidden;
+  border: 1px solid var(--sf-token-border-default, #e2e8f0);
+}
+
+.hiw-table th,
+.hiw-table td {
+  padding: 7px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--sf-token-border-default, #e2e8f0);
+}
+
+.hiw-table th {
+  background: var(--sf-token-surface-base, #f1f5f9);
+  font-weight: 700;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sf-token-text-muted, #54617a);
+}
+
+.hiw-table tr:last-child td {
+  border-bottom: none;
+}
+
+.hiw-table code {
+  font-family: var(--sf-token-font-family-mono);
+  font-size: 10px;
+  background: var(--sf-token-surface-base, #f1f5f9);
+  padding: 1px 4px;
+  border-radius: var(--sf-token-radius-sm, 3px);
+  color: var(--sf-token-accent, #3b82f6);
+}
+
+.hiw-table-default {
+  font-family: var(--sf-token-font-family-mono);
+  font-size: 10px;
+  color: var(--sf-token-state-success-fg, #16a34a);
+  font-weight: 600;
+}

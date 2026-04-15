@@ -368,7 +368,7 @@ describe('validateIdentityMappings', () => {
     assert.ok(result.reason.toLowerCase().includes('slug'));
   });
 
-  it('invalid: new entry has unknown color atom', () => {
+  it('invalid: new color entry has unknown color atom', () => {
     const result = validateIdentityMappings({
       mappings: [
         { new_key: 'color:light-olive+black', match: null, action: 'new', reason: 'new' },
@@ -377,6 +377,17 @@ describe('validateIdentityMappings', () => {
       palette,
     });
     assert.equal(result.valid, false);
+  });
+
+  it('valid: new edition — slug is not checked against palette (Gate 1 covers actual atoms)', () => {
+    const result = validateIdentityMappings({
+      mappings: [
+        { new_key: 'edition:cyberpunk-2077-arasaka-edition', match: null, action: 'new', reason: 'new edition' },
+      ],
+      existingRegistry: makeRegistry(),
+      palette,
+    });
+    assert.equal(result.valid, true, 'edition slugs are identity, not color atoms — Gate 1 validates actual colors');
   });
 
   it('valid: match updates color atoms (all in palette)', () => {

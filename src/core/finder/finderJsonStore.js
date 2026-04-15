@@ -218,7 +218,8 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
 
   /**
    * Delete a single run by run_number. Recalculates selected from remaining runs.
-   * Returns updated doc, or null if no runs remain (file deleted).
+   * WHY: Extra fields (variant_registry, evaluations, carousel_slots) survive even
+   * when all runs are removed — they are not owned by run history.
    */
   function deleteRun({ productId, productRoot, runNumber }) {
     const existing = read({ productId, productRoot });
@@ -229,11 +230,6 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
 
     if (remaining.length === existingRuns.length) return existing;
 
-    if (remaining.length === 0) {
-      unlinkWithRetry(resolvePath(productId, productRoot));
-      return null;
-    }
-
     const recalculated = recalculateFromRuns(remaining, existing.product_id || productId, existing.category, existing);
     write({ productId, productRoot, data: recalculated });
     return recalculated;
@@ -241,7 +237,7 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
 
   /**
    * Delete multiple runs by run_number. Recalculates selected once from remaining.
-   * Returns updated doc, or null if no runs remain (file deleted).
+   * WHY: Extra fields survive even when all runs are removed.
    */
   function deleteRuns({ productId, productRoot, runNumbers }) {
     const existing = read({ productId, productRoot });
@@ -253,21 +249,23 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
 
     if (remaining.length === existingRuns.length) return existing;
 
-    if (remaining.length === 0) {
-      unlinkWithRetry(resolvePath(productId, productRoot));
-      return null;
-    }
-
     const recalculated = recalculateFromRuns(remaining, existing.product_id || productId, existing.category, existing);
     write({ productId, productRoot, data: recalculated });
     return recalculated;
   }
 
   /**
-   * Delete all finder data for a product. Removes the JSON file.
+   * Delete all runs for a product. Clears run history but preserves extra fields
+   * (variant_registry, evaluations, carousel_slots).
+   * WHY: "Delete all runs" erases discovery history, not the entity layer.
+   * Variants and PIF data are independent of run history.
    */
   function deleteAll({ productId, productRoot }) {
-    unlinkWithRetry(resolvePath(productId, productRoot));
+    const existing = read({ productId, productRoot });
+    if (!existing) return { deleted: true };
+
+    const cleaned = recalculateFromRuns([], existing.product_id || productId, existing.category, existing);
+    write({ productId, productRoot, data: cleaned });
     return { deleted: true };
   }
 

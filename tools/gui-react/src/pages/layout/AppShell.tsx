@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { TabNav } from './TabNav.tsx';
@@ -70,7 +70,7 @@ export function AppShell() {
   // ── Local UI state ────────────────────────────────────────────────
   const isRunning = Boolean(processStatus?.running);
   const [headerTaskDrawerOpen, toggleHeaderTaskDrawer] = usePersistedToggle('appShell:header:taskDrawer:open', false);
-  const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
+  const [settingsPanelOpen, toggleSettingsPanel, setSettingsPanelOpen] = usePersistedToggle('appShell:settingsPanel:open', false);
   const settingsPanelRef = useRef<HTMLDivElement | null>(null);
   const blockUntilSettingsReady = !settingsReady && !allowDegradedRender;
   const indicatorTitle = isRunning
@@ -118,7 +118,7 @@ export function AppShell() {
         <div className="flex items-center gap-3">
           <div ref={settingsPanelRef} className="relative">
             <button
-              onClick={() => setSettingsPanelOpen((open) => !open)}
+              onClick={toggleSettingsPanel}
               className="sf-shell-header-control inline-flex h-8 w-8 items-center justify-center"
               title={settingsPanelOpen ? 'Close app settings' : 'Open app settings'}
               aria-label={settingsPanelOpen ? 'Close app settings' : 'Open app settings'}

@@ -59,9 +59,10 @@
   .section-toggle .toggle-subtitle { font-size: 10px; color: var(--text-subtle); }
   .section-body { padding: 0 20px 24px; }
 
-  /* Explainer */
-  .explainer { display: flex; flex-direction: column; gap: 24px; }
+  /* Explainer — 2-column grid */
+  .explainer { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .exp-section { display: flex; flex-direction: column; gap: 10px; }
+  .exp-span-full { grid-column: 1 / -1; }
   .exp-heading { display: flex; align-items: center; gap: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border-light); }
   .exp-num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; font-weight: 700; color: white; flex-shrink: 0; }
   .exp-heading h3 { font-size: 13px; font-weight: 700; }
@@ -71,9 +72,9 @@
 
   /* Flow diagrams */
   .flow { display: flex; align-items: center; justify-content: center; gap: 0; flex-wrap: wrap; padding: 14px 12px; background: var(--surface-alt); border-radius: var(--radius); border: 1px solid var(--border-light); }
-  .flow-box { padding: 8px 14px; border-radius: 6px; font-size: 11px; font-weight: 600; text-align: center; border: 1.5px solid; min-width: 100px; line-height: 1.35; }
+  .flow-box { padding: 6px 10px; border-radius: 6px; font-size: 10px; font-weight: 600; text-align: center; border: 1.5px solid; min-width: 70px; line-height: 1.35; }
   .flow-box small { display: block; font-size: 9px; font-weight: 400; opacity: 0.8; margin-top: 1px; }
-  .flow-arrow { font-size: 16px; color: var(--text-subtle); padding: 0 5px; flex-shrink: 0; }
+  .flow-arrow { font-size: 14px; color: var(--text-subtle); padding: 0 3px; flex-shrink: 0; }
   .flow-accent  { background: var(--accent-light); border-color: var(--accent-border); color: var(--accent); }
   .flow-green   { background: var(--green-bg); border-color: var(--green-border); color: var(--green); }
   .flow-purple  { background: var(--purple-bg); border-color: var(--purple-border); color: var(--purple); }
@@ -90,7 +91,7 @@
   .callout-teal   { background: var(--teal-bg); border-color: var(--teal-border); }
 
   /* Compare cards */
-  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .compare-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
   .compare-card { padding: 12px; border-radius: 6px; border: 1px solid; }
   .compare-card h4 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
   .compare-card ul { list-style: none; padding: 0; font-size: 11px; color: var(--text-muted); line-height: 1.6; }
@@ -113,14 +114,14 @@
   /* Placeholder */
   .placeholder-section { background: var(--surface); border: 1px dashed var(--border); border-radius: var(--radius); padding: 24px; text-align: center; color: var(--text-subtle); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
 
-  /* Learning diagram */
-  .learn-row { display: flex; align-items: stretch; gap: 0; font-size: 11px; }
-  .learn-cell { flex: 1; padding: 10px 12px; border: 1px solid var(--border-light); display: flex; flex-direction: column; gap: 3px; }
-  .learn-cell:first-child { border-radius: 6px 0 0 6px; }
-  .learn-cell:last-child { border-radius: 0 6px 6px 0; }
+  /* Learning diagram — vertical stack */
+  .learn-row { display: flex; flex-direction: column; font-size: 11px; }
+  .learn-cell { padding: 8px 12px; border: 1px solid var(--border-light); display: flex; flex-direction: column; gap: 2px; }
+  .learn-cell:first-child { border-radius: 6px 6px 0 0; }
+  .learn-cell:last-child { border-radius: 0 0 6px 6px; }
   .learn-label { font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: 0.03em; }
   .learn-detail { font-size: 10.5px; color: var(--text-muted); line-height: 1.45; }
-  .learn-arrow-col { display: flex; align-items: center; font-size: 14px; color: var(--text-subtle); padding: 0 2px; }
+  .learn-arrow-col { display: flex; justify-content: center; font-size: 12px; color: var(--text-subtle); padding: 1px 0; transform: rotate(90deg); }
 </style>
 </head>
 <body>
@@ -307,8 +308,8 @@
           </div>
         </div>
 
-        <!-- 7. Settings -->
-        <div class="exp-section">
+        <!-- 7. Settings — full width -->
+        <div class="exp-section exp-span-full">
           <div class="exp-heading">
             <span class="exp-num" style="background:var(--text-muted);">7</span>
             <h3>Key Settings</h3>

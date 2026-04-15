@@ -14,6 +14,7 @@
  */
 
 import { zodToLlmSchema } from '../../core/llm/zodToLlmSchema.js';
+import { resolvePromptTemplate } from '../../core/llm/resolvePromptTemplate.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
 import { productImageFinderResponseSchema } from './productImageSchema.js';
 
@@ -621,6 +622,35 @@ export function accumulateVariantDiscoveryLog(previousRuns, variantKey, variantI
  * @param {string[]} opts.siblingsExcluded — sibling model names to avoid (from CEF)
  * @returns {string}
  */
+// WHY: Default template for PIF view search. {{VARIABLE}} placeholders mark dynamic injection points.
+export const PIF_VIEW_DEFAULT_TEMPLATE = `Find high-resolution product images for: {{BRAND}} {{MODEL}} — {{VARIANT_DESC}}
+
+IDENTITY: You are looking for the EXACT product "{{BRAND}} {{MODEL}}"{{VARIANT_SUFFIX}}. Not a different model in the same product family. If you encounter sibling models, skip them.
+{{IDENTITY_WARNING}}
+{{SIBLINGS_LINE}}
+VIEW DEFINITIONS — classify every image with one of these exact view names:
+
+{{PRIORITY_VIEWS}}
+{{ADDITIONAL_VIEWS}}
+
+For each priority view, find up to 3 candidate images ranked by resolution and clarity.
+For additional views, include any clean product shots you encounter while searching.
+
+Every image you return MUST use one of these view names: {{ALL_VIEW_KEYS}}
+
+{{IMAGE_REQUIREMENTS}}
+
+{{PREVIOUS_DISCOVERY}}Search strategy:
+- Search broadly: manufacturer product pages, Amazon, Best Buy, Newegg, retailer CDNs, press kits, review sites with high-res product galleries
+- Look for the specific {{VARIANT_TYPE_WORD}} variant page or color selector
+- Prioritize the highest-resolution version you can find from ANY reliable source
+
+If a specific view is genuinely unavailable for this variant, omit it rather than returning a wrong angle.
+
+Return JSON:
+- "images": [{ "view": "view-name", "url": "direct-image-url", "source_page": "page-where-found", "alt_text": "image alt text if available" }, ...]
+- "discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }`;
+
 export function buildProductImageFinderPrompt({
   product = {},
   variantLabel = '',
@@ -634,6 +664,7 @@ export function buildProductImageFinderPrompt({
   ambiguityLevel = 'easy',
   previousDiscovery = { urlsChecked: [], queriesRun: [] },
   promptOverride = '',
+  templateOverride = '',
 }) {
   const brand = product.brand || '';
   const baseModel = product.base_model || '';
@@ -681,27 +712,12 @@ export function buildProductImageFinderPrompt({
     : '';
 
   const additionalSection = additionalViews.length > 0
-    ? `ADDITIONAL (include if you find clean product shots matching these angles):\n${additionalViews.map(v => `  - "${v.key}" — ${v.description}${viewMinLabel(v)}`).join('\n')}`
+    ? `\n` + `ADDITIONAL (include if you find clean product shots matching these angles):\n${additionalViews.map(v => `  - "${v.key}" — ${v.description}${viewMinLabel(v)}`).join('\n')}`
     : '';
 
   const allViewKeys = CANONICAL_VIEW_KEYS.join(', ');
 
-  return `Find high-resolution product images for: ${brand} ${model} — ${variantDesc}
-
-IDENTITY: You are looking for the EXACT product "${brand} ${model}"${variant ? ` (variant: ${variant})` : ''}. Not a different model in the same product family. If you encounter sibling models, skip them.
-${identityWarning}
-${siblingLine}
-VIEW DEFINITIONS — classify every image with one of these exact view names:
-
-${prioritySection}
-${additionalSection ? '\n' + additionalSection : ''}
-
-For each priority view, find up to 3 candidate images ranked by resolution and clarity.
-For additional views, include any clean product shots you encounter while searching.
-
-Every image you return MUST use one of these view names: ${allViewKeys}
-
-${promptOverride || `Image requirements:
+  const imageRequirements = promptOverride || `Image requirements:
 - Clean product shot — the product isolated on a white or plain background, or a clean studio/press shot
 - NOT: lifestyle photos, styled banners, marketing collages, box art, screenshots, in-use/in-hand photos, group shots, images with decorative backgrounds
 - The image must show the EXACT product: ${brand} ${model} in ${variantDesc}
@@ -709,21 +725,28 @@ ${promptOverride || `Image requirements:
 - The URL must be a DIRECT link to the image file (.jpg, .png, .webp or image content-type). Not a page URL.
 - If a site uses dynamic image URLs (e.g. query-string sizing), find or construct the highest-resolution static variant
 - Prefer images where the product fills most of the frame with minimal background
-- Images below the per-view minimum resolution will be rejected — do not return small thumbnails or icons`}
+- Images below the per-view minimum resolution will be rejected — do not return small thumbnails or icons`;
 
-${previousDiscovery.urlsChecked.length > 0 || previousDiscovery.queriesRun.length > 0 ? `Previous searches for this variant (do not repeat — find NEW sources or verify these still work):
-${previousDiscovery.urlsChecked.length > 0 ? `- URLs already checked: ${JSON.stringify(previousDiscovery.urlsChecked)}` : ''}
-${previousDiscovery.queriesRun.length > 0 ? `- Queries already run: ${JSON.stringify(previousDiscovery.queriesRun)}` : ''}
-` : ''}Search strategy:
-- Search broadly: manufacturer product pages, Amazon, Best Buy, Newegg, retailer CDNs, press kits, review sites with high-res product galleries
-- Look for the specific ${variantType === 'edition' ? 'edition' : 'color'} variant page or color selector
-- Prioritize the highest-resolution version you can find from ANY reliable source
+  const previousDiscoverySection = (previousDiscovery.urlsChecked.length > 0 || previousDiscovery.queriesRun.length > 0)
+    ? `Previous searches for this variant (do not repeat — find NEW sources or verify these still work):\n${previousDiscovery.urlsChecked.length > 0 ? `- URLs already checked: ${JSON.stringify(previousDiscovery.urlsChecked)}\n` : ''}${previousDiscovery.queriesRun.length > 0 ? `- Queries already run: ${JSON.stringify(previousDiscovery.queriesRun)}\n` : ''}\n`
+    : '';
 
-If a specific view is genuinely unavailable for this variant, omit it rather than returning a wrong angle.
+  const template = templateOverride || PIF_VIEW_DEFAULT_TEMPLATE;
 
-Return JSON:
-- "images": [{ "view": "view-name", "url": "direct-image-url", "source_page": "page-where-found", "alt_text": "image alt text if available" }, ...]
-- "discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }`;
+  return resolvePromptTemplate(template, {
+    BRAND: brand,
+    MODEL: model,
+    VARIANT_DESC: variantDesc,
+    VARIANT_SUFFIX: variant ? ` (variant: ${variant})` : '',
+    IDENTITY_WARNING: identityWarning,
+    SIBLINGS_LINE: siblingLine,
+    PRIORITY_VIEWS: prioritySection,
+    ADDITIONAL_VIEWS: additionalSection,
+    ALL_VIEW_KEYS: allViewKeys,
+    IMAGE_REQUIREMENTS: imageRequirements,
+    PREVIOUS_DISCOVERY: previousDiscoverySection,
+    VARIANT_TYPE_WORD: variantType === 'edition' ? 'edition' : 'color',
+  });
 }
 
 export const PRODUCT_IMAGE_FINDER_SPEC = {
@@ -781,6 +804,18 @@ export function createProductImageFinderCallLlm(deps) {
  * @param {string} [opts.promptOverride] — custom instruction text replacing default
  * @returns {string}
  */
+// WHY: Default template for PIF hero search. {{VARIABLE}} placeholders mark dynamic injection points.
+export const PIF_HERO_DEFAULT_TEMPLATE = `{{HERO_INSTRUCTIONS}}
+
+IDENTITY: You are looking for the EXACT product "{{BRAND}} {{MODEL}}"{{VARIANT_SUFFIX}}.
+{{IDENTITY_WARNING}}
+{{SIBLINGS_LINE}}
+Every image you return MUST use the view name "hero".
+
+{{PREVIOUS_DISCOVERY}}Return JSON:
+- "images": [{ "view": "hero", "url": "direct-image-url", "source_page": "page-where-found", "alt_text": "image alt text if available" }, ...]
+- "discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }`;
+
 export function buildHeroImageFinderPrompt({
   product = {},
   variantLabel = '',
@@ -792,6 +827,7 @@ export function buildHeroImageFinderPrompt({
   ambiguityLevel = 'easy',
   previousDiscovery = { urlsChecked: [], queriesRun: [] },
   promptOverride = '',
+  templateOverride = '',
 }) {
   const brand = product.brand || '';
   const model = product.model || '';
@@ -824,7 +860,7 @@ ${previousDiscovery.queriesRun.length > 0 ? `- Queries already run: ${JSON.strin
 ` : '';
 
   // Use custom override or built-in instructions
-  const instructions = promptOverride || `Find high-quality lifestyle and contextual product images for: ${brand} ${model} — ${variantDesc}
+  const heroInstructions = promptOverride || `Find high-quality lifestyle and contextual product images for: ${brand} ${model} — ${variantDesc}
 
 You are looking for images that show this product IN CONTEXT — placed on a desk, in a gaming setup, on a workspace surface, or in any real-world environment. The background and setting are intentional and valuable. These are NOT cutout/studio shots.
 
@@ -859,16 +895,17 @@ Allowed sources (in priority order):
 3. Authorized retailer product galleries (Amazon A+ content, Best Buy) — lifestyle images showing the product in context
 Do NOT use images from editorial review sites — even if the photo looks contextual, it is copyrighted editorial content.`;
 
-  return `${instructions}
+  const template = templateOverride || PIF_HERO_DEFAULT_TEMPLATE;
 
-IDENTITY: You are looking for the EXACT product "${brand} ${model}"${variant ? ` (variant: ${variant})` : ''}.
-${identityWarning}
-${siblingLine}
-Every image you return MUST use the view name "hero".
-
-${discoverySection}Return JSON:
-- "images": [{ "view": "hero", "url": "direct-image-url", "source_page": "page-where-found", "alt_text": "image alt text if available" }, ...]
-- "discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }`;
+  return resolvePromptTemplate(template, {
+    BRAND: brand,
+    MODEL: model,
+    VARIANT_SUFFIX: variant ? ` (variant: ${variant})` : '',
+    IDENTITY_WARNING: identityWarning,
+    SIBLINGS_LINE: siblingLine,
+    PREVIOUS_DISCOVERY: discoverySection,
+    HERO_INSTRUCTIONS: heroInstructions,
+  });
 }
 
 export const HERO_IMAGE_FINDER_SPEC = {

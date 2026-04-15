@@ -6,20 +6,24 @@ interface FinderDeleteConfirmModalProps {
   onCancel: () => void;
   isPending: boolean;
   moduleLabel?: string;
+  /** Override the default description with a module-specific explanation. */
+  descriptionOverrides?: Readonly<Record<'run' | 'loop' | 'all', string>>;
 }
 
-export function FinderDeleteConfirmModal({ target, onConfirm, onCancel, isPending, moduleLabel = 'Finder' }: FinderDeleteConfirmModalProps) {
+export function FinderDeleteConfirmModal({ target, onConfirm, onCancel, isPending, moduleLabel = 'Finder', descriptionOverrides }: FinderDeleteConfirmModalProps) {
   const title = target.kind === 'all'
     ? `Delete all ${moduleLabel} data?`
     : target.kind === 'loop'
       ? `Delete loop (${target.runNumbers?.length ?? 0} runs)?`
       : `Delete run #${target.runNumber}?`;
 
-  const description = target.kind === 'all'
+  const defaultDescription = target.kind === 'all'
     ? `This will permanently remove all ${target.count ?? 0} run(s) and reset the ${moduleLabel} state for this product.`
     : target.kind === 'loop'
       ? `This will permanently remove all ${target.runNumbers?.length ?? 0} run(s) from this loop and recalculate the selected state from remaining runs.`
       : `This will permanently remove run #${target.runNumber} and recalculate the selected state from remaining runs.`;
+
+  const description = descriptionOverrides?.[target.kind] ?? defaultDescription;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">

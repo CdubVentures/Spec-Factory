@@ -222,3 +222,32 @@ export interface VariantInfo {
   type: 'color' | 'edition';
   variant_id?: string;
 }
+
+/* ── Selector display types (used by pifSelectors + panel) ────────── */
+
+/** Image entry enriched with run metadata for the gallery. */
+export interface GalleryImage extends ProductImageEntry {
+  run_number: number;
+  run_model: string;
+  run_ran_at: string;
+}
+
+export interface ImageGroup {
+  key: string;
+  label: string;
+  type: 'color' | 'edition';
+  variant_id?: string;
+  orphaned?: boolean;
+  images: GalleryImage[];
+}
+
+export interface RunGroup {
+  type: 'single' | 'loop';
+  loopId?: string;
+  runs: ProductImageFinderRun[];
+}
+
+export interface EvalVariantGroup {
+  variantKey: string;
+  evals: EvalRecord[];
+}

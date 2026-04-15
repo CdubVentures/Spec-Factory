@@ -1,4 +1,5 @@
-import { useReviewStore } from '../state/reviewStore.ts';
+import { useMemo } from 'react';
+import { useBrandFilter, useReviewActions } from '../state/reviewStore.ts';
 import type { ProductReviewPayload } from '../../../types/review.ts';
 
 interface BrandFilterBarProps {
@@ -7,14 +8,17 @@ interface BrandFilterBarProps {
 }
 
 export function BrandFilterBar({ brands, products }: BrandFilterBarProps) {
-  const { brandFilter, setBrandFilterMode, toggleBrand } = useReviewStore();
+  const brandFilter = useBrandFilter();
+  const { setBrandFilterMode, toggleBrand } = useReviewActions();
 
-  // Count products per brand
-  const brandCounts = new Map<string, number>();
-  for (const p of products) {
-    const b = (p.identity?.brand || '').trim();
-    if (b) brandCounts.set(b, (brandCounts.get(b) || 0) + 1);
-  }
+  const brandCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const p of products) {
+      const b = (p.identity?.brand || '').trim();
+      if (b) map.set(b, (map.get(b) || 0) + 1);
+    }
+    return map;
+  }, [products]);
 
   const isAllSelected = brandFilter.mode === 'all';
   const isNoneSelected = brandFilter.mode === 'none';

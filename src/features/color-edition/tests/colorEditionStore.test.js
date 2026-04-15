@@ -370,13 +370,14 @@ describe('colorEditionStore — delete run', () => {
     assert.deepEqual(result.selected.colors, ['black']);
   });
 
-  it('deleting the only run returns null and removes file', () => {
+  it('deleting the only run preserves file with empty runs and extra fields', () => {
     writeColorEdition({
       productId: 'del-003', productRoot: DEL_ROOT,
       data: {
         product_id: 'del-003', category: 'mouse',
         selected: { colors: ['black'], editions: {}, default_color: 'black' },
-        last_ran_at: '2026-04-01T00:00:00Z', run_count: 1,
+        variant_registry: [{ variant_id: 'v_aa', variant_key: 'color:black' }],
+        last_ran_at: '2026-04-01T00:00:00Z', run_count: 1, next_run_number: 2,
         runs: [{
           run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
           fallback_used: false,
@@ -387,9 +388,13 @@ describe('colorEditionStore — delete run', () => {
     });
 
     const result = deleteColorEditionFinderRun({ productId: 'del-003', productRoot: DEL_ROOT, runNumber: 1 });
-    assert.equal(result, null);
+    // WHY: File survives — variant_registry is preserved for rebuild
+    assert.ok(result, 'doc must survive');
+    assert.deepEqual(result.runs, []);
+    assert.equal(result.run_count, 0);
+    assert.deepEqual(result.variant_registry, [{ variant_id: 'v_aa', variant_key: 'color:black' }]);
     const check = readColorEdition({ productId: 'del-003', productRoot: DEL_ROOT });
-    assert.equal(check, null);
+    assert.ok(check, 'file must survive');
   });
 
   it('deleting non-existent run number returns unchanged doc', () => {
@@ -419,16 +424,26 @@ describe('colorEditionStore — delete all', () => {
   const DELALL_ROOT = path.join(TMP_ROOT, '_delall');
   before(() => fs.mkdirSync(DELALL_ROOT, { recursive: true }));
 
-  it('removes JSON file', () => {
+  it('clears runs but preserves file with extra fields', () => {
     writeColorEdition({
       productId: 'delall-001', productRoot: DELALL_ROOT,
-      data: { product_id: 'delall-001', category: 'mouse', selected: { colors: [], editions: {}, default_color: '' }, run_count: 0, runs: [] },
+      data: {
+        product_id: 'delall-001', category: 'mouse',
+        selected: { colors: ['black'], editions: {}, default_color: 'black' },
+        variant_registry: [{ variant_id: 'v_bb', variant_key: 'color:black' }],
+        run_count: 1, next_run_number: 2,
+        runs: [{ run_number: 1, ran_at: '2026-04-01', selected: { colors: ['black'] } }],
+      },
     });
 
     const result = deleteColorEditionFinderAll({ productId: 'delall-001', productRoot: DELALL_ROOT });
     assert.equal(result.deleted, true);
+    // WHY: File survives with variant_registry preserved
     const check = readColorEdition({ productId: 'delall-001', productRoot: DELALL_ROOT });
-    assert.equal(check, null);
+    assert.ok(check, 'file must survive deleteAll');
+    assert.deepEqual(check.runs, []);
+    assert.equal(check.run_count, 0);
+    assert.deepEqual(check.variant_registry, [{ variant_id: 'v_bb', variant_key: 'color:black' }]);
   });
 
   it('returns deleted:true even if file does not exist', () => {

@@ -124,20 +124,20 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   <h1>Schema Reference</h1>
   <p>Complete inventory of all SQL tables across Spec Factory's two database surfaces. Each table shows its columns, primary key, foreign keys, indexes, owning store module, audited rebuild status, and whether add/remove edits in the durable source are honored on a deleted-DB rebuild.</p>
   <div class="meta">
-    <span>Generated 2026-04-12</span>
+    <span>Generated 2026-04-15</span>
     <span>Schema + Rebuild SSOT</span>
   </div>
 </header>
 
 <div class="stats">
   <div class="stat"><div class="n">29</div><div class="l">SpecDb Tables</div></div>
-  <div class="stat"><div class="n">7</div><div class="l">AppDb Tables</div></div>
-  <div class="stat"><div class="n">18</div><div class="l">Store Modules</div></div>
-  <div class="stat"><div class="n">36</div><div class="l">Total Tables</div></div>
-  <div class="stat"><div class="n">21</div><div class="l">JSON-backed</div></div>
+  <div class="stat"><div class="n">8</div><div class="l">AppDb Tables</div></div>
+  <div class="stat"><div class="n">19</div><div class="l">Store Modules</div></div>
+  <div class="stat"><div class="n">37</div><div class="l">Total Tables</div></div>
+  <div class="stat"><div class="n">22</div><div class="l">JSON-backed</div></div>
   <div class="stat"><div class="n">7</div><div class="l">DB-only</div></div>
   <div class="stat"><div class="n">7</div><div class="l">Deferred</div></div>
-  <div class="stat"><div class="n">28</div><div class="l">CQRS ✓</div></div>
+  <div class="stat"><div class="n">29</div><div class="l">CQRS ✓</div></div>
   <div class="stat"><div class="n">8</div><div class="l">CQRS ✗</div></div>
 </div>
 
@@ -574,7 +574,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <div class="life-grid">
       <div class="life-item">
         <div class="life-k">Durable source</div>
-        <div class="life-v">Derived from latest/normalized.json + component seed surfaces</div>
+        <div class="life-v">Derived from field_candidates (resolved) + component seed surfaces</div>
       </div>
       <div class="life-item">
         <div class="life-k">Deleted-DB rebuild</div>
@@ -632,7 +632,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <div class="life-grid">
       <div class="life-item">
         <div class="life-k">Durable source</div>
-        <div class="life-v">Derived from latest/normalized.json + enum/list seed surfaces</div>
+        <div class="life-v">Derived from field_candidates (resolved) + enum/list seed surfaces</div>
       </div>
       <div class="life-item">
         <div class="life-k">Deleted-DB rebuild</div>
@@ -681,7 +681,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <div class="domain-group">
   <div class="domain-label">Catalog</div>
   <details class="table-card" data-table="products">
-  <summary><span class="tname">products</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-usage-src">SRC: 38</span><span class="tag tag-usage-gui">GUI: 1</span><span class="tag tag-cols">7 cols</span><span class="tag tag-store">queueProductStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
+  <summary><span class="tname">products</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-usage-src">SRC: 37</span><span class="tag tag-usage-gui">GUI: 1</span><span class="tag tag-cols">7 cols</span><span class="tag tag-store">queueProductStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -721,9 +721,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <div class="usage-section">
     <div class="usage-head">
       <div class="usage-title">Source Files</div>
-      <div class="usage-count">38 files</div>
+      <div class="usage-count">37 files</div>
     </div>
-    <ul class="usage-file-list"><li><code>src/app/api/catalogHelpers.js</code></li><li><code>src/app/api/specDbRuntime.js</code></li><li><code>src/app/cli/commands/discoverCommand.js</code></li><li><code>src/app/cli/commands/migrateToSqliteCommand.js</code></li><li><code>src/app/cli/commands/pipelineCommands.js</code></li><li><code>src/core/config/runtimeArtifactRoots.js</code></li><li><code>src/core/finder/finderRoutes.js</code></li><li><code>src/db/seedEngine.js</code></li><li><code>src/db/seedRegistry.js</code></li><li><code>src/db/specDb.js</code></li><li><code>src/db/specDbSchema.js</code></li><li><code>src/db/specDbStatements.js</code></li><li><code>src/db/stores/fieldCandidateStore.js</code></li><li><code>src/db/stores/purgeStore.js</code></li><li><code>src/db/stores/queueProductStore.js</code></li><li><code>src/features/catalog/api/catalogRoutes.js</code></li><li><code>src/features/catalog/identity/brandRegistry.js</code></li><li><code>src/features/catalog/identity/productIdentityAuthority.js</code></li><li><code>src/features/catalog/products/backfillProductJsons.js</code></li><li><code>src/features/catalog/products/productCatalog.js</code></li><li><code>src/features/catalog/products/reconciler.js</code></li><li><code>src/features/catalog/products/upsertCatalogProductRow.js</code></li><li><code>src/features/indexing/api/builders/domainChecklistBuilder.js</code></li><li><code>src/features/indexing/api/builders/runListBuilder.js</code></li><li><code>src/features/indexing/api/storageManagerRoutes.js</code></li><li><code>src/features/indexing/orchestration/bootstrap/buildJobFromDb.js</code></li><li><code>src/features/indexing/pipeline/shared/urlClassifier.js</code></li><li><code>src/features/product-image/api/productImageFinderRoutes.js</code></li><li><code>src/features/publisher/api/publisherRoutes.js</code></li><li><code>src/features/review/api/componentReviewHandlers.js</code></li><li><code>src/features/review/api/fieldReviewHandlers.js</code></li><li><code>src/features/review/api/routeSharedHelpers.js</code></li><li><code>src/features/review/contracts/reviewFieldContract.js</code></li><li><code>src/features/review/domain/reviewGridData.js</code></li><li><code>src/features/studio/api/studioRoutes.js</code></li><li><code>src/indexlab/runtimeBridgeEventHandlers.js</code></li><li><code>src/pipeline/checkpoint/scanAndSeedCheckpoints.js</code></li><li><code>src/pipeline/checkpoint/seedFromCheckpoint.js</code></li></ul>
+    <ul class="usage-file-list"><li><code>src/app/api/catalogHelpers.js</code></li><li><code>src/app/api/specDbRuntime.js</code></li><li><code>src/app/cli/commands/discoverCommand.js</code></li><li><code>src/app/cli/commands/migrateToSqliteCommand.js</code></li><li><code>src/app/cli/commands/pipelineCommands.js</code></li><li><code>src/core/config/runtimeArtifactRoots.js</code></li><li><code>src/core/finder/finderRoutes.js</code></li><li><code>src/db/seedEngine.js</code></li><li><code>src/db/seedRegistry.js</code></li><li><code>src/db/specDb.js</code></li><li><code>src/db/specDbSchema.js</code></li><li><code>src/db/specDbStatements.js</code></li><li><code>src/db/stores/fieldCandidateStore.js</code></li><li><code>src/db/stores/purgeStore.js</code></li><li><code>src/db/stores/queueProductStore.js</code></li><li><code>src/features/catalog/api/catalogRoutes.js</code></li><li><code>src/features/catalog/identity/brandRegistry.js</code></li><li><code>src/features/catalog/identity/productIdentityAuthority.js</code></li><li><code>src/features/catalog/products/backfillProductJsons.js</code></li><li><code>src/features/catalog/products/productCatalog.js</code></li><li><code>src/features/catalog/products/reconciler.js</code></li><li><code>src/features/catalog/products/upsertCatalogProductRow.js</code></li><li><code>src/features/indexing/api/builders/domainChecklistBuilder.js</code></li><li><code>src/features/indexing/api/builders/runListBuilder.js</code></li><li><code>src/features/indexing/api/storageManagerRoutes.js</code></li><li><code>src/features/indexing/orchestration/bootstrap/buildJobFromDb.js</code></li><li><code>src/features/indexing/pipeline/shared/urlClassifier.js</code></li><li><code>src/features/product-image/api/productImageFinderRoutes.js</code></li><li><code>src/features/publisher/api/publisherRoutes.js</code></li><li><code>src/features/review/api/componentReviewHandlers.js</code></li><li><code>src/features/review/api/fieldReviewHandlers.js</code></li><li><code>src/features/review/api/routeSharedHelpers.js</code></li><li><code>src/features/review/contracts/reviewFieldContract.js</code></li><li><code>src/features/studio/api/studioRoutes.js</code></li><li><code>src/indexlab/runtimeBridgeEventHandlers.js</code></li><li><code>src/pipeline/checkpoint/scanAndSeedCheckpoints.js</code></li><li><code>src/pipeline/checkpoint/seedFromCheckpoint.js</code></li></ul>
   </div>
     <div class="usage-section">
     <div class="usage-head">
@@ -823,7 +823,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <div class="domain-group">
   <div class="domain-label">Billing</div>
   <details class="table-card" data-table="billing_entries">
-  <summary><span class="tname">billing_entries</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-usage-src">SRC: 10</span><span class="tag tag-usage-gui">GUI: 0</span><span class="tag tag-cols">21 cols</span><span class="tag tag-store">billingStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-no">source edit no</span><span class="tag tag-persist-db">db-only</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-fail">✗</span></span></summary>
+  <summary><span class="tname">billing_entries</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-usage-src">SRC: 8</span><span class="tag tag-usage-gui">GUI: 0</span><span class="tag tag-cols">21 cols</span><span class="tag tag-store">billingStore</span><span class="tag tag-life-no">rebuild no</span><span class="tag tag-sync-no">source edit no</span><span class="tag tag-persist-db">db-only</span><span class="tag tag-strict-no">strict no</span><span class="tag tag-cqrs-fail">✗</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -877,9 +877,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <div class="usage-section">
     <div class="usage-head">
       <div class="usage-title">Source Files</div>
-      <div class="usage-count">10 files</div>
+      <div class="usage-count">8 files</div>
     </div>
-    <ul class="usage-file-list"><li><code>src/app/cli/commands/migrateToSqliteCommand.js</code></li><li><code>src/billing/costLedger.js</code></li><li><code>src/db/seedEngine.js</code></li><li><code>src/db/specDb.js</code></li><li><code>src/db/specDbSchema.js</code></li><li><code>src/db/specDbStatements.js</code></li><li><code>src/db/stores/billingStore.js</code></li><li><code>src/db/stores/deletionStore.js</code></li><li><code>src/features/indexing/api/indexlabRoutes.js</code></li><li><code>src/features/indexing/api/queueBillingLearningRoutes.js</code></li></ul>
+    <ul class="usage-file-list"><li><code>src/app/cli/commands/migrateToSqliteCommand.js</code></li><li><code>src/billing/costLedger.js</code></li><li><code>src/db/appDb.js</code></li><li><code>src/db/appDbSchema.js</code></li><li><code>src/db/appDbSeed.js</code></li><li><code>src/db/seedEngine.js</code></li><li><code>src/features/indexing/api/indexlabRoutes.js</code></li><li><code>src/features/indexing/api/queueBillingLearningRoutes.js</code></li></ul>
   </div>
     <div class="usage-section">
     <div class="usage-head">
@@ -1003,7 +1003,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
       <div class="usage-title">Source Files</div>
       <div class="usage-count">21 files</div>
     </div>
-    <ul class="usage-file-list"><li><code>src/app/api/services/indexLabProcessCompletion.js</code></li><li><code>src/core/config/runtimeArtifactRoots.js</code></li><li><code>src/core/finder/finderRoutes.js</code></li><li><code>src/db/seedRegistry.js</code></li><li><code>src/db/specDb.js</code></li><li><code>src/db/specDbSchema.js</code></li><li><code>src/db/specDbStatements.js</code></li><li><code>src/db/stores/deletionStore.js</code></li><li><code>src/db/stores/purgeStore.js</code></li><li><code>src/db/stores/runMetaStore.js</code></li><li><code>src/features/indexing/api/builders/domainChecklistBuilder.js</code></li><li><code>src/features/indexing/api/builders/indexlabDataBuilders.js</code></li><li><code>src/features/indexing/api/builders/runArtifactReaders.js</code></li><li><code>src/features/indexing/api/builders/runListBuilder.js</code></li><li><code>src/features/indexing/api/indexlabRoutes.js</code></li><li><code>src/features/indexing/api/storageManagerRoutes.js</code></li><li><code>src/features/product-image/api/productImageFinderRoutes.js</code></li><li><code>src/features/product-image/productImageLlmAdapter.js</code></li><li><code>src/indexlab/runtimeBridgeArtifacts.js</code></li><li><code>src/pipeline/checkpoint/seedFromCheckpoint.js</code></li><li><code>src/pipeline/runProduct.js</code></li></ul>
+    <ul class="usage-file-list"><li><code>src/app/api/services/indexLabProcessCompletion.js</code></li><li><code>src/core/config/runtimeArtifactRoots.js</code></li><li><code>src/core/finder/finderJsonStore.js</code></li><li><code>src/core/finder/finderRoutes.js</code></li><li><code>src/db/seedRegistry.js</code></li><li><code>src/db/specDb.js</code></li><li><code>src/db/specDbSchema.js</code></li><li><code>src/db/specDbStatements.js</code></li><li><code>src/db/stores/deletionStore.js</code></li><li><code>src/db/stores/purgeStore.js</code></li><li><code>src/db/stores/runMetaStore.js</code></li><li><code>src/features/indexing/api/builders/domainChecklistBuilder.js</code></li><li><code>src/features/indexing/api/builders/indexlabDataBuilders.js</code></li><li><code>src/features/indexing/api/builders/runArtifactReaders.js</code></li><li><code>src/features/indexing/api/builders/runListBuilder.js</code></li><li><code>src/features/indexing/api/indexlabRoutes.js</code></li><li><code>src/features/indexing/api/storageManagerRoutes.js</code></li><li><code>src/features/product-image/api/productImageFinderRoutes.js</code></li><li><code>src/indexlab/runtimeBridgeArtifacts.js</code></li><li><code>src/pipeline/checkpoint/seedFromCheckpoint.js</code></li><li><code>src/pipeline/runProduct.js</code></li></ul>
   </div>
     <div class="usage-section">
     <div class="usage-head">
@@ -1072,7 +1072,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <div class="domain-group">
   <div class="domain-label">Data Sync</div>
   <details class="table-card" data-table="data_authority_sync">
-  <summary><span class="tname">data_authority_sync</span><span class="tags"><span class="tag tag-pk">PK: category</span><span class="tag tag-usage-src">SRC: 11</span><span class="tag tag-usage-gui">GUI: 0</span><span class="tag tag-cols">5 cols</span><span class="tag tag-store">specDb (direct)</span><span class="tag tag-life-system">system</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-persist-system">system</span><span class="tag tag-strict-na">strict n/a</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
+  <summary><span class="tname">data_authority_sync</span><span class="tags"><span class="tag tag-pk">PK: category</span><span class="tag tag-usage-src">SRC: 10</span><span class="tag tag-usage-gui">GUI: 0</span><span class="tag tag-cols">5 cols</span><span class="tag tag-store">specDb (direct)</span><span class="tag tag-life-system">system</span><span class="tag tag-sync-na">source edit n/a</span><span class="tag tag-persist-system">system</span><span class="tag tag-strict-na">strict n/a</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1110,9 +1110,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <div class="usage-section">
     <div class="usage-head">
       <div class="usage-title">Source Files</div>
-      <div class="usage-count">11 files</div>
+      <div class="usage-count">10 files</div>
     </div>
-    <ul class="usage-file-list"><li><code>src/app/api/services/specDbSyncService.js</code></li><li><code>src/app/api/specDbRuntime.js</code></li><li><code>src/db/specDb.js</code></li><li><code>src/db/specDbSchema.js</code></li><li><code>src/db/specDbStatements.js</code></li><li><code>src/features/category-authority/api/dataAuthorityRoutes.js</code></li><li><code>src/features/review/domain/overridesReseed.js</code></li><li><code>src/features/settings/llmRouteMatrixReseed.js</code></li><li><code>src/features/studio/fieldKeyOrderReseed.js</code></li><li><code>src/features/studio/fieldStudioMapReseed.js</code></li><li><code>src/pipeline/checkpoint/seedFromCheckpoint.js</code></li></ul>
+    <ul class="usage-file-list"><li><code>src/app/api/services/specDbSyncService.js</code></li><li><code>src/app/api/specDbRuntime.js</code></li><li><code>src/db/specDb.js</code></li><li><code>src/db/specDbSchema.js</code></li><li><code>src/db/specDbStatements.js</code></li><li><code>src/features/category-authority/api/dataAuthorityRoutes.js</code></li><li><code>src/features/settings/llmRouteMatrixReseed.js</code></li><li><code>src/features/studio/fieldKeyOrderReseed.js</code></li><li><code>src/features/studio/fieldStudioMapReseed.js</code></li><li><code>src/pipeline/checkpoint/seedFromCheckpoint.js</code></li></ul>
   </div>
     <div class="usage-section">
     <div class="usage-head">
@@ -1790,7 +1790,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <div class="domain-group">
   <div class="domain-label">Color &amp; Edition</div>
   <details class="table-card" data-table="color_edition_finder">
-  <summary><span class="tname">color_edition_finder</span><span class="tags"><span class="tag tag-pk">PK: category, product_id</span><span class="tag tag-usage-src">SRC: 7</span><span class="tag tag-usage-gui">GUI: 0</span><span class="tag tag-cols">8 cols</span><span class="tag tag-store">colorEditionFinderStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
+  <summary><span class="tname">color_edition_finder</span><span class="tags"><span class="tag tag-pk">PK: category, product_id</span><span class="tag tag-usage-src">SRC: 7</span><span class="tag tag-usage-gui">GUI: 0</span><span class="tag tag-cols">9 cols</span><span class="tag tag-store">colorEditionFinderStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1826,6 +1826,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <tr><td class="cn">cooldown_until</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
 <tr><td class="cn">latest_ran_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
 <tr><td class="cn">run_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">variant_registry</td><td class="ct">TEXT</td><td class="cc">DEFAULT '[]' <span class="migr-indicator">via migration</span></td></tr>
 </tbody></table>
     <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_cef_cooldown (cooldown_until)</div></div>
     <div class="usage-section">
@@ -1845,7 +1846,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="color_edition_finder_runs">
-  <summary><span class="tname">color_edition_finder_runs</span><span class="tags"><span class="tag tag-pk">PK: —</span><span class="tag tag-usage-src">SRC: 7</span><span class="tag tag-usage-gui">GUI: 0</span><span class="tag tag-cols">10 cols</span><span class="tag tag-store">colorEditionFinderStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
+  <summary><span class="tname">color_edition_finder_runs</span><span class="tags"><span class="tag tag-pk">PK: —</span><span class="tag tag-usage-src">SRC: 7</span><span class="tag tag-usage-gui">GUI: 0</span><span class="tag tag-cols">14 cols</span><span class="tag tag-store">colorEditionFinderStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1883,6 +1884,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <tr><td class="cn">selected_json</td><td class="ct">TEXT</td><td class="cc">DEFAULT '{}'</td></tr>
 <tr><td class="cn">prompt_json</td><td class="ct">TEXT</td><td class="cc">DEFAULT '{}'</td></tr>
 <tr><td class="cn">response_json</td><td class="ct">TEXT</td><td class="cc">DEFAULT '{}'</td></tr>
+<tr><td class="cn">effort_level</td><td class="ct">TEXT</td><td class="cc">DEFAULT '' <span class="migr-indicator">via migration</span></td></tr>
+<tr><td class="cn">access_mode</td><td class="ct">TEXT</td><td class="cc">DEFAULT '' <span class="migr-indicator">via migration</span></td></tr>
+<tr><td class="cn">thinking</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0 <span class="migr-indicator">via migration</span></td></tr>
+<tr><td class="cn">web_search</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0 <span class="migr-indicator">via migration</span></td></tr>
 </tbody></table>
     <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(category, product_id, run_number)</div><div class="idx-item">idx_cefr_product (category, product_id)</div></div>
     <div class="usage-section">
@@ -1901,11 +1906,70 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
   </div>
 </details>
+<details class="table-card" data-table="variants">
+  <summary><span class="tname">variants</span><span class="tags"><span class="tag tag-pk">PK: category, product_id, variant_id</span><span class="tag tag-usage-src">SRC: 7</span><span class="tag tag-usage-gui">GUI: 1</span><span class="tag tag-cols">12 cols</span><span class="tag tag-store">variantStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
+  <div class="card-body">
+    <div class="life-section">
+    <div class="idx-label">Rebuild Audit</div>
+    <div class="life-grid">
+      <div class="life-item">
+        <div class="life-k">Durable source</div>
+        <div class="life-v">.workspace/products/{pid}/color_edition.json → variant_registry[]</div>
+      </div>
+      <div class="life-item">
+        <div class="life-k">Deleted-DB rebuild</div>
+        <div class="life-v"><span class="tag tag-life-yes">rebuild yes</span></div>
+      </div>
+      <div class="life-item">
+        <div class="life-k">Source add/remove honored</div>
+        <div class="life-v"><span class="tag tag-sync-yes">source edit yes</span></div>
+      </div>
+      <div class="life-item">
+        <div class="life-k">No-known-caveat audit</div>
+        <div class="life-v"><span class="tag tag-strict-yes">strict yes</span></div>
+      </div>
+      <div class="life-item life-item-wide">
+        <div class="life-k">Audit note</div>
+        <div class="life-v">Per-product variant registry (stable v_&lt;8-hex&gt; IDs). Runtime SSOT for published colors/editions. Rebuilds from color_edition.json variant_registry via syncFromRegistry.</div>
+      </div>
+    </div>
+  </div>
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">variant_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">variant_key</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">variant_type</td><td class="ct">TEXT</td><td class="cc">NOT NULL CHECK(variant_type IN ('color','edition'))</td></tr>
+<tr><td class="cn">variant_label</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">color_atoms</td><td class="ct">TEXT</td><td class="cc">DEFAULT '[]'</td></tr>
+<tr><td class="cn">edition_slug</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">edition_display_name</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">retired</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT (datetime('now'))</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_variants_product (category, product_id, retired)</div></div>
+    <div class="usage-section">
+    <div class="usage-head">
+      <div class="usage-title">Source Files</div>
+      <div class="usage-count">7 files</div>
+    </div>
+    <ul class="usage-file-list"><li><code>src/core/finder/finderRoutes.js</code></li><li><code>src/db/specDb.js</code></li><li><code>src/db/specDbSchema.js</code></li><li><code>src/db/specDbStatements.js</code></li><li><code>src/db/stores/variantStore.js</code></li><li><code>src/features/color-edition/api/colorEditionFinderRoutes.js</code></li><li><code>src/features/color-edition/variantLifecycle.js</code></li></ul>
+  </div>
+    <div class="usage-section">
+    <div class="usage-head">
+      <div class="usage-title">GUI / Tools Files</div>
+      <div class="usage-count">1 file</div>
+    </div>
+    <ul class="usage-file-list"><li><code>tools/gui-react/src/features/catalog/components/productHelpers.ts</code></li></ul>
+  </div>
+  </div>
+</details>
 </div>
 <div class="domain-group">
   <div class="domain-label">Publisher Pipeline</div>
   <details class="table-card" data-table="field_candidates">
-  <summary><span class="tname">field_candidates</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-usage-src">SRC: 14</span><span class="tag tag-usage-gui">GUI: 2</span><span class="tag tag-cols">14 cols</span><span class="tag tag-store">fieldCandidateStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
+  <summary><span class="tname">field_candidates</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-usage-src">SRC: 19</span><span class="tag tag-usage-gui">GUI: 1</span><span class="tag tag-cols">15 cols</span><span class="tag tag-store">fieldCandidateStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -1940,28 +2004,29 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 <tr><td class="cn">value</td><td class="ct">TEXT</td><td class="cc"></td></tr>
 <tr><td class="cn">unit</td><td class="ct">TEXT</td><td class="cc">DEFAULT NULL</td></tr>
 <tr><td class="cn">confidence</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
-<tr><td class="cn">source_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 1</td></tr>
-<tr><td class="cn">sources_json</td><td class="ct">TEXT</td><td class="cc">DEFAULT '[]'</td></tr>
+<tr><td class="cn">source_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">source_type</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">model</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
 <tr><td class="cn">validation_json</td><td class="ct">TEXT</td><td class="cc">DEFAULT '{}'</td></tr>
 <tr><td class="cn">metadata_json</td><td class="ct">TEXT</td><td class="cc">DEFAULT '{}'</td></tr>
 <tr><td class="cn">status</td><td class="ct">TEXT</td><td class="cc">DEFAULT 'candidate' CHECK(status IN ('candidate', 'resolved'))</td></tr>
 <tr><td class="cn">submitted_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
 <tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
 </tbody></table>
-    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(category, product_id, field_key, value)</div><div class="idx-item">idx_fc_product (product_id)</div><div class="idx-item">idx_fc_field (category, product_id, field_key)</div></div>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(category, product_id, field_key, source_id)</div><div class="idx-item">idx_fc_product (product_id)</div><div class="idx-item">idx_fc_field (category, product_id, field_key)</div><div class="idx-item">idx_fc_source_id (category, product_id, field_key, source_id)</div><div class="idx-item">idx_fc_product (product_id) ')</div><div class="idx-item">idx_fc_field (category, product_id, field_key) ')</div><div class="idx-item">idx_fc_source_id (category, product_id, field_key, source_id) ')</div></div>
     <div class="usage-section">
     <div class="usage-head">
       <div class="usage-title">Source Files</div>
-      <div class="usage-count">14 files</div>
+      <div class="usage-count">19 files</div>
     </div>
-    <ul class="usage-file-list"><li><code>src/core/finder/finderRoutes.js</code></li><li><code>src/db/seed.js</code></li><li><code>src/db/seedRegistry.js</code></li><li><code>src/db/specDb.js</code></li><li><code>src/db/specDbSchema.js</code></li><li><code>src/db/specDbStatements.js</code></li><li><code>src/db/stores/fieldCandidateStore.js</code></li><li><code>src/features/publisher/api/publisherRoutes.js</code></li><li><code>src/features/publisher/candidate-gate/submitCandidate.js</code></li><li><code>src/features/publisher/candidateReseed.js</code></li><li><code>src/features/publisher/publish/publishCandidate.js</code></li><li><code>src/features/publisher/publish/publishedFieldReseed.js</code></li><li><code>src/features/publisher/publish/publishManualOverride.js</code></li><li><code>src/features/publisher/publish/reconcileThreshold.js</code></li></ul>
+    <ul class="usage-file-list"><li><code>src/app/api/catalogHelpers.js</code></li><li><code>src/core/finder/finderRoutes.js</code></li><li><code>src/db/seed.js</code></li><li><code>src/db/seedRegistry.js</code></li><li><code>src/db/specDb.js</code></li><li><code>src/db/specDbMigrations.js</code></li><li><code>src/db/specDbSchema.js</code></li><li><code>src/db/specDbStatements.js</code></li><li><code>src/db/stores/fieldCandidateStore.js</code></li><li><code>src/features/color-edition/variantLifecycle.js</code></li><li><code>src/features/publisher/api/publisherRoutes.js</code></li><li><code>src/features/publisher/candidate-gate/submitCandidate.js</code></li><li><code>src/features/publisher/candidateReseed.js</code></li><li><code>src/features/publisher/publish/publishCandidate.js</code></li><li><code>src/features/publisher/publish/publishedFieldReseed.js</code></li><li><code>src/features/publisher/publish/publishManualOverride.js</code></li><li><code>src/features/publisher/publish/reconcileThreshold.js</code></li><li><code>src/features/publisher/publish/republishField.js</code></li><li><code>src/features/review/domain/deleteCandidate.js</code></li></ul>
   </div>
     <div class="usage-section">
     <div class="usage-head">
       <div class="usage-title">GUI / Tools Files</div>
-      <div class="usage-count">2 files</div>
+      <div class="usage-count">1 file</div>
     </div>
-    <ul class="usage-file-list"><li><code>tools/gui-react/src/features/color-edition-finder/selectors/colorEditionFinderSelectors.ts</code></li><li><code>tools/gui-react/src/features/color-edition-finder/types.ts</code></li></ul>
+    <ul class="usage-file-list"><li><code>tools/gui-react/src/features/color-edition-finder/selectors/colorEditionFinderSelectors.ts</code></li></ul>
   </div>
   </div>
 </details>
@@ -2030,7 +2095,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   <div class="surface-head">
     <h2>AppDb</h2>
     <span class="tag" style="background:var(--green-s);color:var(--green)">Global</span>
-    <span class="tag tag-cols">7 tables</span>
+    <span class="tag tag-cols">8 tables</span>
   </div>
   <p class="surface-desc">Single global database at <code>.workspace/db/app.sqlite</code>. Cross-category state: brands, user settings, field studio maps, and color registry.</p>
   <div class="domain-group">
@@ -2194,7 +2259,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="settings">
-  <summary><span class="tname">settings</span><span class="tags"><span class="tag tag-pk">PK: section, key</span><span class="tag tag-usage-src">SRC: 18</span><span class="tag tag-usage-gui">GUI: 2</span><span class="tag tag-cols">5 cols</span><span class="tag tag-store">appDb</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
+  <summary><span class="tname">settings</span><span class="tags"><span class="tag tag-pk">PK: section, key</span><span class="tag tag-usage-src">SRC: 20</span><span class="tag tag-usage-gui">GUI: 2</span><span class="tag tag-cols">5 cols</span><span class="tag tag-store">appDb</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -2232,9 +2297,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <div class="usage-section">
     <div class="usage-head">
       <div class="usage-title">Source Files</div>
-      <div class="usage-count">18 files</div>
+      <div class="usage-count">20 files</div>
     </div>
-    <ul class="usage-file-list"><li><code>src/app/cli/commands/migrateToSqliteCommand.js</code></li><li><code>src/core/events/dataChangeContract.js</code></li><li><code>src/core/finder/finderSqlStore.js</code></li><li><code>src/db/appDb.js</code></li><li><code>src/db/appDbSchema.js</code></li><li><code>src/db/appDbSeed.js</code></li><li><code>src/db/seedEngine.js</code></li><li><code>src/db/seedRegistry.js</code></li><li><code>src/features/color-registry/colorRegistrySeed.js</code></li><li><code>src/features/crawl/crawlSession.js</code></li><li><code>src/features/indexing/api/indexlabRoutes.js</code></li><li><code>src/features/indexing/pipeline/shared/queryPlan.js</code></li><li><code>src/features/product-image/productImageFinder.js</code></li><li><code>src/features/product-image/productImageLlmAdapter.js</code></li><li><code>src/features/settings-authority/llmPolicyHandler.js</code></li><li><code>src/features/settings-authority/userSettingsService.js</code></li><li><code>src/features/settings/api/configRuntimeSettingsHandler.js</code></li><li><code>src/features/settings/api/configUiSettingsHandler.js</code></li></ul>
+    <ul class="usage-file-list"><li><code>src/app/cli/commands/migrateToSqliteCommand.js</code></li><li><code>src/core/events/dataChangeContract.js</code></li><li><code>src/core/finder/finderSqlStore.js</code></li><li><code>src/db/appDb.js</code></li><li><code>src/db/appDbSchema.js</code></li><li><code>src/db/appDbSeed.js</code></li><li><code>src/db/seedEngine.js</code></li><li><code>src/db/seedRegistry.js</code></li><li><code>src/features/color-edition/colorEditionFinder.js</code></li><li><code>src/features/color-edition/colorEditionLlmAdapter.js</code></li><li><code>src/features/color-registry/colorRegistrySeed.js</code></li><li><code>src/features/crawl/crawlSession.js</code></li><li><code>src/features/indexing/api/indexlabRoutes.js</code></li><li><code>src/features/indexing/pipeline/shared/queryPlan.js</code></li><li><code>src/features/product-image/productImageFinder.js</code></li><li><code>src/features/product-image/productImageLlmAdapter.js</code></li><li><code>src/features/settings-authority/llmPolicyHandler.js</code></li><li><code>src/features/settings-authority/userSettingsService.js</code></li><li><code>src/features/settings/api/configRuntimeSettingsHandler.js</code></li><li><code>src/features/settings/api/configUiSettingsHandler.js</code></li></ul>
   </div>
     <div class="usage-section">
     <div class="usage-head">
@@ -2297,7 +2362,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </div>
 </details>
 <details class="table-card" data-table="color_registry">
-  <summary><span class="tname">color_registry</span><span class="tags"><span class="tag tag-pk">PK: name</span><span class="tag tag-usage-src">SRC: 13</span><span class="tag tag-usage-gui">GUI: 0</span><span class="tag tag-cols">5 cols</span><span class="tag tag-store">appDb</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
+  <summary><span class="tname">color_registry</span><span class="tags"><span class="tag tag-pk">PK: name</span><span class="tag tag-usage-src">SRC: 14</span><span class="tag tag-usage-gui">GUI: 0</span><span class="tag tag-cols">5 cols</span><span class="tag tag-store">appDb</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-json">json</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">✓</span></span></summary>
   <div class="card-body">
     <div class="life-section">
     <div class="idx-label">Rebuild Audit</div>
@@ -2335,9 +2400,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <div class="usage-section">
     <div class="usage-head">
       <div class="usage-title">Source Files</div>
-      <div class="usage-count">13 files</div>
+      <div class="usage-count">14 files</div>
     </div>
-    <ul class="usage-file-list"><li><code>src/app/cli/commands/migrateToSqliteCommand.js</code></li><li><code>src/db/appDb.js</code></li><li><code>src/db/appDbSchema.js</code></li><li><code>src/db/seedEngine.js</code></li><li><code>src/db/seedRegistry.js</code></li><li><code>src/features/color-edition/colorEditionFinder.js</code></li><li><code>src/features/color-edition/colorEditionLlmAdapter.js</code></li><li><code>src/features/color-registry/api/colorRouteContext.js</code></li><li><code>src/features/color-registry/api/colorRoutes.js</code></li><li><code>src/features/color-registry/colorRegistrySeed.js</code></li><li><code>src/features/studio/api/studioRoutes.js</code></li><li><code>src/features/studio/contracts/egPresets.js</code></li><li><code>src/field-rules/loader.js</code></li></ul>
+    <ul class="usage-file-list"><li><code>src/app/cli/commands/migrateToSqliteCommand.js</code></li><li><code>src/db/appDb.js</code></li><li><code>src/db/appDbSchema.js</code></li><li><code>src/db/seedEngine.js</code></li><li><code>src/db/seedRegistry.js</code></li><li><code>src/features/color-edition/colorEditionFinder.js</code></li><li><code>src/features/color-edition/colorEditionLlmAdapter.js</code></li><li><code>src/features/color-edition/variantRegistry.js</code></li><li><code>src/features/color-registry/api/colorRouteContext.js</code></li><li><code>src/features/color-registry/api/colorRoutes.js</code></li><li><code>src/features/color-registry/colorRegistrySeed.js</code></li><li><code>src/features/studio/api/studioRoutes.js</code></li><li><code>src/features/studio/contracts/egPresets.js</code></li><li><code>src/field-rules/loader.js</code></li></ul>
   </div>
     <div class="usage-section">
     <div class="usage-head">

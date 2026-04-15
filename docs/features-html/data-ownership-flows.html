@@ -193,8 +193,19 @@
 </div>
 
 <div class="principle-box">
+  <h3>Edition combo atoms stay scoped to their edition</h3>
+  <p>Editions have multi-atom colorways (e.g., <code>dark-gray+black+orange</code> for a special edition).
+  The individual atoms describe the edition's color composition &mdash; they are <strong>not</strong> standalone published colors.
+  Published colors come only from <code>variant_type = 'color'</code> variants. The combo atoms are validated against the palette
+  (each atom must exist), then reassembled and stored on the edition variant's <code>color_atoms</code>.</p>
+  <span class="rule rule-green">color variants &#8594; Published colors</span>
+  <span class="rule rule-red">edition color_atoms &#8603; Published colors</span>
+</div>
+
+<div class="principle-box">
   <h3>Dual-State Architecture (CQRS)</h3>
-  <p>JSON files are the durable memory (rebuild/seed/audit). SQL tables are the runtime projection (UI reads). Nothing running should read JSON for published state &mdash; only rebuilding and seeding reads JSON.</p>
+  <p>JSON files are the durable memory (rebuild/seed/audit). SQL tables are the runtime projection (UI reads). Nothing running should read JSON for published state &mdash; only rebuilding and seeding reads JSON.
+  The review grid derives variant-published fields from <code>specDb.variants.listActive()</code> at query time, never from <code>product.json</code>.</p>
 </div>
 
 <div class="dual-state">
@@ -709,10 +720,16 @@
         <td>Republish for that variant from remaining; may unpublish</td>
       </tr>
       <tr>
-        <td><strong>source tag</strong></td>
-        <td><code>"variant_registry"</code></td>
+        <td><strong>source_type</strong></td>
+        <td><code>"cef"</code></td>
         <td><code>"pipeline"</code></td>
         <td><code>"feature:{module}"</code></td>
+      </tr>
+      <tr>
+        <td><strong>source_id pattern</strong></td>
+        <td><code>cef-{pid}-{run}</code></td>
+        <td><code>pipeline-{pid}-{run}</code></td>
+        <td><code>{module}-{pid}-{run}</code></td>
       </tr>
       <tr>
         <td><strong>Ownership</strong></td>
