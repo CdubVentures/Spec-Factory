@@ -1,62 +1,33 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  COOLDOWN_DAYS,
-  computeCooldownUntil,
+  computeRanAt,
   resolveModelTracking,
   resolveAmbiguityContext,
   buildFinderLlmCaller,
 } from '../finderOrchestrationHelpers.js';
 
-// ─── COOLDOWN_DAYS ───────────────────────────────────────────────────────────
+// ─── computeRanAt ─────────────────────────────────────────────────────────────
 
-describe('COOLDOWN_DAYS', () => {
-  it('equals 30', () => {
-    assert.equal(COOLDOWN_DAYS, 30);
-  });
-});
-
-// ─── computeCooldownUntil ────────────────────────────────────────────────────
-
-describe('computeCooldownUntil', () => {
-  it('returns ISO string 30 days from now by default', () => {
+describe('computeRanAt', () => {
+  it('returns ISO string for ranAt and passes through now', () => {
     const now = new Date('2025-01-01T00:00:00.000Z');
-    const { cooldownUntil, ranAt } = computeCooldownUntil({ now });
-    assert.equal(cooldownUntil, new Date('2025-01-31T00:00:00.000Z').toISOString());
+    const { ranAt } = computeRanAt({ now });
     assert.equal(ranAt, now.toISOString());
   });
 
   it('returns the now date as-is', () => {
     const now = new Date('2025-06-15T12:30:00.000Z');
-    const result = computeCooldownUntil({ now });
+    const result = computeRanAt({ now });
     assert.equal(result.now, now);
   });
 
   it('defaults to current time when no argument', () => {
     const before = Date.now();
-    const { ranAt } = computeCooldownUntil();
+    const { ranAt } = computeRanAt();
     const after = Date.now();
     const ts = new Date(ranAt).getTime();
     assert.ok(ts >= before && ts <= after);
-  });
-
-  it('respects custom days parameter', () => {
-    const now = new Date('2025-01-01T00:00:00.000Z');
-    const { cooldownUntil } = computeCooldownUntil({ days: 7, now });
-    assert.equal(cooldownUntil, new Date('2025-01-08T00:00:00.000Z').toISOString());
-  });
-
-  it('uses COOLDOWN_DAYS when days not provided', () => {
-    const now = new Date('2025-01-01T00:00:00.000Z');
-    const { cooldownUntil } = computeCooldownUntil({ now });
-    const expected = new Date(now.getTime() + COOLDOWN_DAYS * 24 * 60 * 60 * 1000).toISOString();
-    assert.equal(cooldownUntil, expected);
-  });
-
-  it('returns empty cooldownUntil when days is 0', () => {
-    const now = new Date('2025-01-01T00:00:00.000Z');
-    const { cooldownUntil } = computeCooldownUntil({ days: 0, now });
-    assert.equal(cooldownUntil, '');
   });
 });
 

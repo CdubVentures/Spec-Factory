@@ -13,6 +13,7 @@ import { registerOperation, getOperationSignal, updateStage, updateModelInfo, up
 import { createStreamBatcher } from '../llm/streamBatcher.js';
 import { defaultProductRoot } from '../config/runtimeArtifactRoots.js';
 import { normalizeConfidence } from '../../features/publisher/publish/publishCandidate.js';
+import { republishField } from '../../features/publisher/publish/republishField.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -170,93 +171,9 @@ function republishAfterDelete(specDb, productId, fieldKeys, sourceType, runSet, 
 
     // Re-publish or clean stale fields[]
     if (data.fields) {
-      const compiled = specDb.getCompiledRules?.();
-      const compiledFields = compiled?.fields || {};
-      const threshold = config?.publishConfidenceThreshold ?? 0.7;
-
       for (const key of fieldKeys) {
-        const remaining = specDb.getFieldCandidatesByProductAndField(productId, key);
-        if (remaining.length === 0 && data.fields[key]) {
-          delete data.fields[key];
-          changed = true;
-          continue;
-        }
-        if (remaining.length === 0 || !data.fields[key]) continue;
-
-        // WHY: Only republish from candidates that meet the confidence threshold.
-        const aboveThreshold = remaining.filter(c => normalizeConfidence(c.confidence) >= threshold);
-        if (aboveThreshold.length === 0) {
-          // Nothing meets threshold — unpublish
-          specDb.demoteResolvedCandidates(productId, key);
-          delete data.fields[key];
-          changed = true;
-          continue;
-        }
-
-        specDb.demoteResolvedCandidates(productId, key);
-        const fieldRule = compiledFields[key] || null;
-        const itemUnion = fieldRule?.contract?.list_rules?.item_union;
-
-        let publishedValue;
-        let publishedConfidence;
-        let winner;
-
-        if (itemUnion === 'set_union') {
-          // WHY: set_union — merge ALL above-threshold candidates' arrays (dedupe).
-          const merged = [];
-          const seen = new Set();
-          let bestConfidence = 0;
-          let bestRow = null;
-          for (const row of aboveThreshold) {
-            let items;
-            try { items = typeof row.value === 'string' ? JSON.parse(row.value) : row.value; }
-            catch { items = null; }
-            if (!Array.isArray(items)) continue;
-            for (const item of items) {
-              const s = typeof item === 'object' ? JSON.stringify(item) : String(item);
-              if (!seen.has(s)) { seen.add(s); merged.push(item); }
-            }
-            specDb.markFieldCandidateResolved(productId, key, row.value);
-            if ((row.confidence ?? 0) > bestConfidence) {
-              bestConfidence = row.confidence ?? 0;
-              bestRow = row;
-            }
-          }
-          publishedValue = merged;
-          publishedConfidence = bestConfidence;
-          winner = bestRow || aboveThreshold[0];
-        } else {
-          // Scalar — pick highest confidence above threshold
-          winner = aboveThreshold.sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0))[0];
-          specDb.markFieldCandidateResolved(productId, key, winner.value);
-          try { publishedValue = typeof winner.value === 'string' ? JSON.parse(winner.value) : winner.value; }
-          catch { publishedValue = winner.value; }
-          publishedConfidence = winner.confidence ?? 0;
-        }
-
-        // WHY: Source-centric rows have no sources_json — build from row columns.
-        const sources = winner.source_id
-          ? [{ source: winner.source_type || '', source_id: winner.source_id, model: winner.model || '', confidence: winner.confidence ?? 0 }]
-          : (Array.isArray(winner.sources_json) ? winner.sources_json : []);
-
-        data.fields[key] = {
-          value: publishedValue,
-          confidence: publishedConfidence,
-          source: 'pipeline',
-          resolved_at: new Date().toISOString(),
-          sources,
-          linked_candidates: remaining.map(r => ({
-            candidate_id: r.id,
-            source_id: r.source_id || '',
-            source_type: r.source_type || '',
-            model: r.model || '',
-            value: r.value,
-            confidence: r.confidence,
-            status: r.status,
-            submitted_at: r.submitted_at,
-          })),
-        };
-        changed = true;
+        const result = republishField({ specDb, productId, fieldKey: key, config, productJson: data });
+        if (result.status !== 'unchanged') changed = true;
       }
     }
 
@@ -292,7 +209,7 @@ export function createFinderRouteHandler(finderConfig) {
     routePrefix, moduleType, phase, fieldKeys,
     runFinder, deleteRun, deleteAll,
     getOne, listByCategory, listRuns,
-    upsertSummary, deleteOneSql, deleteRunSql, deleteAllRunsSql,
+    upsertSummary, updateBookkeeping, deleteOneSql, deleteRunSql, deleteAllRunsSql,
     buildGetResponse, buildResultMeta,
   } = finderConfig;
 
@@ -320,8 +237,6 @@ export function createFinderRouteHandler(finderConfig) {
         const row = getOne(specDb, productId);
         if (!row) return jsonRes(res, 404, { error: 'not found' });
 
-        const now = new Date().toISOString();
-        const onCooldown = Boolean(row.cooldown_until && row.cooldown_until > now);
         const runRows = listRuns(specDb, productId);
         const latestRun = runRows.length > 0 ? runRows[runRows.length - 1] : null;
         const latestSelected = latestRun?.selected;
@@ -330,14 +245,12 @@ export function createFinderRouteHandler(finderConfig) {
           : (row.selected || {});
 
         if (buildGetResponse) {
-          return jsonRes(res, 200, buildGetResponse(row, selected, runRows, onCooldown, { specDb, productId }));
+          return jsonRes(res, 200, buildGetResponse(row, selected, runRows, { specDb, productId }));
         }
 
         return jsonRes(res, 200, {
           product_id: row.product_id,
           category: row.category,
-          cooldown_until: row.cooldown_until,
-          on_cooldown: onCooldown,
           run_count: row.run_count,
           last_ran_at: row.latest_ran_at,
           selected,
@@ -458,18 +371,26 @@ export function createFinderRouteHandler(finderConfig) {
           stripRunSourceFromCandidates(specDb, productId, fieldKeys, finderConfig.candidateSourceType, runNumbers, config);
         }
 
+        if (finderConfig.onAfterRunDelete) {
+          finderConfig.onAfterRunDelete({ specDb, productId, productRoot: defaultProductRoot() });
+        }
+
         if (updated) {
-          const summaryRow = {
-            category,
-            product_id: productId,
-            cooldown_until: updated.cooldown_until || '',
+          const bookkeeping = {
             latest_ran_at: updated.last_ran_at || '',
             run_count: updated.run_count || 0,
           };
-          if (!finderConfig.skipSelectedOnDelete) {
-            Object.assign(summaryRow, updated.selected || {});
+          if (finderConfig.skipSelectedOnDelete && updateBookkeeping) {
+            // WHY: Only touch bookkeeping — preserve custom columns (colors,
+            // editions, variant_registry). Full upsert would nuke them.
+            updateBookkeeping(specDb, productId, bookkeeping);
+          } else {
+            const summaryRow = { category, product_id: productId, ...bookkeeping };
+            if (!finderConfig.skipSelectedOnDelete) {
+              Object.assign(summaryRow, updated.selected || {});
+            }
+            upsertSummary(specDb, summaryRow);
           }
-          upsertSummary(specDb, summaryRow);
         } else {
           deleteAllRunsSql(specDb, productId);
           deleteOneSql(specDb, productId);
@@ -506,21 +427,28 @@ export function createFinderRouteHandler(finderConfig) {
           stripRunSourceFromCandidates(specDb, productId, fieldKeys, finderConfig.candidateSourceType, [runNumber], config);
         }
 
+        // WHY: Post-delete hook lets modules re-derive published state from
+        // their SSOT (e.g. CEF re-derives colors/editions from variants table).
+        if (finderConfig.onAfterRunDelete) {
+          finderConfig.onAfterRunDelete({ specDb, productId, productRoot: defaultProductRoot() });
+        }
+
         if (updated) {
-          const summaryRow = {
-            category,
-            product_id: productId,
-            cooldown_until: updated.cooldown_until || '',
+          const bookkeeping = {
             latest_ran_at: updated.last_ran_at || '',
             run_count: updated.run_count || 0,
           };
-          // WHY: When skipSelectedOnDelete is true, published state lives in
-          // field_candidates — deleting a run should not recalculate it from
-          // remaining runs. Only update bookkeeping columns.
-          if (!finderConfig.skipSelectedOnDelete) {
-            Object.assign(summaryRow, updated.selected || {});
+          if (finderConfig.skipSelectedOnDelete && updateBookkeeping) {
+            // WHY: Only touch bookkeeping — preserve custom columns (colors,
+            // editions, variant_registry). Full upsert would nuke them.
+            updateBookkeeping(specDb, productId, bookkeeping);
+          } else {
+            const summaryRow = { category, product_id: productId, ...bookkeeping };
+            if (!finderConfig.skipSelectedOnDelete) {
+              Object.assign(summaryRow, updated.selected || {});
+            }
+            upsertSummary(specDb, summaryRow);
           }
-          upsertSummary(specDb, summaryRow);
         } else {
           deleteAllRunsSql(specDb, productId);
           deleteOneSql(specDb, productId);

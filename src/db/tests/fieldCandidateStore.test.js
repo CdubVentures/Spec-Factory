@@ -506,4 +506,52 @@ describe('fieldCandidateStore', () => {
     assert.equal(row.validation_json.llmRepair.decisions.length, 1);
     assert.equal(row.validation_json.llmRepair.decisions[0].decision, 'map_to_existing');
   });
+
+  // ── countBySourceId (cross-field count for cascade gate) ──────────
+
+  it('countFieldCandidatesBySourceId returns 0 for unknown product/source', () => {
+    const count = db.countFieldCandidatesBySourceId('nonexistent-pid', 'nonexistent-sid');
+    assert.equal(count, 0);
+  });
+
+  it('countFieldCandidatesBySourceId returns 1 for a single row', () => {
+    const sid = 'cef-mouse-count-1';
+    db.insertFieldCandidate({
+      productId: 'mouse-count', fieldKey: 'weight', sourceId: sid, sourceType: 'cef',
+      value: '58', confidence: 90, model: '', validationJson: {}, metadataJson: {},
+    });
+    assert.equal(db.countFieldCandidatesBySourceId('mouse-count', sid), 1);
+  });
+
+  it('countFieldCandidatesBySourceId returns N across multiple field_keys', () => {
+    const sid = 'cef-mouse-multi-1';
+    db.insertFieldCandidate({
+      productId: 'mouse-multi', fieldKey: 'colors', sourceId: sid, sourceType: 'cef',
+      value: '["black"]', confidence: 95, model: '', validationJson: {}, metadataJson: {},
+    });
+    db.insertFieldCandidate({
+      productId: 'mouse-multi', fieldKey: 'editions', sourceId: sid, sourceType: 'cef',
+      value: '["standard"]', confidence: 90, model: '', validationJson: {}, metadataJson: {},
+    });
+    assert.equal(db.countFieldCandidatesBySourceId('mouse-multi', sid), 2);
+  });
+
+  it('countFieldCandidatesBySourceId decrements after deleteBySourceId for one field', () => {
+    const sid = 'cef-mouse-dec-1';
+    db.insertFieldCandidate({
+      productId: 'mouse-dec', fieldKey: 'colors', sourceId: sid, sourceType: 'cef',
+      value: '["red"]', confidence: 80, model: '', validationJson: {}, metadataJson: {},
+    });
+    db.insertFieldCandidate({
+      productId: 'mouse-dec', fieldKey: 'editions', sourceId: sid, sourceType: 'cef',
+      value: '["limited"]', confidence: 80, model: '', validationJson: {}, metadataJson: {},
+    });
+    assert.equal(db.countFieldCandidatesBySourceId('mouse-dec', sid), 2);
+
+    db.deleteFieldCandidateBySourceId('mouse-dec', 'colors', sid);
+    assert.equal(db.countFieldCandidatesBySourceId('mouse-dec', sid), 1);
+
+    db.deleteFieldCandidateBySourceId('mouse-dec', 'editions', sid);
+    assert.equal(db.countFieldCandidatesBySourceId('mouse-dec', sid), 0);
+  });
 });

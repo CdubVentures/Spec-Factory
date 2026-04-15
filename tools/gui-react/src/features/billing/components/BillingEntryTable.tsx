@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { usePersistedNumber } from '../../../stores/tabStore.ts';
 import type { ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '../../../shared/ui/data-display/DataTable.tsx';
-import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
+import { SkeletonBlock } from '../../../shared/ui/feedback/SkeletonBlock.tsx';
 import { usd, compactNumber } from '../../../utils/formatting.ts';
 import { resolveBillingCallType } from '../billingCallTypeRegistry.ts';
 import { chartColor } from '../billingTransforms.ts';
@@ -26,12 +27,12 @@ function formatTs(ts: string): string {
 }
 
 function formatTokens(value: number): string {
-  if (!value) return '—';
+  if (!value) return '\u2014';
   return value.toLocaleString();
 }
 
 function formatDuration(ms: number): string {
-  if (!ms || ms <= 0) return '—';
+  if (!ms || ms <= 0) return '\u2014';
   if (ms < 1000) return `${ms}ms`;
   return `${(ms / 1000).toFixed(1)}s`;
 }
@@ -85,8 +86,8 @@ function parseFlags(entry: BillingEntry): EntryFlag[] {
 }
 
 export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryTableProps) {
-  const [pageSize, setPageSize] = useState<number>(20);
-  const { data, isLoading } = useBillingEntriesQuery({
+  const [pageSize, setPageSize] = usePersistedNumber('billing:pageSize', 20);
+  const { data, isLoading, isPlaceholderData } = useBillingEntriesQuery({
     limit: pageSize,
     offset: page * pageSize,
     category: filters.category,
@@ -125,7 +126,7 @@ export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryT
       size: 70,
       cell: ({ row }) => {
         const meta = parseMeta(row.original.meta);
-        return <span className="text-[11px] sf-text-muted">{meta.effort_level || '—'}</span>;
+        return <span className="text-[11px] sf-text-muted">{meta.effort_level || '\u2014'}</span>;
       },
     },
     {
@@ -221,11 +222,12 @@ export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryT
   const totalEntries = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalEntries / pageSize));
   const entries = data?.entries ?? [];
-
-  if (isLoading && entries.length === 0) return <Spinner className="h-8 w-8 mx-auto mt-8" />;
+  const initialLoad = isLoading && entries.length === 0;
+  const staleClass = isPlaceholderData ? ' sf-stale-refetch' : '';
 
   return (
-    <div className="sf-surface-card rounded-lg overflow-hidden flex flex-col">
+    <div className="sf-surface-card rounded-lg overflow-hidden flex flex-col sf-billing-min-table">
+      {/* Stable header — never remounts */}
       <div className="px-5 py-3 border-b sf-border-default flex items-center justify-between">
         <h3 className="text-sm font-bold">LLM Call Log</h3>
         <div className="flex items-center gap-1">
@@ -242,13 +244,25 @@ export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryT
         </div>
       </div>
 
-      <DataTable
-        data={entries}
-        columns={columns}
-        searchable={false}
-        persistKey="billing-entries"
-      />
+      {/* Content zone — skeleton or real table */}
+      {initialLoad ? (
+        <div className="p-5 flex flex-col gap-2">
+          {Array.from({ length: 6 }, (_, i) => (
+            <SkeletonBlock key={i} className="sf-skel-row" />
+          ))}
+        </div>
+      ) : (
+        <div className={staleClass || 'sf-fade-in'}>
+          <DataTable
+            data={entries}
+            columns={columns}
+            searchable={false}
+            persistKey="billing-entries"
+          />
+        </div>
+      )}
 
+      {/* Stable pagination footer — always present */}
       <div className="px-4 py-2 flex items-center justify-between text-[11px] sf-text-muted border-t sf-border-default">
         <span>
           {totalEntries > 0

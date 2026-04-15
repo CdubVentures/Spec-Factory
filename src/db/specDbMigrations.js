@@ -53,6 +53,12 @@ export const MIGRATIONS = [
   `ALTER TABLE product_image_finder ADD COLUMN eval_state TEXT DEFAULT '{}'`,
   // WHY: Source-centric candidates — each extraction event gets its own row keyed by source_id.
   // source_id is deterministic for finders (e.g. cef-{productId}-{runNumber}).
+  // WHY: Finder runs now persist thinking and web_search capability flags
+  // for LLM badge rendering in run history. Existing DBs need the columns.
+  `ALTER TABLE color_edition_finder_runs ADD COLUMN thinking INTEGER DEFAULT 0`,
+  `ALTER TABLE color_edition_finder_runs ADD COLUMN web_search INTEGER DEFAULT 0`,
+  `ALTER TABLE product_image_finder_runs ADD COLUMN thinking INTEGER DEFAULT 0`,
+  `ALTER TABLE product_image_finder_runs ADD COLUMN web_search INTEGER DEFAULT 0`,
   `ALTER TABLE field_candidates ADD COLUMN source_id TEXT DEFAULT ''`,
   `ALTER TABLE field_candidates ADD COLUMN source_type TEXT DEFAULT ''`,
   `ALTER TABLE field_candidates ADD COLUMN model TEXT DEFAULT ''`,

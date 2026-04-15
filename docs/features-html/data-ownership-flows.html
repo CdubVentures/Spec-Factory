@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory - Data Ownership &amp; Cascade Flows</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --surface-alt: #f1f3f5;
+    --border: #dee2e6;
+    --border-light: #e9ecef;
+    --text: #212529;
+    --text-muted: #6c757d;
+    --text-subtle: #868e96;
+    --accent: #4263eb;
+    --accent-light: #edf2ff;
+    --green: #2b8a3e;
+    --green-bg: #ebfbee;
+    --green-border: #b2f2bb;
+    --red: #c92a2a;
+    --red-bg: #fff5f5;
+    --red-border: #ffc9c9;
+    --orange: #e67700;
+    --orange-bg: #fff9db;
+    --orange-border: #ffec99;
+    --purple: #7048e8;
+    --purple-bg: #f3f0ff;
+    --purple-border: #d0bfff;
+    --teal: #0c8599;
+    --teal-bg: #e6fcf5;
+    --teal-border: #96f2d7;
+    --blue: #1971c2;
+    --blue-bg: #e7f5ff;
+    --blue-border: #a5d8ff;
+    --pink: #a61e4d;
+    --pink-bg: #fff0f6;
+    --pink-border: #fcc2d7;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.6; }
+
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 32px 0; text-align: center; }
+  .header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  .header p { color: var(--text-muted); font-size: 15px; margin-top: 6px; max-width: 700px; margin-left: auto; margin-right: auto; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+  .section-title {
+    font-size: 20px; font-weight: 700; margin: 48px 0 16px; padding-bottom: 8px;
+    border-bottom: 2px solid var(--accent); display: flex; align-items: center; gap: 10px;
+  }
+  .section-title .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 50%; background: var(--accent);
+    color: white; font-size: 14px; font-weight: 700; flex-shrink: 0;
+  }
+
+  .principle-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px 24px; margin: 16px 0; box-shadow: var(--shadow);
+  }
+  .principle-box h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .principle-box p { color: var(--text-muted); font-size: 14px; }
+  .principle-box .rule {
+    display: inline-block; margin-top: 10px; padding: 4px 12px; border-radius: 4px;
+    font-size: 12px; font-weight: 700; font-family: var(--mono); text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .rule-green { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .rule-red { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+
+  /* ── Flow diagrams ── */
+  .flow-diagram {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 24px; margin: 20px 0; box-shadow: var(--shadow); overflow-x: auto;
+  }
+  .flow-diagram h3 { font-size: 15px; font-weight: 700; margin-bottom: 16px; letter-spacing: -0.3px; }
+
+  .flow-row { display: flex; align-items: stretch; gap: 0; margin: 8px 0; flex-wrap: wrap; }
+  .flow-node {
+    padding: 10px 16px; border-radius: 6px; font-size: 13px; font-weight: 600;
+    text-align: center; min-width: 140px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 2px;
+  }
+  .flow-node .sub { font-size: 10px; font-weight: 400; opacity: 0.7; }
+  .flow-arrow {
+    display: flex; align-items: center; justify-content: center; padding: 0 6px;
+    font-size: 18px; color: var(--text-muted); font-weight: 700; min-width: 32px;
+  }
+  .flow-arrow-down {
+    display: flex; align-items: center; justify-content: center; padding: 4px 0;
+    font-size: 18px; color: var(--text-muted); font-weight: 700; width: 100%;
+  }
+  .flow-arrow .label, .flow-arrow-down .label {
+    font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--text-subtle); margin: 0 4px;
+  }
+
+  .node-source { background: var(--accent-light); color: var(--accent); border: 1px solid #bac8ff; }
+  .node-variant { background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple-border); }
+  .node-evidence { background: var(--orange-bg); color: var(--orange); border: 1px solid var(--orange-border); }
+  .node-published { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .node-feature { background: var(--teal-bg); color: var(--teal); border: 1px solid var(--teal-border); }
+  .node-future { background: var(--pink-bg); color: var(--pink); border: 1px solid var(--pink-border); border-style: dashed; }
+  .node-storage { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue-border); }
+  .node-danger { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+
+  /* ── Cascade tables ── */
+  .cascade-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+  .cascade-table th {
+    text-align: left; padding: 8px 12px; background: var(--surface-alt);
+    border-bottom: 2px solid var(--border); font-weight: 700; font-size: 12px;
+    text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);
+  }
+  .cascade-table td { padding: 8px 12px; border-bottom: 1px solid var(--border-light); vertical-align: top; }
+  .cascade-table code { font-family: var(--mono); font-size: 12px; background: var(--surface-alt); padding: 2px 6px; border-radius: 3px; }
+  .cascade-table .step-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%; background: var(--accent);
+    color: white; font-size: 11px; font-weight: 700;
+  }
+
+  /* ── Ownership grid ── */
+  .ownership-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin: 20px 0; }
+  .ownership-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px; box-shadow: var(--shadow);
+  }
+  .ownership-card h4 { font-size: 15px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .ownership-card .badge {
+    font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .badge-active { background: var(--green-bg); color: var(--green); }
+  .badge-future { background: var(--pink-bg); color: var(--pink); }
+  .ownership-card ul { list-style: none; margin-top: 8px; }
+  .ownership-card li { font-size: 13px; padding: 3px 0; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+  .ownership-card li::before { content: ''; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .owns::before { background: var(--green); }
+  .no-touch::before { background: var(--red); }
+
+  .note-box {
+    background: var(--orange-bg); border: 1px solid var(--orange-border); border-radius: var(--radius);
+    padding: 14px 18px; margin: 16px 0; font-size: 13px; color: var(--orange);
+  }
+  .note-box strong { font-weight: 700; }
+
+  .dual-state {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0;
+  }
+  .dual-state-card {
+    background: var(--surface); border-radius: var(--radius); padding: 16px 20px;
+    box-shadow: var(--shadow);
+  }
+  .dual-state-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .dual-state-card p { font-size: 12px; color: var(--text-muted); }
+  .dual-state-card.json { border: 2px solid var(--blue-border); }
+  .dual-state-card.sql { border: 2px solid var(--green-border); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Data Ownership &amp; Cascade Flows</h1>
+  <p>How sources, variants, evidence, and published state relate to each other.
+  Deletion always cascades downward, never upward. JSON is durable memory; SQL is the runtime read source.</p>
+</div>
+
+<div class="container">
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<h2 class="section-title"><span class="num">1</span> Core Principles</h2>
+
+<div class="principle-box">
+  <h3>Deletion cascades DOWN, never UP</h3>
+  <p>A parent owns its children. Deleting a parent removes all children. A child never deletes or modifies its parent.</p>
+  <span class="rule rule-green">Source &#8594; Evidence &nbsp; (cascade)</span>
+  <span class="rule rule-red">Evidence &#8603; Source &nbsp; (never)</span>
+</div>
+
+<div class="principle-box">
+  <h3>Variant is the SSOT for published colors/editions</h3>
+  <p>Published state for variant-scoped fields is derived from the <code>variants</code> table, not from candidate consensus.
+  Candidates are historical evidence of what was discovered &mdash; they don't drive publishing for variant fields.</p>
+  <span class="rule rule-green">Variants table &#8594; Published state</span>
+  <span class="rule rule-red">Candidates &#8603; Published state &nbsp; (for variant fields)</span>
+</div>
+
+<div class="principle-box">
+  <h3>Dual-State Architecture (CQRS)</h3>
+  <p>JSON files are the durable memory (rebuild/seed/audit). SQL tables are the runtime projection (UI reads). Nothing running should read JSON for published state &mdash; only rebuilding and seeding reads JSON.</p>
+</div>
+
+<div class="dual-state">
+  <div class="dual-state-card json">
+    <h4>JSON (Durable Memory)</h4>
+    <p><code>color_edition.json</code>, <code>product_images.json</code>, <code>product.json</code></p>
+    <p style="margin-top:6px;">Read by: rebuild, reseed, CEF prompt context</p>
+    <p>Never read by: UI, publisher endpoint, review grid, PIF runtime</p>
+  </div>
+  <div class="dual-state-card sql">
+    <h4>SQL (Runtime Projection)</h4>
+    <p><code>variants</code>, <code>field_candidates</code>, <code>color_edition_finder</code>, <code>product_image_finder</code></p>
+    <p style="margin-top:6px;">Read by: everything at runtime</p>
+    <p>Rebuilt from JSON on DB delete</p>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<h2 class="section-title"><span class="num">2</span> Three Source Types + The Variant Entity</h2>
+
+<div class="principle-box">
+  <h3>Source Types Hierarchy</h3>
+  <p>Every piece of data in the system is produced by a <strong>source</strong>. There are three source types,
+  each with different ownership rules for what happens when the source or its parent variant is deleted.</p>
+</div>
+
+<div class="ownership-grid" style="grid-template-columns: repeat(2, 1fr);">
+
+  <div class="ownership-card" style="border-left: 4px solid var(--purple);">
+    <h4>
+      <span style="color:var(--purple);">Variant (Entity)</span>
+      <span class="badge badge-active">Active</span>
+    </h4>
+    <p style="font-size:13px; color:var(--text-muted);">The central entity. Owns published state for variant-scoped fields + all downstream feature data. Not a source itself &mdash; it's what sources discover.</p>
+    <ul>
+      <li class="owns">Published colors / editions (product.json fields[])</li>
+      <li class="owns">PIF images, evaluations, carousel slots</li>
+      <li class="owns">Candidate values (strips contributed items on delete)</li>
+      <li class="owns">Feature Source data (price, SKU, release date via FK)</li>
+      <li class="no-touch">Never touches: CEF runs, pipeline runs, source artifacts</li>
+    </ul>
+  </div>
+
+  <div class="ownership-card" style="border-left: 4px solid var(--accent);">
+    <h4>
+      <span style="color:var(--accent);">Variant Source (CEF)</span>
+      <span class="badge badge-active">Active</span>
+    </h4>
+    <p style="font-size:13px; color:var(--text-muted);">Discovers variants themselves. Produces evidence candidates for colors/editions. Published state comes from variants table, not from candidates.</p>
+    <ul>
+      <li class="owns">field_candidates rows (source_id = cef-{pid}-{run})</li>
+      <li class="owns">CEF JSON run entry + SQL run row</li>
+      <li class="owns">Re-derives published from variants after candidate strip</li>
+      <li class="no-touch">Never touches: variants table, PIF images</li>
+      <li class="no-touch">Never touches: other sources' candidates</li>
+    </ul>
+  </div>
+
+  <div class="ownership-card" style="border-left: 4px solid var(--teal);">
+    <h4>
+      <span style="color:var(--teal);">Pipeline Source</span>
+      <span class="badge badge-future">Future</span>
+    </h4>
+    <p style="font-size:13px; color:var(--text-muted);">Discovers scalar facts (weight, sensor, dimensions). No variant relationship. Candidates ARE the authority for published state.</p>
+    <ul>
+      <li class="owns">field_candidates rows (source_id = pipeline-{pid}-{run})</li>
+      <li class="owns">Run artifacts (screenshots, traces, crawl data)</li>
+      <li class="owns">May unpublish fields if sole evidence removed</li>
+      <li class="no-touch">Never touches: other sources' candidates</li>
+      <li class="no-touch">Never touches: variants (different domain entirely)</li>
+    </ul>
+  </div>
+
+  <div class="ownership-card" style="border-left: 4px solid var(--pink);">
+    <h4>
+      <span style="color:var(--pink);">Feature Source</span>
+      <span class="badge badge-future">Future</span>
+    </h4>
+    <p style="font-size:13px; color:var(--text-muted);">Discovers variant-scoped data (price, SKU, release date). Has <strong>dual ownership</strong> &mdash; owned by both the source that produced it AND the variant it belongs to. Either parent's deletion cascades down.</p>
+    <ul>
+      <li class="owns">field_candidates rows (source_id + variant_id)</li>
+      <li class="owns">May unpublish if sole evidence for that variant's field</li>
+      <li class="no-touch">Never touches: its source or its variant</li>
+    </ul>
+    <div style="margin-top: 10px; padding: 8px 12px; background: var(--pink-bg); border: 1px solid var(--pink-border); border-radius: 4px; font-size: 11px; color: var(--pink);">
+      <strong>Dual ownership:</strong> Delete the source &rarr; its candidates go (like pipeline).
+      Delete the variant &rarr; ALL feature data for that variant goes (like variant cascade).
+      Two parents, either can kill the child.
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<h2 class="section-title"><span class="num">3</span> Variant Data Flow</h2>
+
+<div class="flow-diagram">
+  <h3>Variant Ownership Cascade (what a variant owns)</h3>
+
+  <div class="flow-row">
+    <div class="flow-node node-variant">Variant<span class="sub">variants table (SSOT)</span></div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-node node-published">Published Colors/Editions<span class="sub">product.json fields[] + CEF summary</span></div>
+  </div>
+
+  <div class="flow-row">
+    <div class="flow-node node-variant">Variant</div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-node node-feature">PIF Images<span class="sub">variant_id on each image</span></div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-node node-feature">Evaluations<span class="sub">variant_key match</span></div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-node node-feature">Carousel Slots<span class="sub">slots[variant_key]</span></div>
+  </div>
+
+  <div class="flow-row">
+    <div class="flow-node node-variant">Variant</div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-node node-evidence">Candidate Values<span class="sub">strips items from arrays</span></div>
+  </div>
+
+  <div class="flow-row">
+    <div class="flow-node node-variant">Variant</div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-node node-future">Price (FK)<span class="sub">DELETE WHERE variant_id = ?</span></div>
+  </div>
+
+  <div class="flow-row">
+    <div class="flow-node node-variant">Variant</div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-node node-future">SKU (FK)<span class="sub">DELETE WHERE variant_id = ?</span></div>
+  </div>
+
+  <div class="flow-row">
+    <div class="flow-node node-variant">Variant</div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-node node-future">Release Date (FK)<span class="sub">DELETE WHERE variant_id = ?</span></div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<h2 class="section-title"><span class="num">4</span> Delete Variant &mdash; Full Cascade</h2>
+
+<div class="flow-diagram">
+  <h3>deleteVariant(productId, variantId)</h3>
+  <table class="cascade-table">
+    <thead>
+      <tr><th>Step</th><th>Target</th><th>Action</th><th>File</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="step-num">1</span></td>
+        <td><code>variants</code> table</td>
+        <td>Hard delete row</td>
+        <td><code>variantLifecycle.js</code></td>
+      </tr>
+      <tr>
+        <td><span class="step-num">2</span></td>
+        <td><code>field_candidates</code></td>
+        <td>Strip variant's contributed values from every candidate array. Delete candidate if array becomes empty.</td>
+        <td><code>variantLifecycle.js</code></td>
+      </tr>
+      <tr>
+        <td><span class="step-num">3</span></td>
+        <td><code>color_edition.json</code></td>
+        <td>Filter <code>variant_registry[]</code> + rewrite <code>selected.colors/editions/default_color</code></td>
+        <td><code>variantLifecycle.js</code></td>
+      </tr>
+      <tr>
+        <td><span class="step-num">4</span></td>
+        <td><code>product.json</code> + CEF summary</td>
+        <td>Re-derive <code>fields[colors]</code> and <code>fields[editions]</code> from remaining active variants</td>
+        <td><code>variantLifecycle.js</code></td>
+      </tr>
+      <tr>
+        <td><span class="step-num">5</span></td>
+        <td>PIF JSON + SQL</td>
+        <td>Remove images, evaluations, carousel_slots matching variant_id/variant_key</td>
+        <td><code>variantPropagation.js</code></td>
+      </tr>
+      <tr>
+        <td style="color:var(--pink);"><span class="step-num" style="background:var(--pink);">6</span></td>
+        <td style="color:var(--pink);"><em>Future FK tables</em></td>
+        <td style="color:var(--pink);"><code>DELETE FROM variant_prices WHERE variant_id = ?</code> (automatic via FK)</td>
+        <td style="color:var(--pink);"><em>variantLifecycle.js</em></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<h2 class="section-title"><span class="num">5</span> Source (CEF Run) Data Flow</h2>
+
+<div class="flow-diagram">
+  <h3>Source &rarr; Evidence (one-way ownership)</h3>
+
+  <div class="flow-row">
+    <div class="flow-node node-source">CEF Run N<span class="sub">source_id: cef-{pid}-N</span></div>
+    <div class="flow-arrow"><span class="label">produces</span> &#8594;</div>
+    <div class="flow-node node-evidence">Candidate: colors<span class="sub">["black","white","green"]</span></div>
+  </div>
+  <div class="flow-row">
+    <div class="flow-node node-source">CEF Run N</div>
+    <div class="flow-arrow"><span class="label">produces</span> &#8594;</div>
+    <div class="flow-node node-evidence">Candidate: editions<span class="sub">["special-ed"]</span></div>
+  </div>
+  <div class="flow-row">
+    <div class="flow-node node-source">CEF Run N</div>
+    <div class="flow-arrow"><span class="label">builds</span> &#8594;</div>
+    <div class="flow-node node-variant">Variant Registry<span class="sub">stable IDs, mutable keys</span></div>
+    <div class="flow-arrow"><span class="label">derives</span> &#8594;</div>
+    <div class="flow-node node-published">Published State<span class="sub">SSOT for colors/editions</span></div>
+  </div>
+
+  <div style="margin: 20px 0; padding: 12px 16px; background: var(--red-bg); border: 1px solid var(--red-border); border-radius: 6px; font-size: 13px;">
+    <strong>One-way rule:</strong> Deleting a candidate NEVER deletes or modifies its source (CEF run).
+    Deleting a source ALWAYS deletes its candidates.
+  </div>
+</div>
+
+<div class="flow-diagram">
+  <h3>Delete CEF Run &mdash; Cascade</h3>
+  <table class="cascade-table">
+    <thead>
+      <tr><th>Step</th><th>Target</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="step-num">1</span></td>
+        <td>SQL run row + JSON run</td>
+        <td>Delete from <code>color_edition_finder_runs</code> + filter from <code>color_edition.json runs[]</code></td>
+      </tr>
+      <tr>
+        <td><span class="step-num">2</span></td>
+        <td><code>field_candidates</code></td>
+        <td>Delete rows where <code>source_id = 'cef-{pid}-{runNumber}'</code></td>
+      </tr>
+      <tr>
+        <td><span class="step-num">3</span></td>
+        <td>Published state</td>
+        <td><code>derivePublishedFromVariants()</code> &mdash; re-derives from variants table (SSOT, unchanged by run delete)</td>
+      </tr>
+      <tr>
+        <td><span class="step-num">4</span></td>
+        <td>Summary bookkeeping</td>
+        <td>Update <code>latest_ran_at</code>, <code>run_count</code> via targeted <code>updateBookkeeping()</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note-box">
+    <strong>Variants survive run deletion.</strong> The variants table is independent of run history.
+    Even if all runs are deleted, variants persist. They were discovered by runs but are not owned by them.
+  </div>
+</div>
+
+<div class="flow-diagram">
+  <h3>Delete Candidate (from Review Grid) &mdash; Self-Contained</h3>
+  <table class="cascade-table">
+    <thead>
+      <tr><th>Step</th><th>Target</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="step-num">1</span></td>
+        <td><code>field_candidates</code></td>
+        <td>Delete the specific candidate row</td>
+      </tr>
+      <tr>
+        <td><span class="step-num">2</span></td>
+        <td><code>product.json candidates[]</code></td>
+        <td>Filter from JSON candidates array</td>
+      </tr>
+      <tr>
+        <td><span class="step-num">3</span></td>
+        <td>Published state</td>
+        <td><code>republishField()</code> picks new winner from remaining candidates (for non-variant fields)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note-box">
+    <strong>Self-contained.</strong> Candidate deletion never touches the source that produced it,
+    never touches variants, and never triggers PIF cleanup.
+    For variant-scoped fields (colors/editions), the published state comes from the variants table anyway.
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<h2 class="section-title"><span class="num">6</span> Pipeline Source Flow (Future)</h2>
+
+<div class="flow-diagram">
+  <h3>Pipeline Source &rarr; Evidence &rarr; Published (candidate-driven fields)</h3>
+
+  <div class="flow-row">
+    <div class="flow-node node-source">Pipeline Run<span class="sub">source_id: pipeline-{pid}-{run}</span></div>
+    <div class="flow-arrow"><span class="label">produces</span> &#8594;</div>
+    <div class="flow-node node-evidence">Candidate: weight<span class="sub">"58g" conf: 0.95</span></div>
+    <div class="flow-arrow"><span class="label">publishes</span> &#8594;</div>
+    <div class="flow-node node-published">Published: weight<span class="sub">candidate consensus</span></div>
+  </div>
+
+  <div class="flow-row">
+    <div class="flow-node node-source">Pipeline Run</div>
+    <div class="flow-arrow"><span class="label">produces</span> &#8594;</div>
+    <div class="flow-node node-evidence">Candidate: dimensions<span class="sub">"120x60x40mm"</span></div>
+    <div class="flow-arrow"><span class="label">publishes</span> &#8594;</div>
+    <div class="flow-node node-published">Published: dimensions<span class="sub">candidate consensus</span></div>
+  </div>
+
+  <div style="margin: 20px 0; padding: 12px 16px; background: var(--orange-bg); border: 1px solid var(--orange-border); border-radius: 6px; font-size: 13px;">
+    <strong>Key difference from variant fields:</strong> Pipeline fields (weight, dimensions, sensor, etc.) have their published state
+    determined by <strong>candidate consensus</strong> (highest confidence resolved candidate wins).
+    Unlike variant-scoped fields, there is no SSOT table &mdash; candidates ARE the authority.
+  </div>
+</div>
+
+<div class="flow-diagram">
+  <h3>Delete Pipeline Source &mdash; May Unpublish (Future)</h3>
+  <table class="cascade-table">
+    <thead>
+      <tr><th>Step</th><th>Target</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="step-num">1</span></td>
+        <td>Run artifacts</td>
+        <td>Delete screenshots, traces, crawl data for this run</td>
+      </tr>
+      <tr>
+        <td><span class="step-num">2</span></td>
+        <td><code>field_candidates</code></td>
+        <td>Delete rows where <code>source_id = 'pipeline-{pid}-{run}'</code></td>
+      </tr>
+      <tr>
+        <td><span class="step-num">3</span></td>
+        <td>Published state</td>
+        <td><code>republishField()</code> picks new winner from remaining candidates.
+        <strong>If no candidates remain</strong> for a field, that field is <strong>unpublished</strong> (deleted from product.json fields[]).</td>
+      </tr>
+      <tr>
+        <td><span class="step-num">4</span></td>
+        <td>Linked evidence</td>
+        <td>If this was the <strong>sole source</strong> for a published value, that value disappears.
+        Other sources' candidates for the same field are unaffected.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note-box">
+    <strong>The tricky case:</strong> If pipeline run 1 discovered <code>weight: 58g</code> and pipeline run 2 discovered <code>weight: 60g</code>,
+    deleting run 1 removes the 58g candidate. If 58g was the published winner, <code>republishField()</code> promotes 60g.
+    If run 1 was the <em>only</em> source for weight, the field is unpublished entirely.
+    This is correct &mdash; no evidence means no published value.
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<h2 class="section-title"><span class="num">7</span> Feature Source Flow (Future &mdash; Dual Ownership)</h2>
+
+<div class="flow-diagram">
+  <h3>Feature Source &rarr; Variant-Scoped Evidence with Two Parents</h3>
+
+  <p style="font-size:13px; color:var(--text-muted); margin-bottom: 16px;">
+    A feature source (e.g. a pricing discovery run) produces data that is scoped to a specific variant.
+    The candidate has both a <code>source_id</code> (who discovered it) and a <code>variant_id</code>
+    (which variant it belongs to). Either parent's deletion cascades to the child.
+  </p>
+
+  <div class="flow-row">
+    <div class="flow-node node-source">Pricing Run<span class="sub">source_id: pricing-{pid}-1</span></div>
+    <div class="flow-arrow"><span class="label">produces</span> &#8594;</div>
+    <div class="flow-node node-evidence">Candidate: price<span class="sub">"$79.99" for variant black</span></div>
+    <div class="flow-arrow"><span class="label">publishes</span> &#8594;</div>
+    <div class="flow-node node-published">Published: price<span class="sub">per-variant published list</span></div>
+  </div>
+
+  <div class="flow-row">
+    <div class="flow-node node-variant">Variant: black<span class="sub">variant_id: v_aabb1122</span></div>
+    <div class="flow-arrow"><span class="label">owns</span> &#8594;</div>
+    <div class="flow-node node-evidence">Candidate: price<span class="sub">variant_id FK on row</span></div>
+  </div>
+
+  <div style="margin: 20px 0; padding: 16px; background: var(--surface); border: 2px solid var(--pink-border); border-radius: 6px;">
+    <h4 style="font-size: 14px; color: var(--pink); margin-bottom: 10px;">Dual Ownership: Two Cascade Triggers</h4>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div style="padding: 12px; background: var(--accent-light); border-radius: 6px;">
+        <div style="font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 6px;">Delete Source (pricing run)</div>
+        <div style="font-size: 12px; color: var(--text-muted);">
+          1. Delete candidates with <code>source_id = pricing-{pid}-1</code><br>
+          2. Republish from remaining candidates per variant<br>
+          3. If sole evidence for a variant's price &rarr; unpublish that price<br>
+          4. Variant itself survives (it has other data: images, colors, etc.)
+        </div>
+      </div>
+      <div style="padding: 12px; background: var(--purple-bg); border-radius: 6px;">
+        <div style="font-size: 12px; font-weight: 700; color: var(--purple); margin-bottom: 6px;">Delete Variant (color:black)</div>
+        <div style="font-size: 12px; color: var(--text-muted);">
+          1. <code>DELETE FROM variant_prices WHERE variant_id = ?</code><br>
+          2. <code>DELETE FROM variant_skus WHERE variant_id = ?</code><br>
+          3. ALL feature data for this variant wiped<br>
+          4. Source survives (it may have data for other variants)
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 12px; font-size: 12px; color: var(--text-muted);">
+      <strong>The child never deletes either parent.</strong> Sources and variants are independent entities.
+      A pricing run doesn't own the variant, and a variant doesn't own the pricing run.
+      They both own the intersection: the price data for that specific variant.
+    </div>
+  </div>
+</div>
+
+<div class="flow-diagram">
+  <h3>Feature Source Delete &mdash; Cascade (Future)</h3>
+  <table class="cascade-table">
+    <thead>
+      <tr><th>Step</th><th>Target</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="step-num">1</span></td>
+        <td>Source artifacts</td>
+        <td>Delete run-specific artifacts (LLM traces, scraped pages)</td>
+      </tr>
+      <tr>
+        <td><span class="step-num">2</span></td>
+        <td><code>field_candidates</code></td>
+        <td>Delete rows where <code>source_id = 'pricing-{pid}-{run}'</code></td>
+      </tr>
+      <tr>
+        <td><span class="step-num">3</span></td>
+        <td>Per-variant published state</td>
+        <td>For each affected variant: republish from remaining candidates.
+        If no candidates remain for that variant's price &rarr; unpublish.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note-box">
+    <strong>Same pattern as Pipeline Source</strong> but scoped per-variant. The source produced data for
+    potentially multiple variants. Deleting the source removes its evidence for each. Variants that still
+    have evidence from other sources keep their published values.
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<h2 class="section-title"><span class="num">8</span> All Source Types Compared</h2>
+
+<div class="flow-diagram">
+  <h3>Three source types, three publishing models</h3>
+
+  <table class="cascade-table">
+    <thead>
+      <tr>
+        <th>Aspect</th>
+        <th style="color:var(--accent);">Variant Source (CEF)</th>
+        <th style="color:var(--teal);">Pipeline Source</th>
+        <th style="color:var(--pink);">Feature Source</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Status</strong></td>
+        <td><span class="badge badge-active" style="font-size:10px;">Active</span></td>
+        <td><span class="badge badge-future" style="font-size:10px;">Future</span></td>
+        <td><span class="badge badge-future" style="font-size:10px;">Future</span></td>
+      </tr>
+      <tr>
+        <td><strong>Discovers</strong></td>
+        <td>Variants (colors, editions)</td>
+        <td>Scalar facts (weight, sensor, dimensions)</td>
+        <td>Variant-scoped data (price, SKU, release date)</td>
+      </tr>
+      <tr>
+        <td><strong>Published SSOT</strong></td>
+        <td><code>variants</code> table &rarr; <code>derivePublishedFromVariants()</code></td>
+        <td><code>field_candidates</code> resolved &rarr; <code>republishField()</code></td>
+        <td><code>field_candidates</code> resolved, per variant &rarr; <code>republishField()</code></td>
+      </tr>
+      <tr>
+        <td><strong>Variant relationship</strong></td>
+        <td>Creates/updates variants</td>
+        <td>None</td>
+        <td>References variant_id (FK)</td>
+      </tr>
+      <tr>
+        <td><strong>On source delete</strong></td>
+        <td>Candidates deleted; published re-derived from variants (unchanged)</td>
+        <td>Candidates deleted; republish from remaining; may unpublish if sole evidence</td>
+        <td>Candidates deleted per-variant; republish per-variant; may unpublish per-variant</td>
+      </tr>
+      <tr>
+        <td><strong>On variant delete</strong></td>
+        <td>Strips values from candidates; re-derives published</td>
+        <td>N/A (no variant relationship)</td>
+        <td><strong>ALL data for that variant wiped</strong> (FK cascade)</td>
+      </tr>
+      <tr>
+        <td><strong>On candidate delete</strong></td>
+        <td>Self-contained (published comes from variants)</td>
+        <td>Republish from remaining; may unpublish</td>
+        <td>Republish for that variant from remaining; may unpublish</td>
+      </tr>
+      <tr>
+        <td><strong>source tag</strong></td>
+        <td><code>"variant_registry"</code></td>
+        <td><code>"pipeline"</code></td>
+        <td><code>"feature:{module}"</code></td>
+      </tr>
+      <tr>
+        <td><strong>Ownership</strong></td>
+        <td>Single: source owns candidates</td>
+        <td>Single: source owns candidates</td>
+        <td><strong>Dual:</strong> source owns candidates AND variant owns candidates</td>
+      </tr>
+      <tr>
+        <td><strong>Examples</strong></td>
+        <td>colors: ["black","white"], editions: ["special-ed"]</td>
+        <td>weight: "58g", sensor: "PAW3395"</td>
+        <td>price: "$79.99" for v_black, sku: "ABC-123" for v_black</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<h2 class="section-title"><span class="num">9</span> Variant-Dependent Features (O(1) Scaling)</h2>
+
+<div class="flow-diagram">
+  <h3>Adding a new variant-dependent feature</h3>
+
+  <div class="flow-row">
+    <div class="flow-node node-variant">variants table<span class="sub">SSOT, already exists</span></div>
+    <div class="flow-arrow">&#8592; FK &#8594;</div>
+    <div class="flow-node node-future">variant_prices<span class="sub">variant_id FK, price, currency</span></div>
+  </div>
+  <div class="flow-row">
+    <div class="flow-node node-variant">variants table</div>
+    <div class="flow-arrow">&#8592; FK &#8594;</div>
+    <div class="flow-node node-future">variant_skus<span class="sub">variant_id FK, sku, retailer</span></div>
+  </div>
+  <div class="flow-row">
+    <div class="flow-node node-variant">variants table</div>
+    <div class="flow-arrow">&#8592; FK &#8594;</div>
+    <div class="flow-node node-future">variant_releases<span class="sub">variant_id FK, release_date, region</span></div>
+  </div>
+
+  <div style="margin: 20px 0; padding: 12px 16px; background: var(--green-bg); border: 1px solid var(--green-border); border-radius: 6px; font-size: 13px;">
+    <strong>O(1) to add:</strong> Create the table with a <code>variant_id</code> FK.
+    Variant deletion automatically cascades via <code>DELETE WHERE variant_id = ?</code>.
+    No new splice logic, no new candidate manipulation, no new publishing path.
+    The variant owns the lifecycle.
+  </div>
+</div>
+
+<div class="flow-diagram">
+  <h3>Feature Source: Dual-Ownership Lifecycle</h3>
+
+  <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+    Each feature data row sits at the intersection of two parents.
+    Both parents have full cascade authority over it.
+  </p>
+
+  <div style="display: flex; justify-content: center; gap: 40px; margin: 24px 0; flex-wrap: wrap;">
+
+    <div style="text-align: center;">
+      <div class="flow-node node-source" style="min-width: 160px; margin: 0 auto;">Pricing Run 1<span class="sub">source_id</span></div>
+      <div style="font-size: 24px; color: var(--text-muted); padding: 8px 0;">&#8595;</div>
+      <div style="font-size: 10px; color: var(--text-subtle); font-weight: 600;">OWNS (source axis)</div>
+    </div>
+
+    <div style="text-align: center; display: flex; flex-direction: column; justify-content: center;">
+      <div class="flow-node node-evidence" style="min-width: 200px; border-width: 2px;">
+        SKU: ABC-123<br>Price: $79.99
+        <span class="sub">source_id + variant_id</span>
+      </div>
+    </div>
+
+    <div style="text-align: center;">
+      <div class="flow-node node-variant" style="min-width: 160px; margin: 0 auto;">Variant: black<span class="sub">variant_id</span></div>
+      <div style="font-size: 24px; color: var(--text-muted); padding: 8px 0;">&#8595;</div>
+      <div style="font-size: 10px; color: var(--text-subtle); font-weight: 600;">OWNS (variant axis)</div>
+    </div>
+
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px;">
+    <div style="padding: 12px 16px; background: var(--red-bg); border: 1px solid var(--red-border); border-radius: 6px; font-size: 12px;">
+      <strong style="color: var(--red);">Delete Pricing Run 1:</strong><br>
+      This row deleted (owned by source).<br>
+      Variant survives. Other pricing runs' data survives.<br>
+      If sole evidence for this variant's price &rarr; unpublish price for this variant.
+    </div>
+    <div style="padding: 12px 16px; background: var(--red-bg); border: 1px solid var(--red-border); border-radius: 6px; font-size: 12px;">
+      <strong style="color: var(--red);">Delete Variant black:</strong><br>
+      This row deleted (owned by variant).<br>
+      Pricing Run 1 survives. Its data for other variants survives.<br>
+      ALL feature data for black is wiped: price, SKU, release date, images.
+    </div>
+  </div>
+
+  <div class="note-box" style="margin-top: 16px;">
+    <strong>The child never deletes either parent.</strong> Deleting the SKU data for variant black
+    does not delete the pricing run that discovered it, and does not delete the variant itself.
+    Cascade always flows downward from parent to child, never upward.
+  </div>
+</div>
+
+</div><!-- /.container -->
+</body>
+</html>

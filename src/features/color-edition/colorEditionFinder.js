@@ -9,8 +9,7 @@ import { buildLlmCallDeps } from '../../core/llm/buildLlmCallDeps.js';
 import { buildBillingOnUsage } from '../../billing/costLedger.js';
 import { resolveIdentityAmbiguitySnapshot } from '../indexing/orchestration/shared/identityHelpers.js';
 import {
-  COOLDOWN_DAYS,
-  computeCooldownUntil,
+  computeRanAt,
   resolveModelTracking,
   resolveAmbiguityContext,
   buildFinderLlmCaller,
@@ -24,6 +23,7 @@ import { buildVariantRegistry, applyIdentityMappings, validateColorsAgainstPalet
 import { createVariantIdentityCheckCallLlm, buildVariantIdentityCheckPrompt } from './colorEditionLlmAdapter.js';
 import { submitCandidate, validateField } from '../publisher/index.js';
 import { propagateVariantRenames } from '../product-image/index.js';
+import { derivePublishedFromVariants } from './variantLifecycle.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 
 /**
@@ -115,7 +115,7 @@ function reconcileEditionSlugsFromRegistry(editions, existingRegistry, identityC
   return changed ? reconciled : editions;
 }
 
-function storeFailureAndReturn({ specDb, product, existing, model, fallbackUsed, rejections, raw, productRoot }) {
+function storeFailureAndReturn({ specDb, product, existing, model, fallbackUsed, thinking, webSearch, rejections, raw, productRoot }) {
   const now = new Date();
   const ranAt = now.toISOString();
 
@@ -126,12 +126,13 @@ function storeFailureAndReturn({ specDb, product, existing, model, fallbackUsed,
     productRoot,
     newDiscovery: {
       category: product.category,
-      cooldown_until: '',
       last_ran_at: ranAt,
     },
     run: {
       model,
       fallback_used: fallbackUsed,
+      thinking: Boolean(thinking),
+      web_search: Boolean(webSearch),
       status: 'rejected',
       selected: {},
       prompt: {},
@@ -147,7 +148,8 @@ function storeFailureAndReturn({ specDb, product, existing, model, fallbackUsed,
     ran_at: ranAt,
     model,
     fallback_used: fallbackUsed,
-    cooldown_until: '',
+    thinking: Boolean(thinking),
+    web_search: Boolean(webSearch),
     selected: {},
     prompt: {},
     response: { status: 'rejected', raw, rejections },
@@ -160,7 +162,6 @@ function storeFailureAndReturn({ specDb, product, existing, model, fallbackUsed,
     colors: merged.selected?.colors || [],
     editions: Object.keys(merged.selected?.editions || {}),
     default_color: merged.selected?.default_color || '',
-    cooldown_until: merged.cooldown_until || '',
     latest_ran_at: ranAt,
     run_count: merged.run_count,
   });
@@ -199,7 +200,7 @@ export async function runColorEditionFinder({
 }) {
   productRoot = productRoot || defaultProductRoot();
   const finderStore = specDb.getFinderStore('colorEditionFinder');
-  const cooldownDays = parseInt(finderStore.getSetting('cooldownDays'), 10) || COOLDOWN_DAYS;
+  const reinjectQueriesRun = finderStore.getSetting('reinjectQueriesRun') === 'true';
   const modelTracking = resolveModelTracking({ config, phaseKey: 'colorFinder', onModelResolved });
   const { wrappedOnModelResolved } = modelTracking;
 
@@ -240,6 +241,7 @@ export async function runColorEditionFinder({
     colors: allColors,
     product,
     previousRuns,
+    reinjectQueriesRun,
   });
   const userMessage = JSON.stringify({
     brand: product.brand || '',
@@ -264,7 +266,7 @@ export async function runColorEditionFinder({
 
   let response, usage;
   try {
-    ({ result: response, usage } = await callLlm({ colorNames, colors: allColors, product, previousRuns, familyModelCount, ambiguityLevel }));
+    ({ result: response, usage } = await callLlm({ colorNames, colors: allColors, product, previousRuns, familyModelCount, ambiguityLevel, reinjectQueriesRun }));
   } catch (err) {
     logger?.error?.('color_edition_finder_llm_failed', {
       product_id: product.product_id,
@@ -332,7 +334,7 @@ export async function runColorEditionFinder({
     const colorsHardRejects = colorsValidation.rejections.filter(r => r.reason_code !== 'unknown_enum_prefer_known');
 
     if (colorsHardRejects.length > 0) {
-      return storeFailureAndReturn({ specDb, product, existing, model: modelTracking.actualModel, fallbackUsed: modelTracking.actualFallbackUsed, rejections: colorsValidation.rejections, raw: { colors, editions, default_color: defaultColor }, productRoot });
+      return storeFailureAndReturn({ specDb, product, existing, model: modelTracking.actualModel, fallbackUsed: modelTracking.actualFallbackUsed, thinking: modelTracking.actualThinking, webSearch: modelTracking.actualWebSearch, rejections: colorsValidation.rejections, raw: { colors, editions, default_color: defaultColor }, productRoot });
     }
 
     // Step 2: Build repair map from colors validation
@@ -366,7 +368,7 @@ export async function runColorEditionFinder({
       const editionsHardRejects = editionsValidation.rejections.filter(r => r.reason_code !== 'unknown_enum_prefer_known');
 
       if (editionsHardRejects.length > 0) {
-        return storeFailureAndReturn({ specDb, product, existing, model: modelTracking.actualModel, fallbackUsed: modelTracking.actualFallbackUsed, rejections: editionsValidation.rejections, raw: { colors, editions, default_color: defaultColor }, productRoot });
+        return storeFailureAndReturn({ specDb, product, existing, model: modelTracking.actualModel, fallbackUsed: modelTracking.actualFallbackUsed, thinking: modelTracking.actualThinking, webSearch: modelTracking.actualWebSearch, rejections: editionsValidation.rejections, raw: { colors, editions, default_color: defaultColor }, productRoot });
       }
     }
 
@@ -408,11 +410,26 @@ export async function runColorEditionFinder({
       specDb, product, existing,
       model: modelTracking.actualModel,
       fallbackUsed: modelTracking.actualFallbackUsed,
+      thinking: modelTracking.actualThinking,
+      webSearch: modelTracking.actualWebSearch,
       rejections: [{ reason_code: 'unknown_color_atom', message: paletteCheck.reason, unknownAtoms: paletteCheck.unknownAtoms }],
       raw: { colors: gateColors, editions: gateEditions, default_color: defaultColor },
       productRoot,
     });
   }
+
+  // WHY: gateColors includes edition combo strings (e.g., 'dark-gray+black+orange')
+  // needed by buildVariantRegistry to detect edition entries. But candidates, summary,
+  // and return value must only contain standalone colors — multi-atom edition combos
+  // stay scoped to their edition and are never published as standalone colors.
+  // Single-atom edition colors (e.g., 'black' for an edition that comes in black)
+  // are always standalone colors — they describe the product, not just the edition.
+  const editionCombos = new Set();
+  for (const ed of Object.values(gateEditions)) {
+    const combo = (ed.colors || [])[0];
+    if (combo && combo.includes('+')) editionCombos.add(combo);
+  }
+  const standaloneColors = gateColors.filter(c => !editionCombos.has(c));
 
   onStageAdvance?.('Validate');
 
@@ -431,7 +448,7 @@ export async function runColorEditionFinder({
     if (signal?.aborted) throw new DOMException('Operation cancelled', 'AbortError');
     onStageAdvance?.('Identity');
 
-    const identityPromptOverride = finderStore.getSetting?.('identityCheckPromptOverride') || '';
+    const identityPromptOverride = '';
 
     identityCheckPrompt = buildVariantIdentityCheckPrompt({
       product, existingRegistry: existing.variant_registry,
@@ -511,7 +528,7 @@ export async function runColorEditionFinder({
     discovery_log: response?.discovery_log || emptyLog,
   };
 
-  const { cooldownUntil, ranAt } = computeCooldownUntil({ days: cooldownDays });
+  const { ranAt } = computeRanAt();
 
   // WHY: Nest both prompts/responses when identity check ran. On Run 1 (no identity
   // check), keep the flat structure for backward compat with existing GUI/SQL readers.
@@ -522,31 +539,10 @@ export async function runColorEditionFinder({
     ? { discovery: storedResponse, identity_check: identityCheckResult }
     : storedResponse;
 
-  // Merge into JSON (durable memory — write first)
-  const merged = mergeColorEditionDiscovery({
-    productId: product.product_id,
-    productRoot,
-    newDiscovery: {
-      category: product.category,
-      cooldown_until: cooldownUntil,
-      last_ran_at: ranAt,
-    },
-    run: {
-      started_at: cefStartedAt,
-      duration_ms: Date.now() - cefStartMs,
-      model: modelTracking.actualModel,
-      fallback_used: modelTracking.actualFallbackUsed,
-      effort_level: modelTracking.actualEffortLevel,
-      access_mode: modelTracking.actualAccessMode,
-      selected,
-      prompt: runPrompt,
-      response: runResponse,
-    },
-  });
-
   // ── Gate 2: Identity check validation ─────────────────────────
-  // WHY: If the identity check produced invalid mappings (duplicate matches,
-  // slug changes, unknown atoms), toss the entire run — data is suspect.
+  // WHY: Must run BEFORE persisting the merge. If identity check produced
+  // invalid mappings (duplicate matches, slug changes, unknown atoms),
+  // reject the entire run without writing a ghost successful run to JSON.
   if (hasExistingRegistry && identityCheckResult) {
     const idValidation = validateIdentityMappings({
       mappings: identityCheckResult.mappings || [],
@@ -559,12 +555,37 @@ export async function runColorEditionFinder({
         specDb, product, existing,
         model: modelTracking.actualModel,
         fallbackUsed: modelTracking.actualFallbackUsed,
+        thinking: modelTracking.actualThinking,
+        webSearch: modelTracking.actualWebSearch,
         rejections: [{ reason_code: 'identity_check_invalid', message: idValidation.reason }],
         raw: { colors: gateColors, editions: gateEditions, default_color: defaultColor },
         productRoot,
       });
     }
   }
+
+  // Merge into JSON (durable memory — both gates passed)
+  const merged = mergeColorEditionDiscovery({
+    productId: product.product_id,
+    productRoot,
+    newDiscovery: {
+      category: product.category,
+      last_ran_at: ranAt,
+    },
+    run: {
+      started_at: cefStartedAt,
+      duration_ms: Date.now() - cefStartMs,
+      model: modelTracking.actualModel,
+      fallback_used: modelTracking.actualFallbackUsed,
+      effort_level: modelTracking.actualEffortLevel,
+      access_mode: modelTracking.actualAccessMode,
+      thinking: modelTracking.actualThinking,
+      web_search: modelTracking.actualWebSearch,
+      selected,
+      prompt: runPrompt,
+      response: runResponse,
+    },
+  });
 
   // ── Variant registry update ────────────────────────────────────
   if (hasExistingRegistry && identityCheckResult) {
@@ -625,7 +646,8 @@ export async function runColorEditionFinder({
     fallback_used: modelTracking.actualFallbackUsed,
     effort_level: modelTracking.actualEffortLevel,
     access_mode: modelTracking.actualAccessMode,
-    cooldown_until: cooldownUntil,
+    thinking: modelTracking.actualThinking,
+    web_search: modelTracking.actualWebSearch,
     selected,
     prompt: runPrompt,
     response: runResponse,
@@ -635,14 +657,24 @@ export async function runColorEditionFinder({
   specDb.getFinderStore('colorEditionFinder').upsert({
     category: product.category,
     product_id: product.product_id,
-    colors: gateColors,
+    colors: standaloneColors,
     editions: Object.keys(gateEditions),
-    default_color: selected.default_color,
+    default_color: standaloneColors[0] || selected.default_color,
     variant_registry: merged.variant_registry || [],
-    cooldown_until: cooldownUntil,
     latest_ran_at: ranAt,
     run_count: merged.run_count,
   });
 
-  return { colors: gateColors, editions: gateEditions, default_color: selected.default_color, fallbackUsed: false, rejected: false };
+  // WHY: Dual-write — project variant registry into standalone variants table.
+  if (merged.variant_registry?.length > 0 && specDb.variants) {
+    specDb.variants.syncFromRegistry(product.product_id, merged.variant_registry);
+  }
+
+  // WHY: Variant-derived publishing — overwrite candidate-published values
+  // with authoritative variant-derived state from the variants table.
+  if (specDb.variants) {
+    derivePublishedFromVariants({ specDb, productId: product.product_id, productRoot });
+  }
+
+  return { colors: standaloneColors, editions: gateEditions, default_color: standaloneColors[0] || selected.default_color, fallbackUsed: false, rejected: false };
 }

@@ -31,7 +31,6 @@ describe('colorEditionStore — JSON read/write', () => {
       product_id: 'mouse-001',
       category: 'mouse',
       selected: { colors: ['black', 'white'], editions: {}, default_color: 'black' },
-      cooldown_until: '2026-05-01T00:00:00Z',
       last_ran_at: '2026-04-01T12:00:00Z',
       run_count: 1,
       runs: [],
@@ -71,13 +70,12 @@ describe('recalculateCumulativeFromRuns', () => {
     assert.equal(result.run_count, 0);
     assert.equal(result.next_run_number, 1);
     assert.equal(result.last_ran_at, '');
-    assert.equal(result.cooldown_until, '');
   });
 
   it('single run: selected = that run', () => {
     const runs = [{
       run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
-      fallback_used: false, cooldown_until: '2026-05-01T00:00:00Z',
+      fallback_used: false,
       selected: {
         colors: ['black', 'white'],
         editions: { 'launch-edition': { colors: ['black'] } },
@@ -93,20 +91,19 @@ describe('recalculateCumulativeFromRuns', () => {
     assert.equal(result.run_count, 1);
     assert.equal(result.next_run_number, 2);
     assert.equal(result.last_ran_at, '2026-04-01T00:00:00Z');
-    assert.equal(result.cooldown_until, '2026-05-01T00:00:00Z');
   });
 
   it('multiple runs: selected = latest run (highest run_number)', () => {
     const runs = [
       {
         run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
-        fallback_used: false, cooldown_until: '2026-05-01T00:00:00Z',
+        fallback_used: false,
         selected: { colors: ['black'], editions: {}, default_color: 'black' },
         prompt: { system: 's', user: 'u' }, response: { colors: ['black'], editions: {}, default_color: 'black' },
       },
       {
         run_number: 2, ran_at: '2026-06-01T00:00:00Z', model: 'gpt-6',
-        fallback_used: false, cooldown_until: '2026-07-01T00:00:00Z',
+        fallback_used: false,
         selected: { colors: ['black', 'white', 'red'], editions: { 'launch': { colors: ['black'] } }, default_color: 'black' },
         prompt: { system: 's', user: 'u' }, response: { colors: ['black', 'white', 'red'], editions: { 'launch': { colors: ['black'] } }, default_color: 'black' },
       },
@@ -117,14 +114,13 @@ describe('recalculateCumulativeFromRuns', () => {
     assert.equal(result.run_count, 2);
     assert.equal(result.next_run_number, 3);
     assert.equal(result.last_ran_at, '2026-06-01T00:00:00Z');
-    assert.equal(result.cooldown_until, '2026-07-01T00:00:00Z');
   });
 
   it('non-sequential run_numbers: next_run_number = MAX + 1', () => {
     const runs = [
-      { run_number: 1, ran_at: '2026-04-01', selected: { colors: ['black'], editions: {}, default_color: 'black' }, cooldown_until: '' },
-      { run_number: 3, ran_at: '2026-04-02', selected: { colors: ['black', 'white'], editions: {}, default_color: 'black' }, cooldown_until: '' },
-      { run_number: 5, ran_at: '2026-04-03', selected: { colors: ['red'], editions: {}, default_color: 'red' }, cooldown_until: '' },
+      { run_number: 1, ran_at: '2026-04-01', selected: { colors: ['black'], editions: {}, default_color: 'black' } },
+      { run_number: 3, ran_at: '2026-04-02', selected: { colors: ['black', 'white'], editions: {}, default_color: 'black' } },
+      { run_number: 5, ran_at: '2026-04-03', selected: { colors: ['red'], editions: {}, default_color: 'red' } },
     ];
     const result = recalculateCumulativeFromRuns(runs, 'pid', 'mouse');
     assert.equal(result.run_count, 3);
@@ -134,14 +130,13 @@ describe('recalculateCumulativeFromRuns', () => {
 
   it('rejected runs: selected derived from latest valid run', () => {
     const runs = [
-      { run_number: 1, ran_at: '2026-04-01', cooldown_until: '2026-05-01',
+      { run_number: 1, ran_at: '2026-04-01',
         selected: { colors: ['black'], editions: {}, default_color: 'black' } },
-      { run_number: 2, ran_at: '2026-04-02', cooldown_until: '', status: 'rejected',
+      { run_number: 2, ran_at: '2026-04-02', status: 'rejected',
         selected: {} },
     ];
     const result = recalculateCumulativeFromRuns(runs, 'pid', 'mouse');
     assert.deepEqual(result.selected.colors, ['black'], 'selected from valid run 1, not rejected run 2');
-    assert.equal(result.cooldown_until, '2026-05-01', 'cooldown from valid run 1');
     assert.equal(result.last_ran_at, '2026-04-02', 'last_ran_at from overall latest (rejected)');
     assert.equal(result.run_count, 2);
     assert.equal(result.next_run_number, 3);
@@ -149,14 +144,13 @@ describe('recalculateCumulativeFromRuns', () => {
 
   it('rejected runs interleaved: selected from latest valid', () => {
     const runs = [
-      { run_number: 1, ran_at: '2026-04-01', cooldown_until: '', status: 'rejected', selected: {} },
-      { run_number: 2, ran_at: '2026-04-02', cooldown_until: '2026-05-02',
+      { run_number: 1, ran_at: '2026-04-01', status: 'rejected', selected: {} },
+      { run_number: 2, ran_at: '2026-04-02',
         selected: { colors: ['white'], editions: {}, default_color: 'white' } },
-      { run_number: 3, ran_at: '2026-04-03', cooldown_until: '', status: 'rejected', selected: {} },
+      { run_number: 3, ran_at: '2026-04-03', status: 'rejected', selected: {} },
     ];
     const result = recalculateCumulativeFromRuns(runs, 'pid', 'mouse');
     assert.deepEqual(result.selected.colors, ['white'], 'selected from valid run 2');
-    assert.equal(result.cooldown_until, '2026-05-02', 'cooldown from valid run 2');
     assert.equal(result.last_ran_at, '2026-04-03', 'last_ran_at from overall latest');
     assert.equal(result.run_count, 3);
     assert.equal(result.next_run_number, 4);
@@ -164,12 +158,11 @@ describe('recalculateCumulativeFromRuns', () => {
 
   it('all rejected runs: selected is empty, counts still correct', () => {
     const runs = [
-      { run_number: 1, ran_at: '2026-04-01', cooldown_until: '', status: 'rejected', selected: {} },
-      { run_number: 2, ran_at: '2026-04-02', cooldown_until: '', status: 'rejected', selected: {} },
+      { run_number: 1, ran_at: '2026-04-01', status: 'rejected', selected: {} },
+      { run_number: 2, ran_at: '2026-04-02', status: 'rejected', selected: {} },
     ];
     const result = recalculateCumulativeFromRuns(runs, 'pid', 'mouse');
     assert.deepEqual(result.selected, { colors: [], editions: {}, default_color: '' });
-    assert.equal(result.cooldown_until, '');
     assert.equal(result.last_ran_at, '2026-04-02');
     assert.equal(result.run_count, 2);
     assert.equal(result.next_run_number, 3);
@@ -188,7 +181,6 @@ describe('colorEditionStore — merge with runs', () => {
       productRoot: MERGE_ROOT,
       newDiscovery: {
         category: 'mouse',
-        cooldown_until: '2026-05-01T00:00:00Z',
         last_ran_at: '2026-04-01T00:00:00Z',
       },
       run: {
@@ -215,7 +207,6 @@ describe('colorEditionStore — merge with runs', () => {
       productRoot: MERGE_ROOT,
       newDiscovery: {
         category: 'mouse',
-        cooldown_until: '2026-06-01T00:00:00Z',
         last_ran_at: '2026-05-01T00:00:00Z',
       },
       run: {
@@ -252,11 +243,11 @@ describe('colorEditionStore — merge with runs', () => {
       data: {
         product_id: 'del-merge-001', category: 'mouse',
         selected: { colors: ['red'], editions: {}, default_color: 'red' },
-        cooldown_until: '', last_ran_at: '', run_count: 3, next_run_number: 4,
+        last_ran_at: '', run_count: 3, next_run_number: 4,
         runs: [
-          { run_number: 1, ran_at: '2026-04-01', selected: { colors: ['black'], editions: {}, default_color: 'black' }, cooldown_until: '' },
-          { run_number: 2, ran_at: '2026-04-02', selected: { colors: ['white'], editions: {}, default_color: 'white' }, cooldown_until: '' },
-          { run_number: 3, ran_at: '2026-04-03', selected: { colors: ['red'], editions: {}, default_color: 'red' }, cooldown_until: '' },
+          { run_number: 1, ran_at: '2026-04-01', selected: { colors: ['black'], editions: {}, default_color: 'black' } },
+          { run_number: 2, ran_at: '2026-04-02', selected: { colors: ['white'], editions: {}, default_color: 'white' } },
+          { run_number: 3, ran_at: '2026-04-03', selected: { colors: ['red'], editions: {}, default_color: 'red' } },
         ],
       },
     });
@@ -272,7 +263,7 @@ describe('colorEditionStore — merge with runs', () => {
     // Merge a new run — must get run_number 4 (not 3)
     const merged = mergeColorEditionDiscovery({
       productId: 'del-merge-001', productRoot: DEL_MERGE_ROOT,
-      newDiscovery: { category: 'mouse', cooldown_until: '', last_ran_at: '2026-04-04' },
+      newDiscovery: { category: 'mouse', last_ran_at: '2026-04-04' },
       run: { model: 'gpt-7', fallback_used: false, selected: { colors: ['blue'], editions: {}, default_color: 'blue' }, prompt: {}, response: {} },
     });
 
@@ -292,17 +283,17 @@ describe('colorEditionStore — merge with runs', () => {
       data: {
         product_id: 'compat-001', category: 'mouse',
         selected: { colors: ['black'], editions: {}, default_color: 'black' },
-        cooldown_until: '', last_ran_at: '', run_count: 2,
+        last_ran_at: '', run_count: 2,
         runs: [
-          { run_number: 1, ran_at: '2026-04-01', selected: { colors: ['black'], editions: {}, default_color: 'black' }, cooldown_until: '' },
-          { run_number: 2, ran_at: '2026-04-02', selected: { colors: ['black'], editions: {}, default_color: 'black' }, cooldown_until: '' },
+          { run_number: 1, ran_at: '2026-04-01', selected: { colors: ['black'], editions: {}, default_color: 'black' } },
+          { run_number: 2, ran_at: '2026-04-02', selected: { colors: ['black'], editions: {}, default_color: 'black' } },
         ],
       },
     });
 
     const merged = mergeColorEditionDiscovery({
       productId: 'compat-001', productRoot: COMPAT_ROOT,
-      newDiscovery: { category: 'mouse', cooldown_until: '', last_ran_at: '2026-04-03' },
+      newDiscovery: { category: 'mouse', last_ran_at: '2026-04-03' },
       run: { model: 'gpt-7', selected: { colors: ['white'], editions: {}, default_color: 'white' }, prompt: {}, response: {} },
     });
 
@@ -324,17 +315,17 @@ describe('colorEditionStore — delete run', () => {
       data: {
         product_id: 'del-001', category: 'mouse',
         selected: { colors: ['black', 'white', 'red'], editions: {}, default_color: 'black' },
-        cooldown_until: '2026-07-01T00:00:00Z', last_ran_at: '2026-06-01T00:00:00Z', run_count: 2,
+        last_ran_at: '2026-06-01T00:00:00Z', run_count: 2,
         runs: [
           {
             run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
-            fallback_used: false, cooldown_until: '2026-05-01T00:00:00Z',
+            fallback_used: false,
             selected: { colors: ['black'], editions: {}, default_color: 'black' },
             prompt: { system: 's', user: 'u' }, response: { colors: ['black'], editions: {}, default_color: 'black' },
           },
           {
             run_number: 2, ran_at: '2026-06-01T00:00:00Z', model: 'gpt-6',
-            fallback_used: false, cooldown_until: '2026-07-01T00:00:00Z',
+            fallback_used: false,
             selected: { colors: ['black', 'white', 'red'], editions: {}, default_color: 'black' },
             prompt: { system: 's2', user: 'u2' }, response: { colors: ['black', 'white', 'red'], editions: {}, default_color: 'black' },
           },
@@ -346,7 +337,6 @@ describe('colorEditionStore — delete run', () => {
     assert.equal(result.runs.length, 1);
     assert.equal(result.runs[0].run_number, 2);
     assert.deepEqual(result.selected.colors, ['black', 'white', 'red']);
-    assert.equal(result.cooldown_until, '2026-07-01T00:00:00Z');
     assert.equal(result.next_run_number, 3, 'high-water mark: MAX(2) + 1');
     assert.equal(result.run_count, 1);
   });
@@ -357,17 +347,17 @@ describe('colorEditionStore — delete run', () => {
       data: {
         product_id: 'del-002', category: 'mouse',
         selected: { colors: ['black', 'white'], editions: {}, default_color: 'black' },
-        cooldown_until: '2026-07-01T00:00:00Z', last_ran_at: '2026-06-01T00:00:00Z', run_count: 2,
+        last_ran_at: '2026-06-01T00:00:00Z', run_count: 2,
         runs: [
           {
             run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
-            fallback_used: false, cooldown_until: '2026-05-01T00:00:00Z',
+            fallback_used: false,
             selected: { colors: ['black'], editions: {}, default_color: 'black' },
             prompt: { system: 's', user: 'u' }, response: { colors: ['black'], editions: {}, default_color: 'black' },
           },
           {
             run_number: 2, ran_at: '2026-06-01T00:00:00Z', model: 'gpt-6',
-            fallback_used: false, cooldown_until: '2026-07-01T00:00:00Z',
+            fallback_used: false,
             selected: { colors: ['black', 'white'], editions: {}, default_color: 'black' },
             prompt: { system: 's2', user: 'u2' }, response: { colors: ['black', 'white'], editions: {}, default_color: 'black' },
           },
@@ -378,7 +368,6 @@ describe('colorEditionStore — delete run', () => {
     const result = deleteColorEditionFinderRun({ productId: 'del-002', productRoot: DEL_ROOT, runNumber: 2 });
     assert.equal(result.runs.length, 1);
     assert.deepEqual(result.selected.colors, ['black']);
-    assert.equal(result.cooldown_until, '2026-05-01T00:00:00Z');
   });
 
   it('deleting the only run returns null and removes file', () => {
@@ -387,10 +376,10 @@ describe('colorEditionStore — delete run', () => {
       data: {
         product_id: 'del-003', category: 'mouse',
         selected: { colors: ['black'], editions: {}, default_color: 'black' },
-        cooldown_until: '2026-05-01T00:00:00Z', last_ran_at: '2026-04-01T00:00:00Z', run_count: 1,
+        last_ran_at: '2026-04-01T00:00:00Z', run_count: 1,
         runs: [{
           run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
-          fallback_used: false, cooldown_until: '2026-05-01T00:00:00Z',
+          fallback_used: false,
           selected: { colors: ['black'], editions: {}, default_color: 'black' },
           prompt: { system: 's', user: 'u' }, response: { colors: ['black'], editions: {}, default_color: 'black' },
         }],
@@ -409,10 +398,10 @@ describe('colorEditionStore — delete run', () => {
       data: {
         product_id: 'del-004', category: 'mouse',
         selected: { colors: ['black'], editions: {}, default_color: 'black' },
-        cooldown_until: '', last_ran_at: '', run_count: 1,
+        last_ran_at: '', run_count: 1,
         runs: [{
           run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
-          fallback_used: false, cooldown_until: '',
+          fallback_used: false,
           selected: { colors: ['black'], editions: {}, default_color: 'black' },
           prompt: { system: 's', user: 'u' }, response: { colors: ['black'], editions: {}, default_color: 'black' },
         }],
@@ -474,7 +463,7 @@ describe('colorEditionStore — rebuild JSON → SQL', () => {
           editions: { 'launch-edition': { colors: ['black'] } },
           default_color: 'black',
         },
-        cooldown_until: '2026-05-01T00:00:00Z', last_ran_at: '2026-04-15T00:00:00Z', run_count: 3,
+        last_ran_at: '2026-04-15T00:00:00Z', run_count: 3,
         runs: [],
       },
     });
@@ -494,7 +483,7 @@ describe('colorEditionStore — rebuild JSON → SQL', () => {
       productId: 'rebuild-legacy', productRoot: REBUILD_ROOT,
       data: {
         product_id: 'rebuild-legacy', category: 'mouse',
-        cooldown_until: '', default_color: 'red', run_count: 1, last_ran_at: '',
+        default_color: 'red', run_count: 1, last_ran_at: '',
         colors: { red: { found_run: 1, found_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4' } },
         editions: { 'wilderness': { found_run: 1, found_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4' } },
       },
@@ -515,7 +504,7 @@ describe('colorEditionStore — rebuild JSON → SQL', () => {
       data: {
         product_id: 'rebuild-wrong-cat', category: 'keyboard',
         selected: { colors: ['black'], editions: {}, default_color: 'black' },
-        cooldown_until: '', last_ran_at: '', run_count: 1, runs: [],
+        last_ran_at: '', run_count: 1, runs: [],
       },
     });
 
@@ -530,18 +519,18 @@ describe('colorEditionStore — rebuild JSON → SQL', () => {
       data: {
         product_id: 'rebuild-runs', category: 'mouse',
         selected: { colors: ['black', 'red'], editions: {}, default_color: 'black' },
-        cooldown_until: '2026-05-01T00:00:00Z', last_ran_at: '2026-04-02T00:00:00Z', run_count: 2,
+        last_ran_at: '2026-04-02T00:00:00Z', run_count: 2,
         runs: [
           {
             run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'model-a',
-            fallback_used: false, cooldown_until: '2026-05-01T00:00:00Z',
+            fallback_used: false,
             selected: { colors: ['black'], editions: {}, default_color: 'black' },
             prompt: { system: 'sys1', user: 'usr1' },
             response: { colors: ['black'], editions: {}, default_color: 'black' },
           },
           {
             run_number: 2, ran_at: '2026-04-02T00:00:00Z', model: 'model-b',
-            fallback_used: true, cooldown_until: '2026-05-01T00:00:00Z',
+            fallback_used: true,
             selected: { colors: ['black', 'red'], editions: {}, default_color: 'black' },
             prompt: { system: 'sys2', user: 'usr2' },
             response: { colors: ['black', 'red'], editions: {}, default_color: 'black' },

@@ -8,9 +8,12 @@
  * POST /publisher/:category/reconcile          (apply reconciliation)
  */
 
+import fs from 'node:fs';
+import path from 'node:path';
 import { reconcileThreshold } from '../publish/reconcileThreshold.js';
 import { registerOperation, updateStage, completeOperation, failOperation } from '../../../core/operations/operationsRegistry.js';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
+import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
 
 export function registerPublisherRoutes(ctx) {
   const { jsonRes, readJsonBody, getSpecDb, broadcastWs, config, productRoot } = ctx;
@@ -114,6 +117,27 @@ export function registerPublisherRoutes(ctx) {
           resolved_at: row.updated_at,
         };
       }
+
+      // WHY: Variant-derived fields (colors, editions) are authoritative from
+      // product.json, not from candidate resolved status. Overlay them so the
+      // published endpoint reflects the variants table SSOT.
+      try {
+        const pjPath = path.join(defaultProductRoot(), productId, 'product.json');
+        const pj = JSON.parse(fs.readFileSync(pjPath, 'utf8'));
+        if (pj.fields) {
+          for (const [key, field] of Object.entries(pj.fields)) {
+            if (field?.source === 'variant_registry') {
+              fields[key] = {
+                value: field.value,
+                confidence: field.confidence ?? 1.0,
+                source: 'variant_registry',
+                resolved_at: field.resolved_at || '',
+              };
+            }
+          }
+        }
+      } catch { /* product.json may not exist */ }
+
       jsonRes(res, 200, { product_id: productId, fields });
       return true;
     }

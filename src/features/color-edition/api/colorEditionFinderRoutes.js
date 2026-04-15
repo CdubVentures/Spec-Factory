@@ -6,12 +6,19 @@
  * - specDb method bindings
  * - custom GET response shape (color_details, edition_details)
  * - custom result meta for data-change events
+ * - variant deletion endpoint (DELETE .../variants/:variantId)
  */
 
 import { createFinderRouteHandler } from '../../../core/finder/finderRoutes.js';
+import { emitDataChange } from '../../../core/events/dataChangeContract.js';
+import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
+import { derivePublishedFromVariants } from '../variantLifecycle.js';
 
 export function registerColorEditionFinderRoutes(ctx) {
-  return createFinderRouteHandler({
+  const { jsonRes, getSpecDb, broadcastWs } = ctx;
+  const deleteVariantFn = ctx.deleteVariant;
+
+  const genericHandler = createFinderRouteHandler({
     routePrefix: 'color-edition-finder',
     moduleType: 'cef',
     phase: 'colorFinder',
@@ -25,6 +32,7 @@ export function registerColorEditionFinderRoutes(ctx) {
     listByCategory: (specDb, cat) => specDb.getFinderStore('colorEditionFinder').listByCategory(cat),
     listRuns: (specDb, pid) => specDb.getFinderStore('colorEditionFinder').listRuns(pid),
     upsertSummary: (specDb, row) => specDb.getFinderStore('colorEditionFinder').upsert(row),
+    updateBookkeeping: (specDb, pid, vals) => specDb.getFinderStore('colorEditionFinder').updateBookkeeping(pid, vals),
     deleteOneSql: (specDb, pid) => specDb.getFinderStore('colorEditionFinder').remove(pid),
     deleteRunSql: (specDb, pid, rn) => specDb.getFinderStore('colorEditionFinder').removeRun(pid, rn),
     deleteAllRunsSql: (specDb, pid) => specDb.getFinderStore('colorEditionFinder').removeAllRuns(pid),
@@ -33,7 +41,16 @@ export function registerColorEditionFinderRoutes(ctx) {
     skipSelectedOnDelete: true,
     candidateSourceType: 'cef',
 
-    buildGetResponse: (row, selected, runs, onCooldown, { specDb, productId } = {}) => {
+    // WHY: After run deletion strips candidates and republishField runs,
+    // re-derive published colors/editions from the variants table (SSOT).
+    // Without this, published state temporarily reverts to candidate set_union.
+    onAfterRunDelete: ({ specDb, productId, productRoot }) => {
+      if (specDb.variants) {
+        derivePublishedFromVariants({ specDb, productId, productRoot });
+      }
+    },
+
+    buildGetResponse: (row, selected, runs, { specDb, productId } = {}) => {
       // WHY: Published values come from the summary table (DB).
       // Candidate rows are evidence (which sources submitted what), not the published truth.
       const publishedColors = Array.isArray(row.colors) ? row.colors : [];
@@ -57,8 +74,6 @@ export function registerColorEditionFinderRoutes(ctx) {
       return {
         product_id: row.product_id,
         category: row.category,
-        cooldown_until: row.cooldown_until,
-        on_cooldown: onCooldown,
         run_count: row.run_count,
         last_ran_at: row.latest_ran_at,
         // Published values from summary table + detail from latest run
@@ -69,7 +84,8 @@ export function registerColorEditionFinderRoutes(ctx) {
           color_names: selected.color_names || {},
           edition_details: selected.editions || {},
         },
-        variant_registry: Array.isArray(row.variant_registry) ? row.variant_registry : [],
+        // WHY: Read from variants table (SSOT) instead of summary blob column.
+        variant_registry: specDb?.variants?.listByProduct(productId) || [],
         // All candidates with evidence chains, sorted by confidence desc
         candidates: {
           colors: colorRows.map(shapeCandidateRow).sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0)),
@@ -84,4 +100,41 @@ export function registerColorEditionFinderRoutes(ctx) {
       editionsFound: result.editions ? Object.keys(result.editions).length : 0,
     }),
   })(ctx);
+
+  // WHY: Wrap generic handler to intercept variant-specific routes.
+  // Generic handler returns false for unrecognized paths, so variant
+  // routes are checked after.
+  return async function handleCefRoutes(parts, params, method, req, res) {
+    const handled = await genericHandler(parts, params, method, req, res);
+    if (handled !== false) return handled;
+
+    // ── DELETE /color-edition-finder/:category/:productId/variants/:variantId
+    if (parts[0] === 'color-edition-finder' && method === 'DELETE' && parts[3] === 'variants' && parts[4]) {
+      const category = parts[1] || '';
+      const productId = parts[2] || '';
+      const variantId = parts[4];
+
+      const specDb = getSpecDb(category);
+      if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+
+      if (!deleteVariantFn) return jsonRes(res, 501, { error: 'deleteVariant not wired' });
+
+      const result = deleteVariantFn({
+        specDb, productId, variantId,
+        productRoot: defaultProductRoot(),
+      });
+
+      emitDataChange({
+        broadcastWs,
+        event: 'color-edition-finder-variant-deleted',
+        category,
+        entities: { productIds: [productId] },
+        meta: { productId, variantId, deleted: result.deleted },
+      });
+
+      return jsonRes(res, 200, result);
+    }
+
+    return false;
+  };
 }

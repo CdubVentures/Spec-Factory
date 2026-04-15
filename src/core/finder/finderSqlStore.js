@@ -23,6 +23,8 @@ function hydrateRunRow(row) {
     prompt: safeJsonParse(row.prompt_json, {}),
     response: safeJsonParse(row.response_json, {}),
     fallback_used: Boolean(row.fallback_used),
+    thinking: Boolean(row.thinking),
+    web_search: Boolean(row.web_search),
   };
 }
 
@@ -39,7 +41,7 @@ export function createFinderSqlStore({ db, category, module: mod }) {
   const customColNames = summaryColumns.map(c => c.name);
   // WHY: Map column name → default value for use when upsert receives undefined.
   // Includes both common and custom columns.
-  const COMMON_DEFAULTS = { cooldown_until: '', latest_ran_at: '', run_count: 0, category: '', product_id: '' };
+  const COMMON_DEFAULTS = { latest_ran_at: '', run_count: 0, category: '', product_id: '' };
   const colDefaults = new Map(Object.entries(COMMON_DEFAULTS));
   for (const c of summaryColumns) {
     const d = c.default || '';
@@ -51,7 +53,7 @@ export function createFinderSqlStore({ db, category, module: mod }) {
 
   // ── Prepare statements ──────────────────────────────────────────
 
-  const allSummaryCols = ['category', 'product_id', ...customColNames, 'cooldown_until', 'latest_ran_at', 'run_count'];
+  const allSummaryCols = ['category', 'product_id', ...customColNames, 'latest_ran_at', 'run_count'];
   const placeholders = allSummaryCols.map(() => '?').join(', ');
   const updateSet = allSummaryCols
     .filter(c => c !== 'category' && c !== 'product_id')
@@ -73,8 +75,8 @@ export function createFinderSqlStore({ db, category, module: mod }) {
       `DELETE FROM ${tableName} WHERE category = ? AND product_id = ?`
     ),
     _insertRun: db.prepare(
-      `INSERT OR REPLACE INTO ${runsTableName} (category, product_id, run_number, ran_at, model, fallback_used, effort_level, access_mode, cooldown_until, selected_json, prompt_json, response_json)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT OR REPLACE INTO ${runsTableName} (category, product_id, run_number, ran_at, model, fallback_used, effort_level, access_mode, thinking, web_search, selected_json, prompt_json, response_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ),
     _listRuns: db.prepare(
       `SELECT * FROM ${runsTableName} WHERE category = ? AND product_id = ? ORDER BY run_number ASC`
@@ -87,6 +89,12 @@ export function createFinderSqlStore({ db, category, module: mod }) {
     ),
     _removeAllRuns: db.prepare(
       `DELETE FROM ${runsTableName} WHERE category = ? AND product_id = ?`
+    ),
+    // WHY: Targeted bookkeeping-only update — preserves custom columns.
+    // Used by DELETE run handlers to avoid nuking colors/editions/variant_registry.
+    _updateBookkeeping: db.prepare(
+      `UPDATE ${tableName} SET latest_ran_at = ?, run_count = ?
+       WHERE category = ? AND product_id = ?`
     ),
     // Settings statements (only if module declares settingsDefaults)
     ...(settingsDefaults ? {
@@ -159,7 +167,8 @@ export function createFinderSqlStore({ db, category, module: mod }) {
       row.fallback_used ? 1 : 0,
       row.effort_level || '',
       row.access_mode || '',
-      row.cooldown_until || '',
+      row.thinking ? 1 : 0,
+      row.web_search ? 1 : 0,
       JSON.stringify(row.selected || {}),
       JSON.stringify(row.prompt || {}),
       JSON.stringify(row.response || {}),
@@ -219,10 +228,20 @@ export function createFinderSqlStore({ db, category, module: mod }) {
     db.prepare(`UPDATE ${tableName} SET ${field} = ? WHERE category = ? AND product_id = ?`).run(value, category, productId);
   }
 
+  // WHY: After run deletion, only bookkeeping columns (ran_at, count)
+  // need updating. Full upsert would nuke custom columns (colors, editions,
+  // variant_registry) by overwriting them with empty defaults.
+  function updateBookkeeping(productId, { latest_ran_at, run_count }) {
+    stmts._updateBookkeeping.run(
+      latest_ran_at ?? '', run_count ?? 0,
+      category, productId,
+    );
+  }
+
   return {
     upsert, get, listByCategory, remove,
     insertRun, listRuns, getLatestRun, removeRun, removeAllRuns,
     getSetting, setSetting, getAllSettings, deleteSetting,
-    updateSummaryField,
+    updateSummaryField, updateBookkeeping,
   };
 }

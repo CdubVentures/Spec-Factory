@@ -4,14 +4,6 @@ export interface KpiCard {
   readonly tone: string;
 }
 
-export interface CooldownState {
-  readonly onCooldown: boolean;
-  readonly daysRemaining: number;
-  readonly progressPct: number;
-  readonly label: string;
-  readonly eligibleDate: string;
-}
-
 export interface StatusChipData {
   readonly label: string;
   readonly tone: string;

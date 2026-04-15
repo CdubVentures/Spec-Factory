@@ -133,3 +133,10 @@ export interface CandidateResponse {
   candidates: ReviewCandidate[];
   candidate_count: number;
 }
+
+export interface CandidateDeleteResponse {
+  ok: boolean;
+  deleted: number | boolean;
+  artifacts_cleaned: boolean;
+  republished?: boolean;
+}

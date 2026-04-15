@@ -16,10 +16,10 @@ import { colorEditionFinderResponseSchema, variantIdentityCheckResponseSchema } 
 
 /**
  * Accumulate urls_checked from all previous runs' discovery_logs.
- * Pure function — unions across runs, deduplicates, extracts domains.
+ * Pure function — unions across runs, deduplicates.
  *
  * @param {object[]} previousRuns
- * @returns {{ urlsAlreadyChecked: string[], domainsAlreadyChecked: string[] }}
+ * @returns {{ urlsAlreadyChecked: string[] }}
  */
 export function accumulateUrlsChecked(previousRuns) {
   const urlSet = new Set();
@@ -30,18 +30,26 @@ export function accumulateUrlsChecked(previousRuns) {
     }
   }
 
-  const urlsAlreadyChecked = [...urlSet];
-  const domainSet = new Set();
-  for (const url of urlsAlreadyChecked) {
-    try {
-      domainSet.add(new URL(url).hostname);
-    } catch { /* skip malformed URLs */ }
+  return { urlsAlreadyChecked: [...urlSet] };
+}
+
+/**
+ * Accumulate queries_run from all previous runs' discovery_logs.
+ * Pure function — unions across runs, deduplicates.
+ *
+ * @param {object[]} previousRuns
+ * @returns {{ queriesAlreadyRun: string[] }}
+ */
+export function accumulateQueriesRun(previousRuns) {
+  const querySet = new Set();
+  for (const run of previousRuns) {
+    const queries = run?.response?.discovery_log?.queries_run;
+    if (Array.isArray(queries)) {
+      for (const q of queries) querySet.add(q);
+    }
   }
 
-  return {
-    urlsAlreadyChecked,
-    domainsAlreadyChecked: [...domainSet],
-  };
+  return { queriesAlreadyRun: [...querySet] };
 }
 
 /**
@@ -52,7 +60,7 @@ export function accumulateUrlsChecked(previousRuns) {
  * gate is the safety net, not the prompt.
  *
  * @param {object[]} previousRuns
- * @returns {object} { knownColors, knownColorNames, knownEditions, urlsAlreadyChecked, domainsAlreadyChecked }
+ * @returns {object} { knownColors, knownColorNames, knownEditions, urlsAlreadyChecked }
  */
 function buildKnownInputs(previousRuns) {
   if (!previousRuns || previousRuns.length === 0) {
@@ -61,11 +69,10 @@ function buildKnownInputs(previousRuns) {
       knownColorNames: {},
       knownEditions: [],
       urlsAlreadyChecked: [],
-      domainsAlreadyChecked: [],
     };
   }
 
-  const { urlsAlreadyChecked, domainsAlreadyChecked } = accumulateUrlsChecked(previousRuns);
+  const { urlsAlreadyChecked } = accumulateUrlsChecked(previousRuns);
 
   // Union colors, color_names, editions across all non-rejected runs
   const colorSet = new Set();
@@ -95,7 +102,6 @@ function buildKnownInputs(previousRuns) {
     knownColorNames: colorNamesMap,
     knownEditions: [...editionSet],
     urlsAlreadyChecked,
-    domainsAlreadyChecked,
   };
 }
 
@@ -119,9 +125,10 @@ function buildPaletteLine(colors) {
  * @param {object[]} opts.colors — full color objects [{ name, hex, css_var }]
  * @param {object} opts.product — { brand, base_model, model, variant }
  * @param {object[]} [opts.previousRuns] — compact history from prior runs
+ * @param {boolean} [opts.reinjectQueriesRun] — inject prior queries into prompt (default: false)
  * @returns {string} Complete system prompt
  */
-export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], product = {}, previousRuns = [], familyModelCount = 1, ambiguityLevel = 'easy' }) {
+export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], product = {}, previousRuns = [], familyModelCount = 1, ambiguityLevel = 'easy', reinjectQueriesRun = false }) {
   const brand = product.brand || '';
   const baseModel = product.base_model || '';
   const model = product.model || '';
@@ -138,10 +145,20 @@ export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], pr
   const knownColorNamesStr = Object.keys(known.knownColorNames).length > 0 ? JSON.stringify(known.knownColorNames) : '{}';
   const knownEditionsStr = known.knownEditions.length > 0 ? JSON.stringify(known.knownEditions) : '[]';
   const urlsCheckedStr = known.urlsAlreadyChecked.length > 0 ? JSON.stringify(known.urlsAlreadyChecked) : '[]';
-  const domainsCheckedStr = known.domainsAlreadyChecked.length > 0 ? JSON.stringify(known.domainsAlreadyChecked) : '[]';
+
+  // WHY: queries_run re-injection is off by default — web-capable models see URLs
+  // and naturally skip to fresh results. Only inject when the setting is flipped.
+  const queriesLine = reinjectQueriesRun
+    ? (() => {
+      const { queriesAlreadyRun } = accumulateQueriesRun(previousRuns);
+      return queriesAlreadyRun.length > 0
+        ? `\n- queries already run: ${JSON.stringify(queriesAlreadyRun)}`
+        : '';
+    })()
+    : '';
 
   const knownSection = (known.knownColors.length > 0 || known.knownEditions.length > 0)
-    ? `\nPrevious findings to verify and expand beyond:\n- colors found so far: ${knownColorsStr}\n- color marketing names: ${knownColorNamesStr}\n- editions found so far: ${knownEditionsStr}\n- urls already checked: ${urlsCheckedStr}\nThese may be incomplete or wrong. Re-verify each, then find anything missing.\n`
+    ? `\nPrevious findings to verify and expand beyond:\n- colors found so far: ${knownColorsStr}\n- color marketing names: ${knownColorNamesStr}\n- editions found so far: ${knownEditionsStr}\n- urls already checked: ${urlsCheckedStr}${queriesLine}\nThese may be incomplete or wrong. Re-verify each, then find anything missing.\n`
     : '';
 
   return `Find every official color and every official edition for: ${brand} ${model}
@@ -189,6 +206,7 @@ export const COLOR_EDITION_FINDER_SPEC = {
     previousRuns: domainArgs.previousRuns || [],
     familyModelCount: domainArgs.familyModelCount || 1,
     ambiguityLevel: domainArgs.ambiguityLevel || 'easy',
+    reinjectQueriesRun: domainArgs.reinjectQueriesRun || false,
   }),
   jsonSchema: zodToLlmSchema(colorEditionFinderResponseSchema),
 };

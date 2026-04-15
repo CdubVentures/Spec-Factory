@@ -7,7 +7,6 @@
  * Required per panel:
  *   FinderPanelHeader   — collapse toggle, title, status chip, module chip, run button
  *   FinderKpiCard       — metric cards (grid of N, module decides count + tones)
- *   FinderCooldownStrip — 30-day cooldown progress bar
  *   FinderPanelFooter   — last-run date, model badge, run count
  *   FinderDeleteConfirmModal — confirmation for single-run or delete-all
  *   FinderRunPromptDetails   — expandable system prompt / user message / LLM response
@@ -15,7 +14,6 @@
  *
  * Required hooks / selectors:
  *   useResolvedFinderModel(phaseId) — LLM model resolution, parameterized by phase
- *   deriveCooldownState(result)     — cooldown from server result
  *   deriveFinderStatusChip(result)  — status chip from run count
  *   formatAtomLabel(atom)           — titlecase raw color atoms for display
  *
@@ -42,7 +40,6 @@
 export { ColorSwatch, colorCircleStyle } from './ColorSwatch.tsx';
 export { FinderKpiCard } from './FinderKpiCard.tsx';
 export { FinderPanelHeader } from './FinderPanelHeader.tsx';
-export { FinderCooldownStrip } from './FinderCooldownStrip.tsx';
 export { FinderPanelFooter } from './FinderPanelFooter.tsx';
 export { FinderDeleteConfirmModal } from './FinderDeleteConfirmModal.tsx';
 export { DiscoverySummaryBar } from './DiscoverySummaryBar.tsx';
@@ -51,7 +48,11 @@ export { FinderRunPromptDetails } from './FinderRunPromptDetails.tsx';
 export { FinderRunTimestamp } from './FinderRunTimestamp.tsx';
 export { FinderSectionCard } from './FinderSectionCard.tsx';
 export { toneToChipClass, toneToValueClass } from './toneMappings.ts';
-export { deriveCooldownState, deriveFinderStatusChip, formatAtomLabel } from './finderSelectors.ts';
+export { deriveFinderStatusChip, formatAtomLabel } from './finderSelectors.ts';
 export { useResolvedFinderModel } from './useResolvedFinderModel.ts';
 export type { ResolvedFinderModel } from './useResolvedFinderModel.ts';
-export type { KpiCard, CooldownState, StatusChipData, RunDiscoveryLog, DeleteTarget } from './types.ts';
+export type { KpiCard, StatusChipData, RunDiscoveryLog, DeleteTarget } from './types.ts';
+export { computePagination } from './paginationLogic.ts';
+export { usePagination } from './usePagination.ts';
+export { PagerSizeSelector } from './PagerSizeSelector.tsx';
+export { PagerNavFooter } from './PagerNavFooter.tsx';

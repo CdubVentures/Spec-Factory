@@ -132,3 +132,89 @@ export function propagateVariantRenames({ productId, productRoot, registryUpdate
 
   return { updated: true, counts };
 }
+
+// ── Variant deletion ────────────────────────────────────────────────
+
+/**
+ * Remove images matching variant_id. Returns count of removed.
+ */
+function removeImagesInPlace(images, variantId, variantKey) {
+  if (!Array.isArray(images)) return 0;
+  const before = images.length;
+  for (let i = images.length - 1; i >= 0; i--) {
+    if (images[i].variant_id === variantId || images[i].variant_key === variantKey) {
+      images.splice(i, 1);
+    }
+  }
+  return before - images.length;
+}
+
+/**
+ * Propagate variant deletion across all PIF data for a product.
+ *
+ * WHY: When a variant is deleted from the registry, all PIF data
+ * referencing it (images, evals, carousel slots) must be cleaned up.
+ *
+ * @param {object} opts
+ * @param {string} opts.productId
+ * @param {string} opts.variantId
+ * @param {string} opts.variantKey
+ * @param {string} [opts.productRoot]
+ * @param {object} [opts.specDb] — if provided, updates SQL projection
+ * @returns {{ updated: boolean, counts: { images, runs, evalRecords, carouselSlots } }}
+ */
+export function propagateVariantDelete({ productId, variantId, variantKey, productRoot, specDb }) {
+  productRoot = productRoot || defaultProductRoot();
+  const doc = readPifJson(productId, productRoot);
+
+  if (!doc) return { updated: false, counts: { images: 0, runs: 0, evalRecords: 0, carouselSlots: 0 } };
+
+  const counts = { images: 0, runs: 0, evalRecords: 0, carouselSlots: 0 };
+
+  // 1. selected.images
+  counts.images += removeImagesInPlace(doc.selected?.images, variantId, variantKey);
+
+  // 2. runs[].selected.images + runs[].response.images
+  const runs = Array.isArray(doc.runs) ? doc.runs : [];
+  for (const run of runs) {
+    let runTouched = false;
+    if (removeImagesInPlace(run.selected?.images, variantId, variantKey) > 0) runTouched = true;
+    if (removeImagesInPlace(run.response?.images, variantId, variantKey) > 0) runTouched = true;
+    if (runTouched) counts.runs++;
+  }
+
+  // 3. evaluations[] — filter out evals matching variant_key or variant_id
+  if (Array.isArray(doc.evaluations)) {
+    const before = doc.evaluations.length;
+    doc.evaluations = doc.evaluations.filter(ev =>
+      ev.variant_id !== variantId && ev.variant_key !== variantKey
+    );
+    counts.evalRecords = before - doc.evaluations.length;
+  }
+
+  // 4. carousel_slots[variantKey] — delete the key
+  if (doc.carousel_slots && doc.carousel_slots[variantKey] !== undefined) {
+    delete doc.carousel_slots[variantKey];
+    counts.carouselSlots = 1;
+  }
+
+  writePifJson(productId, productRoot, doc);
+
+  // WHY: SQL must stay in sync with JSON (CQRS — UI reads from DB).
+  if (specDb) {
+    const finderStore = specDb.getFinderStore('productImageFinder');
+    if (finderStore) {
+      finderStore.updateSummaryField(
+        productId, 'carousel_slots',
+        JSON.stringify(doc.carousel_slots || {}),
+      );
+      const imagesSummary = (doc.selected?.images || []).map(i => ({
+        view: i.view, filename: i.filename, variant_key: i.variant_key,
+      }));
+      finderStore.updateSummaryField(productId, 'images', JSON.stringify(imagesSummary));
+      finderStore.updateSummaryField(productId, 'image_count', imagesSummary.length);
+    }
+  }
+
+  return { updated: true, counts };
+}

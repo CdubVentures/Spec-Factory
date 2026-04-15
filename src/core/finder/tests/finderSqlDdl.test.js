@@ -11,9 +11,7 @@ const CEF_MODULE = {
     { name: 'editions', type: 'TEXT', default: "'[]'" },
     { name: 'default_color', type: 'TEXT', default: "''" },
   ],
-  summaryIndexes: [
-    { name: 'idx_cef_cooldown', columns: ['cooldown_until'] },
-  ],
+  summaryIndexes: [],
 };
 
 const SIMPLE_MODULE = {
@@ -33,7 +31,6 @@ describe('generateFinderDdl', () => {
     assert.ok(joined.includes('CREATE TABLE IF NOT EXISTS color_edition_finder'));
     assert.ok(joined.includes('category'));
     assert.ok(joined.includes('product_id'));
-    assert.ok(joined.includes('cooldown_until'));
     assert.ok(joined.includes('run_count'));
     // Custom columns
     assert.ok(joined.includes('colors'));
@@ -59,13 +56,6 @@ describe('generateFinderDdl', () => {
     const joined = ddl.join('\n');
     assert.ok(joined.includes("effort_level TEXT DEFAULT ''"), 'missing effort_level column');
     assert.ok(joined.includes("access_mode TEXT DEFAULT ''"), 'missing access_mode column');
-  });
-
-  it('generates indexes from summaryIndexes', () => {
-    const ddl = generateFinderDdl([CEF_MODULE]);
-    const joined = ddl.join('\n');
-    assert.ok(joined.includes('CREATE INDEX IF NOT EXISTS idx_cef_cooldown'));
-    assert.ok(joined.includes('cooldown_until'));
   });
 
   it('generates runs index on (category, product_id)', () => {

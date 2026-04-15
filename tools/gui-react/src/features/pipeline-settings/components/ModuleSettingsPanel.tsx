@@ -1068,9 +1068,9 @@ function PromptOverrideEditor({
 /* ── CEF Settings ────────────────────────────────────────────────── */
 
 function CefSettingsForm({
-  settings,
-  isSaving,
-  onSave,
+  settings: _settings,
+  isSaving: _isSaving,
+  onSave: _onSave,
 }: {
   settings: Record<string, string>;
   isSaving: boolean;
@@ -1078,25 +1078,7 @@ function CefSettingsForm({
 }) {
   return (
     <div className="space-y-4">
-      <SettingsCard title="Cooldown">
-        <div className="max-w-xs">
-          <label className="block text-[11px] font-semibold sf-text-primary mb-1.5">
-            Cooldown Days
-          </label>
-          <input
-            type="number"
-            value={settings.cooldownDays ?? '30'}
-            onChange={(e) => onSave('cooldownDays', e.target.value)}
-            disabled={isSaving}
-            className="sf-input w-full px-2 py-1.5 rounded sf-text-label text-[12px]"
-            min="0"
-            max="90"
-          />
-          <p className="mt-1.5 text-[10px] sf-text-muted leading-snug">
-            Days before the finder can re-run on the same product. Set to 0 to disable cooldown.
-          </p>
-        </div>
-      </SettingsCard>
+      <p className="text-[11px] sf-text-muted">No configurable settings for this module.</p>
     </div>
   );
 }

@@ -78,7 +78,6 @@ export function rebuildColorEditionFinderFromJson({ specDb, productRoot }) {
       editions,
       default_color: defaultColor,
       variant_registry: data.variant_registry || [],
-      cooldown_until: data.cooldown_until || '',
       latest_ran_at: data.last_ran_at || '',
       run_count: data.run_count || 0,
     });
@@ -93,13 +92,24 @@ export function rebuildColorEditionFinderFromJson({ specDb, productRoot }) {
         ran_at: run.ran_at || '',
         model: run.model || 'unknown',
         fallback_used: Boolean(run.fallback_used),
-        cooldown_until: run.cooldown_until || '',
+        effort_level: run.effort_level || '',
+        access_mode: run.access_mode || '',
+        thinking: Boolean(run.thinking),
+        web_search: Boolean(run.web_search),
         selected: run.selected || {},
         prompt: run.prompt || {},
         response: run.response || {},
       });
     }
     stats.runs_seeded += runs.length;
+
+    // WHY: Seed variants table from JSON variant_registry (Phase 1 dual-write).
+    const registry = data.variant_registry || [];
+    if (registry.length > 0 && specDb.variants) {
+      specDb.variants.syncFromRegistry(productId, registry);
+      stats.variants_seeded = (stats.variants_seeded || 0) + registry.length;
+    }
+
     stats.seeded++;
   }
 

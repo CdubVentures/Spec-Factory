@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildColorEditionFinderPrompt,
   accumulateUrlsChecked,
+  accumulateQueriesRun,
   COLOR_EDITION_FINDER_SPEC,
   buildVariantIdentityCheckPrompt,
   VARIANT_IDENTITY_CHECK_SPEC,
@@ -136,13 +137,12 @@ describe('buildColorEditionFinderPrompt', () => {
 });
 
 describe('accumulateUrlsChecked', () => {
-  it('returns empty arrays for empty runs', () => {
+  it('returns empty array for empty runs', () => {
     const result = accumulateUrlsChecked([]);
     assert.deepEqual(result.urlsAlreadyChecked, []);
-    assert.deepEqual(result.domainsAlreadyChecked, []);
   });
 
-  it('extracts urls and domains from single run', () => {
+  it('extracts urls from single run', () => {
     const result = accumulateUrlsChecked([{
       run_number: 1,
       response: {
@@ -152,8 +152,6 @@ describe('accumulateUrlsChecked', () => {
       },
     }]);
     assert.deepEqual(result.urlsAlreadyChecked, ['https://corsair.com/m75', 'https://amazon.com/dp/B123']);
-    assert.ok(result.domainsAlreadyChecked.includes('corsair.com'));
-    assert.ok(result.domainsAlreadyChecked.includes('amazon.com'));
   });
 
   it('unions urls across multiple runs, no duplicates', () => {
@@ -162,7 +160,6 @@ describe('accumulateUrlsChecked', () => {
       { run_number: 2, response: { discovery_log: { urls_checked: ['https://corsair.com/m75', 'https://bestbuy.com/sku/123'] } } },
     ]);
     assert.equal(result.urlsAlreadyChecked.length, 3);
-    assert.ok(result.domainsAlreadyChecked.includes('bestbuy.com'));
   });
 
   it('handles runs without discovery_log gracefully', () => {
@@ -172,7 +169,78 @@ describe('accumulateUrlsChecked', () => {
       { run_number: 3 },
     ]);
     assert.deepEqual(result.urlsAlreadyChecked, []);
-    assert.deepEqual(result.domainsAlreadyChecked, []);
+  });
+});
+
+describe('accumulateQueriesRun', () => {
+  it('returns empty array for empty runs', () => {
+    const result = accumulateQueriesRun([]);
+    assert.deepEqual(result.queriesAlreadyRun, []);
+  });
+
+  it('extracts queries from single run', () => {
+    const result = accumulateQueriesRun([{
+      run_number: 1,
+      response: {
+        discovery_log: {
+          queries_run: ['Corsair M75 colors', 'Corsair M75 limited edition'],
+        },
+      },
+    }]);
+    assert.deepEqual(result.queriesAlreadyRun, ['Corsair M75 colors', 'Corsair M75 limited edition']);
+  });
+
+  it('unions queries across multiple runs, no duplicates', () => {
+    const result = accumulateQueriesRun([
+      { run_number: 1, response: { discovery_log: { queries_run: ['Corsair M75 colors', 'Corsair M75 editions'] } } },
+      { run_number: 2, response: { discovery_log: { queries_run: ['Corsair M75 colors', 'Corsair M75 special edition'] } } },
+    ]);
+    assert.equal(result.queriesAlreadyRun.length, 3);
+  });
+
+  it('handles runs without discovery_log gracefully', () => {
+    const result = accumulateQueriesRun([
+      { run_number: 1, response: { colors: ['black'] } },
+      { run_number: 2, response: {} },
+      { run_number: 3 },
+    ]);
+    assert.deepEqual(result.queriesAlreadyRun, []);
+  });
+});
+
+describe('buildColorEditionFinderPrompt — reinjectQueriesRun', () => {
+  const product = { brand: 'Corsair', model: 'M75 Air Wireless' };
+  const colors = [{ name: 'black', hex: '#000000', css_var: '--color-black' }];
+  const colorNames = ['black'];
+  const previousRuns = [{
+    run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
+    selected: { colors: ['black'], editions: {}, default_color: 'black' },
+    response: {
+      colors: ['black'], editions: {}, default_color: 'black',
+      discovery_log: {
+        confirmed_from_known: [], added_new: ['black'], rejected_from_known: [],
+        urls_checked: ['https://corsair.com/m75'],
+        queries_run: ['Corsair M75 colors', 'Corsair M75 limited edition'],
+      },
+    },
+  }];
+
+  it('does NOT inject queries when reinjectQueriesRun is false (default)', () => {
+    const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product, previousRuns, reinjectQueriesRun: false });
+    assert.equal(prompt.includes('queries already run'), false, 'no queries section');
+    assert.equal(prompt.includes('Corsair M75 limited edition'), false, 'no query text');
+  });
+
+  it('does NOT inject queries when reinjectQueriesRun is omitted', () => {
+    const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product, previousRuns });
+    assert.equal(prompt.includes('queries already run'), false, 'no queries section by default');
+  });
+
+  it('injects queries when reinjectQueriesRun is true', () => {
+    const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product, previousRuns, reinjectQueriesRun: true });
+    assert.ok(prompt.includes('queries already run'), 'has queries section');
+    assert.ok(prompt.includes('Corsair M75 colors'), 'includes query');
+    assert.ok(prompt.includes('Corsair M75 limited edition'), 'includes query');
   });
 });
 

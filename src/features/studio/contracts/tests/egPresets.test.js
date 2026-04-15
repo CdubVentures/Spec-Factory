@@ -102,50 +102,9 @@ describe('buildEgColorFieldRule', () => {
     assert.equal(rule.ui.label, 'Colors');
   });
 
-  it('has ai_assist with EG extraction guidance', () => {
+  it('has ai_assist with empty reasoning_note (placeholder for future extraction guidance)', () => {
     const rule = buildEgColorFieldRule();
-    assert.ok(rule.ai_assist.reasoning_note.includes('lowercase'));
-    assert.ok(rule.ai_assist.reasoning_note.includes('+'));
-    assert.ok(rule.ai_assist.reasoning_note.includes('hex'));
-  });
-
-  it('reasoning_note is empty-safe when called without ctx', () => {
-    const rule = buildEgColorFieldRule();
-    assert.ok(rule.ai_assist.reasoning_note.includes('lowercase'));
-    assert.ok(rule.ai_assist.reasoning_note.includes('+'));
-    assert.ok(!rule.ai_assist.reasoning_note.includes('etc.'), 'must not contain "etc."');
-  });
-
-  it('reasoning_note derives prefixes dynamically from registry names', () => {
-    const rule = buildEgColorFieldRule({
-      colorNames: ['red', 'blue', 'light-red', 'light-blue', 'dark-red', 'dark-blue', 'white'],
-    });
-    const note = rule.ai_assist.reasoning_note;
-    // Prefixes discovered from data, not hardcoded
-    assert.ok(note.includes('dark-,'), 'dark- prefix discovered');
-    assert.ok(note.includes('light-'), 'light- prefix discovered');
-    assert.ok(note.includes('red'), 'base color listed');
-    assert.ok(note.includes('blue'), 'base color listed');
-    assert.ok(note.includes('Other colors: white'), 'standalone listed separately');
-  });
-
-  it('reasoning_note discovers custom prefixes (vivid-, pastel-, etc.)', () => {
-    const rule = buildEgColorFieldRule({
-      colorNames: ['red', 'vivid-red', 'pastel-red', 'white'],
-    });
-    const note = rule.ai_assist.reasoning_note;
-    assert.ok(note.includes('pastel-'), 'pastel- prefix auto-discovered');
-    assert.ok(note.includes('vivid-'), 'vivid- prefix auto-discovered');
-    assert.ok(note.includes('Other colors: white'));
-  });
-
-  it('reasoning_note lists orphan prefixed names as additional variants', () => {
-    const rule = buildEgColorFieldRule({
-      colorNames: ['red', 'light-coral', 'dark-navy'],
-    });
-    const note = rule.ai_assist.reasoning_note;
-    assert.ok(note.includes('light-coral'), 'orphan listed');
-    assert.ok(note.includes('dark-navy'), 'orphan listed');
+    assert.strictEqual(rule.ai_assist.reasoning_note, '');
   });
 
   it('has search_hints with domain hints populated', () => {
@@ -188,10 +147,9 @@ describe('buildEgEditionFieldRule', () => {
     assert.equal(rule.enum.new_value_policy.mark_needs_curation, true);
   });
 
-  it('has ai_assist with kebab-case guidance', () => {
+  it('has ai_assist with empty reasoning_note (placeholder for future extraction guidance)', () => {
     const rule = buildEgEditionFieldRule();
-    assert.ok(rule.ai_assist.reasoning_note.includes('kebab-case'));
-    assert.ok(rule.ai_assist.reasoning_note.toLowerCase().includes('lowercase'));
+    assert.strictEqual(rule.ai_assist.reasoning_note, '');
   });
 
   it('has optional required level', () => {

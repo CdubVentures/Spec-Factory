@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { usePersistedToggle } from '../../../stores/collapseStore.ts';
+import { useScrollStore, resolveScrollPosition } from '../../../stores/scrollStore.ts';
 import { pct } from '../../../utils/formatting.ts';
 import { confidenceColorClass, trafficColor, trafficTextColor, sourceBadgeClass, SOURCE_BADGE_FALLBACK } from '../../../utils/colors.ts';
 import { hasKnownValue, tryParseJsonArray } from '../../../utils/fieldNormalize.ts';
@@ -10,6 +12,7 @@ import {
   DrawerManualOverride,
 } from '../../../shared/ui/overlay/DrawerShell.tsx';
 import type { ReviewCandidate } from '../../../types/review.ts';
+import { CandidateDeleteConfirm } from './CandidateDeleteConfirm.tsx';
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
@@ -58,20 +61,23 @@ interface FieldReviewDrawerProps {
   onReviewSource?: (candidateId: string) => void;
   onRunAIReview?: () => void;
   aiReviewPending?: boolean;
+  onDeleteCandidate?: (sourceId: string) => void;
+  onDeleteAllCandidates?: () => void;
+  deletePending?: boolean;
 }
 
 // ── Collapsible source table (derived from resolved candidates) ─────
 
 function PublishedSourceTable({ candidates }: { candidates: ReviewCandidate[] }) {
   const resolved = candidates.filter((c) => c.status === 'resolved');
-  const [open, setOpen] = useState(false);
+  const [open, toggleOpen] = usePersistedToggle('review:drawer:sourcesOpen', false);
 
   if (resolved.length === 0) return null;
 
   return (
     <div className="mt-1.5">
       <button
-        onClick={() => setOpen(!open)}
+        onClick={toggleOpen}
         className="flex items-center gap-1.5 sf-text-nano sf-text-subtle font-medium cursor-pointer select-none hover:text-blue-500 transition-colors"
       >
         <span className={`inline-block transition-transform text-[9px] ${open ? 'rotate-90' : ''}`}>&#9656;</span>
@@ -204,10 +210,12 @@ function CandidateCard({
   candidate,
   publishedValue,
   onReviewSource,
+  onDeleteCandidate,
 }: {
   candidate: ReviewCandidate;
   publishedValue: unknown;
   onReviewSource?: (candidateId: string) => void;
+  onDeleteCandidate?: (sourceId: string) => void;
 }) {
   const isResolved = candidate.status === 'resolved';
   const cardClass = isResolved ? 'sf-candidate-resolved' : '';
@@ -270,20 +278,33 @@ function CandidateCard({
         </div>
       )}
 
-      {/* Footer: date + review button */}
+      {/* Footer: date + action buttons */}
       <div className="flex items-center justify-between pt-1.5 border-t sf-border-subtle mt-0.5">
         <span className="text-[10px] sf-text-subtle">{dateStr}</span>
-        {onReviewSource && (
-          <button
-            onClick={() => onReviewSource(candidate.candidate_id)}
-            className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded sf-review-source-button"
-          >
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-[11px] h-[11px]">
-              <path d="M8 1v6m0 0l2.5-2.5M8 7L5.5 4.5M1 10v2.5A2.5 2.5 0 003.5 15h9a2.5 2.5 0 002.5-2.5V10" />
-            </svg>
-            Review
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          {onDeleteCandidate && candidate.source_id && (
+            <button
+              onClick={() => onDeleteCandidate(candidate.source_id)}
+              className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded sf-danger-button"
+              title="Delete this candidate"
+            >
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-[11px] h-[11px]">
+                <path d="M2 4h12M5.333 4V2.667a1.333 1.333 0 011.334-1.334h2.666a1.333 1.333 0 011.334 1.334V4m2 0v9.333a1.333 1.333 0 01-1.334 1.334H4.667a1.333 1.333 0 01-1.334-1.334V4h9.334z" />
+              </svg>
+            </button>
+          )}
+          {onReviewSource && (
+            <button
+              onClick={() => onReviewSource(candidate.candidate_id)}
+              className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded sf-review-source-button"
+            >
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-[11px] h-[11px]">
+                <path d="M8 1v6m0 0l2.5-2.5M8 7L5.5 4.5M1 10v2.5A2.5 2.5 0 003.5 15h9a2.5 2.5 0 002.5-2.5V10" />
+              </svg>
+              Review
+            </button>
+          )}
+        </div>
       </div>
     </DrawerCard>
   );
@@ -304,12 +325,35 @@ export function FieldReviewDrawer({
   onReviewSource,
   onRunAIReview,
   aiReviewPending,
+  onDeleteCandidate,
+  onDeleteAllCandidates,
+  deletePending,
 }: FieldReviewDrawerProps) {
   const hasCandidates = candidates.length > 0;
   const publishedParsed = tryParseJsonArray(currentValue.value);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ mode: 'single'; sourceId: string } | { mode: 'all' } | null>(null);
+
+  // Drawer scroll persistence
+  const drawerBodyRef = useRef<HTMLDivElement>(null);
+  const scrollKey = 'review:drawer:scroll';
+  const scrollSet = useScrollStore((s) => s.set);
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      const stored = resolveScrollPosition(useScrollStore.getState().values[scrollKey]);
+      if (stored && drawerBodyRef.current) {
+        drawerBodyRef.current.scrollTop = stored.top;
+      }
+    });
+    return () => {
+      if (drawerBodyRef.current) {
+        scrollSet(scrollKey, { top: drawerBodyRef.current.scrollTop, left: 0 });
+      }
+    };
+  }, [scrollSet]);
 
   return (
-    <DrawerShell title={title} subtitle={subtitle} onClose={onClose}>
+    <DrawerShell title={title} subtitle={subtitle} onClose={onClose} bodyRef={drawerBodyRef}>
       {/* Section 1: Published Value */}
       <DrawerSection title="Published Value">
         <div className="space-y-1">
@@ -376,6 +420,20 @@ export function FieldReviewDrawer({
           </button>
         </DrawerSection>
       )}
+      {onDeleteAllCandidates && hasCandidates && (
+        <DrawerSection>
+          <button
+            onClick={() => setDeleteConfirm({ mode: 'all' })}
+            disabled={deletePending}
+            className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] font-semibold rounded sf-danger-button disabled:opacity-50"
+          >
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-[13px] h-[13px]">
+              <path d="M2 4h12M5.333 4V2.667a1.333 1.333 0 011.334-1.334h2.666a1.333 1.333 0 011.334 1.334V4m2 0v9.333a1.333 1.333 0 01-1.334 1.334H4.667a1.333 1.333 0 01-1.334-1.334V4h9.334z" />
+            </svg>
+            {deletePending ? 'Deleting...' : 'Delete All Candidates'}
+          </button>
+        </DrawerSection>
+      )}
 
       {/* Section 3: Candidates (display-only) */}
       {(hasCandidates || candidatesLoading) && (
@@ -397,11 +455,29 @@ export function FieldReviewDrawer({
                   candidate={candidate}
                   publishedValue={publishedValue}
                   onReviewSource={onReviewSource}
+                  onDeleteCandidate={onDeleteCandidate ? (sourceId) => setDeleteConfirm({ mode: 'single', sourceId }) : undefined}
                 />
               ))}
             </div>
           )}
         </DrawerSection>
+      )}
+      {deleteConfirm && (
+        <CandidateDeleteConfirm
+          mode={deleteConfirm.mode}
+          fieldLabel={title}
+          candidateCount={candidates.length}
+          isPending={deletePending ?? false}
+          onCancel={() => setDeleteConfirm(null)}
+          onConfirm={() => {
+            if (deleteConfirm.mode === 'single' && 'sourceId' in deleteConfirm) {
+              onDeleteCandidate?.(deleteConfirm.sourceId);
+            } else {
+              onDeleteAllCandidates?.();
+            }
+            setDeleteConfirm(null);
+          }}
+        />
       )}
     </DrawerShell>
   );

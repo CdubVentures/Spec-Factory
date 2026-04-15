@@ -491,6 +491,25 @@ CREATE TABLE IF NOT EXISTS field_audit_cache (
   result_json TEXT NOT NULL DEFAULT '{}',
   run_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS variants (
+  category             TEXT NOT NULL,
+  product_id           TEXT NOT NULL,
+  variant_id           TEXT NOT NULL,
+  variant_key          TEXT NOT NULL,
+  variant_type         TEXT NOT NULL CHECK(variant_type IN ('color','edition')),
+  variant_label        TEXT DEFAULT '',
+  color_atoms          TEXT DEFAULT '[]',
+  edition_slug         TEXT,
+  edition_display_name TEXT,
+  retired              INTEGER DEFAULT 0,
+  created_at           TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at           TEXT,
+  PRIMARY KEY (category, product_id, variant_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_variants_product
+  ON variants(category, product_id, retired);
 `;
 
 // WHY: Single source of truth for llm_route_matrix columns (excluding structural

@@ -35,3 +35,4 @@ export { normalizeFieldKey } from './reviewNormalization.js';
 export { confidenceColor } from './confidenceColor.js';
 export { runQaJudge } from './qaJudge.js';
 export { evaluateVariance, evaluateVarianceBatch } from './varianceEvaluator.js';
+export { deleteCandidateBySourceId, deleteAllCandidatesForField } from './deleteCandidate.js';

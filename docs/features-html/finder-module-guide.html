@@ -96,9 +96,9 @@
 <div class="section-title"><span class="num">0</span> Before You Start &mdash; Framework Prerequisites</div>
 
 <div class="card">
-  <div class="card-header" style="background:var(--red-bg);">Known Hardcodes (Phase&nbsp;1 Fixes)</div>
+  <div class="card-header" style="background:var(--orange-bg);">Manual Wiring Points (Not Auto-Generated)</div>
   <div class="card-body">
-    <p>The finder framework is <em>mostly</em> O(1), but several locations still hardcode the two existing modules (CEF&nbsp;+&nbsp;PIF). Before adding a third finder, these must be resolved or manually extended.</p>
+    <p>The finder framework is O(1) for backend infra, but the frontend has manual wiring points for each new module. These are lightweight (~15 lines total) and documented below. Follow the pattern from CEF/PIF.</p>
     <table>
       <thead><tr><th>Severity</th><th>File</th><th>What&rsquo;s Hardcoded</th><th>Fix</th></tr></thead>
       <tbody>
@@ -134,9 +134,9 @@
         </tr>
       </tbody>
     </table>
-    <div class="callout callout-warn">
+    <div class="callout callout-info">
       <strong>Bottom line</strong>
-      If <code>wireFinderRoutes()</code> is integrated and the frontend union types are widened, a third finder is fully plug-and-play. Until then, you must manually add your module to these 4&ndash;5 locations.
+      These are simple copy-paste additions following the CEF/PIF pattern. Total work: ~15 lines across 4&ndash;5 files. The Step-by-Step Checklist (Section&nbsp;5) gives exact code for each.
     </div>
   </div>
 </div>
@@ -620,6 +620,18 @@ myFinderRouteContext: createMyFinderRouteContext({
       </li>
       <li>
         <div>
+          <strong>Wire reseed DI</strong><br>
+          <code>src/app/api/specDbRuntime.js</code> &mdash; import your rebuild function and pass it to <code>buildReseedSurfaces</code>:
+          <pre class="code-block">import { rebuildMyFinderFromJson }
+  from '../../features/my-feature/index.js';
+
+// In buildReseedSurfaces call:
+rebuildMyFinderFromJson,</pre>
+          <p style="margin-top:6px;">This ensures deleting the <code>.sqlite</code> file triggers a full rebuild from JSON for your module.</p>
+        </div>
+      </li>
+      <li>
+        <div>
           <strong>Run codegen</strong><br>
           <code>node tools/gui-react/scripts/generateLlmPhaseRegistry.js</code><br>
           This regenerates <strong>8 files</strong>:
@@ -1054,6 +1066,34 @@ const result = await submitCandidate({
 <!-- ================================================================== -->
 <div class="section-title"><span class="num">12</span> Common Patterns &amp; Decisions</div>
 
+<div class="card">
+  <div class="card-header" style="background:var(--red-bg);">Critical: Validate Before Persist</div>
+  <div class="card-body">
+    <p>If your orchestrator has <strong>multi-stage validation</strong> (e.g., discovery + identity check), all validation gates must pass <strong>before</strong> calling <code>merge()</code>. The JSON store&rsquo;s <code>merge()</code> writes to disk immediately &mdash; there is no rollback.</p>
+    <p style="margin-top:8px;">Wrong ordering creates a ghost successful run + polluted <code>selected</code> state:</p>
+    <pre class="code-block">// BAD: merge writes to disk, then validation rejects &#8594; ghost run
+const merged = mergeDiscovery({ ... });        // writes JSON!
+if (!validateStage2(result)) {
+  return storeFailureAndReturn({ ... });       // appends SECOND run
+}
+
+// GOOD: validate first, merge only after all gates pass
+if (!validateStage2(result)) {
+  return storeFailureAndReturn({ ... });       // single rejected run
+}
+const merged = mergeDiscovery({ ... });        // clean write</pre>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--accent-light);">Prompt vs Validation &mdash; Where Field Rules Apply</div>
+  <div class="card-body">
+    <p>Field Studio rules (<code>ai_assist.reasoning_note</code>, enum policies, parse templates) are <strong>not</strong> automatically injected into finder LLM prompts. Finder prompts are hand-authored per module.</p>
+    <p style="margin-top:8px;">Field rules apply <strong>after</strong> the LLM responds, at the candidate validation gate (<code>submitCandidate()</code>). This is by design: finders discover broadly, then the gate validates and repairs.</p>
+    <p style="margin-top:8px;">If your finder needs to inform the LLM about field constraints, read compiled rules explicitly in your prompt builder. Do not assume they flow in automatically.</p>
+  </div>
+</div>
+
 <div class="two-col">
 <div class="card">
   <div class="card-header" style="background:var(--teal-bg);">Accumulation Strategy</div>
@@ -1138,17 +1178,18 @@ const result = await submitCandidate({
         <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>src/core/finder/finderModuleRegistry.js</code></td><td>Add 1 entry to <code>FINDER_MODULES</code></td></tr>
         <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>src/core/config/llmPhaseDefs.js</code></td><td>Add 1 phase entry (~8 lines)</td></tr>
         <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>ModuleSettingsPanel.tsx</code></td><td>Add settings form component + rendering branch (settings UI is <strong>not</strong> auto-generated)</td></tr>
-        <tr><td><span class="tag tag-orange">TEMP</span></td><td><code>src/app/api/guiServerRuntime.js</code></td><td>Add imports + context + route def (until wireFinderRoutes is integrated)</td></tr>
-        <tr><td><span class="tag tag-orange">TEMP</span></td><td><code>PipelineSettingsPage.tsx</code></td><td>Add module ID to union (until frontend hardcodes are fixed)</td></tr>
-        <tr><td><span class="tag tag-orange">TEMP</span></td><td><code>ModuleSettingsPanel.tsx:1106</code></td><td>Add module ID to props union (until type is widened)</td></tr>
-        <tr><td><span class="tag tag-orange">TEMP</span></td><td><code>PipelineSettingsPageShell.tsx</code></td><td>Add SVG icon case (until icon registry is codegen&rsquo;d)</td></tr>
+        <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>src/app/api/guiServerRuntime.js</code></td><td>Add 2 imports + 1 context instantiation + 1 route definition</td></tr>
+        <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>src/app/api/specDbRuntime.js</code></td><td>Import rebuild function + pass to <code>buildReseedSurfaces</code></td></tr>
+        <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>PipelineSettingsPage.tsx:349</code></td><td>Add module ID to union type</td></tr>
+        <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>ModuleSettingsPanel.tsx:1106</code></td><td>Add module ID to props union + rendering branch</td></tr>
+        <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>PipelineSettingsPageShell.tsx:176+</code></td><td>Add SVG icon case for <code>module-{type}</code></td></tr>
         <tr><td><span class="tag tag-purple">CODEGEN</span></td><td><code>node tools/gui-react/scripts/generateLlmPhaseRegistry.js</code></td><td>Regenerates 8 files</td></tr>
       </tbody>
     </table>
 
-    <div class="callout callout-ok" style="margin-top:12px;">
-      <strong>After Phase 1 fixes are applied</strong>
-      The 4 rows marked <span class="tag tag-orange">TEMP</span> go away entirely. The <span class="tag tag-accent">MODIFY</span> for <code>ModuleSettingsPanel</code> (settings form) is <strong>permanent</strong> &mdash; settings UI is not auto-generated from the registry.
+    <div class="callout callout-info" style="margin-top:12px;">
+      <strong>Settings form UI is always manual</strong>
+      Each module needs its own settings form component because the settings are domain-specific (cooldown config, image quality thresholds, etc.). Settings <em>storage</em> is auto-wired from the registry; settings <em>UI</em> is not.
     </div>
   </div>
 </div>
@@ -1183,7 +1224,7 @@ const result = await submitCandidate({
 <!-- ================================================================== -->
 
 <div style="text-align:center; padding:32px 0; color:var(--text-muted); font-size:13px;">
-  Spec Factory Finder Module Guide &mdash; Updated 2026-04-14<br>
+  Spec Factory Finder Module Guide &mdash; Updated 2026-04-14 (audit pass: validate-before-persist, prompt vs validation, reseed DI, manual wiring reframe)<br>
   Registry-driven &bull; O(1) scaling &bull; 17 auto-wired systems &bull; dual-state persistence &bull; fire-and-forget<br>
   <span style="margin-top:6px; display:block;">
     Source: <code>src/core/finder/finderModuleRegistry.js</code> &bull;

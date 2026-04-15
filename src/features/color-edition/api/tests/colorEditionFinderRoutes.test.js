@@ -24,13 +24,13 @@ function makeSpecDbStub(finderRow = null, listRows = [], productRow = null, runR
     removeRun: () => {},
     removeAllRuns: () => {},
     insertRun: () => {},
+    updateBookkeeping: () => {},
   };
   return {
     getFinderStore: () => finderStore,
     getColorEditionFinder: () => finderRow,
     listColorEditionFinderByCategory: () => listRows,
     listColorEditionFinderRuns: () => runRows,
-    getColorEditionFinderIfOnCooldown: () => null,
     getProduct: () => productRow ?? { product_id: 'mouse-001', category: 'mouse', brand: 'Corsair', model: 'M75 Air Wireless', variant: '' },
     upsertColorEditionFinder: () => {},
     deleteColorEditionFinder: () => {},
@@ -44,6 +44,7 @@ function makeSpecDbStub(finderRow = null, listRows = [], productRow = null, runR
     ],
     deleteFieldCandidateByValue: (...args) => { candidateDeleteByValueCalls.push(args); },
     upsertFieldCandidate: (...args) => { candidateUpsertCalls.push(args); },
+    variants: { listByProduct: () => [] },
     _candidateDeleteCalls: candidateDeleteCalls,
     _candidateDeleteByValueCalls: candidateDeleteByValueCalls,
     _candidateUpsertCalls: candidateUpsertCalls,
@@ -93,7 +94,7 @@ describe('colorEditionFinderRoutes', () => {
   describe('GET /color-edition-finder/:category', () => {
     it('returns list of finder results for category', async () => {
       const listRows = [
-        { category: 'mouse', product_id: 'mouse-001', colors: ['black'], editions: [], default_color: 'black', cooldown_until: '', latest_ran_at: '', run_count: 1 },
+        { category: 'mouse', product_id: 'mouse-001', colors: ['black'], editions: [], default_color: 'black', latest_ran_at: '', run_count: 1 },
       ];
       const { ctx, calls } = makeCtx({ listRows });
       const handler = registerColorEditionFinderRoutes(ctx);
@@ -109,11 +110,11 @@ describe('colorEditionFinderRoutes', () => {
       const finderRow = {
         category: 'mouse', product_id: 'mouse-001',
         colors: ['black', 'white'], editions: ['launch-edition'],
-        default_color: 'black', cooldown_until: '', latest_ran_at: '2026-04-01T00:00:00Z', run_count: 2,
+        default_color: 'black', latest_ran_at: '2026-04-01T00:00:00Z', run_count: 2,
       };
       const runRows = [{
         run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
-        fallback_used: false, cooldown_until: '',
+        fallback_used: false,
         selected: { colors: ['black', 'white'], editions: { 'launch-edition': { colors: ['black'] } }, default_color: 'black' },
         prompt: { system: 'test', user: '{}' }, response: { colors: ['black', 'white'], editions: {}, default_color: 'black' },
       }];
@@ -122,8 +123,8 @@ describe('colorEditionFinderRoutes', () => {
       const result = await handler(['color-edition-finder', 'mouse', 'mouse-001'], new Map(), 'GET', {}, {});
       assert.equal(result, true);
       assert.equal(calls[0].status, 200);
-      assert.ok(calls[0].body.selected);
-      assert.deepEqual(calls[0].body.selected.colors, ['black', 'white']);
+      assert.ok(calls[0].body.published);
+      assert.deepEqual(calls[0].body.published.colors, ['black', 'white']);
       assert.ok(Array.isArray(calls[0].body.runs));
       assert.equal(calls[0].body.runs.length, 1);
       assert.equal(calls[0].body.runs[0].model, 'gpt-5.4');
@@ -160,7 +161,7 @@ describe('colorEditionFinderRoutes', () => {
       let deletedRun = null;
       const deleteRunFn = ({ runNumber }) => {
         deletedRun = runNumber;
-        return { run_count: 1, selected: { colors: ['black'], editions: {}, default_color: 'black' }, cooldown_until: '', last_ran_at: '' };
+        return { run_count: 1, selected: { colors: ['black'], editions: {}, default_color: 'black' }, last_ran_at: '' };
       };
       const { ctx, calls } = makeCtx({ deleteRunFn });
       const handler = registerColorEditionFinderRoutes(ctx);
@@ -173,7 +174,7 @@ describe('colorEditionFinderRoutes', () => {
     });
 
     it('does NOT delete candidates on single-run deletion', async () => {
-      const deleteRunFn = () => ({ run_count: 1, selected: { colors: ['black'], editions: {}, default_color: 'black' }, cooldown_until: '', last_ran_at: '' });
+      const deleteRunFn = () => ({ run_count: 1, selected: { colors: ['black'], editions: {}, default_color: 'black' }, last_ran_at: '' });
       const { ctx, specDb } = makeCtx({ deleteRunFn });
       const handler = registerColorEditionFinderRoutes(ctx);
       await handler(['color-edition-finder', 'mouse', 'mouse-001', 'runs', '2'], new Map(), 'DELETE', {}, {});

@@ -591,7 +591,7 @@ export function resolveCarouselSlots({ viewBudget, heroCount, variantKey, varian
  * @param {number} [opts.durationMs] — call duration
  * @returns {object} — the appended eval record
  */
-export function appendEvalRecord({ productId, productRoot, variantKey, variantId, type, view, model, prompt, response, result, durationMs, startedAt, effortLevel, accessMode, fallbackUsed, variantLabel, variantType }) {
+export function appendEvalRecord({ productId, productRoot, variantKey, variantId, type, view, model, prompt, response, result, durationMs, startedAt, effortLevel, accessMode, fallbackUsed, thinking, webSearch, variantLabel, variantType }) {
   const doc = readProductImages({ productId, productRoot });
   if (!doc) return null;
 
@@ -610,6 +610,8 @@ export function appendEvalRecord({ productId, productRoot, variantKey, variantId
     effort_level: effortLevel || null,
     access_mode: accessMode || null,
     fallback_used: fallbackUsed ?? false,
+    thinking: Boolean(thinking),
+    web_search: Boolean(webSearch),
     variant_label: variantLabel || null,
     variant_type: variantType || null,
     prompt: prompt || {},

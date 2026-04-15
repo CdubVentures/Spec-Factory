@@ -262,8 +262,8 @@ describe('CEF candidate gate integration', () => {
     assert.equal(summaryAfter.run_count, summaryBefore.run_count + 1);
   });
 
-  // --- 6. Cooldown NOT set on failure ---
-  it('cooldown not updated on failed run', async () => {
+  // --- 6. Summary row exists but empty after failure ---
+  it('summary row has empty colors after failed run', async () => {
     const pid = 'mouse-cd';
     ensureProductJson(pid);
 
@@ -276,10 +276,9 @@ describe('CEF candidate gate integration', () => {
       _callLlmOverride: makeLlmStub({ colors: ['nonexistent-color'], editions: {}, default_color: '' }),
     });
 
-    // Summary row exists (rejected run is counted) but cooldown is empty
+    // Summary row exists (rejected run is counted)
     const summary = specDb.getColorEditionFinder(pid);
     assert.ok(summary, 'summary row exists after rejected run');
-    assert.equal(summary.cooldown_until, '', 'no cooldown on rejection');
     assert.deepEqual(summary.colors, [], 'no valid colors from rejected run');
   });
 

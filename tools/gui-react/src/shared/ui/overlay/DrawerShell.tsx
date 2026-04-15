@@ -11,6 +11,7 @@ interface DrawerShellProps {
   maxHeight?: number | string;
   className?: string;
   scrollContent?: boolean;
+  bodyRef?: React.RefObject<HTMLDivElement>;
   children: ReactNode;
 }
 
@@ -27,7 +28,7 @@ interface DrawerSectionProps {
   bodyClassName?: string;
 }
 
-export function DrawerShell({ title, subtitle, onClose, width, maxHeight, className, scrollContent = true, children }: DrawerShellProps) {
+export function DrawerShell({ title, subtitle, onClose, width, maxHeight, className, scrollContent = true, bodyRef, children }: DrawerShellProps) {
   const style = width || maxHeight !== undefined
     ? {
       ...(width ? { width } : {}),
@@ -47,7 +48,7 @@ export function DrawerShell({ title, subtitle, onClose, width, maxHeight, classN
         </div>
         <button onClick={onClose} className="sf-drawer-close text-lg leading-none">&times;</button>
       </div>
-      <div className={scrollContent ? 'sf-drawer-body p-4 space-y-4 flex-1 min-h-0 overflow-y-auto overflow-x-hidden' : 'sf-drawer-body p-4 space-y-4'}>
+      <div ref={bodyRef} className={scrollContent ? 'sf-drawer-body p-4 space-y-4 flex-1 min-h-0 overflow-y-auto overflow-x-hidden' : 'sf-drawer-body p-4 space-y-4'}>
         {children}
       </div>
     </div>

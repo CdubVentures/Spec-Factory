@@ -605,31 +605,25 @@ export async function runProductImageFinder({
     baseModel: product.base_model, specDb, resolveFn: resolveIdentityAmbiguitySnapshot,
   });
 
-  // Read CEF data — gate: must have colors
-  const cefPath = path.join(productRoot, product.product_id, 'color_edition.json');
-  let cefData;
-  try {
-    cefData = JSON.parse(fs.readFileSync(cefPath, 'utf8'));
-  } catch {
+  // WHY: Read variants from SQL (SSOT) — not from cefData.selected on disk.
+  // The variants table is the runtime authority; JSON is durable memory only.
+  const dbVariants = specDb.variants?.listActive(product.product_id) || [];
+  if (dbVariants.length === 0) {
     return { images: [], rejected: true, rejections: [{ reason_code: 'no_cef_data', message: 'Run CEF first — no color data found' }] };
   }
 
-  const colors = cefData?.selected?.colors || [];
-  if (colors.length === 0) {
-    return { images: [], rejected: true, rejections: [{ reason_code: 'no_colors', message: 'No colors discovered — run CEF first' }] };
-  }
+  const allVariants = dbVariants.map(v => ({
+    variant_id: v.variant_id,
+    key: v.variant_key,
+    label: v.variant_label,
+    type: v.variant_type,
+  }));
 
-  const colorNames = cefData?.selected?.color_names || {};
-  const editions = cefData?.selected?.editions || {};
-  const allVariants = buildVariantList({ colors, colorNames, editions });
+  // Read siblings from CEF runs (identity context — still from JSON)
+  const cefPath = path.join(productRoot, product.product_id, 'color_edition.json');
+  let cefData;
+  try { cefData = JSON.parse(fs.readFileSync(cefPath, 'utf8')); } catch { cefData = null; }
 
-  // WHY: Enrich variants with stable variant_id from CEF registry.
-  // variant_id is the permanent join key; variant_key can change on rename.
-  const variantRegistry = cefData?.variant_registry || [];
-  const registryMap = new Map(variantRegistry.map(r => [r.variant_key, r.variant_id]));
-  for (const v of allVariants) v.variant_id = registryMap.get(v.key) || null;
-
-  // Read siblings from CEF runs (identity context)
   const siblingsExcluded = [];
   for (const run of (cefData?.runs || [])) {
     for (const s of (run.response?.siblings_excluded || run.selected?.siblings_excluded || [])) {
@@ -778,7 +772,7 @@ export async function runProductImageFinder({
         const merged = mergeProductImageDiscovery({
           productId: product.product_id,
           productRoot,
-          newDiscovery: { category: product.category, cooldown_until: '', last_ran_at: ranAt },
+          newDiscovery: { category: product.category, last_ran_at: ranAt },
           run: {
             mode,
             started_at: variantStartedAt,
@@ -787,6 +781,8 @@ export async function runProductImageFinder({
             fallback_used: _mt.actualFallbackUsed,
             effort_level: _mt.actualEffortLevel,
             access_mode: _mt.actualAccessMode,
+            thinking: _mt.actualThinking,
+            web_search: _mt.actualWebSearch,
             selected,
             prompt: { system: systemPrompt, user: userMsg },
             response: responsePayload,
@@ -804,7 +800,8 @@ export async function runProductImageFinder({
           fallback_used: _mt.actualFallbackUsed,
           effort_level: _mt.actualEffortLevel,
           access_mode: _mt.actualAccessMode,
-          cooldown_until: '',
+          thinking: _mt.actualThinking,
+          web_search: _mt.actualWebSearch,
           selected,
           prompt: latestRun.prompt,
           response: latestRun.response,
@@ -815,7 +812,6 @@ export async function runProductImageFinder({
           product_id: product.product_id,
           images: merged.selected.images.map(img => ({ view: img.view, filename: img.filename, variant_key: img.variant_key })),
           image_count: merged.selected.images.length,
-          cooldown_until: '',
           latest_ran_at: ranAt,
           run_count: merged.run_count,
         });
@@ -933,28 +929,23 @@ export async function runCarouselLoop({
     baseModel: product.base_model, specDb, resolveFn: resolveIdentityAmbiguitySnapshot,
   });
 
-  // Read CEF data
-  const cefPath = path.join(productRoot, product.product_id, 'color_edition.json');
-  let cefData;
-  try {
-    cefData = JSON.parse(fs.readFileSync(cefPath, 'utf8'));
-  } catch {
+  // WHY: Read variants from SQL (SSOT) — not from cefData.selected on disk.
+  const dbVariants = specDb.variants?.listActive(product.product_id) || [];
+  if (dbVariants.length === 0) {
     return { images: [], download_errors: [], totalLlmCalls: 0, rejected: true, rejections: [{ reason_code: 'no_cef_data', message: 'Run CEF first — no color data found' }] };
   }
 
-  const colors = cefData?.selected?.colors || [];
-  if (colors.length === 0) {
-    return { images: [], download_errors: [], totalLlmCalls: 0, rejected: true, rejections: [{ reason_code: 'no_colors', message: 'No colors discovered — run CEF first' }] };
-  }
+  const allVariants = dbVariants.map(v => ({
+    variant_id: v.variant_id,
+    key: v.variant_key,
+    label: v.variant_label,
+    type: v.variant_type,
+  }));
 
-  const colorNames = cefData?.selected?.color_names || {};
-  const editions = cefData?.selected?.editions || {};
-  const allVariants = buildVariantList({ colors, colorNames, editions });
-
-  // WHY: Enrich variants with stable variant_id from CEF registry.
-  const variantRegistryLoop = cefData?.variant_registry || [];
-  const registryMapLoop = new Map(variantRegistryLoop.map(r => [r.variant_key, r.variant_id]));
-  for (const v of allVariants) v.variant_id = registryMapLoop.get(v.key) || null;
+  // Read siblings from CEF runs (identity context — still from JSON)
+  const cefPath = path.join(productRoot, product.product_id, 'color_edition.json');
+  let cefData;
+  try { cefData = JSON.parse(fs.readFileSync(cefPath, 'utf8')); } catch { cefData = null; }
 
   const siblingsExcluded = [];
   for (const run of (cefData?.runs || [])) {
@@ -1088,7 +1079,7 @@ export async function runCarouselLoop({
     const merged = mergeProductImageDiscovery({
       productId: product.product_id,
       productRoot,
-      newDiscovery: { category: product.category, cooldown_until: '', last_ran_at: ranAt },
+      newDiscovery: { category: product.category, last_ran_at: ranAt },
       run: {
         mode: callMode,
         loop_id: loopId,
@@ -1098,6 +1089,8 @@ export async function runCarouselLoop({
         fallback_used: _mtLoop.actualFallbackUsed,
         effort_level: _mtLoop.actualEffortLevel,
         access_mode: _mtLoop.actualAccessMode,
+        thinking: _mtLoop.actualThinking,
+        web_search: _mtLoop.actualWebSearch,
         selected,
         prompt: { system: systemPrompt, user: userMsg },
         response: responsePayload,
@@ -1115,7 +1108,8 @@ export async function runCarouselLoop({
       fallback_used: _mtLoop.actualFallbackUsed,
       effort_level: _mtLoop.actualEffortLevel,
       access_mode: _mtLoop.actualAccessMode,
-      cooldown_until: '',
+      thinking: _mtLoop.actualThinking,
+      web_search: _mtLoop.actualWebSearch,
       selected,
       prompt: latestRun.prompt,
       response: latestRun.response,
@@ -1126,7 +1120,6 @@ export async function runCarouselLoop({
       product_id: product.product_id,
       images: merged.selected.images.map(img => ({ view: img.view, filename: img.filename, variant_key: img.variant_key })),
       image_count: merged.selected.images.length,
-      cooldown_until: '',
       latest_ran_at: ranAt,
       run_count: merged.run_count,
     });

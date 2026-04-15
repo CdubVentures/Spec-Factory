@@ -4,6 +4,7 @@ import * as Tooltip from '@radix-ui/react-tooltip';
 import { pct } from '../../../utils/formatting.ts';
 import { InlineCellEditor } from '../../../shared/ui/forms/InlineCellEditor.tsx';
 import { ReviewValueCell } from '../../../shared/ui/data-display/ReviewValueCell.tsx';
+import { useScrollStore, resolveScrollPosition } from '../../../stores/scrollStore.ts';
 import type { ReviewLayout, ProductReviewPayload, CellMode } from '../../../types/review.ts';
 
 interface ReviewMatrixProps {
@@ -17,6 +18,7 @@ interface ReviewMatrixProps {
   onCommitEditing: () => void;
   onCancelEditing: () => void;
   onStartEditing: (productId: string, field: string, initialValue: string) => void;
+  category: string;
 }
 
 const COL_WIDTH = 170;
@@ -35,9 +37,29 @@ export function ReviewMatrix({
   onCommitEditing,
   onCancelEditing,
   onStartEditing,
+  category,
 }: ReviewMatrixProps) {
   const rows = layout.rows;
   const parentRef = useRef<HTMLDivElement>(null);
+
+  // Grid scroll persistence
+  const scrollKey = `review:grid:scroll:${category}`;
+  const scrollSet = useScrollStore((s) => s.set);
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      const stored = resolveScrollPosition(useScrollStore.getState().values[scrollKey]);
+      if (stored && parentRef.current) {
+        parentRef.current.scrollTop = stored.top;
+        parentRef.current.scrollLeft = stored.left;
+      }
+    });
+    return () => {
+      if (parentRef.current) {
+        scrollSet(scrollKey, { top: parentRef.current.scrollTop, left: parentRef.current.scrollLeft });
+      }
+    };
+  }, [scrollKey, scrollSet]);
 
   // Row virtualization
   const rowVirtualizer = useVirtualizer({

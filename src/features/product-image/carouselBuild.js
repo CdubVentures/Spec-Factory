@@ -74,12 +74,16 @@ export async function runEvalView({
   let resolvedAccessMode = '';
   let resolvedEffortLevel = '';
   let resolvedFallbackUsed = false;
+  let resolvedThinking = false;
+  let resolvedWebSearch = false;
   if (!_evalViewFn) {
     const wrappedOnModelResolved = (info) => {
       if (info?.model) resolvedModelName = info.model;
       if (info?.accessMode) resolvedAccessMode = info.accessMode;
       if (info?.effortLevel) resolvedEffortLevel = info.effortLevel;
       if (info?.isFallback) resolvedFallbackUsed = true;
+      if (info?.thinking != null) resolvedThinking = Boolean(info.thinking);
+      if (info?.webSearch != null) resolvedWebSearch = Boolean(info.webSearch);
       onModelResolved?.(info);
     };
     const llmDeps = buildLlmCallDeps({
@@ -162,6 +166,8 @@ export async function runEvalView({
         effortLevel: resolvedEffortLevel || null,
         accessMode: resolvedAccessMode || null,
         fallbackUsed: resolvedFallbackUsed,
+        thinking: resolvedThinking,
+        webSearch: resolvedWebSearch,
         variantLabel,
         variantType,
         durationMs,
@@ -230,12 +236,16 @@ export async function runEvalHero({
   let resolvedAccessMode = '';
   let resolvedEffortLevel = '';
   let resolvedFallbackUsed = false;
+  let resolvedThinking = false;
+  let resolvedWebSearch = false;
   if (!heroCall) {
     const wrappedOnModelResolved = (info) => {
       if (info?.model) resolvedModelName = info.model;
       if (info?.accessMode) resolvedAccessMode = info.accessMode;
       if (info?.effortLevel) resolvedEffortLevel = info.effortLevel;
       if (info?.isFallback) resolvedFallbackUsed = true;
+      if (info?.thinking != null) resolvedThinking = Boolean(info.thinking);
+      if (info?.webSearch != null) resolvedWebSearch = Boolean(info.webSearch);
       onModelResolved?.(info);
     };
     const llmDeps = buildLlmCallDeps({
@@ -329,6 +339,8 @@ export async function runEvalHero({
         effortLevel: resolvedEffortLevel || null,
         accessMode: resolvedAccessMode || null,
         fallbackUsed: resolvedFallbackUsed,
+        thinking: resolvedThinking,
+        webSearch: resolvedWebSearch,
         variantLabel,
         variantType,
         durationMs,

@@ -28,9 +28,7 @@ export const FINDER_MODULES = Object.freeze([
       { name: 'default_color', type: 'TEXT', default: "''" },
       { name: 'variant_registry', type: 'TEXT', default: "'[]'" },
     ],
-    summaryIndexes: [
-      { name: 'idx_cef_cooldown', columns: ['cooldown_until'] },
-    ],
+    summaryIndexes: [],
 
     // Fields this finder populates (for candidate cleanup on delete-all)
     fieldKeys: ['colors', 'editions'],
@@ -58,8 +56,7 @@ export const FINDER_MODULES = Object.freeze([
 
     // Per-category settings (stored in {tableName}_settings table)
     settingsDefaults: {
-      cooldownDays: '30',              // days before finder can re-run on the same product (0 = no cooldown)
-      identityCheckPromptOverride: '', // custom prompt for variant identity check (Run 2+)
+      reinjectQueriesRun: 'false',     // inject prior queries into prompt to avoid repeats (default: off — URLs handle dedup)
     },
 
     // LLM phase schema (codegen: phaseSchemaRegistry.generated.js)
@@ -77,6 +74,7 @@ export const FINDER_MODULES = Object.freeze([
       'run': ['color-registry'],
       'run-deleted': [],
       'deleted': [],
+      'variant-deleted': ['review', 'product', 'product-image-finder', 'publisher'],
     },
 
     // Module Settings (codegen: moduleSettingsSections.generated.ts)
@@ -101,9 +99,7 @@ export const FINDER_MODULES = Object.freeze([
       { name: 'carousel_slots', type: 'TEXT', default: "'{}'" },
       { name: 'eval_state', type: 'TEXT', default: "'{}'" },
     ],
-    summaryIndexes: [
-      { name: 'idx_pif_cooldown', columns: ['cooldown_until'] },
-    ],
+    summaryIndexes: [],
 
     // PIF doesn't populate field candidates — images are artifacts, not spec fields
     fieldKeys: [],

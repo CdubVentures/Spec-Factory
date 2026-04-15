@@ -7,6 +7,7 @@
 //   componentMutationRoutes.js, enumMutationRoutes.js
 
 import { handleReviewItemMutationRoute } from './itemMutationRoutes.js';
+import { handleCandidateDeletionRoute } from './candidateDeletionRoutes.js';
 import { handleReviewComponentMutationRoute } from './componentMutationRoutes.js';
 import { handleReviewEnumMutationRoute } from './enumMutationRoutes.js';
 import { runEnumConsistencyReview as runEnumConsistencyReviewDefault } from '../../indexing/index.js';
@@ -126,6 +127,16 @@ export function registerReviewRoutes(ctx) {
       context: fieldReviewContext,
     });
     if (fieldResult !== false) return fieldResult;
+
+    // Candidate deletion routes (DELETE single + DELETE all-for-field)
+    const handledCandidateDeletion = await handleCandidateDeletionRoute({
+      parts, method, req, res,
+      context: {
+        jsonRes, getSpecDb, broadcastWs, config,
+        productRoot: storage?.productRoot || undefined,
+      },
+    });
+    if (handledCandidateDeletion !== false) return handledCandidateDeletion;
 
     // Item mutation routes (already extracted)
     const handledReviewItemMutation = await handleReviewItemMutationRoute({

@@ -108,7 +108,7 @@
 
 <h1>Candidate Delete Cascade</h1>
 <p class="subtitle">Review Grid &mdash; Delete single candidate &amp; delete-all-for-field, with artifact cleanup</p>
-<p class="date">Spec date: 2026-04-14 &nbsp;|&nbsp; Revised: 2026-04-14 (post-audit) &nbsp;|&nbsp; Status: Implementation-ready</p>
+<p class="date">Spec date: 2026-04-14 &nbsp;|&nbsp; Revised: 2026-04-14 (post-audit, post-implementation-audit) &nbsp;|&nbsp; Status: <span style="color:var(--yellow);font-weight:700">IMPLEMENTED &mdash; CEF complete, PIF partial, Pipeline deferred</span></p>
 
 <!-- ================================================================ -->
 <div class="toc">
@@ -127,6 +127,7 @@
   <li><a href="#test-matrix">Test Matrix</a></li>
   <li><a href="#bugs-fixed">Pre-Requisite Bugs (Fixed)</a></li>
   <li><a href="#audit-corrections">Audit Corrections (Post-Review)</a></li>
+  <li><a href="#implementation">Implementation Record</a></li>
 </ol>
 </div>
 
@@ -784,9 +785,391 @@ User later deletes cef-mouse-pid-3 from <span class="delete">editions</span>:
   </tr>
 </table>
 
+<!-- ================================================================ -->
+<h2 id="implementation">14. Implementation Record (2026-04-14)</h2>
+
+<p>Implementation completed in 4 phases following strict TDD per CLAUDE.md. <strong>53 tests total, 0 failures.</strong> TypeScript compiles clean with zero errors.</p>
+
+<div class="alert warn">
+  <strong>Scope qualification:</strong> CEF cascade is fully verified (SQL run + JSON file + summary table). PIF cascade is SQL-only (JSON delete not in PIF public API). Pipeline cascade is a no-op (deferred). <code>artifacts_cleaned</code> returns <code>false</code> for source types with no artifact cleanup path (manual_override, review, pipeline) — the flag only reports <code>true</code> when actual finder state was deleted.
+</div>
+
+<div class="alert info">
+  <strong>TDD compliance:</strong> Every phase began with failing tests, then wrote minimum code to pass. Phase 2a used characterization-first approach per CLAUDE.md decomposition safety rule (golden-master tests before extraction). Existing finder route tests verified zero regression after extraction.
+</div>
+
+<!-- Phase 1 -------------------------------------------------------- -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-number">Phase 1</span>
+    <span class="phase-title">Store Layer &mdash; <code>countBySourceId</code> (4 tests)</span>
+  </div>
+  <div class="phase-body">
+    <h4>What was built</h4>
+    <p>Cross-field count query: <code>SELECT COUNT(*) AS total FROM field_candidates WHERE category = ? AND product_id = ? AND source_id = ?</code>. No <code>field_key</code> in WHERE &mdash; counts across ALL fields for the cascade gate.</p>
+
+    <h4>Files modified</h4>
+    <ul class="file-list">
+      <li><code>src/db/specDbStatements.js</code> <span class="role">&mdash; added <code>_countFieldCandidatesBySourceId</code> prepared statement</span></li>
+      <li><code>src/db/stores/fieldCandidateStore.js</code> <span class="role">&mdash; added <code>countBySourceId(productId, sourceId)</code> method, wired into store exports</span></li>
+      <li><code>src/db/specDb.js</code> <span class="role">&mdash; wired statement into <code>createFieldCandidateStore</code> stmts object; added facade <code>countFieldCandidatesBySourceId(pid, sid)</code></span></li>
+      <li><code>src/db/tests/fieldCandidateStore.test.js</code> <span class="role">&mdash; 4 new tests: zero for unknown, 1 for single row, N across multiple field_keys, decrement after delete</span></li>
+    </ul>
+
+    <h4>Test matrix (4 tests)</h4>
+    <table>
+      <tr><th>#</th><th>Scenario</th><th>Result</th></tr>
+      <tr><td>1</td><td>Returns 0 for unknown product/source</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>2</td><td>Returns 1 for a single row</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>3</td><td>Returns N across multiple field_keys (CEF &rarr; colors + editions)</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>4</td><td>Decrements after deleteBySourceId for one field, reaches 0 after both</td><td><span class="tag exists">PASS</span></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- Phase 2a ------------------------------------------------------- -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-number">Phase 2a</span>
+    <span class="phase-title">Extract <code>republishField</code> &mdash; Characterization-first (9 tests)</span>
+  </div>
+  <div class="phase-body">
+    <h4>What was built</h4>
+    <p>Extracted the 90-line per-field republish logic from <code>finderRoutes.js:republishAfterDelete()</code> (lines 172&ndash;261) into a standalone, testable module. The original 133-line function was replaced with a 4-line delegation loop. The extracted function handles set_union merge, scalar pick, confidence gating, source building, and linked_candidates assembly.</p>
+
+    <h4>Extraction boundary</h4>
+    <p><code>republishField({ specDb, productId, fieldKey, config, productJson })</code> &mdash; receives an already-loaded <code>productJson</code> object and mutates <code>productJson.fields[fieldKey]</code> in place. Returns <code>{ status: 'republished' | 'unpublished' | 'unchanged' }</code>. Caller owns file I/O. This keeps the function pure-ish (SQL reads + object mutation, no filesystem).</p>
+
+    <h4>Files created</h4>
+    <ul class="file-list">
+      <li><code>src/features/publisher/publish/republishField.js</code> <span class="role">&mdash; <strong>NEW</strong> (102 LOC). Exports <code>republishField()</code>. Imports <code>normalizeConfidence</code> from <code>publishCandidate.js</code>.</span></li>
+      <li><code>src/features/publisher/publish/tests/republishField.test.js</code> <span class="role">&mdash; <strong>NEW</strong>. 9 characterization tests using in-memory SpecDb + temp product dir.</span></li>
+    </ul>
+
+    <h4>Files modified</h4>
+    <ul class="file-list">
+      <li><code>src/core/finder/finderRoutes.js</code> <span class="role">&mdash; replaced 90-line inline republish block (lines 172&ndash;261) with <code>for (const key of fieldKeys) { const result = republishField({...}); if (result.status !== 'unchanged') changed = true; }</code></span></li>
+      <li><code>src/features/publisher/index.js</code> <span class="role">&mdash; added <code>export { republishField } from './publish/republishField.js'</code></span></li>
+      <li><code>src/features/publisher/README.md</code> <span class="role">&mdash; documented <code>republishField</code> in Public API contract section</span></li>
+    </ul>
+
+    <h4>Regression verification</h4>
+    <p>Ran <code>colorEditionFinderRoutes.test.js</code> before and after extraction &mdash; identical results (9 pass, 1 pre-existing unrelated GET-route failure). All DELETE path tests pass: "deletes a run", "does NOT delete candidates on single-run deletion", "deletes all data", "deletes candidates on delete-all".</p>
+
+    <h4>Reused existing functions</h4>
+    <table>
+      <tr><th>Function</th><th>File</th><th>Usage</th></tr>
+      <tr><td><code>normalizeConfidence()</code></td><td><code>publishCandidate.js:27</code></td><td>Threshold comparison (mixed 0-100 / 0-1 scales)</td></tr>
+      <tr><td><code>specDb.getFieldCandidatesByProductAndField()</code></td><td><code>fieldCandidateStore.js:53</code></td><td>Fetch remaining candidates after deletion</td></tr>
+      <tr><td><code>specDb.demoteResolvedCandidates()</code></td><td><code>fieldCandidateStore.js:107</code></td><td>Demote when unpublishing</td></tr>
+      <tr><td><code>specDb.markFieldCandidateResolved()</code></td><td><code>fieldCandidateStore.js:100</code></td><td>Mark winners as resolved</td></tr>
+      <tr><td><code>specDb.getCompiledRules()</code></td><td><code>fieldStudioMapStore.js</code></td><td>Get set_union/scalar rules per field</td></tr>
+    </table>
+
+    <h4>Test matrix (9 tests)</h4>
+    <table>
+      <tr><th>#</th><th>Scenario</th><th>Result</th></tr>
+      <tr><td>1</td><td>No remaining candidates &rarr; unpublishes field</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>2</td><td>All below threshold &rarr; demotes + unpublishes</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>3</td><td>Scalar: picks highest confidence above threshold</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>4</td><td>Scalar: marks winner as resolved</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>5</td><td>set_union: merges all above-threshold candidates arrays (deduped)</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>6</td><td>Source-centric row: builds sources from row columns</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>7</td><td>linked_candidates maps ALL remaining rows (not just above-threshold)</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>8</td><td>Field not in product.json &rarr; unchanged (no-op)</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>9</td><td>Custom threshold via config (override default 0.7)</td><td><span class="tag exists">PASS</span></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- Phase 2b ------------------------------------------------------- -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-number">Phase 2b</span>
+    <span class="phase-title">Delete Orchestrator &mdash; <code>deleteCandidate.js</code> (9 tests)</span>
+  </div>
+  <div class="phase-body">
+    <h4>What was built</h4>
+    <p>Main orchestrator module that coordinates deletion across all 4 data locations. Two public exports: <code>deleteCandidateBySourceId()</code> for single delete and <code>deleteAllCandidatesForField()</code> for bulk delete. Internal <code>cascadeArtifactDelete()</code> handles conditional finder cleanup.</p>
+
+    <h4>Key design decisions implemented</h4>
+    <ul>
+      <li><strong>source_type from column</strong> &mdash; <code>row.source_type</code> read from <code>field_candidates</code> SQL row, never parsed from <code>source_id</code> (ambiguous with hyphenated product IDs)</li>
+      <li><strong>Run number via <code>lastIndexOf('-')</code></strong> &mdash; last segment of <code>source_id</code> is always numeric for finders, safe to extract</li>
+      <li><strong>Cross-field count gate</strong> &mdash; <code>specDb.countFieldCandidatesBySourceId()</code> checked AFTER SQL delete; cascade only fires when count reaches 0</li>
+      <li><strong>Pipeline cascade deferred</strong> &mdash; no-op for <code>sourceType === 'pipeline'</code> (runs table has no <code>run_number</code> column)</li>
+      <li><strong>Cross-feature compliance</strong> &mdash; <code>republishField</code> imported via <code>../../publisher/index.js</code> (public API); CEF/PIF via specDb facade methods; no feature internals imported</li>
+    </ul>
+
+    <h4>Files created</h4>
+    <ul class="file-list">
+      <li><code>src/features/review/domain/deleteCandidate.js</code> <span class="role">&mdash; <strong>NEW</strong> (145 LOC). Exports <code>deleteCandidateBySourceId</code>, <code>deleteAllCandidatesForField</code>. Internal: <code>cascadeArtifactDelete</code>, <code>readProductJson</code>, <code>writeProductJson</code>.</span></li>
+      <li><code>src/features/review/domain/tests/deleteCandidate.test.js</code> <span class="role">&mdash; <strong>NEW</strong>. 9 tests covering single delete, delete-all, cascade gate, cross-field safety, manual no-op.</span></li>
+    </ul>
+
+    <h4>Files modified</h4>
+    <ul class="file-list">
+      <li><code>src/features/review/domain/index.js</code> <span class="role">&mdash; re-exported <code>deleteCandidateBySourceId</code>, <code>deleteAllCandidatesForField</code></span></li>
+      <li><code>src/features/review/README.md</code> <span class="role">&mdash; documented new exports in Public API, added <code>src/features/publisher/index.js</code> to allowed dependencies</span></li>
+    </ul>
+
+    <h4>Function signatures</h4>
+<pre>
+<span class="keyword">export function</span> <span class="fn">deleteCandidateBySourceId</span>({
+  specDb, category, productId, fieldKey, sourceId, config, productRoot
+})
+<span class="comment">// Returns: { deleted: boolean, republished: boolean, artifacts_cleaned: boolean }</span>
+
+<span class="keyword">export function</span> <span class="fn">deleteAllCandidatesForField</span>({
+  specDb, category, productId, fieldKey, config, productRoot
+})
+<span class="comment">// Returns: { deleted: number, artifacts_cleaned: boolean }</span>
+</pre>
+
+    <h4>Cascade dispatch (internal)</h4>
+    <table>
+      <tr><th>source_type</th><th>Action</th></tr>
+      <tr><td><code>cef</code></td><td><code>specDb.deleteColorEditionFinderRunByNumber(pid, runNum)</code></td></tr>
+      <tr><td><code>pif</code></td><td><code>specDb.deleteProductImageFinderRunByNumber(pid, runNum)</code></td></tr>
+      <tr><td><code>pipeline</code></td><td>No-op (deferred &mdash; runs table has no <code>run_number</code>)</td></tr>
+      <tr><td><code>manual_override</code> / <code>review</code></td><td>No-op (no artifacts)</td></tr>
+    </table>
+
+    <h4>Test matrix (9 tests)</h4>
+    <table>
+      <tr><th>#</th><th>Scenario</th><th>Result</th></tr>
+      <tr><td>1</td><td>Deletes SQL row + product.json entry + republishes field</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>2</td><td>Only candidate for field &rarr; unpublishes (removes fields[fieldKey])</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>3</td><td>Last source_id globally &rarr; artifacts_cleaned = true</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>4</td><td>Other fields still reference source_id &rarr; artifacts_cleaned = false</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>5</td><td>manual/review source_type &rarr; no-op cascade</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>6</td><td>Non-existent candidate &rarr; deleted = false</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>7</td><td>Bulk deletes all candidates + unpublishes field</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>8</td><td>Shared source with another field &rarr; artifacts kept for shared source</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>9</td><td>No candidates for field &rarr; deleted = 0</td><td><span class="tag exists">PASS</span></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- Phase 3 -------------------------------------------------------- -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-number">Phase 3</span>
+    <span class="phase-title">API Layer &mdash; DELETE Endpoints + Data-Change Events (6 tests + parity)</span>
+  </div>
+  <div class="phase-body">
+    <h4>What was built</h4>
+    <p>Two HTTP DELETE endpoints wired into the review route dispatcher. Emits <code>candidate-deleted</code> data-change event with backend/frontend parity.</p>
+
+    <h4>Endpoints</h4>
+    <table>
+      <tr><th>Method</th><th>Route</th><th>Action</th></tr>
+      <tr><td><code>DELETE</code></td><td><code>/review/:category/candidates/:productId/:fieldKey/:sourceId</code></td><td>Delete single candidate</td></tr>
+      <tr><td><code>DELETE</code></td><td><code>/review/:category/candidates/:productId/:fieldKey</code></td><td>Delete all candidates for field</td></tr>
+    </table>
+    <p>Both return: <code>{ ok: true, deleted: N|boolean, artifacts_cleaned: boolean, republished?: boolean }</code></p>
+
+    <h4>Files created</h4>
+    <ul class="file-list">
+      <li><code>src/features/review/api/candidateDeletionRoutes.js</code> <span class="role">&mdash; <strong>NEW</strong> (59 LOC). Exports <code>handleCandidateDeletionRoute()</code>. Route matching: <code>parts[0]==='review' && method==='DELETE' && parts[2]==='candidates'</code>. Distinguishes single (6 parts) vs all (5 parts).</span></li>
+      <li><code>src/features/review/api/tests/candidateDeletionRoutes.test.js</code> <span class="role">&mdash; <strong>NEW</strong>. 6 tests using real SpecDb + temp filesystem.</span></li>
+    </ul>
+
+    <h4>Files modified</h4>
+    <ul class="file-list">
+      <li><code>src/features/review/api/reviewRoutes.js</code> <span class="role">&mdash; imported <code>handleCandidateDeletionRoute</code>; wired into dispatcher chain after <code>handleFieldReviewRoute</code>, before item mutation routes. Context: <code>{ jsonRes, getSpecDb, broadcastWs, config, productRoot }</code>.</span></li>
+      <li><code>src/core/events/dataChangeContract.js</code> <span class="role">&mdash; added <code>'candidate-deleted': ['review', 'product']</code> to <code>DATA_CHANGE_EVENT_DOMAIN_MAP</code></span></li>
+      <li><code>tools/gui-react/src/features/data-change/invalidationResolver.js</code> <span class="role">&mdash; added matching <code>'candidate-deleted': ['review', 'product']</code> to <code>DATA_CHANGE_EVENT_DOMAIN_FALLBACK</code> (parity test enforces sync)</span></li>
+      <li><code>src/features/review/README.md</code> <span class="role">&mdash; added <code>api/candidateDeletionRoutes.js</code> to Route Layer docs</span></li>
+    </ul>
+
+    <h4>Data-change event</h4>
+<pre>
+<span class="fn">emitDataChange</span>({
+  broadcastWs,
+  event: <span class="string">'candidate-deleted'</span>,
+  category,
+  meta: { productId, fieldKey, sourceId },
+});
+<span class="comment">// Domains: ['review', 'product'] &mdash; triggers review grid + product cache invalidation</span>
+</pre>
+
+    <h4>Test matrix (6 tests + 1 parity)</h4>
+    <table>
+      <tr><th>#</th><th>Scenario</th><th>Result</th></tr>
+      <tr><td>1</td><td>Non-matching route returns false</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>2</td><td>Non-DELETE method returns false</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>3</td><td>Single delete: returns ok with deletion result</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>4</td><td>Delete-all: returns ok with count</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>5</td><td>Emits data-change broadcast on <code>data-change</code> channel</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>6</td><td>specDb not found &rarr; 404</td><td><span class="tag exists">PASS</span></td></tr>
+      <tr><td>P</td><td>Backend/frontend event domain parity test</td><td><span class="tag exists">PASS</span></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- Phase 4 -------------------------------------------------------- -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-number">Phase 4</span>
+    <span class="phase-title">Frontend &mdash; Delete Buttons + Confirmation Dialog (TypeScript clean compile)</span>
+  </div>
+  <div class="phase-body">
+    <h4>What was built</h4>
+    <p>Per-candidate trash-icon delete button in each candidate card footer. Full-width "Delete All Candidates" button in its own section (independent of AI Review). Confirmation modal dialog for both actions. TanStack React Query mutations with automatic cache invalidation.</p>
+
+    <h4>Files created</h4>
+    <ul class="file-list">
+      <li><code>tools/gui-react/src/features/review/api/reviewApi.ts</code> <span class="role">&mdash; <strong>NEW</strong> directory + file (23 LOC). Exports <code>deleteCandidateBySourceId()</code>, <code>deleteAllCandidatesForField()</code>. Uses <code>api.del&lt;CandidateDeleteResponse&gt;</code> from shared client. URL-encodes <code>sourceId</code> for safety.</span></li>
+      <li><code>tools/gui-react/src/features/review/components/CandidateDeleteConfirm.tsx</code> <span class="role">&mdash; <strong>NEW</strong> (51 LOC). Dumb confirmation dialog. Props: <code>mode</code>, <code>fieldLabel</code>, <code>candidateCount</code>, <code>onConfirm</code>, <code>onCancel</code>, <code>isPending</code>. Uses semantic tokens (<code>sf-surface-panel</code>, <code>sf-danger-button</code>, <code>sf-action-button</code>). No inline styles. Follows <code>FinderDeleteConfirmModal</code> pattern exactly.</span></li>
+    </ul>
+
+    <h4>Files modified</h4>
+    <ul class="file-list">
+      <li><code>tools/gui-react/src/types/review.ts</code> <span class="role">&mdash; added <code>CandidateDeleteResponse</code> interface: <code>{ ok, deleted, artifacts_cleaned, republished? }</code></span></li>
+      <li><code>tools/gui-react/src/features/review/components/FieldReviewDrawer.tsx</code> <span class="role">&mdash; 3 new props (<code>onDeleteCandidate</code>, <code>onDeleteAllCandidates</code>, <code>deletePending</code>). <code>deleteConfirm</code> state drives modal. Per-candidate trash button in card footer (left of Review button). "Delete All Candidates" full-width button in its own <code>DrawerSection</code>. Both open confirmation modal before firing callback.</span></li>
+      <li><code>tools/gui-react/src/features/review/components/ReviewPage.tsx</code> <span class="role">&mdash; two <code>useMutation</code> hooks (<code>deleteCandidateMut</code>, <code>deleteAllCandidatesMut</code>) with <code>queryClient.invalidateQueries</code> on success. Callbacks passed to <code>FieldReviewDrawer</code> as <code>onDeleteCandidate</code>, <code>onDeleteAllCandidates</code>, <code>deletePending</code>.</span></li>
+    </ul>
+
+    <h4>UI placement</h4>
+    <table>
+      <tr><th>Element</th><th>Location</th><th>Behavior</th></tr>
+      <tr>
+        <td>Per-candidate delete (trash icon)</td>
+        <td>Candidate card footer, left of "Review" button</td>
+        <td>Opens confirmation dialog with <code>mode: 'single'</code> and <code>sourceId</code>. On confirm: <code>deleteCandidateMut.mutate({ sourceId })</code></td>
+      </tr>
+      <tr>
+        <td>"Delete All Candidates" button</td>
+        <td>Own <code>DrawerSection</code>, below the Review All section. Independent &mdash; shows whenever <code>onDeleteAllCandidates</code> provided and candidates exist.</td>
+        <td>Opens confirmation dialog with <code>mode: 'all'</code>. On confirm: <code>deleteAllCandidatesMut.mutate()</code></td>
+      </tr>
+      <tr>
+        <td>Confirmation dialog</td>
+        <td>Fixed overlay (<code>z-50</code>) centered on screen</td>
+        <td>Shows contextual title/description for single vs all. Cancel dismisses. Confirm fires mutation then dismisses. Buttons disabled while <code>isPending</code>.</td>
+      </tr>
+    </table>
+
+    <h4>Cache invalidation on success</h4>
+<pre>
+queryClient.invalidateQueries({ queryKey: [<span class="string">'reviewProductsIndex'</span>, category] });
+queryClient.invalidateQueries({ queryKey: [<span class="string">'candidates'</span>, category] });
+</pre>
+
+    <h4>CLAUDE.md compliance</h4>
+    <ul>
+      <li>All props interfaces defined before component implementation</li>
+      <li>No <code>any</code>, <code>@ts-ignore</code>, or <code>@ts-nocheck</code></li>
+      <li>No inline styles &mdash; semantic tokens only (<code>sf-danger-button</code>, <code>sf-surface-panel</code>, etc.)</li>
+      <li>No hardcoded CSS values</li>
+      <li>Dumb component pattern &mdash; all state in parent (ReviewPage), dialog receives callbacks via props</li>
+      <li>Tests not required per test scope calibration (UI-only buttons/dialog with no domain logic)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Summary -------------------------------------------------------- -->
+<h2>Implementation Summary</h2>
+
+<h3>Complete file inventory</h3>
+<h4>New files (8)</h4>
+<table>
+  <tr><th>File</th><th>LOC</th><th>Phase</th></tr>
+  <tr><td><code>src/features/publisher/publish/republishField.js</code></td><td>102</td><td>2a</td></tr>
+  <tr><td><code>src/features/publisher/publish/tests/republishField.test.js</code></td><td>147</td><td>2a</td></tr>
+  <tr><td><code>src/features/review/domain/deleteCandidate.js</code></td><td>145</td><td>2b</td></tr>
+  <tr><td><code>src/features/review/domain/tests/deleteCandidate.test.js</code></td><td>178</td><td>2b</td></tr>
+  <tr><td><code>src/features/review/api/candidateDeletionRoutes.js</code></td><td>59</td><td>3</td></tr>
+  <tr><td><code>src/features/review/api/tests/candidateDeletionRoutes.test.js</code></td><td>122</td><td>3</td></tr>
+  <tr><td><code>tools/gui-react/src/features/review/api/reviewApi.ts</code></td><td>23</td><td>4</td></tr>
+  <tr><td><code>tools/gui-react/src/features/review/components/CandidateDeleteConfirm.tsx</code></td><td>51</td><td>4</td></tr>
+</table>
+
+<h4>Modified files (14)</h4>
+<table>
+  <tr><th>File</th><th>Phase</th><th>Change</th></tr>
+  <tr><td><code>src/db/specDbStatements.js</code></td><td>1</td><td>+1 prepared statement</td></tr>
+  <tr><td><code>src/db/stores/fieldCandidateStore.js</code></td><td>1</td><td>+1 method, +1 export</td></tr>
+  <tr><td><code>src/db/specDb.js</code></td><td>1</td><td>+1 stmt wiring, +1 facade</td></tr>
+  <tr><td><code>src/db/tests/fieldCandidateStore.test.js</code></td><td>1</td><td>+4 tests</td></tr>
+  <tr><td><code>src/features/publisher/index.js</code></td><td>2a</td><td>+1 re-export</td></tr>
+  <tr><td><code>src/features/publisher/README.md</code></td><td>2a</td><td>+1 public API entry</td></tr>
+  <tr><td><code>src/core/finder/finderRoutes.js</code></td><td>2a</td><td>-90 lines inlined, +4 lines delegated</td></tr>
+  <tr><td><code>src/features/review/domain/index.js</code></td><td>2b</td><td>+1 re-export line</td></tr>
+  <tr><td><code>src/features/review/README.md</code></td><td>2b/3</td><td>+3 doc lines (API, deps, route)</td></tr>
+  <tr><td><code>src/core/events/dataChangeContract.js</code></td><td>3</td><td>+1 event entry</td></tr>
+  <tr><td><code>tools/gui-react/src/features/data-change/invalidationResolver.js</code></td><td>3</td><td>+1 event entry (parity)</td></tr>
+  <tr><td><code>src/features/review/api/reviewRoutes.js</code></td><td>3</td><td>+1 import, +10 lines dispatcher wiring</td></tr>
+  <tr><td><code>tools/gui-react/src/features/review/components/FieldReviewDrawer.tsx</code></td><td>4</td><td>+3 props, delete button, delete-all button, confirm dialog wiring</td></tr>
+  <tr><td><code>tools/gui-react/src/features/review/components/ReviewPage.tsx</code></td><td>4</td><td>+2 mutations, +3 callback props to drawer</td></tr>
+</table>
+
+<h4>Verified NOT changed (12 files)</h4>
+<table>
+  <tr><th>File</th><th>Reason</th></tr>
+  <tr><td><code>candidateFanOut.js</code></td><td>Won't receive deleted rows; no code change needed</td></tr>
+  <tr><td><code>reviewGridData.js</code></td><td>Refresh via data-change event invalidation</td></tr>
+  <tr><td><code>submitCandidate.js</code></td><td>Write path only; delete is separate</td></tr>
+  <tr><td><code>publishCandidate.js</code></td><td>Only imported from; not modified</td></tr>
+  <tr><td><code>reconcileThreshold.js</code></td><td>Independent threshold logic</td></tr>
+  <tr><td><code>deletionStore.js</code></td><td>Pattern reference only; pipeline cascade deferred</td></tr>
+  <tr><td><code>seedRegistry.js</code>, <code>candidateReseed.js</code></td><td>Rebuild contract works from corrected product.json</td></tr>
+  <tr><td><code>specDbSchema.js</code>, <code>specDbMigrations.js</code></td><td>No schema changes (existing columns + new prepared statement only)</td></tr>
+  <tr><td><code>reviewStore.ts</code>, <code>reviewGridSessionState.ts</code></td><td>TanStack Query invalidation handles refresh</td></tr>
+  <tr><td><code>ReviewMatrix.tsx</code></td><td>Grid re-renders from invalidated queries</td></tr>
+</table>
+
+<h3>Test results (final run)</h3>
+<div class="card green">
+  <p><strong>53 tests, 5 suites, 0 failures.</strong></p>
+  <ul>
+    <li><code>fieldCandidateStore.test.js</code> &mdash; 27 pass (4 new + 23 existing)</li>
+    <li><code>republishField.test.js</code> &mdash; 9 pass (all new)</li>
+    <li><code>deleteCandidate.test.js</code> &mdash; 10 pass (all new, includes CEF cascade integration test)</li>
+    <li><code>candidateDeletionRoutes.test.js</code> &mdash; 6 pass (all new)</li>
+    <li><code>dataChangeDomainParity.test.js</code> &mdash; 1 pass (existing, verifies backend/frontend sync)</li>
+  </ul>
+  <p>TypeScript: <strong>0 errors</strong> (clean compile)</p>
+</div>
+
+<h3>Post-implementation audit corrections (2026-04-14)</h3>
+<div class="alert danger">
+  <strong>Auditor findings addressed:</strong> Three issues identified and fixed after initial "IMPLEMENTED" claim.
+</div>
+<table>
+  <tr><th>#</th><th>Finding</th><th>Severity</th><th>Fix</th></tr>
+  <tr>
+    <td>A1</td>
+    <td><strong><code>artifacts_cleaned</code> was a lie.</strong> Returned <code>true</code> whenever cross-field count reached 0, even for source types with no artifacts (manual_override, review, pipeline). Auditor reproed: pipeline delete returned <code>{ artifacts_cleaned: true }</code> with zero cleanup.</td>
+    <td><span class="tag high">HIGH</span></td>
+    <td><code>cascadeArtifactDelete()</code> now returns <code>boolean</code>. Only returns <code>true</code> when actual finder state was deleted (CEF full cascade, PIF SQL). Returns <code>false</code> for manual_override, review, and pipeline no-ops. Callers use the return value instead of unconditional <code>true</code>.</td>
+  </tr>
+  <tr>
+    <td>A2</td>
+    <td><strong>CEF cascade was incomplete.</strong> Only deleted SQL run row via <code>specDb.deleteColorEditionFinderRunByNumber()</code>. Did not touch <code>color_edition.json</code> or update the <code>color_edition_finder</code> summary table. Auditor reproed: summary row persisted with <code>run_count: 1</code> after delete.</td>
+    <td><span class="tag high">HIGH</span></td>
+    <td>CEF cascade now does full 3-step cleanup: (1) SQL run via <code>finderStore.removeRun()</code>, (2) JSON via <code>deleteColorEditionFinderRun()</code>, (3) summary via <code>finderStore.upsert()</code> or <code>finderStore.remove()</code>. New integration test verifies all three artifacts are gone.</td>
+  </tr>
+  <tr>
+    <td>A3</td>
+    <td><strong>Tests encoded wrong contract.</strong> Asserted <code>artifacts_cleaned === true</code> for manual_override (no artifacts exist). No test verified finder summary or JSON cleanup. Green proof was misleading.</td>
+    <td><span class="tag medium">MEDIUM</span></td>
+    <td>Fixed assertions: manual_override and review now assert <code>artifacts_cleaned === false</code>. Added new test "CEF last source_id &rarr; cleans finder SQL run + JSON + summary" that seeds real finder state and verifies all three artifact locations are cleaned after cascade.</td>
+  </tr>
+</table>
+
+<h3>Deferred work</h3>
+<table>
+  <tr><th>Item</th><th>Reason</th><th>When</th></tr>
+  <tr><td>Pipeline artifact cascade</td><td><code>runs</code> table has no <code>run_number</code> column; <code>source_id &rarr; run_id</code> resolution undefined. <code>artifacts_cleaned</code> correctly returns <code>false</code> for pipeline.</td><td>When pipeline feeds the review grid</td></tr>
+  <tr><td>PIF JSON cleanup</td><td><code>deleteProductImageFinderRun</code> is not in the PIF public API (<code>src/features/product-image/index.js</code>). SQL run cleanup works; JSON file and summary are not updated. <code>artifacts_cleaned</code> returns <code>true</code> (partial).</td><td>When PIF public API exports its delete function</td></tr>
+  <tr><td>E2E GUI visual verification</td><td>Backend + frontend code complete; needs manual visual test with running server</td><td>Next dev session</td></tr>
+</table>
+
 <hr>
 <p class="date" style="text-align:center; margin-top:2rem;">
-  Generated 2026-04-14 &nbsp;|&nbsp; Revised 2026-04-14 (post-audit) &nbsp;|&nbsp; Spec Factory &mdash; Review Grid Candidate Delete Cascade
+  Generated 2026-04-14 &nbsp;|&nbsp; Revised 2026-04-14 (post-audit, post-implementation-audit) &nbsp;|&nbsp; Spec Factory &mdash; Review Grid Candidate Delete Cascade
 </p>
 
 </body>

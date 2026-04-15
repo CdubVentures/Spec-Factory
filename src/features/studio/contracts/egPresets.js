@@ -22,101 +22,6 @@ export const EG_EDITABLE_PATHS = Object.freeze([
   'ui.tooltip_md',
 ]);
 
-// ── Dynamic reasoning note builder ──────────────────────────────────────────
-
-function buildColorReasoningNote(colorNames, colors) {
-  // WHY: Full extraction guidance for color discovery — used by both the
-  // extraction pipeline and the Color & Edition Finder. This is the SSOT
-  // for how LLMs should discover, match, and format product colors.
-  //
-  // O(1): adding vivid-red, pastel-blue, etc. auto-discovers "vivid-", "pastel-" as prefixes.
-  // No hardcoded prefix list. The registry IS the config.
-
-  const nameSet = new Set(colorNames);
-  const prefixMap = new Map(); // prefix → Set<base>
-  const unprefixed = []; // names with no hyphen (potential bases)
-
-  // Pass 1: identify all names that look like {prefix}-{base}
-  for (const n of colorNames) {
-    const dashIdx = n.indexOf('-');
-    if (dashIdx > 0) {
-      const prefix = n.slice(0, dashIdx);
-      const base = n.slice(dashIdx + 1);
-      if (nameSet.has(base)) {
-        if (!prefixMap.has(prefix)) prefixMap.set(prefix, new Set());
-        prefixMap.get(prefix).add(base);
-      }
-    }
-    if (!n.includes('-')) {
-      unprefixed.push(n);
-    }
-  }
-
-  // Pass 2: bases = unprefixed names that have at least one prefixed variant
-  const basesWithVariants = [];
-  const standalone = [];
-  for (const n of unprefixed) {
-    let hasVariant = false;
-    for (const [, bases] of prefixMap) {
-      if (bases.has(n)) { hasVariant = true; break; }
-    }
-    if (hasVariant) basesWithVariants.push(n);
-    else standalone.push(n);
-  }
-
-  // Pass 3: orphans = prefixed names whose base is NOT registered
-  const orphans = [];
-  for (const n of colorNames) {
-    const dashIdx = n.indexOf('-');
-    if (dashIdx > 0) {
-      const base = n.slice(dashIdx + 1);
-      if (!nameSet.has(base)) orphans.push(n);
-    }
-  }
-
-  // Build prefix summary
-  const parts = [];
-  const prefixes = [...prefixMap.keys()].sort();
-  if (basesWithVariants.length > 0 && prefixes.length > 0) {
-    const prefixList = prefixes.map((p) => `${p}-`).join(', ');
-    parts.push(`Base colors (also valid with prefixes ${prefixList}): ${basesWithVariants.join(', ')}`);
-  }
-  if (standalone.length > 0) {
-    parts.push(`Other colors: ${standalone.join(', ')}`);
-  }
-  if (orphans.length > 0) {
-    parts.push(`Additional variants: ${orphans.join(', ')}`);
-  }
-
-  // Build registered color list with hex values for visual matching
-  const colorEntries = Array.isArray(colors) ? colors : [];
-  const colorListStr = colorEntries.length > 0
-    ? colorEntries.map(c => `${c.name} (${c.hex})`).join(', ')
-    : colorNames.join(', ');
-
-  return [
-    'Discover every color variant this product is or has been available in.',
-    'Check the manufacturer product page (color selectors, variant dropdowns, "available in" sections), major retailers (Amazon, Best Buy, Newegg), and review/spec databases. Include discontinued and regional variants.',
-    '',
-    'Each color is either a single atom ("black", "light-gray") or multiple atoms joined by "+" in dominant visual order.',
-    'Dominant means the color with the most surface area — "black+red" means mostly black with red accents.',
-    'The first color in the array is the most common / default variant (the one shown on the product\'s main marketing page).',
-    '',
-    'Formatting rules:',
-    '- lowercase only, hyphens between words',
-    '- Modifier-first: "light-blue" not "blue-light", "dark-green" not "green-dark"',
-    '- Normalize "grey" to "gray"',
-    '- Translate marketing names to the nearest registered color. "Midnight" → "black", "Arctic" → "white", "Thunderbolt Yellow" → "yellow". Never use marketing names as atoms.',
-    '',
-    parts.join('. ') + '.',
-    '',
-    `Registered colors with hex values: ${colorListStr}`,
-    '',
-    'Match product colors to registered colors by visual similarity using the hex values above. If a registered color\'s hex is close to the product\'s actual color, use the registered name.',
-    'If no registered color is a reasonable visual match, use the nearest registered color by hex similarity. Do not invent new color names.',
-  ].join('\n');
-}
-
 // ── Field rule builders ──────────────────────────────────────────────────────
 // WHY: ctx.colorNames comes from appDb.listColors() (DB is SSOT).
 // If ctx is absent, reasoning_note uses an empty list — the DB is always
@@ -180,7 +85,7 @@ export function buildEgColorFieldRule(ctx) {
       tier_preference: ['tier1', 'tier2', 'tier3'],
     },
     ai_assist: {
-      reasoning_note: buildColorReasoningNote(colorNames, colors),
+      reasoning_note: '',
     },
     ui: {
       label: 'Colors',
@@ -226,17 +131,7 @@ export function buildEgEditionFieldRule(ctx) {
       tier_preference: ['tier1', 'tier2', 'tier3'],
     },
     ai_assist: {
-      reasoning_note: [
-        'Discover every special, limited, or collaboration edition of this product.',
-        'Check the manufacturer product page, retailers, and community forums. Include discontinued and limited-run editions.',
-        '',
-        'Each edition has its own color variant(s). When you find an edition, identify the colors it comes in — those colors must appear in the colors array using the same atom rules (registered atoms, "+"-joined, dominant-first). Every edition adds at least one color entry to the product\'s color list.',
-        '',
-        'Formatting: return editions as kebab-case slugs. Lowercase, hyphens only, no spaces.',
-        'Examples: launch-edition, cyberpunk-2077-edition, sf6-chun-li, wilderness, halo-infinite-edition.',
-        'Do not return display names or title case.',
-        'If an edition has a unique color not in the registered list, map it to the nearest registered color by hex similarity.',
-      ].join('\n'),
+      reasoning_note: '',
     },
     ui: {
       label: 'Editions',

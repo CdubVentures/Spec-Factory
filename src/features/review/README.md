@@ -22,6 +22,7 @@ The review grid, LLM-assisted review, and component review surfaces are **active
   - Overrides: `resolveOverrideFilePath`, `readReviewArtifacts`, `setOverrideFromCandidate`, `setManualOverride`, `approveGreenOverrides`, `buildReviewMetrics`, `finalizeOverrides`
   - Component/enum review: `resolvePropertyFieldMeta`, `buildComponentReviewLayout`, `buildComponentReviewPayloads`, `buildEnumReviewPayloads`
   - Cascade impact: `findProductsReferencingComponent`, `cascadeComponentChange`, `cascadeEnumChange`
+  - Candidate deletion: `deleteCandidateBySourceId`, `deleteAllCandidatesForField`
   - Utilities: `normalizeFieldKey`, `confidenceColor`, `runQaJudge`, `evaluateVariance`, `evaluateVarianceBatch`
 - Consumers must import from `index.js`, not from internal paths.
 
@@ -37,12 +38,13 @@ The review grid, LLM-assisted review, and component review surfaces are **active
 - `api/reviewRoutes.js` — thin dispatcher delegating to extracted handler modules.
 - `api/fieldReviewHandlers.js`, `api/componentReviewHandlers.js` — query/read handlers.
 - `api/itemMutationRoutes.js`, `api/componentMutationRoutes.js`, `api/enumMutationRoutes.js` — mutation handlers.
+- `api/candidateDeletionRoutes.js` — DELETE candidate endpoints (single + bulk).
 - `api/routeSharedHelpers.js` — shared mutation response/validation helpers.
 - `api/mutationResolvers.js` — SpecDb context resolution for mutations.
 - `api/reviewRouteContext.js` — DI context factory.
 
 ## Dependencies
-- Allowed: `src/core/` (including `src/core/events/dataChangeContract.js`), `src/shared/`, `src/db/`, `src/features/catalog/index.js`, `src/features/indexing/index.js`, `src/features/settings-authority/index.js`, `src/utils/` (common, candidateIdentifier, componentIdentifier, fieldKeys, slotValueShape), `src/engine/` (ruleAccessors, fieldRulesEngine, runtimeGate), `src/field-rules/consumerGate.js`, `src/categories/loader.js`, `src/queue/queueState.js`.
+- Allowed: `src/core/` (including `src/core/events/dataChangeContract.js`), `src/shared/`, `src/db/`, `src/features/publisher/index.js` (republishField), `src/features/color-edition/index.js` (deleteColorEditionFinderRun for cascade), `src/features/catalog/index.js`, `src/features/indexing/index.js`, `src/features/settings-authority/index.js`, `src/utils/` (common, candidateIdentifier, componentIdentifier, fieldKeys, slotValueShape), `src/engine/` (ruleAccessors, fieldRulesEngine, runtimeGate), `src/field-rules/consumerGate.js`, `src/categories/loader.js`, `src/queue/queueState.js`.
 - Forbidden: `src/app/api/` (all HTTP handling is self-contained), deep imports into other feature internals.
 - Legacy: `src/review/*.js` shims re-export from `domain/` for backward compatibility. New consumers should use `src/features/review/index.js`.
 

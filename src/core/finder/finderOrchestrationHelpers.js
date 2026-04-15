@@ -15,23 +15,15 @@ import { resolvePhaseModel } from '../llm/client/routing.js';
 import { stripCompositeKey } from '../llm/routeResolver.js';
 import { extractEffortFromModelName } from '../../shared/effortFromModelName.js';
 
-// ─── Cooldown ────────────────────────────────────────────────────────────────
-
-export const COOLDOWN_DAYS = 30;
-
 /**
- * Compute a cooldown timestamp N days in the future.
+ * Compute the current ISO timestamp for run bookkeeping.
  *
  * @param {object} [opts]
- * @param {number} [opts.days=COOLDOWN_DAYS] — cooldown duration (0 = no cooldown)
- * @param {Date}   [opts.now=new Date()]     — injectable for deterministic tests
- * @returns {{ cooldownUntil: string, ranAt: string, now: Date }}
+ * @param {Date}   [opts.now=new Date()] — injectable for deterministic tests
+ * @returns {{ ranAt: string, now: Date }}
  */
-export function computeCooldownUntil({ days = COOLDOWN_DAYS, now = new Date() } = {}) {
-  const ranAt = now.toISOString();
-  if (days <= 0) return { cooldownUntil: '', ranAt, now };
-  const cooldownUntil = new Date(now.getTime() + days * 24 * 60 * 60 * 1000).toISOString();
-  return { cooldownUntil, ranAt, now };
+export function computeRanAt({ now = new Date() } = {}) {
+  return { ranAt: now.toISOString(), now };
 }
 
 // ─── Model Resolution ────────────────────────────────────────────────────────
@@ -52,6 +44,8 @@ export function resolveModelTracking({ config, phaseKey, onModelResolved = null 
   let actualFallbackUsed = false;
   let actualAccessMode = '';
   let actualEffortLevel = '';
+  let actualThinking = false;
+  let actualWebSearch = false;
 
   // WHY: Effort can come from two sources — baked into model name suffix
   // (e.g. gpt-5.4-xhigh → "xhigh") or configured per-phase in LLM settings.
@@ -63,6 +57,8 @@ export function resolveModelTracking({ config, phaseKey, onModelResolved = null 
     if (info.model) actualModel = info.model;
     if (info.isFallback) actualFallbackUsed = true;
     if (info.accessMode) actualAccessMode = info.accessMode;
+    if (info.thinking != null) actualThinking = Boolean(info.thinking);
+    if (info.webSearch != null) actualWebSearch = Boolean(info.webSearch);
 
     // Resolve effort: baked from model name, else configured for the phase
     const baked = extractEffortFromModelName(info.model || actualModel);
@@ -86,6 +82,8 @@ export function resolveModelTracking({ config, phaseKey, onModelResolved = null 
     get actualFallbackUsed() { return actualFallbackUsed; },
     get actualAccessMode() { return actualAccessMode; },
     get actualEffortLevel() { return actualEffortLevel; },
+    get actualThinking() { return actualThinking; },
+    get actualWebSearch() { return actualWebSearch; },
     wrappedOnModelResolved,
     configModel,
   };

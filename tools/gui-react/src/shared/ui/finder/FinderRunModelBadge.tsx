@@ -1,8 +1,8 @@
 /**
  * FinderRunModelBadge — shared badge for displaying LLM model info in finder
- * run history rows. Shows access mode SVG icon + model name + effort tag.
+ * run history rows. Shows access mode SVG icon + capability icons + model name + effort tag.
  *
- * WHY: Both CEF and PIF run history rows need identical badge rendering.
+ * WHY: All finder run/eval history rows need identical badge rendering.
  * Shared component avoids duplication per O(1) scaling rule.
  */
 
@@ -18,6 +18,10 @@ interface FinderRunModelBadgeProps {
   readonly effortLevel?: string;
   /** Whether a fallback model was used. */
   readonly fallbackUsed?: boolean;
+  /** Whether thinking was enabled for this run. */
+  readonly thinking?: boolean;
+  /** Whether web search was enabled for this run. */
+  readonly webSearch?: boolean;
 }
 
 const ICON_SIZE = 9;
@@ -41,6 +45,30 @@ function LabIconMini() {
   );
 }
 
+/** WHY: Matches the ThinkingIcon from ModelAccessBadges.tsx at mini scale. */
+function ThinkingIconMini() {
+  return (
+    <svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5.5 9.5C3.5 8.5 2 6.5 2 4.5A4.5 4.5 0 0 1 11 4.5c0 2-1.5 4-3.5 5" />
+      <path d="M5.5 9.5v2a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-2" />
+      <circle cx="12.5" cy="3" r="1" fill="currentColor" stroke="none" />
+      <circle cx="14" cy="5.5" r="0.7" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+/** WHY: Matches the WebSearchIcon from ModelAccessBadges.tsx at mini scale. */
+function WebSearchIconMini() {
+  return (
+    <svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="7" cy="7" r="5.5" />
+      <ellipse cx="7" cy="7" rx="2.2" ry="5.5" />
+      <path d="M1.5 7h11" />
+      <path d="M2.5 4h9M2.5 10h9" />
+    </svg>
+  );
+}
+
 /** Effort label style — small uppercase pill inline with the model name. */
 const EFFORT_STYLE: React.CSSProperties = {
   fontSize: '8px',
@@ -56,6 +84,8 @@ export const FinderRunModelBadge = memo(function FinderRunModelBadge({
   accessMode,
   effortLevel,
   fallbackUsed,
+  thinking,
+  webSearch,
 }: FinderRunModelBadgeProps) {
   if (!model) return null;
 
@@ -74,6 +104,24 @@ export const FinderRunModelBadge = memo(function FinderRunModelBadge({
           title={isLab ? 'LLM Lab' : 'Cloud API'}
         >
           {isLab ? <LabIconMini /> : <ApiIconMini />}
+        </span>
+      )}
+      {thinking && (
+        <span
+          className="inline-flex items-center"
+          style={{ color: 'var(--sf-state-run-ai-fg)' }}
+          title="Thinking enabled"
+        >
+          <ThinkingIconMini />
+        </span>
+      )}
+      {webSearch && (
+        <span
+          className="inline-flex items-center"
+          style={{ color: 'var(--sf-state-run-ai-fg)' }}
+          title="Web search enabled"
+        >
+          <WebSearchIconMini />
         </span>
       )}
       <span>{model}</span>

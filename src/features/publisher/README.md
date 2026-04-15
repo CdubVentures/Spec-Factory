@@ -17,6 +17,7 @@ export { mergeDiscoveredEnums }  from './validation/mergeDiscoveredEnums.js';
 export { buildDiscoveredEnumMap } from './buildDiscoveredEnumMap.js';
 export { persistDiscoveredValue } from './persistDiscoveredValues.js';
 export { rebuildFieldCandidatesFromJson } from './candidateReseed.js';
+export { republishField }  from './publish/republishField.js';
 ```
 
 ## Dependencies

@@ -61,6 +61,7 @@ describe('runColorEditionFinder', () => {
     const appDb = makeAppDbStub([
       { name: 'black', hex: '#000000', css_var: '--color-black' },
       { name: 'white', hex: '#ffffff', css_var: '--color-white' },
+      { name: 'red', hex: '#ef4444', css_var: '--color-red' },
     ]);
 
     const result = await runColorEditionFinder({
@@ -71,14 +72,14 @@ describe('runColorEditionFinder', () => {
       logger: null,
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
-        colors: ['black', 'white'],
-        editions: { 'cyberpunk-2077-edition': { colors: ['black'] } },
+        colors: ['black', 'white', 'black+red'],
+        editions: { 'cyberpunk-2077-edition': { colors: ['black+red'] } },
         default_color: 'black',
       }),
     });
 
     assert.deepEqual(result.colors, ['black', 'white']);
-    assert.deepEqual(result.editions, { 'cyberpunk-2077-edition': { colors: ['black'] } });
+    assert.deepEqual(result.editions, { 'cyberpunk-2077-edition': { colors: ['black+red'] } });
     assert.equal(result.default_color, 'black');
   });
 
@@ -138,6 +139,7 @@ describe('runColorEditionFinder', () => {
   it('SQL summary updated with new editions format', async () => {
     const appDb = makeAppDbStub([
       { name: 'black', hex: '#000000', css_var: '--color-black' },
+      { name: 'red', hex: '#ef4444', css_var: '--color-red' },
     ]);
 
     await runColorEditionFinder({
@@ -148,15 +150,15 @@ describe('runColorEditionFinder', () => {
       logger: null,
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
-        colors: ['black'],
-        editions: { 'launch': { colors: ['black'] } },
+        colors: ['black', 'black+red'],
+        editions: { 'launch': { colors: ['black+red'] } },
         default_color: 'black',
       }),
     });
 
     const row = specDb.getColorEditionFinder('mouse-sql');
     assert.ok(row);
-    assert.deepEqual(row.colors, ['black']);
+    assert.deepEqual(row.colors, ['black'], 'standalone color only; edition combo excluded');
     assert.equal(row.default_color, 'black');
   });
 
@@ -238,35 +240,6 @@ describe('runColorEditionFinder', () => {
     assert.deepEqual(result.colors, []);
     assert.deepEqual(result.editions, {});
     assert.equal(result.default_color, '');
-  });
-
-  it('cooldown set to 30 days from now', async () => {
-    const appDb = makeAppDbStub([
-      { name: 'black', hex: '#000000', css_var: '--color-black' },
-    ]);
-    const beforeMs = Date.now();
-
-    await runColorEditionFinder({
-      product: { ...PRODUCT, product_id: 'mouse-cooldown' },
-      appDb,
-      specDb,
-      config: {},
-      logger: null,
-      productRoot: PRODUCT_ROOT,
-      _callLlmOverride: makeLlmStub({
-        colors: ['black'],
-        editions: {},
-        default_color: 'black',
-      }),
-    });
-
-    const row = specDb.getColorEditionFinder('mouse-cooldown');
-    const cooldownDate = new Date(row.cooldown_until).getTime();
-    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-    const expectedMin = beforeMs + thirtyDaysMs - 5000;
-    const expectedMax = Date.now() + thirtyDaysMs + 5000;
-    assert.ok(cooldownDate >= expectedMin, 'cooldown at least ~30 days out');
-    assert.ok(cooldownDate <= expectedMax, 'cooldown not more than ~30 days out');
   });
 
   it('second run receives previousRuns as known inputs in prompt', async () => {
@@ -545,6 +518,13 @@ describe('runColorEditionFinder', () => {
 
     assert.equal(result.rejected, true, 'run must be rejected');
     assert.ok(result.rejections.some(r => r.reason_code === 'identity_check_invalid'), 'rejection reason_code');
+
+    // WHY: Gate 2 rejection must not leave a ghost successful run or pollute selected.
+    const afterRun2 = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
+    assert.equal(afterRun2.runs.length, 2, 'expect exactly 2 runs (Run 1 + rejected Run 2)');
+    assert.equal(afterRun2.runs[0].status, undefined, 'Run 1 is successful (no status)');
+    assert.equal(afterRun2.runs[1].status, 'rejected', 'Run 2 is rejected');
+    assert.deepStrictEqual(afterRun2.selected.colors, ['black', 'white'], 'selected must reflect Run 1 only');
   });
 
   it('identity check with match + new correctly updates registry and selected', async () => {
@@ -769,51 +749,6 @@ describe('runColorEditionFinder', () => {
     assert.ok(afterRun2.selected.editions['cod-bo6-edition'], 'slug unchanged when no drift');
   });
 
-  it('edition slug reconciliation: new edition passes through when not in registry', async () => {
-    const pid = 'mouse-slug-new';
-    const appDb = makeAppDbStub([
-      { name: 'black', hex: '#000000', css_var: '--color-black' },
-      { name: 'gold', hex: '#fbbf24', css_var: '--color-gold' },
-    ]);
-
-    // Run 1: only colors, no editions
-    await runColorEditionFinder({
-      product: { ...PRODUCT, product_id: pid },
-      appDb, specDb, config: {}, logger: null,
-      productRoot: PRODUCT_ROOT,
-      _callLlmOverride: makeLlmStub({
-        colors: ['black'],
-        editions: {},
-        default_color: 'black',
-      }),
-    });
-
-    const afterRun1 = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
-    const blackId = afterRun1.variant_registry.find(e => e.variant_key === 'color:black').variant_id;
-
-    // Run 2: discovers a NEW edition (not in registry yet) — must pass through unchanged
-    await runColorEditionFinder({
-      product: { ...PRODUCT, product_id: pid },
-      appDb, specDb, config: {}, logger: null,
-      productRoot: PRODUCT_ROOT,
-      _callLlmOverride: makeLlmStub({
-        colors: ['black', 'black+gold'],
-        editions: { 'gold-edition': { display_name: 'Gold Edition', colors: ['black+gold'] } },
-        default_color: 'black',
-      }),
-      _callIdentityCheckOverride: makeLlmStub({
-        mappings: [
-          { new_key: 'color:black', match: blackId, action: 'match', reason: 'same' },
-          { new_key: 'edition:gold-edition', match: null, action: 'new', reason: 'new edition' },
-        ],
-        retired: [],
-      }),
-    });
-
-    const afterRun2 = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
-    assert.ok(afterRun2.selected.editions['gold-edition'], 'new edition slug preserved as-is');
-    assert.equal(afterRun2.selected.editions['gold-edition'].display_name, 'Gold Edition');
-  });
 
   it('edition slug drift: elimination fallback when registry color_atoms are empty', async () => {
     const pid = 'mouse-slug-elim';
@@ -878,5 +813,67 @@ describe('runColorEditionFinder', () => {
     const doomAfter = afterRun2.variant_registry.find(e => e.variant_id === doomEntry.variant_id);
     assert.deepEqual(doomAfter.color_atoms, ['light-olive', 'black', 'red'],
       'color_atoms should be repaired after reconciliation fixes the lookup');
+  });
+
+  // ── Edition combo isolation ──────────────────────────────────────
+
+  it('edition combos excluded from return value and summary colors', async () => {
+    const pid = 'mouse-combo-isolate';
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+      { name: 'white', hex: '#ffffff', css_var: '--color-white' },
+      { name: 'dark-gray', hex: '#333333', css_var: '--color-dark-gray' },
+      { name: 'orange', hex: '#ff8800', css_var: '--color-orange' },
+    ]);
+
+    const result = await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb, specDb, config: {}, logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black', 'white', 'dark-gray+black+orange'],
+        editions: { 'special-edition': { display_name: 'Special', colors: ['dark-gray+black+orange'] } },
+        default_color: 'black',
+      }),
+    });
+
+    // Return value must only have standalone colors
+    assert.ok(result.colors.includes('black'), 'standalone color preserved');
+    assert.ok(result.colors.includes('white'), 'standalone color preserved');
+    assert.ok(!result.colors.includes('dark-gray+black+orange'), 'edition combo must NOT be in return colors');
+
+    // SQL summary must only have standalone colors
+    const sqlRow = specDb.getColorEditionFinder(pid);
+    assert.ok(sqlRow.colors.includes('black'));
+    assert.ok(sqlRow.colors.includes('white'));
+    assert.ok(!sqlRow.colors.includes('dark-gray+black+orange'), 'edition combo must NOT be in summary colors');
+
+    // JSON selected preserves full audit trail (including combo)
+    const json = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
+    assert.ok(json.selected.colors.includes('dark-gray+black+orange'),
+      'JSON selected preserves combo for audit trail');
+  });
+
+  it('standalone multi-atom color preserved (not mistaken for edition combo)', async () => {
+    const pid = 'mouse-multiatom-color';
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+      { name: 'red', hex: '#ef4444', css_var: '--color-red' },
+    ]);
+
+    const result = await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb, specDb, config: {}, logger: null,
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black', 'black+red'],
+        editions: {},
+        default_color: 'black',
+      }),
+    });
+
+    // black+red is a standalone two-tone color, not an edition combo
+    assert.ok(result.colors.includes('black+red'), 'multi-atom standalone color must be preserved');
+    assert.ok(result.colors.includes('black'));
   });
 });

@@ -7,7 +7,6 @@ import { PubMark, PubLegend } from '../../../shared/ui/feedback/PubMark.tsx';
 import {
   FinderPanelHeader,
   FinderKpiCard,
-  FinderCooldownStrip,
   FinderPanelFooter,
   FinderDeleteConfirmModal,
   DiscoverySummaryBar,
@@ -16,18 +15,22 @@ import {
   FinderRunTimestamp,
   FinderSectionCard,
   useResolvedFinderModel,
-  deriveCooldownState,
   deriveFinderStatusChip,
   ColorSwatch,
+  usePagination,
+  PagerSizeSelector,
+  PagerNavFooter,
 } from '../../../shared/ui/finder/index.ts';
 import type { DeleteTarget } from '../../../shared/ui/finder/types.ts';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
+import { usePersistedExpandMap } from '../../../stores/tabStore.ts';
 import { usePublishedFields } from '../../../hooks/usePublishedFields.ts';
 import {
   useColorEditionFinderQuery,
   useDeleteColorEditionFinderRunMutation,
   useDeleteColorEditionFinderAllMutation,
+  useDeleteVariantMutation,
 } from '../api/colorEditionFinderQueries.ts';
 import {
   deriveFinderKpiCards,
@@ -61,9 +64,44 @@ function ColorPillInline({ pill }: { readonly pill: ColorPill }) {
   );
 }
 
-function SelectedStateCard({ display, isPublished }: {
+function VariantDeleteButton({ variantId, variantLabel, onDelete, isPending }: {
+  readonly variantId: string | null;
+  readonly variantLabel: string;
+  readonly onDelete: (variantId: string) => void;
+  readonly isPending: boolean;
+}) {
+  if (!variantId) return null;
+  return (
+    <button
+      onClick={() => {
+        const confirmed = window.confirm(
+          `Delete variant "${variantLabel}"?\n\n`
+          + 'This will permanently:\n'
+          + '- Remove this variant from the registry\n'
+          + '- Remove its color/edition from published values\n'
+          + '- Strip its values from all discovery candidates\n'
+          + '- Delete all product images linked to this variant\n'
+          + '- Remove carousel slots and evaluations for this variant\n\n'
+          + 'This cannot be undone.',
+        );
+        if (confirmed) onDelete(variantId);
+      }}
+      disabled={isPending}
+      className="ml-auto w-4 h-4 flex items-center justify-center rounded-full sf-text-muted hover:bg-red-100 hover:text-red-600 transition-colors disabled:opacity-40"
+      title="Delete variant"
+    >
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" className="w-[8px] h-[8px]">
+        <path d="M4 4l8 8M12 4l-8 8" />
+      </svg>
+    </button>
+  );
+}
+
+function SelectedStateCard({ display, isPublished, onDeleteVariant, deleteVariantPending }: {
   readonly display: ReturnType<typeof deriveSelectedStateDisplay>;
   readonly isPublished: (fieldKey: string) => boolean;
+  readonly onDeleteVariant?: (variantId: string) => void;
+  readonly deleteVariantPending?: boolean;
 }) {
   if (display.colors.length === 0 && display.editions.length === 0) return null;
 
@@ -90,7 +128,14 @@ function SelectedStateCard({ display, isPublished }: {
           </div>
           <div className="flex flex-wrap gap-1.5">
             {display.colors.map(pill => (
-              <ColorPillInline key={pill.name} pill={pill} />
+              <span key={pill.name} className="inline-flex items-center gap-1.5 px-2 py-1 sf-surface-panel border sf-border-soft rounded-md text-[11px] font-semibold sf-text-primary">
+                <ColorSwatch hexParts={pill.hexParts} size="md" />
+                {pill.displayName && <span className="sf-text-primary">{pill.displayName}</span>}
+                <span className="font-mono sf-text-muted">{pill.name}</span>
+                {onDeleteVariant && (
+                  <VariantDeleteButton variantId={pill.variantId} variantLabel={pill.displayName || pill.name} onDelete={onDeleteVariant} isPending={deleteVariantPending ?? false} />
+                )}
+              </span>
             ))}
           </div>
         </div>
@@ -107,7 +152,7 @@ function SelectedStateCard({ display, isPublished }: {
             <div className="flex flex-col gap-2">
               {display.editions.map(ed => (
                 <div key={ed.slug} className="sf-surface-panel border sf-border-soft rounded-md px-3 py-2">
-                  <div className="mb-1.5 inline-flex items-center gap-1.5">
+                  <div className="mb-1.5 inline-flex items-center gap-1.5 w-full">
                     {ed.displayName && (
                       <span className="text-[12px] font-semibold sf-text-primary">{ed.displayName}</span>
                     )}
@@ -118,6 +163,9 @@ function SelectedStateCard({ display, isPublished }: {
                       <span className="px-1 py-0.5 rounded text-[9px] font-bold sf-text-muted sf-surface-soft">
                         {ed.sourceCount}x
                       </span>
+                    )}
+                    {onDeleteVariant && (
+                      <VariantDeleteButton variantId={ed.variantId} variantLabel={ed.displayName || ed.slug} onDelete={onDeleteVariant} isPending={deleteVariantPending ?? false} />
                     )}
                   </div>
                   <div className="flex flex-wrap gap-1">
@@ -141,17 +189,19 @@ function SelectedStateCard({ display, isPublished }: {
   );
 }
 
-function DiscoveryDetailsSection({ log, siblingsExcluded }: { readonly log: RunDiscoveryLog; readonly siblingsExcluded: readonly string[] }) {
+function DiscoveryDetailsSection({ log, siblingsExcluded, storageKey }: { readonly log: RunDiscoveryLog; readonly siblingsExcluded: readonly string[]; readonly storageKey: string }) {
+  const [open, toggleOpen] = usePersistedToggle(storageKey, false);
   const hasAny = log.confirmedCount > 0 || log.addedNewCount > 0 || log.rejectedCount > 0
     || log.urlsCheckedCount > 0 || log.queriesRunCount > 0 || siblingsExcluded.length > 0;
   if (!hasAny) return null;
 
   return (
-    <details className="sf-surface-panel border sf-border-soft rounded-md">
-      <summary className="px-3 py-2 text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted cursor-pointer select-none hover:sf-text-subtle">
+    <div className="sf-surface-panel border sf-border-soft rounded-md">
+      <button type="button" onClick={toggleOpen} className="w-full px-3 py-2 text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted cursor-pointer select-none hover:sf-text-subtle flex items-center gap-1 text-left">
+        <span className="inline-block transition-transform text-[8px]" style={{ transform: open ? 'rotate(90deg)' : 'none' }}>&#9656;</span>
         Discovery Details
-      </summary>
-      <div className="px-3 pb-3 flex flex-col gap-2.5">
+      </button>
+      {open && <div className="px-3 pb-3 flex flex-col gap-2.5">
         {siblingsExcluded.length > 0 && (
           <div>
             <div className="text-[9px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-1">Siblings Excluded</div>
@@ -216,8 +266,8 @@ function DiscoveryDetailsSection({ log, siblingsExcluded }: { readonly log: RunD
             </div>
           </div>
         )}
-      </div>
-    </details>
+      </div>}
+    </div>
   );
 }
 
@@ -227,12 +277,15 @@ function CefRunHistoryRow({
   row,
   colorRegistry,
   onDelete,
+  expanded,
+  onToggle,
 }: {
   readonly row: RunHistoryRow;
   readonly colorRegistry: ColorRegistryEntry[];
   readonly onDelete: (runNumber: number) => void;
+  readonly expanded: boolean;
+  readonly onToggle: () => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
   const hexMap = useMemo(() => new Map(colorRegistry.map(c => [c.name, c.hex])), [colorRegistry]);
   const selColors = row.selected?.colors ?? [];
   const selEditions = row.selected?.editions ?? {};
@@ -240,7 +293,7 @@ function CefRunHistoryRow({
   return (
     <div className={`sf-surface-panel rounded-lg overflow-hidden${row.isLatest ? ' border-l-2 border-[var(--sf-token-accent-strong)]' : ''}`}>
       <div
-        onClick={() => setExpanded(!expanded)}
+        onClick={onToggle}
         className="flex items-center gap-3 px-4 py-2.5 cursor-pointer select-none hover:opacity-80"
       >
         <span className="text-[10px] sf-text-muted shrink-0" style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
@@ -257,6 +310,8 @@ function CefRunHistoryRow({
             accessMode={row.accessMode}
             effortLevel={row.effortLevel}
             fallbackUsed={row.fallbackUsed}
+            thinking={row.thinking}
+            webSearch={row.webSearch}
           />
         )}
         <Chip label={`${row.colorCount} colors`} className="sf-chip-accent" />
@@ -314,13 +369,14 @@ function CefRunHistoryRow({
             <DiscoverySummaryBar log={row.discoveryLog} />
           </div>
 
-          <DiscoveryDetailsSection log={row.discoveryLog} siblingsExcluded={row.siblingsExcluded} />
+          <DiscoveryDetailsSection log={row.discoveryLog} siblingsExcluded={row.siblingsExcluded} storageKey={`cef:discovery:${row.runNumber}`} />
 
           {/* System prompt, user message, LLM response */}
           <FinderRunPromptDetails
             systemPrompt={row.systemPrompt}
             userMessage={row.userMessage}
             response={row.responseJson}
+            storageKeyPrefix={`cef:prompt:${row.runNumber}`}
           />
         </div>
       )}
@@ -344,6 +400,7 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
   const cefRunUrl = `/color-edition-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`;
   const deleteRunMut = useDeleteColorEditionFinderRunMutation(category, productId);
   const deleteAllMut = useDeleteColorEditionFinderAllMutation(category, productId);
+  const deleteVariantMut = useDeleteVariantMutation(category, productId);
   const { model: resolvedModel, accessMode: resolvedAccessMode, modelDisplay, effortLevel } = useResolvedFinderModel('colorFinder');
 
   const { data: colorRegistry = [] } = useQuery<ColorRegistryEntry[]>({
@@ -352,6 +409,7 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
   });
 
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [cefRunExpand, toggleCefRunExpand] = usePersistedExpandMap(`indexing:cef:runExpand:${productId}`);
 
   const isAnyDeletePending = deleteRunMut.isPending || deleteAllMut.isPending;
 
@@ -379,9 +437,10 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
   const effectiveResult = isError ? null : result;
   const statusChip = deriveFinderStatusChip(effectiveResult);
   const kpiCards = deriveFinderKpiCards(effectiveResult);
-  const cooldown = deriveCooldownState(effectiveResult);
   const selectedState = deriveSelectedStateDisplay(effectiveResult, colorRegistry);
   const runHistoryRows = deriveRunHistoryRows(effectiveResult);
+  const cefPag = usePagination({ totalItems: runHistoryRows.length, storageKey: 'finder-page-size:cef-history' });
+  const visibleCefRows = runHistoryRows.slice(cefPag.startIndex, cefPag.endIndex);
 
   const badgeProps = {
     accessMode: resolvedAccessMode,
@@ -419,17 +478,19 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
       ) : (
         <div className="px-6 pb-6 pt-4 space-y-5">
           {/* KPI Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {kpiCards.map(card => (
               <FinderKpiCard key={card.label} value={card.value} label={card.label} tone={card.tone} />
             ))}
           </div>
 
-          {/* Cooldown Strip */}
-          {effectiveResult.run_count > 0 && <FinderCooldownStrip cooldown={cooldown} />}
-
           {/* Selected State */}
-          <SelectedStateCard display={selectedState} isPublished={isPublished} />
+          <SelectedStateCard
+            display={selectedState}
+            isPublished={isPublished}
+            onDeleteVariant={(variantId) => deleteVariantMut.mutate(variantId)}
+            deleteVariantPending={deleteVariantMut.isPending}
+          />
 
           {/* Run History — collapsible, default closed */}
           {runHistoryRows.length > 0 && (
@@ -438,25 +499,31 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
               count={`${runHistoryRows.length} run${runHistoryRows.length !== 1 ? 's' : ''}`}
               storeKey={`cef:history:${productId}`}
               trailing={
-                <button
-                  onClick={() => setDeleteTarget({ kind: 'all', count: runHistoryRows.length })}
-                  disabled={isAnyDeletePending}
-                  className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded sf-action-button sf-status-text-danger border sf-border-soft opacity-60 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  Delete All
-                </button>
+                <div className="flex items-center gap-2">
+                  <PagerSizeSelector pageSize={cefPag.pageSize} onPageSizeChange={cefPag.setPageSize} />
+                  <button
+                    onClick={() => setDeleteTarget({ kind: 'all', count: runHistoryRows.length })}
+                    disabled={isAnyDeletePending}
+                    className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded sf-action-button sf-status-text-danger border sf-border-soft opacity-60 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    Delete All
+                  </button>
+                </div>
               }
             >
               <div className="space-y-1.5">
-                {runHistoryRows.map((row) => (
+                {visibleCefRows.map((row) => (
                   <CefRunHistoryRow
                     key={row.runNumber}
                     row={row}
                     colorRegistry={colorRegistry}
                     onDelete={(rn) => setDeleteTarget({ kind: 'run', runNumber: rn })}
+                    expanded={!!cefRunExpand[String(row.runNumber)]}
+                    onToggle={() => toggleCefRunExpand(String(row.runNumber))}
                   />
                 ))}
               </div>
+              <PagerNavFooter page={cefPag.page} totalPages={cefPag.totalPages} showingLabel={cefPag.showingLabel} onPageChange={cefPag.setPage} />
             </FinderSectionCard>
           )}
 

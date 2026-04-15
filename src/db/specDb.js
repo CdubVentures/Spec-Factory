@@ -35,6 +35,7 @@ import { FINDER_MODULES } from '../core/finder/finderModuleRegistry.js';
 import { createFinderSqlStore } from '../core/finder/finderSqlStore.js';
 import { generateFinderDdl } from '../core/finder/finderSqlDdl.js';
 import { createFieldCandidateStore } from './stores/fieldCandidateStore.js';
+import { createVariantStore } from './stores/variantStore.js';
 
 export class SpecDb {
   constructor({ dbPath, category }) {
@@ -180,9 +181,25 @@ export class SpecDb {
         _deleteFieldCandidateBySourceId: this._deleteFieldCandidateBySourceId,
         _deleteFieldCandidatesBySourceType: this._deleteFieldCandidatesBySourceType,
         _getFieldCandidatesByValue: this._getFieldCandidatesByValue,
+        _countFieldCandidatesBySourceId: this._countFieldCandidatesBySourceId,
+      },
+    });
+    this._variantStore = createVariantStore({
+      db: this.db,
+      category: this.category,
+      stmts: {
+        _upsertVariant: this._upsertVariant,
+        _getVariant: this._getVariant,
+        _listVariantsByProduct: this._listVariantsByProduct,
+        _listActiveVariantsByProduct: this._listActiveVariantsByProduct,
+        _retireVariant: this._retireVariant,
+        _deleteVariant: this._deleteVariant,
+        _deleteVariantsByProduct: this._deleteVariantsByProduct,
       },
     });
   }
+
+  get variants() { return this._variantStore; }
 
   assertStrictIdentitySlotIntegrity() {
     _assertIntegrity(this.db);
@@ -535,5 +552,7 @@ export class SpecDb {
   deleteFieldCandidatesBySourceType(pid, fk, st) { this._fieldCandidateStore.deleteBySourceType(pid, fk, st); }
   getFieldCandidatesByValue(pid, fk, val) { return this._fieldCandidateStore.getByValue(pid, fk, val); }
   markFieldCandidateResolvedByValue(pid, fk, val) { this._fieldCandidateStore.markResolvedByValue(pid, fk, val); }
+  countFieldCandidatesBySourceId(pid, sid) { return this._fieldCandidateStore.countBySourceId(pid, sid); }
+  updateFieldCandidateValue(pid, fk, sid, val) { this._fieldCandidateStore.updateValue(pid, fk, sid, val); }
 
 }

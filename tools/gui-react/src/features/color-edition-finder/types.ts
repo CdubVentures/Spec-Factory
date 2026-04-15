@@ -29,7 +29,8 @@ export interface ColorEditionFinderRunEntry {
   readonly fallback_used: boolean;
   readonly effort_level?: string;
   readonly access_mode?: string;
-  readonly cooldown_until: string;
+  readonly thinking?: boolean;
+  readonly web_search?: boolean;
   readonly started_at?: string;
   readonly duration_ms?: number | null;
   readonly selected: ColorEditionFinderSelected;
@@ -84,8 +85,6 @@ export interface CefVariantRegistryEntry {
 export interface ColorEditionFinderResult {
   readonly product_id: string;
   readonly category: string;
-  readonly cooldown_until: string;
-  readonly on_cooldown: boolean;
   readonly run_count: number;
   readonly last_ran_at: string;
   readonly published: CefPublishedState;
@@ -117,6 +116,16 @@ export interface ColorEditionFinderDeleteRunResponse {
 
 export interface ColorEditionFinderDeleteAllResponse {
   readonly ok: boolean;
+}
+
+export interface VariantDeleteResponse {
+  readonly deleted: boolean;
+  readonly variant?: CefVariantRegistryEntry;
+  readonly published?: {
+    readonly colors: readonly string[];
+    readonly editions: readonly string[];
+    readonly defaultColor: string;
+  };
 }
 
 export interface ColorRegistryEntry {

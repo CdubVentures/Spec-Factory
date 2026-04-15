@@ -15,3 +15,4 @@ export { registerColorEditionFinderRoutes } from './api/colorEditionFinderRoutes
 export { createColorEditionFinderRouteContext } from './api/colorEditionFinderRouteContext.js';
 export { generateVariantId, buildVariantRegistry, applyIdentityMappings, validateColorsAgainstPalette, validateIdentityMappings } from './variantRegistry.js';
 export { backfillVariantRegistry } from './backfillVariantRegistry.js';
+export { derivePublishedFromVariants, deleteVariant } from './variantLifecycle.js';

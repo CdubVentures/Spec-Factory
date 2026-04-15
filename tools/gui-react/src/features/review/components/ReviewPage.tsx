@@ -13,8 +13,9 @@ import { pct } from '../../../utils/formatting.ts';
 import { useFieldLabels } from '../../../hooks/useFieldLabels.ts';
 import { useDebouncedCallback } from '../../../hooks/useDebounce.ts';
 import { readReviewGridSessionState, writeReviewGridSessionState } from '../state/reviewGridSessionState.ts';
-import type { ReviewLayout, ProductsIndexResponse, CandidateResponse, ReviewCandidate } from '../../../types/review.ts';
+import type { ReviewLayout, ProductsIndexResponse, CandidateResponse, CandidateDeleteResponse, ReviewCandidate } from '../../../types/review.ts';
 import { parseCatalogProducts } from '../../catalog/api/catalogParsers.ts';
+import { deleteCandidateBySourceId, deleteAllCandidatesForField } from '../api/reviewApi.ts';
 
 const SORT_OPTIONS: { value: SortMode; label: string }[] = [
   { value: 'brand', label: 'Brand' },
@@ -230,6 +231,25 @@ export function ReviewPage() {
     },
   });
 
+  // Candidate deletion mutations
+  const deleteCandidateMut = useMutation({
+    mutationFn: ({ sourceId }: { sourceId: string }) =>
+      deleteCandidateBySourceId(category, selectedProductId, selectedField, sourceId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
+      queryClient.invalidateQueries({ queryKey: ['candidates', category] });
+    },
+  });
+
+  const deleteAllCandidatesMut = useMutation({
+    mutationFn: () =>
+      deleteAllCandidatesForField(category, selectedProductId, selectedField),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
+      queryClient.invalidateQueries({ queryKey: ['candidates', category] });
+    },
+  });
+
   // Optimistically update the products-index cache so the grid reflects changes instantly.
   // Accepts optional source metadata to preserve provenance from candidates or mark as 'user'.
   const optimisticUpdateField = useCallback((
@@ -393,6 +413,7 @@ export function ReviewPage() {
           onCommitEditing={handleCommitEditing}
           onCancelEditing={handleCancelEditing}
           onStartEditing={handleStartEditing}
+          category={category}
         />
 
         {drawerOpen && activeProduct && activeFieldState && (() => {
@@ -436,6 +457,9 @@ export function ReviewPage() {
               onRunAIReview={() => {
                 console.log('Review all:', selectedProductId, selectedField);
               }}
+              onDeleteCandidate={(sourceId) => deleteCandidateMut.mutate({ sourceId })}
+              onDeleteAllCandidates={() => deleteAllCandidatesMut.mutate()}
+              deletePending={deleteCandidateMut.isPending || deleteAllCandidatesMut.isPending}
             />
           );
         })()}

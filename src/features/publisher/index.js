@@ -42,6 +42,7 @@ export { publishCandidate } from './publish/publishCandidate.js';
 export { publishManualOverride } from './publish/publishManualOverride.js';
 export { rebuildPublishedFieldsFromJson } from './publish/publishedFieldReseed.js';
 export { reconcileThreshold } from './publish/reconcileThreshold.js';
+export { republishField } from './publish/republishField.js';
 
 // Rebuild contract (reseed surface for deleted-DB recovery)
 export { rebuildFieldCandidatesFromJson } from './candidateReseed.js';

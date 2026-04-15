@@ -392,6 +392,45 @@ export async function buildProductReviewPayload({
     }
   }
 
+  // WHY: Variant-derived fields (colors, editions) are authoritative from the
+  // variants SQL table (SSOT), not from candidates or product.json. Derive inline
+  // so the review grid always shows the correct published state from SQL.
+  if (specDb?.variants) {
+    const activeVariants = specDb.variants.listActive(productId);
+    const variantColors = [];
+    const variantEditions = [];
+    for (const v of activeVariants) {
+      if (v.variant_type === 'color') {
+        for (const atom of v.color_atoms) {
+          if (!variantColors.includes(atom)) variantColors.push(atom);
+        }
+      } else if (v.variant_type === 'edition') {
+        if (v.edition_slug && !variantEditions.includes(v.edition_slug)) {
+          variantEditions.push(v.edition_slug);
+        }
+        // WHY: Edition color_atoms stay scoped to the edition — NOT standalone colors.
+      }
+    }
+    if (variantColors.length > 0) {
+      resolvedByField.set(normalizeField('colors'), {
+        value: JSON.stringify(variantColors),
+        confidence: 1.0,
+        status: 'resolved',
+        metadata_json: { source: 'variant_registry' },
+        updated_at: '',
+      });
+    }
+    if (variantEditions.length > 0) {
+      resolvedByField.set(normalizeField('editions'), {
+        value: JSON.stringify(variantEditions),
+        confidence: 1.0,
+        status: 'resolved',
+        metadata_json: { source: 'variant_registry' },
+        updated_at: '',
+      });
+    }
+  }
+
   for (const layoutRow of resolvedLayout.rows || []) {
     const field = normalizeField(layoutRow.key);
     const fieldCandidateRows = candidatesByField.get(field) || [];

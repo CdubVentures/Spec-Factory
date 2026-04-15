@@ -186,6 +186,12 @@ export function createFieldCandidateStore({ db, category, stmts }) {
       .map(hydrateRow);
   }
 
+  function countBySourceId(productId, sourceId) {
+    return stmts._countFieldCandidatesBySourceId.get(
+      category, String(productId || ''), String(sourceId || '')
+    )?.total ?? 0;
+  }
+
   function markResolvedByValue(productId, fieldKey, value) {
     db.prepare(
       `UPDATE field_candidates SET status = 'resolved', updated_at = datetime('now')
@@ -193,8 +199,17 @@ export function createFieldCandidateStore({ db, category, stmts }) {
     ).run(category, String(productId || ''), String(fieldKey || ''), value ?? null);
   }
 
+  // WHY: Variant deletion needs to update candidate values (splice items from
+  // JSON arrays) without changing source_id or other columns.
+  function updateValue(productId, fieldKey, sourceId, newValue) {
+    db.prepare(
+      `UPDATE field_candidates SET value = ?, updated_at = datetime('now')
+       WHERE category = ? AND product_id = ? AND field_key = ? AND source_id = ?`
+    ).run(newValue, category, String(productId || ''), String(fieldKey || ''), String(sourceId || ''));
+  }
+
   return {
     upsert, get, getByProductAndField, getAllByProduct, deleteByProduct, deleteByProductAndField, deleteByProductFieldValue, getPaginated, count, stats, markResolved, demoteResolved, getResolved, getDistinctProducts,
-    insert, getBySourceId, deleteBySourceId, deleteBySourceType, getByValue, markResolvedByValue,
+    insert, getBySourceId, deleteBySourceId, deleteBySourceType, getByValue, markResolvedByValue, countBySourceId, updateValue,
   };
 }

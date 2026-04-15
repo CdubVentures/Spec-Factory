@@ -44,6 +44,8 @@ export interface ProductImageFinderRun {
   fallback_used: boolean;
   effort_level?: string;
   access_mode?: string;
+  thinking?: boolean;
+  web_search?: boolean;
   /** Run mode: 'view' for angle-based, 'hero' for studio product shots. Absent on legacy runs. */
   mode?: 'view' | 'hero';
   /** Shared ID across all runs in a single loop invocation. Absent on non-loop runs. */
@@ -136,6 +138,10 @@ export interface EvalRecord {
   access_mode?: string | null;
   /** Whether a fallback model was used. Absent on legacy records. */
   fallback_used?: boolean;
+  /** Whether thinking was enabled for this eval. Absent on legacy records. */
+  thinking?: boolean;
+  /** Whether web search was enabled for this eval. Absent on legacy records. */
+  web_search?: boolean;
   /** Human-readable variant label. Absent on legacy records. */
   variant_label?: string | null;
   /** Variant type: "color" or "edition". Absent on legacy records. */
@@ -163,8 +169,6 @@ export interface ProductImageFinderResult {
   category: string;
   images: Array<{ view: string; filename: string; variant_key: string; variant_id?: string }>;
   image_count: number;
-  cooldown_until: string;
-  on_cooldown: boolean;
   run_count: number;
   last_ran_at: string;
   selected: { images: ProductImageEntry[] };

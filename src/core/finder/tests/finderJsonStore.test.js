@@ -50,18 +50,17 @@ describe('finderJsonStore — generic factory', () => {
 
   it('single run → selected from that run', () => {
     const store = makeStore();
-    const runs = [{ run_number: 1, ran_at: '2026-04-01', cooldown_until: '2026-05-01', selected: { items: ['x'], label: 'X' } }];
+    const runs = [{ run_number: 1, ran_at: '2026-04-01', selected: { items: ['x'], label: 'X' } }];
     const result = store.recalculateFromRuns(runs, 'pid', 'cat');
     assert.deepEqual(result.selected, { items: ['x'], label: 'X' });
     assert.equal(result.next_run_number, 2);
-    assert.equal(result.cooldown_until, '2026-05-01');
   });
 
   it('rejected runs skipped for selected, counted in run_count', () => {
     const store = makeStore();
     const runs = [
-      { run_number: 1, ran_at: '2026-04-01', cooldown_until: '2026-05-01', selected: { items: ['a'], label: 'A' } },
-      { run_number: 2, ran_at: '2026-04-02', cooldown_until: '', status: 'rejected', selected: {} },
+      { run_number: 1, ran_at: '2026-04-01', selected: { items: ['a'], label: 'A' } },
+      { run_number: 2, ran_at: '2026-04-02', status: 'rejected', selected: {} },
     ];
     const result = store.recalculateFromRuns(runs, 'pid', 'cat');
     assert.deepEqual(result.selected, { items: ['a'], label: 'A' });
@@ -75,7 +74,7 @@ describe('finderJsonStore — generic factory', () => {
     const store = makeStore();
     const merged = store.merge({
       productId: 'merge-1', productRoot: TMP_ROOT,
-      newDiscovery: { category: 'cat', cooldown_until: '2026-05-01', last_ran_at: '2026-04-01' },
+      newDiscovery: { category: 'cat', last_ran_at: '2026-04-01' },
       run: { model: 'gpt', fallback_used: false, selected: { items: ['a'], label: 'A' }, prompt: {}, response: {} },
     });
     assert.equal(merged.runs.length, 1);
@@ -88,7 +87,7 @@ describe('finderJsonStore — generic factory', () => {
     const store = makeStore();
     const merged = store.merge({
       productId: 'merge-1', productRoot: TMP_ROOT,
-      newDiscovery: { category: 'cat', cooldown_until: '2026-06-01', last_ran_at: '2026-05-01' },
+      newDiscovery: { category: 'cat', last_ran_at: '2026-05-01' },
       run: { model: 'gpt-2', fallback_used: false, selected: { items: ['a', 'b'], label: 'AB' }, prompt: {}, response: {} },
     });
     assert.equal(merged.runs.length, 2);
@@ -101,17 +100,16 @@ describe('finderJsonStore — generic factory', () => {
     // Seed with one good run
     store.merge({
       productId: 'merge-rej', productRoot: TMP_ROOT,
-      newDiscovery: { category: 'cat', cooldown_until: '2026-05-01', last_ran_at: '2026-04-01' },
+      newDiscovery: { category: 'cat', last_ran_at: '2026-04-01' },
       run: { model: 'gpt', selected: { items: ['good'], label: 'G' }, prompt: {}, response: {} },
     });
     // Rejected run
     const merged = store.merge({
       productId: 'merge-rej', productRoot: TMP_ROOT,
-      newDiscovery: { category: 'cat', cooldown_until: '', last_ran_at: '2026-04-02' },
+      newDiscovery: { category: 'cat', last_ran_at: '2026-04-02' },
       run: { model: 'gpt', status: 'rejected', selected: {}, prompt: {}, response: {} },
     });
     assert.deepEqual(merged.selected, { items: ['good'], label: 'G' });
-    assert.equal(merged.cooldown_until, '2026-05-01');
   });
 
   // ── eval field preservation across merge ─────────────────────────
@@ -128,7 +126,7 @@ describe('finderJsonStore — generic factory', () => {
     // Run 1: seed with an image
     store.merge({
       productId: 'eval-m1', productRoot: TMP_ROOT,
-      newDiscovery: { category: 'cat', cooldown_until: '', last_ran_at: '2026-04-01' },
+      newDiscovery: { category: 'cat', last_ran_at: '2026-04-01' },
       run: { model: 'gpt', selected: { images: [{ filename: 'top.png', view: 'top', variant_key: 'color:black' }] }, prompt: {}, response: {} },
     });
     // Simulate eval: write eval fields directly onto selected.images
@@ -142,7 +140,7 @@ describe('finderJsonStore — generic factory', () => {
     // Run 2: new discovery — recalculateSelected rebuilds from runs (no eval fields)
     const merged = store.merge({
       productId: 'eval-m1', productRoot: TMP_ROOT,
-      newDiscovery: { category: 'cat', cooldown_until: '', last_ran_at: '2026-04-02' },
+      newDiscovery: { category: 'cat', last_ran_at: '2026-04-02' },
       run: { model: 'gpt', selected: { images: [{ filename: 'left.png', view: 'left', variant_key: 'color:black' }] }, prompt: {}, response: {} },
     });
 
@@ -164,7 +162,7 @@ describe('finderJsonStore — generic factory', () => {
     // Seed
     store.merge({
       productId: 'eval-m2', productRoot: TMP_ROOT,
-      newDiscovery: { category: 'cat', cooldown_until: '', last_ran_at: '2026-04-01' },
+      newDiscovery: { category: 'cat', last_ran_at: '2026-04-01' },
       run: { model: 'gpt', selected: { items: ['a'], label: 'A', images: [{ filename: 'f.png', eval_best: true }] }, prompt: {}, response: {} },
     });
     // Manually set eval on selected (simulating what mergeEvaluation does)
@@ -175,7 +173,7 @@ describe('finderJsonStore — generic factory', () => {
     // New run — latest-wins selected (no recalculateSelected hook)
     const merged = store.merge({
       productId: 'eval-m2', productRoot: TMP_ROOT,
-      newDiscovery: { category: 'cat', cooldown_until: '', last_ran_at: '2026-04-02' },
+      newDiscovery: { category: 'cat', last_ran_at: '2026-04-02' },
       run: { model: 'gpt', selected: { items: ['b'], label: 'B', images: [{ filename: 'f.png' }, { filename: 'g.png' }] }, prompt: {}, response: {} },
     });
     // f.png should have eval fields overlaid from existing
@@ -197,7 +195,7 @@ describe('finderJsonStore — generic factory', () => {
       selected: { images: [{ filename: 'top.png', eval_best: true, eval_reasoning: 'crisp', hero: true, hero_rank: 1 }] },
     };
     const runs = [
-      { run_number: 1, ran_at: '2026-04-01', cooldown_until: '', selected: { images: [{ filename: 'top.png', view: 'top' }] } },
+      { run_number: 1, ran_at: '2026-04-01', selected: { images: [{ filename: 'top.png', view: 'top' }] } },
     ];
     const result = store.recalculateFromRuns(runs, 'pid', 'cat', existingDoc);
     const topImg = result.selected.images.find(i => i.filename === 'top.png');
@@ -218,7 +216,7 @@ describe('finderJsonStore — generic factory', () => {
     });
     store.merge({
       productId: 'eval-rej', productRoot: TMP_ROOT,
-      newDiscovery: { category: 'cat', cooldown_until: '', last_ran_at: '2026-04-01' },
+      newDiscovery: { category: 'cat', last_ran_at: '2026-04-01' },
       run: { model: 'gpt', selected: { images: [{ filename: 'a.png' }] }, prompt: {}, response: {} },
     });
     // Add eval fields
@@ -229,7 +227,7 @@ describe('finderJsonStore — generic factory', () => {
     // Rejected run — selected should be preserved entirely
     const merged = store.merge({
       productId: 'eval-rej', productRoot: TMP_ROOT,
-      newDiscovery: { category: 'cat', cooldown_until: '', last_ran_at: '2026-04-02' },
+      newDiscovery: { category: 'cat', last_ran_at: '2026-04-02' },
       run: { model: 'gpt', status: 'rejected', selected: { images: [] }, prompt: {}, response: {} },
     });
     assert.equal(merged.selected.images[0].eval_best, true, 'rejected run must not clear eval fields');
@@ -241,7 +239,7 @@ describe('finderJsonStore — generic factory', () => {
     const store = makeStore();
     store.merge({
       productId: 'del-only', productRoot: TMP_ROOT,
-      newDiscovery: { category: 'cat', cooldown_until: '', last_ran_at: '2026-04-01' },
+      newDiscovery: { category: 'cat', last_ran_at: '2026-04-01' },
       run: { model: 'gpt', selected: { items: ['x'], label: 'X' }, prompt: {}, response: {} },
     });
     const result = store.deleteRun({ productId: 'del-only', productRoot: TMP_ROOT, runNumber: 1 });
@@ -256,10 +254,10 @@ describe('finderJsonStore — generic factory', () => {
       data: {
         product_id: 'del-r', category: 'cat',
         selected: { items: ['b'], label: 'B' },
-        cooldown_until: '', last_ran_at: '', run_count: 2, next_run_number: 3,
+        last_ran_at: '', run_count: 2, next_run_number: 3,
         runs: [
-          { run_number: 1, ran_at: '2026-04-01', selected: { items: ['a'], label: 'A' }, cooldown_until: '' },
-          { run_number: 2, ran_at: '2026-04-02', selected: { items: ['b'], label: 'B' }, cooldown_until: '' },
+          { run_number: 1, ran_at: '2026-04-01', selected: { items: ['a'], label: 'A' } },
+          { run_number: 2, ran_at: '2026-04-02', selected: { items: ['b'], label: 'B' } },
         ],
       },
     });
@@ -277,11 +275,11 @@ describe('finderJsonStore — generic factory', () => {
       data: {
         product_id: 'batch-1', category: 'cat',
         selected: { items: ['c'], label: 'C' },
-        cooldown_until: '', last_ran_at: '', run_count: 3, next_run_number: 4,
+        last_ran_at: '', run_count: 3, next_run_number: 4,
         runs: [
-          { run_number: 1, ran_at: '2026-04-01', selected: { items: ['a'], label: 'A' }, cooldown_until: '' },
-          { run_number: 2, ran_at: '2026-04-02', selected: { items: ['b'], label: 'B' }, cooldown_until: '' },
-          { run_number: 3, ran_at: '2026-04-03', selected: { items: ['c'], label: 'C' }, cooldown_until: '2026-05-03' },
+          { run_number: 1, ran_at: '2026-04-01', selected: { items: ['a'], label: 'A' } },
+          { run_number: 2, ran_at: '2026-04-02', selected: { items: ['b'], label: 'B' } },
+          { run_number: 3, ran_at: '2026-04-03', selected: { items: ['c'], label: 'C' } },
         ],
       },
     });
@@ -299,10 +297,10 @@ describe('finderJsonStore — generic factory', () => {
       data: {
         product_id: 'batch-all', category: 'cat',
         selected: { items: ['x'], label: 'X' },
-        cooldown_until: '', last_ran_at: '', run_count: 2, next_run_number: 3,
+        last_ran_at: '', run_count: 2, next_run_number: 3,
         runs: [
-          { run_number: 1, ran_at: '2026-04-01', selected: { items: ['x'], label: 'X' }, cooldown_until: '' },
-          { run_number: 2, ran_at: '2026-04-02', selected: { items: ['y'], label: 'Y' }, cooldown_until: '' },
+          { run_number: 1, ran_at: '2026-04-01', selected: { items: ['x'], label: 'X' } },
+          { run_number: 2, ran_at: '2026-04-02', selected: { items: ['y'], label: 'Y' } },
         ],
       },
     });
@@ -318,9 +316,9 @@ describe('finderJsonStore — generic factory', () => {
       data: {
         product_id: 'batch-noop', category: 'cat',
         selected: { items: ['a'], label: 'A' },
-        cooldown_until: '', last_ran_at: '', run_count: 1, next_run_number: 2,
+        last_ran_at: '', run_count: 1, next_run_number: 2,
         runs: [
-          { run_number: 1, ran_at: '2026-04-01', selected: { items: ['a'], label: 'A' }, cooldown_until: '' },
+          { run_number: 1, ran_at: '2026-04-01', selected: { items: ['a'], label: 'A' } },
         ],
       },
     });
@@ -336,9 +334,9 @@ describe('finderJsonStore — generic factory', () => {
       data: {
         product_id: 'batch-empty', category: 'cat',
         selected: { items: ['a'], label: 'A' },
-        cooldown_until: '', last_ran_at: '', run_count: 1, next_run_number: 2,
+        last_ran_at: '', run_count: 1, next_run_number: 2,
         runs: [
-          { run_number: 1, ran_at: '2026-04-01', selected: { items: ['a'], label: 'A' }, cooldown_until: '' },
+          { run_number: 1, ran_at: '2026-04-01', selected: { items: ['a'], label: 'A' } },
         ],
       },
     });
@@ -395,8 +393,8 @@ describe('finderJsonStore — generic factory', () => {
     const data = {
       product_id: 'drun-fail', category: 'cat',
       selected: { items: ['x'], label: 'X' },
-      cooldown_until: '', last_ran_at: '', run_count: 1, next_run_number: 2,
-      runs: [{ run_number: 1, ran_at: '2026-04-01', selected: { items: ['x'], label: 'X' }, cooldown_until: '' }],
+      last_ran_at: '', run_count: 1, next_run_number: 2,
+      runs: [{ run_number: 1, ran_at: '2026-04-01', selected: { items: ['x'], label: 'X' } }],
     };
     fs.writeFileSync(dataPath, JSON.stringify(data));
     // Now replace the file with a directory to make unlink fail
@@ -427,10 +425,10 @@ describe('finderJsonStore — generic factory', () => {
     const data = {
       product_id: 'druns-fail', category: 'cat',
       selected: { items: ['a'], label: 'A' },
-      cooldown_until: '', last_ran_at: '', run_count: 2, next_run_number: 3,
+      last_ran_at: '', run_count: 2, next_run_number: 3,
       runs: [
-        { run_number: 1, ran_at: '2026-04-01', selected: { items: ['a'], label: 'A' }, cooldown_until: '' },
-        { run_number: 2, ran_at: '2026-04-02', selected: { items: ['b'], label: 'B' }, cooldown_until: '' },
+        { run_number: 1, ran_at: '2026-04-01', selected: { items: ['a'], label: 'A' } },
+        { run_number: 2, ran_at: '2026-04-02', selected: { items: ['b'], label: 'B' } },
       ],
     };
     fs.writeFileSync(dataPath, JSON.stringify(data));

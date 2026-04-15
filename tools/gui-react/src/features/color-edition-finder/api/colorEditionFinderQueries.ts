@@ -6,6 +6,7 @@ import type {
   AcceptedResponse,
   ColorEditionFinderDeleteRunResponse,
   ColorEditionFinderDeleteAllResponse,
+  VariantDeleteResponse,
 } from '../types.ts';
 
 export function useColorEditionFinderQuery(category: string, productId: string) {
@@ -55,6 +56,24 @@ export function useDeleteColorEditionFinderAllMutation(category: string, product
   return useMutation<ColorEditionFinderDeleteAllResponse>({
     mutationFn: () => api.del<ColorEditionFinderDeleteAllResponse>(
       `/color-edition-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`,
+    ),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteVariantMutation(category: string, productId: string) {
+  const queryClient = useQueryClient();
+
+  const invalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['color-edition-finder', category, productId] });
+    queryClient.invalidateQueries({ queryKey: ['colors'] });
+    queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
+    queryClient.invalidateQueries({ queryKey: ['product', category] });
+  }, [queryClient, category, productId]);
+
+  return useMutation<VariantDeleteResponse, Error, string>({
+    mutationFn: (variantId: string) => api.del<VariantDeleteResponse>(
+      `/color-edition-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/variants/${encodeURIComponent(variantId)}`,
     ),
     onSuccess: invalidate,
   });

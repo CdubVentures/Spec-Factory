@@ -7,6 +7,7 @@ export interface ColorPill {
   readonly hexParts: readonly string[];
   readonly isDefault: boolean;
   readonly sourceCount: number;
+  readonly variantId: string | null;
 }
 
 export interface EditionBlock {
@@ -14,6 +15,7 @@ export interface EditionBlock {
   readonly displayName: string;
   readonly pairedColors: readonly ColorPill[];
   readonly sourceCount: number;
+  readonly variantId: string | null;
 }
 
 export interface SelectedStateDisplay {
@@ -43,6 +45,8 @@ export interface RunHistoryRow {
   readonly fallbackUsed: boolean;
   readonly effortLevel: string;
   readonly accessMode: string;
+  readonly thinking: boolean;
+  readonly webSearch: boolean;
   readonly colorCount: number;
   readonly editionCount: number;
   readonly isLatest: boolean;
@@ -64,20 +68,10 @@ export interface KpiCard {
   readonly tone: string;
 }
 
-export interface CooldownState {
-  readonly onCooldown: boolean;
-  readonly daysRemaining: number;
-  readonly progressPct: number;
-  readonly label: string;
-  readonly eligibleDate: string;
-}
-
 export interface StatusChip {
   readonly label: string;
   readonly tone: string;
 }
-
-const COOLDOWN_DAYS = 30;
 
 export function deriveFinderKpiCards(result: ColorEditionFinderResult | null): KpiCard[] {
   const colors = result?.published?.colors?.length ?? 0;
@@ -85,46 +79,12 @@ export function deriveFinderKpiCards(result: ColorEditionFinderResult | null): K
   const defaultColor = result?.published?.default_color || '--';
   const runCount = result?.run_count ?? 0;
 
-  const cooldown = deriveCooldownState(result);
-  const cooldownLabel = cooldown.onCooldown
-    ? `${cooldown.daysRemaining}d`
-    : runCount > 0 ? 'Ready' : '--';
-
   return [
     { label: 'Colors', value: String(colors), tone: 'accent' },
     { label: 'Editions', value: String(editions), tone: 'purple' },
     { label: 'Default Color', value: defaultColor, tone: 'teal' },
     { label: 'Runs', value: String(runCount), tone: 'success' },
-    { label: 'Cooldown', value: cooldownLabel, tone: 'info' },
   ];
-}
-
-export function deriveCooldownState(result: ColorEditionFinderResult | null): CooldownState {
-  if (!result || !result.cooldown_until) {
-    return { onCooldown: false, daysRemaining: 0, progressPct: 100, label: '', eligibleDate: '' };
-  }
-
-  const now = Date.now();
-  const cooldownEnd = new Date(result.cooldown_until).getTime();
-
-  if (Number.isNaN(cooldownEnd) || cooldownEnd <= now) {
-    return { onCooldown: false, daysRemaining: 0, progressPct: 100, label: 'Ready', eligibleDate: '' };
-  }
-
-  const msRemaining = cooldownEnd - now;
-  const daysRemaining = Math.ceil(msRemaining / 86400000);
-  const totalMs = COOLDOWN_DAYS * 86400000;
-  const elapsed = totalMs - msRemaining;
-  const progressPct = Math.min(100, Math.max(0, (elapsed / totalMs) * 100));
-  const eligibleDate = result.cooldown_until.split('T')[0] || '';
-
-  return {
-    onCooldown: true,
-    daysRemaining,
-    progressPct,
-    label: `${daysRemaining}d remaining`,
-    eligibleDate,
-  };
 }
 
 export function deriveFinderStatusChip(result: ColorEditionFinderResult | null): StatusChip {
@@ -141,8 +101,8 @@ function resolveHex(name: string, hexMap: Map<string, string>): string {
   return hexMap.get(firstAtom) || hexMap.get(name) || '';
 }
 
-function toColorPill(name: string, defaultColor: string, hexMap: Map<string, string>, displayName = '', sourceCount = 0): ColorPill {
-  return { name, displayName, hex: resolveHex(name, hexMap), hexParts: resolveHexParts(name, hexMap), isDefault: name === defaultColor, sourceCount };
+function toColorPill(name: string, defaultColor: string, hexMap: Map<string, string>, displayName = '', sourceCount = 0, variantId: string | null = null): ColorPill {
+  return { name, displayName, hex: resolveHex(name, hexMap), hexParts: resolveHexParts(name, hexMap), isDefault: name === defaultColor, sourceCount, variantId };
 }
 
 /**
@@ -178,8 +138,13 @@ export function deriveSelectedStateDisplay(
     const colorCands = cands?.colors ?? [];
     const editionCands = cands?.editions ?? [];
 
+    // WHY: Look up variant_id from variant_registry for each color/edition.
+    // variant_key format is 'color:{atom}' or 'edition:{slug}'.
+    const registry = result?.variant_registry ?? [];
+    const variantByKey = new Map(registry.map(v => [v.variant_key, v.variant_id]));
+
     const colors = pub.colors.map(name =>
-      toColorPill(name, defaultColor, hexMap, colorNameMap[name] || '', findItemSourceCount(colorCands, name))
+      toColorPill(name, defaultColor, hexMap, colorNameMap[name] || '', findItemSourceCount(colorCands, name), variantByKey.get(`color:${name}`) ?? null)
     );
 
     const editions: EditionBlock[] = pub.editions.map(slug => {
@@ -188,9 +153,10 @@ export function deriveSelectedStateDisplay(
         slug,
         displayName: edMeta?.display_name || '',
         pairedColors: (edMeta?.colors ?? []).map((name: string) =>
-          toColorPill(name, defaultColor, hexMap, colorNameMap[name] || '', findItemSourceCount(colorCands, name))
+          toColorPill(name, defaultColor, hexMap, colorNameMap[name] || '', findItemSourceCount(colorCands, name), variantByKey.get(`color:${name}`) ?? null)
         ),
         sourceCount: findItemSourceCount(editionCands, slug),
+        variantId: variantByKey.get(`edition:${slug}`) ?? null,
       };
     });
 
@@ -247,6 +213,8 @@ export function deriveRunHistoryRows(
         fallbackUsed: run.fallback_used,
         effortLevel: run.effort_level ?? '',
         accessMode: run.access_mode ?? '',
+        thinking: Boolean(run.thinking),
+        webSearch: Boolean(run.web_search),
         colorCount: run.selected?.colors?.length ?? 0,
         editionCount: Object.keys(run.selected?.editions ?? {}).length,
         isLatest: run.run_number === maxRunNumber,

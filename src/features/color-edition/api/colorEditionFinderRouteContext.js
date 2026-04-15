@@ -1,5 +1,6 @@
 import { runColorEditionFinder } from '../colorEditionFinder.js';
 import { deleteColorEditionFinderRun, deleteColorEditionFinderAll } from '../colorEditionStore.js';
+import { deleteVariant } from '../variantLifecycle.js';
 
 export function createColorEditionFinderRouteContext(options = {}) {
   if (!options || typeof options !== 'object' || Array.isArray(options)) {
@@ -12,5 +13,6 @@ export function createColorEditionFinderRouteContext(options = {}) {
     jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
     logger, runColorEditionFinder,
     deleteColorEditionFinderRun, deleteColorEditionFinderAll,
+    deleteVariant,
   };
 }

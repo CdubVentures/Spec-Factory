@@ -38,7 +38,7 @@ describe('createFinderSqlStore — generic SQL store', () => {
     store.upsert({
       category: 'cat', product_id: 'p1',
       items: ['a', 'b'], label: 'AB',
-      cooldown_until: '2026-05-01', latest_ran_at: '2026-04-01', run_count: 1,
+      latest_ran_at: '2026-04-01', run_count: 1,
     });
     const row = store.get('p1');
     assert.ok(row);
@@ -50,7 +50,7 @@ describe('createFinderSqlStore — generic SQL store', () => {
     store.upsert({
       category: 'cat', product_id: 'p1',
       items: ['a', 'b', 'c'], label: 'ABC',
-      cooldown_until: '2026-06-01', latest_ran_at: '2026-05-01', run_count: 2,
+      latest_ran_at: '2026-05-01', run_count: 2,
     });
     const row = store.get('p1');
     assert.equal(row.run_count, 2);
@@ -64,7 +64,7 @@ describe('createFinderSqlStore — generic SQL store', () => {
     store.upsert({
       category: 'cat', product_id: 'p2',
       items: [], label: '',
-      cooldown_until: '', latest_ran_at: '', run_count: 0,
+      latest_ran_at: '', run_count: 0,
     });
     const rows = store.listByCategory('cat');
     assert.ok(rows.length >= 2);
@@ -76,7 +76,7 @@ describe('createFinderSqlStore — generic SQL store', () => {
     store.upsert({
       category: 'cat', product_id: 'p-del',
       items: [], label: '',
-      cooldown_until: '', latest_ran_at: '', run_count: 0,
+      latest_ran_at: '', run_count: 0,
     });
     store.remove('p-del');
     assert.equal(store.get('p-del'), null);
@@ -88,7 +88,6 @@ describe('createFinderSqlStore — generic SQL store', () => {
     store.insertRun({
       category: 'cat', product_id: 'p1', run_number: 1,
       ran_at: '2026-04-01', model: 'gpt', fallback_used: false,
-      cooldown_until: '2026-05-01',
       selected: { items: ['a'] }, prompt: { system: 's' }, response: { items: ['a'] },
     });
     const runs = store.listRuns('p1');
@@ -102,7 +101,6 @@ describe('createFinderSqlStore — generic SQL store', () => {
     store.insertRun({
       category: 'cat', product_id: 'p1', run_number: 2,
       ran_at: '2026-05-01', model: 'gpt-2', fallback_used: true,
-      cooldown_until: '',
       selected: { items: ['a', 'b'] }, prompt: { system: 's2', user: 'u2' }, response: {},
     });
     const runs = store.listRuns('p1');
@@ -121,7 +119,7 @@ describe('createFinderSqlStore — generic SQL store', () => {
   it('removeAllRuns clears all runs for product', () => {
     store.insertRun({
       category: 'cat', product_id: 'p-clear', run_number: 1,
-      ran_at: '', model: 'x', fallback_used: false, cooldown_until: '',
+      ran_at: '', model: 'x', fallback_used: false,
       selected: {}, prompt: {}, response: {},
     });
     store.removeAllRuns('p-clear');
@@ -134,7 +132,7 @@ describe('createFinderSqlStore — generic SQL store', () => {
     store.insertRun({
       category: 'cat', product_id: 'p-effort', run_number: 1,
       ran_at: '2026-04-12', model: 'gpt-5.4-xhigh', fallback_used: false,
-      cooldown_until: '', effort_level: 'xhigh', access_mode: 'lab',
+      effort_level: 'xhigh', access_mode: 'lab',
       selected: {}, prompt: {}, response: {},
     });
     const runs = store.listRuns('p-effort');
@@ -147,7 +145,6 @@ describe('createFinderSqlStore — generic SQL store', () => {
     store.insertRun({
       category: 'cat', product_id: 'p-no-effort', run_number: 1,
       ran_at: '', model: 'gpt-4o', fallback_used: false,
-      cooldown_until: '',
       selected: {}, prompt: {}, response: {},
     });
     const runs = store.listRuns('p-no-effort');

@@ -640,5 +640,44 @@ export function prepareStatements(db) {
     _getFieldCandidatesByValue: db.prepare(
       'SELECT * FROM field_candidates WHERE category = ? AND product_id = ? AND field_key = ? AND value = ? ORDER BY confidence DESC'
     ),
+
+    _countFieldCandidatesBySourceId: db.prepare(
+      'SELECT COUNT(*) AS total FROM field_candidates WHERE category = ? AND product_id = ? AND source_id = ?'
+    ),
+
+    // ── Variants ────────────────────────────────────────────────────
+    _upsertVariant: db.prepare(
+      `INSERT INTO variants (category, product_id, variant_id, variant_key, variant_type,
+        variant_label, color_atoms, edition_slug, edition_display_name, retired, created_at, updated_at)
+       VALUES (@category, @product_id, @variant_id, @variant_key, @variant_type,
+        @variant_label, @color_atoms, @edition_slug, @edition_display_name, @retired, @created_at, @updated_at)
+       ON CONFLICT(category, product_id, variant_id) DO UPDATE SET
+        variant_key = excluded.variant_key,
+        variant_type = excluded.variant_type,
+        variant_label = excluded.variant_label,
+        color_atoms = excluded.color_atoms,
+        edition_slug = excluded.edition_slug,
+        edition_display_name = excluded.edition_display_name,
+        retired = excluded.retired,
+        updated_at = excluded.updated_at`
+    ),
+    _getVariant: db.prepare(
+      'SELECT * FROM variants WHERE category = ? AND product_id = ? AND variant_id = ?'
+    ),
+    _listVariantsByProduct: db.prepare(
+      'SELECT * FROM variants WHERE category = ? AND product_id = ? ORDER BY variant_type, variant_key'
+    ),
+    _listActiveVariantsByProduct: db.prepare(
+      'SELECT * FROM variants WHERE category = ? AND product_id = ? AND retired = 0 ORDER BY variant_type, variant_key'
+    ),
+    _retireVariant: db.prepare(
+      `UPDATE variants SET retired = 1, updated_at = datetime('now') WHERE category = ? AND product_id = ? AND variant_id = ?`
+    ),
+    _deleteVariant: db.prepare(
+      'DELETE FROM variants WHERE category = ? AND product_id = ? AND variant_id = ?'
+    ),
+    _deleteVariantsByProduct: db.prepare(
+      'DELETE FROM variants WHERE category = ? AND product_id = ?'
+    ),
   };
 }

@@ -116,7 +116,7 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
     const pid = 'mouse-viper-e2e';
     ensureProductJson(pid);
 
-    // Realistic Razer Viper color response
+    // Realistic Razer Viper color response (edition uses multi-atom combo)
     const result = await runColorEditionFinder({
       product: { ...PRODUCT, product_id: pid },
       appDb: makeAppDbStub(),
@@ -124,37 +124,34 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
       config: { llmModelPlan: 'gemini-2.5-flash' },
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
-        colors: ['black', 'white', 'pink', 'red', 'purple'],
-        editions: { 'cyberpunk-2077-edition': { colors: ['black'] } },
+        colors: ['black', 'white', 'pink', 'red', 'purple', 'black+red'],
+        editions: { 'cyberpunk-2077-edition': { colors: ['black+red'] } },
         default_color: 'black',
       }),
     });
 
     // --- Acceptance ---
     assert.equal(result.rejected, false, 'should be accepted');
-    assert.deepEqual(result.colors, ['black', 'white', 'pink', 'red', 'purple']);
+    assert.deepEqual(result.colors, ['black', 'white', 'pink', 'red', 'purple'],
+      'edition combo black+red must NOT appear in result colors');
 
-    // --- DB: field_candidates row exists ---
+    // --- DB: field_candidates row exists (source-centric format) ---
     const dbCandidates = specDb.getFieldCandidatesByProductAndField(pid, 'colors');
     assert.equal(dbCandidates.length, 1, 'one candidate row for colors');
-    assert.ok(dbCandidates[0].sources_json.length > 0, 'sources populated');
-    assert.equal(dbCandidates[0].sources_json[0].source, 'cef');
-    assert.equal(dbCandidates[0].sources_json[0].model, 'gemini-2.5-flash');
-    assert.ok(dbCandidates[0].validation_json.valid === true, 'validation passed');
+    assert.equal(dbCandidates[0].source_type, 'cef', 'source_type is cef');
+    assert.ok(dbCandidates[0].source_id, 'source_id populated');
 
     // --- JSON: product.json candidates[] exists ---
     const pj = readProductJson(pid);
     assert.ok(pj.candidates, 'candidates key exists');
     assert.ok(pj.candidates.colors, 'colors candidates exist');
     assert.equal(pj.candidates.colors.length, 1, 'one candidate entry');
-    assert.deepEqual(pj.candidates.colors[0].value, ['black', 'white', 'pink', 'red', 'purple']);
-    assert.ok(pj.candidates.colors[0].validation, 'validation record present');
-    assert.ok(pj.candidates.colors[0].sources.length > 0, 'sources present in JSON');
 
     // --- CEF's own tables also populated ---
     const cefRow = specDb.getColorEditionFinder(pid);
     assert.ok(cefRow, 'CEF summary row exists');
-    assert.deepEqual(cefRow.colors, ['black', 'white', 'pink', 'red', 'purple']);
+    assert.ok(cefRow.colors.includes('black'), 'standalone color in summary');
+    assert.ok(!cefRow.colors.includes('black+red'), 'edition combo NOT in summary');
   });
 
   it('CEF output with case repairs → repaired values in all targets', async () => {

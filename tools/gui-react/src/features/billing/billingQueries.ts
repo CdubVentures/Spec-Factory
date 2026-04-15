@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { api } from '../../api/client.ts';
 import type {
   BillingSummaryResponse,
@@ -33,6 +33,7 @@ export function useBillingSummaryQuery(filters: BillingFilterState) {
     queryKey: ['billing', 'summary', filters],
     queryFn: () => api.get<BillingSummaryResponse>(withFilters('/billing/global/summary', filters)),
     refetchInterval: BILLING_REFETCH,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -41,6 +42,7 @@ export function useBillingDailyQuery(filters: BillingFilterState) {
     queryKey: ['billing', 'daily', filters],
     queryFn: () => api.get<BillingDailyResponse>(withFilters('/billing/global/daily?months=1', filters)),
     refetchInterval: BILLING_REFETCH,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -49,6 +51,7 @@ export function useBillingByModelQuery(filters: BillingFilterState) {
     queryKey: ['billing', 'by-model', filters],
     queryFn: () => api.get<BillingByModelResponse>(withFilters('/billing/global/by-model', filters)),
     refetchInterval: BILLING_REFETCH,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -57,6 +60,7 @@ export function useBillingByReasonQuery(filters: BillingFilterState) {
     queryKey: ['billing', 'by-reason', filters],
     queryFn: () => api.get<BillingByReasonResponse>(withFilters('/billing/global/by-reason', filters)),
     refetchInterval: BILLING_REFETCH,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -65,6 +69,7 @@ export function useBillingByCategoryQuery(filters: BillingFilterState) {
     queryKey: ['billing', 'by-category', filters],
     queryFn: () => api.get<BillingByCategoryResponse>(withFilters('/billing/global/by-category', filters)),
     refetchInterval: BILLING_REFETCH,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -90,5 +95,6 @@ export function useBillingEntriesQuery(opts: EntriesQueryOpts) {
     queryKey: ['billing', 'entries', opts],
     queryFn: () => api.get<BillingEntriesResponse>(`/billing/global/entries?${params.toString()}`),
     refetchInterval: BILLING_REFETCH,
+    placeholderData: keepPreviousData,
   });
 }

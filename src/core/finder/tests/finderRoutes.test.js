@@ -28,13 +28,15 @@ function makeFinderConfig(overrides = {}) {
     deleteRun: overrides.deleteRun || (() => null),
     deleteRuns: overrides.deleteRuns || undefined,
     deleteAll: overrides.deleteAll || (() => ({ deleted: true })),
-    getOne: overrides.getOne || (() => ({ product_id: 'p1', category: 'cat', cooldown_until: '', latest_ran_at: '', run_count: 1 })),
+    getOne: overrides.getOne || (() => ({ product_id: 'p1', category: 'cat', latest_ran_at: '', run_count: 1 })),
     listByCategory: overrides.listByCategory || (() => []),
     listRuns: overrides.listRuns || (() => []),
     upsertSummary: overrides.upsertSummary || (() => {}),
+    updateBookkeeping: overrides.updateBookkeeping || undefined,
     deleteOneSql: overrides.deleteOneSql || (() => {}),
     deleteRunSql: overrides.deleteRunSql || (() => {}),
     deleteAllRunsSql: overrides.deleteAllRunsSql || (() => {}),
+    skipSelectedOnDelete: overrides.skipSelectedOnDelete || false,
   };
 }
 
@@ -89,7 +91,7 @@ describe('createFinderRouteHandler — generic', () => {
   });
 
   it('GET single returns row with runs and selected', async () => {
-    const row = { product_id: 'p1', category: 'cat', cooldown_until: '', latest_ran_at: '2026-04-01', run_count: 1 };
+    const row = { product_id: 'p1', category: 'cat', latest_ran_at: '2026-04-01', run_count: 1 };
     const runs = [{ run_number: 1, selected: { items: ['a'] } }];
     const { ctx, calls } = makeCtx();
     const handler = createFinderRouteHandler(makeFinderConfig({
@@ -131,7 +133,7 @@ describe('createFinderRouteHandler — generic', () => {
     let deletedRun = null;
     const { ctx, calls } = makeCtx();
     const handler = createFinderRouteHandler(makeFinderConfig({
-      deleteRun: ({ runNumber }) => { deletedRun = runNumber; return { run_count: 1, selected: {}, cooldown_until: '', last_ran_at: '' }; },
+      deleteRun: ({ runNumber }) => { deletedRun = runNumber; return { run_count: 1, selected: {}, last_ran_at: '' }; },
       deleteRunSql: () => {},
     }))(ctx);
     await handler(['test-finder', 'cat', 'p1', 'runs', '3'], new Map(), 'DELETE', {}, {});
@@ -169,7 +171,7 @@ describe('createFinderRouteHandler — generic', () => {
     const { ctx, calls } = makeCtx();
     ctx.readJsonBody = async () => ({ runNumbers: [2, 3] });
     const handler = createFinderRouteHandler(makeFinderConfig({
-      deleteRuns: ({ runNumbers }) => { deletedNumbers.push(...runNumbers); return { run_count: 1, selected: {}, cooldown_until: '', last_ran_at: '' }; },
+      deleteRuns: ({ runNumbers }) => { deletedNumbers.push(...runNumbers); return { run_count: 1, selected: {}, last_ran_at: '' }; },
       deleteRunSql: () => {},
     }))(ctx);
     await handler(['test-finder', 'cat', 'p1', 'runs', 'batch'], new Map(), 'DELETE', {}, {});
@@ -223,9 +225,60 @@ describe('createFinderRouteHandler — generic', () => {
   it('DELETE single run does NOT delete candidates', async () => {
     const { ctx, specDb } = makeCtx();
     const handler = createFinderRouteHandler(makeFinderConfig({
-      deleteRun: () => ({ run_count: 1, selected: {}, cooldown_until: '', last_ran_at: '' }),
+      deleteRun: () => ({ run_count: 1, selected: {}, last_ran_at: '' }),
     }))(ctx);
     await handler(['test-finder', 'cat', 'p1', 'runs', '1'], new Map(), 'DELETE', {}, {});
     assert.equal(specDb._candidateDeleteCalls.length, 0);
+  });
+
+  // ── skipSelectedOnDelete: bookkeeping-only updates ─────────────
+
+  it('DELETE single run with skipSelectedOnDelete calls updateBookkeeping instead of upsertSummary', async () => {
+    const upsertCalls = [];
+    const bookkeepingCalls = [];
+    const { ctx } = makeCtx();
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      deleteRun: () => ({ run_count: 2, selected: { colors: ['red'] }, last_ran_at: '2026-04-14' }),
+      skipSelectedOnDelete: true,
+      upsertSummary: (_specDb, row) => upsertCalls.push(row),
+      updateBookkeeping: (_specDb, pid, vals) => bookkeepingCalls.push({ pid, ...vals }),
+    }))(ctx);
+    await handler(['test-finder', 'cat', 'p1', 'runs', '1'], new Map(), 'DELETE', {}, {});
+    assert.equal(upsertCalls.length, 0, 'upsertSummary must NOT be called');
+    assert.equal(bookkeepingCalls.length, 1, 'updateBookkeeping must be called once');
+    assert.equal(bookkeepingCalls[0].pid, 'p1');
+    assert.equal(bookkeepingCalls[0].latest_ran_at, '2026-04-14');
+    assert.equal(bookkeepingCalls[0].run_count, 2);
+  });
+
+  it('DELETE batch with skipSelectedOnDelete calls updateBookkeeping instead of upsertSummary', async () => {
+    const upsertCalls = [];
+    const bookkeepingCalls = [];
+    const { ctx } = makeCtx();
+    ctx.readJsonBody = async () => ({ runNumbers: [1, 2] });
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      deleteRuns: () => ({ run_count: 1, selected: { colors: ['blue'] }, last_ran_at: '2026-04-14' }),
+      skipSelectedOnDelete: true,
+      upsertSummary: (_specDb, row) => upsertCalls.push(row),
+      updateBookkeeping: (_specDb, pid, vals) => bookkeepingCalls.push({ pid, ...vals }),
+    }))(ctx);
+    await handler(['test-finder', 'cat', 'p1', 'runs', 'batch'], new Map(), 'DELETE', {}, {});
+    assert.equal(upsertCalls.length, 0, 'upsertSummary must NOT be called');
+    assert.equal(bookkeepingCalls.length, 1, 'updateBookkeeping must be called once');
+    assert.equal(bookkeepingCalls[0].run_count, 1);
+  });
+
+  it('DELETE single run WITHOUT skipSelectedOnDelete still uses upsertSummary', async () => {
+    const upsertCalls = [];
+    const bookkeepingCalls = [];
+    const { ctx } = makeCtx();
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      deleteRun: () => ({ run_count: 1, selected: { colors: ['red'] }, last_ran_at: '2026-04-14' }),
+      upsertSummary: (_specDb, row) => upsertCalls.push(row),
+      updateBookkeeping: (_specDb, pid, vals) => bookkeepingCalls.push({ pid, ...vals }),
+    }))(ctx);
+    await handler(['test-finder', 'cat', 'p1', 'runs', '1'], new Map(), 'DELETE', {}, {});
+    assert.equal(upsertCalls.length, 1, 'upsertSummary must be called');
+    assert.equal(bookkeepingCalls.length, 0, 'updateBookkeeping must NOT be called');
   });
 });

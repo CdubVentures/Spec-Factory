@@ -2,7 +2,6 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   deriveFinderKpiCards,
-  deriveCooldownState,
   deriveFinderStatusChip,
   deriveSelectedStateDisplay,
   deriveRunHistoryRows,
@@ -12,8 +11,6 @@ import type { ColorEditionFinderResult, ColorRegistryEntry } from '../../types.t
 const SAMPLE_RESULT: ColorEditionFinderResult = {
   product_id: 'mouse-001',
   category: 'mouse',
-  cooldown_until: new Date(Date.now() + 20 * 86400000).toISOString(),
-  on_cooldown: true,
   run_count: 3,
   last_ran_at: '2026-04-01T12:00:00Z',
   published: {
@@ -33,7 +30,6 @@ const SAMPLE_RESULT: ColorEditionFinderResult = {
       ran_at: '2026-03-01T00:00:00Z',
       model: 'gpt-5.4',
       fallback_used: false,
-      cooldown_until: '2026-03-31T00:00:00Z',
       selected: { colors: ['black', 'white'], editions: {}, default_color: 'black' },
       prompt: { system: 'System prompt run 1', user: '{"brand":"Corsair"}' },
       response: { colors: ['black', 'white'], editions: {}, default_color: 'black' },
@@ -43,7 +39,6 @@ const SAMPLE_RESULT: ColorEditionFinderResult = {
       ran_at: '2026-04-01T12:00:00Z',
       model: 'gpt-6',
       fallback_used: true,
-      cooldown_until: '2026-05-01T12:00:00Z',
       selected: {
         colors: ['black', 'white', 'black+red'],
         editions: { 'launch-edition': { colors: ['black', 'white'] } },
@@ -69,9 +64,9 @@ const REGISTRY: ColorRegistryEntry[] = [
 // ── deriveFinderKpiCards ────────────────────────────────────────────
 
 describe('deriveFinderKpiCards', () => {
-  it('returns 5 cards with correct values', () => {
+  it('returns 4 cards with correct values', () => {
     const cards = deriveFinderKpiCards(SAMPLE_RESULT);
-    assert.equal(cards.length, 5);
+    assert.equal(cards.length, 4);
     assert.equal(cards[0].label, 'Colors');
     assert.equal(cards[0].value, '3');
     assert.equal(cards[1].label, 'Editions');
@@ -89,33 +84,6 @@ describe('deriveFinderKpiCards', () => {
     const defaultCard = cards.find(c => c.label === 'Default Color');
     assert.ok(defaultCard);
     assert.equal(defaultCard.value, '--');
-  });
-});
-
-// ── deriveCooldownState ─────────────────────────────────────────────
-
-describe('deriveCooldownState', () => {
-  it('detects active cooldown', () => {
-    const state = deriveCooldownState(SAMPLE_RESULT);
-    assert.equal(state.onCooldown, true);
-    assert.ok(state.daysRemaining > 0);
-    assert.ok(state.progressPct >= 0 && state.progressPct <= 100);
-  });
-
-  it('detects expired cooldown', () => {
-    const expired = {
-      ...SAMPLE_RESULT,
-      cooldown_until: new Date(Date.now() - 86400000).toISOString(),
-      on_cooldown: false,
-    };
-    const state = deriveCooldownState(expired);
-    assert.equal(state.onCooldown, false);
-  });
-
-  it('handles null result', () => {
-    const state = deriveCooldownState(null);
-    assert.equal(state.onCooldown, false);
-    assert.equal(state.daysRemaining, 0);
   });
 });
 
@@ -408,7 +376,6 @@ describe('deriveRunHistoryRows', () => {
       ran_at: '2026-04-09T00:00:00Z',
       model: 'claude-sonnet-4-6',
       fallback_used: false,
-      cooldown_until: '',
       selected: { colors: [] as string[], editions: {} as Record<string, { colors: string[] }>, default_color: '' },
       prompt: { system: '', user: '' },
       response: {

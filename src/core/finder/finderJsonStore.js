@@ -7,7 +7,7 @@
  *
  * Invariants:
  * - Latest-wins: `selected` reflects the latest non-rejected run
- * - Rejected runs are counted but don't overwrite selected/cooldown
+ * - Rejected runs are counted but don't overwrite selected
  * - `next_run_number` is a monotonic high-water mark (never reused)
  * - Each run stores full prompt + response for auditability
  */
@@ -61,7 +61,6 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
       product_id: productId || '',
       category: category || '',
       selected: emptySelected(),
-      cooldown_until: '',
       last_ran_at: '',
       run_count: 0,
       next_run_number: 1,
@@ -137,7 +136,6 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
     const overallLatest = sorted[sorted.length - 1];
     const maxRunNumber = overallLatest.run_number;
 
-    // WHY: Rejected runs shouldn't determine selected or cooldown.
     const validRuns = sorted.filter(r => r.status !== 'rejected');
     const latestValid = validRuns.length > 0 ? validRuns[validRuns.length - 1] : null;
 
@@ -152,7 +150,6 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
       product_id: productId || '',
       category: category || '',
       selected,
-      cooldown_until: latestValid?.cooldown_until || '',
       last_ran_at: overallLatest.ran_at || '',
       run_count: runs.length,
       next_run_number: maxRunNumber + 1,
@@ -180,7 +177,6 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
       ran_at: newDiscovery.last_ran_at || new Date().toISOString(),
       model: run.model || 'unknown',
       fallback_used: Boolean(run.fallback_used),
-      cooldown_until: newDiscovery.cooldown_until || '',
       ...(run.status ? { status: run.status } : {}),
       ...(run.mode ? { mode: run.mode } : {}),
       ...(run.loop_id ? { loop_id: run.loop_id } : {}),
@@ -191,7 +187,6 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
       response: run.response || emptySelected(),
     };
 
-    // WHY: Rejected runs must not overwrite selected or cooldown.
     // WHY: recalculateSelected hook lets modules accumulate across runs
     // instead of latest-wins (e.g. PIF unions images per variant).
     const newSelected = run.status === 'rejected'
@@ -210,7 +205,6 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
       product_id: existing.product_id || productId || '',
       category: existing.category || newDiscovery.category || '',
       selected: newSelected,
-      cooldown_until: run.status === 'rejected' ? (existing.cooldown_until || '') : (newDiscovery.cooldown_until || existing.cooldown_until || ''),
       last_ran_at: newDiscovery.last_ran_at || existing.last_ran_at || '',
       run_count: existingRuns.length + 1,
       next_run_number: runNumber + 1,

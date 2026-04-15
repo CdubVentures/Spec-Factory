@@ -43,7 +43,7 @@ export function registerProductImageFinderRoutes(ctx) {
     deleteRunSql: (specDb, pid, rn) => store(specDb).removeRun(pid, rn),
     deleteAllRunsSql: (specDb, pid) => store(specDb).removeAllRuns(pid),
 
-    buildGetResponse: (row, selected, runs, onCooldown) => {
+    buildGetResponse: (row, selected, runs) => {
       // Backfill dimensions for images that predate dimension capture
       const productRoot = defaultProductRoot();
       const enrichImage = (img) => {
@@ -108,8 +108,6 @@ export function registerProductImageFinderRoutes(ctx) {
         category: row.category,
         images: row.images,
         image_count: row.image_count,
-        cooldown_until: row.cooldown_until,
-        on_cooldown: onCooldown,
         run_count: row.run_count,
         last_ran_at: row.latest_ran_at,
         selected: enrichedSelected,
@@ -302,7 +300,6 @@ export function registerProductImageFinderRoutes(ctx) {
             product_id: productId,
             images: recalculated.selected?.images?.map(i => ({ view: i.view, filename: i.filename, variant_key: i.variant_key })) || [],
             image_count: recalculated.selected?.images?.length || 0,
-            cooldown_until: recalculated.cooldown_until || '',
             latest_ran_at: recalculated.last_ran_at || '',
             run_count: recalculated.run_count || 0,
           });
@@ -315,7 +312,10 @@ export function registerProductImageFinderRoutes(ctx) {
               ran_at: run.ran_at || '',
               model: run.model || '',
               fallback_used: run.fallback_used,
-              cooldown_until: run.cooldown_until || '',
+              effort_level: run.effort_level || '',
+              access_mode: run.access_mode || '',
+              thinking: Boolean(run.thinking),
+              web_search: Boolean(run.web_search),
               selected: run.selected || {},
               prompt: run.prompt || {},
               response: run.response || {},
@@ -476,7 +476,6 @@ export function registerProductImageFinderRoutes(ctx) {
               product_id: productId,
               images: recalculated.selected?.images?.map(i => ({ view: i.view, filename: i.filename, variant_key: i.variant_key })) || [],
               image_count: recalculated.selected?.images?.length || 0,
-              cooldown_until: recalculated.cooldown_until || '',
               latest_ran_at: recalculated.last_ran_at || '',
               run_count: recalculated.run_count || 0,
             });
@@ -485,7 +484,8 @@ export function registerProductImageFinderRoutes(ctx) {
                 category, product_id: productId,
                 run_number: run.run_number, ran_at: run.ran_at || '',
                 model: run.model || '', fallback_used: run.fallback_used,
-                cooldown_until: run.cooldown_until || '',
+                effort_level: run.effort_level || '', access_mode: run.access_mode || '',
+                thinking: Boolean(run.thinking), web_search: Boolean(run.web_search),
                 selected: run.selected || {}, prompt: run.prompt || {}, response: run.response || {},
               });
             }
@@ -963,7 +963,6 @@ export function registerProductImageFinderRoutes(ctx) {
           product_id: productId,
           images: recalculated.selected?.images?.map(img => ({ view: img.view, filename: img.filename, variant_key: img.variant_key })) || [],
           image_count: recalculated.selected?.images?.length || 0,
-          cooldown_until: recalculated.cooldown_until || '',
           latest_ran_at: recalculated.last_ran_at || '',
           run_count: recalculated.run_count || 0,
         });
@@ -976,7 +975,10 @@ export function registerProductImageFinderRoutes(ctx) {
             ran_at: run.ran_at || '',
             model: run.model || '',
             fallback_used: run.fallback_used,
-            cooldown_until: run.cooldown_until || '',
+            effort_level: run.effort_level || '',
+            access_mode: run.access_mode || '',
+            thinking: Boolean(run.thinking),
+            web_search: Boolean(run.web_search),
             selected: run.selected || {},
             prompt: run.prompt || {},
             response: run.response || {},
