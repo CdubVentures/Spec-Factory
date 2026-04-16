@@ -6,6 +6,7 @@ import { InlineCellEditor } from '../../../shared/ui/forms/InlineCellEditor.tsx'
 import { ReviewValueCell } from '../../../shared/ui/data-display/ReviewValueCell.tsx';
 import { useScrollStore, resolveScrollPosition } from '../../../stores/scrollStore.ts';
 import { useReviewStore, useEditingValue } from '../state/reviewStore.ts';
+import { useGridPan } from '../hooks/useGridPan.ts';
 import type { ReviewLayout, ProductReviewPayload, CellMode } from '../../../types/review.ts';
 
 interface ReviewMatrixProps {
@@ -55,6 +56,7 @@ export const ReviewMatrix = memo(function ReviewMatrix({
 }: ReviewMatrixProps) {
   const rows = layout.rows;
   const parentRef = useRef<HTMLDivElement>(null);
+  const { isPanning, panHandlers } = useGridPan(parentRef);
 
   // Grid scroll persistence
   const scrollKey = `review:grid:scroll:${category}`;
@@ -123,8 +125,9 @@ export const ReviewMatrix = memo(function ReviewMatrix({
       <div className="sf-table-shell rounded-lg overflow-hidden">
         <div
           ref={parentRef}
-          className="overflow-auto"
+          className={`overflow-auto ${isPanning ? 'sf-grid-panning' : 'sf-grid-pannable'}`}
           style={{ height: 'calc(100vh - 340px)' }}
+          onPointerDown={panHandlers.onPointerDown}
         >
           <div style={{ width: totalColWidth, position: 'relative' }}>
             <div className="flex sf-table-head sticky top-0 z-20" style={{ width: totalColWidth, height: HEADER_HEIGHT }}>
@@ -222,7 +225,6 @@ export const ReviewMatrix = memo(function ReviewMatrix({
                         const fieldState = p.fields[row.key];
                         const isActive = activeCell?.productId === p.product_id && activeCell?.field === row.key;
                         const isEditing = isActive && cellMode === 'editing';
-                        const isSelected = isActive && cellMode === 'selected';
                         const dimmed = p.hasRun === false;
                         return (
                           <div
@@ -232,13 +234,11 @@ export const ReviewMatrix = memo(function ReviewMatrix({
                             className={`absolute top-0 flex items-center sf-review-matrix-cell ${
                               isEditing
                                 ? 'sf-review-matrix-cell-editing cursor-text'
-                                : isSelected
+                                : isActive
                                   ? 'ring-2 ring-accent ring-inset sf-review-matrix-cell-active cursor-text'
-                                  : isActive
-                                    ? 'ring-2 ring-accent ring-inset sf-review-matrix-cell-active cursor-text'
-                                    : dimmed
-                                      ? 'sf-review-matrix-cell-dimmed cursor-pointer'
-                                      : 'cursor-pointer'
+                                  : dimmed
+                                    ? 'sf-review-matrix-cell-dimmed cursor-pointer'
+                                    : 'cursor-pointer'
                             }`}
                             style={{ width: vCol.size, left: vCol.start, height: ROW_HEIGHT }}
                             onClick={() => onCellClick(p.product_id, row.key)}

@@ -23,6 +23,7 @@ import { useFieldLabels } from '../../../hooks/useFieldLabels.ts';
 import { computeReviewDashboardMetrics, deriveReviewKpiCards } from '../selectors/reviewMetricsSelectors.ts';
 import { useDebouncedCallback } from '../../../hooks/useDebounce.ts';
 import { readReviewGridSessionState, writeReviewGridSessionState } from '../state/reviewGridSessionState.ts';
+import { readReviewDrawerSessionState, writeReviewDrawerSessionState } from '../state/reviewDrawerSessionState.ts';
 import type { ReviewLayout, ProductsIndexResponse, CandidateResponse, CandidateDeleteResponse, ReviewCandidate } from '../../../types/review.ts';
 import { parseCatalogProducts } from '../../catalog/api/catalogParsers.ts';
 import { deleteCandidateBySourceId, deleteAllCandidatesForField } from '../api/reviewApi.ts';
@@ -84,8 +85,13 @@ export function ReviewPage() {
   const queryClient = useQueryClient();
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reviewGridHydratedRef = useRef<string>('');
+  const reviewDrawerHydratedRef = useRef<string>('');
   const persistedGridState = useMemo(
     () => readReviewGridSessionState(category),
+    [category],
+  );
+  const persistedDrawerState = useMemo(
+    () => readReviewDrawerSessionState(category),
     [category],
   );
 
@@ -147,6 +153,18 @@ export function ReviewPage() {
     setFilter,
   ]);
 
+  // WHY: Hydrate drawer state (activeCell + drawerOpen) from localStorage on category load.
+  // Gated on indexData so the restored productId can be validated against available products.
+  useEffect(() => {
+    if (!indexData?.products || indexData.products.length === 0) return;
+    if (reviewDrawerHydratedRef.current === category) return;
+    reviewDrawerHydratedRef.current = category;
+    if (!persistedDrawerState.drawerOpen || !persistedDrawerState.productId || !persistedDrawerState.field) return;
+    const productExists = indexData.products.some((p) => p.product_id === persistedDrawerState.productId);
+    if (!productExists) return;
+    openDrawer(persistedDrawerState.productId, persistedDrawerState.field);
+  }, [category, indexData?.products, persistedDrawerState, openDrawer]);
+
   useEffect(() => {
     if (reviewGridHydratedRef.current !== category) return;
     writeReviewGridSessionState(category, {
@@ -158,6 +176,16 @@ export function ReviewPage() {
       runStatusFilter,
     });
   }, [category, sortMode, brandFilter.mode, brandFilter.selected, confidenceFilter, coverageFilter, runStatusFilter]);
+
+  // Persist drawer state (activeCell + drawerOpen) to localStorage on change
+  useEffect(() => {
+    if (reviewDrawerHydratedRef.current !== category) return;
+    writeReviewDrawerSessionState(category, {
+      drawerOpen,
+      productId: activeCell?.productId ?? '',
+      field: activeCell?.field ?? '',
+    });
+  }, [category, drawerOpen, activeCell?.productId, activeCell?.field]);
 
   // Auto-clear "saved" status after 2 seconds
   useEffect(() => {
@@ -270,16 +298,6 @@ export function ReviewPage() {
     },
     onError: () => {
       setSaveStatus('error');
-    },
-  });
-
-  const runGridAiReviewMut = useMutation({
-    mutationFn: () =>
-      api.post(`/review-components/${category}/run-component-review-batch`, {}),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['componentReview', category] });
-      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
-      queryClient.invalidateQueries({ queryKey: ['candidates', category] });
     },
   });
 
@@ -482,12 +500,6 @@ export function ReviewPage() {
               candidates={drawerCandidates}
               candidatesLoading={candidatesLoading}
               publishedValue={activeFieldState.selected.value}
-              onReviewSource={(candidateId) => {
-                console.log('Review source:', candidateId, selectedProductId, selectedField);
-              }}
-              onRunAIReview={() => {
-                console.log('Review all:', selectedProductId, selectedField);
-              }}
               onDeleteCandidate={(sourceId) => deleteCandidateMut.mutate({ sourceId })}
               onDeleteAllCandidates={() => deleteAllCandidatesMut.mutate()}
               deletePending={deleteCandidateMut.isPending || deleteAllCandidatesMut.isPending}

@@ -482,7 +482,21 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
       <SettingGroupBlock title="LLM Call Contract">
         {/* Prompt template editors (generic, registry-driven) */}
         {phaseSchema.prompt_templates && phaseSchema.prompt_templates.length > 0 ? (
-          <div className="space-y-4">
+          phaseSchema.eval_criteria_defaults && phaseSchema.eval_criteria_categories ? (
+            /* Image-evaluator: single column — view eval, criteria tabs, then hero eval */
+            <EvalPromptLayout
+              phaseId={phaseId}
+              promptTemplates={phaseSchema.prompt_templates}
+              phaseOverrides={phaseOverrides}
+              onPhaseOverrideChange={onPhaseOverrideChange}
+              responseSchemas={[
+                phaseSchema.response_schema,
+                ...(phaseSchema.hero_response_schema ? [phaseSchema.hero_response_schema] : []),
+              ]}
+              phaseSchema={phaseSchema as CategoryViewPromptTabsPhaseSchema}
+            />
+          ) : (
+            /* CEF / Image-finder: two-column grid for multiple prompts */
             <PromptTemplatesSection
               phaseId={phaseId}
               promptTemplates={phaseSchema.prompt_templates}
@@ -494,11 +508,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
                 ...(phaseSchema.hero_response_schema ? [phaseSchema.hero_response_schema] : []),
               ]}
             />
-            {/* Eval criteria per-category editing (preserved for image-evaluator) */}
-            {phaseSchema.eval_criteria_defaults && phaseSchema.eval_criteria_categories && (
-              <CategoryViewPromptTabs phaseSchema={phaseSchema as CategoryViewPromptTabsPhaseSchema} />
-            )}
-          </div>
+          )
         ) : phaseSchema.eval_criteria_defaults && phaseSchema.eval_criteria_categories ? (
           <CategoryViewPromptTabs phaseSchema={phaseSchema as CategoryViewPromptTabsPhaseSchema} />
         ) : (
@@ -599,6 +609,188 @@ function ModulePromptTemplateEditor({ templateDef, category }: {
   );
 }
 
+/* ── Eval Prompt Layout (image-evaluator — unified view tabs) ─────────────
+ * WHY: Each view tab shows everything for that view in one column:
+ *   criteria (editable) → structural prompt → response schema (bottom).
+ * Hero tab shows hero criteria → hero prompt → hero schema.
+ * Category tabs are shared across all views.
+ */
+
+const EVAL_VIEW_TABS = ['top', 'bottom', 'left', 'right', 'front', 'rear', 'sangle', 'angle', 'hero'] as const;
+type EvalViewTab = typeof EVAL_VIEW_TABS[number];
+
+function EvalPromptLayout({ promptTemplates, responseSchemas, phaseSchema }: {
+  readonly phaseId: LlmPhaseId;
+  readonly promptTemplates: readonly PromptTemplateDef[];
+  readonly phaseOverrides: LlmPhaseOverrides;
+  readonly onPhaseOverrideChange: (overrides: LlmPhaseOverrides) => void;
+  readonly responseSchemas: Record<string, unknown>[];
+  readonly phaseSchema: CategoryViewPromptTabsPhaseSchema;
+}) {
+  const categories = phaseSchema.eval_criteria_categories;
+  const defaults = phaseSchema.eval_criteria_defaults;
+  const viewEval = promptTemplates[0];
+  const heroEval = promptTemplates[1];
+
+  const [activeCategory, setActiveCategory] = usePersistedTab<string>(
+    'llm-config:eval-category',
+    categories[0] ?? 'mouse',
+    { validValues: categories as unknown as readonly string[] },
+  );
+  const [activeView, setActiveView] = usePersistedTab<string>(
+    'llm-config:eval-view',
+    'top',
+    { validValues: EVAL_VIEW_TABS as unknown as readonly string[] },
+  );
+
+  const isHero = activeView === 'hero';
+  const criteriaKey = isHero ? 'heroEvalCriteria' : `evalViewCriteria_${activeView}`;
+  const activeTemplate = isHero ? heroEval : viewEval;
+  const activeSchema = isHero ? responseSchemas[1] : responseSchemas[0];
+
+  const { settings, saveSetting, isLoading } = useModuleSettingsAuthority({
+    category: activeCategory,
+    moduleId: 'productImageFinder',
+  });
+
+  const dbValue = (settings[criteriaKey] as string) ?? '';
+  const defaultValue = defaults[activeCategory]?.[activeView] ?? '';
+  const displayValue = dbValue || defaultValue;
+  const isOverridden = dbValue.length > 0;
+
+  const [draft, setDraft] = useState(displayValue);
+  const prevDisplayRef = useRef(displayValue);
+  useEffect(() => {
+    if (prevDisplayRef.current !== displayValue) {
+      prevDisplayRef.current = displayValue;
+      setDraft(displayValue);
+    }
+  }, [displayValue]);
+
+  const tabKey = `${activeCategory}:${activeView}`;
+  const prevTabKeyRef = useRef(tabKey);
+  useEffect(() => {
+    if (prevTabKeyRef.current !== tabKey) {
+      prevTabKeyRef.current = tabKey;
+      setDraft(displayValue);
+    }
+  }, [tabKey, displayValue]);
+
+  const handleSave = useCallback(() => {
+    const trimmed = draft.trim();
+    if (trimmed === defaultValue.trim()) {
+      saveSetting(criteriaKey, '');
+    } else {
+      saveSetting(criteriaKey, trimmed);
+    }
+  }, [draft, defaultValue, criteriaKey, saveSetting]);
+
+  const handleReset = useCallback(() => {
+    saveSetting(criteriaKey, '');
+    setDraft(defaultValue);
+  }, [criteriaKey, defaultValue, saveSetting]);
+
+  const isDirty = draft.trim() !== displayValue.trim();
+
+  return (
+    <div className="space-y-3">
+      {/* Category tabs */}
+      <div className="flex flex-wrap gap-1 mb-1">
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setActiveCategory(cat)}
+            className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded cursor-pointer transition-opacity ${
+              activeCategory === cat ? 'sf-primary-button' : 'sf-btn-ghost sf-text-muted hover:opacity-80'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {/* View tabs */}
+      <div className="flex flex-wrap gap-1">
+        {EVAL_VIEW_TABS.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveView(tab)}
+            className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide rounded cursor-pointer transition-opacity ${
+              activeView === tab ? 'sf-primary-button' : 'sf-btn-ghost sf-text-muted hover:opacity-80'
+            }`}
+          >
+            {tab === 'hero' ? 'Hero' : tab}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Criteria (editable) ── */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted">
+            {activeCategory} &mdash; {isHero ? 'Hero Selection' : `${activeView} View`} Eval Criteria
+          </div>
+          <div className="flex items-center gap-2">
+            {isOverridden && (
+              <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded sf-chip-warning">Customized</span>
+            )}
+            {isLoading && (
+              <span className="text-[10px] sf-text-muted">Loading...</span>
+            )}
+          </div>
+        </div>
+        <textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={handleSave}
+          className="sf-pre-block sf-text-caption font-mono rounded p-3 w-full overflow-auto whitespace-pre-wrap leading-relaxed resize-y"
+          style={{ minHeight: '300px' }}
+          spellCheck={false}
+        />
+        <div className="flex items-center gap-2">
+          {isDirty && (
+            <button
+              onClick={handleSave}
+              className="sf-primary-button px-3 py-1 text-[10px] font-bold uppercase tracking-wide rounded cursor-pointer"
+            >
+              Save
+            </button>
+          )}
+          {isOverridden && (
+            <button
+              onClick={handleReset}
+              className="sf-btn-ghost sf-text-muted px-3 py-1 text-[10px] font-bold uppercase tracking-wide rounded cursor-pointer hover:opacity-80"
+            >
+              Reset to Default
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Structural prompt (editable) ── */}
+      {activeTemplate && (
+        <ModulePromptTemplateEditor
+          key={`${activeTemplate.promptKey}-${activeCategory}`}
+          templateDef={activeTemplate}
+          category={activeCategory}
+        />
+      )}
+
+      {/* ── Response schema (read-only, always at bottom) ── */}
+      {activeSchema && (
+        <div>
+          <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">
+            {isHero ? 'Hero Selection' : 'View Eval'} Response Schema
+          </div>
+          <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
+            {JSON.stringify(activeSchema, null, 2)}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Prompt Templates Section (generic, driven by prompt_templates array) ── */
 
 function PromptTemplatesSection({ phaseId, promptTemplates, phaseOverrides, onPhaseOverrideChange, responseSchemas }: {
@@ -632,12 +824,11 @@ function PromptTemplatesSection({ phaseId, promptTemplates, phaseOverrides, onPh
         </div>
       )}
 
-      {/* Template editors */}
-      <div className={promptTemplates.length > 1 ? 'grid grid-cols-2 gap-4' : ''}>
-        {promptTemplates.map((tmpl) =>
-          tmpl.storageScope === 'global' ? (
+      {/* Template editors — each paired with its response schema */}
+      {promptTemplates.map((tmpl, i) => (
+        <div key={tmpl.promptKey} className="space-y-3">
+          {tmpl.storageScope === 'global' ? (
             <GlobalPromptTemplateEditor
-              key={tmpl.promptKey}
               phaseId={phaseId}
               templateDef={tmpl}
               phaseOverrides={phaseOverrides}
@@ -649,17 +840,15 @@ function PromptTemplatesSection({ phaseId, promptTemplates, phaseOverrides, onPh
               templateDef={tmpl}
               category={activeCategory}
             />
-          ),
-        )}
-      </div>
-
-      {/* Response schemas (read-only) */}
-      {responseSchemas.map((schema, i) => schema && (
-        <div key={i}>
-          <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Response Schema{responseSchemas.length > 1 ? ` (${i + 1})` : ''}</div>
-          <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
-            {JSON.stringify(schema, null, 2)}
-          </pre>
+          )}
+          {responseSchemas[i] && (
+            <div>
+              <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Response Schema</div>
+              <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
+                {JSON.stringify(responseSchemas[i], null, 2)}
+              </pre>
+            </div>
+          )}
         </div>
       ))}
     </div>

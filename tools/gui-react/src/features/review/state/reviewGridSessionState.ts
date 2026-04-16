@@ -1,12 +1,13 @@
 import { FILTER_REGISTRY } from './reviewFilterRegistry.ts';
 import type { ConfidenceFilter, CoverageFilter, RunStatusFilter } from './reviewFilterRegistry.ts';
+import type { SortMode } from './reviewStore.ts';
 
 const REVIEW_GRID_SESSION_KEY_PREFIX = 'review:grid:sessionState:';
-const SORT_MODES = new Set(['brand', 'recent', 'confidence', 'coverage', 'missing']);
+const SORT_MODES: ReadonlySet<string> = new Set<SortMode>(['brand', 'recent', 'confidence', 'coverage', 'missing']);
 const BRAND_FILTER_MODES = new Set(['all', 'none', 'custom']);
 
 export interface ReviewGridSessionState {
-  sortMode: 'brand' | 'recent' | 'confidence' | 'coverage' | 'missing';
+  sortMode: SortMode;
   brandFilterMode: 'all' | 'none' | 'custom';
   selectedBrands: string[];
   confidenceFilter: ConfidenceFilter;

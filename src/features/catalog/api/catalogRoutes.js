@@ -83,9 +83,16 @@ export function registerCatalogRoutes(ctx) {
           brand: body.brand || '',
           rows,
           storage,
+          specDb: resolveSpecDb(category),
           appDb,
         });
         if (result?.ok) {
+          const bulkSpecDb = resolveSpecDb(category);
+          for (const row of result.results || []) {
+            if (row.status === 'created' && row.productId) {
+              upsertCatalogProductRow(bulkSpecDb, category, row.productId, row);
+            }
+          }
           emitDataChange({
             broadcastWs,
             event: 'catalog-bulk-add',
@@ -113,6 +120,7 @@ export function registerCatalogRoutes(ctx) {
           base_model: body.base_model || '',
           variant: body.variant || '',
           storage,
+          specDb: resolveSpecDb(category),
           appDb,
         });
         if (result?.ok) {
@@ -172,9 +180,7 @@ export function registerCatalogRoutes(ctx) {
           category,
           productId,
           storage,
-          removeQueue: async ({ category: queueCategory, productId: queueProductId }) => {
-            await removeQueueEntry(queueCategory, queueProductId);
-          },
+          specDb: resolveSpecDb(category),
         });
         if (result?.ok) {
           const specDb = resolveSpecDb(category);

@@ -753,13 +753,22 @@ describe('deleteVariant', () => {
     assert.ok(!jsonColors || jsonColors.length === 0, 'JSON candidate entry removed when all values stripped');
   }));
 
-  it('strips edition slug from edition candidates on edition variant delete', withEnv(({ specDb, root, ensureProductJson, ensureCefJson }) => {
+  it('strips edition combo colors from CEF candidates on edition variant delete', withEnv(({ specDb, root, ensureProductJson, readProductJson, ensureCefJson }) => {
     seedVariants(specDb);
     seedCefSummary(specDb);
-    ensureProductJson(PID);
+    ensureProductJson(PID, {
+      candidates: {
+        editions: [{ value: ['special-ed'], source_id: 'cef-ed-1', source_type: 'cef', confidence: 0.95 }],
+        colors: [{ value: ['black', 'olive+khaki'], source_id: 'cef-col-1', source_type: 'cef', confidence: 0.95 }],
+      },
+    });
     ensureCefJson(PID, {
       product_id: PID, category: 'mouse',
-      selected: { colors: ['black', 'olive', 'khaki'], editions: { 'special-ed': { display_name: 'Special Edition' } }, default_color: 'black' },
+      selected: {
+        colors: ['black'],
+        editions: { 'special-ed': { display_name: 'Special Edition', colors: ['olive+khaki'] } },
+        default_color: 'black',
+      },
       variant_registry: [
         { variant_id: 'v_aa', variant_key: 'color:black', variant_type: 'color', color_atoms: ['black'] },
         { variant_id: 'v_cc', variant_key: 'edition:special-ed', variant_type: 'edition', color_atoms: ['olive', 'khaki'], edition_slug: 'special-ed' },
@@ -773,7 +782,7 @@ describe('deleteVariant', () => {
     });
     specDb.insertFieldCandidate({
       productId: PID, fieldKey: 'colors', sourceId: 'cef-col-1', sourceType: 'cef',
-      value: '["black","olive","khaki"]', confidence: 0.95, model: 'test',
+      value: '["black","olive+khaki"]', confidence: 0.95, model: 'test',
       validationJson: {}, metadataJson: {},
     });
 
@@ -784,13 +793,16 @@ describe('deleteVariant', () => {
     const edCandidates = specDb.getFieldCandidatesByProductAndField(PID, 'editions');
     assert.equal(edCandidates.length, 0, 'edition candidate deleted');
 
-    // Color candidate should have olive+khaki stripped
+    // Color candidate should have the edition combo stripped
     const colCandidates = specDb.getFieldCandidatesByProductAndField(PID, 'colors');
     assert.equal(colCandidates.length, 1);
     const colVal = JSON.parse(colCandidates[0].value);
-    assert.ok(!colVal.includes('olive'), 'edition atom stripped from colors');
-    assert.ok(!colVal.includes('khaki'), 'edition atom stripped from colors');
+    assert.ok(!colVal.includes('olive+khaki'), 'edition combo stripped from colors');
     assert.ok(colVal.includes('black'), 'non-edition color preserved');
+
+    const pj = readProductJson(PID);
+    assert.deepEqual(pj.candidates.colors[0].value, ['black'], 'product.json colors candidate strips the edition combo');
+    assert.equal(pj.candidates.editions, undefined, 'product.json edition candidate removed when emptied');
   }));
 
   it('returns deleted false for missing variant', withEnv(({ specDb, root }) => {
@@ -805,7 +817,8 @@ describe('deleteAllVariants', () => {
     seedCefSummary(specDb);
     ensureProductJson(PID, {
       candidates: {
-        colors: [{ value: ['black', 'white'], source_id: 'cef-test-1', source_type: 'cef', confidence: 0.95 }],
+        colors: [{ value: ['black', 'white', 'olive+khaki'], source_id: 'cef-test-1', source_type: 'cef', confidence: 0.95 }],
+        editions: [{ value: ['special-ed'], source_id: 'cef-test-ed-1', source_type: 'cef', confidence: 0.95 }],
       },
     });
     ensureCefJson(PID, {
@@ -822,7 +835,12 @@ describe('deleteAllVariants', () => {
     // Seed SQL candidates
     specDb.insertFieldCandidate({
       productId: PID, fieldKey: 'colors', sourceId: 'cef-test-1', sourceType: 'cef',
-      value: '["black","white"]', confidence: 0.95, model: 'test',
+      value: '["black","white","olive+khaki"]', confidence: 0.95, model: 'test',
+      validationJson: {}, metadataJson: {}, status: 'resolved',
+    });
+    specDb.insertFieldCandidate({
+      productId: PID, fieldKey: 'editions', sourceId: 'cef-test-ed-1', sourceType: 'cef',
+      value: '["special-ed"]', confidence: 0.95, model: 'test',
       validationJson: {}, metadataJson: {},
     });
 
@@ -848,6 +866,8 @@ describe('deleteAllVariants', () => {
     const pj = readProductJson(PID);
     assert.equal(pj.fields.colors, undefined, 'colors field cleared');
     assert.equal(pj.fields.editions, undefined, 'editions field cleared');
+    assert.equal(pj.candidates.colors, undefined, 'colors candidates cleared');
+    assert.equal(pj.candidates.editions, undefined, 'editions candidates cleared');
 
     // CEF JSON variant_registry empty
     const cef = readCefJson(PID);
@@ -859,6 +879,7 @@ describe('deleteAllVariants', () => {
 
     // SQL candidates stripped (all values came from these variants)
     assert.equal(specDb.getFieldCandidatesByProductAndField(PID, 'colors').length, 0);
+    assert.equal(specDb.getFieldCandidatesByProductAndField(PID, 'editions').length, 0);
   }));
 
   it('returns deleted 0 when no variants exist', withEnv(({ specDb, root }) => {

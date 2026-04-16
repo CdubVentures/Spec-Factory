@@ -241,6 +241,73 @@ test('catalog routes: product detail resolves identity through specDb when catal
   assert.equal(result.body.normalized.identity.variant, 'Db Variant');
 });
 
+// --- specDb wiring tests (delete, single-add dedup, bulk-add upsert) ---
+
+test('catalog routes: DELETE passes specDb to removeProduct so it can find the product', async () => {
+  let receivedSpecDb = 'NOT_SET';
+  const specDb = {
+    category: 'mouse',
+    upsertProduct: noop,
+  };
+
+  const handler = registerCatalogRoutes(makeCatalogCtx({
+    getSpecDb: (cat) => (cat === 'mouse' ? specDb : null),
+    catalogRemoveProduct: async ({ specDb: sd }) => {
+      receivedSpecDb = sd;
+      return { ok: true, removed: true };
+    },
+  }));
+
+  await handler(['catalog', 'mouse', 'products', 'mouse-abc123'], new URLSearchParams(), 'DELETE', {}, {});
+  assert.equal(receivedSpecDb, specDb, 'specDb must be forwarded to catalogRemoveProduct');
+});
+
+test('catalog routes: single POST passes specDb to addProduct for dedup', async () => {
+  let receivedSpecDb = 'NOT_SET';
+  const specDb = {
+    category: 'mouse',
+    upsertProduct: noop,
+  };
+
+  const handler = registerCatalogRoutes(makeCatalogCtx({
+    readJsonBody: async () => ({ brand: 'Razer', base_model: 'Viper' }),
+    getSpecDb: (cat) => (cat === 'mouse' ? specDb : null),
+    catalogAddProduct: async ({ specDb: sd }) => {
+      receivedSpecDb = sd;
+      return { ok: true, productId: 'mouse-abc', product: { brand: 'Razer', base_model: 'Viper', variant: '', status: 'active', identifier: 'x' } };
+    },
+  }));
+
+  await handler(['catalog', 'mouse', 'products'], new URLSearchParams(), 'POST', {}, {});
+  assert.equal(receivedSpecDb, specDb, 'specDb must be forwarded to catalogAddProduct');
+});
+
+test('catalog routes: bulk POST passes specDb and upserts each created product to SQL', async () => {
+  let receivedSpecDb = 'NOT_SET';
+  const upsertRows = [];
+  const specDb = {
+    category: 'mouse',
+    upsertProduct: (row) => { upsertRows.push(row); },
+  };
+
+  const handler = registerCatalogRoutes(makeCatalogCtx({
+    readJsonBody: async () => ({ brand: 'Razer', rows: [{ base_model: 'Viper' }] }),
+    getSpecDb: (cat) => (cat === 'mouse' ? specDb : null),
+    catalogAddProductsBulk: async ({ specDb: sd }) => {
+      receivedSpecDb = sd;
+      return {
+        ok: true, created: 1, skipped_existing: 0, skipped_duplicate: 0, invalid: 0, failed: 0,
+        results: [{ index: 0, brand: 'Razer', base_model: 'Viper', model: 'Viper', variant: '', productId: 'mouse-new1', status: 'created', identifier: 'x1' }],
+      };
+    },
+  }));
+
+  await handler(['catalog', 'mouse', 'products', 'bulk'], new URLSearchParams(), 'POST', {}, {});
+  assert.equal(receivedSpecDb, specDb, 'specDb must be forwarded to catalogAddProductsBulk');
+  assert.equal(upsertRows.length, 1, 'bulk add must upsert each created product to SQL');
+  assert.equal(upsertRows[0].product_id, 'mouse-new1');
+});
+
 test('brand routes: seed emits typed data-change contract', async () => {
   const emitted = [];
   const handler = registerBrandRoutes(makeBrandCtx({

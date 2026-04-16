@@ -563,37 +563,9 @@ function PifSettingsForm({
         </div>
       </SettingsCard>
 
-      {/* ── Prompt Configuration ── */}
-      <SettingsCard title="Prompt Configuration" subtitle="Override the default LLM instructions">
-        <PromptOverrideEditor
-          label="View Prompt Instructions"
-          storageKey="moduleSettings:promptOverride:viewPrompt"
-          value={settings.viewPromptOverride || ''}
-          isSaving={isSaving}
-          onSave={(val) => onSave('viewPromptOverride', val)}
-        />
-        <PromptOverrideEditor
-          label="Hero Prompt Instructions"
-          storageKey="moduleSettings:promptOverride:heroPrompt"
-          value={settings.heroPromptOverride || ''}
-          isSaving={isSaving}
-          onSave={(val) => onSave('heroPromptOverride', val)}
-        />
-        <PromptOverrideEditor
-          label="Eval View Prompt Instructions"
-          storageKey="moduleSettings:promptOverride:evalPrompt"
-          value={settings.evalPromptOverride || ''}
-          isSaving={isSaving}
-          onSave={(val) => onSave('evalPromptOverride', val)}
-        />
-        <PromptOverrideEditor
-          label="Eval Hero Prompt Instructions"
-          storageKey="moduleSettings:promptOverride:heroEvalPrompt"
-          value={settings.heroEvalPromptOverride || ''}
-          isSaving={isSaving}
-          onSave={(val) => onSave('heroEvalPromptOverride', val)}
-        />
-      </SettingsCard>
+      <p className="text-[10px] sf-text-muted mt-2 px-1">
+        Prompt templates and eval criteria are edited in LLM Config &rarr; Image Finder and Carousel Builder.
+      </p>
     </div>
   );
 }
@@ -1013,65 +985,6 @@ function ViewBudgetEditor({
   );
 }
 
-/* ── Prompt Override Editor ──────────────────────────────────────── */
-
-function PromptOverrideEditor({
-  label,
-  storageKey,
-  value,
-  isSaving,
-  onSave,
-}: {
-  label: string;
-  storageKey: string;
-  value: string;
-  isSaving: boolean;
-  onSave: (val: string) => void;
-}) {
-  const [expanded, toggleExpanded] = usePersistedToggle(storageKey, false);
-  const hasOverride = Boolean(value.trim());
-
-  return (
-    <div className="rounded border sf-border-soft overflow-hidden mb-2">
-      <button
-        onClick={toggleExpanded}
-        type="button"
-        className="w-full flex items-center gap-2.5 px-3 py-2.5 cursor-pointer select-none hover:opacity-80"
-      >
-        <span
-          className="text-[10px] sf-text-muted shrink-0 transition-transform duration-150"
-          style={{ transform: expanded ? 'rotate(90deg)' : 'none' }}
-        >
-          {'\u25B6'}
-        </span>
-        <span className="text-[11px] font-semibold sf-text-primary">{label}</span>
-        <div className="flex-1" />
-        {hasOverride ? (
-          <span
-            onClick={(e) => { e.stopPropagation(); onSave(''); }}
-            className="text-[10px] px-1.5 py-0.5 rounded sf-btn-ghost sf-text-muted cursor-pointer"
-          >
-            Clear Override
-          </span>
-        ) : (
-          <span className="text-[10px] sf-text-muted">Using default</span>
-        )}
-      </button>
-      {expanded && (
-        <div className="px-3 pb-3 border-t sf-border-soft">
-          <textarea
-            value={value}
-            onChange={(e) => onSave(e.target.value)}
-            disabled={isSaving}
-            placeholder="Leave empty to use the built-in default prompt. Edit to customize the instruction block."
-            className="sf-input w-full px-3 py-2 mt-3 rounded sf-text-label font-mono text-[11px] leading-relaxed resize-y"
-            rows={8}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
 
 /* ── CEF Settings ────────────────────────────────────────────────── */
 
@@ -1086,7 +999,7 @@ function CefSettingsForm({
 }) {
   return (
     <div className="space-y-4">
-      <p className="text-[11px] sf-text-muted">No configurable settings for this module.</p>
+      <p className="text-[10px] sf-text-muted">Prompt templates are edited in LLM Config &rarr; Color &amp; Edition Finder.</p>
     </div>
   );
 }

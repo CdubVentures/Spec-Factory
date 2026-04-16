@@ -26,6 +26,17 @@ function writeProductJson(productRoot, productId, data) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
 
+function getColorVariantCombo(variant) {
+  return String(variant?.variant_key || '').replace(/^color:/, '');
+}
+
+function getEditionColorCombo(variant) {
+  const atoms = Array.isArray(variant?.color_atoms)
+    ? variant.color_atoms.filter(atom => typeof atom === 'string' && atom.length > 0)
+    : [];
+  return atoms.join('+');
+}
+
 // ── Derive display names from variant table (pure) ─────────────────
 
 /**
@@ -49,7 +60,7 @@ export function deriveColorNamesFromVariants(variants, publishedColors, publishe
     if (v.variant_type === 'color' && v.variant_label) {
       // WHY: Use combo string from variant_key, not individual atoms.
       // Published colors are combo strings (e.g. "white+silver"), not split atoms.
-      const combo = v.variant_key.replace(/^color:/, '');
+      const combo = getColorVariantCombo(v);
       if (combo && colorSet.has(combo)) {
         colorNames[combo] = v.variant_label;
       }
@@ -58,10 +69,10 @@ export function deriveColorNamesFromVariants(variants, publishedColors, publishe
       // selected.editions stored combo strings ["black+gray+orange"].
       // Frontend iterates .colors and renders each entry as a color pill,
       // so we must re-join to preserve the combo display.
-      const atoms = v.color_atoms || [];
+      const combo = getEditionColorCombo(v);
       editionDetails[v.edition_slug] = {
         display_name: v.edition_display_name || v.edition_slug,
-        colors: atoms.length > 0 ? [atoms.join('+')] : [],
+        colors: combo ? [combo] : [],
       };
     }
   }
@@ -93,7 +104,7 @@ export function derivePublishedFromVariants({ specDb, productId, productRoot }) 
       // WHY: Publish the combo string (e.g. "white+silver"), not individual atoms.
       // Atom splitting is only for palette validation. The combo is the variant key
       // and the contract buildVariantList / PIF depend on.
-      const combo = v.variant_key.replace(/^color:/, '');
+      const combo = getColorVariantCombo(v);
       if (combo && !colors.includes(combo)) colors.push(combo);
     } else if (v.variant_type === 'edition') {
       if (v.edition_slug && !editions.includes(v.edition_slug)) {
@@ -171,7 +182,7 @@ function removeVariantFromJson({ productId, variantId, productRoot }) {
       if (v.variant_type === 'color') {
         // WHY: Use combo string from variant_key, not split atoms from color_atoms.
         // Must match derivePublishedFromVariants so rebuild produces correct state.
-        const combo = v.variant_key.replace(/^color:/, '');
+        const combo = getColorVariantCombo(v);
         if (combo && !colors.includes(combo)) colors.push(combo);
       } else if (v.variant_type === 'edition') {
         // WHY: Preserve edition detail from existing selected if available
@@ -211,17 +222,18 @@ function stripVariantFromCandidates({ specDb, productId, variant, productRoot })
   if (variant.variant_type === 'color') {
     // WHY: Use combo string from variant_key, not split atoms from color_atoms.
     // Candidates store combo strings (e.g. "white+silver"), not individual atoms.
-    const combo = variant.variant_key.replace(/^color:/, '');
+    const combo = getColorVariantCombo(variant);
     if (combo) strips.push({ fieldKey: 'colors', values: [combo] });
   } else if (variant.variant_type === 'edition') {
     if (variant.edition_slug) {
       strips.push({ fieldKey: 'editions', values: [variant.edition_slug] });
     }
-    // WHY: Edition color_atoms are evidence of the edition's colorway. When
-    // the edition is deleted, these atoms are invalid evidence in colors candidates.
-    // Unlike color variants (which use combo strings), edition atoms are individual.
-    if (variant.color_atoms?.length > 0) {
-      strips.push({ fieldKey: 'colors', values: variant.color_atoms });
+    // WHY: CEF colors candidates store the edition colorway as one combo string
+    // (e.g. "dark-gray+black+orange"), not split atoms. Delete must strip that
+    // canonical stored value or the row survives with stale evidence.
+    const combo = getEditionColorCombo(variant);
+    if (combo) {
+      strips.push({ fieldKey: 'colors', values: [combo] });
     }
   }
 

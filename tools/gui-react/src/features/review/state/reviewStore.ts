@@ -51,8 +51,6 @@ interface ReviewState {
   coverageFilter: CoverageFilter;
   runStatusFilter: RunStatusFilter;
 
-  // Existing actions
-  setActiveCell: (cell: ActiveCell | null) => void;
   openDrawer: (productId: string, field: string) => void;
   closeDrawer: () => void;
 
@@ -95,7 +93,6 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
   coverageFilter: 'all',
   runStatusFilter: 'all',
 
-  setActiveCell: (cell) => set({ activeCell: cell }),
   openDrawer: (productId, field) => {
     set({ activeCell: { productId, field }, drawerOpen: true });
   },

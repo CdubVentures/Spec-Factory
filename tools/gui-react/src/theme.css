@@ -2024,6 +2024,19 @@ html[data-sf-theme-mode='dark'] .sf-component-row-pending-ai-soft {
   outline: none;
 }
 
+/* ── Review Matrix: grab-and-go pan cursors ─── */
+.sf-grid-pannable {
+  cursor: grab;
+}
+.sf-grid-pannable .sf-review-matrix-cell-editing {
+  cursor: text;
+}
+.sf-grid-panning,
+.sf-grid-panning * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
 .sf-border-default {
   border-color: rgb(var(--sf-color-border-default-rgb));
 }
