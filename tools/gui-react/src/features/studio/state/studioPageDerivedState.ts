@@ -76,16 +76,14 @@ export interface StudioCompileStatusOptions {
 }
 
 export interface StudioPageProcessStateOptions {
-  processCommand?: string | null;
-  processRunning?: boolean;
-  processExitCode?: number | null;
+  compileRunning: boolean;
+  validateRunning: boolean;
+  compileError: string | null;
   compilePending: boolean;
   validatePending: boolean;
 }
 
 export interface StudioPageProcessState {
-  isCompileProcessCommand: boolean;
-  isValidateProcessCommand: boolean;
   compileProcessRunning: boolean;
   compileProcessFailed: boolean;
   reportsTabRunning: boolean;
@@ -252,37 +250,16 @@ export function deriveStudioCompileStatus({
 }
 
 export function deriveStudioPageProcessState({
-  processCommand,
-  processRunning = false,
-  processExitCode,
+  compileRunning,
+  validateRunning,
+  compileError,
   compilePending,
   validatePending,
 }: StudioPageProcessStateOptions): StudioPageProcessState {
-  const processCommandToken = String(processCommand || '').toLowerCase();
-  const isCompileProcessCommand =
-    processCommandToken.includes('compile-rules') ||
-    processCommandToken.includes('category-compile');
-  const isValidateProcessCommand =
-    processCommandToken.includes('validate-rules');
-  const compileProcessRunning =
-    Boolean(processRunning) && isCompileProcessCommand;
-  const compileProcessFailed =
-    !processRunning &&
-    isCompileProcessCommand &&
-    processExitCode !== null &&
-    processExitCode !== undefined &&
-    Number(processExitCode) !== 0;
-
   return {
-    isCompileProcessCommand,
-    isValidateProcessCommand,
-    compileProcessRunning,
-    compileProcessFailed,
-    reportsTabRunning:
-      compilePending ||
-      validatePending ||
-      (Boolean(processRunning) &&
-        (isCompileProcessCommand || isValidateProcessCommand)),
+    compileProcessRunning: compileRunning,
+    compileProcessFailed: compileError !== null,
+    reportsTabRunning: compilePending || validatePending || compileRunning || validateRunning,
   };
 }
 

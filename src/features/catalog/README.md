@@ -3,12 +3,12 @@ Own catalog product, brand, identity, and artifact-migration behavior behind the
 This feature is the stable source for catalog-backed product identity and catalog maintenance workflows.
 
 ## Public API (The Contract)
-- `src/features/catalog/index.js`: product catalog CRUD/list flows, brand registry/rename helpers, identity gate and authority helpers, `discoverCategoriesLocal()`, `scanOrphans()`, `reconcileOrphans()`.
+- `src/features/catalog/index.js`: product catalog CRUD/list flows, `deleteProductCascade()` (full product deletion with cascade to all 21 product-scoped tables + filesystem), brand registry/rename helpers, identity gate and authority helpers, `discoverCategoriesLocal()`, `scanOrphans()`, `reconcileOrphans()`.
 - `src/features/catalog/api/catalogRoutes.js`: `registerCatalogRoutes(ctx)`.
 - `src/features/catalog/api/brandRoutes.js`: `registerBrandRoutes(ctx)`.
 
 ## Dependencies
-- Allowed: internal modules under `src/features/catalog/**`, `src/core/events/dataChangeContract.js`, `src/core/events/dataPropagationCounters.js`, `src/queue/queueState.js`, and existing low-level helpers in `src/utils/**`.
+- Allowed: internal modules under `src/features/catalog/**`, `src/core/events/dataChangeContract.js`, `src/core/events/dataPropagationCounters.js`, `src/core/finder/finderModuleRegistry.js`, `src/core/config/runtimeArtifactRoots.js`, `src/db/stores/deletionStore.js`, `src/queue/queueState.js`, and existing low-level helpers in `src/utils/**`.
 - Forbidden: cross-feature deep imports from other feature internals; other domains should consume catalog via `src/features/catalog/index.js`.
 
 ## Domain Invariants

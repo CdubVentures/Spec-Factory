@@ -192,7 +192,6 @@ export class SpecDb {
         _getVariant: this._getVariant,
         _listVariantsByProduct: this._listVariantsByProduct,
         _listActiveVariantsByProduct: this._listActiveVariantsByProduct,
-        _retireVariant: this._retireVariant,
         _deleteVariant: this._deleteVariant,
         _deleteVariantsByProduct: this._deleteVariantsByProduct,
       },

@@ -208,8 +208,8 @@
     <dt>confirmed_from_known</dt><dd>Colors/editions from prior runs that the LLM re-confirmed this run</dd>
     <dt>added_new</dt><dd>Newly discovered colors/editions not seen in prior runs</dd>
     <dt>rejected_from_known</dt><dd>Previously known items the LLM determined are incorrect</dd>
-    <dt>urls_checked</dt><dd>All URLs the LLM visited during search (accumulated across runs)</dd>
-    <dt>queries_run</dt><dd>All search queries the LLM executed (accumulated across runs)</dd>
+    <dt>urls_checked</dt><dd>URLs the LLM visited during this run (audit-only &mdash; not fed forward to next run)</dd>
+    <dt>queries_run</dt><dd>Search queries the LLM executed this run (audit-only &mdash; not fed forward)</dd>
   </dl>
 </div>
 </div>
@@ -409,7 +409,7 @@
 
   <dl class="detail-grid" style="margin-top:10px;">
     <dt>Web verification</dt><dd>Judge uses scoped web queries ("{brand} {model} [color name]") against manufacturer site + 1-2 retailers. Not endless searching.</dd>
-    <dt>Ambiguity context</dt><dd>Judge receives <code>familyModelCount</code> + <code>ambiguityLevel</code> to detect colors belonging to sibling models.</dd>
+    <dt>Ambiguity context</dt><dd>Judge receives <code>familyModelCount</code> + <code>ambiguityLevel</code> + explicit <strong>sibling model names</strong> (from DB) to detect colors belonging to sibling models.</dd>
     <dt>Trust anchor</dt><dd>Existing registry variants are treated as "confirmed unless proven wrong." Burden of proof is on new discoveries.</dd>
   </dl>
 </div>
@@ -420,15 +420,15 @@
 <div class="card-body">
 <ul class="rule-list">
   <li><span class="rule-icon rule-icon-accent">1</span> <strong>base_model + variant:</strong> CEF uses both fields together to identify the exact product. A "DeathAdder V3" (wired) and "DeathAdder V3 Pro" (wireless) are separate products with separate color inventories.</li>
-  <li><span class="rule-icon rule-icon-accent">2</span> <strong>Sibling exclusion:</strong> When LLM search returns colors for related but different models, those siblings are excluded and logged in <code>siblings_excluded</code>.</li>
-  <li><span class="rule-icon rule-icon-accent">3</span> <strong>Family count / ambiguity:</strong> CEF reads <code>familyModelCount</code> and <code>ambiguityLevel</code> from <code>resolveIdentityAmbiguitySnapshot</code>. High sibling counts trigger stronger IDENTITY WARNING blocks in the prompt.</li>
+  <li><span class="rule-icon rule-icon-accent">2</span> <strong>Sibling exclusion:</strong> Sibling model names are resolved from the DB and injected as &ldquo;This product is NOT: X, Y, Z&rdquo;. LLM-discovered siblings are also logged in <code>siblings_excluded</code>.</li>
+  <li><span class="rule-icon rule-icon-accent">3</span> <strong>Family count / ambiguity:</strong> CEF reads <code>familyModelCount</code>, <code>ambiguityLevel</code>, and <code>siblingModels</code> from <code>resolveIdentityAmbiguitySnapshot</code>. High sibling counts trigger stronger IDENTITY WARNING blocks in the prompt, and explicit model names enable precise exclusion.</li>
 </ul>
   <table style="margin-top:12px;">
     <thead><tr><th>Ambiguity</th><th>Family Size</th><th>Prompt Behavior</th></tr></thead>
     <tbody>
-      <tr><td><span class="tag tag-green">Easy</span></td><td>1 model</td><td>Standard identity matching</td></tr>
-      <tr><td><span class="tag tag-orange">Medium</span></td><td>2&ndash;5 models</td><td>CAUTION block: verify exact model in URLs and page titles</td></tr>
-      <tr><td><span class="tag tag-red">Hard+</span></td><td>6+ models</td><td>HIGH AMBIGUITY block: triple-check, skip if unconfirmed</td></tr>
+      <tr><td><span class="tag tag-green">Easy</span></td><td>1 model</td><td>Standard identity matching (no siblings)</td></tr>
+      <tr><td><span class="tag tag-orange">Medium</span></td><td>2&ndash;5 models</td><td>CAUTION block + &ldquo;This product is NOT: X, Y&rdquo; sibling list</td></tr>
+      <tr><td><span class="tag tag-red">Hard+</span></td><td>6+ models</td><td>HIGH AMBIGUITY block + explicit sibling list: triple-check, skip if unconfirmed</td></tr>
     </tbody>
   </table>
 </div>
@@ -512,15 +512,13 @@
 <div class="card">
 <div class="card-header" style="background:var(--teal-bg);">Cumulative Knowledge Across Runs</div>
 <div class="card-body">
-  <p>Each CEF run builds on prior runs. The <code>buildKnownInputs(previousRuns)</code> function accumulates all discovery from prior non-rejected runs and feeds it into the next prompt as "known inputs".</p>
+  <p>Each CEF run builds on prior runs. The <code>buildKnownInputs(previousRuns)</code> function accumulates discovery from prior non-rejected runs and feeds it into the next prompt as &ldquo;previous findings.&rdquo;</p>
   <dl class="detail-grid">
     <dt>knownColors</dt><dd>Union of all <code>colors</code> from prior non-rejected runs (growth pattern: once found, stays visible)</dd>
     <dt>knownColorNames</dt><dd>Latest name per atom across all runs</dd>
     <dt>knownEditions</dt><dd>Union of all edition slugs across all runs</dd>
-    <dt>urlsAlreadyChecked</dt><dd>Union of all <code>discovery_log.urls_checked</code> across all runs</dd>
-    <dt>domainsAlreadyChecked</dt><dd>Domain-level dedup of checked URLs</dd>
   </dl>
-  <p style="margin-top:12px;">The LLM receives all known inputs in a "KNOWN INPUTS" section of the system prompt. It must confirm or reject each known item and discover NEW items the prior runs missed.</p>
+  <p style="margin-top:12px;">URLs and queries are <strong>NOT</strong> fed forward &mdash; the LLM decides its own search strategy fresh each run. Only colors, names, and editions are injected so the LLM knows what to re-verify and expand beyond.</p>
 </div>
 </div>
 

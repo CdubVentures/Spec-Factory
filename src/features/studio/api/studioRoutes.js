@@ -1,5 +1,6 @@
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { runEnumConsistencyReview as runEnumConsistencyReviewDefault } from '../../indexing/index.js';
+import { executeCommand } from '../../../core/operations/commandExecutor.js';
 import { hashJson } from '../../../ingest/compileUtils.js';
 import { normalizeFieldStudioMap } from '../../../ingest/compileMapNormalization.js';
 import {
@@ -56,6 +57,7 @@ export function registerStudioRoutes(ctx) {
     cleanVariant,
     runEnumConsistencyReview = runEnumConsistencyReviewDefault,
     appDb,
+    syncSpecDbForCategory,
   } = ctx;
   const hasStudioMapHandlers = (
     typeof saveFieldStudioMap === 'function'
@@ -175,26 +177,30 @@ export function registerStudioRoutes(ctx) {
       return jsonRes(res, 200, { products, brands: [...brandSet].sort() });
     }
 
-    // Studio compile
+    // Studio compile (in-process via command executor)
     if (parts[0] === 'studio' && parts[1] && parts[2] === 'compile' && method === 'POST') {
       const category = parts[1];
-      try {
-        const status = startProcess('src/app/cli/spec.js', ['compile-rules', '--category', category, '--local']);
-        return jsonRes(res, 200, status);
-      } catch (err) {
-        return jsonRes(res, 409, { error: err.message });
-      }
+      const { operationId, error } = await executeCommand({
+        type: 'compile',
+        category,
+        config,
+        deps: { sessionCache, invalidateFieldRulesCache, reviewLayoutByCategory, syncSpecDbForCategory, getSpecDb, broadcastWs },
+      });
+      if (error === 'category_busy') return jsonRes(res, 409, { error: 'category_busy' });
+      return jsonRes(res, 200, { operationId, type: 'compile', category, running: true });
     }
 
-    // Studio: validate rules
+    // Studio: validate rules (in-process via command executor)
     if (parts[0] === 'studio' && parts[1] && parts[2] === 'validate-rules' && method === 'POST') {
       const category = parts[1];
-      try {
-        const status = startProcess('src/app/cli/spec.js', ['validate-rules', '--category', category, '--local']);
-        return jsonRes(res, 200, status);
-      } catch (err) {
-        return jsonRes(res, 409, { error: err.message });
-      }
+      const { operationId, error } = await executeCommand({
+        type: 'validate',
+        category,
+        config,
+        deps: {},
+      });
+      if (error === 'category_busy') return jsonRes(res, 409, { error: 'category_busy' });
+      return jsonRes(res, 200, { operationId, type: 'validate', category, running: true });
     }
 
     if (parts[0] === 'studio' && parts[1] && parts[2] === 'guardrails' && method === 'GET') {

@@ -76,7 +76,6 @@ export function StudioPageShell({
 }: StudioPageShellProps) {
   const saveStudioDocsMut = { isPending: savePending };
   const compileMut = { isPending: compilePending };
-  const processStatus = { running: processRunning };
   const runCompileFromStudio = onRunCompile;
   const reloadAuthoritySnapshot = onReloadAuthoritySnapshot;
   const keepLocalChangesForAuthorityConflict =
@@ -206,7 +205,7 @@ export function StudioPageShell({
 
             <button
               onClick={runCompileFromStudio}
-              disabled={compileMut.isPending || processStatus.running}
+              disabled={compileMut.isPending || compileProcessRunning}
               className={`${btnPrimary} relative h-11 min-h-11 text-sm rounded inline-flex items-center justify-center overflow-visible whitespace-nowrap ${actionBtnWidth}`}
             >
               <span className="w-full text-center font-medium truncate">
@@ -214,7 +213,7 @@ export function StudioPageShell({
                   ? "Compiling..."
                   : compileMut.isPending
                     ? "Starting..."
-                    : processStatus.running
+                    : processRunning
                       ? "Process Running..."
                       : "Compile & Generate"}
               </span>

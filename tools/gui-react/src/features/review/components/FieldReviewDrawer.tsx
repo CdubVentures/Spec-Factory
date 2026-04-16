@@ -12,7 +12,8 @@ import {
   DrawerManualOverride,
 } from '../../../shared/ui/overlay/DrawerShell.tsx';
 import type { ReviewCandidate } from '../../../types/review.ts';
-import { FinderRunModelBadge } from '../../../shared/ui/finder/index.ts';
+import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
+import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTypes.ts';
 import { CandidateDeleteConfirm } from './CandidateDeleteConfirm.tsx';
 
 // ── Helpers ─────────────────────────────────────────────────────────
@@ -269,16 +270,28 @@ function CandidateCard({
         <ValueChips value={parsedArray} publishedValue={publishedValue} />
       )}
 
-      {/* Source label + model badge */}
-      {(candidate.source || candidate.model) && (
-        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-          {candidate.source && (
-            <span className="text-[10px] sf-text-muted">{sourceDisplayLabel(candidate.source)}</span>
-          )}
-          {candidate.model && (
-            <FinderRunModelBadge model={candidate.model} accessMode="api" />
-          )}
-        </div>
+      {/* Source label */}
+      {candidate.source && (
+        <span className="text-[10px] sf-text-muted mt-0.5">{sourceDisplayLabel(candidate.source)}</span>
+      )}
+      {/* Model line — exact operations sidebar format: [badges] model-name effort */}
+      {candidate.model && (
+        <span className="flex items-center gap-1 text-[8px] sf-text-muted mt-0.5">
+          Model:{' '}
+          <span className="inline-flex items-center gap-0.5 font-mono font-bold sf-text-subtle">
+            {typeof meta?.llm_access_mode === 'string' && (
+              <ModelBadgeGroup
+                accessMode={meta.llm_access_mode as LlmAccessMode}
+                thinking={Boolean(meta?.llm_thinking)}
+                webSearch={Boolean(meta?.llm_web_search)}
+              />
+            )}
+            {candidate.model}
+            {typeof meta?.llm_effort_level === 'string' && meta.llm_effort_level !== '' && (
+              <span className="sf-text-muted font-normal">{meta.llm_effort_level}</span>
+            )}
+          </span>
+        </span>
       )}
 
       {/* Source URL */}
@@ -316,7 +329,7 @@ function CandidateCard({
           {onDeleteCandidate && candidate.source_id && (
             <button
               onClick={() => onDeleteCandidate(candidate.source_id)}
-              className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded sf-danger-button"
+              className="inline-flex items-center justify-center gap-1 px-2 h-[22px] text-[10px] font-medium rounded sf-danger-button"
               title="Delete this candidate"
             >
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-[11px] h-[11px]">
@@ -327,7 +340,7 @@ function CandidateCard({
           {onReviewSource && (
             <button
               onClick={() => onReviewSource(candidate.candidate_id)}
-              className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded sf-review-source-button"
+              className="inline-flex items-center justify-center gap-1 px-2 h-[22px] text-[10px] font-medium rounded sf-review-source-button"
             >
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-[11px] h-[11px]">
                 <path d="M8 1v6m0 0l2.5-2.5M8 7L5.5 4.5M1 10v2.5A2.5 2.5 0 003.5 15h9a2.5 2.5 0 002.5-2.5V10" />

@@ -84,6 +84,7 @@ export function applyMigrations(db) {
   }
   db.exec(SECONDARY_INDEXES);
   migrateFieldCandidatesToSourceCentric(db);
+  migrateFieldCandidatesAddVariantColumns(db);
 }
 
 /**
@@ -225,6 +226,89 @@ export function migrateFieldCandidatesToSourceCentric(db) {
     db.exec('ALTER TABLE field_candidates_new RENAME TO field_candidates');
 
     // Recreate indexes
+    db.exec('CREATE INDEX IF NOT EXISTS idx_fc_product ON field_candidates(product_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_fc_field ON field_candidates(category, product_id, field_key)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_fc_source_id ON field_candidates(category, product_id, field_key, source_id)');
+  });
+
+  tx();
+}
+
+/**
+ * Variant-aware migration: recreate field_candidates with variant_id and
+ * variant_id_key (generated column) plus updated UNIQUE constraint.
+ *
+ * WHY: SQLite does not support ALTER TABLE ADD COLUMN for generated columns,
+ * so the table must be recreated. Preserves all existing data — variant_id
+ * defaults to NULL for existing rows (variant_id_key → '' via COALESCE).
+ *
+ * Idempotent: skips if variant_id column already exists.
+ *
+ * @param {import('better-sqlite3').Database} db
+ */
+export function migrateFieldCandidatesAddVariantColumns(db) {
+  const cols = db.pragma('table_info(field_candidates)');
+  if (cols.some(c => c.name === 'variant_id')) return;
+
+  const allRows = db.prepare('SELECT * FROM field_candidates').all();
+
+  const tx = db.transaction(() => {
+    db.exec(`
+      CREATE TABLE field_candidates_v2 (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category TEXT NOT NULL,
+        product_id TEXT NOT NULL,
+        field_key TEXT NOT NULL,
+        value TEXT,
+        unit TEXT DEFAULT NULL,
+        confidence REAL DEFAULT 0,
+        source_id TEXT NOT NULL DEFAULT '',
+        source_type TEXT NOT NULL DEFAULT '',
+        model TEXT DEFAULT '',
+        validation_json TEXT DEFAULT '{}',
+        metadata_json TEXT DEFAULT '{}',
+        status TEXT DEFAULT 'candidate' CHECK(status IN ('candidate', 'resolved')),
+        variant_id TEXT DEFAULT NULL,
+        variant_id_key TEXT GENERATED ALWAYS AS (COALESCE(variant_id, '')) STORED,
+        submitted_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        UNIQUE(category, product_id, field_key, source_id, variant_id_key)
+      )
+    `);
+
+    const insert = db.prepare(`
+      INSERT OR IGNORE INTO field_candidates_v2
+        (category, product_id, field_key, value, unit, confidence,
+         source_id, source_type, model, validation_json, metadata_json,
+         status, variant_id, submitted_at, updated_at)
+      VALUES
+        (@category, @product_id, @field_key, @value, @unit, @confidence,
+         @source_id, @source_type, @model, @validation_json, @metadata_json,
+         @status, NULL, @submitted_at, @updated_at)
+    `);
+
+    for (const r of allRows) {
+      insert.run({
+        category: r.category || '',
+        product_id: r.product_id || '',
+        field_key: r.field_key || '',
+        value: r.value ?? null,
+        unit: r.unit ?? null,
+        confidence: r.confidence ?? 0,
+        source_id: r.source_id || '',
+        source_type: r.source_type || '',
+        model: r.model || '',
+        validation_json: r.validation_json || '{}',
+        metadata_json: r.metadata_json || '{}',
+        status: r.status || 'candidate',
+        submitted_at: r.submitted_at || null,
+        updated_at: r.updated_at || null,
+      });
+    }
+
+    db.exec('DROP TABLE field_candidates');
+    db.exec('ALTER TABLE field_candidates_v2 RENAME TO field_candidates');
+
     db.exec('CREATE INDEX IF NOT EXISTS idx_fc_product ON field_candidates(product_id)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_fc_field ON field_candidates(category, product_id, field_key)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_fc_source_id ON field_candidates(category, product_id, field_key, source_id)');

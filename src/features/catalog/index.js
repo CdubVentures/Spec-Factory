@@ -39,6 +39,7 @@ export {
 export { generateIdentifier } from './identity/productIdentity.js';
 export { slugify } from './identity/slugify.js';
 export { resolveBrandIdentifier } from './identity/resolveBrandIdentifier.js';
+export { deleteProductCascade } from './products/deleteProductCascade.js';
 export { discoverCategoriesLocal } from './products/discoverCategories.js';
 async function loadCatalogReconciler() {
   return import('./products/reconciler.js');

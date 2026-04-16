@@ -15,3 +15,5 @@ export {
   listOperations,
 } from './operationsRegistry.js';
 export { fireAndForget } from './fireAndForget.js';
+export { executeCommand } from './commandExecutor.js';
+export { COMMAND_REGISTRY, COMMAND_REGISTRY_MAP } from './commandRegistry.js';

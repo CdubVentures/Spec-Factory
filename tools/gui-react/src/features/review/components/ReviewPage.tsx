@@ -6,16 +6,21 @@ import {
   useReviewStore, selectSelectedField, selectSelectedProductId,
   useActiveCell, useDrawerOpen, useCellMode, useEditingValue,
   useOriginalEditingValue, useSaveStatus, useBrandFilter, useSortMode,
+  useConfidenceFilter, useCoverageFilter, useRunStatusFilter,
   useReviewActions,
 } from '../state/reviewStore.ts';
 import type { SortMode } from '../state/reviewStore.ts';
+import { matchesConfidenceFilter, matchesCoverageFilter, matchesRunStatusFilter } from '../selectors/reviewFilterPredicates.ts';
+import { FILTER_REGISTRY } from '../state/reviewFilterRegistry.ts';
+import { FilterGroupBar } from './FilterGroupBar.tsx';
 import { ReviewMatrix } from './ReviewMatrix.tsx';
 import { FieldReviewDrawer } from './FieldReviewDrawer.tsx';
 import { BrandFilterBar } from './BrandFilterBar.tsx';
-import { MetricRow } from '../../../shared/ui/data-display/MetricRow.tsx';
+import { ReviewDashboardStrip } from './ReviewDashboardStrip.tsx';
+import { ReviewToolbar } from './ReviewToolbar.tsx';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
-import { pct } from '../../../utils/formatting.ts';
 import { useFieldLabels } from '../../../hooks/useFieldLabels.ts';
+import { computeReviewDashboardMetrics, deriveReviewKpiCards } from '../selectors/reviewMetricsSelectors.ts';
 import { useDebouncedCallback } from '../../../hooks/useDebounce.ts';
 import { readReviewGridSessionState, writeReviewGridSessionState } from '../state/reviewGridSessionState.ts';
 import type { ReviewLayout, ProductsIndexResponse, CandidateResponse, CandidateDeleteResponse, ReviewCandidate } from '../../../types/review.ts';
@@ -26,6 +31,8 @@ const SORT_OPTIONS: { value: SortMode; label: string }[] = [
   { value: 'brand', label: 'Brand' },
   { value: 'recent', label: 'Recent' },
   { value: 'confidence', label: 'Confidence' },
+  { value: 'coverage', label: 'Coverage' },
+  { value: 'missing', label: 'Missing' },
 ];
 
 function hostFromUrl(url: string): string {
@@ -61,6 +68,9 @@ export function ReviewPage() {
   const saveStatus = useSaveStatus();
   const brandFilter = useBrandFilter();
   const sortMode = useSortMode();
+  const confidenceFilter = useConfidenceFilter();
+  const coverageFilter = useCoverageFilter();
+  const runStatusFilter = useRunStatusFilter();
   const selectedField = useReviewStore(selectSelectedField);
   const selectedProductId = useReviewStore(selectSelectedProductId);
 
@@ -69,6 +79,7 @@ export function ReviewPage() {
     openDrawer, closeDrawer, selectCell, startEditing, cancelEditing,
     setEditingValue, commitEditing, setSaveStatus,
     setAvailableBrands, setBrandFilterMode, setBrandFilterSelection, setSortMode,
+    setFilter,
   } = useReviewActions();
   const queryClient = useQueryClient();
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -119,6 +130,12 @@ export function ReviewPage() {
     } else {
       setBrandFilterMode(persistedGridState.brandFilterMode);
     }
+    for (const def of FILTER_REGISTRY) {
+      const persisted = persistedGridState[def.key as keyof typeof persistedGridState] as string;
+      if (persisted && persisted !== def.defaultValue) {
+        setFilter(def.key, persisted);
+      }
+    }
     reviewGridHydratedRef.current = category;
   }, [
     category,
@@ -127,6 +144,7 @@ export function ReviewPage() {
     setSortMode,
     setBrandFilterMode,
     setBrandFilterSelection,
+    setFilter,
   ]);
 
   useEffect(() => {
@@ -135,8 +153,11 @@ export function ReviewPage() {
       sortMode,
       brandFilterMode: brandFilter.mode,
       selectedBrands: Array.from(brandFilter.selected),
+      confidenceFilter,
+      coverageFilter,
+      runStatusFilter,
     });
-  }, [category, sortMode, brandFilter.mode, brandFilter.selected]);
+  }, [category, sortMode, brandFilter.mode, brandFilter.selected, confidenceFilter, coverageFilter, runStatusFilter]);
 
   // Auto-clear "saved" status after 2 seconds
   useEffect(() => {
@@ -162,6 +183,17 @@ export function ReviewPage() {
       });
     }
 
+    // Metric filters
+    if (confidenceFilter !== 'all') {
+      filtered = filtered.filter((p) => matchesConfidenceFilter(p, confidenceFilter));
+    }
+    if (coverageFilter !== 'all') {
+      filtered = filtered.filter((p) => matchesCoverageFilter(p, coverageFilter));
+    }
+    if (runStatusFilter !== 'all') {
+      filtered = filtered.filter((p) => matchesRunStatusFilter(p, runStatusFilter));
+    }
+
     // Sort
     const sorted = [...filtered];
     switch (sortMode) {
@@ -174,6 +206,12 @@ export function ReviewPage() {
         break;
       case 'confidence':
         sorted.sort((a, b) => a.metrics.confidence - b.metrics.confidence);
+        break;
+      case 'coverage':
+        sorted.sort((a, b) => a.metrics.coverage - b.metrics.coverage);
+        break;
+      case 'missing':
+        sorted.sort((a, b) => b.metrics.missing - a.metrics.missing);
         break;
       case 'brand':
       default:
@@ -188,7 +226,7 @@ export function ReviewPage() {
         break;
     }
     return sorted;
-  }, [indexData?.products, brandFilter, sortMode]);
+  }, [indexData?.products, brandFilter, sortMode, confidenceFilter, coverageFilter, runStatusFilter]);
 
   // First click = select + open drawer. Second click on same cell = start editing.
   // Uses getState() / getQueryData() to avoid stale closure deps that would cause
@@ -349,20 +387,12 @@ export function ReviewPage() {
     }
   }, [cellMode, saveStatus, editingValue, originalEditingValue, activeCell, debouncedSave]);
 
-  // Aggregate metrics — use run-only metrics from server if available
-  const metrics = useMemo(() => {
-    if (!indexData) return null;
-    const mr = indexData.metrics_run;
-    if (mr && mr.count > 0) {
-      return { confidence: mr.confidence, coverage: mr.coverage, missing: mr.missing, count: mr.count };
-    }
-    // Fallback: compute from filtered products
-    if (!products.length) return null;
-    const totalConf = products.reduce((s, p) => s + p.metrics.confidence, 0) / products.length;
-    const totalCov = products.reduce((s, p) => s + p.metrics.coverage, 0) / products.length;
-    const totalMissing = products.reduce((s, p) => s + (p.metrics.missing || 0), 0);
-    return { confidence: totalConf, coverage: totalCov, missing: totalMissing, count: products.length };
-  }, [indexData, products]);
+  // WHY: Always derive from filtered products so metrics match the visible grid state.
+  const dashboardMetrics = useMemo(
+    () => computeReviewDashboardMetrics(products, indexData?.total ?? 0, layout?.rows.length ?? 0),
+    [products, indexData?.total, layout?.rows.length],
+  );
+  const kpiCards = useMemo(() => deriveReviewKpiCards(dashboardMetrics), [dashboardMetrics]);
 
   // Active product for drawer
   const activeProduct = products.find(p => p.product_id === selectedProductId);
@@ -382,37 +412,26 @@ export function ReviewPage() {
 
   return (
     <div className="space-y-2">
-      {/* Top bar: metrics + sort */}
-      <div className="flex items-center justify-between">
-        {metrics && (
-          <MetricRow
-            metrics={[
-              { label: 'Products', value: `${metrics.count}/${indexData.total}` },
-              { label: 'Avg Confidence', value: pct(metrics.confidence) },
-              { label: 'Avg Coverage', value: pct(metrics.coverage) },
-              { label: 'Missing', value: metrics.missing },
-            ]}
-          />
-        )}
-        <div className="flex gap-2 items-center">
-          <select
-            value={sortMode}
-            onChange={(e) => setSortMode(e.target.value as SortMode)}
-            className="w-auto px-2 py-1 rounded sf-select sf-text-nano"
-          >
-            {SORT_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>Sort: {opt.label}</option>
-            ))}
-          </select>
+      {/* Dashboard strip: KPI metrics */}
+      <ReviewDashboardStrip kpiCards={kpiCards} saveStatus={saveStatus} />
 
-          {saveStatus === 'saving' && <span className="sf-text-nano sf-status-text-info">Saving...</span>}
-          {saveStatus === 'saved' && <span className="sf-text-nano sf-status-text-success">Saved</span>}
-          {saveStatus === 'error' && <span className="sf-text-nano sf-status-text-danger">Save failed</span>}
-        </div>
-      </div>
-
-      {/* Brand filter bar */}
-      <BrandFilterBar brands={indexData.brands} products={indexData.products} />
+      {/* Sort + filter toolbar: all controls on one horizontal row */}
+      <ReviewToolbar>
+        <select
+          value={sortMode}
+          onChange={(e) => setSortMode(e.target.value as SortMode)}
+          className="shrink-0 w-auto px-2 py-0.5 rounded sf-select text-[10px]"
+        >
+          {SORT_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>Sort: {opt.label}</option>
+          ))}
+        </select>
+        <div className="sf-review-brand-filter-separator w-px h-4 shrink-0" />
+        <BrandFilterBar brands={indexData.brands} products={indexData.products} />
+        <FilterGroupBar def={FILTER_REGISTRY[0]} value={confidenceFilter} onChange={setFilter} />
+        <FilterGroupBar def={FILTER_REGISTRY[1]} value={coverageFilter} onChange={setFilter} />
+        <FilterGroupBar def={FILTER_REGISTRY[2]} value={runStatusFilter} onChange={setFilter} />
+      </ReviewToolbar>
 
       {/* Main content: matrix + drawer */}
       <div className={`grid ${drawerOpen ? 'grid-cols-[1fr,420px]' : 'grid-cols-1'} gap-3`}>

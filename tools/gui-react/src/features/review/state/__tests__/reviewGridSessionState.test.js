@@ -16,12 +16,18 @@ test('parseReviewGridSessionState returns safe defaults for invalid payloads', a
     sortMode: 'brand',
     brandFilterMode: 'all',
     selectedBrands: [],
+    confidenceFilter: 'all',
+    coverageFilter: 'all',
+    runStatusFilter: 'all',
   });
 
   assert.deepEqual(parseReviewGridSessionState('broken-json'), {
     sortMode: 'brand',
     brandFilterMode: 'all',
     selectedBrands: [],
+    confidenceFilter: 'all',
+    coverageFilter: 'all',
+    runStatusFilter: 'all',
   });
 });
 
@@ -38,6 +44,9 @@ test('parseReviewGridSessionState sanitizes unknown mode values', async () => {
     sortMode: 'brand',
     brandFilterMode: 'custom',
     selectedBrands: ['Razer', 'Pulsar'],
+    confidenceFilter: 'all',
+    coverageFilter: 'all',
+    runStatusFilter: 'all',
   });
 });
 
@@ -69,5 +78,58 @@ test('read/write review grid session state round-trips via localStorage', async 
     sortMode: 'confidence',
     brandFilterMode: 'custom',
     selectedBrands: ['Logitech', 'Razer'],
+    confidenceFilter: 'all',
+    coverageFilter: 'all',
+    runStatusFilter: 'all',
   });
+});
+
+test('parseReviewGridSessionState preserves valid filter values', async () => {
+  const { parseReviewGridSessionState } = await loadReviewGridSessionStateModule();
+
+  const parsed = parseReviewGridSessionState(JSON.stringify({
+    sortMode: 'brand',
+    brandFilterMode: 'all',
+    selectedBrands: [],
+    confidenceFilter: 'high',
+    coverageFilter: 'sparse',
+    runStatusFilter: 'ran',
+  }));
+
+  assert.equal(parsed.confidenceFilter, 'high');
+  assert.equal(parsed.coverageFilter, 'sparse');
+  assert.equal(parsed.runStatusFilter, 'ran');
+});
+
+test('parseReviewGridSessionState sanitizes unknown filter values to defaults', async () => {
+  const { parseReviewGridSessionState } = await loadReviewGridSessionStateModule();
+
+  const parsed = parseReviewGridSessionState(JSON.stringify({
+    sortMode: 'brand',
+    brandFilterMode: 'all',
+    selectedBrands: [],
+    confidenceFilter: 'bogus',
+    coverageFilter: 999,
+    runStatusFilter: null,
+  }));
+
+  assert.equal(parsed.confidenceFilter, 'all');
+  assert.equal(parsed.coverageFilter, 'all');
+  assert.equal(parsed.runStatusFilter, 'all');
+});
+
+test('legacy JSON without filter fields hydrates with defaults (backward compat)', async () => {
+  const { parseReviewGridSessionState } = await loadReviewGridSessionStateModule();
+
+  const parsed = parseReviewGridSessionState(JSON.stringify({
+    sortMode: 'recent',
+    brandFilterMode: 'none',
+    selectedBrands: [],
+  }));
+
+  assert.equal(parsed.sortMode, 'recent');
+  assert.equal(parsed.brandFilterMode, 'none');
+  assert.equal(parsed.confidenceFilter, 'all');
+  assert.equal(parsed.coverageFilter, 'all');
+  assert.equal(parsed.runStatusFilter, 'all');
 });

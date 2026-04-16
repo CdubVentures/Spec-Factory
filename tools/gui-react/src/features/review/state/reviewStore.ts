@@ -1,8 +1,10 @@
 import { create } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import type { CellMode, SaveStatus, BrandFilter } from '../../../types/review.ts';
+import { FILTER_REGISTRY } from './reviewFilterRegistry.ts';
+import type { ConfidenceFilter, CoverageFilter, RunStatusFilter } from './reviewFilterRegistry.ts';
 
-export type SortMode = 'brand' | 'recent' | 'confidence';
+export type SortMode = 'brand' | 'recent' | 'confidence' | 'coverage' | 'missing';
 
 interface ActiveCell {
   productId: string;
@@ -44,6 +46,11 @@ interface ReviewState {
   // Sort
   sortMode: SortMode;
 
+  // Metric filters
+  confidenceFilter: ConfidenceFilter;
+  coverageFilter: CoverageFilter;
+  runStatusFilter: RunStatusFilter;
+
   // Existing actions
   setActiveCell: (cell: ActiveCell | null) => void;
   openDrawer: (productId: string, field: string) => void;
@@ -65,6 +72,9 @@ interface ReviewState {
 
   // Sort action
   setSortMode: (mode: SortMode) => void;
+
+  // Generic filter action (registry-driven)
+  setFilter: (key: string, value: string) => void;
 }
 
 export const useReviewStore = create<ReviewState>((set, get) => ({
@@ -80,6 +90,10 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
   brandFilter: { mode: 'all', selected: new Set<string>() },
 
   sortMode: 'brand',
+
+  confidenceFilter: 'all',
+  coverageFilter: 'all',
+  runStatusFilter: 'all',
 
   setActiveCell: (cell) => set({ activeCell: cell }),
   openDrawer: (productId, field) => {
@@ -203,6 +217,13 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
 
   // Sort action
   setSortMode: (mode) => set({ sortMode: mode }),
+
+  // Generic filter action
+  setFilter: (key, value) => {
+    const def = FILTER_REGISTRY.find((d) => d.key === key);
+    if (!def || !def.validValues.has(value)) return;
+    set({ [key]: value });
+  },
 }));
 
 // WHY: selectedField and selectedProductId are derived from activeCell, not stored.
@@ -222,6 +243,9 @@ export const useOriginalEditingValue = () => useReviewStore((s) => s.originalEdi
 export const useSaveStatus = () => useReviewStore((s) => s.saveStatus);
 export const useBrandFilter = () => useReviewStore((s) => s.brandFilter);
 export const useSortMode = () => useReviewStore((s) => s.sortMode);
+export const useConfidenceFilter = () => useReviewStore((s) => s.confidenceFilter);
+export const useCoverageFilter = () => useReviewStore((s) => s.coverageFilter);
+export const useRunStatusFilter = () => useReviewStore((s) => s.runStatusFilter);
 
 // ── Actions (stable refs, grouped with useShallow to prevent object identity re-renders) ──
 export const useReviewActions = () => useReviewStore(useShallow((s) => ({
@@ -238,4 +262,5 @@ export const useReviewActions = () => useReviewStore(useShallow((s) => ({
   setBrandFilterSelection: s.setBrandFilterSelection,
   setSortMode: s.setSortMode,
   toggleBrand: s.toggleBrand,
+  setFilter: s.setFilter,
 })));

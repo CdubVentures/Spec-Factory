@@ -52,7 +52,8 @@ export const cefHowItWorksSections: HiwSection[] = [
               'Compares against **variant registry** with web verification',
               'LLM judges: **match**, **new**, or **reject** (verified via official sources)',
               'Picks better labels via `preferred_label`, blocks slug drift + type crossing',
-              'Ambiguity-aware: sibling model count + risk level inform decisions',
+              'Ambiguity-aware: sibling model count + risk level + **explicit sibling model names** inform decisions',
+              'Wrong-product variants: **hard-deleted** from registry + PIF cascade (not soft-flagged)',
             ],
           },
         ],
@@ -68,21 +69,21 @@ export const cefHowItWorksSections: HiwSection[] = [
     blocks: [
       {
         kind: 'text',
-        content: 'Each run feeds forward: accumulated **URLs** tell the LLM which pages to skip, **known findings** tell it what to re-verify and expand beyond.',
+        content: 'Each run feeds forward **known findings** (colors, names, editions) so the LLM knows what to re-verify and expand beyond. URLs are NOT injected \u2014 the LLM picks its own search strategy fresh each run.',
       },
       {
         kind: 'learn-chain',
         cells: [
-          { tone: 'accent', label: 'Run 1', detail: 'Finds black, white. Logs URLs + queries.' },
-          { tone: 'green', label: 'Run 2', detail: 'Skips visited pages. Finds limited edition.' },
-          { tone: 'purple', label: 'Run 3', detail: 'Hits page 2, review sites for anything missed.' },
+          { tone: 'accent', label: 'Run 1', detail: 'Finds black, white. Fresh web search.' },
+          { tone: 'green', label: 'Run 2', detail: 'Re-verifies known + finds limited edition.' },
+          { tone: 'purple', label: 'Run 3', detail: 'Different search angle, finds regional exclusive.' },
         ],
       },
       {
         kind: 'callout',
         tone: 'orange',
         icon: '\u{1F4A1}',
-        content: 'URLs are **informational, not blocking** \u2014 the LLM can revisit if needed. Queries are audit-only by default so search results stay fresh.',
+        content: 'URLs and queries are **audit-only** \u2014 recorded in the discovery log but never fed back into the prompt. This keeps each run\u2019s search strategy fresh.',
       },
     ],
   },
@@ -98,7 +99,7 @@ export const cefHowItWorksSections: HiwSection[] = [
           ['**Known colors**', '\u2714', 'Re-verify + find missing'],
           ['**Known color names**', '\u2714', 'Use existing marketing names'],
           ['**Known editions**', '\u2714', 'Re-verify + find missing'],
-          ['**URLs checked**', '\u2714', 'Skip visited pages'],
+          ['**URLs checked**', '\u2718 audit', 'Recorded per run, not fed forward'],
           ['**Queries run**', '\u2718 audit', 'Stored for debug only'],
           ['**Confirmed/added/rejected**', '\u2718 indirect', 'Audit trail per run'],
           ['**Siblings excluded**', '\u2718 audit', 'Re-discovered each run'],
@@ -123,6 +124,7 @@ export const cefHowItWorksSections: HiwSection[] = [
           { tone: 'green', label: 'Match', detail: 'Same variant \u2192 keeps `variant_id`, updates metadata. `preferred_label` overrides if judge finds a better name.' },
           { tone: 'accent', label: 'New', detail: 'Genuinely new + web-verified \u2192 fresh `variant_id`.' },
           { tone: 'muted', label: 'Reject', detail: 'Hallucinated / unverifiable \u2192 discarded entirely.' },
+          { tone: 'orange', label: 'Remove', detail: 'Wrong-product contamination \u2192 hard-deleted from registry + PIF cascade. Never for discontinued real products.' },
         ],
       },
       {

@@ -227,8 +227,12 @@
       <div class="quick-ref-result">Clears image selections (eval flags, hero/hero_rank) &rarr; carousel auto-resolves from remaining evals</div>
     </div>
     <div class="quick-ref-row">
-      <div class="quick-ref-action">Delete Field Key <span class="status-planned">Planned</span></div>
+      <div class="quick-ref-action">Delete Field Key <span class="status-active">Active</span></div>
       <div class="quick-ref-result">Deletes candidates only (DB and product.json). Name changes are ID-driven &mdash; no cascade implications.</div>
+    </div>
+    <div class="quick-ref-row">
+      <div class="quick-ref-action">Delete Product <span class="status-active">Active</span></div>
+      <div class="quick-ref-result">Full cascade: finder runs + summaries (all modules) &rarr; variants &rarr; field_candidates &rarr; pipeline history (runs, crawl, telemetry, item links) &rarr; product folder (all JSON + images) &rarr; products row</div>
     </div>
   </div>
 
@@ -671,15 +675,17 @@
 <h2 class="section-title"><span class="num">9</span> Field Key Operations</h2>
 
 <div class="flow-diagram">
-  <h3>Field Key &mdash; Name Change <span class="status-planned" style="font-size:10px; vertical-align: middle;">Planned</span></h3>
+  <h3>Field Key &mdash; Name Change <span class="status-active" style="font-size:10px; vertical-align: middle;">Active</span></h3>
   <p style="font-size:13px; color:var(--text-muted); margin-bottom: 12px;">
-    Field key renames are <strong>ID-driven</strong>. The field has a stable internal ID that doesn't change.
-    Renaming the display key has no cascade implications &mdash; no data moves, no candidates are affected.
+    Field key identity is <strong>ID-driven</strong>. The <code>field_key</code> slug (e.g. <code>flawless_sensor</code>) is the stable identifier
+    used across all tables (<code>field_candidates</code>, <code>enum_lists</code>, <code>item_component_links</code>).
+    Display names are derived at render time via <code>humanizeField()</code> &mdash; changing the display label has
+    no cascade implications. No data moves, no candidates are affected.
   </p>
 </div>
 
 <div class="flow-diagram">
-  <h3>Field Key &mdash; Delete <span class="status-planned" style="font-size:10px; vertical-align: middle;">Planned</span></h3>
+  <h3>Field Key &mdash; Delete <span class="status-active" style="font-size:10px; vertical-align: middle;">Active</span></h3>
   <table class="cascade-table">
     <thead>
       <tr><th>Step</th><th>Target</th><th>Action</th></tr>
@@ -902,6 +908,76 @@
       </tr>
     </tbody>
   </table>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<h2 class="section-title"><span class="num">14</span> Delete Product &mdash; Full Cascade</h2>
+
+<div class="flow-diagram">
+  <h3>deleteProductCascade(specDb, productId, category) <span class="status-active" style="font-size:10px; vertical-align: middle;">Active</span></h3>
+  <table class="cascade-table">
+    <thead>
+      <tr><th>Step</th><th>Target</th><th>Action</th><th>Tables / Paths</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="step-num">1</span></td>
+        <td>Finder runs + summaries</td>
+        <td>Iterate <code>FINDER_MODULES</code> registry. For each module:
+        <code>removeAllRuns(pid)</code> then <code>remove(pid)</code></td>
+        <td><code>color_edition_finder</code>, <code>color_edition_finder_runs</code>,
+        <code>product_image_finder</code>, <code>product_image_finder_runs</code></td>
+      </tr>
+      <tr>
+        <td><span class="step-num">2</span></td>
+        <td>Variants</td>
+        <td><code>variants.removeByProduct(pid)</code></td>
+        <td><code>variants</code></td>
+      </tr>
+      <tr>
+        <td><span class="step-num">3</span></td>
+        <td>Field candidates</td>
+        <td><code>deleteFieldCandidatesByProduct(pid)</code></td>
+        <td><code>field_candidates</code></td>
+      </tr>
+      <tr>
+        <td><span class="step-num">4</span></td>
+        <td>Pipeline history</td>
+        <td><code>deleteProductHistory()</code> &mdash; transactional cascade of all pipeline tables + run/output dirs</td>
+        <td><code>query_index</code>, <code>query_cooldowns</code>, <code>url_crawl_ledger</code>,
+        <code>bridge_events</code>, <code>knob_snapshots</code>, <code>url_index</code>, <code>prompt_index</code>,
+        <code>item_list_links</code>, <code>item_component_links</code>,
+        <code>crawl_sources</code>, <code>source_screenshots</code>, <code>source_videos</code>,
+        <code>run_artifacts</code>, <code>runs</code></td>
+      </tr>
+      <tr>
+        <td><span class="step-num">5</span></td>
+        <td>Product folder</td>
+        <td><code>rmSync(.workspace/products/{pid}/, recursive)</code></td>
+        <td><code>product.json</code>, <code>color_edition.json</code>, <code>product_images.json</code>, <code>images/</code></td>
+      </tr>
+      <tr>
+        <td><span class="step-num">6</span></td>
+        <td>Products row</td>
+        <td><code>DELETE FROM products WHERE product_id = ?</code></td>
+        <td><code>products</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note-box">
+    <strong>Entry point:</strong> <code>DELETE /catalog/{cat}/products/{pid}</code> &rarr;
+    <code>catalogRoutes.js</code> &rarr; <code>deleteProductCascade()</code> &rarr; <code>deleteCatalogProductRow()</code>.
+    Each cascade step is best-effort (try/catch) &mdash; partial failure does not block subsequent steps.
+    The <code>FINDER_MODULES</code> registry ensures O(1) scaling when new finder modules are added.
+  </div>
+
+  <div class="note-box" style="margin-top: 10px;">
+    <strong>21 tables covered:</strong> 6 tables cleaned directly by cascade steps 1&ndash;3 (finder summaries, finder runs, variants, field_candidates),
+    14 tables cleaned by <code>deleteProductHistory</code> (step 4), and the <code>products</code> row (step 6).
+    All filesystem artifacts (JSON, images, run dirs, output dirs) are removed.
+  </div>
 </div>
 
 </div><!-- /.container -->

@@ -2,6 +2,8 @@ import { resolveProductIdentity } from '../index.js';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { recordQueueCleanupOutcome } from '../../../core/events/dataPropagationCounters.js';
 import { upsertCatalogProductRow } from '../products/upsertCatalogProductRow.js';
+import { deleteProductCascade } from '../products/deleteProductCascade.js';
+import { createDeletionStore } from '../../../db/stores/deletionStore.js';
 
 export function registerCatalogRoutes(ctx) {
   const {
@@ -175,7 +177,11 @@ export function registerCatalogRoutes(ctx) {
           },
         });
         if (result?.ok) {
-          deleteCatalogProductRow(resolveSpecDb(category), category, productId);
+          const specDb = resolveSpecDb(category);
+          // WHY: Cascade-delete all dependent data before removing the anchor row.
+          // Finder data, variants, candidates, pipeline history, and product folder.
+          deleteProductCascade({ specDb, productId, category, createDeletionStore });
+          deleteCatalogProductRow(specDb, category, productId);
           emitDataChange({
             broadcastWs,
             event: 'catalog-product-delete',

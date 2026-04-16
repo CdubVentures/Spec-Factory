@@ -24,7 +24,8 @@ export function BrandFilterBar({ brands, products }: BrandFilterBarProps) {
   const isNoneSelected = brandFilter.mode === 'none';
 
   return (
-    <div className="sf-review-brand-filter-bar flex items-center gap-1.5 py-1 px-1 rounded overflow-x-auto">
+    <>
+      <span className="sf-review-filter-group-label shrink-0 text-[10px]">Brands</span>
       <button
         onClick={() => setBrandFilterMode('all')}
         className={`sf-review-brand-filter-toggle shrink-0 px-2 py-0.5 text-[10px] rounded border ${
@@ -45,7 +46,6 @@ export function BrandFilterBar({ brands, products }: BrandFilterBarProps) {
       >
         None
       </button>
-      <div className="sf-review-brand-filter-separator w-px h-4 shrink-0" />
       {brands.map((brand) => {
         const active = brandFilter.mode === 'all' || brandFilter.selected.has(brand);
         const count = brandCounts.get(brand) || 0;
@@ -63,6 +63,6 @@ export function BrandFilterBar({ brands, products }: BrandFilterBarProps) {
           </button>
         );
       })}
-    </div>
+    </>
   );
 }

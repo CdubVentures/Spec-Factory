@@ -1,5 +1,6 @@
 import { resolveStudioSaveStatus, type StudioAutoSaveStatus } from '../../../shared/ui/feedback/settingsStatus.ts';
-import type { ProcessStatus } from '../../../types/events.ts';
+import type { Operation } from '../../operations/state/operationsStore.ts';
+import { deriveStudioOperationsState } from './studioOperationsSelectors.ts';
 import type {
   ArtifactEntry,
   ComponentDbResponse,
@@ -46,7 +47,7 @@ interface BuildStudioPageShellControllerStateInput {
   activeTab: StudioTabId;
   autoSaveAllEnabled: boolean;
   selectedKey: string;
-  processStatus?: ProcessStatus | null;
+  operations: ReadonlyMap<string, Operation>;
   rules: Record<string, FieldRule>;
   fieldOrder: string[];
   wbMap: StudioConfig;
@@ -133,7 +134,7 @@ export function buildStudioPageShellControllerState({
   activeTab,
   autoSaveAllEnabled,
   selectedKey,
-  processStatus,
+  operations,
   rules,
   fieldOrder,
   wbMap,
@@ -182,10 +183,12 @@ export function buildStudioPageShellControllerState({
     };
   }
 
+  const opsState = deriveStudioOperationsState(operations, category);
+
   const processState = deriveStudioPageProcessState({
-    processCommand: processStatus?.command,
-    processRunning: processStatus?.running,
-    processExitCode: processStatus?.exitCode,
+    compileRunning: opsState.compileRunning,
+    validateRunning: opsState.validateRunning,
+    compileError: opsState.compileError,
     compilePending: compileMutState.isPending,
     validatePending: validateRulesMutState.isPending,
   });
@@ -215,7 +218,7 @@ export function buildStudioPageShellControllerState({
     mutationErrorMessage: errorMessageOf(compileMutState.error),
     compileProcessRunning: processState.compileProcessRunning,
     compileProcessFailed: processState.compileProcessFailed,
-    processExitCode: processStatus?.exitCode,
+    processExitCode: undefined,
     compileStale,
     runningLabel: 'Compiling\u2026',
   });
@@ -277,7 +280,10 @@ export function buildStudioPageShellControllerState({
     validatePending: validateRulesMutState.isPending,
     validateIsError: validateRulesMutState.isError,
     validateErrorMessage: errorMessageOf(validateRulesMutState.error),
-    processStatus,
+    compileRunning: opsState.compileRunning,
+    validateRunning: opsState.validateRunning,
+    compileError: opsState.compileError,
+    validateError: opsState.validateError,
     onRunCompile: runCompileFromStudio,
     onRunValidate: runValidate,
   });
@@ -300,7 +306,7 @@ export function buildStudioPageShellControllerState({
       compileStatusDot: shellPresentation.compileStatusDot,
       compilePending: compileMutState.isPending,
       compileProcessRunning: processState.compileProcessRunning,
-      processRunning: Boolean(processStatus?.running),
+      processRunning: opsState.anyStudioOpRunning,
     },
     activePanelProps,
   };

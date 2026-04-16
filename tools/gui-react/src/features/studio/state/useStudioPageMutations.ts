@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import {
   useMutation,
   type QueryClient,
@@ -6,16 +6,16 @@ import {
 } from '@tanstack/react-query';
 
 import { api } from '../../../api/client.ts';
-import type { ProcessStatus } from '../../../types/events.ts';
 import type { FieldStudioMapResponse } from '../../../types/studio.ts';
 import type { FieldStudioMapValidationResponse } from '../components/studioSharedTypes.ts';
 import type { StudioTabId } from './studioPageTabs.ts';
-import { invalidateFieldRulesQueries } from './invalidateFieldRulesQueries.ts';
 import { assertFieldStudioMapValidationOrThrow } from './mapValidationPreflight.js';
 
-export interface StudioProcessStatusSnapshot {
-  running?: boolean;
-  exitCode?: number | null;
+interface CompileResponse {
+  operationId: string;
+  type: string;
+  category: string;
+  running: boolean;
 }
 
 export interface RunEnumConsistencyOptions {
@@ -25,15 +25,13 @@ export interface RunEnumConsistencyOptions {
 
 export interface UseStudioPageMutationsInput {
   category: string;
-  processStatus?: StudioProcessStatusSnapshot | null;
   queryClient: QueryClient;
   setActiveTab: (nextTab: StudioTabId) => void;
-  setProcessStatus: (status: ProcessStatus) => void;
 }
 
 export interface UseStudioPageMutationsResult {
-  compileMut: UseMutationResult<ProcessStatus, Error, void>;
-  validateRulesMut: UseMutationResult<ProcessStatus, Error, void>;
+  compileMut: UseMutationResult<CompileResponse, Error, void>;
+  validateRulesMut: UseMutationResult<CompileResponse, Error, void>;
   enumConsistencyMut: UseMutationResult<
     unknown,
     Error,
@@ -44,7 +42,7 @@ export interface UseStudioPageMutationsResult {
       reviewEnabled?: boolean;
     }
   >;
-  runCompileFromStudio: () => Promise<ProcessStatus>;
+  runCompileFromStudio: () => Promise<CompileResponse>;
   runEnumConsistency: (
     fieldKey: string,
     options?: RunEnumConsistencyOptions,
@@ -54,18 +52,10 @@ export interface UseStudioPageMutationsResult {
 
 export function useStudioPageMutations({
   category,
-  processStatus,
   queryClient,
   setActiveTab,
-  setProcessStatus,
 }: UseStudioPageMutationsInput): UseStudioPageMutationsResult {
-  useEffect(() => {
-    if (!processStatus?.running && processStatus?.exitCode !== undefined) {
-      invalidateFieldRulesQueries(queryClient, category);
-    }
-  }, [processStatus?.running, processStatus?.exitCode, queryClient, category]);
-
-  const compileMut = useMutation<ProcessStatus, Error, void>({
+  const compileMut = useMutation<CompileResponse, Error, void>({
     mutationFn: async () => {
       const currentMap = await api.get<FieldStudioMapResponse>(
         `/studio/${category}/field-studio-map`,
@@ -79,15 +69,15 @@ export function useStudioPageMutations({
         actionLabel: 'compile',
         allowLegacyCompileBypass: true,
       });
-      return api.post<ProcessStatus>(`/studio/${category}/compile`);
+      return api.post<CompileResponse>(`/studio/${category}/compile`);
     },
-    onSuccess: (data) => setProcessStatus(data),
+    // WHY: No onSuccess needed — operation lifecycle comes via operations WS channel
   });
 
-  const validateRulesMut = useMutation<ProcessStatus, Error, void>({
+  const validateRulesMut = useMutation<CompileResponse, Error, void>({
     mutationFn: () =>
-      api.post<ProcessStatus>(`/studio/${category}/validate-rules`),
-    onSuccess: (data) => setProcessStatus(data),
+      api.post<CompileResponse>(`/studio/${category}/validate-rules`),
+    // WHY: No onSuccess needed — operation lifecycle comes via operations WS channel
   });
 
   const enumConsistencyMut = useMutation({
@@ -128,8 +118,7 @@ export function useStudioPageMutations({
 
   const refreshStudioData = useCallback(async () => {
     await api.post(`/studio/${category}/invalidate-cache`);
-    invalidateFieldRulesQueries(queryClient, category);
-  }, [category, queryClient]);
+  }, [category]);
 
   return {
     compileMut,

@@ -233,14 +233,14 @@
     <table>
       <thead><tr><th>Ambiguity</th><th>Family Size</th><th>Prompt Behavior</th></tr></thead>
       <tbody>
-        <tr><td><span class="tag tag-green">Easy</span></td><td>1 model</td><td>Standard identity matching</td></tr>
-        <tr><td><span class="tag tag-orange">Medium</span></td><td>2&ndash;5 models</td><td>CAUTION block: verify exact model name in URLs and page titles</td></tr>
-        <tr><td><span class="tag tag-red">Hard+</span></td><td>6+ models</td><td>HIGH AMBIGUITY block: triple-check every image, skip if unconfirmed</td></tr>
+        <tr><td><span class="tag tag-green">Easy</span></td><td>1 model</td><td>Standard identity matching (no siblings)</td></tr>
+        <tr><td><span class="tag tag-orange">Medium</span></td><td>2&ndash;5 models</td><td>CAUTION block + explicit sibling model names list</td></tr>
+        <tr><td><span class="tag tag-red">Hard+</span></td><td>6+ models</td><td>HIGH AMBIGUITY block + explicit sibling list: triple-check every image, skip if unconfirmed</td></tr>
       </tbody>
     </table>
     <dl class="detail-grid" style="margin-top:12px;">
-      <dt>Sibling exclusion</dt><dd>Known sibling model names (from CEF <code>siblings_excluded</code>) listed in prompt as "do NOT return images of these"</dd>
-      <dt>Source</dt><dd>Family model count and ambiguity level from <code>resolveIdentityAmbiguitySnapshot</code></dd>
+      <dt>Sibling exclusion</dt><dd>Sibling model names from <strong>two sources</strong>: DB-known family members (via <code>resolveIdentityAmbiguitySnapshot</code>) merged with LLM-discovered siblings (from CEF <code>siblings_excluded</code>). Listed in prompt as &ldquo;do NOT return images of these.&rdquo;</dd>
+      <dt>Source</dt><dd>Family model count, ambiguity level, and sibling model names from <code>resolveIdentityAmbiguitySnapshot</code></dd>
     </dl>
   </div>
 </div>

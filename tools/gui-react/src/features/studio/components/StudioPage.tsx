@@ -1,8 +1,10 @@
-﻿import { useEffect, useRef } from "react";
+﻿import { useEffect, useRef, useMemo } from "react";
 import { usePersistedTab } from "../../../stores/tabStore.ts";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUiStore } from "../../../stores/uiStore.ts";
 import { useRuntimeStore } from "../../runtime-ops/state/runtimeStore.ts";
+import { useOperationsStore } from "../../operations/state/operationsStore.ts";
+import { deriveStudioOperationsState } from "../state/studioOperationsSelectors.ts";
 import { Spinner } from "../../../shared/ui/feedback/Spinner.tsx";
 import { StudioPageActivePanel } from "./StudioPageActivePanel.tsx";
 import { useStudioPageDocsController } from "../state/useStudioPageDocsController.ts";
@@ -42,8 +44,8 @@ export function StudioPage() {
     `studio:keyNavigator:selectedKey:${category}`,
     "",
   );
-  const setProcessStatus = useRuntimeStore((s) => s.setProcessStatus);
   const processStatus = useRuntimeStore((s) => s.processStatus);
+  const operations = useOperationsStore((s) => s.operations);
   const queryClient = useQueryClient();
   const autoSaveAllEnabled = useUiStore((s) => s.autoSaveAllEnabled);
   const setAutoSaveAllEnabled = useUiStore((s) => s.setAutoSaveAllEnabled);
@@ -51,6 +53,15 @@ export function StudioPage() {
   const setAutoSaveEnabled = useUiStore((s) => s.setAutoSaveEnabled);
   const autoSaveMapEnabled = useUiStore((s) => s.autoSaveMapEnabled);
   const setAutoSaveMapEnabled = useUiStore((s) => s.setAutoSaveMapEnabled);
+
+  const opsState = useMemo(
+    () => deriveStudioOperationsState(operations, category),
+    [operations, category],
+  );
+
+  // WHY: processRunning drives artifact polling — true when IndexLab OR compile/validate is running
+  const anyRunning = Boolean(processStatus.running) || opsState.anyStudioOpRunning;
+
   const {
     studio,
     isLoading,
@@ -65,10 +76,10 @@ export function StudioPage() {
   } = useStudioPageQueries({
     category,
     activeTab,
-    processRunning: Boolean(processStatus.running),
+    processRunning: anyRunning,
   });
 
-  // WHY: refetch studio payload (compileStale) and artifacts when a process finishes
+  // WHY: refetch studio payload (compileStale) and artifacts when IndexLab finishes
   const prevRunningRef = useRef(Boolean(processStatus.running));
   useEffect(() => {
     const wasRunning = prevRunningRef.current;
@@ -79,6 +90,18 @@ export function StudioPage() {
       queryClient.invalidateQueries({ queryKey: ['studio-artifacts', category] });
     }
   }, [processStatus.running, category, queryClient]);
+
+  // WHY: refetch studio data when a compile/validate operation completes
+  const prevOpsRunningRef = useRef(opsState.anyStudioOpRunning);
+  useEffect(() => {
+    const wasRunning = prevOpsRunningRef.current;
+    const isRunning = opsState.anyStudioOpRunning;
+    prevOpsRunningRef.current = isRunning;
+    if (wasRunning && !isRunning) {
+      queryClient.invalidateQueries({ queryKey: ['studio', category] });
+      queryClient.invalidateQueries({ queryKey: ['studio-artifacts', category] });
+    }
+  }, [opsState.anyStudioOpRunning, category, queryClient]);
 
   // ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ Queries ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬
 
@@ -91,10 +114,8 @@ export function StudioPage() {
     refreshStudioData,
   } = useStudioPageMutations({
     category,
-    processStatus,
     queryClient,
     setActiveTab,
-    setProcessStatus,
   });
 
   // ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ Derived data ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬
@@ -145,7 +166,7 @@ export function StudioPage() {
     activeTab,
     autoSaveAllEnabled,
     selectedKey,
-    processStatus,
+    operations,
     rules: storeRules,
     fieldOrder: storeFieldOrder,
     wbMap,

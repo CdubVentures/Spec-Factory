@@ -1,8 +1,8 @@
 export interface CompileReportsViewStateOptions {
-  processCommand?: string | null;
-  processRunning?: boolean;
-  processExitCode?: number | null;
-  processStartedAt?: string | null;
+  compileRunning: boolean;
+  validateRunning: boolean;
+  compileError: string | null;
+  validateError: string | null;
   compilePending: boolean;
   compileIsError: boolean;
   compileErrorMessage?: string;
@@ -31,10 +31,10 @@ const IDLE_BADGE_CLASS =
   'sf-border-default sf-bg-surface-soft sf-text-muted dark:sf-border-default sf-dk-surface-900a30 dark:sf-text-subtle';
 
 export function deriveCompileReportsViewState({
-  processCommand,
-  processRunning = false,
-  processExitCode,
-  processStartedAt,
+  compileRunning,
+  validateRunning,
+  compileError,
+  validateError,
   compilePending,
   compileIsError,
   compileErrorMessage,
@@ -45,68 +45,20 @@ export function deriveCompileReportsViewState({
   progressTick,
   nowMs,
 }: CompileReportsViewStateOptions): CompileReportsViewState {
-  const processCommandToken = String(processCommand || '').toLowerCase();
-  const compileProcessCommand =
-    processCommandToken.includes('compile-rules') ||
-    processCommandToken.includes('category-compile');
-  const validateProcessCommand =
-    processCommandToken.includes('validate-rules');
-  const compileProcessRunning = Boolean(processRunning) && compileProcessCommand;
-  const validateProcessRunning =
-    Boolean(processRunning) && validateProcessCommand;
-  const compileProcessFinished =
-    !processRunning && compileProcessCommand;
-  const validateProcessFinished =
-    !processRunning && validateProcessCommand;
-  const compileProcessFailed =
-    compileProcessFinished &&
-    processExitCode !== null &&
-    processExitCode !== undefined &&
-    Number(processExitCode) !== 0;
-  const validateProcessFailed =
-    validateProcessFinished &&
-    processExitCode !== null &&
-    processExitCode !== undefined &&
-    Number(processExitCode) !== 0;
-  const anyProcessRunning = Boolean(processRunning);
-  const progressActive =
-    compileProcessRunning ||
-    validateProcessRunning ||
-    compilePending ||
-    validatePending;
+  const anyProcessRunning = compileRunning || validateRunning;
+  const progressActive = compileRunning || validateRunning || compilePending || validatePending;
 
-  const activeArtifactGoal = compileProcessCommand
-    ? processCommandToken.includes('compile-rules')
-      ? Math.max(artifacts.length, 9)
-      : 6
-    : Math.max(artifacts.length, 9);
+  const activeArtifactGoal = Math.max(artifacts.length, 9);
   const idleArtifactGoal = Math.max(artifacts.length, 1);
-  const compileStartedAtMs = Date.parse(String(processStartedAt || ''));
-  const artifactUpdatedThisRunCount = Number.isFinite(compileStartedAtMs)
-    ? artifacts.filter((artifact) => {
-        const updatedMs = Date.parse(String(artifact?.updated || ''));
-        return Number.isFinite(updatedMs) && updatedMs >= compileStartedAtMs - 1000;
-      }).length
-    : 0;
-  const runningArtifactCount = Math.min(
-    Math.max(0, artifactUpdatedThisRunCount),
-    activeArtifactGoal,
-  );
-  const elapsedMs = Number.isFinite(compileStartedAtMs)
-    ? Math.max(0, nowMs - compileStartedAtMs)
-    : progressTick * 500;
+  const elapsedMs = progressTick * 500;
   const fallbackRunningCount = progressActive
     ? Math.min(
         Math.max(1, Math.floor(elapsedMs / 1500)),
         Math.max(1, activeArtifactGoal - 1),
       )
     : 0;
-  const artifactProgressCount = progressActive
-    ? Math.max(runningArtifactCount, fallbackRunningCount)
-    : 0;
-  const artifactProgressGoal = progressActive
-    ? activeArtifactGoal
-    : idleArtifactGoal;
+  const artifactProgressCount = progressActive ? fallbackRunningCount : 0;
+  const artifactProgressGoal = progressActive ? activeArtifactGoal : idleArtifactGoal;
   const idleArtifactCount = progressActive ? 0 : artifacts.length;
   const artifactProgressPercent = progressActive
     ? artifactProgressGoal > 0
@@ -119,64 +71,29 @@ export function deriveCompileReportsViewState({
     ? `Artifacts ${artifactProgressCount} of ${artifactProgressGoal}`
     : `Artifacts ${idleArtifactCount} of ${idleArtifactGoal}`;
 
-  const compileBadge = compileProcessRunning
-    ? {
-        label: 'Compile running',
-        className: 'sf-callout sf-callout-info',
-      }
+  const compileBadge = compileRunning
+    ? { label: 'Compile running', className: 'sf-callout sf-callout-info' }
     : compilePending
-      ? {
-          label: 'Compile starting',
-          className: 'sf-callout sf-callout-info',
-        }
+      ? { label: 'Compile starting', className: 'sf-callout sf-callout-info' }
       : compileIsError
-        ? {
-            label: compileErrorMessage || 'Compile failed',
-            className: 'sf-callout sf-callout-danger',
-          }
-        : compileProcessFailed
-          ? {
-              label:
-                processExitCode !== null && processExitCode !== undefined
-                  ? `Compile failed (${processExitCode})`
-                  : 'Compile failed',
-              className: 'sf-callout sf-callout-danger',
-            }
+        ? { label: compileErrorMessage || 'Compile failed', className: 'sf-callout sf-callout-danger' }
+        : compileError
+          ? { label: 'Compile failed', className: 'sf-callout sf-callout-danger' }
           : null;
 
-  const validateBadge = validateProcessRunning
-    ? {
-        label: 'Validation running',
-        className: 'sf-callout sf-callout-info',
-      }
+  const validateBadge = validateRunning
+    ? { label: 'Validation running', className: 'sf-callout sf-callout-info' }
     : validatePending
-      ? {
-          label: 'Validation starting',
-          className: 'sf-callout sf-callout-info',
-        }
+      ? { label: 'Validation starting', className: 'sf-callout sf-callout-info' }
       : validateIsError
-        ? {
-            label: validateErrorMessage || 'Validation failed',
-            className: 'sf-callout sf-callout-danger',
-          }
-        : validateProcessFailed
-          ? {
-              label:
-                processExitCode !== null && processExitCode !== undefined
-                  ? `Validation failed (${processExitCode})`
-                  : 'Validation failed',
-              className: 'sf-callout sf-callout-danger',
-            }
-          : validateProcessFinished
-            ? {
-                label: 'Validation complete',
-                className: 'sf-callout sf-callout-success',
-              }
-            : null;
+        ? { label: validateErrorMessage || 'Validation failed', className: 'sf-callout sf-callout-danger' }
+        : validateError
+          ? { label: 'Validation failed', className: 'sf-callout sf-callout-danger' }
+          : null;
 
   return {
-    compileProcessRunning,
-    validateProcessRunning,
+    compileProcessRunning: compileRunning,
+    validateProcessRunning: validateRunning,
     anyProcessRunning,
     progressActive,
     compileBadgeLabel: compileBadge?.label || 'Compile idle',

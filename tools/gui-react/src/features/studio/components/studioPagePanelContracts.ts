@@ -1,4 +1,3 @@
-import type { ProcessStatus } from '../../../types/events.ts';
 import type {
   ArtifactEntry,
   ComponentDbResponse,
@@ -80,7 +79,10 @@ export interface StudioPageActivePanelReportsProps {
   validatePending: boolean;
   validateIsError: boolean;
   validateErrorMessage?: string;
-  processStatus?: ProcessStatus | null;
+  compileRunning: boolean;
+  validateRunning: boolean;
+  compileError: string | null;
+  validateError: string | null;
   onRunCompile: () => void | Promise<unknown>;
   onRunValidate: () => void | Promise<unknown>;
 }

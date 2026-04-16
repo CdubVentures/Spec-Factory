@@ -107,3 +107,37 @@ export async function handleCompileProcessCompletion({
     specDbSync: specDbSync || undefined,
   };
 }
+
+/**
+ * In-process post-compile hook — called by commandExecutor after compileRules() returns.
+ * Same side effects as handleCompileProcessCompletion but accepts category directly
+ * instead of parsing cliArgs. No exitCode check (the handler already succeeded).
+ *
+ * @param {object} opts
+ * @param {string} opts.category
+ * @param {object} opts.deps — DI bag from the route handler
+ */
+export async function handleCompilePostComplete({ category, deps }) {
+  const {
+    sessionCache,
+    invalidateFieldRulesCache,
+    reviewLayoutByCategory,
+    syncSpecDbForCategory,
+    getSpecDb,
+    broadcastWs,
+    logError = console.error,
+  } = deps;
+
+  // WHY: Reuses the same completion path as the child-process handler.
+  return handleCompileProcessCompletion({
+    exitCode: 0,
+    cliArgs: ['compile-rules', '--category', category],
+    sessionCache,
+    invalidateFieldRulesCache,
+    reviewLayoutByCategory,
+    syncSpecDbForCategory,
+    getSpecDb,
+    broadcastWs,
+    logError,
+  });
+}

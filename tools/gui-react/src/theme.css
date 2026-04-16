@@ -3322,6 +3322,26 @@ html[data-sf-theme-mode='dark'] .sf-review-brand-filter-separator {
   background: rgb(var(--sf-color-border-subtle-rgb) / 0.7);
 }
 
+/* ── Review Dashboard Strip ────────────────────────────── */
+.sf-review-dashboard-strip {
+  background: var(--sf-token-surface-elevated);
+  border: 1px solid var(--sf-token-border-default);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+
+html[data-sf-theme-mode='dark'] .sf-review-dashboard-strip {
+  background: var(--sf-token-surface-elevated);
+  border-color: var(--sf-token-border-subtle);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.16);
+}
+
+/* ── Review filter group label ─────────────────────────── */
+.sf-review-filter-group-label {
+  color: var(--sf-token-text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 .sf-cell-tooltip-content {
   color: rgb(var(--sf-color-text-inverse-rgb));
   border-color: rgb(var(--sf-color-border-subtle-rgb) / 0.55);

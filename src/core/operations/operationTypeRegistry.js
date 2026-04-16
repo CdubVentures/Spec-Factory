@@ -12,6 +12,8 @@
 export const OPERATION_TYPES = Object.freeze([
   { type: 'pipeline',            label: 'PL',  chipStyle: 'sf-chip-info' },
   { type: 'publisher-reconcile', label: 'PUB', chipStyle: 'sf-chip-success' },
+  { type: 'compile',             label: 'CMP', chipStyle: 'sf-chip-success' },
+  { type: 'validate',            label: 'VAL', chipStyle: 'sf-chip-neutral' },
 ]);
 
 export const OPERATION_TYPE_MAP = Object.freeze(

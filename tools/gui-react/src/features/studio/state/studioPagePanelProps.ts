@@ -1,4 +1,3 @@
-import type { ProcessStatus } from '../../../types/events.ts';
 import type {
   ArtifactEntry,
   ComponentDbResponse,
@@ -91,7 +90,10 @@ export interface BuildStudioPageActivePanelPropsInput {
   validatePending: boolean;
   validateIsError: boolean;
   validateErrorMessage?: string;
-  processStatus?: ProcessStatus | null;
+  compileRunning: boolean;
+  validateRunning: boolean;
+  compileError: string | null;
+  validateError: string | null;
   onRunCompile: () => void | Promise<unknown>;
   onRunValidate: () => void | Promise<unknown>;
 }
@@ -139,7 +141,10 @@ export function buildStudioPageActivePanelProps({
   validatePending,
   validateIsError,
   validateErrorMessage,
-  processStatus,
+  compileRunning,
+  validateRunning,
+  compileError,
+  validateError,
   onRunCompile,
   onRunValidate,
 }: BuildStudioPageActivePanelPropsInput): StudioPageActivePanelProps {
@@ -215,7 +220,10 @@ export function buildStudioPageActivePanelProps({
       validatePending,
       validateIsError,
       validateErrorMessage,
-      processStatus,
+      compileRunning,
+      validateRunning,
+      compileError,
+      validateError,
       onRunCompile,
       onRunValidate,
     },

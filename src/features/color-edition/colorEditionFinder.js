@@ -26,6 +26,7 @@ import { propagateVariantRenames, remapOrphanedVariantKeys } from '../product-im
 import { backfillPifVariantIdsForProduct, collectOrphanedPifKeys } from '../product-image/backfillPifVariantIds.js';
 import { propagateVariantDelete } from '../product-image/index.js';
 import { derivePublishedFromVariants } from './variantLifecycle.js';
+import { extractEffortFromModelName } from '../../shared/effortFromModelName.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 
 /**
@@ -330,7 +331,13 @@ export async function runColorEditionFinder({
     const nextRunNumber = existing?.next_run_number || (previousRuns.length + 1);
     // WHY: Deterministic source_id — stable across rebuilds (product_id + run_number).
     const cefSourceId = `cef-${product.product_id}-${nextRunNumber}`;
-    const cefSourceMeta = { source: 'cef', source_id: cefSourceId, model: modelTracking.actualModel, run_number: nextRunNumber };
+    // WHY: Append effort suffix so candidate cards can show the effort badge.
+    // extractEffortFromModelName already handles names with baked-in effort,
+    // so double-suffix is avoided — we only append if not already present.
+    const cefModelWithEffort = modelTracking.actualEffortLevel && !extractEffortFromModelName(modelTracking.actualModel)
+      ? `${modelTracking.actualModel}-${modelTracking.actualEffortLevel}`
+      : modelTracking.actualModel;
+    const cefSourceMeta = { source: 'cef', source_id: cefSourceId, model: cefModelWithEffort, run_number: nextRunNumber };
 
     // Step 1: Validate colors (pure — no writes yet)
     const colorsValidation = validateField({
@@ -389,19 +396,34 @@ export async function runColorEditionFinder({
     // Writing here would leak candidates into product.json for runs that
     // later get rejected by palette validation or identity check validation.
     deferredCandidateWrite = () => {
-      const colorsMeta = Object.keys(colorNamesMap).length > 0 ? { color_names: colorNamesMap } : undefined;
+      // WHY: Persist LLM model metadata so candidate cards can display
+      // the same SVG badges (thinking, web search, access mode, effort)
+      // shown in the operations sidebar and finder run history rows.
+      const llmMeta = {
+        llm_access_mode: modelTracking.actualAccessMode || 'api',
+        llm_thinking: modelTracking.actualThinking,
+        llm_web_search: modelTracking.actualWebSearch,
+        llm_effort_level: modelTracking.actualEffortLevel || '',
+      };
+      const colorsMeta = {
+        ...(Object.keys(colorNamesMap).length > 0 ? { color_names: colorNamesMap } : {}),
+        ...llmMeta,
+      };
       submitCandidate({
         category: product.category, productId: product.product_id,
         fieldKey: 'colors', value: gateColors, confidence: 100,
         sourceMeta: cefSourceMeta, fieldRules, knownValues, componentDb: null, specDb, productRoot,
         metadata: colorsMeta, appDb, config,
       });
+      const editionsMeta = {
+        ...(Object.keys(gateEditions).length > 0 ? { edition_details: gateEditions } : {}),
+        ...llmMeta,
+      };
       submitCandidate({
         category: product.category, productId: product.product_id,
         fieldKey: 'editions', value: Object.keys(gateEditions), confidence: 100,
         sourceMeta: cefSourceMeta, fieldRules, knownValues, componentDb: null, specDb, productRoot,
-        metadata: Object.keys(gateEditions).length > 0 ? { edition_details: gateEditions } : undefined,
-        appDb, config,
+        metadata: editionsMeta, appDb, config,
       });
     };
   }

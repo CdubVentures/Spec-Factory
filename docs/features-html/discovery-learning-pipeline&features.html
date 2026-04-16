@@ -453,9 +453,9 @@
       <dt>Discovered from</dt><dd>LLM web browsing (manufacturer sites, Amazon, Best Buy, press releases, review sites)</dd>
       <dt>Normalized by</dt><dd><strong>Nothing.</strong> URLs stored as-is from LLM response.</dd>
       <dt>Stored in</dt><dd>JSON: <code>runs[N].response.discovery_log.urls_checked</code>. SQL: embedded in <code>response_json</code> TEXT column.</dd>
-      <dt>Dedup key</dt><dd>JS <code>Set</code> exact string match during <code>accumulateUrlsChecked()</code></dd>
-      <dt>Feed-forward</dt><dd>Always. Union of all previous runs' urls_checked injected into next prompt.</dd>
-      <dt>Expiration</dt><dd><code>urlCooldownDays</code> (default 90). Runs older than cutoff are excluded from accumulation. Records stay in JSON for audit.</dd>
+      <dt>Dedup key</dt><dd>JS <code>Set</code> exact string match during <code>accumulateUrlsChecked()</code> (audit utility only)</dd>
+      <dt>Feed-forward</dt><dd><strong>No.</strong> URLs are audit-only &mdash; not injected into subsequent prompts. The LLM picks its own search strategy fresh each run.</dd>
+      <dt>Expiration</dt><dd>N/A for CEF prompt injection (removed). Records stay in JSON for audit. PIF and pipeline still use <code>urlCooldownDays</code> for crawl dedup.</dd>
     </dl>
   </div>
 </div>
@@ -749,7 +749,7 @@
 
 <div class="callout callout-danger">
   <span class="callout-icon">!</span>
-  <div><strong>Only the Pipeline has any expiration logic.</strong> Both CEF and PIF accumulate URLs and queries forever with no TTL, no pruning, and no archival. Over many runs, prompt injection of accumulated URLs/queries will grow unbounded.</div>
+  <div><strong>CEF no longer injects URLs/queries into prompts</strong> (audit-only). PIF still accumulates per-variant URLs with <code>urlCooldownDays</code> TTL. The Pipeline has its own query cooldown system.</div>
 </div>
 
 <div class="card">
@@ -773,7 +773,7 @@
         <tr>
           <td><strong>URL records</strong></td>
           <td><span class="status-dot dot-green"></span> <code>urlCooldownDays</code> (90-day default). URLs with <code>last_seen_ts</code> older than cutoff are re-crawlable.</td>
-          <td><span class="status-dot dot-green"></span> <code>urlCooldownDays</code> (90-day default). Runs older than cutoff excluded from prompt accumulation.</td>
+          <td><span class="status-dot dot-gray"></span> N/A &mdash; CEF no longer injects URLs into prompts. Audit-only.</td>
           <td><span class="status-dot dot-green"></span> <code>urlCooldownDays</code> (90-day default). Runs older than cutoff excluded from prompt accumulation.</td>
         </tr>
         <tr>
@@ -947,7 +947,7 @@
         <tr>
           <td><strong>Prompt growth risk</strong></td>
           <td>Low &mdash; cooldowns expire, limiting active query set</td>
-          <td>Low &mdash; <code>urlCooldownDays</code> bounds accumulation window. Runs older than cutoff are excluded.</td>
+          <td>None &mdash; URLs not injected into prompts. Only colors/names/editions fed forward (bounded by product scope).</td>
           <td>Low &mdash; <code>urlCooldownDays</code> bounds per-variant accumulation. Runs older than cutoff are excluded.</td>
         </tr>
       </tbody>
@@ -961,8 +961,8 @@
 
 <div class="gap-analysis">
   <div class="gap-row">
-    <div class="gap-label">URL Expiration (CEF)</div>
-    <div class="gap-desc">Controlled by <code>urlCooldownDays</code> (default 90). Runs older than cutoff excluded from URL accumulation. Records preserved in JSON.</div>
+    <div class="gap-label">URL Accumulation (CEF)</div>
+    <div class="gap-desc">URLs are no longer fed forward into CEF prompts. Each run picks its own search strategy. URLs remain in JSON as audit trail only.</div>
     <div class="gap-status"><span class="tag tag-green">RESOLVED</span></div>
   </div>
   <div class="gap-row">
@@ -997,13 +997,13 @@
   </div>
   <div class="gap-row">
     <div class="gap-label">Stale URL Detection</div>
-    <div class="gap-desc">Pipeline tracks fetch health (ok_count, blocked_count). CEF/PIF have zero awareness of URL health &mdash; a 404'd URL stays in accumulation forever.</div>
-    <div class="gap-status"><span class="tag tag-red">CEF/PIF MISSING</span></div>
+    <div class="gap-desc">Pipeline tracks fetch health (ok_count, blocked_count). CEF no longer injects URLs (resolved). PIF still accumulates per-variant URLs with no health awareness.</div>
+    <div class="gap-status"><span class="tag tag-orange">PIF ONLY</span></div>
   </div>
   <div class="gap-row">
     <div class="gap-label">Prompt Size Cap</div>
-    <div class="gap-desc">No cap on how many accumulated URLs/queries get injected. Could exceed useful context window size after many runs.</div>
-    <div class="gap-status"><span class="tag tag-red">ALL FINDERS</span></div>
+    <div class="gap-desc">CEF resolved &mdash; URLs not injected. PIF still accumulates per-variant URLs (bounded by <code>urlCooldownDays</code>).</div>
+    <div class="gap-status"><span class="tag tag-orange">PIF ONLY</span></div>
   </div>
   <div class="gap-row">
     <div class="gap-label">Cross-Feature Discovery</div>
@@ -1194,34 +1194,10 @@
 </div>
 
 <div class="rec-grid">
-  <div class="rec-card rec-critical">
-    <h4>Prompt Accumulation Cap</h4>
-    <p>Add a configurable <strong>max_urls_injected</strong> / <strong>max_queries_injected</strong> knob to CEF and PIF. When accumulated count exceeds cap, inject only the most recent N (FIFO). Prevents prompt bloat after many runs.</p>
-    <p style="margin-top: 6px;"><span class="tag tag-red">HIGH PRIORITY</span> <span class="tag tag-muted">CEF + PIF</span></p>
-  </div>
-
-  <div class="rec-card rec-critical">
-    <h4>URL Normalization for CEF</h4>
-    <p>Apply basic normalization (lowercase host, strip trailing slash, strip fragment) to CEF's <code>urls_checked</code> during accumulation. Prevents duplicate entries from minor URL variations.</p>
-    <p style="margin-top: 6px;"><span class="tag tag-red">HIGH PRIORITY</span> <span class="tag tag-muted">CEF</span></p>
-  </div>
-
   <div class="rec-card rec-new">
-    <h4>Discovery Log TTL for Finders</h4>
-    <p>Add a <strong>discoveryLogMaxAge</strong> knob (default: 90 days). During accumulation, skip runs older than this age. URLs from stale runs (likely 404'd or changed) are dropped from feed-forward.</p>
-    <p style="margin-top: 6px;"><span class="tag tag-accent">MEDIUM</span> <span class="tag tag-muted">CEF + PIF</span></p>
-  </div>
-
-  <div class="rec-card rec-new">
-    <h4>Run-Count Window for Accumulation</h4>
-    <p>Alternative to TTL: add a <strong>discoveryLogMaxRuns</strong> knob (default: 5). Only accumulate from the last N runs. Simpler to reason about than date-based TTL.</p>
-    <p style="margin-top: 6px;"><span class="tag tag-accent">MEDIUM</span> <span class="tag tag-muted">CEF + PIF</span></p>
-  </div>
-
-  <div class="rec-card rec-auto">
-    <h4>Automated Prompt Size Check</h4>
-    <p>Before injecting accumulated URLs/queries, estimate token count. If over a threshold (e.g., 2000 tokens), truncate oldest entries and log a warning. Protects LLM context without manual intervention.</p>
-    <p style="margin-top: 6px;"><span class="tag tag-green">AUTOMATED</span> <span class="tag tag-muted">CEF + PIF</span></p>
+    <h4>PIF URL Accumulation Cap</h4>
+    <p>Add a configurable <strong>max_urls_injected</strong> knob to PIF. When accumulated count exceeds cap, inject only the most recent N (FIFO). CEF resolved &mdash; URLs no longer injected into CEF prompts.</p>
+    <p style="margin-top: 6px;"><span class="tag tag-accent">MEDIUM</span> <span class="tag tag-muted">PIF only</span></p>
   </div>
 
   <div class="rec-card rec-manual">

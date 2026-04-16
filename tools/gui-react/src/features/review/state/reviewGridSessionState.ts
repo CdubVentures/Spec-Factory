@@ -1,11 +1,17 @@
+import { FILTER_REGISTRY } from './reviewFilterRegistry.ts';
+import type { ConfidenceFilter, CoverageFilter, RunStatusFilter } from './reviewFilterRegistry.ts';
+
 const REVIEW_GRID_SESSION_KEY_PREFIX = 'review:grid:sessionState:';
-const SORT_MODES = new Set(['brand', 'recent', 'confidence']);
+const SORT_MODES = new Set(['brand', 'recent', 'confidence', 'coverage', 'missing']);
 const BRAND_FILTER_MODES = new Set(['all', 'none', 'custom']);
 
 export interface ReviewGridSessionState {
-  sortMode: 'brand' | 'recent' | 'confidence';
+  sortMode: 'brand' | 'recent' | 'confidence' | 'coverage' | 'missing';
   brandFilterMode: 'all' | 'none' | 'custom';
   selectedBrands: string[];
+  confidenceFilter: ConfidenceFilter;
+  coverageFilter: CoverageFilter;
+  runStatusFilter: RunStatusFilter;
 }
 
 function getStorage(): Storage | null {
@@ -50,15 +56,27 @@ function parseSelectedBrands(value: unknown): string[] {
   return result;
 }
 
+function parseFilterValue(value: unknown, validSet: ReadonlySet<string>, fallback: string): string {
+  if (typeof value !== 'string') return fallback;
+  return validSet.has(value) ? value : fallback;
+}
+
 function parseStateObject(value: unknown): ReviewGridSessionState {
   const base = value && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, unknown>
     : {};
+
+  const filterFields: Record<string, string> = {};
+  for (const def of FILTER_REGISTRY) {
+    filterFields[def.key] = parseFilterValue(base[def.key], def.validValues, def.defaultValue);
+  }
+
   return {
     sortMode: parseSortMode(base.sortMode),
     brandFilterMode: parseBrandFilterMode(base.brandFilterMode),
     selectedBrands: parseSelectedBrands(base.selectedBrands),
-  };
+    ...filterFields,
+  } as ReviewGridSessionState;
 }
 
 export function buildReviewGridSessionStorageKey(category: string): string {
