@@ -56,7 +56,6 @@ export const FINDER_MODULES = Object.freeze([
 
     // Per-category settings (stored in {tableName}_settings table)
     settingsDefaults: {
-      reinjectQueriesRun: 'false',     // inject prior queries into prompt to avoid repeats (default: off — URLs handle dedup)
       discoveryPromptTemplate: '',     // custom discovery prompt template; empty = built-in default
       identityCheckPromptTemplate: '', // custom identity check prompt template; empty = built-in default
     },

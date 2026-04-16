@@ -20,7 +20,7 @@ export const cefHowItWorksSections: HiwSection[] = [
           { label: 'Product', sub: 'brand + model', tone: 'neutral' },
           { label: 'LLM Search', sub: 'web discovery', tone: 'accent' },
           { label: 'Palette Gate', sub: 'valid atoms', tone: 'green' },
-          { label: 'Identity Check', sub: 'run 2+', tone: 'purple' },
+          { label: 'Identity Judge', sub: 'run 2+ / web verify', tone: 'purple' },
           { label: 'Candidates', sub: 'review queue', tone: 'teal' },
         ],
       },
@@ -47,11 +47,12 @@ export const cefHowItWorksSections: HiwSection[] = [
           {
             tone: 'purple',
             badge: 'GATE 2',
-            title: 'Identity Check (Run 2+)',
+            title: 'Identity Judge (Run 2+)',
             items: [
-              'Compares against **variant registry**',
-              'LLM: **match**, **new**, or **reject**',
-              'Blocks slug drift + type crossing',
+              'Compares against **variant registry** with web verification',
+              'LLM judges: **match**, **new**, or **reject** (verified via official sources)',
+              'Picks better labels via `preferred_label`, blocks slug drift + type crossing',
+              'Ambiguity-aware: sibling model count + risk level inform decisions',
             ],
           },
         ],
@@ -114,21 +115,21 @@ export const cefHowItWorksSections: HiwSection[] = [
     blocks: [
       {
         kind: 'text',
-        content: 'Each color/edition gets a **permanent variant ID** (hash). Identity check preserves IDs when labels or atoms change.',
+        content: 'Each color/edition gets a **permanent variant ID** (hash). The identity judge preserves IDs across runs, verifies discoveries via web, and picks the most accurate label.',
       },
       {
         kind: 'slot-steps',
         steps: [
-          { tone: 'green', label: 'Match', detail: 'Same variant \u2192 keeps `variant_id`, updates metadata.' },
-          { tone: 'accent', label: 'New', detail: 'Genuinely new \u2192 fresh `variant_id`.' },
-          { tone: 'muted', label: 'Reject', detail: 'Hallucinated \u2192 discarded entirely.' },
+          { tone: 'green', label: 'Match', detail: 'Same variant \u2192 keeps `variant_id`, updates metadata. `preferred_label` overrides if judge finds a better name.' },
+          { tone: 'accent', label: 'New', detail: 'Genuinely new + web-verified \u2192 fresh `variant_id`.' },
+          { tone: 'muted', label: 'Reject', detail: 'Hallucinated / unverifiable \u2192 discarded entirely.' },
         ],
       },
       {
         kind: 'callout',
         tone: 'purple',
         icon: '\u{1F517}',
-        content: 'Variant IDs **link CEF to PIF**. Atom renames propagate to images, evals, and carousel slots.',
+        content: 'Variant IDs **link CEF to PIF**. Atom renames propagate to images, evals, and carousel slots. Post-sync **backfill** auto-heals stale variant IDs on PIF images.',
       },
     ],
   },
@@ -196,9 +197,7 @@ export const cefHowItWorksSections: HiwSection[] = [
         kind: 'table',
         headers: ['Setting', 'Default', 'Controls'],
         defaultCol: 1,
-        rows: [
-          ['`reinjectQueriesRun`', 'false', 'Inject prior queries into prompt (off \u2014 URLs handle dedup)'],
-        ],
+        rows: [],
       },
     ],
   },

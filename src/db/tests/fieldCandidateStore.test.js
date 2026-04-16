@@ -536,6 +536,104 @@ describe('fieldCandidateStore', () => {
     assert.equal(db.countFieldCandidatesBySourceId('mouse-multi', sid), 2);
   });
 
+  // ── variant_id column (future feature-source cascade anchor) ──────
+
+  it('variant_id column exists and defaults to NULL', () => {
+    db.insertFieldCandidate({
+      productId: 'mouse-vid-null', fieldKey: 'weight',
+      sourceId: 'cef-mouse-vid-null-1', sourceType: 'cef',
+      value: '58', confidence: 80, model: '', validationJson: {}, metadataJson: {},
+    });
+
+    const row = db.getFieldCandidateBySourceId('mouse-vid-null', 'weight', 'cef-mouse-vid-null-1');
+    assert.ok(row, 'row exists');
+    assert.equal(row.variant_id, null, 'variant_id defaults to NULL');
+  });
+
+  it('insertFieldCandidate accepts variant_id', () => {
+    db.insertFieldCandidate({
+      productId: 'mouse-vid-set', fieldKey: 'release_date',
+      sourceId: 'feature-mouse-vid-set-1', sourceType: 'feature',
+      value: '2026-05-01', confidence: 90, model: '',
+      validationJson: {}, metadataJson: {},
+      variantId: 'v_black_001',
+    });
+
+    const row = db.getFieldCandidateBySourceId('mouse-vid-set', 'release_date', 'feature-mouse-vid-set-1');
+    assert.ok(row, 'row exists');
+    assert.equal(row.variant_id, 'v_black_001', 'variant_id persisted');
+  });
+
+  it('UNIQUE constraint allows same source_id with different variant_id', () => {
+    db.insertFieldCandidate({
+      productId: 'mouse-vid-uniq', fieldKey: 'price',
+      sourceId: 'feature-mouse-vid-uniq-1', sourceType: 'feature',
+      value: '$79', confidence: 90, model: '',
+      validationJson: {}, metadataJson: {},
+      variantId: 'v_black',
+    });
+
+    // Same source_id + field_key but different variant_id — must NOT conflict
+    db.insertFieldCandidate({
+      productId: 'mouse-vid-uniq', fieldKey: 'price',
+      sourceId: 'feature-mouse-vid-uniq-1', sourceType: 'feature',
+      value: '$89', confidence: 90, model: '',
+      validationJson: {}, metadataJson: {},
+      variantId: 'v_white',
+    });
+
+    const rows = db.getFieldCandidatesByProductAndField('mouse-vid-uniq', 'price');
+    assert.equal(rows.length, 2, 'two rows coexist with same source_id, different variant_id');
+    const vids = rows.map(r => r.variant_id).sort();
+    assert.deepEqual(vids, ['v_black', 'v_white']);
+  });
+
+  it('deleteByVariantId removes all candidates for that variant across fields', () => {
+    db.insertFieldCandidate({
+      productId: 'mouse-vid-del', fieldKey: 'price',
+      sourceId: 'feature-mouse-vid-del-1', sourceType: 'feature',
+      value: '$79', confidence: 90, model: '',
+      validationJson: {}, metadataJson: {},
+      variantId: 'v_del_target',
+    });
+    db.insertFieldCandidate({
+      productId: 'mouse-vid-del', fieldKey: 'release_date',
+      sourceId: 'feature-mouse-vid-del-2', sourceType: 'feature',
+      value: '2026-06-01', confidence: 85, model: '',
+      validationJson: {}, metadataJson: {},
+      variantId: 'v_del_target',
+    });
+    // Different variant — must survive
+    db.insertFieldCandidate({
+      productId: 'mouse-vid-del', fieldKey: 'price',
+      sourceId: 'feature-mouse-vid-del-3', sourceType: 'feature',
+      value: '$89', confidence: 90, model: '',
+      validationJson: {}, metadataJson: {},
+      variantId: 'v_survivor',
+    });
+
+    db.deleteFieldCandidatesByVariantId('mouse-vid-del', 'v_del_target');
+
+    const remaining = db.getAllFieldCandidatesByProduct('mouse-vid-del');
+    assert.equal(remaining.length, 1, 'only survivor remains');
+    assert.equal(remaining[0].variant_id, 'v_survivor');
+  });
+
+  it('deleteByVariantId does not touch NULL variant_id rows', () => {
+    db.insertFieldCandidate({
+      productId: 'mouse-vid-null2', fieldKey: 'colors',
+      sourceId: 'cef-mouse-vid-null2-1', sourceType: 'cef',
+      value: '["black"]', confidence: 95, model: '',
+      validationJson: {}, metadataJson: {},
+      // no variantId — defaults to NULL
+    });
+
+    db.deleteFieldCandidatesByVariantId('mouse-vid-null2', 'v_anything');
+
+    const rows = db.getFieldCandidatesByProductAndField('mouse-vid-null2', 'colors');
+    assert.equal(rows.length, 1, 'NULL variant_id row untouched');
+  });
+
   it('countFieldCandidatesBySourceId decrements after deleteBySourceId for one field', () => {
     const sid = 'cef-mouse-dec-1';
     db.insertFieldCandidate({

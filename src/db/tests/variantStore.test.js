@@ -22,7 +22,6 @@ const VARIANT_COLOR = {
   colorAtoms: ['black'],
   editionSlug: null,
   editionDisplayName: null,
-  retired: false,
   createdAt: '2026-04-14T00:00:00Z',
 };
 
@@ -35,7 +34,6 @@ const VARIANT_EDITION = {
   colorAtoms: ['olive', 'khaki'],
   editionSlug: 'special-ed',
   editionDisplayName: 'Special Edition',
-  retired: false,
   createdAt: '2026-04-14T00:00:00Z',
 };
 
@@ -49,7 +47,6 @@ describe('variantStore', () => {
     assert.equal(row.variant_type, 'color');
     assert.equal(row.variant_label, 'Black');
     assert.deepEqual(row.color_atoms, ['black']);
-    assert.equal(row.retired, false);
   }));
 
   it('upsert updates on conflict', withDb((db) => {
@@ -81,19 +78,12 @@ describe('variantStore', () => {
     assert.equal(rows[1].variant_type, 'edition');
   }));
 
-  it('listActive excludes retired variants', withDb((db) => {
+  it('listActive returns same results as listByProduct (no retired filter)', withDb((db) => {
     db.variants.upsert(VARIANT_COLOR);
-    db.variants.upsert({ ...VARIANT_EDITION, retired: true });
+    db.variants.upsert(VARIANT_EDITION);
     const active = db.variants.listActive('mouse-001');
-    assert.equal(active.length, 1);
-    assert.equal(active[0].variant_id, 'v_aabb1122');
-  }));
-
-  it('retire sets retired=1', withDb((db) => {
-    db.variants.upsert(VARIANT_COLOR);
-    db.variants.retire('mouse-001', 'v_aabb1122');
-    const row = db.variants.get('mouse-001', 'v_aabb1122');
-    assert.equal(row.retired, true);
+    const all = db.variants.listByProduct('mouse-001');
+    assert.equal(active.length, all.length);
   }));
 
   it('remove hard deletes', withDb((db) => {
@@ -140,7 +130,7 @@ describe('variantStore', () => {
       variantKey: 'edition:doom-edition', variantType: 'edition',
       variantLabel: 'DOOM Edition', colorAtoms: ['olive', 'black', 'red'],
       editionSlug: 'doom-edition', editionDisplayName: 'DOOM Edition',
-      retired: false, createdAt: '2026-04-14T00:00:00Z',
+      createdAt: '2026-04-14T00:00:00Z',
     });
     assert.equal(db.variants.listByProduct('mouse-001').length, 3, 'pre-sync: 3 variants');
 
@@ -164,7 +154,7 @@ describe('variantStore', () => {
       productId: 'mouse-002', variantId: 'v_other001',
       variantKey: 'color:white', variantType: 'color', variantLabel: 'White',
       colorAtoms: ['white'], editionSlug: null, editionDisplayName: null,
-      retired: false, createdAt: '2026-04-14T00:00:00Z',
+      createdAt: '2026-04-14T00:00:00Z',
     });
 
     // Sync product A with only 1 variant — must not affect product B

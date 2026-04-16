@@ -1,13 +1,14 @@
-import { memo } from 'react';
-import { PifDiscoveryLogToggle } from './PifDiscoveryLogToggle.tsx';
+import { memo, useMemo } from 'react';
 import { buildModeBadge, resolveVariantColorAtoms } from '../selectors/pifSelectors.ts';
 import { variantBadgeBgStyle } from '../helpers/pifColorUtils.ts';
 import {
   FinderRunTimestamp,
   FinderRunModelBadge,
   FinderRunPromptDetails,
+  FinderDiscoveryDetails,
   ColorSwatch,
 } from '../../../shared/ui/finder/index.ts';
+import type { DiscoverySection } from '../../../shared/ui/finder/index.ts';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
 import type { ProductImageFinderRun } from '../types.ts';
 
@@ -38,6 +39,15 @@ export const PifRunHistoryRow = memo(function PifRunHistoryRow({
   const variantLabel = run.response?.variant_label || run.response?.variant_key || '--';
   const colorAtoms = resolveVariantColorAtoms(variantKey, editions);
   const hexParts = colorAtoms.map(a => hexMap.get(a.trim()) || '');
+
+  const discoverySections = useMemo((): DiscoverySection[] => {
+    if (!log) return [];
+    const sections: DiscoverySection[] = [];
+    if (log.queries_run?.length) sections.push({ title: 'Queries Run', format: 'lines', items: log.queries_run });
+    if (log.urls_checked?.length) sections.push({ title: 'URLs Checked', format: 'lines', items: log.urls_checked });
+    if (log.notes?.length) sections.push({ title: 'Notes', format: 'lines', items: log.notes });
+    return sections;
+  }, [log]);
 
   return (
     <div className="sf-surface-panel rounded-lg overflow-hidden">
@@ -102,9 +112,11 @@ export const PifRunHistoryRow = memo(function PifRunHistoryRow({
           )}
 
           {/* Discovery log */}
-          {log && (log.urls_checked?.length > 0 || log.queries_run?.length > 0 || log.notes?.length > 0) && (
-            <PifDiscoveryLogToggle log={log} storageKey={`pif:discoveryLog:${run.run_number}`} />
-          )}
+          {log && <FinderDiscoveryDetails
+            title="Discovery Log"
+            sections={discoverySections}
+            storageKey={`pif:discoveryLog:${run.run_number}`}
+          />}
 
           {/* System prompt, user message, LLM response */}
           <FinderRunPromptDetails

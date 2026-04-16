@@ -273,7 +273,7 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
           { new_key: 'color:red', match: null, action: 'new', reason: 'new' },
           { new_key: 'edition:doom-edition', match: null, action: 'new', reason: 'new' },
         ],
-        retired: [],
+        remove: [],
       }),
     });
 

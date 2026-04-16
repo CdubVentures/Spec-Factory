@@ -15,6 +15,7 @@ import {
   applyIdentityMappings,
   validateColorsAgainstPalette,
   validateIdentityMappings,
+  validateOrphanRemaps,
 } from '../variantRegistry.js';
 
 /* ── Factories ──────────────────────────────────────────────────── */
@@ -430,18 +431,18 @@ describe('applyIdentityMappings', () => {
 
   it('match with identical key/atoms: no fields change, no updated_at', () => {
     const original = makeRegistry();
-    const result = applyIdentityMappings({
+    const { registry } = applyIdentityMappings({
       existingRegistry: original,
       mappings: [
         { new_key: 'color:black', match: 'v_aaa11111', action: 'match', reason: 'unchanged' },
       ],
-      retired: [],
+      remove: [],
       productId: 'mouse-001',
       colors: ['black', 'ocean-blue'],
       colorNames: {},
       editions: { 'cod-bo6': { display_name: 'COD BO6', colors: ['black+orange'] } },
     });
-    const entry = result.find(e => e.variant_id === 'v_aaa11111');
+    const entry = registry.find(e => e.variant_id === 'v_aaa11111');
     assert.equal(entry.variant_key, 'color:black');
     assert.equal(entry.variant_label, 'black');
     assert.deepStrictEqual(entry.color_atoms, ['black']);
@@ -451,18 +452,18 @@ describe('applyIdentityMappings', () => {
   // ── match action: updated atoms → mutable fields change ──
 
   it('match with updated atoms: mutable fields change, variant_id preserved', () => {
-    const result = applyIdentityMappings({
+    const { registry } = applyIdentityMappings({
       existingRegistry: makeRegistry(),
       mappings: [
         { new_key: 'color:deep-ocean-blue', match: 'v_bbb22222', action: 'match', reason: 'better palette match' },
       ],
-      retired: [],
+      remove: [],
       productId: 'mouse-001',
       colors: ['black', 'deep-ocean-blue'],
       colorNames: { 'deep-ocean-blue': 'Deep Ocean Blue' },
       editions: {},
     });
-    const updated = result.find(e => e.variant_id === 'v_bbb22222');
+    const updated = registry.find(e => e.variant_id === 'v_bbb22222');
     assert.ok(updated);
     assert.equal(updated.variant_key, 'color:deep-ocean-blue');
     assert.equal(updated.variant_label, 'Deep Ocean Blue');
@@ -472,18 +473,18 @@ describe('applyIdentityMappings', () => {
   });
 
   it('match with updated label only', () => {
-    const result = applyIdentityMappings({
+    const { registry } = applyIdentityMappings({
       existingRegistry: makeRegistry(),
       mappings: [
         { new_key: 'color:ocean-blue', match: 'v_bbb22222', action: 'match', reason: 'label refined' },
       ],
-      retired: [],
+      remove: [],
       productId: 'mouse-001',
       colors: ['black', 'ocean-blue'],
       colorNames: { 'ocean-blue': 'Pacific Ocean Blue' },
       editions: {},
     });
-    const updated = result.find(e => e.variant_id === 'v_bbb22222');
+    const updated = registry.find(e => e.variant_id === 'v_bbb22222');
     assert.equal(updated.variant_label, 'Pacific Ocean Blue');
     assert.equal(updated.variant_key, 'color:ocean-blue', 'key unchanged');
     assert.deepStrictEqual(updated.color_atoms, ['ocean-blue'], 'atoms unchanged');
@@ -492,18 +493,18 @@ describe('applyIdentityMappings', () => {
   // ── match action: edition with same slug → updates display_name/atoms ──
 
   it('edition match preserves slug and updates display_name + atoms', () => {
-    const result = applyIdentityMappings({
+    const { registry } = applyIdentityMappings({
       existingRegistry: makeRegistry(),
       mappings: [
         { new_key: 'edition:cod-bo6', match: 'v_ccc33333', action: 'match', reason: 'atoms expanded' },
       ],
-      retired: [],
+      remove: [],
       productId: 'mouse-001',
       colors: ['black', 'black+orange+gold'],
       colorNames: {},
       editions: { 'cod-bo6': { display_name: 'Call of Duty Black Ops 6', colors: ['black+orange+gold'] } },
     });
-    const edEntry = result.find(e => e.variant_id === 'v_ccc33333');
+    const edEntry = registry.find(e => e.variant_id === 'v_ccc33333');
     assert.ok(edEntry);
     assert.equal(edEntry.variant_id, 'v_ccc33333', 'hash must NOT change');
     assert.equal(edEntry.edition_slug, 'cod-bo6', 'slug must NOT change');
@@ -514,18 +515,18 @@ describe('applyIdentityMappings', () => {
   // ── new action ──
 
   it('new generates new variant_id and pushes entry', () => {
-    const result = applyIdentityMappings({
+    const { registry } = applyIdentityMappings({
       existingRegistry: makeRegistry(),
       mappings: [
         { new_key: 'color:crimson-red', match: null, action: 'new', reason: 'genuinely new color' },
       ],
-      retired: [],
+      remove: [],
       productId: 'mouse-001',
       colors: ['black', 'ocean-blue', 'crimson-red'],
       colorNames: { 'crimson-red': 'Crimson Red' },
       editions: {},
     });
-    const newEntry = result.find(e => e.variant_key === 'color:crimson-red');
+    const newEntry = registry.find(e => e.variant_key === 'color:crimson-red');
     assert.ok(newEntry, 'new entry should exist');
     assert.match(newEntry.variant_id, /^v_[0-9a-f]{8}$/);
     assert.notEqual(newEntry.variant_id, 'v_aaa11111');
@@ -536,18 +537,18 @@ describe('applyIdentityMappings', () => {
   });
 
   it('new for edition creates edition entry', () => {
-    const result = applyIdentityMappings({
+    const { registry } = applyIdentityMappings({
       existingRegistry: makeRegistry(),
       mappings: [
         { new_key: 'edition:witcher-3', match: null, action: 'new', reason: 'new edition' },
       ],
-      retired: [],
+      remove: [],
       productId: 'mouse-001',
       colors: ['black'],
       colorNames: {},
       editions: { 'witcher-3': { display_name: 'Witcher 3 Edition', colors: ['black+red'] } },
     });
-    const edEntry = result.find(e => e.variant_key === 'edition:witcher-3');
+    const edEntry = registry.find(e => e.variant_key === 'edition:witcher-3');
     assert.ok(edEntry);
     assert.equal(edEntry.variant_type, 'edition');
     assert.equal(edEntry.edition_slug, 'witcher-3');
@@ -559,75 +560,76 @@ describe('applyIdentityMappings', () => {
 
   it('reject skips discovery entirely — registry unchanged', () => {
     const original = makeRegistry();
-    const result = applyIdentityMappings({
+    const { registry } = applyIdentityMappings({
       existingRegistry: original,
       mappings: [
         { new_key: 'color:light-olive+black+red', match: null, action: 'reject', reason: 'hallucinated' },
       ],
-      retired: [],
+      remove: [],
       productId: 'mouse-001',
       colors: ['black', 'ocean-blue'],
       colorNames: {},
       editions: {},
     });
-    assert.equal(result.length, 3, 'no new entries from reject');
-    assert.ok(!result.find(e => e.variant_key === 'color:light-olive+black+red'));
+    assert.equal(registry.length, 3, 'no new entries from reject');
+    assert.ok(!registry.find(e => e.variant_key === 'color:light-olive+black+red'));
   });
 
-  // ── retired ──
+  // ── remove (hard-delete wrong-product variants) ──
 
-  it('retired variant_ids get retired: true but stay in registry', () => {
-    const result = applyIdentityMappings({
+  it('removed variant_ids are deleted from registry and returned in removed', () => {
+    const { registry, removed } = applyIdentityMappings({
       existingRegistry: makeRegistry(),
       mappings: [],
-      retired: ['v_ccc33333'],
+      remove: ['v_ccc33333'],
       productId: 'mouse-001',
       colors: ['black', 'ocean-blue'],
       colorNames: {},
       editions: {},
     });
-    const retiredEntry = result.find(e => e.variant_id === 'v_ccc33333');
-    assert.ok(retiredEntry, 'retired entry must remain in registry');
-    assert.equal(retiredEntry.retired, true);
-    assert.equal(result.length, 3, 'registry size must not shrink');
+    assert.equal(registry.length, 2, 'registry shrinks by 1');
+    assert.ok(!registry.find(e => e.variant_id === 'v_ccc33333'), 'removed entry gone from registry');
+    assert.equal(removed.length, 1, 'removed array has 1 entry');
+    assert.equal(removed[0].variant_id, 'v_ccc33333');
   });
 
   // ── Edge cases ──
 
   it('unknown match variant_id is ignored gracefully', () => {
-    const result = applyIdentityMappings({
+    const { registry } = applyIdentityMappings({
       existingRegistry: makeRegistry(),
       mappings: [
         { new_key: 'color:phantom', match: 'v_doesnotexist', action: 'match', reason: 'bad match' },
       ],
-      retired: [],
+      remove: [],
       productId: 'mouse-001',
       colors: ['black', 'ocean-blue'],
       colorNames: {},
       editions: {},
     });
-    assert.equal(result.length, 3);
+    assert.equal(registry.length, 3);
   });
 
-  it('empty mappings and retired returns registry unchanged', () => {
+  it('empty mappings and remove returns registry unchanged', () => {
     const original = makeRegistry();
-    const result = applyIdentityMappings({
+    const { registry, removed } = applyIdentityMappings({
       existingRegistry: original,
       mappings: [],
-      retired: [],
+      remove: [],
       productId: 'mouse-001',
       colors: ['black', 'ocean-blue'],
       colorNames: {},
       editions: {},
     });
-    assert.equal(result.length, 3);
-    assert.equal(result[0].variant_id, 'v_aaa11111');
-    assert.equal(result[1].variant_id, 'v_bbb22222');
-    assert.equal(result[2].variant_id, 'v_ccc33333');
+    assert.equal(registry.length, 3);
+    assert.equal(registry[0].variant_id, 'v_aaa11111');
+    assert.equal(registry[1].variant_id, 'v_bbb22222');
+    assert.equal(registry[2].variant_id, 'v_ccc33333');
+    assert.equal(removed.length, 0);
   });
 
-  it('mixed match + new + reject + retire in one call', () => {
-    const result = applyIdentityMappings({
+  it('mixed match + new + reject + remove in one call', () => {
+    const { registry, removed } = applyIdentityMappings({
       existingRegistry: makeRegistry(),
       mappings: [
         { new_key: 'color:black', match: 'v_aaa11111', action: 'match', reason: 'unchanged' },
@@ -635,62 +637,194 @@ describe('applyIdentityMappings', () => {
         { new_key: 'color:crimson-red', match: null, action: 'new', reason: 'new' },
         { new_key: 'color:light-olive+black', match: null, action: 'reject', reason: 'hallucinated' },
       ],
-      retired: ['v_ccc33333'],
+      remove: ['v_ccc33333'],
       productId: 'mouse-001',
       colors: ['black', 'deep-ocean-blue', 'crimson-red'],
       colorNames: { 'deep-ocean-blue': 'Deep Ocean Blue', 'crimson-red': 'Crimson Red' },
       editions: {},
     });
-    assert.equal(result.length, 4, '3 existing + 1 new (reject adds nothing)');
-    assert.equal(result.find(e => e.variant_id === 'v_aaa11111')?.variant_key, 'color:black');
-    assert.equal(result.find(e => e.variant_id === 'v_bbb22222')?.variant_key, 'color:deep-ocean-blue');
-    assert.equal(result.find(e => e.variant_id === 'v_ccc33333')?.retired, true);
-    assert.ok(result.find(e => e.variant_key === 'color:crimson-red'));
-    assert.ok(!result.find(e => e.variant_key === 'color:light-olive+black'));
+    assert.equal(registry.length, 3, '2 existing + 1 new (reject adds nothing, 1 removed)');
+    assert.equal(registry.find(e => e.variant_id === 'v_aaa11111')?.variant_key, 'color:black');
+    assert.equal(registry.find(e => e.variant_id === 'v_bbb22222')?.variant_key, 'color:deep-ocean-blue');
+    assert.ok(!registry.find(e => e.variant_id === 'v_ccc33333'), 'removed entry gone');
+    assert.ok(registry.find(e => e.variant_key === 'color:crimson-red'));
+    assert.ok(!registry.find(e => e.variant_key === 'color:light-olive+black'));
+    assert.equal(removed.length, 1, 'removed array has the deleted entry');
+    assert.equal(removed[0].variant_id, 'v_ccc33333');
   });
 
   // ── Type guards ──
 
   it('type guard: color matched to edition is rejected and forced to new', () => {
-    const result = applyIdentityMappings({
+    const { registry } = applyIdentityMappings({
       existingRegistry: makeRegistry(),
       mappings: [
         { new_key: 'color:olive+black+red', match: 'v_ccc33333', action: 'match', reason: 'similar atoms' },
       ],
-      retired: [],
+      remove: [],
       productId: 'mouse-001',
       colors: ['black', 'ocean-blue', 'olive+black+red'],
       colorNames: {},
       editions: { 'cod-bo6': { display_name: 'COD BO6', colors: ['black+orange'] } },
     });
-    const original = result.find(e => e.variant_id === 'v_ccc33333');
+    const original = registry.find(e => e.variant_id === 'v_ccc33333');
     assert.ok(original, 'original edition entry still exists');
     assert.equal(original.variant_key, 'edition:cod-bo6', 'edition key unchanged');
     assert.equal(original.variant_type, 'edition', 'type unchanged');
 
-    const created = result.find(e => e.variant_key === 'color:olive+black+red');
+    const created = registry.find(e => e.variant_key === 'color:olive+black+red');
     assert.ok(created, 'cross-type mapping became a new entry');
     assert.equal(created.variant_type, 'color');
     assert.notEqual(created.variant_id, 'v_ccc33333', 'got its own new hash');
   });
 
   it('type guard: edition matched to color is rejected and forced to new', () => {
-    const result = applyIdentityMappings({
+    const { registry } = applyIdentityMappings({
       existingRegistry: makeRegistry(),
       mappings: [
         { new_key: 'edition:special', match: 'v_aaa11111', action: 'match', reason: 'same product' },
       ],
-      retired: [],
+      remove: [],
       productId: 'mouse-001',
       colors: ['black'],
       colorNames: {},
       editions: { 'special': { display_name: 'Special Edition', colors: ['black+gold'] } },
     });
-    const original = result.find(e => e.variant_id === 'v_aaa11111');
+    const original = registry.find(e => e.variant_id === 'v_aaa11111');
     assert.equal(original.variant_key, 'color:black', 'color key unchanged');
 
-    const created = result.find(e => e.variant_key === 'edition:special');
+    const created = registry.find(e => e.variant_key === 'edition:special');
     assert.ok(created, 'cross-type mapping became a new entry');
     assert.equal(created.variant_type, 'edition');
+  });
+
+  // ── preferred_label ──
+
+  it('match with preferred_label overrides computed variant_label for color', () => {
+    const { registry } = applyIdentityMappings({
+      existingRegistry: makeRegistry(),
+      mappings: [
+        { new_key: 'color:black', match: 'v_aaa11111', action: 'match', reason: 'confirmed', preferred_label: 'Stealth Black' },
+      ],
+      remove: [],
+      productId: 'mouse-001',
+      colors: ['black'],
+      colorNames: {},
+      editions: {},
+    });
+    const entry = registry.find(e => e.variant_id === 'v_aaa11111');
+    assert.equal(entry.variant_label, 'Stealth Black', 'preferred_label must override computed label');
+    assert.ok(entry.updated_at, 'updated_at must be set');
+  });
+
+  it('match with preferred_label overrides computed variant_label for edition', () => {
+    const { registry } = applyIdentityMappings({
+      existingRegistry: makeRegistry(),
+      mappings: [
+        { new_key: 'edition:cod-bo6', match: 'v_ccc33333', action: 'match', reason: 'confirmed', preferred_label: 'Call of Duty: Black Ops 6 Bundle' },
+      ],
+      remove: [],
+      productId: 'mouse-001',
+      colors: ['black', 'black+orange'],
+      colorNames: {},
+      editions: { 'cod-bo6': { display_name: 'COD BO6', colors: ['black+orange'] } },
+    });
+    const entry = registry.find(e => e.variant_id === 'v_ccc33333');
+    assert.equal(entry.variant_label, 'Call of Duty: Black Ops 6 Bundle', 'preferred_label must override edition display_name');
+    assert.equal(entry.edition_display_name, 'Call of Duty: Black Ops 6 Bundle');
+  });
+
+  it('match without preferred_label uses existing label logic', () => {
+    const { registry } = applyIdentityMappings({
+      existingRegistry: makeRegistry(),
+      mappings: [
+        { new_key: 'color:black', match: 'v_aaa11111', action: 'match', reason: 'same' },
+      ],
+      remove: [],
+      productId: 'mouse-001',
+      colors: ['black'],
+      colorNames: { black: 'Jet Black' },
+      editions: {},
+    });
+    const entry = registry.find(e => e.variant_id === 'v_aaa11111');
+    assert.equal(entry.variant_label, 'Jet Black', 'colorNames logic must apply when no preferred_label');
+  });
+});
+
+/* ── validateOrphanRemaps ──────────────────────────────────────── */
+
+describe('validateOrphanRemaps', () => {
+  it('accepts valid remap to existing registry key', () => {
+    const registry = makeRegistry();
+    const result = validateOrphanRemaps({
+      orphanRemaps: [
+        { orphan_key: 'edition:doom-the-dark-ages-edition', action: 'remap', remap_to: 'edition:cod-bo6', reason: 'slug drift' },
+      ],
+      registry,
+    });
+    assert.equal(result.valid, true);
+  });
+
+  it('accepts valid dead with null remap_to', () => {
+    const registry = makeRegistry();
+    const result = validateOrphanRemaps({
+      orphanRemaps: [
+        { orphan_key: 'color:navy-blue', action: 'dead', remap_to: null, reason: 'hallucinated — never existed' },
+      ],
+      registry,
+    });
+    assert.equal(result.valid, true);
+  });
+
+  it('accepts empty orphanRemaps', () => {
+    const result = validateOrphanRemaps({ orphanRemaps: [], registry: makeRegistry() });
+    assert.equal(result.valid, true);
+  });
+
+  it('rejects remap to nonexistent registry key', () => {
+    const registry = makeRegistry();
+    const result = validateOrphanRemaps({
+      orphanRemaps: [
+        { orphan_key: 'color:red', action: 'remap', remap_to: 'color:does-not-exist', reason: 'test' },
+      ],
+      registry,
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.reason.includes('does-not-exist'));
+  });
+
+  it('rejects remap with null remap_to', () => {
+    const registry = makeRegistry();
+    const result = validateOrphanRemaps({
+      orphanRemaps: [
+        { orphan_key: 'color:red', action: 'remap', remap_to: null, reason: 'test' },
+      ],
+      registry,
+    });
+    assert.equal(result.valid, false);
+  });
+
+  it('rejects dead with non-null remap_to', () => {
+    const registry = makeRegistry();
+    const result = validateOrphanRemaps({
+      orphanRemaps: [
+        { orphan_key: 'color:red', action: 'dead', remap_to: 'color:black', reason: 'test' },
+      ],
+      registry,
+    });
+    assert.equal(result.valid, false);
+  });
+
+  it('rejects duplicate remap_to targets', () => {
+    const registry = makeRegistry();
+    const result = validateOrphanRemaps({
+      orphanRemaps: [
+        { orphan_key: 'color:navy-blue', action: 'remap', remap_to: 'color:black', reason: 'a' },
+        { orphan_key: 'color:dark-blue', action: 'remap', remap_to: 'color:black', reason: 'b' },
+      ],
+      registry,
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.reason.includes('Duplicate'));
   });
 });

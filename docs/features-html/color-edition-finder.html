@@ -301,7 +301,7 @@
   </table>
 
   <dl class="detail-grid" style="margin-top:12px;">
-    <dt>Retired variants</dt><dd>Marked <code>retired: true</code> but <strong>never removed</strong> from the registry. PIF images may still reference them by <code>variant_id</code>.</dd>
+    <dt>Removed variants</dt><dd>Wrong-product contamination is <strong>hard-deleted</strong> from the registry + PIF images cascade-deleted. Only for variants that were NEVER real for this product. Discontinued real products stay forever.</dd>
     <dt>Builder</dt><dd><code>buildVariantRegistry({ productId, colors, colorNames, editions })</code> &mdash; creates fresh registry on Run 1.</dd>
     <dt>Backfill</dt><dd><code>backfillVariantRegistry({ specDb, productRoot })</code> &mdash; one-time scan for products missing a registry. Idempotent.</dd>
   </dl>
@@ -335,9 +335,9 @@
 </div>
 
 <div class="card">
-<div class="card-header" style="background:var(--red-bg);">Gate 2: Identity Check Validation (<code>validateIdentityMappings</code>)</div>
+<div class="card-header" style="background:var(--red-bg);">Gate 2: Identity Judge Validation (<code>validateIdentityMappings</code>)</div>
 <div class="card-body">
-  <p>Runs <strong>AFTER</strong> LLM 2 (identity check), <strong>BEFORE</strong> any writes. Validates the identity check output. Any failure rejects the entire run.</p>
+  <p>Runs <strong>AFTER</strong> LLM 2 (identity judge), <strong>BEFORE</strong> any writes. Validates the judge's output. Any failure rejects the entire run. The judge uses <strong>web access</strong> to verify discoveries against official sources before accepting.</p>
 
   <table>
     <thead><tr><th>Rule</th><th>Check</th><th>Rejection Reason Code</th></tr></thead>
@@ -378,31 +378,40 @@
 </div>
 
 <div class="card">
-<div class="card-header" style="background:var(--accent-light);">Identity Check Actions (LLM 2 Output)</div>
+<div class="card-header" style="background:var(--accent-light);">Identity Judge Actions (LLM 2 Output)</div>
 <div class="card-body">
   <table>
-    <thead><tr><th>Action</th><th>Meaning</th><th><code>match</code> field</th><th>Example</th></tr></thead>
+    <thead><tr><th>Action</th><th>Meaning</th><th><code>match</code> field</th><th>New Fields</th><th>Example</th></tr></thead>
     <tbody>
       <tr>
         <td><span class="tag tag-green">match</span></td>
-        <td>Same variant &mdash; confirm identity. Can update mutable fields (atoms, label) if different and valid.</td>
+        <td>Same variant &mdash; confirm identity. Judge compares labels and picks the more accurate/official name. Can update mutable fields (atoms, label) if different and valid.</td>
         <td>Existing <code>variant_id</code> (non-null)</td>
-        <td><code>ocean-blue</code> &rarr; <code>deep-ocean-blue</code> (refined atoms, same variant)</td>
+        <td><code>verified</code>: true/false<br><code>preferred_label</code>: better name (optional)</td>
+        <td><code>ocean-blue</code> &rarr; <code>deep-ocean-blue</code> with <code>preferred_label: "Deep Ocean Blue"</code></td>
       </tr>
       <tr>
         <td><span class="tag tag-accent">new</span></td>
-        <td>Genuinely new variant &mdash; create entry with new hash.</td>
+        <td>Genuinely new variant &mdash; <strong>web-verified</strong> before accepting. Create entry with new hash.</td>
         <td><code>null</code></td>
-        <td>New color <code>crimson-red</code> never seen before</td>
+        <td><code>verified</code>: true (confirmed on official site)</td>
+        <td>New color <code>crimson-red</code> confirmed on manufacturer site + Best Buy</td>
       </tr>
       <tr>
         <td><span class="tag tag-red">reject</span></td>
-        <td>Hallucinated/garbage discovery &mdash; skip entirely. Not written to registry or selected.</td>
+        <td>Hallucinated/unverifiable discovery &mdash; not found on official sources. Skip entirely.</td>
         <td><code>null</code></td>
-        <td>LLM hallucinated a color that does not actually exist for this product</td>
+        <td><code>verified</code>: true (searched but not found)</td>
+        <td>Color not found on official product page or any major retailer</td>
       </tr>
     </tbody>
   </table>
+
+  <dl class="detail-grid" style="margin-top:10px;">
+    <dt>Web verification</dt><dd>Judge uses scoped web queries ("{brand} {model} [color name]") against manufacturer site + 1-2 retailers. Not endless searching.</dd>
+    <dt>Ambiguity context</dt><dd>Judge receives <code>familyModelCount</code> + <code>ambiguityLevel</code> to detect colors belonging to sibling models.</dd>
+    <dt>Trust anchor</dt><dd>Existing registry variants are treated as "confirmed unless proven wrong." Burden of proof is on new discoveries.</dd>
+  </dl>
 </div>
 </div>
 
@@ -542,11 +551,11 @@
       <tr><td>3</td><td><strong>LLM 1 (Discovery)</strong></td><td><span class="tag tag-teal">Discovery</span></td><td>Call LLM via <code>createColorEditionFinderCallLlm()</code>. Supports two-phase dispatch (research + writer) when <code>jsonStrict=false</code>. Streams reasoning tokens via <code>onStreamChunk</code>.</td></tr>
       <tr><td>4</td><td><strong>Candidate Gate</strong></td><td><span class="tag tag-teal">Validate</span></td><td>5-step validation pipeline (see Section 6). All-or-nothing: any hard reject fails the entire run.</td></tr>
       <tr><td>5</td><td><strong>Gate 1: Palette Validation</strong></td><td><span class="tag tag-teal">Validate</span></td><td>Every color atom checked against registered palette via <code>validateColorsAgainstPalette()</code>. One unknown atom &rarr; <code>storeFailureAndReturn()</code>. LLM 2 never runs on failure.</td></tr>
-      <tr><td>6</td><td><strong>LLM 2: Identity Check</strong></td><td><span class="tag tag-accent">Identity</span></td><td>Run 2+ only. Fire second LLM call (<code>variant_identity_check</code>). Compares new discoveries against existing variant registry. Actions: <code>match</code> (same variant) / <code>new</code> (genuinely new) / <code>reject</code> (hallucinated).</td></tr>
-      <tr><td>7</td><td><strong>Gate 2: Identity Validation</strong></td><td><span class="tag tag-accent">Identity</span></td><td>Validates identity check output: duplicate match detection, slug change protection, palette check on mappings. Any failure &rarr; <code>storeFailureAndReturn()</code>.</td></tr>
-      <tr><td>8</td><td><strong>Variant Registry Update</strong></td><td><span class="tag tag-green">Confirm</span></td><td>Run 1: <code>buildVariantRegistry()</code> generates fresh registry with stable <code>v_&lt;8-hex&gt;</code> hashes. Run 2+: <code>applyIdentityMappings()</code> with validated match/new/reject actions.</td></tr>
+      <tr><td>6</td><td><strong>LLM 2: Identity Judge</strong></td><td><span class="tag tag-accent">Identity</span></td><td>Run 2+ only. Fire second LLM call (<code>variant_identity_check</code>) with <strong>web access</strong>. Judge compares new discoveries against existing registry with ambiguity context (<code>familyModelCount</code>, <code>ambiguityLevel</code>), verifies via official sources, picks better labels. Actions: <code>match</code> / <code>new</code> / <code>reject</code>. Optional: <code>verified</code> flag + <code>preferred_label</code>. LLM 2 failure is fatal &mdash; rejects entire run.</td></tr>
+      <tr><td>7</td><td><strong>Gate 2: Identity Validation</strong></td><td><span class="tag tag-accent">Identity</span></td><td>Validates judge output: duplicate match detection, slug change protection, palette check on mappings. Any failure &rarr; <code>storeFailureAndReturn()</code>.</td></tr>
+      <tr><td>8</td><td><strong>Variant Registry Update</strong></td><td><span class="tag tag-green">Confirm</span></td><td>Run 1: <code>buildVariantRegistry()</code> generates fresh registry with stable <code>v_&lt;8-hex&gt;</code> hashes. Run 2+: <code>applyIdentityMappings()</code> with validated match/new/reject actions. <code>preferred_label</code> overrides computed labels when present.</td></tr>
       <tr><td>9</td><td><strong>JSON Persist</strong></td><td><span class="tag tag-green">Confirm</span></td><td><code>mergeColorEditionDiscovery()</code> appends run to <code>.workspace/products/{pid}/color_edition.json</code>. Updates selected, sets cooldown.</td></tr>
-      <tr><td>10</td><td><strong>SQL Persist</strong></td><td><span class="tag tag-green">Confirm</span></td><td>Insert run row + upsert summary row into specDb (frontend projection).</td></tr>
+      <tr><td>10</td><td><strong>SQL Persist + Sync</strong></td><td><span class="tag tag-green">Confirm</span></td><td>Insert run row + bookkeeping-only summary upsert. <code>syncFromRegistry()</code> projects to variants table, <code>onAfterSync</code> triggers <code>derivePublishedFromVariants()</code> (sole publisher). Post-sync <code>backfillPifVariantIdsForProduct()</code> auto-heals stale PIF variant IDs.</td></tr>
       <tr><td>11</td><td><strong>Return</strong></td><td></td><td><code>{ colors, editions, default_color, fallbackUsed, rejected }</code></td></tr>
     </tbody>
   </table>
@@ -955,6 +964,7 @@
       <tr><td><code>FinderDeleteConfirmModal</code></td><td><code>shared/ui/finder/</code></td><td>Delete confirmation (run or all)</td></tr>
       <tr><td><code>FinderSectionCard</code></td><td><code>shared/ui/finder/</code></td><td>Collapsible section card for run history, selected state</td></tr>
       <tr><td><code>FinderRunPromptDetails</code></td><td><code>shared/ui/finder/</code></td><td>Expandable prompt/response viewer</td></tr>
+      <tr><td><code>FinderDiscoveryDetails</code></td><td><code>shared/ui/finder/</code></td><td>Collapsible discovery details with typed sections (confirmed, new, rejected, URLs, queries)</td></tr>
       <tr><td><code>FinderRunTimestamp</code></td><td><code>shared/ui/finder/</code></td><td>PST time + duration</td></tr>
       <tr><td><code>DiscoverySummaryBar</code></td><td><code>shared/ui/finder/</code></td><td>Discovery log summary (confirmed, new, rejected, urls, queries)</td></tr>
       <tr><td><code>useResolvedFinderModel</code></td><td><code>shared/ui/finder/</code></td><td>Resolve LLM model + access mode for phase</td></tr>
@@ -962,7 +972,7 @@
       <tr><td><code>deriveFinderStatusChip</code></td><td><code>shared/ui/finder/</code></td><td>Pure function: "Not Run" vs "Run N"</td></tr>
       <tr><td><code>formatAtomLabel</code></td><td><code>shared/ui/finder/</code></td><td>Titlecase raw color atoms</td></tr>
       <tr><td><code>useFireAndForget</code></td><td><code>features/operations/hooks/</code></td><td>Optimistic insert + POST + stub lifecycle</td></tr>
-      <tr><td><code>useOperationsStore</code></td><td><code>features/operations/state/</code></td><td>Zustand store: track running/done/error operations</td></tr>
+      <tr><td><code>useIsModuleRunning</code></td><td><code>features/operations/hooks/</code></td><td>Focused selector: returns boolean, only re-renders when CEF-specific running state changes</td></tr>
       <tr><td><code>usePersistedToggle</code></td><td><code>shared hooks</code></td><td>Persist collapsed/expanded panel state</td></tr>
     </tbody>
   </table>

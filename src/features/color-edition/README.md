@@ -23,10 +23,10 @@ Exported from `index.js`:
 - `deriveColorNamesFromVariants(variants, publishedColors, publishedEditions)` — Pure function: derives `{ colorNames, editionDetails }` display maps from variant rows. Used at GET time so response never depends on run-snapshot `selected`.
 - `derivePublishedFromVariants({ specDb, productId, productRoot? })` — Re-derives published colors/editions from the `variants` SQL table (SSOT). Writes to product.json fields[] + CEF summary columns. Called after every CEF run and after variant deletion.
 - `deleteVariant({ specDb, productId, variantId, productRoot? })` — Full cascade: removes variant from SQL table + JSON, strips values from candidates, re-derives published, cascades to PIF (images, evals, carousel slots).
-- `variantIdentityCheckResponseSchema` — Zod schema: `{ mappings: [{new_key, match, action, reason}], retired: string[] }`
-- `buildVariantIdentityCheckPrompt({ product, existingRegistry, newColors, newColorNames, newEditions })` — System prompt for Run 2+ identity check. Compares new discoveries against existing variant registry.
-- `createVariantIdentityCheckCallLlm(deps)` — Factory: creates bound LLM caller for identity check (same `colorFinder` phase, `variant_identity_check` reason).
-- `applyIdentityMappings({ existingRegistry, mappings, retired, productId, ... })` — Applies LLM identity check results to registry: updates matched entries (preserving hashes), creates new entries, marks retired entries.
+- `variantIdentityCheckResponseSchema` — Zod schema: `{ mappings: [{new_key, match, action, reason, verified?, preferred_label?}], remove: string[] }`
+- `buildVariantIdentityCheckPrompt({ product, existingRegistry, newColors, newColorNames, newEditions, familyModelCount?, ambiguityLevel?, runCount? })` — System prompt for Run 2+ identity judge. Verifies discoveries via web, compares quality against existing registry, picks better labels. Receives ambiguity context.
+- `createVariantIdentityCheckCallLlm(deps)` — Factory: creates bound LLM caller for identity judge (same `colorFinder` phase, `variant_identity_check` reason).
+- `applyIdentityMappings({ existingRegistry, mappings, remove, productId, ... })` — Applies identity judge results to registry: updates matched entries (preserving hashes, applying `preferred_label` when present), creates new entries, hard-deletes wrong-product variants. Returns `{ registry, removed }`.
 
 SQL store (wired through specDb, not imported directly):
 
@@ -46,11 +46,10 @@ Variants table (standalone entity, wired as `specDb.variants`):
 - `specDb.variants.upsert(opts)` — Insert or update a variant row
 - `specDb.variants.get(productId, variantId)` — Single lookup (hydrated)
 - `specDb.variants.listByProduct(productId)` — All variants for product (sorted by type, key)
-- `specDb.variants.listActive(productId)` — Non-retired only
-- `specDb.variants.retire(productId, variantId)` — Soft delete (retired=1)
+- `specDb.variants.listActive(productId)` — Alias for listByProduct (no retired filter)
 - `specDb.variants.remove(productId, variantId)` — Hard delete
 - `specDb.variants.removeByProduct(productId)` — Delete all for product
-- `specDb.variants.syncFromRegistry(productId, registryArray)` — Bulk upsert from variant_registry JSON array
+- `specDb.variants.syncFromRegistry(productId, registryArray, { onAfterSync }?)` — Bulk upsert from variant_registry JSON array. Optional `onAfterSync({ productId })` callback fires after sync completes (used to trigger `derivePublishedFromVariants`).
 
 ## Dependencies
 
@@ -75,9 +74,11 @@ Variants table (standalone entity, wired as `specDb.variants`):
 - **Run history as source log**: each LLM call stored in `runs` array with full prompt + response
 - **Cooldown derived from latest run**: deleting the latest run recalculates cooldown from the new latest
 - **Candidate gate (all-or-nothing)**: Before CEF writes anything, `submitCandidate()` validates `colors` against Field Studio rules. If validation fails, the entire run is rejected — no CEF writes, no candidates, no cooldown. Failure stored in `color_edition_finder_runs` with `response.status = 'rejected'`. On success, repaired values (not raw LLM output) flow to CEF tables and `field_candidates`. Gate skipped gracefully if compiled rules not available (test environments).
-- **Variants table is the SSOT**: The `variants` SQL table is the runtime authority for variant data. Published colors/editions are derived from active (non-retired) variants via `derivePublishedFromVariants()`, not from candidate set_union. JSON `variant_registry` in `color_edition.json` is the durable backup (rebuild/seed only — never read at runtime).
+- **Variants table is the SSOT**: The `variants` SQL table is the runtime authority for variant data. Published colors/editions are derived from variants via `derivePublishedFromVariants()`, not from candidate set_union. JSON `variant_registry` in `color_edition.json` is the durable backup (rebuild/seed only — never read at runtime). Wrong-product variants are hard-deleted (no soft-delete/retired flag).
 - **Variant registry**: Each variant gets a permanent `v_<8-hex>` hash (`variant_id`) assigned on first CEF publish. Hash never changes even if variant name, color atoms, or edition details are updated. Dual-written to both JSON (`color_edition.json variant_registry[]`) and SQL (`variants` table).
 - **Variant deletion cascade**: Deleting a variant removes it from the `variants` table, strips its contributed values from all `field_candidates` arrays, removes from JSON SSOT (`variant_registry` + `selected.*`), re-derives published state, and cascades to PIF (images, evals, carousel slots). Future FK tables (price, SKU, release date) will cascade automatically.
 - **Candidates are evidence, not authority**: For variant-scoped fields (colors, editions), `field_candidates` are historical evidence of what each CEF run discovered. They do not drive published state. Published colors/editions come from the variants table. Candidates with `source: 'variant_registry'` in product.json fields[] indicate variant-derived publishing.
 - **`selected` is audit-only**: `selected` in JSON is LLM feed-forward / audit trail only. Published truth for `color_names` and `edition_details` is derived from the variants table at GET time via `deriveColorNamesFromVariants`. Never read `selected` as published state.
-- **Identity check (Run 2+)**: Every CEF run after the first fires a second LLM call (`variant_identity_check` reason, same `colorFinder` phase) that compares new discoveries against the existing registry. The LLM decides: same variant (update metadata, keep hash) or genuinely new (create new hash). Retired variants are marked `retired: true` but never removed. If the identity check call fails, falls back to write-once behavior (no registry modification). Run prompt/response is nested: `{ discovery: {...}, identity_check: {...} }` on Run 2+, flat `{ system, user }` on Run 1.
+- **Identity judge (Run 2+)**: Every CEF run after the first fires a second LLM call (`variant_identity_check` reason, same `colorFinder` phase) that acts as a judge/validator. It receives ambiguity context (`familyModelCount`, `ambiguityLevel`, `runCount`), uses **web access** to verify discoveries against official sources, compares label quality, and picks the most accurate name (`preferred_label`). Decisions: same variant (update metadata, keep hash), genuinely new (web-verified, create new hash), reject (hallucinated/unverifiable), or remove (wrong-product contamination — hard-deleted from registry + PIF cascade). Discontinued real products are NEVER removed. Identity check failure is **fatal** — rejects the entire run (no silent fallback). Run prompt/response nested: `{ discovery: {...}, identity_check: {...} }` on Run 2+, flat `{ system, user }` on Run 1.
+- **Post-sync backfill**: After every `syncFromRegistry`, `backfillPifVariantIdsForProduct()` auto-heals stale PIF variant IDs (same key, drifted ID) and stamps missing IDs. Idempotent — no-op if nothing to fix.
+- **Sync-triggers-derive**: The orchestrator does NOT write published state (colors, editions, default_color) to the summary table. `syncFromRegistry` fires `onAfterSync → derivePublishedFromVariants()`, which is the sole publisher. Summary `upsert` only writes bookkeeping columns (`run_count`, `latest_ran_at`).

@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import {
   buildColorEditionFinderPrompt,
   accumulateUrlsChecked,
-  accumulateQueriesRun,
   COLOR_EDITION_FINDER_SPEC,
   buildVariantIdentityCheckPrompt,
   VARIANT_IDENTITY_CHECK_SPEC,
@@ -105,7 +104,7 @@ describe('buildColorEditionFinderPrompt', () => {
     assert.ok(prompt.includes('cod-bo6-edition'), 'known edition');
   });
 
-  it('subsequent run: injects urls_already_checked from previous discovery_log', () => {
+  it('subsequent run: does NOT inject urls from previous discovery_log', () => {
     const prompt = buildColorEditionFinderPrompt({
       colorNames, colors, product,
       previousRuns: [{
@@ -121,7 +120,8 @@ describe('buildColorEditionFinderPrompt', () => {
         },
       }],
     });
-    assert.ok(prompt.includes('https://corsair.com/m75'), 'url from previous run');
+    assert.ok(!prompt.includes('https://corsair.com/m75'), 'urls must not be fed forward');
+    assert.ok(!prompt.includes('urls already checked'), 'no urls section in prompt');
   });
 
   it('handles empty colorNames gracefully', () => {
@@ -170,77 +170,29 @@ describe('accumulateUrlsChecked', () => {
     ]);
     assert.deepEqual(result.urlsAlreadyChecked, []);
   });
-});
 
-describe('accumulateQueriesRun', () => {
-  it('returns empty array for empty runs', () => {
-    const result = accumulateQueriesRun([]);
-    assert.deepEqual(result.queriesAlreadyRun, []);
+  it('filters out runs older than cutoffIso', () => {
+    const result = accumulateUrlsChecked([
+      { run_number: 1, ran_at: '2026-01-01T00:00:00Z', response: { discovery_log: { urls_checked: ['https://old.com'] } } },
+      { run_number: 2, ran_at: '2026-04-10T00:00:00Z', response: { discovery_log: { urls_checked: ['https://recent.com'] } } },
+    ], { cutoffIso: '2026-03-01T00:00:00Z' });
+    assert.deepEqual(result.urlsAlreadyChecked, ['https://recent.com']);
   });
 
-  it('extracts queries from single run', () => {
-    const result = accumulateQueriesRun([{
-      run_number: 1,
-      response: {
-        discovery_log: {
-          queries_run: ['Corsair M75 colors', 'Corsair M75 limited edition'],
-        },
-      },
-    }]);
-    assert.deepEqual(result.queriesAlreadyRun, ['Corsair M75 colors', 'Corsair M75 limited edition']);
+  it('includes all runs when cutoffIso is empty', () => {
+    const result = accumulateUrlsChecked([
+      { run_number: 1, ran_at: '2026-01-01T00:00:00Z', response: { discovery_log: { urls_checked: ['https://old.com'] } } },
+      { run_number: 2, ran_at: '2026-04-10T00:00:00Z', response: { discovery_log: { urls_checked: ['https://recent.com'] } } },
+    ], { cutoffIso: '' });
+    assert.equal(result.urlsAlreadyChecked.length, 2);
   });
 
-  it('unions queries across multiple runs, no duplicates', () => {
-    const result = accumulateQueriesRun([
-      { run_number: 1, response: { discovery_log: { queries_run: ['Corsair M75 colors', 'Corsair M75 editions'] } } },
-      { run_number: 2, response: { discovery_log: { queries_run: ['Corsair M75 colors', 'Corsair M75 special edition'] } } },
+  it('includes all runs when no options passed (backward compat)', () => {
+    const result = accumulateUrlsChecked([
+      { run_number: 1, ran_at: '2026-01-01T00:00:00Z', response: { discovery_log: { urls_checked: ['https://old.com'] } } },
+      { run_number: 2, ran_at: '2026-04-10T00:00:00Z', response: { discovery_log: { urls_checked: ['https://recent.com'] } } },
     ]);
-    assert.equal(result.queriesAlreadyRun.length, 3);
-  });
-
-  it('handles runs without discovery_log gracefully', () => {
-    const result = accumulateQueriesRun([
-      { run_number: 1, response: { colors: ['black'] } },
-      { run_number: 2, response: {} },
-      { run_number: 3 },
-    ]);
-    assert.deepEqual(result.queriesAlreadyRun, []);
-  });
-});
-
-describe('buildColorEditionFinderPrompt — reinjectQueriesRun', () => {
-  const product = { brand: 'Corsair', model: 'M75 Air Wireless' };
-  const colors = [{ name: 'black', hex: '#000000', css_var: '--color-black' }];
-  const colorNames = ['black'];
-  const previousRuns = [{
-    run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4',
-    selected: { colors: ['black'], editions: {}, default_color: 'black' },
-    response: {
-      colors: ['black'], editions: {}, default_color: 'black',
-      discovery_log: {
-        confirmed_from_known: [], added_new: ['black'], rejected_from_known: [],
-        urls_checked: ['https://corsair.com/m75'],
-        queries_run: ['Corsair M75 colors', 'Corsair M75 limited edition'],
-      },
-    },
-  }];
-
-  it('does NOT inject queries when reinjectQueriesRun is false (default)', () => {
-    const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product, previousRuns, reinjectQueriesRun: false });
-    assert.equal(prompt.includes('queries already run'), false, 'no queries section');
-    assert.equal(prompt.includes('Corsair M75 limited edition'), false, 'no query text');
-  });
-
-  it('does NOT inject queries when reinjectQueriesRun is omitted', () => {
-    const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product, previousRuns });
-    assert.equal(prompt.includes('queries already run'), false, 'no queries section by default');
-  });
-
-  it('injects queries when reinjectQueriesRun is true', () => {
-    const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product, previousRuns, reinjectQueriesRun: true });
-    assert.ok(prompt.includes('queries already run'), 'has queries section');
-    assert.ok(prompt.includes('Corsair M75 colors'), 'includes query');
-    assert.ok(prompt.includes('Corsair M75 limited edition'), 'includes query');
+    assert.equal(result.urlsAlreadyChecked.length, 2);
   });
 });
 
@@ -300,7 +252,7 @@ describe('buildVariantIdentityCheckPrompt', () => {
     assert.ok(result.includes('"match"'), 'match action in example');
     assert.ok(result.includes('"new"'), 'new action in example');
     assert.ok(result.includes('"reject"'), 'reject action in example');
-    assert.ok(result.includes('retired'));
+    assert.ok(result.includes('remove'));
   });
 
   it('does NOT contain old update/create actions in JSON examples', () => {
@@ -312,7 +264,7 @@ describe('buildVariantIdentityCheckPrompt', () => {
   it('contains expected JSON response shape', () => {
     const result = buildVariantIdentityCheckPrompt({ product, existingRegistry, newColors: ['black'], newColorNames: {}, newEditions: {} });
     assert.ok(result.includes('"mappings"'));
-    assert.ok(result.includes('"retired"'));
+    assert.ok(result.includes('"remove"'));
     assert.ok(result.includes('"action"'));
     assert.ok(result.includes('"match"'));
   });
@@ -343,18 +295,46 @@ describe('buildVariantIdentityCheckPrompt', () => {
     assert.equal(result, 'CUSTOM PROMPT');
   });
 
-  it('excludes retired entries from registry listing', () => {
-    const regWithRetired = [
+  it('includes all entries in registry listing (no retired filter)', () => {
+    const fullRegistry = [
       ...existingRegistry,
-      { variant_id: 'v_rrr99999', variant_key: 'color:red', variant_type: 'color', variant_label: 'Red', color_atoms: ['red'], edition_slug: null, retired: true, created_at: '2026-01-01T00:00:00Z' },
+      { variant_id: 'v_rrr99999', variant_key: 'color:red', variant_type: 'color', variant_label: 'Red', color_atoms: ['red'], edition_slug: null, created_at: '2026-01-01T00:00:00Z' },
     ];
-    const result = buildVariantIdentityCheckPrompt({ product, existingRegistry: regWithRetired, newColors: ['black'], newColorNames: {}, newEditions: {} });
-    assert.ok(!result.includes('v_rrr99999'), 'retired entries should not appear in registry listing');
+    const result = buildVariantIdentityCheckPrompt({ product, existingRegistry: fullRegistry, newColors: ['black'], newColorNames: {}, newEditions: {} });
+    assert.ok(result.includes('v_rrr99999'), 'all entries appear in registry listing');
   });
 
   it('handles empty registry gracefully', () => {
     const result = buildVariantIdentityCheckPrompt({ product, existingRegistry: [], newColors: ['black'], newColorNames: {}, newEditions: {} });
     assert.ok(result.includes('(none)'));
+  });
+
+  // ── orphanedPifKeys ──
+
+  it('includes orphan section when orphanedPifKeys is non-empty', () => {
+    const result = buildVariantIdentityCheckPrompt({
+      product, existingRegistry: [], newColors: ['black'], newColorNames: {}, newEditions: {},
+      orphanedPifKeys: ['edition:doom-the-dark-ages-edition', 'color:navy-blue'],
+    });
+    assert.ok(result.includes('ORPHANED PIF IMAGE KEYS'));
+    assert.ok(result.includes('edition:doom-the-dark-ages-edition'));
+    assert.ok(result.includes('color:navy-blue'));
+    assert.ok(result.includes('orphan_remaps'));
+  });
+
+  it('omits orphan section when orphanedPifKeys is empty', () => {
+    const result = buildVariantIdentityCheckPrompt({
+      product, existingRegistry: [], newColors: ['black'], newColorNames: {}, newEditions: {},
+      orphanedPifKeys: [],
+    });
+    assert.ok(!result.includes('ORPHANED PIF IMAGE KEYS'));
+  });
+
+  it('omits orphan section when orphanedPifKeys is not provided', () => {
+    const result = buildVariantIdentityCheckPrompt({
+      product, existingRegistry: [], newColors: ['black'], newColorNames: {}, newEditions: {},
+    });
+    assert.ok(!result.includes('ORPHANED PIF IMAGE KEYS'));
   });
 });
 
@@ -365,8 +345,9 @@ describe('VARIANT_IDENTITY_CHECK_SPEC', () => {
     assert.equal(VARIANT_IDENTITY_CHECK_SPEC.role, 'triage');
   });
 
-  it('jsonSchema has mappings and retired properties', () => {
+  it('jsonSchema has mappings, remove, and orphan_remaps properties', () => {
     assert.ok(VARIANT_IDENTITY_CHECK_SPEC.jsonSchema.properties.mappings);
-    assert.ok(VARIANT_IDENTITY_CHECK_SPEC.jsonSchema.properties.retired);
+    assert.ok(VARIANT_IDENTITY_CHECK_SPEC.jsonSchema.properties.remove);
+    assert.ok(VARIANT_IDENTITY_CHECK_SPEC.jsonSchema.properties.orphan_remaps);
   });
 });

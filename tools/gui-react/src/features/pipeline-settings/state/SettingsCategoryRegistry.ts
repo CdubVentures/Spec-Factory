@@ -4,7 +4,7 @@
 
 // WHY: LLM/extraction settings are owned by the LLM Config page (dedicated rich UI).
 // Pipeline Settings covers global, planner, fetcher, extraction (screenshots), and validation.
-export type SettingsCategoryId = 'review-publisher' | 'global' | 'planner' | 'fetcher' | 'extraction' | 'validation';
+export type SettingsCategoryId = 'review-publisher' | 'global' | 'discovery' | 'planner' | 'fetcher' | 'extraction' | 'validation';
 
 export interface SettingsSectionDef {
   readonly id: string;
@@ -23,7 +23,7 @@ export interface SettingsCategoryDef {
   readonly sections: readonly SettingsSectionDef[];
 }
 
-export const SETTINGS_CATEGORY_KEYS = ['review-publisher', 'global', 'planner', 'fetcher', 'extraction', 'validation'] as const;
+export const SETTINGS_CATEGORY_KEYS = ['review-publisher', 'global', 'discovery', 'planner', 'fetcher', 'extraction', 'validation'] as const;
 
 export const SETTINGS_CATEGORY_REGISTRY: readonly SettingsCategoryDef[] = Object.freeze([
   {
@@ -42,6 +42,14 @@ export const SETTINGS_CATEGORY_REGISTRY: readonly SettingsCategoryDef[] = Object
     sections: Object.freeze([
       { id: 'run-setup', label: 'Run Setup & Limits', tip: 'Run timeout and execution limits' },
       { id: 'output', label: 'Output & Automation', tip: 'Output destinations, artifact controls, and category authority' },
+    ]),
+  },
+  {
+    id: 'discovery',
+    label: 'Discovery',
+    subtitle: 'URL and query cooldown windows for all discovery feeds',
+    sections: Object.freeze([
+      { id: 'cooldowns', label: 'Cooldowns', tip: 'How long URLs and queries remain in cooldown before rediscovery' },
     ]),
   },
   {

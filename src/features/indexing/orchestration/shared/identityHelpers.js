@@ -6,13 +6,14 @@ import {
 import { sha256 } from './cryptoHelpers.js';
 import { toFloat } from './typeHelpers.js';
 
-export async function resolveIdentityAmbiguitySnapshot({ config, category = '', identityLock = {}, specDb = null } = {}) {
+export async function resolveIdentityAmbiguitySnapshot({ config, category = '', identityLock = {}, specDb = null, currentModel = '' } = {}) {
   const brandToken = normalizeIdentityToken(identityLock?.brand);
   const modelToken = normalizeIdentityToken(identityLock?.base_model);
   if (!brandToken || !modelToken) {
     return {
       family_model_count: 0,
       ambiguity_level: 'unknown',
+      sibling_models: [],
       source: 'missing_identity'
     };
   }
@@ -20,20 +21,32 @@ export async function resolveIdentityAmbiguitySnapshot({ config, category = '', 
   try {
     // WHY: SQL is the sole SSOT for products.
     const rows = specDb?.getAllProducts?.() || [];
-    const familyCount = rows.filter((row) =>
+    const familyRows = rows.filter((row) =>
       normalizeIdentityToken(row?.brand) === brandToken
       && normalizeIdentityToken(row?.base_model) === modelToken
-    ).length;
-    const safeCount = Math.max(1, familyCount);
+    );
+    const safeCount = Math.max(1, familyRows.length);
+
+    // WHY: List sibling model names so prompts can say "this is NOT: X, Y, Z".
+    // Excludes the current product's own model name.
+    const currentModelToken = normalizeIdentityToken(currentModel);
+    const siblingModels = [...new Set(
+      familyRows
+        .map(r => r.model || '')
+        .filter(m => m && normalizeIdentityToken(m) !== currentModelToken)
+    )];
+
     return {
       family_model_count: safeCount,
       ambiguity_level: ambiguityLevelFromFamilyCount(safeCount),
+      sibling_models: siblingModels,
       source: 'specDb'
     };
   } catch {
     return {
       family_model_count: 1,
       ambiguity_level: 'easy',
+      sibling_models: [],
       source: 'fallback'
     };
   }

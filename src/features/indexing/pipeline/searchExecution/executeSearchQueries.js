@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import { defaultIndexLabRoot } from '../../../../core/config/runtimeArtifactRoots.js';
 import { runSearchProviders as _defaultRunSearchProviders } from './searchProviders.js';
 import { searchSourceCorpus as _defaultSearchSourceCorpus } from './sourceCorpus.js';
-import { configValue, configBool } from '../../../../shared/settingsAccessor.js';
+import { configValue, configBool, configInt } from '../../../../shared/settingsAccessor.js';
 import {
   buildPlanOnlyResults,
   extractSiteHostFromQuery,
@@ -19,6 +19,12 @@ import { toArray } from '../shared/discoveryIdentity.js';
 import { runWithConcurrency } from '../shared/helpers.js';
 import { normalizeHost } from '../shared/hostParser.js';
 import { isVideoUrl } from '../shared/urlClassifier.js';
+
+function isUrlCooldownExpired(lastSeenTs, cooldownMs) {
+  if (cooldownMs <= 0) return true;
+  if (!lastSeenTs) return true;
+  return (Date.now() - new Date(lastSeenTs).getTime()) > cooldownMs;
+}
 
 /**
  * Execute the search queries phase of discovery.
@@ -52,6 +58,10 @@ export async function executeSearchQueries({
     selectedQueryRowMap?.get(String(query || '').trim().toLowerCase()) || null;
   const resolveProfileQueryRow = (query) =>
     profileQueryRowMap?.get(String(query || '').trim().toLowerCase()) || null;
+
+  // URL cooldown: allow re-crawl of URLs older than this
+  const urlCooldownDays = configInt(config, 'urlCooldownDays') ?? 90;
+  const urlCooldownMs = Math.max(0, urlCooldownDays) * 86400000;
 
   const rawResults = [];
   const searchAttempts = [];
@@ -265,7 +275,7 @@ export async function executeSearchQueries({
                 decision: '',
                 reason: '',
                 provider: String(r?.provider || '').trim(),
-                already_crawled: Boolean(frontierDb?.getUrlRow?.(rawUrl)?.fetch_count > 0),
+                already_crawled: (() => { const r = frontierDb?.getUrlRow?.(rawUrl); return Boolean(r?.fetch_count > 0 && !isUrlCooldownExpired(r.last_seen_ts, urlCooldownMs)); })(),
               };
             })
           });
@@ -365,7 +375,7 @@ export async function executeSearchQueries({
               decision: '',
               reason: 'plan_only_no_provider',
               provider: 'plan',
-              already_crawled: Boolean(frontierDb?.getUrlRow?.(rawUrl)?.fetch_count > 0),
+              already_crawled: (() => { const r = frontierDb?.getUrlRow?.(rawUrl); return Boolean(r?.fetch_count > 0 && !isUrlCooldownExpired(r.last_seen_ts, urlCooldownMs)); })(),
             };
           })
         });
@@ -382,7 +392,8 @@ export async function executeSearchQueries({
     if (!url || seen.has(url)) continue;
     seen.add(url);
     if (isVideoUrl(url)) continue;
-    if (frontierDb?.getUrlRow?.(url)?.fetch_count > 0) continue;
+    const urlRow = frontierDb?.getUrlRow?.(url);
+    if (urlRow?.fetch_count > 0 && !isUrlCooldownExpired(urlRow.last_seen_ts, urlCooldownMs)) continue;
     searchResults.push(row);
   }
 

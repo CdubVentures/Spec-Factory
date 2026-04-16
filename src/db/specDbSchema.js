@@ -121,9 +121,14 @@ CREATE TABLE IF NOT EXISTS field_candidates (
   validation_json TEXT DEFAULT '{}',
   metadata_json TEXT DEFAULT '{}',
   status TEXT DEFAULT 'candidate' CHECK(status IN ('candidate', 'resolved')),
+  variant_id TEXT DEFAULT NULL,
+  -- WHY: SQLite treats NULL as distinct in UNIQUE constraints, so ON CONFLICT
+  -- never fires for NULL variant_id rows. This generated column converts NULL
+  -- to '' for UNIQUE purposes while keeping the real variant_id as NULL.
+  variant_id_key TEXT GENERATED ALWAYS AS (COALESCE(variant_id, '')) STORED,
   submitted_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now')),
-  UNIQUE(category, product_id, field_key, source_id)
+  UNIQUE(category, product_id, field_key, source_id, variant_id_key)
 );
 
 CREATE INDEX IF NOT EXISTS idx_fc_product ON field_candidates(product_id);
@@ -502,14 +507,13 @@ CREATE TABLE IF NOT EXISTS variants (
   color_atoms          TEXT DEFAULT '[]',
   edition_slug         TEXT,
   edition_display_name TEXT,
-  retired              INTEGER DEFAULT 0,
   created_at           TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at           TEXT,
   PRIMARY KEY (category, product_id, variant_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_variants_product
-  ON variants(category, product_id, retired);
+  ON variants(category, product_id);
 `;
 
 // WHY: Single source of truth for llm_route_matrix columns (excluding structural

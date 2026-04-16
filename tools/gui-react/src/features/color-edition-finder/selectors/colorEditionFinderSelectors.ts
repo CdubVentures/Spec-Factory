@@ -189,20 +189,35 @@ export function deriveRunHistoryRows(
         })
         .join('; ');
 
-      const siblings = run.response?.siblings_excluded ?? [];
-      const dl = run.response?.discovery_log;
+      // WHY: Run 1 stores response as flat { colors, editions, discovery_log, ... }.
+      // Run 2+ stores as { discovery: { colors, ..., discovery_log }, identity_check: ... }.
+      // Resolve both shapes to extract siblings_excluded and discovery_log.
+      const resp = run.response as unknown as Record<string, unknown>;
+      const hasNestedResponse = resp?.discovery && typeof resp.discovery === 'object';
+      const discoveryResp = (hasNestedResponse ? resp.discovery : resp) as Record<string, unknown>;
+      const siblings = (discoveryResp?.siblings_excluded ?? []) as readonly string[];
+      const dl = discoveryResp?.discovery_log as Record<string, readonly string[]> | undefined;
       const discoveryLog: RunDiscoveryLog = {
         confirmedCount: dl?.confirmed_from_known?.length ?? 0,
         addedNewCount: dl?.added_new?.length ?? 0,
         rejectedCount: dl?.rejected_from_known?.length ?? 0,
         urlsCheckedCount: dl?.urls_checked?.length ?? 0,
         queriesRunCount: dl?.queries_run?.length ?? 0,
-        confirmedFromKnown: dl?.confirmed_from_known ?? [],
-        addedNew: dl?.added_new ?? [],
-        rejectedFromKnown: dl?.rejected_from_known ?? [],
-        urlsChecked: dl?.urls_checked ?? [],
-        queriesRun: dl?.queries_run ?? [],
+        confirmedFromKnown: (dl?.confirmed_from_known ?? []) as readonly string[],
+        addedNew: (dl?.added_new ?? []) as readonly string[],
+        rejectedFromKnown: (dl?.rejected_from_known ?? []) as readonly string[],
+        urlsChecked: (dl?.urls_checked ?? []) as readonly string[],
+        queriesRun: (dl?.queries_run ?? []) as readonly string[],
       };
+
+      // WHY: Run 1 stores prompt as { system, user }. Run 2+ stores as
+      // { discovery: { system, user }, identity_check: { system, user } }.
+      // Resolve both shapes into the flat systemPrompt/userMessage for display.
+      const prompt = run.prompt as Record<string, unknown>;
+      const hasNestedPrompt = prompt?.discovery && typeof prompt.discovery === 'object';
+      const discoveryPrompt = hasNestedPrompt ? (prompt.discovery as Record<string, string>) : prompt;
+      const systemPrompt = (discoveryPrompt?.system as string) ?? '';
+      const userMessage = (discoveryPrompt?.user as string) ?? '';
 
       return {
         runNumber: run.run_number,
@@ -221,8 +236,8 @@ export function deriveRunHistoryRows(
         startedAt: run.started_at ?? '',
         durationMs: run.duration_ms ?? null,
         selected: run.selected,
-        systemPrompt: run.prompt?.system ?? '',
-        userMessage: run.prompt?.user ?? '',
+        systemPrompt,
+        userMessage,
         responseJson: JSON.stringify(run.response, null, 2),
         siblingsExcluded: siblings,
         discoveryLog,

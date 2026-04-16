@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory - Discovery &amp; Learning: Pipeline &amp; Features</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --surface-alt: #f1f3f5;
+    --border: #dee2e6;
+    --border-light: #e9ecef;
+    --text: #212529;
+    --text-muted: #6c757d;
+    --accent: #4263eb;
+    --accent-light: #edf2ff;
+    --green: #2b8a3e;
+    --green-bg: #ebfbee;
+    --red: #c92a2a;
+    --red-bg: #fff5f5;
+    --orange: #e67700;
+    --orange-bg: #fff9db;
+    --purple: #7048e8;
+    --purple-bg: #f3f0ff;
+    --teal: #0c8599;
+    --teal-bg: #e6fcf5;
+    --pink: #a61e4d;
+    --pink-bg: #fff0f6;
+    --cyan: #0b7285;
+    --cyan-bg: #e3fafc;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-lg: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.6; }
+
+  /* Header */
+  .header { background: linear-gradient(135deg, #1a1b2e 0%, #2d2f54 100%); padding: 48px 0 40px; text-align: center; position: relative; overflow: hidden; }
+  .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
+  .header h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.5px; color: #ffffff; position: relative; }
+  .header p { color: rgba(255,255,255,0.6); font-size: 15px; margin-top: 8px; position: relative; }
+  .header .badge-row { display: flex; gap: 8px; justify-content: center; margin-top: 16px; position: relative; }
+  .header .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .badge-pipe { background: rgba(66,99,235,0.2); color: #8da4ef; border: 1px solid rgba(66,99,235,0.3); }
+  .badge-cef { background: rgba(43,138,62,0.2); color: #8fca9e; border: 1px solid rgba(43,138,62,0.3); }
+  .badge-pif { background: rgba(112,72,232,0.2); color: #b197fc; border: 1px solid rgba(112,72,232,0.3); }
+
+  /* Layout */
+  .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+  .section-title { font-size: 20px; font-weight: 700; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); display: flex; align-items: center; gap: 10px; }
+  .section-title .num { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+
+  /* Cards */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+  .card-header { padding: 14px 20px; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-light); }
+  .card-body { padding: 16px 20px; font-size: 14px; }
+  .card-body p { margin-bottom: 10px; }
+  .card-body p:last-child { margin-bottom: 0; }
+
+  /* Tags */
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .tag-green { background: var(--green-bg); color: var(--green); }
+  .tag-red { background: var(--red-bg); color: var(--red); }
+  .tag-orange { background: var(--orange-bg); color: var(--orange); }
+  .tag-purple { background: var(--purple-bg); color: var(--purple); }
+  .tag-teal { background: var(--teal-bg); color: var(--teal); }
+  .tag-accent { background: var(--accent-light); color: var(--accent); }
+  .tag-pink { background: var(--pink-bg); color: var(--pink); }
+  .tag-cyan { background: var(--cyan-bg); color: var(--cyan); }
+  .tag-muted { background: var(--surface-alt); color: var(--text-muted); }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border-light); }
+  th { background: var(--surface-alt); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
+  tr:last-child td { border-bottom: none; }
+  td code { font-family: var(--mono); font-size: 12px; background: var(--surface-alt); padding: 2px 6px; border-radius: 3px; color: var(--accent); }
+
+  /* Grids */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 900px) { .three-col { grid-template-columns: 1fr; } }
+  @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* Flow diagrams */
+  .flow-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 20px 0; flex-wrap: wrap; }
+  .flow-box { padding: 10px 16px; border-radius: var(--radius); font-weight: 600; font-size: 12px; text-align: center; border: 2px solid; min-width: 120px; line-height: 1.3; }
+  .flow-arrow { font-size: 20px; color: var(--text-muted); flex-shrink: 0; }
+  .flow-pass { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+  .flow-fail { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+  .flow-neutral { background: var(--surface-alt); border-color: var(--border); color: var(--text); }
+  .flow-accent { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .flow-teal { background: var(--teal-bg); border-color: var(--teal); color: var(--teal); }
+  .flow-purple { background: var(--purple-bg); border-color: var(--purple); color: var(--purple); }
+  .flow-orange { background: var(--orange-bg); border-color: var(--orange); color: var(--orange); }
+  .flow-pink { background: var(--pink-bg); border-color: var(--pink); color: var(--pink); }
+  .flow-cyan { background: var(--cyan-bg); border-color: var(--cyan); color: var(--cyan); }
+
+  /* Vertical flows */
+  .flow-vertical { display: flex; flex-direction: column; align-items: center; gap: 0; margin: 24px auto; max-width: 700px; }
+  .flow-vertical .flow-box { min-width: 280px; }
+  .flow-vertical .flow-arrow { transform: rotate(90deg); margin: -2px 0; }
+  .flow-vertical .flow-branch { display: flex; gap: 16px; align-items: flex-start; justify-content: center; width: 100%; }
+  .flow-vertical .flow-branch .flow-box { min-width: 180px; flex: 1; max-width: 220px; }
+
+  /* Swimlane diagram */
+  .swimlane { display: grid; grid-template-columns: 120px 1fr 1fr 1fr; gap: 0; margin: 24px 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
+  .swimlane .lane-label { padding: 12px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; writing-mode: horizontal-tb; display: flex; align-items: center; justify-content: center; border-right: 2px solid var(--border); }
+  .swimlane .lane-cell { padding: 12px; border-bottom: 1px solid var(--border-light); border-right: 1px solid var(--border-light); font-size: 12px; min-height: 70px; display: flex; flex-direction: column; gap: 4px; justify-content: center; }
+  .swimlane .lane-cell:last-child { border-right: none; }
+  .swimlane .lane-header { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; background: var(--surface-alt); padding: 10px; border-bottom: 2px solid var(--border); }
+  .swimlane .lane-header.h-pipe { color: var(--accent); }
+  .swimlane .lane-header.h-cef { color: var(--green); }
+  .swimlane .lane-header.h-pif { color: var(--purple); }
+  .swimlane .lane-label.l-url { background: var(--accent-light); color: var(--accent); }
+  .swimlane .lane-label.l-domain { background: var(--teal-bg); color: var(--teal); }
+  .swimlane .lane-label.l-query { background: var(--orange-bg); color: var(--orange); }
+  .swimlane .lane-label.l-expiry { background: var(--red-bg); color: var(--red); }
+  .swimlane .lane-label.l-dedup { background: var(--purple-bg); color: var(--purple); }
+  .swimlane .lane-label.l-norm { background: var(--cyan-bg); color: var(--cyan); }
+  .swimlane .mini-tag { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; }
+  .swimlane .mt-yes { background: var(--green-bg); color: var(--green); }
+  .swimlane .mt-no { background: var(--red-bg); color: var(--red); }
+  .swimlane .mt-partial { background: var(--orange-bg); color: var(--orange); }
+
+  /* Code blocks */
+  pre.json-block { background: #1e1e2e; border: 1px solid #313244; border-radius: 6px; padding: 16px 20px; font-family: var(--mono); font-size: 12px; line-height: 1.5; overflow-x: auto; color: #cdd6f4; margin-top: 8px; }
+  pre.json-block .k { color: #89b4fa; }
+  pre.json-block .s { color: #a6e3a1; }
+  pre.json-block .n { color: #fab387; }
+  pre.json-block .c { color: #6c7086; font-style: italic; }
+
+  /* Callouts */
+  .callout { border-radius: var(--radius); padding: 16px 20px; margin: 16px 0; font-size: 13.5px; display: flex; gap: 12px; align-items: flex-start; }
+  .callout-icon { font-size: 18px; flex-shrink: 0; line-height: 1.4; }
+  .callout-warn { background: var(--orange-bg); border: 1px solid #ffd43b; }
+  .callout-info { background: var(--accent-light); border: 1px solid #91a7ff; }
+  .callout-danger { background: var(--red-bg); border: 1px solid #ffa8a8; }
+  .callout-success { background: var(--green-bg); border: 1px solid #8ce99a; }
+
+  /* Status indicators */
+  .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+  .dot-green { background: var(--green); }
+  .dot-red { background: var(--red); }
+  .dot-orange { background: var(--orange); }
+
+  /* Knob table */
+  .knob-table td:first-child { font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+  .knob-table td:nth-child(2) { font-family: var(--mono); font-size: 12px; }
+
+  /* Legend */
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0; padding: 10px 16px; background: var(--surface-alt); border-radius: var(--radius); font-size: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+
+  /* TOC */
+  .toc { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 32px; }
+  .toc h3 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 12px; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin-bottom: 4px; font-size: 14px; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  /* Recommendation cards */
+  .rec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  @media (max-width: 768px) { .rec-grid { grid-template-columns: 1fr; } }
+  .rec-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; border-left: 4px solid; }
+  .rec-card h4 { font-size: 14px; margin-bottom: 6px; }
+  .rec-card p { font-size: 13px; color: var(--text-muted); }
+  .rec-auto { border-left-color: var(--green); }
+  .rec-manual { border-left-color: var(--orange); }
+  .rec-new { border-left-color: var(--accent); }
+  .rec-critical { border-left-color: var(--red); }
+
+  .pipe-color { color: var(--accent); }
+  .cef-color { color: var(--green); }
+  .pif-color { color: var(--purple); }
+
+  /* Detail grid */
+  .detail-grid { display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px; font-size: 13px; background: var(--surface-alt); padding: 12px 14px; border-radius: 6px; margin-top: 6px; }
+  .detail-grid dt { font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+  .detail-grid dd { color: var(--text); }
+
+  /* Big flow diagrams */
+  .big-flow { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin: 20px 0; overflow-x: auto; }
+  .big-flow h4 { text-align: center; font-size: 14px; color: var(--text-muted); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .lifecycle-track { display: flex; align-items: stretch; gap: 0; margin: 16px 0; }
+  .lc-stage { flex: 1; text-align: center; padding: 14px 8px; font-size: 12px; font-weight: 600; border: 1px solid; position: relative; }
+  .lc-stage::after { content: ''; position: absolute; right: -10px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-left: 10px solid; border-top: 8px solid transparent; border-bottom: 8px solid transparent; z-index: 1; }
+  .lc-stage:last-child::after { display: none; }
+  .lc-stage small { display: block; font-weight: 400; font-size: 10px; margin-top: 2px; opacity: 0.8; }
+  .lc-1 { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .lc-1::after { border-left-color: var(--accent); }
+  .lc-2 { background: var(--teal-bg); border-color: var(--teal); color: var(--teal); }
+  .lc-2::after { border-left-color: var(--teal); }
+  .lc-3 { background: var(--orange-bg); border-color: var(--orange); color: var(--orange); }
+  .lc-3::after { border-left-color: var(--orange); }
+  .lc-4 { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+  .lc-4::after { border-left-color: var(--green); }
+  .lc-5 { background: var(--purple-bg); border-color: var(--purple); color: var(--purple); }
+  .lc-5::after { border-left-color: var(--purple); }
+  .lc-6 { background: var(--pink-bg); border-color: var(--pink); color: var(--pink); }
+
+  .gap-analysis { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .gap-row { display: grid; grid-template-columns: 200px 1fr 120px; gap: 12px; align-items: center; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+  .gap-row .gap-label { font-weight: 600; font-size: 13px; }
+  .gap-row .gap-desc { font-size: 13px; color: var(--text-muted); }
+  .gap-row .gap-status { text-align: right; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ HEADER ═══════════════════ -->
+<div class="header">
+  <h1>Discovery &amp; Learning: Pipeline &amp; Features</h1>
+  <p>URL, Domain &amp; Query lifecycle across all three independent discovery feeds</p>
+  <div class="badge-row">
+    <span class="badge badge-pipe">Indexing Pipeline</span>
+    <span class="badge badge-cef">Color Edition Finder</span>
+    <span class="badge badge-pif">Product Image Finder</span>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ═══════════════════ TOC ═══════════════════ -->
+<div class="toc">
+  <h3>Contents</h3>
+  <ol>
+    <li><a href="#architecture">Architecture: Three Independent Feeds</a></li>
+    <li><a href="#comparison">Side-by-Side Comparison Matrix</a></li>
+    <li><a href="#url-flow">URL Lifecycle Flow</a></li>
+    <li><a href="#domain-flow">Domain Tracking Flow</a></li>
+    <li><a href="#query-flow">Query Discovery Flow</a></li>
+    <li><a href="#storage">What Each Feature Stores (Exact Schemas)</a></li>
+    <li><a href="#expiration">Expiration &amp; TTL Analysis</a></li>
+    <li><a href="#dedup">Uniqueness &amp; Deduplication</a></li>
+    <li><a href="#normalization">URL Normalization</a></li>
+    <li><a href="#accumulation">Cross-Run Accumulation (Feed-Forward)</a></li>
+    <li><a href="#gaps">Gap Analysis &amp; Maintenance Needs</a></li>
+    <li><a href="#knobs">All Configurable Knobs</a></li>
+    <li><a href="#recommendations">Recommendations</a></li>
+  </ol>
+</div>
+
+
+<!-- ═══════════════════ 1. ARCHITECTURE ═══════════════════ -->
+<h2 class="section-title" id="architecture"><span class="num">1</span> Architecture: Three Independent Feeds</h2>
+
+<div class="callout callout-info">
+  <span class="callout-icon">i</span>
+  <div>All three systems discover URLs, domains, and queries <strong>independently</strong>. They do not share discovery data with each other. Each maintains its own storage, accumulation, and dedup logic.</div>
+</div>
+
+<div class="big-flow">
+  <h4>Discovery Independence Model</h4>
+  <div style="display: flex; gap: 24px; justify-content: center; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 200px; max-width: 320px; text-align: center;">
+      <div class="flow-box flow-accent" style="margin-bottom: 8px;">Indexing Pipeline</div>
+      <div style="font-size: 12px; color: var(--text-muted); padding: 0 8px;">
+        Search engines (Google, Bing, Brave, Searxng, Serper) &rarr; URL corpus &rarr; Domain authority index &rarr; Crawl &amp; extract specs
+      </div>
+      <div style="margin-top: 8px;">
+        <span class="tag tag-accent">SQL-backed</span>
+        <span class="tag tag-green">Cooldown TTL</span>
+      </div>
+    </div>
+    <div style="flex: 1; min-width: 200px; max-width: 320px; text-align: center;">
+      <div class="flow-box flow-pass" style="margin-bottom: 8px;">Color Edition Finder</div>
+      <div style="font-size: 12px; color: var(--text-muted); padding: 0 8px;">
+        LLM web browsing &rarr; Manufacturer + retailer pages &rarr; Discover colors, editions, variants
+      </div>
+      <div style="margin-top: 8px;">
+        <span class="tag tag-green">JSON + SQL</span>
+        <span class="tag tag-orange">No URL TTL</span>
+      </div>
+    </div>
+    <div style="flex: 1; min-width: 200px; max-width: 320px; text-align: center;">
+      <div class="flow-box flow-purple" style="margin-bottom: 8px;">Product Image Finder</div>
+      <div style="font-size: 12px; color: var(--text-muted); padding: 0 8px;">
+        LLM web search &rarr; Per-variant queries &rarr; Download, dedup, quality-gate images
+      </div>
+      <div style="margin-top: 8px;">
+        <span class="tag tag-purple">JSON + SQL</span>
+        <span class="tag tag-orange">No URL TTL</span>
+      </div>
+    </div>
+  </div>
+  <div style="text-align: center; margin-top: 20px; font-size: 12px; color: var(--text-muted); border-top: 1px dashed var(--border); padding-top: 12px;">
+    No data flows between the three feeds. Each discovers, stores, and accumulates independently.
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 2. COMPARISON MATRIX ═══════════════════ -->
+<h2 class="section-title" id="comparison"><span class="num">2</span> Side-by-Side Comparison Matrix</h2>
+
+<div class="card">
+  <div class="card-body" style="padding: 0; overflow-x: auto;">
+    <div class="swimlane" style="min-width: 700px;">
+      <!-- Header row -->
+      <div class="lane-label" style="background: var(--surface-alt); font-size: 10px; color: var(--text-muted);">CAPABILITY</div>
+      <div class="lane-header h-pipe">Indexing Pipeline</div>
+      <div class="lane-header h-cef">Color Edition Finder</div>
+      <div class="lane-header h-pif">Product Image Finder</div>
+
+      <!-- URL Storage -->
+      <div class="lane-label l-url">URL Storage</div>
+      <div class="lane-cell">
+        <span class="mini-tag mt-yes">SQL</span>
+        <code style="font-size: 11px;">url_index</code> (telemetry)<br>
+        <code style="font-size: 11px;">url_crawl_ledger</code> (live state)
+      </div>
+      <div class="lane-cell">
+        <span class="mini-tag mt-yes">JSON</span>
+        <code style="font-size: 11px;">runs[].response.discovery_log.urls_checked</code>
+      </div>
+      <div class="lane-cell">
+        <span class="mini-tag mt-yes">JSON</span>
+        <code style="font-size: 11px;">runs[].response.discovery_log.urls_checked</code><br>
+        + image <code style="font-size: 11px;">url</code> per record
+      </div>
+
+      <!-- Domain Tracking -->
+      <div class="lane-label l-domain">Domain Tracking</div>
+      <div class="lane-cell">
+        <span class="mini-tag mt-yes">RICH</span>
+        <code style="font-size: 11px;">sourceRegistry</code> (tiered authority)<br>
+        <code style="font-size: 11px;">urlClassifier</code> (role, tier, doc_kind)<br>
+        Health stats per domain
+      </div>
+      <div class="lane-cell">
+        <span class="mini-tag mt-no">NONE</span>
+        URLs stored as flat strings. No domain extraction, no aggregation.
+      </div>
+      <div class="lane-cell">
+        <span class="mini-tag mt-partial">MINIMAL</span>
+        <code style="font-size: 11px;">source_page</code> per image (full URL, not parsed to domain)
+      </div>
+
+      <!-- Query Storage -->
+      <div class="lane-label l-query">Query Storage</div>
+      <div class="lane-cell">
+        <span class="mini-tag mt-yes">SQL</span>
+        <code style="font-size: 11px;">query_index</code> (telemetry)<br>
+        <code style="font-size: 11px;">query_cooldowns</code> (dedup + TTL)
+      </div>
+      <div class="lane-cell">
+        <span class="mini-tag mt-yes">JSON</span>
+        <code style="font-size: 11px;">runs[].response.discovery_log.queries_run</code>
+      </div>
+      <div class="lane-cell">
+        <span class="mini-tag mt-yes">JSON</span>
+        <code style="font-size: 11px;">runs[].response.discovery_log.queries_run</code>
+      </div>
+
+      <!-- Expiration -->
+      <div class="lane-label l-expiry">Expiration / TTL</div>
+      <div class="lane-cell">
+        <span class="mini-tag mt-yes">30-DAY</span>
+        <code style="font-size: 11px;">query_cooldowns.cooldown_until</code><br>
+        Auto-purge via <code style="font-size: 11px;">purgeExpiredCooldowns()</code>
+      </div>
+      <div class="lane-cell">
+        <span class="mini-tag mt-no">NONE</span>
+        URLs and queries accumulate indefinitely. Only manual delete.
+      </div>
+      <div class="lane-cell">
+        <span class="mini-tag mt-no">NONE</span>
+        URLs and queries accumulate indefinitely. Only manual delete.
+      </div>
+
+      <!-- Dedup -->
+      <div class="lane-label l-dedup">Dedup Method</div>
+      <div class="lane-cell">
+        <span class="mini-tag mt-yes">MULTI</span>
+        Query hash (cooldown table)<br>
+        URL canonical key (crawl ledger PK)<br>
+        Content hash (crawl_sources PK)
+      </div>
+      <div class="lane-cell">
+        <span class="mini-tag mt-partial">SET</span>
+        JS <code style="font-size: 11px;">Set</code> on exact string match during accumulation. No normalization.
+      </div>
+      <div class="lane-cell">
+        <span class="mini-tag mt-yes">2-LAYER</span>
+        URL Set (normalized) at download +<br>
+        SHA-256 content hash post-download
+      </div>
+
+      <!-- Normalization -->
+      <div class="lane-label l-norm">URL Normalization</div>
+      <div class="lane-cell">
+        <span class="mini-tag mt-yes">FULL</span>
+        <code style="font-size: 11px;">canonicalizeUrl()</code>: lowercase scheme+host, sort params, strip fragments
+      </div>
+      <div class="lane-cell">
+        <span class="mini-tag mt-no">NONE</span>
+        URLs stored exactly as LLM provides. Case-sensitive string match.
+      </div>
+      <div class="lane-cell">
+        <span class="mini-tag mt-partial">TARGETED</span>
+        <code style="font-size: 11px;">normalizeImageUrl()</code>: strips Best Buy sizing, Shopify dimensions, format overrides
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 3. URL LIFECYCLE ═══════════════════ -->
+<h2 class="section-title" id="url-flow"><span class="num">3</span> URL Lifecycle Flow</h2>
+
+<!-- Pipeline URL flow -->
+<div class="card">
+  <div class="card-header"><span class="tag tag-accent">PIPELINE</span> URL Lifecycle</div>
+  <div class="card-body">
+    <div class="lifecycle-track">
+      <div class="lc-stage lc-1">Discover<small>Search engines</small></div>
+      <div class="lc-stage lc-2">Classify<small>urlClassifier</small></div>
+      <div class="lc-stage lc-3">Triage<small>Hard-drop filter</small></div>
+      <div class="lc-stage lc-4">Record<small>url_index + crawl_ledger</small></div>
+      <div class="lc-stage lc-5">Crawl<small>Fetch + hash content</small></div>
+      <div class="lc-stage lc-6">Extract<small>LLM field extraction</small></div>
+    </div>
+    <dl class="detail-grid" style="margin-top: 12px;">
+      <dt>Discovered from</dt><dd>Google, Bing, Brave, DuckDuckGo, Serper, Searxng</dd>
+      <dt>Normalized by</dt><dd><code>canonicalizeUrl()</code> &mdash; lowercase scheme+host, sort query params, strip fragment</dd>
+      <dt>Stored in</dt><dd><code>url_index</code> (telemetry, append-only) + <code>url_crawl_ledger</code> (live state, PK: canonical_url + product_id)</dd>
+      <dt>Dedup key</dt><dd>Canonical URL + product_id (composite primary key prevents re-insert)</dd>
+      <dt>Health tracked</dt><dd>fetch_count, ok_count, blocked_count, timeout_count, server_error_count, first/last_seen timestamps</dd>
+      <dt>Expiration</dt><dd>URL records: <code>urlCooldownDays</code> (90-day default) — URLs with <code>last_seen_ts</code> older than cutoff are re-crawlable. Query cooldowns: 30-day TTL with auto-purge.</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- CEF URL flow -->
+<div class="card">
+  <div class="card-header"><span class="tag tag-green">CEF</span> URL Lifecycle</div>
+  <div class="card-body">
+    <div class="lifecycle-track">
+      <div class="lc-stage lc-1">LLM Browses<small>Web-capable model</small></div>
+      <div class="lc-stage lc-2">Reports URLs<small>discovery_log.urls_checked</small></div>
+      <div class="lc-stage lc-3">Store in JSON<small>color_edition.json</small></div>
+      <div class="lc-stage lc-4">Accumulate<small>Set union across runs</small></div>
+      <div class="lc-stage lc-5">Inject in Prompt<small>Always (urls always injected)</small></div>
+      <div class="lc-stage lc-6">LLM Skips Known<small>Finds new sources</small></div>
+    </div>
+    <dl class="detail-grid" style="margin-top: 12px;">
+      <dt>Discovered from</dt><dd>LLM web browsing (manufacturer sites, Amazon, Best Buy, press releases, review sites)</dd>
+      <dt>Normalized by</dt><dd><strong>Nothing.</strong> URLs stored as-is from LLM response.</dd>
+      <dt>Stored in</dt><dd>JSON: <code>runs[N].response.discovery_log.urls_checked</code>. SQL: embedded in <code>response_json</code> TEXT column.</dd>
+      <dt>Dedup key</dt><dd>JS <code>Set</code> exact string match during <code>accumulateUrlsChecked()</code></dd>
+      <dt>Feed-forward</dt><dd>Always. Union of all previous runs' urls_checked injected into next prompt.</dd>
+      <dt>Expiration</dt><dd><code>urlCooldownDays</code> (default 90). Runs older than cutoff are excluded from accumulation. Records stay in JSON for audit.</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- PIF URL flow -->
+<div class="card">
+  <div class="card-header"><span class="tag tag-purple">PIF</span> URL Lifecycle</div>
+  <div class="card-body">
+    <div class="lifecycle-track">
+      <div class="lc-stage lc-1">LLM Searches<small>Per-variant query</small></div>
+      <div class="lc-stage lc-2">Returns Image URLs<small>+ discovery_log</small></div>
+      <div class="lc-stage lc-3">Normalize URL<small>Best Buy, Shopify fixes</small></div>
+      <div class="lc-stage lc-4">URL Dedup<small>Set check (normalized)</small></div>
+      <div class="lc-stage lc-5">Download &amp; Hash<small>SHA-256 content dedup</small></div>
+      <div class="lc-stage lc-6">Quality Gate<small>Min dims, min bytes</small></div>
+    </div>
+    <dl class="detail-grid" style="margin-top: 12px;">
+      <dt>Discovered from</dt><dd>LLM web search: manufacturer pages, Amazon, Best Buy, Newegg, retailer CDNs, press kits</dd>
+      <dt>Normalized by</dt><dd><code>normalizeImageUrl()</code> &mdash; strips Best Buy <code>;maxHeight=</code>, Shopify <code>?width=</code>, <code>format=webp</code></dd>
+      <dt>Stored in</dt><dd>JSON: image records in <code>selected.images[]</code> + discovery_log in runs. SQL: <code>images</code> TEXT column.</dd>
+      <dt>Dedup layer 1</dt><dd>URL Set (normalized string match) at download time &mdash; prevents re-downloading same URL</dd>
+      <dt>Dedup layer 2</dt><dd>SHA-256 content hash post-download &mdash; catches same image served from different CDN URLs</dd>
+      <dt>Feed-forward</dt><dd><code>accumulateVariantDiscoveryLog()</code> unions urls_checked + queries_run per variant (matched by variant_id first, then variant_key)</dd>
+      <dt>Expiration</dt><dd><code>urlCooldownDays</code> (default 90). Runs older than cutoff excluded from accumulation. Image records + discovery logs persist in JSON for audit.</dd>
+    </dl>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 4. DOMAIN TRACKING ═══════════════════ -->
+<h2 class="section-title" id="domain-flow"><span class="num">4</span> Domain Tracking Flow</h2>
+
+<div class="three-col">
+  <div class="card">
+    <div class="card-header"><span class="tag tag-accent">PIPELINE</span> Rich Domain Model</div>
+    <div class="card-body">
+      <p><strong>sourceRegistry</strong> provides tiered authority:</p>
+      <table>
+        <tr><th>Tier</th><th>Role</th></tr>
+        <tr><td><code>tier1</code></td><td>Manufacturer (official)</td></tr>
+        <tr><td><code>tier2</code></td><td>Lab / instrumented review</td></tr>
+        <tr><td><code>tier3</code></td><td>Retailer (Amazon, Best Buy)</td></tr>
+        <tr><td><code>tier4</code></td><td>Community / forum</td></tr>
+        <tr><td><code>tier5</code></td><td>Aggregator / comparison</td></tr>
+      </table>
+      <p style="margin-top: 10px;">Each entry tracks: crawl config (rate limits, method), discovery config (priority, enabled), health stats (success rate, latency, block rate).</p>
+      <p><strong>urlClassifier</strong> enriches each discovered URL with: <code>tier</code>, <code>role</code>, <code>doc_kind_guess</code>, <code>identity_match_level</code>, <code>approvedDomain</code>.</p>
+      <p><strong>Crawl ledger</strong> aggregates domain stats: fetch_count, ok_count, blocked_count, avg_latency, cooldown_remaining.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="tag tag-green">CEF</span> No Domain Model</div>
+    <div class="card-body">
+      <div class="callout callout-warn" style="margin: 0;">
+        <span class="callout-icon">!</span>
+        <div>
+          <strong>No domain-level tracking exists.</strong><br>
+          URLs are stored as flat string arrays. No host extraction. No domain aggregation. No tier classification.<br><br>
+          The LLM is asked to check "manufacturer site, major retailers, press releases" &mdash; but there's no structured record of <em>which</em> domains were checked.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="tag tag-purple">PIF</span> Minimal Domain Model</div>
+    <div class="card-body">
+      <div class="callout callout-warn" style="margin: 0;">
+        <span class="callout-icon">!</span>
+        <div>
+          <strong>Per-image <code>source_page</code> only.</strong><br>
+          Each image record has a <code>source_page</code> field (full URL string where the image was found). No host extraction, no domain-level aggregation or bucketing.<br><br>
+          Image download URLs are normalized (Best Buy, Shopify) but <code>source_page</code> is stored raw.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 5. QUERY DISCOVERY ═══════════════════ -->
+<h2 class="section-title" id="query-flow"><span class="num">5</span> Query Discovery Flow</h2>
+
+<!-- Pipeline query flow -->
+<div class="card">
+  <div class="card-header"><span class="tag tag-accent">PIPELINE</span> Query Lifecycle (Multi-Stage)</div>
+  <div class="card-body">
+    <div class="lifecycle-track">
+      <div class="lc-stage lc-1">NeedSet<small>Compute missing fields</small></div>
+      <div class="lc-stage lc-2">Search Profile<small>Generate candidates</small></div>
+      <div class="lc-stage lc-3">Search Planner<small>LLM ranks queries</small></div>
+      <div class="lc-stage lc-4">Query Journey<small>Filter &amp; sort</small></div>
+      <div class="lc-stage lc-5">Execute<small>Fire against engines</small></div>
+      <div class="lc-stage lc-6">Record<small>query_index + cooldown</small></div>
+    </div>
+    <dl class="detail-grid" style="margin-top: 12px;">
+      <dt>Generation</dt><dd>NeedSet determines what fields are missing &rarr; Search Profile creates candidate queries from brand/model/category &rarr; Search Planner LLM-ranks them</dd>
+      <dt>Dedup</dt><dd><code>query_cooldowns</code> table: <code>stableHashString(productId + "::" + normalizedQuery)</code> as PK. Queries within cooldown window are skipped.</dd>
+      <dt>Normalization</dt><dd><code>normalizeQuery()</code>: trim, lowercase, collapse whitespace to single spaces</dd>
+      <dt>Cooldown</dt><dd>30-day default (configurable via <code>queryCooldownDays</code>). Auto-purged via <code>purgeExpiredCooldowns()</code>.</dd>
+      <dt>Telemetry</dt><dd><code>query_index</code> stores: query, provider, result_count, field_yield, tier, timestamp</dd>
+      <dt>Engines</dt><dd>Google, Bing, DuckDuckGo, Brave, Serper, Searxng (configurable via <code>searchEngines</code> setting)</dd>
+    </dl>
+  </div>
+</div>
+
+<div class="two-col">
+  <!-- CEF query flow -->
+  <div class="card">
+    <div class="card-header"><span class="tag tag-green">CEF</span> Query Lifecycle</div>
+    <div class="card-body">
+      <div class="flow-vertical">
+        <div class="flow-box flow-pass">LLM executes searches</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-box flow-neutral">Reports queries_run[]</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-box flow-teal">Stored in JSON run</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-box flow-orange">Accumulate via Set union</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-box flow-accent">Conditionally re-inject<br><small>(off by default)</small></div>
+      </div>
+      <dl class="detail-grid" style="margin-top: 12px;">
+        <dt>Generation</dt><dd>LLM decides what to search (not system-generated)</dd>
+        <dt>Dedup</dt><dd>JS <code>Set</code> exact string match</dd>
+        <dt>Normalization</dt><dd>None</dd>
+        <dt>Injection</dt><dd>Not injected into prompts (stored for audit trail only)</dd>
+        <dt>Cooldown</dt><dd>None</dd>
+      </dl>
+    </div>
+  </div>
+
+  <!-- PIF query flow -->
+  <div class="card">
+    <div class="card-header"><span class="tag tag-purple">PIF</span> Query Lifecycle</div>
+    <div class="card-body">
+      <div class="flow-vertical">
+        <div class="flow-box flow-purple">Per-variant LLM call</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-box flow-neutral">Reports queries_run[]</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-box flow-teal">Stored in JSON run</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-box flow-orange">Accumulate per-variant<br><small>(by variant_id or key)</small></div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-box flow-accent">Always re-injected</div>
+      </div>
+      <dl class="detail-grid" style="margin-top: 12px;">
+        <dt>Generation</dt><dd>LLM generates variant-specific queries: "Brand Model Color product photos"</dd>
+        <dt>Dedup</dt><dd>JS <code>Set</code> exact string match per variant</dd>
+        <dt>Normalization</dt><dd>None</dd>
+        <dt>Injection</dt><dd>Always (both urls_checked and queries_run)</dd>
+        <dt>Variant match</dt><dd><code>variant_id</code> first (survives renames), falls back to <code>variant_key</code></dd>
+      </dl>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 6. STORAGE SCHEMAS ═══════════════════ -->
+<h2 class="section-title" id="storage"><span class="num">6</span> What Each Feature Stores (Exact Schemas)</h2>
+
+<!-- Pipeline storage -->
+<div class="card">
+  <div class="card-header"><span class="tag tag-accent">PIPELINE</span> SQL Tables</div>
+  <div class="card-body">
+<pre class="json-block"><span class="c">-- Telemetry: every URL visited during discovery runs</span>
+<span class="k">url_index</span> (
+  id, category, run_id, <span class="s">url</span>, <span class="s">host</span>, tier, doc_kind,
+  fields_filled, fetch_success, ts, created_at
+)  <span class="c">-- Indexes: category, run_id, host</span>
+
+<span class="c">-- Live state: per-URL per-product fetch history</span>
+<span class="k">url_crawl_ledger</span> (
+  <span class="s">canonical_url</span>, <span class="s">product_id</span>,  <span class="c">-- PK (composite)</span>
+  category, original_url, <span class="s">domain</span>, path_sig, final_url,
+  <span class="s">content_hash</span>, content_type, http_status, bytes, elapsed_ms,
+  fetch_count, ok_count, blocked_count, timeout_count,
+  server_error_count, redirect_count, notfound_count, gone_count,
+  first_seen_ts, last_seen_ts, first_seen_run_id, last_seen_run_id
+)  <span class="c">-- Indexes: product_id, domain</span>
+
+<span class="c">-- Telemetry: every query executed during discovery runs</span>
+<span class="k">query_index</span> (
+  id, category, run_id, product_id, <span class="s">query</span>, <span class="s">provider</span>,
+  result_count, field_yield, tier, ts, created_at
+)  <span class="c">-- Indexes: category, run_id, (query, provider)</span>
+
+<span class="c">-- Active cooldown: prevents re-executing recent queries (30-day TTL)</span>
+<span class="k">query_cooldowns</span> (
+  <span class="s">query_hash</span>, <span class="s">product_id</span>,  <span class="c">-- PK (composite)</span>
+  category, query_text, provider, tier, group_key,
+  normalized_key, hint_source, attempt_count, result_count,
+  last_executed_at, <span class="n">cooldown_until</span>  <span class="c">-- THE ONLY TTL COLUMN</span>
+)  <span class="c">-- Indexes: product_id, cooldown_until</span>
+
+<span class="c">-- Content-addressed binary index (HTML, screenshots, PDFs)</span>
+<span class="k">crawl_sources</span> (
+  <span class="s">content_hash</span>, <span class="s">product_id</span>,  <span class="c">-- PK (composite)</span>
+  category, run_id, source_url, final_url, host,
+  http_status, doc_kind, source_tier, content_type,
+  size_bytes, file_path, has_screenshot, has_pdf,
+  has_ldjson, has_dom_snippet, crawled_at
+)  <span class="c">-- Indexes: product_id, run_id, host</span></pre>
+  </div>
+</div>
+
+<!-- CEF storage -->
+<div class="card">
+  <div class="card-header"><span class="tag tag-green">CEF</span> JSON Structure (color_edition.json)</div>
+  <div class="card-body">
+<pre class="json-block">{
+  <span class="k">"product_id"</span>: <span class="s">"corsair-k100-rgb"</span>,
+  <span class="k">"category"</span>: <span class="s">"keyboard"</span>,
+  <span class="k">"selected"</span>: { colors, color_names, editions, default_color },
+  <span class="k">"variant_registry"</span>: [ ... ],
+  <span class="k">"runs"</span>: [
+    {
+      <span class="k">"run_number"</span>: <span class="n">1</span>,
+      <span class="k">"ran_at"</span>: <span class="s">"2026-04-10T..."</span>,
+      <span class="k">"model"</span>: <span class="s">"claude-sonnet-4-6"</span>,
+      <span class="k">"response"</span>: {
+        <span class="k">"colors"</span>: [<span class="s">"black"</span>, <span class="s">"white"</span>],
+        <span class="k">"discovery_log"</span>: {
+          <span class="k">"urls_checked"</span>: [           <span class="c">// &larr; URL storage</span>
+            <span class="s">"https://corsair.com/k100"</span>,
+            <span class="s">"https://amazon.com/dp/B09..."</span>
+          ],
+          <span class="k">"queries_run"</span>: [            <span class="c">// &larr; Query storage</span>
+            <span class="s">"Corsair K100 RGB colors"</span>,
+            <span class="s">"Corsair K100 RGB editions"</span>
+          ],
+          <span class="k">"confirmed_from_known"</span>: [],
+          <span class="k">"added_new"</span>: [<span class="s">"black"</span>, <span class="s">"white"</span>],
+          <span class="k">"rejected_from_known"</span>: []
+        }
+      }
+    }
+  ]
+}</pre>
+    <p style="margin-top: 10px; font-size: 13px; color: var(--text-muted);">
+      SQL projection: <code>color_edition_finder_runs.response_json</code> (TEXT column containing the full response including discovery_log). Extracted on read via <code>safeJsonParse()</code>.
+    </p>
+  </div>
+</div>
+
+<!-- PIF storage -->
+<div class="card">
+  <div class="card-header"><span class="tag tag-purple">PIF</span> JSON Structure (product_images.json)</div>
+  <div class="card-body">
+<pre class="json-block">{
+  <span class="k">"product_id"</span>: <span class="s">"corsair-m65-elite"</span>,
+  <span class="k">"selected"</span>: {
+    <span class="k">"images"</span>: [
+      {
+        <span class="k">"view"</span>: <span class="s">"top"</span>,
+        <span class="k">"url"</span>: <span class="s">"https://corsair.com/.../m65-black-top.png"</span>,    <span class="c">// normalized</span>
+        <span class="k">"source_page"</span>: <span class="s">"https://corsair.com/m65-elite"</span>,          <span class="c">// raw</span>
+        <span class="k">"variant_key"</span>: <span class="s">"color:black"</span>,
+        <span class="k">"variant_id"</span>: <span class="s">"v_a3f1c8e2"</span>,
+        <span class="k">"content_hash"</span>: <span class="s">"e3b0c44298fc1c149..."</span>,                  <span class="c">// SHA-256</span>
+        <span class="k">"width"</span>: <span class="n">1200</span>, <span class="k">"height"</span>: <span class="n">900</span>, <span class="k">"bytes"</span>: <span class="n">245000</span>,
+        <span class="k">"quality_pass"</span>: <span class="n">true</span>,
+        <span class="k">"bg_removed"</span>: <span class="n">true</span>,
+        <span class="k">"downloaded_at"</span>: <span class="s">"2026-04-12T..."</span>
+      }
+    ]
+  },
+  <span class="k">"runs"</span>: [
+    {
+      <span class="k">"response"</span>: {
+        <span class="k">"variant_key"</span>: <span class="s">"color:black"</span>,
+        <span class="k">"variant_id"</span>: <span class="s">"v_a3f1c8e2"</span>,
+        <span class="k">"images"</span>: [ ... ],
+        <span class="k">"discovery_log"</span>: {
+          <span class="k">"urls_checked"</span>: [ ... ],    <span class="c">// per-variant URL tracking</span>
+          <span class="k">"queries_run"</span>: [ ... ],     <span class="c">// per-variant query tracking</span>
+          <span class="k">"notes"</span>: [ ... ]
+        }
+      }
+    }
+  ]
+}</pre>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 7. EXPIRATION ═══════════════════ -->
+<h2 class="section-title" id="expiration"><span class="num">7</span> Expiration &amp; TTL Analysis</h2>
+
+<div class="callout callout-danger">
+  <span class="callout-icon">!</span>
+  <div><strong>Only the Pipeline has any expiration logic.</strong> Both CEF and PIF accumulate URLs and queries forever with no TTL, no pruning, and no archival. Over many runs, prompt injection of accumulated URLs/queries will grow unbounded.</div>
+</div>
+
+<div class="card">
+  <div class="card-body" style="padding: 0; overflow-x: auto;">
+    <table style="min-width: 650px;">
+      <thead>
+        <tr>
+          <th>Data Type</th>
+          <th>Pipeline</th>
+          <th>CEF</th>
+          <th>PIF</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Query cooldown</strong></td>
+          <td><span class="status-dot dot-green"></span> 30-day TTL, auto-purge via <code>purgeExpiredCooldowns()</code></td>
+          <td><span class="status-dot dot-green"></span> <code>queryCooldownDays</code> (Discovery tab)</td>
+          <td><span class="status-dot dot-green"></span> <code>queryCooldownDays</code> (Discovery tab)</td>
+        </tr>
+        <tr>
+          <td><strong>URL records</strong></td>
+          <td><span class="status-dot dot-green"></span> <code>urlCooldownDays</code> (90-day default). URLs with <code>last_seen_ts</code> older than cutoff are re-crawlable.</td>
+          <td><span class="status-dot dot-green"></span> <code>urlCooldownDays</code> (90-day default). Runs older than cutoff excluded from prompt accumulation.</td>
+          <td><span class="status-dot dot-green"></span> <code>urlCooldownDays</code> (90-day default). Runs older than cutoff excluded from prompt accumulation.</td>
+        </tr>
+        <tr>
+          <td><strong>CEF summary cooldown</strong></td>
+          <td>N/A</td>
+          <td><span class="status-dot dot-orange"></span> <code>cooldown_until</code> column exists in SQL but is app-level checked, not auto-purged</td>
+          <td>N/A</td>
+        </tr>
+        <tr>
+          <td><strong>Domain health</strong></td>
+          <td><span class="status-dot dot-green"></span> sourceRegistry tracks success_rate_7d, last_failure_at, block_rate_7d</td>
+          <td><span class="status-dot dot-red"></span> No domain tracking</td>
+          <td><span class="status-dot dot-red"></span> No domain tracking</td>
+        </tr>
+        <tr>
+          <td><strong>Telemetry indexes</strong></td>
+          <td><span class="status-dot dot-orange"></span> Row-capped (url_index: 10k, query_index: 5k per category) but no TTL</td>
+          <td>N/A</td>
+          <td>N/A</td>
+        </tr>
+        <tr>
+          <td><strong>Variant retirement</strong></td>
+          <td>N/A</td>
+          <td><span class="status-dot dot-green"></span> Soft-delete via <code>retired=1</code> flag. Preserves history.</td>
+          <td><span class="status-dot dot-green"></span> Cascade-delete via <code>propagateVariantDelete()</code></td>
+        </tr>
+        <tr>
+          <td><strong>Run deletion</strong></td>
+          <td>Bulk purge via <code>purgeStore</code></td>
+          <td><span class="status-dot dot-orange"></span> Manual <code>deleteRun()</code> / <code>deleteAll()</code>. URLs from deleted run are lost.</td>
+          <td><span class="status-dot dot-orange"></span> Manual <code>deleteRun()</code> / <code>deleteAll()</code>. URLs from deleted run are lost.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 8. DEDUP ═══════════════════ -->
+<h2 class="section-title" id="dedup"><span class="num">8</span> Uniqueness &amp; Deduplication</h2>
+
+<div class="three-col">
+  <div class="card">
+    <div class="card-header"><span class="tag tag-accent">PIPELINE</span> 3-Layer Dedup</div>
+    <div class="card-body">
+      <p><strong>Layer 1: Query Hash</strong></p>
+      <p style="font-size: 12px;"><code>stableHashString(productId + "::" + normalizedQuery)</code> &rarr; PK in <code>query_cooldowns</code>. Prevents re-executing within TTL window.</p>
+
+      <p style="margin-top: 12px;"><strong>Layer 2: Canonical URL</strong></p>
+      <p style="font-size: 12px;"><code>canonicalizeUrl()</code> &rarr; PK in <code>url_crawl_ledger</code>. Same canonical URL + product_id = upsert (updates fetch counts).</p>
+
+      <p style="margin-top: 12px;"><strong>Layer 3: Content Hash</strong></p>
+      <p style="font-size: 12px;">SHA-256 of fetched content &rarr; PK in <code>crawl_sources</code>. Same content from different URLs = single record.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="tag tag-green">CEF</span> 1-Layer Dedup</div>
+    <div class="card-body">
+      <p><strong>Layer 1: Set-Based String Match</strong></p>
+      <p style="font-size: 12px;">JS <code>new Set()</code> during <code>accumulateUrlsChecked()</code>. Exact string equality only.</p>
+
+      <div class="callout callout-warn" style="margin-top: 12px;">
+        <span class="callout-icon">!</span>
+        <div style="font-size: 12px;">
+          <strong>No normalization means:</strong><br>
+          <code>https://corsair.com/k100</code> and<br>
+          <code>https://corsair.com/K100</code><br>
+          are treated as different URLs.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="tag tag-purple">PIF</span> 2-Layer Dedup</div>
+    <div class="card-body">
+      <p><strong>Layer 1: Normalized URL Set</strong></p>
+      <p style="font-size: 12px;"><code>normalizeImageUrl(url)</code> then check <code>alreadyDownloadedUrls</code> Set. Prevents re-downloading same image URL for a variant.</p>
+
+      <p style="margin-top: 12px;"><strong>Layer 2: Content Hash</strong></p>
+      <p style="font-size: 12px;">SHA-256 of downloaded file bytes. <code>alreadyDownloadedHashes</code> Set catches CDN re-serves (same image, different URL).</p>
+
+      <p style="margin-top: 12px; font-size: 12px; color: var(--text-muted);">Self-heals from disk: if sets are empty at init, reconstructs from existing JSON image records.</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 9. NORMALIZATION ═══════════════════ -->
+<h2 class="section-title" id="normalization"><span class="num">9</span> URL Normalization</h2>
+
+<div class="card">
+  <div class="card-body" style="padding: 0; overflow-x: auto;">
+    <table style="min-width: 600px;">
+      <thead>
+        <tr><th>Transform</th><th>Pipeline</th><th>CEF</th><th>PIF</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Lowercase scheme + host</td>
+          <td><span class="tag tag-green">YES</span></td>
+          <td><span class="tag tag-red">NO</span></td>
+          <td><span class="tag tag-red">NO</span></td>
+        </tr>
+        <tr>
+          <td>Sort query parameters</td>
+          <td><span class="tag tag-green">YES</span></td>
+          <td><span class="tag tag-red">NO</span></td>
+          <td><span class="tag tag-red">NO</span></td>
+        </tr>
+        <tr>
+          <td>Strip URL fragment</td>
+          <td><span class="tag tag-green">YES</span></td>
+          <td><span class="tag tag-red">NO</span></td>
+          <td><span class="tag tag-red">NO</span></td>
+        </tr>
+        <tr>
+          <td>Strip CDN sizing params</td>
+          <td><span class="tag tag-muted">N/A</span></td>
+          <td><span class="tag tag-red">NO</span></td>
+          <td><span class="tag tag-green">YES</span> Best Buy <code>;maxHeight</code>, Shopify <code>?width</code></td>
+        </tr>
+        <tr>
+          <td>Strip format overrides</td>
+          <td><span class="tag tag-muted">N/A</span></td>
+          <td><span class="tag tag-red">NO</span></td>
+          <td><span class="tag tag-green">YES</span> <code>format=webp</code> removed</td>
+        </tr>
+        <tr>
+          <td>Trailing slash normalization</td>
+          <td><span class="tag tag-red">NO</span></td>
+          <td><span class="tag tag-red">NO</span></td>
+          <td><span class="tag tag-red">NO</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 10. ACCUMULATION ═══════════════════ -->
+<h2 class="section-title" id="accumulation"><span class="num">10</span> Cross-Run Accumulation (Feed-Forward)</h2>
+
+<div class="card">
+  <div class="card-header">How Discovery Context Feeds Into Future Runs</div>
+  <div class="card-body">
+    <table>
+      <thead>
+        <tr><th>Aspect</th><th>Pipeline</th><th>CEF</th><th>PIF</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>URL feed-forward</strong></td>
+          <td>Crawl ledger tracks all fetched URLs per product. Search planning checks cooldowns before re-executing.</td>
+          <td><code>accumulateUrlsChecked()</code> unions all <code>runs[].discovery_log.urls_checked</code> via Set. <strong>Always injected</strong> into prompt.</td>
+          <td><code>accumulateVariantDiscoveryLog()</code> unions per-variant (matched by variant_id first). <strong>Always injected</strong>.</td>
+        </tr>
+        <tr>
+          <td><strong>Query feed-forward</strong></td>
+          <td>Cooldown table prevents re-running same query within 30 days.</td>
+          <td>Stored in JSON discovery_log for audit. <strong>Not injected</strong> into prompts &mdash; URLs handle dedup.</td>
+          <td>Accumulated per-variant via same function. <strong>Always injected</strong>.</td>
+        </tr>
+        <tr>
+          <td><strong>Rejected runs</strong></td>
+          <td>N/A (no "rejected" concept at query level)</td>
+          <td><strong>Included</strong> in URL/query accumulation (intentional &mdash; even rejected runs may have checked valid URLs)</td>
+          <td>Runs are per-variant; no "rejected" status at PIF level</td>
+        </tr>
+        <tr>
+          <td><strong>Prompt growth risk</strong></td>
+          <td>Low &mdash; cooldowns expire, limiting active query set</td>
+          <td>Low &mdash; <code>urlCooldownDays</code> bounds accumulation window. Runs older than cutoff are excluded.</td>
+          <td>Low &mdash; <code>urlCooldownDays</code> bounds per-variant accumulation. Runs older than cutoff are excluded.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 11. GAP ANALYSIS ═══════════════════ -->
+<h2 class="section-title" id="gaps"><span class="num">11</span> Gap Analysis &amp; Maintenance Needs</h2>
+
+<div class="gap-analysis">
+  <div class="gap-row">
+    <div class="gap-label">URL Expiration (CEF)</div>
+    <div class="gap-desc">Controlled by <code>urlCooldownDays</code> (default 90). Runs older than cutoff excluded from URL accumulation. Records preserved in JSON.</div>
+    <div class="gap-status"><span class="tag tag-green">RESOLVED</span></div>
+  </div>
+  <div class="gap-row">
+    <div class="gap-label">URL Expiration (PIF)</div>
+    <div class="gap-desc">Controlled by <code>urlCooldownDays</code> (default 90). Per-variant runs older than cutoff excluded from URL accumulation.</div>
+    <div class="gap-status"><span class="tag tag-green">RESOLVED</span></div>
+  </div>
+  <div class="gap-row">
+    <div class="gap-label">Query Expiration (CEF)</div>
+    <div class="gap-desc">Queries accumulate forever in JSON run history. Not injected into prompts (audit only), so no prompt growth risk.</div>
+    <div class="gap-status"><span class="tag tag-red">MISSING</span></div>
+  </div>
+  <div class="gap-row">
+    <div class="gap-label">Query Expiration (PIF)</div>
+    <div class="gap-desc">Queries accumulate forever per-variant. Always injected into prompt with no cap.</div>
+    <div class="gap-status"><span class="tag tag-red">MISSING</span></div>
+  </div>
+  <div class="gap-row">
+    <div class="gap-label">URL Normalization (CEF)</div>
+    <div class="gap-desc">No normalization at all. <code>https://Amazon.com/dp/B09</code> vs <code>https://amazon.com/dp/B09</code> are treated as different.</div>
+    <div class="gap-status"><span class="tag tag-orange">WEAK</span></div>
+  </div>
+  <div class="gap-row">
+    <div class="gap-label">Domain Aggregation (CEF)</div>
+    <div class="gap-desc">No structured domain data. Cannot answer "which domains have we checked for this product?" without parsing URL strings.</div>
+    <div class="gap-status"><span class="tag tag-red">MISSING</span></div>
+  </div>
+  <div class="gap-row">
+    <div class="gap-label">Domain Aggregation (PIF)</div>
+    <div class="gap-desc"><code>source_page</code> is a raw URL string. No domain extraction or aggregation layer.</div>
+    <div class="gap-status"><span class="tag tag-orange">WEAK</span></div>
+  </div>
+  <div class="gap-row">
+    <div class="gap-label">Stale URL Detection</div>
+    <div class="gap-desc">Pipeline tracks fetch health (ok_count, blocked_count). CEF/PIF have zero awareness of URL health &mdash; a 404'd URL stays in accumulation forever.</div>
+    <div class="gap-status"><span class="tag tag-red">CEF/PIF MISSING</span></div>
+  </div>
+  <div class="gap-row">
+    <div class="gap-label">Prompt Size Cap</div>
+    <div class="gap-desc">No cap on how many accumulated URLs/queries get injected. Could exceed useful context window size after many runs.</div>
+    <div class="gap-status"><span class="tag tag-red">ALL FINDERS</span></div>
+  </div>
+  <div class="gap-row">
+    <div class="gap-label">Cross-Feature Discovery</div>
+    <div class="gap-desc">Pipeline discovers URLs/domains that CEF/PIF could use. Currently zero integration. By design (independent feeds) but potentially wasteful.</div>
+    <div class="gap-status"><span class="tag tag-muted">BY DESIGN</span></div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 12. KNOBS ═══════════════════ -->
+<h2 class="section-title" id="knobs"><span class="num">12</span> All Configurable Knobs</h2>
+
+<!-- Pipeline knobs -->
+<div class="card">
+  <div class="card-header"><span class="tag tag-accent">PIPELINE</span> Discovery Knobs</div>
+  <div class="card-body" style="padding: 0; overflow-x: auto;">
+    <table class="knob-table" style="min-width: 700px;">
+      <thead>
+        <tr><th>Knob</th><th>Default</th><th>Type</th><th>Effect</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>searchEngines</td>
+          <td>"google"</td>
+          <td>csv_enum</td>
+          <td>Which search engines to use for query execution</td>
+        </tr>
+        <tr>
+          <td>searchEnginesFallback</td>
+          <td>"bing"</td>
+          <td>csv_enum</td>
+          <td>Fallback engine if primary fails</td>
+        </tr>
+        <tr>
+          <td>serperSearchMinIntervalMs</td>
+          <td>500</td>
+          <td>int (0-30000)</td>
+          <td>Minimum delay between Serper API calls</td>
+        </tr>
+        <tr>
+          <td>serperBurstEnabled</td>
+          <td>false</td>
+          <td>bool</td>
+          <td>Allow parallel Serper calls (sets interval to 0)</td>
+        </tr>
+        <tr>
+          <td>serpSelectorMaxKeep</td>
+          <td>50</td>
+          <td>int</td>
+          <td>Max URLs passed to LLM SERP selector for reranking</td>
+        </tr>
+        <tr>
+          <td>searchMaxRetries</td>
+          <td>3</td>
+          <td>int</td>
+          <td>Per-query retry limit on search engine failure</td>
+        </tr>
+        <tr>
+          <td>discoveryInternalFirst</td>
+          <td>false</td>
+          <td>bool</td>
+          <td>Check local specDb before hitting external search engines</td>
+        </tr>
+        <tr>
+          <td>queryCooldownDays</td>
+          <td>30</td>
+          <td>int</td>
+          <td>TTL for query cooldowns before they can be re-executed</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- CEF knobs -->
+<div class="card">
+  <div class="card-header"><span class="tag tag-green">CEF</span> Discovery Knobs</div>
+  <div class="card-body" style="padding: 0; overflow-x: auto;">
+    <table class="knob-table" style="min-width: 700px;">
+      <thead>
+        <tr><th>Knob</th><th>Default</th><th>Type</th><th>Effect</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>discoveryPromptTemplate</td>
+          <td>"" (built-in)</td>
+          <td>string</td>
+          <td>Override the discovery phase LLM system prompt (Handlebars template)</td>
+        </tr>
+        <tr>
+          <td>identityCheckPromptTemplate</td>
+          <td>"" (built-in)</td>
+          <td>string</td>
+          <td>Override the variant identity check LLM prompt (Run 2+)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- PIF knobs -->
+<div class="card">
+  <div class="card-header"><span class="tag tag-purple">PIF</span> Discovery &amp; Image Knobs</div>
+  <div class="card-body" style="padding: 0; overflow-x: auto;">
+    <table class="knob-table" style="min-width: 700px;">
+      <thead>
+        <tr><th>Knob</th><th>Default</th><th>Type</th><th>Effect</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>viewBudget</td>
+          <td>Category-dependent</td>
+          <td>JSON array</td>
+          <td>Which canonical views to search for (e.g., ["top","left","angle"] for keyboard)</td>
+        </tr>
+        <tr>
+          <td>viewAttemptBudgets</td>
+          <td>Category-dependent</td>
+          <td>JSON {view: N}</td>
+          <td>Max LLM calls per view per variant</td>
+        </tr>
+        <tr>
+          <td>viewAttemptBudget</td>
+          <td>5</td>
+          <td>int</td>
+          <td>Flat fallback if per-view budgets not set</td>
+        </tr>
+        <tr>
+          <td>heroAttemptBudget</td>
+          <td>3</td>
+          <td>int</td>
+          <td>Max hero image LLM calls per variant</td>
+        </tr>
+        <tr>
+          <td>satisfactionThreshold</td>
+          <td>3</td>
+          <td>int</td>
+          <td>Quality images needed per view before carousel considers it "satisfied"</td>
+        </tr>
+        <tr>
+          <td>minWidth / minHeight</td>
+          <td>800 / 600</td>
+          <td>int</td>
+          <td>Minimum image dimensions to pass quality gate</td>
+        </tr>
+        <tr>
+          <td>minFileSize</td>
+          <td>50000</td>
+          <td>int (bytes)</td>
+          <td>Minimum file size (rejects tiny thumbnails)</td>
+        </tr>
+        <tr>
+          <td>viewPromptOverride</td>
+          <td>"" (built-in)</td>
+          <td>string</td>
+          <td>Override the view-mode LLM system prompt</td>
+        </tr>
+        <tr>
+          <td>heroPromptOverride</td>
+          <td>"" (built-in)</td>
+          <td>string</td>
+          <td>Override the hero-mode LLM system prompt</td>
+        </tr>
+        <tr>
+          <td>rmbgConcurrency</td>
+          <td>0 (auto)</td>
+          <td>int</td>
+          <td>Background removal parallelism (0 = auto-detect from RAM)</td>
+        </tr>
+        <tr>
+          <td>evalEnabled</td>
+          <td>true</td>
+          <td>bool</td>
+          <td>Enable vision LLM evaluation of downloaded images</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 13. RECOMMENDATIONS ═══════════════════ -->
+<h2 class="section-title" id="recommendations"><span class="num">13</span> Recommendations</h2>
+
+<div class="callout callout-info">
+  <span class="callout-icon">i</span>
+  <div>The three feeds being independent is correct by design. The maintenance gaps are around <strong>unbounded accumulation</strong>, <strong>missing normalization</strong>, and <strong>zero URL health awareness</strong> in the finders.</div>
+</div>
+
+<div class="rec-grid">
+  <div class="rec-card rec-critical">
+    <h4>Prompt Accumulation Cap</h4>
+    <p>Add a configurable <strong>max_urls_injected</strong> / <strong>max_queries_injected</strong> knob to CEF and PIF. When accumulated count exceeds cap, inject only the most recent N (FIFO). Prevents prompt bloat after many runs.</p>
+    <p style="margin-top: 6px;"><span class="tag tag-red">HIGH PRIORITY</span> <span class="tag tag-muted">CEF + PIF</span></p>
+  </div>
+
+  <div class="rec-card rec-critical">
+    <h4>URL Normalization for CEF</h4>
+    <p>Apply basic normalization (lowercase host, strip trailing slash, strip fragment) to CEF's <code>urls_checked</code> during accumulation. Prevents duplicate entries from minor URL variations.</p>
+    <p style="margin-top: 6px;"><span class="tag tag-red">HIGH PRIORITY</span> <span class="tag tag-muted">CEF</span></p>
+  </div>
+
+  <div class="rec-card rec-new">
+    <h4>Discovery Log TTL for Finders</h4>
+    <p>Add a <strong>discoveryLogMaxAge</strong> knob (default: 90 days). During accumulation, skip runs older than this age. URLs from stale runs (likely 404'd or changed) are dropped from feed-forward.</p>
+    <p style="margin-top: 6px;"><span class="tag tag-accent">MEDIUM</span> <span class="tag tag-muted">CEF + PIF</span></p>
+  </div>
+
+  <div class="rec-card rec-new">
+    <h4>Run-Count Window for Accumulation</h4>
+    <p>Alternative to TTL: add a <strong>discoveryLogMaxRuns</strong> knob (default: 5). Only accumulate from the last N runs. Simpler to reason about than date-based TTL.</p>
+    <p style="margin-top: 6px;"><span class="tag tag-accent">MEDIUM</span> <span class="tag tag-muted">CEF + PIF</span></p>
+  </div>
+
+  <div class="rec-card rec-auto">
+    <h4>Automated Prompt Size Check</h4>
+    <p>Before injecting accumulated URLs/queries, estimate token count. If over a threshold (e.g., 2000 tokens), truncate oldest entries and log a warning. Protects LLM context without manual intervention.</p>
+    <p style="margin-top: 6px;"><span class="tag tag-green">AUTOMATED</span> <span class="tag tag-muted">CEF + PIF</span></p>
+  </div>
+
+  <div class="rec-card rec-manual">
+    <h4>Domain Extraction for PIF</h4>
+    <p>Extract host from <code>source_page</code> at storage time and store as a separate <code>source_domain</code> field. Enables domain-level aggregation queries in the GUI without URL parsing at read time.</p>
+    <p style="margin-top: 6px;"><span class="tag tag-orange">LOW</span> <span class="tag tag-muted">PIF</span></p>
+  </div>
+</div>
+
+<div class="card" style="margin-top: 24px;">
+  <div class="card-header">Summary: What Exists vs What's Needed</div>
+  <div class="card-body">
+    <div class="legend">
+      <div class="legend-item"><span class="status-dot dot-green"></span> Implemented &amp; healthy</div>
+      <div class="legend-item"><span class="status-dot dot-orange"></span> Exists but incomplete</div>
+      <div class="legend-item"><span class="status-dot dot-red"></span> Missing / needs attention</div>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Capability</th><th>Pipeline</th><th>CEF</th><th>PIF</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>URL discovery</td>
+          <td><span class="status-dot dot-green"></span> Full</td>
+          <td><span class="status-dot dot-green"></span> LLM-driven</td>
+          <td><span class="status-dot dot-green"></span> LLM-driven</td>
+        </tr>
+        <tr>
+          <td>Query discovery</td>
+          <td><span class="status-dot dot-green"></span> Multi-stage</td>
+          <td><span class="status-dot dot-green"></span> LLM-logged</td>
+          <td><span class="status-dot dot-green"></span> Per-variant</td>
+        </tr>
+        <tr>
+          <td>Domain classification</td>
+          <td><span class="status-dot dot-green"></span> 5-tier model</td>
+          <td><span class="status-dot dot-red"></span> None</td>
+          <td><span class="status-dot dot-orange"></span> source_page only</td>
+        </tr>
+        <tr>
+          <td>URL normalization</td>
+          <td><span class="status-dot dot-green"></span> canonicalizeUrl()</td>
+          <td><span class="status-dot dot-red"></span> None</td>
+          <td><span class="status-dot dot-orange"></span> Image URLs only</td>
+        </tr>
+        <tr>
+          <td>Dedup</td>
+          <td><span class="status-dot dot-green"></span> 3-layer</td>
+          <td><span class="status-dot dot-orange"></span> Set only (no normalization)</td>
+          <td><span class="status-dot dot-green"></span> URL Set + content hash</td>
+        </tr>
+        <tr>
+          <td>Expiration / TTL</td>
+          <td><span class="status-dot dot-green"></span> 30-day query cooldown</td>
+          <td><span class="status-dot dot-red"></span> None</td>
+          <td><span class="status-dot dot-red"></span> None</td>
+        </tr>
+        <tr>
+          <td>Prompt size bounding</td>
+          <td><span class="status-dot dot-green"></span> Cooldown limits active set</td>
+          <td><span class="status-dot dot-red"></span> Unbounded</td>
+          <td><span class="status-dot dot-red"></span> Unbounded</td>
+        </tr>
+        <tr>
+          <td>URL health tracking</td>
+          <td><span class="status-dot dot-green"></span> Crawl ledger stats</td>
+          <td><span class="status-dot dot-red"></span> None</td>
+          <td><span class="status-dot dot-red"></span> None</td>
+        </tr>
+        <tr>
+          <td>Configurable knobs</td>
+          <td><span class="status-dot dot-green"></span> 8+ knobs</td>
+          <td><span class="status-dot dot-orange"></span> 3 knobs</td>
+          <td><span class="status-dot dot-green"></span> 11+ knobs</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div style="text-align: center; margin-top: 48px; padding: 24px; color: var(--text-muted); font-size: 12px; border-top: 1px solid var(--border);">
+  Generated from codebase audit &mdash; Spec Factory Discovery &amp; Learning Reference<br>
+  Last updated: 2026-04-15
+</div>
+
+</div><!-- /container -->
+</body>
+</html>

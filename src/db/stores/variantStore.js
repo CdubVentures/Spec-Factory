@@ -18,7 +18,6 @@ function hydrateRow(row) {
   return {
     ...row,
     color_atoms: safeParse(row.color_atoms, []),
-    retired: Boolean(row.retired),
   };
 }
 
@@ -27,7 +26,7 @@ function hydrateRow(row) {
  */
 export function createVariantStore({ db, category, stmts }) {
 
-  function upsert({ productId, variantId, variantKey, variantType, variantLabel, colorAtoms, editionSlug, editionDisplayName, retired, createdAt, updatedAt }) {
+  function upsert({ productId, variantId, variantKey, variantType, variantLabel, colorAtoms, editionSlug, editionDisplayName, createdAt, updatedAt }) {
     stmts._upsertVariant.run({
       category,
       product_id: String(productId || ''),
@@ -38,7 +37,6 @@ export function createVariantStore({ db, category, stmts }) {
       color_atoms: JSON.stringify(colorAtoms || []),
       edition_slug: editionSlug ?? null,
       edition_display_name: editionDisplayName ?? null,
-      retired: retired ? 1 : 0,
       created_at: createdAt || new Date().toISOString(),
       updated_at: updatedAt || null,
     });
@@ -56,10 +54,6 @@ export function createVariantStore({ db, category, stmts }) {
 
   function listActive(productId) {
     return stmts._listActiveVariantsByProduct.all(category, String(productId || '')).map(hydrateRow);
-  }
-
-  function retire(productId, variantId) {
-    stmts._retireVariant.run(category, String(productId || ''), String(variantId || ''));
   }
 
   function remove(productId, variantId) {
@@ -99,7 +93,6 @@ export function createVariantStore({ db, category, stmts }) {
         colorAtoms: entry.color_atoms,
         editionSlug: entry.edition_slug,
         editionDisplayName: entry.edition_display_name,
-        retired: entry.retired || false,
         createdAt: entry.created_at,
         updatedAt: entry.updated_at,
       });
@@ -108,5 +101,5 @@ export function createVariantStore({ db, category, stmts }) {
     onAfterSync?.({ productId });
   }
 
-  return { upsert, get, listByProduct, listActive, retire, remove, removeByProduct, syncFromRegistry };
+  return { upsert, get, listByProduct, listActive, remove, removeByProduct, syncFromRegistry };
 }

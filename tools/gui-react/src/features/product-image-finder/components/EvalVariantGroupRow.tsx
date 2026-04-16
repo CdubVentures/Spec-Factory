@@ -16,7 +16,7 @@ interface EvalVariantGroupRowProps {
   readonly hexMap: Map<string, string>;
   readonly editions: Record<string, { display_name?: string; colors?: string[] }>;
   readonly onDeleteEval: (evalNumber: number) => void;
-  readonly onDeleteVariantEvals: (evalNumbers: readonly number[]) => void;
+  readonly onDeleteVariantEvals: (evalNumbers: readonly number[], variantLabel: string) => void;
   readonly expanded: boolean;
   readonly onToggle: () => void;
   readonly evalExpandMap: Record<string, boolean>;
@@ -93,7 +93,7 @@ export const EvalVariantGroupRow = memo(function EvalVariantGroupRow({
           <Chip label={countParts.join(' \u00B7 ')} className="sf-chip-success" />
         )}
         <button
-          onClick={(e) => { e.stopPropagation(); onDeleteVariantEvals(evalNumbers); }}
+          onClick={(e) => { e.stopPropagation(); onDeleteVariantEvals(evalNumbers, variantLabel); }}
           className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded sf-status-text-danger border sf-border-soft opacity-50 hover:opacity-100"
         >
           Del

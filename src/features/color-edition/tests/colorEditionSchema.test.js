@@ -214,7 +214,7 @@ describe('variantIdentityCheckResponseSchema', () => {
   it('accepts valid response with match mapping', () => {
     const result = variantIdentityCheckResponseSchema.safeParse({
       mappings: [validMapping],
-      retired: [],
+      remove: [],
     });
     assert.ok(result.success);
     assert.equal(result.data.mappings[0].action, 'match');
@@ -224,7 +224,7 @@ describe('variantIdentityCheckResponseSchema', () => {
   it('accepts valid response with new mapping (null match)', () => {
     const result = variantIdentityCheckResponseSchema.safeParse({
       mappings: [{ new_key: 'color:crimson-red', match: null, action: 'new', reason: 'genuinely new color' }],
-      retired: [],
+      remove: [],
     });
     assert.ok(result.success);
     assert.equal(result.data.mappings[0].action, 'new');
@@ -234,7 +234,7 @@ describe('variantIdentityCheckResponseSchema', () => {
   it('accepts valid response with reject mapping (null match)', () => {
     const result = variantIdentityCheckResponseSchema.safeParse({
       mappings: [{ new_key: 'color:light-olive+black', match: null, action: 'reject', reason: 'hallucinated' }],
-      retired: [],
+      remove: [],
     });
     assert.ok(result.success);
     assert.equal(result.data.mappings[0].action, 'reject');
@@ -247,17 +247,17 @@ describe('variantIdentityCheckResponseSchema', () => {
         { new_key: 'color:crimson-red', match: null, action: 'new', reason: 'new' },
         { new_key: 'color:fake', match: null, action: 'reject', reason: 'garbage' },
       ],
-      retired: ['v_deadbeef'],
+      remove: ['v_deadbeef'],
     });
     assert.ok(result.success);
     assert.equal(result.data.mappings.length, 3);
-    assert.deepStrictEqual(result.data.retired, ['v_deadbeef']);
+    assert.deepStrictEqual(result.data.remove, ['v_deadbeef']);
   });
 
   it('rejects old update action', () => {
     const result = variantIdentityCheckResponseSchema.safeParse({
       mappings: [{ ...validMapping, action: 'update' }],
-      retired: [],
+      remove: [],
     });
     assert.ok(!result.success, 'update is no longer a valid action');
   });
@@ -265,15 +265,15 @@ describe('variantIdentityCheckResponseSchema', () => {
   it('rejects old create action', () => {
     const result = variantIdentityCheckResponseSchema.safeParse({
       mappings: [{ new_key: 'color:red', match: null, action: 'create', reason: 'new' }],
-      retired: [],
+      remove: [],
     });
     assert.ok(!result.success, 'create is no longer a valid action');
   });
 
-  it('accepts empty mappings and retired', () => {
+  it('accepts empty mappings and remove', () => {
     const result = variantIdentityCheckResponseSchema.safeParse({
       mappings: [],
-      retired: [],
+      remove: [],
     });
     assert.ok(result.success);
   });
@@ -281,7 +281,7 @@ describe('variantIdentityCheckResponseSchema', () => {
   it('rejects invalid action value', () => {
     const result = variantIdentityCheckResponseSchema.safeParse({
       mappings: [{ ...validMapping, action: 'delete' }],
-      retired: [],
+      remove: [],
     });
     assert.ok(!result.success);
   });
@@ -290,7 +290,7 @@ describe('variantIdentityCheckResponseSchema', () => {
     const { new_key: _, ...noKey } = validMapping;
     const result = variantIdentityCheckResponseSchema.safeParse({
       mappings: [noKey],
-      retired: [],
+      remove: [],
     });
     assert.ok(!result.success);
   });
@@ -299,18 +299,142 @@ describe('variantIdentityCheckResponseSchema', () => {
     const { reason: _, ...noReason } = validMapping;
     const result = variantIdentityCheckResponseSchema.safeParse({
       mappings: [noReason],
-      retired: [],
+      remove: [],
     });
     assert.ok(!result.success);
   });
 
   it('rejects missing mappings field', () => {
-    const result = variantIdentityCheckResponseSchema.safeParse({ retired: [] });
+    const result = variantIdentityCheckResponseSchema.safeParse({ remove: [] });
     assert.ok(!result.success);
   });
 
-  it('rejects missing retired field', () => {
+  it('remove defaults to empty array when omitted', () => {
     const result = variantIdentityCheckResponseSchema.safeParse({ mappings: [] });
+    assert.ok(result.success);
+    assert.deepStrictEqual(result.data.remove, []);
+  });
+
+  // ── verified + preferred_label optional fields ──────────────────
+
+  it('verified defaults to false when omitted', () => {
+    const result = variantIdentityCheckResponseSchema.safeParse({
+      mappings: [validMapping],
+      remove: [],
+    });
+    assert.ok(result.success);
+    assert.equal(result.data.mappings[0].verified, false);
+  });
+
+  it('verified accepts true', () => {
+    const result = variantIdentityCheckResponseSchema.safeParse({
+      mappings: [{ ...validMapping, verified: true }],
+      remove: [],
+    });
+    assert.ok(result.success);
+    assert.equal(result.data.mappings[0].verified, true);
+  });
+
+  it('preferred_label accepts a string', () => {
+    const result = variantIdentityCheckResponseSchema.safeParse({
+      mappings: [{ ...validMapping, preferred_label: 'Official Black' }],
+      remove: [],
+    });
+    assert.ok(result.success);
+    assert.equal(result.data.mappings[0].preferred_label, 'Official Black');
+  });
+
+  it('preferred_label is absent when omitted', () => {
+    const result = variantIdentityCheckResponseSchema.safeParse({
+      mappings: [validMapping],
+      remove: [],
+    });
+    assert.ok(result.success);
+    assert.equal(result.data.mappings[0].preferred_label, undefined);
+  });
+
+  it('backward compat: existing responses without new fields still parse', () => {
+    const oldResponse = {
+      mappings: [
+        { new_key: 'color:black', match: 'v_abc', action: 'match', reason: 'same' },
+        { new_key: 'color:red', match: null, action: 'new', reason: 'new color' },
+        { new_key: 'color:fake', match: null, action: 'reject', reason: 'hallucinated' },
+      ],
+      remove: ['v_old'],
+    };
+    const result = variantIdentityCheckResponseSchema.safeParse(oldResponse);
+    assert.ok(result.success, 'must parse without new fields');
+    assert.equal(result.data.mappings[0].verified, false, 'verified defaults to false');
+    assert.equal(result.data.mappings[0].preferred_label, undefined, 'preferred_label absent');
+  });
+
+  // ── orphan_remaps ──────────────────────────────────────────────
+
+  it('orphan_remaps defaults to empty array when omitted', () => {
+    const result = variantIdentityCheckResponseSchema.safeParse({
+      mappings: [validMapping],
+      remove: [],
+    });
+    assert.ok(result.success);
+    assert.deepEqual(result.data.orphan_remaps, []);
+  });
+
+  it('accepts valid remap orphan entry', () => {
+    const result = variantIdentityCheckResponseSchema.safeParse({
+      mappings: [],
+      remove: [],
+      orphan_remaps: [
+        { orphan_key: 'edition:doom-the-dark-ages-edition', action: 'remap', remap_to: 'edition:doom-the-dark-ages', reason: 'slug drift' },
+      ],
+    });
+    assert.ok(result.success);
+    assert.equal(result.data.orphan_remaps.length, 1);
+    assert.equal(result.data.orphan_remaps[0].action, 'remap');
+    assert.equal(result.data.orphan_remaps[0].remap_to, 'edition:doom-the-dark-ages');
+  });
+
+  it('accepts valid dead orphan entry with null remap_to', () => {
+    const result = variantIdentityCheckResponseSchema.safeParse({
+      mappings: [],
+      remove: [],
+      orphan_remaps: [
+        { orphan_key: 'color:navy-blue', action: 'dead', remap_to: null, reason: 'hallucinated — never sold in this color' },
+      ],
+    });
+    assert.ok(result.success);
+    assert.equal(result.data.orphan_remaps[0].action, 'dead');
+    assert.equal(result.data.orphan_remaps[0].remap_to, null);
+  });
+
+  it('rejects invalid orphan_remaps action', () => {
+    const result = variantIdentityCheckResponseSchema.safeParse({
+      mappings: [],
+      remove: [],
+      orphan_remaps: [
+        { orphan_key: 'color:red', action: 'merge', remap_to: null, reason: 'test' },
+      ],
+    });
     assert.ok(!result.success);
+  });
+
+  it('rejects orphan_remaps entry missing reason', () => {
+    const result = variantIdentityCheckResponseSchema.safeParse({
+      mappings: [],
+      remove: [],
+      orphan_remaps: [
+        { orphan_key: 'color:red', action: 'dead', remap_to: null },
+      ],
+    });
+    assert.ok(!result.success);
+  });
+
+  it('backward compat: old responses without orphan_remaps still parse', () => {
+    const oldResponse = {
+      mappings: [validMapping],
+      remove: [],
+    };
+    const result = variantIdentityCheckResponseSchema.safeParse(oldResponse);
+    assert.ok(result.success);
+    assert.deepEqual(result.data.orphan_remaps, [], 'defaults to empty array');
   });
 });

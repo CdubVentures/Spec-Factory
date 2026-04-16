@@ -215,8 +215,8 @@
         <tr><td>Reseed / rebuild surface</td><td><code>seedRegistry.js</code> reads <code>reseedKey</code> + <code>rebuildFnKey</code></td></tr>
         <tr><td>Cooldown gate (POST rejected if on cooldown)</td><td>Generic handler checks <code>cooldown_until</code> column</td></tr>
         <tr><td>Field Studio gate (POST returns 403 if required field disabled)</td><td>Generic handler checks <code>requiredFields</code> vs compiled rules &mdash; <strong>all</strong> must be enabled (AND logic)</td></tr>
-        <tr><td>Candidate cleanup on delete</td><td><code>stripRunSourceFromCandidates()</code> reads <code>fieldKeys</code> + <code>candidateSourceType</code></td></tr>
-        <tr><td>Re-publish after delete</td><td><code>republishAfterDelete()</code> re-thresholds remaining candidates</td></tr>
+        <tr><td>Candidate cleanup on delete</td><td><code>stripRunSourceFromCandidates()</code> reads <code>fieldKeys</code> + <code>candidateSourceType</code>. Variant deletion strips combo strings from CEF sources only. Feature sources use <code>variant_id</code> FK cascade.</td></tr>
+        <tr><td>Re-publish after delete</td><td><code>republishAfterDelete()</code> re-thresholds remaining candidates. Skipped for CEF (variants table is SSOT).</td></tr>
       </tbody>
     </table>
   </div>
@@ -689,7 +689,7 @@ useDeleteMyFinderAllMutation(...)       // DELETE all</pre>
   FinderPanelHeader, FinderKpiCard,
   FinderCooldownStrip, FinderPanelFooter,
   FinderDeleteConfirmModal, FinderSectionCard,
-  FinderHowItWorks,
+  FinderHowItWorks, FinderDiscoveryDetails,
   FinderRunModelBadge,
   FinderRunPromptDetails, FinderRunTimestamp,
   DiscoverySummaryBar,
@@ -699,6 +699,8 @@ useDeleteMyFinderAllMutation(...)       // DELETE all</pre>
 } from '../../../shared/ui/finder/index.ts';
 import { useFireAndForget }
   from '../../operations/hooks/useFireAndForget.ts';
+import { useIsModuleRunning, useRunningVariantKeys }
+  from '../../operations/hooks/useFinderOperations.ts';
 import { myFinderHowItWorksSections }
   from '../myFinderHowItWorksContent.ts';</pre>
           <p style="margin-top:8px;">Build domain-specific sub-components for your data display (date cards, price tables, etc.). Keep derivation logic in a separate <code>selectors/</code> file for testability.</p>
@@ -1008,9 +1010,10 @@ const result = await submitCandidate({
         <tr><td><code>FinderKpiCard</code></td><td>Metric cards grid</td></tr>
         <tr><td><code>FinderCooldownStrip</code></td><td>Progress bar (configurable days)</td></tr>
         <tr><td><code>FinderPanelFooter</code></td><td>Last run, model, count</td></tr>
-        <tr><td><code>FinderDeleteConfirmModal</code></td><td>Delete single/all confirmation</td></tr>
+        <tr><td><code>FinderDeleteConfirmModal</code></td><td>Delete confirmation for run/loop/all/image/eval/variant (all kinds routed through <code>DeleteTarget</code>)</td></tr>
         <tr><td><code>FinderSectionCard</code></td><td>Collapsible body sections</td></tr>
         <tr><td><code>FinderHowItWorks</code></td><td>Collapsible &ldquo;How It Works&rdquo; explainer (2-col grid, typed content blocks)</td></tr>
+        <tr><td><code>FinderDiscoveryDetails</code></td><td>Collapsible discovery/details toggle with typed <code>DiscoverySection[]</code> (chips or lines format)</td></tr>
         <tr><td><code>FinderRunPromptDetails</code></td><td>Prompt/response viewer</td></tr>
         <tr><td><code>FinderRunModelBadge</code></td><td>Model + access mode + effort badge</td></tr>
         <tr><td><code>FinderRunTimestamp</code></td><td>PST time + duration</td></tr>
@@ -1219,7 +1222,7 @@ const merged = mergeDiscovery({ ... });        // clean write</pre>
         <tr><td><code>source_id</code></td><td>Deterministic identifier for each extraction event. Finders: <code>{moduleType}-{productId}-{runNumber}</code>. Survives rebuilds.</td></tr>
         <tr><td><code>effort_level</code></td><td>LLM reasoning effort level (from model tracking). Stored in runs table, powers <code>FinderRunModelBadge</code>.</td></tr>
         <tr><td><code>access_mode</code></td><td>How the LLM was accessed (direct, cached, queued). Stored in runs table, powers badge icon.</td></tr>
-        <tr><td><code>variant_id</code></td><td>Immutable 8-hex hash (<code>v_&lt;hash&gt;</code>) for product variants. CEF-specific &mdash; most finders won&rsquo;t need this.</td></tr>
+        <tr><td><code>variant_id</code></td><td>Immutable 8-hex hash (<code>v_&lt;hash&gt;</code>) for product variants. CEF candidates have <code>variant_id = NULL</code> (run-scoped, many variants per run). Feature source candidates carry <code>variant_id</code> to enable identity-based cascade on variant deletion: <code>DELETE WHERE variant_id = ?</code>. See <a href="data-ownership-flows.html">Data Ownership Flows</a>.</td></tr>
       </tbody>
     </table>
   </div>

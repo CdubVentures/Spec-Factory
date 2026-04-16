@@ -13,6 +13,6 @@ export { createColorEditionFinderCallLlm, buildColorEditionFinderPrompt, createV
 export { runColorEditionFinder } from './colorEditionFinder.js';
 export { registerColorEditionFinderRoutes } from './api/colorEditionFinderRoutes.js';
 export { createColorEditionFinderRouteContext } from './api/colorEditionFinderRouteContext.js';
-export { generateVariantId, buildVariantRegistry, applyIdentityMappings, validateColorsAgainstPalette, validateIdentityMappings } from './variantRegistry.js';
+export { generateVariantId, buildVariantRegistry, applyIdentityMappings, validateColorsAgainstPalette, validateIdentityMappings, validateOrphanRemaps } from './variantRegistry.js';
 export { backfillVariantRegistry } from './backfillVariantRegistry.js';
 export { deriveColorNamesFromVariants, derivePublishedFromVariants, deleteVariant, deleteAllVariants } from './variantLifecycle.js';

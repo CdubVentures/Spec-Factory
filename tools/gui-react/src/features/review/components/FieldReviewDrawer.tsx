@@ -12,6 +12,7 @@ import {
   DrawerManualOverride,
 } from '../../../shared/ui/overlay/DrawerShell.tsx';
 import type { ReviewCandidate } from '../../../types/review.ts';
+import { FinderRunModelBadge } from '../../../shared/ui/finder/index.ts';
 import { CandidateDeleteConfirm } from './CandidateDeleteConfirm.tsx';
 
 // ── Helpers ─────────────────────────────────────────────────────────
@@ -28,6 +29,33 @@ function formatDate(iso: string | null | undefined): string {
   if (!iso) return '';
   try {
     return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch {
+    return String(iso).slice(0, 10);
+  }
+}
+
+/** WHY: Short source codes (cef, pif, pipeline) are opaque — map to human-readable labels. */
+const SOURCE_DISPLAY_LABELS: Record<string, string> = {
+  cef: 'Color & Edition Finder',
+  pif: 'Product Image Finder',
+  pipeline: 'Pipeline',
+  reference: 'Reference',
+  manual: 'Manual',
+  user: 'User',
+  override: 'Override',
+};
+
+function sourceDisplayLabel(source: string): string {
+  return SOURCE_DISPLAY_LABELS[source.toLowerCase()] || source;
+}
+
+function formatDateTime(iso: string | null | undefined): string {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    const date = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    const time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
+    return `${date} \u00B7 ${time}`;
   } catch {
     return String(iso).slice(0, 10);
   }
@@ -98,7 +126,7 @@ function PublishedSourceTable({ candidates }: { candidates: ReviewCandidate[] })
               .sort((a, b) => (b.score || 0) - (a.score || 0))
               .map((c, i) => (
                 <tr key={`${c.candidate_id}-${i}`} className="sf-text-muted">
-                  <td className="py-1 px-1.5 border-b sf-border-subtle">{c.source || '—'}</td>
+                  <td className="py-1 px-1.5 border-b sf-border-subtle">{c.source ? sourceDisplayLabel(c.source) : '—'}</td>
                   <td className="py-1 px-1.5 border-b sf-border-subtle font-mono">{c.model || '—'}</td>
                   <td className="py-1 px-1.5 border-b sf-border-subtle font-mono font-semibold">{pct(c.score)}</td>
                   <td className="py-1 px-1.5 border-b sf-border-subtle">
@@ -219,7 +247,7 @@ function CandidateCard({
 }) {
   const isResolved = candidate.status === 'resolved';
   const cardClass = isResolved ? 'sf-candidate-resolved' : '';
-  const dateStr = formatDate(candidate.submitted_at);
+  const dateStr = formatDateTime(candidate.submitted_at);
   const host = candidate.evidence_url ? extractHost(candidate.evidence_url) : '';
   const meta = candidate.metadata && typeof candidate.metadata === 'object' ? candidate.metadata as Record<string, unknown> : null;
   const parsedArray = tryParseJsonArray(candidate.value);
@@ -241,12 +269,15 @@ function CandidateCard({
         <ValueChips value={parsedArray} publishedValue={publishedValue} />
       )}
 
-      {/* Method + model */}
+      {/* Source label + model badge */}
       {(candidate.source || candidate.model) && (
-        <div className="flex items-center gap-1.5 text-xs sf-text-muted mt-0.5">
-          {candidate.source && <span>{candidate.source}</span>}
-          {candidate.source && candidate.model && <span className="sf-text-subtle text-[8px]">&bull;</span>}
-          {candidate.model && <span className="font-mono">{candidate.model}</span>}
+        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+          {candidate.source && (
+            <span className="text-[10px] sf-text-muted">{sourceDisplayLabel(candidate.source)}</span>
+          )}
+          {candidate.model && (
+            <FinderRunModelBadge model={candidate.model} accessMode="api" />
+          )}
         </div>
       )}
 
@@ -285,7 +316,7 @@ function CandidateCard({
           {onDeleteCandidate && candidate.source_id && (
             <button
               onClick={() => onDeleteCandidate(candidate.source_id)}
-              className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded sf-danger-button"
+              className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded sf-danger-button"
               title="Delete this candidate"
             >
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-[11px] h-[11px]">
@@ -296,7 +327,7 @@ function CandidateCard({
           {onReviewSource && (
             <button
               onClick={() => onReviewSource(candidate.candidate_id)}
-              className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded sf-review-source-button"
+              className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded sf-review-source-button"
             >
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-[11px] h-[11px]">
                 <path d="M8 1v6m0 0l2.5-2.5M8 7L5.5 4.5M1 10v2.5A2.5 2.5 0 003.5 15h9a2.5 2.5 0 002.5-2.5V10" />

@@ -554,5 +554,6 @@ export class SpecDb {
   markFieldCandidateResolvedByValue(pid, fk, val) { this._fieldCandidateStore.markResolvedByValue(pid, fk, val); }
   countFieldCandidatesBySourceId(pid, sid) { return this._fieldCandidateStore.countBySourceId(pid, sid); }
   updateFieldCandidateValue(pid, fk, sid, val) { this._fieldCandidateStore.updateValue(pid, fk, sid, val); }
+  deleteFieldCandidatesByVariantId(pid, vid) { this._fieldCandidateStore.deleteByVariantId(pid, vid); }
 
 }

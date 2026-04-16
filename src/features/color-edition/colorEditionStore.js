@@ -106,7 +106,9 @@ export function rebuildColorEditionFinderFromJson({ specDb, productRoot }) {
     // WHY: Seed variants table from JSON variant_registry (Phase 1 dual-write).
     // onAfterSync triggers derivePublishedFromVariants to keep summary columns
     // and product.json fields in sync — same pattern as the live run path.
-    const registry = data.variant_registry || [];
+    // WHY: Legacy JSON files may contain retired: true entries from the old soft-delete era.
+    // Filter them out on rebuild — removed variants are gone, not flagged.
+    const registry = (data.variant_registry || []).filter(e => !e.retired);
     if (registry.length > 0 && specDb.variants) {
       specDb.variants.syncFromRegistry(productId, registry, {
         onAfterSync: () => derivePublishedFromVariants({ specDb, productId, productRoot: root }),

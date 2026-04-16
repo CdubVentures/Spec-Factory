@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory - CEF Pipeline Validation Tests</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --surface-alt: #f1f3f5;
+    --border: #dee2e6;
+    --border-light: #e9ecef;
+    --text: #212529;
+    --text-muted: #6c757d;
+    --accent: #4263eb;
+    --accent-light: #edf2ff;
+    --green: #2b8a3e;
+    --green-bg: #ebfbee;
+    --red: #c92a2a;
+    --red-bg: #fff5f5;
+    --orange: #e67700;
+    --orange-bg: #fff9db;
+    --purple: #7048e8;
+    --purple-bg: #f3f0ff;
+    --teal: #0c8599;
+    --teal-bg: #e6fcf5;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.6; }
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 32px 0; text-align: center; }
+  .header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  .header p { color: var(--text-muted); font-size: 15px; margin-top: 6px; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+  .section-title { font-size: 20px; font-weight: 700; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); display: flex; align-items: center; gap: 10px; }
+  .section-title .num { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+  .card-header { padding: 14px 20px; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-light); }
+  .card-body { padding: 16px 20px; font-size: 14px; }
+  .card-body p { margin-bottom: 10px; }
+  .card-body p:last-child { margin-bottom: 0; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .tag-green { background: var(--green-bg); color: var(--green); }
+  .tag-red { background: var(--red-bg); color: var(--red); }
+  .tag-orange { background: var(--orange-bg); color: var(--orange); }
+  .tag-accent { background: var(--accent-light); color: var(--accent); }
+  .tag-purple { background: var(--purple-bg); color: var(--purple); }
+  .tag-teal { background: var(--teal-bg); color: var(--teal); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border-light); }
+  th { background: var(--surface-alt); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
+  tr:last-child td { border-bottom: none; }
+  td code { font-family: var(--mono); font-size: 12px; background: var(--surface-alt); padding: 2px 6px; border-radius: 3px; color: var(--accent); }
+  .flow-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 24px 0; flex-wrap: wrap; }
+  .flow-box { padding: 12px 20px; border-radius: var(--radius); font-weight: 600; font-size: 13px; text-align: center; border: 2px solid; min-width: 120px; }
+  .flow-arrow { font-size: 20px; color: var(--text-muted); }
+  .flow-pass { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+  .flow-fail { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+  .flow-neutral { background: var(--surface-alt); border-color: var(--border); color: var(--text); }
+  .flow-accent { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .flow-purple { background: var(--purple-bg); border-color: var(--purple); color: var(--purple); }
+  .flow-teal { background: var(--teal-bg); border-color: var(--teal); color: var(--teal); }
+  pre.prompt-block { background: #1e1e2e; color: #cdd6f4; border-radius: 6px; padding: 16px 20px; font-family: var(--mono); font-size: 12px; line-height: 1.5; overflow-x: auto; margin-top: 8px; white-space: pre-wrap; word-wrap: break-word; }
+  pre.prompt-block .var { color: #f9e2af; }
+  .detail-grid { display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px; font-size: 13px; background: var(--surface-alt); padding: 12px 14px; border-radius: 6px; margin-top: 6px; }
+  .detail-grid dt { font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+  .detail-grid dd { color: var(--text); }
+  .test-num { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; font-size: 13px; font-weight: 700; color: white; flex-shrink: 0; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+  .verdict { font-weight: 700; font-size: 13px; padding: 6px 12px; border-radius: 4px; display: inline-block; }
+  .verdict-pass { background: var(--green-bg); color: var(--green); }
+  .verdict-fail { background: var(--red-bg); color: var(--red); }
+  .verdict-upgrade { background: var(--purple-bg); color: var(--purple); }
+  .verdict-protect { background: var(--teal-bg); color: var(--teal); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>CEF Pipeline Validation Tests</h1>
+  <p>9 scenarios covering discovery consistency, hallucination rejection, quality judging, repair, data protection, and wrong-product removal</p>
+</div>
+
+<div class="container">
+
+<!-- ── Setup ────────────────────────────────────────────────────── -->
+
+<div class="section-title"><span class="num">0</span> Setup &amp; Original Prompts</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">How to Run</div>
+<div class="card-body">
+  <p>All tests use the GUI. Each test specifies a <strong>Discovery Prompt</strong> to paste into <code>/llm-config &rarr; Color &amp; Edition Finder &rarr; Discovery Prompt</code>. The identity check prompt is always left empty (uses built-in judge). Same model runs both LLM 1 and LLM 2 (shared <code>colorFinder</code> phase).</p>
+  <p><strong>Web search must be ON</strong> for all tests (<code>/llm-config &rarr; CEF &rarr; Capabilities &rarr; Web Search</code>).</p>
+  <p>After each test, <strong>restore the original discovery prompt</strong> (Section 0b below) before running the next test.</p>
+  <p>Pick a test product with known colors/editions on the manufacturer site. The prompt uses <code>{{BRAND}}</code> and <code>{{MODEL}}</code> which auto-resolve.</p>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--accent-light);">Model &amp; Effort Settings Per Run</div>
+<div class="card-body">
+  <p>Change model in <code>/llm-config &rarr; Color &amp; Edition Finder &rarr; Base Model</code> before each run. Both LLM 1 (discovery) and LLM 2 (judge) share the same model. <strong>All models must support web search</strong> (routed through LLM Lab).</p>
+  <table>
+    <thead><tr><th>Test</th><th>Run</th><th>Model</th><th>Effort</th><th>Web</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td rowspan="1"><span class="test-num" style="background:var(--red);">T1</span></td><td>Run 1</td><td><code>gpt-4.1-mini</code></td><td>&mdash;</td><td>ON</td><td>Cheapest web-capable model. Canned prompt &mdash; Gate 1 catches it before any web call.</td></tr>
+      <tr style="border-top:2px solid var(--border);"><td rowspan="2"><span class="test-num" style="background:var(--purple);">T2</span></td><td>Run 1</td><td><code>gpt-4.1</code></td><td>&mdash;</td><td>ON</td><td>Solid web model builds real registry.</td></tr>
+      <tr><td>Run 2</td><td><code>gpt-4.1</code></td><td>&mdash;</td><td>ON</td><td>Same model &mdash; canned discovery, judge needs web to catch <code>pink</code>.</td></tr>
+      <tr style="border-top:2px solid var(--border);"><td rowspan="1"><span class="test-num" style="background:var(--green);">T3</span></td><td>Run 1</td><td><code>gpt-5.4-xhigh</code></td><td>xhigh (baked)</td><td>ON</td><td>Best available. Maximum accuracy + effort for gold-standard baseline.</td></tr>
+      <tr style="border-top:2px solid var(--border);"><td rowspan="2"><span class="test-num" style="background:var(--teal);">T4</span></td><td>Run 1</td><td><code>gpt-5.4-xhigh</code></td><td>xhigh (baked)</td><td>ON</td><td>Best model builds the baseline to protect.</td></tr>
+      <tr><td>Run 2</td><td><code>gpt-4.1-mini</code></td><td>&mdash;</td><td>ON</td><td>Weakest web model &mdash; canned discovery returns only <code>black</code>. Judge must still protect via web.</td></tr>
+      <tr style="border-top:2px solid var(--border);"><td rowspan="2"><span class="test-num" style="background:var(--orange);">T5</span></td><td>Run 1</td><td><code>gpt-4.1</code></td><td>&mdash;</td><td>ON</td><td>Good model establishes baseline.</td></tr>
+      <tr><td>Run 2</td><td><code>gpt-4.1</code></td><td>&mdash;</td><td>ON</td><td>Same model, same prompt &mdash; identical conditions for stability test.</td></tr>
+      <tr style="border-top:2px solid var(--border);"><td rowspan="2"><span class="test-num" style="background:var(--accent);">T6</span></td><td>Run 1</td><td><code>gpt-4.1</code></td><td>&mdash;</td><td>ON</td><td>Good-but-not-best model. Produces decent but generic labels.</td></tr>
+      <tr><td>Run 2</td><td><code>gpt-5.4-xhigh</code></td><td>xhigh (baked)</td><td>ON</td><td>Best model with name-focused prompt. Judge compares and upgrades labels.</td></tr>
+      <tr style="border-top:2px solid var(--border);"><td rowspan="3"><span class="test-num" style="background:var(--green);">T7</span></td><td>Run 1</td><td><code>gpt-4.1-mini</code></td><td>&mdash;</td><td>ON</td><td>Weakest web model. Discovery baseline.</td></tr>
+      <tr><td>Run 2</td><td><code>gpt-4.1</code></td><td>&mdash;</td><td>ON</td><td>Mid-tier. Should find more than mini.</td></tr>
+      <tr><td>Run 3</td><td><code>gpt-5.4-xhigh</code></td><td>xhigh (baked)</td><td>ON</td><td>Best model. Should find everything &mdash; most colors, best names, all editions.</td></tr>
+    </tbody>
+  </table>
+
+  <dl class="detail-grid" style="margin-top:12px;">
+    <dt>Web-capable models</dt><dd>Only use models routed through <strong>LLM Lab</strong> (web search support). OpenAI 5-series: <code>gpt-5.4</code>, <code>gpt-5.4-xhigh</code>. OpenAI 4-series: <code>gpt-4.1</code>, <code>gpt-4.1-mini</code>, <code>gpt-4.1-nano</code>. Avoid <code>gpt-4o-mini</code> (no web).</dd>
+    <dt>Effort levels</dt><dd><code>-xhigh</code> suffix has effort baked into the model name (extracted automatically). For standard models, toggle Thinking ON and set effort in <code>/llm-config</code> if needed.</dd>
+    <dt>Switching between runs</dt><dd>Change the model in <code>/llm-config</code> BEFORE clicking Run. Both LLM calls in that run will use the new model.</dd>
+  </dl>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--teal-bg);">0a. Original Discovery Prompt (restore after each test)</div>
+<div class="card-body">
+  <p>Copy this into <code>Discovery Prompt</code> to restore default behavior. Clear the field to use the built-in prompt instead.</p>
+<pre class="prompt-block">Find every official color and every official edition for: <span class="var">{{BRAND}}</span> <span class="var">{{MODEL}}</span>
+<span class="var">{{KNOWN_FINDINGS}}</span>
+Research thoroughly. Check the manufacturer site, major retailers, press releases, and review sites. Look for standard colorways, limited editions, collaboration editions (game tie-ins, franchise partnerships), and regional exclusives. Do not stop after finding the first few — keep searching until you are confident you have found them all.
+
+Only include results for the exact "<span class="var">{{BRAND}}</span> <span class="var">{{MODEL}}</span>" product. If you encounter sibling models with different names, exclude them and list them in siblings_excluded. Only list siblings you actually found — do not invent them.
+<span class="var">{{IDENTITY_WARNING}}</span>
+
+Color output rules:
+- Normalize to registered color atoms: <span class="var">{{PALETTE}}</span>
+- Lowercase, modifier-first ("light-blue" not "blue-light"), normalize "grey" to "gray"
+- Multi-color shells: atoms joined by "+" in dominant order ("black+red")
+- Standard colorways should almost always be a SINGLE atom matching how retailers list the product. Reserve "+" for when the product is genuinely marketed as a named multi-color variant (e.g. "Frost White" = "white+silver"). Minor accents (trim, scroll wheels, logos, RGB lighting) do not warrant "+". Use color_names for the full marketing name instead (e.g. "black": "Translucent Black and Silver"). Editions typically ARE multi-color — a Cyberpunk edition with a black body, red accents, and yellow highlights = "black+red+yellow" is correct.
+- colors[0] must be the default color shown on the official product page
+- Map marketing names in color_names (e.g. "light-blue": "Glacier Blue"). REQUIRED when the atom is not an exact match for the manufacturer's color name. If the manufacturer calls it "Navy Sky Blue" and you normalize to "light-blue", you MUST record "light-blue": "Navy Sky Blue". Only omit the color_names entry when the atom IS the exact name (e.g. "black" = "Black").
+- UNIQUE ENTRIES REQUIRED: Every colorway must have a unique entry in the colors array. Single-color products use a single atom ("black"). Multi-color products use atoms joined by "+" in dominant order ("dark-gray+black+orange"). No duplicates.
+- COMPLETE LIST: The colors array must contain EVERY colorway — standard single colors, standard multi-color combos, AND edition combos. One entry per SKU/colorway.
+
+Edition output rules:
+- An edition is a named special/limited/collaboration version sold by the manufacturer
+- Slug format: kebab-case (e.g. "cod-bo6-edition", "witcher-3-10th-anniversary-edition")
+- Each edition needs display_name (official name) and a colors array with a SINGLE combo entry
+- The combo entry joins all visible shell/body colors with "+" in dominant order (most dominant first). Example: a dark gray body with black accents and orange highlights = ["dark-gray+black+orange"]. A black and red edition = ["black+red"]. Use the same registered atoms.
+- The edition's combo entry MUST also appear in the master colors array
+- Plain color variants, bundles, refurbs, and aftermarket skins are NOT editions
+
+Return JSON with these exact keys and shapes:
+- "colors": ["atom", ...] (first = default)
+- "default_color": "atom" (must equal colors[0])
+- "color_names": { "atom": "Marketing Name", ... } (omit when atom IS the name)
+- "editions": { "slug": { "display_name": "Official Name", "colors": ["atom+atom+atom"] }, ... } or {} if none found (colors is a single combo entry)
+- "siblings_excluded": ["Model Name", ...]
+- "discovery_log": { "confirmed_from_known": [], "added_new": [], "rejected_from_known": [], "urls_checked": [], "queries_run": [] }</pre>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--purple-bg);">0b. Original Identity Check Prompt (restore after each test)</div>
+<div class="card-body">
+  <p>The identity check prompt is <strong>built dynamically</strong> (registry + discoveries injected at runtime). To restore defaults, <strong>clear the Identity Check Prompt field entirely</strong>. The built-in judge prompt includes web validation, ambiguity context, trust anchor, and preferred_label support.</p>
+  <p>If you need to paste the full judge prompt for reference or override, use this:</p>
+<pre class="prompt-block">You are the VARIANT JUDGE for: {brand} {model}
+
+Your job is to validate, compare, and judge variant data quality — not just match IDs.
+
+EXISTING VARIANT REGISTRY (published, with stable IDs):
+  v_example1 | color | color:black | label: "black" | atoms: [black]
+
+NEW CEF DISCOVERIES (from this run):
+  color:black, atoms: [black]
+  color:deep-ocean-blue — label: "Deep Ocean Blue", atoms: [deep-ocean-blue]
+
+TRUST ANCHOR: This is the first identity check for this product. All discoveries are unconfirmed.
+
+─── VALIDATION PROTOCOL ───
+
+For any "new" or uncertain discovery, verify against official sources before accepting.
+Search: "{brand} {model} [color/edition name]" on the manufacturer site and 1-2 major retailers.
+You know the exact brand and model — keep queries scoped and targeted.
+If 2-3 sources don't confirm a discovery, reject it as hallucinated.
+Set "verified": true on any mapping you confirmed via web search.
+
+─── JUDGE INSTRUCTIONS ───
+
+You are not just matching — you are judging quality. For each discovery:
+1. IDENTIFY: Does it match an existing variant, or is it genuinely new?
+2. VALIDATE: Can you confirm it exists for THIS exact model via web search?
+3. COMPARE: If matching an existing variant, compare the labels. More detail and accuracy always wins.
+   - If the new name is more official/accurate, set "preferred_label" to the better name.
+   - If the existing label is already correct or better, omit preferred_label.
+4. DECIDE: match (same variant), new (genuinely new and verified), or reject (hallucinated/unverifiable).
+
+─── MATCHING RULES ───
+
+- A color RENAME is the SAME variant. Use "match" with the existing variant_id.
+- Color atoms gaining or losing a modifier = SAME variant. Use "match".
+- Edition gaining extra color detail = SAME variant. Use "match".
+- Completely different color, never existed = "new" — verify it first.
+- Different edition slug = "new" — verify it exists.
+- Existing NOT in new = may need "remove" (ONLY if verified the variant was NEVER real for this product &mdash; wrong-product contamination, hallucination. Discontinued real products must NOT be removed).
+
+─── HALLUCINATION CHECK ───
+
+If a discovery cannot be found on the official product page or any major retailer, REJECT it.
+Common hallucination patterns: sibling model colors, duplicated edition atoms as standalone, previous-gen colors.
+
+─── STRUCTURAL RULES (MUST FOLLOW) ───
+
+- Every discovery MUST appear in "mappings".
+- "action": "match" | "new" | "reject"
+- "match": existing variant_id for match, null for new/reject.
+- "verified": true if web-confirmed, false if structural match only.
+- "preferred_label": optional, only for match actions with a better name.
+- Each variant_id at most ONCE. Edition slugs must NOT change.
+- NEVER map color to edition or vice versa.</pre>
+</div>
+</div>
+
+<!-- ── Test Matrix Overview ─────────────────────────────────────── -->
+
+<div class="section-title"><span class="num">1</span> Test Matrix Overview</div>
+
+<div class="card">
+<div class="card-body">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Scenario</th>
+        <th>Setup</th>
+        <th>Runs</th>
+        <th>Gate Tested</th>
+        <th>Verdict</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="test-num" style="background:var(--red);">1</span></td>
+        <td><strong>Hallucination &rarr; Gate 1 rejects</strong></td>
+        <td><span class="tag tag-orange">WIPE</span> fresh product</td>
+        <td>1 run (fake atoms)</td>
+        <td><span class="tag tag-red">GATE 1</span></td>
+        <td><span class="verdict verdict-fail">REJECTED</span></td>
+      </tr>
+      <tr>
+        <td><span class="test-num" style="background:var(--purple);">2</span></td>
+        <td><strong>Hallucination &rarr; Judge rejects</strong></td>
+        <td><span class="tag tag-orange">WIPE</span> then Run 1 (real data)</td>
+        <td>2 runs (real baseline &rarr; fake injected)</td>
+        <td><span class="tag tag-purple">GATE 2</span></td>
+        <td><span class="verdict verdict-fail">FAKES REJECTED</span></td>
+      </tr>
+      <tr>
+        <td><span class="test-num" style="background:var(--green);">3</span></td>
+        <td><strong>Best model &rarr; perfect baseline</strong></td>
+        <td><span class="tag tag-orange">WIPE</span> fresh product</td>
+        <td>1 run (best model, original prompt)</td>
+        <td><span class="tag tag-green">ALL PASS</span></td>
+        <td><span class="verdict verdict-pass">BASELINE</span></td>
+      </tr>
+      <tr>
+        <td><span class="test-num" style="background:var(--teal);">4</span></td>
+        <td><strong>Lower model &rarr; data protected</strong></td>
+        <td><span class="tag tag-orange">WIPE</span> then Run 1 (best model)</td>
+        <td>2 runs (best baseline &rarr; weak discovery)</td>
+        <td><span class="tag tag-teal">PROTECTED</span></td>
+        <td><span class="verdict verdict-protect">NO DOWNGRADE</span></td>
+      </tr>
+      <tr>
+        <td><span class="test-num" style="background:var(--orange);">5</span></td>
+        <td><strong>Same data, no change</strong></td>
+        <td><span class="tag tag-orange">WIPE</span> then Run 1 (best model)</td>
+        <td>2 runs (best baseline &rarr; same quality again)</td>
+        <td><span class="tag tag-green">ALL PASS</span></td>
+        <td><span class="verdict verdict-pass">STABLE</span></td>
+      </tr>
+      <tr>
+        <td><span class="test-num" style="background:var(--accent);">6</span></td>
+        <td><strong>Better data &rarr; repairs applied</strong></td>
+        <td><span class="tag tag-orange">WIPE</span> then Run 1 (decent data)</td>
+        <td>2 runs (decent baseline &rarr; better names prompt)</td>
+        <td><span class="tag tag-accent">UPGRADED</span></td>
+        <td><span class="verdict verdict-upgrade">REPAIRED</span></td>
+      </tr>
+      <tr>
+        <td><span class="test-num" style="background:var(--green);">7</span></td>
+        <td><strong>Discovery consistency &mdash; 3 models</strong></td>
+        <td><span class="tag tag-orange">WIPE</span> fresh product</td>
+        <td>3 runs (mini &rarr; 4.1 &rarr; 5.4-xhigh)</td>
+        <td><span class="tag tag-green">ACCUMULATE</span></td>
+        <td><span class="verdict verdict-pass">SUPERSET</span></td>
+      </tr>
+      <tr>
+        <td><span class="test-num" style="background:var(--red);">8</span></td>
+        <td><strong>Wrong-product variant &rarr; hard-deleted + PIF cascade</strong></td>
+        <td><span class="tag tag-orange">WIPE</span> then Run 1 (real + fake variant)</td>
+        <td>2 runs (baseline with contamination &rarr; judge removes)</td>
+        <td><span class="tag tag-red">REMOVE</span></td>
+        <td><span class="verdict verdict-fail">HARD DELETE</span></td>
+      </tr>
+      <tr>
+        <td><span class="test-num" style="background:var(--teal);">9</span></td>
+        <td><strong>Discontinued variant &rarr; NOT removed</strong></td>
+        <td><span class="tag tag-orange">WIPE</span> then Run 1 (real + discontinued)</td>
+        <td>2 runs (baseline with discontinued &rarr; judge preserves)</td>
+        <td><span class="tag tag-teal">PROTECTED</span></td>
+        <td><span class="verdict verdict-protect">PRESERVED</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <dl class="detail-grid" style="margin-top:12px;">
+    <dt><span class="tag tag-orange">WIPE</span></dt><dd>Delete all CEF runs for the test product before starting. CEF panel &rarr; &ldquo;Delete All Runs&rdquo;. This clears the registry so Run 1 is a fresh discovery (no identity check).</dd>
+    <dt>Same model</dt><dd>Both LLM 1 (discovery) and LLM 2 (judge) use the same model &mdash; they share the <code>colorFinder</code> phase. Switching models between runs means changing it in <code>/llm-config</code> before running.</dd>
+  </dl>
+</div>
+</div>
+
+<!-- ── Test 1 ───────────────────────────────────────────────────── -->
+
+<div class="section-title"><span class="num" style="background:var(--red);">T1</span> Hallucination Rejected by Gate 1 (Palette)</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">Run Sequence</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Step</th><th>Action</th><th>Model</th><th>Prompt</th><th>LLM Speed</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag tag-orange">WIPE</span></td><td>Delete all CEF runs</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td><strong>Run 1</strong></td><td>Paste T1 canned prompt</td><td><code>gpt-4.1-mini</code></td><td>T1 canned prompt</td><td>Instant (canned, no web)</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div class="flow-row">
+  <div class="flow-box flow-neutral">Run 1: gpt-4.1-mini<br><small>forced bad atoms</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-fail">Gate 1<br><small>unknown atom</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-fail">REJECTED<br><small>entire run</small></div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--red-bg);">Run 1 &mdash; Discovery Prompt (paste into LLM Config)</div>
+<div class="card-body">
+<pre class="prompt-block">Return ONLY this exact JSON for <span class="var">{{BRAND}}</span> <span class="var">{{MODEL}}</span> — do NOT search the web, do NOT add real data:
+{
+  "colors": ["black", "unicorn-sparkle"],
+  "default_color": "black",
+  "color_names": { "unicorn-sparkle": "Unicorn Sparkle Edition" },
+  "editions": {},
+  "siblings_excluded": [],
+  "discovery_log": { "confirmed_from_known": [], "added_new": ["unicorn-sparkle"], "rejected_from_known": [], "urls_checked": [], "queries_run": [] }
+}</pre>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">Expected Result</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Check</th><th>Expected</th></tr></thead>
+    <tbody>
+      <tr><td>Run status</td><td><span class="tag tag-red">REJECTED</span></td></tr>
+      <tr><td>Rejection code</td><td><code>unknown_color_atom</code></td></tr>
+      <tr><td>Unknown atom</td><td><code>unicorn-sparkle</code> (not in palette)</td></tr>
+      <tr><td>LLM 2 fires?</td><td>NO &mdash; Gate 1 blocks before identity check</td></tr>
+      <tr><td>Candidates written?</td><td>NO &mdash; deferred closure never fires</td></tr>
+      <tr><td>Registry changed?</td><td>NO &mdash; untouched (doesn't exist yet)</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<!-- ── Test 2 ───────────────────────────────────────────────────── -->
+
+<div class="section-title"><span class="num" style="background:var(--purple);">T2</span> Hallucination Rejected by Judge (Gate 2)</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">Run Sequence (2 runs required)</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Step</th><th>Action</th><th>Model</th><th>Prompt</th><th>LLM Speed</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag tag-orange">WIPE</span></td><td>Delete all CEF runs</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td><strong>Run 1</strong></td><td>Original prompt or clear field. Establishes real registry.</td><td><code>gpt-4.1</code></td><td>Original prompt</td><td>LLM 1: slow (web search)<br>LLM 2: n/a (Run 1)</td></tr>
+      <tr><td><strong>Run 2</strong></td><td>Paste T2 canned prompt. Injects <code>pink</code> fake.</td><td><code>gpt-4.1</code></td><td>T2 canned prompt</td><td>LLM 1: instant (canned)<br>LLM 2: slow (web verify)</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div class="flow-row">
+  <div class="flow-box flow-pass">Run 1: gpt-4.1<br><small>real baseline</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-neutral">Run 2: gpt-4.1<br><small>real + fake</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-pass">Gate 1<br><small>atoms valid</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-purple">Judge<br><small>web verify</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-fail">pink rejected<br><small>not on site</small></div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--purple-bg);">Run 2 &mdash; Discovery Prompt (paste into LLM Config)</div>
+<div class="card-body">
+<pre class="prompt-block">Return ONLY this exact JSON for <span class="var">{{BRAND}}</span> <span class="var">{{MODEL}}</span> — do NOT search the web:
+{
+  "colors": ["black", "white", "pink"],
+  "default_color": "black",
+  "color_names": { "pink": "Sakura Blossom Limited" },
+  "editions": {},
+  "siblings_excluded": [],
+  "discovery_log": { "confirmed_from_known": ["black", "white"], "added_new": ["pink"], "rejected_from_known": [], "urls_checked": [], "queries_run": [] }
+}</pre>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">Expected Result (Run 2)</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Check</th><th>Expected</th></tr></thead>
+    <tbody>
+      <tr><td>Run status</td><td><span class="tag tag-green">SUCCESS</span> (judge cleans the data)</td></tr>
+      <tr><td>Gate 1</td><td>PASSES &mdash; <code>pink</code> is a valid palette atom</td></tr>
+      <tr><td>Judge on <code>black</code>, <code>white</code></td><td><code>action: "match"</code>, <code>verified: true</code></td></tr>
+      <tr><td>Judge on <code>pink</code></td><td><code>action: "reject"</code>, <code>verified: true</code>, reason: "not found on official site"</td></tr>
+      <tr><td>Registry</td><td><code>pink</code> NOT added. Run 1 colors preserved with same <code>variant_id</code>s.</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:10px;"><strong>Key validation:</strong> <code>pink</code> passes Gate 1 (valid atom) but the judge catches it via web search. This is the hallucination filter the judge provides that Gate 1 cannot.</p>
+</div>
+</div>
+
+<!-- ── Test 3 ───────────────────────────────────────────────────── -->
+
+<div class="section-title"><span class="num" style="background:var(--green);">T3</span> Best Model &mdash; Perfect Discovery (Baseline)</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">Run Sequence</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Step</th><th>Action</th><th>Model</th><th>Prompt</th><th>LLM Speed</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag tag-orange">WIPE</span></td><td>Delete all CEF runs</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td><strong>Run 1</strong></td><td>Original prompt or clear field. Best model + max effort.</td><td><code>gpt-5.4-xhigh</code></td><td>Original prompt</td><td>LLM 1: slow (full web search, xhigh effort)<br>LLM 2: n/a (Run 1)</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div class="flow-row">
+  <div class="flow-box flow-neutral">Run 1: gpt-5.4-xhigh<br><small>best model, full search</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-pass">Gate 1<br><small>all valid</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-pass">Registry<br><small>complete baseline</small></div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">Expected Result</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Check</th><th>Expected</th></tr></thead>
+    <tbody>
+      <tr><td>Run status</td><td><span class="tag tag-green">SUCCESS</span></td></tr>
+      <tr><td>Colors found</td><td>All official colors (cross-reference manufacturer site)</td></tr>
+      <tr><td>Editions found</td><td>All official editions (if any)</td></tr>
+      <tr><td>Color names</td><td>Accurate marketing names (e.g., "Glacier Blue" not just "light-blue")</td></tr>
+      <tr><td>LLM 2</td><td>Does NOT fire (Run 1 &mdash; no existing registry)</td></tr>
+      <tr><td>Registry</td><td>Complete &mdash; every real variant has a stable <code>variant_id</code></td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:10px;"><strong>Record the registry state</strong> (variant_ids, keys, labels). This is the gold standard for T4, T5, T6.</p>
+</div>
+</div>
+
+<!-- ── Test 4 ───────────────────────────────────────────────────── -->
+
+<div class="section-title"><span class="num" style="background:var(--teal);">T4</span> Lower Model &mdash; Data Protected (No Downgrade)</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">Run Sequence (2 runs required)</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Step</th><th>Action</th><th>Model</th><th>Prompt</th><th>LLM Speed</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag tag-orange">WIPE</span></td><td>Delete all CEF runs</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td><strong>Run 1</strong></td><td>Original prompt. Best model. Complete baseline.</td><td><code>gpt-5.4-xhigh</code></td><td>Original prompt</td><td>LLM 1: slow (web, xhigh)<br>LLM 2: n/a (Run 1)</td></tr>
+      <tr><td style="color:var(--orange);font-weight:600;">Switch model</td><td colspan="4">Change to <code>gpt-4.1-mini</code> in <code>/llm-config</code> before Run 2</td></tr>
+      <tr><td><strong>Run 2</strong></td><td>Paste T4 canned prompt. Weak model discovers only black.</td><td><code>gpt-4.1-mini</code></td><td>T4 canned prompt</td><td>LLM 1: instant (canned)<br>LLM 2: slow (web verify)</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div class="flow-row">
+  <div class="flow-box flow-pass">Run 1: gpt-5.4-xhigh<br><small>best model baseline</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-neutral">Run 2: gpt-4.1-mini<br><small>only finds black</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-pass">Gate 1<br><small>valid</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-purple">Judge<br><small>protects baseline</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-teal">Registry<br><small>unchanged</small></div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--teal-bg);">Run 2 &mdash; Discovery Prompt (paste into LLM Config)</div>
+<div class="card-body">
+<pre class="prompt-block">Return ONLY this exact JSON for <span class="var">{{BRAND}}</span> <span class="var">{{MODEL}}</span> — do NOT search the web:
+{
+  "colors": ["black"],
+  "default_color": "black",
+  "color_names": {},
+  "editions": {},
+  "siblings_excluded": [],
+  "discovery_log": { "confirmed_from_known": ["black"], "added_new": [], "rejected_from_known": [], "urls_checked": [], "queries_run": [] }
+}</pre>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">Expected Result (Run 2)</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Check</th><th>Expected</th></tr></thead>
+    <tbody>
+      <tr><td>Run status</td><td><span class="tag tag-green">SUCCESS</span></td></tr>
+      <tr><td>Judge on <code>black</code></td><td><code>action: "match"</code> &mdash; preserves existing <code>variant_id</code></td></tr>
+      <tr><td><code>remove</code> array</td><td><strong>EMPTY</strong> &mdash; judge must NOT remove colors just because this run missed them</td></tr>
+      <tr><td>Registry after Run 2</td><td><strong>IDENTICAL</strong> to Run 1 &mdash; all variant_ids, keys, labels preserved</td></tr>
+      <tr><td>Published colors</td><td><strong>UNCHANGED</strong> &mdash; still has all colors from Run 1</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:10px;"><strong>Key validation:</strong> The trust anchor says "1 prior pass confirmed these variants." A single weak run finding only black must not downgrade the registry. This is the data protection guarantee.</p>
+</div>
+</div>
+
+<!-- ── Test 5 ───────────────────────────────────────────────────── -->
+
+<div class="section-title"><span class="num" style="background:var(--orange);">T5</span> Same Data, New Run &mdash; No Change Needed</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">Run Sequence (2 runs required)</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Step</th><th>Action</th><th>Model</th><th>Prompt</th><th>LLM Speed</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag tag-orange">WIPE</span></td><td>Delete all CEF runs</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td><strong>Run 1</strong></td><td>Original prompt. Establishes baseline.</td><td><code>gpt-4.1</code></td><td>Original prompt</td><td>LLM 1: slow (web search)<br>LLM 2: n/a (Run 1)</td></tr>
+      <tr><td><strong>Run 2</strong></td><td>Original prompt again. Identical config. Same model.</td><td><code>gpt-4.1</code></td><td>Original prompt</td><td>LLM 1: slow (web search)<br>LLM 2: slow (web verify)</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div class="flow-row">
+  <div class="flow-box flow-pass">Run 1: gpt-4.1<br><small>baseline</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-neutral">Run 2: gpt-4.1<br><small>same findings</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-pass">Gate 1<br><small>valid</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-purple">Judge<br><small>all match</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-pass">Registry<br><small>stable</small></div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">Expected Result (Run 2)</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Check</th><th>Expected</th></tr></thead>
+    <tbody>
+      <tr><td>Run status</td><td><span class="tag tag-green">SUCCESS</span></td></tr>
+      <tr><td>All mappings</td><td><code>action: "match"</code> for every discovery &mdash; nothing new, nothing rejected</td></tr>
+      <tr><td><code>preferred_label</code></td><td>Absent on all &mdash; labels already correct</td></tr>
+      <tr><td>Registry</td><td>All <code>variant_id</code>s identical to Run 1. No <code>updated_at</code> changes.</td></tr>
+      <tr><td>Published state</td><td>Unchanged</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:10px;"><strong>Key validation:</strong> Stability. Running the same quality again doesn't churn the data. No label upgrades, no new entries, no retirements.</p>
+</div>
+</div>
+
+<!-- ── Test 6 ───────────────────────────────────────────────────── -->
+
+<div class="section-title"><span class="num" style="background:var(--accent);">T6</span> Better Data &mdash; Repairs Applied (Label Upgrade)</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">Run Sequence (2 runs required)</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Step</th><th>Action</th><th>Model</th><th>Prompt</th><th>LLM Speed</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag tag-orange">WIPE</span></td><td>Delete all CEF runs</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td><strong>Run 1</strong></td><td>Original prompt. Decent model produces generic names.</td><td><code>gpt-4.1</code></td><td>Original prompt</td><td>LLM 1: slow (web search)<br>LLM 2: n/a (Run 1)</td></tr>
+      <tr><td style="color:var(--orange);font-weight:600;">Switch model</td><td colspan="4">Change to <code>gpt-5.4-xhigh</code> in <code>/llm-config</code> before Run 2</td></tr>
+      <tr><td><strong>Run 2</strong></td><td>Paste T6 better-names prompt. Best model finds official names.</td><td><code>gpt-5.4-xhigh</code></td><td>T6 better-names prompt</td><td>LLM 1: slow (web, xhigh, name focus)<br>LLM 2: slow (web verify + compare)</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div class="flow-row">
+  <div class="flow-box flow-neutral">Run 1: gpt-4.1<br><small>decent baseline</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-neutral">Run 2: gpt-5.4-xhigh<br><small>better names</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-pass">Gate 1<br><small>valid</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-purple">Judge<br><small>compares labels</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-accent">Registry<br><small>labels upgraded</small></div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--accent-light);">Run 2 &mdash; Discovery Prompt (paste into LLM Config)</div>
+<div class="card-body">
+<pre class="prompt-block">Find every official color and every official edition for: <span class="var">{{BRAND}}</span> <span class="var">{{MODEL}}</span>
+<span class="var">{{KNOWN_FINDINGS}}</span>
+Research thoroughly. Check the manufacturer site for the EXACT official marketing names for each color. Use the manufacturer's precise terminology — not generic descriptions.
+
+IMPORTANT: For color_names, use the OFFICIAL marketing name from the manufacturer's website. For example:
+- If the manufacturer calls it "Arctic Frost" not just "White", use "Arctic Frost"
+- If the manufacturer calls it "Midnight" not just "Black", use "Midnight"
+- Check press releases and product pages for the exact naming
+
+<span class="var">{{IDENTITY_WARNING}}</span>
+
+Color output rules:
+- Normalize to registered color atoms: <span class="var">{{PALETTE}}</span>
+- Lowercase, modifier-first, normalize "grey" to "gray"
+- Multi-color shells: atoms joined by "+" in dominant order
+- colors[0] must be the default color
+- Map EXACT marketing names in color_names — prioritize official manufacturer naming over generic
+
+Edition output rules:
+- Slug format: kebab-case
+- Each edition needs display_name (EXACT official name) and colors array with combo
+
+Return JSON with: colors, default_color, color_names, editions, siblings_excluded, discovery_log</pre>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">Expected Result (Run 2)</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Check</th><th>Expected</th></tr></thead>
+    <tbody>
+      <tr><td>Run status</td><td><span class="tag tag-green">SUCCESS</span></td></tr>
+      <tr><td>Judge on existing colors</td><td><code>action: "match"</code> with <code>preferred_label</code> set to the more official name</td></tr>
+      <tr><td><code>verified</code></td><td><code>true</code> on upgraded labels (judge confirmed the better name on official site)</td></tr>
+      <tr><td>Registry after Run 2</td><td>Same <code>variant_id</code>s, but <code>variant_label</code> updated to the more accurate name</td></tr>
+      <tr><td><code>updated_at</code></td><td>Set on entries where label changed</td></tr>
+      <tr><td>Published state</td><td>Updated color_names reflect the better labels</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:10px;"><strong>Key validation:</strong> Same atoms, better names. The judge compares "black" (Run 1) vs "Midnight" (Run 2), confirms "Midnight" is the official manufacturer name, and sets <code>preferred_label: "Midnight"</code>. <code>applyIdentityMappings</code> updates the label. Variant ID stability preserved, data quality improved.</p>
+</div>
+</div>
+
+<!-- ── Test 7 ───────────────────────────────────────────────────── -->
+
+<div class="section-title"><span class="num" style="background:var(--green);">T7</span> Discovery Consistency &mdash; 3 Models, Back-to-Back</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">Run Sequence (3 runs, escalating model quality)</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Step</th><th>Action</th><th>Model</th><th>Prompt</th><th>LLM Speed</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag tag-orange">WIPE</span></td><td>Delete all CEF runs</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td><strong>Run 1</strong></td><td>Original prompt. Weakest web model.</td><td><code>gpt-4.1-mini</code></td><td>Original prompt</td><td>LLM 1: moderate (web, mini)<br>LLM 2: n/a (Run 1)</td></tr>
+      <tr><td style="color:var(--orange);font-weight:600;">Switch model</td><td colspan="4">Change to <code>gpt-4.1</code> in <code>/llm-config</code></td></tr>
+      <tr><td><strong>Run 2</strong></td><td>Original prompt. Mid-tier model.</td><td><code>gpt-4.1</code></td><td>Original prompt</td><td>LLM 1: slow (web)<br>LLM 2: slow (web verify)</td></tr>
+      <tr><td style="color:var(--orange);font-weight:600;">Switch model</td><td colspan="4">Change to <code>gpt-5.4-xhigh</code> in <code>/llm-config</code></td></tr>
+      <tr><td><strong>Run 3</strong></td><td>Original prompt. Best model + max effort.</td><td><code>gpt-5.4-xhigh</code></td><td>Original prompt</td><td>LLM 1: slow (web, xhigh)<br>LLM 2: slow (web verify, xhigh)</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div class="flow-row">
+  <div class="flow-box flow-neutral">Run 1: gpt-4.1-mini<br><small>baseline discovery</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-accent">Run 2: gpt-4.1<br><small>finds more?</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-pass">Run 3: gpt-5.4-xhigh<br><small>finds everything?</small></div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--green-bg);">What to Compare Across Runs</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Metric</th><th>Run 1 (mini)</th><th>Run 2 (4.1)</th><th>Run 3 (5.4-xhigh)</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Colors found</strong></td><td>Fewer (may miss some)</td><td>More (should find most)</td><td>All official colors</td></tr>
+      <tr><td><strong>Editions found</strong></td><td>May miss editions entirely</td><td>Should find common ones</td><td>All editions including obscure</td></tr>
+      <tr><td><strong>Color names accuracy</strong></td><td>Generic ("black", "white")</td><td>Better ("Jet Black", "Pearl White")</td><td>Official manufacturer names</td></tr>
+      <tr><td><strong>Edition combo accuracy</strong></td><td>May get atom order wrong</td><td>Usually correct</td><td>Correct dominant-first order</td></tr>
+      <tr><td><strong>Hallucinations</strong></td><td>Possible (check judge rejections)</td><td>Less likely</td><td>Rare</td></tr>
+      <tr><td><strong>URLs checked</strong></td><td>Fewer sources</td><td>More sources</td><td>Manufacturer + retailers + reviews</td></tr>
+    </tbody>
+  </table>
+
+  <dl class="detail-grid" style="margin-top:12px;">
+    <dt>Run 1 &rarr; Run 2</dt><dd>Identity judge should <code>match</code> all Run 1 colors, potentially add <code>new</code> ones Run 1 missed, and upgrade labels via <code>preferred_label</code> if better names found.</dd>
+    <dt>Run 2 &rarr; Run 3</dt><dd>Judge should <code>match</code> everything from Run 2, may add remaining <code>new</code> entries, may set <code>preferred_label</code> for even better official names. Zero retirements.</dd>
+    <dt>Final state</dt><dd>Registry after Run 3 should be the <strong>superset</strong> of all 3 runs &mdash; every real color/edition found by any model, with the best label from the best model. All <code>variant_id</code>s stable from when each variant was first discovered.</dd>
+  </dl>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">Expected Result (After All 3 Runs)</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Check</th><th>Expected</th></tr></thead>
+    <tbody>
+      <tr><td>Registry size</td><td>Grows or stays equal with each run &mdash; never shrinks</td></tr>
+      <tr><td>Variant IDs from Run 1</td><td>Still present and <strong>unchanged</strong> in Run 3 registry</td></tr>
+      <tr><td>New entries from Run 2/3</td><td>Have fresh <code>variant_id</code>s, <code>verified: true</code></td></tr>
+      <tr><td>Labels</td><td>Best names from the best model (via <code>preferred_label</code>)</td></tr>
+      <tr><td><code>remove</code> array</td><td><strong>EMPTY</strong> on all 3 runs &mdash; each run adds or confirms, never removes wrong-product data</td></tr>
+      <tr><td>Discovery log quality</td><td>Run 3 has more <code>urls_checked</code> and <code>queries_run</code> than Run 1</td></tr>
+      <tr><td>Published colors</td><td>Superset &mdash; includes everything from all 3 runs</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:10px;"><strong>Key validation:</strong> This proves progressive enrichment &mdash; each better model adds value without losing prior work. The registry is a monotonically improving accumulator.</p>
+</div>
+</div>
+
+<!-- ── Test 8 ───────────────────────────────────────────────────── -->
+
+<div class="section-title"><span class="num" style="background:var(--red);">T8</span> Wrong-Product Variant &mdash; Hard-Deleted + PIF Cascade</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">Run Sequence (2 runs required)</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Step</th><th>Action</th><th>Model</th><th>Prompt</th><th>LLM Speed</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag tag-orange">WIPE</span></td><td>Delete all CEF runs</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td><strong>Run 1</strong></td><td>T8 canned prompt. Plants a sibling-model color (e.g. <code>sunset-haze</code> from X2A on an X2H product).</td><td><code>gpt-4.1</code></td><td>T8 Run 1 canned prompt</td><td>LLM 1: instant (canned)<br>LLM 2: n/a (Run 1)</td></tr>
+      <tr><td><strong>PIF Run</strong></td><td>Run PIF for the product so images exist for the contaminated variant.</td><td><code>gpt-4.1</code></td><td>Original prompt</td><td>slow (web search)</td></tr>
+      <tr><td><strong>Run 2</strong></td><td>Original prompt. Judge verifies all variants via web.</td><td><code>gpt-4.1</code></td><td>Original prompt</td><td>LLM 1: slow (web search)<br>LLM 2: slow (web verify)</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div class="flow-row">
+  <div class="flow-box flow-pass">Run 1: canned<br><small>real + fake variant</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-neutral">PIF run<br><small>images for all variants</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-pass">Run 2: web search<br><small>judge verifies</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-fail">remove: [v_xyz]<br><small>hard-delete + PIF cascade</small></div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--red-bg);">Run 1 &mdash; Discovery Prompt (paste into LLM Config)</div>
+<div class="card-body">
+<pre class="prompt-block">Return ONLY this exact JSON for <span class="var">{{BRAND}}</span> <span class="var">{{MODEL}}</span> — do NOT search the web:
+{
+  "colors": ["black", "white", "sunset-haze"],
+  "default_color": "black",
+  "color_names": { "sunset-haze": "Sunset Haze" },
+  "editions": {},
+  "siblings_excluded": [],
+  "discovery_log": { "confirmed_from_known": [], "added_new": ["black", "white", "sunset-haze"], "rejected_from_known": [], "urls_checked": [], "queries_run": [] }
+}</pre>
+  <p style="margin-top:8px;"><strong>Note:</strong> <code>sunset-haze</code> must be a real palette atom but belong to a <em>sibling model</em>, not this product. Substitute with a color known to belong to a different product in the same family.</p>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">Expected Result (Run 2)</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Check</th><th>Expected</th></tr></thead>
+    <tbody>
+      <tr><td>Run status</td><td><span class="tag tag-green">SUCCESS</span></td></tr>
+      <tr><td>Judge on <code>black</code>, <code>white</code></td><td><code>action: "match"</code>, <code>verified: true</code></td></tr>
+      <tr><td>Judge on <code>sunset-haze</code></td><td>Not in new discoveries (original prompt), so variant appears in <code>remove</code> array</td></tr>
+      <tr><td><code>remove</code> array</td><td><code>["v_&lt;sunset-haze-id&gt;"]</code> &mdash; the variant_id for sunset-haze</td></tr>
+      <tr><td>Registry after Run 2</td><td><code>sunset-haze</code> <strong>GONE</strong> from registry. <code>black</code> and <code>white</code> preserved with same <code>variant_id</code>s.</td></tr>
+      <tr><td>Published colors</td><td><code>sunset-haze</code> <strong>NOT</strong> in published colors</td></tr>
+      <tr><td>PIF cascade</td><td>Any PIF images for the <code>sunset-haze</code> variant <strong>DELETED</strong> (images, carousel slots, evals)</td></tr>
+      <tr><td>PIF surviving</td><td>PIF images for <code>black</code> and <code>white</code> <strong>UNTOUCHED</strong></td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:10px;"><strong>Key validation:</strong> Wrong-product contamination is hard-deleted, not soft-flagged. The variant disappears from the registry entirely, and PIF images are cascade-deleted. This is the cleanup guarantee for data that was never real.</p>
+</div>
+</div>
+
+<!-- ── Test 9 ───────────────────────────────────────────────────── -->
+
+<div class="section-title"><span class="num" style="background:var(--teal);">T9</span> Discontinued Variant &mdash; NOT Removed (Protection)</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">Run Sequence (2 runs required)</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Step</th><th>Action</th><th>Model</th><th>Prompt</th><th>LLM Speed</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag tag-orange">WIPE</span></td><td>Delete all CEF runs</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td><strong>Run 1</strong></td><td>T9 canned prompt. Includes a real discontinued/limited color (e.g. a launch color no longer sold).</td><td><code>gpt-4.1</code></td><td>T9 Run 1 canned prompt</td><td>LLM 1: instant (canned)<br>LLM 2: n/a (Run 1)</td></tr>
+      <tr><td><strong>Run 2</strong></td><td>T9 Run 2 canned prompt. Omits the discontinued color from discoveries. Judge must decide.</td><td><code>gpt-4.1</code></td><td>T9 Run 2 canned prompt</td><td>LLM 1: instant (canned)<br>LLM 2: slow (web verify)</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div class="flow-row">
+  <div class="flow-box flow-pass">Run 1: canned<br><small>all colors incl. discontinued</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-neutral">Run 2: canned<br><small>discontinued missing</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-pass">Judge<br><small>web verifies it WAS real</small></div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box flow-teal">remove: []<br><small>discontinued preserved</small></div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--teal-bg);">Run 1 &mdash; Discovery Prompt (paste into LLM Config)</div>
+<div class="card-body">
+<pre class="prompt-block">Return ONLY this exact JSON for <span class="var">{{BRAND}}</span> <span class="var">{{MODEL}}</span> — do NOT search the web:
+{
+  "colors": ["black", "white", "red"],
+  "default_color": "black",
+  "color_names": { "red": "Launch Red" },
+  "editions": {},
+  "siblings_excluded": [],
+  "discovery_log": { "confirmed_from_known": [], "added_new": ["black", "white", "red"], "rejected_from_known": [], "urls_checked": [], "queries_run": [] }
+}</pre>
+  <p style="margin-top:8px;"><strong>Note:</strong> <code>red</code> / "Launch Red" represents a discontinued launch color that WAS real but is no longer manufactured. Pick a color that actually existed for this product in the past.</p>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--teal-bg);">Run 2 &mdash; Discovery Prompt (paste into LLM Config)</div>
+<div class="card-body">
+<pre class="prompt-block">Return ONLY this exact JSON for <span class="var">{{BRAND}}</span> <span class="var">{{MODEL}}</span> — do NOT search the web:
+{
+  "colors": ["black", "white"],
+  "default_color": "black",
+  "color_names": {},
+  "editions": {},
+  "siblings_excluded": [],
+  "discovery_log": { "confirmed_from_known": ["black", "white"], "added_new": [], "rejected_from_known": [], "urls_checked": [], "queries_run": [] }
+}</pre>
+  <p style="margin-top:8px;"><strong>Note:</strong> <code>red</code> is deliberately omitted from Run 2 discoveries. The judge must verify via web that "Launch Red" was a real product and NOT add it to the <code>remove</code> array.</p>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--surface-alt);">Expected Result (Run 2)</div>
+<div class="card-body">
+  <table>
+    <thead><tr><th>Check</th><th>Expected</th></tr></thead>
+    <tbody>
+      <tr><td>Run status</td><td><span class="tag tag-green">SUCCESS</span></td></tr>
+      <tr><td>Judge on <code>black</code>, <code>white</code></td><td><code>action: "match"</code></td></tr>
+      <tr><td><code>remove</code> array</td><td><strong>EMPTY</strong> &mdash; judge must NOT remove a discontinued real product</td></tr>
+      <tr><td>Registry after Run 2</td><td><code>red</code> / "Launch Red" <strong>STILL PRESENT</strong> with same <code>variant_id</code></td></tr>
+      <tr><td>Registry size</td><td><strong>UNCHANGED</strong> &mdash; 3 variants (black, white, red)</td></tr>
+      <tr><td>Published colors</td><td><strong>STILL includes</strong> <code>red</code></td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:10px;"><strong>Key validation:</strong> Discontinued products that WERE real must never be removed. The judge's web search should confirm the variant existed (old product pages, reviews, retailer archives) and leave the <code>remove</code> array empty. This is the protection guarantee against data loss for real-but-discontinued products.</p>
+</div>
+</div>
+
+<!-- ── Execution Order ──────────────────────────────────────────── -->
+
+<div class="section-title"><span class="num">2</span> Recommended Execution Order</div>
+
+<div class="card">
+<div class="card-body">
+  <p>Each test starts with a <span class="tag tag-orange">WIPE</span>. Tests are independent &mdash; they do not share state. Restore the original discovery prompt between tests.</p>
+  <table>
+    <thead><tr><th>Order</th><th>Test</th><th>Total Runs</th><th>Wall Clock</th><th>What It Proves</th></tr></thead>
+    <tbody>
+      <tr><td>1st</td><td><span class="test-num" style="background:var(--red);">T1</span> Gate 1 reject</td><td>wipe + 1 run</td><td>~10s (canned, no web)</td><td>Palette gate catches invalid atoms</td></tr>
+      <tr><td>2nd</td><td><span class="test-num" style="background:var(--green);">T3</span> Best baseline</td><td>wipe + 1 run</td><td>~30-60s (full web search)</td><td>Best model produces complete, accurate data</td></tr>
+      <tr><td>3rd</td><td><span class="test-num" style="background:var(--purple);">T2</span> Judge rejects fake</td><td>wipe + 2 runs</td><td>~60-90s (Run 1 web + Run 2 judge web)</td><td>Judge catches plausible hallucinations via web</td></tr>
+      <tr><td>4th</td><td><span class="test-num" style="background:var(--teal);">T4</span> Data protected</td><td>wipe + 2 runs</td><td>~45-75s (Run 1 web + Run 2 canned + judge web)</td><td>Weak discovery can't downgrade good baseline</td></tr>
+      <tr><td>5th</td><td><span class="test-num" style="background:var(--orange);">T5</span> Stability</td><td>wipe + 2 runs</td><td>~60-120s (both runs full web)</td><td>Same quality re-run = zero churn</td></tr>
+      <tr><td>6th</td><td><span class="test-num" style="background:var(--accent);">T6</span> Repair</td><td>wipe + 2 runs</td><td>~60-120s (both runs web search)</td><td>Better names get applied via preferred_label</td></tr>
+      <tr><td>7th</td><td><span class="test-num" style="background:var(--green);">T7</span> Discovery</td><td>wipe + 3 runs</td><td>~120-180s (3 web searches, escalating models)</td><td>Progressive enrichment &mdash; better models find more, registry accumulates</td></tr>
+      <tr><td>8th</td><td><span class="test-num" style="background:var(--red);">T8</span> Wrong-product removal</td><td>wipe + 2 runs + PIF</td><td>~90-120s (Run 1 canned + PIF + Run 2 web + judge web)</td><td>Wrong-product contamination hard-deleted + PIF cascade</td></tr>
+      <tr><td>9th</td><td><span class="test-num" style="background:var(--teal);">T9</span> Discontinued preserved</td><td>wipe + 2 runs</td><td>~60-90s (Run 1 canned + Run 2 canned + judge web)</td><td>Discontinued real variant protected from removal</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<!-- ── Quick Checklist ──────────────────────────────────────────── -->
+
+<div class="section-title"><span class="num">3</span> Post-Test Verification Checklist</div>
+
+<div class="card">
+<div class="card-body">
+  <table>
+    <thead><tr><th>Check</th><th>Where to look</th></tr></thead>
+    <tbody>
+      <tr><td>Run status (rejected/success)</td><td>CEF panel &rarr; run history card</td></tr>
+      <tr><td>Rejection reason code</td><td>Run response &rarr; <code>rejections[].reason_code</code></td></tr>
+      <tr><td>Identity judge mappings</td><td>Run response &rarr; <code>identity_check.mappings[]</code></td></tr>
+      <tr><td><code>verified</code> / <code>preferred_label</code> fields</td><td>Same mappings array</td></tr>
+      <tr><td><code>remove</code> array (identity check)</td><td>Run response &rarr; <code>identity_check.remove[]</code> &mdash; should be empty unless wrong-product contamination confirmed</td></tr>
+      <tr><td>Variant registry stability</td><td>CEF panel &rarr; variant registry section (check <code>variant_id</code>s)</td></tr>
+      <tr><td>Published colors/editions</td><td>CEF panel &rarr; published state card</td></tr>
+      <tr><td>PIF orphans</td><td>PIF panel &rarr; look for DataIntegrityBanner (should be absent)</td></tr>
+      <tr><td>PIF cascade after remove</td><td>After T8: removed variant&rsquo;s images, carousel slots, and evals should be gone from PIF panel</td></tr>
+      <tr><td>Prompt used</td><td>Run response &rarr; <code>prompt.system</code> (discovery) or <code>prompt.identity_check.system</code> (judge)</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+</div>
+</body>
+</html>

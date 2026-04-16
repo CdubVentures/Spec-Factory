@@ -22,9 +22,7 @@ export function ImageLightbox({ img, src, category, productId, onClose }: ImageL
     ? originalImageServeUrl(category, productId, img.original_filename ?? '')
     : '';
 
-  const checkerboard = img.bg_removed && img.view !== 'hero'
-    ? 'repeating-conic-gradient(#808080 0% 25%, #606060 0% 50%) 0 0 / 20px 20px'
-    : 'none';
+  const showChecker = img.bg_removed && img.view !== 'hero';
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -54,8 +52,7 @@ export function ImageLightbox({ img, src, category, productId, onClose }: ImageL
               {img.view === 'hero' ? 'Cropped 16:9' : 'Processed'}
             </span>
             <div
-              className="flex items-center justify-center flex-1 rounded-lg overflow-hidden"
-              style={{ background: checkerboard }}
+              className={`flex items-center justify-center flex-1 rounded-lg overflow-hidden ${showChecker ? 'pif-lightbox-checker' : ''}`}
             >
               <img src={src} alt={`${img.view} processed`} className="max-w-full max-h-[75vh] object-contain" />
             </div>

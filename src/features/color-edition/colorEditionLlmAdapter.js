@@ -20,11 +20,13 @@ import { colorEditionFinderResponseSchema, variantIdentityCheckResponseSchema } 
  * Pure function — unions across runs, deduplicates.
  *
  * @param {object[]} previousRuns
+ * @param {{ cutoffIso?: string }} [opts]
  * @returns {{ urlsAlreadyChecked: string[] }}
  */
-export function accumulateUrlsChecked(previousRuns) {
+export function accumulateUrlsChecked(previousRuns, { cutoffIso = '' } = {}) {
   const urlSet = new Set();
   for (const run of previousRuns) {
+    if (cutoffIso && run.ran_at && run.ran_at < cutoffIso) continue;
     const urls = run?.response?.discovery_log?.urls_checked;
     if (Array.isArray(urls)) {
       for (const u of urls) urlSet.add(u);
@@ -35,33 +37,17 @@ export function accumulateUrlsChecked(previousRuns) {
 }
 
 /**
- * Accumulate queries_run from all previous runs' discovery_logs.
- * Pure function — unions across runs, deduplicates.
- *
- * @param {object[]} previousRuns
- * @returns {{ queriesAlreadyRun: string[] }}
- */
-export function accumulateQueriesRun(previousRuns) {
-  const querySet = new Set();
-  for (const run of previousRuns) {
-    const queries = run?.response?.discovery_log?.queries_run;
-    if (Array.isArray(queries)) {
-      for (const q of queries) querySet.add(q);
-    }
-  }
-
-  return { queriesAlreadyRun: [...querySet] };
-}
-
-/**
  * Build the known-inputs block for run N+1.
  * Accumulates colors, color_names, and editions across ALL non-rejected
- * runs (not just the latest). Same growth pattern as URLs — a color
- * found in run 1 stays visible even if run 2 missed it. The candidate
- * gate is the safety net, not the prompt.
+ * runs (not just the latest). A color found in run 1 stays visible even
+ * if run 2 missed it. The candidate gate is the safety net, not the prompt.
+ *
+ * WHY: URLs are NOT fed forward. The LLM should decide its own search
+ * strategy fresh each run — injecting prior URLs suppresses exploration
+ * and makes the LLM re-verify instead of discovering new sources.
  *
  * @param {object[]} previousRuns
- * @returns {object} { knownColors, knownColorNames, knownEditions, urlsAlreadyChecked }
+ * @returns {object} { knownColors, knownColorNames, knownEditions }
  */
 function buildKnownInputs(previousRuns) {
   if (!previousRuns || previousRuns.length === 0) {
@@ -69,11 +55,8 @@ function buildKnownInputs(previousRuns) {
       knownColors: [],
       knownColorNames: {},
       knownEditions: [],
-      urlsAlreadyChecked: [],
     };
   }
-
-  const { urlsAlreadyChecked } = accumulateUrlsChecked(previousRuns);
 
   // Union colors, color_names, editions across all non-rejected runs
   const colorSet = new Set();
@@ -102,7 +85,6 @@ function buildKnownInputs(previousRuns) {
     knownColors: [...colorSet],
     knownColorNames: colorNamesMap,
     knownEditions: [...editionSet],
-    urlsAlreadyChecked,
   };
 }
 
@@ -126,7 +108,6 @@ function buildPaletteLine(colors) {
  * @param {object[]} opts.colors — full color objects [{ name, hex, css_var }]
  * @param {object} opts.product — { brand, base_model, model, variant }
  * @param {object[]} [opts.previousRuns] — compact history from prior runs
- * @param {boolean} [opts.reinjectQueriesRun] — inject prior queries into prompt (default: false)
  * @returns {string} Complete system prompt
  */
 // WHY: Default template with {{VARIABLE}} placeholders for the CEF discovery prompt.
@@ -164,7 +145,7 @@ Return JSON with these exact keys and shapes:
 - "siblings_excluded": ["Model Name", ...]
 - "discovery_log": { "confirmed_from_known": [], "added_new": [], "rejected_from_known": [], "urls_checked": [], "queries_run": [] }`;
 
-export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], product = {}, previousRuns = [], familyModelCount = 1, ambiguityLevel = 'easy', reinjectQueriesRun = false, templateOverride = '' }) {
+export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], product = {}, previousRuns = [], familyModelCount = 1, ambiguityLevel = 'easy', siblingModels = [], templateOverride = '' }) {
   const brand = product.brand || '';
   const baseModel = product.base_model || '';
   const model = product.model || '';
@@ -180,25 +161,16 @@ export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], pr
   const knownColorsStr = known.knownColors.length > 0 ? JSON.stringify(known.knownColors) : '[]';
   const knownColorNamesStr = Object.keys(known.knownColorNames).length > 0 ? JSON.stringify(known.knownColorNames) : '{}';
   const knownEditionsStr = known.knownEditions.length > 0 ? JSON.stringify(known.knownEditions) : '[]';
-  const urlsCheckedStr = known.urlsAlreadyChecked.length > 0 ? JSON.stringify(known.urlsAlreadyChecked) : '[]';
-
-  // WHY: queries_run re-injection is off by default — web-capable models see URLs
-  // and naturally skip to fresh results. Only inject when the setting is flipped.
-  const queriesLine = reinjectQueriesRun
-    ? (() => {
-      const { queriesAlreadyRun } = accumulateQueriesRun(previousRuns);
-      return queriesAlreadyRun.length > 0
-        ? `\n- queries already run: ${JSON.stringify(queriesAlreadyRun)}`
-        : '';
-    })()
-    : '';
 
   const knownSection = (known.knownColors.length > 0 || known.knownEditions.length > 0)
-    ? `\nPrevious findings to verify and expand beyond:\n- colors found so far: ${knownColorsStr}\n- color marketing names: ${knownColorNamesStr}\n- editions found so far: ${knownEditionsStr}\n- urls already checked: ${urlsCheckedStr}${queriesLine}\nThese may be incomplete or wrong. Re-verify each, then find anything missing.\n`
+    ? `\nPrevious findings to verify and expand beyond:\n- colors found so far: ${knownColorsStr}\n- color marketing names: ${knownColorNamesStr}\n- editions found so far: ${knownEditionsStr}\nThese may be incomplete or wrong. Re-verify each, then find anything missing.\n`
     : '';
 
+  const siblingList = siblingModels.length > 0
+    ? `\nThis product is NOT: ${siblingModels.join(', ')}. Do not include colors or editions from those models.`
+    : '';
   const identityWarning = familyModelCount > 1
-    ? `\nIDENTITY WARNING: This product has ${familyModelCount} models in its family (ambiguity: ${ambiguityLevel}). Similar products exist under "${brand}" with overlapping names. Verify you are researching the exact "${product.model}" — check model numbers, product page titles, and URL slugs. Do not mix colors/editions from sibling models.\n`
+    ? `\nIDENTITY WARNING: This product has ${familyModelCount} models in its family (ambiguity: ${ambiguityLevel}). Similar products exist under "${brand}" with overlapping names. Verify you are researching the exact "${product.model}" — check model numbers, product page titles, and URL slugs. Do not mix colors/editions from sibling models.${siblingList}\n`
     : '';
 
   const template = templateOverride || CEF_DISCOVERY_DEFAULT_TEMPLATE;
@@ -223,7 +195,7 @@ export const COLOR_EDITION_FINDER_SPEC = {
     previousRuns: domainArgs.previousRuns || [],
     familyModelCount: domainArgs.familyModelCount || 1,
     ambiguityLevel: domainArgs.ambiguityLevel || 'easy',
-    reinjectQueriesRun: domainArgs.reinjectQueriesRun || false,
+    siblingModels: domainArgs.siblingModels || [],
   }),
   jsonSchema: zodToLlmSchema(colorEditionFinderResponseSchema),
 };
@@ -263,14 +235,13 @@ export function createColorEditionFinderCallLlm(deps) {
  * @param {string} [opts.promptOverride] — user override from settings
  * @returns {string} system prompt
  */
-export function buildVariantIdentityCheckPrompt({ product = {}, existingRegistry = [], newColors = [], newColorNames = {}, newEditions = {}, promptOverride = '' }) {
+export function buildVariantIdentityCheckPrompt({ product = {}, existingRegistry = [], newColors = [], newColorNames = {}, newEditions = {}, promptOverride = '', familyModelCount = 1, ambiguityLevel = 'easy', siblingModels = [], runCount = 0, orphanedPifKeys = [] }) {
   if (promptOverride.trim()) return promptOverride.trim();
 
   const brand = product.brand || '';
   const model = product.model || '';
 
   const registryLines = existingRegistry
-    .filter((e) => !e.retired)
     .map((e) => `  ${e.variant_id} | ${e.variant_type} | ${e.variant_key} | label: "${e.variant_label}" | atoms: [${e.color_atoms.join(', ')}]${e.edition_slug ? ` | edition: ${e.edition_slug}` : ''}`)
     .join('\n');
 
@@ -296,42 +267,105 @@ export function buildVariantIdentityCheckPrompt({ product = {}, existingRegistry
 
   const allNewLines = [newColorLines, extraEditionLines].filter(Boolean).join('\n');
 
-  return `You are validating a Color & Edition Finder update for: ${brand} ${model}
+  const siblingList = siblingModels.length > 0
+    ? `\nThis product is NOT: ${siblingModels.join(', ')}. Do not accept colors or editions from those models.`
+    : '';
+  const ambiguityBlock = familyModelCount > 1
+    ? `\nAMBIGUITY ALERT: This product has ${familyModelCount} sibling models in its family (ambiguity: ${ambiguityLevel}). Colors or editions that look plausible may belong to a different model in the family. Verify the EXACT model name/number on product pages before confirming any discovery.${siblingList}\n`
+    : '';
 
+  const trustAnchor = runCount > 0
+    ? `The existing registry was confirmed by ${runCount} prior analysis pass${runCount > 1 ? 'es' : ''}. Treat existing variants as "confirmed unless proven wrong." The burden of proof is on NEW discoveries.`
+    : 'This is the first identity check for this product. All discoveries are unconfirmed.';
+
+  return `You are the VARIANT JUDGE for: ${brand} ${model}
+
+Your job is to validate, compare, and judge variant data quality — not just match IDs.
+${ambiguityBlock}
 EXISTING VARIANT REGISTRY (published, with stable IDs):
 ${registryLines || '  (none)'}
 
 NEW CEF DISCOVERIES (from this run):
 ${allNewLines || '  (none)'}
 
-For EACH new discovery, determine if it matches an existing variant, is genuinely new, or is hallucinated/garbage.
+TRUST ANCHOR: ${trustAnchor}
 
-Matching rules:
+─── VALIDATION PROTOCOL ───
+
+For any "new" or uncertain discovery, verify against official sources before accepting.
+Search: "${brand} ${model} [color/edition name]" on the manufacturer site and 1-2 major retailers.
+You know the exact brand and model — keep queries scoped and targeted.
+If 2-3 sources don't confirm a discovery, reject it as hallucinated.
+Set "verified": true on any mapping you confirmed via web search.
+
+─── JUDGE INSTRUCTIONS ───
+
+You are not just matching — you are judging quality. For each discovery:
+1. IDENTIFY: Does it match an existing variant, or is it genuinely new?
+2. VALIDATE: Can you confirm it exists for THIS exact model via web search?
+3. COMPARE: If matching an existing variant, compare the labels. More detail and accuracy always wins.
+   - If the new name is more official/accurate, set "preferred_label" to the better name.
+   - If the existing label is already correct or better, omit preferred_label.
+4. DECIDE: match (same variant), new (genuinely new and verified), or reject (hallucinated/unverifiable).
+
+─── MATCHING RULES ───
+
 - A color RENAME is the SAME variant (e.g. "Ocean Blue" → "Deep Ocean Blue" for the same product color). Use "match" with the existing variant_id.
 - Color atoms gaining or losing a modifier for the same base color is the SAME variant (e.g. "blue" → "light-blue"). Use "match".
 - An edition gaining extra color detail in its combo is the SAME variant (e.g. "black+orange" → "black+orange+gold" for the same edition). Use "match".
-- A completely different color that never existed before is genuinely NEW. Set action to "new", match to null.
-- A completely different edition slug with no relationship to existing editions is "new".
-- A discovery that looks hallucinated, has impossible color combos, or duplicates an edition's colors as a standalone color should be REJECTED. Set action to "reject", match to null.
-- Existing variants NOT present in the new discoveries may be RETIRED — list their variant_ids in "retired" if they appear to be discontinued. Do NOT retire variants just because the LLM missed them in one run — only retire if you have evidence the product no longer comes in that color/edition.
+- A completely different color that never existed before is genuinely NEW — but ONLY if you can verify it. Set action to "new", match to null.
+- A completely different edition slug with no relationship to existing editions is "new" — verify it exists.
+- Existing variants NOT present in the new discoveries may need REMOVAL. List their variant_ids in "remove" ONLY if you verified via web that the variant was NEVER a real product for this exact model — hallucination, wrong-product contamination, or data that never existed. Discontinued or limited-run products that WERE real must NOT be removed. If in doubt, do NOT remove.
+
+─── HALLUCINATION CHECK ───
+
+If a discovery cannot be found on the official product page or any major retailer, REJECT it.
+Common hallucination patterns:
+- Colors that belong to a sibling model, not this one
+- Standalone color combos that duplicate an edition's atoms (e.g. "olive+black+red" when a DOOM edition exists with those atoms)
+- Colors or editions that existed for a previous generation but not this model
+Use your web access to verify — scoped queries, not endless searching.
+
+─── RESPONSE FORMAT ───
 
 Respond with JSON:
 {
   "mappings": [
-    { "new_key": "color:black", "match": "v_existing_id", "action": "match", "reason": "same color" },
-    { "new_key": "color:crimson-red", "match": null, "action": "new", "reason": "genuinely new color" },
-    { "new_key": "color:light-olive+black+red", "match": null, "action": "reject", "reason": "hallucinated color, atoms overlap with DOOM edition" }
+    { "new_key": "color:black", "match": "v_existing_id", "action": "match", "reason": "confirmed on ${brand.toLowerCase() || 'manufacturer'}.com — same color", "verified": true },
+    { "new_key": "color:deep-ocean-blue", "match": "v_rename_target", "action": "match", "reason": "renamed from ocean-blue, official name per manufacturer", "verified": true, "preferred_label": "Deep Ocean Blue" },
+    { "new_key": "color:crimson-red", "match": null, "action": "new", "reason": "confirmed on ${brand.toLowerCase() || 'manufacturer'}.com and bestbuy.com", "verified": true },
+    { "new_key": "color:rainbow-sparkle", "match": null, "action": "reject", "reason": "not found on official site or any retailer — likely hallucinated", "verified": true }
   ],
-  "retired": ["v_id_of_discontinued_variant"]
+  "remove": [],
+  "orphan_remaps": []
 }
+${orphanedPifKeys.length > 0 ? `
+─── ORPHANED PIF IMAGE KEYS ───
 
-Rules:
+These variant_keys exist on product images but do NOT match any entry in the existing registry.
+For each orphaned key, decide:
+- "remap": This is the same variant as an existing registry entry (drifted slug). Set remap_to to the correct registry variant_key.
+- "dead": This key was NEVER a real variant — it was hallucinated, corrupted, or test data. ONLY use "dead" when you are certain the variant never existed as a real product. Discontinued/retired/limited-run products are STILL REAL and must NOT be marked dead.
+- If an orphaned key represents a real product variant (current OR discontinued) but has no matching registry entry, OMIT it from orphan_remaps entirely. It will remain flagged for manual review.
+
+Orphaned keys:
+${orphanedPifKeys.map(k => '  ' + k).join('\n')}
+
+Add your decisions to "orphan_remaps":
+  { "orphan_key": "edition:doom-old-slug", "action": "remap", "remap_to": "edition:doom-correct-slug", "reason": "slug drift — same edition" }
+  { "orphan_key": "color:sparkle-rainbow", "action": "dead", "remap_to": null, "reason": "hallucinated color — no evidence this product was ever sold in this color" }
+` : ''}
+
+─── STRUCTURAL RULES (MUST FOLLOW) ───
+
 - Every new discovery MUST appear in "mappings" — do not skip any.
-- "action" must be "match" (same variant), "new" (genuinely new), or "reject" (hallucinated/garbage).
+- "action" must be "match", "new", or "reject".
 - "match" must be an existing variant_id for "match" actions, null for "new" and "reject".
-- "reason" should be 1 sentence explaining the decision.
-- "retired" is an array of variant_ids — empty if nothing retired.
-- Each existing variant_id may appear at most ONCE across all mappings. Do not map two discoveries to the same variant.
+- "reason" should be 1 sentence explaining the decision and what you checked.
+- "verified": true if you confirmed via web search, false if matched purely by structural identity.
+- "preferred_label": optional string — only for "match" actions where you found a better/more official name.
+- "remove" is an array of variant_ids — empty if nothing removed. Only for wrong-product contamination, never for discontinued real products.
+- Each existing variant_id may appear at most ONCE across all mappings.
 - Edition slugs must NOT change. If matching an edition, use the EXISTING slug in new_key (e.g. if the registry has "edition:cod-bo6", your new_key must be "edition:cod-bo6", NOT "edition:cod-bo6-edition").
 - NEVER map a color to an edition or an edition to a color. They are fundamentally different variant types. A standalone color combo (e.g. "olive+black+red") is NOT the same as an edition (e.g. "DOOM: The Dark Ages Edition") even if their atoms overlap. If a color has similar atoms to an edition, they are STILL separate variants — use "reject" for the suspicious color or "new" if it genuinely exists.`;
 }
@@ -347,6 +381,11 @@ export const VARIANT_IDENTITY_CHECK_SPEC = {
     newColorNames: domainArgs.newColorNames,
     newEditions: domainArgs.newEditions,
     promptOverride: domainArgs.promptOverride || '',
+    familyModelCount: domainArgs.familyModelCount,
+    ambiguityLevel: domainArgs.ambiguityLevel,
+    siblingModels: domainArgs.siblingModels || [],
+    runCount: domainArgs.runCount,
+    orphanedPifKeys: domainArgs.orphanedPifKeys || [],
   }),
   jsonSchema: zodToLlmSchema(variantIdentityCheckResponseSchema),
 };

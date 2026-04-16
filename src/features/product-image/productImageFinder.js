@@ -556,6 +556,12 @@ export async function runProductImageFinder({
   const _mt = resolveModelTracking({ config, phaseKey: 'imageFinder', onModelResolved });
   const wrappedOnModelResolved = _mt.wrappedOnModelResolved;
 
+  // URL cooldown: skip discovery logs older than this cutoff
+  const urlCooldownDays = configInt(config, 'urlCooldownDays') ?? 90;
+  const urlCooldownCutoffIso = urlCooldownDays > 0
+    ? new Date(Date.now() - urlCooldownDays * 86400000).toISOString()
+    : '';
+
   // Read per-category settings
   const finderStore = specDb.getFinderStore('productImageFinder');
 
@@ -600,10 +606,16 @@ export async function runProductImageFinder({
     return { images: [], rejected: true, rejections: [{ reason_code: 'hero_disabled', message: 'Hero search is disabled for this category' }] };
   }
 
-  const { familyModelCount, ambiguityLevel } = await resolveAmbiguityContext({
+  const { familyModelCount, ambiguityLevel, siblingModels } = await resolveAmbiguityContext({
     config, category: product.category, brand: product.brand,
-    baseModel: product.base_model, specDb, resolveFn: resolveIdentityAmbiguitySnapshot,
+    baseModel: product.base_model, currentModel: product.model,
+    specDb, resolveFn: resolveIdentityAmbiguitySnapshot,
   });
+
+  // WHY: Merge DB-known sibling model names with LLM-discovered siblings.
+  for (const m of siblingModels) {
+    if (m && !siblingsExcluded.includes(m)) siblingsExcluded.push(m);
+  }
 
   // WHY: Read variants from SQL (SSOT) — not from cefData.selected on disk.
   // The variants table is the runtime authority; JSON is durable memory only.
@@ -688,7 +700,7 @@ export async function runProductImageFinder({
 
       try {
         // Accumulate discovery logs from previous runs for this specific variant
-        const previousDiscovery = accumulateVariantDiscoveryLog(previousPifRuns, variant.key, variant.variant_id);
+        const previousDiscovery = accumulateVariantDiscoveryLog(previousPifRuns, variant.key, variant.variant_id, { cutoffIso: urlCooldownCutoffIso });
 
         // Build hard URL dedup set from all previously downloaded images for this variant
         const variantImages = (pifDoc?.selected?.images || []).filter(img => matchVariant(img, { variantId: variant.variant_id, variantKey: variant.key }));
@@ -924,9 +936,10 @@ export async function runCarouselLoop({
   const viewPromptOverride = finderStore.getSetting('viewPromptOverride') || '';
   const heroPromptOverride = finderStore.getSetting('heroPromptOverride') || '';
 
-  const { familyModelCount, ambiguityLevel } = await resolveAmbiguityContext({
+  const { familyModelCount, ambiguityLevel, siblingModels } = await resolveAmbiguityContext({
     config, category: product.category, brand: product.brand,
-    baseModel: product.base_model, specDb, resolveFn: resolveIdentityAmbiguitySnapshot,
+    baseModel: product.base_model, currentModel: product.model,
+    specDb, resolveFn: resolveIdentityAmbiguitySnapshot,
   });
 
   // WHY: Read variants from SQL (SSOT) — not from cefData.selected on disk.
@@ -952,6 +965,11 @@ export async function runCarouselLoop({
     for (const s of (run.response?.siblings_excluded || run.selected?.siblings_excluded || [])) {
       if (s && !siblingsExcluded.includes(s)) siblingsExcluded.push(s);
     }
+  }
+
+  // WHY: Merge DB-known sibling model names with LLM-discovered siblings.
+  for (const m of siblingModels) {
+    if (m && !siblingsExcluded.includes(m)) siblingsExcluded.push(m);
   }
 
   const variants = variantKey
@@ -992,7 +1010,7 @@ export async function runCarouselLoop({
     // Re-read fresh state from disk (discovery log accumulates across all calls)
     const pifDoc = readProductImages({ productId: product.product_id, productRoot });
     const previousPifRuns = Array.isArray(pifDoc?.runs) ? pifDoc.runs : [];
-    const previousDiscovery = accumulateVariantDiscoveryLog(previousPifRuns, variant.key, variant.variant_id);
+    const previousDiscovery = accumulateVariantDiscoveryLog(previousPifRuns, variant.key, variant.variant_id, { cutoffIso: urlCooldownCutoffIso });
 
     const llmDeps = buildLlmCallDeps({
       config, logger,

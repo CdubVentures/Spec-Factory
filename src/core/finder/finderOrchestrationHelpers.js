@@ -105,22 +105,25 @@ export function resolveModelTracking({ config, phaseKey, onModelResolved = null 
  * @param {Function} opts.resolveFn — resolveIdentityAmbiguitySnapshot (injected to avoid core→feature import)
  * @returns {Promise<{ familyModelCount: number, ambiguityLevel: string }>}
  */
-export async function resolveAmbiguityContext({ config, category, brand, baseModel, specDb, resolveFn }) {
+export async function resolveAmbiguityContext({ config, category, brand, baseModel, currentModel, specDb, resolveFn }) {
   let familyModelCount = 1;
   let ambiguityLevel = 'easy';
+  let siblingModels = [];
   try {
     const snapshot = await resolveFn({
       config,
       category,
       identityLock: { brand, base_model: baseModel },
       specDb,
+      currentModel: currentModel || '',
     });
     familyModelCount = snapshot.family_model_count || 1;
     ambiguityLevel = snapshot.ambiguity_level || 'easy';
+    siblingModels = snapshot.sibling_models || [];
   } catch {
     // Non-fatal — fall back to easy
   }
-  return { familyModelCount, ambiguityLevel };
+  return { familyModelCount, ambiguityLevel, siblingModels };
 }
 
 // ─── LLM Caller Factory ─────────────────────────────────────────────────────

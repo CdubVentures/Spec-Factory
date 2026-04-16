@@ -1,7 +1,6 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
-import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import { PubMark, PubLegend } from '../../../shared/ui/feedback/PubMark.tsx';
 import {
@@ -9,10 +8,6 @@ import {
   FinderKpiCard,
   FinderPanelFooter,
   FinderDeleteConfirmModal,
-  DiscoverySummaryBar,
-  FinderRunPromptDetails,
-  FinderRunModelBadge,
-  FinderRunTimestamp,
   FinderSectionCard,
   FinderHowItWorks,
   useResolvedFinderModel,
@@ -40,10 +35,11 @@ import {
   deriveRunHistoryRows,
 } from '../selectors/colorEditionFinderSelectors.ts';
 import { cefHowItWorksSections } from '../cefHowItWorksContent.ts';
-import type { RunHistoryRow, RunDiscoveryLog, ColorPill } from '../selectors/colorEditionFinderSelectors.ts';
+import { CefRunHistoryRow } from './CefRunHistoryRow.tsx';
+import type { ColorPill } from '../selectors/colorEditionFinderSelectors.ts';
 import type { ColorRegistryEntry } from '../types.ts';
-import { useOperationsStore } from '../../../stores/operationsStore.ts';
 import { useFireAndForget } from '../../operations/hooks/useFireAndForget.ts';
+import { useIsModuleRunning } from '../../operations/hooks/useFinderOperations.ts';
 
 /* ── CEF-specific sub-components ──────────────────────────────────── */
 
@@ -70,25 +66,13 @@ function ColorPillInline({ pill }: { readonly pill: ColorPill }) {
 function VariantDeleteButton({ variantId, variantLabel, onDelete, isPending }: {
   readonly variantId: string | null;
   readonly variantLabel: string;
-  readonly onDelete: (variantId: string) => void;
+  readonly onDelete: (variantId: string, variantLabel: string) => void;
   readonly isPending: boolean;
 }) {
   if (!variantId) return null;
   return (
     <button
-      onClick={(e) => {
-        e.stopPropagation();
-        const confirmed = window.confirm(
-          `Delete variant "${variantLabel}"?\n\n`
-          + 'This will permanently:\n'
-          + '- Strip this variant\'s values from all field candidates (CEF table & JSON, field_candidates table & JSON)\n'
-          + '- Strip its color/edition from published values\n'
-          + '- Delete all Product Image Finder data for this variant: run history, eval history, and images\n'
-          + '- Remove carousel slots for this variant\n\n'
-          + 'This cannot be undone.',
-        );
-        if (confirmed) onDelete(variantId);
-      }}
+      onClick={(e) => { e.stopPropagation(); onDelete(variantId, variantLabel); }}
       disabled={isPending}
       className="ml-auto px-1.5 py-0.5 text-[9px] font-bold uppercase rounded sf-status-text-danger border sf-border-soft opacity-50 hover:opacity-100 disabled:opacity-40"
     >
@@ -100,9 +84,9 @@ function VariantDeleteButton({ variantId, variantLabel, onDelete, isPending }: {
 function SelectedStateCard({ display, isPublished, onDeleteVariant, deleteVariantPending, onDeleteAllVariants, deleteAllVariantsPending }: {
   readonly display: ReturnType<typeof deriveSelectedStateDisplay>;
   readonly isPublished: (fieldKey: string) => boolean;
-  readonly onDeleteVariant?: (variantId: string) => void;
+  readonly onDeleteVariant?: (variantId: string, variantLabel: string) => void;
   readonly deleteVariantPending?: boolean;
-  readonly onDeleteAllVariants?: () => void;
+  readonly onDeleteAllVariants?: (count: number) => void;
   readonly deleteAllVariantsPending?: boolean;
 }) {
   if (display.colors.length === 0 && display.editions.length === 0) return null;
@@ -119,18 +103,7 @@ function SelectedStateCard({ display, isPublished, onDeleteVariant, deleteVarian
           <PubLegend />
           {onDeleteAllVariants && variantCount > 0 && (
             <button
-              onClick={() => {
-                const confirmed = window.confirm(
-                  `Delete all ${variantCount} variant${variantCount !== 1 ? 's' : ''}?\n\n`
-                  + 'For each variant this will permanently:\n'
-                  + '- Strip variant values from all field candidates (CEF table & JSON, field_candidates table & JSON)\n'
-                  + '- Strip all colors/editions from published values\n'
-                  + '- Delete all Product Image Finder data: run history, eval history, and images\n'
-                  + '- Remove all carousel slots\n\n'
-                  + 'This cannot be undone.',
-                );
-                if (confirmed) onDeleteAllVariants();
-              }}
+              onClick={() => onDeleteAllVariants(variantCount)}
               disabled={deleteAllVariantsPending || deleteVariantPending}
               className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded sf-action-button sf-status-text-danger border sf-border-soft opacity-60 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
             >
@@ -210,201 +183,6 @@ function SelectedStateCard({ display, isPublished, onDeleteVariant, deleteVarian
   );
 }
 
-function DiscoveryDetailsSection({ log, siblingsExcluded, storageKey }: { readonly log: RunDiscoveryLog; readonly siblingsExcluded: readonly string[]; readonly storageKey: string }) {
-  const [open, toggleOpen] = usePersistedToggle(storageKey, false);
-  const hasAny = log.confirmedCount > 0 || log.addedNewCount > 0 || log.rejectedCount > 0
-    || log.urlsCheckedCount > 0 || log.queriesRunCount > 0 || siblingsExcluded.length > 0;
-  if (!hasAny) return null;
-
-  return (
-    <div className="sf-surface-panel border sf-border-soft rounded-md">
-      <button type="button" onClick={toggleOpen} className="w-full px-3 py-2 text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted cursor-pointer select-none hover:sf-text-subtle flex items-center gap-1 text-left">
-        <span className="inline-block transition-transform text-[8px]" style={{ transform: open ? 'rotate(90deg)' : 'none' }}>&#9656;</span>
-        Discovery Details
-      </button>
-      {open && <div className="px-3 pb-3 flex flex-col gap-2.5">
-        {siblingsExcluded.length > 0 && (
-          <div>
-            <div className="text-[9px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-1">Siblings Excluded</div>
-            <div className="flex flex-wrap gap-1">
-              {siblingsExcluded.map(s => (
-                <Chip key={s} label={s} className="sf-chip-danger" />
-              ))}
-            </div>
-          </div>
-        )}
-        {log.confirmedCount > 0 && (
-          <div>
-            <div className="text-[9px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-1">Confirmed from Known</div>
-            <div className="flex flex-wrap gap-1">
-              {log.confirmedFromKnown.map(c => (
-                <Chip key={c} label={c} className="sf-chip-success" />
-              ))}
-            </div>
-          </div>
-        )}
-        {log.addedNewCount > 0 && (
-          <div>
-            <div className="text-[9px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-1">Added New</div>
-            <div className="flex flex-wrap gap-1">
-              {log.addedNew.map(c => (
-                <Chip key={c} label={c} className="sf-chip-accent" />
-              ))}
-            </div>
-          </div>
-        )}
-        {log.rejectedCount > 0 && (
-          <div>
-            <div className="text-[9px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-1">Rejected from Known</div>
-            <div className="flex flex-wrap gap-1">
-              {log.rejectedFromKnown.map(c => (
-                <Chip key={c} label={c} className="sf-chip-danger" />
-              ))}
-            </div>
-          </div>
-        )}
-        {log.urlsCheckedCount > 0 && (
-          <div>
-            <div className="text-[9px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-1">URLs Checked ({log.urlsCheckedCount})</div>
-            <div className="flex flex-col gap-0.5">
-              {log.urlsChecked.map(url => (
-                <span key={url} className="text-[10px] font-mono sf-text-subtle truncate max-w-full" title={url}>
-                  {url}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-        {log.queriesRunCount > 0 && (
-          <div>
-            <div className="text-[9px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-1">Queries Run ({log.queriesRunCount})</div>
-            <div className="flex flex-col gap-0.5">
-              {log.queriesRun.map(q => (
-                <span key={q} className="text-[10px] font-mono sf-text-subtle">
-                  {q}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>}
-    </div>
-  );
-}
-
-/* ── Run History Row ─────────────────────────────────────────────── */
-
-function CefRunHistoryRow({
-  row,
-  colorRegistry,
-  onDelete,
-  expanded,
-  onToggle,
-}: {
-  readonly row: RunHistoryRow;
-  readonly colorRegistry: ColorRegistryEntry[];
-  readonly onDelete: (runNumber: number) => void;
-  readonly expanded: boolean;
-  readonly onToggle: () => void;
-}) {
-  const hexMap = useMemo(() => new Map(colorRegistry.map(c => [c.name, c.hex])), [colorRegistry]);
-  const selColors = row.selected?.colors ?? [];
-  const selEditions = row.selected?.editions ?? {};
-
-  return (
-    <div className="sf-surface-panel rounded-lg overflow-hidden">
-      <div
-        onClick={onToggle}
-        className="flex items-center gap-3 px-4 py-2.5 cursor-pointer select-none hover:opacity-80"
-      >
-        <span className="text-[10px] sf-text-muted shrink-0" style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
-          {'\u25B6'}
-        </span>
-        <span className="text-[13px] font-mono font-bold text-[var(--sf-token-accent-strong)]">
-          #{row.runNumber}
-        </span>
-        <span className="font-mono text-[10px] sf-text-muted">{row.ranAt?.split('T')[0] ?? ''}</span>
-        <FinderRunTimestamp startedAt={row.startedAt} durationMs={row.durationMs} />
-        {row.model && (
-          <FinderRunModelBadge
-            model={row.model}
-            accessMode={row.accessMode}
-            effortLevel={row.effortLevel}
-            fallbackUsed={row.fallbackUsed}
-            thinking={row.thinking}
-            webSearch={row.webSearch}
-          />
-        )}
-        <Chip label={`${row.colorCount} colors`} className="sf-chip-accent" />
-        <Chip label={`${row.editionCount} editions`} className="sf-chip-purple" />
-        <div className="flex-1" />
-        {row.validationStatus === 'rejected' ? (
-          <Chip label="Rejected" className="sf-chip-danger" />
-        ) : (
-          <Chip label="Valid" className="sf-chip-success" />
-        )}
-        {row.isLatest && <Chip label="LATEST" className="sf-chip-teal-strong" />}
-        {row.rejectionSummary && (
-          <span className="text-[9px] font-mono sf-text-muted truncate max-w-[180px]" title={row.rejectionSummary}>
-            {row.rejectionSummary}
-          </span>
-        )}
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete(row.runNumber); }}
-          className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded sf-status-text-danger border sf-border-soft opacity-50 hover:opacity-100"
-        >
-          Del
-        </button>
-      </div>
-
-      {expanded && (
-        <div className="px-4 pb-4 pt-1 border-t sf-border-soft flex flex-col gap-3">
-          {/* Selected output summary */}
-          <div>
-            <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-1.5">Selected Output</div>
-            <div className="flex flex-wrap gap-1 mb-1">
-              {selColors.map(name => {
-                const parts = name.split('+').map(a => hexMap.get(a.trim()) || '');
-                return (
-                  <span key={name} className="inline-flex items-center gap-1 px-1.5 py-0.5 sf-surface-panel rounded text-[10px] font-mono sf-text-primary">
-                    <ColorSwatch hexParts={parts} size="sm" />
-                    {name}
-                  </span>
-                );
-              })}
-            </div>
-            {Object.keys(selEditions).length > 0 && (
-              <div className="flex gap-2 flex-wrap">
-                {Object.keys(selEditions).map(slug => (
-                  <span key={slug} className="text-[10px] font-mono font-semibold sf-chip-purple px-1.5 py-0.5 rounded">
-                    {slug}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Discovery summary + details */}
-          <div>
-            <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-1.5">Discovery Summary</div>
-            <DiscoverySummaryBar log={row.discoveryLog} />
-          </div>
-
-          <DiscoveryDetailsSection log={row.discoveryLog} siblingsExcluded={row.siblingsExcluded} storageKey={`cef:discovery:${row.runNumber}`} />
-
-          {/* System prompt, user message, LLM response */}
-          <FinderRunPromptDetails
-            systemPrompt={row.systemPrompt}
-            userMessage={row.userMessage}
-            response={row.responseJson}
-            storageKeyPrefix={`cef:prompt:${row.runNumber}`}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ── Main Component ───────────────────────────────────────────────── */
 
 interface ColorEditionFinderPanelProps {
@@ -433,26 +211,27 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [cefRunExpand, toggleCefRunExpand] = usePersistedExpandMap(`indexing:cef:runExpand:${productId}`);
 
-  const isAnyDeletePending = deleteRunMut.isPending || deleteAllMut.isPending;
+  const isAnyDeletePending = deleteRunMut.isPending || deleteAllMut.isPending || deleteVariantMut.isPending || deleteAllVariantsMut.isPending;
 
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
-    if (deleteTarget.kind === 'run' && deleteTarget.runNumber) {
-      deleteRunMut.mutate(deleteTarget.runNumber, {
-        onSuccess: () => setDeleteTarget(null),
-      });
-    } else {
-      deleteAllMut.mutate(undefined, {
-        onSuccess: () => setDeleteTarget(null),
-      });
+    const dismiss = () => setDeleteTarget(null);
+    switch (deleteTarget.kind) {
+      case 'run':
+        if (deleteTarget.runNumber) deleteRunMut.mutate(deleteTarget.runNumber, { onSuccess: dismiss });
+        break;
+      case 'variant':
+        if (deleteTarget.variantId) deleteVariantMut.mutate(deleteTarget.variantId, { onSuccess: dismiss });
+        break;
+      case 'variant-all':
+        deleteAllVariantsMut.mutate(undefined, { onSuccess: dismiss });
+        break;
+      default:
+        deleteAllMut.mutate(undefined, { onSuccess: dismiss });
     }
-  }, [deleteTarget, deleteRunMut, deleteAllMut]);
+  }, [deleteTarget, deleteRunMut, deleteAllMut, deleteVariantMut, deleteAllVariantsMut]);
 
-  const ops = useOperationsStore((s) => s.operations);
-  const isRunningCef = useMemo(
-    () => [...ops.values()].some((o) => o.type === 'cef' && o.productId === productId && o.status === 'running'),
-    [ops, productId],
-  );
+  const isRunningCef = useIsModuleRunning('cef', productId);
 
   if (!productId || !category) return null;
 
@@ -517,9 +296,9 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
           <SelectedStateCard
             display={selectedState}
             isPublished={isPublished}
-            onDeleteVariant={(variantId) => deleteVariantMut.mutate(variantId)}
+            onDeleteVariant={(variantId, variantLabel) => setDeleteTarget({ kind: 'variant', variantId, label: variantLabel })}
             deleteVariantPending={deleteVariantMut.isPending}
-            onDeleteAllVariants={() => deleteAllVariantsMut.mutate(undefined)}
+            onDeleteAllVariants={(count) => setDeleteTarget({ kind: 'variant-all', count })}
             deleteAllVariantsPending={deleteAllVariantsMut.isPending}
           />
 

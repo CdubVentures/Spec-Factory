@@ -46,9 +46,19 @@ const variantMappingSchema = z.object({
   match: z.string().nullable(),
   action: z.enum(['match', 'new', 'reject']),
   reason: z.string(),
+  verified: z.boolean().default(false),
+  preferred_label: z.string().optional(),
+});
+
+const orphanRemapSchema = z.object({
+  orphan_key: z.string(),
+  action: z.enum(['remap', 'dead']),
+  remap_to: z.string().nullable(),
+  reason: z.string(),
 });
 
 export const variantIdentityCheckResponseSchema = z.object({
   mappings: z.array(variantMappingSchema),
-  retired: z.array(z.string()),
+  remove: z.array(z.string()).default([]),
+  orphan_remaps: z.array(orphanRemapSchema).default([]),
 });

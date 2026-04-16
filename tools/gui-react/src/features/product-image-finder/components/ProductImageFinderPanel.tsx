@@ -7,7 +7,6 @@
  */
 
 import { useMemo, useCallback, useState } from 'react';
-import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
 import './ProductImageFinderPanel.css';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import {
@@ -19,17 +18,15 @@ import {
   FinderHowItWorks,
   useResolvedFinderModel,
   deriveFinderStatusChip,
-  ColorSwatch,
   usePagination,
   PagerSizeSelector,
   PagerNavFooter,
-  DataIntegrityBanner,
 } from '../../../shared/ui/finder/index.ts';
 import type { KpiCard, DeleteTarget } from '../../../shared/ui/finder/types.ts';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { usePersistedExpandMap } from '../../../stores/tabStore.ts';
-import { useOperationsStore } from '../../../stores/operationsStore.ts';
 import { useFireAndForget } from '../../operations/hooks/useFireAndForget.ts';
+import { useIsModuleRunning, useRunningVariantKeys } from '../../operations/hooks/useFinderOperations.ts';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
@@ -48,10 +45,8 @@ import {
 import type { ProductImageEntry, GalleryImage } from '../types.ts';
 import { pifHowItWorksSections } from '../pifHowItWorksContent.ts';
 import { ImageLightbox } from './ImageLightbox.tsx';
-import { GalleryCard } from './GalleryCard.tsx';
 import { imageServeUrl } from '../helpers/pifImageUrls.ts';
 import {
-  resolveVariantColorAtoms,
   buildVariantList,
   buildGalleryImages,
   groupImagesByVariant,
@@ -59,7 +54,7 @@ import {
   groupRunsByLoop,
   groupEvalsByVariant,
 } from '../selectors/pifSelectors.ts';
-import { CarouselSlotRow } from './CarouselSlotRow.tsx';
+import { VariantImageGroup } from './VariantImageGroup.tsx';
 import { PifRunHistoryRow } from './PifRunHistoryRow.tsx';
 import { EvalHistoryRow } from './EvalHistoryRow.tsx';
 import { EvalVariantGroupRow } from './EvalVariantGroupRow.tsx';
@@ -127,30 +122,20 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
     });
   }, [processImageMut]);
 
-  // Operations tracker — only Loop locks per-variant; View/Hero are spammable
-  const ops = useOperationsStore((s) => s.operations);
-  const loopingVariants = useMemo(() => {
-    const set = new Set<string>();
-    for (const o of ops.values()) {
-      if (o.type === 'pif' && o.productId === productId && o.status === 'running' && o.variantKey && o.subType === 'loop') {
-        set.add(o.variantKey);
-      }
-    }
-    return set;
-  }, [ops, productId]);
-  const evaluatingVariants = useMemo(() => {
-    const set = new Set<string>();
-    for (const o of ops.values()) {
-      if (o.type === 'pif' && o.productId === productId && o.status === 'running' && o.subType === 'evaluate') {
-        if (o.variantKey) set.add(o.variantKey);
-      }
-    }
-    return set;
-  }, [ops, productId]);
-  const isRunning = useMemo(
-    () => [...ops.values()].some((o) => o.type === 'pif' && o.productId === productId && o.status === 'running'),
-    [ops, productId],
-  );
+  // WHY: Stable refs so GalleryCard's React.memo is effective. Inline closures
+  // over `img` would create new function refs on every render, defeating memo.
+  const handleOpenLightbox = useCallback((img: GalleryImage) => setLightboxImg(img), []);
+  const handleDeleteImage = useCallback((filename: string) => {
+    setDeleteTarget({ kind: 'image', filename });
+  }, []);
+  const handleDeleteVariantImages = useCallback((filenames: readonly string[], label: string) => {
+    setDeleteTarget({ kind: 'images-variant', filenames, count: filenames.length, label });
+  }, []);
+
+  // Operations tracker — focused selectors only re-render when PIF-specific state changes
+  const isRunning = useIsModuleRunning('pif', productId);
+  const loopingVariants = useRunningVariantKeys('pif', productId, 'loop');
+  const evaluatingVariants = useRunningVariantKeys('pif', productId, 'evaluate');
 
   // Build variant list from CEF published data, enriched with stable variant_id from registry
   const variants = useMemo(() => {
@@ -297,14 +282,38 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
 
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
-    if (deleteTarget.kind === 'run' && deleteTarget.runNumber) {
-      deleteRunMut.mutate(deleteTarget.runNumber, { onSuccess: () => setDeleteTarget(null) });
-    } else if (deleteTarget.kind === 'loop' && deleteTarget.runNumbers?.length) {
-      deleteRunsBatchMut.mutate(deleteTarget.runNumbers, { onSuccess: () => setDeleteTarget(null) });
-    } else {
-      deleteAllMut.mutate(undefined, { onSuccess: () => setDeleteTarget(null) });
+    const dismiss = () => setDeleteTarget(null);
+    switch (deleteTarget.kind) {
+      case 'run':
+        if (deleteTarget.runNumber) deleteRunMut.mutate(deleteTarget.runNumber, { onSuccess: dismiss });
+        break;
+      case 'loop':
+        if (deleteTarget.runNumbers?.length) deleteRunsBatchMut.mutate(deleteTarget.runNumbers, { onSuccess: dismiss });
+        break;
+      case 'image':
+        if (deleteTarget.filename) deleteImageMut.mutate(deleteTarget.filename, { onSuccess: dismiss });
+        break;
+      case 'eval':
+        if (deleteTarget.evalNumber != null) deleteEvalMut.mutate(deleteTarget.evalNumber, { onSuccess: dismiss });
+        break;
+      case 'eval-all':
+      case 'eval-variant':
+        if (deleteTarget.evalNumbers?.length) {
+          for (const n of deleteTarget.evalNumbers) deleteEvalMut.mutate(n);
+          dismiss();
+        }
+        break;
+      case 'images-all':
+      case 'images-variant':
+        if (deleteTarget.filenames?.length) {
+          for (const f of deleteTarget.filenames) deleteImageMut.mutate(f);
+          dismiss();
+        }
+        break;
+      default:
+        deleteAllMut.mutate(undefined, { onSuccess: dismiss });
     }
-  }, [deleteTarget, deleteRunMut, deleteRunsBatchMut, deleteAllMut]);
+  }, [deleteTarget, deleteRunMut, deleteRunsBatchMut, deleteAllMut, deleteImageMut, deleteEvalMut]);
 
   if (!productId || !category) return null;
 
@@ -452,11 +461,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                     <button
                       onClick={handleProcessAll}
                       disabled={isProcessingAll}
-                      className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded border sf-border-soft hover:opacity-100"
-                      style={{
-                        color: isProcessingAll ? 'var(--sf-muted)' : 'var(--sf-accent, #4263eb)',
-                        opacity: isProcessingAll ? 0.8 : 0.7,
-                      }}
+                      className={`px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded border sf-border-soft hover:opacity-100 ${isProcessingAll ? 'pif-process-btn--busy' : 'pif-process-btn'}`}
                     >
                       {isProcessingAll
                         ? 'Processing...'
@@ -473,133 +478,50 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                   >
                     {imageGroups.every(g => !!pifImageGroupExpand[g.key]) ? 'Collapse All' : 'Expand All'}
                   </button>
+                  {imageCount > 0 && (
+                    <button
+                      onClick={() => {
+                        const allFilenames = galleryImages.map(img => img.filename).filter(Boolean);
+                        setDeleteTarget({ kind: 'images-all', filenames: allFilenames, count: allFilenames.length });
+                      }}
+                      disabled={deleteImageMut.isPending}
+                      className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded sf-action-button sf-status-text-danger border sf-border-soft opacity-60 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      Delete All
+                    </button>
+                  )}
                 </div>
               }
             >
               <div className="pif-gallery-columns">
-                {imageGroups.map(group => {
-                  const isOpen = !!pifImageGroupExpand[group.key];
-                  const groupColorAtoms = resolveVariantColorAtoms(group.key, editions);
-                  const groupHexParts = groupColorAtoms.map(a => hexMap.get(a.trim()) || '');
-                  const groupSlots = resolveSlots(
-                    pifData?.carouselSettings?.viewBudget ?? ['top', 'left', 'angle'],
-                    pifData?.carouselSettings?.heroEnabled ? 3 : 0,
-                    group.key,
-                    pifData?.carousel_slots ?? {},
-                    group.images as ProductImageEntry[],
-                  );
-                  const progress = carouselProgressMap[group.key];
-                  const progressLabel = progress
-                    ? `${progress.viewsFilled}/${progress.viewsTotal} views \u00B7 ${progress.heroCount}/${progress.heroTarget} heroes`
-                    : null;
-                  return (
-                    <div key={group.key} className="break-inside-avoid mb-3 sf-surface-panel rounded-lg overflow-hidden">
-                      <div
-                        onClick={() => togglePifImageGroupExpand(group.key)}
-                        className="flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none hover:opacity-80"
-                      >
-                        <span
-                          className={`text-[10px] sf-text-muted shrink-0 transition-transform duration-150 ${isOpen ? 'rotate-90' : ''}`}
-                        >
-                          {'\u25B6'}
-                        </span>
-                        <ColorSwatch hexParts={groupHexParts} />
-                        <span className="text-[12px] font-semibold sf-text-primary truncate min-w-0 flex-1">
-                          {group.label}
-                        </span>
-                        <Chip
-                          label={group.type === 'edition' ? 'ED' : 'CLR'}
-                          className={group.type === 'edition' ? 'sf-chip-accent' : 'sf-chip-info'}
-                        />
-                        {group.images.length > 0 ? (
-                          <Chip label={`${group.images.length} img`} className="sf-chip-success" />
-                        ) : (
-                          <span className="text-[10px] sf-text-muted italic">no images</span>
-                        )}
-                        {progressLabel && (
-                          <span className="text-[9px] sf-text-muted font-mono whitespace-nowrap">{progressLabel}</span>
-                        )}
-                        <div className="shrink-0 flex items-center gap-1">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleRunVariantView(group.key); }}
-                            className="px-2 py-1 text-[9px] font-bold uppercase tracking-wide rounded sf-primary-button"
-                            title="Single view run"
-                          >
-                            View
-                          </button>
-                          {heroEnabled && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleRunVariantHero(group.key); }}
-                              className="px-2 py-1 text-[9px] font-bold uppercase tracking-wide rounded sf-primary-button"
-                              title="Single hero run"
-                            >
-                              Hero
-                            </button>
-                          )}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleLoopVariant(group.key); }}
-                            disabled={loopingVariants.has(group.key)}
-                            className="px-2 py-1 text-[9px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed"
-                            title="Loop: views then heroes until carousel complete"
-                          >
-                            Loop
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleEvalVariant(group.key); }}
-                            disabled={evaluatingVariants.has(group.key) || group.images.length === 0}
-                            className="px-2 py-1 text-[9px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed"
-                            title="Carousel Builder: evaluate images and pick best per view"
-                          >
-                            Eval
-                          </button>
-                        </div>
-                      </div>
-                      {group.orphaned && (
-                        <div className="px-3 pb-1">
-                          <DataIntegrityBanner message="Orphaned variant — images reference a variant not in the registry. Re-run CEF to re-discover, or delete these images." />
-                        </div>
-                      )}
-                      {isOpen && (
-                        <div className="px-3 pb-3">
-                          {/* Carousel Slots — inside variant group, same card size */}
-                          <CarouselSlotRow
-                            variantKey={group.key}
-                            variantId={group.variant_id}
-                            viewBudget={pifData?.carouselSettings?.viewBudget ?? ['top', 'left', 'angle']}
-                            heroCount={pifData?.carouselSettings?.heroEnabled ? 3 : 0}
-                            carouselSlots={pifData?.carousel_slots ?? {}}
-                            images={group.images}
-                            category={category}
-                            productId={productId}
-                          />
-                          {group.images.length > 0 && (
-                            <div className="flex gap-2 flex-wrap">
-                              {(() => {
-                                const slotSourceMap = new Map<string, 'eval' | 'user'>();
-                                for (const s of groupSlots) {
-                                  if (s.filename && s.source !== 'empty') slotSourceMap.set(s.filename, s.source as 'eval' | 'user');
-                                }
-                                return group.images.map((img, i) => (
-                                <GalleryCard
-                                  key={`${img.run_number}-${img.variant_key}-${img.view}-${i}`}
-                                  img={img}
-                                  category={category}
-                                  productId={productId}
-                                  onOpen={() => setLightboxImg(img)}
-                                  onDelete={(filename) => deleteImageMut.mutate(filename)}
-                                  onProcess={handleProcessImage}
-                                  isProcessing={processingFilename === img.filename}
-                                  carouselSource={slotSourceMap.get(img.filename)}
-                                />
-                              ));
-                              })()}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                {imageGroups.map(group => (
+                  <VariantImageGroup
+                    key={group.key}
+                    group={group}
+                    editions={editions}
+                    hexMap={hexMap}
+                    viewBudget={pifData?.carouselSettings?.viewBudget ?? ['top', 'left', 'angle']}
+                    heroCount={pifData?.carouselSettings?.heroEnabled ? 3 : 0}
+                    carouselSlots={pifData?.carousel_slots ?? {}}
+                    carouselProgressMap={carouselProgressMap}
+                    isOpen={!!pifImageGroupExpand[group.key]}
+                    onToggle={() => togglePifImageGroupExpand(group.key)}
+                    heroEnabled={heroEnabled}
+                    loopingVariant={loopingVariants.has(group.key)}
+                    evaluatingVariant={evaluatingVariants.has(group.key)}
+                    onRunView={handleRunVariantView}
+                    onRunHero={handleRunVariantHero}
+                    onLoopVariant={handleLoopVariant}
+                    onEvalVariant={handleEvalVariant}
+                    onOpenLightbox={handleOpenLightbox}
+                    onDeleteImage={handleDeleteImage}
+                    onDeleteVariantImages={handleDeleteVariantImages}
+                    onProcessImage={handleProcessImage}
+                    processingFilename={processingFilename}
+                    category={category}
+                    productId={productId}
+                  />
+                ))}
               </div>
             </FinderSectionCard>
           )}
@@ -667,7 +589,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                   <button
                     onClick={() => {
                       const allEvalNumbers = (pifData?.evaluations ?? []).map(e => e.eval_number);
-                      for (const n of allEvalNumbers) deleteEvalMut.mutate(n);
+                      setDeleteTarget({ kind: 'eval-all', evalNumbers: allEvalNumbers, count: allEvalNumbers.length });
                     }}
                     disabled={deleteEvalMut.isPending}
                     className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded sf-action-button sf-status-text-danger border sf-border-soft opacity-60 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
@@ -685,7 +607,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                       evalRecord={group.evals[0]}
                       hexMap={hexMap}
                       editions={editions}
-                      onDelete={(n) => deleteEvalMut.mutate(n)}
+                      onDelete={(n) => setDeleteTarget({ kind: 'eval', evalNumber: n })}
                       expanded={!!pifEvalExpand[String(group.evals[0].eval_number)]}
                       onToggle={() => togglePifEvalExpand(String(group.evals[0].eval_number))}
                     />
@@ -695,8 +617,8 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                       group={group}
                       hexMap={hexMap}
                       editions={editions}
-                      onDeleteEval={(n) => deleteEvalMut.mutate(n)}
-                      onDeleteVariantEvals={(nums) => { for (const n of nums) deleteEvalMut.mutate(n); }}
+                      onDeleteEval={(n) => setDeleteTarget({ kind: 'eval', evalNumber: n })}
+                      onDeleteVariantEvals={(nums, variantLabel) => setDeleteTarget({ kind: 'eval-variant', evalNumbers: [...nums], count: nums.length, label: variantLabel })}
                       expanded={!!pifEvalGroupExpand[group.variantKey]}
                       onToggle={() => togglePifEvalGroupExpand(group.variantKey)}
                       evalExpandMap={pifEvalExpand}
@@ -735,7 +657,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
           target={deleteTarget}
           onConfirm={handleConfirmDelete}
           onCancel={() => setDeleteTarget(null)}
-          isPending={deleteRunMut.isPending || deleteRunsBatchMut.isPending || deleteAllMut.isPending}
+          isPending={deleteRunMut.isPending || deleteRunsBatchMut.isPending || deleteAllMut.isPending || deleteImageMut.isPending || deleteEvalMut.isPending}
           moduleLabel="PIF"
         />
       )}

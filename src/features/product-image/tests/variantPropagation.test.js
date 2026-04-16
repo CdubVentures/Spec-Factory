@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { propagateVariantRenames } from '../variantPropagation.js';
+import { propagateVariantRenames, remapOrphanedVariantKeys } from '../variantPropagation.js';
 
 const TMP_ROOT = path.join('.tmp', '_test_variant_propagation');
 const PRODUCT_ROOT = path.join(TMP_ROOT, 'products');
@@ -340,6 +340,166 @@ describe('propagateVariantRenames', () => {
       productId: 'empty-updates',
       productRoot: PRODUCT_ROOT,
       registryUpdates: [],
+    });
+
+    assert.equal(result.updated, true);
+    assert.equal(result.counts.images, 0);
+  });
+});
+
+/* ── remapOrphanedVariantKeys ──────────────────────────────────── */
+
+describe('remapOrphanedVariantKeys', () => {
+  before(() => fs.mkdirSync(PRODUCT_ROOT, { recursive: true }));
+  after(() => cleanup());
+
+  it('remaps variant_key, variant_id, and variant_label on selected.images', () => {
+    const doc = {
+      product_id: 'remap-basic',
+      category: 'mouse',
+      selected: {
+        images: [
+          makeImage({ variant_key: 'edition:doom-old', variant_id: 'v_stale', variant_label: 'DOOM Old' }),
+          makeImage({ view: 'left', filename: 'left.png', variant_key: 'color:black' }),
+        ],
+      },
+      carousel_slots: {},
+      evaluations: [],
+      runs: [],
+    };
+    writePifDoc('remap-basic', doc);
+
+    const result = remapOrphanedVariantKeys({
+      productId: 'remap-basic',
+      productRoot: PRODUCT_ROOT,
+      remaps: [{
+        oldKey: 'edition:doom-old',
+        newKey: 'edition:doom-new',
+        newVariantId: 'v_correct',
+        newLabel: 'DOOM New',
+      }],
+    });
+
+    assert.equal(result.updated, true);
+    assert.ok(result.counts.images >= 1);
+
+    const updated = readPifDoc('remap-basic');
+    const img = updated.selected.images[0];
+    assert.equal(img.variant_key, 'edition:doom-new');
+    assert.equal(img.variant_id, 'v_correct');
+    assert.equal(img.variant_label, 'DOOM New');
+
+    // Other images untouched
+    assert.equal(updated.selected.images[1].variant_key, 'color:black');
+  });
+
+  it('re-keys carousel_slots from old key to new key', () => {
+    const doc = {
+      product_id: 'remap-carousel',
+      category: 'mouse',
+      selected: { images: [makeImage({ variant_key: 'color:old-blue', variant_id: 'v_stale' })] },
+      carousel_slots: { 'color:old-blue': { top: 'top.png' }, 'color:black': { top: 'b.png' } },
+      evaluations: [],
+      runs: [],
+    };
+    writePifDoc('remap-carousel', doc);
+
+    remapOrphanedVariantKeys({
+      productId: 'remap-carousel',
+      productRoot: PRODUCT_ROOT,
+      remaps: [{ oldKey: 'color:old-blue', newKey: 'color:ocean-blue', newVariantId: 'v_correct', newLabel: 'Ocean Blue' }],
+    });
+
+    const updated = readPifDoc('remap-carousel');
+    assert.equal(updated.carousel_slots['color:old-blue'], undefined);
+    assert.deepEqual(updated.carousel_slots['color:ocean-blue'], { top: 'top.png' });
+    assert.deepEqual(updated.carousel_slots['color:black'], { top: 'b.png' }, 'other slots untouched');
+  });
+
+  it('updates evaluations matching old variant_key', () => {
+    const doc = {
+      product_id: 'remap-evals',
+      category: 'mouse',
+      selected: { images: [] },
+      carousel_slots: {},
+      evaluations: [
+        makeEval({ variant_key: 'color:old-blue', variant_label: 'Old Blue' }),
+        makeEval({ variant_key: 'color:black' }),
+      ],
+      runs: [],
+    };
+    writePifDoc('remap-evals', doc);
+
+    const result = remapOrphanedVariantKeys({
+      productId: 'remap-evals',
+      productRoot: PRODUCT_ROOT,
+      remaps: [{ oldKey: 'color:old-blue', newKey: 'color:ocean-blue', newVariantId: 'v_correct', newLabel: 'Ocean Blue' }],
+    });
+
+    assert.ok(result.counts.evalRecords >= 1);
+    const updated = readPifDoc('remap-evals');
+    assert.equal(updated.evaluations[0].variant_key, 'color:ocean-blue');
+    assert.equal(updated.evaluations[0].variant_label, 'Ocean Blue');
+    assert.equal(updated.evaluations[1].variant_key, 'color:black', 'other evals untouched');
+  });
+
+  it('remaps images in runs[].selected and runs[].response', () => {
+    const doc = {
+      product_id: 'remap-runs',
+      category: 'mouse',
+      selected: { images: [] },
+      carousel_slots: {},
+      evaluations: [],
+      runs: [{
+        run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'test',
+        selected: { images: [makeImage({ variant_key: 'color:old-blue', variant_id: 'v_stale' })] },
+        response: {
+          variant_key: 'color:old-blue', variant_label: 'Old Blue',
+          images: [makeImage({ variant_key: 'color:old-blue', variant_id: 'v_stale' })],
+        },
+      }],
+    };
+    writePifDoc('remap-runs', doc);
+
+    remapOrphanedVariantKeys({
+      productId: 'remap-runs',
+      productRoot: PRODUCT_ROOT,
+      remaps: [{ oldKey: 'color:old-blue', newKey: 'color:ocean-blue', newVariantId: 'v_correct', newLabel: 'Ocean Blue' }],
+    });
+
+    const updated = readPifDoc('remap-runs');
+    const run = updated.runs[0];
+    assert.equal(run.selected.images[0].variant_key, 'color:ocean-blue');
+    assert.equal(run.selected.images[0].variant_id, 'v_correct');
+    assert.equal(run.response.variant_key, 'color:ocean-blue');
+    assert.equal(run.response.variant_label, 'Ocean Blue');
+    assert.equal(run.response.images[0].variant_key, 'color:ocean-blue');
+  });
+
+  it('returns updated: false when PIF doc does not exist', () => {
+    const result = remapOrphanedVariantKeys({
+      productId: 'nonexistent',
+      productRoot: PRODUCT_ROOT,
+      remaps: [{ oldKey: 'color:x', newKey: 'color:y', newVariantId: 'v_aaa', newLabel: 'Y' }],
+    });
+    assert.equal(result.updated, false);
+  });
+
+  it('no-op when remaps is empty', () => {
+    const doc = {
+      product_id: 'remap-empty',
+      category: 'mouse',
+      selected: { images: [makeImage()] },
+      carousel_slots: {},
+      evaluations: [],
+      runs: [],
+    };
+    writePifDoc('remap-empty', doc);
+
+    const result = remapOrphanedVariantKeys({
+      productId: 'remap-empty',
+      productRoot: PRODUCT_ROOT,
+      remaps: [],
     });
 
     assert.equal(result.updated, true);

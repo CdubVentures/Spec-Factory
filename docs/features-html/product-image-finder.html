@@ -809,13 +809,15 @@
         <tr><td><code>FinderDeleteConfirmModal</code></td><td><code>shared/ui/finder/</code></td><td>Delete confirmation (run, image, or all)</td></tr>
         <tr><td><code>FinderSectionCard</code></td><td><code>shared/ui/finder/</code></td><td>Collapsible section card for run history, gallery</td></tr>
         <tr><td><code>FinderRunPromptDetails</code></td><td><code>shared/ui/finder/</code></td><td>Expandable prompt/response viewer per run</td></tr>
+        <tr><td><code>FinderDiscoveryDetails</code></td><td><code>shared/ui/finder/</code></td><td>Collapsible discovery log with typed sections (queries, URLs, notes)</td></tr>
         <tr><td><code>FinderRunTimestamp</code></td><td><code>shared/ui/finder/</code></td><td>PST time + duration</td></tr>
         <tr><td><code>useResolvedFinderModel</code></td><td><code>shared/ui/finder/</code></td><td>Resolve LLM model + access mode for imageFinder phase</td></tr>
         <tr><td><code>deriveCooldownState</code></td><td><code>shared/ui/finder/</code></td><td>Pure function cooldown state</td></tr>
         <tr><td><code>deriveFinderStatusChip</code></td><td><code>shared/ui/finder/</code></td><td>Pure function status chip</td></tr>
         <tr><td><code>formatAtomLabel</code></td><td><code>shared/ui/finder/</code></td><td>Titlecase raw color atoms for variant labels</td></tr>
         <tr><td><code>useFireAndForget</code></td><td><code>features/operations/hooks/</code></td><td>Optimistic insert + POST + stub lifecycle. Used for run, loop, and process.</td></tr>
-        <tr><td><code>useOperationsStore</code></td><td><code>features/operations/state/</code></td><td>Zustand store: track running operations, check if loop is pending</td></tr>
+        <tr><td><code>useIsModuleRunning</code></td><td><code>features/operations/hooks/</code></td><td>Focused selector: returns boolean, only re-renders when PIF-specific running state changes</td></tr>
+        <tr><td><code>useRunningVariantKeys</code></td><td><code>features/operations/hooks/</code></td><td>Focused selector: returns Set of running variant keys by subType (loop/evaluate)</td></tr>
         <tr><td><code>usePersistedToggle</code></td><td><code>shared hooks</code></td><td>Persist collapsed/expanded panel state</td></tr>
         <tr><td><code>useColorEditionFinderQuery</code></td><td><code>features/color-edition-finder/</code></td><td>Cross-feature: reads CEF data to build variant list and color swatches</td></tr>
       </tbody>

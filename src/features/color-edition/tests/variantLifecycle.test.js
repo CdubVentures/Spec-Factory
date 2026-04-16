@@ -137,18 +137,6 @@ describe('derivePublishedFromVariants', () => {
     assert.deepEqual(result.editions, ['limited-ed']);
   }));
 
-  it('retired variants excluded from published', withEnv(({ specDb, root, ensureProductJson, readProductJson }) => {
-    seedVariants(specDb);
-    seedCefSummary(specDb);
-    specDb.variants.retire(PID, 'v_bb'); // retire white
-    ensureProductJson(PID);
-
-    const result = derivePublishedFromVariants({ specDb, productId: PID, productRoot: root });
-
-    assert.ok(!result.colors.includes('white'), 'retired variant excluded');
-    assert.ok(result.colors.includes('black'), 'active variant included');
-  }));
-
   it('no variants → empty published + fields deleted from product.json', withEnv(({ specDb, root, ensureProductJson, readProductJson }) => {
     seedCefSummary(specDb);
     ensureProductJson(PID, { fields: { colors: { value: ['old'] }, editions: { value: ['old'] } } });
@@ -543,6 +531,137 @@ describe('deleteVariant', () => {
     assert.ok(!cef.selected.colors.includes('khaki'), 'edition atoms must NOT be in selected.colors');
     assert.equal(cef.selected.default_color, 'white', 'default_color updated');
     assert.ok(cef.selected.editions['special-ed'], 'edition preserved in selected.editions');
+  }));
+
+  it('CEF JSON selected.colors preserves combo strings for surviving variants', withEnv(({ specDb, root, ensureProductJson, ensureCefJson, readCefJson }) => {
+    // WHY: removeVariantFromJson must use combo strings (from variant_key) not split
+    // atoms (from color_atoms) for surviving variants. selected.colors must match
+    // derivePublishedFromVariants output so rebuild produces correct state.
+    specDb.variants.syncFromRegistry(PID, [
+      { variant_id: 'v_ws', variant_key: 'color:white+silver', variant_type: 'color', variant_label: 'Frost White', color_atoms: ['white', 'silver'], created_at: '2026-04-14T00:00:00Z' },
+      { variant_id: 'v_dgb', variant_key: 'color:dark-gray+black', variant_type: 'color', variant_label: 'Storm', color_atoms: ['dark-gray', 'black'], created_at: '2026-04-14T00:00:00Z' },
+    ]);
+    seedCefSummary(specDb);
+    ensureProductJson(PID);
+    ensureCefJson(PID, {
+      product_id: PID, category: 'mouse',
+      selected: { colors: ['white+silver', 'dark-gray+black'], editions: {}, default_color: 'white+silver' },
+      variant_registry: [
+        { variant_id: 'v_ws', variant_key: 'color:white+silver', variant_type: 'color', color_atoms: ['white', 'silver'] },
+        { variant_id: 'v_dgb', variant_key: 'color:dark-gray+black', variant_type: 'color', color_atoms: ['dark-gray', 'black'] },
+      ], runs: [], run_count: 1, next_run_number: 2,
+    });
+
+    deleteVariant({ specDb, productId: PID, variantId: 'v_ws', productRoot: root });
+
+    const cef = readCefJson(PID);
+    // Surviving variant must appear as combo string, not split atoms
+    assert.ok(cef.selected.colors.includes('dark-gray+black'), 'surviving combo preserved as combo string');
+    assert.ok(!cef.selected.colors.includes('dark-gray'), 'individual atom "dark-gray" must NOT appear');
+    assert.ok(!cef.selected.colors.includes('black'), 'individual atom "black" must NOT appear');
+    // Deleted variant gone
+    assert.ok(!cef.selected.colors.includes('white+silver'), 'deleted combo removed');
+    assert.ok(!cef.selected.colors.includes('white'), 'deleted atom "white" not present');
+    assert.ok(!cef.selected.colors.includes('silver'), 'deleted atom "silver" not present');
+    assert.equal(cef.selected.default_color, 'dark-gray+black', 'default_color updated to surviving combo');
+  }));
+
+  it('strips combo color value from candidates (not individual atoms)', withEnv(({ specDb, root, ensureProductJson, readProductJson, ensureCefJson }) => {
+    // WHY: Combo variants like color:white+silver store ["white+silver"] in candidates,
+    // NOT split atoms ["white","silver"]. The strip must match the combo string.
+    specDb.variants.syncFromRegistry(PID, [
+      { variant_id: 'v_ws', variant_key: 'color:white+silver', variant_type: 'color', variant_label: 'Frost White', color_atoms: ['white', 'silver'], created_at: '2026-04-14T00:00:00Z' },
+      { variant_id: 'v_bk', variant_key: 'color:black', variant_type: 'color', variant_label: 'Black', color_atoms: ['black'], created_at: '2026-04-14T00:00:00Z' },
+    ]);
+    seedCefSummary(specDb);
+    ensureProductJson(PID, {
+      candidates: {
+        colors: [
+          { value: ['white+silver', 'black'], source_id: 'cef-test-1', source_type: 'cef', confidence: 0.95 },
+        ],
+      },
+    });
+    ensureCefJson(PID, {
+      product_id: PID, category: 'mouse',
+      selected: { colors: ['white+silver', 'black'], editions: {}, default_color: 'white+silver' },
+      variant_registry: [
+        { variant_id: 'v_ws', variant_key: 'color:white+silver', variant_type: 'color', color_atoms: ['white', 'silver'] },
+        { variant_id: 'v_bk', variant_key: 'color:black', variant_type: 'color', color_atoms: ['black'] },
+      ], runs: [], run_count: 1, next_run_number: 2,
+    });
+
+    specDb.insertFieldCandidate({
+      productId: PID, fieldKey: 'colors', sourceId: 'cef-test-1', sourceType: 'cef',
+      value: '["white+silver","black"]', confidence: 0.95, model: 'test',
+      validationJson: {}, metadataJson: {},
+    });
+
+    deleteVariant({ specDb, productId: PID, variantId: 'v_ws', productRoot: root });
+
+    // SQL: combo value stripped, black preserved
+    const remaining = specDb.getFieldCandidatesByProductAndField(PID, 'colors');
+    assert.equal(remaining.length, 1, 'candidate survives with remaining value');
+    const vals = JSON.parse(remaining[0].value);
+    assert.ok(!vals.includes('white+silver'), 'combo "white+silver" stripped from SQL candidate');
+    assert.ok(vals.includes('black'), 'black preserved in SQL candidate');
+
+    // JSON: same
+    const pj = readProductJson(PID);
+    const jsonVals = Array.isArray(pj.candidates.colors[0].value)
+      ? pj.candidates.colors[0].value
+      : JSON.parse(pj.candidates.colors[0].value);
+    assert.ok(!jsonVals.includes('white+silver'), 'combo "white+silver" stripped from JSON candidate');
+    assert.ok(jsonVals.includes('black'), 'black preserved in JSON candidate');
+  }));
+
+  it('only strips from CEF-sourced candidates, leaves other sources untouched', withEnv(({ specDb, root, ensureProductJson, readProductJson, ensureCefJson }) => {
+    // WHY: A non-CEF source (pipeline, feature) may independently discover the same
+    // color value. Variant deletion should only strip from source_type=cef rows.
+    specDb.variants.syncFromRegistry(PID, [
+      { variant_id: 'v_bk', variant_key: 'color:black', variant_type: 'color', variant_label: 'Black', color_atoms: ['black'], created_at: '2026-04-14T00:00:00Z' },
+    ]);
+    seedCefSummary(specDb);
+    ensureProductJson(PID, {
+      candidates: {
+        colors: [
+          { value: ['black'], source_id: 'cef-test-1', source_type: 'cef', confidence: 0.95 },
+          { value: ['black'], source_id: 'pipeline-test-1', source_type: 'pipeline', confidence: 0.8 },
+        ],
+      },
+    });
+    ensureCefJson(PID, {
+      product_id: PID, category: 'mouse',
+      selected: { colors: ['black'], editions: {}, default_color: 'black' },
+      variant_registry: [
+        { variant_id: 'v_bk', variant_key: 'color:black', variant_type: 'color', color_atoms: ['black'] },
+      ], runs: [], run_count: 1, next_run_number: 2,
+    });
+
+    specDb.insertFieldCandidate({
+      productId: PID, fieldKey: 'colors', sourceId: 'cef-test-1', sourceType: 'cef',
+      value: '["black"]', confidence: 0.95, model: 'test',
+      validationJson: {}, metadataJson: {},
+    });
+    specDb.insertFieldCandidate({
+      productId: PID, fieldKey: 'colors', sourceId: 'pipeline-test-1', sourceType: 'pipeline',
+      value: '["black"]', confidence: 0.8, model: 'test',
+      validationJson: {}, metadataJson: {},
+    });
+
+    deleteVariant({ specDb, productId: PID, variantId: 'v_bk', productRoot: root });
+
+    // SQL: CEF candidate deleted, pipeline candidate untouched
+    const remaining = specDb.getFieldCandidatesByProductAndField(PID, 'colors');
+    assert.equal(remaining.length, 1, 'one candidate survives');
+    assert.equal(remaining[0].source_type, 'pipeline', 'pipeline candidate untouched');
+    assert.equal(remaining[0].source_id, 'pipeline-test-1');
+    const vals = JSON.parse(remaining[0].value);
+    assert.deepEqual(vals, ['black'], 'pipeline candidate value intact');
+
+    // JSON: same — pipeline entry survives
+    const pj = readProductJson(PID);
+    assert.equal(pj.candidates.colors.length, 1, 'one JSON candidate survives');
+    assert.equal(pj.candidates.colors[0].source_type, 'pipeline');
   }));
 
   it('strips deleted variant values from field_candidates', withEnv(({ specDb, root, ensureProductJson, readProductJson, ensureCefJson }) => {

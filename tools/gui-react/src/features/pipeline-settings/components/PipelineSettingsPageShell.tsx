@@ -3,7 +3,7 @@ import { SidebarShell } from '../../../shared/ui/navigation/SidebarShell.tsx';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
 import { MODULE_SETTINGS_SECTIONS, type ModuleSettingsSectionId } from '../state/moduleSettingsSections.generated.ts';
 
-type RuntimeSectionId = 'global' | 'planner' | 'fetcher' | 'extraction' | 'source-strategy' | 'deterministic-strategy';
+type RuntimeSectionId = 'global' | 'discovery' | 'planner' | 'fetcher' | 'extraction' | 'source-strategy' | 'deterministic-strategy';
 type EvaluationSectionId = 'review-publisher' | 'validation';
 
 export type PipelineSectionId = RuntimeSectionId | ModuleSettingsSectionId | EvaluationSectionId;
@@ -12,6 +12,7 @@ const moduleIds = MODULE_SETTINGS_SECTIONS.map(s => s.id) as ModuleSettingsSecti
 
 export const PIPELINE_SECTION_IDS = [
   'global' as const,
+  'discovery' as const,
   'planner' as const,
   'fetcher' as const,
   'extraction' as const,
@@ -25,12 +26,21 @@ export const PIPELINE_SECTION_IDS = [
 // WHY: O(1) group registry — add one entry here for a new top-level sidebar group.
 // Order here = render order. Items reference a group ID.
 export const SETTINGS_GROUP_REGISTRY = [
+  { id: 'discovery', label: 'Discovery' },
   { id: 'runtime', label: 'Runtime Settings' },
   { id: 'modules', label: 'Module Settings' },
   { id: 'evaluation', label: 'Evaluation Settings' },
 ] as const;
 
 const PIPELINE_SECTIONS = [
+  // ── Discovery ────────────────────────────────────────────────────
+  {
+    id: 'discovery' as const,
+    label: 'Cooldowns',
+    subtitle: 'URL and query cooldown windows',
+    tip: 'Controls how long URLs and queries remain in cooldown before rediscovery. Shared across Pipeline, Color Edition Finder, and Product Image Finder.',
+    group: 'discovery',
+  },
   // ── Runtime Settings ──────────────────────────────────────────────
   {
     id: 'global' as const,
@@ -124,6 +134,14 @@ export function SectionNavIcon({ id, active }: { id: PipelineSectionId; active: 
             <circle cx="4" cy="17" r="1.5" />
             <circle cx="12" cy="12" r="1.5" />
             <path d="M12 9.5v5" />
+          </>
+        )}
+        {/* Discovery — magnifying glass + globe */}
+        {id === 'discovery' && (
+          <>
+            <circle cx="10" cy="10" r="6" />
+            <path d="m14.5 14.5 5 5" />
+            <path d="M7 10h6M10 7v6" />
           </>
         )}
         {/* Planner — compass rose */}

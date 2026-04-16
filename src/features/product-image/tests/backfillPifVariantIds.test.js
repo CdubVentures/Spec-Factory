@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { backfillPifVariantIds } from '../backfillPifVariantIds.js';
+import { backfillPifVariantIds, backfillPifVariantIdsForProduct, collectOrphanedPifKeys } from '../backfillPifVariantIds.js';
 
 const TMP_ROOT = path.join('.tmp', '_test_backfill_variant_ids');
 const PRODUCT_ROOT = path.join(TMP_ROOT, 'products');
@@ -161,5 +161,199 @@ describe('backfillPifVariantIds', () => {
 
     const doc = readJson(pid, 'product_images.json');
     assert.equal(doc.selected.images[0].variant_id, undefined);
+  });
+});
+
+/* ── backfillPifVariantIdsForProduct (single-product with id remap) ── */
+
+describe('backfillPifVariantIdsForProduct', () => {
+  before(() => fs.mkdirSync(PRODUCT_ROOT, { recursive: true }));
+  after(() => cleanup());
+
+  it('stamps variant_id on images missing it', () => {
+    const pid = 'bfp-stamp';
+    const registry = [{ variant_key: 'color:black', variant_id: 'v_correct' }];
+    writeJson(pid, 'product_images.json', makePifDoc(pid, 'mouse', [
+      { view: 'top', filename: 'top.png', variant_key: 'color:black' },
+    ]));
+
+    const result = backfillPifVariantIdsForProduct({ productId: pid, registry, productRoot: PRODUCT_ROOT });
+
+    assert.equal(result.stamped, 1);
+    assert.equal(result.remapped, 0);
+    const doc = readJson(pid, 'product_images.json');
+    assert.equal(doc.selected.images[0].variant_id, 'v_correct');
+  });
+
+  it('remaps stale variant_id when key matches but id differs', () => {
+    const pid = 'bfp-remap';
+    const registry = [{ variant_key: 'color:black', variant_id: 'v_correct' }];
+    writeJson(pid, 'product_images.json', makePifDoc(pid, 'mouse', [
+      { view: 'top', filename: 'top.png', variant_key: 'color:black', variant_id: 'v_stale_old' },
+    ]));
+
+    const result = backfillPifVariantIdsForProduct({ productId: pid, registry, productRoot: PRODUCT_ROOT });
+
+    assert.equal(result.stamped, 0);
+    assert.equal(result.remapped, 1);
+    const doc = readJson(pid, 'product_images.json');
+    assert.equal(doc.selected.images[0].variant_id, 'v_correct');
+  });
+
+  it('does not remap when variant_id already matches registry', () => {
+    const pid = 'bfp-noop';
+    const registry = [{ variant_key: 'color:black', variant_id: 'v_correct' }];
+    writeJson(pid, 'product_images.json', makePifDoc(pid, 'mouse', [
+      { view: 'top', filename: 'top.png', variant_key: 'color:black', variant_id: 'v_correct' },
+    ]));
+
+    const result = backfillPifVariantIdsForProduct({ productId: pid, registry, productRoot: PRODUCT_ROOT });
+
+    assert.equal(result.stamped, 0);
+    assert.equal(result.remapped, 0);
+  });
+
+  it('handles missing PIF file gracefully', () => {
+    const pid = 'bfp-no-pif';
+    const registry = [{ variant_key: 'color:black', variant_id: 'v_aaa' }];
+
+    const result = backfillPifVariantIdsForProduct({ productId: pid, registry, productRoot: PRODUCT_ROOT });
+
+    assert.equal(result.stamped, 0);
+    assert.equal(result.remapped, 0);
+  });
+
+  it('remaps stale variant_ids in run response images', () => {
+    const pid = 'bfp-remap-runs';
+    const registry = [{ variant_key: 'color:black', variant_id: 'v_correct' }];
+    writeJson(pid, 'product_images.json', makePifDoc(pid, 'mouse',
+      [{ view: 'top', filename: 'top.png', variant_key: 'color:black', variant_id: 'v_stale' }],
+      [{
+        run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'test',
+        selected: { images: [{ view: 'top', filename: 'top.png', variant_key: 'color:black', variant_id: 'v_stale' }] },
+        response: {
+          variant_key: 'color:black', variant_id: 'v_stale',
+          images: [{ view: 'top', filename: 'top.png', variant_key: 'color:black', variant_id: 'v_stale' }],
+        },
+      }],
+    ));
+
+    backfillPifVariantIdsForProduct({ productId: pid, registry, productRoot: PRODUCT_ROOT });
+
+    const doc = readJson(pid, 'product_images.json');
+    assert.equal(doc.selected.images[0].variant_id, 'v_correct');
+    assert.equal(doc.runs[0].selected.images[0].variant_id, 'v_correct');
+    assert.equal(doc.runs[0].response.variant_id, 'v_correct');
+    assert.equal(doc.runs[0].response.images[0].variant_id, 'v_correct');
+  });
+});
+
+/* ── collectOrphanedPifKeys ────────────────────────────────────── */
+
+describe('collectOrphanedPifKeys', () => {
+  before(() => fs.mkdirSync(PRODUCT_ROOT, { recursive: true }));
+  after(() => cleanup());
+
+  it('returns keys present in PIF images but absent from registry', () => {
+    const pid = 'orphan-basic';
+    const registry = [{ variant_key: 'color:black', variant_id: 'v_aaa' }];
+    writeJson(pid, 'product_images.json', makePifDoc(pid, 'mouse', [
+      { view: 'top', filename: 'top.png', variant_key: 'color:black' },
+      { view: 'top', filename: 'top-doom.png', variant_key: 'edition:doom-the-dark-ages-edition' },
+    ]));
+
+    const orphans = collectOrphanedPifKeys({ productId: pid, registry, productRoot: PRODUCT_ROOT });
+
+    assert.deepEqual(orphans, ['edition:doom-the-dark-ages-edition']);
+  });
+
+  it('returns empty array when all PIF keys match registry', () => {
+    const pid = 'orphan-none';
+    const registry = [
+      { variant_key: 'color:black', variant_id: 'v_aaa' },
+      { variant_key: 'color:white', variant_id: 'v_bbb' },
+    ];
+    writeJson(pid, 'product_images.json', makePifDoc(pid, 'mouse', [
+      { view: 'top', filename: 'top.png', variant_key: 'color:black' },
+      { view: 'top', filename: 'top2.png', variant_key: 'color:white' },
+    ]));
+
+    const orphans = collectOrphanedPifKeys({ productId: pid, registry, productRoot: PRODUCT_ROOT });
+
+    assert.deepEqual(orphans, []);
+  });
+
+  it('returns empty array when PIF file does not exist', () => {
+    const pid = 'orphan-no-pif';
+    const registry = [{ variant_key: 'color:black', variant_id: 'v_aaa' }];
+
+    const orphans = collectOrphanedPifKeys({ productId: pid, registry, productRoot: PRODUCT_ROOT });
+
+    assert.deepEqual(orphans, []);
+  });
+
+  it('returns empty array when registry is empty', () => {
+    const pid = 'orphan-empty-reg';
+    writeJson(pid, 'product_images.json', makePifDoc(pid, 'mouse', [
+      { view: 'top', filename: 'top.png', variant_key: 'color:black' },
+    ]));
+
+    const orphans = collectOrphanedPifKeys({ productId: pid, registry: [], productRoot: PRODUCT_ROOT });
+
+    assert.deepEqual(orphans, ['color:black']);
+  });
+
+  it('collects orphaned keys from run images too', () => {
+    const pid = 'orphan-runs';
+    const registry = [{ variant_key: 'color:black', variant_id: 'v_aaa' }];
+    writeJson(pid, 'product_images.json', makePifDoc(pid, 'mouse',
+      [{ view: 'top', filename: 'top.png', variant_key: 'color:black' }],
+      [{
+        run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'test',
+        selected: { images: [{ view: 'top', filename: 'top-red.png', variant_key: 'color:red' }] },
+        response: {
+          variant_key: 'color:red',
+          images: [{ view: 'top', filename: 'top-red.png', variant_key: 'color:red' }],
+        },
+      }],
+    ));
+
+    const orphans = collectOrphanedPifKeys({ productId: pid, registry, productRoot: PRODUCT_ROOT });
+
+    assert.deepEqual(orphans, ['color:red']);
+  });
+
+  it('deduplicates orphaned keys across selected and runs', () => {
+    const pid = 'orphan-dedup';
+    const registry = [{ variant_key: 'color:black', variant_id: 'v_aaa' }];
+    writeJson(pid, 'product_images.json', makePifDoc(pid, 'mouse',
+      [{ view: 'top', filename: 'top.png', variant_key: 'color:red' }],
+      [{
+        run_number: 1, ran_at: '2026-04-01T00:00:00Z', model: 'test',
+        selected: { images: [] },
+        response: {
+          variant_key: 'color:red',
+          images: [{ view: 'top', filename: 'top-red.png', variant_key: 'color:red' }],
+        },
+      }],
+    ));
+
+    const orphans = collectOrphanedPifKeys({ productId: pid, registry, productRoot: PRODUCT_ROOT });
+
+    assert.equal(orphans.length, 1, 'should not duplicate color:red');
+    assert.deepEqual(orphans, ['color:red']);
+  });
+
+  it('skips images with no variant_key', () => {
+    const pid = 'orphan-no-key';
+    const registry = [{ variant_key: 'color:black', variant_id: 'v_aaa' }];
+    writeJson(pid, 'product_images.json', makePifDoc(pid, 'mouse', [
+      { view: 'top', filename: 'top.png', variant_key: 'color:black' },
+      { view: 'top', filename: 'top2.png' },
+    ]));
+
+    const orphans = collectOrphanedPifKeys({ productId: pid, registry, productRoot: PRODUCT_ROOT });
+
+    assert.deepEqual(orphans, []);
   });
 });

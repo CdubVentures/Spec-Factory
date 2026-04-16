@@ -19,10 +19,12 @@ import {
   createColorEditionFinderCallLlm,
 } from './colorEditionLlmAdapter.js';
 import { readColorEdition, writeColorEdition, mergeColorEditionDiscovery } from './colorEditionStore.js';
-import { buildVariantRegistry, applyIdentityMappings, validateColorsAgainstPalette, validateIdentityMappings } from './variantRegistry.js';
+import { buildVariantRegistry, applyIdentityMappings, validateColorsAgainstPalette, validateIdentityMappings, validateOrphanRemaps } from './variantRegistry.js';
 import { createVariantIdentityCheckCallLlm, buildVariantIdentityCheckPrompt } from './colorEditionLlmAdapter.js';
 import { submitCandidate, validateField } from '../publisher/index.js';
-import { propagateVariantRenames } from '../product-image/index.js';
+import { propagateVariantRenames, remapOrphanedVariantKeys } from '../product-image/index.js';
+import { backfillPifVariantIdsForProduct, collectOrphanedPifKeys } from '../product-image/backfillPifVariantIds.js';
+import { propagateVariantDelete } from '../product-image/index.js';
 import { derivePublishedFromVariants } from './variantLifecycle.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 
@@ -68,7 +70,7 @@ function reconcileEditionSlugsFromRegistry(editions, existingRegistry, identityC
   // Strategy 1: combo → canonical slug
   const comboToCanonical = new Map();
   for (const entry of existingRegistry) {
-    if (entry.variant_type !== 'edition' || !entry.edition_slug || entry.retired) continue;
+    if (entry.variant_type !== 'edition' || !entry.edition_slug) continue;
     const combo = entry.color_atoms.join('+');
     if (combo) comboToCanonical.set(combo, entry.edition_slug);
   }
@@ -200,15 +202,15 @@ export async function runColorEditionFinder({
 }) {
   productRoot = productRoot || defaultProductRoot();
   const finderStore = specDb.getFinderStore('colorEditionFinder');
-  const reinjectQueriesRun = finderStore.getSetting('reinjectQueriesRun') === 'true';
   const discoveryPromptTemplate = finderStore.getSetting('discoveryPromptTemplate') || '';
   const identityCheckPromptTemplate = finderStore.getSetting('identityCheckPromptTemplate') || '';
   const modelTracking = resolveModelTracking({ config, phaseKey: 'colorFinder', onModelResolved });
   const { wrappedOnModelResolved } = modelTracking;
 
-  const { familyModelCount, ambiguityLevel } = await resolveAmbiguityContext({
+  const { familyModelCount, ambiguityLevel, siblingModels } = await resolveAmbiguityContext({
     config, category: product.category, brand: product.brand,
-    baseModel: product.base_model, specDb, resolveFn: resolveIdentityAmbiguitySnapshot,
+    baseModel: product.base_model, currentModel: product.model,
+    specDb, resolveFn: resolveIdentityAmbiguitySnapshot,
   });
 
   const allColors = appDb.listColors();
@@ -243,7 +245,6 @@ export async function runColorEditionFinder({
     colors: allColors,
     product,
     previousRuns,
-    reinjectQueriesRun,
     templateOverride: discoveryPromptTemplate,
   });
   const userMessage = JSON.stringify({
@@ -269,7 +270,7 @@ export async function runColorEditionFinder({
 
   let response, usage;
   try {
-    ({ result: response, usage } = await callLlm({ colorNames, colors: allColors, product, previousRuns, familyModelCount, ambiguityLevel, reinjectQueriesRun }));
+    ({ result: response, usage } = await callLlm({ colorNames, colors: allColors, product, previousRuns, familyModelCount, ambiguityLevel, siblingModels }));
   } catch (err) {
     logger?.error?.('color_edition_finder_llm_failed', {
       product_id: product.product_id,
@@ -452,6 +453,17 @@ export async function runColorEditionFinder({
   let identityCheckUser = null;
   const hasExistingRegistry = existing?.variant_registry?.length > 0;
 
+  // WHY: Collect orphaned PIF keys before identity check so LLM 2 can reconcile
+  // them alongside normal discovery matching. Orphans = PIF image keys not in registry.
+  let orphanedPifKeys = [];
+  if (hasExistingRegistry) {
+    orphanedPifKeys = collectOrphanedPifKeys({
+      productId: product.product_id,
+      registry: existing.variant_registry,
+      productRoot,
+    });
+  }
+
   // WHY: Skip identity check when _callLlmOverride is set but no identity check
   // override is provided — test mode without real LLM routing.
   if (hasExistingRegistry && (!_callLlmOverride || _callIdentityCheckOverride)) {
@@ -462,6 +474,8 @@ export async function runColorEditionFinder({
       product, existingRegistry: existing.variant_registry,
       newColors: gateColors, newColorNames: colorNamesMap, newEditions: gateEditions,
       promptOverride: identityCheckPromptTemplate,
+      familyModelCount, ambiguityLevel, siblingModels, runCount: previousRuns.length,
+      orphanedPifKeys,
     });
     identityCheckUser = JSON.stringify({
       brand: product.brand || '', model: product.model || '',
@@ -494,6 +508,8 @@ export async function runColorEditionFinder({
         product, existingRegistry: existing.variant_registry,
         newColors: gateColors, newColorNames: colorNamesMap, newEditions: gateEditions,
         promptOverride: identityCheckPromptTemplate,
+        familyModelCount, ambiguityLevel, siblingModels, runCount: previousRuns.length,
+        orphanedPifKeys,
       });
       identityCheckResult = idResult;
 
@@ -613,15 +629,28 @@ export async function runColorEditionFinder({
   // ── Variant registry update ────────────────────────────────────
   if (hasExistingRegistry && identityCheckResult) {
     // Run 2+: Apply validated identity check mappings to existing registry
-    merged.variant_registry = applyIdentityMappings({
+    const { registry: updatedRegistry, removed } = applyIdentityMappings({
       existingRegistry: existing.variant_registry,
       mappings: identityCheckResult.mappings || [],
-      retired: identityCheckResult.retired || [],
+      remove: identityCheckResult.remove || [],
       productId: product.product_id,
       colors: gateColors,
       colorNames: colorNamesMap,
       editions: gateEditions,
     });
+    merged.variant_registry = updatedRegistry;
+
+    // WHY: Cascade PIF delete for variants LLM 2 confirmed don't belong on this product.
+    for (const entry of removed) {
+      propagateVariantDelete({
+        productId: product.product_id,
+        variantId: entry.variant_id,
+        variantKey: entry.variant_key,
+        productRoot,
+        specDb,
+      });
+    }
+
     writeColorEdition({ productId: product.product_id, productRoot, data: merged });
 
     // WHY: Both gates passed — propagate validated variant key changes to PIF
@@ -645,6 +674,51 @@ export async function runColorEditionFinder({
       const propResult = propagateVariantRenames({ productId: product.product_id, productRoot, registryUpdates, specDb });
       if (!propResult?.updated) {
         logger?.warn?.('variant_rename_propagation_failed', { product_id: product.product_id, updates: registryUpdates.length });
+      }
+    }
+
+    // ── Orphan reconciliation (non-fatal) ────────────────────────
+    // WHY: LLM 2 returns orphan_remaps alongside normal mappings. Remaps
+    // heal slug-drifted PIF images; dead purges hallucinated/corrupted data only.
+    // Failure here does NOT reject the run — core identity check passed.
+    const orphanRemaps = identityCheckResult?.orphan_remaps || [];
+    if (orphanRemaps.length > 0) {
+      const orphanValidation = validateOrphanRemaps({
+        orphanRemaps,
+        registry: merged.variant_registry,
+      });
+
+      if (orphanValidation.valid) {
+        const remaps = [];
+        const deadKeys = [];
+
+        for (const or of orphanRemaps) {
+          if (or.action === 'remap' && or.remap_to) {
+            const target = merged.variant_registry.find(e => e.variant_key === or.remap_to);
+            if (target) {
+              remaps.push({
+                oldKey: or.orphan_key,
+                newKey: target.variant_key,
+                newVariantId: target.variant_id,
+                newLabel: target.variant_label || '',
+              });
+            }
+          } else if (or.action === 'dead') {
+            deadKeys.push(or.orphan_key);
+          }
+        }
+
+        if (remaps.length > 0) {
+          remapOrphanedVariantKeys({ productId: product.product_id, productRoot, remaps, specDb });
+        }
+
+        for (const deadKey of deadKeys) {
+          propagateVariantDelete({ productId: product.product_id, variantId: null, variantKey: deadKey, productRoot, specDb });
+        }
+      } else {
+        logger?.warn?.('orphan_remap_validation_failed', {
+          product_id: product.product_id, reason: orphanValidation.reason,
+        });
       }
     }
   } else if (!merged.variant_registry || merged.variant_registry.length === 0) {
@@ -694,6 +768,18 @@ export async function runColorEditionFinder({
   if (merged.variant_registry?.length > 0 && specDb.variants) {
     specDb.variants.syncFromRegistry(product.product_id, merged.variant_registry, {
       onAfterSync: () => derivePublishedFromVariants({ specDb, productId: product.product_id, productRoot }),
+    });
+  }
+
+  // WHY: Heal orphaned PIF variant_ids — images may reference stale ids
+  // from the bug era (identity check silently failing, causing fresh registry
+  // builds with new ids for same keys). Idempotent — no-op if nothing to fix.
+  if (merged.variant_registry?.length > 0) {
+    backfillPifVariantIdsForProduct({
+      productId: product.product_id,
+      registry: merged.variant_registry,
+      productRoot,
+      specDb,
     });
   }
 

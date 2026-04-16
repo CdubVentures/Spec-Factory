@@ -133,6 +133,94 @@ export function propagateVariantRenames({ productId, productRoot, registryUpdate
   return { updated: true, counts };
 }
 
+// ── Orphan remap ────────────────────────────────────────────────────
+
+/**
+ * Remap orphaned variant_keys on PIF images to canonical registry keys.
+ * Matches by variant_key (not variant_id — orphans have stale/wrong ids).
+ *
+ * @param {object} opts
+ * @param {string} opts.productId
+ * @param {string} [opts.productRoot]
+ * @param {Array<{oldKey, newKey, newVariantId, newLabel}>} opts.remaps
+ * @param {object} [opts.specDb]
+ * @returns {{ updated: boolean, counts: { images, runs, evalRecords, carouselSlots } }}
+ */
+export function remapOrphanedVariantKeys({ productId, productRoot, remaps, specDb }) {
+  productRoot = productRoot || defaultProductRoot();
+  const doc = readPifJson(productId, productRoot);
+
+  if (!doc) return { updated: false, counts: { images: 0, runs: 0, evalRecords: 0, carouselSlots: 0 } };
+
+  const counts = { images: 0, runs: 0, evalRecords: 0, carouselSlots: 0 };
+
+  for (const { oldKey, newKey, newVariantId, newLabel } of remaps) {
+    // WHY: Match by variant_key, not variant_id — orphaned images have stale ids.
+    const remapImages = (images) => {
+      if (!Array.isArray(images)) return 0;
+      let count = 0;
+      for (const img of images) {
+        if (img.variant_key === oldKey) {
+          img.variant_key = newKey;
+          img.variant_id = newVariantId;
+          if (newLabel) img.variant_label = newLabel;
+          count++;
+        }
+      }
+      return count;
+    };
+
+    counts.images += remapImages(doc.selected?.images);
+
+    for (const run of (doc.runs || [])) {
+      counts.images += remapImages(run.selected?.images);
+      counts.images += remapImages(run.response?.images);
+
+      if (run.response?.variant_key === oldKey) {
+        run.response.variant_key = newKey;
+        if (newLabel) run.response.variant_label = newLabel;
+        counts.runs++;
+      }
+    }
+
+    // Re-key carousel_slots
+    if (doc.carousel_slots && doc.carousel_slots[oldKey] !== undefined) {
+      doc.carousel_slots[newKey] = doc.carousel_slots[oldKey];
+      delete doc.carousel_slots[oldKey];
+      counts.carouselSlots++;
+    }
+
+    // Update evaluations
+    if (Array.isArray(doc.evaluations)) {
+      for (const ev of doc.evaluations) {
+        if (ev.variant_key === oldKey) {
+          ev.variant_key = newKey;
+          if (newLabel) ev.variant_label = newLabel;
+          counts.evalRecords++;
+        }
+      }
+    }
+  }
+
+  writePifJson(productId, productRoot, doc);
+
+  if (specDb) {
+    const finderStore = specDb.getFinderStore?.('productImageFinder');
+    if (finderStore) {
+      finderStore.updateSummaryField(
+        productId, 'carousel_slots',
+        JSON.stringify(doc.carousel_slots || {}),
+      );
+      const imagesSummary = (doc.selected?.images || []).map(i => ({
+        view: i.view, filename: i.filename, variant_key: i.variant_key,
+      }));
+      finderStore.updateSummaryField(productId, 'images', JSON.stringify(imagesSummary));
+    }
+  }
+
+  return { updated: true, counts };
+}
+
 // ── Variant deletion ────────────────────────────────────────────────
 
 /**

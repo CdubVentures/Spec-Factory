@@ -169,9 +169,10 @@ function removeVariantFromJson({ productId, variantId, productRoot }) {
     const editions = {};
     for (const v of remaining) {
       if (v.variant_type === 'color') {
-        for (const atom of (v.color_atoms || [])) {
-          if (!colors.includes(atom)) colors.push(atom);
-        }
+        // WHY: Use combo string from variant_key, not split atoms from color_atoms.
+        // Must match derivePublishedFromVariants so rebuild produces correct state.
+        const combo = v.variant_key.replace(/^color:/, '');
+        if (combo && !colors.includes(combo)) colors.push(combo);
       } else if (v.variant_type === 'edition') {
         // WHY: Preserve edition detail from existing selected if available
         const slug = v.edition_slug;
@@ -208,12 +209,17 @@ function stripVariantFromCandidates({ specDb, productId, variant, productRoot })
   const strips = [];
 
   if (variant.variant_type === 'color') {
-    strips.push({ fieldKey: 'colors', values: variant.color_atoms || [] });
+    // WHY: Use combo string from variant_key, not split atoms from color_atoms.
+    // Candidates store combo strings (e.g. "white+silver"), not individual atoms.
+    const combo = variant.variant_key.replace(/^color:/, '');
+    if (combo) strips.push({ fieldKey: 'colors', values: [combo] });
   } else if (variant.variant_type === 'edition') {
     if (variant.edition_slug) {
       strips.push({ fieldKey: 'editions', values: [variant.edition_slug] });
     }
-    // Edition atoms also appear in the colors field
+    // WHY: Edition color_atoms are evidence of the edition's colorway. When
+    // the edition is deleted, these atoms are invalid evidence in colors candidates.
+    // Unlike color variants (which use combo strings), edition atoms are individual.
     if (variant.color_atoms?.length > 0) {
       strips.push({ fieldKey: 'colors', values: variant.color_atoms });
     }
@@ -225,6 +231,11 @@ function stripVariantFromCandidates({ specDb, productId, variant, productRoot })
     const candidates = specDb.getFieldCandidatesByProductAndField(productId, fieldKey);
 
     for (const row of candidates) {
+      // WHY: Only strip from CEF-sourced candidates. Pipeline/feature sources
+      // may independently discover the same color — that evidence is unrelated
+      // to the variant entity and must not be touched.
+      if (row.source_type !== 'cef') continue;
+
       let parsed;
       try { parsed = typeof row.value === 'string' ? JSON.parse(row.value) : row.value; }
       catch { continue; }
@@ -255,6 +266,9 @@ function stripVariantFromCandidates({ specDb, productId, variant, productRoot })
 
       for (let i = entries.length - 1; i >= 0; i--) {
         const entry = entries[i];
+        // WHY: Same CEF-only scoping as SQL — only strip from CEF sources.
+        if (entry.source_type !== 'cef') continue;
+
         let parsed;
         try { parsed = typeof entry.value === 'string' ? JSON.parse(entry.value) : entry.value; }
         catch { continue; }

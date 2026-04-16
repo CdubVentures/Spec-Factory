@@ -9,6 +9,7 @@ import type { KpiCard } from '../../../shared/ui/finder/types.ts';
 import type {
   ProductImageEntry,
   ProductImageFinderRun,
+  ProductImageFinderResult,
   VariantInfo,
   ResolvedSlot,
   EvalRecord,
@@ -62,23 +63,20 @@ export function buildVariantList(cefData: {
   const colorNames = cefData.color_names || {};
   const editions = cefData.editions || {};
 
-  const comboToEdition = new Map<string, { slug: string; displayName: string }>();
-  for (const [slug, ed] of Object.entries(editions)) {
-    const combo = (ed.colors || [])[0];
-    if (combo) comboToEdition.set(combo, { slug, displayName: ed.display_name || slug });
+  // WHY: Colors and editions are built independently. An edition with
+  // colors: ["black"] must NOT steal "black" from the standalone colors.
+  const variants: VariantInfo[] = [];
+
+  for (const entry of colors) {
+    const name = colorNames[entry];
+    const hasName = !!(name && name.toLowerCase() !== entry.toLowerCase());
+    variants.push({ key: `color:${entry}`, label: hasName ? name : formatAtomLabel(entry), type: 'color' });
   }
 
-  const variants: VariantInfo[] = [];
-  for (const entry of colors) {
-    const edition = comboToEdition.get(entry);
-    if (edition) {
-      variants.push({ key: `edition:${edition.slug}`, label: edition.displayName, type: 'edition' });
-    } else {
-      const name = colorNames[entry];
-      const hasName = !!(name && name.toLowerCase() !== entry.toLowerCase());
-      variants.push({ key: `color:${entry}`, label: hasName ? name : formatAtomLabel(entry), type: 'color' });
-    }
+  for (const [slug, ed] of Object.entries(editions)) {
+    variants.push({ key: `edition:${slug}`, label: ed.display_name || slug, type: 'edition' });
   }
+
   return variants;
 }
 
@@ -279,4 +277,42 @@ export function derivePifKpiCards(
       tone: carouselAgg.allComplete ? 'success' : 'info',
     },
   ];
+}
+
+/* ── Optimistic Cache Helpers ──────────────────────────────────────── */
+
+/**
+ * Produce a new ProductImageFinderResult with a single image removed by filename.
+ * Filters from: images[], runs[].selected.images[], runs[].response.images[].
+ * Decrements image_count by the number of removals from the top-level images[].
+ * Returns data unchanged when the filename is not found.
+ */
+export function removeImageFromResult(
+  data: ProductImageFinderResult,
+  filename: string,
+): ProductImageFinderResult {
+  const nextImages = data.images.filter((img) => img.filename !== filename);
+  const removed = data.images.length - nextImages.length;
+  if (removed === 0) {
+    // WHY: Nothing to filter in runs either — short-circuit to avoid unnecessary cloning.
+    const hasInRuns = data.runs.some(
+      (r) =>
+        r.selected.images.some((i) => i.filename === filename) ||
+        r.response.images.some((i) => i.filename === filename),
+    );
+    if (!hasInRuns) return data;
+  }
+
+  const nextRuns = data.runs.map((run) => ({
+    ...run,
+    selected: { ...run.selected, images: run.selected.images.filter((i) => i.filename !== filename) },
+    response: { ...run.response, images: run.response.images.filter((i) => i.filename !== filename) },
+  }));
+
+  return {
+    ...data,
+    images: nextImages,
+    image_count: data.image_count - removed,
+    runs: nextRuns,
+  };
 }

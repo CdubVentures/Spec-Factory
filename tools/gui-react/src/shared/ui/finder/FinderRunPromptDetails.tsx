@@ -24,22 +24,26 @@ const PRE_CLS = 'px-3 pb-3 text-[10px] font-mono sf-text-subtle whitespace-pre-w
 const PANEL_CLS = 'sf-surface-panel border sf-border-soft rounded-md';
 
 export function FinderRunPromptDetails({ systemPrompt, userMessage, response, storageKeyPrefix }: FinderRunPromptDetailsProps) {
-  const hasAny = systemPrompt || userMessage || response;
-  if (!hasAny) return null;
+  // WHY: Check for actual content, not just truthiness. Empty string '' from
+  // `run.prompt?.system ?? ''` was hiding system prompts that exist in the DB.
+  const hasSystem = systemPrompt != null && systemPrompt.length > 0;
+  const hasUser = userMessage != null && userMessage.length > 0;
+  const hasResponse = response != null;
+  if (!hasSystem && !hasUser && !hasResponse) return null;
 
   return (
     <div className="flex flex-col gap-2">
-      {systemPrompt && (
+      {hasSystem && (
         <ToggleSection storageKey={`${storageKeyPrefix}:system`} label="System Prompt">
           <pre className={PRE_CLS}>{systemPrompt}</pre>
         </ToggleSection>
       )}
-      {userMessage && (
+      {hasUser && (
         <ToggleSection storageKey={`${storageKeyPrefix}:user`} label="User Message">
           <pre className={PRE_CLS}>{userMessage}</pre>
         </ToggleSection>
       )}
-      {response != null && (
+      {hasResponse && (
         <ToggleSection storageKey={`${storageKeyPrefix}:response`} label="LLM Response">
           <pre className={PRE_CLS}>
             {String(typeof response === 'string' ? response : JSON.stringify(response, null, 2))}
@@ -55,7 +59,7 @@ function ToggleSection({ storageKey, label, children }: { storageKey: string; la
   return (
     <div className={PANEL_CLS}>
       <button type="button" onClick={toggleOpen} className={SUMMARY_CLS}>
-        <span className="inline-block transition-transform text-[8px]" style={{ transform: open ? 'rotate(90deg)' : 'none' }}>&#9656;</span>
+        <span className={`inline-block transition-transform duration-150 text-[8px] ${open ? 'rotate-90' : ''}`}>&#9656;</span>
         {label}
       </button>
       {open && children}

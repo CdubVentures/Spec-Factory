@@ -79,7 +79,6 @@ export interface CefVariantRegistryEntry {
   readonly edition_display_name: string | null;
   readonly created_at: string;
   readonly updated_at?: string;
-  readonly retired?: boolean;
 }
 
 export interface ColorEditionFinderResult {

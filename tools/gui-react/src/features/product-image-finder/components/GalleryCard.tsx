@@ -8,7 +8,7 @@ interface GalleryCardProps {
   readonly img: GalleryImage;
   readonly category: string;
   readonly productId: string;
-  readonly onOpen: () => void;
+  readonly onOpen: (img: GalleryImage) => void;
   readonly onDelete: (filename: string) => void;
   readonly onProcess: (filename: string) => void;
   readonly isProcessing: boolean;
@@ -33,7 +33,7 @@ export const GalleryCard = memo(function GalleryCard({
       className={`sf-surface-elevated rounded-lg border overflow-hidden flex flex-col cursor-grab active:cursor-grabbing w-40 ${passesQuality ? 'sf-border-soft' : 'border-red-400/50'} ${isDimmed ? 'opacity-40' : ''}`}
     >
       <button
-        onClick={onOpen}
+        onClick={() => onOpen(img)}
         className={`relative w-full h-32 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity ${img.bg_removed ? 'p-2' : ''} ${isRejected ? 'sf-state-danger-bg' : 'sf-surface-bg'}`}
       >
         {src && !errored ? (

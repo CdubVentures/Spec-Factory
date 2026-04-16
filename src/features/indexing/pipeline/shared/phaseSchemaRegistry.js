@@ -155,7 +155,7 @@ const COLOR_FINDER_IDENTITY_CHECK = Object.freeze({
       { promptKey: 'discovery', label: 'Discovery Prompt', storageScope: 'module', moduleId: 'colorEditionFinder', settingKey: 'discoveryPromptTemplate', defaultTemplate: CEF_DISCOVERY_DEFAULT_TEMPLATE, variables: [
         { name: 'BRAND', description: 'e.g. "Logitech"', required: true },
         { name: 'MODEL', description: 'e.g. "G502 X Plus"', required: true },
-        { name: 'KNOWN_FINDINGS', description: 'Run 2+ discovery context — includes: colors found so far e.g. ["black","white"], color marketing names e.g. {"light-blue":"Glacier Blue"}, editions found so far e.g. ["cod-bo6"], urls already checked e.g. ["https://www.logitech.com/..."]. Also includes queries already run ONLY when reinjectQueriesRun setting is ON (off by default — URLs handle dedup). Empty string on Run 1.', required: false },
+        { name: 'KNOWN_FINDINGS', description: 'Run 2+ discovery context — includes: colors found so far e.g. ["black","white"], color marketing names e.g. {"light-blue":"Glacier Blue"}, editions found so far e.g. ["cod-bo6"], urls already checked e.g. ["https://www.logitech.com/..."]. Empty string on Run 1.', required: false },
         { name: 'IDENTITY_WARNING', description: 'Scales by familyModelCount: empty when <=1. When >1: "\\nIDENTITY WARNING: This product has N models in its family (ambiguity: medium/hard)...\\n" with brand, model, ambiguity level injected.', required: false },
         { name: 'PALETTE', description: 'e.g. "black (#000000), white (#ffffff), red (#ff0000), light-blue (#add8e6)" — or "(no registered colors)" when palette is empty', required: true },
       ], userMessageInfo: [

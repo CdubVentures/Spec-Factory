@@ -13,10 +13,12 @@ import {
   groupRunsByLoop,
   groupEvalsByVariant,
   derivePifKpiCards,
+  removeImageFromResult,
 } from '../pifSelectors.ts';
 import type {
   ProductImageEntry,
   ProductImageFinderRun,
+  ProductImageFinderResult,
   EvalRecord,
   GalleryImage,
   VariantInfo,
@@ -128,15 +130,17 @@ describe('buildVariantList', () => {
     assert.equal(result[1].key, 'color:white');
   });
 
-  it('matches edition when combo appears in colors', () => {
+  it('edition combo in colors produces both a color and an edition variant', () => {
     const result = buildVariantList({
       colors: ['black+red'],
       editions: { 'gaming-edition': { display_name: 'Gaming Edition', colors: ['black+red'] } },
     });
-    assert.equal(result.length, 1);
-    assert.equal(result[0].key, 'edition:gaming-edition');
-    assert.equal(result[0].label, 'Gaming Edition');
-    assert.equal(result[0].type, 'edition');
+    assert.equal(result.length, 2, 'color + edition independently');
+    assert.ok(result.find(v => v.key === 'color:black+red'), 'combo stays as color');
+    const ed = result.find(v => v.key === 'edition:gaming-edition');
+    assert.ok(ed, 'edition built from edition_details');
+    assert.equal(ed!.label, 'Gaming Edition');
+    assert.equal(ed!.type, 'edition');
   });
 
   it('uses color_names override for display name', () => {
@@ -158,6 +162,41 @@ describe('buildVariantList', () => {
       color_names: { black: 'Black' },
     });
     assert.equal(result[0].label, 'Black');
+  });
+
+  it('builds editions directly from edition_details, not from colors array', () => {
+    const result = buildVariantList({
+      colors: ['black', 'white'],
+      editions: { 'cod-bo6': { display_name: 'Call of Duty BO6', colors: ['black+gray+orange'] } },
+    });
+    assert.equal(result.length, 3, 'black + white + edition');
+    assert.ok(result.find(v => v.key === 'color:black'), 'black stays as color');
+    assert.ok(result.find(v => v.key === 'color:white'), 'white stays as color');
+    const ed = result.find(v => v.key === 'edition:cod-bo6');
+    assert.ok(ed, 'edition created from edition_details');
+    assert.equal(ed!.label, 'Call of Duty BO6');
+    assert.equal(ed!.type, 'edition');
+  });
+
+  it('edition with single-color combo does not steal that color from the list', () => {
+    const result = buildVariantList({
+      colors: ['black', 'white'],
+      editions: { 'stealth-edition': { display_name: 'Stealth Edition', colors: ['black'] } },
+    });
+    assert.equal(result.length, 3, 'black + white + edition');
+    assert.ok(result.find(v => v.key === 'color:black'), 'black must remain as standalone color');
+    assert.ok(result.find(v => v.key === 'edition:stealth-edition'), 'edition created independently');
+  });
+
+  it('editions without colors array still created', () => {
+    const result = buildVariantList({
+      colors: ['black'],
+      editions: { 'mystery-ed': { display_name: 'Mystery Edition' } },
+    });
+    assert.equal(result.length, 2);
+    const ed = result.find(v => v.key === 'edition:mystery-ed');
+    assert.ok(ed);
+    assert.equal(ed!.label, 'Mystery Edition');
   });
 });
 
@@ -493,5 +532,125 @@ describe('derivePifKpiCards', () => {
     const cards = derivePifKpiCards(0, 0, 0, { filled: 0, total: 0, allComplete: false });
     assert.equal(cards[0].value, '0');
     assert.equal(cards[3].value, '--');
+  });
+});
+
+/* ── removeImageFromResult ─────────────────────────────────────────── */
+
+function makeResult(overrides: Partial<ProductImageFinderResult> = {}): ProductImageFinderResult {
+  return {
+    product_id: 'p1',
+    category: 'mouse',
+    images: [],
+    image_count: 0,
+    run_count: 0,
+    last_ran_at: '2026-04-01T00:00:00Z',
+    selected: { images: [] },
+    runs: [],
+    ...overrides,
+  };
+}
+
+describe('removeImageFromResult', () => {
+  it('removes image from top-level images[], runs[].selected.images[], runs[].response.images[] and decrements image_count', () => {
+    const img = makeImage({ filename: 'top-black.png' });
+    const run = makeRun({
+      run_number: 1,
+      selected: { images: [img] },
+      response: { ...makeRun().response, images: [img] },
+    });
+    const data = makeResult({
+      images: [{ view: 'top', filename: 'top-black.png', variant_key: 'color:black' }],
+      image_count: 1,
+      runs: [run],
+    });
+
+    const result = removeImageFromResult(data, 'top-black.png');
+
+    assert.equal(result.images.length, 0);
+    assert.equal(result.image_count, 0);
+    assert.equal(result.runs[0].selected.images.length, 0);
+    assert.equal(result.runs[0].response.images.length, 0);
+  });
+
+  it('removes image from multiple runs', () => {
+    const img = makeImage({ filename: 'shared.png' });
+    const run1 = makeRun({ run_number: 1, selected: { images: [img] }, response: { ...makeRun().response, images: [img] } });
+    const run2 = makeRun({ run_number: 2, selected: { images: [img] }, response: { ...makeRun().response, images: [img] } });
+    const data = makeResult({
+      images: [{ view: 'top', filename: 'shared.png', variant_key: 'color:black' }],
+      image_count: 1,
+      runs: [run1, run2],
+    });
+
+    const result = removeImageFromResult(data, 'shared.png');
+
+    assert.equal(result.runs[0].selected.images.length, 0);
+    assert.equal(result.runs[1].selected.images.length, 0);
+  });
+
+  it('leaves run intact when last image is removed (run stays, empty array)', () => {
+    const img = makeImage({ filename: 'only.png' });
+    const run = makeRun({ selected: { images: [img] }, response: { ...makeRun().response, images: [img] } });
+    const data = makeResult({
+      images: [{ view: 'top', filename: 'only.png', variant_key: 'color:black' }],
+      image_count: 1,
+      runs: [run],
+      run_count: 1,
+    });
+
+    const result = removeImageFromResult(data, 'only.png');
+
+    assert.equal(result.runs.length, 1, 'run should not be removed');
+    assert.equal(result.runs[0].selected.images.length, 0);
+    assert.equal(result.image_count, 0);
+    assert.equal(result.run_count, 1, 'run_count should not change');
+  });
+
+  it('returns data unchanged when filename not found', () => {
+    const img = makeImage({ filename: 'existing.png' });
+    const run = makeRun({ selected: { images: [img] }, response: { ...makeRun().response, images: [img] } });
+    const data = makeResult({
+      images: [{ view: 'top', filename: 'existing.png', variant_key: 'color:black' }],
+      image_count: 1,
+      runs: [run],
+    });
+
+    const result = removeImageFromResult(data, 'nonexistent.png');
+
+    assert.equal(result.images.length, 1);
+    assert.equal(result.image_count, 1);
+    assert.equal(result.runs[0].selected.images.length, 1);
+  });
+
+  it('handles empty runs array', () => {
+    const data = makeResult({ images: [], image_count: 0, runs: [] });
+    const result = removeImageFromResult(data, 'anything.png');
+    assert.deepEqual(result, data);
+  });
+
+  it('only removes matching filename, preserves other images', () => {
+    const imgA = makeImage({ filename: 'a.png', view: 'top' });
+    const imgB = makeImage({ filename: 'b.png', view: 'left' });
+    const run = makeRun({
+      selected: { images: [imgA, imgB] },
+      response: { ...makeRun().response, images: [imgA, imgB] },
+    });
+    const data = makeResult({
+      images: [
+        { view: 'top', filename: 'a.png', variant_key: 'color:black' },
+        { view: 'left', filename: 'b.png', variant_key: 'color:black' },
+      ],
+      image_count: 2,
+      runs: [run],
+    });
+
+    const result = removeImageFromResult(data, 'a.png');
+
+    assert.equal(result.images.length, 1);
+    assert.equal(result.images[0].filename, 'b.png');
+    assert.equal(result.image_count, 1);
+    assert.equal(result.runs[0].selected.images.length, 1);
+    assert.equal(result.runs[0].selected.images[0].filename, 'b.png');
   });
 });

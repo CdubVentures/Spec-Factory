@@ -23,8 +23,14 @@ export interface RunDiscoveryLog {
 }
 
 export interface DeleteTarget {
-  readonly kind: 'run' | 'loop' | 'all';
+  readonly kind: 'run' | 'loop' | 'all' | 'image' | 'images-all' | 'images-variant' | 'eval' | 'eval-all' | 'eval-variant' | 'variant' | 'variant-all';
   readonly runNumber?: number;
   readonly runNumbers?: readonly number[];
+  readonly evalNumber?: number;
+  readonly evalNumbers?: readonly number[];
   readonly count?: number;
+  readonly label?: string;
+  readonly filename?: string;
+  readonly filenames?: readonly string[];
+  readonly variantId?: string;
 }

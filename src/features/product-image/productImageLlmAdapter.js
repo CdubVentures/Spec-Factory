@@ -579,11 +579,12 @@ export function migrateFromLegacyViews(view1, view2, category) {
  * @param {string} variantKey — e.g. "color:black" or "edition:cod-bo6"
  * @returns {{ urlsChecked: string[], queriesRun: string[] }}
  */
-export function accumulateVariantDiscoveryLog(previousRuns, variantKey, variantId) {
+export function accumulateVariantDiscoveryLog(previousRuns, variantKey, variantId, { cutoffIso = '' } = {}) {
   const urlSet = new Set();
   const querySet = new Set();
 
   for (const run of previousRuns) {
+    if (cutoffIso && run.ran_at && run.ran_at < cutoffIso) continue;
     // WHY: Match by variant_id first (survives renames), fall back to variant_key
     const rId = run.response?.variant_id;
     const rKey = run.response?.variant_key;

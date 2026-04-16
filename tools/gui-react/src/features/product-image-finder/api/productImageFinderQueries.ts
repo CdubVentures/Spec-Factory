@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { api } from '../../../api/client.ts';
+import { removeImageFromResult } from '../selectors/pifSelectors.ts';
 import type {
   ProductImageFinderResult,
   AcceptedResponse,
@@ -75,16 +76,26 @@ export function useDeleteProductImageFinderRunsBatchMutation(category: string, p
 
 export function useDeleteProductImageMutation(category: string, productId: string) {
   const queryClient = useQueryClient();
+  const queryKey = ['product-image-finder', category, productId] as const;
 
-  const resetQuery = useCallback(() => {
-    queryClient.removeQueries({ queryKey: ['product-image-finder', category, productId] });
-  }, [queryClient, category, productId]);
-
-  return useMutation<ProductImageFinderDeleteResponse, Error, string>({
+  return useMutation<ProductImageFinderDeleteResponse, Error, string, { previous: ProductImageFinderResult | undefined }>({
     mutationFn: (filename: string) => api.del<ProductImageFinderDeleteResponse>(
       `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/images/${encodeURIComponent(filename)}`,
     ),
-    onSuccess: resetQuery,
+    // WHY: Optimistic update removes the image from the UI instantly — no spinner flash,
+    // no layout jump. The WS data-change event refreshes authoritative data afterwards.
+    onMutate: (filename) => {
+      const previous = queryClient.getQueryData<ProductImageFinderResult>(queryKey);
+      if (previous) {
+        queryClient.setQueryData<ProductImageFinderResult>(queryKey, removeImageFromResult(previous, filename));
+      }
+      return { previous };
+    },
+    onError: (_err, _filename, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData<ProductImageFinderResult>(queryKey, context.previous);
+      }
+    },
   });
 }
 

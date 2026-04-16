@@ -62,6 +62,8 @@ export { usePagination } from './usePagination.ts';
 export { PagerSizeSelector } from './PagerSizeSelector.tsx';
 export { PagerNavFooter } from './PagerNavFooter.tsx';
 export { useShowMore } from './useShowMore.ts';
+export { FinderDiscoveryDetails } from './FinderDiscoveryDetails.tsx';
+export type { DiscoverySection } from './FinderDiscoveryDetails.tsx';
 export { FinderHowItWorks } from './FinderHowItWorks.tsx';
 export type {
   FinderHowItWorksProps,

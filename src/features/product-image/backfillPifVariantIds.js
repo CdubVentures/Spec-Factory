@@ -39,6 +39,105 @@ function stampImages(images, registryMap) {
 }
 
 /**
+ * Stamp OR remap variant_id on images. Unlike stampImages (which only fills
+ * missing ids), this also corrects stale ids where the key matches but the
+ * id drifted (e.g. bug-era fresh registry rebuilds).
+ * @returns {{ stamped: number, remapped: number }}
+ */
+function stampOrRemapImages(images, registryMap) {
+  let stamped = 0;
+  let remapped = 0;
+  if (!Array.isArray(images)) return { stamped, remapped };
+  for (const img of images) {
+    const correctId = registryMap.get(img.variant_key);
+    if (!correctId) continue;
+    if (!img.variant_id) {
+      img.variant_id = correctId;
+      stamped++;
+    } else if (img.variant_id !== correctId) {
+      img.variant_id = correctId;
+      remapped++;
+    }
+  }
+  return { stamped, remapped };
+}
+
+/**
+ * Backfill + remap variant_ids for a single product.
+ * Takes registry directly (no CEF JSON read). Idempotent.
+ *
+ * @param {object} opts
+ * @param {string} opts.productId
+ * @param {Array} opts.registry — current variant_registry entries
+ * @param {string} [opts.productRoot]
+ * @param {object} [opts.specDb] — if provided, updates SQL projection
+ * @returns {{ stamped: number, remapped: number }}
+ */
+export function backfillPifVariantIdsForProduct({ productId, registry, productRoot, specDb } = {}) {
+  const root = productRoot || defaultProductRoot();
+  const stats = { stamped: 0, remapped: 0 };
+  if (!Array.isArray(registry) || registry.length === 0) return stats;
+
+  const pifPath = path.join(root, productId, 'product_images.json');
+  const pifDoc = readJson(pifPath);
+  if (!pifDoc) return stats;
+
+  const registryMap = new Map(registry.map(r => [r.variant_key, r.variant_id]));
+  let touched = false;
+
+  // selected.images
+  const selResult = stampOrRemapImages(pifDoc.selected?.images, registryMap);
+  stats.stamped += selResult.stamped;
+  stats.remapped += selResult.remapped;
+
+  // runs[].selected.images + runs[].response.images
+  const runs = Array.isArray(pifDoc.runs) ? pifDoc.runs : [];
+  for (const run of runs) {
+    const selRunResult = stampOrRemapImages(run.selected?.images, registryMap);
+    stats.stamped += selRunResult.stamped;
+    stats.remapped += selRunResult.remapped;
+
+    const respResult = stampOrRemapImages(run.response?.images, registryMap);
+    stats.stamped += respResult.stamped;
+    stats.remapped += respResult.remapped;
+
+    // Top-level run.response.variant_id
+    if (run.response?.variant_key) {
+      const correctId = registryMap.get(run.response.variant_key);
+      if (correctId) {
+        if (!run.response.variant_id) {
+          run.response.variant_id = correctId;
+          stats.stamped++;
+        } else if (run.response.variant_id !== correctId) {
+          run.response.variant_id = correctId;
+          stats.remapped++;
+        }
+      }
+    }
+  }
+
+  touched = (stats.stamped + stats.remapped) > 0;
+
+  if (touched) {
+    writeJson(pifPath, pifDoc);
+
+    if (specDb) {
+      const finderStore = specDb.getFinderStore?.('productImageFinder');
+      if (finderStore) {
+        finderStore.updateSummaryField(
+          productId, 'images',
+          JSON.stringify((pifDoc.selected?.images || []).map(i => ({
+            view: i.view, filename: i.filename, variant_key: i.variant_key,
+          }))),
+        );
+      }
+    }
+  }
+
+  return stats;
+}
+
+/**
  * @param {object} opts
  * @param {object} [opts.specDb] — if provided, updates SQL projection
  * @param {string} [opts.productRoot]
@@ -118,4 +217,39 @@ export function backfillPifVariantIds({ specDb, productRoot } = {}) {
   }
 
   return stats;
+}
+
+/**
+ * Collect variant_keys that appear on PIF images but NOT in the registry.
+ * Pure read — no mutations.
+ *
+ * @param {object} opts
+ * @param {string} opts.productId
+ * @param {Array} opts.registry — current variant_registry entries
+ * @param {string} [opts.productRoot]
+ * @returns {string[]} orphaned variant_keys
+ */
+export function collectOrphanedPifKeys({ productId, registry, productRoot } = {}) {
+  const root = productRoot || defaultProductRoot();
+  const pifPath = path.join(root, productId, 'product_images.json');
+  const pifDoc = readJson(pifPath);
+  if (!pifDoc) return [];
+
+  const registryKeys = new Set((registry || []).map(r => r.variant_key));
+  const pifKeys = new Set();
+
+  const collect = (images) => {
+    if (!Array.isArray(images)) return;
+    for (const img of images) {
+      if (img.variant_key) pifKeys.add(img.variant_key);
+    }
+  };
+
+  collect(pifDoc.selected?.images);
+  for (const run of (pifDoc.runs || [])) {
+    collect(run.selected?.images);
+    collect(run.response?.images);
+  }
+
+  return [...pifKeys].filter(k => !registryKeys.has(k));
 }

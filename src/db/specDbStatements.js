@@ -562,7 +562,7 @@ export function prepareStatements(db) {
         @category, @product_id, @field_key, @value, @unit,
         @confidence, @source_id, @source_type, @model, @validation_json, @metadata_json, @status
       )
-      ON CONFLICT(category, product_id, field_key, source_id) DO UPDATE SET
+      ON CONFLICT(category, product_id, field_key, source_id, variant_id_key) DO UPDATE SET
         confidence = MAX(excluded.confidence, field_candidates.confidence),
         unit = COALESCE(excluded.unit, unit),
         validation_json = excluded.validation_json,
@@ -617,11 +617,11 @@ export function prepareStatements(db) {
       INSERT INTO field_candidates (
         category, product_id, field_key, source_id, source_type,
         value, unit, confidence, model,
-        validation_json, metadata_json, status
+        validation_json, metadata_json, status, variant_id
       ) VALUES (
         @category, @product_id, @field_key, @source_id, @source_type,
         @value, @unit, @confidence, @model,
-        @validation_json, @metadata_json, @status
+        @validation_json, @metadata_json, @status, @variant_id
       )
     `),
 
@@ -648,9 +648,9 @@ export function prepareStatements(db) {
     // ── Variants ────────────────────────────────────────────────────
     _upsertVariant: db.prepare(
       `INSERT INTO variants (category, product_id, variant_id, variant_key, variant_type,
-        variant_label, color_atoms, edition_slug, edition_display_name, retired, created_at, updated_at)
+        variant_label, color_atoms, edition_slug, edition_display_name, created_at, updated_at)
        VALUES (@category, @product_id, @variant_id, @variant_key, @variant_type,
-        @variant_label, @color_atoms, @edition_slug, @edition_display_name, @retired, @created_at, @updated_at)
+        @variant_label, @color_atoms, @edition_slug, @edition_display_name, @created_at, @updated_at)
        ON CONFLICT(category, product_id, variant_id) DO UPDATE SET
         variant_key = excluded.variant_key,
         variant_type = excluded.variant_type,
@@ -658,7 +658,6 @@ export function prepareStatements(db) {
         color_atoms = excluded.color_atoms,
         edition_slug = excluded.edition_slug,
         edition_display_name = excluded.edition_display_name,
-        retired = excluded.retired,
         updated_at = excluded.updated_at`
     ),
     _getVariant: db.prepare(
@@ -667,11 +666,9 @@ export function prepareStatements(db) {
     _listVariantsByProduct: db.prepare(
       'SELECT * FROM variants WHERE category = ? AND product_id = ? ORDER BY variant_type, variant_key'
     ),
+    // WHY: listActive is now an alias for listByProduct — no retired column exists.
     _listActiveVariantsByProduct: db.prepare(
-      'SELECT * FROM variants WHERE category = ? AND product_id = ? AND retired = 0 ORDER BY variant_type, variant_key'
-    ),
-    _retireVariant: db.prepare(
-      `UPDATE variants SET retired = 1, updated_at = datetime('now') WHERE category = ? AND product_id = ? AND variant_id = ?`
+      'SELECT * FROM variants WHERE category = ? AND product_id = ? ORDER BY variant_type, variant_key'
     ),
     _deleteVariant: db.prepare(
       'DELETE FROM variants WHERE category = ? AND product_id = ? AND variant_id = ?'

@@ -132,11 +132,14 @@ export function createFieldCandidateStore({ db, category, stmts }) {
   // WHY: Idempotent insert — check-before-insert instead of ON CONFLICT because
   // the UNIQUE(source_id) constraint can't be added until Phase 8 data migration.
   // Also catches old UNIQUE(value) violations during transition (same value, different source).
-  function insert({ productId, fieldKey, sourceId, sourceType, value, unit, confidence, model, validationJson, metadataJson, status }) {
+  function insert({ productId, fieldKey, sourceId, sourceType, value, unit, confidence, model, validationJson, metadataJson, status, variantId }) {
     const sid = String(sourceId || '');
+    const vid = variantId ?? null;
     if (sid) {
       const existing = getBySourceId(productId, fieldKey, sid);
-      if (existing) return;
+      // WHY: Skip duplicate only when variant_id matches (or both null).
+      // Different variant_id = different candidate even with same source_id.
+      if (existing && existing.variant_id === vid) return;
     }
     try {
       stmts._insertFieldCandidate.run({
@@ -152,6 +155,7 @@ export function createFieldCandidateStore({ db, category, stmts }) {
         validation_json: JSON.stringify(validationJson ?? {}),
         metadata_json: JSON.stringify(metadataJson ?? {}),
         status: status || 'candidate',
+        variant_id: vid,
       });
     } catch (e) {
       // WHY: During transition, old UNIQUE(value) constraint may fire when same value
@@ -199,6 +203,14 @@ export function createFieldCandidateStore({ db, category, stmts }) {
     ).run(category, String(productId || ''), String(fieldKey || ''), value ?? null);
   }
 
+  // WHY: Feature source cascade — when a variant is deleted, all candidates
+  // anchored to that variant_id must go (price, SKU, release date, etc.).
+  function deleteByVariantId(productId, variantId) {
+    db.prepare(
+      'DELETE FROM field_candidates WHERE category = ? AND product_id = ? AND variant_id = ?'
+    ).run(category, String(productId || ''), String(variantId || ''));
+  }
+
   // WHY: Variant deletion needs to update candidate values (splice items from
   // JSON arrays) without changing source_id or other columns.
   function updateValue(productId, fieldKey, sourceId, newValue) {
@@ -210,6 +222,6 @@ export function createFieldCandidateStore({ db, category, stmts }) {
 
   return {
     upsert, get, getByProductAndField, getAllByProduct, deleteByProduct, deleteByProductAndField, deleteByProductFieldValue, getPaginated, count, stats, markResolved, demoteResolved, getResolved, getDistinctProducts,
-    insert, getBySourceId, deleteBySourceId, deleteBySourceType, getByValue, markResolvedByValue, countBySourceId, updateValue,
+    insert, getBySourceId, deleteBySourceId, deleteBySourceType, getByValue, markResolvedByValue, countBySourceId, updateValue, deleteByVariantId,
   };
 }

@@ -219,6 +219,45 @@ export function validateIdentityMappings({ mappings = [], existingRegistry = [],
   return { valid: true, reason: null };
 }
 
+/* ── Validate orphan remaps ────────────────────────────────────── */
+
+/**
+ * Validate orphan_remaps from LLM identity check response.
+ * Separate from validateIdentityMappings — different contract.
+ *
+ * @param {object} opts
+ * @param {Array<{orphan_key, action, remap_to, reason}>} opts.orphanRemaps
+ * @param {Array} opts.registry — current variant_registry entries (post-apply)
+ * @returns {{ valid: boolean, reason: string | null }}
+ */
+export function validateOrphanRemaps({ orphanRemaps = [], registry = [] }) {
+  const registryKeys = new Set(registry.map(r => r.variant_key));
+  const remapTargets = new Set();
+
+  for (const or of orphanRemaps) {
+    if (or.action === 'remap') {
+      if (!or.remap_to) {
+        return { valid: false, reason: `remap action must have non-null remap_to for "${or.orphan_key}"` };
+      }
+      if (!registryKeys.has(or.remap_to)) {
+        return { valid: false, reason: `remap target "${or.remap_to}" not found in registry for "${or.orphan_key}"` };
+      }
+      if (remapTargets.has(or.remap_to)) {
+        return { valid: false, reason: `Duplicate remap target: "${or.remap_to}" claimed by multiple orphans` };
+      }
+      remapTargets.add(or.remap_to);
+    }
+
+    if (or.action === 'dead') {
+      if (or.remap_to != null) {
+        return { valid: false, reason: `dead action must have null remap_to for "${or.orphan_key}"` };
+      }
+    }
+  }
+
+  return { valid: true, reason: null };
+}
+
 /* ── Apply identity mappings ───────────────────────────────────── */
 
 /**
@@ -235,14 +274,14 @@ export function validateIdentityMappings({ mappings = [], existingRegistry = [],
  * @param {object} opts
  * @param {Array} opts.existingRegistry — current variant_registry array
  * @param {Array<{new_key, match, action, reason}>} opts.mappings — LLM output
- * @param {string[]} opts.retired — variant_ids no longer in discoveries
+ * @param {string[]} opts.remove — variant_ids confirmed as wrong-product contamination
  * @param {string} opts.productId
  * @param {string[]} opts.colors — new discovery colors
  * @param {Record<string, string>} opts.colorNames — new discovery color names
  * @param {Record<string, object>} opts.editions — new discovery editions
- * @returns {Array} — updated registry array
+ * @returns {{ registry: Array, removed: Array }} — kept registry + removed entries
  */
-export function applyIdentityMappings({ existingRegistry, mappings, retired, productId, colors = [], colorNames = {}, editions = {} }) {
+export function applyIdentityMappings({ existingRegistry, mappings, remove, productId, colors = [], colorNames = {}, editions = {} }) {
   const now = new Date().toISOString();
   const registry = existingRegistry.map((e) => ({ ...e }));
   const byId = new Map(registry.map((e) => [e.variant_id, e]));
@@ -273,7 +312,8 @@ export function applyIdentityMappings({ existingRegistry, mappings, retired, pro
           const slug = entry.edition_slug; // WHY: slug never changes (Gate 2 enforces)
           const ed = editions[slug];
           const combo = (ed?.colors || [])[0] || '';
-          const newLabel = ed?.display_name || slug;
+          let newLabel = ed?.display_name || slug;
+          if (mapping.preferred_label) newLabel = mapping.preferred_label;
           const newAtoms = combo ? combo.split('+').filter(Boolean) : [];
           const labelChanged = newLabel !== entry.variant_label;
           const atomsChanged = JSON.stringify(newAtoms) !== JSON.stringify(entry.color_atoms);
@@ -291,7 +331,8 @@ export function applyIdentityMappings({ existingRegistry, mappings, retired, pro
           const atom = newKey.replace('color:', '');
           const name = colorNames[atom];
           const hasName = name && name.toLowerCase() !== atom.toLowerCase();
-          const newLabel = hasName ? name : atom;
+          let newLabel = hasName ? name : atom;
+          if (mapping.preferred_label) newLabel = mapping.preferred_label;
           const newAtoms = atom.split('+').filter(Boolean);
           const labelChanged = newLabel !== entry.variant_label;
           const atomsChanged = JSON.stringify(newAtoms) !== JSON.stringify(entry.color_atoms);
@@ -344,13 +385,10 @@ export function applyIdentityMappings({ existingRegistry, mappings, retired, pro
     }
   }
 
-  // WHY: Retired variants stay in registry — PIF images may reference them.
-  const retiredSet = new Set(retired || []);
-  for (const entry of registry) {
-    if (retiredSet.has(entry.variant_id)) {
-      entry.retired = true;
-    }
-  }
+  // WHY: Removed variants are wrong-product contamination — hard-delete from registry.
+  const removeSet = new Set(remove || []);
+  const removed = registry.filter(e => removeSet.has(e.variant_id));
+  const kept = registry.filter(e => !removeSet.has(e.variant_id));
 
-  return registry;
+  return { registry: kept, removed };
 }

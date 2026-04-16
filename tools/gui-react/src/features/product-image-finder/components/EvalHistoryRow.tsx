@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { resolveVariantColorAtoms } from '../selectors/pifSelectors.ts';
 import { variantBadgeBgStyle } from '../helpers/pifColorUtils.ts';
+import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import {
   FinderRunTimestamp,
   FinderRunModelBadge,
@@ -87,26 +88,43 @@ export const EvalHistoryRow = memo(function EvalHistoryRow({
       </div>
 
       {expanded && (
-        <div className="px-4 pb-4 pt-1 border-t sf-border-soft flex flex-col gap-3">
-          {/* Result summary */}
-          {evalRecord.result && (
-            <div>
-              <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-1">Result</div>
-              <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text max-h-[200px]">
-                {JSON.stringify(evalRecord.result, null, 2)}
-              </pre>
-            </div>
-          )}
-
-          {/* System prompt + user message + response — identical to run history */}
-          <FinderRunPromptDetails
-            systemPrompt={evalRecord.prompt?.system}
-            userMessage={evalRecord.prompt?.user}
-            response={evalRecord.response}
-            storageKeyPrefix={`pif:evalPrompt:${evalRecord.eval_number}`}
-          />
-        </div>
+        <EvalExpandedContent evalRecord={evalRecord} />
       )}
     </div>
   );
 });
+
+function EvalExpandedContent({ evalRecord }: { readonly evalRecord: EvalRecord }) {
+  const [resultOpen, toggleResultOpen] = usePersistedToggle(`pif:evalResult:${evalRecord.eval_number}`, false);
+
+  return (
+    <div className="px-4 pb-4 pt-1 border-t sf-border-soft flex flex-col gap-3">
+      {/* Result — collapsible toggle */}
+      {evalRecord.result && Object.keys(evalRecord.result).length > 0 && (
+        <div className="sf-surface-panel border sf-border-soft rounded-md">
+          <button
+            type="button"
+            onClick={toggleResultOpen}
+            className="w-full px-3 py-2 text-[9px] font-bold uppercase tracking-[0.08em] sf-text-muted cursor-pointer select-none hover:sf-text-subtle flex items-center gap-1 text-left"
+          >
+            <span className={`inline-block transition-transform duration-150 text-[8px] ${resultOpen ? 'rotate-90' : ''}`}>&#9656;</span>
+            Result
+          </button>
+          {resultOpen && (
+            <pre className="px-3 pb-3 text-[10px] font-mono sf-text-subtle whitespace-pre-wrap break-words max-h-64 overflow-y-auto">
+              {JSON.stringify(evalRecord.result, null, 2)}
+            </pre>
+          )}
+        </div>
+      )}
+
+      {/* System prompt + user message + response */}
+      <FinderRunPromptDetails
+        systemPrompt={evalRecord.prompt?.system}
+        userMessage={evalRecord.prompt?.user}
+        response={evalRecord.response}
+        storageKeyPrefix={`pif:evalPrompt:${evalRecord.eval_number}`}
+      />
+    </div>
+  );
+}

@@ -161,7 +161,6 @@ export interface VariantRegistryEntry {
   edition_display_name: string | null;
   created_at: string;
   updated_at?: string;
-  retired?: boolean;
 }
 
 export interface ProductImageFinderResult {
