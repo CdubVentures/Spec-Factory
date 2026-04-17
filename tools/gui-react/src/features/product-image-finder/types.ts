@@ -156,7 +156,7 @@ export interface VariantRegistryEntry {
   variant_key: string;
   variant_type: 'color' | 'edition';
   variant_label: string;
-  color_atoms: string[];
+  color_atoms: readonly string[];
   edition_slug: string | null;
   edition_display_name: string | null;
   created_at: string;

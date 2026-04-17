@@ -138,7 +138,7 @@ export function deriveSelectedStateDisplay(
   const pub = result?.published;
   const cands = result?.candidates;
 
-  if (pub && pub.colors.length > 0) {
+  if (pub && (pub.colors.length > 0 || pub.editions.length > 0)) {
     const colorNameMap = pub.color_names ?? {};
     const editionDetailsMap = pub.edition_details ?? {};
     const defaultColor = pub.default_color || pub.colors[0] || '';
@@ -150,16 +150,49 @@ export function deriveSelectedStateDisplay(
     const registry = result?.variant_registry ?? [];
     const variantByKey = new Map(registry.map(v => [v.variant_key, v.variant_id]));
 
+    // WHY: An edition variant is also a color variant — its paired colors
+    // form a combo (joined with '+') that surfaces on the Colors side.
+    // Track contributing edition slugs per combo so P can cascade from
+    // the edition's resolved state onto the combo pill.
+    const editionsByCombo = new Map<string, string[]>();
+    for (const slug of pub.editions) {
+      const paired = editionDetailsMap[slug]?.colors ?? [];
+      if (paired.length === 0) continue;
+      const combo = paired.join('+');
+      const existing = editionsByCombo.get(combo);
+      if (existing) existing.push(slug);
+      else editionsByCombo.set(combo, [slug]);
+    }
+
     // WHY: When publishedSets is omitted, every rendered item is treated as
     // published (back-compat). When provided (from the publisher endpoint's
     // resolved arrays), isPublished is set by Set containment per item.
     const hasPublishedSets = publishedSets !== undefined;
     const publishedColorSet = hasPublishedSets ? new Set(publishedSets.colors) : null;
     const publishedEditionSet = hasPublishedSets ? new Set(publishedSets.editions) : null;
-    const colorPublished = (name: string) => publishedColorSet ? publishedColorSet.has(name) : true;
+    const colorPublished = (name: string) => {
+      if (!publishedColorSet && !publishedEditionSet) return true;
+      if (publishedColorSet?.has(name)) return true;
+      const contribs = editionsByCombo.get(name);
+      if (contribs && publishedEditionSet) {
+        return contribs.some(slug => publishedEditionSet.has(slug));
+      }
+      return false;
+    };
     const editionPublished = (slug: string) => publishedEditionSet ? publishedEditionSet.has(slug) : true;
 
-    const colors = pub.colors.map(name =>
+    // Union standalone colors with edition-derived combos (dedupe by name,
+    // preserve standalone order then append new combos).
+    const seenColorNames = new Set<string>(pub.colors);
+    const allColorNames: string[] = [...pub.colors];
+    for (const combo of editionsByCombo.keys()) {
+      if (!seenColorNames.has(combo)) {
+        allColorNames.push(combo);
+        seenColorNames.add(combo);
+      }
+    }
+
+    const colors = allColorNames.map(name =>
       toColorPill(name, defaultColor, hexMap, colorNameMap[name] || '', findItemSourceCount(colorCands, name), variantByKey.get(`color:${name}`) ?? null, colorPublished(name))
     );
 

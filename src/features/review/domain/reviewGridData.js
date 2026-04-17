@@ -401,14 +401,19 @@ export async function buildProductReviewPayload({
     const variantEditions = [];
     for (const v of activeVariants) {
       if (v.variant_type === 'color') {
-        for (const atom of v.color_atoms) {
-          if (!variantColors.includes(atom)) variantColors.push(atom);
-        }
+        // WHY: Combos stay intact as a single entry (e.g. "black+white"), not
+        // split into individual atoms. Atom splitting is reserved for palette
+        // validation / repair. Storage + display layers see the combo.
+        const combo = Array.isArray(v.color_atoms) ? v.color_atoms.join('+') : '';
+        if (combo && !variantColors.includes(combo)) variantColors.push(combo);
       } else if (v.variant_type === 'edition') {
         if (v.edition_slug && !variantEditions.includes(v.edition_slug)) {
           variantEditions.push(v.edition_slug);
         }
-        // WHY: Edition color_atoms stay scoped to the edition — NOT standalone colors.
+        // WHY: An edition IS a color variant — its combo cascades into the
+        // colors list so the review grid shows the full published color set.
+        const editionCombo = Array.isArray(v.color_atoms) ? v.color_atoms.join('+') : '';
+        if (editionCombo && !variantColors.includes(editionCombo)) variantColors.push(editionCombo);
       }
     }
     if (variantColors.length > 0) {

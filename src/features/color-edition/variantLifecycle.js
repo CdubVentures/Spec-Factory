@@ -110,8 +110,10 @@ export function derivePublishedFromVariants({ specDb, productId, productRoot }) 
       if (v.edition_slug && !editions.includes(v.edition_slug)) {
         editions.push(v.edition_slug);
       }
-      // WHY: Edition color_atoms describe the colorway composition (e.g., dark-gray+black+orange).
-      // They must NOT be promoted to standalone published colors.
+      // WHY: An edition IS a color variant — its combo (e.g. "dark-gray+black+orange")
+      // must also appear in published colors. Combo stays intact; no atom split.
+      const editionCombo = getEditionColorCombo(v);
+      if (editionCombo && !colors.includes(editionCombo)) colors.push(editionCombo);
     }
   }
 

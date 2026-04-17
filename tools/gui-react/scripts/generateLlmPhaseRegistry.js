@@ -421,10 +421,8 @@ function generateFinderPanelRegistry() {
 function generateModuleSettingsSections() {
   const lines = [HEADER];
   lines.push('// WHY: Derived from src/core/finder/finderModuleRegistry.js');
-  lines.push('// Pipeline Settings auto-renders module sections + form components from this registry.\n');
-
-  lines.push("import { lazy, type ComponentType } from 'react';");
-  lines.push("import type { ModuleSettingsFormProps } from '../types/moduleSettingsFormProps.ts';\n");
+  lines.push('// Pipeline Settings auto-renders module sections from this registry.');
+  lines.push('// Form bodies are rendered by <FinderSettingsRenderer /> driven by finderSettingsRegistry.generated.ts.\n');
 
   lines.push('export const MODULE_SETTINGS_SECTIONS = [');
   for (const m of FINDER_MODULES) {
@@ -448,17 +446,82 @@ function generateModuleSettingsSections() {
   lines.push(`export const MODULE_IDS = [${moduleIdEntries.join(', ')}] as const;`);
   lines.push('export type ModuleSettingsModuleId = typeof MODULE_IDS[number];\n');
 
-  // Form components map — keyed by moduleId. Record<ModuleSettingsModuleId, ...> forces TS to fail
-  // at codegen time if any section lacks a matching form. Adding a finder = add settingsFormPath +
-  // settingsFormExport to its FINDER_MODULES entry; ModuleSettingsPanel resolves at render. Zero panel edits.
-  lines.push('export const MODULE_SETTINGS_FORMS: Record<ModuleSettingsModuleId, ComponentType<ModuleSettingsFormProps>> = {');
+  lines.push('export type ModuleSettingsSectionId = typeof MODULE_SETTINGS_SECTIONS[number][\'id\'];\n');
+
+  return lines.join('\n');
+}
+
+// ── Generate finderSettingsRegistry.generated.ts (typed per-finder settings schema) ──
+
+function serializeSettingEntry(entry) {
+  const parts = [
+    `key: ${quote(entry.key)}`,
+    `type: ${quote(entry.type)}`,
+    `default: ${JSON.stringify(entry.default)}`,
+  ];
+  if (entry.min !== undefined) parts.push(`min: ${entry.min}`);
+  if (entry.max !== undefined) parts.push(`max: ${entry.max}`);
+  if (entry.allowed !== undefined) {
+    parts.push(`allowed: [${entry.allowed.map(quote).join(', ')}] as const`);
+  }
+  if (entry.uiLabel !== undefined) parts.push(`uiLabel: ${quote(entry.uiLabel)}`);
+  if (entry.uiTip !== undefined) parts.push(`uiTip: ${quote(entry.uiTip)}`);
+  if (entry.uiGroup !== undefined) parts.push(`uiGroup: ${quote(entry.uiGroup)}`);
+  if (entry.uiHero !== undefined) parts.push(`uiHero: ${entry.uiHero}`);
+  if (entry.secret !== undefined) parts.push(`secret: ${entry.secret}`);
+  if (entry.disabledBy !== undefined) parts.push(`disabledBy: ${quote(entry.disabledBy)}`);
+  if (entry.allowEmpty !== undefined) parts.push(`allowEmpty: ${entry.allowEmpty}`);
+  if (entry.hidden !== undefined) parts.push(`hidden: ${entry.hidden}`);
+  if (entry.widget !== undefined) parts.push(`widget: ${quote(entry.widget)}`);
+  if (entry.widgetProps !== undefined) {
+    parts.push(`widgetProps: ${JSON.stringify(entry.widgetProps)}`);
+  }
+  return `{ ${parts.join(', ')} }`;
+}
+
+function generateFinderSettingsRegistry() {
+  const lines = [HEADER];
+  lines.push('// WHY: Derived from src/core/finder/finderModuleRegistry.js');
+  lines.push('// Drives <FinderSettingsRenderer />. Each entry is a typed primitive (bool/int/float/string/enum),');
+  lines.push('// optionally rendered via a named widget registered in the GUI widget registry.\n');
+
+  lines.push(`export type FinderSettingType = 'bool' | 'int' | 'float' | 'string' | 'enum';\n`);
+
+  lines.push('export interface FinderSettingsEntry {');
+  lines.push('  key: string;');
+  lines.push('  type: FinderSettingType;');
+  lines.push('  default: boolean | number | string;');
+  lines.push('  min?: number;');
+  lines.push('  max?: number;');
+  lines.push('  allowed?: readonly string[];');
+  lines.push('  uiLabel?: string;');
+  lines.push('  uiTip?: string;');
+  lines.push('  uiGroup?: string;');
+  lines.push('  uiHero?: boolean;');
+  lines.push('  secret?: boolean;');
+  lines.push('  disabledBy?: string;');
+  lines.push('  allowEmpty?: boolean;');
+  lines.push('  hidden?: boolean;');
+  lines.push('  widget?: string;');
+  lines.push('  widgetProps?: Record<string, unknown>;');
+  lines.push('}\n');
+
+  const finderIds = FINDER_MODULES
+    .filter((m) => Array.isArray(m.settingsSchema))
+    .map((m) => quote(m.id));
+  lines.push(`export const FINDER_IDS_WITH_SETTINGS = [${finderIds.join(', ')}] as const;`);
+  lines.push('export type FinderIdWithSettings = typeof FINDER_IDS_WITH_SETTINGS[number];\n');
+
+  lines.push('export const FINDER_SETTINGS_REGISTRY: Record<FinderIdWithSettings, readonly FinderSettingsEntry[]> = {');
   for (const m of FINDER_MODULES) {
-    if (!m.settingsFormPath || !m.settingsFormExport) continue;
-    lines.push(`  ${quote(m.id)}: lazy(() => import('../../${m.settingsFormPath}.tsx').then((mod) => ({ default: mod.${m.settingsFormExport} }))),`);
+    if (!Array.isArray(m.settingsSchema)) continue;
+    lines.push(`  ${quote(m.id)}: [`);
+    for (const entry of m.settingsSchema) {
+      lines.push(`    ${serializeSettingEntry(entry)},`);
+    }
+    lines.push(`  ],`);
   }
   lines.push('};\n');
-
-  lines.push('export type ModuleSettingsSectionId = typeof MODULE_SETTINGS_SECTIONS[number][\'id\'];\n');
 
   return lines.join('\n');
 }
@@ -473,6 +536,7 @@ const finderRegistry = generateOperationTypeRegistry();
 const finderPhaseSchemas = generateFinderPhaseSchemaRegistry();
 const finderPanels = generateFinderPanelRegistry();
 const moduleSettingsSections = generateModuleSettingsSections();
+const finderSettingsRegistry = generateFinderSettingsRegistry();
 
 const INDEXING_DIR = resolve(__dirname, '../src/features/indexing/state');
 const PIPELINE_DIR = resolve(__dirname, '../src/features/pipeline-settings/state');
@@ -486,6 +550,7 @@ writeFileSync(resolve(OPS_DIR, 'operationTypeRegistry.generated.ts'), finderRegi
 writeFileSync(resolve(BACKEND_SCHEMA_DIR, 'phaseSchemaRegistry.generated.js'), finderPhaseSchemas);
 writeFileSync(resolve(INDEXING_DIR, 'finderPanelRegistry.generated.ts'), finderPanels);
 writeFileSync(resolve(PIPELINE_DIR, 'moduleSettingsSections.generated.ts'), moduleSettingsSections);
+writeFileSync(resolve(PIPELINE_DIR, 'finderSettingsRegistry.generated.ts'), finderSettingsRegistry);
 
 console.log('Generated:');
 console.log('  types/llmPhaseTypes.generated.ts');
@@ -496,3 +561,4 @@ console.log('  operations/state/operationTypeRegistry.generated.ts');
 console.log('  backend/phaseSchemaRegistry.generated.js');
 console.log('  indexing/state/finderPanelRegistry.generated.ts');
 console.log('  pipeline-settings/state/moduleSettingsSections.generated.ts');
+console.log('  pipeline-settings/state/finderSettingsRegistry.generated.ts');

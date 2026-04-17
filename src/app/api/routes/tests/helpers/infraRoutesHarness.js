@@ -1,4 +1,6 @@
 import path from 'node:path';
+import fs from 'node:fs';
+import os from 'node:os';
 
 import { registerInfraRoutes } from '../../infraRoutes.js';
 
@@ -26,6 +28,9 @@ export function createMissingPathFs(overrides = {}) {
 }
 
 export function createInfraRoutesContext(overrides = {}) {
+  // WHY: Redirect RUNTIME_SETTINGS_SNAPSHOT writes to a tmpdir. The real snapshot
+  // dir is .workspace/runtime/snapshots — leaking there pollutes production state.
+  const snapshotsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'infra-route-snap-'));
   return {
     jsonRes: (_res, status, body) => ({ status, body }),
     readJsonBody: async () => ({}),
@@ -39,6 +44,7 @@ export function createInfraRoutesContext(overrides = {}) {
     DIST_ROOT: path.resolve('gui-dist'),
     OUTPUT_ROOT: path.resolve('out'),
     INDEXLAB_ROOT: path.resolve('indexlab'),
+    snapshotsDir,
     fs: createPresentPathFs(),
     path,
     processRef: {

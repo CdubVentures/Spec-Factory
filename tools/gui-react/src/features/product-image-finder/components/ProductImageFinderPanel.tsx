@@ -137,25 +137,16 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   const loopingVariants = useRunningVariantKeys('pif', productId, 'loop');
   const evaluatingVariants = useRunningVariantKeys('pif', productId, 'evaluate');
 
-  // Build variant list from CEF published data, enriched with stable variant_id from registry
+  // WHY: Build variants directly from the CEF variant_registry (SSOT).
+  // One registry row = one variant. Labels use color_names[combo] for colors
+  // and edition_display_name for editions. This avoids the duplicate-edition
+  // bug that arose when deriving from published.colors (which now cascades
+  // edition combos into colors).
   const variants = useMemo(() => {
     if (cefError) return [];
-    const pub = cefData?.published;
-    if (!pub?.colors?.length) return [];
-    const list = buildVariantList({
-      colors: pub.colors,
-      color_names: pub.color_names,
-      editions: pub.edition_details,
-    });
-    // Enrich with stable variant_id from CEF registry
     const registry = cefData?.variant_registry;
-    if (registry?.length) {
-      const registryMap = new Map(registry.map((r) => [r.variant_key, r.variant_id]));
-      for (const v of list) {
-        v.variant_id = registryMap.get(v.key);
-      }
-    }
-    return list;
+    if (!registry?.length) return [];
+    return buildVariantList(registry, cefData?.published?.color_names);
   }, [cefData, cefError]);
 
   // All images from all runs, ordered by run_number, tagged with run metadata

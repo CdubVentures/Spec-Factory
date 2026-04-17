@@ -1858,7 +1858,8 @@
   ],
   "eg_toggles": {
     "colors": true,
-    "editions": true
+    "editions": true,
+    "release_date": true
   },
   "enum_lists": [],
   "enum_sources": [],

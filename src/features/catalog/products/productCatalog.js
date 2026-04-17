@@ -31,6 +31,7 @@ export async function addProduct({
   storage = null,
   specDb = null,
   appDb = null,
+  productRoot = null,
 }) {
   const cat = String(category ?? '').trim().toLowerCase();
   const cleanBrand = String(brand ?? '').trim();
@@ -69,15 +70,14 @@ export async function addProduct({
     added_by: 'gui'
   };
 
-  // WHY: Write the rebuild SSOT product.json at .workspace/products/{pid}/
-  try {
-    writeProductIdentity({
-      productId: pid,
-      category: cat,
-      identity: { brand: identity.brand, base_model: identity.base_model, model: identity.model, variant: identity.variant, brand_identifier: product.brand_identifier },
-      identifier: product.identifier,
-    });
-  } catch { /* best-effort: pipeline still works without product.json */ }
+  // WHY: Write the rebuild SSOT product.json at {productRoot}/{pid}/
+  writeProductIdentity({
+    productId: pid,
+    category: cat,
+    identity: { brand: identity.brand, base_model: identity.base_model, model: identity.model, variant: identity.variant, brand_identifier: product.brand_identifier },
+    identifier: product.identifier,
+    productRoot,
+  });
 
   return { ok: true, productId: pid, product };
 }
@@ -95,6 +95,7 @@ export async function addProductsBulk({
   storage = null,
   specDb = null,
   appDb = null,
+  productRoot = null,
 }) {
   const cat = String(category ?? '').trim().toLowerCase();
   const defaultBrand = String(brand ?? '').trim();
@@ -194,14 +195,13 @@ export async function addProductsBulk({
     };
 
     try {
-      try {
-        writeProductIdentity({
-          productId: pid,
-          category: cat,
-          identity: { brand: identity.brand, base_model: identity.base_model, model: identity.model, variant: identity.variant, brand_identifier: product.brand_identifier },
-          identifier: product.identifier,
-        });
-      } catch { /* best-effort */ }
+      writeProductIdentity({
+        productId: pid,
+        category: cat,
+        identity: { brand: identity.brand, base_model: identity.base_model, model: identity.model, variant: identity.variant, brand_identifier: product.brand_identifier },
+        identifier: product.identifier,
+        productRoot,
+      });
 
       created += 1;
       results.push({ ...normalizedResult, ...product, status: 'created' });

@@ -9,6 +9,15 @@ Generic infrastructure for LLM-driven finder modules. Any module that discovers 
 - `FINDER_MODULE_MAP` — O(1) lookup by module ID
 - `FINDER_MODULE_BY_PREFIX` — O(1) lookup by route prefix
 
+### `finderSettingsSchema.js` — typed per-category settings contract
+- `finderSettingsEntrySchema` — zod discriminated union over setting types (`bool`, `int`, `float`, `string`, `enum`)
+- `finderSettingsSchema` — zod array schema for a module's full settings list
+- `validateFinderSettingsSchema(schema)` — parse + validate; throws on shape errors
+- `deriveFinderSettingsDefaults(schema)` — produce a `{ key: stringDefault }` map for DDL/SQL consumers (bools → `'true'/'false'`, numbers → `String(n)`, strings/enums verbatim)
+
+### `finderRouteContext.js` — generic shared-infra factory
+- `createFinderRouteContext(options)` — returns the shared HTTP/DB/broadcast plumbing required by every finder route (`jsonRes`, `readJsonBody`, `config`, `appDb`, `getSpecDb`, `broadcastWs`, `logger`). Throws on missing required options. Per-finder orchestrator functions are imported locally by the thin route wrapper that uses them — not bundled into the context.
+
 ### `finderJsonStore.js` — per-product JSON persistence
 - `createFinderJsonStore({ filePrefix, emptySelected })` — factory returning:
   - `read({ productId, productRoot })` — read JSON, returns parsed object or null

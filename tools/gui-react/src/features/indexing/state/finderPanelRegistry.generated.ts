@@ -15,4 +15,8 @@ export const FINDER_PANELS = [
     id: 'productImageFinder',
     component: lazy(() => import('../../product-image-finder/components/ProductImageFinderPanel.tsx').then(m => ({ default: m.ProductImageFinderPanel }))),
   },
+  {
+    id: 'releaseDateFinder',
+    component: lazy(() => import('../../release-date-finder/components/ReleaseDateFinderPanel.tsx').then(m => ({ default: m.ReleaseDateFinderPanel }))),
+  },
 ] as const;

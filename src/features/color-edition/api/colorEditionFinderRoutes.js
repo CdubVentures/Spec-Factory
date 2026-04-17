@@ -12,11 +12,12 @@
 import { createFinderRouteHandler } from '../../../core/finder/finderRoutes.js';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
-import { deriveColorNamesFromVariants, derivePublishedFromVariants, deleteAllVariants } from '../variantLifecycle.js';
+import { deriveColorNamesFromVariants, derivePublishedFromVariants, deleteAllVariants, deleteVariant } from '../variantLifecycle.js';
+import { runColorEditionFinder } from '../colorEditionFinder.js';
+import { deleteColorEditionFinderRun, deleteColorEditionFinderAll } from '../colorEditionStore.js';
 
 export function registerColorEditionFinderRoutes(ctx) {
   const { jsonRes, getSpecDb, broadcastWs } = ctx;
-  const deleteVariantFn = ctx.deleteVariant;
 
   const genericHandler = createFinderRouteHandler({
     routePrefix: 'color-edition-finder',
@@ -24,9 +25,9 @@ export function registerColorEditionFinderRoutes(ctx) {
     phase: 'colorFinder',
     fieldKeys: ['colors', 'editions'],
 
-    runFinder: ctx.runColorEditionFinder,
-    deleteRun: ctx.deleteColorEditionFinderRun,
-    deleteAll: ctx.deleteColorEditionFinderAll,
+    runFinder: runColorEditionFinder,
+    deleteRun: deleteColorEditionFinderRun,
+    deleteAll: deleteColorEditionFinderAll,
 
     getOne: (specDb, pid) => specDb.getFinderStore('colorEditionFinder').get(pid),
     listByCategory: (specDb, cat) => specDb.getFinderStore('colorEditionFinder').listByCategory(cat),
@@ -145,9 +146,7 @@ export function registerColorEditionFinderRoutes(ctx) {
       const specDb = getSpecDb(category);
       if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
 
-      if (!deleteVariantFn) return jsonRes(res, 501, { error: 'deleteVariant not wired' });
-
-      const result = deleteVariantFn({
+      const result = deleteVariant({
         specDb, productId, variantId,
         productRoot: defaultProductRoot(),
       });

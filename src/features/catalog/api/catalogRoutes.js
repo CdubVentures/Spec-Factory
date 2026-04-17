@@ -4,6 +4,7 @@ import { recordQueueCleanupOutcome } from '../../../core/events/dataPropagationC
 import { upsertCatalogProductRow } from '../products/upsertCatalogProductRow.js';
 import { deleteProductCascade } from '../products/deleteProductCascade.js';
 import { createDeletionStore } from '../../../db/stores/deletionStore.js';
+import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
 
 export function registerCatalogRoutes(ctx) {
   const {
@@ -53,6 +54,8 @@ export function registerCatalogRoutes(ctx) {
     return 0;
   }
 
+  const productRoot = config?.productRoot || defaultProductRoot();
+
   return async function handleCatalogRoutes(parts, params, method, req, res) {
     // POST /api/v1/catalog/{cat}/reconcile  { dryRun?: boolean }
     if (parts[0] === 'catalog' && parts[1] && parts[2] === 'reconcile' && method === 'POST') {
@@ -85,6 +88,7 @@ export function registerCatalogRoutes(ctx) {
           storage,
           specDb: resolveSpecDb(category),
           appDb,
+          productRoot,
         });
         if (result?.ok) {
           const bulkSpecDb = resolveSpecDb(category);
@@ -122,6 +126,7 @@ export function registerCatalogRoutes(ctx) {
           storage,
           specDb: resolveSpecDb(category),
           appDb,
+          productRoot,
         });
         if (result?.ok) {
           upsertCatalogProductRow(resolveSpecDb(category), category, result.productId, result.product);

@@ -220,7 +220,7 @@ export function EnumConfigurator({
                 <div className="space-y-1">
                   <div className="inline-flex rounded border sf-border-default overflow-hidden opacity-50">
                     <button type="button" disabled className="px-3 py-1 text-[11px] font-medium sf-bg-surface-soft sf-text-subtle">On</button>
-                    <button type="button" disabled className="px-3 py-1 text-[11px] font-medium border-l sf-border-default sf-bg-surface-soft-strong sf-text-on-emphasis shadow-inner">Off</button>
+                    <button type="button" disabled className="px-3 py-1 text-[11px] font-medium border-l sf-border-default sf-bg-surface-soft-strong sf-text-primary shadow-inner">Off</button>
                   </div>
                   <div className="text-[10px] sf-text-subtle">Locked: closed enum rejects unknowns via P1. Consistency not applicable.</div>
                 </div>
@@ -238,7 +238,7 @@ export function EnumConfigurator({
                       type="button"
                       onClick={() => { if (reviewToggleOn) handleReviewModeToggle(); }}
                       disabled={Boolean(consistencyPending)}
-                      className={`px-3 py-1 text-[11px] font-medium border-l sf-border-default disabled:opacity-50 ${reviewToggleOn ? 'sf-bg-surface-soft sf-text-subtle' : 'sf-bg-surface-soft-strong sf-text-on-emphasis shadow-inner'}`}
+                      className={`px-3 py-1 text-[11px] font-medium border-l sf-border-default disabled:opacity-50 ${reviewToggleOn ? 'sf-bg-surface-soft sf-text-subtle' : 'sf-bg-surface-soft-strong sf-text-primary shadow-inner'}`}
                       title="Disable review mode for Format Pattern and Consistency."
                     >Off</button>
                   </div>

@@ -58,9 +58,7 @@ export const FINDER_MODULES = Object.freeze([
     // Feature module paths (for auto-wiring routes + orchestrator)
     featurePath: 'color-edition',
     routeFile: 'colorEditionFinderRoutes',
-    contextFile: 'colorEditionFinderRouteContext',
     registrarExport: 'registerColorEditionFinderRoutes',
-    contextExport: 'createColorEditionFinderRouteContext',
 
     // JSON store config
     filePrefix: 'color_edition',
@@ -69,11 +67,13 @@ export const FINDER_MODULES = Object.freeze([
     reseedKey: 'color_edition',
     rebuildFnKey: 'rebuildColorEditionFinderFromJson',
 
-    // Per-category settings (stored in {tableName}_settings table)
-    settingsDefaults: {
-      discoveryPromptTemplate: '',     // custom discovery prompt template; empty = built-in default
-      identityCheckPromptTemplate: '', // custom identity check prompt template; empty = built-in default
-    },
+    // Per-category settings (typed schema; drives DDL + UI renderer).
+    // WHY: Prompt templates are edited in LLM Config (not Pipeline Settings),
+    // so they're `hidden: true` — the settings table still stores them.
+    settingsSchema: [
+      { key: 'discoveryPromptTemplate', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'identityCheckPromptTemplate', type: 'string', default: '', allowEmpty: true, hidden: true },
+    ],
 
     // LLM phase schema (codegen: phaseSchemaRegistry.generated.js)
     promptBuilderExport: 'buildColorEditionFinderPrompt',
@@ -99,8 +99,6 @@ export const FINDER_MODULES = Object.freeze([
     settingsLabel: 'Color & Edition Finder',
     settingsSubtitle: 'CEF module settings',
     settingsTip: 'Per-category settings for the Color & Edition Finder discovery module.',
-    settingsFormPath: 'pipeline-settings/components/forms/CefSettingsForm',
-    settingsFormExport: 'CefSettingsForm',
     iconName: 'palette',
   },
   {
@@ -136,9 +134,7 @@ export const FINDER_MODULES = Object.freeze([
     // Feature module paths (for auto-wiring)
     featurePath: 'product-image',
     routeFile: 'productImageFinderRoutes',
-    contextFile: 'productImageFinderRouteContext',
     registrarExport: 'registerProductImageFinderRoutes',
-    contextExport: 'createProductImageFinderRouteContext',
 
     // JSON store config
     filePrefix: 'product_images',
@@ -147,41 +143,87 @@ export const FINDER_MODULES = Object.freeze([
     reseedKey: 'product_images',
     rebuildFnKey: 'rebuildProductImageFinderFromJson',
 
-    // Per-category settings (stored in {tableName}_settings table)
-    // viewConfig: JSON array of {key, description} in priority order.
-    // Empty string = use category defaults from CATEGORY_VIEW_DEFAULTS.
-    settingsDefaults: {
-      hfToken: '',                     // HuggingFace access token for RMBG 2.0 model download (gated model)
-      viewConfig: '', minWidth: '800', minHeight: '600', minFileSize: '50000',
-      rmbgConcurrency: '0',            // 0 = auto-detect from system RAM; >0 = fixed ONNX inference slot count
-      viewQualityConfig: '',           // JSON { [view]: { minWidth, minHeight, minFileSize } }; empty = category defaults
-      // Carousel strategy settings
-      viewBudget: '',                  // JSON array of view keys; empty = use CATEGORY_VIEW_BUDGET_DEFAULTS
-      satisfactionThreshold: '3',     // quality images per view to be "satisfied"
-      heroEnabled: 'true',            // whether hero search is active
-      heroCount: '3',                 // target hero images per variant
-      viewAttemptBudget: '5',         // max LLM calls per view before moving on (flat fallback)
-      viewAttemptBudgets: '',         // JSON { [view]: attempts }; empty = CATEGORY_VIEW_ATTEMPT_DEFAULTS
-      heroAttemptBudget: '3',         // max hero LLM calls per variant
-      viewPromptOverride: '',         // custom view prompt instructions; empty = built-in template
-      heroPromptOverride: '',         // custom hero prompt instructions; empty = built-in template
-      // Carousel Builder (vision evaluator) settings
-      evalEnabled: 'true',             // enable/disable the vision evaluator
-      evalThumbSize: '768',            // thumbnail dimension for LLM vision calls (512px tile boundary — 768 uses 4 tiles like 1024)
-      evalPromptOverride: '',          // custom view evaluation prompt; empty = built-in template
-      heroEvalPromptOverride: '',      // custom hero selection prompt; empty = built-in template
-      evalHeroCount: '3',             // target number of hero selections per variant
-      // Per-view eval criteria overrides (empty = use code defaults from CATEGORY_VIEW_EVAL_CRITERIA)
-      evalViewCriteria_top: '',
-      evalViewCriteria_bottom: '',
-      evalViewCriteria_left: '',
-      evalViewCriteria_right: '',
-      evalViewCriteria_front: '',
-      evalViewCriteria_rear: '',
-      evalViewCriteria_sangle: '',
-      evalViewCriteria_angle: '',
-      heroEvalCriteria: '',           // per-category hero eval criteria override
-    },
+    // Per-category settings (typed schema; drives DDL + UI renderer).
+    // Widget-backed entries reference named widgets registered in the GUI;
+    // widgetProps.childKeys declare any sibling keys the widget composes.
+    settingsSchema: [
+      // Authentication
+      { key: 'hfToken', type: 'string', default: '', secret: true, allowEmpty: true,
+        uiLabel: 'HuggingFace Token', uiGroup: 'Authentication',
+        uiTip: 'Access token for the RMBG 2.0 gated model download' },
+
+      // Carousel strategy — viewBudget widget owns viewAttemptBudget + viewAttemptBudgets
+      { key: 'satisfactionThreshold', type: 'int', default: 3, min: 1, max: 20,
+        uiLabel: 'Satisfaction Threshold', uiGroup: 'Carousel Strategy',
+        uiTip: 'Quality images per view required before that view is "satisfied"' },
+      { key: 'viewBudget', type: 'string', default: '', allowEmpty: true,
+        widget: 'viewBudget', uiLabel: 'View Budget', uiGroup: 'Carousel Strategy',
+        uiTip: 'Active views + per-view attempt budgets. Empty = category defaults.',
+        widgetProps: { childKeys: ['viewAttemptBudget', 'viewAttemptBudgets'] } },
+      { key: 'viewAttemptBudget', type: 'int', default: 5, min: 1, max: 50,
+        uiLabel: 'Default View Attempt Budget', uiGroup: 'Carousel Strategy' },
+      { key: 'viewAttemptBudgets', type: 'string', default: '', allowEmpty: true,
+        uiLabel: 'Per-View Attempt Budgets (JSON)', uiGroup: 'Carousel Strategy' },
+      { key: 'reRunBudget', type: 'int', default: 1, min: 0, max: 5,
+        uiLabel: 'Re-run Budget', uiGroup: 'Carousel Strategy',
+        uiTip: 'Extra LLM calls per view when re-looping an already-satisfied variant. 0 = skip.' },
+
+      // Hero slots
+      { key: 'heroEnabled', type: 'bool', default: true,
+        uiLabel: 'Hero Slots Enabled', uiGroup: 'Hero Slots' },
+      { key: 'heroCount', type: 'int', default: 3, min: 1, max: 20, disabledBy: 'heroEnabled',
+        uiLabel: 'Hero Count', uiGroup: 'Hero Slots' },
+      { key: 'heroAttemptBudget', type: 'int', default: 3, min: 1, max: 20, disabledBy: 'heroEnabled',
+        uiLabel: 'Hero Attempt Budget', uiGroup: 'Hero Slots' },
+
+      // Views — widget-managed priority list (JSON blob)
+      { key: 'viewConfig', type: 'string', default: '', allowEmpty: true,
+        widget: 'viewConfig', uiLabel: 'View Configuration', uiGroup: 'Views',
+        uiTip: 'Priority order and descriptions per view. Empty = category defaults.' },
+
+      // Image quality — flat primitives + optional per-view widget
+      { key: 'minWidth', type: 'int', default: 800, min: 100, max: 8000,
+        uiLabel: 'Min Width', uiGroup: 'Image Quality' },
+      { key: 'minHeight', type: 'int', default: 600, min: 100, max: 8000,
+        uiLabel: 'Min Height', uiGroup: 'Image Quality' },
+      { key: 'minFileSize', type: 'int', default: 50000, min: 1000, max: 50000000,
+        uiLabel: 'Min File Size (bytes)', uiGroup: 'Image Quality' },
+      { key: 'viewQualityConfig', type: 'string', default: '', allowEmpty: true,
+        widget: 'viewQualityGrid', uiLabel: 'Per-View Quality', uiGroup: 'Image Quality',
+        uiTip: 'Per-view overrides of the quality thresholds. Empty = category defaults.' },
+
+      // Vision evaluator
+      { key: 'evalEnabled', type: 'bool', default: true,
+        uiLabel: 'Vision Evaluator Enabled', uiGroup: 'Vision Evaluation' },
+      { key: 'evalThumbSize', type: 'int', default: 768, min: 256, max: 2048, disabledBy: 'evalEnabled',
+        widget: 'evalThumbSize',
+        uiLabel: 'Eval Thumbnail Size', uiGroup: 'Vision Evaluation',
+        uiTip: '512px tile boundary — 768 uses 4 tiles like 1024. Larger = more detail but more tokens.' },
+      { key: 'evalHeroCount', type: 'int', default: 3, min: 1, max: 20, disabledBy: 'evalEnabled',
+        uiLabel: 'Eval Hero Count', uiGroup: 'Vision Evaluation' },
+
+      // RMBG — niche performance knob, kept at the bottom
+      { key: 'rmbgConcurrency', type: 'int', default: 0, min: 0, max: 32,
+        uiLabel: 'RMBG Concurrency', uiGroup: 'RMBG',
+        uiTip: '0 = auto-detect from system RAM; >0 = fixed ONNX slot count' },
+
+      // Search prompts — edited in LLM Config, persisted here for the runtime
+      { key: 'viewPromptOverride', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'heroPromptOverride', type: 'string', default: '', allowEmpty: true, hidden: true },
+      // Eval prompts + per-view criteria — edited in LLM Config, persisted here for the runtime
+      { key: 'evalPromptOverride', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'heroEvalPromptOverride', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'evalViewCriteria_top', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'evalViewCriteria_bottom', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'evalViewCriteria_left', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'evalViewCriteria_right', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'evalViewCriteria_front', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'evalViewCriteria_rear', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'evalViewCriteria_sangle', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'evalViewCriteria_angle', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'heroEvalCriteria', type: 'string', default: '', allowEmpty: true, hidden: true },
+    ],
+
 
     // LLM phase schema (codegen: phaseSchemaRegistry.generated.js)
     promptBuilderExport: 'buildProductImageFinderPrompt',
@@ -208,9 +250,88 @@ export const FINDER_MODULES = Object.freeze([
     settingsLabel: 'Product Image Finder',
     settingsSubtitle: 'PIF module settings',
     settingsTip: 'Per-category settings for the Product Image Finder: view angles and image quality.',
-    settingsFormPath: 'pipeline-settings/components/forms/PifSettingsForm',
-    settingsFormExport: 'PifSettingsForm',
     iconName: 'image',
+  },
+  {
+    // Identity
+    id: 'releaseDateFinder',
+    routePrefix: 'release-date-finder',
+    moduleClass: 'variantFieldProducer',
+    variantSource: 'colorEditionFinder',
+    moduleType: 'rdf',
+    moduleLabel: 'RDF',
+    chipStyle: 'sf-chip-warning',
+
+    // DB schema (summary table — custom columns per module)
+    tableName: 'release_date_finder',
+    runsTableName: 'release_date_finder_runs',
+    summaryColumns: [
+      // WHY: Per-variant selected candidates projected from JSON for fast UI GET.
+      // Each entry: { variant_id, variant_key, variant_label, value, confidence, sources, ran_at, run_number }
+      { name: 'candidates', type: 'TEXT', default: "'[]'" },
+      { name: 'candidate_count', type: 'INTEGER', default: '0' },
+      { name: 'cooldown_until', type: 'TEXT', default: "''" },
+    ],
+    summaryIndexes: [
+      { name: 'idx_rdf_cooldown', columns: ['cooldown_until'] },
+    ],
+
+    // Fields this finder populates (publisher-owned — RDF submits candidates via submitCandidate)
+    fieldKeys: ['release_date'],
+
+    // Field Studio gate: release_date must be enabled in eg_toggles
+    requiredFields: ['release_date'],
+
+    // LLM phase (reference to llmPhaseDefs entry)
+    phase: 'releaseDateFinder',
+
+    // Feature module paths (for auto-wiring)
+    featurePath: 'release-date',
+    routeFile: 'releaseDateFinderRoutes',
+    registrarExport: 'registerReleaseDateFinderRoutes',
+
+    // JSON store config
+    filePrefix: 'release_date',
+
+    // Reseed
+    reseedKey: 'release_date',
+    rebuildFnKey: 'rebuildReleaseDateFinderFromJson',
+
+    // Per-category settings. variantFieldProducer requires perVariantAttemptBudget.
+    // WHY: Prompt templates are edited in LLM Config (not Pipeline Settings),
+    // so they're `hidden: true` — the settings table still stores them.
+    settingsSchema: [
+      { key: 'discoveryPromptTemplate', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'perVariantAttemptBudget', type: 'int', default: 1, min: 1, max: 5,
+        uiLabel: 'Per-Variant Attempt Budget', uiGroup: 'Discovery',
+        uiTip: 'LLM calls per variant before giving up. 1 = one shot; higher values enable retries with widening query strategy.' },
+      { key: 'minConfidence', type: 'int', default: 70, min: 0, max: 100,
+        uiLabel: 'Min Confidence', uiGroup: 'Discovery',
+        uiTip: 'Minimum LLM confidence score (0-100) to accept a date candidate. Below this, the variant run is marked unknown.' },
+    ],
+
+    // LLM phase schema (codegen: phaseSchemaRegistry.generated.js)
+    promptBuilderExport: 'buildReleaseDateFinderPrompt',
+    responseSchemaExport: 'releaseDateFinderResponseSchema',
+
+    // GUI panel (codegen: finderPanelRegistry.generated.ts)
+    panelFeaturePath: 'release-date-finder',
+    panelExport: 'ReleaseDateFinderPanel',
+
+    // Data-change events: suffix → extra domains beyond routePrefix.
+    // WHY: RDF writes field_candidates via submitCandidate, so review + product + publisher
+    // must refresh on run lifecycle events (same contract as CEF).
+    dataChangeEvents: {
+      'run': ['review', 'product', 'publisher'],
+      'run-deleted': ['review', 'product', 'publisher'],
+      'deleted': ['review', 'product', 'publisher'],
+    },
+
+    // Module Settings (codegen: moduleSettingsSections.generated.ts)
+    settingsLabel: 'Release Date Finder',
+    settingsSubtitle: 'RDF module settings',
+    settingsTip: 'Per-category settings for the Release Date Finder: per-variant discovery of first-availability dates.',
+    iconName: 'calendar',
   },
 ]);
 

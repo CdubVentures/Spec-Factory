@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory - Release Date Finder (RDF) Reference</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --surface-alt: #f1f3f5;
+    --border: #dee2e6;
+    --border-light: #e9ecef;
+    --text: #212529;
+    --text-muted: #6c757d;
+    --accent: #4263eb;
+    --accent-light: #edf2ff;
+    --green: #2b8a3e;
+    --green-bg: #ebfbee;
+    --red: #c92a2a;
+    --red-bg: #fff5f5;
+    --orange: #e67700;
+    --orange-bg: #fff9db;
+    --purple: #7048e8;
+    --purple-bg: #f3f0ff;
+    --teal: #0c8599;
+    --teal-bg: #e6fcf5;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.6; }
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 32px 0; text-align: center; }
+  .header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  .header p { color: var(--text-muted); font-size: 15px; margin-top: 6px; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  .section-title { font-size: 20px; font-weight: 700; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); display: flex; align-items: center; gap: 10px; }
+  .section-title .num { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+  .card-header { padding: 14px 20px; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-light); }
+  .card-body { padding: 16px 20px; font-size: 14px; }
+  .card-body p { margin-bottom: 10px; }
+  .card-body p:last-child { margin-bottom: 0; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .tag-green { background: var(--green-bg); color: var(--green); }
+  .tag-orange { background: var(--orange-bg); color: var(--orange); }
+  .tag-accent { background: var(--accent-light); color: var(--accent); }
+  .tag-purple { background: var(--purple-bg); color: var(--purple); }
+  .tag-teal { background: var(--teal-bg); color: var(--teal); }
+  .tag-red { background: var(--red-bg); color: var(--red); }
+  .detail-grid { display: grid; grid-template-columns: 180px 1fr; gap: 4px 12px; font-size: 13px; background: var(--surface-alt); padding: 12px 14px; border-radius: 6px; margin-top: 6px; }
+  .detail-grid dt { font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+  .detail-grid dd { color: var(--text); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border-light); }
+  th { background: var(--surface-alt); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
+  tr:last-child td { border-bottom: none; }
+  td code { font-family: var(--mono); font-size: 12px; background: var(--surface-alt); padding: 2px 6px; border-radius: 3px; color: var(--accent); }
+  .flow-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 24px 0; flex-wrap: wrap; }
+  .flow-box { padding: 12px 20px; border-radius: var(--radius); font-weight: 600; font-size: 13px; text-align: center; border: 2px solid; min-width: 140px; }
+  .flow-arrow { font-size: 20px; color: var(--text-muted); }
+  .flow-pass { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+  .flow-fail { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+  .flow-repair { background: var(--purple-bg); border-color: var(--purple); color: var(--purple); }
+  .flow-neutral { background: var(--surface-alt); border-color: var(--border); color: var(--text); }
+  .flow-accent { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .flow-teal { background: var(--teal-bg); border-color: var(--teal); color: var(--teal); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+  pre.code-block { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 6px; padding: 16px 20px; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; overflow-x: auto; color: var(--text); margin-top: 8px; }
+  .callout { border-left: 4px solid; padding: 14px 18px; border-radius: 0 var(--radius) var(--radius) 0; margin: 12px 0; font-size: 13.5px; }
+  .callout-warn { border-color: var(--orange); background: var(--orange-bg); }
+  .callout-info { border-color: var(--accent); background: var(--accent-light); }
+  .callout-ok { border-color: var(--green); background: var(--green-bg); }
+  .callout strong { display: block; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Release Date Finder (RDF) Reference</h1>
+  <p>Per-variant first-availability date discovery with evidence tiers, confidence gating, and the shared publisher pipeline</p>
+</div>
+
+<div class="container">
+
+<div class="callout callout-info" style="margin-bottom:24px;">
+  <strong>Module class:</strong> <code>variantFieldProducer</code> &mdash; RDF is the first of its class. It iterates CEF variants, runs the LLM per-variant, and routes each result through the shared publisher gate with a <code>variant_id</code>-scoped candidate row. The next variant-scoped field finder (e.g. <code>discontinued</code>) follows this exact pattern.
+</div>
+
+<!-- ================================================================== -->
+<!-- 1. OVERVIEW -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">1</span> Overview</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--accent-light);">Per-Variant Release Date Discovery</div>
+  <div class="card-body">
+    <p style="margin-bottom:12px;">RDF discovers a first-availability release date <strong>per CEF variant</strong> (each color and each edition). Every candidate carries evidence (URL + excerpt + tier) and a confidence score. Candidates above threshold flow through the shared publisher gate and populate <code>field_candidates</code> scoped to the variant.</p>
+    <div class="flow-row">
+      <div class="flow-box flow-neutral">CEF Variants<br><small>colors + editions</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-accent">Run per Variant<br><small>LLM + evidence</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-teal">Validate<br><small>confidence + evidence gate</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-pass">Publish<br><small>field_candidates (variant-scoped)</small></div>
+    </div>
+    <dl class="detail-grid">
+      <dt>Dependency</dt><dd>Requires CEF data (<code>specDb.variants.listByProduct(productId)</code>) &mdash; one RDF run per variant.</dd>
+      <dt>Module class</dt><dd><code>variantFieldProducer</code> &mdash; new class alongside <code>variantArtifactProducer</code> (PIF) and <code>variantGenerator</code> (CEF).</dd>
+      <dt>Field rule</dt><dd>EG-locked <code>release_date</code>: scalar date. Accepted formats: <code>YYYY-MM-DD</code>, <code>YYYY</code>, <code>MMM YYYY</code>, <code>Month YYYY</code>.</dd>
+      <dt>Accumulation</dt><dd><strong>Latest-wins per variant</strong>. Each new run for a variant replaces its candidate. Distinct variants accumulate independently.</dd>
+      <dt>Discovery learning</dt><dd>URLs and queries feed-forward per variant with global URL/Query cooldown windows (default 90 days).</dd>
+      <dt>Phase</dt><dd><code>releaseDateFinder</code> (<code>llmPhaseDefs.js</code>) &mdash; triage role, planner model family.</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- 2. WHY VARIANT-SCOPED -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">2</span> Why Variant-Scoped (not Product-Scoped)</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--purple-bg);">Release Dates Differ Across Colorways and Editions</div>
+  <div class="card-body">
+    <p>A product&rsquo;s &ldquo;default&rdquo; release date is rarely the only one that matters:</p>
+    <ul style="margin:6px 0 0 20px; font-size:13.5px;">
+      <li>Limited colorways drop months after launch.</li>
+      <li>Collab editions (SF6 Chun-Li, CoD BO6, Cyberpunk) ship on their own calendars.</li>
+      <li>Regional SKUs can announce first, then roll out globally.</li>
+    </ul>
+    <p style="margin-top:10px;">RDF mirrors the PIF model: iterate CEF&rsquo;s <code>variant_registry</code> and produce one candidate per <code>variant_id</code>. The scalar product-level <code>release_date</code> field rule still applies (same shape), but each candidate row carries a <code>variant_id</code> foreign key so the same field key can have N coexisting rows.</p>
+
+    <div class="callout callout-info" style="margin-top:8px;">
+      <strong>Reconciliation with the pipeline</strong>
+      The main indexing pipeline publishes a <em>product-level</em> <code>release_date</code> (no <code>variant_id</code>). RDF publishes <em>variant-level</em> candidates. They coexist in <code>field_candidates</code> via the <code>UNIQUE(category, product_id, field_key, source_id, variant_id_key)</code> index. Deleting a variant via <code>deleteVariant()</code> cascades that variant&rsquo;s candidates automatically (SQL + JSON mirror).
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- 3. DATA FLOW -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">3</span> Data Flow</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--green-bg);">Request &rarr; LLM &rarr; Gate &rarr; Publish &rarr; Persist</div>
+  <div class="card-body">
+    <div class="flow-row">
+      <div class="flow-box flow-accent">POST /release-date-finder/:cat/:pid<br><small>body: { variant_key? }</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-neutral">Register Op<br><small>202 Accepted</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-teal">Per-Variant Loop<br><small>runPerVariant.js</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-repair">LLM + Zod parse<br><small>releaseDateSchema.js</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-accent">Confidence Gate<br><small>minConfidence, evidence&nbsp;&ge;&nbsp;1</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-pass">submitCandidate()<br><small>variant_id-scoped</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-pass">JSON + SQL Write<br><small>durable + projection</small></div>
+    </div>
+    <dl class="detail-grid">
+      <dt>Endpoint (all variants)</dt><dd><code>POST /api/release-date-finder/:category/:productId</code> &mdash; body empty fires one run per variant.</dd>
+      <dt>Endpoint (one variant)</dt><dd>Same URL with <code>{ "variant_key": "color:black" }</code> &mdash; single variant.</dd>
+      <dt>Schema</dt><dd><code>src/features/release-date/releaseDateSchema.js</code> &mdash; Zod: <code>release_date</code> string, <code>confidence</code> 0&ndash;100, <code>unknown_reason</code>, <code>evidence[]</code> (<code>source_url</code>, <code>source_type</code>, <code>tier</code>, <code>excerpt</code>), <code>discovery_log</code>.</dd>
+      <dt>Confidence gate</dt><dd>Below-threshold candidates are persisted with <code>below_confidence: true</code> but <em>not</em> submitted to the publisher. Run still counts and cooldown still sets.</dd>
+      <dt>Unknown path</dt><dd>LLM returns empty <code>release_date</code> + <code>unknown_reason</code>. Run persists, no publisher submit, no cooldown reset.</dd>
+      <dt>Publisher error path</dt><dd>If <code>submitCandidate()</code> throws, the error lands on <code>candidate.publisher_error</code>. The run itself still persists &mdash; the publisher is advisory, not a hard dependency.</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- 4. VARIANT RESOLUTION -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">4</span> Variant Resolution</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--purple-bg);">Backend: CEF Registry is SSOT</div>
+  <div class="card-body">
+    <p>The orchestrator reads variants via <code>specDb.variants.listByProduct(productId)</code>. It does <strong>not</strong> re-derive from <code>published.colors</code>. The registry is the one-row-per-variant truth.</p>
+    <pre class="code-block">// src/features/release-date/releaseDateFinder.js
+const variants = specDb.variants.listByProduct(productId);
+const targets = variantKey
+  ? variants.filter((v) =&gt; v.variant_key === variantKey)
+  : variants;
+for (const v of targets) {
+  await produceForVariant({ product, variant: v, ... });
+}</pre>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--teal-bg);">Frontend: Shared Scaffolding (O(1) for future finders)</div>
+  <div class="card-body">
+    <p>The RDF panel uses the shared variant-row scaffolding from <code>shared/ui/finder/</code>. The next variant-dependent finder (e.g. <code>discontinued</code>) drops in with the same imports:</p>
+    <pre class="code-block">import {
+  FinderPanelHeader, FinderKpiCard, FinderPanelFooter,
+  FinderDeleteConfirmModal, FinderSectionCard, FinderHowItWorks,
+  FinderVariantRow, useFinderColorHexMap,
+  buildFinderVariantRows, buildEditionsMap,
+  resolveVariantColorAtoms,
+} from '../../../shared/ui/finder/index.ts';</pre>
+    <p style="margin-top:8px;">Label precedence (via <code>buildFinderVariantRows</code>):</p>
+    <ul style="margin:4px 0 0 20px; font-size:13.5px;">
+      <li>Edition &rarr; <code>edition_display_name</code> (e.g. &ldquo;Call of Duty&reg;: Black Ops 6 Edition&rdquo;)</li>
+      <li>Color with marketing name &rarr; <code>color_names[combo]</code> (e.g. &ldquo;Glacier Blue&rdquo;)</li>
+      <li>Raw color &rarr; <code>formatAtomLabel(combo)</code> titlecase (e.g. <code>black</code> &rarr; &ldquo;Black&rdquo;)</li>
+    </ul>
+    <p style="margin-top:8px;">Two-column layout (<code>grid grid-cols-2 gap-3</code>) and <code>FinderVariantRow</code> chrome (arrow + ColorSwatch + label + ED/CLR chip + <code>trailing</code> slot + <code>children</code> expanded slot) are identical to PIF.</p>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- 5. EVIDENCE AND CONFIDENCE -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">5</span> Evidence &amp; Confidence</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--teal-bg);">Every Date Must Cite a Source</div>
+  <div class="card-body">
+    <p>The LLM is required to return at least one <code>evidence</code> entry. Each entry carries:</p>
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>source_url</code></td><td>string</td><td>Canonical URL of the source page.</td></tr>
+        <tr><td><code>source_page</code></td><td>string?</td><td>Page title or article heading.</td></tr>
+        <tr><td><code>source_type</code></td><td>enum</td><td><code>manufacturer</code> / <code>retailer</code> / <code>review</code> / <code>press</code> / <code>other</code></td></tr>
+        <tr><td><code>tier</code></td><td>enum</td><td><code>tier1</code> (manufacturer, press release) / <code>tier2</code> (major retailer, pro review) / <code>tier3</code> (secondary press)</td></tr>
+        <tr><td><code>excerpt</code></td><td>string</td><td>Short quoted snippet anchoring the date.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout-info" style="margin-top:8px;">
+      <strong>Publisher threshold</strong>
+      A candidate is submitted to the publisher only when <strong>all</strong> of:
+      <ul style="margin:4px 0 0 16px; font-size:13px;">
+        <li>Date value is non-empty (not <code>unk</code>)</li>
+        <li><code>confidence &ge; minConfidence</code> (default 70, per-module setting)</li>
+        <li><code>evidence.length &ge; 1</code> (field rule: <code>min_evidence_refs = 1</code>)</li>
+      </ul>
+      Below-threshold candidates still persist with <code>below_confidence: true</code> so you can audit them in the panel.
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- 6. REGISTRY WIRING -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">6</span> Registry Wiring</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--accent-light);">finderModuleRegistry.js Entry</div>
+  <div class="card-body">
+    <pre class="code-block">{
+  id: 'releaseDateFinder',
+  routePrefix: 'release-date-finder',
+  moduleClass: 'variantFieldProducer',
+  variantSource: 'colorEditionFinder',
+  moduleType: 'rdf',
+  moduleLabel: 'RDF',
+  chipStyle: 'sf-chip-warning',
+  tableName: 'release_date_finder',
+  runsTableName: 'release_date_finder_runs',
+  summaryColumns: [
+    { name: 'candidates', type: 'TEXT', default: "'[]'" },
+    { name: 'candidate_count', type: 'INTEGER', default: '0' },
+    { name: 'cooldown_until', type: 'TEXT', default: "''" },
+  ],
+  summaryIndexes: [{ name: 'idx_rdf_cooldown', columns: ['cooldown_until'] }],
+  fieldKeys: ['release_date'],
+  requiredFields: ['release_date'],
+  phase: 'releaseDateFinder',
+  featurePath: 'release-date',
+  routeFile: 'releaseDateFinderRoutes',
+  registrarExport: 'registerReleaseDateFinderRoutes',
+  filePrefix: 'release_date',
+  reseedKey: 'release_date',
+  rebuildFnKey: 'rebuildReleaseDateFinderFromJson',
+  settingsSchema: [
+    { key: 'discoveryPromptTemplate', type: 'string', default: '', allowEmpty: true, hidden: true },
+    { key: 'perVariantAttemptBudget', type: 'int', default: 1, min: 1, max: 5 },
+    { key: 'minConfidence',           type: 'int', default: 70, min: 0, max: 100 },
+  ],
+  promptBuilderExport: 'buildReleaseDateFinderPrompt',
+  responseSchemaExport: 'releaseDateFinderResponseSchema',
+  panelFeaturePath: 'release-date-finder',
+  panelExport: 'ReleaseDateFinderPanel',
+  dataChangeEvents: {
+    'run': ['review', 'product', 'publisher'],
+    'run-deleted': ['review', 'product', 'publisher'],
+    'deleted': ['review', 'product', 'publisher'],
+  },
+  settingsLabel: 'Release Date Finder',
+  iconName: 'calendar',
+}</pre>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- 7. SETTINGS -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">7</span> Settings</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--orange-bg);">Per-Module and Global Knobs</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Setting</th><th>Default</th><th>Controls</th></tr></thead>
+      <tbody>
+        <tr><td><code>perVariantAttemptBudget</code></td><td>1</td><td>Max LLM calls per variant per Run invocation (1&ndash;5).</td></tr>
+        <tr><td><code>minConfidence</code></td><td>70</td><td>Confidence gate for publisher submission. Below &rarr; candidate persists locally only.</td></tr>
+        <tr><td><code>discoveryPromptTemplate</code></td><td>&ldquo;&rdquo; (uses default)</td><td>Optional per-category prompt override. See <code>RDF_DEFAULT_TEMPLATE</code>.</td></tr>
+        <tr><td><code>urlCooldownDays</code> <span class="tag tag-accent">global</span></td><td>90</td><td>Global URL re-check window. Shared with all finders. Pipeline Settings &rarr; Cooldowns.</td></tr>
+        <tr><td><code>queryCooldownDays</code> <span class="tag tag-accent">global</span></td><td>90</td><td>Global query re-run window. Shared with all finders.</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:8px;">The cooldown knobs are <em>global</em> (not per-finder) because a URL fetched by RDF should not be fetched again by PIF the next day. Stored in <code>runtime_settings</code> and read at run time.</p>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- 8. PANEL -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">8</span> Panel (Indexing Lab)</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--purple-bg);">Layout mirrors PIF</div>
+  <div class="card-body">
+    <p>The RDF panel follows the same shape as PIF &mdash; the user should feel no shift between them:</p>
+    <ul style="margin:4px 0 0 20px; font-size:13.5px;">
+      <li><strong>Header:</strong> title + model chip + status chip + &ldquo;Run All&rdquo; button.</li>
+      <li><strong>KPI grid (4 cards):</strong> <em>Release Dates</em> &bull; <em>Variants</em> &bull; <em>Runs</em> &bull; <em>Published&nbsp;N/total</em>. Order mirrors PIF&rsquo;s <em>Images &bull; Variants &bull; Runs &bull; Carousel&nbsp;N/total</em>.</li>
+      <li><strong>How It Works</strong> collapsible explainer (content: <code>rdfHowItWorksContent.ts</code>).</li>
+      <li><strong>All Release Dates</strong> section &mdash; two-column grid of <code>FinderVariantRow</code>s. Each row: arrow, ColorSwatch, label, ED/CLR chip, date/unk chip, confidence %, Run button. Expanded body lists evidence and publisher candidates.</li>
+      <li><strong>Run History</strong> section &mdash; per-run row with model, duration, variant label, resolved date, evidence count. Expandable for prompt/response audit.</li>
+      <li><strong>Footer:</strong> last run, run count, model badge.</li>
+    </ul>
+    <div class="callout callout-info" style="margin-top:8px;">
+      <strong>For the next variant-dependent finder</strong>
+      Copy the RDF panel shape: header &rarr; KPI grid (same 4 card order) &rarr; HIW &rarr; &ldquo;All &lt;Thing&gt;&rdquo; grid &rarr; Run History &rarr; footer. Swap only the module-specific chips, expanded body, KPI derivations, and HIW content. The shared scaffolding (<code>FinderVariantRow</code>, <code>useFinderColorHexMap</code>, <code>buildFinderVariantRows</code>) stays identical.
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- 9. FILE MAP -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">9</span> File Map</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--surface-alt);">Backend (<code>src/features/release-date/</code>)</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>File</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td><code>releaseDateFinder.js</code></td><td>Orchestrator &mdash; per-variant loop, submitCandidate, persist.</td></tr>
+        <tr><td><code>releaseDateLlmAdapter.js</code></td><td>Prompt builder + <code>RDF_DEFAULT_TEMPLATE</code> + discovery log accumulator.</td></tr>
+        <tr><td><code>releaseDateSchema.js</code></td><td>Zod schema for LLM response.</td></tr>
+        <tr><td><code>releaseDateStore.js</code></td><td>JSON store wrapper + latest-wins-per-variant <code>recalculateSelected</code> + rebuild fn.</td></tr>
+        <tr><td><code>api/releaseDateFinderRoutes.js</code></td><td>Thin route handler via <code>createFinderRouteHandler</code>.</td></tr>
+        <tr><td><code>index.js</code></td><td>Public exports.</td></tr>
+        <tr><td><code>tests/*.test.js</code></td><td>Schema, adapter, store, orchestrator tests (41 total).</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--surface-alt);">Frontend (<code>tools/gui-react/src/features/release-date-finder/</code>)</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>File</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td><code>types.ts</code></td><td>TS interfaces: <code>EvidenceSource</code>, <code>PublisherCandidateRef</code>, <code>ReleaseDateFinderCandidate</code>, <code>ReleaseDateFinderRun</code>, <code>ReleaseDateFinderResult</code>.</td></tr>
+        <tr><td><code>api/releaseDateFinderQueries.ts</code></td><td>React Query hooks (GET, POST, DELETE run, DELETE all).</td></tr>
+        <tr><td><code>selectors/rdfSelectors.ts</code></td><td>Pure derivations: KPI cards, variant rows, run history rows.</td></tr>
+        <tr><td><code>components/ReleaseDateFinderPanel.tsx</code></td><td>Indexing Lab panel &mdash; uses shared scaffolding.</td></tr>
+        <tr><td><code>rdfHowItWorksContent.ts</code></td><td>&ldquo;How It Works&rdquo; content (typed <code>HiwSection[]</code>).</td></tr>
+        <tr><td><code>index.ts</code></td><td>Barrel export (codegen lazy-imports from here).</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- 10. RELATED DOCS -->
+<!-- ================================================================== -->
+<div class="section-title"><span class="num">10</span> Related Docs</div>
+
+<div class="card">
+  <div class="card-body">
+    <ul style="margin:4px 0 0 20px; font-size:13.5px;">
+      <li><a href="finder-module-guide.html">Finder Module Guide</a> &mdash; how to build a new finder (registry, codegen, shared helpers).</li>
+      <li><a href="color-edition-finder.html">Color &amp; Edition Finder Reference</a> &mdash; variant registry SSOT (RDF depends on it).</li>
+      <li><a href="product-image-finder.html">Product Image Finder Reference</a> &mdash; variant-dependent finder with the same panel shape.</li>
+      <li><a href="publisher-pipeline.html">Publisher Pipeline</a> &mdash; <code>submitCandidate()</code> gate, <code>field_candidates</code> table, variant-scoped cascade.</li>
+      <li><a href="data-ownership-flows.html">Data Ownership Flows</a> &mdash; JSON SSOT + SQL projection contract, variant_id cascade on delete.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- FOOTER -->
+<!-- ================================================================== -->
+
+<div style="text-align:center; padding:32px 0; color:var(--text-muted); font-size:13px;">
+  Spec Factory Release Date Finder Reference &mdash; 2026-04-17<br>
+  Module class: <code>variantFieldProducer</code> &bull; Shared variant-row scaffolding &bull; Per-variant publisher gate<br>
+  <span style="margin-top:6px; display:block;">
+    Backend: <code>src/features/release-date/</code> &bull;
+    Frontend: <code>tools/gui-react/src/features/release-date-finder/</code>
+  </span>
+</div>
+
+</div>
+</body>
+</html>

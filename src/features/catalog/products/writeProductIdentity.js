@@ -1,11 +1,14 @@
-// WHY: Creates the initial product.json at .workspace/products/{pid}/product.json
+// WHY: Creates the initial product.json at {productRoot}/{pid}/product.json
 // when a product is added to the system. This is the rebuild SSOT — one file per
 // product that grows over its lifetime (sources merge in after runs, fields after review).
 // Does NOT overwrite an existing file — safe for re-add / idempotent calls.
+//
+// productRoot is REQUIRED. Callers must resolve the path explicitly. There is no
+// silent default — a previous default caused tests to write into the real
+// .workspace/products/ and polluted production data.
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
 
 export function writeProductIdentity({
   productId,
@@ -14,8 +17,10 @@ export function writeProductIdentity({
   identifier,
   productRoot,
 }) {
-  const resolvedRoot = productRoot || defaultProductRoot();
-  const productDir = path.join(resolvedRoot, productId);
+  if (!productRoot) {
+    throw new Error('writeProductIdentity requires productRoot');
+  }
+  const productDir = path.join(productRoot, productId);
   const productPath = path.join(productDir, 'product.json');
 
   if (fs.existsSync(productPath)) {

@@ -7,6 +7,8 @@ import { buildColorEditionFinderPrompt } from '../../../color-edition/colorEditi
 import { colorEditionFinderResponseSchema } from '../../../color-edition/colorEditionSchema.js';
 import { buildProductImageFinderPrompt } from '../../../product-image/productImageLlmAdapter.js';
 import { productImageFinderResponseSchema } from '../../../product-image/productImageSchema.js';
+import { buildReleaseDateFinderPrompt } from '../../../release-date/releaseDateLlmAdapter.js';
+import { releaseDateFinderResponseSchema } from '../../../release-date/releaseDateSchema.js';
 
 export const FINDER_PHASE_SCHEMAS = Object.freeze({
   'color-finder': {
@@ -16,5 +18,9 @@ export const FINDER_PHASE_SCHEMAS = Object.freeze({
   'image-finder': {
     system_prompt: buildProductImageFinderPrompt({ product: { brand: '{brand}', model: '{model}' } }),
     response_schema: zodToLlmSchema(productImageFinderResponseSchema),
+  },
+  'release-date-finder': {
+    system_prompt: buildReleaseDateFinderPrompt({ product: { brand: '{brand}', model: '{model}' } }),
+    response_schema: zodToLlmSchema(releaseDateFinderResponseSchema),
   },
 });

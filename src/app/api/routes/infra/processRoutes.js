@@ -1,4 +1,5 @@
 import { buildProcessStartLaunchPlan } from '../../../../features/indexing/api/builders/processStartLaunchPlan.js';
+import { defaultSnapshotRoot } from '../../../../core/config/runtimeArtifactRoots.js';
 
 async function ensureGeneratedRulesPresent({ fs, generatedRulesCandidates = [] } = {}) {
   for (const rulesPath of generatedRulesCandidates) {
@@ -27,6 +28,7 @@ export function createInfraProcessRoutes({
   HELPER_ROOT,
   OUTPUT_ROOT,
   INDEXLAB_ROOT,
+  snapshotsDir,
   fs,
   pathApi,
   startProcess,
@@ -37,6 +39,7 @@ export function createInfraProcessRoutes({
   buildProcessStartLaunchPlanFn = buildProcessStartLaunchPlan,
   processRef = process,
 } = {}) {
+  const resolvedSnapshotsDir = snapshotsDir || defaultSnapshotRoot();
   return async function handleInfraProcess(parts, _params, method, req, res) {
     if (parts[0] !== 'process') {
       return false;
@@ -49,6 +52,7 @@ export function createInfraProcessRoutes({
         helperRoot: HELPER_ROOT,
         outputRoot: OUTPUT_ROOT,
         indexLabRoot: INDEXLAB_ROOT,
+        snapshotsDir: resolvedSnapshotsDir,
         env: processRef.env,
         pathApi,
       });

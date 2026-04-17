@@ -1,7 +1,30 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
 
 import { createPipelineCommands } from '../pipelineCommands.js';
+
+// WHY: Every test gets its own tmp productRoot so writeProductCheckpoint
+// never touches the real .workspace/products/. Register afterEach to wipe it.
+function makeTmpProductRoot() {
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'cmdil-prod-'));
+}
+
+function makeConfig(overrides = {}) {
+  return {
+    runtimeScreencastEnabled: false,
+    productRoot: makeTmpProductRoot(),
+    ...overrides,
+  };
+}
+
+function cleanupConfig(config) {
+  if (config?.productRoot) {
+    try { fs.rmSync(config.productRoot, { recursive: true, force: true }); } catch {}
+  }
+}
 
 // WHY: Characterization tests lock current commandIndexLab behavior before
 // we modify it to support DB-first job resolution via jobOverride.
@@ -63,12 +86,6 @@ function buildDeps(mockRunProduct, mockRunUntilComplete) {
   };
 }
 
-function makeConfig() {
-  return {
-    runtimeScreencastEnabled: false,
-  };
-}
-
 test('commandIndexLab characterization: existing fixture file is read via s3Key', async () => {
   const existingJob = {
     productId: 'mouse-abc12345',
@@ -81,19 +98,24 @@ test('commandIndexLab characterization: existing fixture file is read via s3Key'
   const mockRun = createMockRunProduct();
   const { commandIndexLab } = createPipelineCommands(buildDeps(mockRun));
 
-  await commandIndexLab(makeConfig(), storage, {
-    category: 'mouse',
-    'product-id': 'mouse-abc12345',
-    'run-id': 'test-run-001',
-  });
+  const config = makeConfig();
+  try {
+    await commandIndexLab(config, storage, {
+      category: 'mouse',
+      'product-id': 'mouse-abc12345',
+      'run-id': 'test-run-001',
+    });
 
-  assert.equal(mockRun.calls.length, 1, 'runProduct called once');
-  const call = mockRun.calls[0];
-  assert.equal(call.s3Key, 'specs/inputs/mouse/products/mouse-abc12345.json');
-  // WHY: jobOverride is falsy (null) — runProduct falls through to fixture read.
-  // Before DB-first wiring this was undefined; now it's null from failed DB lookup.
-  // Observable behavior is identical: fixture file is still read.
-  assert.ok(!call.jobOverride, 'jobOverride is falsy — fixture read path used');
+    assert.equal(mockRun.calls.length, 1, 'runProduct called once');
+    const call = mockRun.calls[0];
+    assert.equal(call.s3Key, 'specs/inputs/mouse/products/mouse-abc12345.json');
+    // WHY: jobOverride is falsy (null) — runProduct falls through to fixture read.
+    // Before DB-first wiring this was undefined; now it's null from failed DB lookup.
+    // Observable behavior is identical: fixture file is still read.
+    assert.ok(!call.jobOverride, 'jobOverride is falsy — fixture read path used');
+  } finally {
+    cleanupConfig(config);
+  }
 });
 
 test('commandIndexLab characterization: --brand/--model creates fixture with those values', async () => {
@@ -101,19 +123,24 @@ test('commandIndexLab characterization: --brand/--model creates fixture with tho
   const mockRun = createMockRunProduct();
   const { commandIndexLab } = createPipelineCommands(buildDeps(mockRun));
 
-  await commandIndexLab(makeConfig(), storage, {
-    category: 'mouse',
-    brand: 'Logitech',
-    model: 'G502 X Plus',
-    'run-id': 'test-run-002',
-  });
+  const config = makeConfig();
+  try {
+    await commandIndexLab(config, storage, {
+      category: 'mouse',
+      brand: 'Logitech',
+      model: 'G502 X Plus',
+      'run-id': 'test-run-002',
+    });
 
-  assert.equal(storage.written.length, 1, 'one fixture written');
-  const written = storage.written[0];
-  assert.equal(written.parsed.identityLock.brand, 'Logitech');
-  assert.equal(written.parsed.identityLock.base_model, 'G502 X Plus');
-  assert.equal(written.parsed.identityLock.model, 'G502 X Plus');
-  assert.ok(written.key.startsWith('specs/inputs/mouse/products/'));
+    assert.equal(storage.written.length, 1, 'one fixture written');
+    const written = storage.written[0];
+    assert.equal(written.parsed.identityLock.brand, 'Logitech');
+    assert.equal(written.parsed.identityLock.base_model, 'G502 X Plus');
+    assert.equal(written.parsed.identityLock.model, 'G502 X Plus');
+    assert.ok(written.key.startsWith('specs/inputs/mouse/products/'));
+  } finally {
+    cleanupConfig(config);
+  }
 });
 
 test('commandIndexLab characterization: no args creates fixture with unknown defaults', async () => {
@@ -121,16 +148,21 @@ test('commandIndexLab characterization: no args creates fixture with unknown def
   const mockRun = createMockRunProduct();
   const { commandIndexLab } = createPipelineCommands(buildDeps(mockRun));
 
-  await commandIndexLab(makeConfig(), storage, {
-    category: 'mouse',
-    'run-id': 'test-run-003',
-  });
+  const config = makeConfig();
+  try {
+    await commandIndexLab(config, storage, {
+      category: 'mouse',
+      'run-id': 'test-run-003',
+    });
 
-  assert.equal(storage.written.length, 1, 'one fixture written');
-  const written = storage.written[0];
-  assert.equal(written.parsed.identityLock.brand, 'unknown');
-  assert.equal(written.parsed.identityLock.base_model, 'unknown-model');
-  assert.equal(written.parsed.identityLock.model, 'unknown-model');
+    assert.equal(storage.written.length, 1, 'one fixture written');
+    const written = storage.written[0];
+    assert.equal(written.parsed.identityLock.brand, 'unknown');
+    assert.equal(written.parsed.identityLock.base_model, 'unknown-model');
+    assert.equal(written.parsed.identityLock.model, 'unknown-model');
+  } finally {
+    cleanupConfig(config);
+  }
 });
 
 test('commandIndexLab characterization: --seed "Razer Viper V3 Pro" parses brand/model', async () => {
@@ -138,17 +170,22 @@ test('commandIndexLab characterization: --seed "Razer Viper V3 Pro" parses brand
   const mockRun = createMockRunProduct();
   const { commandIndexLab } = createPipelineCommands(buildDeps(mockRun));
 
-  await commandIndexLab(makeConfig(), storage, {
-    category: 'mouse',
-    seed: 'Razer Viper V3 Pro',
-    'run-id': 'test-run-004',
-  });
+  const config = makeConfig();
+  try {
+    await commandIndexLab(config, storage, {
+      category: 'mouse',
+      seed: 'Razer Viper V3 Pro',
+      'run-id': 'test-run-004',
+    });
 
-  assert.equal(storage.written.length, 1, 'one fixture written');
-  const written = storage.written[0];
-  assert.equal(written.parsed.identityLock.brand, 'Razer');
-  assert.equal(written.parsed.identityLock.base_model, 'Viper V3 Pro');
-  assert.equal(written.parsed.identityLock.model, 'Viper V3 Pro');
+    assert.equal(storage.written.length, 1, 'one fixture written');
+    const written = storage.written[0];
+    assert.equal(written.parsed.identityLock.brand, 'Razer');
+    assert.equal(written.parsed.identityLock.base_model, 'Viper V3 Pro');
+    assert.equal(written.parsed.identityLock.model, 'Viper V3 Pro');
+  } finally {
+    cleanupConfig(config);
+  }
 });
 
 test('commandIndexLab characterization: --seed URL is used as s3Key directly (contains /)', async () => {
@@ -161,15 +198,20 @@ test('commandIndexLab characterization: --seed URL is used as s3Key directly (co
   const mockRun = createMockRunProduct();
   const { commandIndexLab } = createPipelineCommands(buildDeps(mockRun));
 
-  await commandIndexLab(makeConfig(), storage, {
-    category: 'mouse',
-    seed: seedUrl,
-    'run-id': 'test-run-005',
-  });
+  const config = makeConfig();
+  try {
+    await commandIndexLab(config, storage, {
+      category: 'mouse',
+      seed: seedUrl,
+      'run-id': 'test-run-005',
+    });
 
-  assert.equal(storage.written.length, 0, 'no fixture written — URL used as s3Key');
-  assert.equal(mockRun.calls.length, 1);
-  assert.equal(mockRun.calls[0].s3Key, seedUrl);
+    assert.equal(storage.written.length, 0, 'no fixture written — URL used as s3Key');
+    assert.equal(mockRun.calls.length, 1);
+    assert.equal(mockRun.calls[0].s3Key, seedUrl);
+  } finally {
+    cleanupConfig(config);
+  }
 });
 
 test('commandIndexLab characterization: --fields populates requirements.requiredFields', async () => {
@@ -177,16 +219,21 @@ test('commandIndexLab characterization: --fields populates requirements.required
   const mockRun = createMockRunProduct();
   const { commandIndexLab } = createPipelineCommands(buildDeps(mockRun));
 
-  await commandIndexLab(makeConfig(), storage, {
-    category: 'mouse',
-    brand: 'Razer',
-    model: 'Viper',
-    fields: 'weight,dpi,sensor',
-    'run-id': 'test-run-006',
-  });
+  const config = makeConfig();
+  try {
+    await commandIndexLab(config, storage, {
+      category: 'mouse',
+      brand: 'Razer',
+      model: 'Viper',
+      fields: 'weight,dpi,sensor',
+      'run-id': 'test-run-006',
+    });
 
-  const written = storage.written[0];
-  assert.deepEqual(written.parsed.requirements, { requiredFields: ['weight', 'dpi', 'sensor'] });
+    const written = storage.written[0];
+    assert.deepEqual(written.parsed.requirements, { requiredFields: ['weight', 'dpi', 'sensor'] });
+  } finally {
+    cleanupConfig(config);
+  }
 });
 
 // --- New behavior tests (DB-first job resolution) ---
@@ -196,21 +243,26 @@ test('commandIndexLab: --brand/--model builds jobOverride directly (no DB needed
   const mockRun = createMockRunProduct();
   const { commandIndexLab } = createPipelineCommands(buildDeps(mockRun));
 
-  await commandIndexLab(makeConfig(), storage, {
-    category: 'mouse',
-    brand: 'Corsair',
-    model: 'M75 Air',
-    variant: 'White',
-    'product-id': 'mouse-test999',
-    'run-id': 'test-run-010',
-  });
+  const config = makeConfig();
+  try {
+    await commandIndexLab(config, storage, {
+      category: 'mouse',
+      brand: 'Corsair',
+      model: 'M75 Air',
+      variant: 'White',
+      'product-id': 'mouse-test999',
+      'run-id': 'test-run-010',
+    });
 
-  assert.equal(mockRun.calls.length, 1);
-  const call = mockRun.calls[0];
-  assert.ok(call.jobOverride, 'jobOverride should be set from CLI args');
-  assert.equal(call.jobOverride.identityLock.brand, 'Corsair');
-  assert.equal(call.jobOverride.identityLock.base_model, 'M75 Air');
-  assert.equal(call.jobOverride.identityLock.model, 'M75 Air White');
-  assert.equal(call.jobOverride.identityLock.variant, 'White');
-  assert.equal(call.jobOverride.productId, 'mouse-test999');
+    assert.equal(mockRun.calls.length, 1);
+    const call = mockRun.calls[0];
+    assert.ok(call.jobOverride, 'jobOverride should be set from CLI args');
+    assert.equal(call.jobOverride.identityLock.brand, 'Corsair');
+    assert.equal(call.jobOverride.identityLock.base_model, 'M75 Air');
+    assert.equal(call.jobOverride.identityLock.model, 'M75 Air White');
+    assert.equal(call.jobOverride.identityLock.variant, 'White');
+    assert.equal(call.jobOverride.productId, 'mouse-test999');
+  } finally {
+    cleanupConfig(config);
+  }
 });

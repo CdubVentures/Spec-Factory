@@ -7,6 +7,7 @@
 export type OperationType =
   | 'cef'
   | 'pif'
+  | 'rdf'
   | 'pipeline'
   | 'publisher-reconcile'
   | 'compile'
@@ -15,6 +16,7 @@ export type OperationType =
 export const MODULE_STYLES: Readonly<Record<string, string>> = {
   'cef': 'sf-chip-accent',
   'pif': 'sf-chip-info',
+  'rdf': 'sf-chip-warning',
   'pipeline': 'sf-chip-info',
   'publisher-reconcile': 'sf-chip-success',
   'compile': 'sf-chip-success',
@@ -24,6 +26,7 @@ export const MODULE_STYLES: Readonly<Record<string, string>> = {
 export const MODULE_LABELS: Readonly<Record<string, string>> = {
   'cef': 'CEF',
   'pif': 'PIF',
+  'rdf': 'RDF',
   'pipeline': 'PL',
   'publisher-reconcile': 'PUB',
   'compile': 'CMP',

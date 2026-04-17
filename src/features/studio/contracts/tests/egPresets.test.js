@@ -7,6 +7,7 @@ import {
   EG_DEFAULT_TOGGLES,
   buildEgColorFieldRule,
   buildEgEditionFieldRule,
+  buildEgReleaseDateFieldRule,
   buildAllEgDefaults,
   getEgPresetForKey,
   preserveEgEditablePaths,
@@ -17,8 +18,8 @@ import {
 } from '../egPresets.js';
 
 describe('EG_LOCKED_KEYS', () => {
-  it('contains colors and editions', () => {
-    assert.deepEqual([...EG_LOCKED_KEYS].sort(), ['colors', 'editions']);
+  it('contains colors, editions, and release_date', () => {
+    assert.deepEqual([...EG_LOCKED_KEYS].sort(), ['colors', 'editions', 'release_date']);
   });
 
   it('is frozen', () => {
@@ -175,6 +176,80 @@ describe('buildEgEditionFieldRule', () => {
   });
 });
 
+// ── buildEgReleaseDateFieldRule ──────────────────────────────────────────────
+
+describe('buildEgReleaseDateFieldRule', () => {
+  it('returns an object with key release_date', () => {
+    const rule = buildEgReleaseDateFieldRule();
+    assert.equal(rule.key, 'release_date');
+  });
+
+  it('has scalar date contract', () => {
+    const rule = buildEgReleaseDateFieldRule();
+    assert.equal(rule.contract.type, 'date');
+    assert.equal(rule.contract.shape, 'scalar');
+  });
+
+  it('has empty delimiters (scalar, not list)', () => {
+    const rule = buildEgReleaseDateFieldRule();
+    assert.deepEqual(rule.parse.delimiters, []);
+  });
+
+  it('has accepted_formats matching canonical field_studio_map definition', () => {
+    const rule = buildEgReleaseDateFieldRule();
+    assert.deepEqual(rule.parse.accepted_formats, ['YYYY-MM-DD', 'YYYY', 'MMM YYYY', 'Month YYYY']);
+  });
+
+  it('has open enum policy (new dates acceptable with evidence)', () => {
+    const rule = buildEgReleaseDateFieldRule();
+    assert.equal(rule.enum_policy, 'open');
+    assert.equal(rule.enum.policy, 'open');
+    assert.equal(rule.enum.new_value_policy.accept_if_evidence, true);
+  });
+
+  it('has expected required_level with sometimes availability', () => {
+    const rule = buildEgReleaseDateFieldRule();
+    assert.equal(rule.priority.required_level, 'expected');
+    assert.equal(rule.priority.availability, 'sometimes');
+    assert.equal(rule.priority.difficulty, 'medium');
+  });
+
+  it('has evidence min_refs 1 with standard tier preference', () => {
+    const rule = buildEgReleaseDateFieldRule();
+    assert.equal(rule.evidence.min_evidence_refs, 1);
+    assert.deepEqual(rule.evidence.tier_preference, ['tier1', 'tier2', 'tier3']);
+  });
+
+  it('has UI label "Release Date"', () => {
+    const rule = buildEgReleaseDateFieldRule();
+    assert.equal(rule.ui.label, 'Release Date');
+  });
+
+  it('has search_hints with date-oriented query terms and domain hints', () => {
+    const rule = buildEgReleaseDateFieldRule();
+    assert.ok(rule.search_hints.query_terms.includes('release date'));
+    assert.ok(rule.search_hints.query_terms.includes('launch date'));
+    assert.ok(rule.search_hints.domain_hints.length > 0);
+    assert.ok(rule.search_hints.content_types.includes('product_page'));
+  });
+
+  it('has ai_assist with reasoning_note field (may be empty or populated)', () => {
+    const rule = buildEgReleaseDateFieldRule();
+    assert.equal(typeof rule.ai_assist.reasoning_note, 'string');
+  });
+
+  it('has no token_map (scalar date, no normalization vocabulary)', () => {
+    const rule = buildEgReleaseDateFieldRule();
+    assert.ok(!rule.parse.token_map || Object.keys(rule.parse.token_map).length === 0);
+  });
+
+  it('returns a new object each call (no shared mutation)', () => {
+    const a = buildEgReleaseDateFieldRule();
+    const b = buildEgReleaseDateFieldRule();
+    assert.notEqual(a, b);
+  });
+});
+
 // ── isEgLockedField ──────────────────────────────────────────────────────────
 
 describe('isEgLockedField', () => {
@@ -184,6 +259,10 @@ describe('isEgLockedField', () => {
 
   it('returns true for editions', () => {
     assert.equal(isEgLockedField('editions'), true);
+  });
+
+  it('returns true for release_date', () => {
+    assert.equal(isEgLockedField('release_date'), true);
   });
 
   it('returns false for other fields', () => {
@@ -216,9 +295,10 @@ describe('isEgEditablePath', () => {
 // ── EG_DEFAULT_TOGGLES ───────────────────────────────────────────────────────
 
 describe('EG_DEFAULT_TOGGLES', () => {
-  it('has both colors and editions set to true', () => {
+  it('has colors, editions, and release_date all set to true', () => {
     assert.equal(EG_DEFAULT_TOGGLES.colors, true);
     assert.equal(EG_DEFAULT_TOGGLES.editions, true);
+    assert.equal(EG_DEFAULT_TOGGLES.release_date, true);
   });
 
   it('is frozen', () => {
@@ -229,20 +309,43 @@ describe('EG_DEFAULT_TOGGLES', () => {
 // ── resolveEgLockedKeys ──────────────────────────────────────────────────────
 
 describe('resolveEgLockedKeys', () => {
-  it('returns both keys when both toggles are true', () => {
-    assert.deepEqual(resolveEgLockedKeys({ colors: true, editions: true }), ['colors', 'editions']);
+  it('returns all three keys when all toggles are true', () => {
+    assert.deepEqual(
+      resolveEgLockedKeys({ colors: true, editions: true, release_date: true }).sort(),
+      ['colors', 'editions', 'release_date'],
+    );
   });
 
-  it('returns only colors when editions is false', () => {
-    assert.deepEqual(resolveEgLockedKeys({ colors: true, editions: false }), ['colors']);
+  it('returns only colors when editions and release_date are false', () => {
+    assert.deepEqual(
+      resolveEgLockedKeys({ colors: true, editions: false, release_date: false }),
+      ['colors'],
+    );
   });
 
-  it('returns only editions when colors is false', () => {
-    assert.deepEqual(resolveEgLockedKeys({ colors: false, editions: true }), ['editions']);
+  it('returns only editions when colors and release_date are false', () => {
+    assert.deepEqual(
+      resolveEgLockedKeys({ colors: false, editions: true, release_date: false }),
+      ['editions'],
+    );
   });
 
-  it('returns empty array when both are false', () => {
-    assert.deepEqual(resolveEgLockedKeys({ colors: false, editions: false }), []);
+  it('returns only release_date when colors and editions are false', () => {
+    assert.deepEqual(
+      resolveEgLockedKeys({ colors: false, editions: false, release_date: true }),
+      ['release_date'],
+    );
+  });
+
+  it('excludes release_date when its toggle is missing', () => {
+    assert.ok(!resolveEgLockedKeys({ colors: true, editions: true }).includes('release_date'));
+  });
+
+  it('returns empty array when all are false', () => {
+    assert.deepEqual(
+      resolveEgLockedKeys({ colors: false, editions: false, release_date: false }),
+      [],
+    );
   });
 
   it('returns empty array for empty object', () => {
@@ -290,6 +393,7 @@ describe('buildAllEgDefaults', () => {
     const defaults = buildAllEgDefaults();
     assert.deepEqual(defaults.colors, buildEgColorFieldRule());
     assert.deepEqual(defaults.editions, buildEgEditionFieldRule());
+    assert.deepEqual(defaults.release_date, buildEgReleaseDateFieldRule());
   });
 
   it('returns fresh objects each call', () => {
@@ -311,6 +415,11 @@ describe('getEgPresetForKey', () => {
   it('returns edition rule for "editions"', () => {
     const rule = getEgPresetForKey('editions');
     assert.deepEqual(rule, buildEgEditionFieldRule());
+  });
+
+  it('returns release_date rule for "release_date"', () => {
+    const rule = getEgPresetForKey('release_date');
+    assert.deepEqual(rule, buildEgReleaseDateFieldRule());
   });
 
   it('returns null for unknown key', () => {
@@ -355,6 +464,22 @@ describe('preserveEgEditablePaths', () => {
     preserveEgEditablePaths({ ui: { aliases: ['x'] } }, preset);
     assert.deepEqual(preset, original);
   });
+
+  it('preserves editable paths for release_date (aliases + search_hints)', () => {
+    const current = {
+      key: 'release_date',
+      contract: { type: 'MUTATED' },
+      ui: { label: 'MUTATED', aliases: ['launch_date', 'available_since'] },
+      search_hints: { domain_hints: ['custom.com'] },
+    };
+    const preset = buildEgReleaseDateFieldRule();
+    const merged = preserveEgEditablePaths(current, preset);
+
+    assert.equal(merged.contract.type, preset.contract.type);
+    assert.equal(merged.ui.label, preset.ui.label);
+    assert.deepEqual(merged.ui.aliases, ['launch_date', 'available_since']);
+    assert.deepEqual(merged.search_hints.domain_hints, ['custom.com']);
+  });
 });
 
 // ── sanitizeEgLockedOverrides ───────────────────────────────────────────────
@@ -397,6 +522,42 @@ describe('sanitizeEgLockedOverrides', () => {
     };
     const sanitized = sanitizeEgLockedOverrides(overrides, { colors: false, editions: true });
     assert.equal(sanitized.colors.contract.type, 'HACKED');
+  });
+
+  it('sanitizes release_date non-editable paths when toggle is on', () => {
+    const overrides = {
+      release_date: {
+        key: 'release_date',
+        contract: { type: 'HACKED' },
+        ui: { label: 'HACKED', aliases: ['launch_date'], tooltip_md: 'custom tip' },
+        search_hints: { domain_hints: ['mine.com'] },
+      },
+    };
+    const sanitized = sanitizeEgLockedOverrides(
+      overrides,
+      { colors: true, editions: true, release_date: true },
+    );
+    const preset = buildEgReleaseDateFieldRule();
+
+    // Non-editable: reset
+    assert.equal(sanitized.release_date.contract.type, preset.contract.type);
+    assert.equal(sanitized.release_date.ui.label, preset.ui.label);
+
+    // Editable: preserved
+    assert.deepEqual(sanitized.release_date.ui.aliases, ['launch_date']);
+    assert.equal(sanitized.release_date.ui.tooltip_md, 'custom tip');
+    assert.deepEqual(sanitized.release_date.search_hints.domain_hints, ['mine.com']);
+  });
+
+  it('does not sanitize release_date when its toggle is off', () => {
+    const overrides = {
+      release_date: { key: 'release_date', contract: { type: 'HACKED' } },
+    };
+    const sanitized = sanitizeEgLockedOverrides(
+      overrides,
+      { colors: true, editions: true, release_date: false },
+    );
+    assert.equal(sanitized.release_date.contract.type, 'HACKED');
   });
 
   it('handles null/undefined gracefully', () => {

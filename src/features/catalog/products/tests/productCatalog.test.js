@@ -14,7 +14,8 @@ import { SpecDb } from '../../../../db/specDb.js';
 
 async function tmpConfig() {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'prod-cat-'));
-  return { categoryAuthorityRoot: dir, _tmpDir: dir };
+  const productRoot = path.join(dir, 'products');
+  return { categoryAuthorityRoot: dir, productRoot, _tmpDir: dir };
 }
 
 async function cleanup(config) {
@@ -50,7 +51,7 @@ test('addProduct: creates product with hex-based productId', async () => {
   try {
     const result = await addProduct({
       config, category: 'mouse', brand: 'Logitech', base_model: 'G Pro X Superlight 2',
-      storage
+      storage, productRoot: config.productRoot,
     });
 
     assert.equal(result.ok, true);
@@ -59,10 +60,6 @@ test('addProduct: creates product with hex-based productId', async () => {
     assert.equal(result.product.model, 'G Pro X Superlight 2');
     assert.equal(result.product.variant, '');
     assert.equal(result.product.added_by, 'gui');
-
-    // WHY: catalog JSON is no longer mutated on CRUD. SQL is the live SSOT.
-    // Product.json at .workspace/products/{pid}/ is the rebuild file.
-
   } finally {
     await cleanup(config);
   }
@@ -76,11 +73,11 @@ test('addProduct: rejects duplicate via specDb', async () => {
     getAllProducts: () => products,
   };
   try {
-    const first = await addProduct({ config, category: 'mouse', brand: 'Razer', base_model: 'Viper', specDb: mockSpecDb });
+    const first = await addProduct({ config, category: 'mouse', brand: 'Razer', base_model: 'Viper', specDb: mockSpecDb, productRoot: config.productRoot });
     assert.equal(first.ok, true);
     // Simulate catalogRoutes.js upsertCatalogProductRow by adding to mock
     products.push({ product_id: first.productId, brand: 'Razer', base_model: 'Viper', model: 'Viper', variant: '' });
-    const result = await addProduct({ config, category: 'mouse', brand: 'Razer', base_model: 'Viper', specDb: mockSpecDb });
+    const result = await addProduct({ config, category: 'mouse', brand: 'Razer', base_model: 'Viper', specDb: mockSpecDb, productRoot: config.productRoot });
     assert.equal(result.ok, false);
     assert.equal(result.error, 'product_already_exists');
   } finally {
@@ -91,7 +88,7 @@ test('addProduct: rejects duplicate via specDb', async () => {
 test('addProduct: rejects empty brand', async () => {
   const config = await tmpConfig();
   try {
-    const result = await addProduct({ config, category: 'mouse', brand: '', base_model: 'Viper' });
+    const result = await addProduct({ config, category: 'mouse', brand: '', base_model: 'Viper', productRoot: config.productRoot });
     assert.equal(result.ok, false);
     assert.equal(result.error, 'brand_required');
   } finally {
@@ -102,7 +99,7 @@ test('addProduct: rejects empty brand', async () => {
 test('addProduct: rejects empty model', async () => {
   const config = await tmpConfig();
   try {
-    const result = await addProduct({ config, category: 'mouse', brand: 'Razer', base_model: '' });
+    const result = await addProduct({ config, category: 'mouse', brand: 'Razer', base_model: '', productRoot: config.productRoot });
     assert.equal(result.ok, false);
     assert.equal(result.error, 'model_required');
   } finally {
@@ -113,7 +110,7 @@ test('addProduct: rejects empty model', async () => {
 test('addProduct: strips fabricated variant', async () => {
   const config = await tmpConfig();
   try {
-    const result = await addProduct({ config, category: 'mouse', brand: 'Acer', base_model: 'Cestus 310', variant: '310' });
+    const result = await addProduct({ config, category: 'mouse', brand: 'Acer', base_model: 'Cestus 310', variant: '310', productRoot: config.productRoot });
     assert.equal(result.ok, true);
     assert.match(result.productId, HEX_PID_RE);
     assert.equal(result.product.variant, '');
@@ -125,7 +122,7 @@ test('addProduct: strips fabricated variant', async () => {
 test('addProduct: preserves real variant', async () => {
   const config = await tmpConfig();
   try {
-    const result = await addProduct({ config, category: 'mouse', brand: 'Corsair', base_model: 'M55', variant: 'Wireless' });
+    const result = await addProduct({ config, category: 'mouse', brand: 'Corsair', base_model: 'M55', variant: 'Wireless', productRoot: config.productRoot });
     assert.equal(result.ok, true);
     assert.match(result.productId, HEX_PID_RE);
     assert.equal(result.product.variant, 'Wireless');
@@ -137,9 +134,21 @@ test('addProduct: preserves real variant', async () => {
 test('addProduct: works without storage or queue', async () => {
   const config = await tmpConfig();
   try {
-    const result = await addProduct({ config, category: 'mouse', brand: 'Razer', base_model: 'DeathAdder V3' });
+    const result = await addProduct({ config, category: 'mouse', brand: 'Razer', base_model: 'DeathAdder V3', productRoot: config.productRoot });
     assert.equal(result.ok, true);
     assert.match(result.productId, HEX_PID_RE);
+  } finally {
+    await cleanup(config);
+  }
+});
+
+test('addProduct: throws when productRoot is missing', async () => {
+  const config = await tmpConfig();
+  try {
+    await assert.rejects(
+      () => addProduct({ config, category: 'mouse', brand: 'Razer', base_model: 'Viper' }),
+      /productRoot/
+    );
   } finally {
     await cleanup(config);
   }
@@ -260,6 +269,7 @@ test('addProductsBulk: result rows include identifier and brand_identifier', asy
       category: 'mouse',
       brand: 'Razer',
       rows: [{ base_model: 'Viper', variant: 'V3 Pro' }],
+      productRoot: config.productRoot,
     });
     assert.equal(result.ok, true);
     assert.equal(result.created, 1);

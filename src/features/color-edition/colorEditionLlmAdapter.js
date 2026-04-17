@@ -310,9 +310,7 @@ You are not just matching — you are judging quality. For each discovery:
 
 ─── MATCHING RULES ───
 
-- A color RENAME is the SAME variant (e.g. "Ocean Blue" → "Deep Ocean Blue" for the same product color). Use "match" with the existing variant_id.
-- Color atoms gaining or losing a modifier for the same base color is the SAME variant (e.g. "blue" → "light-blue"). Use "match".
-- An edition gaining extra color detail in its combo is the SAME variant (e.g. "black+orange" → "black+orange+gold" for the same edition). Use "match".
+- Decide "match" vs "new" based on what you verify, not on how similar the atoms look. Two variants that share atoms can still be separate colorways sold by the manufacturer; two variants with drifted atom parses can still be the same colorway. Verify before deciding.
 - A completely different color that never existed before is genuinely NEW — but ONLY if you can verify it. Set action to "new", match to null.
 - A completely different edition slug with no relationship to existing editions is "new" — verify it exists.
 - Existing variants NOT present in the new discoveries may need REMOVAL. List their variant_ids in "remove" ONLY if you verified via web that the variant was NEVER a real product for this exact model — hallucination, wrong-product contamination, or data that never existed. Discontinued or limited-run products that WERE real must NOT be removed. If in doubt, do NOT remove.

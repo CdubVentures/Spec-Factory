@@ -2,12 +2,14 @@
 // the accumulated product state, deduped by content_hash. Each product gets
 // its own file at {productRoot}/{productId}/product.json keyed by the
 // unique productId (not by category/brand/model which can be renamed).
-// productRoot defaults to .workspace/products/ — the rebuild SSOT location.
+//
+// productRoot is REQUIRED. Callers must resolve it explicitly — a previous
+// silent default caused tests to write into the real .workspace/products/
+// and created hundreds of duplicate product rows.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { mergeProductSources } from './mergeProductSources.js';
-import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 
 function safeReadJson(filePath) {
   try {
@@ -18,13 +20,15 @@ function safeReadJson(filePath) {
 }
 
 /**
- * @param {{ productCheckpoint: object, outRoot?: string, productRoot?: string, runId: string }} opts
+ * @param {{ productCheckpoint: object, productRoot: string, runId: string }} opts
  * @returns {{ productPath: string, sourcesAdded: number, sourcesUpdated: number }}
  */
-export function writeProductCheckpoint({ productCheckpoint, outRoot, productRoot, runId }) {
+export function writeProductCheckpoint({ productCheckpoint, productRoot, runId }) {
+  if (!productRoot) {
+    throw new Error('writeProductCheckpoint requires productRoot');
+  }
   const productId = String(productCheckpoint.product_id || '').trim();
-  const resolvedRoot = productRoot || defaultProductRoot();
-  const productDir = path.join(resolvedRoot, productId);
+  const productDir = path.join(productRoot, productId);
   const productPath = path.join(productDir, 'product.json');
   const existing = safeReadJson(productPath);
 

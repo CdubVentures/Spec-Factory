@@ -16,9 +16,11 @@ function cleanup(dirPath) {
 
 function createLaunchPlanHarness() {
   const categoryAuthorityRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'sf-launch-plan-'));
+  const snapshotsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sf-snapshots-'));
 
   return {
     categoryAuthorityRoot,
+    snapshotsDir,
     buildRequest(overrides = {}) {
       return {
         category: 'mouse',
@@ -35,6 +37,7 @@ function createLaunchPlanHarness() {
         helperRoot: path.resolve('category_authority'),
         outputRoot: path.resolve('test-output'),
         indexLabRoot: path.resolve('test-indexlab'),
+        snapshotsDir,
         env: {},
         pathApi: path,
         buildRunIdFn: () => 'test-run-id-000',
@@ -43,6 +46,7 @@ function createLaunchPlanHarness() {
     },
     cleanup() {
       cleanup(categoryAuthorityRoot);
+      cleanup(snapshotsDir);
     },
   };
 }

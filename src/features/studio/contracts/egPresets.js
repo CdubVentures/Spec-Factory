@@ -146,12 +146,67 @@ export function buildEgEditionFieldRule(ctx) {
   };
 }
 
+// WHY: Scalar date field. Accepted formats mirror canonical release_date def
+// in category_authority field_studio_maps. No token_map or vocab — dates
+// validate by format, not by closed vocabulary.
+export function buildEgReleaseDateFieldRule(ctx) {
+  return {
+    key: 'release_date',
+    contract: {
+      type: 'date',
+      shape: 'scalar',
+      list_rules: {},
+    },
+    parse: {
+      delimiters: [],
+      accepted_formats: ['YYYY-MM-DD', 'YYYY', 'MMM YYYY', 'Month YYYY'],
+      range_separators: [],
+      unit: null,
+    },
+    enum_policy: 'open',
+    enum: {
+      policy: 'open',
+      new_value_policy: { accept_if_evidence: true, mark_needs_curation: false },
+    },
+    priority: {
+      required_level: 'expected',
+      availability: 'sometimes',
+      difficulty: 'medium',
+      effort: 4,
+    },
+    evidence: {
+      min_evidence_refs: 1,
+      tier_preference: ['tier1', 'tier2', 'tier3'],
+    },
+    ai_assist: {
+      reasoning_note: '',
+    },
+    ui: {
+      label: 'Release Date',
+      group: 'general',
+      tooltip_md: 'First date the product was available for purchase. Accept YYYY-MM-DD, YYYY, MMM YYYY, or Month YYYY. If not provable with evidence, output unk with unknown_reason.',
+    },
+    search_hints: {
+      domain_hints: ['mousespecs.org', 'eloshapes.com', 'pcpartpicker.com', 'techpowerup.com'],
+      content_types: ['product_page', 'review'],
+      query_terms: ['release date', 'launch date', 'available since', 'announced'],
+      query_templates: [
+        '{brand} {model} release date',
+        '{brand} {model} launch date',
+        '{brand} {model} available since',
+        '"{model}" release date',
+      ],
+    },
+  };
+}
+
 // ── Registry (SSOT — add new EG-locked fields here) ─────────────────────────
 // O(1): one entry here = auto-locked, auto-seeded, auto-backfilled, auto-compiled.
 
 export const EG_PRESET_REGISTRY = Object.freeze({
   colors: buildEgColorFieldRule,
   editions: buildEgEditionFieldRule,
+  release_date: buildEgReleaseDateFieldRule,
 });
 
 // ── Derived constants (never maintain manually — derived from registry) ──────

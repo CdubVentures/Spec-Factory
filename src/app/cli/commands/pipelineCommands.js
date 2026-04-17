@@ -6,6 +6,7 @@ import { buildCrawlCheckpoint } from '../../../pipeline/checkpoint/buildCrawlChe
 import { writeCrawlCheckpoint } from '../../../pipeline/checkpoint/writeCrawlCheckpoint.js';
 import { buildProductCheckpoint } from '../../../pipeline/checkpoint/buildProductCheckpoint.js';
 import { writeProductCheckpoint } from '../../../pipeline/checkpoint/writeProductCheckpoint.js';
+import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
 import { buildJobFromDb } from '../../../features/indexing/orchestration/index.js';
 import { serializeRunSummary } from '../../../indexlab/runSummarySerializer.js';
 import { buildRuntimeOpsPanels } from '../../../features/indexing/api/index.js';
@@ -26,6 +27,7 @@ export function createPipelineCommands({
     const category = String(args.category || 'mouse').trim();
     const seed = String(args.seed || '').trim();
     const outRoot = String(args.out || defaultIndexLabRoot()).trim();
+    const productRoot = String(args['product-root'] || config?.productRoot || defaultProductRoot()).trim();
     const requestedRunIdRaw = String(args['run-id'] || '').trim();
     const requestedRunId = /^[A-Za-z0-9._-]{8,96}$/.test(requestedRunIdRaw)
       ? requestedRunIdRaw
@@ -323,7 +325,7 @@ export function createPipelineCommands({
           upsertRunArtifact: specDb ? (row) => specDb.upsertRunArtifact(row) : undefined,
           category,
         });
-        writeProductCheckpoint({ productCheckpoint: productCp, outRoot, runId: result.runId });
+        writeProductCheckpoint({ productCheckpoint: productCp, productRoot, runId: result.runId });
       } catch (cpErr) {
         console.warn('[checkpoint-write] run.json/product.json write failed:', cpErr?.message || cpErr);
       }

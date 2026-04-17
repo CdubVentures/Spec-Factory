@@ -113,17 +113,21 @@ describe('deriveSelectedStateDisplay', () => {
 
   it('maps colors with hex, hexParts, and displayName from registry and marks isDefault', () => {
     const display = deriveSelectedStateDisplay(SAMPLE_RESULT, REGISTRY);
-    assert.equal(display.colors.length, 3);
-    assert.equal(display.colors[0].name, 'black');
-    assert.equal(display.colors[0].hex, '#000000');
-    assert.deepEqual(display.colors[0].hexParts, ['#000000']);
-    assert.equal(display.colors[0].displayName, '');
-    assert.equal(display.colors[0].isDefault, true);
-    assert.equal(display.colors[1].name, 'white');
-    assert.equal(display.colors[1].hex, '#ffffff');
-    assert.deepEqual(display.colors[1].hexParts, ['#ffffff']);
-    assert.equal(display.colors[1].displayName, '');
-    assert.equal(display.colors[1].isDefault, false);
+    // WHY: 3 standalone colors (black, white, black+red) + 1 edition-derived
+    // combo from launch-edition's paired colors ['black','white'] → 'black+white'.
+    assert.equal(display.colors.length, 4);
+    const black = display.colors.find(c => c.name === 'black');
+    assert.ok(black);
+    assert.equal(black.hex, '#000000');
+    assert.deepEqual(black.hexParts, ['#000000']);
+    assert.equal(black.displayName, '');
+    assert.equal(black.isDefault, true);
+    const white = display.colors.find(c => c.name === 'white');
+    assert.ok(white);
+    assert.equal(white.hex, '#ffffff');
+    assert.deepEqual(white.hexParts, ['#ffffff']);
+    assert.equal(white.displayName, '');
+    assert.equal(white.isDefault, false);
   });
 
   it('resolves multi-color hex from first atom and hexParts for all atoms', () => {
@@ -278,6 +282,96 @@ describe('deriveSelectedStateDisplay', () => {
     assert.ok(display.colors.every(p => p.isPublished === false));
     assert.ok(display.editions.every(e => e.isPublished === false));
     assert.ok(display.editions.every(e => e.pairedColors.every(p => p.isPublished === false)));
+  });
+
+  // ── edition-color union (editions are also colors) ──────────────
+  // WHY: An edition variant is conceptually a color variant — its paired
+  // colors form a combo that should appear on the Colors side alongside
+  // standalone colors. The combo's publish state cascades from the edition.
+
+  it('adds an edition combo (paired colors joined with +) to the Colors list', () => {
+    const display = deriveSelectedStateDisplay(SAMPLE_RESULT, REGISTRY);
+    const combo = display.colors.find(c => c.name === 'black+white');
+    assert.ok(combo, 'launch-edition [black,white] should surface as black+white on the Colors side');
+    assert.deepEqual(combo.hexParts, ['#000000', '#ffffff']);
+  });
+
+  it('does not duplicate an edition combo already present as a standalone color', () => {
+    const result: ColorEditionFinderResult = {
+      ...SAMPLE_RESULT,
+      published: {
+        ...SAMPLE_RESULT.published,
+        colors: ['black', 'black+white'],
+        editions: ['launch-edition'],
+        edition_details: { 'launch-edition': { colors: ['black', 'white'] } },
+      },
+    };
+    const display = deriveSelectedStateDisplay(result, REGISTRY);
+    const matches = display.colors.filter(c => c.name === 'black+white');
+    assert.equal(matches.length, 1);
+  });
+
+  it('skips editions with empty paired colors (no combo contribution)', () => {
+    const result: ColorEditionFinderResult = {
+      ...SAMPLE_RESULT,
+      published: {
+        ...SAMPLE_RESULT.published,
+        colors: ['black'],
+        editions: ['empty-edition'],
+        edition_details: { 'empty-edition': { colors: [] } },
+      },
+    };
+    const display = deriveSelectedStateDisplay(result, REGISTRY);
+    assert.equal(display.colors.length, 1);
+    assert.equal(display.colors[0].name, 'black');
+  });
+
+  it('collapses two editions with the same combo into a single Colors-side pill', () => {
+    const result: ColorEditionFinderResult = {
+      ...SAMPLE_RESULT,
+      published: {
+        ...SAMPLE_RESULT.published,
+        colors: [],
+        editions: ['ed-one', 'ed-two'],
+        edition_details: {
+          'ed-one': { colors: ['black', 'white'] },
+          'ed-two': { colors: ['black', 'white'] },
+        },
+      },
+    };
+    const display = deriveSelectedStateDisplay(result, REGISTRY);
+    const matches = display.colors.filter(c => c.name === 'black+white');
+    assert.equal(matches.length, 1);
+  });
+
+  it('cascades isPublished=true onto an edition combo when the edition is in publishedSets.editions', () => {
+    const display = deriveSelectedStateDisplay(SAMPLE_RESULT, REGISTRY, {
+      colors: [],
+      editions: ['launch-edition'],
+    });
+    const combo = display.colors.find(c => c.name === 'black+white');
+    assert.ok(combo);
+    assert.equal(combo.isPublished, true);
+  });
+
+  it('marks an edition combo isPublished=false when neither the edition nor the combo name is published', () => {
+    const display = deriveSelectedStateDisplay(SAMPLE_RESULT, REGISTRY, {
+      colors: ['black'],
+      editions: [],
+    });
+    const combo = display.colors.find(c => c.name === 'black+white');
+    assert.ok(combo);
+    assert.equal(combo.isPublished, false);
+  });
+
+  it('marks an edition combo isPublished=true when the combo name is directly in publishedSets.colors (even without edition resolve)', () => {
+    const display = deriveSelectedStateDisplay(SAMPLE_RESULT, REGISTRY, {
+      colors: ['black+white'],
+      editions: [],
+    });
+    const combo = display.colors.find(c => c.name === 'black+white');
+    assert.ok(combo);
+    assert.equal(combo.isPublished, true);
   });
 });
 

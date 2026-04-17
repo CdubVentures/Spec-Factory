@@ -774,7 +774,8 @@
   ],
   "eg_toggles": {
     "colors": true,
-    "editions": true
+    "editions": true,
+    "release_date": true
   },
   "enum_lists": [],
   "enum_sources": [],
@@ -2394,13 +2395,10 @@
       "value_form_sample": "list"
     },
     "colors": {
-      "ai_assist": {
-        "reasoning_note": "Discover every color variant this product is or has been available in.\nCheck the manufacturer product page (color selectors, variant dropdowns, \"available in\" sections), major retailers (Amazon, Best Buy, Newegg), and review/spec databases. Include discontinued and regional variants.\n\nEach color is either a single atom (\"black\", \"light-gray\") or multiple atoms joined by \"+\" in dominant visual order.\nDominant means the color with the most surface area — \"black+red\" means mostly black with red accents.\nThe first color in the array is the most common / default variant (the one shown on the product's main marketing page).\n\nFormatting rules:\n- lowercase only, hyphens between words\n- Modifier-first: \"light-blue\" not \"blue-light\", \"dark-green\" not \"green-dark\"\n- Normalize \"grey\" to \"gray\"\n- Translate marketing names to the nearest registered color. \"Midnight\" → \"black\", \"Arctic\" → \"white\", \"Thunderbolt Yellow\" → \"yellow\". Never use marketing names as atoms.\n\nBase colors (also valid with prefixes dark-, light-): amber, blue, brown, coral, cyan, emerald, fuchsia, gray, green, indigo, lime, olive, orange, pink, purple, red, rose, sky, slate, stone, teal, violet, yellow. Other colors: beige, black, gold, ivory, lavender, magenta, maroon, navy, salmon, silver, turquoise, white.\n\nRegistered colors with hex values: amber, beige, black, blue, brown, coral, cyan, dark-blue, dark-brown, dark-cyan, dark-fuchsia, dark-gray, dark-green, dark-indigo, dark-lime, dark-orange, dark-pink, dark-purple, dark-red, dark-rose, dark-sky, dark-slate, dark-stone, dark-teal, dark-violet, dark-yellow, emerald, fuchsia, gold, gray, green, indigo, ivory, lavender, light-amber, light-blue, light-brown, light-coral, light-cyan, light-emerald, light-fuchsia, light-gray, light-green, light-indigo, light-lime, light-olive, light-orange, light-pink, light-purple, light-red, light-rose, light-sky, light-slate, light-stone, light-teal, light-violet, light-yellow, lime, magenta, maroon, navy, olive, orange, pink, purple, red, rose, salmon, silver, sky, slate, stone, teal, turquoise, violet, white, yellow\n\nMatch product colors to registered colors by visual similarity using the hex values above. If a registered color's hex is close to the product's actual color, use the registered name.\nIf no registered color is a reasonable visual match, use the nearest registered color by hex similarity. Do not invent new color names."
-      },
       "contract": {
         "list_rules": {
           "dedupe": true,
-          "item_union": "set_union",
+          "item_union": "winner_only",
           "sort": "none"
         },
         "shape": "list",
@@ -3457,9 +3455,6 @@
       "variance_policy": "upper_bound"
     },
     "editions": {
-      "ai_assist": {
-        "reasoning_note": "Discover every special, limited, or collaboration edition of this product.\nCheck the manufacturer product page, retailers, and community forums. Include discontinued and limited-run editions.\n\nEach edition has its own color variant(s). When you find an edition, identify the colors it comes in — those colors must appear in the colors array using the same atom rules (registered atoms, \"+\"-joined, dominant-first). Every edition adds at least one color entry to the product's color list.\n\nFormatting: return editions as kebab-case slugs. Lowercase, hyphens only, no spaces.\nExamples: launch-edition, cyberpunk-2077-edition, sf6-chun-li, wilderness, halo-infinite-edition.\nDo not return display names or title case.\nIf an edition has a unique color not in the registered list, map it to the nearest registered color by hex similarity."
-      },
       "consumers": {
         "enum.match.format_hint": {
           "review": false
@@ -3468,7 +3463,7 @@
       "contract": {
         "list_rules": {
           "dedupe": true,
-          "item_union": "set_union",
+          "item_union": "winner_only",
           "sort": "none"
         },
         "shape": "list",
@@ -7796,6 +7791,11 @@
       "canonical_key": "release_date",
       "component": null,
       "constraints": [],
+      "consumers": {
+        "enum.match.format_hint": {
+          "review": false
+        }
+      },
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -7813,6 +7813,7 @@
         "source": null
       },
       "enum_policy": "open",
+      "enum_source": null,
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -9700,10 +9701,10 @@
       "enum": {
         "match": {},
         "new_value_policy": {},
-        "policy": "open",
+        "policy": "open_prefer_known",
         "source": "yes_no"
       },
-      "enum_policy": "open",
+      "enum_policy": "open_prefer_known",
       "enum_source": "yes_no",
       "evidence": {
         "min_evidence_refs": 1,

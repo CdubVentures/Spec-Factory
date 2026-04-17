@@ -4,9 +4,14 @@
  * Generates routeCtx entries and routeDefinitions for all registered
  * finder modules. guiServerRuntime calls this once at boot to auto-wire
  * finder routes without per-module static imports.
+ *
+ * The shared context is the same for every finder (HTTP / DB / broadcast
+ * plumbing). Per-finder orchestrator functions are imported locally by
+ * each thin route wrapper, not bundled into the context.
  */
 
 import { FINDER_MODULES } from './finderModuleRegistry.js';
+import { createFinderRouteContext } from './finderRouteContext.js';
 
 /**
  * Dynamically import and wire all registered finder modules.
@@ -27,25 +32,14 @@ export async function wireFinderRoutes(deps) {
   const routeDefinitions = [];
 
   for (const mod of FINDER_MODULES) {
-    const featureBase = `../../features/${mod.featurePath}`;
-
-    // WHY: Dynamic import — no static per-module imports in guiServerRuntime.
-    const [routeMod, ctxMod] = await Promise.all([
-      import(`${featureBase}/api/${mod.routeFile}.js`),
-      import(`${featureBase}/api/${mod.contextFile}.js`),
-    ]);
-
+    const routeMod = await import(`../../features/${mod.featurePath}/api/${mod.routeFile}.js`);
     const registrar = routeMod[mod.registrarExport];
-    const ctxFactory = ctxMod[mod.contextExport];
 
     if (typeof registrar !== 'function') {
       throw new Error(`Finder "${mod.id}": missing export "${mod.registrarExport}" from ${mod.routeFile}.js`);
     }
-    if (typeof ctxFactory !== 'function') {
-      throw new Error(`Finder "${mod.id}": missing export "${mod.contextExport}" from ${mod.contextFile}.js`);
-    }
 
-    const ctx = ctxFactory({
+    const ctx = createFinderRouteContext({
       jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
       logger: createLogger ? createLogger(mod.routePrefix) : null,
     });

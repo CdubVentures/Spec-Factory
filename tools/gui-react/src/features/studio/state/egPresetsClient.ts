@@ -170,9 +170,61 @@ export function buildEgEditionPreset(ctx?: EgPresetCtx): FieldRule {
   };
 }
 
+export function buildEgReleaseDatePreset(_ctx?: EgPresetCtx): FieldRule {
+  return {
+    key: 'release_date',
+    contract: {
+      type: 'date',
+      shape: 'scalar',
+      list_rules: {},
+    },
+    parse: {
+      delimiters: [],
+      accepted_formats: ['YYYY-MM-DD', 'YYYY', 'MMM YYYY', 'Month YYYY'],
+      token_map: {},
+    },
+    enum_policy: 'open',
+    enum: {
+      policy: 'open',
+      match: { strategy: 'exact' },
+      new_value_policy: { accept_if_evidence: true, mark_needs_curation: false },
+    },
+    priority: {
+      required_level: 'expected',
+      availability: 'sometimes',
+      difficulty: 'medium',
+      effort: 4,
+    },
+    evidence: {
+      min_evidence_refs: 1,
+      tier_preference: ['tier1', 'tier2', 'tier3'],
+    },
+    ai_assist: {
+      reasoning_note: 'Return the release date in one of the accepted formats: YYYY-MM-DD (preferred), YYYY, MMM YYYY (e.g. "Jan 2024"), or "Month YYYY" (e.g. "January 2024"). Do not return date ranges, relative phrases like "Q1 2024", seasons, or vague terms like "early 2024". If the exact date is not provable from evidence, emit unk with unknown_reason.',
+    },
+    ui: {
+      label: 'Release Date',
+      group: 'general',
+      tooltip_md: 'First date the product was available for purchase. Accept YYYY-MM-DD, YYYY, MMM YYYY, or Month YYYY. If not provable with evidence, output unk with unknown_reason.',
+    },
+    search_hints: {
+      domain_hints: ['mousespecs.org', 'eloshapes.com', 'pcpartpicker.com', 'techpowerup.com'],
+      content_types: ['product_page', 'review'],
+      query_terms: ['release date', 'launch date', 'available since', 'announced'],
+      query_templates: [
+        '{brand} {model} release date',
+        '{brand} {model} launch date',
+        '{brand} {model} available since',
+        '"{model}" release date',
+      ],
+    },
+  };
+}
+
 const EG_PRESET_BUILDERS: Record<string, (ctx?: EgPresetCtx) => FieldRule> = {
   colors: buildEgColorPreset,
   editions: buildEgEditionPreset,
+  release_date: buildEgReleaseDatePreset,
 };
 
 export const EG_PRESET_KEYS: readonly string[] = Object.freeze(Object.keys(EG_PRESET_BUILDERS));

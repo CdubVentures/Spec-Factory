@@ -110,7 +110,7 @@ describe('derivePublishedFromVariants', () => {
     assert.ok(!result.colors.includes('silver'), 'individual atom "silver" must NOT appear');
   }));
 
-  it('active edition variants → editions includes slugs, atoms stay scoped to edition', withEnv(({ specDb, root, ensureProductJson, readProductJson }) => {
+  it('active edition variants → editions includes slugs, combo cascades into colors (atoms never leak)', withEnv(({ specDb, root, ensureProductJson, readProductJson }) => {
     seedVariants(specDb);
     seedCefSummary(specDb);
     ensureProductJson(PID);
@@ -118,13 +118,13 @@ describe('derivePublishedFromVariants', () => {
     const result = derivePublishedFromVariants({ specDb, productId: PID, productRoot: root });
 
     assert.ok(result.editions.includes('special-ed'));
-    // WHY: Edition combo atoms describe the edition's colorway — they must NOT
-    // be promoted to standalone published colors.
-    assert.ok(!result.colors.includes('olive'), 'edition atoms must NOT leak into published colors');
-    assert.ok(!result.colors.includes('khaki'), 'edition atoms must NOT leak into published colors');
+    // WHY: Edition IS a color — its combo (joined atoms) cascades into published
+    // colors. Individual atoms still never leak as standalone.
+    assert.ok(!result.colors.includes('olive'), 'individual edition atoms must NOT leak as standalones');
+    assert.ok(!result.colors.includes('khaki'), 'individual edition atoms must NOT leak as standalones');
   }));
 
-  it('edition-only product → empty colors, populated editions', withEnv(({ specDb, root, ensureProductJson }) => {
+  it('edition-only product → edition combo cascades into published colors', withEnv(({ specDb, root, ensureProductJson }) => {
     specDb.variants.syncFromRegistry(PID, [
       { variant_id: 'v_ed', variant_key: 'edition:limited-ed', variant_type: 'edition', variant_label: 'Limited', color_atoms: ['red', 'gold'], edition_slug: 'limited-ed', edition_display_name: 'Limited', created_at: '2026-04-14T00:00:00Z' },
     ]);
@@ -133,7 +133,8 @@ describe('derivePublishedFromVariants', () => {
 
     const result = derivePublishedFromVariants({ specDb, productId: PID, productRoot: root });
 
-    assert.deepEqual(result.colors, [], 'no standalone color variants → empty colors');
+    // WHY: Edition IS a color — its combo is published even when no standalone color variants exist.
+    assert.deepEqual(result.colors, ['red+gold'], 'edition combo is published as a color');
     assert.deepEqual(result.editions, ['limited-ed']);
   }));
 

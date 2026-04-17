@@ -362,6 +362,93 @@ describe('CEF candidate gate integration', () => {
     assert.ok(jsonEd.includes('cyberpunk-edition'));
   });
 
+  // --- 8b. Edition combo surfaces as a colors candidate — INTACT ---
+  // WHY: COMBOS STAY INTACT. Per the LLM adapter contract, editions[slug].colors
+  // is a single-element array with the full combo string (e.g. ["black+white"]).
+  // That combo MUST appear in the colors candidate as-is, never split into atoms.
+  // Splitting is reserved for palette validation / repair only.
+  it('writes an edition color combo as a colors candidate — combo stays intact (no atom split)', async () => {
+    const pid = 'mouse-ed-combo';
+    ensureProductJson(pid);
+
+    const result = await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: makeAppDbStub(REGISTERED_COLORS),
+      specDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black'],
+        editions: { 'Launch Edition': { colors: ['black+white'] } },
+        default_color: 'black',
+      }),
+    });
+
+    assert.equal(result.rejected, false);
+
+    const colorCandidates = specDb.getFieldCandidatesByProductAndField(pid, 'colors');
+    assert.equal(colorCandidates.length, 1);
+    const colorsValue = JSON.parse(colorCandidates[0].value);
+    assert.ok(Array.isArray(colorsValue));
+    assert.ok(colorsValue.includes('black'), 'standalone black present');
+    assert.ok(colorsValue.includes('black+white'), 'edition combo surfaces as colors candidate intact');
+    // The combo must NOT be split into atoms — "white" alone must not leak in
+    // unless the LLM explicitly declared it as a standalone color.
+    assert.ok(!colorsValue.includes('white'), 'combo not split into standalone atom');
+  });
+
+  it('does not duplicate a combo already present in standalone colors', async () => {
+    const pid = 'mouse-ed-combo-dup';
+    ensureProductJson(pid);
+
+    const result = await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: makeAppDbStub(REGISTERED_COLORS),
+      specDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black+white'],
+        editions: { 'Launch Edition': { colors: ['black+white'] } },
+        default_color: 'black+white',
+      }),
+    });
+
+    assert.equal(result.rejected, false);
+
+    const colorCandidates = specDb.getFieldCandidatesByProductAndField(pid, 'colors');
+    assert.equal(colorCandidates.length, 1);
+    const colorsValue = JSON.parse(colorCandidates[0].value);
+    const combos = colorsValue.filter(v => v === 'black+white');
+    assert.equal(combos.length, 1, 'combo present exactly once');
+  });
+
+  it('preserves a single-color edition combo as its atom entry (no spurious splits)', async () => {
+    const pid = 'mouse-ed-single';
+    ensureProductJson(pid);
+
+    const result = await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: makeAppDbStub(REGISTERED_COLORS),
+      specDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black'],
+        editions: { 'Solo Edition': { colors: ['red'] } },
+        default_color: 'black',
+      }),
+    });
+
+    assert.equal(result.rejected, false);
+
+    const colorCandidates = specDb.getFieldCandidatesByProductAndField(pid, 'colors');
+    const colorsValue = JSON.parse(colorCandidates[0].value);
+    // Single-color edition: combo === its single atom. Merged intact.
+    assert.ok(colorsValue.includes('red'), 'single-color edition combo merged as-is');
+    assert.ok(!colorsValue.some(v => v.includes('+')), 'no spurious + combo for single-color edition');
+  });
+
   // --- 9. Editions record passes shape=record validation ---
   it('editions record with nested colors passes validation', async () => {
     const pid = 'mouse-ed-shape';

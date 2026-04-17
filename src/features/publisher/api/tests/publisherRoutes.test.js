@@ -204,6 +204,70 @@ describe('publisher routes', () => {
     assert.equal(responses[0].body.fields.editions, undefined);
   });
 
+  // WHY: An edition IS a color — its combo must cascade into the published
+  // colors list. Resolving an edition implicitly publishes its color combo.
+  it('GET /publisher/:category/published/:productId cascades resolved edition combos into published colors', async () => {
+    const pid = 'rt-edition-cascade';
+    // Colors: only 'black' explicitly resolved as standalone
+    seedCandidate(specDb, pid, 'colors', ['black'], 0.95, 'resolved');
+    // Editions: 'cod-bo6' resolved — its combo 'dark-gray+black+orange' must cascade
+    seedCandidate(specDb, pid, 'editions', ['cod-bo6'], 0.9, 'resolved');
+    // Seed an edition variant so the endpoint can look up its combo
+    specDb.variants.upsert({
+      productId: pid,
+      variantId: 'v_cod_bo6',
+      variantKey: 'edition:cod-bo6',
+      variantType: 'edition',
+      variantLabel: 'Call of Duty: Black Ops 6 Edition',
+      colorAtoms: ['dark-gray', 'black', 'orange'],
+      editionSlug: 'cod-bo6',
+      editionDisplayName: 'Call of Duty: Black Ops 6 Edition',
+    });
+
+    const { ctx, responses } = makeCtx(specDb);
+    const handler = registerPublisherRoutes(ctx);
+
+    await handler(
+      ['publisher', 'mouse', 'published', pid],
+      new URLSearchParams(),
+      'GET', {}, {},
+    );
+
+    assert.equal(responses[0].status, 200);
+    assert.ok(responses[0].body.fields.colors, 'colors present');
+    assert.ok(responses[0].body.fields.colors.value.includes('black'), 'standalone color published');
+    assert.ok(responses[0].body.fields.colors.value.includes('dark-gray+black+orange'), 'edition combo cascaded into colors');
+  });
+
+  it('GET /publisher/:category/published/:productId does not cascade an edition combo twice when the combo is also resolved as a standalone color', async () => {
+    const pid = 'rt-edition-dedupe';
+    seedCandidate(specDb, pid, 'colors', ['dark-gray+black+orange'], 0.95, 'resolved');
+    seedCandidate(specDb, pid, 'editions', ['cod-bo6-dup'], 0.9, 'resolved');
+    specDb.variants.upsert({
+      productId: pid,
+      variantId: 'v_cod_bo6_dup',
+      variantKey: 'edition:cod-bo6-dup',
+      variantType: 'edition',
+      variantLabel: 'Dup',
+      colorAtoms: ['dark-gray', 'black', 'orange'],
+      editionSlug: 'cod-bo6-dup',
+      editionDisplayName: 'Dup',
+    });
+
+    const { ctx, responses } = makeCtx(specDb);
+    const handler = registerPublisherRoutes(ctx);
+
+    await handler(
+      ['publisher', 'mouse', 'published', pid],
+      new URLSearchParams(),
+      'GET', {}, {},
+    );
+
+    assert.equal(responses[0].status, 200);
+    const combos = responses[0].body.fields.colors.value.filter(c => c === 'dark-gray+black+orange');
+    assert.equal(combos.length, 1, 'combo present exactly once');
+  });
+
   // --- GET /publisher/:category/reconcile (dry-run) ---
 
   it('GET /publisher/:category/reconcile returns preview counts', async () => {

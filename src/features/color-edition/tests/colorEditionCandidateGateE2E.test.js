@@ -132,8 +132,11 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
 
     // --- Acceptance ---
     assert.equal(result.rejected, false, 'should be accepted');
-    assert.deepEqual(result.colors, ['black', 'white', 'pink', 'red', 'purple'],
-      'edition combo black+red must NOT appear in result colors');
+    // WHY: Edition IS a color — 'black+red' is both the standalone color AND the
+    // edition combo. It stays intact (not split) and is published as a color.
+    assert.ok(result.colors.includes('black'));
+    assert.ok(result.colors.includes('white'));
+    assert.ok(result.colors.includes('black+red'), 'edition combo cascades into result colors');
 
     // --- DB: field_candidates row exists (source-centric format) ---
     const dbCandidates = specDb.getFieldCandidatesByProductAndField(pid, 'colors');
@@ -151,7 +154,7 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
     const cefRow = specDb.getColorEditionFinder(pid);
     assert.ok(cefRow, 'CEF summary row exists');
     assert.ok(cefRow.colors.includes('black'), 'standalone color in summary');
-    assert.ok(!cefRow.colors.includes('black+red'), 'edition combo NOT in summary');
+    assert.ok(cefRow.colors.includes('black+red'), 'edition combo in summary (edition IS a color)');
   });
 
   it('CEF output with case repairs → repaired values in all targets', async () => {

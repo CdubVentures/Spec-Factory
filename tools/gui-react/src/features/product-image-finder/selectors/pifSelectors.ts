@@ -4,13 +4,14 @@
  * Follows the CEF selector pattern: all functions are pure (data in → display model out),
  * testable in isolation, and consumed by ProductImageFinderPanel.tsx as the sole orchestrator.
  */
-import { formatAtomLabel } from '../../../shared/ui/finder/finderSelectors.ts';
+import { formatAtomLabel, resolveVariantColorAtoms as sharedResolveVariantColorAtoms } from '../../../shared/ui/finder/finderSelectors.ts';
 import type { KpiCard } from '../../../shared/ui/finder/types.ts';
 import type {
   ProductImageEntry,
   ProductImageFinderRun,
   ProductImageFinderResult,
   VariantInfo,
+  VariantRegistryEntry,
   ResolvedSlot,
   EvalRecord,
   GalleryImage,
@@ -32,52 +33,48 @@ export const GENERIC_VIEW_ORDER: readonly string[] = ['top', 'left', 'angle', 's
 
 /* ── Variant / Color Helpers ──────────────────────────────────────── */
 
-/**
- * Resolve color atoms from a variant_key, looking up edition colors from CEF.
- * - "color:black+red" → ["black", "red"]
- * - "edition:cod-bo6-edition" → looks up edition's colors combo → ["dark-gray", "black", "orange"]
- */
-export function resolveVariantColorAtoms(
-  variantKey: string,
-  editions: Record<string, { display_name?: string; colors?: string[] }>,
-): string[] {
-  if (variantKey.startsWith('edition:')) {
-    const slug = variantKey.replace('edition:', '');
-    const ed = editions[slug];
-    const combo = ed?.colors?.[0] || '';
-    return combo.split('+').filter(Boolean);
-  }
-  return variantKey.replace(/^color:/, '').split('+').filter(Boolean);
-}
+export const resolveVariantColorAtoms = sharedResolveVariantColorAtoms;
 
 /**
- * Build an ordered variant list from CEF published data.
- * Search priority: edition display name > marketing name > titlecased atom.
+ * Build an ordered variant list from the variant_registry (SSOT).
+ *
+ * WHY: Registry is the one-variant-per-row truth. Building from published
+ * colors + editions maps produced duplicates once edition combos started
+ * cascading into published colors (edition IS a color). PIF runs against
+ * variants; the list must reflect exactly what's in the registry.
+ *
+ * Label priority:
+ *   - edition variant → edition_display_name → variant_label → slug
+ *   - color variant   → color_names[combo] → variant_label → formatAtomLabel(combo)
  */
-export function buildVariantList(cefData: {
-  colors?: readonly string[];
-  color_names?: Readonly<Record<string, string>>;
-  editions?: Readonly<Record<string, { display_name?: string; colors?: readonly string[] }>>;
-}): VariantInfo[] {
-  const colors = cefData.colors || [];
-  const colorNames = cefData.color_names || {};
-  const editions = cefData.editions || {};
-
-  // WHY: Colors and editions are built independently. An edition with
-  // colors: ["black"] must NOT steal "black" from the standalone colors.
-  const variants: VariantInfo[] = [];
-
-  for (const entry of colors) {
-    const name = colorNames[entry];
-    const hasName = !!(name && name.toLowerCase() !== entry.toLowerCase());
-    variants.push({ key: `color:${entry}`, label: hasName ? name : formatAtomLabel(entry), type: 'color' });
-  }
-
-  for (const [slug, ed] of Object.entries(editions)) {
-    variants.push({ key: `edition:${slug}`, label: ed.display_name || slug, type: 'edition' });
-  }
-
-  return variants;
+export function buildVariantList(
+  registry: readonly VariantRegistryEntry[],
+  colorNames?: Readonly<Record<string, string>>,
+): VariantInfo[] {
+  const names = colorNames || {};
+  return registry.map(entry => {
+    if (entry.variant_type === 'edition') {
+      const label = entry.edition_display_name
+        || entry.variant_label
+        || entry.edition_slug
+        || '';
+      return {
+        key: entry.variant_key,
+        label,
+        type: 'edition',
+        variant_id: entry.variant_id,
+      };
+    }
+    const combo = entry.variant_key.replace(/^color:/, '');
+    const named = names[combo] || entry.variant_label || '';
+    const hasNamedLabel = !!(named && named.toLowerCase() !== combo.toLowerCase());
+    return {
+      key: entry.variant_key,
+      label: hasNamedLabel ? named : formatAtomLabel(combo),
+      type: 'color',
+      variant_id: entry.variant_id,
+    };
+  });
 }
 
 /* ── Gallery Image Transforms ─────────────────────────────────────── */

@@ -1,12 +1,10 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { SpecDb } from '../specDb.js';
 import { getVariantDossier } from '../helpers/variantDossierHelper.js';
-
-const TEST_DIR = path.join('.workspace', 'db', '_test_variant_dossier');
-const DB_PATH = path.join(TEST_DIR, 'spec.sqlite');
 
 function seedVariant(db, { productId, variantId, variantKey, variantType, variantLabel, colorAtoms = [], editionSlug = null, editionDisplayName = null }) {
   db.variants.upsert({
@@ -25,16 +23,16 @@ function seedCandidate(db, { productId, fieldKey, sourceId, sourceType, value, v
 
 describe('getVariantDossier', () => {
   let db;
+  let testDir;
 
   before(() => {
-    fs.mkdirSync(TEST_DIR, { recursive: true });
-    db = new SpecDb({ dbPath: DB_PATH, category: 'mouse' });
+    testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'variant-dossier-'));
+    db = new SpecDb({ dbPath: path.join(testDir, 'spec.sqlite'), category: 'mouse' });
   });
 
   after(() => {
-    db.close();
-    try { fs.unlinkSync(DB_PATH); } catch { /* */ }
-    try { fs.rmdirSync(TEST_DIR); } catch { /* */ }
+    try { db.close(); } catch { /* */ }
+    try { fs.rmSync(testDir, { recursive: true, force: true }); } catch { /* */ }
   });
 
   it('returns variant identity + candidates grouped by field_key', () => {

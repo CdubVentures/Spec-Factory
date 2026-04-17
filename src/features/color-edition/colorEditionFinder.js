@@ -29,16 +29,22 @@ import { derivePublishedFromVariants } from './variantLifecycle.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 
 /**
- * Merge edition-exclusive colors into the master colors array.
- * Idempotent — skips atoms already present. Mutates `colors` in place.
+ * Merge each edition's color combo into the master colors array as ONE intact
+ * combo string per edition (e.g. "black+white"). Idempotent — skips combos
+ * already present. Mutates `colors` in place.
+ *
+ * WHY: The LLM contract (see colorEditionLlmAdapter prompt) is that
+ * `editions[slug].colors` is a single-element array containing the full combo
+ * string — e.g. `["black+white"]`. Join is applied defensively in case the
+ * input has already been split into atoms; the combo must stay intact
+ * everywhere. Atoms only get split during repair/palette validation, never
+ * here and never in storage/published/candidate values.
  */
 function mergeEditionColorsInto(colors, editions) {
   for (const edMeta of Object.values(editions)) {
-    if (Array.isArray(edMeta.colors)) {
-      for (const c of edMeta.colors) {
-        if (!colors.includes(c)) colors.push(c);
-      }
-    }
+    if (!Array.isArray(edMeta.colors) || edMeta.colors.length === 0) continue;
+    const combo = edMeta.colors.join('+');
+    if (combo && !colors.includes(combo)) colors.push(combo);
   }
 }
 
@@ -444,18 +450,9 @@ export async function runColorEditionFinder({
     });
   }
 
-  // WHY: gateColors includes edition combo strings (e.g., 'dark-gray+black+orange')
-  // needed by buildVariantRegistry to detect edition entries. But candidates, summary,
-  // and return value must only contain standalone colors — multi-atom edition combos
-  // stay scoped to their edition and are never published as standalone colors.
-  // Single-atom edition colors (e.g., 'black' for an edition that comes in black)
-  // are always standalone colors — they describe the product, not just the edition.
-  const editionCombos = new Set();
-  for (const ed of Object.values(gateEditions)) {
-    const combo = (ed.colors || [])[0];
-    if (combo && combo.includes('+')) editionCombos.add(combo);
-  }
-  const standaloneColors = gateColors.filter(c => !editionCombos.has(c));
+  // WHY: An edition IS a color variant — its combo (e.g. 'dark-gray+black+orange')
+  // stays in the published colors list alongside standalone colors. Combos stay
+  // intact everywhere. Atom splitting is only for palette validation / repair.
 
   onStageAdvance?.('Validate');
 
@@ -798,5 +795,5 @@ export async function runColorEditionFinder({
     });
   }
 
-  return { colors: standaloneColors, editions: gateEditions, default_color: standaloneColors[0] || selected.default_color, fallbackUsed: false, rejected: false };
+  return { colors: gateColors, editions: gateEditions, default_color: gateColors[0] || selected.default_color, fallbackUsed: false, rejected: false };
 }

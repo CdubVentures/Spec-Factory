@@ -10,7 +10,8 @@ export type LlmPhaseId =
   | 'validate'
   | 'color-finder'
   | 'image-finder'
-  | 'image-evaluator';
+  | 'image-evaluator'
+  | 'release-date-finder';
 
 export type LlmPhaseGroup =
   | 'global'

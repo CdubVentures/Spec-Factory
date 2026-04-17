@@ -2,10 +2,8 @@
 // Run: node tools/gui-react/scripts/generateLlmPhaseRegistry.js
 
 // WHY: Derived from src/core/finder/finderModuleRegistry.js
-// Pipeline Settings auto-renders module sections + form components from this registry.
-
-import { lazy, type ComponentType } from 'react';
-import type { ModuleSettingsFormProps } from '../types/moduleSettingsFormProps.ts';
+// Pipeline Settings auto-renders module sections from this registry.
+// Form bodies are rendered by <FinderSettingsRenderer /> driven by finderSettingsRegistry.generated.ts.
 
 export const MODULE_SETTINGS_SECTIONS = [
   {
@@ -26,14 +24,18 @@ export const MODULE_SETTINGS_SECTIONS = [
     iconName: 'image' as const,
     group: 'modules',
   },
+  {
+    id: 'module-rdf' as const,
+    moduleId: 'releaseDateFinder',
+    label: 'Release Date Finder',
+    subtitle: 'RDF module settings',
+    tip: 'Per-category settings for the Release Date Finder: per-variant discovery of first-availability dates.',
+    iconName: 'calendar' as const,
+    group: 'modules',
+  },
 ] as const;
 
-export const MODULE_IDS = ['colorEditionFinder', 'productImageFinder'] as const;
+export const MODULE_IDS = ['colorEditionFinder', 'productImageFinder', 'releaseDateFinder'] as const;
 export type ModuleSettingsModuleId = typeof MODULE_IDS[number];
-
-export const MODULE_SETTINGS_FORMS: Record<ModuleSettingsModuleId, ComponentType<ModuleSettingsFormProps>> = {
-  'colorEditionFinder': lazy(() => import('../../pipeline-settings/components/forms/CefSettingsForm.tsx').then((mod) => ({ default: mod.CefSettingsForm }))),
-  'productImageFinder': lazy(() => import('../../pipeline-settings/components/forms/PifSettingsForm.tsx').then((mod) => ({ default: mod.PifSettingsForm }))),
-};
 
 export type ModuleSettingsSectionId = typeof MODULE_SETTINGS_SECTIONS[number]['id'];

@@ -3222,9 +3222,9 @@
       "difficulty": "medium",
       "display_decimals": 0,
       "display_mode": "all",
-      "effort": 3,
+      "effort": 4,
       "examples": [],
-      "group": "General",
+      "group": "general",
       "guidance_md": null,
       "key": "release_date",
       "label": "Release Date",
@@ -3517,6 +3517,6 @@
       "unit": ""
     }
   ],
-  "generated_at": "2026-04-11T04:58:24.647Z",
+  "generated_at": "2026-04-17T05:52:22.787Z",
   "version": 1
 }

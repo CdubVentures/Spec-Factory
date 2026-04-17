@@ -15,42 +15,46 @@ function cleanup(dir) {
 }
 
 function buildPlan(bodyOverrides = {}, optionOverrides = {}) {
-  return buildProcessStartLaunchPlan({
-    body: {
-      category: 'mouse',
-      mode: 'indexlab',
-      productId: 'mouse-acme-orbit-x1',
-      ...bodyOverrides,
-    },
-    helperRoot: path.resolve('category_authority'),
-    outputRoot: path.resolve('gui-output-root'),
-    indexLabRoot: path.resolve('gui-indexlab-root'),
-    env: {},
-    pathApi: path,
-    buildRunIdFn: () => 'generated-run-1234',
-    ...optionOverrides,
-  });
+  const snapshotsDir = optionOverrides.snapshotsDir || makeTmpDir();
+  return {
+    snapshotsDir,
+    result: buildProcessStartLaunchPlan({
+      body: {
+        category: 'mouse',
+        mode: 'indexlab',
+        productId: 'mouse-acme-orbit-x1',
+        ...bodyOverrides,
+      },
+      helperRoot: path.resolve('category_authority'),
+      outputRoot: path.resolve('gui-output-root'),
+      indexLabRoot: path.resolve('gui-indexlab-root'),
+      snapshotsDir,
+      env: {},
+      pathApi: path,
+      buildRunIdFn: () => 'generated-run-1234',
+      ...optionOverrides,
+    }),
+  };
 }
 
 test('buildProcessStartLaunchPlan normalizes launch request into preflight paths, cli args, and env overrides', () => {
   const overrideRoot = makeTmpDir();
+  const { result, snapshotsDir } = buildPlan({
+    requestedRunId: 'bad',
+    categoryAuthorityRoot: overrideRoot,
+    fields: ['dpi', 'weight', ''],
+    providers: ['manufacturer', ' search '],
+    discoveryEnabled: true,
+    searchEngines: 'bing,brave,duckduckgo',
+    profile: 'thorough',
+    dryRun: true,
+    localOutputRoot: path.resolve('body-local-output-root'),
+    indexlabOut: path.resolve('body-indexlab-root'),
+    specDbDir: path.resolve('body-spec-db-root'),
+    maxRunSeconds: 600,
+    llmFallbackEnabled: false,
+  });
   try {
-    const result = buildPlan({
-      requestedRunId: 'bad',
-      categoryAuthorityRoot: overrideRoot,
-      fields: ['dpi', 'weight', ''],
-      providers: ['manufacturer', ' search '],
-      discoveryEnabled: true,
-      searchEngines: 'bing,brave,duckduckgo',
-      profile: 'thorough',
-      dryRun: true,
-      localOutputRoot: path.resolve('body-local-output-root'),
-      indexlabOut: path.resolve('body-indexlab-root'),
-      specDbDir: path.resolve('body-spec-db-root'),
-      maxRunSeconds: 600,
-      llmFallbackEnabled: false,
-    });
-
     assert.equal(result.ok, true);
     assert.equal(result.requestedRunId, 'generated-run-1234');
     assert.equal(result.replaceRunning, true);
@@ -92,31 +96,40 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
     assert.equal(Object.hasOwn(result.envOverrides, 'LLM_PLAN_FALLBACK_MODEL'), false,
       'LLM_PLAN_FALLBACK_MODEL is snapshot-only');
     assert.ok(
-      result.envOverrides.RUNTIME_SETTINGS_SNAPSHOT.includes(path.join('runtime', 'snapshots')),
-      'snapshot path is inside .workspace/runtime/snapshots/',
+      result.envOverrides.RUNTIME_SETTINGS_SNAPSHOT.startsWith(snapshotsDir),
+      'snapshot path is inside the test-provided snapshotsDir',
     );
     assert.equal(fs.existsSync(result.envOverrides.RUNTIME_SETTINGS_SNAPSHOT), true);
   } finally {
     cleanup(overrideRoot);
+    cleanup(snapshotsDir);
   }
 });
 
 test('buildProcessStartLaunchPlan rejects unsupported process mode', () => {
-  const result = buildPlan({ mode: 'legacy' });
-  assert.deepEqual(result, {
-    ok: false,
-    status: 400,
-    body: {
-      error: 'unsupported_process_mode',
-      message: 'Only indexlab mode is supported in GUI process/start.',
-    },
-  });
+  const { result, snapshotsDir } = buildPlan({ mode: 'legacy' });
+  try {
+    assert.deepEqual(result, {
+      ok: false,
+      status: 400,
+      body: {
+        error: 'unsupported_process_mode',
+        message: 'Only indexlab mode is supported in GUI process/start.',
+      },
+    });
+  } finally {
+    cleanup(snapshotsDir);
+  }
 });
 
 test('buildProcessStartLaunchPlan passes searchEngines through to CLI args', () => {
-  const result = buildPlan({ searchEngines: 'bing,brave' });
-  assert.equal(result.ok, true);
-  assert.ok(result.cliArgs.includes('--search-engines'), 'includes --search-engines flag');
-  assert.ok(result.cliArgs.includes('bing,brave'), 'includes engine CSV value');
+  const { result, snapshotsDir } = buildPlan({ searchEngines: 'bing,brave' });
+  try {
+    assert.equal(result.ok, true);
+    assert.ok(result.cliArgs.includes('--search-engines'), 'includes --search-engines flag');
+    assert.ok(result.cliArgs.includes('bing,brave'), 'includes engine CSV value');
+  } finally {
+    cleanup(snapshotsDir);
+  }
 });
 

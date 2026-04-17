@@ -89,6 +89,31 @@
 </div>
 
 <div class="container">
+  <div class="card" style="border-color: var(--accent); background: var(--accent-light);">
+    <div class="card-header" style="background: var(--accent); color: white;">
+      <span>Update &mdash; 2026-04-16: Finder Settings Renderer + Route Context Dedup</span>
+    </div>
+    <div class="card-body" style="font-size: 13px;">
+      <p><strong>The settings UI and route context factories changed.</strong> Sections below that reference the old shapes are stale in those specifics. New-finder rules:</p>
+      <ul style="padding-left: 20px; margin-top: 6px;">
+        <li><strong><code>settingsDefaults</code> &rarr; <code>settingsSchema</code></strong>: each module declares a typed array of setting entries (<code>{ key, type, default, min?, max?, allowed?, uiLabel?, uiTip?, uiGroup?, uiHero?, secret?, disabledBy?, allowEmpty?, hidden?, widget?, widgetProps? }</code>). Same shape as <code>RUNTIME_SETTINGS_REGISTRY</code>. <code>deriveFinderSettingsDefaults(schema)</code> produces the legacy <code>{ key: stringDefault }</code> map for SQL/DDL.</li>
+        <li><strong>No per-finder settings form</strong>: <code>CefSettingsForm</code> / <code>PifSettingsForm</code> / <code>MODULE_SETTINGS_FORMS</code> are deleted. <code>FinderSettingsRenderer</code> renders every primitive entry from the generated <code>FINDER_SETTINGS_REGISTRY</code>. Non-primitive controls (budgets, grids, reorderable lists) are named widgets registered via <code>registerSettingWidget(name, Component)</code>.</li>
+        <li><strong>No per-finder route context factory</strong>: the <code>contextFile</code> / <code>contextExport</code> registry fields are gone. Every module uses the shared <code>createFinderRouteContext(options)</code> from <code>src/core/finder/finderRouteContext.js</code>, which returns only the shared plumbing (<code>jsonRes</code>, <code>readJsonBody</code>, <code>config</code>, <code>appDb</code>, <code>getSpecDb</code>, <code>broadcastWs</code>, <code>logger</code>). Per-finder orchestrator functions are imported locally by the thin route wrapper that uses them.</li>
+        <li><strong>No <code>settingsFormPath</code> / <code>settingsFormExport</code></strong>: those registry fields are gone. The renderer lookup is by module id alone.</li>
+      </ul>
+      <p style="margin-top: 8px;"><strong>New-finder checklist (O(1)):</strong></p>
+      <ol style="padding-left: 20px; margin-top: 4px;">
+        <li>Add one <code>FINDER_MODULES</code> entry in <code>src/core/finder/finderModuleRegistry.js</code> with <code>settingsSchema</code> (widgets referenced by name; reuse <code>viewBudget</code>/<code>viewQualityGrid</code>/<code>viewConfig</code>/<code>evalThumbSize</code> where they fit).</li>
+        <li>Write feature files: orchestrator, LLM adapter, JSON store, panel component, thin route registrar.</li>
+        <li>Run <code>node tools/gui-react/scripts/generateLlmPhaseRegistry.js</code>.</li>
+        <li>If you need a brand-new widget type, add a <code>widgets/&lt;Name&gt;.tsx</code> file and register it in <code>widgets/index.ts</code>.</li>
+      </ol>
+      <p style="margin-top: 8px;">Treat mentions below of <code>settingsDefaults</code>, <code>CefSettingsForm</code>/<code>PifSettingsForm</code>, <code>MODULE_SETTINGS_FORMS</code>, <code>contextFile</code>/<code>contextExport</code>, <code>settingsFormPath</code>/<code>settingsFormExport</code>, or the context-factory step as historical context. The bullets above are the current contract.</p>
+    </div>
+  </div>
+</div>
+
+<div class="container">
 
 <!-- ================================================================== -->
 <!-- 0. BEFORE YOU START -->
@@ -694,6 +719,7 @@ import { myFinderHowItWorksSections }
   from '../myFinderHowItWorksContent.ts';</pre>
           <p style="margin-top:8px;">Build domain-specific sub-components for your data display (date cards, price tables, etc.). Keep derivation logic in a separate <code>selectors/</code> file for testability.</p>
           <p style="margin-top:8px;"><strong>&ldquo;How It Works&rdquo; explainer:</strong> Create <code>myFinderHowItWorksContent.ts</code> (pure data, typed <code>HiwSection[]</code>) and drop <code>&lt;FinderHowItWorks&gt;</code> between the KPI grid and first content section. Block types: <code>text</code>, <code>flow</code>, <code>callout</code>, <code>compare</code>, <code>learn-chain</code>, <code>slot-steps</code>, <code>table</code>. Tones: <code>accent</code>, <code>green</code>, <code>purple</code>, <code>teal</code>, <code>orange</code>, <code>amber</code>, <code>neutral</code>, <code>muted</code>. Set <code>span:&nbsp;2</code> on sections that need full width (tables).</p>
+          <p style="margin-top:8px;"><strong>Variant-dependent finders:</strong> use the shared scaffolding from <code>shared/ui/finder/</code> &mdash; <code>FinderVariantRow</code>, <code>useFinderColorHexMap</code>, <code>buildFinderVariantRows</code>, <code>buildEditionsMap</code>, <code>resolveVariantColorAtoms</code>. See the code block in Section 9 for the drop-in pattern. Do <strong>not</strong> hand-roll variant rows, color swatches, or label-resolution logic per finder.</p>
         </div>
       </li>
       <li>
@@ -983,6 +1009,44 @@ for (const v of variants) {
         <li>Reseed (<code>candidateReseed.js</code>) round-trips <code>variant_id</code> through <code>product.json &rarr; field_candidates</code>.</li>
       </ul>
     </div>
+
+    <div class="callout callout-info" style="margin-top:8px;">
+      <strong>Frontend: shared variant-panel scaffolding (O(1) for the next finder)</strong>
+      <p style="margin:4px 0 0; font-size:13px;">Variant-dependent finder panels (PIF, RDF, and anything that renders one row per CEF variant) share their chrome. Drop these in instead of re-inventing the grid + labels + swatches:</p>
+      <pre class="code-block" style="margin-top:8px;">import {
+  FinderSectionCard, FinderVariantRow,
+  useFinderColorHexMap,
+  buildFinderVariantRows, buildEditionsMap,
+  resolveVariantColorAtoms,
+} from '../../../shared/ui/finder/index.ts';
+
+const hexMap   = useFinderColorHexMap();
+const editions = useMemo(() =&gt; buildEditionsMap(cefData), [cefData]);
+const variants = useMemo(() =&gt; buildFinderVariantRows(cefData), [cefData]);
+
+&lt;FinderSectionCard title="All Release Dates" storeKey={...} defaultOpen&gt;
+  &lt;div className="grid grid-cols-2 gap-3"&gt;
+    {variants.map(v =&gt; {
+      const atoms    = resolveVariantColorAtoms(v.variant_key, editions);
+      const hexParts = atoms.map(a =&gt; hexMap.get(a.trim()) || '');
+      return (
+        &lt;FinderVariantRow
+          key={v.variant_key} variant={v} hexParts={hexParts}
+          expanded={...} onToggle={...} expandable={...}
+          trailing={/* module-specific chips + buttons */}
+        &gt;
+          {/* module-specific expanded body */}
+        &lt;/FinderVariantRow&gt;
+      );
+    })}
+  &lt;/div&gt;
+&lt;/FinderSectionCard&gt;</pre>
+      <ul style="margin:4px 0 0 16px; font-size:13px;">
+        <li><strong><code>buildFinderVariantRows(cefData)</code></strong> produces the canonical label precedence (<code>edition_display_name</code>, then <code>color_names[combo]</code>, then <code>formatAtomLabel(combo)</code>). Never hand-roll this in a panel.</li>
+        <li><strong>Two-column grid</strong> (<code>grid grid-cols-2 gap-3</code>) + <strong><code>FinderVariantRow</code></strong> chrome = identical look across all variant-dependent finders.</li>
+        <li>Section title convention: &ldquo;All &lt;Thing&gt;&rdquo; with a &ldquo;N across M variants&rdquo; count. KPI order mirrors PIF: <em>items found &bull; variants &bull; runs &bull; published N/total</em>.</li>
+      </ul>
+    </div>
   </div>
 </div>
 
@@ -1029,6 +1093,11 @@ for (const v of variants) {
         <tr><td><code>FinderRunTimestamp</code></td><td>PST time + duration</td></tr>
         <tr><td><code>DiscoverySummaryBar</code></td><td>Discovery log summary bar</td></tr>
         <tr><td><code>ColorSwatch</code></td><td>Multi-color gradient circle</td></tr>
+        <tr><td><code>FinderVariantRow</code></td><td><strong>Variant-dependent finders</strong>: shared row chrome (panel + arrow + swatch + label + ED/CLR chip) with <code>trailing</code> and <code>children</code> slots for module chips/buttons/expanded body. First used by PIF/RDF; next variant-dependent finder drops in free.</td></tr>
+        <tr><td><code>buildFinderVariantRows(cefData)</code></td><td>Pure: variant list with title-cased labels (<code>color_names</code> + <code>formatAtomLabel</code>). Preferred over inline mapping.</td></tr>
+        <tr><td><code>buildEditionsMap(cefData)</code></td><td>Pure: <code>edition_details</code> accessor. Feeds <code>resolveVariantColorAtoms</code>.</td></tr>
+        <tr><td><code>resolveVariantColorAtoms(variantKey, editions)</code></td><td>Pure: splits <code>color:</code> atoms or looks up edition combo. Used to seed <code>ColorSwatch</code>.</td></tr>
+        <tr><td><code>useFinderColorHexMap()</code></td><td>Hook: queries <code>/colors</code>, returns stable <code>Map&lt;name,hex&gt;</code> for swatches.</td></tr>
         <tr><td><code>useResolvedFinderModel</code></td><td>Hook: LLM model + access mode for a phase</td></tr>
         <tr><td><code>deriveCooldownState</code></td><td>Pure: days remaining, progress %</td></tr>
         <tr><td><code>deriveFinderStatusChip</code></td><td>Pure: &ldquo;Not Run&rdquo; vs &ldquo;Run N&rdquo;</td></tr>
@@ -1242,7 +1311,7 @@ const merged = mergeDiscovery({ ... });        // clean write</pre>
 <!-- ================================================================== -->
 
 <div style="text-align:center; padding:32px 0; color:var(--text-muted); font-size:13px;">
-  Spec Factory Finder Module Guide &mdash; Updated 2026-04-14 (audit pass: validate-before-persist, prompt vs validation, reseed DI, manual wiring reframe)<br>
+  Spec Factory Finder Module Guide &mdash; Updated 2026-04-17 (shared variant-row scaffolding for variant-dependent finders: FinderVariantRow + buildFinderVariantRows + useFinderColorHexMap)<br>
   Registry-driven &bull; O(1) scaling &bull; 17 auto-wired systems &bull; dual-state persistence &bull; fire-and-forget<br>
   <span style="margin-top:6px; display:block;">
     Source: <code>src/core/finder/finderModuleRegistry.js</code> &bull;

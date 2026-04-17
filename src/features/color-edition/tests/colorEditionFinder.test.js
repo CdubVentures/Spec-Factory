@@ -78,7 +78,8 @@ describe('runColorEditionFinder', () => {
       }),
     });
 
-    assert.deepEqual(result.colors, ['black', 'white']);
+    // WHY: Edition IS a color — 'black+red' combo stays in published colors.
+    assert.deepEqual(result.colors, ['black', 'white', 'black+red']);
     assert.deepEqual(result.editions, { 'cyberpunk-2077-edition': { colors: ['black+red'] } });
     assert.equal(result.default_color, 'black');
   });
@@ -158,7 +159,9 @@ describe('runColorEditionFinder', () => {
 
     const row = specDb.getColorEditionFinder('mouse-sql');
     assert.ok(row);
-    assert.deepEqual(row.colors, ['black'], 'standalone color only; edition combo excluded');
+    // WHY: Edition IS a color — its combo is published alongside standalone colors.
+    assert.ok(row.colors.includes('black'), 'standalone color included');
+    assert.ok(row.colors.includes('black+red'), 'edition combo cascaded into published colors');
     assert.equal(row.default_color, 'black');
   });
 
@@ -850,9 +853,9 @@ describe('runColorEditionFinder', () => {
       'color_atoms should be repaired after reconciliation fixes the lookup');
   });
 
-  // ── Edition combo isolation ──────────────────────────────────────
+  // ── Edition combos cascade into colors (edition IS a color) ─────
 
-  it('edition combos excluded from return value and summary colors', async () => {
+  it('edition combo cascades into return value and summary colors', async () => {
     const pid = 'mouse-combo-isolate';
     const appDb = makeAppDbStub([
       { name: 'black', hex: '#000000', css_var: '--color-black' },
@@ -872,16 +875,16 @@ describe('runColorEditionFinder', () => {
       }),
     });
 
-    // Return value must only have standalone colors
+    // Edition IS a color: return value includes both standalone colors AND the combo.
     assert.ok(result.colors.includes('black'), 'standalone color preserved');
     assert.ok(result.colors.includes('white'), 'standalone color preserved');
-    assert.ok(!result.colors.includes('dark-gray+black+orange'), 'edition combo must NOT be in return colors');
+    assert.ok(result.colors.includes('dark-gray+black+orange'), 'edition combo cascaded into return colors');
 
-    // SQL summary must only have standalone colors
+    // SQL summary mirrors — combo is in published colors too.
     const sqlRow = specDb.getColorEditionFinder(pid);
     assert.ok(sqlRow.colors.includes('black'));
     assert.ok(sqlRow.colors.includes('white'));
-    assert.ok(!sqlRow.colors.includes('dark-gray+black+orange'), 'edition combo must NOT be in summary colors');
+    assert.ok(sqlRow.colors.includes('dark-gray+black+orange'), 'edition combo in summary colors');
 
     // JSON selected preserves full audit trail (including combo)
     const json = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });

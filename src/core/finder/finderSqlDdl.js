@@ -73,7 +73,7 @@ export function generateFinderDdl(modules) {
     // WHY: Each module owns its own settings table. SpecDb is already
     // per-category, so no category column needed. Reseed rebuilds from
     // the JSON mirror in category_authority.
-    if (mod.settingsDefaults) {
+    if (Array.isArray(mod.settingsSchema) && mod.settingsSchema.length > 0) {
       const settingsTableName = `${mod.tableName}_settings`;
       statements.push([
         `CREATE TABLE IF NOT EXISTS ${settingsTableName} (`,

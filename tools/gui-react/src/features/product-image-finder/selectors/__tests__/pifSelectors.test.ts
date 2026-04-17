@@ -118,85 +118,90 @@ describe('resolveVariantColorAtoms', () => {
 /* ── buildVariantList ─────────────────────────────────────────────── */
 
 describe('buildVariantList', () => {
-  it('returns empty for empty input', () => {
-    assert.deepEqual(buildVariantList({}), []);
+  const mk = (over = {}) => ({
+    variant_id: 'v1', variant_key: 'color:black', variant_type: 'color' as const,
+    variant_label: 'Black', color_atoms: ['black'], edition_slug: null,
+    edition_display_name: null, created_at: '2026-04-16T00:00:00Z',
+    ...over,
   });
 
-  it('builds color variants from colors array', () => {
-    const result = buildVariantList({ colors: ['black', 'white'] });
-    assert.equal(result.length, 2);
+  it('returns empty for empty registry', () => {
+    assert.deepEqual(buildVariantList([]), []);
+  });
+
+  it('builds exactly one variant per registry entry — no duplicates when editions exist', () => {
+    const result = buildVariantList([
+      mk({ variant_id: 'v1', variant_key: 'color:black', variant_type: 'color', variant_label: 'Black', color_atoms: ['black'] }),
+      mk({ variant_id: 'v2', variant_key: 'color:white', variant_type: 'color', variant_label: 'White', color_atoms: ['white'] }),
+      mk({ variant_id: 'v3', variant_key: 'edition:cod-bo6', variant_type: 'edition', variant_label: 'COD BO6', color_atoms: ['dark-gray','black','orange'], edition_slug: 'cod-bo6', edition_display_name: 'Call of Duty BO6' }),
+    ]);
+    assert.equal(result.length, 3, 'one variant per registry row');
     assert.equal(result[0].key, 'color:black');
-    assert.equal(result[0].type, 'color');
     assert.equal(result[1].key, 'color:white');
+    assert.equal(result[2].key, 'edition:cod-bo6');
   });
 
-  it('edition combo in colors produces both a color and an edition variant', () => {
-    const result = buildVariantList({
-      colors: ['black+red'],
-      editions: { 'gaming-edition': { display_name: 'Gaming Edition', colors: ['black+red'] } },
-    });
-    assert.equal(result.length, 2, 'color + edition independently');
-    assert.ok(result.find(v => v.key === 'color:black+red'), 'combo stays as color');
-    const ed = result.find(v => v.key === 'edition:gaming-edition');
-    assert.ok(ed, 'edition built from edition_details');
-    assert.equal(ed!.label, 'Gaming Edition');
-    assert.equal(ed!.type, 'edition');
+  it('edition registry entry only produces an edition variant (no duplicate color variant even when combo is also a color)', () => {
+    const result = buildVariantList([
+      mk({ variant_id: 'v1', variant_key: 'edition:gaming-ed', variant_type: 'edition', variant_label: 'Gaming', color_atoms: ['black','red'], edition_slug: 'gaming-ed', edition_display_name: 'Gaming Edition' }),
+    ]);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].key, 'edition:gaming-ed');
+    assert.equal(result[0].type, 'edition');
+    assert.equal(result[0].label, 'Gaming Edition');
   });
 
-  it('uses color_names override for display name', () => {
-    const result = buildVariantList({
-      colors: ['black'],
-      color_names: { black: 'Midnight Black' },
-    });
-    assert.equal(result[0].label, 'Midnight Black');
+  it('uses edition display_name as label for edition variants', () => {
+    const result = buildVariantList([
+      mk({ variant_id: 'v1', variant_key: 'edition:stealth', variant_type: 'edition', variant_label: 'Stealth', color_atoms: ['black'], edition_slug: 'stealth', edition_display_name: 'Stealth Edition' }),
+    ]);
+    assert.equal(result[0].label, 'Stealth Edition');
   });
 
-  it('falls back to titlecased atom when no color_names', () => {
-    const result = buildVariantList({ colors: ['dark-gray'] });
-    assert.equal(result[0].label, 'Dark Gray');
+  it('uses color_names[combo] as label for color variants when provided', () => {
+    const result = buildVariantList(
+      [mk({ variant_id: 'v1', variant_key: 'color:white+silver', variant_type: 'color', variant_label: 'White Silver', color_atoms: ['white','silver'] })],
+      { 'white+silver': 'Frost White' },
+    );
+    assert.equal(result[0].label, 'Frost White');
   });
 
-  it('ignores color_names that match the raw name (case insensitive)', () => {
-    const result = buildVariantList({
-      colors: ['black'],
-      color_names: { black: 'Black' },
-    });
+  it('falls back to variant_label, then formatted atom, for color variants', () => {
+    const labeled = buildVariantList(
+      [mk({ variant_id: 'v1', variant_key: 'color:black', variant_type: 'color', variant_label: 'Midnight Black', color_atoms: ['black'] })],
+    );
+    assert.equal(labeled[0].label, 'Midnight Black');
+
+    const unlabeled = buildVariantList(
+      [mk({ variant_id: 'v1', variant_key: 'color:dark-gray', variant_type: 'color', variant_label: '', color_atoms: ['dark-gray'] })],
+    );
+    assert.equal(unlabeled[0].label, 'Dark Gray');
+  });
+
+  it('ignores a color label that matches the raw combo (case insensitive)', () => {
+    const result = buildVariantList(
+      [mk({ variant_id: 'v1', variant_key: 'color:black', variant_type: 'color', variant_label: 'Black', color_atoms: ['black'] })],
+    );
     assert.equal(result[0].label, 'Black');
   });
 
-  it('builds editions directly from edition_details, not from colors array', () => {
-    const result = buildVariantList({
-      colors: ['black', 'white'],
-      editions: { 'cod-bo6': { display_name: 'Call of Duty BO6', colors: ['black+gray+orange'] } },
-    });
-    assert.equal(result.length, 3, 'black + white + edition');
-    assert.ok(result.find(v => v.key === 'color:black'), 'black stays as color');
-    assert.ok(result.find(v => v.key === 'color:white'), 'white stays as color');
-    const ed = result.find(v => v.key === 'edition:cod-bo6');
-    assert.ok(ed, 'edition created from edition_details');
-    assert.equal(ed!.label, 'Call of Duty BO6');
-    assert.equal(ed!.type, 'edition');
+  it('edition without display_name falls back to variant_label, then slug', () => {
+    const labeled = buildVariantList([
+      mk({ variant_id: 'v1', variant_key: 'edition:mystery-ed', variant_type: 'edition', variant_label: 'Mystery Edition', color_atoms: ['black'], edition_slug: 'mystery-ed', edition_display_name: null }),
+    ]);
+    assert.equal(labeled[0].label, 'Mystery Edition');
+
+    const slugOnly = buildVariantList([
+      mk({ variant_id: 'v1', variant_key: 'edition:slug-only', variant_type: 'edition', variant_label: '', color_atoms: ['black'], edition_slug: 'slug-only', edition_display_name: null }),
+    ]);
+    assert.equal(slugOnly[0].label, 'slug-only');
   });
 
-  it('edition with single-color combo does not steal that color from the list', () => {
-    const result = buildVariantList({
-      colors: ['black', 'white'],
-      editions: { 'stealth-edition': { display_name: 'Stealth Edition', colors: ['black'] } },
-    });
-    assert.equal(result.length, 3, 'black + white + edition');
-    assert.ok(result.find(v => v.key === 'color:black'), 'black must remain as standalone color');
-    assert.ok(result.find(v => v.key === 'edition:stealth-edition'), 'edition created independently');
-  });
-
-  it('editions without colors array still created', () => {
-    const result = buildVariantList({
-      colors: ['black'],
-      editions: { 'mystery-ed': { display_name: 'Mystery Edition' } },
-    });
-    assert.equal(result.length, 2);
-    const ed = result.find(v => v.key === 'edition:mystery-ed');
-    assert.ok(ed);
-    assert.equal(ed!.label, 'Mystery Edition');
+  it('carries variant_id from the registry onto VariantInfo', () => {
+    const result = buildVariantList([
+      mk({ variant_id: 'v_abc', variant_key: 'color:black', variant_type: 'color', variant_label: 'Black', color_atoms: ['black'] }),
+    ]);
+    assert.equal(result[0].variant_id, 'v_abc');
   });
 });
 

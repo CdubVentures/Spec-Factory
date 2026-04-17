@@ -5,7 +5,6 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { defaultSnapshotRoot } from './runtimeArtifactRoots.js';
 
 // WHY: These are run-control fields that should NOT be in the settings snapshot.
 // They control what to run (product identity), not how to run (pipeline settings).
@@ -34,11 +33,17 @@ function extractSettingsFromBody(body) {
  * Write a runtime settings snapshot to disk.
  * @param {string} runId — Run identifier
  * @param {Object} body — Full POST body (run control + settings)
- * @param {string} [snapshotsDir] — Optional override for snapshot directory (defaults to .workspace/runtime/snapshots)
+ * @param {string} snapshotsDir — REQUIRED snapshot directory. Callers resolve the
+ *   real .workspace/runtime/snapshots at the route boundary; tests pass a tmpdir.
+ *   There is no silent default — a previous default leaked test state into the
+ *   real runtime snapshots.
  * @returns {string} Absolute path to the written snapshot file
  */
 export function writeRuntimeSettingsSnapshot(runId, body, snapshotsDir) {
-  const resolvedDir = snapshotsDir ? path.resolve(snapshotsDir) : defaultSnapshotRoot();
+  if (!snapshotsDir) {
+    throw new Error('writeRuntimeSettingsSnapshot requires snapshotsDir');
+  }
+  const resolvedDir = path.resolve(snapshotsDir);
   fs.mkdirSync(resolvedDir, { recursive: true });
 
   const snapshot = {

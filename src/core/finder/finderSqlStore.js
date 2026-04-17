@@ -10,6 +10,8 @@
  * on read. Serializes them on write.
  */
 
+import { deriveFinderSettingsDefaults } from './finderSettingsSchema.js';
+
 function safeJsonParse(str, fallback) {
   if (!str || typeof str !== 'string') return fallback;
   try { return JSON.parse(str); } catch { return fallback; }
@@ -36,7 +38,12 @@ function hydrateRunRow(row) {
  * @returns {object} store with upsert, get, listByCategory, remove, insertRun, listRuns, getLatestRun, removeRun, removeAllRuns
  */
 export function createFinderSqlStore({ db, category, module: mod }) {
-  const { tableName, runsTableName, summaryColumns = [], settingsDefaults } = mod;
+  const { tableName, runsTableName, summaryColumns = [], settingsSchema } = mod;
+  // WHY: Derive the legacy { key: stringDefault } map from the schema once.
+  // All downstream read-through logic keeps operating on this shape.
+  const settingsDefaults = Array.isArray(settingsSchema) && settingsSchema.length > 0
+    ? deriveFinderSettingsDefaults(settingsSchema)
+    : null;
   const settingsTableName = `${tableName}_settings`;
   const customColNames = summaryColumns.map(c => c.name);
   // WHY: Map column name → default value for use when upsert receives undefined.

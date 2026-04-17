@@ -54,11 +54,12 @@ test('studio payload response has exact StudioPayload shape', async () => {
   assert.ok(result.body.fieldOrder.includes('dpi'), 'dpi in fieldOrder');
   assert.ok(result.body.fieldOrder.includes('colors'), 'colors in fieldOrder');
   assert.ok(result.body.fieldOrder.includes('editions'), 'editions in fieldOrder');
-  assert.deepEqual(result.body.egLockedKeys, ['colors', 'editions']);
+  assert.deepEqual([...result.body.egLockedKeys].sort(), ['colors', 'editions', 'release_date']);
   assert.ok(Array.isArray(result.body.egEditablePaths));
   assert.ok(result.body.egToggles, 'egToggles present');
   assert.equal(result.body.egToggles.colors, true);
   assert.equal(result.body.egToggles.editions, true);
+  assert.equal(result.body.egToggles.release_date, true);
   assert.equal(result.body.compiledAt, '2026-03-29T00:00:00Z');
   assert.equal(result.body.compileStale, false);
   StudioPayloadSchema.parse(result.body);

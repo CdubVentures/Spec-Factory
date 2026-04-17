@@ -1071,6 +1071,14 @@ html[data-sf-radius] {
   background: rgb(var(--sf-color-border-default-rgb) / 0.42);
 }
 
+.sf-bg-accent {
+  background: rgb(var(--sf-color-accent-rgb));
+}
+
+.sf-text-on-emphasis {
+  color: rgb(var(--sf-color-text-inverse-rgb));
+}
+
 .sf-hover-bg-surface-soft:hover {
   background: rgb(var(--sf-color-border-default-rgb) / 0.28);
 }

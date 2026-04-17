@@ -13,11 +13,17 @@ import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { registerOperation, getOperationSignal, updateStage, updateModelInfo, updateProgressText, updateLoopProgress, updateQueueDelay, appendLlmCall, completeOperation, failOperation, cancelOperation, fireAndForget } from '../../../core/operations/index.js';
 import { createStreamBatcher } from '../../../core/llm/streamBatcher.js';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
-import { readImageDimensions, buildVariantList, imageStem } from '../productImageFinder.js';
+import { readImageDimensions, buildVariantList, imageStem, runProductImageFinder, runCarouselLoop } from '../productImageFinder.js';
 import { evaluateCarousel } from '../carouselStrategy.js';
 import { resolveViewBudget } from '../productImageLlmAdapter.js';
 import { resolveViewAttemptBudgets } from '../viewAttemptDefaults.js';
-import { readProductImages } from '../productImageStore.js';
+import {
+  readProductImages,
+  deleteProductImageFinderRun,
+  deleteProductImageFinderRuns,
+  deleteProductImageFinderAll,
+} from '../productImageStore.js';
+import { runEvalView, runEvalHero } from '../carouselBuild.js';
 import { writeCarouselSlot, resolveCarouselSlots, deleteEvalRecord, extractEvalState } from '../imageEvaluator.js';
 
 export function registerProductImageFinderRoutes(ctx) {
@@ -30,10 +36,10 @@ export function registerProductImageFinderRoutes(ctx) {
     phase: 'imageFinder',
     fieldKeys: [],
 
-    runFinder: ctx.runProductImageFinder,
-    deleteRun: ctx.deleteProductImageFinderRun,
-    deleteRuns: ctx.deleteProductImageFinderRuns,
-    deleteAll: ctx.deleteProductImageFinderAll,
+    runFinder: runProductImageFinder,
+    deleteRun: deleteProductImageFinderRun,
+    deleteRuns: deleteProductImageFinderRuns,
+    deleteAll: deleteProductImageFinderAll,
 
     getOne: (specDb, pid) => store(specDb).get(pid),
     listByCategory: (specDb, cat) => store(specDb).listByCategory(cat),
@@ -549,7 +555,7 @@ export function registerProductImageFinderRoutes(ctx) {
             entities: { productIds: [productId] },
             meta: { productId },
           },
-          asyncWork: () => ctx.runCarouselLoop({
+          asyncWork: () => runCarouselLoop({
             product: {
               product_id: productId,
               category,
@@ -653,7 +659,7 @@ export function registerProductImageFinderRoutes(ctx) {
             entities: { productIds: [productId] },
             meta: { productId },
           },
-          asyncWork: () => ctx.runEvalView({
+          asyncWork: () => runEvalView({
             product: {
               product_id: productId,
               category,
@@ -735,7 +741,7 @@ export function registerProductImageFinderRoutes(ctx) {
             entities: { productIds: [productId] },
             meta: { productId },
           },
-          asyncWork: () => ctx.runEvalHero({
+          asyncWork: () => runEvalHero({
             product: {
               product_id: productId,
               category,
@@ -874,7 +880,7 @@ export function registerProductImageFinderRoutes(ctx) {
             entities: { productIds: [productId] },
             meta: { productId },
           },
-          asyncWork: () => ctx.runProductImageFinder({
+          asyncWork: () => runProductImageFinder({
             product: {
               product_id: productId,
               category,

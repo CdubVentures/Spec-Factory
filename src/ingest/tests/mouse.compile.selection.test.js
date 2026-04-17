@@ -30,13 +30,13 @@ test('compileCategoryFieldStudio honors selected_keys scope from field studio ma
       config: { categoryAuthorityRoot: helperRoot },
     });
     assert.equal(result.compiled, true);
-    // WHY: EG-locked keys (colors, editions) are always injected into the selected set,
-    // so the total is selected_keys + EG_LOCKED_KEYS = 2 + 2 = 4.
-    assert.equal(result.selected_key_count, 4);
-    assert.equal(result.field_count, 4);
+    // WHY: EG-locked keys (colors, editions, release_date) are always injected into the selected set,
+    // so the total is selected_keys + EG_LOCKED_KEYS = 2 + 3 = 5.
+    assert.equal(result.selected_key_count, 5);
+    assert.equal(result.field_count, 5);
 
     const fieldRules = JSON.parse(await fs.readFile(path.join(generatedRoot, 'field_rules.json'), 'utf8'));
-    assert.deepEqual(Object.keys(fieldRules.fields).sort(), ['colors', 'connection', 'editions', 'weight']);
+    assert.deepEqual(Object.keys(fieldRules.fields).sort(), ['colors', 'connection', 'editions', 'release_date', 'weight']);
   } finally {
     await cleanup();
   }

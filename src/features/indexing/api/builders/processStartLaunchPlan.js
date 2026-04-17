@@ -20,6 +20,7 @@ export function buildProcessStartLaunchPlan(options = {}) {
     helperRoot = '',
     outputRoot = '',
     indexLabRoot = '',
+    snapshotsDir,
     env = process.env,
     pathApi = path,
     buildRunIdFn = buildRunId,
@@ -124,7 +125,7 @@ export function buildProcessStartLaunchPlan(options = {}) {
   // WHY: Plan 05 — runtime settings snapshot is the SSOT for child settings.
   // The child reads this via RUNTIME_SETTINGS_SNAPSHOT env var in config.js.
   try {
-    const snapshotPath = writeRuntimeSettingsSnapshot(requestedRunId, body);
+    const snapshotPath = writeRuntimeSettingsSnapshot(requestedRunId, body, snapshotsDir);
     envOverrides.RUNTIME_SETTINGS_SNAPSHOT = snapshotPath;
   } catch (err) {
     return buildError(500, {

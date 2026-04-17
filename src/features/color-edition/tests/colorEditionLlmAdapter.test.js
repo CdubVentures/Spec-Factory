@@ -248,7 +248,7 @@ describe('buildVariantIdentityCheckPrompt', () => {
 
   it('contains matching rules with match/new/reject actions', () => {
     const result = buildVariantIdentityCheckPrompt({ product, existingRegistry, newColors: ['black'], newColorNames: {}, newEditions: {} });
-    assert.ok(result.includes('RENAME'));
+    assert.ok(result.includes('preferred_label'), 'rename path via preferred_label');
     assert.ok(result.includes('"match"'), 'match action in example');
     assert.ok(result.includes('"new"'), 'new action in example');
     assert.ok(result.includes('"reject"'), 'reject action in example');

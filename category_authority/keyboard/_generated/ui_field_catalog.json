@@ -2931,12 +2931,12 @@
       "array_handling": "none",
       "availability": "sometimes",
       "canonical_key": "release_date",
-      "difficulty": "easy",
+      "difficulty": "medium",
       "display_decimals": 0,
       "display_mode": "all",
-      "effort": 3,
+      "effort": 4,
       "examples": [],
-      "group": "General",
+      "group": "general",
       "guidance_md": null,
       "key": "release_date",
       "label": "Release Date",
@@ -3231,6 +3231,6 @@
       "unit": ""
     }
   ],
-  "generated_at": "2026-04-11T04:58:16.572Z",
+  "generated_at": "2026-04-17T05:52:22.278Z",
   "version": 1
 }
