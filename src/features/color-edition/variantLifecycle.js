@@ -256,12 +256,10 @@ function stripVariantFromCandidates({ specDb, productId, variant, productRoot })
       const filtered = parsed.filter(item => !removeSet.has(item));
       if (filtered.length === parsed.length) continue;
 
-      if (filtered.length === 0) {
-        // WHY: Empty array = candidate has no valid values left. Delete it.
-        specDb.deleteFieldCandidateBySourceId(productId, fieldKey, row.source_id);
-      } else {
-        specDb.updateFieldCandidateValue(productId, fieldKey, row.source_id, JSON.stringify(filtered));
-      }
+      // WHY: Candidate rows are audit/evidence. Variant delete strips matching
+      // values but never deletes the row — even when the array becomes empty.
+      // Rows are only deleted on explicit candidate-delete or source/run delete.
+      specDb.updateFieldCandidateValue(productId, fieldKey, row.source_id, JSON.stringify(filtered));
     }
   }
 
@@ -276,8 +274,7 @@ function stripVariantFromCandidates({ specDb, productId, variant, productRoot })
       const entries = productJson.candidates[fieldKey];
       if (!Array.isArray(entries)) continue;
 
-      for (let i = entries.length - 1; i >= 0; i--) {
-        const entry = entries[i];
+      for (const entry of entries) {
         // WHY: Same CEF-only scoping as SQL — only strip from CEF sources.
         if (entry.source_type !== 'cef') continue;
 
@@ -290,19 +287,55 @@ function stripVariantFromCandidates({ specDb, productId, variant, productRoot })
         if (filtered.length === parsed.length) continue;
         jsonChanged = true;
 
-        if (filtered.length === 0) {
-          entries.splice(i, 1);
-        } else {
-          entry.value = filtered;
-        }
+        // WHY: Mirrors the SQL rule — strip values, keep the row. Empty arrays
+        // are valid evidence state ("source once had values, now has none").
+        entry.value = filtered;
       }
-
-      if (entries.length === 0) delete productJson.candidates[fieldKey];
     }
     if (jsonChanged) {
       productJson.updated_at = new Date().toISOString();
       writeProductJson(productRoot, productId, productJson);
     }
+  }
+}
+
+// ── Variant-id FK cascade for feature-source candidates ────────────
+
+/**
+ * Delete all field_candidates anchored to a variant_id (SQL + JSON).
+ *
+ * WHY: Feature-source candidates (price, SKU, release date) carry the
+ * variant_id as the FK anchor. When a variant is deleted, every row keyed
+ * to that id must go — both in SQL and in the product.json mirror.
+ *
+ * NULL variant_id rows (CEF-source, pipeline) are NOT touched here —
+ * those go through stripVariantFromCandidates value matching.
+ */
+function cascadeVariantIdFromCandidates({ specDb, productId, variantId, productRoot }) {
+  if (!variantId) return;
+
+  specDb.deleteFieldCandidatesByVariantId(productId, variantId);
+
+  const productJson = readProductJson(productRoot, productId);
+  if (!productJson?.candidates) return;
+
+  let jsonChanged = false;
+  for (const [fieldKey, entries] of Object.entries(productJson.candidates)) {
+    if (!Array.isArray(entries)) continue;
+
+    for (let i = entries.length - 1; i >= 0; i--) {
+      if (entries[i]?.variant_id === variantId) {
+        entries.splice(i, 1);
+        jsonChanged = true;
+      }
+    }
+
+    if (entries.length === 0) delete productJson.candidates[fieldKey];
+  }
+
+  if (jsonChanged) {
+    productJson.updated_at = new Date().toISOString();
+    writeProductJson(productRoot, productId, productJson);
   }
 }
 
@@ -313,10 +346,11 @@ function stripVariantFromCandidates({ specDb, productId, variant, productRoot })
  *
  * Cascade:
  *   1. variants table → hard delete
- *   2. field_candidates → strip variant's contributed values from arrays
- *   3. color_edition.json variant_registry + selected → filter out
- *   4. published state → re-derive from remaining variants
- *   5. PIF → remove images, evals, carousel_slots for this variant
+ *   2. field_candidates (CEF source) → strip variant's contributed values from arrays
+ *   3. field_candidates (feature source) → DELETE WHERE variant_id = ? (FK cascade)
+ *   4. color_edition.json variant_registry + selected → filter out
+ *   5. published state → re-derive from remaining variants
+ *   6. PIF → remove images, evals, carousel_slots for this variant
  *
  * @param {{ specDb, productId: string, variantId: string, productRoot?: string }} opts
  * @returns {{ deleted: boolean, variant?: object }}
@@ -329,10 +363,13 @@ export function deleteVariant({ specDb, productId, variantId, productRoot }) {
   // 1. Remove from variants table
   specDb.variants.remove(productId, variantId);
 
-  // 2. Strip variant's values from all field_candidates (SQL + JSON)
+  // 2. Strip variant's values from CEF-source field_candidates (SQL + JSON)
   stripVariantFromCandidates({ specDb, productId, variant, productRoot });
 
-  // 3. Remove from JSON SSOT
+  // 3. Cascade variant-anchored feature-source candidates by variant_id (SQL + JSON)
+  cascadeVariantIdFromCandidates({ specDb, productId, variantId, productRoot });
+
+  // 4. Remove from JSON SSOT
   removeVariantFromJson({ productId, variantId, productRoot });
 
   // 4. Re-derive published state from remaining variants

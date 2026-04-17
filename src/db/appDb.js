@@ -328,7 +328,7 @@ export class AppDb {
       cached_prompt_tokens: entry.cached_prompt_tokens ?? 0,
       total_tokens: entry.total_tokens ?? 0,
       cost_usd: entry.cost_usd ?? 0,
-      reason: entry.reason || 'extract',
+      reason: entry.reason || '',
       host: entry.host || '',
       url_count: entry.url_count ?? 0,
       evidence_chars: entry.evidence_chars ?? 0,
@@ -420,7 +420,7 @@ export class AppDb {
              COALESCE(SUM(completion_tokens), 0) as completion_tokens
       FROM billing_entries WHERE month = ?${f.sql} GROUP BY reason
     `).all(...baseParams)) {
-      by_reason[row.reason || 'extract'] = { cost_usd: row.cost_usd, prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens, calls: row.calls };
+      by_reason[row.reason || ''] = { cost_usd: row.cost_usd, prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens, calls: row.calls };
     }
 
     return {

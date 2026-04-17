@@ -19,7 +19,7 @@ Exported from `index.js`:
 - `runColorEditionFinder({ product, appDb, specDb, config, ... })` — Full orchestrator: LLM call → capture prompt/response → merge → persist
 - `generateVariantId(productId, variantKey)` — Deterministic hash: `v_` + 8 hex chars from SHA-256. Product-scoped, never changes once assigned.
 - `buildVariantRegistry({ productId, colors, colorNames, editions })` — Builds full variant registry array from CEF selected data. Each entry has stable `variant_id`, current `variant_key`/`variant_label`/`color_atoms`.
-- `backfillVariantRegistry({ specDb, productRoot? })` — One-time backfill: scans all products, generates registry for those missing one, writes JSON + SQL. Idempotent.
+- `backfillVariantRegistry({ specDb, productRoot? })` — One-time backfill: scans all products, generates registry for those missing one, writes the JSON SSOT (`color_edition.json`). Idempotent.
 - `deriveColorNamesFromVariants(variants, publishedColors, publishedEditions)` — Pure function: derives `{ colorNames, editionDetails }` display maps from variant rows. Used at GET time so response never depends on run-snapshot `selected`.
 - `derivePublishedFromVariants({ specDb, productId, productRoot? })` — Re-derives published colors/editions from the `variants` SQL table (SSOT). Writes to product.json fields[] + CEF summary columns. Called after every CEF run and after variant deletion.
 - `deleteVariant({ specDb, productId, variantId, productRoot? })` — Full cascade: removes variant from SQL table + JSON, strips values from candidates, re-derives published, cascades to PIF (images, evals, carousel slots).

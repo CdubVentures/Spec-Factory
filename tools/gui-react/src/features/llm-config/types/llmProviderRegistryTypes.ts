@@ -19,8 +19,6 @@ export interface LlmProviderModel {
   thinkingEffortOptions?: string[];
 }
 
-export type LlmProviderHealthStatus = 'green' | 'gray' | 'red';
-
 export interface LlmProviderEntry {
   id: string;
   name: string;
@@ -29,6 +27,5 @@ export interface LlmProviderEntry {
   apiKey: string;
   expanded: boolean;
   accessMode?: LlmAccessMode;
-  health?: LlmProviderHealthStatus;
   models: LlmProviderModel[];
 }

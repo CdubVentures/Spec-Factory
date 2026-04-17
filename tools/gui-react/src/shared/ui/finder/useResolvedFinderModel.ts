@@ -13,7 +13,8 @@ import type { LlmPhaseOverrides, LlmOverridePhaseId } from '../../../features/ll
 import { assembleLlmPolicyFromFlat } from '../../../features/llm-config/state/llmPolicyAdapter.generated.ts';
 import { resolveProviderForModel } from '../../../features/llm-config/state/llmProviderRegistryBridge.ts';
 import type { LlmAccessMode, LlmProviderEntry } from '../../../features/llm-config/types/llmProviderRegistryTypes.ts';
-import { extractEffortFromModelName } from '../../../features/llm-config/state/llmEffortFromModelName.ts';
+import { resolveEffortLabel } from '../../../features/llm-config/state/resolveEffortLabel.ts';
+import { gateCapabilities, capabilitiesFromRegistry } from '../../../features/llm-config/state/modelCapabilityGate.ts';
 
 export interface ResolvedFinderModel {
   model: ReturnType<typeof resolvePhaseModel>;
@@ -62,9 +63,25 @@ export function useResolvedFinderModel(phaseId: LlmOverridePhaseId): ResolvedFin
       : (phaseOverride?.baseModel || globalDraft.llmModelPlan);
     const accessMode = resolveAccessModeForModel(registry, rawModelKey);
     const modelDisplay = resolved?.effectiveModel || 'not configured';
-    // WHY: Baked effort (e.g. gpt-5.4-xhigh) takes priority over configured effort.
-    const bakedEffort = extractEffortFromModelName(modelDisplay);
-    const effortLevel = bakedEffort || resolved?.thinkingEffort || '';
-    return { model: resolved, accessMode, modelDisplay, effortLevel, registry };
+    // WHY: Gate stored toggles by target model's declared capabilities so stale
+    // thinking=true / webSearch=true (from a prior lab-model selection) don't
+    // leak into the badge when the current model can't honor them.
+    const primaryCaps = capabilitiesFromRegistry(registry, rawModelKey);
+    const gated = gateCapabilities(
+      { thinking: resolved?.thinking, webSearch: resolved?.webSearch, thinkingEffort: resolved?.thinkingEffort },
+      primaryCaps,
+    );
+    const gatedResolved = resolved ? {
+      ...resolved,
+      thinking: gated.thinking,
+      webSearch: gated.webSearch,
+      thinkingEffort: gated.thinkingEffort,
+    } : resolved;
+    const effortLevel = resolveEffortLabel({
+      model: modelDisplay,
+      effortLevel: gated.thinkingEffort,
+      thinking: gated.thinking,
+    });
+    return { model: gatedResolved, accessMode, modelDisplay, effortLevel, registry };
   }, [storeValues, phaseId]);
 }

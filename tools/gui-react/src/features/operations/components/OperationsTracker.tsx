@@ -9,6 +9,7 @@ import {
 import { OperationDetailModal } from './OperationDetailModal.tsx';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
 import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTypes.ts';
+import { resolveEffortLabel } from '../../llm-config/state/resolveEffortLabel.ts';
 
 /* ── Sort: running (newest-first) → error → done ──────────────────── */
 
@@ -266,9 +267,10 @@ function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
               webSearch={op.modelInfo.webSearch}
             />
             {op.modelInfo.isFallback ? '\u26A0 ' : ''}{op.modelInfo.model}
-            {op.modelInfo.effortLevel && (
-              <span className="sf-text-muted font-normal">{op.modelInfo.effortLevel}</span>
-            )}
+            {(() => {
+              const e = resolveEffortLabel({ model: op.modelInfo.model, effortLevel: op.modelInfo.effortLevel, thinking: op.modelInfo.thinking });
+              return e ? <span className="sf-text-muted font-normal">{e}</span> : null;
+            })()}
           </span>
         </span>
       )}

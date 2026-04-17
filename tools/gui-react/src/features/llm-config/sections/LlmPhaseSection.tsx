@@ -609,15 +609,13 @@ function ModulePromptTemplateEditor({ templateDef, category }: {
   );
 }
 
-/* ── Eval Prompt Layout (image-evaluator — unified view tabs) ─────────────
- * WHY: Each view tab shows everything for that view in one column:
- *   criteria (editable) → structural prompt → response schema (bottom).
- * Hero tab shows hero criteria → hero prompt → hero schema.
- * Category tabs are shared across all views.
+/* ── Eval Prompt Layout (image-evaluator — two columns: View Eval | Hero Eval) ──
+ * WHY: Two LLM calls = two columns. Shared tabs (category, view) on top.
+ * Left column:  view criteria → view structural prompt → view schema
+ * Right column: hero criteria → hero structural prompt → hero schema
  */
 
-const EVAL_VIEW_TABS = ['top', 'bottom', 'left', 'right', 'front', 'rear', 'sangle', 'angle', 'hero'] as const;
-type EvalViewTab = typeof EVAL_VIEW_TABS[number];
+const EVAL_VIEW_TABS = ['top', 'bottom', 'left', 'right', 'front', 'rear', 'sangle', 'angle'] as const;
 
 function EvalPromptLayout({ promptTemplates, responseSchemas, phaseSchema }: {
   readonly phaseId: LlmPhaseId;
@@ -643,58 +641,14 @@ function EvalPromptLayout({ promptTemplates, responseSchemas, phaseSchema }: {
     { validValues: EVAL_VIEW_TABS as unknown as readonly string[] },
   );
 
-  const isHero = activeView === 'hero';
-  const criteriaKey = isHero ? 'heroEvalCriteria' : `evalViewCriteria_${activeView}`;
-  const activeTemplate = isHero ? heroEval : viewEval;
-  const activeSchema = isHero ? responseSchemas[1] : responseSchemas[0];
-
   const { settings, saveSetting, isLoading } = useModuleSettingsAuthority({
     category: activeCategory,
     moduleId: 'productImageFinder',
   });
 
-  const dbValue = (settings[criteriaKey] as string) ?? '';
-  const defaultValue = defaults[activeCategory]?.[activeView] ?? '';
-  const displayValue = dbValue || defaultValue;
-  const isOverridden = dbValue.length > 0;
-
-  const [draft, setDraft] = useState(displayValue);
-  const prevDisplayRef = useRef(displayValue);
-  useEffect(() => {
-    if (prevDisplayRef.current !== displayValue) {
-      prevDisplayRef.current = displayValue;
-      setDraft(displayValue);
-    }
-  }, [displayValue]);
-
-  const tabKey = `${activeCategory}:${activeView}`;
-  const prevTabKeyRef = useRef(tabKey);
-  useEffect(() => {
-    if (prevTabKeyRef.current !== tabKey) {
-      prevTabKeyRef.current = tabKey;
-      setDraft(displayValue);
-    }
-  }, [tabKey, displayValue]);
-
-  const handleSave = useCallback(() => {
-    const trimmed = draft.trim();
-    if (trimmed === defaultValue.trim()) {
-      saveSetting(criteriaKey, '');
-    } else {
-      saveSetting(criteriaKey, trimmed);
-    }
-  }, [draft, defaultValue, criteriaKey, saveSetting]);
-
-  const handleReset = useCallback(() => {
-    saveSetting(criteriaKey, '');
-    setDraft(defaultValue);
-  }, [criteriaKey, defaultValue, saveSetting]);
-
-  const isDirty = draft.trim() !== displayValue.trim();
-
   return (
     <div className="space-y-3">
-      {/* Category tabs */}
+      {/* Category tabs (shared) */}
       <div className="flex flex-wrap gap-1 mb-1">
         {categories.map((cat) => (
           <button
@@ -709,7 +663,7 @@ function EvalPromptLayout({ promptTemplates, responseSchemas, phaseSchema }: {
         ))}
       </div>
 
-      {/* View tabs */}
+      {/* View tabs (shared — controls left column's criteria) */}
       <div className="flex flex-wrap gap-1">
         {EVAL_VIEW_TABS.map((tab) => (
           <button
@@ -719,74 +673,144 @@ function EvalPromptLayout({ promptTemplates, responseSchemas, phaseSchema }: {
               activeView === tab ? 'sf-primary-button' : 'sf-btn-ghost sf-text-muted hover:opacity-80'
             }`}
           >
-            {tab === 'hero' ? 'Hero' : tab}
+            {tab}
           </button>
         ))}
       </div>
 
-      {/* ── Criteria (editable) ── */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted">
-            {activeCategory} &mdash; {isHero ? 'Hero Selection' : `${activeView} View`} Eval Criteria
-          </div>
-          <div className="flex items-center gap-2">
-            {isOverridden && (
-              <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded sf-chip-warning">Customized</span>
-            )}
-            {isLoading && (
-              <span className="text-[10px] sf-text-muted">Loading...</span>
-            )}
-          </div>
-        </div>
-        <textarea
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={handleSave}
-          className="sf-pre-block sf-text-caption font-mono rounded p-3 w-full overflow-auto whitespace-pre-wrap leading-relaxed resize-y"
-          style={{ minHeight: '300px' }}
-          spellCheck={false}
-        />
-        <div className="flex items-center gap-2">
-          {isDirty && (
-            <button
-              onClick={handleSave}
-              className="sf-primary-button px-3 py-1 text-[10px] font-bold uppercase tracking-wide rounded cursor-pointer"
-            >
-              Save
-            </button>
+      {/* Two columns: View Eval | Hero Eval */}
+      <div className="grid grid-cols-2 gap-4 items-start">
+        {/* ── Left: View Eval ── */}
+        <div className="space-y-3">
+          <EvalCriteriaEditor
+            label={`${activeCategory} \u2014 ${activeView} View Eval Criteria`}
+            settingKey={`evalViewCriteria_${activeView}`}
+            defaultValue={defaults[activeCategory]?.[activeView] ?? ''}
+            settings={settings}
+            saveSetting={saveSetting}
+            isLoading={isLoading}
+            tabKey={`${activeCategory}:${activeView}`}
+          />
+          {viewEval && (
+            <ModulePromptTemplateEditor
+              key={`${viewEval.promptKey}-${activeCategory}`}
+              templateDef={viewEval}
+              category={activeCategory}
+            />
           )}
-          {isOverridden && (
-            <button
-              onClick={handleReset}
-              className="sf-btn-ghost sf-text-muted px-3 py-1 text-[10px] font-bold uppercase tracking-wide rounded cursor-pointer hover:opacity-80"
-            >
-              Reset to Default
-            </button>
+          {responseSchemas[0] && (
+            <div>
+              <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">View Eval Response Schema</div>
+              <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
+                {JSON.stringify(responseSchemas[0], null, 2)}
+              </pre>
+            </div>
+          )}
+        </div>
+
+        {/* ── Right: Hero Eval ── */}
+        <div className="space-y-3">
+          <EvalCriteriaEditor
+            label={`${activeCategory} \u2014 Hero Selection Criteria`}
+            settingKey="heroEvalCriteria"
+            defaultValue={defaults[activeCategory]?.hero ?? ''}
+            settings={settings}
+            saveSetting={saveSetting}
+            isLoading={isLoading}
+            tabKey={`${activeCategory}:hero`}
+          />
+          {heroEval && (
+            <ModulePromptTemplateEditor
+              key={`${heroEval.promptKey}-${activeCategory}`}
+              templateDef={heroEval}
+              category={activeCategory}
+            />
+          )}
+          {responseSchemas[1] && (
+            <div>
+              <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Hero Eval Response Schema</div>
+              <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
+                {JSON.stringify(responseSchemas[1], null, 2)}
+              </pre>
+            </div>
           )}
         </div>
       </div>
+    </div>
+  );
+}
 
-      {/* ── Structural prompt (editable) ── */}
-      {activeTemplate && (
-        <ModulePromptTemplateEditor
-          key={`${activeTemplate.promptKey}-${activeCategory}`}
-          templateDef={activeTemplate}
-          category={activeCategory}
-        />
-      )}
+/* ── Eval Criteria Editor (reusable per-column criteria textarea) ── */
 
-      {/* ── Response schema (read-only, always at bottom) ── */}
-      {activeSchema && (
-        <div>
-          <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">
-            {isHero ? 'Hero Selection' : 'View Eval'} Response Schema
-          </div>
-          <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
-            {JSON.stringify(activeSchema, null, 2)}
-          </pre>
+function EvalCriteriaEditor({ label, settingKey, defaultValue, settings, saveSetting, isLoading, tabKey }: {
+  readonly label: string;
+  readonly settingKey: string;
+  readonly defaultValue: string;
+  readonly settings: Record<string, string>;
+  readonly saveSetting: (key: string, value: string) => void;
+  readonly isLoading: boolean;
+  readonly tabKey: string;
+}) {
+  const dbValue = (settings[settingKey] as string) ?? '';
+  const displayValue = dbValue || defaultValue;
+  const isOverridden = dbValue.length > 0;
+
+  const [draft, setDraft] = useState(displayValue);
+  const prevDisplayRef = useRef(displayValue);
+  useEffect(() => {
+    if (prevDisplayRef.current !== displayValue) {
+      prevDisplayRef.current = displayValue;
+      setDraft(displayValue);
+    }
+  }, [displayValue]);
+
+  const prevTabKeyRef = useRef(tabKey);
+  useEffect(() => {
+    if (prevTabKeyRef.current !== tabKey) {
+      prevTabKeyRef.current = tabKey;
+      setDraft(displayValue);
+    }
+  }, [tabKey, displayValue]);
+
+  const handleSave = useCallback(() => {
+    const trimmed = draft.trim();
+    saveSetting(settingKey, trimmed === defaultValue.trim() ? '' : trimmed);
+  }, [draft, defaultValue, settingKey, saveSetting]);
+
+  const handleReset = useCallback(() => {
+    saveSetting(settingKey, '');
+    setDraft(defaultValue);
+  }, [settingKey, defaultValue, saveSetting]);
+
+  const isDirty = draft.trim() !== displayValue.trim();
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted">{label}</div>
+        <div className="flex items-center gap-2">
+          {isOverridden && (
+            <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded sf-chip-warning">Customized</span>
+          )}
+          {isLoading && <span className="text-[10px] sf-text-muted">Loading...</span>}
         </div>
-      )}
+      </div>
+      <textarea
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={handleSave}
+        className="sf-pre-block sf-text-caption font-mono rounded p-3 w-full overflow-auto whitespace-pre-wrap leading-relaxed resize-y"
+        style={{ minHeight: '200px' }}
+        spellCheck={false}
+      />
+      <div className="flex items-center gap-2">
+        {isDirty && (
+          <button onClick={handleSave} className="sf-primary-button px-3 py-1 text-[10px] font-bold uppercase tracking-wide rounded cursor-pointer">Save</button>
+        )}
+        {isOverridden && (
+          <button onClick={handleReset} className="sf-btn-ghost sf-text-muted px-3 py-1 text-[10px] font-bold uppercase tracking-wide rounded cursor-pointer hover:opacity-80">Reset to Default</button>
+        )}
+      </div>
     </div>
   );
 }
@@ -824,33 +848,35 @@ function PromptTemplatesSection({ phaseId, promptTemplates, phaseOverrides, onPh
         </div>
       )}
 
-      {/* Template editors — each paired with its response schema */}
-      {promptTemplates.map((tmpl, i) => (
-        <div key={tmpl.promptKey} className="space-y-3">
-          {tmpl.storageScope === 'global' ? (
-            <GlobalPromptTemplateEditor
-              phaseId={phaseId}
-              templateDef={tmpl}
-              phaseOverrides={phaseOverrides}
-              onPhaseOverrideChange={onPhaseOverrideChange}
-            />
-          ) : (
-            <ModulePromptTemplateEditor
-              key={`${tmpl.promptKey}-${activeCategory}`}
-              templateDef={tmpl}
-              category={activeCategory}
-            />
-          )}
-          {responseSchemas[i] && (
-            <div>
-              <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Response Schema</div>
-              <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
-                {JSON.stringify(responseSchemas[i], null, 2)}
-              </pre>
-            </div>
-          )}
-        </div>
-      ))}
+      {/* Template editors — each column: prompt → schema (top to bottom) */}
+      <div className={promptTemplates.length > 1 ? 'grid grid-cols-2 gap-4 items-start' : ''}>
+        {promptTemplates.map((tmpl, i) => (
+          <div key={tmpl.promptKey} className="space-y-3">
+            {tmpl.storageScope === 'global' ? (
+              <GlobalPromptTemplateEditor
+                phaseId={phaseId}
+                templateDef={tmpl}
+                phaseOverrides={phaseOverrides}
+                onPhaseOverrideChange={onPhaseOverrideChange}
+              />
+            ) : (
+              <ModulePromptTemplateEditor
+                key={`${tmpl.promptKey}-${activeCategory}`}
+                templateDef={tmpl}
+                category={activeCategory}
+              />
+            )}
+            {responseSchemas[i] && (
+              <div>
+                <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Response Schema</div>
+                <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
+                  {JSON.stringify(responseSchemas[i], null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

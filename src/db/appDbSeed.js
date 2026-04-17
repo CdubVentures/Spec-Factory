@@ -259,7 +259,7 @@ export function seedBillingFromJsonl({ appDb, billingLedgerDir }) {
           cached_prompt_tokens: parsed.cached_prompt_tokens ?? 0,
           total_tokens: parsed.total_tokens ?? 0,
           cost_usd: parsed.cost_usd ?? 0,
-          reason: parsed.reason || 'extract',
+          reason: parsed.reason || '',
           host: parsed.host || '',
           url_count: parsed.url_count ?? 0,
           evidence_chars: parsed.evidence_chars ?? 0,

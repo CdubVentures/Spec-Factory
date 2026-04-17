@@ -24,7 +24,6 @@ export function parseProviderRegistry(json: string): LlmProviderEntry[] {
       .map((entry) => ({
         ...entry,
         expanded: entry.expanded ?? true,
-        health: entry.health ?? 'gray',
         // Migrate persisted 'base' role → 'primary'
         models: (entry.models ?? []).map((m: LlmProviderModel) =>
           m.role === ('base' as string) ? { ...m, role: 'primary' as LlmModelRole } : m,
@@ -37,7 +36,7 @@ export function parseProviderRegistry(json: string): LlmProviderEntry[] {
 
 export function serializeProviderRegistry(registry: LlmProviderEntry[]): string {
   if (registry.length === 0) return '';
-  const serializable = registry.map(({ expanded, health, ...rest }) => rest);
+  const serializable = registry.map(({ expanded, ...rest }) => rest);
   return JSON.stringify(serializable);
 }
 
@@ -159,7 +158,6 @@ export function createDefaultProvider(type: LlmProviderType): LlmProviderEntry {
     baseUrl: DEFAULT_BASE_URLS[type] ?? '',
     apiKey: '',
     expanded: true,
-    health: 'gray',
     models: [],
   };
 }

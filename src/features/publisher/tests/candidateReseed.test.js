@@ -207,6 +207,31 @@ describe('rebuildFieldCandidatesFromJson', () => {
     assert.equal(rows[0].value, '58');
   });
 
+  it('preserves variant_id through reseed round-trip (new format)', () => {
+    writeProduct('mouse-vid-rt', {
+      category: 'mouse', product_id: 'mouse-vid-rt',
+      candidates: {
+        release_date: [
+          {
+            value: '2026-06-01',
+            source_id: 'feature-mouse-vid-rt-1',
+            source_type: 'feature',
+            confidence: 90,
+            model: 'gpt-5',
+            variant_id: 'v_round_trip',
+            validation: { valid: true, repairs: [], rejections: [] },
+          },
+        ],
+      },
+    });
+
+    rebuildFieldCandidatesFromJson({ specDb, productRoot: PRODUCT_ROOT });
+
+    const row = specDb.getFieldCandidateBySourceId('mouse-vid-rt', 'release_date', 'feature-mouse-vid-rt-1');
+    assert.ok(row, 'row inserted from JSON');
+    assert.equal(row.variant_id, 'v_round_trip', 'variant_id preserved through reseed');
+  });
+
   it('old-format: single source with run_number (no run_id) gets deterministic source_id', () => {
     writeProduct('mouse-rn-only', {
       category: 'mouse', product_id: 'mouse-rn-only',

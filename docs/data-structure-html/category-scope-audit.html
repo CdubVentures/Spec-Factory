@@ -105,9 +105,9 @@ svg text{font-family:var(--sans)}
   <h1>Spec Factory &mdash; Category-Driven Architecture Reference</h1>
   <p>Architecture reference for the category-driven tab layout and data scoping system. Documents how category selection propagates through the frontend and backend, the four registry groups / three-section tab bar, and the scope of every data surface.</p>
   <div class="meta">
-    <span>Verified 2026-04-11</span>
+    <span>Verified 2026-04-16</span>
     <span>Sidebar has no "All Categories" option</span>
-    <span>18 tabs across 4 registry groups</span>
+    <span>17 tabs across 4 registry groups</span>
   </div>
 </header>
 
@@ -115,10 +115,10 @@ svg text{font-family:var(--sans)}
 <!-- STATS BAR                                                          -->
 <!-- ================================================================== -->
 <div class="stats">
-  <div class="stat"><div class="n" style="color:var(--green)">11</div><div class="l">Category-Scoped Tabs</div></div>
+  <div class="stat"><div class="n" style="color:var(--green)">10</div><div class="l">Category-Scoped Tabs</div></div>
   <div class="stat"><div class="n" style="color:var(--accent)">5</div><div class="l">Global Tabs</div></div>
   <div class="stat"><div class="n" style="color:var(--t3)">2</div><div class="l">Global Settings Tabs</div></div>
-  <div class="stat"><div class="n" style="color:var(--green)">18</div><div class="l">Total Tabs</div></div>
+  <div class="stat"><div class="n" style="color:var(--green)">17</div><div class="l">Total Tabs</div></div>
   <div class="stat"><div class="n" style="color:var(--amber)">2</div><div class="l">disabledOnAll (legacy)</div></div>
 </div>
 
@@ -260,7 +260,7 @@ svg text{font-family:var(--sans)}
     </div>
     <div class="scope-row">
       <div class="scope-label">Storage / Runs</div>
-      <div class="scope-detail"><code>product_runs</code> in SpecDb &bull; <code>/storage/runs?category=</code></div>
+      <div class="scope-detail"><code>runs</code> (with <code>product_id</code>) in SpecDb &bull; <code>/storage/runs?category=</code></div>
     </div>
   </div>
 
@@ -320,7 +320,6 @@ svg text{font-family:var(--sans)}
       <!-- Category group -->
       <div style="padding:12px 16px;border-right:1px solid var(--border);display:flex;flex-wrap:wrap;gap:4px;align-items:center;flex:1">
         <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Overview</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Product</span>
         <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Catalog</span>
         <span style="color:var(--t3)">||</span>
         <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Field Rules Studio</span>
@@ -328,13 +327,13 @@ svg text{font-family:var(--sans)}
         <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Indexing Lab</span>
         <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Runtime Ops</span>
         <span style="color:var(--t3)">||</span>
+        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Publisher</span>
+        <span style="color:var(--t3)">||</span>
         <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Review Grid</span>
         <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Review Components</span>
         <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Review LLM</span>
         <span style="color:var(--t3)">||</span>
         <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Storage</span>
-        <span style="color:var(--t3)">||</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Publisher</span>
       </div>
       <!-- Settings group -->
       <div style="padding:12px 16px;display:flex;gap:4px;align-items:center;border-left:2px solid var(--border);white-space:nowrap">
@@ -353,7 +352,7 @@ svg text{font-family:var(--sans)}
 
   <!-- CURRENT REGISTRY -->
   <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;margin-top:32px">pageRegistry.ts (Current)</h3>
-  <p class="surface-desc">SSOT for all 18 tabs. Tab groups: <code>'global'</code>, <code>'catalog'</code>, <code>'ops'</code>, <code>'settings'</code>. The <code>disabledOnAll</code> flag still exists on 2 tabs (Review Grid and Review Components) but is not used in the <code>TabDef</code> interface or <code>toTabDef()</code> mapping. Legacy <code>'all'</code>-aware logic still exists outside <code>pageRegistry.ts</code> in a few global/settings surfaces.</p>
+  <p class="surface-desc">SSOT for all 17 tabs. Tab groups: <code>'global'</code>, <code>'catalog'</code>, <code>'ops'</code>, <code>'settings'</code>. The <code>disabledOnAll</code> flag still exists on 2 tabs (Review Grid and Review Components) but is not used in the <code>TabDef</code> interface or <code>toTabDef()</code> mapping. Legacy <code>'all'</code>-aware logic still exists outside <code>pageRegistry.ts</code> in a few global/settings surfaces.</p>
 
   <div style="background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:20px 24px;font-family:var(--mono);font-size:0.78rem;color:var(--t2);line-height:1.8;overflow-x:auto;white-space:pre;margin-bottom:24px"><span style="color:var(--t3)">// -- Global group (far left, globe icon, border-r separator) --------</span>
 <span style="color:var(--accent)">{ path: '/categories',       label: 'Categories',          tabGroup: 'global' }</span>
@@ -364,18 +363,17 @@ svg text{font-family:var(--sans)}
 
 <span style="color:var(--t3)">// -- Catalog group (list icon, center) --------------------------------</span>
 <span style="color:var(--green)">{ path: '/',                 label: 'Overview',            tabGroup: 'catalog' }</span>
-<span style="color:var(--green)">{ path: '/product',          label: 'Selected Product',    tabGroup: 'catalog' }</span>
 <span style="color:var(--green)">{ path: '/catalog',          label: 'Catalog',             tabGroup: 'catalog',  dividerAfter: true }</span>
 <span style="color:var(--green)">{ path: '/studio',           label: 'Field Rules Studio',  tabGroup: 'catalog',  dividerAfter: true }</span>
 
 <span style="color:var(--t3)">// -- Ops group (list icon, center) ------------------------------------</span>
 <span style="color:var(--green)">{ path: '/indexing',         label: 'Indexing Lab',        tabGroup: 'ops' }</span>
-<span style="color:var(--green)">{ path: '/runtime-ops',      label: 'Runtime Ops',         tabGroup: 'ops',  dividerAfter: true }</span>
+<span style="color:var(--green)">{ path: '/runtime-ops',      label: 'Runtime Ops',         tabGroup: 'ops' }</span>
+<span style="color:var(--green)">{ path: '/publisher',        label: 'Publisher',           tabGroup: 'ops',  dividerBefore: true, dividerAfter: true }</span>
 <span style="color:var(--amber)">{ path: '/review',           label: 'Review Grid',         tabGroup: 'ops',  disabledOnAll: true }</span>
 <span style="color:var(--amber)">{ path: '/review-components',label: 'Review Components',   tabGroup: 'ops',  disabledOnAll: true }</span>
 <span style="color:var(--green)">{ path: '/llm-settings',     label: 'Review LLM',          tabGroup: 'ops',  dividerAfter: true }</span>
-<span style="color:var(--green)">{ path: '/storage',          label: 'Storage',             tabGroup: 'ops',  dividerAfter: true }</span>
-<span style="color:var(--green)">{ path: '/publisher',        label: 'Publisher',           tabGroup: 'ops' }</span>
+<span style="color:var(--green)">{ path: '/storage',          label: 'Storage',             tabGroup: 'ops' }</span>
 
 <span style="color:var(--t3)">// -- Settings group (far right, gear icon, ml-auto, border-l) --------</span>
 <span style="color:var(--t3)">{ path: '/llm-config',       label: 'LLM',                tabGroup: 'settings' }</span>
@@ -383,7 +381,7 @@ svg text{font-family:var(--sans)}
 
   <div class="finding-card warn">
     <h4><span class="tag tag-warn">Note</span> disabledOnAll still exists on 2 entries</h4>
-    <p>Review Grid (<code>/review</code>, line 52) and Review Components (<code>/review-components</code>, line 53) in <code>pageRegistry.ts</code> still carry <code>disabledOnAll: true</code>. However, <code>disabledOnAll</code> is <strong>not</strong> part of the <code>TabDef</code> interface and is stripped by the <code>toTabDef()</code> function, so it has no runtime effect on the tab bar. The flag remains as a vestigial property on the <code>PageEntry</code> objects only.</p>
+    <p>Review Grid (<code>/review</code>, line 49) and Review Components (<code>/review-components</code>, line 50) in <code>pageRegistry.ts</code> still carry <code>disabledOnAll: true</code>. However, <code>disabledOnAll</code> is <strong>not</strong> part of the <code>TabDef</code> interface and is stripped by the <code>toTabDef()</code> function, so it has no runtime effect on the tab bar. The flag remains as a vestigial property on the <code>PageEntry</code> objects only.</p>
   </div>
 
 </section>
@@ -496,14 +494,6 @@ svg text{font-family:var(--sans)}
         <td><span class="verdict-pass">PASS</span></td>
       </tr>
       <tr>
-        <td class="cn">Selected Product</td>
-        <td class="ct">catalog</td>
-        <td><span class="tag tag-category">Category</span></td>
-        <td class="ct">&mdash;</td>
-        <td class="cc">Product detail view. Normal sidebar flows provide a real category; backend still keeps the <code>'all'</code> safety guard in case a stale token leaks through.</td>
-        <td><span class="verdict-pass">PASS</span></td>
-      </tr>
-      <tr>
         <td class="cn">Catalog</td>
         <td class="ct">catalog</td>
         <td><span class="tag tag-category">Category</span></td>
@@ -603,7 +593,7 @@ svg text{font-family:var(--sans)}
     <h2>Current Findings</h2>
     <span class="tag tag-warn">6 Current</span>
   </div>
-  <p class="surface-desc">Current-state observations from the code as of 2026-04-11. This section records what is true now, not the historical intent of the tab reorganization.</p>
+  <p class="surface-desc">Current-state observations from the code as of 2026-04-16. This section records what is true now, not the historical intent of the tab reorganization.</p>
 
   <div class="finding-card pass">
     <h4><span class="tag tag-pass">Current</span> Finding 1: Sidebar category selection is real-category only</h4>
@@ -627,7 +617,7 @@ svg text{font-family:var(--sans)}
 
   <div class="finding-card warn">
     <h4><span class="tag tag-warn">Current</span> Finding 5: <code>disabledOnAll</code> survives as a vestigial page-registry field</h4>
-    <p><strong>Current state:</strong> Review Grid and Review Components still carry <code>disabledOnAll: true</code> on the raw <code>PageEntry</code> objects in <code>pageRegistry.ts</code> (lines 52-53). The property is stripped before <code>TabNav</code> receives the tab definitions, so it currently has no runtime effect.</p>
+    <p><strong>Current state:</strong> Review Grid and Review Components still carry <code>disabledOnAll: true</code> on the raw <code>PageEntry</code> objects in <code>pageRegistry.ts</code> (lines 49-50). The property is stripped before <code>TabNav</code> receives the tab definitions, so it currently has no runtime effect.</p>
   </div>
 
   <div class="finding-card warn">
@@ -648,7 +638,7 @@ svg text{font-family:var(--sans)}
   <div class="principle-grid">
     <div class="principle-card">
       <h4 style="color:var(--green)">SpecDb = Per-Category</h4>
-      <p><code>specDbRuntime.js</code> &mdash; <code>path.join(config.specDbDir, resolvedCategory, 'spec.sqlite')</code>. One SQLite file per category with 30 base tables. Most core tables carry <code>category TEXT NOT NULL</code>, but several auxiliary tables do not (<code>component_aliases</code>, <code>billing_entries</code>, <code>data_authority_sync</code>, <code>field_studio_map</code>, <code>field_key_order</code>).</p>
+      <p><code>specDbRuntime.js</code> &mdash; <code>path.join(config.specDbDir, resolvedCategory, 'spec.sqlite')</code>. One SQLite file per category with 29 base tables. Most core tables carry <code>category TEXT NOT NULL</code>, but several auxiliary tables do not (<code>component_aliases</code>, <code>billing_entries</code>, <code>data_authority_sync</code>, <code>field_studio_map</code>, <code>field_key_order</code>).</p>
     </div>
     <div class="principle-card">
       <h4 style="color:var(--accent)">AppDb Settings = Global</h4>
@@ -733,14 +723,11 @@ svg text{font-family:var(--sans)}
       <rect x="250" y="65" width="90" height="40" rx="5" fill="var(--green-s)" stroke="var(--green)" stroke-width="0.5"/>
       <text x="295" y="89" text-anchor="middle" fill="var(--green)" font-size="10" font-weight="600">Overview</text>
 
-      <rect x="350" y="65" width="90" height="40" rx="5" fill="var(--green-s)" stroke="var(--green)" stroke-width="0.5"/>
-      <text x="395" y="89" text-anchor="middle" fill="var(--green)" font-size="10" font-weight="600">Product</text>
+      <rect x="360" y="65" width="120" height="40" rx="5" fill="var(--green-s)" stroke="var(--green)" stroke-width="0.5"/>
+      <text x="420" y="89" text-anchor="middle" fill="var(--green)" font-size="10" font-weight="600">Catalog</text>
 
-      <rect x="450" y="65" width="90" height="40" rx="5" fill="var(--green-s)" stroke="var(--green)" stroke-width="0.5"/>
-      <text x="495" y="89" text-anchor="middle" fill="var(--green)" font-size="10" font-weight="600">Catalog</text>
-
-      <rect x="550" y="65" width="90" height="40" rx="5" fill="var(--green-s)" stroke="var(--green)" stroke-width="0.5"/>
-      <text x="595" y="89" text-anchor="middle" fill="var(--green)" font-size="10" font-weight="600">Studio</text>
+      <rect x="500" y="65" width="140" height="40" rx="5" fill="var(--green-s)" stroke="var(--green)" stroke-width="0.5"/>
+      <text x="570" y="89" text-anchor="middle" fill="var(--green)" font-size="10" font-weight="600">Studio</text>
 
       <!-- Middle row: pipeline tabs -->
       <rect x="250" y="120" width="200" height="50" rx="5" fill="var(--green-s)" stroke="var(--green)" stroke-width="0.5"/>
@@ -766,7 +753,7 @@ svg text{font-family:var(--sans)}
       <!-- SpecDb -->
       <rect x="340" y="335" width="220" height="70" rx="6" fill="var(--s1)" stroke="var(--green)" stroke-width="1.5"/>
       <text x="450" y="360" text-anchor="middle" fill="var(--green)" font-size="11" font-weight="700">SpecDb (per-category)</text>
-      <text x="450" y="377" text-anchor="middle" fill="var(--t3)" font-size="9">36 base tables</text>
+      <text x="450" y="377" text-anchor="middle" fill="var(--t3)" font-size="9">29 base tables</text>
       <text x="450" y="393" text-anchor="middle" fill="var(--t3)" font-size="8">.workspace/db/{cat}/spec.sqlite</text>
 
       <path d="M190 252 L285 252 L285 335 L340 335" stroke="var(--green)" stroke-width="1.5" fill="none" marker-end="url(#arr-green)"/>
@@ -804,7 +791,7 @@ svg text{font-family:var(--sans)}
 <!-- ================================================================== -->
 <footer style="margin-top:64px;padding-top:24px;border-top:1px solid var(--border);color:var(--t3);font-size:0.78rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px">
   <span>Spec Factory &mdash; Category-Driven Architecture Reference</span>
-<span>Verified 2026-04-11 &bull; 18 tabs across 4 registry groups &bull; Current findings documented</span>
+<span>Verified 2026-04-16 &bull; 17 tabs across 4 registry groups &bull; Current findings documented</span>
 </footer>
 
 </div>

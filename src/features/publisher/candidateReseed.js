@@ -79,6 +79,7 @@ export function rebuildFieldCandidatesFromJson({ specDb, productRoot }) {
             model: candidate.model || '',
             validationJson: candidate.validation ?? {},
             metadataJson: candidate.metadata ?? {},
+            variantId: candidate.variant_id || null,
           });
           productCandidateCount++;
         } else {
@@ -104,6 +105,7 @@ export function rebuildFieldCandidatesFromJson({ specDb, productRoot }) {
               model: src.model || '',
               validationJson: candidate.validation ?? {},
               metadataJson: candidate.metadata ?? {},
+              variantId: candidate.variant_id || null,
             });
           } else {
             specDb.upsertFieldCandidate({

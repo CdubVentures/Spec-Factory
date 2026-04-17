@@ -39,7 +39,12 @@ export function submitCandidate({
   metadata,
   appDb,
   config,
+  variantId,
 }) {
+  // WHY: Normalize falsy variantId (undefined/null/'') to null so SQL stores NULL
+  // and the JSON entry omits the key. Truthy strings are the FK anchor for
+  // feature-source candidates; deletion cascade keys on this column.
+  const normalizedVariantId = variantId || null;
   // --- Guard: identity ---
   if (!productId || !fieldKey) {
     return {
@@ -114,6 +119,7 @@ export function submitCandidate({
     model: sourceModel,
     validationJson: validationRecord,
     metadataJson: hasMetadata ? metadata : {},
+    variantId: normalizedVariantId,
   });
 
   const candidateRow = specDb.getFieldCandidateBySourceId(productId, fieldKey, sourceId);
@@ -138,8 +144,12 @@ export function submitCandidate({
       validation: validationRecord,
     };
     if (hasMetadata) entry.metadata = metadata;
-    // WHY: insertFieldCandidate no-ops on duplicate source_id — JSON must match.
-    const alreadyExists = productJson.candidates[fieldKey].some(e => e.source_id === sourceId);
+    if (normalizedVariantId) entry.variant_id = normalizedVariantId;
+    // WHY: Mirror SQL UNIQUE(source_id, variant_id_key) — same source_id with
+    // a different variant_id is a distinct candidate, not a duplicate.
+    const alreadyExists = productJson.candidates[fieldKey].some(e =>
+      e.source_id === sourceId && (e.variant_id || null) === normalizedVariantId
+    );
     if (!alreadyExists) {
       productJson.candidates[fieldKey].push(entry);
     }

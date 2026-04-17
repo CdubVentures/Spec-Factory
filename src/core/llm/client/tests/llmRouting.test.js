@@ -147,13 +147,10 @@ test('route key helpers detect role-only keys and snapshot masks secrets', () =>
 
   // plan role reads llmModelPlan → gemini-2.5-flash → infers gemini → geminiApiKey
   assert.equal(hasLlmRouteApiKey(config, { reason: 'plan' }), true);
-  // extract also aliases to llmModelPlan → same model → same key
-  assert.equal(hasLlmRouteApiKey(config, { reason: 'extract' }), true);
   assert.equal(hasAnyLlmApiKey(config), true);
 
   const snapshot = llmRoutingSnapshot(config);
   assert.equal(snapshot.plan.primary.api_key_present, true);
-  assert.equal(snapshot.extract.primary.api_key_present, true);
   assert.equal(Object.hasOwn(snapshot.plan.primary, 'apiKey'), false);
 });
 

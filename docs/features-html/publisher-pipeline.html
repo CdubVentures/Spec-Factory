@@ -150,6 +150,7 @@
       <dt>productRoot</dt><dd><code>string</code> &mdash; filesystem path to product directory</dd>
       <dt>appDb</dt><dd><code>object</code> &mdash; injected AppDb for unit registry</dd>
       <dt>config</dt><dd><code>object</code> &mdash; publish config (threshold)</dd>
+      <dt>variantId</dt><dd><code>string?</code> &mdash; optional FK anchor for variant-scoped feature candidates (price, SKU, release date). Falsy values (undefined / null / <code>''</code>) normalize to NULL — SQL row carries NULL and JSON entry omits the <code>variant_id</code> key. CEF and pipeline sources omit this; future feature finders pass it.</dd>
     </dl>
   </div>
 </div>

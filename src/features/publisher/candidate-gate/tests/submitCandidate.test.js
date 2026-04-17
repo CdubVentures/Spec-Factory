@@ -531,4 +531,97 @@ describe('submitCandidate', () => {
     assert.equal(pj.candidates.weight.length, 1, 'product.json should have exactly 1 candidate entry');
     assert.equal(pj.candidates.weight[0].source_id, 'cef-mouse-idem-7');
   });
+
+  // ── variant_id propagation ────────────────────────────────────────
+
+  it('without variantId: SQL row variant_id is NULL and JSON entry has no variant_id key', () => {
+    ensureProductJson('mouse-vid-omit');
+    submitCandidate({
+      ...baseDeps(specDb),
+      productId: 'mouse-vid-omit',
+      fieldKey: 'weight',
+      value: 65,
+      confidence: 88,
+      sourceMeta: { source: 'feature', model: 'gpt-5', run_number: 1 },
+    });
+
+    const row = specDb.getFieldCandidateBySourceId('mouse-vid-omit', 'weight', 'feature-mouse-vid-omit-1');
+    assert.ok(row, 'row inserted');
+    assert.equal(row.variant_id, null, 'variant_id is NULL when omitted');
+
+    const entry = readProductJson('mouse-vid-omit').candidates.weight[0];
+    assert.ok(!('variant_id' in entry), 'product.json entry has no variant_id key when omitted');
+  });
+
+  it('with variantId: propagates to SQL row and to JSON entry', () => {
+    ensureProductJson('mouse-vid-set');
+    submitCandidate({
+      ...baseDeps(specDb),
+      productId: 'mouse-vid-set',
+      fieldKey: 'weight',
+      value: 65,
+      confidence: 88,
+      sourceMeta: { source: 'feature', model: 'gpt-5', run_number: 1 },
+      variantId: 'v_test_one',
+    });
+
+    const row = specDb.getFieldCandidateBySourceId('mouse-vid-set', 'weight', 'feature-mouse-vid-set-1');
+    assert.ok(row, 'row inserted');
+    assert.equal(row.variant_id, 'v_test_one', 'variant_id propagates to SQL');
+
+    const entry = readProductJson('mouse-vid-set').candidates.weight[0];
+    assert.equal(entry.variant_id, 'v_test_one', 'variant_id propagates to product.json entry');
+  });
+
+  it('same source_id with different variantIds creates two distinct rows', () => {
+    ensureProductJson('mouse-vid-pair');
+    submitCandidate({
+      ...baseDeps(specDb),
+      productId: 'mouse-vid-pair',
+      fieldKey: 'weight',
+      value: 65,
+      confidence: 88,
+      sourceMeta: { source: 'feature', model: 'gpt-5', run_number: 7 },
+      variantId: 'v_alpha',
+    });
+    submitCandidate({
+      ...baseDeps(specDb),
+      productId: 'mouse-vid-pair',
+      fieldKey: 'weight',
+      value: 67,
+      confidence: 90,
+      sourceMeta: { source: 'feature', model: 'gpt-5', run_number: 7 },
+      variantId: 'v_beta',
+    });
+
+    // WHY: UNIQUE includes variant_id_key — same source_id + different variant_id = two rows
+    const rows = specDb.getFieldCandidatesByProductAndField('mouse-vid-pair', 'weight');
+    const vids = rows.map(r => r.variant_id).sort();
+    assert.deepEqual(vids, ['v_alpha', 'v_beta'], 'two SQL rows coexist with distinct variant_ids');
+
+    const pj = readProductJson('mouse-vid-pair');
+    assert.equal(pj.candidates.weight.length, 2, 'product.json has both entries');
+    const jsonVids = pj.candidates.weight.map(e => e.variant_id).sort();
+    assert.deepEqual(jsonVids, ['v_alpha', 'v_beta']);
+  });
+
+  it('variantId="" is normalized to NULL (no key in JSON)', () => {
+    ensureProductJson('mouse-vid-empty');
+    submitCandidate({
+      ...baseDeps(specDb),
+      productId: 'mouse-vid-empty',
+      fieldKey: 'weight',
+      value: 70,
+      confidence: 80,
+      sourceMeta: { source: 'feature', run_number: 1 },
+      variantId: '',
+    });
+
+    const row = specDb.getFieldCandidateBySourceId('mouse-vid-empty', 'weight', 'feature-mouse-vid-empty-1');
+    assert.ok(row, 'row inserted');
+    assert.equal(row.variant_id, null, 'empty variantId normalized to NULL in SQL');
+
+    const entry = readProductJson('mouse-vid-empty').candidates.weight[0];
+    assert.ok(!('variant_id' in entry), 'no variant_id key in JSON for empty input');
+  });
 });

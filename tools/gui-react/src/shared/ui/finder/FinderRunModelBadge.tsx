@@ -7,7 +7,7 @@
  */
 
 import { memo } from 'react';
-import { extractEffortFromModelName } from '../../../features/llm-config/state/llmEffortFromModelName.ts';
+import { resolveEffortLabel } from '../../../features/llm-config/state/resolveEffortLabel.ts';
 
 interface FinderRunModelBadgeProps {
   /** Model name as persisted in the run record (e.g. "gpt-5.4-xhigh"). */
@@ -89,8 +89,9 @@ export const FinderRunModelBadge = memo(function FinderRunModelBadge({
 }: FinderRunModelBadgeProps) {
   if (!model) return null;
 
-  // WHY: Effort can come from persisted field or derived from model name (legacy).
-  const resolvedEffort = effortLevel || extractEffortFromModelName(model) || '';
+  // WHY: Baked model-name suffix always shows; configured effort only when thinking is on.
+  // This also masks historical rows that persisted a config effort while thinking was off.
+  const resolvedEffort = resolveEffortLabel({ model, effortLevel, thinking });
 
   const hasAccessMode = accessMode === 'lab' || accessMode === 'api';
   const isLab = accessMode === 'lab';

@@ -4,6 +4,7 @@ import type { Operation, LlmCallRecord } from '../state/operationsStore.ts';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
 import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTypes.ts';
 import { extractEffortFromModelName } from '../../llm-config/state/llmEffortFromModelName.ts';
+import { resolveEffortLabel } from '../../llm-config/state/resolveEffortLabel.ts';
 import {
   MODULE_STYLES,
   MODULE_LABELS,
@@ -409,9 +410,10 @@ export function OperationDetailModal({ op, onClose }: Props) {
                         webSearch={op.modelInfo.webSearch}
                       />
                       {op.modelInfo.isFallback ? '\u26A0 ' : ''}{op.modelInfo.model}
-                      {op.modelInfo.effortLevel && (
-                        <span className="sf-text-muted font-normal">{op.modelInfo.effortLevel}</span>
-                      )}
+                      {(() => {
+                        const e = resolveEffortLabel({ model: op.modelInfo.model, effortLevel: op.modelInfo.effortLevel, thinking: op.modelInfo.thinking });
+                        return e ? <span className="sf-text-muted font-normal">{e}</span> : null;
+                      })()}
                     </span>
                   </span>
                 </>

@@ -8,7 +8,6 @@ This boundary is the canonical home for low-level configuration and model-routin
 - `src/core/config/runtimeArtifactRoots.js`: `defaultLocalOutputRoot()`, `defaultIndexLabRoot()`.
 - `src/core/llm/client/routing.js`: `resolveLlmRoute()`, `resolveLlmFallbackRoute()`, `hasLlmRouteApiKey()`, `hasAnyLlmApiKey()`, `llmRoutingSnapshot()`, `callLlmWithRouting()`.
 - `src/core/llm/client/llmClient.js`: `getProviderHealth()`, `redactOpenAiError()`, `callLlmProvider()`.
-- `src/core/llm/client/healthCheck.js`: `runLlmHealthCheck()`.
 - `src/core/llm/client/providerHealth.js`: `LlmProviderHealth`, `normalizeProviderBaseUrl()`.
 - `src/core/llm/providers/index.js`: `selectLlmProvider()`.
 - `src/core/llm/providers/{gemini,deepseek,openaiCompatible}.js`: provider request functions.
@@ -25,6 +24,6 @@ This boundary is the canonical home for low-level configuration and model-routin
 ## Domain Invariants
 - Config manifest defaults are assembled from manifest group modules and exposed through the shim in `src/core/config/manifest.js`.
 - Runtime artifact roots resolve deterministically from the local temp root plus fixed `output` and `indexlab` subpaths.
-- Prompt builders stay pure; provider selection, HTTP concerns, caching, and health checks stay inside `src/core/llm/**`.
+- Prompt builders stay pure; provider selection, HTTP concerns, and caching stay inside `src/core/llm/**`.
 - Secrets and provider credentials must not leak out of this boundary through logs or higher-level contracts.
 - `src/core/events/dataChangeContract.js`: shared mutation broadcast infrastructure consumed by all features — not feature-specific.

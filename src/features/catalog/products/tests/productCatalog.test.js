@@ -5,6 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import {
   addProduct,
+  addProductsBulk,
   updateProduct,
   removeProduct,
   listProducts,
@@ -246,5 +247,28 @@ test('listProducts: returns base_model and variant from SQL', () => {
     assert.equal(products[0].variant, 'Scream');
   } finally {
     specDb.close();
+  }
+});
+
+// --- addProductsBulk ---
+
+test('addProductsBulk: result rows include identifier and brand_identifier', async () => {
+  const config = await tmpConfig();
+  try {
+    const result = await addProductsBulk({
+      config,
+      category: 'mouse',
+      brand: 'Razer',
+      rows: [{ base_model: 'Viper', variant: 'V3 Pro' }],
+    });
+    assert.equal(result.ok, true);
+    assert.equal(result.created, 1);
+    const row = result.results[0];
+    assert.equal(row.status, 'created');
+    assert.ok(row.identifier, 'result row must include identifier');
+    assert.match(row.identifier, /^[a-f0-9]{8}$/, 'identifier must be 8-char hex');
+    assert.equal(typeof row.brand_identifier, 'string', 'result row must include brand_identifier');
+  } finally {
+    await cleanup(config);
   }
 });

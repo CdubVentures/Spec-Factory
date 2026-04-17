@@ -135,7 +135,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
   <p>Complete run lifecycle from start to completion. Every phase, every data read/write, every SQL table touched. Validated against <code>pipelinePhaseRegistry.js</code>, <code>buildRuntimeOpsPanels.js</code>, and <code>runtimeStageDefs.js</code>.</p>
   <div class="meta">
     <span>Spec Factory</span>
-    <span>Audited 2026-04-11</span>
+    <span>Audited 2026-04-16</span>
     <span>Code-validated</span>
   </div>
 </header>
@@ -143,7 +143,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
 <!-- ═══════════════════════ STATS ═══════════════════════ -->
 <div class="stats">
   <div class="stat"><div class="n">8</div><div class="l">Pipeline Phases</div></div>
-  <div class="stat"><div class="n">44</div><div class="l">SQL Tables (base)</div></div>
+  <div class="stat"><div class="n">37</div><div class="l">SQL Tables (base)</div></div>
   <div class="stat"><div class="n">11</div><div class="l">RuntimeOps Panels</div></div>
   <div class="stat"><div class="n">6</div><div class="l">Fetch Plugins</div></div>
   <div class="stat"><div class="n">5</div><div class="l">Worker Pools</div></div>
@@ -831,7 +831,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
       <div class="phase-section">
         <div class="phase-section-label label-info">Persistence Notes &mdash; Product Lifecycle</div>
         <ul class="op-list">
-          <li><code>product.json</code> is the durable product-side checkpoint; <code>product_queue</code> is rebuilt from checkpoint seeding, not directly updated by this live finalize path</li>
+          <li><code>product.json</code> is the durable product-side checkpoint that the live finalize path writes so SQL can be rebuilt from disk</li>
           <li><code>query_cooldowns</code> are snapshotted into <code>product.json</code> before finalization so tier progression survives DB rebuilds</li>
         </ul>
       </div>
@@ -1204,14 +1204,14 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <line x1="250" y1="220" x2="250" y2="250" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow3-green)"/>
         <rect x="60" y="255" width="380" height="70" rx="8" fill="rgba(34,197,94,0.06)" stroke="rgba(34,197,94,0.2)" stroke-width="1"/>
         <text x="80" y="278" fill="#22c55e" font-size="10" font-weight="700">SQL UPSERTS (transaction-wrapped)</text>
-        <text x="80" y="296" fill="#475569" font-size="9.5">runs &bull; product_runs &bull; run_artifacts &bull; crawl_sources &bull; url_crawl_ledger</text>
+        <text x="80" y="296" fill="#475569" font-size="9.5">runs &bull; run_artifacts &bull; crawl_sources &bull; url_crawl_ledger</text>
         <text x="80" y="312" fill="#94a3b8" font-size="8.5">Idempotent: ON CONFLICT DO UPDATE</text>
 
         <!-- Product SQL targets -->
         <line x1="700" y1="220" x2="700" y2="250" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow3-green)"/>
         <rect x="510" y="255" width="380" height="70" rx="8" fill="rgba(34,197,94,0.06)" stroke="rgba(34,197,94,0.2)" stroke-width="1"/>
         <text x="530" y="278" fill="#22c55e" font-size="10" font-weight="700">SQL UPSERTS (transaction-wrapped)</text>
-        <text x="530" y="296" fill="#475569" font-size="9.5">products &bull; product_queue &bull; query_cooldowns</text>
+        <text x="530" y="296" fill="#475569" font-size="9.5">products &bull; query_cooldowns</text>
         <text x="530" y="312" fill="#94a3b8" font-size="8.5">Idempotent: ON CONFLICT DO UPDATE</text>
 
         <!-- Labels -->
@@ -1243,8 +1243,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
       <div class="phase-section">
         <div class="phase-section-label label-sql">SQL Upserts (seedCrawlCheckpoint)</div>
         <ul class="op-list sql">
-          <li><code>UPSERT runs</code> &mdash; restores run record (status, timestamps, settings)</li>
-          <li><code>UPSERT product_runs</code> &mdash; restores run-to-product linkage</li>
+          <li><code>UPSERT runs</code> &mdash; restores run record (status, timestamps, settings, product linkage via <code>product_id</code> column)</li>
           <li><code>UPSERT run_artifacts</code> &mdash; restores <code>needset</code>, <code>search_profile</code>, <code>run_summary</code>, <code>brand_resolution</code>, optional <code>runtime_ops_panels</code>, and reconstructed <code>run_checkpoint</code></li>
           <li><code>UPSERT crawl_sources</code> + <code>url_crawl_ledger</code> &mdash; restores per-URL crawl results and crawl-history state</li>
         </ul>
@@ -1284,7 +1283,6 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <div class="phase-section-label label-sql">SQL Upserts (seedProductCheckpoint)</div>
         <ul class="op-list sql">
           <li><code>UPSERT products</code> &mdash; restores product master record</li>
-          <li><code>UPSERT product_queue</code> &mdash; restores queue position and status</li>
           <li><code>UPSERT query_cooldowns</code> &mdash; restores cooldown / tier-progression state from <code>product.json</code></li>
         </ul>
       </div>

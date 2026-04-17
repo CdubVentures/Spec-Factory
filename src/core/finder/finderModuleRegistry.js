@@ -26,7 +26,6 @@ export const FINDER_MODULES = Object.freeze([
       { name: 'colors', type: 'TEXT', default: "'[]'" },
       { name: 'editions', type: 'TEXT', default: "'[]'" },
       { name: 'default_color', type: 'TEXT', default: "''" },
-      { name: 'variant_registry', type: 'TEXT', default: "'[]'" },
     ],
     summaryIndexes: [],
 
@@ -71,10 +70,12 @@ export const FINDER_MODULES = Object.freeze([
     // Data-change events: suffix → extra domains beyond routePrefix.
     // Standard 3 (run, run-deleted, deleted) always included.
     // WHY: color-registry because CEF discovers new colors.
+    // WHY: review + product on run lifecycle — CEF writes field_candidates
+    // for colors/editions; without these, the review grid stays stale until reload.
     dataChangeEvents: {
-      'run': ['color-registry'],
-      'run-deleted': [],
-      'deleted': [],
+      'run': ['color-registry', 'review', 'product'],
+      'run-deleted': ['review', 'product'],
+      'deleted': ['review', 'product'],
       'variant-deleted': ['review', 'product', 'product-image-finder', 'publisher'],
     },
 

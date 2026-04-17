@@ -14,6 +14,7 @@ import {
 import type { ReviewCandidate } from '../../../types/review.ts';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
 import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTypes.ts';
+import { resolveEffortLabel } from '../../llm-config/state/resolveEffortLabel.ts';
 import { CandidateDeleteConfirm } from './CandidateDeleteConfirm.tsx';
 
 // ── Helpers ─────────────────────────────────────────────────────────
@@ -287,9 +288,10 @@ function CandidateCard({
               />
             )}
             {candidate.model}
-            {typeof meta?.llm_effort_level === 'string' && meta.llm_effort_level !== '' && (
-              <span className="sf-text-muted font-normal">{meta.llm_effort_level}</span>
-            )}
+            {(() => {
+              const e = resolveEffortLabel({ model: candidate.model, effortLevel: typeof meta?.llm_effort_level === 'string' ? meta.llm_effort_level : '', thinking: Boolean(meta?.llm_thinking) });
+              return e ? <span className="sf-text-muted font-normal">{e}</span> : null;
+            })()}
           </span>
         </span>
       )}

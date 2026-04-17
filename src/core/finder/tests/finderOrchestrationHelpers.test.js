@@ -104,31 +104,51 @@ describe('resolveModelTracking', () => {
     assert.equal(tracking.actualEffortLevel, 'xhigh');
   });
 
-  it('resolves configured effort when model name has no baked effort', () => {
+  it('resolves configured effort when thinking is on and model has no baked effort', () => {
     const config = { _resolvedColorFinderThinkingEffort: 'high' };
     const tracking = resolveModelTracking({ config, phaseKey: 'colorFinder' });
-    tracking.wrappedOnModelResolved({ model: 'gpt-4o', isFallback: false, accessMode: 'api' });
+    tracking.wrappedOnModelResolved({ model: 'gpt-4o', isFallback: false, accessMode: 'api', thinking: true });
     assert.equal(tracking.actualEffortLevel, 'high');
+  });
+
+  it('discards configured effort when thinking is off (no baked suffix)', () => {
+    const config = { _resolvedColorFinderThinkingEffort: 'low' };
+    const tracking = resolveModelTracking({ config, phaseKey: 'colorFinder' });
+    tracking.wrappedOnModelResolved({ model: 'gpt-5.4-mini', isFallback: false, accessMode: 'lab', thinking: false });
+    assert.equal(tracking.actualEffortLevel, '');
   });
 
   it('baked effort takes priority over configured effort', () => {
     const config = { _resolvedColorFinderThinkingEffort: 'low' };
     const tracking = resolveModelTracking({ config, phaseKey: 'colorFinder' });
-    tracking.wrappedOnModelResolved({ model: 'gpt-5.4-xhigh', isFallback: false, accessMode: 'lab' });
+    tracking.wrappedOnModelResolved({ model: 'gpt-5.4-xhigh', isFallback: false, accessMode: 'lab', thinking: true });
     assert.equal(tracking.actualEffortLevel, 'xhigh');
+  });
+
+  it('baked effort still applies when thinking is off', () => {
+    const tracking = resolveModelTracking({ config: {}, phaseKey: 'colorFinder' });
+    tracking.wrappedOnModelResolved({ model: 'gpt-5.4-low', isFallback: false, accessMode: 'lab', thinking: false });
+    assert.equal(tracking.actualEffortLevel, 'low');
   });
 
   it('effort defaults to empty string when no baked or configured effort', () => {
     const tracking = resolveModelTracking({ config: {}, phaseKey: 'colorFinder' });
-    tracking.wrappedOnModelResolved({ model: 'gpt-4o', isFallback: false, accessMode: 'api' });
+    tracking.wrappedOnModelResolved({ model: 'gpt-4o', isFallback: false, accessMode: 'api', thinking: true });
     assert.equal(tracking.actualEffortLevel, '');
   });
 
-  it('uses fallback configured effort when fallback model is used', () => {
+  it('uses fallback configured effort when fallback model is used and thinking is on', () => {
     const config = { _resolvedColorFinderFallbackThinkingEffort: 'medium' };
     const tracking = resolveModelTracking({ config, phaseKey: 'colorFinder' });
-    tracking.wrappedOnModelResolved({ model: 'gpt-4o-mini', isFallback: true, accessMode: 'api' });
+    tracking.wrappedOnModelResolved({ model: 'gpt-4o-mini', isFallback: true, accessMode: 'api', thinking: true });
     assert.equal(tracking.actualEffortLevel, 'medium');
+  });
+
+  it('discards fallback configured effort when thinking is off', () => {
+    const config = { _resolvedColorFinderFallbackThinkingEffort: 'medium' };
+    const tracking = resolveModelTracking({ config, phaseKey: 'colorFinder' });
+    tracking.wrappedOnModelResolved({ model: 'gpt-4o-mini', isFallback: true, accessMode: 'api', thinking: false });
+    assert.equal(tracking.actualEffortLevel, '');
   });
 });
 

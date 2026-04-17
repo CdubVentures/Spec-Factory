@@ -34,7 +34,7 @@ describe('classifyLlmCallType', () => {
     ['verify_extract', 'verification'],
 
     // extraction
-    ['extract', 'extraction'],
+    ['extract', 'unknown'],
     ['extract_candidates', 'extraction'],
     ['extract_fields', 'extraction'],
 

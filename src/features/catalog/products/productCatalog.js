@@ -204,7 +204,7 @@ export async function addProductsBulk({
       } catch { /* best-effort */ }
 
       created += 1;
-      results.push({ ...normalizedResult, status: 'created' });
+      results.push({ ...normalizedResult, ...product, status: 'created' });
     } catch (error) {
       failed += 1;
       results.push({

@@ -96,9 +96,23 @@
 <div class="card-header" style="background:var(--surface-alt);">How to Run</div>
 <div class="card-body">
   <p>All tests use the GUI. Each test specifies a <strong>Discovery Prompt</strong> to paste into <code>/llm-config &rarr; Color &amp; Edition Finder &rarr; Discovery Prompt</code>. The identity check prompt is always left empty (uses built-in judge). Same model runs both LLM 1 and LLM 2 (shared <code>colorFinder</code> phase).</p>
-  <p><strong>Web search must be ON</strong> for all tests (<code>/llm-config &rarr; CEF &rarr; Capabilities &rarr; Web Search</code>).</p>
+  <p><strong>Web search is ON for most tests</strong> (<code>/llm-config &rarr; CEF &rarr; Capabilities &rarr; Web Search</code>). Tests using <code>gemini-2.5-flash-lite</code> (T1, T4 Run 2, T7 Run 1) ignore the Web Search toggle — Gemini direct API has no web tools in our system.</p>
   <p>After each test, <strong>restore the original discovery prompt</strong> (Section 0b below) before running the next test.</p>
   <p>Pick a test product with known colors/editions on the manufacturer site. The prompt uses <code>{{BRAND}}</code> and <code>{{MODEL}}</code> which auto-resolve.</p>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header" style="background:var(--red-bg);">⚠ Canned Prompt Echo Mode — Why Tests May Fail</div>
+<div class="card-body">
+  <p><strong>Known failure mode:</strong> Capable models (gpt-5.4-mini, 4.1, 5.4-xhigh) ignore weak "echo this JSON" prompts. Two defiance paths observed:</p>
+  <ul style="margin:6px 0 10px 24px;">
+    <li><strong>With web search ON</strong> — LLM browses real sites, returns real data (e.g. 86s, real deep URLs).</li>
+    <li><strong>With web search OFF</strong> — LLM still reasons its way past the echo instruction and silently drops fake atoms (e.g. 17s, returns <code>["black"]</code> instead of <code>["black", "unicorn-sparkle"]</code>). RLHF anti-fabrication training overrides the prompt.</li>
+  </ul>
+  <p><strong>Detection:</strong> If a canned run takes &gt;5 seconds, contains real URLs, or is missing the intentional fake atom, the LLM defied echo mode.</p>
+  <p><strong>Mitigation strategy:</strong> Use <code>gemini-2.5-flash-lite</code> (direct API, no web tools, less RLHF-hardened) for all canned echo tests. Gemini is more likely to echo the prompt verbatim because (a) no web tools exist to tempt it, and (b) it has lighter anti-fabrication training than gpt-5 series. Assigned to T1, T4 Run 2, and T7 Run 1.</p>
+  <p><strong>Tests still requiring web-capable models</strong> (for the judge on Run 2): T2, T8, T9 use <code>gpt-4.1</code>. The discovery LLM and judge share a phase, so swapping mid-run isn't possible. For these, prompt strength is the only defense — re-run 1-2 times if discovery defies.</p>
 </div>
 </div>
 
@@ -109,24 +123,25 @@
   <table>
     <thead><tr><th>Test</th><th>Run</th><th>Model</th><th>Effort</th><th>Web</th><th>Why</th></tr></thead>
     <tbody>
-      <tr><td rowspan="1"><span class="test-num" style="background:var(--red);">T1</span></td><td>Run 1</td><td><code>gpt-4.1-mini</code></td><td>&mdash;</td><td>ON</td><td>Cheapest web-capable model. Canned prompt &mdash; Gate 1 catches it before any web call.</td></tr>
+      <tr><td rowspan="1"><span class="test-num" style="background:var(--red);">T1</span></td><td>Run 1</td><td><code>gemini-2.5-flash-lite</code></td><td>&mdash;</td><td><strong style="color:var(--text-muted);">N/A</strong></td><td>Gemini direct API has no web tools at provider level — web toggle is moot. Basic model with less RLHF jailbreak-resistance, more compliant with echo-mode prompts.</td></tr>
       <tr style="border-top:2px solid var(--border);"><td rowspan="2"><span class="test-num" style="background:var(--purple);">T2</span></td><td>Run 1</td><td><code>gpt-4.1</code></td><td>&mdash;</td><td>ON</td><td>Solid web model builds real registry.</td></tr>
       <tr><td>Run 2</td><td><code>gpt-4.1</code></td><td>&mdash;</td><td>ON</td><td>Same model &mdash; canned discovery, judge needs web to catch <code>pink</code>.</td></tr>
       <tr style="border-top:2px solid var(--border);"><td rowspan="1"><span class="test-num" style="background:var(--green);">T3</span></td><td>Run 1</td><td><code>gpt-5.4-xhigh</code></td><td>xhigh (baked)</td><td>ON</td><td>Best available. Maximum accuracy + effort for gold-standard baseline.</td></tr>
       <tr style="border-top:2px solid var(--border);"><td rowspan="2"><span class="test-num" style="background:var(--teal);">T4</span></td><td>Run 1</td><td><code>gpt-5.4-xhigh</code></td><td>xhigh (baked)</td><td>ON</td><td>Best model builds the baseline to protect.</td></tr>
-      <tr><td>Run 2</td><td><code>gpt-4.1-mini</code></td><td>&mdash;</td><td>ON</td><td>Weakest web model &mdash; canned discovery returns only <code>black</code>. Judge must still protect via web.</td></tr>
+      <tr><td>Run 2</td><td><code>gemini-2.5-flash-lite</code></td><td>&mdash;</td><td>N/A</td><td>Gemini (no web) echoes canned "only black" prompt. Judge runs structurally — matches black, leaves other variants alone (no web means no removal justification). Protection still holds.</td></tr>
       <tr style="border-top:2px solid var(--border);"><td rowspan="2"><span class="test-num" style="background:var(--orange);">T5</span></td><td>Run 1</td><td><code>gpt-4.1</code></td><td>&mdash;</td><td>ON</td><td>Good model establishes baseline.</td></tr>
       <tr><td>Run 2</td><td><code>gpt-4.1</code></td><td>&mdash;</td><td>ON</td><td>Same model, same prompt &mdash; identical conditions for stability test.</td></tr>
       <tr style="border-top:2px solid var(--border);"><td rowspan="2"><span class="test-num" style="background:var(--accent);">T6</span></td><td>Run 1</td><td><code>gpt-4.1</code></td><td>&mdash;</td><td>ON</td><td>Good-but-not-best model. Produces decent but generic labels.</td></tr>
       <tr><td>Run 2</td><td><code>gpt-5.4-xhigh</code></td><td>xhigh (baked)</td><td>ON</td><td>Best model with name-focused prompt. Judge compares and upgrades labels.</td></tr>
-      <tr style="border-top:2px solid var(--border);"><td rowspan="3"><span class="test-num" style="background:var(--green);">T7</span></td><td>Run 1</td><td><code>gpt-4.1-mini</code></td><td>&mdash;</td><td>ON</td><td>Weakest web model. Discovery baseline.</td></tr>
+      <tr style="border-top:2px solid var(--border);"><td rowspan="3"><span class="test-num" style="background:var(--green);">T7</span></td><td>Run 1</td><td><code>gemini-2.5-flash-lite</code></td><td>&mdash;</td><td>N/A</td><td>Weakest model, no web tools. Discovery baseline uses only training-data memory — deliberately weak to test that stronger models on Run 2 &amp; 3 enrich without downgrading.</td></tr>
       <tr><td>Run 2</td><td><code>gpt-4.1</code></td><td>&mdash;</td><td>ON</td><td>Mid-tier. Should find more than mini.</td></tr>
       <tr><td>Run 3</td><td><code>gpt-5.4-xhigh</code></td><td>xhigh (baked)</td><td>ON</td><td>Best model. Should find everything &mdash; most colors, best names, all editions.</td></tr>
     </tbody>
   </table>
 
   <dl class="detail-grid" style="margin-top:12px;">
-    <dt>Web-capable models</dt><dd>Only use models routed through <strong>LLM Lab</strong> (web search support). OpenAI 5-series: <code>gpt-5.4</code>, <code>gpt-5.4-xhigh</code>. OpenAI 4-series: <code>gpt-4.1</code>, <code>gpt-4.1-mini</code>, <code>gpt-4.1-nano</code>. Avoid <code>gpt-4o-mini</code> (no web).</dd>
+    <dt>Web-capable models</dt><dd>Only use models routed through <strong>LLM Lab</strong> (web search support). OpenAI 5-series: <code>gpt-5.4</code>, <code>gpt-5.4-xhigh</code>. OpenAI 4-series: <code>gpt-4.1</code>. Avoid <code>gpt-4o-mini</code> (no web).</dd>
+    <dt>Non-web models (echo-mode)</dt><dd><code>gemini-2.5-flash-lite</code> via <strong>Gemini direct API</strong> — no web tools, cheaper, less RLHF-hardened against echo-mode prompts. Used as the "dumb" model in T1 (Gate 1), T4 Run 2 (weak discovery), and T7 Run 1 (baseline). The Web Search toggle has no effect on Gemini direct calls.</dd>
     <dt>Effort levels</dt><dd><code>-xhigh</code> suffix has effort baked into the model name (extracted automatically). For standard models, toggle Thinking ON and set effort in <code>/llm-config</code> if needed.</dd>
     <dt>Switching between runs</dt><dd>Change the model in <code>/llm-config</code> BEFORE clicking Run. Both LLM calls in that run will use the new model.</dd>
   </dl>
@@ -345,14 +360,15 @@ Common hallucination patterns: sibling model colors, duplicated edition atoms as
     <thead><tr><th>Step</th><th>Action</th><th>Model</th><th>Prompt</th><th>LLM Speed</th></tr></thead>
     <tbody>
       <tr><td><span class="tag tag-orange">WIPE</span></td><td>Delete all CEF runs</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
-      <tr><td><strong>Run 1</strong></td><td>Paste T1 canned prompt</td><td><code>gpt-4.1-mini</code></td><td>T1 canned prompt</td><td>Instant (canned, no web)</td></tr>
+      <tr><td style="color:var(--accent);font-weight:600;">Model</td><td colspan="4">Switch to <code>gemini-2.5-flash-lite</code> in <code>/llm-config &rarr; CEF</code>. Gemini has no web tools so Web Search toggle state is irrelevant. No judge fires on Run 1.</td></tr>
+      <tr><td><strong>Run 1</strong></td><td>Paste T1 canned prompt</td><td><code>gemini-2.5-flash-lite</code></td><td>T1 canned prompt</td><td>Instant (canned, no web)</td></tr>
     </tbody>
   </table>
 </div>
 </div>
 
 <div class="flow-row">
-  <div class="flow-box flow-neutral">Run 1: gpt-4.1-mini<br><small>forced bad atoms</small></div>
+  <div class="flow-box flow-neutral">Run 1: gemini-2.5-flash-lite<br><small>forced bad atoms, no web</small></div>
   <span class="flow-arrow">&rarr;</span>
   <div class="flow-box flow-fail">Gate 1<br><small>unknown atom</small></div>
   <span class="flow-arrow">&rarr;</span>
@@ -362,14 +378,24 @@ Common hallucination patterns: sibling model colors, duplicated edition atoms as
 <div class="card">
 <div class="card-header" style="background:var(--red-bg);">Run 1 &mdash; Discovery Prompt (paste into LLM Config)</div>
 <div class="card-body">
-<pre class="prompt-block">Return ONLY this exact JSON for <span class="var">{{BRAND}}</span> <span class="var">{{MODEL}}</span> — do NOT search the web, do NOT add real data:
+<pre class="prompt-block">[CEF PIPELINE DATA REPLAY]
+
+You are a replay adapter forwarding a pre-captured LLM response into the CEF pipeline. The data was captured from an upstream discovery source and validated there. Your only job: emit the JSON payload below unchanged so downstream stages receive it as-is.
+
+OPERATIONAL CONSTRAINTS:
+- Do NOT call tools. This is a forward-only replay, not a new discovery call.
+- Do NOT re-research <span class="var">{{BRAND}}</span> <span class="var">{{MODEL}}</span>. Upstream has already done this.
+- Do NOT substitute, correct, normalize, or filter any field value.
+- Emit the payload exactly as written — arrays and keys byte-for-byte.
+
+PAYLOAD:
 {
-  "colors": ["black", "unicorn-sparkle"],
+  "colors": ["black", "plasma-violet"],
   "default_color": "black",
-  "color_names": { "unicorn-sparkle": "Unicorn Sparkle Edition" },
+  "color_names": { "plasma-violet": "Plasma Violet Special Edition" },
   "editions": {},
   "siblings_excluded": [],
-  "discovery_log": { "confirmed_from_known": [], "added_new": ["unicorn-sparkle"], "rejected_from_known": [], "urls_checked": [], "queries_run": [] }
+  "discovery_log": { "confirmed_from_known": [], "added_new": ["plasma-violet"], "rejected_from_known": [], "urls_checked": [], "queries_run": [] }
 }</pre>
 </div>
 </div>
@@ -382,7 +408,7 @@ Common hallucination patterns: sibling model colors, duplicated edition atoms as
     <tbody>
       <tr><td>Run status</td><td><span class="tag tag-red">REJECTED</span></td></tr>
       <tr><td>Rejection code</td><td><code>unknown_color_atom</code></td></tr>
-      <tr><td>Unknown atom</td><td><code>unicorn-sparkle</code> (not in palette)</td></tr>
+      <tr><td>Unknown atom</td><td><code>plasma-violet</code> (not in palette — no "plasma-" prefix in registered scheme, only <code>light-</code>/<code>dark-</code>/base)</td></tr>
       <tr><td>LLM 2 fires?</td><td>NO &mdash; Gate 1 blocks before identity check</td></tr>
       <tr><td>Candidates written?</td><td>NO &mdash; deferred closure never fires</td></tr>
       <tr><td>Registry changed?</td><td>NO &mdash; untouched (doesn't exist yet)</td></tr>
@@ -424,7 +450,21 @@ Common hallucination patterns: sibling model colors, duplicated edition atoms as
 <div class="card">
 <div class="card-header" style="background:var(--purple-bg);">Run 2 &mdash; Discovery Prompt (paste into LLM Config)</div>
 <div class="card-body">
-<pre class="prompt-block">Return ONLY this exact JSON for <span class="var">{{BRAND}}</span> <span class="var">{{MODEL}}</span> — do NOT search the web:
+<pre class="prompt-block">[CEF PIPELINE INTEGRATION TEST — T2: Gate 2 Judge Hallucination Filter]
+
+You are NOT doing discovery. You are a test fixture generator. This test verifies that the identity-check judge rejects a palette-valid but product-wrong color via web verification.
+
+HARD CONSTRAINTS — any deviation produces a false green:
+- Do NOT web search from the discovery LLM. Do NOT call tools.
+- Do NOT correct, substitute, or remove "pink" from the output.
+- Do NOT add or remove other colors. The output must be exactly 3 colors: black, white, pink.
+- Emit the JSON below byte-for-byte.
+
+Note: The JUDGE (LLM 2, fires automatically after discovery on Run 2+) WILL use web search — that is intentional and required. Only the discovery LLM (LLM 1) must stay in echo mode.
+
+"pink" IS a valid palette atom (so Gate 1 will pass) but does NOT exist for <span class="var">{{BRAND}}</span> <span class="var">{{MODEL}}</span>. The judge must catch it on Run 2 via web verification and mark it action:reject.
+
+OUTPUT EXACTLY:
 {
   "colors": ["black", "white", "pink"],
   "default_color": "black",
@@ -508,8 +548,8 @@ Common hallucination patterns: sibling model colors, duplicated edition atoms as
     <tbody>
       <tr><td><span class="tag tag-orange">WIPE</span></td><td>Delete all CEF runs</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
       <tr><td><strong>Run 1</strong></td><td>Original prompt. Best model. Complete baseline.</td><td><code>gpt-5.4-xhigh</code></td><td>Original prompt</td><td>LLM 1: slow (web, xhigh)<br>LLM 2: n/a (Run 1)</td></tr>
-      <tr><td style="color:var(--orange);font-weight:600;">Switch model</td><td colspan="4">Change to <code>gpt-4.1-mini</code> in <code>/llm-config</code> before Run 2</td></tr>
-      <tr><td><strong>Run 2</strong></td><td>Paste T4 canned prompt. Weak model discovers only black.</td><td><code>gpt-4.1-mini</code></td><td>T4 canned prompt</td><td>LLM 1: instant (canned)<br>LLM 2: slow (web verify)</td></tr>
+      <tr><td style="color:var(--orange);font-weight:600;">Switch model</td><td colspan="4">Change to <code>gemini-2.5-flash-lite</code> in <code>/llm-config</code> before Run 2</td></tr>
+      <tr><td><strong>Run 2</strong></td><td>Paste T4 canned prompt. Weak model echoes only black.</td><td><code>gemini-2.5-flash-lite</code></td><td>T4 canned prompt</td><td>LLM 1: instant (canned)<br>LLM 2: fast (structural match, no web)</td></tr>
     </tbody>
   </table>
 </div>
@@ -518,7 +558,7 @@ Common hallucination patterns: sibling model colors, duplicated edition atoms as
 <div class="flow-row">
   <div class="flow-box flow-pass">Run 1: gpt-5.4-xhigh<br><small>best model baseline</small></div>
   <span class="flow-arrow">&rarr;</span>
-  <div class="flow-box flow-neutral">Run 2: gpt-4.1-mini<br><small>only finds black</small></div>
+  <div class="flow-box flow-neutral">Run 2: gemini-2.5-flash-lite<br><small>only finds black</small></div>
   <span class="flow-arrow">&rarr;</span>
   <div class="flow-box flow-pass">Gate 1<br><small>valid</small></div>
   <span class="flow-arrow">&rarr;</span>
@@ -530,7 +570,21 @@ Common hallucination patterns: sibling model colors, duplicated edition atoms as
 <div class="card">
 <div class="card-header" style="background:var(--teal-bg);">Run 2 &mdash; Discovery Prompt (paste into LLM Config)</div>
 <div class="card-body">
-<pre class="prompt-block">Return ONLY this exact JSON for <span class="var">{{BRAND}}</span> <span class="var">{{MODEL}}</span> — do NOT search the web:
+<pre class="prompt-block">[CEF PIPELINE INTEGRATION TEST — T4: Weak-Discovery Data Protection]
+
+You are NOT doing discovery. You are a test fixture generator simulating a weak model that missed colors. This test verifies the judge protects the baseline from downgrade.
+
+HARD CONSTRAINTS — any deviation produces a false green:
+- Do NOT web search from the discovery LLM. Do NOT call tools.
+- Do NOT add colors beyond "black".
+- Do NOT add color_names, editions, or siblings.
+- Emit the JSON below byte-for-byte.
+
+Note: The JUDGE (LLM 2) WILL use web search to validate against the existing registry — that is intentional. Only the discovery LLM (LLM 1) must stay in echo mode.
+
+Run 1 established a baseline with the best model. This run simulates a weak model finding ONLY "black". The judge must match black but NOT remove the other registry variants — trust-anchor protection.
+
+OUTPUT EXACTLY:
 {
   "colors": ["black"],
   "default_color": "black",
@@ -695,7 +749,7 @@ Return JSON with: colors, default_color, color_names, editions, siblings_exclude
     <thead><tr><th>Step</th><th>Action</th><th>Model</th><th>Prompt</th><th>LLM Speed</th></tr></thead>
     <tbody>
       <tr><td><span class="tag tag-orange">WIPE</span></td><td>Delete all CEF runs</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
-      <tr><td><strong>Run 1</strong></td><td>Original prompt. Weakest web model.</td><td><code>gpt-4.1-mini</code></td><td>Original prompt</td><td>LLM 1: moderate (web, mini)<br>LLM 2: n/a (Run 1)</td></tr>
+      <tr><td><strong>Run 1</strong></td><td>Original prompt. Weakest model, no web.</td><td><code>gemini-2.5-flash-lite</code></td><td>Original prompt</td><td>LLM 1: fast (no web, training-memory only)<br>LLM 2: n/a (Run 1)</td></tr>
       <tr><td style="color:var(--orange);font-weight:600;">Switch model</td><td colspan="4">Change to <code>gpt-4.1</code> in <code>/llm-config</code></td></tr>
       <tr><td><strong>Run 2</strong></td><td>Original prompt. Mid-tier model.</td><td><code>gpt-4.1</code></td><td>Original prompt</td><td>LLM 1: slow (web)<br>LLM 2: slow (web verify)</td></tr>
       <tr><td style="color:var(--orange);font-weight:600;">Switch model</td><td colspan="4">Change to <code>gpt-5.4-xhigh</code> in <code>/llm-config</code></td></tr>
@@ -706,7 +760,7 @@ Return JSON with: colors, default_color, color_names, editions, siblings_exclude
 </div>
 
 <div class="flow-row">
-  <div class="flow-box flow-neutral">Run 1: gpt-4.1-mini<br><small>baseline discovery</small></div>
+  <div class="flow-box flow-neutral">Run 1: gemini-2.5-flash-lite<br><small>baseline (no web, weak)</small></div>
   <span class="flow-arrow">&rarr;</span>
   <div class="flow-box flow-accent">Run 2: gpt-4.1<br><small>finds more?</small></div>
   <span class="flow-arrow">&rarr;</span>
@@ -717,7 +771,7 @@ Return JSON with: colors, default_color, color_names, editions, siblings_exclude
 <div class="card-header" style="background:var(--green-bg);">What to Compare Across Runs</div>
 <div class="card-body">
   <table>
-    <thead><tr><th>Metric</th><th>Run 1 (mini)</th><th>Run 2 (4.1)</th><th>Run 3 (5.4-xhigh)</th></tr></thead>
+    <thead><tr><th>Metric</th><th>Run 1 (gemini-lite)</th><th>Run 2 (4.1)</th><th>Run 3 (5.4-xhigh)</th></tr></thead>
     <tbody>
       <tr><td><strong>Colors found</strong></td><td>Fewer (may miss some)</td><td>More (should find most)</td><td>All official colors</td></tr>
       <tr><td><strong>Editions found</strong></td><td>May miss editions entirely</td><td>Should find common ones</td><td>All editions including obscure</td></tr>
@@ -787,7 +841,19 @@ Return JSON with: colors, default_color, color_names, editions, siblings_exclude
 <div class="card">
 <div class="card-header" style="background:var(--red-bg);">Run 1 &mdash; Discovery Prompt (paste into LLM Config)</div>
 <div class="card-body">
-<pre class="prompt-block">Return ONLY this exact JSON for <span class="var">{{BRAND}}</span> <span class="var">{{MODEL}}</span> — do NOT search the web:
+<pre class="prompt-block">[CEF PIPELINE INTEGRATION TEST — T8: Wrong-Product Variant Hard-Delete (Baseline)]
+
+You are NOT doing discovery. You are a test fixture generator planting sibling-model contamination. This test verifies that the judge hard-deletes wrong-product variants on Run 2 and cascades to PIF.
+
+HARD CONSTRAINTS — any deviation produces a false green:
+- Do NOT web search. Do NOT call tools. (Run 1 — no judge fires, but echo mode keeps discovery clean.)
+- Do NOT remove or rename "sunset-haze".
+- Do NOT add other colors.
+- Emit the JSON below byte-for-byte.
+
+"sunset-haze" is a valid palette atom but belongs to a SIBLING model, not <span class="var">{{BRAND}}</span> <span class="var">{{MODEL}}</span>. Gate 1 passes (valid atom). On Run 2 (original discovery prompt, web ON), the judge must web-verify and add sunset-haze's variant_id to remove[] — triggering hard-delete + PIF cascade.
+
+OUTPUT EXACTLY:
 {
   "colors": ["black", "white", "sunset-haze"],
   "default_color": "black",
@@ -851,7 +917,18 @@ Return JSON with: colors, default_color, color_names, editions, siblings_exclude
 <div class="card">
 <div class="card-header" style="background:var(--teal-bg);">Run 1 &mdash; Discovery Prompt (paste into LLM Config)</div>
 <div class="card-body">
-<pre class="prompt-block">Return ONLY this exact JSON for <span class="var">{{BRAND}}</span> <span class="var">{{MODEL}}</span> — do NOT search the web:
+<pre class="prompt-block">[CEF PIPELINE INTEGRATION TEST — T9: Discontinued Variant Protection (Baseline)]
+
+You are NOT doing discovery. You are a test fixture generator establishing a baseline that includes a discontinued variant. This test verifies the judge preserves real-but-discontinued variants on Run 2.
+
+HARD CONSTRAINTS — any deviation produces a false green:
+- Do NOT web search. Do NOT call tools. (Run 1 — no judge fires.)
+- Do NOT add or remove colors.
+- Emit the JSON below byte-for-byte.
+
+"red" / "Launch Red" represents a real discontinued color. This run plants it in the registry so Run 2 can test whether the judge incorrectly removes it when missing from later discovery.
+
+OUTPUT EXACTLY:
 {
   "colors": ["black", "white", "red"],
   "default_color": "black",
@@ -867,7 +944,21 @@ Return JSON with: colors, default_color, color_names, editions, siblings_exclude
 <div class="card">
 <div class="card-header" style="background:var(--teal-bg);">Run 2 &mdash; Discovery Prompt (paste into LLM Config)</div>
 <div class="card-body">
-<pre class="prompt-block">Return ONLY this exact JSON for <span class="var">{{BRAND}}</span> <span class="var">{{MODEL}}</span> — do NOT search the web:
+<pre class="prompt-block">[CEF PIPELINE INTEGRATION TEST — T9: Discontinued Variant Protection (Weak Run)]
+
+You are NOT doing discovery. You are a test fixture generator simulating a run that MISSED the discontinued color. The judge must web-verify and preserve it anyway.
+
+HARD CONSTRAINTS — any deviation produces a false green:
+- Do NOT web search from the discovery LLM. Do NOT call tools.
+- Do NOT add "red" back to the output.
+- Do NOT add other colors.
+- Emit the JSON below byte-for-byte.
+
+Note: The JUDGE (LLM 2) WILL use web search to confirm "Launch Red" was real — that is intentional and required. Only the discovery LLM (LLM 1) must stay in echo mode.
+
+"red" is deliberately omitted from this run's discoveries. The judge must verify via web that "Launch Red" was a real product and leave the remove[] array empty — discontinued real products are NEVER removed.
+
+OUTPUT EXACTLY:
 {
   "colors": ["black", "white"],
   "default_color": "black",

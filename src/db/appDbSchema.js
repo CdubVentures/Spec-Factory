@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS billing_entries (
   cached_prompt_tokens INTEGER DEFAULT 0,
   total_tokens INTEGER DEFAULT 0,
   cost_usd REAL DEFAULT 0,
-  reason TEXT DEFAULT 'extract',
+  reason TEXT DEFAULT '',
   host TEXT DEFAULT '',
   url_count INTEGER DEFAULT 0,
   evidence_chars INTEGER DEFAULT 0,

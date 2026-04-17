@@ -4,6 +4,7 @@
 import { assembleLlmPolicy } from '../llm/llmPolicySchema.js';
 import { providerFromModelToken } from '../llm/providerMeta.js';
 import { buildRegistryLookup } from '../llm/routeResolver.js';
+import { gateCapabilities, capabilitiesFromLookup } from '../../shared/modelCapabilityGate.js';
 import { LLM_PHASE_DEFS } from './llmPhaseDefs.js';
 import {
   normalizeModelPricingMap,
@@ -126,30 +127,57 @@ export function resolvePhaseOverrides(merged) {
     const phaseOverride = overrides[def.id] || {};
     const prefix = `_resolved${capitalize(def.id)}`;
 
-    merged[`${prefix}BaseModel`] = phaseOverride.baseModel || merged[def.globalModel];
-    merged[`${prefix}ReasoningModel`] = phaseOverride.reasoningModel || merged.llmModelReasoning;
-    merged[`${prefix}UseReasoning`] = phaseOverride.useReasoning ?? merged[def.groupToggle] ?? false;
+    const baseModel = phaseOverride.baseModel || merged[def.globalModel];
+    const reasoningModel = phaseOverride.reasoningModel || merged.llmModelReasoning;
+    const useReasoning = phaseOverride.useReasoning ?? merged[def.groupToggle] ?? false;
+    const fallbackModel = phaseOverride.fallbackModel || merged[def.globalFallbackModel] || '';
+    const fallbackReasoningModel = phaseOverride.fallbackReasoningModel || merged[def.globalFallbackReasoningModel] || '';
+    const fallbackUseReasoning = phaseOverride.fallbackUseReasoning ?? false;
+    const writerModel = phaseOverride.writerModel || '';
+    const writerReasoningModel = phaseOverride.writerReasoningModel || '';
+    const writerUseReasoning = phaseOverride.writerUseReasoning ?? false;
+
+    // WHY: Mask stored capability toggles by each role's target model. A stale
+    // thinking=true left over from a prior lab-model selection must not leak into
+    // LLM calls or UI when the current model doesn't declare that capability.
+    const primaryCaps = capabilitiesFromLookup(merged._registryLookup, useReasoning ? reasoningModel : baseModel);
+    const primaryGated = gateCapabilities(
+      { thinking: phaseOverride.thinking, thinkingEffort: phaseOverride.thinkingEffort, webSearch: phaseOverride.webSearch },
+      primaryCaps,
+    );
+    const fallbackCaps = capabilitiesFromLookup(merged._registryLookup, fallbackUseReasoning ? fallbackReasoningModel : fallbackModel);
+    const fallbackGated = gateCapabilities(
+      { thinking: phaseOverride.fallbackThinking, thinkingEffort: phaseOverride.fallbackThinkingEffort, webSearch: phaseOverride.fallbackWebSearch },
+      fallbackCaps,
+    );
+    const writerCaps = capabilitiesFromLookup(merged._registryLookup, writerUseReasoning ? writerReasoningModel : writerModel);
+    const writerGated = gateCapabilities(
+      { thinking: phaseOverride.writerThinking, thinkingEffort: phaseOverride.writerThinkingEffort, webSearch: false },
+      writerCaps,
+    );
+
+    merged[`${prefix}BaseModel`] = baseModel;
+    merged[`${prefix}ReasoningModel`] = reasoningModel;
+    merged[`${prefix}UseReasoning`] = useReasoning;
     merged[`${prefix}MaxOutputTokens`] = phaseOverride.maxOutputTokens ?? merged[def.globalTokens];
     merged[`${prefix}TimeoutMs`] = phaseOverride.timeoutMs ?? merged[def.globalTimeout];
     merged[`${prefix}MaxContextTokens`] = phaseOverride.maxContextTokens ?? merged[def.globalContextTokens];
-    merged[`${prefix}WebSearch`] = phaseOverride.webSearch ?? false;
-    merged[`${prefix}Thinking`] = phaseOverride.thinking ?? false;
-    merged[`${prefix}ThinkingEffort`] = phaseOverride.thinkingEffort || '';
-    merged[`${prefix}FallbackModel`]          = phaseOverride.fallbackModel || merged[def.globalFallbackModel] || '';
-    merged[`${prefix}FallbackReasoningModel`] = phaseOverride.fallbackReasoningModel || merged[def.globalFallbackReasoningModel] || '';
-    merged[`${prefix}FallbackUseReasoning`]   = phaseOverride.fallbackUseReasoning ?? false;
-    merged[`${prefix}FallbackThinking`]       = phaseOverride.fallbackThinking ?? false;
-    merged[`${prefix}FallbackThinkingEffort`] = phaseOverride.fallbackThinkingEffort || '';
-    merged[`${prefix}FallbackWebSearch`]      = phaseOverride.fallbackWebSearch ?? false;
+    merged[`${prefix}WebSearch`] = primaryGated.webSearch;
+    merged[`${prefix}Thinking`] = primaryGated.thinking;
+    merged[`${prefix}ThinkingEffort`] = primaryGated.thinkingEffort;
+    merged[`${prefix}FallbackModel`]          = fallbackModel;
+    merged[`${prefix}FallbackReasoningModel`] = fallbackReasoningModel;
+    merged[`${prefix}FallbackUseReasoning`]   = fallbackUseReasoning;
+    merged[`${prefix}FallbackThinking`]       = fallbackGated.thinking;
+    merged[`${prefix}FallbackThinkingEffort`] = fallbackGated.thinkingEffort;
+    merged[`${prefix}FallbackWebSearch`]      = fallbackGated.webSearch;
     merged[`${prefix}DisableLimits`]          = phaseOverride.disableLimits ?? false;
     merged[`${prefix}JsonStrict`]             = phaseOverride.jsonStrict ?? true;
-    // WHY: Writer model is an independent model selector for Phase 2 formatting
-    // when jsonStrict is off. Same shape as fallback but serves a different purpose.
-    merged[`${prefix}WriterModel`]            = phaseOverride.writerModel || '';
-    merged[`${prefix}WriterReasoningModel`]   = phaseOverride.writerReasoningModel || '';
-    merged[`${prefix}WriterUseReasoning`]     = phaseOverride.writerUseReasoning ?? false;
-    merged[`${prefix}WriterThinking`]         = phaseOverride.writerThinking ?? false;
-    merged[`${prefix}WriterThinkingEffort`]   = phaseOverride.writerThinkingEffort || '';
+    merged[`${prefix}WriterModel`]            = writerModel;
+    merged[`${prefix}WriterReasoningModel`]   = writerReasoningModel;
+    merged[`${prefix}WriterUseReasoning`]     = writerUseReasoning;
+    merged[`${prefix}WriterThinking`]         = writerGated.thinking;
+    merged[`${prefix}WriterThinkingEffort`]   = writerGated.thinkingEffort;
   }
 
   // WHY: Cache the assembled composite so routing.js can read it without

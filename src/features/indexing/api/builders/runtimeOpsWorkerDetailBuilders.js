@@ -12,7 +12,6 @@ import {
   classifyWorkerEventMatch,
   buildPhaseLineageFromSourcePackets, buildPhaseLineageFromRuntimeTelemetry,
 } from './runtimeOpsPhaseLineage.js';
-import { collectPreviewExtractionFields } from './runtimeOpsExtractionFieldBuilders.js';
 import { inferPool } from './runtimeOpsWorkerPoolBuilders.js';
 import { normalizeHost } from '../../pipeline/shared/hostParser.js';
 import { isVideoUrl } from '../../pipeline/shared/urlClassifier.js';
@@ -550,7 +549,6 @@ export function buildWorkerDetail(events, workerId, options = {}) {
       });
     }
   }
-  extractionFields.push(...collectPreviewExtractionFields(events, workerUrls, existingFieldKeys));
   const extractedFieldNames = new Set(
     extractionFields
       .map((row) => String(row?.field || '').trim())

@@ -10,7 +10,7 @@ export async function startInProcessGuiServer(t, {
   cwd = null,
 } = {}) {
   const resolvedPort = port ?? await getFreePort();
-  const runtime = createGuiServerRuntime({
+  const runtime = await createGuiServerRuntime({
     env,
     argv: ['--port', String(resolvedPort), ...argv],
     distRoot,

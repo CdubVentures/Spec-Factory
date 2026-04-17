@@ -146,7 +146,7 @@ code{font-family:var(--mono);font-size:0.85em}
   <h1>Spec Factory &mdash; Storage Reference</h1>
   <p class="subtitle">Current storage surface verified against the live path builders, checkpoint writers, output namespaces, and committed authority files. This page describes only the storage layout the app uses today.</p>
   <div class="meta">
-    <span>Audited 2026-04-11</span>
+    <span>Audited 2026-04-16</span>
     <span>Code-validated</span>
   </div>
 </header>
@@ -154,7 +154,7 @@ code{font-family:var(--mono);font-size:0.85em}
 <!-- ─────────────────────── STATS ─────────────────────── -->
 <div class="stats">
   <div class="stat sql"><div class="n">2</div><div class="l">SQLite Databases</div></div>
-  <div class="stat json"><div class="n">91</div><div class="l">Category Authority Files</div></div>
+  <div class="stat json"><div class="n">94</div><div class="l">Category Authority Files</div></div>
   <div class="stat bin"><div class="n">8</div><div class="l">Runtime File Families</div></div>
   <div class="stat eph"><div class="n">4</div><div class="l">Checkpoint / Recovery Files</div></div>
 </div>
@@ -258,9 +258,9 @@ code{font-family:var(--mono);font-size:0.85em}
 
   <div class="tree"><span class="dir">.workspace/</span>                          <span class="comment"># Git-ignored runtime root</span>
   <span class="dir">db/</span>                                <span class="comment"># SQLite databases</span>
-    <span class="sql">app.sqlite</span>                       <span class="comment"># Global AppDb surface (7 tables)</span>
+    <span class="sql">app.sqlite</span>                       <span class="comment"># Global AppDb surface (8 tables)</span>
     <span class="dir">{category}/</span>
-      <span class="sql">spec.sqlite</span>                    <span class="comment"># Per-category SpecDb surface (36 tables)</span>
+      <span class="sql">spec.sqlite</span>                    <span class="comment"># Per-category SpecDb surface (29 tables)</span>
   <span class="dir">global/</span>                            <span class="comment"># JSON fallback / seed files</span>
     <span class="json">user-settings.json</span>               <span class="comment"># Boot-time fallback; app.sqlite is primary</span>
   <span class="dir">runtime/</span>
@@ -289,13 +289,13 @@ code{font-family:var(--mono);font-size:0.85em}
     <div class="domain-label">Database Files</div>
 
     <details class="card">
-      <summary><span class="card-name">db/app.sqlite</span><span class="tags"><span class="tag tag-sql">SQL</span><span class="tag tag-count">7 tables</span></span></summary>
+      <summary><span class="card-name">db/app.sqlite</span><span class="tags"><span class="tag tag-sql">SQL</span><span class="tag tag-count">8 tables</span></span></summary>
       <div class="card-body">
         <table class="prop-table">
-          <tr><td class="pk">Purpose</td><td class="pv">Global application database. Holds brands, brand/category links, rename history, runtime settings, studio maps, the color registry, and the unit registry.</td></tr>
-          <tr><td class="pk">Tables</td><td class="pv"><code>brands</code>, <code>brand_categories</code>, <code>brand_renames</code>, <code>settings</code>, <code>studio_maps</code>, <code>color_registry</code>, <code>unit_registry</code></td></tr>
-          <tr><td class="pk">Write boundary</td><td class="pv">AppDb persistence and the feature routes that manage brands, settings, studio maps, and colors.</td></tr>
-          <tr><td class="pk">Recovery inputs</td><td class="pv"><code>category_authority/_global/brand_registry.json</code>, <code>category_authority/_global/color_registry.json</code>, and <code>.workspace/global/user-settings.json</code> for boot-time settings fallback.</td></tr>
+          <tr><td class="pk">Purpose</td><td class="pv">Global application database. Holds brands, brand/category links, rename history, runtime settings, studio maps, the color registry, the unit registry, and the billing ledger.</td></tr>
+          <tr><td class="pk">Tables</td><td class="pv"><code>brands</code>, <code>brand_categories</code>, <code>brand_renames</code>, <code>settings</code>, <code>studio_maps</code>, <code>color_registry</code>, <code>unit_registry</code>, <code>billing_entries</code></td></tr>
+          <tr><td class="pk">Write boundary</td><td class="pv">AppDb persistence and the feature routes that manage brands, settings, studio maps, colors, units, and billing.</td></tr>
+          <tr><td class="pk">Recovery inputs</td><td class="pv"><code>category_authority/_global/brand_registry.json</code>, <code>category_authority/_global/color_registry.json</code>, <code>category_authority/_global/unit_registry.json</code>, and <code>.workspace/global/user-settings.json</code> for boot-time settings fallback.</td></tr>
           <tr><td class="pk">SQLite mode</td><td class="pv">WAL enabled, <code>synchronous = NORMAL</code>.</td></tr>
           <tr><td class="pk">Retention</td><td class="pv">Permanent shared state.</td></tr>
         </table>
@@ -303,13 +303,13 @@ code{font-family:var(--mono);font-size:0.85em}
     </details>
 
     <details class="card">
-      <summary><span class="card-name">db/{category}/spec.sqlite</span><span class="tags"><span class="tag tag-sql">SQL</span><span class="tag tag-count">36 tables</span><span class="tag tag-json">Per-Category</span></span></summary>
+      <summary><span class="card-name">db/{category}/spec.sqlite</span><span class="tags"><span class="tag tag-sql">SQL</span><span class="tag tag-count">29 tables</span><span class="tag tag-json">Per-Category</span></span></summary>
       <div class="card-body">
         <table class="prop-table">
-          <tr><td class="pk">Purpose</td><td class="pv">Per-category operational database. Owns products, queues, runs, run artifacts, crawl sources, review state, telemetry indexes, route matrices, and crawl/support tables.</td></tr>
-          <tr><td class="pk">Table breakdown</td><td class="pv">36 current base tables from <code>specDbSchema.js</code>.</td></tr>
-          <tr><td class="pk">Write boundary</td><td class="pv">19 modules in <code>src/db/stores/</code>, plus checkpoint reseed helpers and a small amount of direct recovery SQL.</td></tr>
-          <tr><td class="pk">Recovery inputs</td><td class="pv">Category authority seed data, <code>.workspace/products/{pid}/product.json</code>, <code>.workspace/runs/{runId}/run.json</code>, and media re-indexing from disk.</td></tr>
+          <tr><td class="pk">Purpose</td><td class="pv">Per-category operational database. Owns products, variants, runs, run artifacts, crawl sources, review/candidate state, telemetry indexes, route matrices, and crawl/support tables.</td></tr>
+          <tr><td class="pk">Table breakdown</td><td class="pv">29 current base tables from <code>specDbSchema.js</code>.</td></tr>
+          <tr><td class="pk">Write boundary</td><td class="pv">18 modules in <code>src/db/stores/</code>, plus checkpoint reseed helpers and a small amount of direct recovery SQL.</td></tr>
+          <tr><td class="pk">Recovery inputs</td><td class="pv">Category authority seed data, <code>.workspace/products/{pid}/product.json</code>, <code>.workspace/products/{pid}/color_edition.json</code>, <code>.workspace/runs/{runId}/run.json</code>, and media re-indexing from disk.</td></tr>
           <tr><td class="pk">SQLite mode</td><td class="pv">WAL enabled, <code>synchronous = NORMAL</code>.</td></tr>
           <tr><td class="pk">Retention</td><td class="pv">Permanent per-category runtime state.</td></tr>
         </table>
@@ -355,7 +355,7 @@ code{font-family:var(--mono);font-size:0.85em}
         <table class="prop-table">
           <tr><td class="pk">Purpose</td><td class="pv">Durable crawl checkpoint manifest. Current schema is version 2, or version 3 when <code>runtime_ops_panels</code> are embedded.</td></tr>
           <tr><td class="pk">Written by</td><td class="pv"><code>buildCrawlCheckpoint()</code> + <code>writeCrawlCheckpoint()</code>.</td></tr>
-          <tr><td class="pk">Recovery role</td><td class="pv">Seeds <code>runs</code>, <code>product_runs</code>, selected <code>run_artifacts</code>, <code>crawl_sources</code>, and <code>url_crawl_ledger</code>. Screenshot/video SQL indexes are rebuilt by scanning disk media separately.</td></tr>
+          <tr><td class="pk">Recovery role</td><td class="pv">Seeds <code>runs</code> (with <code>product_id</code> linkage), selected <code>run_artifacts</code>, <code>crawl_sources</code>, and <code>url_crawl_ledger</code>. Screenshot/video SQL indexes are rebuilt by scanning disk media separately.</td></tr>
           <tr><td class="pk">Retention</td><td class="pv">Per-run durable checkpoint kept for rebuild and run history.</td></tr>
         </table>
       </div>
@@ -410,7 +410,7 @@ code{font-family:var(--mono);font-size:0.85em}
         <table class="prop-table">
           <tr><td class="pk">Purpose</td><td class="pv">Per-product rebuild checkpoint. Current runtime shape carries identity, latest run metadata, merged sources, and <code>query_cooldowns</code>.</td></tr>
           <tr><td class="pk">Written by</td><td class="pv"><code>writeProductIdentity()</code> at add time, then <code>writeProductCheckpoint()</code> after runs via read-merge-write.</td></tr>
-          <tr><td class="pk">Recovery role</td><td class="pv">Seeds <code>products</code>, <code>product_queue</code>, <code>query_cooldowns</code>, and fallback <code>crawl_sources</code> when rebuilding SpecDb.</td></tr>
+          <tr><td class="pk">Recovery role</td><td class="pv">Seeds <code>products</code>, <code>query_cooldowns</code>, and fallback <code>crawl_sources</code> when rebuilding SpecDb.</td></tr>
           <tr><td class="pk">Retention</td><td class="pv">Permanent per-product checkpoint.</td></tr>
         </table>
       </div>
@@ -468,14 +468,15 @@ code{font-family:var(--mono);font-size:0.85em}
     <h2>Category Authority Structure</h2>
     <span class="tag tag-git">Committed</span>
   </div>
-  <p class="section-desc"><code>category_authority/</code> is the committed authority/config surface. The current tree contains 91 JSON files across <code>mouse</code>, <code>keyboard</code>, <code>monitor</code>, <code>_global</code>, <code>_test_mouse</code>, and <code>_tests</code>.</p>
+  <p class="section-desc"><code>category_authority/</code> is the committed authority/config surface. The current tree contains 94 files across <code>mouse</code>, <code>keyboard</code>, <code>monitor</code>, <code>mousepad</code>, <code>_global</code>, <code>_test_keyboard</code>, and <code>_tests</code>.</p>
 
   <div class="tree"><span class="dir">category_authority/</span>
   <span class="dir">_global/</span>
     <span class="json">brand_registry.json</span>              <span class="comment"># AppDb seed + write-back registry</span>
     <span class="json">color_registry.json</span>              <span class="comment"># 77-color seed registry</span>
+    <span class="json">unit_registry.json</span>               <span class="comment"># Unit synonym + conversion registry</span>
     <span class="dir">_shared/</span>                         <span class="comment"># 8 validation schemas</span>
-  <span class="dir">mouse|keyboard|monitor/</span>           <span class="comment"># Live category directories</span>
+  <span class="dir">mouse|keyboard|monitor|mousepad/</span>  <span class="comment"># Live category directories</span>
     <span class="dir">_generated/</span>                      <span class="comment"># Compiled authority output</span>
       <span class="json">_compile_report.json</span>
       <span class="json">manifest.json</span>
@@ -496,7 +497,7 @@ code{font-family:var(--mono);font-size:0.85em}
       <span class="dir">components/</span>
         <span class="json">{type}_{name}.json</span>
     <span class="dir">tests/</span>                           <span class="comment"># mouse only</span>
-  <span class="dir">_test_mouse/</span>                      <span class="comment"># Fixture category with generated/control/override data</span>
+  <span class="dir">_test_keyboard/</span>                   <span class="comment"># Fixture category with generated/control/override data</span>
   <span class="dir">_tests/</span>
     <span class="dir">helpers/</span>
   <div class="domain-group">
@@ -506,7 +507,7 @@ code{font-family:var(--mono);font-size:0.85em}
       <summary><span class="card-name">_generated/</span><span class="tags"><span class="tag tag-json">JSON Config</span><span class="tag tag-count">10&ndash;13 files</span><span class="tag tag-git">Committed</span></span></summary>
       <div class="card-body">
         <table class="prop-table">
-          <tr><td class="pk">Current counts</td><td class="pv"><strong>mouse:</strong> 13 JSON files, <strong>keyboard:</strong> 10, <strong>monitor:</strong> 10, <strong>_test_mouse:</strong> 12.</td></tr>
+          <tr><td class="pk">Current counts</td><td class="pv"><strong>mouse:</strong> 10 files (9 root + 4 in component_db), <strong>keyboard:</strong> 9, <strong>monitor:</strong> 9, <strong>mousepad:</strong> seed-only.</td></tr>
           <tr><td class="pk">Root files</td><td class="pv"><code>manifest.json</code>, <code>field_rules.json</code>, <code>field_groups.json</code>, <code>ui_field_catalog.json</code>, <code>known_values.json</code>, <code>parse_templates.json</code>, <code>cross_validation_rules.json</code>, <code>key_migrations.json</code>, plus <code>_compile_report.json</code> in the live categories.</td></tr>
           <tr><td class="pk">Written by</td><td class="pv"><code>category-compile</code> from authority inputs and schemas.</td></tr>
           <tr><td class="pk">Mutable?</td><td class="pv">No. Treat as generated output and regenerate instead of hand-editing.</td></tr>
@@ -540,7 +541,7 @@ code{font-family:var(--mono);font-size:0.85em}
       <div class="card-body">
         <table class="prop-table">
           <tr><td class="pk">Canonical path</td><td class="pv"><code>category_authority/{category}/_overrides/overrides.json</code> is the consolidated v2 path used by shared override helpers when present.</td></tr>
-          <tr><td class="pk">Current disk state</td><td class="pv"><strong>mouse</strong> currently has 26 JSON files here (legacy per-product <code>*.overrides.json</code> plus <code>components/*.json</code>). <strong>keyboard</strong> and <strong>monitor</strong> currently have empty <code>_overrides/</code> directories.</td></tr>
+          <tr><td class="pk">Current disk state</td><td class="pv"><strong>mouse</strong> currently has 27 JSON files here (13 root + 14 components), mixing legacy per-product <code>*.overrides.json</code>, the consolidated <code>overrides.json</code>, and <code>components/*.json</code>. <strong>keyboard</strong> and <strong>monitor</strong> currently have empty <code>_overrides/</code> directories.</td></tr>
           <tr><td class="pk">Compatibility</td><td class="pv">Code still falls back to legacy per-product override docs when consolidated data is absent.</td></tr>
           <tr><td class="pk">Mutable?</td><td class="pv">Yes. This is a persisted JSON authority surface for override/review data.</td></tr>
           <tr><td class="pk">In SQL?</td><td class="pv">Review state and accepted values are reflected into SpecDb tables, but JSON remains a supported persistence and reseed surface.</td></tr>
@@ -602,10 +603,10 @@ code{font-family:var(--mono);font-size:0.85em}
       <h3><span class="dot" style="background:var(--green)"></span>app.sqlite</h3>
       <div class="db-path">.workspace/db/app.sqlite</div>
       <div class="db-meta">
-        <strong>Tables:</strong> 7 (brands, brand_categories, brand_renames, settings, studio_maps, color_registry, unit_registry)<br>
+        <strong>Tables:</strong> 8 (brands, brand_categories, brand_renames, settings, studio_maps, color_registry, unit_registry, billing_entries)<br>
         <strong>Scope:</strong> Global (one per installation)<br>
-        <strong>Purpose:</strong> Cross-category state for brands, settings, studio maps, colors, and units.<br>
-        <strong>Recovery inputs:</strong> <code>category_authority/_global/brand_registry.json</code>, <code>category_authority/_global/color_registry.json</code>, <code>.workspace/global/user-settings.json</code>
+        <strong>Purpose:</strong> Cross-category state for brands, settings, studio maps, colors, units, and the billing ledger.<br>
+        <strong>Recovery inputs:</strong> <code>category_authority/_global/brand_registry.json</code>, <code>category_authority/_global/color_registry.json</code>, <code>category_authority/_global/unit_registry.json</code>, <code>.workspace/global/user-settings.json</code>
       </div>
     </div>
 
@@ -613,10 +614,10 @@ code{font-family:var(--mono);font-size:0.85em}
       <h3><span class="dot" style="background:var(--accent)"></span>spec.sqlite</h3>
       <div class="db-path">.workspace/db/{category}/spec.sqlite</div>
       <div class="db-meta">
-        <strong>Tables:</strong> 36 (36 in specDbSchema.js)<br>
+        <strong>Tables:</strong> 29 (29 in specDbSchema.js)<br>
         <strong>Scope:</strong> Per-category (one per active category)<br>
-        <strong>Purpose:</strong> Products, queues, runs, artifacts, review state, telemetry, and crawl/support data.<br>
-        <strong>Store modules:</strong> 19 files in <code>src/db/stores/</code>
+        <strong>Purpose:</strong> Products, variants, runs, artifacts, review/candidate state, telemetry, and crawl/support data.<br>
+        <strong>Store modules:</strong> 18 files in <code>src/db/stores/</code>
       </div>
     </div>
 
@@ -784,7 +785,7 @@ code{font-family:var(--mono);font-size:0.85em}
         <td class="fname">SQLite databases</td>
         <td>.sqlite (WAL mode)</td>
         <td><code>db/app.sqlite</code>, <code>db/{category}/spec.sqlite</code></td>
-        <td>Primary persistent stores: AppDb (global, 7 tables) + SpecDb (per-category, 36 tables).</td>
+        <td>Primary persistent stores: AppDb (global, 8 tables) + SpecDb (per-category, 29 tables).</td>
       </tr>
       <tr>
         <td class="fname">Crawl checkpoints</td>
@@ -862,7 +863,7 @@ code{font-family:var(--mono);font-size:0.85em}
         <td class="fname">Product checkpoint</td>
         <td><code>products/{pid}/product.json</code></td>
         <td>Post-pipeline (after each run)</td>
-        <td>Bootstraps incremental runs and rebuilds product rows, queue state, cooldowns, and fallback crawl sources.</td>
+        <td>Bootstraps incremental runs and rebuilds product rows, cooldowns, and fallback crawl sources.</td>
         <td>Permanent</td>
       </tr>
       <tr>
@@ -912,7 +913,7 @@ code{font-family:var(--mono);font-size:0.85em}
       </tr>
       <tr>
         <td class="fname">spec.sqlite</td>
-        <td>19 store modules + checkpoint reseed helpers</td>
+        <td>18 store modules + checkpoint reseed helpers</td>
         <td>At boot + per-run + on review</td>
         <td>Permanent</td>
         <td>Category authority + checkpoints + recrawl</td>
@@ -955,7 +956,7 @@ code{font-family:var(--mono);font-size:0.85em}
         <td><code>writeProductIdentity()</code> + <code>writeProductCheckpoint()</code></td>
         <td>Per-run (post-pipeline)</td>
         <td>Permanent</td>
-        <td>Rebuild source for product/queue/cooldown state</td>
+        <td>Rebuild source for product identity and cooldown state</td>
         <td class="yes">Yes</td>
       </tr>
       <tr>
@@ -1098,7 +1099,7 @@ code{font-family:var(--mono);font-size:0.85em}
 <!-- ─────────────────────── FOOTER ─────────────────────── -->
 <footer style="border-top:1px solid var(--border);padding-top:24px;margin-top:64px;display:flex;justify-content:space-between;align-items:center;font-size:0.78rem;color:var(--t3)">
   <span>Spec Factory &mdash; Storage Reference</span>
-  <span>Code-validated &middot; Audited 2026-04-11</span>
+  <span>Code-validated &middot; Audited 2026-04-16</span>
 </footer>
 
 </div>

@@ -11,7 +11,6 @@ import { detectMixIssues, detectStaleModelIssues, resolveRingColor } from '../st
 import { detectEmptyModelFields } from '../state/llmModelValidation.ts';
 import { AlertBanner } from '../../../shared/ui/feedback/AlertBanner.tsx';
 import { usePersistedExpandMap } from '../../../stores/tabStore.ts';
-import { HealthDot } from '../../../shared/ui/feedback/HealthDot.tsx';
 import { LlmAllModelsSection } from './LlmAllModelsSection.tsx';
 import { ModelSelectDropdown } from '../components/ModelSelectDropdown.tsx';
 
@@ -163,7 +162,7 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
                 onChange={handleBaseModelChange}
                 style={ringStyle('llmModelPlan')}
               />
-              <HealthDot status={baseProv?.health ?? 'gray'} />
+
             </div>
           </div>
           <div className="flex flex-col gap-1">
@@ -176,7 +175,7 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
                 onChange={(v) => updateDraft('llmModelReasoning', v)}
                 style={ringStyle('llmModelReasoning')}
               />
-              <HealthDot status={reasonProv?.health ?? 'gray'} />
+
             </div>
           </div>
           {/* Row 2: Base fallback | Reasoning fallback */}
@@ -191,7 +190,7 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
                 style={ringStyle('llmPlanFallbackModel')}
                 allowNone
               />
-              <HealthDot status={baseFbProv?.health ?? 'gray'} />
+
             </div>
           </div>
           <div className="flex flex-col gap-1">
@@ -205,7 +204,7 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
                 style={ringStyle('llmReasoningFallbackModel')}
                 allowNone
               />
-              <HealthDot status={reasonFbProv?.health ?? 'gray'} />
+
             </div>
           </div>
         </div>

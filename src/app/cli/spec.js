@@ -35,7 +35,6 @@ function usage() {
     '  review metrics --category <category> [--window-hours <n>] [--local]',
     '  review suggest --category <category> --type enum|component|alias --field <field> --value <value> --evidence-url <url> --evidence-quote <quote> [--canonical <value>] [--reason <text>] [--reviewer <id>] [--product-id <id>] [--local]',
     '  billing-report [--month YYYY-MM] [--local]',
-    '  llm-health [--provider deepseek|openai|gemini] [--model <name>] [--local]',
     '  export-overrides --category <category> [--local]',
     '  migrate-overrides --category <category> [--local]',
     '  migrate-to-sqlite --category <category> [--phase <1-9>] [--local]',
@@ -207,16 +206,6 @@ const loadBillingReportCommandHandler = createLazyLoader(async () => {
   });
 });
 
-const loadLlmHealthCommandHandler = createLazyLoader(async () => {
-  const [{ createLlmHealthCommand }, { runLlmHealthCheck }] = await Promise.all([
-    import('./commands/llmHealthCommand.js'),
-    import('../../core/llm/client/healthCheck.js'),
-  ]);
-  return createLlmHealthCommand({
-    runLlmHealthCheck,
-  });
-});
-
 const loadMigrateToSqliteCommandHandler = createLazyLoader(async () => {
   const { createMigrateToSqliteCommand } = await import('./commands/migrateToSqliteCommand.js');
   return createMigrateToSqliteCommand({
@@ -243,8 +232,6 @@ async function executeCommand({ command, config, storage, args }) {
       return (await loadMigrateOverridesCommandHandler())(config, storage, args);
     case 'billing-report':
       return (await loadBillingReportCommandHandler())(config, storage, args);
-    case 'llm-health':
-      return (await loadLlmHealthCommandHandler())(config, storage, args);
     case 'migrate-to-sqlite':
       return (await loadMigrateToSqliteCommandHandler())(config, storage, args);
     default:

@@ -24,8 +24,6 @@ const KNOWN_REASONS = [
   'validate_enum_consistency',
   'validate_component_matches',
   'field_repair',
-  'health',
-  'extract',
 ] as const;
 
 describe('BILLING_CALL_TYPE_REGISTRY', () => {
@@ -103,7 +101,7 @@ describe('BILLING_CALL_TYPE_GROUPS', () => {
     ok(BILLING_CALL_TYPE_GROUPS.length > 0);
     deepStrictEqual(
       BILLING_CALL_TYPE_GROUPS,
-      ['Pipeline', 'Product Image', 'Color Edition', 'Validation', 'Other'],
+      ['Pipeline', 'Product Image', 'Color Edition', 'Validation'],
     );
   });
 

@@ -26,7 +26,6 @@ import { propagateVariantRenames, remapOrphanedVariantKeys } from '../product-im
 import { backfillPifVariantIdsForProduct, collectOrphanedPifKeys } from '../product-image/backfillPifVariantIds.js';
 import { propagateVariantDelete } from '../product-image/index.js';
 import { derivePublishedFromVariants } from './variantLifecycle.js';
-import { extractEffortFromModelName } from '../../shared/effortFromModelName.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 
 /**
@@ -331,13 +330,7 @@ export async function runColorEditionFinder({
     const nextRunNumber = existing?.next_run_number || (previousRuns.length + 1);
     // WHY: Deterministic source_id — stable across rebuilds (product_id + run_number).
     const cefSourceId = `cef-${product.product_id}-${nextRunNumber}`;
-    // WHY: Append effort suffix so candidate cards can show the effort badge.
-    // extractEffortFromModelName already handles names with baked-in effort,
-    // so double-suffix is avoided — we only append if not already present.
-    const cefModelWithEffort = modelTracking.actualEffortLevel && !extractEffortFromModelName(modelTracking.actualModel)
-      ? `${modelTracking.actualModel}-${modelTracking.actualEffortLevel}`
-      : modelTracking.actualModel;
-    const cefSourceMeta = { source: 'cef', source_id: cefSourceId, model: cefModelWithEffort, run_number: nextRunNumber };
+    const cefSourceMeta = { source: 'cef', source_id: cefSourceId, model: modelTracking.actualModel, run_number: nextRunNumber };
 
     // Step 1: Validate colors (pure — no writes yet)
     const colorsValidation = validateField({

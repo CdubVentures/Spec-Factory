@@ -32,6 +32,36 @@ test('review drawer regression: review events invalidate candidates query family
   assert.equal(hasQueryKey(keys, ['product', 'mouse']), true);
 });
 
+test('CEF run completion invalidates review grid so new candidates appear live', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: { type: 'data-change', event: 'color-edition-finder-run' },
+    categories: ['mouse'],
+  });
+  assert.equal(hasQueryKey(keys, ['candidates', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['reviewProductsIndex', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['product', 'mouse']), true);
+});
+
+test('CEF single-run delete invalidates review grid so stripped candidates disappear live', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: { type: 'data-change', event: 'color-edition-finder-run-deleted' },
+    categories: ['mouse'],
+  });
+  assert.equal(hasQueryKey(keys, ['candidates', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['reviewProductsIndex', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['product', 'mouse']), true);
+});
+
+test('CEF delete-all-runs invalidates review grid', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: { type: 'data-change', event: 'color-edition-finder-deleted' },
+    categories: ['mouse'],
+  });
+  assert.equal(hasQueryKey(keys, ['candidates', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['reviewProductsIndex', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['product', 'mouse']), true);
+});
+
 test('component impact regression: component events invalidate componentImpact', () => {
   const keys = resolveDataChangeInvalidationQueryKeys({
     message: {

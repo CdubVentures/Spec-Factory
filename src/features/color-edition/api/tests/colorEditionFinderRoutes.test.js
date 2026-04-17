@@ -337,6 +337,8 @@ describe('colorEditionFinderRoutes', () => {
       // Stub remaining methods used by deleteVariant cascade
       specDb.getFieldCandidatesByProductAndField = () => [];
       specDb.deleteFieldCandidateBySourceId = () => {};
+      specDb.updateFieldCandidateValue = () => {};
+      specDb.deleteFieldCandidatesByVariantId = () => {};
       const handler = registerColorEditionFinderRoutes(ctx);
       const result = await handler(['color-edition-finder', 'mouse', 'mouse-001', 'variants'], new Map(), 'DELETE', {}, {});
       assert.equal(result, true);

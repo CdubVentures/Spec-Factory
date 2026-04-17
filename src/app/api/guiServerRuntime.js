@@ -22,11 +22,8 @@ import { registerSourceStrategyRoutes } from '../../features/indexing/api/source
 import { registerSpecSeedsRoutes } from '../../features/indexing/api/specSeedsRoutes.js';
 import { registerColorRoutes } from '../../features/color-registry/api/colorRoutes.js';
 import { createColorRouteContext } from '../../features/color-registry/api/colorRouteContext.js';
-import { registerColorEditionFinderRoutes } from '../../features/color-edition/api/colorEditionFinderRoutes.js';
-import { registerProductImageFinderRoutes } from '../../features/product-image/api/productImageFinderRoutes.js';
 import { registerUnitRegistryRoutes } from '../../features/unit-registry/api/unitRegistryRoutes.js';
-import { createColorEditionFinderRouteContext } from '../../features/color-edition/api/colorEditionFinderRouteContext.js';
-import { createProductImageFinderRouteContext } from '../../features/product-image/api/productImageFinderRouteContext.js';
+import { wireFinderRoutes } from '../../core/finder/finderRouteWiring.js';
 import { registerModuleSettingsRoutes } from '../../features/module-settings/api/moduleSettingsRoutes.js';
 import { createModuleSettingsRouteContext } from '../../features/module-settings/api/moduleSettingsRouteContext.js';
 import { registerPublisherRoutes } from '../../features/publisher/api/publisherRoutes.js';
@@ -63,7 +60,7 @@ const MODULE_DIRNAME = path.dirname(MODULE_FILENAME);
 
 export const PROJECT_ROOT = path.resolve(MODULE_DIRNAME, '..', '..', '..');
 
-function withProcessBootstrapOverrides({ env = null, argv = null, cwd = null }, factory) {
+async function withProcessBootstrapOverrides({ env = null, argv = null, cwd = null }, factory) {
   const previousArgv = process.argv;
   const previousCwd = process.cwd();
   const envKeys = env ? Object.keys(env) : [];
@@ -85,7 +82,8 @@ function withProcessBootstrapOverrides({ env = null, argv = null, cwd = null }, 
   }
 
   try {
-    return factory();
+    // WHY: await so async factories complete before process state restoration.
+    return await factory();
   } finally {
     if (cwd) {
       process.chdir(previousCwd);
@@ -109,7 +107,7 @@ export function createGuiServerRuntime({
   distRoot = null,
   cwd = null,
 } = {}) {
-  return withProcessBootstrapOverrides({ env, argv, cwd }, () => {
+  return withProcessBootstrapOverrides({ env, argv, cwd }, async () => {
     const {
       env: { config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD },
       storage: { storage, getIndexLabRoot },
@@ -137,7 +135,16 @@ export function createGuiServerRuntime({
         ? path.resolve(projectRoot, process.env.__GUI_DIST_ROOT)
         : path.resolve(projectRoot, 'tools', 'gui-react', 'dist');
 
+    // WHY: Auto-wire all finder modules from FINDER_MODULES registry — adding a
+    // new finder requires only a registry entry, not a touch to this file.
+    const { routeCtx: finderRouteCtx, routeDefinitions: finderRouteDefinitions } =
+      await wireFinderRoutes({
+        jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
+        createLogger: createRouteLlmLogger,
+      });
+
     const routeCtx = {
+      ...finderRouteCtx,
       infraRouteContext: createInfraRouteContext({
         jsonRes, readJsonBody, listDirs, canonicalSlugify, HELPER_ROOT, DIST_ROOT: resolvedDistRoot,
         OUTPUT_ROOT, INDEXLAB_ROOT, fs, path,
@@ -181,14 +188,6 @@ export function createGuiServerRuntime({
         jsonRes, readJsonBody, appDb,
         unitRegistryPath: path.resolve(HELPER_ROOT, '_global', 'unit_registry.json'),
       },
-      colorEditionFinderRouteContext: createColorEditionFinderRouteContext({
-        jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
-        logger: createRouteLlmLogger('color-edition-finder'),
-      }),
-      productImageFinderRouteContext: createProductImageFinderRouteContext({
-        jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
-        logger: createRouteLlmLogger('product-image-finder'),
-      }),
       moduleSettingsRouteContext: createModuleSettingsRouteContext({
         jsonRes, readJsonBody, getSpecDb, broadcastWs, helperRoot: HELPER_ROOT,
       }),
@@ -241,8 +240,7 @@ export function createGuiServerRuntime({
       { key: 'brand', registrar: registerBrandRoutes },
       { key: 'color', registrar: registerColorRoutes },
       { key: 'unitRegistry', registrar: registerUnitRegistryRoutes },
-      { key: 'colorEditionFinder', registrar: registerColorEditionFinderRoutes },
-      { key: 'productImageFinder', registrar: registerProductImageFinderRoutes },
+      ...finderRouteDefinitions,
       { key: 'moduleSettings', registrar: registerModuleSettingsRoutes },
       { key: 'studio', registrar: registerStudioRoutes },
       { key: 'dataAuthority', registrar: registerDataAuthorityRoutes },

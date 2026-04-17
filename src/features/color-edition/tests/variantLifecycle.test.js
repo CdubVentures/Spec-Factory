@@ -74,7 +74,7 @@ function seedCefSummary(specDb) {
   specDb.getFinderStore('colorEditionFinder').upsert({
     category: 'mouse', product_id: PID,
     colors: ['black', 'white', 'olive', 'khaki'], editions: ['special-ed'],
-    default_color: 'black', variant_registry: [],
+    default_color: 'black',
     latest_ran_at: '2026-04-14T00:00:00Z', run_count: 1,
   });
 }
@@ -650,18 +650,26 @@ describe('deleteVariant', () => {
 
     deleteVariant({ specDb, productId: PID, variantId: 'v_bk', productRoot: root });
 
-    // SQL: CEF candidate deleted, pipeline candidate untouched
+    // SQL: CEF candidate preserved with empty array (value stripped, row stays),
+    // pipeline candidate fully untouched
     const remaining = specDb.getFieldCandidatesByProductAndField(PID, 'colors');
-    assert.equal(remaining.length, 1, 'one candidate survives');
-    assert.equal(remaining[0].source_type, 'pipeline', 'pipeline candidate untouched');
-    assert.equal(remaining[0].source_id, 'pipeline-test-1');
-    const vals = JSON.parse(remaining[0].value);
-    assert.deepEqual(vals, ['black'], 'pipeline candidate value intact');
+    assert.equal(remaining.length, 2, 'both candidates survive — CEF row preserved even when empty');
+    const cefRow = remaining.find(r => r.source_type === 'cef');
+    const pipelineRow = remaining.find(r => r.source_type === 'pipeline');
+    assert.ok(cefRow, 'CEF candidate row preserved');
+    assert.deepEqual(JSON.parse(cefRow.value), [], 'CEF value stripped to empty array');
+    assert.ok(pipelineRow, 'pipeline candidate untouched');
+    assert.deepEqual(JSON.parse(pipelineRow.value), ['black'], 'pipeline candidate value intact');
 
-    // JSON: same — pipeline entry survives
+    // JSON: same — both entries survive
     const pj = readProductJson(PID);
-    assert.equal(pj.candidates.colors.length, 1, 'one JSON candidate survives');
-    assert.equal(pj.candidates.colors[0].source_type, 'pipeline');
+    assert.equal(pj.candidates.colors.length, 2, 'both JSON candidates survive');
+    const jsonCef = pj.candidates.colors.find(c => c.source_type === 'cef');
+    const jsonPipe = pj.candidates.colors.find(c => c.source_type === 'pipeline');
+    assert.ok(jsonCef, 'JSON CEF candidate preserved');
+    const jsonCefVal = Array.isArray(jsonCef.value) ? jsonCef.value : JSON.parse(jsonCef.value);
+    assert.deepEqual(jsonCefVal, [], 'JSON CEF value stripped to empty array');
+    assert.ok(jsonPipe, 'JSON pipeline candidate preserved');
   }));
 
   it('strips deleted variant values from field_candidates', withEnv(({ specDb, root, ensureProductJson, readProductJson, ensureCefJson }) => {
@@ -717,7 +725,11 @@ describe('deleteVariant', () => {
     }
   }));
 
-  it('deletes candidate row when all values stripped', withEnv(({ specDb, root, ensureProductJson, readProductJson, ensureCefJson }) => {
+  it('preserves CEF candidate row with empty array when all values stripped', withEnv(({ specDb, root, ensureProductJson, readProductJson, ensureCefJson }) => {
+    // WHY: Variant delete strips matching values from CEF candidate arrays but
+    // never deletes rows — even when the array becomes empty. Candidate rows are
+    // audit/evidence; they only get deleted on explicit candidate-delete or
+    // source/run delete.
     seedVariants(specDb);
     seedCefSummary(specDb);
     ensureProductJson(PID, {
@@ -743,14 +755,20 @@ describe('deleteVariant', () => {
 
     deleteVariant({ specDb, productId: PID, variantId: 'v_aa', productRoot: root });
 
-    // SQL assertion (existing)
+    // SQL: row preserved with empty array
     const remaining = specDb.getFieldCandidatesByProductAndField(PID, 'colors');
-    assert.equal(remaining.length, 0, 'SQL candidate deleted when no values remain');
+    assert.equal(remaining.length, 1, 'SQL candidate row preserved even when empty');
+    assert.equal(remaining[0].source_id, 'cef-only-black');
+    assert.deepEqual(JSON.parse(remaining[0].value), [], 'SQL candidate value stripped to empty array');
 
-    // product.json.candidates assertion (new — Gap 1)
+    // product.json.candidates: entry preserved with empty value
     const pj = readProductJson(PID);
-    const jsonColors = pj.candidates?.colors;
-    assert.ok(!jsonColors || jsonColors.length === 0, 'JSON candidate entry removed when all values stripped');
+    assert.ok(pj.candidates?.colors, 'JSON candidate entry preserved');
+    assert.equal(pj.candidates.colors.length, 1);
+    const jsonVal = Array.isArray(pj.candidates.colors[0].value)
+      ? pj.candidates.colors[0].value
+      : JSON.parse(pj.candidates.colors[0].value);
+    assert.deepEqual(jsonVal, [], 'JSON candidate value stripped to empty array');
   }));
 
   it('strips edition combo colors from CEF candidates on edition variant delete', withEnv(({ specDb, root, ensureProductJson, readProductJson, ensureCefJson }) => {
@@ -789,9 +807,10 @@ describe('deleteVariant', () => {
     // Delete the edition variant
     deleteVariant({ specDb, productId: PID, variantId: 'v_cc', productRoot: root });
 
-    // Edition candidate should be deleted (only had "special-ed")
+    // Edition candidate preserved with empty array (row stays, value stripped)
     const edCandidates = specDb.getFieldCandidatesByProductAndField(PID, 'editions');
-    assert.equal(edCandidates.length, 0, 'edition candidate deleted');
+    assert.equal(edCandidates.length, 1, 'edition candidate row preserved');
+    assert.deepEqual(JSON.parse(edCandidates[0].value), [], 'edition candidate value stripped to empty array');
 
     // Color candidate should have the edition combo stripped
     const colCandidates = specDb.getFieldCandidatesByProductAndField(PID, 'colors');
@@ -802,12 +821,125 @@ describe('deleteVariant', () => {
 
     const pj = readProductJson(PID);
     assert.deepEqual(pj.candidates.colors[0].value, ['black'], 'product.json colors candidate strips the edition combo');
-    assert.equal(pj.candidates.editions, undefined, 'product.json edition candidate removed when emptied');
+    assert.ok(pj.candidates.editions, 'product.json edition candidate entry preserved');
+    assert.equal(pj.candidates.editions.length, 1);
+    const edJsonVal = Array.isArray(pj.candidates.editions[0].value)
+      ? pj.candidates.editions[0].value
+      : JSON.parse(pj.candidates.editions[0].value);
+    assert.deepEqual(edJsonVal, [], 'JSON edition candidate value stripped to empty array');
   }));
 
   it('returns deleted false for missing variant', withEnv(({ specDb, root }) => {
     const result = deleteVariant({ specDb, productId: PID, variantId: 'v_nonexistent', productRoot: root });
     assert.equal(result.deleted, false);
+  }));
+
+  // ── variant_id FK cascade for feature-source candidates ──────────────
+
+  it('cascades feature-source candidates by variant_id (SQL + JSON)', withEnv(({ specDb, root, ensureProductJson, readProductJson, ensureCefJson }) => {
+    specDb.variants.syncFromRegistry(PID, [
+      { variant_id: 'v_target', variant_key: 'color:black', variant_type: 'color', variant_label: 'Black', color_atoms: ['black'], created_at: '2026-04-14T00:00:00Z' },
+      { variant_id: 'v_other', variant_key: 'color:white', variant_type: 'color', variant_label: 'White', color_atoms: ['white'], created_at: '2026-04-14T00:00:00Z' },
+    ]);
+    seedCefSummary(specDb);
+    ensureProductJson(PID, {
+      candidates: {
+        price: [
+          { value: '$79', source_id: 'feature-price-1', source_type: 'feature', confidence: 90, variant_id: 'v_target' },
+          { value: '$89', source_id: 'feature-price-2', source_type: 'feature', confidence: 90, variant_id: 'v_other' },
+        ],
+        release_date: [
+          { value: '2026-06-01', source_id: 'feature-rel-1', source_type: 'feature', confidence: 85, variant_id: 'v_target' },
+        ],
+      },
+    });
+    ensureCefJson(PID, {
+      product_id: PID, category: 'mouse',
+      selected: { colors: ['black', 'white'], editions: {}, default_color: 'black' },
+      variant_registry: [
+        { variant_id: 'v_target', variant_key: 'color:black', variant_type: 'color', color_atoms: ['black'] },
+        { variant_id: 'v_other', variant_key: 'color:white', variant_type: 'color', color_atoms: ['white'] },
+      ], runs: [], run_count: 1, next_run_number: 2,
+    });
+    specDb.insertFieldCandidate({
+      productId: PID, fieldKey: 'price', sourceId: 'feature-price-1', sourceType: 'feature',
+      value: '$79', confidence: 90, model: '', validationJson: {}, metadataJson: {}, variantId: 'v_target',
+    });
+    specDb.insertFieldCandidate({
+      productId: PID, fieldKey: 'price', sourceId: 'feature-price-2', sourceType: 'feature',
+      value: '$89', confidence: 90, model: '', validationJson: {}, metadataJson: {}, variantId: 'v_other',
+    });
+    specDb.insertFieldCandidate({
+      productId: PID, fieldKey: 'release_date', sourceId: 'feature-rel-1', sourceType: 'feature',
+      value: '2026-06-01', confidence: 85, model: '', validationJson: {}, metadataJson: {}, variantId: 'v_target',
+    });
+
+    deleteVariant({ specDb, productId: PID, variantId: 'v_target', productRoot: root });
+
+    const remainingPrice = specDb.getFieldCandidatesByProductAndField(PID, 'price');
+    assert.equal(remainingPrice.length, 1, 'only v_other price candidate survives');
+    assert.equal(remainingPrice[0].variant_id, 'v_other');
+    const remainingRel = specDb.getFieldCandidatesByProductAndField(PID, 'release_date');
+    assert.equal(remainingRel.length, 0, 'release_date candidate cascaded by variant_id');
+
+    const pj = readProductJson(PID);
+    assert.equal(pj.candidates.price.length, 1, 'JSON: only v_other price entry survives');
+    assert.equal(pj.candidates.price[0].variant_id, 'v_other');
+    assert.ok(!pj.candidates.release_date, 'JSON: release_date entry removed when emptied');
+  }));
+
+  it('leaves CEF NULL-variant candidates untouched while cascading feature-source rows', withEnv(({ specDb, root, ensureProductJson, readProductJson, ensureCefJson }) => {
+    specDb.variants.syncFromRegistry(PID, [
+      { variant_id: 'v_target', variant_key: 'color:red', variant_type: 'color', variant_label: 'Red', color_atoms: ['red'], created_at: '2026-04-14T00:00:00Z' },
+      { variant_id: 'v_keep', variant_key: 'color:blue', variant_type: 'color', variant_label: 'Blue', color_atoms: ['blue'], created_at: '2026-04-14T00:00:00Z' },
+    ]);
+    seedCefSummary(specDb);
+    ensureProductJson(PID, {
+      candidates: {
+        // CEF candidate (variant_id NULL) — handled by stripVariantFromCandidates value matching
+        colors: [
+          { value: ['red', 'blue'], source_id: 'cef-col-1', source_type: 'cef', confidence: 95 },
+        ],
+        // Feature candidate anchored to v_target — handled by deleteByVariantId
+        release_date: [
+          { value: '2026-07-01', source_id: 'feature-rel-1', source_type: 'feature', confidence: 90, variant_id: 'v_target' },
+        ],
+      },
+    });
+    ensureCefJson(PID, {
+      product_id: PID, category: 'mouse',
+      selected: { colors: ['red', 'blue'], editions: {}, default_color: 'red' },
+      variant_registry: [
+        { variant_id: 'v_target', variant_key: 'color:red', variant_type: 'color', color_atoms: ['red'] },
+        { variant_id: 'v_keep', variant_key: 'color:blue', variant_type: 'color', color_atoms: ['blue'] },
+      ], runs: [], run_count: 1, next_run_number: 2,
+    });
+    specDb.insertFieldCandidate({
+      productId: PID, fieldKey: 'colors', sourceId: 'cef-col-1', sourceType: 'cef',
+      value: '["red","blue"]', confidence: 95, model: '', validationJson: {}, metadataJson: {},
+    });
+    specDb.insertFieldCandidate({
+      productId: PID, fieldKey: 'release_date', sourceId: 'feature-rel-1', sourceType: 'feature',
+      value: '2026-07-01', confidence: 90, model: '', validationJson: {}, metadataJson: {}, variantId: 'v_target',
+    });
+
+    deleteVariant({ specDb, productId: PID, variantId: 'v_target', productRoot: root });
+
+    // CEF candidate stays — combo string 'red' stripped via value matching, blue preserved
+    const colors = specDb.getFieldCandidatesByProductAndField(PID, 'colors');
+    assert.equal(colors.length, 1, 'CEF colors candidate survives');
+    const vals = JSON.parse(colors[0].value);
+    assert.ok(!vals.includes('red'), 'red stripped via combo value matching');
+    assert.ok(vals.includes('blue'), 'blue preserved');
+    assert.equal(colors[0].variant_id, null, 'CEF row variant_id stays NULL');
+
+    // Feature row cascaded via FK delete
+    const rel = specDb.getFieldCandidatesByProductAndField(PID, 'release_date');
+    assert.equal(rel.length, 0, 'feature release_date cascaded by variant_id delete');
+
+    const pj = readProductJson(PID);
+    assert.ok(pj.candidates.colors, 'JSON: CEF colors candidate survives');
+    assert.ok(!pj.candidates.release_date, 'JSON: feature release_date entry removed');
   }));
 });
 
@@ -866,8 +998,21 @@ describe('deleteAllVariants', () => {
     const pj = readProductJson(PID);
     assert.equal(pj.fields.colors, undefined, 'colors field cleared');
     assert.equal(pj.fields.editions, undefined, 'editions field cleared');
-    assert.equal(pj.candidates.colors, undefined, 'colors candidates cleared');
-    assert.equal(pj.candidates.editions, undefined, 'editions candidates cleared');
+
+    // CEF candidate rows preserved with empty arrays (audit trail, not deleted)
+    assert.ok(pj.candidates.colors, 'colors candidate rows preserved');
+    assert.equal(pj.candidates.colors.length, 1);
+    const colorsJsonVal = Array.isArray(pj.candidates.colors[0].value)
+      ? pj.candidates.colors[0].value
+      : JSON.parse(pj.candidates.colors[0].value);
+    assert.deepEqual(colorsJsonVal, [], 'colors candidate value empty after all variants deleted');
+
+    assert.ok(pj.candidates.editions, 'editions candidate rows preserved');
+    assert.equal(pj.candidates.editions.length, 1);
+    const editionsJsonVal = Array.isArray(pj.candidates.editions[0].value)
+      ? pj.candidates.editions[0].value
+      : JSON.parse(pj.candidates.editions[0].value);
+    assert.deepEqual(editionsJsonVal, [], 'editions candidate value empty after all variants deleted');
 
     // CEF JSON variant_registry empty
     const cef = readCefJson(PID);
@@ -877,9 +1022,13 @@ describe('deleteAllVariants', () => {
     const pif = readPifJson(PID);
     assert.equal(pif.selected.images.length, 0);
 
-    // SQL candidates stripped (all values came from these variants)
-    assert.equal(specDb.getFieldCandidatesByProductAndField(PID, 'colors').length, 0);
-    assert.equal(specDb.getFieldCandidatesByProductAndField(PID, 'editions').length, 0);
+    // SQL CEF candidate rows preserved with empty value arrays
+    const sqlColors = specDb.getFieldCandidatesByProductAndField(PID, 'colors');
+    assert.equal(sqlColors.length, 1, 'colors candidate row preserved');
+    assert.deepEqual(JSON.parse(sqlColors[0].value), [], 'SQL colors candidate empty');
+    const sqlEditions = specDb.getFieldCandidatesByProductAndField(PID, 'editions');
+    assert.equal(sqlEditions.length, 1, 'editions candidate row preserved');
+    assert.deepEqual(JSON.parse(sqlEditions[0].value), [], 'SQL editions candidate empty');
   }));
 
   it('returns deleted 0 when no variants exist', withEnv(({ specDb, root }) => {

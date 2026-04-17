@@ -580,8 +580,13 @@ export async function callLlmProvider({
   const inferredName = providerFromModelToken(model) || providerClient.name;
   const providerLabel = isLab ? `lab-${inferredName}` : inferredName;
   const health = providerHealth || _providerHealth;
-  const deepSeekMode = inferredProvider === 'deepseek';
-  const reason = String(usageContext?.reason || 'extract');
+  // WHY: Registry-routed calls pass the provider TYPE ("openai-compatible"), not
+  // the provider NAME ("deepseek"), so the legacy `inferredProvider === 'deepseek'`
+  // check never fired for registry-routed DeepSeek and strict json_schema was sent
+  // instead of DeepSeek's native json_object mode. Detect via the model token,
+  // gated on !isLab so lab proxies keep using their request_options.json_mode path.
+  const deepSeekMode = !isLab && providerFromModelToken(model) === 'deepseek';
+  const reason = String(usageContext?.reason || '').trim();
   const routeRole = String(usageContext?.route_role || '').trim();
   const jsonSchemaRequested = Boolean(jsonSchema && !deepSeekMode);
   const forceJsonOutput = Boolean(jsonSchema && deepSeekMode);
@@ -803,11 +808,15 @@ export async function callLlmProvider({
   let controller;
   let timer;
   let callStartMs = 0;
+  // WHY: Hoisted so the catch-block retry path (retry-without-schema) can
+  // reference it. Declaring inside the try put it out of scope for the catch,
+  // crashing any provider (e.g. DeepSeek) that rejects strict json_schema.
+  let effectiveSignal;
   try {
     controller = new AbortController();
     timer = setTimeout(() => controller.abort(), timeoutMs);
     // WHY: Compose external cancel signal with internal timeout so both work.
-    const effectiveSignal = externalSignal
+    effectiveSignal = externalSignal
       ? AbortSignal.any([externalSignal, controller.signal])
       : controller.signal;
     callStartMs = Date.now();

@@ -46,7 +46,7 @@ export function createMigrateToSqliteCommand({
                 cached_prompt_tokens: entry.cached_prompt_tokens || 0,
                 total_tokens: entry.total_tokens || 0,
                 cost_usd: entry.cost_usd || 0,
-                reason: entry.reason || 'extract',
+                reason: entry.reason || '',
                 host: entry.host || '',
                 url_count: entry.url_count || 0,
                 evidence_chars: entry.evidence_chars || 0,

@@ -3,7 +3,7 @@
  *
  * Scans all product directories, generates variant_registry from CEF
  * selected data for products that don't have one yet, writes back to
- * JSON and projects to SQL.
+ * the JSON SSOT (color_edition.json).
  *
  * Idempotent: products with existing registries are skipped.
  */
@@ -57,15 +57,8 @@ export function backfillVariantRegistry({ specDb, productRoot }) {
     const productId = data.product_id || entry.name;
     const registry = buildVariantRegistry({ productId, colors, colorNames, editions });
 
-    // Write to JSON (durable SSOT)
     data.variant_registry = registry;
     writeColorEdition({ productId: entry.name, productRoot: root, data });
-
-    // Project to SQL
-    const store = specDb.getFinderStore('colorEditionFinder');
-    if (store) {
-      store.updateSummaryField(productId, 'variant_registry', JSON.stringify(registry));
-    }
 
     stats.backfilled++;
   }

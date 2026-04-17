@@ -98,15 +98,15 @@
 <div class="card">
   <div class="card-header" style="background:var(--orange-bg);">Manual Wiring Points (Not Auto-Generated)</div>
   <div class="card-body">
-    <p>The finder framework is O(1) for backend infra, but the frontend has manual wiring points for each new module. These are lightweight (~15 lines total) and documented below. Follow the pattern from CEF/PIF.</p>
+    <p>The finder framework is O(1) for backend infra. The backend server-boot wiring point has been resolved (auto-wired via <code>wireFinderRoutes()</code>). Remaining manual wiring points are frontend-only and documented below. Backend still requires the registry entry (<code>FINDER_MODULES</code>) and a phase definition (<code>llmPhaseDefs</code>), but no per-finder edits to <code>guiServerRuntime.js</code>. Follow the pattern from CEF/PIF.</p>
     <table>
       <thead><tr><th>Severity</th><th>File</th><th>What&rsquo;s Hardcoded</th><th>Fix</th></tr></thead>
       <tbody>
         <tr>
-          <td><span class="tag tag-red">HIGH</span></td>
-          <td><code>src/app/api/guiServerRuntime.js</code><br><small>lines&nbsp;25&ndash;29, 244&ndash;245</small></td>
-          <td>Static imports + manual route definitions for CEF and PIF</td>
-          <td>Call <code>wireFinderRoutes()</code> from <code>src/core/finder/finderRouteWiring.js</code>. The function already exists and is fully implemented &mdash; it dynamically imports all modules from the registry. Or: manually add your imports + route definition in the same pattern.</td>
+          <td><span class="tag tag-green">RESOLVED</span></td>
+          <td><code>src/app/api/guiServerRuntime.js</code></td>
+          <td>(was) Static imports + manual route definitions for CEF and PIF</td>
+          <td><code>wireFinderRoutes()</code> is now adopted. <code>createGuiServerRuntime</code> is async and spreads the auto-wired routeCtx + routeDefinitions for every <code>FINDER_MODULES</code> entry. Adding a new finder requires zero edits to this file.</td>
         </tr>
         <tr>
           <td><span class="tag tag-red">HIGH</span></td>
@@ -136,7 +136,7 @@
     </table>
     <div class="callout callout-info">
       <strong>Bottom line</strong>
-      These are simple copy-paste additions following the CEF/PIF pattern. Total work: ~15 lines across 4&ndash;5 files. The Step-by-Step Checklist (Section&nbsp;5) gives exact code for each.
+      Backend boot is fully auto-wired. Remaining frontend touchpoints are simple copy-paste following the CEF/PIF pattern. Total work: ~10 lines across 3&ndash;4 frontend files. The Step-by-Step Checklist (Section&nbsp;5) gives exact code for each.
     </div>
   </div>
 </div>
@@ -264,17 +264,17 @@
         </tr>
         <tr>
           <td><strong>5</strong></td>
-          <td>Server Boot (temporary)</td>
+          <td>Server Boot</td>
           <td><code>src/app/api/guiServerRuntime.js</code></td>
-          <td>Static imports + route definitions</td>
-          <td><strong>Until</strong> <code>wireFinderRoutes()</code> is integrated (see Section&nbsp;0)</td>
+          <td>Auto-wired via <code>wireFinderRoutes()</code></td>
+          <td><strong>Never</strong> &mdash; finder routes are spread from registry; this file no longer needs per-finder edits</td>
         </tr>
       </tbody>
     </table>
 
     <div class="callout callout-ok">
       <strong>For a simple field finder (like Release Date)</strong>
-      You touch #1, #2, and #5 only. No EG preset, no schema overlay. Three files modified total (plus your new feature code).
+      You touch #1 and #2 only. No EG preset, no schema overlay, no server-boot edit (auto-wired via <code>wireFinderRoutes()</code>). Two registry files modified total (plus your new feature code).
     </div>
   </div>
 </div>
@@ -599,23 +599,11 @@ Forbidden: other feature folders
       </li>
       <li>
         <div>
-          <strong>Wire routes at server boot</strong><br>
-          <strong>If <code>wireFinderRoutes()</code> has been integrated</strong>: nothing to do &mdash; auto-wired.<br>
-          <strong>If still using static imports</strong>: add to <code>src/app/api/guiServerRuntime.js</code>:
-          <pre class="code-block">// At top (imports):
-import { registerMyFinderRoutes }
-  from '../../features/my-feature/api/myFinderRoutes.js';
-import { createMyFinderRouteContext }
-  from '../../features/my-feature/api/myFinderRouteContext.js';
-
-// In routeCtx object:
-myFinderRouteContext: createMyFinderRouteContext({
-  jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs,
-  logger: createRouteLlmLogger('my-finder'),
-}),
-
-// In routeDefinitions array:
-{ key: 'myFinder', registrar: registerMyFinderRoutes },</pre>
+          <strong>Wire routes at server boot</strong> &mdash; nothing to do.
+          <code>wireFinderRoutes()</code> in <code>src/core/finder/finderRouteWiring.js</code> dynamically imports your
+          <code>routeFile</code> + <code>contextFile</code> from the registry entry and spreads them into <code>routeCtx</code> /
+          <code>routeDefinitions</code> at boot. Naming convention is enforced (<code>registrarExport</code> +
+          <code>contextExport</code> from the registry must exist on the imported modules).
         </div>
       </li>
       <li>
@@ -1187,7 +1175,6 @@ const merged = mergeDiscovery({ ... });        // clean write</pre>
         <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>src/core/finder/finderModuleRegistry.js</code></td><td>Add 1 entry to <code>FINDER_MODULES</code></td></tr>
         <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>src/core/config/llmPhaseDefs.js</code></td><td>Add 1 phase entry (~8 lines)</td></tr>
         <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>ModuleSettingsPanel.tsx</code></td><td>Add settings form component + rendering branch (settings UI is <strong>not</strong> auto-generated)</td></tr>
-        <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>src/app/api/guiServerRuntime.js</code></td><td>Add 2 imports + 1 context instantiation + 1 route definition</td></tr>
         <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>src/app/api/specDbRuntime.js</code></td><td>Import rebuild function + pass to <code>buildReseedSurfaces</code></td></tr>
         <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>PipelineSettingsPage.tsx:349</code></td><td>Add module ID to union type</td></tr>
         <tr><td><span class="tag tag-accent">MODIFY</span></td><td><code>ModuleSettingsPanel.tsx:1106</code></td><td>Add module ID to props union + rendering branch</td></tr>

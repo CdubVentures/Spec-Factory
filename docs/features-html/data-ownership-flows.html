@@ -429,7 +429,9 @@
         <td><code>field_candidates</code> (SQL + JSON)</td>
         <td>Strip variant's combo string (from <code>variant_key</code>) from candidate arrays
         <strong>where <code>source_type = 'cef'</code> only</strong>.
-        Delete candidate row if array becomes empty. Non-CEF sources untouched.</td>
+        <strong>Candidate rows are preserved even when the array becomes empty</strong> &mdash; rows are audit/evidence
+        and are only deleted by explicit candidate-delete (§6) or CEF run delete (§4).
+        Non-CEF sources untouched.</td>
         <td><code>variantLifecycle.js</code></td>
       </tr>
       <tr>
@@ -452,10 +454,10 @@
         <td><code>variantPropagation.js</code></td>
       </tr>
       <tr>
-        <td style="color:var(--pink);"><span class="step-num" style="background:var(--pink);">6</span></td>
-        <td style="color:var(--pink);"><em>Feature data (variant_id FK)</em></td>
-        <td style="color:var(--pink);"><code>DELETE FROM field_candidates WHERE variant_id = ?</code> &mdash; removes price, SKU, release date, discontinued</td>
-        <td style="color:var(--pink);"><em>variantLifecycle.js</em></td>
+        <td><span class="step-num">6</span></td>
+        <td>Feature data (variant_id FK)</td>
+        <td><code>DELETE FROM field_candidates WHERE variant_id = ?</code> &mdash; removes price, SKU, release date, discontinued. Mirrors to <code>product.json.candidates[*][]</code> by filtering entries where <code>entry.variant_id === variantId</code>.</td>
+        <td><code>variantLifecycle.js</code> (<code>cascadeVariantIdFromCandidates</code>)</td>
       </tr>
     </tbody>
   </table>
@@ -837,9 +839,18 @@
   </table>
 
   <div style="margin: 16px 0; padding: 12px 16px; background: var(--green-bg); border: 1px solid var(--green-border); border-radius: 6px; font-size: 13px;">
-    <strong>UNIQUE constraint:</strong> <code>UNIQUE(category, product_id, field_key, source_id, variant_id)</code>.
+    <strong>UNIQUE constraint:</strong> <code>UNIQUE(category, product_id, field_key, source_id, variant_id_key)</code>.
     This allows the same source to write one candidate per variant per field.
-    SQLite treats <code>NULL</code> as distinct, so CEF rows (variant_id = NULL) still deduplicate by source_id alone.
+    The generated <code>variant_id_key</code> column coalesces NULL to <code>''</code> so SQLite treats it as a discriminator
+    instead of as distinct (NULLs would otherwise never collide). CEF rows (variant_id = NULL) still deduplicate by source_id alone.
+  </div>
+
+  <div style="margin: 16px 0; padding: 12px 16px; background: var(--green-bg); border: 1px solid var(--green-border); border-radius: 6px; font-size: 13px;">
+    <strong>Wire status (active):</strong> <code>submitCandidate({ ..., variantId })</code> forwards the optional
+    <code>variantId</code> param to <code>specDb.insertFieldCandidate</code> and to the <code>product.json</code> entry
+    (key omitted when NULL). <code>candidateReseed</code> reads <code>candidate.variant_id</code> back through the
+    round-trip. Cascade on variant delete is wired via <code>variantLifecycle.cascadeVariantIdFromCandidates</code>.
+    Future feature finders need no plumbing — pass <code>variantId</code> in the existing gate call.
   </div>
 </div>
 

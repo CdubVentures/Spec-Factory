@@ -19,7 +19,7 @@ const {
     LAUNCH_CWD,
     DIST_ROOT,
   },
-} = createGuiServerRuntime({
+} = await createGuiServerRuntime({
   distRoot,
 });
 

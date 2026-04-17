@@ -13,7 +13,7 @@
 
 import { resolvePhaseModel } from '../llm/client/routing.js';
 import { stripCompositeKey } from '../llm/routeResolver.js';
-import { extractEffortFromModelName } from '../../shared/effortFromModelName.js';
+import { resolveEffortLabel } from '../../shared/resolveEffortLabel.js';
 
 /**
  * Compute the current ISO timestamp for run bookkeeping.
@@ -47,9 +47,8 @@ export function resolveModelTracking({ config, phaseKey, onModelResolved = null 
   let actualThinking = false;
   let actualWebSearch = false;
 
-  // WHY: Effort can come from two sources — baked into model name suffix
-  // (e.g. gpt-5.4-xhigh → "xhigh") or configured per-phase in LLM settings.
-  // Baked takes priority (same rule as routing.js).
+  // WHY: Effort comes from baked model-name suffix OR phase config, but configured
+  // effort is only meaningful when thinking is on. resolveEffortLabel enforces both rules.
   const capitalize = (s) => s ? s[0].toUpperCase() + s.slice(1) : '';
   const capPhase = capitalize(phaseKey);
 
@@ -60,16 +59,14 @@ export function resolveModelTracking({ config, phaseKey, onModelResolved = null 
     if (info.thinking != null) actualThinking = Boolean(info.thinking);
     if (info.webSearch != null) actualWebSearch = Boolean(info.webSearch);
 
-    // Resolve effort: baked from model name, else configured for the phase
-    const baked = extractEffortFromModelName(info.model || actualModel);
-    if (baked) {
-      actualEffortLevel = baked;
-    } else {
-      const configKey = info.isFallback
-        ? `_resolved${capPhase}FallbackThinkingEffort`
-        : `_resolved${capPhase}ThinkingEffort`;
-      actualEffortLevel = String(config[configKey] || '');
-    }
+    const configKey = info.isFallback
+      ? `_resolved${capPhase}FallbackThinkingEffort`
+      : `_resolved${capPhase}ThinkingEffort`;
+    actualEffortLevel = resolveEffortLabel({
+      model: info.model || actualModel,
+      effortLevel: config[configKey],
+      thinking: actualThinking,
+    });
 
     onModelResolved?.(info);
   };

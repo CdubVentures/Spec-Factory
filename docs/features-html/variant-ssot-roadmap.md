@@ -4,6 +4,13 @@
 > first-class SQL entity that acts as the Single Source of Truth for all
 > variant-dependent features.
 
+## Status
+
+- ✅ **Phase 0** — Run-deletion data-loss fix (custom column preservation)
+- ✅ **Phase 1** — `variants` table + dual-write
+- ✅ **Phase 2** — SSOT cutover; **`variant_registry` SQL column dropped (2026-04-16)**
+- ⏳ **Phase 3** — Review-grid integration + final polish
+
 ## Problem Statement
 
 The `variant_registry` is stored as a JSON TEXT column on `color_edition_finder`.
@@ -196,8 +203,11 @@ product.json, and review grid.
    - `buildGetResponse` queries variants table
    - Response shape: `variant_registry` from SQL, not from summary column
 5. **Route endpoint**: `DELETE /color-edition-finder/:cat/:pid/variants/:variantId`
-6. **Retire the blob**: Remove `variant_registry` from CEF summaryColumns
-   manifest. Migration drops the column.
+6. ✅ **Retire the blob (DONE 2026-04-16)**: Removed `variant_registry`
+   from CEF `summaryColumns`; appended `ALTER TABLE color_edition_finder
+   DROP COLUMN variant_registry` migration. JSON `variant_registry` in
+   `color_edition.json` remains the durable SSOT. Variants table is the
+   sole runtime authority.
 
 **Files**:
 - `src/features/color-edition/variantLifecycle.js` — new (derive + cascade)

@@ -64,7 +64,7 @@ export function createRunLlmRuntime({
           cached_prompt_tokens: usageRow.cached_prompt_tokens || 0,
           total_tokens: usageRow.total_tokens || 0,
           cost_usd: usageRow.cost_usd || 0,
-          reason: usageRow.reason || 'extract',
+          reason: usageRow.reason || '',
           host: usageRow.host || '',
           url_count: usageRow.url_count || 0,
           evidence_chars: usageRow.evidence_chars || 0,
@@ -83,7 +83,7 @@ export function createRunLlmRuntime({
       if (specDb) {
         try {
           specDb.insertPromptIndexEntry({
-            prompt_version: usageRow.reason || 'extract',
+            prompt_version: usageRow.reason || '',
             model: usageRow.model || '',
             token_count: usageRow.total_tokens || 0,
             success: true,

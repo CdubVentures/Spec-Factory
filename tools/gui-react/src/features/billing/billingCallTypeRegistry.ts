@@ -34,10 +34,6 @@ export const BILLING_CALL_TYPE_REGISTRY: readonly BillingCallTypeEntry[] = Objec
   { reason: 'validate_enum_consistency',  label: 'Enum Validator',  color: 'var(--sf-billing-val-1, #38d9a9)', group: 'Validation' },
   { reason: 'validate_component_matches', label: 'Component Match', color: 'var(--sf-billing-val-2, #20c997)', group: 'Validation' },
   { reason: 'field_repair',              label: 'Repair',           color: 'var(--sf-billing-val-3, #12b886)', group: 'Validation' },
-
-  // ── Other (neutral gray — stays out of the way) ──
-  { reason: 'extract',                   label: 'Extract',          color: 'var(--sf-billing-other-1, #868e96)', group: 'Other' },
-  { reason: 'health',                    label: 'Health Check',     color: 'var(--sf-billing-other-2, #495057)', group: 'Other' },
 ]);
 
 export const BILLING_CALL_TYPE_FALLBACK: BillingCallTypeEntry = Object.freeze({

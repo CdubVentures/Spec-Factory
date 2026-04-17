@@ -91,7 +91,7 @@ export function createFinderSqlStore({ db, category, module: mod }) {
       `DELETE FROM ${runsTableName} WHERE category = ? AND product_id = ?`
     ),
     // WHY: Targeted bookkeeping-only update — preserves custom columns.
-    // Used by DELETE run handlers to avoid nuking colors/editions/variant_registry.
+    // Used by DELETE run handlers to avoid nuking colors/editions.
     _updateBookkeeping: db.prepare(
       `UPDATE ${tableName} SET latest_ran_at = ?, run_count = ?
        WHERE category = ? AND product_id = ?`
@@ -229,8 +229,8 @@ export function createFinderSqlStore({ db, category, module: mod }) {
   }
 
   // WHY: After run deletion, only bookkeeping columns (ran_at, count)
-  // need updating. Full upsert would nuke custom columns (colors, editions,
-  // variant_registry) by overwriting them with empty defaults.
+  // need updating. Full upsert would nuke custom columns (colors, editions)
+  // by overwriting them with empty defaults.
   function updateBookkeeping(productId, { latest_ran_at, run_count }) {
     stmts._updateBookkeeping.run(
       latest_ran_at ?? '', run_count ?? 0,

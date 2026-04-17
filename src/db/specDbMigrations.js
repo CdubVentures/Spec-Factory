@@ -47,8 +47,6 @@ export const MIGRATIONS = [
   `ALTER TABLE product_image_finder_runs ADD COLUMN access_mode TEXT DEFAULT ''`,
   // WHY: Carousel Builder stores user slot overrides. Existing DBs need the column.
   `ALTER TABLE product_image_finder ADD COLUMN carousel_slots TEXT DEFAULT '{}'`,
-  // WHY: Variant registry stores stable variant hashes for CEF. Existing DBs need the column.
-  `ALTER TABLE color_edition_finder ADD COLUMN variant_registry TEXT DEFAULT '[]'`,
   // WHY: Eval state stores per-image eval fields as a JSON blob for SQL projection.
   `ALTER TABLE product_image_finder ADD COLUMN eval_state TEXT DEFAULT '{}'`,
   // WHY: Source-centric candidates — each extraction event gets its own row keyed by source_id.
@@ -62,6 +60,10 @@ export const MIGRATIONS = [
   `ALTER TABLE field_candidates ADD COLUMN source_id TEXT DEFAULT ''`,
   `ALTER TABLE field_candidates ADD COLUMN source_type TEXT DEFAULT ''`,
   `ALTER TABLE field_candidates ADD COLUMN model TEXT DEFAULT ''`,
+  // WHY: variant_registry blob retired — variants table is the SSOT. Drops the
+  // column on existing DBs; "no such column" on fresh DBs is swallowed by
+  // applyMigrations() try/catch.
+  `ALTER TABLE color_edition_finder DROP COLUMN variant_registry`,
 ];
 
 export const SECONDARY_INDEXES = `

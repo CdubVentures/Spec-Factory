@@ -9,7 +9,6 @@ import { enqueueLabCall } from '../labQueue.js';
 const ROLE_KEYS = {
   plan: { model: 'llmModelPlan', fallbackModel: 'llmPlanFallbackModel' },
   triage: { model: 'llmModelPlan', fallbackModel: 'llmPlanFallbackModel' },
-  extract: { model: 'llmModelPlan', fallbackModel: 'llmPlanFallbackModel' },
   validate: { model: 'llmModelPlan', fallbackModel: 'llmPlanFallbackModel' },
   write: { model: 'llmModelPlan', fallbackModel: 'llmPlanFallbackModel' },
 };
@@ -34,6 +33,7 @@ export function resolvePhaseReasoning(config = {}, phase = '') {
 
 // WHY: Shared with frontend (LlmPhaseSection.tsx) per O(1) scaling rule.
 import { extractEffortFromModelName } from '../../../shared/effortFromModelName.js';
+import { resolveEffortLabel } from '../../../shared/resolveEffortLabel.js';
 export { extractEffortFromModelName };
 
 export function resolvePhaseModel(config = {}, phase = '') {
@@ -65,7 +65,7 @@ function normalized(value) {
 function routeRoleFromReason(reason = '') {
   const token = normalized(reason).toLowerCase();
   if (!token) {
-    return 'extract';
+    return 'plan';
   }
   if (
     token === 'plan' ||
@@ -90,14 +90,14 @@ function routeRoleFromReason(reason = '') {
   ) {
     return 'validate';
   }
-  return 'extract';
+  return 'plan';
 }
 
 function roleKeySet(role) {
-  return ROLE_KEYS[role] || ROLE_KEYS.extract;
+  return ROLE_KEYS[role] || ROLE_KEYS.plan;
 }
 
-function baseRouteForRole(config = {}, role = 'extract') {
+function baseRouteForRole(config = {}, role = 'plan') {
   const keys = roleKeySet(role);
   const modelKey = normalized(String(configValue(config, keys.model)));
 
@@ -190,7 +190,7 @@ function resolveWriterRoute(config = {}, { role = 'plan', phase = '' } = {}) {
   };
 }
 
-function fallbackRouteForRole(config = {}, role = 'extract') {
+function fallbackRouteForRole(config = {}, role = 'plan') {
   const keys = roleKeySet(role);
   const model = normalized(String(configValue(config, keys.fallbackModel)));
   if (!model) {
@@ -654,7 +654,7 @@ export async function callLlmWithRouting({
     const fbWebSearch = resolvePhaseFlag(config, phase, 'FallbackWebSearch');
     const fbThinking = resolvePhaseFlag(config, phase, 'FallbackThinking');
     const fbThinkingEffort = resolvePhaseString(config, phase, 'FallbackThinkingEffort');
-    onModelResolved?.({ model: fallback.model, provider: fallback.provider, isFallback: true, accessMode: fallback._registryEntry?.accessMode || 'api', thinking: Boolean(fbThinking), webSearch: Boolean(fbWebSearch), effortLevel: extractEffortFromModelName(fallback.model) || fbThinkingEffort || '' });
+    onModelResolved?.({ model: fallback.model, provider: fallback.provider, isFallback: true, accessMode: fallback._registryEntry?.accessMode || 'api', thinking: Boolean(fbThinking), webSearch: Boolean(fbWebSearch), effortLevel: resolveEffortLabel({ model: fallback.model, effortLevel: fbThinkingEffort, thinking: fbThinking }) });
     const capFb = capitalize(String(phase || '').trim());
     const fbReasoning = capFb ? Boolean(config[`_resolved${capFb}FallbackUseReasoning`]) : false;
     const fallbackBakedEffort = extractEffortFromModelName(fallback.model);
@@ -694,7 +694,7 @@ export async function callLlmWithRouting({
   const useWriterPhase = !jsonStrictEnabled && jsonSchema;
 
   if (useWriterPhase) {
-    onModelResolved?.({ model: primary.model, provider: primary.provider, isFallback: false, accessMode: primary._registryEntry?.accessMode || 'api', thinking: Boolean(phaseThinking), webSearch: Boolean(phaseWebSearch), effortLevel: primaryBakedEffort || phaseThinkingEffort || '' });
+    onModelResolved?.({ model: primary.model, provider: primary.provider, isFallback: false, accessMode: primary._registryEntry?.accessMode || 'api', thinking: Boolean(phaseThinking), webSearch: Boolean(phaseWebSearch), effortLevel: resolveEffortLabel({ model: primary.model, effortLevel: phaseThinkingEffort, thinking: phaseThinking }) });
     let researchText;
     try {
       researchText = await wrapLabQueue(primary, () => callLlmProvider({
@@ -772,7 +772,7 @@ export async function callLlmWithRouting({
   }
 
   // Existing single-call behavior (jsonStrict: true or no jsonSchema)
-  onModelResolved?.({ model: primary.model, provider: primary.provider, isFallback: false, accessMode: primary._registryEntry?.accessMode || 'api', thinking: Boolean(phaseThinking), webSearch: Boolean(phaseWebSearch), effortLevel: primaryBakedEffort || phaseThinkingEffort || '' });
+  onModelResolved?.({ model: primary.model, provider: primary.provider, isFallback: false, accessMode: primary._registryEntry?.accessMode || 'api', thinking: Boolean(phaseThinking), webSearch: Boolean(phaseWebSearch), effortLevel: resolveEffortLabel({ model: primary.model, effortLevel: phaseThinkingEffort, thinking: phaseThinking }) });
   try {
     return await wrapLabQueue(primary, () => callLlmProvider({
       ...effectiveSharedParams,

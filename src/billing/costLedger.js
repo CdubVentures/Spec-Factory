@@ -63,7 +63,7 @@ function normalizeEntry(entry = {}) {
     cached_prompt_tokens: safeInt(entry.cached_prompt_tokens, 0),
     total_tokens: safeInt(entry.total_tokens, 0),
     cost_usd: round(entry.cost_usd, 8),
-    reason: String(entry.reason || 'extract'),
+    reason: String(entry.reason || ''),
     host: String(entry.host || ''),
     url_count: safeInt(entry.url_count, 0),
     evidence_chars: safeInt(entry.evidence_chars, 0),
@@ -386,7 +386,7 @@ export function buildBillingOnUsage({ config, appDb, category, productId }) {
           cached_prompt_tokens: usageRow.cached_prompt_tokens || 0,
           total_tokens: usageRow.total_tokens || 0,
           cost_usd: usageRow.cost_usd || 0,
-          reason: usageRow.reason || 'extract',
+          reason: usageRow.reason || '',
           host: usageRow.host || '',
           url_count: usageRow.url_count || 0,
           evidence_chars: usageRow.evidence_chars || 0,
@@ -527,7 +527,7 @@ export function buildLlmMetrics({
     const rowRunId = String(row.runId || row.run_id || '').trim();
     const rowProductId = String(row.productId || row.product_id || '').trim();
     const rowCategory = String(row.category || '').trim();
-    const rowReason = String(row.reason || 'extract').trim();
+    const rowReason = String(row.reason || '').trim();
     const rowTs = String(row.ts || '').trim();
     const rowDay = rowTs.slice(0, 10) || 'unknown_day';
     const runKey = rowRunId || `${rowDay}::${rowProductId || 'unknown_product'}`;
