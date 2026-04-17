@@ -1,26 +1,12 @@
 /**
  * FinderRunTimestamp — shared time + duration display for run history rows.
  *
- * Shows the run start time in PST and the total duration.
- * Placed between date and model badge in both CEF and PIF run history rows.
+ * Time renders in the user-selected timezone from settings (default PST).
+ * Duration is timezone-agnostic.
  */
 
-/** Format an ISO timestamp to PST time string (e.g. "3:42 PM"). */
-function formatTimePST(iso: string): string {
-  if (!iso) return '';
-  try {
-    return new Date(iso).toLocaleTimeString('en-US', {
-      timeZone: 'America/Los_Angeles',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
-  } catch {
-    return '';
-  }
-}
+import { pullFormatTime } from '../../../utils/dateTime.ts';
 
-/** Format duration in ms to a human-readable string (e.g. "1m 23s", "45s"). */
 function formatDuration(ms: number): string {
   if (ms == null || ms < 0) return '';
   const totalSec = Math.round(ms / 1000);
@@ -37,7 +23,7 @@ export function FinderRunTimestamp({
   readonly startedAt?: string | null;
   readonly durationMs?: number | null;
 }) {
-  const time = startedAt ? formatTimePST(startedAt) : '';
+  const time = startedAt ? pullFormatTime(startedAt) : '';
   const dur = durationMs != null ? formatDuration(durationMs) : '';
 
   if (!time && !dur) return null;

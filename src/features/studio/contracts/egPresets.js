@@ -32,6 +32,12 @@ export function buildEgColorFieldRule(ctx) {
   const colors = ctx?.colors ?? [];
   return {
     key: 'colors',
+    // WHY: Colors is a variant-GENERATOR (CEF), not a variant-dependent attribute.
+    // Each color IS a variant identity — talking about "colors of variant X" is
+    // tautological. Published to product.json.fields.colors as a list, not to
+    // variant_fields[vid].colors. Only variant-attribute fields (release_date,
+    // discontinued, per-variant sku/price) get variant_dependent: true.
+    variant_dependent: false,
     contract: {
       type: 'string',
       shape: 'list',
@@ -103,6 +109,9 @@ export function buildEgColorFieldRule(ctx) {
 export function buildEgEditionFieldRule(ctx) {
   return {
     key: 'editions',
+    // WHY: Editions is a variant-GENERATOR (CEF) — same reasoning as colors.
+    // An edition IS a variant identity, not an attribute attached to variants.
+    variant_dependent: false,
     contract: {
       type: 'string',
       shape: 'list',
@@ -152,6 +161,7 @@ export function buildEgEditionFieldRule(ctx) {
 export function buildEgReleaseDateFieldRule(ctx) {
   return {
     key: 'release_date',
+    variant_dependent: true,
     contract: {
       type: 'date',
       shape: 'scalar',

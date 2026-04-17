@@ -542,7 +542,7 @@
       <dt>Override</dt><dd><code>rmbgConcurrency</code> setting (per-category) or <code>setInferenceConcurrency(n)</code> programmatic override</dd>
       <dt>Queue</dt><dd>Queue-based limiter &mdash; excess requests wait for a slot rather than failing</dd>
       <dt>Lifecycle</dt><dd><code>loadModel()</code> (lazy singleton), <code>isModelLoaded()</code>, <code>releaseModel()</code></dd>
-      <dt>Model download</dt><dd><code>ensureModelReady()</code> &mdash; requires <code>HF_TOKEN</code> env var (HuggingFace gated model). Atomic download (write to .tmp, rename on completion).</dd>
+      <dt>Model download</dt><dd><code>ensureModelReady()</code> &mdash; requires <code>hfToken</code> in global settings (Extraction &rarr; Provider &rarr; API Keys) for the HuggingFace gated model. One-time only; skipped once the ONNX file is on disk. Atomic download (write to .tmp, rename on completion).</dd>
     </dl>
   </div>
 </div>

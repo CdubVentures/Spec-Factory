@@ -133,22 +133,22 @@ Color output rules:
 Edition output rules:
 - An edition is a named special/limited/collaboration version sold by the manufacturer
 - Slug format: kebab-case (e.g. "cod-bo6-edition", "witcher-3-10th-anniversary-edition")
-- Each edition needs display_name (official name) and a colors array with a SINGLE combo entry
+- display_name is the EDITION NAME ONLY — the collaboration/franchise/limited descriptor. Do NOT include the brand, base model, or model-line marketing copy. Strip any "{{BRAND}} {{MODEL}} –" style prefix (or equivalent suffix) so only the edition descriptor remains. Good: "Call of Duty: Black Ops 6 Edition", "Cyberpunk 2077: Arasaka Edition", "DOOM: The Dark Ages Edition", "Witcher 3: Wild Hunt 10th Anniversary Edition". Bad: "M75 WIRELESS Lightweight RGB Gaming Mouse – CALL OF DUTY® BLACK OPS 6 EDITION", "DOOM™: The Dark Ages: M75 WIRELESS".
+- Each edition also needs a colors array with a SINGLE combo entry
 - The combo entry joins all visible shell/body colors with "+" in dominant order (most dominant first). Example: a dark gray body with black accents and orange highlights = ["dark-gray+black+orange"]. A black and red edition = ["black+red"]. Use the same registered atoms.
 - The edition's combo entry MUST also appear in the master colors array
 - Plain color variants, bundles, refurbs, and aftermarket skins are NOT editions
 
 {{EVIDENCE_REQUIREMENTS}}
-Attach the refs under "evidence_refs", a map keyed by the color atom (e.g. "black", "dark-gray+black+orange") or edition slug (e.g. "launch-edition"). Every entry in colors[] and every edition slug in editions should have its own evidence_refs key.
 
 Return JSON with these exact keys and shapes:
 - "colors": ["atom", ...] (first = default)
 - "default_color": "atom" (must equal colors[0])
 - "color_names": { "atom": "Marketing Name", ... } (omit when atom IS the name)
-- "editions": { "slug": { "display_name": "Official Name", "colors": ["atom+atom+atom"] }, ... } or {} if none found (colors is a single combo entry)
+- "editions": { "slug": { "display_name": "Edition Name Only (e.g. 'Cyberpunk 2077: Arasaka Edition' — NOT '<brand> <model> – Cyberpunk 2077: Arasaka Edition')", "colors": ["atom+atom+atom"] }, ... } or {} if none found (colors is a single combo entry)
 - "siblings_excluded": ["Model Name", ...]
 - "discovery_log": { "confirmed_from_known": [], "added_new": [], "rejected_from_known": [], "urls_checked": [], "queries_run": [] }
-- "evidence_refs": { "color-atom-or-edition-slug": [{ "url": "...", "tier": "tier1|tier2|tier3|tier4|tier5|other" }, ...], ... }`;
+- "evidence_refs": [{ "url": "...", "tier": "tier1|tier2|tier3|tier4|tier5|other" }, ...]`;
 
 export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], product = {}, previousRuns = [], familyModelCount = 1, ambiguityLevel = 'easy', siblingModels = [], templateOverride = '', minEvidenceRefs = 1 }) {
   const brand = product.brand || '';

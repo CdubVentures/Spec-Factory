@@ -147,11 +147,6 @@ export const FINDER_MODULES = Object.freeze([
     // Widget-backed entries reference named widgets registered in the GUI;
     // widgetProps.childKeys declare any sibling keys the widget composes.
     settingsSchema: [
-      // Authentication
-      { key: 'hfToken', type: 'string', default: '', secret: true, allowEmpty: true,
-        uiLabel: 'HuggingFace Token', uiGroup: 'Authentication',
-        uiTip: 'Access token for the RMBG 2.0 gated model download' },
-
       // Carousel strategy — viewBudget widget owns viewAttemptBudget + viewAttemptBudgets
       { key: 'satisfactionThreshold', type: 'int', default: 3, min: 1, max: 20,
         uiLabel: 'Satisfaction Threshold', uiGroup: 'Carousel Strategy',
@@ -388,19 +383,28 @@ export function getFinderModuleForField(fieldKey) {
 }
 
 /**
- * True when a field's published state is per-variant — i.e. the field is owned
- * by a `variantFieldProducer` module (release date, SKU, discontinued, price).
- * Variant-generator modules (CEF colors/editions) and unowned fields are not
- * variant-dependent by this definition: their display is driven by the variant
- * registry (SSOT), not by grouping field_candidates rows under variant_ids.
+ * True when a field's published state is per-variant.
  *
- * Consumed by review layout (to emit field_rule.variant_dependent) and by the
- * drawer to switch between scalar and variant×value display.
+ * Authored value wins: if the compiled field rule declares `variant_dependent`
+ * as a boolean, that value is returned. Otherwise, fall back to module-class
+ * derivation (variantFieldProducer → true, everything else → false).
+ *
+ * The authored path is the SSOT — EG preset builders emit variant_dependent=true
+ * for colors/editions/release_date, and Field Rules Studio lets non-EG fields
+ * opt in via the Contract panel toggle. The module-class fallback keeps
+ * legacy/bare callers (tests, pre-compile lookups) working without a specDb.
  *
  * @param {string} fieldKey
+ * @param {object} [specDb] — optional specDb with getCompiledRules(); when present,
+ *   the authored field-rule value is used if declared.
  * @returns {boolean}
  */
-export function isVariantDependentField(fieldKey) {
+export function isVariantDependentField(fieldKey, specDb) {
+  if (specDb && typeof specDb.getCompiledRules === 'function') {
+    const rules = specDb.getCompiledRules();
+    const authored = rules?.fields?.[fieldKey]?.variant_dependent;
+    if (typeof authored === 'boolean') return authored;
+  }
   const mod = getFinderModuleForField(fieldKey);
   return mod?.moduleClass === 'variantFieldProducer';
 }

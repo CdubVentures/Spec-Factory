@@ -17,7 +17,8 @@ const selectCls = 'px-2 py-1.5 text-sm border sf-border-soft sf-border-soft roun
 // ── Types ──────────────────────────────────────────────────────────
 import type { CatalogProduct, Brand } from '../../../types/product.ts';
 import type { MutationResult, BulkPreviewStatus, BulkPreviewRow, BulkImportResultRow, BulkImportResult } from './productManagerTypes.ts';
-import { PRODUCT_STATUS_VALUES, cleanVariantToken, isFabricatedVariantToken, isHeaderRow, relativeTime } from './productHelpers.ts';
+import { PRODUCT_STATUS_VALUES, cleanVariantToken, isFabricatedVariantToken, isHeaderRow } from './productHelpers.ts';
+import { relativeTime } from '../../../utils/formatting.ts';
 import { PRODUCT_TABLE_COLUMNS } from './productTableColumns.tsx';
 
 // ── Component ──────────────────────────────────────────────────────

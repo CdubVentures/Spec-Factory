@@ -13,6 +13,7 @@ import {
   FinderDiscoveryDetails,
   ColorSwatch,
 } from '../../../shared/ui/finder/index.ts';
+import { pullFormatDate } from '../../../utils/dateTime.ts';
 import type { DiscoverySection } from '../../../shared/ui/finder/index.ts';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
 import type { RunHistoryRow } from '../selectors/colorEditionFinderSelectors.ts';
@@ -73,7 +74,7 @@ export const CefRunHistoryRow = memo(function CefRunHistoryRow({
         <span className="text-[13px] font-mono font-bold text-[var(--sf-token-accent-strong)]">
           #{row.runNumber}
         </span>
-        <span className="font-mono text-[10px] sf-text-muted">{row.ranAt?.split('T')[0] ?? ''}</span>
+        <span className="font-mono text-[10px] sf-text-muted">{pullFormatDate(row.ranAt)}</span>
         <FinderRunTimestamp startedAt={row.startedAt} durationMs={row.durationMs} />
         {row.model && (
           <FinderRunModelBadge

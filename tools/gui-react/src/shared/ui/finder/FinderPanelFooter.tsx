@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { pullFormatDate } from '../../../utils/dateTime.ts';
 
 interface FinderPanelFooterProps {
   lastRanAt?: string;
@@ -11,7 +12,7 @@ interface FinderPanelFooterProps {
 export function FinderPanelFooter({ lastRanAt, runCount, modelSlot, children }: FinderPanelFooterProps) {
   return (
     <div className="flex items-center gap-3 pt-4 border-t sf-border-soft text-[10px] sf-text-muted">
-      <span>Last run: <strong className="sf-text-subtle">{lastRanAt?.split('T')[0] ?? '--'}</strong></span>
+      <span>Last run: <strong className="sf-text-subtle">{pullFormatDate(lastRanAt) || '--'}</strong></span>
       <span>&middot;</span>
       {modelSlot && (
         <>

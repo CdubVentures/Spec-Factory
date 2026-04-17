@@ -43,7 +43,6 @@ export const DATA_CHANGE_EVENT_DOMAIN_MAP = Object.freeze({
   'component-key-review-confirm': ['component', 'review'],
   'enum-override': ['enum', 'review'],
   'enum-rename': ['enum', 'review'],
-  'enum-consistency': ['enum', 'review'],
   'publisher-reconcile': ['publisher'],
 });
 

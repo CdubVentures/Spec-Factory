@@ -108,9 +108,7 @@ export function StudioPage() {
   const {
     compileMut,
     validateRulesMut,
-    enumConsistencyMut,
     runCompileFromStudio,
-    runEnumConsistency,
     refreshStudioData,
   } = useStudioPageMutations({
     category,
@@ -192,13 +190,11 @@ export function StudioPage() {
     saveStudioDocsMutState: saveStudioDocsMut,
     compileMutState: compileMut,
     validateRulesMutState: validateRulesMut,
-    enumConsistencyMutState: enumConsistencyMut,
     setAutoSaveMapEnabled,
     setSelectedKey,
     saveFromStore,
     persistFieldKeyOrder,
     setAutoSaveEnabled,
-    runEnumConsistency,
     runCompileFromStudio,
     runValidate: () => validateRulesMut.mutate(),
   });

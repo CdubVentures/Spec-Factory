@@ -232,8 +232,7 @@ export function registerProductImageFinderRoutes(ctx) {
       } else {
         const { ensureModelReady } = await import('../modelDownloader.js');
         const modelDir = path.join(productRoot, '..', 'models', 'rmbg-2.0');
-        const pifStore = getSpecDb(category)?.getFinderStore('productImageFinder');
-        const modelStatus = await ensureModelReady({ modelDir, token: pifStore?.getSetting('hfToken') || '' });
+        const modelStatus = await ensureModelReady({ modelDir, token: config?.hfToken || '' });
         if (!modelStatus.ready) {
           failOperation({ id: op.id, error: 'RMBG model not available' });
           return jsonRes(res, 503, { error: 'RMBG model not available', details: modelStatus.error });
@@ -380,8 +379,7 @@ export function registerProductImageFinderRoutes(ctx) {
       if (hasViewImages) {
         const { ensureModelReady } = await import('../modelDownloader.js');
         const modelDir = path.join(productRoot, '..', 'models', 'rmbg-2.0');
-        const batchPifStore = getSpecDb(category)?.getFinderStore('productImageFinder');
-        const modelStatus = await ensureModelReady({ modelDir, token: batchPifStore?.getSetting('hfToken') || '' });
+        const modelStatus = await ensureModelReady({ modelDir, token: config?.hfToken || '' });
         if (!modelStatus.ready) {
           return jsonRes(res, 503, { error: 'RMBG model not available', details: modelStatus.error });
         }

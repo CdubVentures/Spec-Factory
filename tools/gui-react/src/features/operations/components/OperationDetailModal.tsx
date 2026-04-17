@@ -5,6 +5,7 @@ import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.t
 import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTypes.ts';
 import { extractEffortFromModelName } from '../../llm-config/state/llmEffortFromModelName.ts';
 import { resolveEffortLabel } from '../../llm-config/state/resolveEffortLabel.ts';
+import { useFormatTime } from '../../../utils/dateTime.ts';
 import {
   MODULE_STYLES,
   MODULE_LABELS,
@@ -161,12 +162,13 @@ function DiscoveryLogSection({ log }: { readonly log: Record<string, unknown> })
 
 function LlmCallRow({ call }: { readonly call: LlmCallRecord }) {
   const [expanded, setExpanded] = useState(false);
+  const formatTime = useFormatTime();
   const isPending = call.response === null || call.response === undefined;
   const responseStr = isPending ? '' : (typeof call.response === 'string' ? call.response : JSON.stringify(call.response, null, 2));
   const discoveryLog = (!isPending && call.response && typeof call.response === 'object' && 'discovery_log' in call.response)
     ? (call.response as Record<string, unknown>).discovery_log as Record<string, unknown> | null
     : null;
-  const time = call.timestamp ? new Date(call.timestamp).toLocaleTimeString() : '';
+  const time = call.timestamp ? formatTime(call.timestamp) : '';
 
   return (
     <div className="rounded-sm border border-[rgb(var(--sf-color-border-subtle-rgb)/0.2)] overflow-hidden">
@@ -274,6 +276,7 @@ interface Props {
 }
 
 export function OperationDetailModal({ op, onClose }: Props) {
+  const formatTime = useFormatTime();
   /* ── Dismiss handlers ─────────────────────────────────────── */
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -449,9 +452,9 @@ export function OperationDetailModal({ op, onClose }: Props) {
 
           {/* Timestamps */}
           <section className="text-[10px] sf-text-subtle flex items-center gap-4 pt-1 border-t border-[rgb(var(--sf-color-border-subtle-rgb)/0.15)]">
-            <span>Started {new Date(op.startedAt).toLocaleTimeString()}</span>
+            <span>Started {formatTime(op.startedAt)}</span>
             {op.endedAt && (
-              <span>Ended {new Date(op.endedAt).toLocaleTimeString()}</span>
+              <span>Ended {formatTime(op.endedAt)}</span>
             )}
             {op.endedAt && (
               <span>Duration {formatElapsed(op.startedAt, op.endedAt)}</span>

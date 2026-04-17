@@ -18,11 +18,6 @@ interface CompileResponse {
   running: boolean;
 }
 
-export interface RunEnumConsistencyOptions {
-  reviewEnabled?: boolean;
-  formatGuidance?: string;
-}
-
 export interface UseStudioPageMutationsInput {
   category: string;
   queryClient: QueryClient;
@@ -32,29 +27,14 @@ export interface UseStudioPageMutationsInput {
 export interface UseStudioPageMutationsResult {
   compileMut: UseMutationResult<CompileResponse, Error, void>;
   validateRulesMut: UseMutationResult<CompileResponse, Error, void>;
-  enumConsistencyMut: UseMutationResult<
-    unknown,
-    Error,
-    {
-      field: string;
-      apply?: boolean;
-      formatGuidance?: string;
-      reviewEnabled?: boolean;
-    }
-  >;
   runCompileFromStudio: () => Promise<CompileResponse>;
-  runEnumConsistency: (
-    fieldKey: string,
-    options?: RunEnumConsistencyOptions,
-  ) => Promise<unknown>;
   refreshStudioData: () => Promise<void>;
 }
 
 export function useStudioPageMutations({
   category,
-  queryClient,
   setActiveTab,
-}: UseStudioPageMutationsInput): UseStudioPageMutationsResult {
+}: Omit<UseStudioPageMutationsInput, 'queryClient'> & { queryClient: QueryClient }): UseStudioPageMutationsResult {
   const compileMut = useMutation<CompileResponse, Error, void>({
     mutationFn: async () => {
       const currentMap = await api.get<FieldStudioMapResponse>(
@@ -80,41 +60,10 @@ export function useStudioPageMutations({
     // WHY: No onSuccess needed — operation lifecycle comes via operations WS channel
   });
 
-  const enumConsistencyMut = useMutation({
-    mutationFn: (body: {
-      field: string;
-      apply?: boolean;
-      formatGuidance?: string;
-      reviewEnabled?: boolean;
-    }) => api.post(`/studio/${category}/enum-consistency`, body),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ['enumReviewData', category],
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ['reviewProductsIndex', category],
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ['studio-known-values', category],
-      });
-    },
-  });
-
   const runCompileFromStudio = useCallback(async () => {
     setActiveTab('reports');
     return compileMut.mutateAsync();
   }, [setActiveTab, compileMut]);
-
-  const runEnumConsistency = useCallback(
-    (fieldKey: string, options?: RunEnumConsistencyOptions) =>
-      enumConsistencyMut.mutateAsync({
-        field: fieldKey,
-        apply: options?.reviewEnabled !== false,
-        formatGuidance: options?.formatGuidance,
-        reviewEnabled: options?.reviewEnabled,
-      }),
-    [enumConsistencyMut],
-  );
 
   const refreshStudioData = useCallback(async () => {
     await api.post(`/studio/${category}/invalidate-cache`);
@@ -123,9 +72,7 @@ export function useStudioPageMutations({
   return {
     compileMut,
     validateRulesMut,
-    enumConsistencyMut,
     runCompileFromStudio,
-    runEnumConsistency,
     refreshStudioData,
   };
 }

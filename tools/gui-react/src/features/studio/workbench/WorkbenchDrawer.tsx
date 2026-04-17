@@ -1,6 +1,3 @@
-import { useEffect, useState } from 'react';
-
-import { api } from '../../../api/client.ts';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
 import { humanizeField } from '../../../utils/fieldNormalize.ts';
 import { useStudioFieldRulesActions, useStudioFieldRulesState } from '../state/studioFieldRulesController.ts';
@@ -73,57 +70,11 @@ export function WorkbenchDrawer({
     'contract',
     { validValues: DRAWER_TAB_IDS },
   );
-  const [consistencyPending, setConsistencyPending] = useState(false);
-  const [consistencyMessage, setConsistencyMessage] = useState('');
-  const [consistencyError, setConsistencyError] = useState('');
   const { updateField } = useStudioFieldRulesActions();
   const { egLockedKeys } = useStudioFieldRulesState();
   const isEgLocked = egLockedKeys.includes(fieldKey);
 
   const update = (path: string, value: unknown) => updateField(fieldKey, path, value);
-
-  useEffect(() => {
-    setConsistencyMessage('');
-    setConsistencyError('');
-  }, [fieldKey]);
-
-  async function runEnumConsistency(options?: {
-    formatGuidance?: string;
-    reviewEnabled?: boolean;
-  }) {
-    if (consistencyPending) return;
-    setConsistencyPending(true);
-    setConsistencyMessage('');
-    setConsistencyError('');
-    try {
-      const response = await api.post(`/studio/${category}/enum-consistency`, {
-        field: fieldKey,
-        apply: options?.reviewEnabled !== false,
-        formatGuidance: options?.formatGuidance,
-        reviewEnabled: options?.reviewEnabled,
-      }) as {
-        ok?: boolean;
-        applied?: { changed?: number };
-        skipped_reason?: string | null;
-        error?: string;
-      };
-      if (response?.ok === false) {
-        throw new Error(response?.error || 'Consistency run failed.');
-      }
-      const changed = Number(response?.applied?.changed || 0);
-      if (changed > 0) {
-        setConsistencyMessage(`Consistency applied ${changed} change${changed === 1 ? '' : 's'}.`);
-      } else if (response?.skipped_reason) {
-        setConsistencyMessage(`Consistency skipped: ${String(response.skipped_reason).replace(/_/g, ' ')}.`);
-      } else {
-        setConsistencyMessage('Consistency finished with no changes.');
-      }
-    } catch (error) {
-      setConsistencyError(error instanceof Error ? error.message : 'Consistency run failed.');
-    } finally {
-      setConsistencyPending(false);
-    }
-  }
 
   const B = ({ p }: { p: string }) => (
     <SystemBadges fieldPath={p} />
@@ -223,10 +174,6 @@ export function WorkbenchDrawer({
           enumLists={enumLists}
           componentDb={componentDb}
           componentSources={componentSources}
-          consistencyPending={consistencyPending}
-          consistencyMessage={consistencyMessage}
-          consistencyError={consistencyError}
-          onRunConsistency={runEnumConsistency}
           onUpdate={update}
           onNavigate={onNavigate}
           isEgLocked={isEgLocked}

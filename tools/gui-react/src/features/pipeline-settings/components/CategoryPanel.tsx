@@ -55,6 +55,7 @@ function SectionIcon({ sectionId, active }: { sectionId: string; active: boolean
     'css-override': <><path d="m4 17 6-6-6-6M12 19h8" /></>,
     'auto-scroll': <><path d="M12 3v18M6 15l6 6 6-6" /></>,
     capture: <><circle cx="12" cy="12" r="3" /><path d="M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M9 2h6v2H9Z" /></>,
+    'rmbg-model': <><circle cx="8" cy="15" r="4" /><path d="m10.8 12.2 9.2-9.2" /><path d="m17 5 3 3" /><path d="m14 8 3 3" /></>,
   };
 
   return (

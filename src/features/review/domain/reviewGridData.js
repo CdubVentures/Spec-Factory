@@ -141,8 +141,8 @@ export async function buildReviewLayout({
       label: String(ui.label || field),
       field_rule: {
         ...fieldRuleBase,
-        // WHY: derived flag; variantFieldProducer modules own per-variant published state.
-        variant_dependent: isVariantDependentField(normalizeField(field)),
+        // WHY: derived flag; authored field-rule value wins, falls back to module class.
+        variant_dependent: isVariantDependentField(normalizeField(field), specDb),
       },
       _order: toInt(ui.order, Number.MAX_SAFE_INTEGER)
     });
@@ -420,7 +420,7 @@ export async function buildProductReviewPayload({
       if (!existing || toNumber(row.confidence, 0) > toNumber(existing.confidence, 0)) {
         resolvedByField.set(fk, row);
       }
-      if (row.variant_id && isVariantDependentField(fk)) {
+      if (row.variant_id && isVariantDependentField(fk, specDb)) {
         if (!variantValuesByField.has(fk)) variantValuesByField.set(fk, new Map());
         const byVid = variantValuesByField.get(fk);
         const current = byVid.get(row.variant_id);
@@ -434,6 +434,10 @@ export async function buildProductReviewPayload({
   // WHY: Variant-derived fields (colors, editions) are authoritative from the
   // variants SQL table (SSOT), not from candidates or product.json. Derive inline
   // so the review grid always shows the correct published state from SQL.
+  //
+  // These are variant-GENERATORS, not variant-dependent attributes — the field
+  // values ARE the variant identities. They publish to product.json.fields.<key>
+  // as a JSON list, not to variant_fields[vid][key]. No variant_values emitted.
   if (specDb?.variants) {
     const activeVariants = specDb.variants.listActive(productId);
     const variantColors = [];
@@ -488,7 +492,7 @@ export async function buildProductReviewPayload({
       : 0;
     const hasValue = hasKnownValue(resolvedValue);
 
-    const fieldIsVariantDependent = isVariantDependentField(field);
+    const fieldIsVariantDependent = isVariantDependentField(field, specDb);
 
     // Map field_candidates rows → candidate shape.
     // For variant-dependent fields, project variant_id + enrich with variant metadata

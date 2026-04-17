@@ -94,10 +94,6 @@ function buildBaseProps() {
     enumLists: [{ field: 'dpi', values: ['800'] }],
     componentDb: { sensor: [{ name: 'Hero', maker: 'Logitech', aliases: [] }] },
     componentSources: [{ component_type: 'sensor', roles: { properties: [] } }],
-    consistencyPending: false,
-    consistencyMessage: '',
-    consistencyError: '',
-    onRunConsistency: async () => {},
     onUpdate() {},
     onNavigate() {},
     B() {
@@ -131,16 +127,12 @@ test('WorkbenchDrawerTabContent routes enum and preview tabs with their feature 
     WorkbenchDrawerTabContent({
       ...buildBaseProps(),
       activeTab: 'enum',
-      consistencyPending: true,
-      consistencyMessage: 'applied',
     }),
   );
   const enumNode = collectNodes(enumTree, (node) => node.type === 'EnumTab')[0];
 
   assert.ok(enumNode);
   assert.equal(enumNode.props.category, 'mouse');
-  assert.equal(enumNode.props.consistencyPending, true);
-  assert.equal(enumNode.props.consistencyMessage, 'applied');
 
   const previewTree = renderNode(
     WorkbenchDrawerTabContent({

@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { trafficColor, trafficTextColor, sourceBadgeClass, SOURCE_BADGE_FALLBACK } from '../../../utils/colors.ts';
 import { pct } from '../../../utils/formatting.ts';
+import { pullFormatDateTime } from '../../../utils/dateTime.ts';
 import { ActionTooltip } from '../feedback/ActionTooltip.tsx';
 
 interface DrawerShellProps {
@@ -95,15 +96,6 @@ interface DrawerValueRowProps {
   sourceTimestamp?: string | null;
 }
 
-function formatTimestamp(iso: string): string {
-  try {
-    const d = new Date(iso);
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-  } catch {
-    return iso.slice(0, 16);
-  }
-}
-
 export function DrawerValueRow({ color, value, confidence, source, sourceTimestamp }: DrawerValueRowProps) {
   return (
     <div className="space-y-0.5">
@@ -123,7 +115,7 @@ export function DrawerValueRow({ color, value, confidence, source, sourceTimesta
       </div>
       {sourceTimestamp && (
         <div className="sf-text-nano sf-drawer-meta pl-5">
-          set {formatTimestamp(sourceTimestamp)}
+          set {pullFormatDateTime(sourceTimestamp)}
         </div>
       )}
     </div>

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { FinderRunTimestamp } from './FinderRunTimestamp.tsx';
 import { FinderRunModelBadge } from './FinderRunModelBadge.tsx';
+import { pullFormatDate } from '../../../utils/dateTime.ts';
 
 interface FinderRunHistoryRowProps {
   readonly runNumber: number;
@@ -68,7 +69,7 @@ export function FinderRunHistoryRow({
         <span className="text-[13px] font-mono font-bold text-[var(--sf-token-accent-strong)]">
           #{runNumber}
         </span>
-        <span className="font-mono text-[10px] sf-text-muted">{ranAt?.split('T')[0] ?? ''}</span>
+        <span className="font-mono text-[10px] sf-text-muted">{pullFormatDate(ranAt)}</span>
         <FinderRunTimestamp startedAt={startedAt ?? undefined} durationMs={durationMs ?? undefined} />
         {model && (
           <FinderRunModelBadge

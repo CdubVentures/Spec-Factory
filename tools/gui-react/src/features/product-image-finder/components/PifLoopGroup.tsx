@@ -9,6 +9,7 @@ import {
   useShowMore,
 } from '../../../shared/ui/finder/index.ts';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
+import { pullFormatDate } from '../../../utils/dateTime.ts';
 import type { RunGroup } from '../types.ts';
 
 interface PifLoopGroupProps {
@@ -41,7 +42,7 @@ export const PifLoopGroup = memo(function PifLoopGroup({
   const rangeLabel = runNumbers.length > 0
     ? `#${runNumbers[0]}\u2013#${runNumbers[runNumbers.length - 1]}`
     : '';
-  const date = group.runs[0]?.ran_at?.split('T')[0] ?? '--';
+  const date = pullFormatDate(group.runs[0]?.ran_at) || '--';
 
   // Resolve variant from first run in the loop
   const firstRun = group.runs[0];

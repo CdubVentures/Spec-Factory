@@ -1,5 +1,6 @@
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { pct } from '../../../utils/formatting.ts';
+import { pullFormatDateTime } from '../../../utils/dateTime.ts';
 import { trafficColor, sourceBadgeDarkClass, SOURCE_BADGE_DARK_FALLBACK } from '../../../utils/colors.ts';
 
 /**
@@ -138,7 +139,7 @@ export function CellTooltip({ state, children }: CellTooltipProps) {
           {/* Row 2c: Source timestamp */}
           {state.source_timestamp && (
             <div className="sf-cell-tooltip-time text-[9px] mb-1">
-              set {new Date(state.source_timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              set {pullFormatDateTime(state.source_timestamp)}
             </div>
           )}
 

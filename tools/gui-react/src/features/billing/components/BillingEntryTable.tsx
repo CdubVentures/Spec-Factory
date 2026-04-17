@@ -4,6 +4,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '../../../shared/ui/data-display/DataTable.tsx';
 import { SkeletonBlock } from '../../../shared/ui/feedback/SkeletonBlock.tsx';
 import { usd, compactNumber } from '../../../utils/formatting.ts';
+import { useFormatDateTime } from '../../../utils/dateTime.ts';
 import { resolveBillingCallType } from '../billingCallTypeRegistry.ts';
 import { chartColor } from '../billingTransforms.ts';
 import { useBillingEntriesQuery } from '../billingQueries.ts';
@@ -15,15 +16,6 @@ interface BillingEntryTableProps {
   filters: BillingFilterState;
   page: number;
   onPageChange: (page: number) => void;
-}
-
-function formatTs(ts: string): string {
-  try {
-    const d = new Date(ts);
-    return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
-  } catch {
-    return ts;
-  }
 }
 
 function formatTokens(value: number): string {
@@ -87,6 +79,7 @@ function parseFlags(entry: BillingEntry): EntryFlag[] {
 
 export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryTableProps) {
   const [pageSize, setPageSize] = usePersistedNumber('billing:pageSize', 20);
+  const formatDateTime = useFormatDateTime();
   const { data, isLoading, isPlaceholderData } = useBillingEntriesQuery({
     limit: pageSize,
     offset: page * pageSize,
@@ -106,7 +99,7 @@ export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryT
       accessorKey: 'ts',
       header: 'Timestamp',
       size: 170,
-      cell: ({ getValue }) => <span className="font-mono text-[11px] whitespace-nowrap">{formatTs(getValue() as string)}</span>,
+      cell: ({ getValue }) => <span className="font-mono text-[11px] whitespace-nowrap">{formatDateTime(getValue() as string)}</span>,
     },
     {
       accessorKey: 'provider',
@@ -217,7 +210,7 @@ export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryT
         );
       },
     },
-  ], []);
+  ], [formatDateTime]);
 
   const totalEntries = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalEntries / pageSize));

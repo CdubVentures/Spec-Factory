@@ -9,6 +9,7 @@ import {
   ColorSwatch,
 } from '../../../shared/ui/finder/index.ts';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
+import { pullFormatDate } from '../../../utils/dateTime.ts';
 import type { EvalRecord } from '../types.ts';
 
 interface EvalHistoryRowProps {
@@ -54,7 +55,7 @@ export const EvalHistoryRow = memo(function EvalHistoryRow({
         <span className="text-[13px] font-mono font-bold text-[var(--sf-token-accent-strong)]">
           #{evalRecord.eval_number}
         </span>
-        <span className="font-mono text-[10px] sf-text-muted">{evalRecord.ran_at?.split('T')[0] ?? '--'}</span>
+        <span className="font-mono text-[10px] sf-text-muted">{pullFormatDate(evalRecord.ran_at) || '--'}</span>
         <FinderRunTimestamp
           startedAt={evalRecord.started_at}
           durationMs={evalRecord.duration_ms}

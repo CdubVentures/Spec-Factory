@@ -1,6 +1,6 @@
 {
   "category": "mouse",
-  "generated_at": "2026-04-17T05:35:08.507Z",
+  "generated_at": "2026-04-17T21:32:33.888Z",
   "group_index": {
     "buttons_features": [
       "adjustable_scroll_wheel",
@@ -208,7 +208,7 @@
     },
     {
       "count": 13,
-      "display_name": "General",
+      "display_name": "general",
       "field_keys": [
         "colors",
         "design",

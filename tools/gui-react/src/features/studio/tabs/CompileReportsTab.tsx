@@ -4,6 +4,7 @@ import { Tip } from "../../../shared/ui/feedback/Tip.tsx";
 import { deriveCompileReportsViewState } from "../state/compileReportsState.ts";
 import { STUDIO_TIPS } from "../components/studioConstants.ts";
 import type { StudioPageActivePanelReportsProps as CompileReportsTabProps } from "../components/studioPagePanelContracts.ts";
+import { useFormatDateTime } from '../../../utils/dateTime.ts';
 
 import { btnPrimary, sectionCls } from '../../../shared/ui/buttonClasses.ts';
 
@@ -26,6 +27,7 @@ export function CompileReportsTab({
   onRunValidate,
 }: CompileReportsTabProps) {
   const [progressTick, setProgressTick] = useState(0);
+  const formatDateTime = useFormatDateTime();
   const compileReportsViewState = deriveCompileReportsViewState({
     compileRunning,
     validateRunning,
@@ -196,9 +198,7 @@ export function CompileReportsTab({
                     {(artifact.size / 1024).toFixed(1)} KB
                   </td>
                   <td className="py-1 px-2 text-right sf-text-subtle text-xs">
-                    {artifact.updated
-                      ? new Date(artifact.updated).toLocaleString()
-                      : "-"}
+                    {artifact.updated ? formatDateTime(artifact.updated) || '-' : '-'}
                   </td>
                 </tr>
               ))}

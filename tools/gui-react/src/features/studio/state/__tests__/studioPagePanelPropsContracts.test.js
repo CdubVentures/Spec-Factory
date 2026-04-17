@@ -23,7 +23,6 @@ test('buildStudioPageActivePanelProps preserves populated studio panel state and
   const setAutoSaveMapEnabled = () => {};
   const onRunCompile = () => {};
   const onRunValidate = () => {};
-  const onRunEnumConsistency = async () => ({ ok: true });
 
   const result = buildStudioPageActivePanelProps({
     activeTab: 'reports',
@@ -78,8 +77,6 @@ test('buildStudioPageActivePanelProps preserves populated studio panel state and
     setAutoSaveEnabled,
     autoSaveLocked: false,
     autoSaveLockReason: '',
-    onRunEnumConsistency,
-    enumConsistencyPending: true,
     guardrails: {
       warnings: ['stale'],
     },
@@ -111,7 +108,6 @@ test('buildStudioPageActivePanelProps preserves populated studio panel state and
   assert.equal(result.mappingTabProps.onSaveMap, onSaveMap);
   assert.equal(result.mappingTabProps.knownValues.dpi[0], '800');
   assert.equal(result.keyNavigatorTabProps.onSelectKey, onSelectKey);
-  assert.equal(result.keyNavigatorTabProps.onRunEnumConsistency, onRunEnumConsistency);
   assert.deepEqual(result.contractTabProps.guardrails, { warnings: ['stale'] });
   assert.deepEqual(result.reportsTabProps.artifacts, [
     {
@@ -159,8 +155,6 @@ test('buildStudioPageActivePanelProps normalizes missing data sources to safe em
     setAutoSaveEnabled() {},
     autoSaveLocked: false,
     autoSaveLockReason: '',
-    onRunEnumConsistency: async () => ({}),
-    enumConsistencyPending: false,
     guardrails: undefined,
     artifacts: undefined,
     compileErrors: [],

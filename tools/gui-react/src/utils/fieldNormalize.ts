@@ -1,4 +1,5 @@
 import { UNKNOWN_VALUES } from './constants.ts';
+import { maybeFormatDateValue } from './dateTime.ts';
 
 export function normalizeField(field: string): string {
   return field
@@ -66,5 +67,5 @@ export function formatCellValue(value: unknown): string {
       }
     } catch { /* not valid JSON, fall through */ }
   }
-  return raw;
+  return maybeFormatDateValue(raw);
 }

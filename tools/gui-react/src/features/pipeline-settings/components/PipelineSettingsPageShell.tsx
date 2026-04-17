@@ -5,8 +5,9 @@ import { MODULE_SETTINGS_SECTIONS, type ModuleSettingsSectionId } from '../state
 
 type RuntimeSectionId = 'global' | 'discovery' | 'planner' | 'fetcher' | 'extraction' | 'source-strategy' | 'deterministic-strategy';
 type EvaluationSectionId = 'review-publisher' | 'validation';
+type ModuleGlobalSectionId = 'module-global';
 
-export type PipelineSectionId = RuntimeSectionId | ModuleSettingsSectionId | EvaluationSectionId;
+export type PipelineSectionId = RuntimeSectionId | ModuleSettingsSectionId | EvaluationSectionId | ModuleGlobalSectionId;
 
 const moduleIds = MODULE_SETTINGS_SECTIONS.map(s => s.id) as ModuleSettingsSectionId[];
 
@@ -18,6 +19,7 @@ export const PIPELINE_SECTION_IDS = [
   'extraction' as const,
   'source-strategy' as const,
   'deterministic-strategy' as const,
+  'module-global' as const,
   ...moduleIds,
   'review-publisher' as const,
   'validation' as const,
@@ -91,7 +93,15 @@ const PIPELINE_SECTIONS = [
     tip: 'Ordered list of specification seed query templates per category. These replace the single hardcoded "specifications" query in Tier 1 query generation.',
     group: 'runtime',
   },
-  // ── Module Settings (auto-generated from finder module registry) ──
+  // ── Module Settings ────────────────────────────────────────────────
+  {
+    id: 'module-global' as const,
+    label: 'Global',
+    subtitle: 'Shared one-time module setup',
+    tip: 'Module-wide bootstrap settings that span all finder modules — e.g. HuggingFace access for the RMBG background-removal model weights.',
+    group: 'modules',
+  },
+  // Auto-generated per-finder sections (CEF, PIF, RDF)
   ...MODULE_SETTINGS_SECTIONS,
   // ── Evaluation Settings ───────────────────────────────────────────
   {
@@ -221,6 +231,15 @@ export function SectionNavIcon({ id, active }: { id: PipelineSectionId; active: 
             <path d="M4 6h16M4 10h16M4 14h10" />
             <circle cx="19" cy="14" r="2.5" />
             <path d="M19 17v3" />
+          </>
+        )}
+        {/* Module Global — key (one-time credential) */}
+        {id === 'module-global' && (
+          <>
+            <circle cx="8" cy="15" r="4" />
+            <path d="m10.8 12.2 9.2-9.2" />
+            <path d="m17 5 3 3" />
+            <path d="m14 8 3 3" />
           </>
         )}
         {finderIcon}

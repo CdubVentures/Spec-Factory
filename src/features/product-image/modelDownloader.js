@@ -2,7 +2,7 @@
  * RMBG 2.0 model downloader.
  *
  * Downloads the ONNX model weights from HuggingFace to .workspace/models/rmbg-2.0/.
- * Requires hfToken setting (via GUI settings) for authenticated download (model is gated).
+ * Requires config.hfToken (set once in global settings — Extraction → Provider → API Keys) for authenticated download (model is gated).
  * Atomic: writes to .tmp first, renames on completion.
  */
 
@@ -51,7 +51,7 @@ export async function ensureModelReady({ modelDir, token = '', _fetchOverride = 
         ready: false,
         error: `RMBG 2.0 model not found at ${modelPath}. To download:\n` +
           `  1. Create a HuggingFace account and accept the RMBG 2.0 license at https://huggingface.co/briaai/RMBG-2.0\n` +
-          `  2. Set hfToken in Product Image Finder settings with your access token\n` +
+          `  2. Set hfToken in global settings (Extraction → Provider → API Keys) with your access token\n` +
           `  3. Or manually download model_int8.onnx from the onnx/ folder to ${modelDir}`,
       };
     }

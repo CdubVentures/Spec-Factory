@@ -26,6 +26,7 @@ export interface RuntimeSettingDefaults {
   fetchLoadingDelayMs: number;
   fetchSuiteMode: string;
   geminiApiKey: string;
+  hfToken: string;
   googleSearchMaxRetries: number;
   googleSearchMinQueryIntervalMs: number;
   googleSearchProxyUrlsJson: string;
@@ -61,7 +62,6 @@ export interface RuntimeSettingDefaults {
   localOutputRoot: string;
   maxRunSeconds: number;
   openaiApiKey: string;
-  enumConsistencyMode: boolean;
   pipelineSchemaEnforcementMode: string;
   publishConfidenceThreshold: number;
   runtimeControlFile: string;
@@ -81,6 +81,7 @@ export interface RuntimeSettingDefaults {
   needsetGroupSearchMinUnresolved: number;
   needsetGroupSearchMaxRepeats: number;
   queryCooldownDays: number;
+  urlCooldownDays: number;
   queryBuilderMaxAliases: number;
   queryBuilderFieldQueryCap: number;
   queryBuilderDocHintQueryCap: number;

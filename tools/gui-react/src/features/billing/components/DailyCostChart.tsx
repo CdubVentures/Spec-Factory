@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { SkeletonBlock } from '../../../shared/ui/feedback/SkeletonBlock.tsx';
 import { usd } from '../../../utils/formatting.ts';
+import { useFormatDateYMD } from '../../../utils/dateTime.ts';
 import { BILLING_CALL_TYPE_REGISTRY, resolveBillingCallType } from '../billingCallTypeRegistry.ts';
 import { pivotDailyByReason, chartColor } from '../billingTransforms.ts';
 import type { BillingDailyResponse } from '../billingTypes.ts';
@@ -12,15 +13,6 @@ interface DailyCostChartProps {
   isStale?: boolean;
 }
 
-function formatDay(day: string): string {
-  try {
-    const d = new Date(day + 'T00:00:00');
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  } catch {
-    return day;
-  }
-}
-
 interface BarTooltipProps {
   active?: boolean;
   payload?: ReadonlyArray<{ dataKey: string; value: number; color: string }>;
@@ -28,6 +20,7 @@ interface BarTooltipProps {
 }
 
 function DailyBarTooltip({ active, payload, label }: BarTooltipProps) {
+  const formatDay = useFormatDateYMD();
   if (!active || !payload?.length) return null;
 
   const nonZero = payload.filter((p) => p.value > 0);

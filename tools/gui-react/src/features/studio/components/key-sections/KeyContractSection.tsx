@@ -49,6 +49,8 @@ export function KeyContractSection({
     return Number.isFinite(parsed) ? parsed : undefined;
   }
 
+  const variantDependent = boolN(currentRule, 'variant_dependent', false);
+
   return (
     <Section
       title="Contract"
@@ -56,6 +58,53 @@ export function KeyContractSection({
       titleTooltip={STUDIO_TIPS.key_section_contract}
       disabled={disabled}
     >
+      {/* ── Variant Dependent (top-level knob, far-right) ───────
+          WHY: Declares that this field's published state is per-variant.
+          Auto-true on EG defaults (colors/editions/release_date); user-toggleable
+          on non-EG fields. Propagates to the review drawer's variant×value table. */}
+      <div className={`flex items-center justify-between gap-3 px-3 py-2 mb-3 rounded-md sf-surface-panel border sf-border-soft ${variantDependent ? 'sf-switch-on' : ''}`}>
+        <div className="flex items-center gap-2 min-w-0">
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            className={`w-3.5 h-3.5 shrink-0 ${variantDependent ? '' : 'sf-text-subtle'}`}
+            aria-hidden="true"
+          >
+            <circle cx="4" cy="4" r="1.5" />
+            <circle cx="12" cy="4" r="1.5" />
+            <circle cx="8" cy="12" r="1.5" />
+            <path d="M4 4h8M4 4l4 8M12 4l-4 8" />
+          </svg>
+          <div className="flex flex-col min-w-0">
+            <div className={`${labelCls} flex items-center m-0`}>
+              <span className="font-semibold">Variant Dependent</span>
+              <B p="variant_dependent" />
+            </div>
+            <span className="sf-text-nano sf-text-subtle leading-tight">
+              {variantDependent
+                ? 'One value per variant (colors, editions, release_date, …)'
+                : 'One value per product (weight, dpi, connection, …)'}
+            </span>
+          </div>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={variantDependent}
+          aria-label={variantDependent ? 'Per-variant (on)' : 'Per-product (off)'}
+          disabled={disabled}
+          onClick={() => updateField(selectedKey, 'variant_dependent', !variantDependent)}
+          className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full sf-switch-track transition focus:outline-none focus:ring-2 focus:ring-accent/25 ${variantDependent ? 'sf-switch-track-on' : ''} disabled:opacity-60 disabled:cursor-not-allowed`}
+        >
+          <span
+            className={`inline-block h-3.5 w-3.5 rounded-full sf-switch-thumb transition-transform ${variantDependent ? 'translate-x-4' : 'translate-x-0.5'}`}
+            aria-hidden="true"
+          />
+        </button>
+      </div>
+
       {/* ── Type & Shape ──────────────────────────────────────── */}
       <SubSection label="Type & Shape">
         <div className="grid grid-cols-2 gap-3">

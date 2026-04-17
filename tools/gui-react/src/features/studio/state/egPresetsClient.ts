@@ -64,6 +64,7 @@ export function buildEgColorPreset(ctx?: EgPresetCtx): FieldRule {
   const colorNames = ctx?.colorNames ?? [];
   return {
     key: 'colors',
+    variant_dependent: false,
     contract: {
       type: 'string',
       shape: 'list',
@@ -128,6 +129,7 @@ export function buildEgColorPreset(ctx?: EgPresetCtx): FieldRule {
 export function buildEgEditionPreset(ctx?: EgPresetCtx): FieldRule {
   return {
     key: 'editions',
+    variant_dependent: false,
     contract: {
       type: 'string',
       shape: 'list',
@@ -173,6 +175,7 @@ export function buildEgEditionPreset(ctx?: EgPresetCtx): FieldRule {
 export function buildEgReleaseDatePreset(_ctx?: EgPresetCtx): FieldRule {
   return {
     key: 'release_date',
+    variant_dependent: true,
     contract: {
       type: 'date',
       shape: 'scalar',

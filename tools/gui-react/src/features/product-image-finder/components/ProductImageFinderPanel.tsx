@@ -307,8 +307,6 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
     }
   }, [deleteTarget, deleteRunMut, deleteRunsBatchMut, deleteAllMut, deleteImageMut, deleteEvalMut]);
 
-  if (!productId || !category) return null;
-
   const hasCefData = Boolean(variants.length);
   const effectiveResult = isError ? null : pifData;
   const statusChip = deriveFinderStatusChip(effectiveResult ?? null);

@@ -5,7 +5,7 @@
       "version_id": null
     },
     "field_rules": {
-      "changed": true,
+      "changed": false,
       "hash": "5bc2964306d4b5244b2af7019fe16ca327241dc30067c4875e8405a998b6fcdf",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\keyboard\\_generated\\field_rules.json"
     },
@@ -35,19 +35,17 @@
     "required": 12
   },
   "diff": {
-    "changed": true,
+    "changed": false,
     "current_hash": "5bc2964306d4b5244b2af7019fe16ca327241dc30067c4875e8405a998b6fcdf",
     "fields": {
       "added_count": 0,
       "added_keys": [],
-      "changed_count": 1,
-      "changed_keys": [
-        "release_date"
-      ],
+      "changed_count": 0,
+      "changed_keys": [],
       "removed_count": 0,
       "removed_keys": []
     },
-    "previous_hash": "4218cc707125c4bce9314142b3dce873a42c6f7418d91020dd50cca06a4623da"
+    "previous_hash": "5bc2964306d4b5244b2af7019fe16ca327241dc30067c4875e8405a998b6fcdf"
   },
   "errors": [],
   "field_studio_map_hash": "cf1a47e8851a188e0ef31ac1a07cd8d21dd77d19d5c876423e550d701d378a59",

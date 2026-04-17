@@ -4,7 +4,7 @@
 
 // WHY: LLM/extraction settings are owned by the LLM Config page (dedicated rich UI).
 // Pipeline Settings covers global, planner, fetcher, extraction (screenshots), and validation.
-export type SettingsCategoryId = 'review-publisher' | 'global' | 'discovery' | 'planner' | 'fetcher' | 'extraction' | 'validation';
+export type SettingsCategoryId = 'review-publisher' | 'global' | 'discovery' | 'planner' | 'fetcher' | 'extraction' | 'validation' | 'module-global';
 
 export interface SettingsSectionDef {
   readonly id: string;
@@ -23,7 +23,7 @@ export interface SettingsCategoryDef {
   readonly sections: readonly SettingsSectionDef[];
 }
 
-export const SETTINGS_CATEGORY_KEYS = ['review-publisher', 'global', 'discovery', 'planner', 'fetcher', 'extraction', 'validation'] as const;
+export const SETTINGS_CATEGORY_KEYS = ['review-publisher', 'global', 'discovery', 'planner', 'fetcher', 'extraction', 'validation', 'module-global'] as const;
 
 export const SETTINGS_CATEGORY_REGISTRY: readonly SettingsCategoryDef[] = Object.freeze([
   {
@@ -99,6 +99,14 @@ export const SETTINGS_CATEGORY_REGISTRY: readonly SettingsCategoryDef[] = Object
     subtitle: 'Schema enforcement and quality gates',
     sections: Object.freeze([
       { id: 'schema', label: 'Schema Enforcement', tip: 'Pipeline checkpoint validation mode' },
+    ]),
+  },
+  {
+    id: 'module-global',
+    label: 'Global',
+    subtitle: 'Shared one-time module setup',
+    sections: Object.freeze([
+      { id: 'rmbg-model', label: 'RMBG Model', tip: 'One-time HuggingFace access for the background-removal model used by the Product Image Finder. Not read after the model weights are downloaded.' },
     ]),
   },
 ]);

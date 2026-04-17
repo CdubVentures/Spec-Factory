@@ -186,7 +186,7 @@ test('useStudioPageQueries preserves tab-scoped query enablement and reports pol
   }
 });
 
-test('useStudioPageMutations preserves compile, enum-consistency, and refresh behavior', async () => {
+test('useStudioPageMutations preserves compile and refresh behavior', async () => {
   globalThis.__studioPageMutationHarness = {
     apiCalls: [],
     invalidations: [],
@@ -238,30 +238,6 @@ test('useStudioPageMutations preserves compile, enum-consistency, and refresh be
         },
       ],
     );
-
-    await hook.runEnumConsistency('dpi', {
-      reviewEnabled: false,
-      formatGuidance: 'keep canonical casing',
-    });
-
-    const enumCall = globalThis.__studioPageMutationHarness.apiCalls.find((entry) =>
-      entry.url === '/studio/mouse/enum-consistency',
-    );
-    assert.deepEqual(enumCall, {
-      method: 'POST',
-      url: '/studio/mouse/enum-consistency',
-      payload: {
-        field: 'dpi',
-        apply: false,
-        formatGuidance: 'keep canonical casing',
-        reviewEnabled: false,
-      },
-    });
-    assert.deepEqual(globalThis.__studioPageMutationHarness.queryInvalidations, [
-      { queryKey: ['enumReviewData', 'mouse'] },
-      { queryKey: ['reviewProductsIndex', 'mouse'] },
-      { queryKey: ['studio-known-values', 'mouse'] },
-    ]);
 
     await hook.refreshStudioData();
 

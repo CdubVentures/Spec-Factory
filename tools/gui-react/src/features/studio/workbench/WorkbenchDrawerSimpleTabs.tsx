@@ -2,7 +2,6 @@ import { JsonViewer } from '../../../shared/ui/data-display/JsonViewer.tsx';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
 import { EnumConfigurator } from '../components/EnumConfigurator.tsx';
-import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
 import { TagPicker } from '../../../shared/ui/forms/TagPicker.tsx';
 import { TierPicker } from '../../../shared/ui/forms/TierPicker.tsx';
 import {
@@ -40,16 +39,11 @@ const MUTED_ITALIC_TEXT_CLASS = `text-xs ${TEXT_GRAY_400} italic`;
 const MUTED_TEXT_XS_CLASS = `text-xs ${TEXT_GRAY_400}`;
 
 export function EnumTab({
-  category,
   fieldKey,
   rule,
   knownValues,
   enumLists,
   onUpdate,
-  onRunConsistency,
-  consistencyPending,
-  consistencyMessage,
-  consistencyError,
   isEgLocked = false,
   B,
 }: {
@@ -59,15 +53,10 @@ export function EnumTab({
   knownValues: Record<string, string[]>;
   enumLists: EnumEntry[];
   onUpdate: (path: string, val: unknown) => void;
-  onRunConsistency: (options?: { formatGuidance?: string; reviewEnabled?: boolean }) => Promise<void>;
-  consistencyPending: boolean;
-  consistencyMessage: string;
-  consistencyError: string;
   isEgLocked?: boolean;
   B: BadgeSlot;
 }) {
   const contractType = strN(rule, 'contract.type', 'string');
-  const enumConsistencyMode = useRuntimeSettingsValueStore((s) => Boolean(s.values?.enumConsistencyMode));
   return (
     <EnumConfigurator
       fieldKey={fieldKey}
@@ -76,12 +65,7 @@ export function EnumTab({
       enumLists={enumLists}
       contractType={contractType}
       onUpdate={onUpdate}
-      onRunConsistency={onRunConsistency}
-      consistencyPending={consistencyPending}
-      consistencyMessage={consistencyMessage}
-      consistencyError={consistencyError}
       isEgLocked={isEgLocked}
-      enumConsistencyMode={enumConsistencyMode}
       renderLabelSuffix={(path) => <B p={path} />}
     />
   );

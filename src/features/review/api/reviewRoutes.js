@@ -149,7 +149,7 @@ export function registerReviewRoutes(ctx) {
     });
     if (handledReviewItemMutation) return handledReviewItemMutation;
 
-    // Component review routes (layout, components, enums, enum-consistency, impact, review, batch)
+    // Component review routes (layout, components, enums, impact)
     const componentResult = await handleComponentReviewRoute({
       parts, params, method, req, res,
       context: componentReviewContext,

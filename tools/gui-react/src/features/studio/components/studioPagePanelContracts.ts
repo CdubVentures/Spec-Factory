@@ -41,14 +41,6 @@ export interface StudioPageActivePanelKeyProps {
   setAutoSaveEnabled: (nextValue: boolean) => void;
   autoSaveLocked: boolean;
   autoSaveLockReason: string;
-  onRunEnumConsistency: (
-    fieldKey: string,
-    options?: {
-      reviewEnabled?: boolean;
-      formatGuidance?: string;
-    },
-  ) => Promise<unknown>;
-  enumConsistencyPending: boolean;
 }
 
 export interface StudioPageActivePanelContractProps {

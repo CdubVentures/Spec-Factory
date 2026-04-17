@@ -21,8 +21,6 @@ const KNOWN_REASONS = [
   'hero_image_finding',
   'color_edition_finding',
   'variant_identity_check',
-  'validate_enum_consistency',
-  'validate_component_matches',
   'field_repair',
 ] as const;
 

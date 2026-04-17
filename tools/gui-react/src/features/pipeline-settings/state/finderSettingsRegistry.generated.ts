@@ -35,7 +35,6 @@ export const FINDER_SETTINGS_REGISTRY: Record<FinderIdWithSettings, readonly Fin
     { key: 'identityCheckPromptTemplate', type: 'string', default: "", allowEmpty: true, hidden: true },
   ],
   'productImageFinder': [
-    { key: 'hfToken', type: 'string', default: "", uiLabel: 'HuggingFace Token', uiTip: 'Access token for the RMBG 2.0 gated model download', uiGroup: 'Authentication', secret: true, allowEmpty: true },
     { key: 'satisfactionThreshold', type: 'int', default: 3, min: 1, max: 20, uiLabel: 'Satisfaction Threshold', uiTip: 'Quality images per view required before that view is "satisfied"', uiGroup: 'Carousel Strategy' },
     { key: 'viewBudget', type: 'string', default: "", uiLabel: 'View Budget', uiTip: 'Active views + per-view attempt budgets. Empty = category defaults.', uiGroup: 'Carousel Strategy', allowEmpty: true, widget: 'viewBudget', widgetProps: {"childKeys":["viewAttemptBudget","viewAttemptBudgets"]} },
     { key: 'viewAttemptBudget', type: 'int', default: 5, min: 1, max: 50, uiLabel: 'Default View Attempt Budget', uiGroup: 'Carousel Strategy' },

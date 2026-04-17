@@ -233,8 +233,6 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
 
   const isRunningCef = useIsModuleRunning('cef', productId);
 
-  if (!productId || !category) return null;
-
   const effectiveResult = isError ? null : result;
   const statusChip = deriveFinderStatusChip(effectiveResult);
   const kpiCards = deriveFinderKpiCards(effectiveResult);

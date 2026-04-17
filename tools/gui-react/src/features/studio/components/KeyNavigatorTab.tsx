@@ -10,7 +10,6 @@ import { usePersistedToggle } from "../../../stores/collapseStore.ts";
 import { usePersistedTab } from "../../../stores/tabStore.ts";
 import { JsonViewer } from "../../../shared/ui/data-display/JsonViewer.tsx";
 import { EnumConfigurator } from "./EnumConfigurator.tsx";
-import { useRuntimeSettingsValueStore } from "../../../stores/runtimeSettingsValueStore.ts";
 import { SystemBadges } from "../workbench/SystemBadges.tsx";
 import {
   useStudioFieldRulesActions,
@@ -71,8 +70,6 @@ export function KeyNavigatorTab({
   setAutoSaveEnabled,
   autoSaveLocked,
   autoSaveLockReason,
-  onRunEnumConsistency,
-  enumConsistencyPending,
 }: KeyNavigatorTabProps) {
   const { editedRules, editedFieldOrder, egLockedKeys, egToggles, registeredColors } = useStudioFieldRulesState();
   const {
@@ -91,9 +88,6 @@ export function KeyNavigatorTab({
   const [showAddForm, setShowAddForm] = useState(false);
   const [addKeyValue, setAddKeyValue] = useState("");
   const [addKeyGroup, setAddKeyGroup] = useState("");
-
-  const [enumConsistencyMessage, setEnumConsistencyMessage] = useState("");
-  const [enumConsistencyError, setEnumConsistencyError] = useState("");
 
   // Group UI state
   const [selectedGroup, setSelectedGroup] = usePersistedTab<string>(
@@ -118,7 +112,6 @@ export function KeyNavigatorTab({
     false,
   );
 
-  const enumConsistencyMode = useRuntimeSettingsValueStore((s) => Boolean(s.values?.enumConsistencyMode));
   const activeFieldOrder = editedFieldOrder;
   const activeFieldKeys = useMemo(
     () => activeFieldOrder.filter((key) => !key.startsWith("__grp::")),
@@ -641,47 +634,6 @@ export function KeyNavigatorTab({
                   }
                   isEgLocked={isSelectedEgLocked}
                   renderLabelSuffix={(path) => <B p={path} />}
-                  onRunConsistency={async (options) => {
-                    if (!selectedKey) return;
-                    setEnumConsistencyMessage("");
-                    setEnumConsistencyError("");
-                    try {
-                      const result = (await onRunEnumConsistency(
-                        selectedKey,
-                        options,
-                      )) as {
-                        applied?: {
-                          changed?: number;
-                          mapped?: number;
-                          kept?: number;
-                          uncertain?: number;
-                        };
-                        skipped_reason?: string | null;
-                      };
-                      const changed = Number(result?.applied?.changed || 0);
-                      if (changed > 0) {
-                        setEnumConsistencyMessage(
-                          `Consistency applied ${changed} change${changed === 1 ? "" : "s"}.`,
-                        );
-                      } else if (result?.skipped_reason) {
-                        setEnumConsistencyMessage(
-                          `Consistency skipped: ${String(result.skipped_reason).replace(/_/g, " ")}.`,
-                        );
-                      } else {
-                        setEnumConsistencyMessage(
-                          "Consistency finished with no changes.",
-                        );
-                      }
-                    } catch (error) {
-                      setEnumConsistencyError(
-                        (error as Error)?.message || "Consistency run failed.",
-                      );
-                    }
-                  }}
-                  consistencyPending={enumConsistencyPending}
-                  consistencyMessage={enumConsistencyMessage}
-                  consistencyError={enumConsistencyError}
-                  enumConsistencyMode={enumConsistencyMode}
                 />
               </Section>
 

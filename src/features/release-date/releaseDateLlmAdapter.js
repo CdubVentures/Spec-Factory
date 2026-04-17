@@ -101,7 +101,7 @@ Return JSON:
 - "release_date": "YYYY-MM-DD" | "YYYY-MM" | "YYYY" | "MMM YYYY" | "Month YYYY" | "unk"
 - "confidence": 0-100
 - "unknown_reason": "..." (required if release_date is "unk"; empty string otherwise)
-- "evidence": [{ "source_url": "...", "source_page": "...", "source_type": "manufacturer|retailer|review|press|other", "tier": "tier1|tier2|tier3|tier4|tier5|other", "excerpt": "..." }, ...]
+- "evidence": [{ "source_url": "...", "source_page": "...", "tier": "tier1|tier2|tier3|tier4|tier5|other", "excerpt": "..." }, ...]
 - "discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }`;
 
 /**

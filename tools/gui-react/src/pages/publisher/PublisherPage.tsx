@@ -6,6 +6,7 @@ import { api } from '../../api/client.ts';
 import { useUiStore } from '../../stores/uiStore.ts';
 import { DataTable } from '../../shared/ui/data-display/DataTable.tsx';
 import { Chip } from '../../shared/ui/feedback/Chip.tsx';
+import { useFormatDateTime, useTimezoneLabel } from '../../utils/dateTime.ts';
 import type {
   PublisherCandidatesResponse,
   PublisherCandidateRow,
@@ -16,13 +17,6 @@ import type {
 } from './types.ts';
 
 // ── Helpers ──────────────────────────────────────────────────────────
-
-function formatDate(iso: string | null | undefined): string {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleString('en-US', { timeZone: 'America/Los_Angeles', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
-}
 
 function truncateValue(val: string | null | undefined, max = 60): string {
   if (val == null) return '—';
@@ -169,13 +163,14 @@ function LlmDecisionRow({ decision }: { decision: PublisherLlmRepairDecision }) 
 }
 
 function SourceRow({ source }: { source: PublisherSourceEntry }) {
+  const formatDate = useFormatDateTime(false);
   const identifier = source.model ?? source.artifact?.slice(0, 10) ?? source.overridden_by ?? '—';
   return (
     <tr>
       <td className="px-2 py-1" style={{ fontFamily: 'var(--sf-token-font-family-mono)', fontSize: 11 }}>{identifier}</td>
       <td className="px-2 py-1 sf-text-muted" style={{ fontFamily: 'var(--sf-token-font-family-mono)', fontSize: 11 }}>{source.confidence ?? '—'}</td>
       <td className="px-2 py-1 sf-text-subtle" style={{ fontFamily: 'var(--sf-token-font-family-mono)', fontSize: 11 }}>{source.run_id ?? '—'}</td>
-      <td className="px-2 py-1 sf-text-subtle" style={{ fontFamily: 'var(--sf-token-font-family-mono)', fontSize: 11 }}>{formatDate(source.submitted_at)}</td>
+      <td className="px-2 py-1 sf-text-subtle" style={{ fontFamily: 'var(--sf-token-font-family-mono)', fontSize: 11 }}>{formatDate(source.submitted_at) || '—'}</td>
     </tr>
   );
 }
@@ -189,6 +184,7 @@ const detailHeadRowStyle = { background: 'rgb(var(--sf-color-surface-rgb) / 0.5)
 // ── Expanded row content ─────────────────────────────────────────────
 
 function ExpandedRowContent({ row }: { row: PublisherCandidateRow }) {
+  const formatDate = useFormatDateTime(false);
   const repairs = row.validation_json?.repairs ?? [];
   const rejections = row.validation_json?.rejections ?? [];
   const llmRepair = row.validation_json?.llmRepair ?? null;
@@ -344,7 +340,7 @@ function ExpandedRowContent({ row }: { row: PublisherCandidateRow }) {
                   <td className="py-1 px-1.5 sf-text-primary">{sourceType || '—'}</td>
                   <td className="py-1 px-1.5 sf-text-muted" style={{ fontFamily: 'var(--sf-token-font-family-mono)' }}>{row.llm_model || '—'}</td>
                   <td className="py-1 px-1.5 sf-text-muted" style={{ fontFamily: 'var(--sf-token-font-family-mono)', fontSize: 10, wordBreak: 'break-all' }}>{sourceId}</td>
-                  <td className="py-1 px-1.5 sf-text-muted">{row.submitted_at || '—'}</td>
+                  <td className="py-1 px-1.5 sf-text-muted">{formatDate(row.submitted_at) || '—'}</td>
                 </tr>
               </tbody>
             </table>
@@ -378,11 +374,11 @@ function ExpandedRowContent({ row }: { row: PublisherCandidateRow }) {
             </div>
             <div>
               <div className="sf-text-subtle" style={{ fontSize: 10 }}>SUBMITTED</div>
-              <div className="sf-text-subtle" style={{ fontFamily: 'var(--sf-token-font-family-mono)' }}>{formatDate(row.submitted_at)}</div>
+              <div className="sf-text-subtle" style={{ fontFamily: 'var(--sf-token-font-family-mono)' }}>{formatDate(row.submitted_at) || '—'}</div>
             </div>
             <div>
               <div className="sf-text-subtle" style={{ fontSize: 10 }}>UPDATED</div>
-              <div className="sf-text-subtle" style={{ fontFamily: 'var(--sf-token-font-family-mono)' }}>{formatDate(row.updated_at)}</div>
+              <div className="sf-text-subtle" style={{ fontFamily: 'var(--sf-token-font-family-mono)' }}>{formatDate(row.updated_at) || '—'}</div>
             </div>
           </div>
         </div>
@@ -403,6 +399,8 @@ const STATUS_FILTERS: StatusFilter[] = ['all', 'candidate', 'resolved'];
 
 export function PublisherPage() {
   const category = useUiStore((s) => s.category);
+  const formatDate = useFormatDateTime(false);
+  const tzLabel = useTimezoneLabel();
 
   // Filter state (persisted)
   const [page, setPage] = usePersistedNumber('publisher:page', 1);
@@ -487,10 +485,10 @@ export function PublisherPage() {
     },
     {
       accessorKey: 'submitted_at',
-      header: 'Submitted (PST)',
+      header: `Submitted (${tzLabel})`,
       cell: ({ getValue }) => (
         <span className="sf-text-subtle" style={{ fontFamily: 'var(--sf-token-font-family-mono)', fontSize: 11 }}>
-          {formatDate(getValue() as string)}
+          {formatDate(getValue() as string) || '—'}
         </span>
       ),
       size: 120,
@@ -598,7 +596,7 @@ export function PublisherPage() {
       },
       size: 60,
     },
-  ], []);
+  ], [formatDate, tzLabel]);
 
   // ── Expanded row renderer ────────────────────────────────────────
 

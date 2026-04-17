@@ -61,13 +61,6 @@ export function formatBytes(value: number) {
   return `${formatNumber(size, digits)} ${units[idx]}`;
 }
 
-export function formatDateTime(value: string | null | undefined) {
-  if (!value) return '-';
-  const ms = Date.parse(String(value));
-  if (!Number.isFinite(ms)) return String(value);
-  return new Date(ms).toLocaleString();
-}
-
 export function providerFromModelToken(value: string) {
   const token = normalizeToken(value);
   if (!token) return 'openai';

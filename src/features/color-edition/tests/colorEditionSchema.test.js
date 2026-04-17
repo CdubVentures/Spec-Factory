@@ -200,46 +200,49 @@ describe('colorEditionFinderResponseSchema', () => {
     assert.deepEqual(result.color_names, { 'white': 'Arctic White' });
   });
 
-  // ── evidence_refs ──
+  // ── evidence_refs (flat array of {url, tier}) ──
 
-  it('parses evidence_refs record keyed by color atom', () => {
+  it('parses evidence_refs as a flat array at response root', () => {
     const input = {
       colors: ['black', 'white'],
       default_color: 'black',
-      evidence_refs: {
-        'black': [{ url: 'https://razer.com/m1', tier: 'tier1' }],
-        'white': [{ url: 'https://amazon.com/white', tier: 'tier3' }],
-      },
+      evidence_refs: [
+        { url: 'https://razer.com/m1', tier: 'tier1' },
+        { url: 'https://amazon.com/m1', tier: 'tier3' },
+      ],
     };
     const result = colorEditionFinderResponseSchema.parse(input);
-    assert.deepEqual(result.evidence_refs.black, [{ url: 'https://razer.com/m1', tier: 'tier1' }]);
-    assert.deepEqual(result.evidence_refs.white, [{ url: 'https://amazon.com/white', tier: 'tier3' }]);
+    assert.equal(result.evidence_refs.length, 2);
+    assert.deepEqual(result.evidence_refs[0], { url: 'https://razer.com/m1', tier: 'tier1' });
+    assert.deepEqual(result.evidence_refs[1], { url: 'https://amazon.com/m1', tier: 'tier3' });
   });
 
-  it('parses evidence_refs keyed by edition slug', () => {
-    const input = {
-      colors: ['black'],
-      editions: { 'launch-edition': { colors: ['black+red'] } },
-      default_color: 'black',
-      evidence_refs: {
-        'launch-edition': [{ url: 'https://razer.com/launch', tier: 'tier1' }],
-      },
-    };
-    const result = colorEditionFinderResponseSchema.parse(input);
-    assert.deepEqual(result.evidence_refs['launch-edition'], [{ url: 'https://razer.com/launch', tier: 'tier1' }]);
-  });
-
-  it('evidence_refs defaults to empty object when omitted', () => {
+  it('evidence_refs defaults to empty array when omitted', () => {
     const input = { colors: ['black'], default_color: 'black' };
     const result = colorEditionFinderResponseSchema.parse(input);
-    assert.deepEqual(result.evidence_refs, {});
+    assert.deepEqual(result.evidence_refs, []);
+  });
+
+  it('accepts many evidence entries (multi-source allowed)', () => {
+    const input = {
+      colors: ['black'],
+      default_color: 'black',
+      evidence_refs: [
+        { url: 'u1', tier: 'tier1' },
+        { url: 'u2', tier: 'tier1' },
+        { url: 'u3', tier: 'tier3' },
+        { url: 'u4', tier: 'tier4' },
+      ],
+    };
+    const result = colorEditionFinderResponseSchema.parse(input);
+    assert.equal(result.evidence_refs.length, 4);
   });
 
   it('rejects evidence_refs entry missing url', () => {
     const input = {
       colors: ['black'],
       default_color: 'black',
-      evidence_refs: { 'black': [{ tier: 'tier1' }] },
+      evidence_refs: [{ tier: 'tier1' }],
     };
     assert.throws(() => colorEditionFinderResponseSchema.parse(input));
   });
@@ -248,7 +251,7 @@ describe('colorEditionFinderResponseSchema', () => {
     const input = {
       colors: ['black'],
       default_color: 'black',
-      evidence_refs: { 'black': [{ url: 'https://razer.com/m1' }] },
+      evidence_refs: [{ url: 'https://razer.com/m1' }],
     };
     assert.throws(() => colorEditionFinderResponseSchema.parse(input));
   });
@@ -257,19 +260,17 @@ describe('colorEditionFinderResponseSchema', () => {
     const input = {
       colors: ['black'],
       default_color: 'black',
-      evidence_refs: {
-        'black': [
-          { url: 'u1', tier: 'tier1' },
-          { url: 'u2', tier: 'tier2' },
-          { url: 'u3', tier: 'tier3' },
-          { url: 'u4', tier: 'tier4' },
-          { url: 'u5', tier: 'tier5' },
-          { url: 'u6', tier: 'other' },
-        ],
-      },
+      evidence_refs: [
+        { url: 'u1', tier: 'tier1' },
+        { url: 'u2', tier: 'tier2' },
+        { url: 'u3', tier: 'tier3' },
+        { url: 'u4', tier: 'tier4' },
+        { url: 'u5', tier: 'tier5' },
+        { url: 'u6', tier: 'other' },
+      ],
     };
     const result = colorEditionFinderResponseSchema.parse(input);
-    assert.equal(result.evidence_refs.black.length, 6);
+    assert.equal(result.evidence_refs.length, 6);
   });
 });
 

@@ -2,6 +2,7 @@ import { usePersistedToggle } from '../../stores/collapseStore.ts';
 import { useQuery, useMutation, type QueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client.ts';
 import { ActionTooltip } from '../../shared/ui/feedback/ActionTooltip.tsx';
+import { useFormatDate } from '../../utils/dateTime.ts';
 import type {
   ComponentReviewFlaggedItem,
   ComponentReviewDocument,
@@ -57,6 +58,7 @@ function ReviewItemCard({
   onAction: (reviewId: string, action: string, mergeTarget?: string) => void;
   isPending: boolean;
 }) {
+  const formatDate = useFormatDate();
   const badge = statusBadge(item.status);
 
   return (
@@ -130,7 +132,7 @@ function ReviewItemCard({
       )}
 
       <div className="sf-text-nano sf-text-subtle">
-        Product: {item.product_id || 'unknown'} | Created: {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'unknown'}
+        Product: {item.product_id || 'unknown'} | Created: {item.created_at ? formatDate(item.created_at) : 'unknown'}
       </div>
     </div>
   );

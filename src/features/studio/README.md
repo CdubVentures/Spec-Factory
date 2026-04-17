@@ -1,5 +1,5 @@
 ## Purpose
-Own API route registration for field studio payloads, map management, known-values/component-db lookups, and studio enum-consistency flows.
+Own API route registration for field studio payloads, map management, and known-values/component-db lookups.
 This boundary coordinates studio-facing control-plane actions while delegating settings persistence and indexing review logic to explicit seams.
 
 ## Public API (The Contract)

@@ -2,7 +2,6 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   searchStatusLabel,
-  formatTime,
   stateBadgeContent,
   attemptLabel,
   computeSearchStats,
@@ -67,15 +66,6 @@ describe('searchStatusLabel', () => {
       assert.equal(r.chipClass, chipClass);
     });
   }
-});
-
-// ── Characterization: formatTime ─────────────────────────────────────────────
-
-describe('formatTime', () => {
-  it('returns dash for null', () => assert.equal(formatTime(null), '\u2014'));
-  it('extracts HH:MM:SS from string', () => assert.equal(formatTime('2026-03-29T10:23:41Z'), '10:23:41'));
-  it('extracts embedded time', () => assert.equal(formatTime('some 14:05:30 text'), '14:05:30'));
-  it('returns dash for invalid', () => assert.equal(formatTime('not a date'), '\u2014'));
 });
 
 // ── Characterization: stateBadgeContent ──────────────────────────────────────

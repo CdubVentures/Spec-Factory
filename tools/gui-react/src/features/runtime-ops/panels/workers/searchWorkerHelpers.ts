@@ -39,19 +39,6 @@ export function searchStatusLabel(status: string): { label: string; chipClass: s
   }
 }
 
-export function formatTime(ts: string | null): string {
-  if (!ts) return '\u2014';
-  const match = ts.match(/(\d{2}:\d{2}:\d{2})/);
-  if (match) return match[1];
-  try {
-    const d = new Date(ts);
-    if (Number.isNaN(d.getTime())) return '\u2014';
-    return d.toTimeString().slice(0, 8);
-  } catch {
-    return '\u2014';
-  }
-}
-
 export function stateBadgeContent(state: string): { label: string; chipClass: string; pulse: boolean } {
   switch (state) {
     case 'running': return { label: 'Running',       chipClass: 'sf-chip-success',           pulse: true };

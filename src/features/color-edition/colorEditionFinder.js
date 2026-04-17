@@ -573,6 +573,7 @@ export async function runColorEditionFinder({
     default_color: selected.default_color,
     siblings_excluded: Array.isArray(response?.siblings_excluded) ? response.siblings_excluded : [],
     discovery_log: response?.discovery_log || emptyLog,
+    evidence_refs: Array.isArray(response?.evidence_refs) ? response.evidence_refs : [],
   };
 
   const { ranAt } = computeRanAt();

@@ -10,6 +10,7 @@ import {
 } from '../../../shared/ui/finder/index.ts';
 import type { DiscoverySection } from '../../../shared/ui/finder/index.ts';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
+import { pullFormatDate } from '../../../utils/dateTime.ts';
 import type { ProductImageFinderRun } from '../types.ts';
 
 interface PifRunHistoryRowProps {
@@ -61,7 +62,7 @@ export const PifRunHistoryRow = memo(function PifRunHistoryRow({
         <span className="text-[13px] font-mono font-bold text-[var(--sf-token-accent-strong)]">
           #{run.run_number}
         </span>
-        <span className="font-mono text-[10px] sf-text-muted">{run.ran_at?.split('T')[0] ?? '--'}</span>
+        <span className="font-mono text-[10px] sf-text-muted">{pullFormatDate(run.ran_at) || '--'}</span>
         <FinderRunTimestamp
           startedAt={run.started_at || run.response?.started_at}
           durationMs={run.duration_ms ?? run.response?.duration_ms}

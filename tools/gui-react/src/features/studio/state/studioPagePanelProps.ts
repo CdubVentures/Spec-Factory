@@ -72,14 +72,6 @@ export interface BuildStudioPageActivePanelPropsInput {
   setAutoSaveEnabled: (nextValue: boolean) => void;
   autoSaveLocked: boolean;
   autoSaveLockReason: string;
-  onRunEnumConsistency: (
-    fieldKey: string,
-    options?: {
-      reviewEnabled?: boolean;
-      formatGuidance?: string;
-    },
-  ) => Promise<unknown>;
-  enumConsistencyPending: boolean;
   guardrails: Record<string, unknown> | null | undefined;
   artifacts: ArtifactEntry[] | undefined;
   compileErrors: string[];
@@ -129,8 +121,6 @@ export function buildStudioPageActivePanelProps({
   setAutoSaveEnabled,
   autoSaveLocked,
   autoSaveLockReason,
-  onRunEnumConsistency,
-  enumConsistencyPending,
   guardrails,
   artifacts,
   compileErrors,
@@ -190,8 +180,6 @@ export function buildStudioPageActivePanelProps({
       setAutoSaveEnabled,
       autoSaveLocked,
       autoSaveLockReason,
-      onRunEnumConsistency,
-      enumConsistencyPending,
     },
     contractTabProps: {
       category,

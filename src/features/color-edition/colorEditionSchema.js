@@ -14,7 +14,7 @@ const evidenceRefSchema = z.object({
  * - colors: flat array of ALL product colors (colors[0] = default)
  * - editions: keyed by slug, each with its own colors subset
  * - default_color: must equal colors[0]
- * - evidence_refs: keyed by color atom or edition slug → array of {url, tier}
+ * - evidence_refs: flat array of {url, tier} — sources backing this run
  */
 export const colorEditionFinderResponseSchema = z.object({
   colors: z.array(z.string()),
@@ -38,7 +38,7 @@ export const colorEditionFinderResponseSchema = z.object({
     urls_checked: [],
     queries_run: [],
   }),
-  evidence_refs: z.record(z.string(), z.array(evidenceRefSchema)).default({}),
+  evidence_refs: z.array(evidenceRefSchema).default([]),
 });
 
 /* ── Variant identity check response schema ───────────────────── */

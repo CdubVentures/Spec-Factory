@@ -650,7 +650,7 @@ export async function runProductImageFinder({
 
   // Load RMBG model (once before variant loop)
   const modelDir = _modelDirOverride || path.join(productRoot, '..', 'models', 'rmbg-2.0');
-  const hfToken = finderStore.getSetting('hfToken') || '';
+  const hfToken = config?.hfToken || '';
   const modelStatus = await ensureModelReady({ modelDir, token: hfToken });
   let rmbgSession = null;
   if (modelStatus.ready) {
@@ -953,7 +953,7 @@ export async function runCarouselLoop({
 
   // Load RMBG model once
   const modelDir = _modelDirOverride || path.join(productRoot, '..', 'models', 'rmbg-2.0');
-  const hfTokenLoop = finderStore.getSetting('hfToken') || '';
+  const hfTokenLoop = config?.hfToken || '';
   const modelStatus = await ensureModelReady({ modelDir, token: hfTokenLoop });
   let rmbgSession = null;
   if (modelStatus.ready) {

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { DataTable } from '../../shared/ui/data-display/DataTable.tsx';
 import { EVENT_MEANINGS } from '../../utils/constants.ts';
+import { useFormatTime } from '../../utils/dateTime.ts';
 import type { RuntimeEvent } from '../../types/events.ts';
 import type { ColumnDef } from '@tanstack/react-table';
 import * as Tooltip from '@radix-ui/react-tooltip';
@@ -61,67 +62,67 @@ function buildEventDetail(evt: RuntimeEvent) {
   return details.filter(Boolean).join(' | ');
 }
 
-const columns: ColumnDef<RuntimeEvent, unknown>[] = [
-  {
-    accessorKey: 'ts',
-    header: 'Time',
-    cell: ({ getValue }) => {
-      const ts = getValue() as string;
-      return ts ? new Date(ts).toLocaleTimeString() : '';
-    },
-    size: 80,
-  },
-  {
-    accessorKey: 'event',
-    header: 'Event',
-    cell: ({ getValue }) => {
-      const event = getValue() as string;
-      const meaning = EVENT_MEANINGS[event];
-      if (!meaning) return <span className="font-mono text-xs">{event}</span>;
-      return (
-        <Tooltip.Provider>
-          <Tooltip.Root>
-            <Tooltip.Trigger asChild>
-              <span className="font-mono text-xs cursor-help">{event}</span>
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Content
-                className="sf-tooltip-content text-xs rounded px-2 py-1 max-w-xs"
-                sideOffset={5}
-              >
-                {meaning}
-              </Tooltip.Content>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-        </Tooltip.Provider>
-      );
-    },
-    size: 200,
-  },
-  { accessorKey: 'productId', header: 'Product', size: 150 },
-  {
-    id: 'detail',
-    header: 'Detail',
-    cell: ({ row }) => {
-      const evt = row.original;
-      const detail = buildEventDetail(evt);
-      return (
-        <span className="font-mono text-[11px] sf-text-subtle" title={detail}>
-          {detail}
-        </span>
-      );
-    },
-    size: 300,
-  },
-];
-
 interface EventLogProps {
   events: RuntimeEvent[];
   maxHeight?: string;
 }
 
 export function EventLog({ events, maxHeight = 'max-h-72' }: EventLogProps) {
+  const formatTime = useFormatTime(false, true);
   const reversed = useMemo(() => [...events].reverse(), [events]);
+  const columns: ColumnDef<RuntimeEvent, unknown>[] = useMemo(() => [
+    {
+      accessorKey: 'ts',
+      header: 'Time',
+      cell: ({ getValue }) => {
+        const ts = getValue() as string;
+        return ts ? formatTime(ts) : '';
+      },
+      size: 80,
+    },
+    {
+      accessorKey: 'event',
+      header: 'Event',
+      cell: ({ getValue }) => {
+        const event = getValue() as string;
+        const meaning = EVENT_MEANINGS[event];
+        if (!meaning) return <span className="font-mono text-xs">{event}</span>;
+        return (
+          <Tooltip.Provider>
+            <Tooltip.Root>
+              <Tooltip.Trigger asChild>
+                <span className="font-mono text-xs cursor-help">{event}</span>
+              </Tooltip.Trigger>
+              <Tooltip.Portal>
+                <Tooltip.Content
+                  className="sf-tooltip-content text-xs rounded px-2 py-1 max-w-xs"
+                  sideOffset={5}
+                >
+                  {meaning}
+                </Tooltip.Content>
+              </Tooltip.Portal>
+            </Tooltip.Root>
+          </Tooltip.Provider>
+        );
+      },
+      size: 200,
+    },
+    { accessorKey: 'productId', header: 'Product', size: 150 },
+    {
+      id: 'detail',
+      header: 'Detail',
+      cell: ({ row }) => {
+        const evt = row.original;
+        const detail = buildEventDetail(evt);
+        return (
+          <span className="font-mono text-[11px] sf-text-subtle" title={detail}>
+            {detail}
+          </span>
+        );
+      },
+      size: 300,
+    },
+  ], [formatTime]);
 
   return (
     <div className="sf-surface-card p-3 sf-text-primary">

@@ -8,15 +8,17 @@
 
 import { resolvePromptTemplate } from '../llm/resolvePromptTemplate.js';
 
-export const EVIDENCE_PROMPT_FRAGMENT = `For each discovery, cite at least {{MIN_EVIDENCE_REFS}} source URL(s) as evidence_refs[], each with:
-- url: the source URL
-- tier: classify the source using one of these codes (classification only, no ranking):
-    tier1 = manufacturer / brand-official / press release
-    tier2 = professional testing lab / review lab
-    tier3 = authorized retailer / marketplace
-    tier4 = community / forum / blog / user-generated
-    tier5 = specs aggregator / product database
-    other = anything that doesn't fit the above`;
+export const EVIDENCE_PROMPT_FRAGMENT = `Evidence requirements (CRITICAL — publisher will reject low-evidence candidates):
+- Provide AT LEAST {{MIN_EVIDENCE_REFS}} evidence entry with a source URL
+- Tag each source with a tier (classification only, no ranking)
+
+Source tiers:
+- tier1: manufacturer / brand-official / press release
+- tier2: professional testing lab / review lab
+- tier3: authorized retailer / marketplace
+- tier4: community / forum / blog / user-generated
+- tier5: specs aggregator / product database
+- other: anything that doesn't fit the above`;
 
 /**
  * Render the evidence prompt block with MIN_EVIDENCE_REFS bound.

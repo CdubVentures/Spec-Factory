@@ -30,23 +30,6 @@ interface EnumSubTabProps {
   debugLinkedProducts?: boolean;
 }
 
-interface EnumConsistencyResponse {
-  decisions?: Array<{
-    value: string;
-    decision: 'map_to_existing' | 'keep_new' | 'uncertain';
-    target_value?: string | null;
-    confidence?: number;
-    reasoning?: string;
-  }>;
-  applied?: {
-    mapped: number;
-    kept: number;
-    uncertain: number;
-    changed: number;
-  };
-  skipped_reason?: string | null;
-}
-
 function enumToCellState(valueItem: EnumValueReviewItem): ReviewValueCellState {
   return {
     selected: {
@@ -271,8 +254,6 @@ export function EnumSubTab({
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
   const [selectedValueIndex, setSelectedValueIndex] = useState<number | null>(null);
-  const [consistencyMessage, setConsistencyMessage] = useState('');
-  const [consistencyError, setConsistencyError] = useState('');
 
   // ── Drawer mutations (moved from EnumReviewDrawer) ──────────────
   function optimisticAccept(field: string, valueIndex: number, candidateId?: string | null, candidateValue?: string) {
@@ -422,30 +403,6 @@ export function EnumSubTab({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['componentReview', category] });
       invalidateEnumAuthorityQueries(queryClient, category, { includeStudioKnownValues: false });
-    },
-  });
-
-  const enumConsistencyMut = useMutation({
-    mutationFn: (body: { field: string; apply?: boolean }) =>
-      api.post<EnumConsistencyResponse>(`/review-components/${category}/enum-consistency`, body),
-    onMutate: () => {
-      setConsistencyMessage('');
-      setConsistencyError('');
-    },
-    onSuccess: (result) => {
-      invalidateEnumAuthorityQueries(queryClient, category);
-      const changed = Number(result?.applied?.changed || 0);
-      if (changed > 0) {
-        setConsistencyMessage(`Consistency applied ${changed} change${changed === 1 ? '' : 's'}.`);
-      } else if (result?.skipped_reason) {
-        setConsistencyMessage(`Consistency skipped: ${String(result.skipped_reason).replace(/_/g, ' ')}.`);
-      } else {
-        setConsistencyMessage('Consistency finished with no changes.');
-      }
-    },
-    onError: (error) => {
-      setConsistencyError((error as Error)?.message || 'Consistency run failed.');
-      invalidateEnumReviewDataQuery(queryClient, category);
     },
   });
 
@@ -637,17 +594,6 @@ export function EnumSubTab({
                     const otherCount = selectedFieldData.metrics.flags - pipelineCount;
                     return (
                       <div className="flex items-center gap-1.5">
-                        <div className="flex items-center gap-1">
-                          <ActionTooltip text="Apply enum consistency normalization using configured format rules. Uses Key Navigator placeholders like XXXX and YYYY when available.">
-                            <button
-                              onClick={() => enumConsistencyMut.mutate({ field: selectedFieldData.field, apply: true })}
-                              disabled={enumConsistencyMut.isPending}
-                              className="px-2 py-0.5 sf-llm-soft-button sf-text-nano rounded disabled:opacity-50"
-                            >
-                              {enumConsistencyMut.isPending ? 'Consistency...' : 'Consistency'}
-                            </button>
-                          </ActionTooltip>
-                        </div>
                         <ActionTooltip text="Run AI Review across enum values with pending shared/component matches. This does not change accepted values until you accept or confirm.">
                           <button
                             onClick={() => aiReviewBatchMut.mutate()}
@@ -671,12 +617,6 @@ export function EnumSubTab({
                     );
                   })()}
                 </div>
-                {consistencyMessage ? (
-                  <div className="px-3 py-1 sf-text-label sf-status-text-info">{consistencyMessage}</div>
-                ) : null}
-                {consistencyError ? (
-                  <div className="px-3 py-1 sf-text-label sf-status-text-danger">{consistencyError}</div>
-                ) : null}
                 <div className="p-1 space-y-0.5">
                   {selectedFieldData.values.map((valueItem, valueIndex) => (
                     <ValueRow

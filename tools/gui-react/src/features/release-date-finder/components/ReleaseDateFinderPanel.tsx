@@ -157,6 +157,9 @@ export function ReleaseDateFinderPanel({ productId, category }: ReleaseDateFinde
         isRunning={isRunningModule}
         onRun={handleRunAll}
         runLabel="Run All"
+        // WHY: RDF iterates CEF's variant registry. If there are no variants yet,
+        // there's nothing to loop over. Mirrors PIF's CEF-gate pattern.
+        runDisabled={cefVariants.length === 0}
       >
         <FinderRunModelBadge
           labelPrefix="RDF"

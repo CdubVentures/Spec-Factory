@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { pct } from '../../../utils/formatting.ts';
 import { hasKnownValue } from '../../../utils/fieldNormalize.ts';
+import { pullFormatDate } from '../../../utils/dateTime.ts';
 import { Spinner } from '../feedback/Spinner.tsx';
 import { ActionTooltip } from '../feedback/ActionTooltip.tsx';
 import {
@@ -148,7 +149,7 @@ function EvidenceSnippet({ candidate }: { candidate: ReviewCandidate }) {
       )}
       <div className="flex gap-3 sf-text-nano sf-review-evidence-meta">
         {evidence.snippet_id && <span>snippet: {evidence.snippet_id.slice(0, 8)}</span>}
-        {evidence.retrieved_at && <span>{evidence.retrieved_at.slice(0, 10)}</span>}
+        {evidence.retrieved_at && <span>{pullFormatDate(evidence.retrieved_at)}</span>}
       </div>
     </div>
   );

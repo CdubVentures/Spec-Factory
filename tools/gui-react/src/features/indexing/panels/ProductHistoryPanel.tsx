@@ -12,6 +12,7 @@ import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
 import { Sparkline } from '../../runtime-ops/components/Sparkline.tsx';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
+import { relativeTime } from '../../../utils/formatting.ts';
 import type {
   ProductHistoryResponse,
   ProductHistoryRunRow,
@@ -24,17 +25,6 @@ import type {
 } from '../types.ts';
 
 /* ── Helpers ──────────────────────────────────────────────────────── */
-
-function relTime(iso: string): string {
-  if (!iso) return '';
-  const ms = Date.now() - new Date(iso).getTime();
-  if (ms < 60_000) return 'just now';
-  const m = Math.floor(ms / 60_000);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
-}
 
 function fmtDur(a: string, b: string): string {
   if (!a || !b) return '-';
@@ -119,7 +109,7 @@ const queryColumns: ColumnDef<ProductHistoryQueryRow, unknown>[] = [
   { id: 'tier', header: 'Tier', accessorFn: (r) => r.tier, cell: ({ row }) => { const t = tierChip(row.original.tier); return <Chip label={t.label} className={t.cls} />; }, size: 50 },
   { accessorKey: 'provider', header: 'Provider', cell: ({ row }) => <Chip label={row.original.provider} className="sf-chip-accent" />, size: 80 },
   { accessorKey: 'result_count', header: 'Results', size: 65 },
-  { accessorKey: 'ts', header: 'Time', cell: ({ row }) => <span className="sf-text-muted">{relTime(row.original.ts)}</span>, size: 80 },
+  { accessorKey: 'ts', header: 'Time', cell: ({ row }) => <span className="sf-text-muted">{relativeTime(row.original.ts)}</span>, size: 80 },
 ];
 
 const domainColumns: ColumnDef<DomainBreakdownRow, unknown>[] = [
@@ -140,7 +130,7 @@ const urlColumns: ColumnDef<ProductHistoryUrlRow, unknown>[] = [
   { id: 'tier', header: 'Tier', accessorFn: (r) => r.source_tier, cell: ({ row }) => <Chip label={`T${row.original.source_tier}`} className="sf-chip-neutral" />, size: 50 },
   { accessorKey: 'doc_kind', header: 'Kind', cell: ({ row }) => <Chip label={row.original.doc_kind || '-'} className="sf-chip-neutral" />, size: 60 },
   { id: 'sz', header: 'Size', accessorFn: (r) => r.size_bytes, cell: ({ row }) => <span className="font-mono sf-text-label sf-text-muted">{fmtBytes(row.original.size_bytes)}</span>, size: 70 },
-  { accessorKey: 'crawled_at', header: 'Time', cell: ({ row }) => <span className="sf-text-muted">{relTime(row.original.crawled_at)}</span>, size: 70 },
+  { accessorKey: 'crawled_at', header: 'Time', cell: ({ row }) => <span className="sf-text-muted">{relativeTime(row.original.crawled_at)}</span>, size: 70 },
 ];
 
 /* ── Chart constants ──────────────────────────────────────────────── */
@@ -582,7 +572,7 @@ export function ProductHistoryPanel({ productId, category }: ProductHistoryPanel
                   }`}>
                   <TrafficLight color={r.status === 'completed' ? 'green' : r.status === 'failed' ? 'red' : 'gray'} />
                   <span className="font-mono font-semibold">{r.run_id.slice(0, 15)}</span>
-                  <span className="sf-text-muted">{relTime(r.started_at)}</span>
+                  <span className="sf-text-muted">{relativeTime(r.started_at)}</span>
                   <span className="font-mono sf-status-text-warning">{fmtCost(r.cost_usd)}</span>
                   <span className="sf-text-muted">{fmtDur(r.started_at, r.ended_at)}</span>
                 </button>

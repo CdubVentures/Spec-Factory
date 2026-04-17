@@ -9,6 +9,7 @@ import {
   useShowMore,
 } from '../../../shared/ui/finder/index.ts';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
+import { pullFormatDate } from '../../../utils/dateTime.ts';
 import type { EvalVariantGroup } from '../types.ts';
 
 interface EvalVariantGroupRowProps {
@@ -51,7 +52,7 @@ export const EvalVariantGroupRow = memo(function EvalVariantGroupRow({
   const rangeLabel = evalNumbers.length > 0
     ? `#${evalNumbers[0]}\u2013#${evalNumbers[evalNumbers.length - 1]}`
     : '';
-  const date = firstEval?.ran_at?.split('T')[0] ?? '--';
+  const date = pullFormatDate(firstEval?.ran_at) || '--';
 
   return (
     <div className="sf-surface-elevated rounded-lg overflow-hidden border sf-border-soft">

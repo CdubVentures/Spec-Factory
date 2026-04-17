@@ -19,13 +19,6 @@ export interface WorkbenchDrawerTabContentProps {
   enumLists: EnumEntry[];
   componentDb: ComponentDbResponse;
   componentSources: ComponentSource[];
-  consistencyPending: boolean;
-  consistencyMessage: string;
-  consistencyError: string;
-  onRunConsistency: (options?: {
-    formatGuidance?: string;
-    reviewEnabled?: boolean;
-  }) => Promise<void>;
   onUpdate: (path: string, value: unknown) => void;
   onNavigate: (key: string) => void;
   isEgLocked?: boolean;
@@ -42,10 +35,6 @@ export function WorkbenchDrawerTabContent({
   enumLists,
   componentDb,
   componentSources,
-  consistencyPending,
-  consistencyMessage,
-  consistencyError,
-  onRunConsistency,
   onUpdate,
   onNavigate,
   isEgLocked = false,
@@ -64,10 +53,6 @@ export function WorkbenchDrawerTabContent({
         knownValues={knownValues}
         enumLists={enumLists}
         onUpdate={onUpdate}
-        onRunConsistency={onRunConsistency}
-        consistencyPending={consistencyPending}
-        consistencyMessage={consistencyMessage}
-        consistencyError={consistencyError}
         isEgLocked={isEgLocked}
         B={B}
       />

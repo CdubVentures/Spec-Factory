@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { Tip } from "../../../shared/ui/feedback/Tip.tsx";
 import { labelCls } from "./studioConstants.ts";
+import { useFormatDateTime } from "../../../utils/dateTime.ts";
 import {
   STUDIO_TAB_IDS,
   type StudioTabId,
@@ -74,6 +75,7 @@ export function StudioPageShell({
   onRefresh,
   activePanel,
 }: StudioPageShellProps) {
+  const formatDateTime = useFormatDateTime();
   const saveStudioDocsMut = { isPending: savePending };
   const compileMut = { isPending: compilePending };
   const runCompileFromStudio = onRunCompile;
@@ -125,7 +127,7 @@ export function StudioPageShell({
                 <div className="text-[11px] sf-status-text-warning mt-1">
                   Snapshot: {authorityConflictVersion}
                   {authorityConflictDetectedAt
-                    ? ` | detected ${new Date(authorityConflictDetectedAt).toLocaleString()}`
+                    ? ` | detected ${formatDateTime(authorityConflictDetectedAt)}`
                     : ""}
                 </div>
               </div>

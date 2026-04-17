@@ -12,9 +12,10 @@ import { usePersistedExpandMap } from '../../../../stores/tabStore.ts';
 import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
 import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import {
-  getProviderColors, searchStatusLabel, formatTime, stateBadgeContent, attemptLabel,
+  getProviderColors, searchStatusLabel, stateBadgeContent, attemptLabel,
   computeSearchStats, buildSearchNarrative, computeProviderUsage, computeTriageSummary,
 } from './searchWorkerHelpers.ts';
+import { useFormatTime } from '../../../../utils/dateTime.ts';
 
 // ── Props ────────────────────────────────────────────────────────────────────
 
@@ -371,6 +372,7 @@ function AttemptDetail({ attempt, workerId, onJourney, onResults, category }: {
   onJourney: () => void; onResults: () => void; category: string;
 }) {
   const [rawOpen, toggleRawOpen] = usePersistedToggle(`runtimeOps:searchDash:raw:${category}:${attempt.attempt_no}`, false);
+  const formatTime = useFormatTime(false, true);
   const triage = useMemo(() => computeTriageSummary(attempt.results ?? []), [attempt.results]);
   const results = attempt.results ?? [];
 

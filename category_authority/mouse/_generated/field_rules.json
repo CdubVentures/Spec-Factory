@@ -515,7 +515,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -629,7 +628,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -730,7 +728,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -845,7 +842,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -952,7 +948,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -1057,7 +1052,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -1168,7 +1162,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -1279,7 +1272,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -1404,7 +1396,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -1519,7 +1510,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -1634,7 +1624,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -1745,7 +1734,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -1869,7 +1857,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -1996,7 +1983,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2100,7 +2086,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2225,7 +2210,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2353,7 +2337,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2461,7 +2444,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2570,7 +2552,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2675,7 +2656,6 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2798,7 +2778,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -2916,7 +2895,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3019,7 +2997,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3123,7 +3100,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3225,7 +3201,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3318,7 +3293,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3427,7 +3401,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3532,7 +3505,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3649,7 +3621,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3755,7 +3726,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3875,7 +3845,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -3992,7 +3961,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4108,7 +4076,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4217,7 +4184,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4328,7 +4294,6 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4434,7 +4399,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4538,7 +4502,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4642,7 +4605,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4766,7 +4728,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -4881,7 +4842,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5002,7 +4962,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5120,7 +5079,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5251,7 +5209,6 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5379,7 +5336,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5488,7 +5444,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5603,7 +5558,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5702,7 +5656,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5804,7 +5757,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -5907,7 +5859,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6009,7 +5960,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6112,7 +6062,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6220,7 +6169,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6322,7 +6270,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6436,7 +6383,6 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6564,7 +6510,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6667,7 +6612,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6773,7 +6717,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -6883,7 +6826,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -7001,7 +6943,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -7105,7 +7046,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -7239,7 +7179,6 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -7355,7 +7294,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -7469,7 +7407,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -7582,7 +7519,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -7706,7 +7642,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -7820,7 +7755,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -7934,7 +7868,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -8040,7 +7973,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -8141,7 +8073,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -8255,7 +8186,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -8377,7 +8307,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier2",
           "tier1",
@@ -8483,7 +8412,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -8587,7 +8515,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -8696,7 +8623,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -8799,7 +8725,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -8930,7 +8855,6 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9045,7 +8969,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9157,7 +9080,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9264,7 +9186,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9383,7 +9304,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9482,7 +9402,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9585,7 +9504,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9698,7 +9616,6 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9815,7 +9732,6 @@
       },
       "evidence": {
         "min_evidence_refs": 2,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9920,7 +9836,6 @@
       },
       "evidence": {
         "min_evidence_refs": 1,
-        "required": true,
         "tier_preference": [
           "tier1",
           "tier2",
@@ -9999,7 +9914,7 @@
       "unknown_reason_default": "not_found_after_search"
     }
   },
-  "generated_at": "2026-04-17T05:52:20.719Z",
+  "generated_at": "2026-04-17T21:32:33.888Z",
   "key_range": "dataEntry!B9:B83",
   "notes": [
     "Generated by Field Rules Studio compiler.",

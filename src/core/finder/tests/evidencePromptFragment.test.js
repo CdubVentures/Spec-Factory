@@ -25,44 +25,51 @@ describe('EVIDENCE_PROMPT_FRAGMENT', () => {
       );
     }
   });
+
+  it('uses "AT LEAST" language to allow multiple sources', () => {
+    assert.ok(
+      EVIDENCE_PROMPT_FRAGMENT.includes('AT LEAST'),
+      'fragment must use "AT LEAST" so the LLM knows it can provide more than one source',
+    );
+  });
 });
 
 describe('buildEvidencePromptBlock', () => {
   it('substitutes MIN_EVIDENCE_REFS with the provided number', () => {
     const block = buildEvidencePromptBlock({ minEvidenceRefs: 3 });
-    assert.ok(block.includes('cite at least 3'));
+    assert.ok(block.includes('AT LEAST 3'));
     assert.ok(!block.includes('{{MIN_EVIDENCE_REFS}}'));
   });
 
   it('defaults to 1 when called with no args', () => {
     const block = buildEvidencePromptBlock();
-    assert.ok(block.includes('cite at least 1'));
+    assert.ok(block.includes('AT LEAST 1'));
     assert.ok(!block.includes('{{MIN_EVIDENCE_REFS}}'));
   });
 
   it('defaults to 1 when minEvidenceRefs is undefined', () => {
     const block = buildEvidencePromptBlock({ minEvidenceRefs: undefined });
-    assert.ok(block.includes('cite at least 1'));
+    assert.ok(block.includes('AT LEAST 1'));
   });
 
   it('defaults to 1 when minEvidenceRefs is null', () => {
     const block = buildEvidencePromptBlock({ minEvidenceRefs: null });
-    assert.ok(block.includes('cite at least 1'));
+    assert.ok(block.includes('AT LEAST 1'));
   });
 
   it('defaults to 1 when minEvidenceRefs is 0 (impossible config, safe fallback)', () => {
     const block = buildEvidencePromptBlock({ minEvidenceRefs: 0 });
-    assert.ok(block.includes('cite at least 1'));
+    assert.ok(block.includes('AT LEAST 1'));
   });
 
   it('defaults to 1 when minEvidenceRefs is a negative number', () => {
     const block = buildEvidencePromptBlock({ minEvidenceRefs: -2 });
-    assert.ok(block.includes('cite at least 1'));
+    assert.ok(block.includes('AT LEAST 1'));
   });
 
   it('defaults to 1 when minEvidenceRefs is a non-number', () => {
     const block = buildEvidencePromptBlock({ minEvidenceRefs: '3' });
-    assert.ok(block.includes('cite at least 1'));
+    assert.ok(block.includes('AT LEAST 1'));
   });
 
   it('rendered block includes all 6 tier codes', () => {

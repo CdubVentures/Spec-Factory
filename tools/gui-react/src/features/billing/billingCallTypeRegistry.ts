@@ -31,8 +31,6 @@ export const BILLING_CALL_TYPE_REGISTRY: readonly BillingCallTypeEntry[] = Objec
   { reason: 'variant_identity_check',     label: 'Variant ID',      color: 'var(--sf-billing-color-2, #be4bdb)', group: 'Color Edition' },
 
   // ── Validation (teal — cool "verification" feel, distinct from indigo) ──
-  { reason: 'validate_enum_consistency',  label: 'Enum Validator',  color: 'var(--sf-billing-val-1, #38d9a9)', group: 'Validation' },
-  { reason: 'validate_component_matches', label: 'Component Match', color: 'var(--sf-billing-val-2, #20c997)', group: 'Validation' },
   { reason: 'field_repair',              label: 'Repair',           color: 'var(--sf-billing-val-3, #12b886)', group: 'Validation' },
 ]);
 

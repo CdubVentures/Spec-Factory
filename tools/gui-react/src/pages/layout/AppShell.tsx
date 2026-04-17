@@ -13,6 +13,12 @@ import {
   type SfThemeColorProfileId,
   type SfThemeRadiusProfileId,
 } from '../../stores/uiThemeProfiles.ts';
+import {
+  SF_TIMEZONE_OPTIONS,
+  SF_DATE_FORMAT_OPTIONS,
+  type SfTimezoneId,
+  type SfDateFormatId,
+} from '../../stores/uiStore.ts';
 
 import { useSettingsHydration } from './hooks/useSettingsHydration.ts';
 import { useCategorySync } from './hooks/useCategorySync.ts';
@@ -53,6 +59,21 @@ const THEME_RADIUS_LABELS: Record<SfThemeRadiusProfileId, string> = {
   'pill-heavy': 'Pill Heavy',
 };
 
+const TIMEZONE_LABELS: Record<SfTimezoneId, string> = {
+  'America/Los_Angeles': 'Pacific (PST/PDT)',
+  'America/Denver': 'Mountain (MST/MDT)',
+  'America/Chicago': 'Central (CST/CDT)',
+  'America/New_York': 'Eastern (EST/EDT)',
+  UTC: 'UTC',
+};
+
+const DATE_FORMAT_LABELS: Record<SfDateFormatId, string> = {
+  'MM-DD-YY': 'MM-DD-YY (04-17-26)',
+  'MM-DD-YYYY': 'MM-DD-YYYY (04-17-2026)',
+  'YYYY-MM-DD': 'YYYY-MM-DD (2026-04-17)',
+  'DD-MM-YY': 'DD-MM-YY (17-04-26)',
+};
+
 export function AppShell() {
   // ── Composition hooks ─────────────────────────────────────────────
   const { settingsReady, allowDegradedRender, settingsSnapshot } = useSettingsHydration();
@@ -66,6 +87,10 @@ export function AppShell() {
   const themeRadiusProfile = useUiStore((s) => s.themeRadiusProfile);
   const setThemeColorProfile = useUiStore((s) => s.setThemeColorProfile);
   const setThemeRadiusProfile = useUiStore((s) => s.setThemeRadiusProfile);
+  const userTimezone = useUiStore((s) => s.userTimezone);
+  const dateFormat = useUiStore((s) => s.dateFormat);
+  const setUserTimezone = useUiStore((s) => s.setUserTimezone);
+  const setDateFormat = useUiStore((s) => s.setDateFormat);
 
   // ── Local UI state ────────────────────────────────────────────────
   const isRunning = Boolean(processStatus?.running);
@@ -196,6 +221,30 @@ export function AppShell() {
                         </button>
                       ))}
                     </div>
+                  </section>
+                  <section className="space-y-1.5">
+                    <p className="sf-text-label font-semibold">Timezone</p>
+                    <select
+                      value={userTimezone}
+                      onChange={(e) => setUserTimezone(e.target.value as SfTimezoneId)}
+                      className="w-full rounded px-2 py-1.5 sf-text-label sf-icon-button"
+                    >
+                      {SF_TIMEZONE_OPTIONS.map((tz) => (
+                        <option key={tz} value={tz}>{TIMEZONE_LABELS[tz]}</option>
+                      ))}
+                    </select>
+                  </section>
+                  <section className="space-y-1.5">
+                    <p className="sf-text-label font-semibold">Date Format</p>
+                    <select
+                      value={dateFormat}
+                      onChange={(e) => setDateFormat(e.target.value as SfDateFormatId)}
+                      className="w-full rounded px-2 py-1.5 sf-text-label sf-icon-button"
+                    >
+                      {SF_DATE_FORMAT_OPTIONS.map((fmt) => (
+                        <option key={fmt} value={fmt}>{DATE_FORMAT_LABELS[fmt]}</option>
+                      ))}
+                    </select>
                   </section>
                 </div>
               </section>

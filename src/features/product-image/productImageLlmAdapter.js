@@ -806,8 +806,10 @@ IDENTITY: You are looking for the EXACT product "{{BRAND}} {{MODEL}}"{{VARIANT_S
 {{SIBLINGS_LINE}}
 Every image you return MUST use the view name "hero".
 
+{{EVIDENCE_REQUIREMENTS}}
+
 {{PREVIOUS_DISCOVERY}}Return JSON:
-- "images": [{ "view": "hero", "url": "direct-image-url", "source_page": "page-where-found", "alt_text": "image alt text if available" }, ...]
+- "images": [{ "view": "hero", "url": "direct-image-url", "source_page": "page-where-found", "alt_text": "image alt text if available", "evidence_refs": [{ "url": "...", "tier": "tier1|tier2|tier3|tier4|tier5|other" }, ...] }, ...]
 - "discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }`;
 
 export function buildHeroImageFinderPrompt({
@@ -822,6 +824,7 @@ export function buildHeroImageFinderPrompt({
   previousDiscovery = { urlsChecked: [], queriesRun: [] },
   promptOverride = '',
   templateOverride = '',
+  minEvidenceRefs = 1,
 }) {
   const brand = product.brand || '';
   const model = product.model || '';
@@ -899,6 +902,7 @@ Do NOT use images from editorial review sites — even if the photo looks contex
     SIBLINGS_LINE: siblingLine,
     PREVIOUS_DISCOVERY: discoverySection,
     HERO_INSTRUCTIONS: heroInstructions,
+    EVIDENCE_REQUIREMENTS: buildEvidencePromptBlock({ minEvidenceRefs }),
   });
 }
 
@@ -917,6 +921,7 @@ export const HERO_IMAGE_FINDER_SPEC = {
     ambiguityLevel: domainArgs.ambiguityLevel || 'easy',
     previousDiscovery: domainArgs.previousDiscovery || { urlsChecked: [], queriesRun: [] },
     promptOverride: domainArgs.promptOverride || '',
+    minEvidenceRefs: domainArgs.minEvidenceRefs,
   }),
   jsonSchema: zodToLlmSchema(productImageFinderResponseSchema),
 };

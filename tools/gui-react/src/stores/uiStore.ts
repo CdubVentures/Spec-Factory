@@ -19,6 +19,22 @@ const THEME_COLOR_KEY = 'ui:themeColorProfile';
 const THEME_RADIUS_KEY = 'ui:themeRadiusProfile';
 const THEME_DENSITY_KEY = 'ui:themeDensityProfile';
 const RUNTIME_AUTOSAVE_KEY = 'indexlab-runtime-autosave';
+const USER_TIMEZONE_KEY = 'ui:userTimezone';
+const DATE_FORMAT_KEY = 'ui:dateFormat';
+
+export const SF_TIMEZONE_OPTIONS = ['America/Los_Angeles', 'America/Denver', 'America/Chicago', 'America/New_York', 'UTC'] as const;
+export type SfTimezoneId = typeof SF_TIMEZONE_OPTIONS[number];
+export const SF_DATE_FORMAT_OPTIONS = ['MM-DD-YY', 'MM-DD-YYYY', 'YYYY-MM-DD', 'DD-MM-YY'] as const;
+export type SfDateFormatId = typeof SF_DATE_FORMAT_OPTIONS[number];
+export const DEFAULT_TIMEZONE: SfTimezoneId = 'America/Los_Angeles';
+export const DEFAULT_DATE_FORMAT: SfDateFormatId = 'MM-DD-YY';
+
+function coerceTimezone(raw: string): SfTimezoneId {
+  return (SF_TIMEZONE_OPTIONS as readonly string[]).includes(raw) ? raw as SfTimezoneId : DEFAULT_TIMEZONE;
+}
+function coerceDateFormat(raw: string): SfDateFormatId {
+  return (SF_DATE_FORMAT_OPTIONS as readonly string[]).includes(raw) ? raw as SfDateFormatId : DEFAULT_DATE_FORMAT;
+}
 
 const STUDIO_AUTOSAVE_ALL_KEY = 'studio:autoSaveAllEnabled';
 const STUDIO_AUTOSAVE_KEY = 'autoSaveEnabled';
@@ -191,6 +207,8 @@ interface UiState {
   themeColorProfile: SfThemeColorProfileId;
   themeRadiusProfile: SfThemeRadiusProfileId;
   themeDensityProfile: SfThemeDensityProfileId;
+  userTimezone: SfTimezoneId;
+  dateFormat: SfDateFormatId;
   autoSaveAllEnabled: boolean;
   autoSaveEnabled: boolean;
   autoSaveMapEnabled: boolean;
@@ -200,6 +218,8 @@ interface UiState {
   setThemeProfile: (themeProfile: SfThemeProfile) => void;
   setThemeColorProfile: (themeColorProfile: SfThemeColorProfileId) => void;
   setThemeRadiusProfile: (themeRadiusProfile: SfThemeRadiusProfileId) => void;
+  setUserTimezone: (tz: SfTimezoneId) => void;
+  setDateFormat: (fmt: SfDateFormatId) => void;
   setDarkMode: (darkMode: boolean) => void;
   toggleDarkMode: () => void;
   setAutoSaveAllEnabled: (v: boolean) => void;
@@ -217,10 +237,15 @@ const initialStudioAutoSaveState = normalizeStudioAutoSaveState({
 });
 persistStudioAutoSaveState(initialStudioAutoSaveState);
 
+const initialUserTimezone = coerceTimezone(readPersistedValue(USER_TIMEZONE_KEY));
+const initialDateFormat = coerceDateFormat(readPersistedValue(DATE_FORMAT_KEY));
+
 export const useUiStore = create<UiState>((set) => ({
   category: initialCategory,
   categories: coerceCategories(['mouse']),
   ...toThemeState(initialThemeProfile),
+  userTimezone: initialUserTimezone,
+  dateFormat: initialDateFormat,
   autoSaveAllEnabled: initialStudioAutoSaveState.autoSaveAllEnabled,
   autoSaveEnabled: initialStudioAutoSaveState.autoSaveEnabled,
   autoSaveMapEnabled: initialStudioAutoSaveState.autoSaveMapEnabled,
@@ -320,5 +345,13 @@ export const useUiStore = create<UiState>((set) => ({
   setRuntimeAutoSaveEnabled: (v) => {
     writePersistedValue(RUNTIME_AUTOSAVE_KEY, String(v));
     set({ runtimeAutoSaveEnabled: v });
+  },
+  setUserTimezone: (tz) => {
+    writePersistedValue(USER_TIMEZONE_KEY, tz);
+    set({ userTimezone: tz });
+  },
+  setDateFormat: (fmt) => {
+    writePersistedValue(DATE_FORMAT_KEY, fmt);
+    set({ dateFormat: fmt });
   },
 }));

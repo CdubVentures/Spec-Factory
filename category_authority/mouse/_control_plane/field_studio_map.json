@@ -2477,6 +2477,7 @@
         "label": "Colors",
         "tooltip_md": "Colorway tokens. Use list<string>. Normalize grey?gray; multi-colorways may use '+'."
       },
+      "variant_dependent": false,
       "vocab": {
         "allow_new": false,
         "known_values": [
@@ -3512,7 +3513,8 @@
         "group": "general",
         "label": "Editions",
         "tooltip_md": "Special/limited editions. Kebab-case slugs (e.g. cyberpunk-2077-edition)."
-      }
+      },
+      "variant_dependent": false
     },
     "encoder": {
       "aliases": [],
@@ -7786,34 +7788,19 @@
       "value_form_sample": "scalar"
     },
     "release_date": {
-      "aliases": [],
-      "availability": "sometimes",
-      "canonical_key": "release_date",
-      "component": null,
-      "constraints": [],
-      "consumers": {
-        "enum.match.format_hint": {
-          "review": false
-        }
-      },
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "date",
-        "unit": null
+        "type": "date"
       },
-      "data_type": "date",
-      "difficulty": "medium",
-      "display_name": "Release Date",
-      "effort": 4,
       "enum": {
-        "match": {},
-        "new_value_policy": {},
-        "policy": "open",
-        "source": null
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": false
+        },
+        "policy": "open"
       },
       "enum_policy": "open",
-      "enum_source": null,
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -7822,25 +7809,7 @@
           "tier3"
         ]
       },
-      "field_key": "release_date",
-      "field_studio_hints": {
-        "dataEntry": {
-          "key_cell": "B9",
-          "note": "SORT",
-          "row": 9,
-          "sample_values": [
-            "2019-06-17",
-            "2023-03-01",
-            "2024-01-01",
-            "2022-06-01"
-          ],
-          "sheet": "dataEntry"
-        }
-      },
-      "group": "General",
       "key": "release_date",
-      "min_evidence_refs": 1,
-      "output_shape": "scalar",
       "parse": {
         "accepted_formats": [
           "YYYY-MM-DD",
@@ -7852,25 +7821,12 @@
         "range_separators": [],
         "unit": null
       },
-      "parse_rules": {
-        "accepted_formats": [
-          "YYYY-MM-DD",
-          "YYYY",
-          "MMM YYYY",
-          "Month YYYY"
-        ],
-        "delimiters": [],
-        "separators": [],
-        "unit": null
-      },
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
         "effort": 4,
         "required_level": "expected"
       },
-      "required_level": "expected",
-      "round": "none",
       "search_hints": {
         "content_types": [
           "product_page",
@@ -7883,7 +7839,10 @@
           "techpowerup.com"
         ],
         "query_templates": [
-          "{brand} {model} release date launch"
+          "{brand} {model} release date",
+          "{brand} {model} launch date",
+          "{brand} {model} available since",
+          "\"{model}\" release date"
         ],
         "query_terms": [
           "release date",
@@ -7892,29 +7851,12 @@
           "announced"
         ]
       },
-      "selection_policy": {},
-      "shape": "scalar",
-      "type": "date",
       "ui": {
-        "array_handling": "none",
-        "display_decimals": 0,
-        "display_mode": "all",
-        "examples": [],
-        "group": "General",
-        "guidance_md": null,
+        "group": "general",
         "label": "Release Date",
-        "order": 9,
-        "placeholder": "",
-        "prefix": null,
-        "short_label": null,
-        "suffix": null,
-        "tooltip_key": "release_date",
-        "tooltip_md": "Define 'Release Date' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
-        "tooltip_source": "hbs_tooltipsMouse.js"
+        "tooltip_md": "Define 'Release Date' according to contract. If not provable with evidence, output 'unk' with unknown_reason."
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "single",
-      "value_form_sample": "scalar"
+      "variant_dependent": true
     },
     "rgb": {
       "aliases": [],

@@ -16,7 +16,7 @@ function createTestDb() {
 function makeStore(db) {
   const stmts = {
     _getFieldStudioMap: db.prepare(
-      'SELECT map_json, map_hash, updated_at FROM field_studio_map WHERE id = 1'
+      'SELECT map_json, map_hash, compiled_rules, boot_config, updated_at FROM field_studio_map WHERE id = 1'
     ),
     _upsertFieldStudioMap: db.prepare(`
       INSERT INTO field_studio_map (id, map_json, map_hash, updated_at)
@@ -28,6 +28,13 @@ function makeStore(db) {
           WHEN field_studio_map.map_hash != excluded.map_hash THEN datetime('now')
           ELSE field_studio_map.updated_at
         END
+    `),
+    _upsertCompiledRules: db.prepare(`
+      INSERT INTO field_studio_map (id, compiled_rules, boot_config)
+      VALUES (1, @compiled_rules, @boot_config)
+      ON CONFLICT(id) DO UPDATE SET
+        compiled_rules = excluded.compiled_rules,
+        boot_config = excluded.boot_config
     `),
   };
   return createFieldStudioMapStore({ stmts });
@@ -121,5 +128,121 @@ test('upsert with changed hash updates updated_at', () => {
 
   assert.notEqual(row.updated_at, '2020-01-01 00:00:00',
     'updated_at must change when map_hash changes');
+  db.close();
+});
+
+// ── getCompiledRules / getBootConfig contract + memoization ─────────────
+
+test('getCompiledRules returns null when no row exists', () => {
+  const db = createTestDb();
+  const store = makeStore(db);
+  assert.equal(store.getCompiledRules(), null);
+  db.close();
+});
+
+test('getCompiledRules returns null when compiled_rules is default "{}" (no fields key)', () => {
+  const db = createTestDb();
+  const store = makeStore(db);
+  store.upsertFieldStudioMap('{}', 'h');
+  assert.equal(store.getCompiledRules(), null);
+  db.close();
+});
+
+test('getCompiledRules returns null when compiled_rules is malformed JSON', () => {
+  const db = createTestDb();
+  const store = makeStore(db);
+  db.prepare(`
+    INSERT INTO field_studio_map (id, compiled_rules)
+    VALUES (1, 'not-json')
+  `).run();
+  assert.equal(store.getCompiledRules(), null);
+  db.close();
+});
+
+test('getCompiledRules parses and returns blob when fields present', () => {
+  const db = createTestDb();
+  const store = makeStore(db);
+  const blob = JSON.stringify({ fields: { dpi: { variant_dependent: false } }, field_order: ['dpi'] });
+  store.upsertCompiledRules(blob, '{}');
+  const result = store.getCompiledRules();
+  assert.ok(result && result.fields);
+  assert.equal(result.fields.dpi.variant_dependent, false);
+  db.close();
+});
+
+test('getCompiledRules memoizes — same object reference across calls when blob unchanged', () => {
+  // WHY: hot-path callers (isVariantDependentField) call this inside 30k-iteration loops.
+  // Re-parsing a 365 KB JSON blob each time costs ~65s. Stable reference proves the cache hit.
+  const db = createTestDb();
+  const store = makeStore(db);
+  const blob = JSON.stringify({ fields: { dpi: {} } });
+  store.upsertCompiledRules(blob, '{}');
+
+  const first = store.getCompiledRules();
+  const second = store.getCompiledRules();
+  const third = store.getCompiledRules();
+
+  assert.strictEqual(first, second, 'second call must return cached reference');
+  assert.strictEqual(second, third, 'third call must return cached reference');
+  db.close();
+});
+
+test('getCompiledRules invalidates cache after upsertCompiledRules with new blob', () => {
+  const db = createTestDb();
+  const store = makeStore(db);
+  const blobA = JSON.stringify({ fields: { dpi: {} } });
+  const blobB = JSON.stringify({ fields: { dpi: {}, weight: {} } });
+
+  store.upsertCompiledRules(blobA, '{}');
+  const before = store.getCompiledRules();
+  assert.equal(Object.keys(before.fields).length, 1);
+
+  store.upsertCompiledRules(blobB, '{}');
+  const after = store.getCompiledRules();
+
+  assert.notStrictEqual(before, after, 'upsert must invalidate cache');
+  assert.equal(Object.keys(after.fields).length, 2);
+  db.close();
+});
+
+test('getBootConfig returns null when no row exists', () => {
+  const db = createTestDb();
+  const store = makeStore(db);
+  assert.equal(store.getBootConfig(), null);
+  db.close();
+});
+
+test('getBootConfig parses and returns blob', () => {
+  const db = createTestDb();
+  const store = makeStore(db);
+  store.upsertCompiledRules('{"fields":{"x":{}}}', JSON.stringify({ source_hosts: ['a.com'] }));
+  const result = store.getBootConfig();
+  assert.deepEqual(result.source_hosts, ['a.com']);
+  db.close();
+});
+
+test('getBootConfig memoizes — same reference across calls when blob unchanged', () => {
+  const db = createTestDb();
+  const store = makeStore(db);
+  store.upsertCompiledRules('{"fields":{"x":{}}}', '{"source_hosts":["a.com"]}');
+
+  const first = store.getBootConfig();
+  const second = store.getBootConfig();
+
+  assert.strictEqual(first, second);
+  db.close();
+});
+
+test('getBootConfig invalidates cache after upsertCompiledRules with new blob', () => {
+  const db = createTestDb();
+  const store = makeStore(db);
+  store.upsertCompiledRules('{"fields":{"x":{}}}', '{"source_hosts":["a.com"]}');
+  const before = store.getBootConfig();
+
+  store.upsertCompiledRules('{"fields":{"x":{}}}', '{"source_hosts":["b.com"]}');
+  const after = store.getBootConfig();
+
+  assert.notStrictEqual(before, after);
+  assert.deepEqual(after.source_hosts, ['b.com']);
   db.close();
 });

@@ -5,7 +5,7 @@
       "version_id": null
     },
     "field_rules": {
-      "changed": true,
+      "changed": false,
       "hash": "533ac015bc02d60a505773640c0e286101091b9d445ab9076e739941ddeeef3b",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\monitor\\_generated\\field_rules.json"
     },
@@ -35,19 +35,17 @@
     "required": 7
   },
   "diff": {
-    "changed": true,
+    "changed": false,
     "current_hash": "533ac015bc02d60a505773640c0e286101091b9d445ab9076e739941ddeeef3b",
     "fields": {
       "added_count": 0,
       "added_keys": [],
-      "changed_count": 1,
-      "changed_keys": [
-        "release_date"
-      ],
+      "changed_count": 0,
+      "changed_keys": [],
       "removed_count": 0,
       "removed_keys": []
     },
-    "previous_hash": "18c23627bad2e06e1f687b5c7bab4517bc3097e853f405e37925cb7cd69a9ebc"
+    "previous_hash": "533ac015bc02d60a505773640c0e286101091b9d445ab9076e739941ddeeef3b"
   },
   "errors": [],
   "field_studio_map_hash": "0b6855650faf43418d678898ba94faa617569692cb13469fa007a3f647605c6a",

@@ -5,7 +5,6 @@ import type { ColumnPreset } from './workbenchTypes.ts';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
 import { buildWorkbenchRows } from './workbenchHelpers.ts';
 import { buildColumns, getPresetVisibility } from './workbenchColumns.tsx';
-import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
 import { readWorkbenchSessionState, writeWorkbenchSessionState } from './workbenchSessionState.ts';
 import { resolveWorkbenchInlineEditPath } from './workbenchInlineEditContracts.ts';
 import { WorkbenchColumnPresets } from './WorkbenchColumnPresets.tsx';
@@ -197,7 +196,6 @@ export function FieldRulesWorkbench({
   }, [autoSaveEnabled, onSave]);
 
   // ── Build columns ────────────────────────────────────────────────
-  const enumConsistencyMode = useRuntimeSettingsValueStore((s) => Boolean(s.values?.enumConsistencyMode));
   const columns = useMemo(
     () => buildColumns(
       editingCell,
@@ -207,9 +205,8 @@ export function FieldRulesWorkbench({
       handleToggleRow,
       handleToggleAll,
       selectedCount === rows.length && rows.length > 0,
-      enumConsistencyMode,
     ),
-    [editingCell, handleInlineCommit, rowSelection, handleToggleRow, handleToggleAll, selectedCount, rows.length, enumConsistencyMode],
+    [editingCell, handleInlineCommit, rowSelection, handleToggleRow, handleToggleAll, selectedCount, rows.length],
   );
 
   // ── Drawer ───────────────────────────────────────────────────────

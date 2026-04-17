@@ -32,15 +32,6 @@ interface StudioMutationState {
   error: unknown;
 }
 
-interface StudioEnumConsistencyMutationState {
-  isPending: boolean;
-}
-
-interface StudioEnumConsistencyOptions {
-  reviewEnabled?: boolean;
-  formatGuidance?: string;
-}
-
 interface BuildStudioPageShellControllerStateInput {
   category: string;
   isLoading: boolean;
@@ -73,16 +64,11 @@ interface BuildStudioPageShellControllerStateInput {
   saveStudioDocsMutState: StudioMutationState;
   compileMutState: StudioMutationState;
   validateRulesMutState: StudioMutationState;
-  enumConsistencyMutState: StudioEnumConsistencyMutationState;
   setAutoSaveMapEnabled: (nextValue: boolean) => void;
   setSelectedKey: (nextKey: string) => void;
   saveFromStore: (options?: { force?: boolean }) => void | Promise<unknown>;
   persistFieldKeyOrder: (order: string[]) => void;
   setAutoSaveEnabled: (nextValue: boolean) => void;
-  runEnumConsistency: (
-    fieldKey: string,
-    options?: StudioEnumConsistencyOptions,
-  ) => Promise<unknown>;
   runCompileFromStudio: () => void | Promise<unknown>;
   runValidate: () => void | Promise<unknown>;
 }
@@ -160,13 +146,11 @@ export function buildStudioPageShellControllerState({
   saveStudioDocsMutState,
   compileMutState,
   validateRulesMutState,
-  enumConsistencyMutState,
   setAutoSaveMapEnabled,
   setSelectedKey,
   saveFromStore,
   persistFieldKeyOrder,
   setAutoSaveEnabled,
-  runEnumConsistency,
   runCompileFromStudio,
   runValidate,
 }: BuildStudioPageShellControllerStateInput): StudioPageShellControllerState {
@@ -268,8 +252,6 @@ export function buildStudioPageShellControllerState({
     setAutoSaveEnabled,
     autoSaveLocked: autoSaveAllEnabled,
     autoSaveLockReason: autoSaveAllEnabled ? 'Auto-Save All' : '',
-    onRunEnumConsistency: runEnumConsistency,
-    enumConsistencyPending: enumConsistencyMutState.isPending,
     guardrails,
     artifacts,
     compileErrors: rootDerivedState.compileErrors,
