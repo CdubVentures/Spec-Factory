@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CEF Feature Audit Report</title>
+<style>
+:root {
+  --bg: #f8f9fa;
+  --surface: #ffffff;
+  --surface-alt: #f1f3f5;
+  --border: #dee2e6;
+  --border-light: #e9ecef;
+  --text: #212529;
+  --text-muted: #6c757d;
+  --accent: #4263eb;
+  --accent-light: #edf2ff;
+  --green: #2b8a3e;
+  --green-bg: #ebfbee;
+  --red: #c92a2a;
+  --red-bg: #fff5f5;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.5; }
+.header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 28px 0; text-align: center; }
+.header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+.header .meta { color: var(--text-muted); font-size: 14px; margin-top: 6px; }
+.container { max-width: 1200px; margin: 0 auto; padding: 28px 24px; }
+.summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+.stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
+.stat .label { color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.stat .value { font-size: 26px; font-weight: 700; }
+.stat.pass .value { color: var(--green); }
+.stat.fail .value { color: var(--red); }
+.overview { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0; margin-bottom: 28px; box-shadow: var(--shadow); overflow: hidden; }
+.overview h2 { padding: 14px 20px; font-size: 15px; font-weight: 600; border-bottom: 1px solid var(--border-light); background: var(--surface-alt); }
+.overview table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.overview th, .overview td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border-light); }
+.overview th { background: var(--surface-alt); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
+.overview tr:last-child td { border-bottom: none; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+.card-header { padding: 14px 20px; border-bottom: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.card-header h3 { font-size: 16px; font-weight: 600; }
+.card-header .gate { color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.card-body { padding: 16px 20px; font-size: 14px; }
+.card-body .desc { color: var(--text-muted); margin-bottom: 14px; }
+.steps { margin-bottom: 14px; }
+.steps h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 6px; }
+.steps ul { list-style: none; padding-left: 0; }
+.steps li { padding: 6px 10px; margin-bottom: 4px; background: var(--surface-alt); border-radius: 4px; font-size: 13px; font-family: var(--mono); }
+.checks h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 6px; }
+.checks table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.checks th, .checks td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: top; }
+.checks th { background: var(--surface-alt); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
+.checks code { font-family: var(--mono); font-size: 12px; background: var(--surface-alt); padding: 1px 5px; border-radius: 3px; color: var(--text); word-break: break-word; white-space: pre-wrap; display: inline-block; max-width: 100%; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+.badge-pass { background: var(--green-bg); color: var(--green); }
+.badge-fail { background: var(--red-bg); color: var(--red); }
+.badge-error { background: var(--red-bg); color: var(--red); }
+.row-pass td.status { color: var(--green); font-weight: 600; }
+.row-fail td.status { color: var(--red); font-weight: 600; }
+.error-block { background: var(--red-bg); border-left: 3px solid var(--red); padding: 10px 14px; font-family: var(--mono); font-size: 12px; color: var(--red); white-space: pre-wrap; word-break: break-word; margin-top: 10px; border-radius: 4px; }
+footer { text-align: center; color: var(--text-muted); font-size: 12px; padding: 24px 0; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>CEF Feature Audit Report</h1>
+  <div class="meta">Generated 2026-04-17T02:03:31.272Z · Runtime 680ms · Deterministic (LLM stubbed)</div>
+</div>
+<div class="container">
+  <div class="summary">
+    <div class="stat"><div class="label">Scenarios</div><div class="value">9</div></div>
+    <div class="stat pass"><div class="label">Passed</div><div class="value">9</div></div>
+    <div class="stat "><div class="label">Failed</div><div class="value">0</div></div>
+    <div class="stat"><div class="label">Checks</div><div class="value">51/51</div></div>
+  </div>
+
+  <div class="overview">
+    <h2>Summary</h2>
+    <table>
+      <thead><tr><th>ID</th><th>Scenario</th><th>Gate</th><th>Checks</th><th>Time</th><th>Result</th></tr></thead>
+      <tbody>
+      <tr>
+        <td><strong>T1</strong></td>
+        <td>Palette Rejection (unknown atom)</td>
+        <td>Gate 1 / candidate gate</td>
+        <td>5 / 5</td>
+        <td>9ms</td>
+        <td><span class="badge badge-pass">PASS</span></td>
+      </tr>
+      <tr>
+        <td><strong>T2</strong></td>
+        <td>Gate 2 Judge Rejection (Hallucination Filter)</td>
+        <td>Gate 2</td>
+        <td>6 / 6</td>
+        <td>84ms</td>
+        <td><span class="badge badge-pass">PASS</span></td>
+      </tr>
+      <tr>
+        <td><strong>T3</strong></td>
+        <td>Best Baseline — Complete Discovery</td>
+        <td>Happy path</td>
+        <td>6 / 6</td>
+        <td>38ms</td>
+        <td><span class="badge badge-pass">PASS</span></td>
+      </tr>
+      <tr>
+        <td><strong>T4</strong></td>
+        <td>Data Protected from Weak Run</td>
+        <td>Gate 2 (protection)</td>
+        <td>6 / 6</td>
+        <td>75ms</td>
+        <td><span class="badge badge-pass">PASS</span></td>
+      </tr>
+      <tr>
+        <td><strong>T5</strong></td>
+        <td>Stability — Same Data, No Churn</td>
+        <td>Stability</td>
+        <td>4 / 4</td>
+        <td>69ms</td>
+        <td><span class="badge badge-pass">PASS</span></td>
+      </tr>
+      <tr>
+        <td><strong>T6</strong></td>
+        <td>Label Upgrade via preferred_label</td>
+        <td>Label quality</td>
+        <td>5 / 5</td>
+        <td>71ms</td>
+        <td><span class="badge badge-pass">PASS</span></td>
+      </tr>
+      <tr>
+        <td><strong>T7</strong></td>
+        <td>Progressive Enrichment — 3 Runs</td>
+        <td>Accumulation</td>
+        <td>5 / 5</td>
+        <td>115ms</td>
+        <td><span class="badge badge-pass">PASS</span></td>
+      </tr>
+      <tr>
+        <td><strong>T8</strong></td>
+        <td>Wrong-Product Variant Hard-Delete + PIF Cascade</td>
+        <td>PIF cascade</td>
+        <td>9 / 9</td>
+        <td>74ms</td>
+        <td><span class="badge badge-pass">PASS</span></td>
+      </tr>
+      <tr>
+        <td><strong>T9</strong></td>
+        <td>Discontinued Variant Preserved</td>
+        <td>Preservation</td>
+        <td>5 / 5</td>
+        <td>71ms</td>
+        <td><span class="badge badge-pass">PASS</span></td>
+      </tr></tbody>
+    </table>
+  </div>
+
+  
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3>T1 — Palette Rejection (unknown atom)</h3>
+        <div class="gate">Gate 1 / candidate gate · mouse-t1 · 9ms</div>
+      </div>
+      <span class="badge badge-pass">PASS</span>
+    </div>
+    <div class="card-body">
+      <p class="desc">LLM returns an atom not in the registered palette. Either the candidate gate (enum_value_not_allowed, closed enum) or Gate 1 (unknown_color_atom, variantRegistry palette check) rejects it before any registry write.</p>
+      <div class="steps"><h4>Steps</h4><ul><li>Run 1 — plasma-violet forced</li></ul></div>
+      
+      
+      <div class="checks">
+        <h4>Checks (5/5 passed)</h4>
+        <table>
+          <thead><tr><th>Status</th><th>Check</th><th>Actual</th><th>Expected</th></tr></thead>
+          <tbody>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>run rejected</td>
+    <td><code>true</code></td>
+    <td><code>true</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>reason_code ∈ {enum_value_not_allowed, unknown_color_atom}</td>
+    <td><code>[&quot;enum_value_not_allowed&quot;]</code></td>
+    <td><code>[&quot;enum_value_not_allowed&quot;,&quot;unknown_color_atom&quot;]</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>rejection references &quot;plasma-violet&quot;</td>
+    <td><code>yes</code></td>
+    <td><code>yes</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>no variant_registry written</td>
+    <td><code>0</code></td>
+    <td><code>0</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>1 rejected run persisted</td>
+    <td><code>1 run(s), status=rejected</code></td>
+    <td><code>1 run with status=rejected</code></td>
+  </tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3>T2 — Gate 2 Judge Rejection (Hallucination Filter)</h3>
+        <div class="gate">Gate 2 · mouse-t2 · 84ms</div>
+      </div>
+      <span class="badge badge-pass">PASS</span>
+    </div>
+    <div class="card-body">
+      <p class="desc">Run 2 discovery contains a palette-valid but product-wrong color. Judge rejects it; registry preserved with no new variant.</p>
+      <div class="steps"><h4>Steps</h4><ul><li>Run 1 — baseline black + white</li><li>Run 2 — discovery adds pink, judge rejects</li></ul></div>
+      
+      
+      <div class="checks">
+        <h4>Checks (6/6 passed)</h4>
+        <table>
+          <thead><tr><th>Status</th><th>Check</th><th>Actual</th><th>Expected</th></tr></thead>
+          <tbody>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>Run 2 succeeded (not rejected)</td>
+    <td><code>false</code></td>
+    <td><code>false</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>registry has exactly 2 variants</td>
+    <td><code>2</code></td>
+    <td><code>2</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>pink is NOT in registry</td>
+    <td><code>[&quot;color:black&quot;,&quot;color:white&quot;]</code></td>
+    <td><code>[&quot;color:black&quot;,&quot;color:white&quot;]</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>judge marked pink action:reject</td>
+    <td><code>reject</code></td>
+    <td><code>reject</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>black variant_id preserved across runs</td>
+    <td><code>v_17b08b9b → v_17b08b9b</code></td>
+    <td><code>unchanged</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>white variant_id preserved across runs</td>
+    <td><code>v_94b6d8f5 → v_94b6d8f5</code></td>
+    <td><code>unchanged</code></td>
+  </tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3>T3 — Best Baseline — Complete Discovery</h3>
+        <div class="gate">Happy path · mouse-t3 · 38ms</div>
+      </div>
+      <span class="badge badge-pass">PASS</span>
+    </div>
+    <div class="card-body">
+      <p class="desc">Rich discovery with 3 colors + 1 edition. Full registry built, published state derived correctly.</p>
+      <div class="steps"><h4>Steps</h4><ul><li>Run 1 — full discovery</li></ul></div>
+      
+      
+      <div class="checks">
+        <h4>Checks (6/6 passed)</h4>
+        <table>
+          <thead><tr><th>Status</th><th>Check</th><th>Actual</th><th>Expected</th></tr></thead>
+          <tbody>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>run succeeded</td>
+    <td><code>false</code></td>
+    <td><code>false</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>registry has 3 variants</td>
+    <td><code>3</code></td>
+    <td><code>3</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>registry keys = [color:black, color:white, edition:cyberpunk-edition]</td>
+    <td><code>[&quot;color:black&quot;,&quot;color:white&quot;,&quot;edition:cyberpunk-edition&quot;]</code></td>
+    <td><code>[&quot;color:black&quot;,&quot;color:white&quot;,&quot;edition:cyberpunk-edition&quot;]</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>edition label is &quot;Cyberpunk Edition&quot;</td>
+    <td><code>Cyberpunk Edition</code></td>
+    <td><code>Cyberpunk Edition</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>edition atoms = [black, red]</td>
+    <td><code>[&quot;black&quot;,&quot;red&quot;]</code></td>
+    <td><code>[&quot;black&quot;,&quot;red&quot;]</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>default_color is black</td>
+    <td><code>black</code></td>
+    <td><code>black</code></td>
+  </tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3>T4 — Data Protected from Weak Run</h3>
+        <div class="gate">Gate 2 (protection) · mouse-t4 · 75ms</div>
+      </div>
+      <span class="badge badge-pass">PASS</span>
+    </div>
+    <div class="card-body">
+      <p class="desc">Run 1 establishes 3 colors; Run 2 finds only one (simulated weak model). Judge matches what was found; existing variants preserved.</p>
+      <div class="steps"><h4>Steps</h4><ul><li>Run 1 — strong baseline</li><li>Run 2 — weak discovery finds only black</li></ul></div>
+      
+      
+      <div class="checks">
+        <h4>Checks (6/6 passed)</h4>
+        <table>
+          <thead><tr><th>Status</th><th>Check</th><th>Actual</th><th>Expected</th></tr></thead>
+          <tbody>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>Run 2 succeeded</td>
+    <td><code>false</code></td>
+    <td><code>false</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>registry still has 3 variants</td>
+    <td><code>3</code></td>
+    <td><code>3</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>all Run 1 variant_ids preserved in Run 2</td>
+    <td><code>[&quot;v_ace7fbb8&quot;,&quot;v_c233e41e&quot;,&quot;v_c74fe933&quot;]</code></td>
+    <td><code>[&quot;v_ace7fbb8&quot;,&quot;v_c233e41e&quot;,&quot;v_c74fe933&quot;]</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>judge remove[] is empty</td>
+    <td><code>[]</code></td>
+    <td><code>[]</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>white still in registry</td>
+    <td><code>true</code></td>
+    <td><code>true</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>red still in registry</td>
+    <td><code>true</code></td>
+    <td><code>true</code></td>
+  </tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3>T5 — Stability — Same Data, No Churn</h3>
+        <div class="gate">Stability · mouse-t5 · 69ms</div>
+      </div>
+      <span class="badge badge-pass">PASS</span>
+    </div>
+    <div class="card-body">
+      <p class="desc">Two identical runs. Second run judge matches all. Registry must be byte-identical; no updated_at fields introduced.</p>
+      <div class="steps"><h4>Steps</h4><ul><li>Run 1</li><li>Run 2 — identical</li></ul></div>
+      
+      
+      <div class="checks">
+        <h4>Checks (4/4 passed)</h4>
+        <table>
+          <thead><tr><th>Status</th><th>Check</th><th>Actual</th><th>Expected</th></tr></thead>
+          <tbody>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>registry has 2 variants</td>
+    <td><code>2</code></td>
+    <td><code>2</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>variant_ids identical Run 1 → Run 2</td>
+    <td><code>[&quot;v_5632144e&quot;,&quot;v_bde8f573&quot;]</code></td>
+    <td><code>[&quot;v_5632144e&quot;,&quot;v_bde8f573&quot;]</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>labels unchanged</td>
+    <td><code>[&quot;black&quot;,&quot;white&quot;]</code></td>
+    <td><code>[&quot;black&quot;,&quot;white&quot;]</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>no updated_at introduced (nothing changed)</td>
+    <td><code>[null,null]</code></td>
+    <td><code>[null,null]</code></td>
+  </tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3>T6 — Label Upgrade via preferred_label</h3>
+        <div class="gate">Label quality · mouse-t6 · 71ms</div>
+      </div>
+      <span class="badge badge-pass">PASS</span>
+    </div>
+    <div class="card-body">
+      <p class="desc">Run 2 judge provides preferred_label for each match. Registry labels update; variant_ids preserved; updated_at set.</p>
+      <div class="steps"><h4>Steps</h4><ul><li>Run 1 — generic labels</li><li>Run 2 — judge upgrades labels</li></ul></div>
+      
+      
+      <div class="checks">
+        <h4>Checks (5/5 passed)</h4>
+        <table>
+          <thead><tr><th>Status</th><th>Check</th><th>Actual</th><th>Expected</th></tr></thead>
+          <tbody>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>variant_ids preserved</td>
+    <td><code>[&quot;v_3eb5b361&quot;,&quot;v_9114d65f&quot;]</code></td>
+    <td><code>[&quot;v_3eb5b361&quot;,&quot;v_9114d65f&quot;]</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>black label upgraded to &quot;Midnight&quot;</td>
+    <td><code>Midnight</code></td>
+    <td><code>Midnight</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>white label upgraded to &quot;Arctic Frost&quot;</td>
+    <td><code>Arctic Frost</code></td>
+    <td><code>Arctic Frost</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>black has updated_at</td>
+    <td><code>true</code></td>
+    <td><code>true</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>white has updated_at</td>
+    <td><code>true</code></td>
+    <td><code>true</code></td>
+  </tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3>T7 — Progressive Enrichment — 3 Runs</h3>
+        <div class="gate">Accumulation · mouse-t7 · 115ms</div>
+      </div>
+      <span class="badge badge-pass">PASS</span>
+    </div>
+    <div class="card-body">
+      <p class="desc">Three runs of escalating discovery. Registry grows monotonically; variant_ids from earlier runs are stable; no removals.</p>
+      <div class="steps"><h4>Steps</h4><ul><li>Run 1 — 1 color</li><li>Run 2 — add white</li><li>Run 3 — add red</li></ul></div>
+      
+      
+      <div class="checks">
+        <h4>Checks (5/5 passed)</h4>
+        <table>
+          <thead><tr><th>Status</th><th>Check</th><th>Actual</th><th>Expected</th></tr></thead>
+          <tbody>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>registry has 3 variants after Run 3</td>
+    <td><code>3</code></td>
+    <td><code>3</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>registry grew monotonically (1 → 2 → 3)</td>
+    <td><code>[1,2,3]</code></td>
+    <td><code>[1,2,3]</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>black variant_id from Run 1 still present in Run 3</td>
+    <td><code>v_5f427253</code></td>
+    <td><code>still present</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>white variant_id from Run 2 still present in Run 3</td>
+    <td><code>v_6b45f84c</code></td>
+    <td><code>still present</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>remove[] empty on all runs</td>
+    <td><code>true</code></td>
+    <td><code>true</code></td>
+  </tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3>T8 — Wrong-Product Variant Hard-Delete + PIF Cascade</h3>
+        <div class="gate">PIF cascade · mouse-t8 · 74ms</div>
+      </div>
+      <span class="badge badge-pass">PASS</span>
+    </div>
+    <div class="card-body">
+      <p class="desc">Sibling-model color (amber) planted in Run 1 registry. Real PIF images seeded. Run 2 judge removes it; PIF cascade deletes associated images, carousel slots, and evaluations.</p>
+      <div class="steps"><h4>Steps</h4><ul><li>Run 1 — plant amber + seed PIF</li><li>Run 2 — judge removes amber</li></ul></div>
+      
+      
+      <div class="checks">
+        <h4>Checks (9/9 passed)</h4>
+        <table>
+          <thead><tr><th>Status</th><th>Check</th><th>Actual</th><th>Expected</th></tr></thead>
+          <tbody>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>Run 2 succeeded</td>
+    <td><code>false</code></td>
+    <td><code>false</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>amber removed from CEF registry</td>
+    <td><code>false</code></td>
+    <td><code>false</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>registry has 2 variants (black, white)</td>
+    <td><code>2</code></td>
+    <td><code>2</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>black variant_id preserved</td>
+    <td><code>v_1bfe1401 → v_1bfe1401</code></td>
+    <td><code>unchanged</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>PIF: 4 surviving images (2 black + 2 white)</td>
+    <td><code>4</code></td>
+    <td><code>4</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>PIF: 0 amber images remain</td>
+    <td><code>0</code></td>
+    <td><code>0</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>PIF: carousel_slots has 2 keys (amber gone)</td>
+    <td><code>[&quot;color:black&quot;,&quot;color:white&quot;]</code></td>
+    <td><code>[&quot;color:black&quot;,&quot;color:white&quot;]</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>PIF: 2 evaluations remain (amber evals gone)</td>
+    <td><code>2</code></td>
+    <td><code>2</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>PIF: 0 amber evaluations</td>
+    <td><code>0</code></td>
+    <td><code>0</code></td>
+  </tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3>T9 — Discontinued Variant Preserved</h3>
+        <div class="gate">Preservation · mouse-t9 · 71ms</div>
+      </div>
+      <span class="badge badge-pass">PASS</span>
+    </div>
+    <div class="card-body">
+      <p class="desc">Run 1 registers a real-but-discontinued color (red). Run 2 discovery misses it. Judge must NOT add it to remove[] — discontinued real products are preserved.</p>
+      <div class="steps"><h4>Steps</h4><ul><li>Run 1 — 3 colors including &quot;red&quot; (discontinued)</li><li>Run 2 — discovery misses red, judge preserves</li></ul></div>
+      
+      
+      <div class="checks">
+        <h4>Checks (5/5 passed)</h4>
+        <table>
+          <thead><tr><th>Status</th><th>Check</th><th>Actual</th><th>Expected</th></tr></thead>
+          <tbody>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>Run 2 succeeded</td>
+    <td><code>false</code></td>
+    <td><code>false</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>registry still has 3 variants</td>
+    <td><code>3</code></td>
+    <td><code>3</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>red still present in registry</td>
+    <td><code>true</code></td>
+    <td><code>true</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>red variant_id preserved</td>
+    <td><code>v_2952ec63 → v_2952ec63</code></td>
+    <td><code>unchanged</code></td>
+  </tr>
+  <tr class="row-pass">
+    <td class="status">PASS</td>
+    <td>judge remove[] empty</td>
+    <td><code>[]</code></td>
+    <td><code>[]</code></td>
+  </tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer>Audit tool at tools/feature-audit-tests/cef/ · Uses _callLlmOverride + _callIdentityCheckOverride seams · No real LLM calls</footer>
+</div>
+</body>
+</html>

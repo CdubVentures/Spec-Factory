@@ -64,6 +64,9 @@ export const MIGRATIONS = [
   // column on existing DBs; "no such column" on fresh DBs is swallowed by
   // applyMigrations() try/catch.
   `ALTER TABLE color_edition_finder DROP COLUMN variant_registry`,
+  // WHY: Evaluations array projected to SQL — runtime GET must read SQL per
+  // CLAUDE.md Dual-State mandate. JSON stays as durable memory.
+  `ALTER TABLE product_image_finder ADD COLUMN evaluations TEXT DEFAULT '[]'`,
 ];
 
 export const SECONDARY_INDEXES = `

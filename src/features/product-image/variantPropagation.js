@@ -14,6 +14,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
+import { extractEvalState } from './imageEvaluator.js';
 
 function readPifJson(productId, productRoot) {
   try {
@@ -393,6 +394,10 @@ export function propagateVariantDelete({ productId, variantId, variantKey, produ
       }));
       finderStore.updateSummaryField(productId, 'images', JSON.stringify(imagesSummary));
       finderStore.updateSummaryField(productId, 'image_count', imagesSummary.length);
+      // WHY: eval_state and evaluations must also sync — variant delete clears eval
+      // fields on images and filters the evaluations array; runtime GET reads SQL.
+      finderStore.updateSummaryField(productId, 'eval_state', JSON.stringify(extractEvalState(doc)));
+      finderStore.updateSummaryField(productId, 'evaluations', JSON.stringify(doc.evaluations || []));
 
       // Delete SQL run rows + update bookkeeping
       if (deletedRunNumbers.length > 0) {

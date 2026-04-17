@@ -136,6 +136,60 @@ describe('publisher routes', () => {
     assert.deepEqual(responses[0].body.fields, {});
   });
 
+  // WHY: CLAUDE.md Dual-State Architecture Mandate — variant-derived fields
+  // (colors, editions) must come from the color_edition_finder SQL summary,
+  // not from product.json. Asserting colors/editions resolve WITHOUT any
+  // product.json on disk proves the endpoint reads SQL, not JSON.
+  it('GET /publisher/:category/published/:productId reads variant-derived fields from CEF SQL (not product.json)', async () => {
+    // No product.json created — CEF summary in SQL is the only source
+    specDb.getFinderStore('colorEditionFinder').upsert({
+      category: 'mouse',
+      product_id: 'rt-variant-sql',
+      colors: ['black', 'white+silver'],
+      editions: ['special-ed'],
+      default_color: 'black',
+      variant_registry: [],
+      latest_ran_at: '2026-04-16T00:00:00Z',
+      run_count: 1,
+    });
+
+    const { ctx, responses } = makeCtx(specDb);
+    const handler = registerPublisherRoutes(ctx);
+
+    await handler(
+      ['publisher', 'mouse', 'published', 'rt-variant-sql'],
+      new URLSearchParams(),
+      'GET', {}, {},
+    );
+
+    assert.equal(responses[0].status, 200);
+    assert.ok(responses[0].body.fields.colors, 'colors field populated from CEF SQL');
+    assert.deepEqual(responses[0].body.fields.colors.value, ['black', 'white+silver']);
+    assert.equal(responses[0].body.fields.colors.source, 'variant_registry');
+    assert.equal(responses[0].body.fields.colors.confidence, 1.0);
+    assert.equal(responses[0].body.fields.colors.resolved_at, '2026-04-16T00:00:00Z');
+
+    assert.ok(responses[0].body.fields.editions, 'editions field populated from CEF SQL');
+    assert.deepEqual(responses[0].body.fields.editions.value, ['special-ed']);
+    assert.equal(responses[0].body.fields.editions.source, 'variant_registry');
+  });
+
+  it('GET /publisher/:category/published/:productId omits colors/editions when CEF summary is absent or empty', async () => {
+    // No CEF summary seeded — no product.json either
+    const { ctx, responses } = makeCtx(specDb);
+    const handler = registerPublisherRoutes(ctx);
+
+    await handler(
+      ['publisher', 'mouse', 'published', 'rt-no-variants'],
+      new URLSearchParams(),
+      'GET', {}, {},
+    );
+
+    assert.equal(responses[0].status, 200);
+    assert.equal(responses[0].body.fields.colors, undefined);
+    assert.equal(responses[0].body.fields.editions, undefined);
+  });
+
   // --- GET /publisher/:category/reconcile (dry-run) ---
 
   it('GET /publisher/:category/reconcile returns preview counts', async () => {

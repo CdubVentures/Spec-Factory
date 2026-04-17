@@ -100,6 +100,8 @@ export const FINDER_MODULES = Object.freeze([
       { name: 'image_count', type: 'INTEGER', default: '0' },
       { name: 'carousel_slots', type: 'TEXT', default: "'{}'" },
       { name: 'eval_state', type: 'TEXT', default: "'{}'" },
+      // WHY: SQL projection of doc.evaluations[] — runtime GET must read SQL, not JSON.
+      { name: 'evaluations', type: 'TEXT', default: "'[]'" },
     ],
     summaryIndexes: [],
 

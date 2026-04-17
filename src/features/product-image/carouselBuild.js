@@ -175,6 +175,15 @@ export async function runEvalView({
         response: result._response,
         result: { rankings: result.rankings },
       });
+
+      // WHY: SQL projection — dual-write evaluations[] after appendEvalRecord
+      // mutated JSON. Runtime GET reads SQL per CLAUDE.md dual-state mandate.
+      if (finderStore) {
+        const fresh = readProductImages({ productId: product.product_id, productRoot: root });
+        if (fresh) {
+          finderStore.updateSummaryField(product.product_id, 'evaluations', JSON.stringify(fresh.evaluations || []));
+        }
+      }
     }
   });
 
@@ -348,6 +357,14 @@ export async function runEvalHero({
         response: heroResults,
         result: heroResults,
       });
+
+      // WHY: SQL projection — dual-write evaluations[] after appendEvalRecord.
+      if (finderStore) {
+        const fresh = readProductImages({ productId: product.product_id, productRoot: root });
+        if (fresh) {
+          finderStore.updateSummaryField(product.product_id, 'evaluations', JSON.stringify(fresh.evaluations || []));
+        }
+      }
     }
   });
 

@@ -90,6 +90,7 @@ export function rebuildProductImageFinderFromJson({ specDb, productRoot }) {
       image_count: images.length,
       carousel_slots: JSON.stringify(data.carousel_slots || {}),
       eval_state: JSON.stringify(extractEvalState(data)),
+      evaluations: JSON.stringify(Array.isArray(data.evaluations) ? data.evaluations : []),
       latest_ran_at: data.last_ran_at || '',
       run_count: data.run_count || 0,
     });

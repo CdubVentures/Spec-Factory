@@ -183,7 +183,8 @@
       <strong>How to choose</strong>
       <p style="margin:0;">Does your LLM discover a <em>value</em> that belongs in a product&rsquo;s spec fields (date, weight, price, dimension)? &rarr; <strong>Field Finder</strong> or <strong>Simple Field Finder</strong>.</p>
       <p style="margin:4px 0 0;">Does it discover <em>assets</em> (images, videos, documents)? &rarr; <strong>Artifact Finder</strong>.</p>
-      <p style="margin:4px 0 0;">Does it need variant identity tracking (stable hashes, identity check on Run 2+)? &rarr; That is CEF-specific logic. Most new finders will not need this.</p>
+      <p style="margin:4px 0 0;">Does it <em>discover</em> variants (build the registry, identity-check on Run 2+, assign permanent <code>v_&lt;hex&gt;</code> hashes)? &rarr; CEF-specific. No new finder should re-implement this.</p>
+      <p style="margin:4px 0 0;">Does it discover a value that varies <em>per variant</em> (e.g.&nbsp;release-date per color, SKU per edition)? &rarr; You are a <strong>variant-scoped Field Finder</strong>. <em>Read</em> variants from <code>specDb.variants.listByProduct(productId)</code> &mdash; CEF already populated them &mdash; then call <code>submitCandidate({ ..., variantId })</code> once per variant. The candidate gate handles SQL+JSON dual-write; <code>deleteVariant()</code> auto-cascades your candidate rows. See Section&nbsp;9 for the wiring.</p>
     </div>
   </div>
 </div>
@@ -934,14 +935,16 @@ const result = await submitCandidate({
   specDb,
   productRoot,
   config,                             // optional: enables auto-publish
+  variantId: null,                    // null/omit = product-level field
+                                      // pass v_&lt;hex&gt; for variant-scoped fields
 });</pre>
 
     <p style="margin-top:12px;"><strong>What happens inside <code>submitCandidate()</code>:</strong></p>
     <ol style="margin:4px 0 0 20px; font-size:13px;">
       <li>12-step deterministic validation pipeline (reads your field rule &mdash; skips inapplicable steps)</li>
       <li>Builds deterministic <code>source_id</code>: <code>myf-{productId}-{runNumber}</code></li>
-      <li>SQL write to <code>field_candidates</code> table</li>
-      <li>JSON write to <code>product.json candidates[]</code></li>
+      <li>SQL write to <code>field_candidates</code> table (with <code>variant_id</code> if provided)</li>
+      <li>JSON write to <code>product.json candidates[]</code> (with <code>variant_id</code> key if provided)</li>
       <li>Optional auto-publish if confidence meets threshold</li>
     </ol>
 
@@ -960,6 +963,25 @@ const result = await submitCandidate({
         <li>No field rule defined &rarr; <code>submitCandidate()</code> still works (minimal validation)</li>
       </ul>
       The validation pipeline is smart enough to skip steps that don&rsquo;t apply to your field&rsquo;s rule shape.
+    </div>
+
+    <div class="callout callout-success" style="margin-top:8px;">
+      <strong>Variant-scoped fields (release-date, SKU, per-variant pricing, &hellip;)</strong>
+      <p style="margin:4px 0 0; font-size:13px;">If your finder produces one value <em>per variant</em>, iterate over <code>specDb.variants.listByProduct(productId)</code> (CEF-built &mdash; do not re-derive) and submit one candidate per variant with that variant&rsquo;s <code>variant_id</code>:</p>
+      <pre class="code-block">const variants = specDb.variants.listByProduct(productId);
+for (const v of variants) {
+  await submitCandidate({
+    /* &hellip; same as above &hellip; */
+    fieldKey: 'release_date',
+    value: response.releases[v.variant_key],
+    variantId: v.variant_id,            // FK anchor to variants table
+  });
+}</pre>
+      <ul style="margin:4px 0 0 16px; font-size:13px;">
+        <li>SQL <code>UNIQUE(category, product_id, field_key, source_id, variant_id_key)</code> lets the same <code>source_id</code> coexist with different <code>variant_id</code>s &mdash; one row per variant.</li>
+        <li><code>deleteVariant()</code> automatically cascades your rows via <code>specDb.deleteFieldCandidatesByVariantId(...)</code> + JSON mirror filter. No per-feature cleanup code needed.</li>
+        <li>Reseed (<code>candidateReseed.js</code>) round-trips <code>variant_id</code> through <code>product.json &rarr; field_candidates</code>.</li>
+      </ul>
     </div>
   </div>
 </div>
@@ -1130,7 +1152,7 @@ const merged = mergeDiscovery({ ... });        // clean write</pre>
   published: { ... },
   candidates: { ... },
 })</pre>
-    <p style="margin-top:6px;">If omitted, the default response includes only standard fields. CEF uses this for <code>published.colors</code>, <code>published.editions</code>, <code>candidates</code>, and <code>variant_registry</code>.</p>
+    <p style="margin-top:6px;">If omitted, the default response includes only standard fields. CEF uses this for <code>published.colors</code>, <code>published.editions</code>, <code>candidates</code>, and <code>variant_registry</code> (sourced from <code>specDb.variants.listByProduct()</code> &mdash; the <code>variants</code> table is the runtime SSOT; no summary-column blob).</p>
   </div>
 </div>
 

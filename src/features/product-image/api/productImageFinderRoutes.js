@@ -62,8 +62,8 @@ export function registerProductImageFinderRoutes(ctx) {
         const evalData = evalState[img.filename];
         return evalData ? { ...img, ...evalData } : img;
       };
-      // WHY: evaluations array is still JSON-only (not projected to SQL yet).
-      const jsonDoc = readProductImages({ productId: row.product_id, productRoot });
+      // WHY: evaluations projected to SQL per CLAUDE.md dual-state mandate — runtime UI reads SQL only.
+      const evaluations = typeof row.evaluations === 'string' ? JSON.parse(row.evaluations || '[]') : (row.evaluations || []);
 
       const enrichedSelected = selected?.images
         ? { ...selected, images: selected.images.map(enrichImage).map(overlayEval) }
@@ -115,7 +115,7 @@ export function registerProductImageFinderRoutes(ctx) {
         carouselProgress,
         carouselSettings: { viewAttemptBudget, viewAttemptBudgets, heroAttemptBudget, heroEnabled, viewBudget },
         carousel_slots: typeof row.carousel_slots === 'string' ? JSON.parse(row.carousel_slots || '{}') : (row.carousel_slots || {}),
-        evaluations: jsonDoc?.evaluations || [],
+        evaluations,
       };
     },
 
@@ -811,11 +811,12 @@ export function registerProductImageFinderRoutes(ctx) {
         const result = deleteEvalRecord({ productId, productRoot, evalNumber });
         if (!result) return jsonRes(res, 404, { error: 'eval record not found' });
 
-        // SQL projection — update eval_state after eval deletion
+        // SQL projection — update eval_state AND evaluations after eval deletion
         const specDb = getSpecDb(category);
         if (specDb) {
           const finderStore = store(specDb);
           finderStore.updateSummaryField(productId, 'eval_state', JSON.stringify(extractEvalState(result)));
+          finderStore.updateSummaryField(productId, 'evaluations', JSON.stringify(result.evaluations || []));
         }
 
         emitDataChange({

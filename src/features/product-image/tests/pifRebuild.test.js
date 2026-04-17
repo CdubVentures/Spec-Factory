@@ -170,6 +170,56 @@ describe('rebuildProductImageFinderFromJson', () => {
     assert.strictEqual(evalState['bottom-black.png'], undefined, 'no eval fields → not in eval_state');
   });
 
+  it('seeds evaluations array from JSON into SQL column', () => {
+    // WHY: CLAUDE.md Dual-State mandate — evaluations must be projected to SQL
+    // so the runtime GET handler reads from SQL, not JSON. Rebuild is the
+    // "deleted-DB → rehydrate from JSON" contract.
+    const root = makeTmpRoot();
+    const specDb = makeFakeSpecDb('mouse');
+    const productId = 'prod_evaluations_rebuild';
+
+    seedDoc(root, productId, {
+      product_id: productId,
+      category: 'mouse',
+      selected: { images: [] },
+      evaluations: [
+        { variant_key: 'color:black', variant_id: 'v_aa', type: 'view', view: 'top', model: 'gpt-5.4', reasoning: 'crisp angle' },
+        { variant_key: 'color:black', variant_id: 'v_aa', type: 'hero', model: 'gpt-5.4', reasoning: 'best hero' },
+      ],
+      runs: [],
+    });
+
+    rebuildProductImageFinderFromJson({ specDb, productRoot: root });
+
+    const row = specDb._stores.productImageFinder.upserted[0];
+    assert.ok(row.evaluations, 'evaluations column seeded');
+    const evaluations = typeof row.evaluations === 'string' ? JSON.parse(row.evaluations) : row.evaluations;
+    assert.equal(evaluations.length, 2);
+    assert.equal(evaluations[0].variant_key, 'color:black');
+    assert.equal(evaluations[0].type, 'view');
+    assert.equal(evaluations[1].type, 'hero');
+  });
+
+  it('seeds empty evaluations array when JSON has none', () => {
+    const root = makeTmpRoot();
+    const specDb = makeFakeSpecDb('mouse');
+    const productId = 'prod_empty_evaluations';
+
+    seedDoc(root, productId, {
+      product_id: productId,
+      category: 'mouse',
+      selected: { images: [] },
+      runs: [],
+      // no evaluations key
+    });
+
+    rebuildProductImageFinderFromJson({ specDb, productRoot: root });
+
+    const row = specDb._stores.productImageFinder.upserted[0];
+    const evaluations = typeof row.evaluations === 'string' ? JSON.parse(row.evaluations) : row.evaluations;
+    assert.deepEqual(evaluations, []);
+  });
+
   it('seeds run history', () => {
     const root = makeTmpRoot();
     const specDb = makeFakeSpecDb('mouse');

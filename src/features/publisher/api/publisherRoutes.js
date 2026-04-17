@@ -8,12 +8,9 @@
  * POST /publisher/:category/reconcile          (apply reconciliation)
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
 import { reconcileThreshold } from '../publish/reconcileThreshold.js';
 import { registerOperation, updateStage, completeOperation, failOperation } from '../../../core/operations/operationsRegistry.js';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
-import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
 
 export function registerPublisherRoutes(ctx) {
   const { jsonRes, readJsonBody, getSpecDb, broadcastWs, config, productRoot } = ctx;
@@ -119,24 +116,31 @@ export function registerPublisherRoutes(ctx) {
       }
 
       // WHY: Variant-derived fields (colors, editions) are authoritative from
-      // product.json, not from candidate resolved status. Overlay them so the
-      // published endpoint reflects the variants table SSOT.
-      try {
-        const pjPath = path.join(defaultProductRoot(), productId, 'product.json');
-        const pj = JSON.parse(fs.readFileSync(pjPath, 'utf8'));
-        if (pj.fields) {
-          for (const [key, field] of Object.entries(pj.fields)) {
-            if (field?.source === 'variant_registry') {
-              fields[key] = {
-                value: field.value,
-                confidence: field.confidence ?? 1.0,
-                source: 'variant_registry',
-                resolved_at: field.resolved_at || '',
-              };
-            }
-          }
+      // the variants table → color_edition_finder SQL summary (maintained by
+      // derivePublishedFromVariants). CLAUDE.md Dual-State mandate: runtime
+      // UI reads must come from SQL, never product.json.
+      // NOTE: resolved_at uses the last CEF run time as a proxy — precise
+      // variant-mutation timestamp isn't projected to SQL today. Functionally
+      // identical for consumers since both bump when variants change.
+      const cefRow = specDb.getFinderStore?.('colorEditionFinder')?.get?.(productId);
+      if (cefRow) {
+        if (Array.isArray(cefRow.colors) && cefRow.colors.length > 0) {
+          fields.colors = {
+            value: cefRow.colors,
+            confidence: 1.0,
+            source: 'variant_registry',
+            resolved_at: cefRow.latest_ran_at || '',
+          };
         }
-      } catch { /* product.json may not exist */ }
+        if (Array.isArray(cefRow.editions) && cefRow.editions.length > 0) {
+          fields.editions = {
+            value: cefRow.editions,
+            confidence: 1.0,
+            source: 'variant_registry',
+            resolved_at: cefRow.latest_ran_at || '',
+          };
+        }
+      }
 
       jsonRes(res, 200, { product_id: productId, fields });
       return true;

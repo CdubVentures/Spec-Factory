@@ -284,7 +284,7 @@
     <dt>Hash format</dt><dd><code>v_&lt;8-hex&gt;</code> from <code>generateVariantId(productId, variantKey)</code> &mdash; SHA-256 of <code>"{productId}:{variantKey}"</code>, first 8 hex chars, prefixed <code>v_</code></dd>
     <dt>Hash NEVER changes</dt><dd>Once assigned, the <code>variant_id</code> is permanent. It survives atom updates, label changes, and any mutable field modifications.</dd>
     <dt>Deterministic</dt><dd>Same product + same key always produces the same hash. Product-scoped (no cross-product collisions).</dd>
-    <dt>Registry location</dt><dd><code>variant_registry[]</code> array on <code>color_edition.json</code> (top-level). Projected to SQL <code>color_edition_finder.variant_registry</code> column.</dd>
+    <dt>Registry location</dt><dd><code>variant_registry[]</code> array on <code>color_edition.json</code> (top-level) is the durable SSOT. Projected to the <code>variants</code> SQL table (one row per variant) via <code>specDb.variants.syncFromRegistry()</code>. The <code>variants</code> table is the runtime authority &mdash; the legacy <code>color_edition_finder.variant_registry</code> blob column was retired (variant-ssot-roadmap Phase&nbsp;2 §6).</dd>
   </dl>
 
   <table style="margin-top:16px;">
