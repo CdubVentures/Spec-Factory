@@ -38,6 +38,11 @@ export interface ReviewCandidateGen {
   llm_extract_provider?: string | null;
   llm_validate_model?: string | null;
   llm_validate_provider?: string | null;
+  variant_id?: string | null;
+  variant_label?: string | null;
+  variant_type?: string | null;
+  color_atoms?: string[] | null;
+  edition_slug?: string | null;
 }
 
 export interface FieldStateGen {
@@ -53,6 +58,7 @@ export interface FieldStateGen {
   evidence_quote?: string;
   overridden?: boolean;
   source_timestamp?: string | null;
+  variant_values?: Record<string, unknown>;
 }
 
 export interface ProductIdentityGen {

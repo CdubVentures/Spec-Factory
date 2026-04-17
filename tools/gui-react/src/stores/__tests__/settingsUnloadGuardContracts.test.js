@@ -172,27 +172,14 @@ test('multiple domains, only dirty ones are flushed', async () => {
       }),
       markFlushed: () => {},
     });
-    const unreg3 = mod.registerUnloadGuard({
-      domain: 'llm',
-      isDirty: () => true,
-      getPayload: () => ({
-        url: '/api/v1/llm-settings/mouse/routes',
-        method: 'PUT',
-        body: { c: 3 },
-      }),
-      markFlushed: () => {},
-    });
-
     env.fireEvent('beforeunload');
 
-    assert.equal(env.fetchCalls.length, 2);
+    assert.equal(env.fetchCalls.length, 1);
     const urls = env.fetchCalls.map((c) => c.url);
     assert.ok(urls.includes('/api/v1/runtime-settings'));
-    assert.ok(urls.includes('/api/v1/llm-settings/mouse/routes'));
 
     unreg1();
     unreg2();
-    unreg3();
   } finally {
     env.cleanup();
   }

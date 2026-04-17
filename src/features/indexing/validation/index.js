@@ -1,24 +1,5 @@
 // Validation — public API re-exports.
-// Identity, traffic light, enum, verification, live-crawl.
-
-export {
-  buildIdentityCriticalContradictions,
-  evaluateSourceIdentity,
-  evaluateIdentityGate,
-  buildIdentityReport,
-} from './identityGate.js';
-
-export { buildTrafficLight } from './trafficLight.js';
-
-export { validateComponentMatches } from './validateComponentMatches.js';
-
-export {
-  runEnumConsistencyReview,
-  resolveEnumConsistencyFormatGuidance,
-  sanitizeEnumConsistencyDecisions,
-} from './validateEnumConsistency.js';
-
-export { appendLlmVerificationReport } from './verificationReport.js';
+// Live-crawl diagnostics (post-run GUI inspection only).
 
 // Live-crawl evaluators
 export {

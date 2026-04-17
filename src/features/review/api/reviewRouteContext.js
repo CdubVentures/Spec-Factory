@@ -12,7 +12,6 @@ import {
 } from './mutationResolvers.js';
 import { buildComponentIdentifier } from '../../../utils/componentIdentifier.js';
 import { slugify } from '../../catalog/index.js';
-import { runEnumConsistencyReview } from '../../indexing/index.js';
 
 export function createReviewRouteContext(options = {}) {
   if (!options || typeof options !== 'object' || Array.isArray(options)) {
@@ -43,7 +42,6 @@ export function createReviewRouteContext(options = {}) {
     buildComponentIdentifier, cascadeComponentChange,
     resolveEnumMutationContext,
     cascadeEnumChange,
-    runEnumConsistencyReview,
     patchCompiledComponentDb,
   };
 }

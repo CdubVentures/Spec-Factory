@@ -1,7 +1,6 @@
 import { saveFieldStudioMap, validateFieldStudioMap } from '../../../ingest/categoryCompile.js';
 import { buildFieldLabelsMap } from '../../review/domain/index.js';
 import { cleanVariant } from '../../catalog/index.js';
-import { runEnumConsistencyReview } from '../../indexing/index.js';
 
 export function createStudioRouteContext(options = {}) {
   if (!options || typeof options !== 'object' || Array.isArray(options)) {
@@ -21,6 +20,6 @@ export function createStudioRouteContext(options = {}) {
     validateFieldStudioMap, invalidateFieldRulesCache, buildFieldLabelsMap,
     getSpecDb, getSpecDbReady, storage, startProcess, broadcastWs,
     reviewLayoutByCategory, cleanVariant,
-    runEnumConsistencyReview, appDb,
+    appDb,
   };
 }

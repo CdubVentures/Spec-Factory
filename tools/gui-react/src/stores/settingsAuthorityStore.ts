@@ -4,7 +4,6 @@ export interface SettingsAuthorityStoreSnapshot {
   category: string;
   runtimeReady: boolean;
   sourceStrategyReady: boolean;
-  llmSettingsReady: boolean;
   uiSettingsReady: boolean;
   uiSettingsPersistState: 'idle' | 'saving' | 'error';
   uiSettingsPersistMessage: string;
@@ -24,7 +23,6 @@ const DEFAULT_SNAPSHOT: SettingsAuthorityStoreSnapshot = {
   category: 'all',
   runtimeReady: false,
   sourceStrategyReady: false,
-  llmSettingsReady: false,
   uiSettingsReady: false,
   uiSettingsPersistState: 'idle',
   uiSettingsPersistMessage: '',

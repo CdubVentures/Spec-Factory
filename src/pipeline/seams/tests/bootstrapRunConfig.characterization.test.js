@@ -49,7 +49,6 @@ function buildMinimalDeps() {
           fn: 'createRunLlmRuntime',
           hasRuntimeOverrides: opts.runtimeOverrides === runtimeOverrides,
           hasBillingSnapshot: opts.billingSnapshot === billingSnapshot,
-          hasNoRouteMatrixPolicy: opts.routeMatrixPolicy === undefined,
         });
         return llmRuntime;
       },
@@ -104,19 +103,14 @@ describe('bootstrapRunConfig characterization', () => {
     assert.ok(order.indexOf('readBillingSnapshot') < order.indexOf('createRunLlmRuntime'));
     assert.ok(order.indexOf('createRunLlmRuntime') < order.indexOf('computeNeedSet'));
     assert.strictEqual(order.length, 4);
-    // Dead code removed
-    assert.ok(!order.includes('loadCategoryConfig'));
-    assert.ok(!order.includes('loadRouteMatrixPolicyForRun'));
-    assert.ok(!order.includes('buildIndexlabRuntimeCategoryConfig'));
   });
 
-  test('routeMatrixPolicy is not passed to createRunLlmRuntime', async () => {
+  test('createRunLlmRuntime receives runtime overrides and billing snapshot', async () => {
     const logger = createSpyLogger();
     const stubDeps = buildMinimalDeps();
     await bootstrapRunConfig(buildMinimalParams(logger, stubDeps));
 
     const llmCall = stubDeps.calls.find((c) => c.fn === 'createRunLlmRuntime');
-    assert.strictEqual(llmCall.hasNoRouteMatrixPolicy, true);
     assert.strictEqual(llmCall.hasRuntimeOverrides, true);
     assert.strictEqual(llmCall.hasBillingSnapshot, true);
   });
@@ -132,8 +126,6 @@ describe('bootstrapRunConfig characterization', () => {
     assert.ok(result.initialNeedSet);
     assert.ok(result.blockedHosts instanceof Set);
     assert.ok(Array.isArray(result.requiredFields));
-    // routeMatrixPolicy removed
-    assert.strictEqual(result.routeMatrixPolicy, undefined);
   });
 
   test('emits bootstrap_step events in order', async () => {

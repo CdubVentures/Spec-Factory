@@ -2,7 +2,7 @@
 
 SQLite-backed persistence layer for review state, component identity, and queue management.
 
-**SpecDb** (`specDb.js`): Per-category facade over 12 domain-specific store modules. One instance per category, located at `.workspace/db/{category}/spec.sqlite`.
+**SpecDb** (`specDb.js`): Per-category facade over 11 domain-specific store modules. One instance per category, located at `.workspace/db/{category}/spec.sqlite`.
 
 **AppDb** (`appDb.js`): Shared cross-category database at `.workspace/db/app.sqlite` for global state: brands (34+), brand categories, brand renames, user settings (~170 keys), studio maps, color registry, unit registry, billing entries, and seed hash tracking. Opened once at bootstrap, shared across all categories.
   - Billing: `insertBillingEntry`, `getBillingRollup(month, category?)`, `getBillingEntriesForMonth`, `getBillingSnapshot`, `getGlobalDaily`, `getGlobalEntries`, `countBillingEntries`
@@ -23,7 +23,7 @@ SQLite-backed persistence layer for review state, component identity, and queue 
   - Brands, settings, studio maps, color registry, unit registry
   - Billing: insert, rollup, snapshot, daily, entries, count
 - `specDbSchema.js` → `SCHEMA` — DDL string for table/index creation
-- `specDbHelpers.js` → `normalizeListLinkToken`, `expandListLinkValues`, `toPositiveInteger`, `toBoolInt`, `toBand`, `buildDefaultLlmRoutes`
+- `specDbHelpers.js` → `normalizeListLinkToken`, `expandListLinkValues`, `toPositiveInteger`, `toBoolInt`, `hydrateRow`, `hydrateRows`
 - `specDbMigrations.js` → `applyMigrations(db)`, `MIGRATIONS`, `SECONDARY_INDEXES`
 - `specDbIntegrity.js` → `cleanupLegacyIdentityFallbackRows`, `assertStrictIdentitySlotIntegrity`
 - `specDbStatements.js` → `prepareStatements(db)` — compiled SQL
@@ -42,9 +42,9 @@ SQLite-backed persistence layer for review state, component identity, and queue 
 ## Mutation Boundaries
 
 - SQLite database files: one per category (`spec.sqlite`), plus one global (`app.sqlite`)
-- SpecDb: component_identity, enum/list, key_review, queue/product, llm_route, telemetry indexes, crawl artifacts, runs, field_candidates
+- SpecDb: component_identity, enum/list, key_review, queue/product, telemetry indexes, crawl artifacts, runs, field_candidates
 - AppDb: brands, brand_categories, brand_renames, settings, studio_maps, color_registry, unit_registry, billing_entries
-- 12 SpecDb store modules: componentStore, enumListStore, itemStateStore, keyReviewStore, queueProductStore, llmRouteSourceStore, sourceIntelStore, artifactStore, runMetaStore, runArtifactStore, telemetryIndexStore, purgeStore, fieldCandidateStore
+- 11 SpecDb store modules: componentStore, enumListStore, itemStateStore, keyReviewStore, queueProductStore, sourceIntelStore, artifactStore, runMetaStore, runArtifactStore, telemetryIndexStore, purgeStore, fieldCandidateStore
 - Write access is through `SpecDb`/`AppDb` methods only — consumers must not use raw SQL
 
 ## Domain Invariants

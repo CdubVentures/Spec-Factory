@@ -2,7 +2,16 @@
 // classifications. Every dropdown, badge, sort, and validation in the frontend
 // must derive from these registries. Adding a new enum value = add one entry here.
 
-import { toEffortBand, EFFORT_BOUNDS } from '../pages/llm-settings/llmRouteDomain.ts';
+const EFFORT_BOUNDS = { min: 1, max: 10 } as const;
+
+function toEffortBand(effort: number): '1-3' | '4-6' | '7-8' | '9-10' {
+  const parsed = Number.isFinite(effort) ? effort : EFFORT_BOUNDS.min;
+  const n = Math.max(EFFORT_BOUNDS.min, Math.min(EFFORT_BOUNDS.max, parsed));
+  if (n <= 3) return '1-3';
+  if (n <= 6) return '4-6';
+  if (n <= 8) return '7-8';
+  return '9-10';
+}
 
 // ── Registries ──────────────────────────────────────────────────────────
 

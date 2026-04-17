@@ -84,7 +84,7 @@ The live route-order array in `src/app/api/guiServerRuntime.js` is exactly 17 fa
 | Family key | Primary paths | Files |
 |------------|---------------|-------|
 | `infra` | `/health`, `/categories`, `/serper/*`, `/searxng/*`, `/process/*`, `/graphql` | `src/app/api/routes/infraRoutes.js`, `src/app/api/routes/infra/*.js` |
-| `config` | `/ui-settings`, `/runtime-settings`, `/llm-policy`, `/llm-settings/*`, `/indexing/llm-config`, `/indexing/llm-metrics`, `/indexing/domain-checklist/*`, `/indexing/review-metrics/*` | `src/features/settings/api/configRoutes.js` |
+| `config` | `/ui-settings`, `/runtime-settings`, `/llm-policy`, `/indexing/llm-config`, `/indexing/llm-metrics`, `/indexing/domain-checklist/*`, `/indexing/review-metrics/*` | `src/features/settings/api/configRoutes.js` |
 | `indexlab` | `/indexlab/runs`, `/indexlab/run/*`, `/indexlab/indexes/*`, `/indexlab/analytics/*`, `/indexlab/live-crawl/*`, `/storage/*` | `src/features/indexing/api/indexlabRoutes.js`, `src/features/indexing/api/storageManagerRoutes.js` |
 | `runtimeOps` | `/indexlab/run/:runId/runtime/*` | `src/features/indexing/api/runtimeOpsRoutes.js` |
 | `catalog` | `/catalog/*`, `/product/*` | `src/features/catalog/api/catalogRoutes.js` |
@@ -138,10 +138,9 @@ Each route family receives a context object. Fifteen contexts come from dedicate
 
 ## Settings And Policy Split
 
-- `src/features/settings/api/configRoutes.js` mounts five live handler families:
+- `src/features/settings/api/configRoutes.js` mounts four live handler families:
   - UI settings via `src/features/settings/api/configUiSettingsHandler.js`
   - indexing metadata and metrics via `src/features/settings/api/configIndexingMetricsHandler.js`
-  - category-scoped LLM route matrices via `src/features/settings/api/configLlmSettingsHandler.js`
   - runtime settings via `src/features/settings/api/configRuntimeSettingsHandler.js`
   - composite global LLM policy via `src/features/settings-authority/llmPolicyHandler.js`
 - There is no live `/api/v1/storage-settings` route.

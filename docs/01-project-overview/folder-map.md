@@ -74,8 +74,8 @@
 |------|---------|-----------|
 | `tools/gui-react/` | React/Vite/TypeScript operator GUI | `package.json`, `vite.config.ts`, `src/App.tsx`, `src/registries/pageRegistry.ts` |
 | `tools/gui-react/src/features/` | stateful GUI feature implementations (`12` dirs) | `catalog/`, `color-edition-finder/`, `color-registry/`, `data-change/`, `indexing/`, `llm-config/`, `operations/`, `pipeline-settings/`, `review/`, `runtime-ops/`, `storage-manager/`, `studio/` |
-| `tools/gui-react/src/pages/` | route shells and page-local modules (`12` dirs) | `billing/`, `component-review/`, `layout/`, `llm-settings/`, `overview/`, `product/`, `publisher/`, `runtime/`, `storage/`, `test-mode/`, `unit-registry/`, `__tests__/` |
-| `tools/gui-react/src/stores/` | Zustand stores | `uiStore.ts`, `tabStore.ts`, `collapseStore.ts`, `runtimeSettingsValueStore.ts`, `llmSettingsAuthority.ts` |
+| `tools/gui-react/src/pages/` | route shells and page-local modules (`11` dirs) | `billing/`, `component-review/`, `layout/`, `overview/`, `product/`, `publisher/`, `runtime/`, `storage/`, `test-mode/`, `unit-registry/`, `__tests__/` |
+| `tools/gui-react/src/stores/` | Zustand stores | `uiStore.ts`, `tabStore.ts`, `collapseStore.ts`, `runtimeSettingsValueStore.ts` |
 | `tools/gui-react/src/api/` | shared REST, GraphQL, websocket, and teardown clients | `client.ts`, `graphql.ts`, `ws.ts`, `teardownFetch.ts` |
 | `tools/searxng/` | optional local search sidecar | `docker-compose.yml` |
 | `tools/` root scripts | packaging, setup, and validation utilities | `build-exe.mjs`, `build-setup-exe.mjs`, `specfactory-launcher.mjs`, `check-env-example-sync.mjs` |

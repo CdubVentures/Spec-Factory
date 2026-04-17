@@ -180,21 +180,6 @@ export function buildReseedSurfaces(deps) {
     },
     ...finderSurfaces,
     {
-      key: 'llm_route_matrix',
-      label: 'LLM Route Matrix',
-      scope: 'reseed',
-      tables: ['llm_route_matrix'],
-      shouldRun: null,
-      execute: (ctx) => deps.rebuildLlmRouteMatrixFromJson({
-        specDb: ctx.db,
-        helperRoot: ctx.helperRoot,
-      }),
-      formatLog: (category, result) =>
-        result.reseeded > 0
-          ? `${category}: ${result.reseeded} LLM route rows re-seeded`
-          : '',
-    },
-    {
       key: 'field_key_order',
       label: 'Field Key Order',
       scope: 'reseed',

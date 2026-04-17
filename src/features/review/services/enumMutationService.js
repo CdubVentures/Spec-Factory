@@ -22,12 +22,6 @@ export function dedupeEnumValues(values = []) {
   return output;
 }
 
-export function readEnumConsistencyFormatHint(rule = {}) {
-  const enumBlock = rule?.enum && typeof rule.enum === 'object' ? rule.enum : {};
-  const enumMatch = enumBlock?.match && typeof enumBlock.match === 'object' ? enumBlock.match : {};
-  return String(enumMatch?.format_hint || rule?.enum_match_format_hint || '').trim();
-}
-
 export function validateEnumCandidate({
   candidateRow,
   candidateId,

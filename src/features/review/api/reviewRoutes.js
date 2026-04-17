@@ -10,13 +10,11 @@ import { handleReviewItemMutationRoute } from './itemMutationRoutes.js';
 import { handleCandidateDeletionRoute } from './candidateDeletionRoutes.js';
 import { handleReviewComponentMutationRoute } from './componentMutationRoutes.js';
 import { handleReviewEnumMutationRoute } from './enumMutationRoutes.js';
-import { runEnumConsistencyReview as runEnumConsistencyReviewDefault } from '../../indexing/index.js';
 import { isConsumerEnabled } from '../../../field-rules/consumerGate.js';
 import {
   normalizeEnumToken,
   hasMeaningfulEnumValue,
   dedupeEnumValues,
-  readEnumConsistencyFormatHint,
 } from '../services/enumMutationService.js';
 import { normalizeFieldKey } from '../domain/reviewNormalization.js';
 import { handleFieldReviewRoute } from './fieldReviewHandlers.js';
@@ -27,7 +25,6 @@ export {
   normalizeEnumToken,
   hasMeaningfulEnumValue,
   dedupeEnumValues,
-  readEnumConsistencyFormatHint,
 };
 
 function resolveSessionFieldRule(session = null, fieldKey = '') {
@@ -85,7 +82,6 @@ export function registerReviewRoutes(ctx) {
     // Enum mutation helpers
     resolveEnumMutationContext,
     cascadeEnumChange,
-    runEnumConsistencyReview = runEnumConsistencyReviewDefault,
     patchCompiledComponentDb,
   } = ctx;
 
@@ -117,7 +113,6 @@ export function registerReviewRoutes(ctx) {
     HELPER_ROOT, OUTPUT_ROOT,
     cascadeEnumChange,
     specDbCache, broadcastWs,
-    runEnumConsistencyReview,
   };
 
   return async function handleReviewRoutes(parts, params, method, req, res) {

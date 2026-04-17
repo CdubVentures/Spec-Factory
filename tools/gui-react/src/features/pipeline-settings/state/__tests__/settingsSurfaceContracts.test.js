@@ -165,7 +165,6 @@ test('settings surface normalizes cached runtime settings through the public GUI
 test('settings manifest surface keeps concrete option defaults and labels aligned', async () => {
   const [pipelineSettingsFeature, settingsManifest] = await loadSettingsSurfaceModules();
   const {
-    LLM_ROUTE_PRESET_LIMITS,
     LLM_SETTING_LIMITS,
     RUNTIME_SETTING_DEFAULTS,
     SEARXNG_ENGINE_LABELS,
@@ -204,7 +203,6 @@ test('settings manifest surface keeps concrete option defaults and labels aligne
   );
 
   assert.equal(LLM_SETTING_LIMITS.maxTokens.max > LLM_SETTING_LIMITS.maxTokens.min, true);
-  assert.equal(LLM_ROUTE_PRESET_LIMITS.deep.enableWebsearch, true);
   assert.equal(
     Object.values(SETTINGS_AUTOSAVE_DEBOUNCE_MS).every((value) => typeof value === 'number' && value >= 0),
     true,

@@ -21,8 +21,6 @@ export const DATA_CHANGE_EVENT_DOMAIN_MAP = Object.freeze({
   'color-update': ['color-registry'],
   'color-delete': ['color-registry'],
   'spec-seeds-updated': ['spec-seeds'],
-  'llm-settings-updated': ['settings', 'indexing'],
-  'llm-settings-reset': ['settings', 'indexing'],
   'runtime-settings-updated': ['settings', 'indexing'],
   'user-settings-updated': ['settings', 'indexing'],
   'category-created': ['categories'],

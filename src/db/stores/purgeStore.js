@@ -31,7 +31,6 @@ export function createPurgeStore({ db, category: defaultCategory }) {
 
       // Catalog
       clearedCatalogState += db.prepare('DELETE FROM products WHERE category = ?').run(cat).changes;
-      clearedCatalogState += db.prepare('DELETE FROM llm_route_matrix WHERE category = ?').run(cat).changes;
 
 
       // Optional tables

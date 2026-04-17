@@ -381,21 +381,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     </div>
   </details>
 
-  <!-- LLM Routing (key_review_state, key_review_runs, key_review_run_sources, key_review_audit retired in Phase 1b) -->
-  <details class="wave-card">
-    <summary>
-      <span class="wave-title">LLM Routing</span>
-      <span class="wave-desc">llm_route_matrix</span>
-      <span class="tags"><span class="badge badge-complete">1 table</span></span>
-    </summary>
-    <div class="wave-body">
-      <p>LLM source routing matrix. The key review state machine tables (key_review_state, key_review_runs, key_review_run_sources, key_review_audit) were retired in Phase 1b.</p>
-      <div class="table-list">
-        <div class="table-item"><span class="dot"></span><code>llm_route_matrix</code><span class="note">37 cols</span></div>
-      </div>
-    </div>
-  </details>
-
   <!-- Telemetry -->
   <details class="wave-card">
     <summary>
@@ -491,11 +476,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
           <td><code>product.json</code> and <code>color_edition.json</code> are rebuild checkpoints; SQL is the live query surface. Run/product linkage lives on <code>runs.product_id</code>.</td>
         </tr>
         <tr>
-          <td><code>Review workflow + key review state</code></td>
-          <td class="replaced"><code>llm_route_matrix</code></td>
-          <td>LLM route configuration (curation_suggestions, component_review_queue, and key_review_* tables retired).</td>
-        </tr>
-        <tr>
           <td><code>Cross-run telemetry indexes</code></td>
           <td class="replaced"><code>knob_snapshots</code>, <code>query_index</code>, <code>url_index</code>, <code>prompt_index</code></td>
           <td>SQL owns the queryable analytics layer; disk files remain only for checkpoints and published outputs.</td>
@@ -567,7 +547,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
         <tr><td><code class="store-name">runArtifactStore.js</code></td><td><code class="tbl-name">run_artifacts</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
         <tr><td><code class="store-name">sourceIntelStore.js</code></td><td><code class="tbl-name">bridge_events</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
         <tr><td><code class="store-name">artifactStore.js</code></td><td><code class="tbl-name">crawl_sources</code>, <code class="tbl-name">source_screenshots</code>, <code class="tbl-name">source_videos</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
-        <tr><td><code class="store-name">llmRouteSourceStore.js</code></td><td><code class="tbl-name">llm_route_matrix</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
         <tr><td><code class="store-name">itemStateStore.js</code></td><td><code class="tbl-name">item_component_links</code>, <code class="tbl-name">item_list_links</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
         <tr><td><code class="store-name">componentStore.js</code></td><td><code class="tbl-name">component_identity</code>, <code class="tbl-name">component_aliases</code>, <code class="tbl-name">component_values</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>
         <tr><td><code class="store-name">enumListStore.js</code></td><td><code class="tbl-name">enum_lists</code>, <code class="tbl-name">list_values</code></td><td><span class="surface-tag surface-spec">SpecDb</span></td></tr>

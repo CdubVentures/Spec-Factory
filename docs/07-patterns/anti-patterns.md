@@ -83,7 +83,6 @@ Do instead:
   - `PUT /api/v1/ui-settings`
   - `PUT /api/v1/runtime-settings`
   - `PUT /api/v1/llm-policy`
-  - `PUT /api/v1/llm-settings/:category/routes`
   - `PUT /api/v1/spec-seeds?category=:category` when editing deterministic query templates
 - Reserve browser storage for derived continuity like `tools/gui-react/src/stores/tabStore.ts`, `tools/gui-react/src/stores/collapseStore.ts`, and `tools/gui-react/src/features/indexing/state/indexlabStore.ts`.
 

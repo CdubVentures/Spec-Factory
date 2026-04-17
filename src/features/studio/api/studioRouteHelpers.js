@@ -1,5 +1,3 @@
-import { isConsumerEnabled } from '../../../field-rules/consumerGate.js';
-
 export function normalizeEnumToken(value) {
   return String(value ?? '').trim().toLowerCase();
 }
@@ -22,16 +20,6 @@ export function dedupeEnumValues(values = []) {
     output.push(text);
   }
   return output;
-}
-
-export function readEnumConsistencyFormatHint(rule = {}) {
-  const enumBlock = rule?.enum && typeof rule.enum === 'object' ? rule.enum : {};
-  const enumMatch = enumBlock?.match && typeof enumBlock.match === 'object' ? enumBlock.match : {};
-  return String(enumMatch?.format_hint || rule?.enum_match_format_hint || '').trim();
-}
-
-export function isEnumConsistencyReviewEnabled(rule = {}) {
-  return isConsumerEnabled(rule, 'enum.match.format_hint', 'review');
 }
 
 export function buildPendingEnumValuesFromSuggestions(suggestionsDoc = {}, fieldKey = '') {
@@ -157,51 +145,3 @@ export function summarizeStudioMapPayload(map) {
   };
 }
 
-// WHY: Phase E3 — SQL is sole source. Count decisions and update SQL directly.
-export async function applyEnumConsistencyToSuggestions({
-  category,
-  field,
-  decisions = [],
-  specDb = null,
-  // Legacy params kept for signature compatibility (unused after E3)
-  fs: _fs,
-  path: _path,
-  helperRoot: _helperRoot,
-}) {
-  let mapped = 0;
-  let kept = 0;
-  let uncertain = 0;
-  let changed = 0;
-
-  const decisionList = Array.isArray(decisions) ? decisions : [];
-  for (const decision of decisionList) {
-    const value = String(decision?.value || '').trim();
-    if (!value) continue;
-    const action = String(decision?.decision || '').trim().toLowerCase();
-    if (action === 'map_to_existing') {
-      mapped += 1;
-      changed += 1;
-    } else if (action === 'keep_new') {
-      kept += 1;
-      changed += 1;
-    } else {
-      uncertain += 1;
-    }
-  }
-
-  if (specDb && changed > 0) {
-    try {
-      for (const decision of decisionList) {
-        const action = String(decision?.decision || '').trim().toLowerCase();
-        if (action === 'map_to_existing' || action === 'keep_new') {
-          specDb.updateCurationSuggestionStatus(
-            'enum_value', field, String(decision?.value || '').trim(), 'accepted',
-            { reviewer: 'llm_enum_consistency' }
-          );
-        }
-      }
-    } catch { /* best-effort SQL write */ }
-  }
-
-  return { mapped, kept, uncertain, changed };
-}

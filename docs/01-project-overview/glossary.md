@@ -20,7 +20,6 @@
 | Component review | Review workflow for shared/component-backed review items | `src/features/review/api/reviewRoutes.js`, `tools/gui-react/src/pages/component-review/ComponentReviewPage.tsx` |
 | Enum review | Review workflow for enum-backed review items and catalog suggestions | `src/features/review/api/reviewRoutes.js`, `tools/gui-react/src/pages/component-review/EnumSubTab.tsx` |
 | LLM policy | The composite global provider/model policy returned by `/api/v1/llm-policy` and edited in the GUI LLM config surface | `src/features/settings-authority/llmPolicyHandler.js`, `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` |
-| LLM settings | Category-scoped route-matrix settings persisted through `/api/v1/llm-settings/:category/routes` | `src/features/settings/api/configLlmSettingsHandler.js`, `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx` |
 | Runtime settings | Flat operator-editable runtime settings returned by `/api/v1/runtime-settings` | `src/features/settings/api/configRuntimeSettingsHandler.js` |
 | UI settings | Persisted GUI autosave/settings toggles returned by `/api/v1/ui-settings` | `src/features/settings/api/configUiSettingsHandler.js` |
 | Unit Registry | Global managed table of canonical units, synonyms, and conversions used by publisher unit validation and exposed at `/#/units` | `src/features/unit-registry/api/unitRegistryRoutes.js`, `tools/gui-react/src/pages/unit-registry/UnitRegistryPage.tsx`, `src/field-rules/unitRegistry.js` |
@@ -47,7 +46,6 @@
 | source | `src/features/studio/api/studioRoutes.js` | Field Rules Studio terminology |
 | source | `src/features/review/api/reviewRoutes.js` | review-grid, component-review, and enum-review terminology |
 | source | `src/features/settings-authority/llmPolicyHandler.js` | LLM policy terminology |
-| source | `src/features/settings/api/configLlmSettingsHandler.js` | LLM settings terminology |
 | source | `src/features/unit-registry/api/unitRegistryRoutes.js` | Unit Registry terminology and API surface |
 | source | `src/field-rules/unitRegistry.js` | Unit Registry runtime-cache semantics |
 | source | `src/features/color-registry/api/colorRoutes.js` | Color Registry terminology |

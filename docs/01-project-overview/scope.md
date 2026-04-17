@@ -49,7 +49,7 @@ Spec Factory is a local-first operator workbench for category authority, catalog
 | Crawl + indexing runs | `/#/indexing`, `indexlab` | `tools/gui-react/src/features/indexing/components/IndexingPage.tsx`, `src/app/cli/commands/pipelineCommands.js` |
 | Runtime diagnostics | `/#/runtime-ops` | `tools/gui-react/src/features/runtime-ops/components/RuntimeOpsPage.tsx` |
 | Publisher audit log | `/#/publisher` | `tools/gui-react/src/pages/publisher/PublisherPage.tsx`, `src/features/publisher/api/publisherRoutes.js` |
-| Review workflows | `/#/review`, `/#/review-components`, `/#/llm-settings`, `review *` commands | `tools/gui-react/src/features/review/components/ReviewPage.tsx`, `tools/gui-react/src/pages/component-review/ComponentReviewPage.tsx`, `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx`, `src/app/cli/commands/reviewCommand.js` |
+| Review workflows | `/#/review`, `/#/review-components`, `review *` commands | `tools/gui-react/src/features/review/components/ReviewPage.tsx`, `tools/gui-react/src/pages/component-review/ComponentReviewPage.tsx`, `src/app/cli/commands/reviewCommand.js` |
 | Studio / authority authoring | `/#/studio`, `compile-rules`, `validate-rules` | `tools/gui-react/src/features/studio/components/StudioPage.tsx`, `src/app/cli/commands/fieldRulesCommands.js` |
 | Runtime + storage maintenance | `/#/storage`, `/#/runtime-ops`, `gui:api` | `tools/gui-react/src/pages/storage/StoragePage.tsx`, `src/features/indexing/api/storageManagerRoutes.js`, `src/app/api/guiServer.js` |
 | Settings + provider config | `/#/llm-config`, `/#/pipeline-settings` | `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx`, `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` |

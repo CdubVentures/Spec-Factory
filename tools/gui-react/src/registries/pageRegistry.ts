@@ -48,8 +48,7 @@ export const PAGE_REGISTRY: readonly PageEntry[] = Object.freeze([
   { path: '/publisher',          label: 'Publisher',           tabGroup: 'ops', loader: () => import('../pages/publisher/PublisherPage.tsx'),                         exportName: 'PublisherPage',           dividerBefore: true, dividerAfter: true },
   { path: '/review',             label: 'Review Grid',         tabGroup: 'ops', loader: () => import('../features/review/components/ReviewPage.tsx'),                 exportName: 'ReviewPage',             disabledOnAll: true },
   { path: '/review-components',  label: 'Review Components',   tabGroup: 'ops', loader: () => import('../pages/component-review/ComponentReviewPage.tsx'),            exportName: 'ComponentReviewPage',    disabledOnAll: true },
-  { path: '/llm-settings',       label: 'Review LLM',         tabGroup: 'ops', loader: () => import('../pages/llm-settings/LlmSettingsPage.tsx'),                   exportName: 'LlmSettingsPage',        dividerAfter: true },
-  { path: '/storage',            label: 'Storage',             tabGroup: 'ops', loader: () => import('../pages/storage/StoragePage.tsx'),                             exportName: 'StoragePage' },
+  { path: '/storage',            label: 'Storage',             tabGroup: 'ops', loader: () => import('../pages/storage/StoragePage.tsx'),                             exportName: 'StoragePage', dividerBefore: true },
 
   // ── Settings group (far-right) ─────────────────────────────────
   { path: '/llm-config',         label: 'LLM',                tabGroup: 'settings', loader: () => import('../features/llm-config/components/LlmConfigPage.tsx'),          exportName: 'LlmConfigPage' },

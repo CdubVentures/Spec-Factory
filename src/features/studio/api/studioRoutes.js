@@ -1,17 +1,11 @@
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
-import { runEnumConsistencyReview as runEnumConsistencyReviewDefault } from '../../indexing/index.js';
 import { executeCommand } from '../../../core/operations/commandExecutor.js';
 import { hashJson } from '../../../ingest/compileUtils.js';
 import { normalizeFieldStudioMap } from '../../../ingest/compileMapNormalization.js';
 import {
-  applyEnumConsistencyToSuggestions,
   buildPendingEnumValuesFromSuggestions,
   buildStudioComponentDbFromSpecDb,
   buildStudioKnownValuesFromSpecDb,
-  dedupeEnumValues,
-  hasMeaningfulEnumValue,
-  isEnumConsistencyReviewEnabled,
-  readEnumConsistencyFormatHint,
   summarizeStudioMapPayload,
 } from './studioRouteHelpers.js';
 import {
@@ -55,7 +49,6 @@ export function registerStudioRoutes(ctx) {
     broadcastWs,
     reviewLayoutByCategory,
     cleanVariant,
-    runEnumConsistencyReview = runEnumConsistencyReviewDefault,
     appDb,
     syncSpecDbForCategory,
   } = ctx;
@@ -232,148 +225,6 @@ export function registerStudioRoutes(ctx) {
       return jsonRes(res, 503, {
         error: 'specdb_not_ready',
         message: `SpecDb not ready for ${category}`,
-      });
-    }
-
-    if (parts[0] === 'studio' && parts[1] && parts[2] === 'enum-consistency' && method === 'POST') {
-      const category = parts[1];
-      if (String(category || '').trim().toLowerCase() === 'all') {
-        return jsonRes(res, 400, { error: 'category_required', message: 'Select a concrete category before running enum consistency.' });
-      }
-      const runtimeSpecDb = typeof getSpecDbReady === 'function'
-        ? await getSpecDbReady(category)
-        : null;
-      const body = await readJsonBody(req);
-      const field = String(body?.field || '').trim();
-      if (!field) {
-        return jsonRes(res, 400, { error: 'field_required', message: 'field is required' });
-      }
-      const apply = body?.apply === true;
-      const maxPendingInput = Number.parseInt(String(body?.maxPending ?? ''), 10);
-      const maxPending = Number.isFinite(maxPendingInput) ? Math.max(1, Math.min(200, maxPendingInput)) : 120;
-
-      // WHY: Read from live list_values DB (not compiled blob) so discovered
-      // enum values are included. Matches componentReviewHandlers pattern.
-      const session = await sessionCache.getSessionRules(category);
-      const listRows = runtimeSpecDb ? (runtimeSpecDb.getListValues(field) || []) : [];
-      const knownValues = dedupeEnumValues(
-        listRows
-          .filter((row) => !Boolean(row?.needs_review))
-          .map((row) => row?.value)
-      );
-      // WHY: Pending enum values come from list_values (publisher writes needs_review=true)
-      const pendingValues = dedupeEnumValues(
-        listRows
-          .filter((row) => Boolean(row?.needs_review) && hasMeaningfulEnumValue(row?.value))
-          .slice(0, maxPending)
-          .map((row) => row?.value)
-      );
-      const enumPolicy = String(
-        session?.mergedFields?.[field]?.enum?.policy
-        || session?.mergedFields?.[field]?.enum_policy
-        || 'open_prefer_known'
-      ).trim() || 'open_prefer_known';
-      const fieldRule = session?.mergedFields?.[field] && typeof session.mergedFields[field] === 'object'
-        ? session.mergedFields[field]
-        : {};
-      const formatGuidance = String(body?.formatGuidance || '').trim() || readEnumConsistencyFormatHint(fieldRule);
-      const reviewEnabledOverride = typeof body?.reviewEnabled === 'boolean' ? body.reviewEnabled : null;
-      const reviewEnabled = reviewEnabledOverride == null
-        ? isEnumConsistencyReviewEnabled(fieldRule)
-        : reviewEnabledOverride;
-
-      if (!reviewEnabled) {
-        return jsonRes(res, 200, {
-          category,
-          field,
-          review_enabled: false,
-          enum_policy: enumPolicy,
-          known_values: knownValues,
-          pending_values: pendingValues,
-          format_guidance: formatGuidance || null,
-          apply,
-          decisions: [],
-          applied: { mapped: 0, kept: 0, uncertain: 0, changed: 0 },
-          llm_enabled: false,
-          skipped_reason: 'review_consumer_disabled',
-        });
-      }
-
-      if (pendingValues.length === 0) {
-        return jsonRes(res, 200, {
-          category,
-          field,
-          review_enabled: true,
-          enum_policy: enumPolicy,
-          known_values: knownValues,
-          pending_values: [],
-          format_guidance: formatGuidance || null,
-          apply,
-          decisions: [],
-          applied: { mapped: 0, kept: 0, uncertain: 0, changed: 0 },
-          llm_enabled: false,
-          skipped_reason: 'no_pending_values',
-        });
-      }
-
-      const consistency = await runEnumConsistencyReview({
-        fieldKey: field,
-        enumPolicy,
-        canonicalValues: knownValues,
-        pendingValues,
-        formatGuidance,
-        config,
-        logger: null,
-      });
-      const decisions = Array.isArray(consistency?.decisions) ? consistency.decisions : [];
-      let applied = { mapped: 0, kept: 0, uncertain: 0, changed: 0 };
-      if (apply && decisions.length > 0) {
-        applied = await applyEnumConsistencyToSuggestions({
-          fs,
-          path,
-          helperRoot: HELPER_ROOT,
-          category,
-          field,
-          decisions,
-          specDb: runtimeSpecDb || null,
-        });
-        sessionCache.invalidateSessionCache(category);
-        reviewLayoutByCategory.delete(category);
-      }
-
-      if (apply && applied.changed > 0) {
-        emitDataChange({
-          broadcastWs,
-          event: 'enum-consistency',
-          category,
-          entities: {
-            fieldKeys: [field],
-          },
-          meta: {
-            field,
-            mapped: applied.mapped,
-            kept: applied.kept,
-            uncertain: applied.uncertain,
-            source: 'studio',
-          },
-        });
-      }
-
-      return jsonRes(res, 200, {
-        category,
-        field,
-        review_enabled: reviewEnabled,
-        enum_policy: enumPolicy,
-        known_values: knownValues,
-        pending_values: pendingValues,
-        format_guidance: formatGuidance || null,
-        apply,
-        decisions,
-        applied,
-        llm_enabled: Boolean(consistency?.enabled),
-        llm_model: consistency?.model || null,
-        llm_provider: consistency?.provider || null,
-        skipped_reason: consistency?.skipped_reason || null,
       });
     }
 

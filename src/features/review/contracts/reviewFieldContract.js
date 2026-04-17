@@ -28,6 +28,10 @@ export const FIELD_STATE_SHAPE = Object.freeze([
   { key: 'evidence_quote', coerce: 'string', optional: true },
   { key: 'overridden', coerce: 'bool', optional: true },
   { key: 'source_timestamp', coerce: 'string', nullable: true, optional: true },
+  // WHY: Per-variant published state for variant-dependent fields (variantFieldProducer
+  // modules — release_date, future discontinued/SKU/price). Map keyed by variant_id.
+  // Absent on scalar fields.
+  { key: 'variant_values', coerce: 'object', optional: true },
 ]);
 export const FIELD_STATE_KEYS = Object.freeze(
   FIELD_STATE_SHAPE.filter(d => !d.optional).map(d => d.key),
@@ -68,6 +72,15 @@ export const REVIEW_CANDIDATE_SHAPE = Object.freeze([
   { key: 'llm_extract_provider', coerce: 'string', nullable: true, optional: true },
   { key: 'llm_validate_model', coerce: 'string', nullable: true, optional: true },
   { key: 'llm_validate_provider', coerce: 'string', nullable: true, optional: true },
+  // WHY: Variant attribution for variant-dependent fields. Populated when a candidate
+  // belongs to a specific variant (release_date per color/edition). Absent on scalar
+  // candidates. Drawer renders a variant chip + label from these fields instead of
+  // digging variant identity out of opaque metadata_json.
+  { key: 'variant_id', coerce: 'string', nullable: true, optional: true },
+  { key: 'variant_label', coerce: 'string', nullable: true, optional: true },
+  { key: 'variant_type', coerce: 'string', nullable: true, optional: true },
+  { key: 'color_atoms', coerce: 'array', itemType: 'string', nullable: true, optional: true },
+  { key: 'edition_slug', coerce: 'string', nullable: true, optional: true },
 ]);
 export const REVIEW_CANDIDATE_KEYS = Object.freeze(REVIEW_CANDIDATE_SHAPE.map(d => d.key));
 

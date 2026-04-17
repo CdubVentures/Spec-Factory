@@ -32,7 +32,6 @@
 | `/publisher` | `PublisherPage` | none | lazy import from `tools/gui-react/src/pages/publisher/PublisherPage.tsx`; `/publisher/:category/*` queries | `AppShell` | publisher candidate audit log and validation history |
 | `/review` | `ReviewPage` | none | lazy import from `tools/gui-react/src/features/review/components/ReviewPage.tsx`; review queries/mutations | `AppShell` | scalar review workflow |
 | `/review-components` | `ComponentReviewPage` | none | lazy import from `tools/gui-react/src/pages/component-review/ComponentReviewPage.tsx`; component review queries/mutations | `AppShell` | component and enum review workflow |
-| `/llm-settings` | `LlmSettingsPage` | none | lazy import from `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx`; `useLlmSettingsAuthority()` | `AppShell` | category-scoped `llm_route_matrix` editing |
 | `/storage` | `StoragePage` | none | lazy import from `tools/gui-react/src/pages/storage/StoragePage.tsx`; `useStorageOverview()` and `useStorageRuns()` | `AppShell` | storage inventory and destructive maintenance actions |
 | `/llm-config` | `LlmConfigPage` | none | lazy import from `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx`; `useLlmPolicyAuthority()` plus `/indexing/llm-config` queries | `AppShell` | global LLM policy, provider, and budget configuration |
 | `/pipeline-settings` | `PipelineSettingsPage` | none | lazy import from `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx`; runtime settings, source strategy, and spec seed authorities | `AppShell` | runtime and pipeline control surface |
@@ -44,7 +43,7 @@
 |------|--------|--------|
 | global | `GLOBAL_TABS` in `tools/gui-react/src/registries/pageRegistry.ts` | `/categories`, `/brands`, `/colors`, `/units`, `/billing` |
 | catalog | `CATALOG_TABS` in `tools/gui-react/src/registries/pageRegistry.ts` | `/`, `/product`, `/catalog`, `/studio` |
-| ops | `OPS_TABS` in `tools/gui-react/src/registries/pageRegistry.ts` | `/indexing`, `/runtime-ops`, `/publisher`, `/review`, `/review-components`, `/llm-settings`, `/storage` |
+| ops | `OPS_TABS` in `tools/gui-react/src/registries/pageRegistry.ts` | `/indexing`, `/runtime-ops`, `/publisher`, `/review`, `/review-components`, `/storage` |
 | settings | `SETTINGS_TABS` in `tools/gui-react/src/registries/pageRegistry.ts` | `/llm-config`, `/pipeline-settings` |
 | standalone | `tools/gui-react/src/App.tsx` only | `/test-mode` |
 

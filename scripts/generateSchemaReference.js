@@ -158,7 +158,6 @@ const storeMap = {
   enum_lists: 'enumListStore', list_values: 'enumListStore',
   item_component_links: 'itemStateStore', item_list_links: 'itemStateStore',
   products: 'queueProductStore',
-  llm_route_matrix: 'llmRouteSourceStore',
   bridge_events: 'sourceIntelStore',
   crawl_sources: 'artifactStore', source_screenshots: 'artifactStore', source_videos: 'artifactStore',
   runs: 'runMetaStore', run_artifacts: 'runArtifactStore',
@@ -182,7 +181,7 @@ const persistenceMap = {
   color_edition_finder: 'json', color_edition_finder_runs: 'json',
   field_candidates: 'json',
   variants: 'json',
-  llm_route_matrix: 'json', field_key_order: 'json', field_studio_map: 'json',
+  field_key_order: 'json', field_studio_map: 'json',
   brands: 'json', brand_categories: 'json', brand_renames: 'json',
   settings: 'json', studio_maps: 'json', color_registry: 'json', unit_registry: 'json',
   source_screenshots: 'json', source_videos: 'json',
@@ -261,13 +260,6 @@ const lifecycleMap = {
     'yes',
     'yes',
     'Product identity rows rebuild from product checkpoints.',
-    'yes'
-  ),
-  llm_route_matrix: life(
-    'category_authority/{cat}/_control_plane/llm_route_matrix.json',
-    'yes',
-    'yes',
-    'Current JSON rows are honored on fresh rebuild; empty rows reset to defaults.',
     'yes'
   ),
   billing_entries: life(
@@ -467,7 +459,6 @@ const specDbGroups = [
   { label: 'Enum / List Management', tables: ['enum_lists', 'list_values'] },
   { label: 'Item State', tables: ['item_component_links', 'item_list_links'] },
   { label: 'Catalog', tables: ['products'] },
-  { label: 'LLM Route Configuration', tables: ['llm_route_matrix'] },
   { label: 'Billing', tables: ['billing_entries'] },
   { label: 'Bridge Events', tables: ['bridge_events'] },
   { label: 'Runs & Artifacts', tables: ['runs', 'run_artifacts'] },
@@ -1146,7 +1137,7 @@ const cqrsCompliance = {
   color_edition_finder: true, color_edition_finder_runs: true,
   field_candidates: true,
   variants: true,
-  llm_route_matrix: true, field_key_order: true, field_studio_map: true,
+  field_key_order: true, field_studio_map: true,
   brands: true, brand_categories: true, brand_renames: true,
   settings: true, studio_maps: true, color_registry: true, unit_registry: true,
   // JSON-backed ext-dep — rebuild correct, external fs dependency

@@ -74,37 +74,6 @@ test('indexed runtime status text keeps error and partial ahead of dirty labels'
   );
 });
 
-test('llm status helper distinguishes autosave-pending dirty state from clean state', async () => {
-  const {
-    resolveLlmSettingsStatusText,
-  } = await loadSettingsStatusModule();
-
-  assert.equal(
-    resolveLlmSettingsStatusText({
-      isSaving: false,
-      saveState: 'partial',
-      saveMessage: 'Saved with rejected routes.',
-      llmHydrated: true,
-      dirty: true,
-      autoSaveEnabled: true,
-      lastSavedAt: '12:34',
-    }),
-    'Saved with rejected routes. Last save: 12:34',
-  );
-
-  assert.equal(
-    resolveLlmSettingsStatusText({
-      isSaving: false,
-      saveState: 'idle',
-      saveMessage: '',
-      llmHydrated: true,
-      dirty: true,
-      autoSaveEnabled: true,
-    }),
-    'Unsaved (Auto-Save Pending).',
-  );
-});
-
 test('source strategy status helpers keep persistence outcomes ahead of generic idle labels', async () => {
   const {
     resolveSourceStrategyStatus,

@@ -17,12 +17,12 @@ This file is supplemental. Canonical behavior still lives in the source files th
 | env manifest | `src/core/config/manifest/index.js`, `src/core/config/manifest.js` | derives the emitted config manifest from runtime + bootstrap registries |
 | config assembly | `src/config.js`, `src/core/config/configBuilder.js` | merges manifest defaults, env values, runtime defaults, and persisted settings |
 | settings persistence | `src/features/settings-authority/userSettingsService.js`, `src/features/settings/api/configPersistenceContext.js` | persists settings to AppDb when available, with JSON fallback only when AppDb is unavailable |
-| mounted settings API | `src/features/settings/api/configRoutes.js` | mounts `ui-settings`, `indexing/*`, `llm-settings/*`, `runtime-settings`, and `llm-policy`; no live `storage-settings` or `convergence-settings` route is mounted |
+| mounted settings API | `src/features/settings/api/configRoutes.js` | mounts `ui-settings`, `indexing/*`, `runtime-settings`, and `llm-policy`; no live `storage-settings` or `convergence-settings` route is mounted |
 | storage manager inventory | `src/features/indexing/api/storageManagerRoutes.js` | inventory/maintenance surface only; currently reports `storage_backend: "local"` and is not a knob-editing API |
 | source strategy SSOT | `category_authority/<category>/sources.json`, `src/features/indexing/sources/sourceFileService.js`, `src/features/indexing/api/sourceStrategyRoutes.js` | file-backed source registry; `sources` is an object keyed by `sourceId`, not an array |
 | spec seed SSOT | `src/features/indexing/sources/specSeedsFileService.js`, `src/features/indexing/api/specSeedsRoutes.js` | file-backed deterministic query templates per category |
 | GUI pipeline settings | `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` | edits runtime settings, source strategy, and spec seeds; no storage-settings editor exists here |
-| GUI LLM surfaces | `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx`, `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` | category route-matrix editing is separate from composite `llm-policy` editing |
+| GUI LLM surfaces | `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` | composite `llm-policy` editing |
 | GUI storage surface | `tools/gui-react/src/pages/storage/StoragePage.tsx` | storage inventory/maintenance surface only; not a knob-editing screen |
 
 ## Audit Corrections From This Pass
@@ -81,7 +81,6 @@ Declared but currently unpopulated manifest groups remain `core`, `caching`, `st
 
 - `tools/gui-react/src/pages/layout/AppShell.tsx` and `tools/gui-react/src/pages/layout/hooks/useSettingsHydration.ts` hydrate runtime/UI settings before most pages render.
 - `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` reads `/indexing/llm-config` for model metadata and edits runtime/source-strategy/spec-seed state.
-- `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx` edits category-scoped `llm_route_matrix` rows in SQLite through `/llm-settings/:category/routes`.
 - `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` edits the composite runtime-backed policy through `/llm-policy`.
 - `tools/gui-react/src/pages/storage/StoragePage.tsx` only wraps `StorageManagerPanel`; it does not expose a writable storage-settings form.
 
@@ -117,7 +116,6 @@ Declared but currently unpopulated manifest groups remain `core`, `caching`, `st
 | source | `tools/gui-react/src/pages/layout/AppShell.tsx` | app-shell settings hydration boundary |
 | source | `tools/gui-react/src/pages/layout/hooks/useSettingsHydration.ts` | settings hydration hook |
 | source | `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` | current pipeline settings GUI ownership |
-| source | `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx` | category LLM route surface |
 | source | `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` | composite LLM policy surface |
 | source | `tools/gui-react/src/pages/storage/StoragePage.tsx` | storage GUI is inventory-only |
 | source | `category_authority/keyboard/sources.json` | keyboard source inventory count |

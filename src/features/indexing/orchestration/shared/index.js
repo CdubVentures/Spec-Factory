@@ -60,11 +60,6 @@ export {
 } from './identityHelpers.js';
 
 export {
-  parseMinEvidenceRefs,
-  sendModeIncludesPrime,
-  selectPreferredRouteRow,
-  deriveRouteMatrixPolicy,
-  loadRouteMatrixPolicyForRun,
   resolveRuntimeControlKey,
   resolveIndexingResumeKey,
   defaultRuntimeOverrides,

@@ -152,6 +152,6 @@ sequenceDiagram
 
 ## Related Documents
 
-- [Pipeline and Runtime Settings](./pipeline-and-runtime-settings.md) - Separate feature for flat runtime settings and category route matrices.
-- [Routing and GUI](../03-architecture/routing-and-gui.md) - Maps `/llm-config` and `/llm-settings` to their separate page owners.
+- [Pipeline and Runtime Settings](./pipeline-and-runtime-settings.md) - Separate feature for flat runtime settings.
+- [Routing and GUI](../03-architecture/routing-and-gui.md) - Maps `/llm-config` to its page owner.
 - [API Surface](../06-references/api-surface.md) - Exact `/llm-policy` and `/indexing/llm-config` contracts.

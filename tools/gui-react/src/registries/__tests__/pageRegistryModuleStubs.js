@@ -12,7 +12,6 @@ export const PAGE_REGISTRY_MODULE_STUBS = Object.freeze({
   '../features/indexing/components/IndexingPage.tsx': createPageStub('IndexingPage'),
   '../features/pipeline-settings/components/PipelineSettingsPage.tsx': createPageStub('PipelineSettingsPage'),
   '../features/runtime-ops/components/RuntimeOpsPage.tsx': createPageStub('RuntimeOpsPage'),
-  '../pages/llm-settings/LlmSettingsPage.tsx': createPageStub('LlmSettingsPage'),
   '../features/review/components/ReviewPage.tsx': createPageStub('ReviewPage'),
   '../pages/component-review/ComponentReviewPage.tsx': createPageStub('ComponentReviewPage'),
   '../features/llm-config/components/LlmConfigPage.tsx': createPageStub('LlmConfigPage'),

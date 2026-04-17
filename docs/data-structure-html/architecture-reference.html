@@ -281,7 +281,6 @@ svg text{font-family:var(--sans)}
         <tr><td class="cn">Run Metadata</td><td class="ct">runs</td><td class="cc">runMetaStore</td></tr>
         <tr><td class="cn">Run Artifacts</td><td class="ct">run_artifacts</td><td class="cc">runArtifactStore</td></tr>
         <tr><td class="cn">Source Intel</td><td class="ct">bridge_events</td><td class="cc">sourceIntelStore</td></tr>
-        <tr><td class="cn">LLM Route</td><td class="ct">llm_route_matrix</td><td class="cc">llmRouteSourceStore</td></tr>
         <tr><td class="cn">Crawl Artifacts</td><td class="ct">crawl_sources, source_screenshots, source_videos</td><td class="cc">artifactStore</td></tr>
         <tr><td class="cn">Telemetry Index</td><td class="ct">knob_snapshots, query_index, url_index, prompt_index</td><td class="cc">telemetryIndexStore</td></tr>
         <tr><td class="cn">Catalog</td><td class="ct">products</td><td class="cc">queueProductStore</td></tr>
@@ -613,7 +612,6 @@ svg text{font-family:var(--sans)}
       <tr><td class="cn">fieldKeyOrderStore</td><td class="ct">field_key_order</td><td class="cc">1</td></tr>
       <tr><td class="cn">fieldStudioMapStore</td><td class="ct">field_studio_map</td><td class="cc">1</td></tr>
       <tr><td class="cn">itemStateStore</td><td class="ct">item_component_links, item_list_links</td><td class="cc">2</td></tr>
-      <tr><td class="cn">llmRouteSourceStore</td><td class="ct">llm_route_matrix</td><td class="cc">1</td></tr>
       <tr><td class="cn">purgeStore</td><td class="ct" style="opacity:0.7">Cross-store: bulk category/product cleanup in referential integrity order</td><td class="cc">Operational</td></tr>
       <tr><td class="cn">queueProductStore</td><td class="ct">products</td><td class="cc">1</td></tr>
       <tr><td class="cn">runArtifactStore</td><td class="ct">run_artifacts</td><td class="cc">1</td></tr>
@@ -717,8 +715,6 @@ svg text{font-family:var(--sans)}
       <tbody>
         <tr><td class="cn">/runtime-settings</td><td class="ct">GET/PUT/POST</td><td class="cc">createRuntimeSettingsHandler &mdash; RUNTIME_SETTINGS_REGISTRY</td></tr>
         <tr><td class="cn">/ui-settings</td><td class="ct">GET/PUT</td><td class="cc">createUiSettingsHandler &mdash; persisted UI autosave toggles</td></tr>
-        <tr><td class="cn">/llm-settings/{category}/routes</td><td class="ct">GET/PUT</td><td class="cc">createLlmSettingsHandler &mdash; llm_route_matrix overrides</td></tr>
-        <tr><td class="cn">/llm-settings/{category}/routes/reset</td><td class="ct">POST</td><td class="cc">Reset llm_route_matrix to category defaults</td></tr>
         <tr><td class="cn">/llm-policy</td><td class="ct">GET/PUT/POST</td><td class="cc">createLlmPolicyHandler &mdash; assembled LLM policy object</td></tr>
         <tr><td class="cn">/indexing/llm-config</td><td class="ct">GET</td><td class="cc">createIndexingMetricsHandler &mdash; LLM defaults, pricing, schemas</td></tr>
         <tr><td class="cn">/indexing/llm-metrics</td><td class="ct">GET</td><td class="cc">LLM usage rollup over historical runs</td></tr>

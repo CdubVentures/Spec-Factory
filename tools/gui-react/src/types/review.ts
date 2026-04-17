@@ -18,6 +18,10 @@ export interface ReviewLayoutRow {
     enum_name: string | null;
     component_type: string | null;
     enum_source: string | null;
+    // WHY: Backend-derived from FINDER_MODULES registry. True when the field's
+    // published state is per-variant (variantFieldProducer class). Drives the
+    // review drawer's "Published Variant Values" table + candidate variant labels.
+    variant_dependent?: boolean;
   };
 }
 
@@ -59,6 +63,25 @@ export interface ReviewCandidate {
   submitted_at?: string | null;
   evidence_url?: string | null;
   metadata?: Record<string, unknown> | null;
+  // Variant attribution — populated for variant-dependent fields
+  variant_id?: string | null;
+  variant_label?: string | null;
+  variant_type?: 'color' | 'edition' | string | null;
+  color_atoms?: string[] | null;
+  edition_slug?: string | null;
+}
+
+// WHY: Per-variant published state entry for variant-dependent fields.
+// Enriched server-side with variant metadata so drawer rendering needs no extra lookups.
+export interface VariantValueEntry {
+  value: unknown;
+  confidence: number;
+  source?: string;
+  source_timestamp?: string | null;
+  variant_label?: string | null;
+  variant_type?: 'color' | 'edition' | string | null;
+  color_atoms?: string[] | null;
+  edition_slug?: string | null;
 }
 
 export interface FieldState {
@@ -80,6 +103,9 @@ export interface FieldState {
   evidence_quote?: string;
   accepted_candidate_id?: string | null;
   selected_candidate_id?: string | null;
+  // Per-variant published state — populated only when field_rule.variant_dependent is true.
+  // Keyed by variant_id.
+  variant_values?: Record<string, VariantValueEntry>;
 }
 
 export interface ProductReviewPayload {

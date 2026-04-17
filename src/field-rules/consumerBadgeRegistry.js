@@ -56,7 +56,8 @@ export function buildExtractor(entry) {
 export const PARENT_GROUPS = Object.freeze({
   idx:  { label: 'IDX',  title: 'Indexing Lab' },
   eng:  { label: 'ENG',  title: 'Field Rules Engine' },
-  rev:  { label: 'REV',  title: 'LLM Review' },
+  rev:  { label: 'REV',  title: 'Component Review' },
+  flag: { label: 'FLAG', title: 'Review Flags' },
   seed: { label: 'SEED', title: 'Seed Pipeline' },
   comp: { label: 'COMP', title: 'Component System' },
   val:  { label: 'VAL',  title: 'Publish Pipeline Validation' },
@@ -74,7 +75,6 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
     consumers: {
       'idx.needset': { desc: 'Maps to priority bucket (core/secondary/optional). Identity=100pts, critical=80, required=60, expected=30, optional=10 in need_score. Core fields scheduled first.' },
       'eng.gate': { desc: 'Weights field in runtime evidence enforcement. Identity/required fields get stricter validation.' },
-      'rev.grid': { desc: 'Weights field by importance during consensus scoring. Identity/required fields get stricter validation.' },
     } },
 
   { path: 'priority.availability', type: 'string', flatAliases: ['availability'],
@@ -101,7 +101,6 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
     section: 'Contract (Type, Shape, Unit)', key: 'Data Type',
     consumers: {
       'eng.validate': { desc: 'Validates candidate values match the expected data type (string, number, integer, boolean).' },
-      'rev.grid': { desc: 'Flags candidates with type mismatches for correction.' },
       'val.type': { desc: 'Step 4 — Type Check. Verifies and coerces value type. Safe coercion only (e.g., "42" to 42).' },
     } },
 
@@ -109,7 +108,6 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
     section: 'Contract (Type, Shape, Unit)', key: 'Shape',
     consumers: {
       'eng.validate': { desc: 'Validates output shape (scalar, list, object) matches declaration.' },
-      'rev.grid': { desc: 'Flags list values in scalar fields and vice versa.' },
       'seed.schema': { desc: 'Sets up correct storage structure in SpecDb: single value column vs array vs structured object.' },
       'val.shape': { desc: 'Step 2 — Shape Check. Validates value matches expected shape. Short-circuits pipeline on failure.' },
     } },
@@ -118,7 +116,6 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
     section: 'Contract (Type, Shape, Unit)', key: 'Unit',
     consumers: {
       'eng.normalize': { desc: 'Normalizes extracted values to the declared unit (e.g. "58 grams" to "58g").' },
-      'rev.grid': { desc: 'Flags candidates with unexpected or missing units.' },
       'val.unit': { desc: 'Step 3 — Unit Verification. Matches value unit against contract.unit (case-insensitive), rejects unknown units.' },
     } },
 
@@ -201,7 +198,6 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
     section: 'Enum Policy', key: 'Policy',
     consumers: {
       'eng.enum': { desc: 'Enforces enum policy (open, closed, open_prefer_known) during value extraction and matching.' },
-      'rev.enum': { desc: 'Enforces enum constraints during candidate scoring. Unknown values in closed enums are flagged.' },
       'seed.schema': { desc: 'Seeds enum policy into SpecDb field meta for downstream query use.' },
       'val.enum': { desc: 'Step 9 — Enum Check. Validates values against known-values list using policy. closed: exact match. open_prefer_known: alias resolution.' },
     } },
@@ -209,15 +205,12 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
   { path: 'enum.source', type: 'string', flatAliases: ['enum_source'],
     section: 'Enum Policy', key: 'Source',
     consumers: {
-      'rev.grid': { desc: 'Matches candidates against the declared enum value list during scoring.' },
-      'rev.component': { desc: 'Resolves component property enum values from declared source.' },
       'seed.schema': { desc: 'Loads the enum value list (data_lists, component_db, yes_no) into SpecDb as allowed values.' },
     } },
 
   { path: 'enum.match.format_hint', type: 'string', flatAliases: ['enum_match_format_hint'],
     section: 'Enum Policy', key: 'Format Pattern',
     consumers: {
-      'rev.enum': { desc: 'Uses this format template as output guidance during enum consistency runs.' },
       'val.format': { desc: 'Step 6 — Format Check. Custom regex pattern applied after template registry check.' },
     } },
 
@@ -233,7 +226,7 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
     section: 'Evidence Requirements', key: 'Min Evidence Refs',
     consumers: {
       'eng.gate': { desc: 'Rejects field value if distinct evidence refs fall below this threshold.' },
-      'rev.flag': { desc: 'Flags field for manual review when evidence ref count is insufficient.' },
+      'flag.evidence': { desc: 'Flags field for manual review when evidence ref count is insufficient.' },
       'pub.gate': { desc: 'Rejects candidate at publish time if distinct evidence refs fall below threshold.' },
     } },
 
@@ -308,7 +301,6 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
     section: 'UI Display', key: 'Label',
     consumers: {
       'idx.needset': { desc: 'Used as display_name in field assessments. Fallback for group description and field identification.' },
-      'rev.grid': { desc: 'Displayed as field label in review grid column headers.' },
     } },
 
   { path: 'group', type: 'string', flatAliases: [],

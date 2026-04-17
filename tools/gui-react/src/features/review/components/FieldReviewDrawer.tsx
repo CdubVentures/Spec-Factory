@@ -11,13 +11,16 @@ import {
   DrawerCard,
   DrawerManualOverride,
 } from '../../../shared/ui/overlay/DrawerShell.tsx';
-import type { ReviewCandidate } from '../../../types/review.ts';
+import type { ReviewCandidate, VariantValueEntry } from '../../../types/review.ts';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
 import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTypes.ts';
 import { resolveEffortLabel } from '../../llm-config/state/resolveEffortLabel.ts';
 import { CandidateDeleteConfirm } from './CandidateDeleteConfirm.tsx';
 import { PublishedBadge } from '../../../shared/ui/feedback/PublishedBadge.tsx';
 import { resolveDrawerBadge } from '../selectors/drawerBadgeSelector.ts';
+import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
+import { ColorSwatch } from '../../../shared/ui/finder/ColorSwatch.tsx';
+import { useFinderColorHexMap } from '../../../shared/ui/finder/useFinderColorHexMap.ts';
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
@@ -97,6 +100,12 @@ interface FieldReviewDrawerProps {
   onDeleteCandidate?: (sourceId: string) => void;
   onDeleteAllCandidates?: () => void;
   deletePending?: boolean;
+  // Variant-dependent field support (release_date, future discontinued/SKU/price).
+  // When `variantDependent` is true and `variantValues` is populated, the drawer renders
+  // a per-variant published-value table instead of a single scalar. Candidates are
+  // expected to carry variant_id/variant_label/variant_type/color_atoms.
+  variantDependent?: boolean;
+  variantValues?: Record<string, VariantValueEntry>;
 }
 
 // ── Collapsible source table (derived from resolved candidates) ─────
@@ -182,9 +191,95 @@ function ValueChips({ value, publishedValue }: { value: string[]; publishedValue
   );
 }
 
+// ── Variant chip helpers ───────────────────────────────────────────
+
+function variantChipLabel(variantType: string | null | undefined): 'ED' | 'CLR' {
+  return variantType === 'edition' ? 'ED' : 'CLR';
+}
+
+function variantChipClass(variantType: string | null | undefined): string {
+  return variantType === 'edition' ? 'sf-chip-accent' : 'sf-chip-info';
+}
+
+function colorAtomsToHexParts(
+  atoms: readonly string[] | null | undefined,
+  hexMap: ReadonlyMap<string, string>,
+): string[] {
+  if (!Array.isArray(atoms) || atoms.length === 0) return [];
+  return atoms.map((atom) => hexMap.get(atom) || '').filter(Boolean);
+}
+
+// ── Published variant table (variant-dependent fields) ─────────────
+
+function PublishedVariantRow({
+  entry,
+  hexParts,
+}: {
+  entry: VariantValueEntry;
+  hexParts: readonly string[];
+}) {
+  const label = entry.variant_label || '—';
+  const displayValue = entry.value != null ? String(entry.value) : 'unk';
+  const valueColor = trafficColor(entry.confidence >= 0.8 ? 'green' : entry.confidence >= 0.5 ? 'yellow' : 'red');
+  return (
+    <div className="flex items-center gap-2 px-2 py-1.5 border-b sf-border-soft last:border-b-0">
+      <ColorSwatch hexParts={hexParts} />
+      <span className="text-[11px] font-semibold sf-text-primary truncate min-w-0 flex-1" title={label}>
+        {label}
+      </span>
+      <Chip
+        label={variantChipLabel(entry.variant_type)}
+        className={variantChipClass(entry.variant_type)}
+      />
+      <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${valueColor}`} />
+      <span className="font-mono text-[11px] font-semibold sf-text-primary shrink-0" title={displayValue}>
+        {displayValue}
+      </span>
+      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono text-center shrink-0 ${confidenceColorClass(entry.confidence)}`}>
+        {pct(entry.confidence)}
+      </span>
+    </div>
+  );
+}
+
+function PublishedVariantTable({
+  variantValues,
+}: {
+  variantValues: Record<string, VariantValueEntry>;
+}) {
+  const hexMap = useFinderColorHexMap();
+  const entries = Object.entries(variantValues);
+  if (entries.length === 0) return null;
+
+  // Sort: editions first, then colors; within each, alphabetically by label
+  const sorted = [...entries].sort(([, a], [, b]) => {
+    const aIsEdition = a.variant_type === 'edition' ? 0 : 1;
+    const bIsEdition = b.variant_type === 'edition' ? 0 : 1;
+    if (aIsEdition !== bIsEdition) return aIsEdition - bIsEdition;
+    return String(a.variant_label || '').localeCompare(String(b.variant_label || ''));
+  });
+
+  return (
+    <div className="sf-surface-panel rounded-lg overflow-hidden border sf-border-soft">
+      {sorted.map(([vid, entry]) => (
+        <PublishedVariantRow
+          key={vid}
+          entry={entry}
+          hexParts={colorAtomsToHexParts(entry.color_atoms, hexMap)}
+        />
+      ))}
+    </div>
+  );
+}
+
 // ── Metadata renderers ─────────────────────────────────────────────
 
+// WHY: For variant-dependent candidates, variant_key/label/type are promoted to the
+// card header — hide them from the metadata block to avoid duplication.
 const METADATA_FILTER_KEYS = new Set(['evidence', 'method']);
+const VARIANT_METADATA_FILTER_KEYS = new Set([
+  'evidence', 'method', 'variant_key', 'variant_label', 'variant_type',
+]);
 
 // WHY: Format object metadata values as readable key-value lines instead of
 // inline JSON.stringify. Keeps the same plain-text layout as original but readable.
@@ -218,9 +313,16 @@ function formatMetaValue(key: string, value: unknown): string {
   return JSON.stringify(value);
 }
 
-function MetadataBlock({ meta }: { meta: Record<string, unknown> | null | undefined }) {
+function MetadataBlock({
+  meta,
+  hideVariantKeys = false,
+}: {
+  meta: Record<string, unknown> | null | undefined;
+  hideVariantKeys?: boolean;
+}) {
+  const filter = hideVariantKeys ? VARIANT_METADATA_FILTER_KEYS : METADATA_FILTER_KEYS;
   const entries = meta
-    ? Object.entries(meta).filter(([k]) => !METADATA_FILTER_KEYS.has(k))
+    ? Object.entries(meta).filter(([k]) => !filter.has(k))
     : [];
 
   return (
@@ -244,11 +346,13 @@ function CandidateCard({
   publishedValue,
   onReviewSource,
   onDeleteCandidate,
+  hexMap,
 }: {
   candidate: ReviewCandidate;
   publishedValue: unknown;
   onReviewSource?: (candidateId: string) => void;
   onDeleteCandidate?: (sourceId: string) => void;
+  hexMap: ReadonlyMap<string, string>;
 }) {
   const isResolved = candidate.status === 'resolved';
   const cardClass = isResolved ? 'sf-candidate-resolved' : '';
@@ -256,9 +360,25 @@ function CandidateCard({
   const host = candidate.evidence_url ? extractHost(candidate.evidence_url) : '';
   const meta = candidate.metadata && typeof candidate.metadata === 'object' ? candidate.metadata as Record<string, unknown> : null;
   const parsedArray = tryParseJsonArray(candidate.value);
+  const hasVariant = Boolean(candidate.variant_id);
+  const variantHexParts = hasVariant ? colorAtomsToHexParts(candidate.color_atoms, hexMap) : [];
 
   return (
     <DrawerCard className={cardClass}>
+      {/* Variant header (for variant-dependent candidates) */}
+      {hasVariant && (
+        <div className="flex items-center gap-2 pb-1 border-b sf-border-soft">
+          <ColorSwatch hexParts={variantHexParts} />
+          <span className="text-[11px] font-semibold sf-text-primary truncate flex-1 min-w-0" title={candidate.variant_label || ''}>
+            {candidate.variant_label || '—'}
+          </span>
+          <Chip
+            label={variantChipLabel(candidate.variant_type)}
+            className={variantChipClass(candidate.variant_type)}
+          />
+        </div>
+      )}
+
       {/* Value + confidence badge */}
       <div className="flex items-center gap-2">
         <span className="font-mono text-sm font-bold flex-1 truncate break-all" title={String(candidate.value)}>
@@ -316,7 +436,7 @@ function CandidateCard({
       )}
 
       {/* Metadata block */}
-      <MetadataBlock meta={meta} />
+      <MetadataBlock meta={meta} hideVariantKeys={hasVariant} />
 
       {/* Artifact link */}
       {candidate.run_id && (
@@ -378,11 +498,16 @@ export function FieldReviewDrawer({
   onDeleteCandidate,
   onDeleteAllCandidates,
   deletePending,
+  variantDependent = false,
+  variantValues,
 }: FieldReviewDrawerProps) {
   const hasCandidates = candidates.length > 0;
   const publishedParsed = tryParseJsonArray(currentValue.value);
   const hasPublished = hasKnownValue(currentValue.value);
-  const badgeKind = resolveDrawerBadge(fieldKey, hasPublished);
+  const hexMap = useFinderColorHexMap();
+  const variantValueEntries = variantValues ? Object.keys(variantValues).length : 0;
+  const hasVariantTable = variantDependent && variantValueEntries > 0;
+  const badgeKind = resolveDrawerBadge(fieldKey, hasPublished || hasVariantTable, variantDependent);
   const [deleteConfirm, setDeleteConfirm] = useState<{ mode: 'single'; sourceId: string } | { mode: 'all' } | null>(null);
 
   // Drawer scroll persistence
@@ -407,56 +532,60 @@ export function FieldReviewDrawer({
   return (
     <DrawerShell title={title} subtitle={subtitle} onClose={onClose} bodyRef={drawerBodyRef}>
       {/* Section 1: Published value / variant */}
-      <DrawerSection title={badgeKind === 'variant' ? 'Published Variant' : 'Published Value'}>
+      <DrawerSection title={hasVariantTable ? 'Published Variant Values' : (badgeKind === 'variant' ? 'Published Variant' : 'Published Value')}>
         {badgeKind && (
           <div className="mb-2">
             <PublishedBadge kind={badgeKind} />
           </div>
         )}
-        <div className="space-y-1">
-          {/* Header row: dot + source + confidence */}
-          <div className="flex items-center gap-2">
-            <span className={`inline-block w-3 h-3 rounded-full shrink-0 ${trafficColor(currentValue.color)}`} />
-            {publishedParsed ? (
-              <span className={`text-xs font-semibold ${trafficTextColor(currentValue.color)}`}>
-                {publishedParsed.length} values
-              </span>
-            ) : (
-              <span className={`font-mono text-sm font-semibold break-words min-w-0 ${trafficTextColor(currentValue.color)}`}>
-                {currentValue.value}
-              </span>
-            )}
-            {currentValue.source && (
-              <span className={`sf-text-nano px-1.5 py-0.5 rounded font-medium ${sourceBadgeClass[currentValue.source] || SOURCE_BADGE_FALLBACK}`}>
-                {currentValue.source}
-              </span>
-            )}
-            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono min-w-[2.2rem] text-center ml-auto ${confidenceColorClass(currentValue.confidence)}`}>
-              {pct(currentValue.confidence)}
-            </span>
-          </div>
-          {/* List values as a 2-column grid */}
-          {publishedParsed && (
-            <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 pl-5">
-              {publishedParsed.map((item, i) => (
-                <span key={`${item}-${i}`} className="font-mono text-[11px] truncate sf-text-muted">
-                  {item}
+        {hasVariantTable ? (
+          <PublishedVariantTable variantValues={variantValues!} />
+        ) : (
+          <div className="space-y-1">
+            {/* Header row: dot + source + confidence */}
+            <div className="flex items-center gap-2">
+              <span className={`inline-block w-3 h-3 rounded-full shrink-0 ${trafficColor(currentValue.color)}`} />
+              {publishedParsed ? (
+                <span className={`text-xs font-semibold ${trafficTextColor(currentValue.color)}`}>
+                  {publishedParsed.length} values
                 </span>
-              ))}
+              ) : (
+                <span className={`font-mono text-sm font-semibold break-words min-w-0 ${trafficTextColor(currentValue.color)}`}>
+                  {currentValue.value}
+                </span>
+              )}
+              {currentValue.source && (
+                <span className={`sf-text-nano px-1.5 py-0.5 rounded font-medium ${sourceBadgeClass[currentValue.source] || SOURCE_BADGE_FALLBACK}`}>
+                  {currentValue.source}
+                </span>
+              )}
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono min-w-[2.2rem] text-center ml-auto ${confidenceColorClass(currentValue.confidence)}`}>
+                {pct(currentValue.confidence)}
+              </span>
             </div>
-          )}
-          {currentValue.sourceTimestamp && (
-            <div className="sf-text-nano sf-drawer-meta pl-5">
-              set {formatDate(currentValue.sourceTimestamp)}
-            </div>
-          )}
-        </div>
+            {/* List values as a 2-column grid */}
+            {publishedParsed && (
+              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 pl-5">
+                {publishedParsed.map((item, i) => (
+                  <span key={`${item}-${i}`} className="font-mono text-[11px] truncate sf-text-muted">
+                    {item}
+                  </span>
+                ))}
+              </div>
+            )}
+            {currentValue.sourceTimestamp && (
+              <div className="sf-text-nano sf-drawer-meta pl-5">
+                set {formatDate(currentValue.sourceTimestamp)}
+              </div>
+            )}
+          </div>
+        )}
         {currentValue.overridden && (
           <div className="mt-1 px-2 py-1 text-center font-medium sf-status sf-status-info">
             Overridden (manual)
           </div>
         )}
-        {!candidatesLoading && (
+        {!candidatesLoading && !hasVariantTable && (
           <PublishedSourceTable candidates={candidates} />
         )}
       </DrawerSection>
@@ -513,6 +642,7 @@ export function FieldReviewDrawer({
                   publishedValue={publishedValue}
                   onReviewSource={onReviewSource}
                   onDeleteCandidate={onDeleteCandidate ? (sourceId) => setDeleteConfirm({ mode: 'single', sourceId }) : undefined}
+                  hexMap={hexMap}
                 />
               ))}
             </div>

@@ -109,7 +109,6 @@ src/app/api/guiServerRuntime.js
 | `/api/v1/runtime-settings` | `src/features/settings/api/configRuntimeSettingsHandler.js` | AppDb `settings` section `runtime` plus JSON mirror/fallback | `tools/gui-react/src/features/pipeline-settings/`, `tools/gui-react/src/stores/runtimeSettingsValueStore.ts` |
 | `/api/v1/ui-settings` | `src/features/settings/api/configUiSettingsHandler.js` | AppDb `settings` section `ui` plus JSON mirror/fallback | `tools/gui-react/src/stores/uiStore.ts` |
 | `/api/v1/llm-policy` | `src/features/settings-authority/llmPolicyHandler.js` | AppDb `settings` section `runtime` via flat-key patch merge | `tools/gui-react/src/features/llm-config/state/useLlmPolicyAuthority.ts` |
-| `/api/v1/llm-settings/:category/routes` | `src/features/settings/api/configLlmSettingsHandler.js` | per-category SpecDb + JSON mirror in `category_authority/<category>/_control_plane/llm_route_matrix.json` | `tools/gui-react/src/stores/llmSettingsAuthority.ts` |
 | `/api/v1/source-strategy` | `src/features/indexing/api/sourceStrategyRoutes.js` | `category_authority/<category>/sources.json` | `tools/gui-react/src/features/pipeline-settings/state/sourceStrategyAuthority.ts` |
 | `/api/v1/spec-seeds` | `src/features/indexing/api/specSeedsRoutes.js` | `category_authority/<category>/spec_seeds.json` | `tools/gui-react/src/features/pipeline-settings/state/specSeedsAuthority.ts` |
 
@@ -126,7 +125,6 @@ Verified absences:
 | UI settings | AppDb `settings` section `ui` in `.workspace/db/app.sqlite` | `src/features/settings-authority/userSettingsService.js` |
 | Studio maps | AppDb `studio_maps` table in `.workspace/db/app.sqlite` | `src/features/settings-authority/userSettingsService.js` |
 | JSON settings mirror / fallback | `.workspace/global/user-settings.json` | `src/features/settings-authority/userSettingsService.js` |
-| Category LLM route matrices | `.workspace/db/<category>/spec.sqlite` plus `category_authority/<category>/_control_plane/llm_route_matrix.json` mirror | `src/features/settings/api/configLlmSettingsHandler.js` |
 | Source strategy | `category_authority/<category>/sources.json` | `src/features/indexing/sources/sourceFileService.js` |
 | Spec seeds | `category_authority/<category>/spec_seeds.json` | `src/features/indexing/sources/specSeedsFileService.js` |
 
@@ -168,7 +166,6 @@ Verified absences:
 | source | `src/features/settings/api/configRoutes.js` | mounted mutable config routes |
 | source | `src/features/settings/api/configRuntimeSettingsHandler.js` | `/runtime-settings` contract |
 | source | `src/features/settings-authority/llmPolicyHandler.js` | `/llm-policy` contract |
-| source | `src/features/settings/api/configLlmSettingsHandler.js` | category LLM route-matrix persistence |
 | source | `src/features/indexing/api/sourceStrategyRoutes.js` | source-strategy file-backed settings surface |
 | source | `src/features/indexing/api/specSeedsRoutes.js` | spec-seeds file-backed settings surface |
 | source | `tools/check-env-example-sync.mjs` | env-check implementation and limitations |

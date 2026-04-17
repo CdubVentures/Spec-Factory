@@ -9,15 +9,12 @@ export {
   normalizeEnumToken,
   hasMeaningfulEnumValue,
   dedupeEnumValues,
-  readEnumConsistencyFormatHint,
-  isEnumConsistencyReviewEnabled,
   buildPendingEnumValuesFromSuggestions,
   normalizeComponentAliasList,
   buildStudioKnownValuesPayload,
   buildStudioKnownValuesFromSpecDb,
   buildStudioComponentDbFromSpecDb,
   summarizeStudioMapPayload,
-  applyEnumConsistencyToSuggestions,
 } from './api/studioRouteHelpers.js';
 
 // EG compatibility presets (colors + editions field rule SSOT).

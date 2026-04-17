@@ -10,14 +10,11 @@ export const MIGRATIONS = [
   `ALTER TABLE component_values ADD COLUMN component_identity_id INTEGER REFERENCES component_identity(id)`,
   `ALTER TABLE list_values ADD COLUMN source_timestamp TEXT`,
   `ALTER TABLE list_values ADD COLUMN list_id INTEGER REFERENCES enum_lists(id)`,
-  `ALTER TABLE llm_route_matrix ADD COLUMN enable_websearch INTEGER DEFAULT 1`,
   `DROP TABLE IF EXISTS brands`,
   `DROP INDEX IF EXISTS idx_art_product`,
   `DROP TABLE IF EXISTS artifacts`,
-  // WHY: scope column was added to the llm_route_matrix schema but existing databases
-  // don't have it. The CREATE TABLE IF NOT EXISTS is a no-op for existing tables, so
-  // the column must be added via ALTER TABLE before any index references it.
-  `ALTER TABLE llm_route_matrix ADD COLUMN scope TEXT DEFAULT 'field'`,
+  // WHY: retired llm_route_matrix table — the Review LLM panel is gone.
+  `DROP TABLE IF EXISTS llm_route_matrix`,
   // WHY: Phase F — stable brand FK on products, enables O(1) rename cascade
   `ALTER TABLE products ADD COLUMN brand_identifier TEXT DEFAULT ''`,
   // WHY: Tier column on query_index — enables per-query tier display in run history panel.
@@ -70,7 +67,6 @@ export const MIGRATIONS = [
 ];
 
 export const SECONDARY_INDEXES = `
-  CREATE INDEX IF NOT EXISTS idx_lrm_cat_scope ON llm_route_matrix(category, scope);
   CREATE INDEX IF NOT EXISTS idx_cv_identity_id ON component_values(component_identity_id);
   CREATE INDEX IF NOT EXISTS idx_lv_list_id ON list_values(list_id);
   CREATE INDEX IF NOT EXISTS idx_prod_brand_id ON products(category, brand_identifier);

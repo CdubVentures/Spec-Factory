@@ -12,8 +12,12 @@ describe('resolveDrawerBadge', () => {
     assert.equal(resolveDrawerBadge('editions', true), 'variant');
   });
 
-  it('returns "value" for a non-variant field (release_date) with published value', () => {
+  it('returns "value" for a non-variant field (release_date) with published value and no variant_dependent flag', () => {
     assert.equal(resolveDrawerBadge('release_date', true), 'value');
+  });
+
+  it('returns "variant" when variant_dependent flag is set (backend-signalled)', () => {
+    assert.equal(resolveDrawerBadge('release_date', true, true), 'variant');
   });
 
   it('returns "value" for name field with published value', () => {

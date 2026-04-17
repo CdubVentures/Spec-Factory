@@ -50,35 +50,6 @@ export function resolveIndexedSettingsStatusText({
   return successLabel;
 }
 
-export function resolveLlmSettingsStatusText({
-  isSaving,
-  saveState,
-  saveMessage,
-  llmHydrated,
-  dirty,
-  autoSaveEnabled,
-  lastSavedAt = '',
-}: {
-  isSaving: boolean;
-  saveState: SaveStateKind;
-  saveMessage: string;
-  llmHydrated: boolean;
-  dirty: boolean;
-  autoSaveEnabled: boolean;
-  lastSavedAt?: string | null;
-}): string {
-  const base = isSaving
-    ? 'Saving...'
-    : saveState === 'error' || saveState === 'partial'
-      ? saveMessage
-      : !llmHydrated
-        ? 'Loading persisted LLM settings...'
-        : dirty
-          ? (autoSaveEnabled ? 'Unsaved (Auto-Save Pending).' : 'Unsaved changes.')
-          : 'All changes saved.';
-  return lastSavedAt ? `${base} Last save: ${lastSavedAt}` : base;
-}
-
 export function resolveSourceStrategyStatus({
   isSaving,
   saveState,

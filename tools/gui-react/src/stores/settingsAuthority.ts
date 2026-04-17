@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { readRuntimeSettingsSnapshot, useRuntimeSettingsReader } from '../features/pipeline-settings/index.ts';
 import { readSourceStrategySnapshot, sourceStrategyQueryKey, useSourceStrategyReader } from '../features/pipeline-settings/index.ts';
-import { llmSettingsRoutesQueryKey, readLlmSettingsSnapshot, useLlmSettingsReader } from './llmSettingsAuthority.ts';
 import { readUiSettingsSnapshot, useUiSettingsAuthority } from './uiSettingsAuthority.ts';
 import { SETTINGS_AUTOSAVE_DEBOUNCE_MS } from './settingsManifest.ts';
 import { useUiStore } from './uiStore.ts';
@@ -17,7 +16,6 @@ export interface SettingsAuthoritySnapshot {
   category: string;
   runtimeReady: boolean;
   sourceStrategyReady: boolean;
-  llmSettingsReady: boolean;
   uiSettingsReady: boolean;
   uiSettingsPersistState: 'idle' | 'saving' | 'error';
   uiSettingsPersistMessage: string;
@@ -38,14 +36,13 @@ export function isSettingsAuthoritySnapshotReady(
   if (!category || category === 'all') {
     return true;
   }
-  return snapshot.sourceStrategyReady && snapshot.llmSettingsReady;
+  return snapshot.sourceStrategyReady;
 }
 
 interface SettingsHydrationPipelineOptions {
   category: string;
   runtimeReload: () => Promise<unknown>;
   sourceStrategyReload: () => Promise<unknown>;
-  llmReload: () => Promise<void>;
   uiReload: () => Promise<unknown>;
 }
 
@@ -53,7 +50,6 @@ async function runSettingsStartupHydrationPipeline({
   category,
   runtimeReload,
   sourceStrategyReload,
-  llmReload,
   uiReload,
 }: SettingsHydrationPipelineOptions) {
   const reloadTasks: Promise<unknown>[] = [
@@ -62,7 +58,6 @@ async function runSettingsStartupHydrationPipeline({
   ];
   if (category !== 'all') {
     reloadTasks.push(sourceStrategyReload());
-    reloadTasks.push(llmReload());
   }
   await Promise.allSettled(reloadTasks);
 }
@@ -70,12 +65,10 @@ async function runSettingsStartupHydrationPipeline({
 async function runCategoryScopedSettingsHydrationPipeline({
   category,
   sourceStrategyReload,
-  llmReload,
-}: Pick<SettingsHydrationPipelineOptions, 'category' | 'sourceStrategyReload' | 'llmReload'>) {
+}: Pick<SettingsHydrationPipelineOptions, 'category' | 'sourceStrategyReload'>) {
   if (category === 'all') return;
   await Promise.allSettled([
     sourceStrategyReload(),
-    llmReload(),
   ]);
 }
 
@@ -97,11 +90,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
     enabled: false,
   });
   const sourceStrategy = useSourceStrategyReader({
-    category,
-    enabled: category !== 'all',
-    autoQueryEnabled: false,
-  });
-  const llm = useLlmSettingsReader({
     category,
     enabled: category !== 'all',
     autoQueryEnabled: false,
@@ -135,14 +123,12 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
   const lastAppliedServerUiFingerprintRef = useRef('');
   const runtimeReloadRef = useRef(runtime.reload);
   const sourceStrategyReloadRef = useRef(sourceStrategy.reload);
-  const llmReloadRef = useRef(llm.reload);
   const uiReloadRef = useRef(reloadUiSettings);
   const hydrateAuthoritySnapshot = useSettingsAuthorityStore((s) => s.hydrateOnce);
   const patchAuthoritySnapshot = useSettingsAuthorityStore((s) => s.patchSnapshot);
 
   runtimeReloadRef.current = runtime.reload;
   sourceStrategyReloadRef.current = sourceStrategy.reload;
-  llmReloadRef.current = llm.reload;
   uiReloadRef.current = reloadUiSettings;
 
   const uiAutoSavePayload = {
@@ -159,15 +145,11 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
   const hasSourceStrategySnapshot = category === 'all'
     ? true
     : readSourceStrategySnapshot(queryClient, category) !== undefined;
-  const hasLlmSettingsSnapshot = category === 'all'
-    ? true
-    : readLlmSettingsSnapshot(queryClient, category) !== undefined;
 
   const authoritySnapshot = useMemo<SettingsAuthoritySnapshot>(() => ({
     category,
     runtimeReady: hasRuntimeSnapshot,
     sourceStrategyReady: hasSourceStrategySnapshot,
-    llmSettingsReady: hasLlmSettingsSnapshot,
     uiSettingsReady: hasUiSettingsSnapshot,
     uiSettingsPersistState,
     uiSettingsPersistMessage,
@@ -177,7 +159,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
     category,
     hasRuntimeSnapshot,
     hasSourceStrategySnapshot,
-    hasLlmSettingsSnapshot,
     hasUiSettingsSnapshot,
     uiSettingsPersistState,
     uiSettingsPersistMessage,
@@ -195,7 +176,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
           category,
           runtimeReload: runtimeReloadRef.current,
           sourceStrategyReload: sourceStrategyReloadRef.current,
-          llmReload: llmReloadRef.current,
           uiReload: uiReloadRef.current,
         });
         if (cancelled || runId !== startupHydrationRunIdRef.current) return;
@@ -207,7 +187,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
       await runCategoryScopedSettingsHydrationPipeline({
         category,
         sourceStrategyReload: sourceStrategyReloadRef.current,
-        llmReload: llmReloadRef.current,
       });
       if (cancelled || runId !== startupHydrationRunIdRef.current) return;
       hydratedCategoryRef.current = category;
@@ -281,20 +260,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
         }
         case 'ui': {
           void uiReloadRef.current();
-          return;
-        }
-        case 'llm': {
-          const scopedCategory = String(event.category || '').trim();
-          if (!scopedCategory || scopedCategory.toLowerCase() === 'all') {
-            if (category !== 'all') {
-              void llmReloadRef.current();
-            }
-            return;
-          }
-          queryClient.invalidateQueries({ queryKey: llmSettingsRoutesQueryKey(scopedCategory) });
-          if (category !== 'all' && scopedCategory === category) {
-            void llmReloadRef.current();
-          }
           return;
         }
         case 'source-strategy': {

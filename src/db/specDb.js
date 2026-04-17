@@ -21,7 +21,6 @@ import { createComponentStore } from './stores/componentStore.js';
 import { createEnumListStore } from './stores/enumListStore.js';
 import { createSourceIntelStore } from './stores/sourceIntelStore.js';
 import { createQueueProductStore } from './stores/queueProductStore.js';
-import { createLlmRouteSourceStore } from './stores/llmRouteSourceStore.js';
 import { createPurgeStore } from './stores/purgeStore.js';
 import { createRunMetaStore } from './stores/runMetaStore.js';
 import { createArtifactStore } from './stores/artifactStore.js';
@@ -79,12 +78,6 @@ export class SpecDb {
       db: this.db, category: this.category,
       stmts: {
         _upsertProduct: this._upsertProduct,
-      }
-    });
-    this._llmRouteSourceStore = createLlmRouteSourceStore({
-      db: this.db, category: this.category,
-      stmts: {
-        _upsertLlmRoute: this._upsertLlmRoute,
       }
     });
     this._purgeStore = createPurgeStore({ db: this.db, category: this.category });
@@ -384,19 +377,11 @@ export class SpecDb {
   getAllProducts(sf) { return this._queueProductStore.getAllProducts(sf); }
   deleteProduct(pid) { return this._queueProductStore.deleteProduct(pid); }
 
-  // --- LLM Route Matrix ---
-
-  ensureDefaultLlmRouteMatrix() { this._llmRouteSourceStore.ensureDefaultLlmRouteMatrix(); }
-  getLlmRouteMatrix(scope) { return this._llmRouteSourceStore.getLlmRouteMatrix(scope); }
-  saveLlmRouteMatrix(rows) { return this._llmRouteSourceStore.saveLlmRouteMatrix(rows); }
-  resetLlmRouteMatrixToDefaults() { return this._llmRouteSourceStore.resetLlmRouteMatrixToDefaults(); }
-
   counts() {
     const tables = [
       'component_values', 'component_identity',
       'component_aliases', 'enum_lists', 'list_values', 'item_component_links',
       'item_list_links', 'products',
-      'llm_route_matrix',
       'color_edition_finder',
       'color_edition_finder_runs'
     ];

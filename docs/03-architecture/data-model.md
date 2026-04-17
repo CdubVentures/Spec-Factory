@@ -49,7 +49,6 @@ These columns and table changes are not just historical notes; they are part of 
 | `component_values` | adds `constraints`, `component_identity_id` FK | `src/db/specDbMigrations.js` |
 | `list_values` | adds `source_timestamp`, hardens `list_id` FK | `src/db/specDbMigrations.js` |
 | `key_review_state` | adds `item_field_state_id`, `component_value_id`, `component_identity_id`, `list_value_id`, `enum_list_id` FKs | `src/db/specDbMigrations.js` |
-| `llm_route_matrix` | adds `enable_websearch`, `scope` | `src/db/specDbMigrations.js` |
 | `item_field_state` | adds override provenance columns (`override_source`, `override_value`, `override_reason`, `override_provenance`, `overridden_by`, `overridden_at`) | `src/db/specDbMigrations.js` |
 | `product_runs` | adds `storage_state`, `local_path`, `s3_key`, `size_bytes`, `relocated_at` | `src/db/specDbMigrations.js` |
 | `products` | adds `brand_identifier`, `base_model` | `src/db/specDbMigrations.js` |
@@ -62,7 +61,6 @@ These columns and table changes are not just historical notes; they are part of 
 
 | Index | Table | Columns | Notes |
 |-------|-------|---------|-------|
-| `idx_lrm_cat_scope` | `llm_route_matrix` | `(category, scope)` | scope routing lookup |
 | `idx_cv_identity_id` | `component_values` | `(component_identity_id)` | identity FK join |
 | `idx_lv_list_id` | `list_values` | `(list_id)` | list FK join |
 | `ux_krs_grid_slot` | `key_review_state` | `(category, item_field_state_id)` | unique partial WHERE grid_key |
@@ -426,49 +424,6 @@ Table constraints: `UNIQUE(category, product_id, run_id)`.
 | `s3_key` | `TEXT` | `DEFAULT ''` | migration-added legacy relocation field |
 | `size_bytes` | `INTEGER` | `DEFAULT 0` | migration-added artifact size |
 | `relocated_at` | `TEXT` | `DEFAULT ''` | migration-added relocation timestamp |
-
-### `llm_route_matrix`
-
-Table constraints: `UNIQUE(category, route_key)`.
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | row id |
-| `category` | `TEXT` | `NOT NULL` | category slug |
-| `scope` | `TEXT` | `NOT NULL CHECK(scope IN ('field', 'component', 'list'))` | route scope |
-| `route_key` | `TEXT` | `NOT NULL` | stable matrix key |
-| `required_level` | `TEXT` | `NOT NULL` | evidence threshold bucket |
-| `difficulty` | `TEXT` | `NOT NULL` | difficulty bucket |
-| `availability` | `TEXT` | `NOT NULL` | availability bucket |
-| `effort` | `INTEGER` | `NOT NULL DEFAULT 3` | effort value |
-| `effort_band` | `TEXT` | `NOT NULL DEFAULT '1-3'` | effort band |
-| `single_source_data` | `INTEGER` | `NOT NULL DEFAULT 1` | boolean flag |
-| `all_source_data` | `INTEGER` | `NOT NULL DEFAULT 0` | boolean flag |
-| `enable_websearch` | `INTEGER` | `NOT NULL DEFAULT 1` | boolean flag |
-| `model_ladder_today` | `TEXT` | `NOT NULL` | model routing ladder |
-| `all_sources_confidence_repatch` | `INTEGER` | `NOT NULL DEFAULT 1` | boolean flag |
-| `max_tokens` | `INTEGER` | `NOT NULL DEFAULT 4096` | token ceiling |
-| `studio_key_navigation_sent_in_extract_review` | `INTEGER` | `NOT NULL DEFAULT 1` | boolean prompt flag |
-| `studio_contract_rules_sent_in_extract_review` | `INTEGER` | `NOT NULL DEFAULT 1` | boolean prompt flag |
-| `studio_extraction_guidance_sent_in_extract_review` | `INTEGER` | `NOT NULL DEFAULT 1` | boolean prompt flag |
-| `studio_tooltip_or_description_sent_when_present` | `INTEGER` | `NOT NULL DEFAULT 1` | boolean prompt flag |
-| `studio_enum_options_sent_when_present` | `INTEGER` | `NOT NULL DEFAULT 1` | boolean prompt flag |
-| `studio_component_variance_constraints_sent_in_component_review` | `INTEGER` | `NOT NULL DEFAULT 1` | boolean prompt flag |
-| `studio_parse_template_sent_direct_in_extract_review` | `INTEGER` | `NOT NULL DEFAULT 1` | boolean prompt flag |
-| `studio_ai_mode_difficulty_effort_sent_direct_in_extract_review` | `INTEGER` | `NOT NULL DEFAULT 1` | boolean prompt flag |
-| `studio_required_level_sent_in_extract_review` | `INTEGER` | `NOT NULL DEFAULT 1` | boolean prompt flag |
-| `studio_component_entity_set_sent_when_component_field` | `INTEGER` | `NOT NULL DEFAULT 1` | boolean prompt flag |
-| `studio_evidence_policy_sent_direct_in_extract_review` | `INTEGER` | `NOT NULL DEFAULT 1` | boolean prompt flag |
-| `studio_variance_policy_sent_in_component_review` | `INTEGER` | `NOT NULL DEFAULT 1` | boolean prompt flag |
-| `studio_constraints_sent_in_component_review` | `INTEGER` | `NOT NULL DEFAULT 1` | boolean prompt flag |
-| `studio_send_booleans_prompted_to_model` | `INTEGER` | `NOT NULL DEFAULT 0` | boolean prompt flag |
-| `scalar_linked_send` | `TEXT` | `NOT NULL DEFAULT 'scalar value + prime sources'` | scalar send mode |
-| `component_values_send` | `TEXT` | `NOT NULL DEFAULT 'component values + prime sources'` | component send mode |
-| `list_values_send` | `TEXT` | `NOT NULL DEFAULT 'list values prime sources'` | list send mode |
-| `llm_output_min_evidence_refs_required` | `INTEGER` | `NOT NULL DEFAULT 1` | min evidence refs |
-| `insufficient_evidence_action` | `TEXT` | `NOT NULL DEFAULT 'threshold_unmet'` | fallback action |
-| `created_at` | `TEXT` | `DEFAULT (datetime('now'))` | timestamp |
-| `updated_at` | `TEXT` | `DEFAULT (datetime('now'))` | timestamp |
 
 ## SpecDb: Key-Review Workflow Tables
 
@@ -934,7 +889,6 @@ Table constraints: primary key on `category`. Lifecycle: rebuild=yes, source_edi
 | `fieldStudioMapStore` | `field_studio_map` |
 | `itemStateStore` | `item_field_state`, `product_review_state` |
 | `keyReviewStore` | `key_review_state`, `key_review_runs`, `key_review_run_sources`, `key_review_audit` |
-| `llmRouteSourceStore` | `llm_route_matrix` |
 | `provenanceStore` | `item_field_state` (override provenance columns) |
 | `purgeStore` | cross-table purge operations |
 | `queueProductStore` | `product_queue`, `products` |
@@ -946,10 +900,6 @@ Table constraints: primary key on `category`. Lifecycle: rebuild=yes, source_edi
 Note: `field_audit_cache` is written directly by `src/app/api/routes/testModeRoutes.js`, not via a store module.
 
 ## Schema Registries (`src/db/specDbSchema.js`)
-
-### `LLM_ROUTE_COLUMN_REGISTRY` (33 entries)
-
-Single source of truth for all `llm_route_matrix` columns (excluding structural cols `id`, `category`, `created_at`, `updated_at`). Adding a column to the route matrix requires exactly one entry here. Each entry carries `key`, `type` (`string` | `int` | `bool`), `sqlDefault`, and optional `promptFlag` / `componentOnly` flags. `LLM_ROUTE_BOOLEAN_KEYS` is derived from the registry by filtering `type === 'bool'`.
 
 ### Per-Table Boolean Key Registries (6 registries)
 

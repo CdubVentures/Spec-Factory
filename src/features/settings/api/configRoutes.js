@@ -1,7 +1,6 @@
 import { loadUserSettingsSync } from '../../settings-authority/index.js';
 import { createConfigPersistenceContext } from './configPersistenceContext.js';
 import { createIndexingMetricsHandler } from './configIndexingMetricsHandler.js';
-import { createLlmSettingsHandler } from './configLlmSettingsHandler.js';
 import { createUiSettingsHandler } from './configUiSettingsHandler.js';
 import { createRuntimeSettingsHandler } from './configRuntimeSettingsHandler.js';
 import { createLlmPolicyHandler } from '../../settings-authority/llmPolicyHandler.js';
@@ -46,10 +45,6 @@ export function registerConfigRoutes(ctx) {
     getSpecDb,
   });
 
-  const llmHandler = createLlmSettingsHandler({
-    jsonRes, readJsonBody, getSpecDb, broadcastWs, HELPER_ROOT,
-  });
-
   const uiHandler = createUiSettingsHandler({
     jsonRes, readJsonBody, broadcastWs, persistenceCtx,
   });
@@ -65,7 +60,6 @@ export function registerConfigRoutes(ctx) {
   return async function handleConfigRoutes(parts, params, method, req, res) {
     if (parts[0] === 'ui-settings') return uiHandler(parts, params, method, req, res);
     if (parts[0] === 'indexing') return metricsHandler(parts, params, method, req, res);
-    if (parts[0] === 'llm-settings') return llmHandler(parts, params, method, req, res);
     if (parts[0] === 'runtime-settings') return runtimeHandler(parts, params, method, req, res);
     if (parts[0] === 'llm-policy') return llmPolicyHandler(parts, params, method, req, res);
     return false;

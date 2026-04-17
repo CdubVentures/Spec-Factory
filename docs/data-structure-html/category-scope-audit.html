@@ -243,10 +243,6 @@ svg text{font-family:var(--sans)}
       <div class="scope-detail"><code>/spec-seeds?category=</code> &bull; Per-category deterministic templates</div>
     </div>
     <div class="scope-row">
-      <div class="scope-label">LLM Route Matrix</div>
-      <div class="scope-detail"><code>llm_route_matrix</code> in SpecDb &bull; <code>/llm-settings/${'{'}category{'}'}/routes</code></div>
-    </div>
-    <div class="scope-row">
       <div class="scope-label">Review Data</div>
       <div class="scope-detail"><code>field_candidates</code> in SpecDb &bull; <code>/review/${'{'}category{'}'}/...</code></div>
     </div>
@@ -331,7 +327,6 @@ svg text{font-family:var(--sans)}
         <span style="color:var(--t3)">||</span>
         <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Review Grid</span>
         <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Review Components</span>
-        <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Review LLM</span>
         <span style="color:var(--t3)">||</span>
         <span style="font-family:var(--mono);font-weight:600;color:var(--green);padding:4px 8px;background:var(--green-s);border-radius:4px">Storage</span>
       </div>
@@ -371,8 +366,7 @@ svg text{font-family:var(--sans)}
 <span style="color:var(--green)">{ path: '/runtime-ops',      label: 'Runtime Ops',         tabGroup: 'ops' }</span>
 <span style="color:var(--green)">{ path: '/publisher',        label: 'Publisher',           tabGroup: 'ops',  dividerBefore: true, dividerAfter: true }</span>
 <span style="color:var(--amber)">{ path: '/review',           label: 'Review Grid',         tabGroup: 'ops',  disabledOnAll: true }</span>
-<span style="color:var(--amber)">{ path: '/review-components',label: 'Review Components',   tabGroup: 'ops',  disabledOnAll: true }</span>
-<span style="color:var(--green)">{ path: '/llm-settings',     label: 'Review LLM',          tabGroup: 'ops',  dividerAfter: true }</span>
+<span style="color:var(--amber)">{ path: '/review-components',label: 'Review Components',   tabGroup: 'ops',  disabledOnAll: true, dividerAfter: true }</span>
 <span style="color:var(--green)">{ path: '/storage',          label: 'Storage',             tabGroup: 'ops' }</span>
 
 <span style="color:var(--t3)">// -- Settings group (far right, gear icon, ml-auto, border-l) --------</span>
@@ -542,14 +536,6 @@ svg text{font-family:var(--sans)}
         <td><span class="verdict-warn">VESTIGE</span></td>
       </tr>
       <tr>
-        <td class="cn">Review LLM</td>
-        <td class="ct">ops</td>
-        <td><span class="tag tag-category">Category</span></td>
-        <td class="ct">&mdash;</td>
-        <td class="cc">Moved from Settings to Category group (ops). Per-category LLM route matrix. <code>/llm-settings/${'{'}category{'}'}/routes</code>. <code>dividerAfter: true</code>.</td>
-        <td><span class="verdict-pass">PASS</span></td>
-      </tr>
-      <tr>
         <td class="cn">Storage</td>
         <td class="ct">ops</td>
         <td><span class="tag tag-category">Category</span></td>
@@ -657,10 +643,6 @@ svg text{font-family:var(--sans)}
       <p><code>sourceStrategyAuthority.ts</code> &mdash; All API calls use <code>?category=${'{'}category{'}'}</code>. Reads/writes <code>category_authority/{'{'}cat{'}'}/sources.json</code>. Correctly scoped. Stays in Pipeline Settings with category badge indicator.</p>
     </div>
     <div class="principle-card">
-      <h4 style="color:var(--green)">LLM Route Matrix = Per-Category</h4>
-      <p><code>llmSettingsAuthority.ts</code> &mdash; <code>/llm-settings/${'{'}category{'}'}/routes</code>. Stored in SpecDb <code>llm_route_matrix</code> table with <code>category</code> column. Now in ops group as Review LLM tab.</p>
-    </div>
-    <div class="principle-card">
       <h4 style="color:var(--accent)">Brand Registry = Global + Junction</h4>
       <p><code>appDbSchema.js</code> &mdash; <code>brands</code> in AppDb (global). <code>brand_categories(identifier, category)</code> junction table maps brands to categories. Now its own <code>/brands</code> route in Global group.</p>
     </div>
@@ -743,9 +725,6 @@ svg text{font-family:var(--sans)}
 
       <rect x="386" y="186" width="130" height="40" rx="5" fill="var(--green-s)" stroke="var(--green)" stroke-width="0.5"/>
       <text x="451" y="210" text-anchor="middle" fill="var(--green)" font-size="10" font-weight="600">Review Components</text>
-
-      <rect x="522" y="186" width="110" height="40" rx="5" fill="var(--green-s)" stroke="var(--green)" stroke-width="0.5"/>
-      <text x="577" y="210" text-anchor="middle" fill="var(--green)" font-size="10" font-weight="600">Review LLM</text>
 
       <rect x="250" y="240" width="70" height="35" rx="5" fill="var(--green-s)" stroke="var(--green)" stroke-width="0.5"/>
       <text x="285" y="261" text-anchor="middle" fill="var(--green)" font-size="10" font-weight="600">Storage</text>

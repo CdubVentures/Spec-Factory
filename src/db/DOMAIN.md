@@ -18,8 +18,8 @@ Two database classes:
 
 ```
 specDb.js              — SpecDb composition root: constructor wiring, thin delegators, cascade helpers
-specDbSchema.js        — DDL (SCHEMA constant) + LLM_ROUTE_BOOLEAN_KEYS
-specDbHelpers.js       — 9 pure helper functions (normalizeListLinkToken, expandListLinkValues, toBoolInt, etc.)
+specDbSchema.js        — DDL (SCHEMA constant) + per-table boolean-key lists
+specDbHelpers.js       — pure helper functions (normalizeListLinkToken, expandListLinkValues, toBoolInt, hydrateRow, etc.)
 specDbStatements.js    — prepareStatements(db) factory: compiles ~30 prepared statements
 specDbMigrations.js    — applyMigrations(db): ALTER TABLE migrations
 specDbIntegrity.js     — cleanupLegacyIdentityFallbackRows(db), assertStrictIdentitySlotIntegrity(db)
@@ -34,7 +34,6 @@ stores/
   enumListStore.js         — 15 methods: enum_lists + list_values
   sourceIntelStore.js      —  3 methods: bridge_events
   queueProductStore.js     —  4 methods: products
-  llmRouteSourceStore.js   —  4 methods: llm_route_matrix
 ```
 
 ## Pattern

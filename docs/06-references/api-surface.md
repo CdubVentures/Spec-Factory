@@ -41,9 +41,6 @@
 | GET | `/api/v1/indexing/llm-metrics` | aggregated LLM usage metrics | none | none | metrics payload |
 | GET | `/api/v1/indexing/domain-checklist/:category` | domain/source checklist for a category | none | none | checklist payload |
 | GET | `/api/v1/indexing/review-metrics/:category` | human review throughput metrics | none | none | review metrics payload |
-| GET | `/api/v1/llm-settings/:category/routes` | read category LLM route matrix | none | none | `{ category, scope, rows }` |
-| PUT | `/api/v1/llm-settings/:category/routes` | write category LLM route matrix | none | `{ rows }` | `{ ok, applied: { rows }, snapshot, rejected, category, rows }` |
-| POST | `/api/v1/llm-settings/:category/routes/reset` | reset category LLM route matrix | none | none | `{ ok, category, rows }` |
 | GET | `/api/v1/llm-policy` | read the composite global LLM policy assembled from managed runtime keys | none | none | `{ ok, policy }` |
 | PUT | `/api/v1/llm-policy` | persist the composite global LLM policy back into runtime settings | none | `LlmPolicy` composite | `{ ok, policy }` or `422 { ok: false, error: 'invalid_model', rejected }` |
 | POST | `/api/v1/llm-policy` | compatibility write alias for the composite global LLM policy | none | `LlmPolicy` composite | `{ ok, policy }` or `422 { ok: false, error: 'invalid_model', rejected }` |
@@ -264,10 +261,9 @@ No verified `POST /api/v1/review/:category/finalize` endpoint exists in the curr
 | source | `src/app/api/routes/infra/serperRoutes.js` | Serper credit balance proxy endpoint |
 | source | `src/app/api/routes/infra/processRoutes.js` | process start/stop/status surface |
 | source | `src/app/api/routes/infra/graphqlRoutes.js` | orphaned GraphQL proxy (always 502) |
-| source | `src/features/settings/api/configRoutes.js` | config route dispatcher (ui-settings, indexing, llm-settings, runtime-settings, llm-policy) |
+| source | `src/features/settings/api/configRoutes.js` | config route dispatcher (ui-settings, indexing, runtime-settings, llm-policy) |
 | source | `src/features/settings/api/configUiSettingsHandler.js` | `ui-settings` GET/PUT contract |
 | source | `src/features/settings/api/configRuntimeSettingsHandler.js` | `runtime-settings` GET/PUT/POST contract |
-| source | `src/features/settings/api/configLlmSettingsHandler.js` | category LLM route-matrix GET/PUT/reset contract |
 | source | `src/features/settings/api/configIndexingMetricsHandler.js` | `indexing/llm-config`, `llm-metrics`, `domain-checklist`, and `review-metrics` payloads |
 | source | `src/features/settings-authority/llmPolicyHandler.js` | composite LLM policy endpoint behavior |
 | source | `src/features/indexing/api/indexlabRoutes.js` | IndexLab endpoints, analytics, live-crawl, and storage delegation |

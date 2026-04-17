@@ -372,3 +372,35 @@ export const FINDER_DATA_CHANGE_EVENTS = Object.freeze(
 export const FINDER_DATA_CHANGE_DOMAINS = Object.freeze(
   FINDER_MODULES.map((mod) => mod.routePrefix),
 );
+
+/**
+ * O(1) lookup: find the finder module that owns a given field key.
+ *
+ * @param {string} fieldKey
+ * @returns {object|null} the module entry, or null if no module lists the field
+ */
+export function getFinderModuleForField(fieldKey) {
+  if (!fieldKey || typeof fieldKey !== 'string') return null;
+  for (const mod of FINDER_MODULES) {
+    if (Array.isArray(mod.fieldKeys) && mod.fieldKeys.includes(fieldKey)) return mod;
+  }
+  return null;
+}
+
+/**
+ * True when a field's published state is per-variant — i.e. the field is owned
+ * by a `variantFieldProducer` module (release date, SKU, discontinued, price).
+ * Variant-generator modules (CEF colors/editions) and unowned fields are not
+ * variant-dependent by this definition: their display is driven by the variant
+ * registry (SSOT), not by grouping field_candidates rows under variant_ids.
+ *
+ * Consumed by review layout (to emit field_rule.variant_dependent) and by the
+ * drawer to switch between scalar and variant×value display.
+ *
+ * @param {string} fieldKey
+ * @returns {boolean}
+ */
+export function isVariantDependentField(fieldKey) {
+  const mod = getFinderModuleForField(fieldKey);
+  return mod?.moduleClass === 'variantFieldProducer';
+}

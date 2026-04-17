@@ -16,7 +16,7 @@ const VALID_PARENT_PREFIXES = new Set(Object.keys(PARENT_GROUPS));
 const VALID_TYPES = new Set(['string', 'array', 'filteredArray', 'presence']);
 
 // WHY: sub-consumer key must match parent.name pattern
-const CONSUMER_KEY_RE = /^(idx|eng|rev|seed|comp|val|pub)\.\w+$/;
+const CONSUMER_KEY_RE = /^(idx|eng|rev|flag|seed|comp|val|pub)\.\w+$/;
 
 describe('Registry entry shape', () => {
   it('every entry has required fields', () => {
@@ -77,11 +77,14 @@ describe('Registry integrity', () => {
         allKeys.add(key);
       }
     }
-    // WHY: eng.parse removed — parse.template retired in type-driven normalization.
+    // WHY: rev.grid/rev.flag/rev.enum removed — consensus scoring never shipped, LLM enum
+    // consistency dead-ended, and per-field flag semantics now live under a dedicated `flag`
+    // parent group instead of `rev`.
     const expected = [
       'idx.needset', 'idx.search',
       'eng.validate', 'eng.normalize', 'eng.enum', 'eng.list', 'eng.component', 'eng.gate',
-      'rev.grid', 'rev.flag', 'rev.enum', 'rev.component',
+      'rev.component',
+      'flag.evidence',
       'seed.schema', 'seed.component',
     ];
     for (const key of expected) {

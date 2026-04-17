@@ -62,7 +62,6 @@ function makeReviewCtx(overrides = {}) {
     cascadeComponentChange: async () => {},
     resolveEnumMutationContext: () => ({ error: 'not_used' }),
     cascadeEnumChange: async () => {},
-    runEnumConsistencyReview: async () => ({ enabled: false, skipped_reason: 'not_stubbed', decisions: [] }),
     ensureGridKeyReviewState: () => {},
     patchCompiledComponentDb: async () => ({}),
   };
@@ -204,71 +203,6 @@ test('review suggest emits typed data-change contract', async () => {
   assert.deepEqual(emitted[0].payload.domains, ['review', 'suggestions']);
 });
 
-test('enum consistency preview returns decisions without emitting data-change', async () => {
-  const emitted = [];
-  const specDb = makeMockEnumSpecDb();
-  const handler = registerReviewRoutes(makeReviewCtx({
-    readJsonBody: async () => ({ field: 'lighting', apply: false }),
-    getSpecDbReady: async () => specDb,
-    runEnumConsistencyReview: async () => ({
-      enabled: true,
-      decisions: [
-        {
-          value: 'Rgb Led',
-          decision: 'map_to_existing',
-          target_value: 'RGB LED',
-          confidence: 0.93,
-          reasoning: 'matches canonical casing',
-        },
-      ],
-    }),
-    broadcastWs: (channel, payload) => emitted.push({ channel, payload }),
-  }));
-
-  const result = await handler(['review-components', 'mouse', 'enum-consistency'], new URLSearchParams(), 'POST', {}, {});
-  assert.equal(result.status, 200);
-  assert.equal(result.body.apply, false);
-  assert.equal(Array.isArray(result.body.decisions), true);
-  assert.equal(result.body.decisions.length, 1);
-  assert.equal(result.body.decisions[0].decision, 'map_to_existing');
-  assert.equal(emitted.length, 0);
-});
-
-test('enum consistency apply emits typed data-change contract', async () => {
-  const emitted = [];
-  const specDb = makeMockEnumSpecDb();
-  const handler = registerReviewRoutes(makeReviewCtx({
-    readJsonBody: async () => ({ field: 'lighting', apply: true }),
-    getSpecDbReady: async () => specDb,
-    runEnumConsistencyReview: async () => ({
-      enabled: true,
-      decisions: [
-        {
-          value: 'Rgb Led',
-          decision: 'map_to_existing',
-          target_value: 'RGB LED',
-          confidence: 0.93,
-          reasoning: 'matches canonical casing',
-        },
-      ],
-    }),
-    broadcastWs: (channel, payload) => emitted.push({ channel, payload }),
-  }));
-
-  const result = await handler(['review-components', 'mouse', 'enum-consistency'], new URLSearchParams(), 'POST', {}, {});
-  assert.equal(result.status, 200);
-  assert.equal(result.body.apply, true);
-  assert.equal(result.body.applied.mapped, 1);
-  assert.equal(result.body.applied.changed, 1);
-  assert.equal(emitted.length, 1);
-  assert.equal(emitted[0].channel, 'data-change');
-  assert.equal(emitted[0].payload.type, 'data-change');
-  assert.equal(emitted[0].payload.event, 'enum-consistency');
-  assert.equal(emitted[0].payload.category, 'mouse');
-  assert.deepEqual(emitted[0].payload.categories, ['mouse']);
-  assert.deepEqual(emitted[0].payload.domains, ['enum', 'review']);
-});
-
 test('enum override is blocked when review consumer disables enum.source', async () => {
   const emitted = [];
   const seededSpecDb = { isSeeded: () => true };
@@ -318,38 +252,3 @@ test('enum override is blocked when review consumer disables enum.source', async
   assert.equal(emitted.length, 0);
 });
 
-test('enum consistency skips when review consumer is disabled', async () => {
-  const emitted = [];
-  const specDb = makeMockEnumSpecDb();
-  let llmInvoked = false;
-  const handler = registerReviewRoutes(makeReviewCtx({
-    readJsonBody: async () => ({ field: 'lighting', apply: true }),
-    getSpecDbReady: async () => specDb,
-    sessionCache: {
-      getSessionRules: async () => ({
-        mergedFields: {
-          lighting: {
-            consumers: {
-              'enum.match.format_hint': { review: false },
-            },
-          },
-        },
-      }),
-      invalidateSessionCache: () => {},
-    },
-    runEnumConsistencyReview: async () => {
-      llmInvoked = true;
-      return {
-        enabled: true,
-        decisions: [],
-      };
-    },
-    broadcastWs: (channel, payload) => emitted.push({ channel, payload }),
-  }));
-
-  const result = await handler(['review-components', 'mouse', 'enum-consistency'], new URLSearchParams(), 'POST', {}, {});
-  assert.equal(result.status, 403);
-  assert.equal(result.body?.error, 'review_consumer_disabled');
-  assert.equal(llmInvoked, false);
-  assert.equal(emitted.length, 0);
-});

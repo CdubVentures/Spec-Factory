@@ -121,7 +121,6 @@ const DOMAIN_QUERY_TEMPLATES = Object.freeze({
   ]),
   settings: Object.freeze([
     ['ui-settings'],
-    ['llm-settings-routes', CATEGORY_TOKEN],
     ['runtime-settings'],
     ['indexing', 'llm-config'],
   ]),
@@ -188,8 +187,6 @@ export const DATA_CHANGE_EVENT_DOMAIN_FALLBACK = Object.freeze({
   'color-add': ['color-registry'],
   'color-update': ['color-registry'],
   'color-delete': ['color-registry'],
-  'llm-settings-updated': ['settings', 'indexing'],
-  'llm-settings-reset': ['settings', 'indexing'],
   'runtime-settings-updated': ['settings', 'indexing'],
   'user-settings-updated': ['settings', 'indexing'],
   'category-created': ['categories'],

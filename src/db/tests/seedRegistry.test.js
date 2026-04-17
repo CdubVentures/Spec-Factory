@@ -36,7 +36,6 @@ function makeStubReseedDeps() {
       scanAndSeedCheckpoints: stub('scanAndSeedCheckpoints'),
       rebuildColorEditionFinderFromJson: stub('rebuildColorEditionFinderFromJson'),
       rebuildProductImageFinderFromJson: stub('rebuildProductImageFinderFromJson'),
-      rebuildLlmRouteMatrixFromJson: stub('rebuildLlmRouteMatrixFromJson'),
       reseedFieldKeyOrderFromJson: stub('reseedFieldKeyOrderFromJson'),
       reseedFieldStudioMapFromJson: stub('reseedFieldStudioMapFromJson'),
       rebuildFieldCandidatesFromJson: stub('rebuildFieldCandidatesFromJson'),
@@ -245,10 +244,10 @@ describe('buildCategorySurfaces', () => {
 // ── buildReseedSurfaces ─────────────────────────────────────────────────────
 
 describe('buildReseedSurfaces', () => {
-  it('returns exactly 8 entries', () => {
+  it('returns exactly 7 entries', () => {
     const { deps } = makeStubReseedDeps();
     const surfaces = buildReseedSurfaces(deps);
-    assert.equal(surfaces.length, 8);
+    assert.equal(surfaces.length, 7);
   });
 
   it('every entry has scope "reseed", execute (fn), formatLog (fn)', () => {
@@ -261,7 +260,7 @@ describe('buildReseedSurfaces', () => {
     }
   });
 
-  const expectedReseedKeys = ['checkpoint', 'color_edition', 'product_images', 'llm_route_matrix', 'field_key_order', 'field_studio_map', 'field_candidates', 'published_fields'];
+  const expectedReseedKeys = ['checkpoint', 'color_edition', 'product_images', 'field_key_order', 'field_studio_map', 'field_candidates', 'published_fields'];
   it('contains all expected keys', () => {
     const { deps } = makeStubReseedDeps();
     const surfaces = buildReseedSurfaces(deps);
@@ -293,10 +292,10 @@ describe('buildReseedSurfaces', () => {
     assert.equal(entry.shouldRun({ indexLabRoot: null }), false);
   });
 
-  it('color_edition, product_images, llm_route_matrix, field_key_order, field_studio_map, field_candidates, published_fields shouldRun is null', () => {
+  it('color_edition, product_images, field_key_order, field_studio_map, field_candidates, published_fields shouldRun is null', () => {
     const { deps } = makeStubReseedDeps();
     const surfaces = buildReseedSurfaces(deps);
-    for (const key of ['color_edition', 'product_images', 'llm_route_matrix', 'field_key_order', 'field_studio_map', 'field_candidates', 'published_fields']) {
+    for (const key of ['color_edition', 'product_images', 'field_key_order', 'field_studio_map', 'field_candidates', 'published_fields']) {
       const entry = surfaces.find(s => s.key === key);
       assert.equal(entry.shouldRun, null, `${key} shouldRun`);
     }
@@ -322,17 +321,6 @@ describe('buildReseedSurfaces', () => {
     const call = calls.find(c => c.name === 'rebuildColorEditionFinderFromJson');
     assert.ok(call);
     assert.deepEqual(call.args[0], { specDb: fakeDb, productRoot: '/prod' });
-  });
-
-  it('llm_route_matrix.execute calls deps.rebuildLlmRouteMatrixFromJson', () => {
-    const { deps, calls } = makeStubReseedDeps();
-    const surfaces = buildReseedSurfaces(deps);
-    const entry = surfaces.find(s => s.key === 'llm_route_matrix');
-    const fakeDb = { name: 'testDb' };
-    entry.execute({ db: fakeDb, helperRoot: '/helpers' });
-    const call = calls.find(c => c.name === 'rebuildLlmRouteMatrixFromJson');
-    assert.ok(call);
-    assert.deepEqual(call.args[0], { specDb: fakeDb, helperRoot: '/helpers' });
   });
 
   it('field_candidates.execute calls deps.rebuildFieldCandidatesFromJson', () => {

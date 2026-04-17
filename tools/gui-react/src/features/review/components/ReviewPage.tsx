@@ -469,6 +469,8 @@ export function ReviewPage() {
           const drawerCandidates = candidateData?.candidates ?? activeFieldState.candidates ?? [];
           const currentSource = activeFieldState.source
             || candidateSourceLabel(drawerCandidates.find((candidate) => candidateSourceLabel(candidate)) ?? drawerCandidates[0]);
+          const activeLayoutRow = layout?.rows.find((r) => r.key === selectedField);
+          const variantDependent = Boolean(activeLayoutRow?.field_rule?.variant_dependent);
 
           return (
             <FieldReviewDrawer
@@ -504,6 +506,8 @@ export function ReviewPage() {
               onDeleteCandidate={(sourceId) => deleteCandidateMut.mutate({ sourceId })}
               onDeleteAllCandidates={() => deleteAllCandidatesMut.mutate()}
               deletePending={deleteCandidateMut.isPending || deleteAllCandidatesMut.isPending}
+              variantDependent={variantDependent}
+              variantValues={activeFieldState.variant_values}
             />
           );
         })()}

@@ -72,10 +72,10 @@ test('multiple file hashes do not clobber each other', async () => {
   const harness = createHarness();
   try {
     harness.specDb.setFileSeedHash('overrides', 'hash_a');
-    harness.specDb.setFileSeedHash('llm_route_matrix', 'hash_b');
+    harness.specDb.setFileSeedHash('color_edition', 'hash_b');
     harness.specDb.setFileSeedHash('field_studio_map', 'hash_c');
     assert.equal(harness.specDb.getFileSeedHash('overrides'), 'hash_a');
-    assert.equal(harness.specDb.getFileSeedHash('llm_route_matrix'), 'hash_b');
+    assert.equal(harness.specDb.getFileSeedHash('color_edition'), 'hash_b');
     assert.equal(harness.specDb.getFileSeedHash('field_studio_map'), 'hash_c');
   } finally {
     await cleanupHarness(harness);

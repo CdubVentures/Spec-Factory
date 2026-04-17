@@ -59,7 +59,6 @@ tools/gui-react/src/main.tsx
 | persisted tab state | `tools/gui-react/src/stores/tabStore.ts` | remembers active nested tabs |
 | runtime settings value map | `tools/gui-react/src/stores/runtimeSettingsValueStore.ts` | flat runtime settings authority used by multiple settings surfaces |
 | settings readiness snapshot | `tools/gui-react/src/stores/settingsAuthorityStore.ts` | controls hydration-ready vs degraded-render state |
-| category LLM route matrix authority | `tools/gui-react/src/stores/llmSettingsAuthority.ts` | category-scoped `llm_route_matrix` read/write surface |
 | feature-local state | `tools/gui-react/src/features/**/state/*` | page-specific selectors, hooks, and derived state |
 
 ## Hydration And Shell Hooks
@@ -89,7 +88,7 @@ tools/gui-react/src/main.tsx
 |---------|-------|-------|
 | registry-owned route inventory | `tools/gui-react/src/registries/pageRegistry.ts` | one entry per tabbed page |
 | feature-owned pages | `tools/gui-react/src/features/**/components/*Page.tsx` | preferred home for complex routed surfaces |
-| page wrappers / page-local modules | `tools/gui-react/src/pages/**` | used for overview, product, billing, storage, review LLM, unit registry, publisher, and test mode |
+| page wrappers / page-local modules | `tools/gui-react/src/pages/**` | used for overview, product, billing, storage, unit registry, publisher, and test mode |
 | shell-only layout | `tools/gui-react/src/pages/layout/*` | route-independent navigation and frame |
 
 ## Feature Ownership By Route Group
@@ -98,7 +97,7 @@ tools/gui-react/src/main.tsx
 |------|----------------|-------|
 | global | `/categories`, `/brands`, `/colors`, `/units`, `/billing` | `tools/gui-react/src/features/catalog/components/CategoryManager.tsx`, `tools/gui-react/src/features/studio/components/BrandManager.tsx`, `tools/gui-react/src/features/color-registry/components/ColorRegistryPage.tsx`, `tools/gui-react/src/pages/unit-registry/UnitRegistryPage.tsx`, `tools/gui-react/src/pages/billing/BillingPage.tsx` |
 | catalog | `/`, `/product`, `/catalog`, `/studio` | `tools/gui-react/src/pages/overview/OverviewPage.tsx`, `tools/gui-react/src/pages/product/ProductPage.tsx`, `tools/gui-react/src/features/catalog/components/CatalogPage.tsx`, `tools/gui-react/src/features/studio/components/StudioPage.tsx` |
-| ops | `/indexing`, `/runtime-ops`, `/publisher`, `/review`, `/review-components`, `/llm-settings`, `/storage` | `tools/gui-react/src/features/indexing/components/IndexingPage.tsx`, `tools/gui-react/src/features/runtime-ops/components/RuntimeOpsPage.tsx`, `tools/gui-react/src/pages/publisher/PublisherPage.tsx`, `tools/gui-react/src/features/review/components/ReviewPage.tsx`, `tools/gui-react/src/pages/component-review/ComponentReviewPage.tsx`, `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx`, `tools/gui-react/src/pages/storage/StoragePage.tsx` |
+| ops | `/indexing`, `/runtime-ops`, `/publisher`, `/review`, `/review-components`, `/storage` | `tools/gui-react/src/features/indexing/components/IndexingPage.tsx`, `tools/gui-react/src/features/runtime-ops/components/RuntimeOpsPage.tsx`, `tools/gui-react/src/pages/publisher/PublisherPage.tsx`, `tools/gui-react/src/features/review/components/ReviewPage.tsx`, `tools/gui-react/src/pages/component-review/ComponentReviewPage.tsx`, `tools/gui-react/src/pages/storage/StoragePage.tsx` |
 | settings | `/llm-config`, `/pipeline-settings` | `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx`, `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` |
 | non-registry | `/test-mode` | `tools/gui-react/src/pages/test-mode/TestModePage.tsx` |
 
@@ -107,7 +106,6 @@ tools/gui-react/src/main.tsx
 - `tools/gui-react/src/pages/storage/StoragePage.tsx` is a thin wrapper over the storage-manager panel. It is not a storage-settings editor.
 - `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` edits runtime settings, source strategy, and deterministic spec seeds. It does not call a live `/storage-settings` or `/convergence-settings` backend.
 - `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` owns the global composite LLM policy surface.
-- `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx` separately owns category-scoped `llm_route_matrix` editing.
 
 ## Validated Against
 

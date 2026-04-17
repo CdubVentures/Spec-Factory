@@ -84,4 +84,15 @@ describe('reviewFieldContract', () => {
       strictEqual(unique.size, list.length, `duplicate found in ${JSON.stringify(list)}`);
     }
   });
+
+  it('FIELD_STATE_OPTIONAL_KEYS includes variant_values (variant-dependent published state)', () => {
+    ok(FIELD_STATE_OPTIONAL_KEYS.includes('variant_values'),
+      'variant_values must be in optional keys for variant-dependent field payload');
+  });
+
+  it('REVIEW_CANDIDATE_KEYS includes variant_id + variant_label + variant_type + color_atoms + edition_slug', () => {
+    for (const key of ['variant_id', 'variant_label', 'variant_type', 'color_atoms', 'edition_slug']) {
+      ok(REVIEW_CANDIDATE_KEYS.includes(key), `missing: ${key}`);
+    }
+  });
 });

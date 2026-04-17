@@ -4,6 +4,7 @@ import { nowIso } from '../../../shared/primitives.js';
 import { loadCategoryConfig } from '../../../categories/loader.js';
 import { ruleRequiredLevel } from '../../../engine/ruleAccessors.js';
 import { projectFieldRulesForConsumer } from '../../../field-rules/consumerGate.js';
+import { isVariantDependentField } from '../../../core/finder/finderModuleRegistry.js';
 import { confidenceColor } from './confidenceColor.js';
 import { buildFallbackFieldCandidateId } from '../../../utils/candidateIdentifier.js';
 import { resolveAuthoritativeProductIdentity } from '../../catalog/index.js';
@@ -132,12 +133,17 @@ export async function buildReviewLayout({
     const sourceHints = extractFieldStudioHints(rule);
     const sourceRow = toInt(sourceHints.row, parseFieldStudioRowFromCell(sourceHints.key_cell));
     const positionalGroup = positionalGroupMap.get(normalizeField(field));
+    const fieldRuleBase = normalizeFieldContract(rule);
     rows.push({
       source_row: sourceRow > 0 ? sourceRow : null,
       group: positionalGroup || String(ui.group || '').trim(),
       key: normalizeField(field),
       label: String(ui.label || field),
-      field_rule: normalizeFieldContract(rule),
+      field_rule: {
+        ...fieldRuleBase,
+        // WHY: derived flag; variantFieldProducer modules own per-variant published state.
+        variant_dependent: isVariantDependentField(normalizeField(field)),
+      },
       _order: toInt(ui.order, Number.MAX_SAFE_INTEGER)
     });
   }
@@ -391,9 +397,20 @@ export async function buildProductReviewPayload({
   const dbProduct = specDb?.getProduct(productId) || null;
   const allCandidates = toArray(specDb?.getAllFieldCandidatesByProduct?.(productId));
 
+  // Variant registry lookup for enriching candidates + building variant_values.
+  // Keyed by variant_id (the ID publisher + field_candidates rows reference).
+  const variantById = new Map();
+  if (specDb?.variants?.listActive) {
+    for (const v of specDb.variants.listActive(productId)) {
+      if (v?.variant_id) variantById.set(v.variant_id, v);
+    }
+  }
+
   // Group candidates by field_key, track resolved (published) per field.
+  // For variant-dependent fields, collect ALL resolved rows keyed by variant_id.
   const candidatesByField = new Map();
   const resolvedByField = new Map();
+  const variantValuesByField = new Map(); // fk → Map<vid, resolvedRow>
   for (const row of allCandidates) {
     const fk = normalizeField(row.field_key);
     if (!candidatesByField.has(fk)) candidatesByField.set(fk, []);
@@ -402,6 +419,14 @@ export async function buildProductReviewPayload({
       const existing = resolvedByField.get(fk);
       if (!existing || toNumber(row.confidence, 0) > toNumber(existing.confidence, 0)) {
         resolvedByField.set(fk, row);
+      }
+      if (row.variant_id && isVariantDependentField(fk)) {
+        if (!variantValuesByField.has(fk)) variantValuesByField.set(fk, new Map());
+        const byVid = variantValuesByField.get(fk);
+        const current = byVid.get(row.variant_id);
+        if (!current || toNumber(row.confidence, 0) > toNumber(current.confidence, 0)) {
+          byVid.set(row.variant_id, row);
+        }
       }
     }
   }
@@ -463,12 +488,16 @@ export async function buildProductReviewPayload({
       : 0;
     const hasValue = hasKnownValue(resolvedValue);
 
+    const fieldIsVariantDependent = isVariantDependentField(field);
+
     // Map field_candidates rows → candidate shape.
+    // For variant-dependent fields, project variant_id + enrich with variant metadata
+    // (label/type/color_atoms/edition_slug) so the drawer can render per-variant cards.
     let candidates = fieldCandidateRows.map((c) => {
       const meta = isObject(c.metadata_json) ? c.metadata_json : {};
       // WHY: Source-centric rows have source_type column; legacy rows fall back to metadata.
       const sourceToken = String(c.source_type || meta.source || '').trim().toLowerCase();
-      return {
+      const base = {
         candidate_id: `fc_${c.id}`,
         value: c.value,
         score: Math.max(0, Math.min(1, toNumber(c.confidence, 0))),
@@ -483,6 +512,15 @@ export async function buildProductReviewPayload({
           source_id: sourceToken || '',
         },
       };
+      if (fieldIsVariantDependent && c.variant_id) {
+        const variant = variantById.get(c.variant_id) || null;
+        base.variant_id = c.variant_id;
+        base.variant_label = variant?.variant_label ?? null;
+        base.variant_type = variant?.variant_type ?? null;
+        base.color_atoms = Array.isArray(variant?.color_atoms) ? variant.color_atoms : null;
+        base.edition_slug = variant?.edition_slug ?? null;
+      }
+      return base;
     });
 
     // Determine source/method from resolved candidate.
@@ -503,7 +541,7 @@ export async function buildProductReviewPayload({
 
     if (!hasValue) missingCount += 1;
 
-    rows[field] = {
+    const row = {
       selected: {
         value: resolvedValue,
         confidence: isOverridden ? 1 : resolvedConfidence,
@@ -522,6 +560,37 @@ export async function buildProductReviewPayload({
       overridden: isOverridden,
       source_timestamp: String(resolvedRow?.updated_at || '').trim() || null,
     };
+
+    // WHY: Variant-dependent fields (owned by a variantFieldProducer module) expose
+    // per-variant published state keyed by variant_id. Drawer renders a variant×value
+    // table from this map. Scalar fields (colors/editions are handled by the variants
+    // SSOT branch above) don't emit variant_values. Each entry is enriched with variant
+    // metadata (label/type/color_atoms/edition_slug) so the drawer renders without an
+    // extra API call.
+    if (fieldIsVariantDependent) {
+      const byVid = variantValuesByField.get(field);
+      if (byVid && byVid.size > 0) {
+        const variantValues = {};
+        for (const [vid, r] of byVid.entries()) {
+          const vmeta = isObject(r.metadata_json) ? r.metadata_json : {};
+          const vsourceToken = String(r.source_type || vmeta.source || '').trim().toLowerCase();
+          const vinfo = variantById.get(vid) || null;
+          variantValues[vid] = {
+            value: r.value,
+            confidence: Math.max(0, Math.min(1, toNumber(r.confidence, 0))),
+            source: dbSourceLabel(vsourceToken) || vsourceToken || '',
+            source_timestamp: String(r.updated_at || '').trim() || null,
+            variant_label: vinfo?.variant_label ?? null,
+            variant_type: vinfo?.variant_type ?? null,
+            color_atoms: Array.isArray(vinfo?.color_atoms) ? vinfo.color_atoms : null,
+            edition_slug: vinfo?.edition_slug ?? null,
+          };
+        }
+        row.variant_values = variantValues;
+      }
+    }
+
+    rows[field] = row;
   }
 
   // Metrics from field state.
