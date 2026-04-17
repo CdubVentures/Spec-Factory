@@ -22,6 +22,8 @@ interface FinderRunModelBadgeProps {
   readonly thinking?: boolean;
   /** Whether web search was enabled for this run. */
   readonly webSearch?: boolean;
+  /** Optional disambiguation label shown as a leading pill (e.g. "PIF", "EVAL"). */
+  readonly labelPrefix?: string;
 }
 
 const ICON_SIZE = 9;
@@ -86,6 +88,7 @@ export const FinderRunModelBadge = memo(function FinderRunModelBadge({
   fallbackUsed,
   thinking,
   webSearch,
+  labelPrefix,
 }: FinderRunModelBadgeProps) {
   if (!model) return null;
 
@@ -98,6 +101,17 @@ export const FinderRunModelBadge = memo(function FinderRunModelBadge({
 
   return (
     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] font-mono font-bold sf-chip-neutral">
+      {labelPrefix && (
+        <span
+          style={{
+            ...EFFORT_STYLE,
+            color: 'var(--sf-token-accent-strong)',
+            backgroundColor: 'rgb(var(--sf-color-accent-strong-rgb) / 0.15)',
+          }}
+        >
+          {labelPrefix.toUpperCase()}
+        </span>
+      )}
       {hasAccessMode && (
         <span
           className="inline-flex items-center"
@@ -119,7 +133,7 @@ export const FinderRunModelBadge = memo(function FinderRunModelBadge({
       {webSearch && (
         <span
           className="inline-flex items-center"
-          style={{ color: 'var(--sf-state-run-ai-fg)' }}
+          style={{ color: 'var(--sf-state-success-fg)' }}
           title="Web search enabled"
         >
           <WebSearchIconMini />

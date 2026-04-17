@@ -1007,6 +1007,8 @@ for (const v of variants) {
         <li>SQL <code>UNIQUE(category, product_id, field_key, source_id, variant_id_key)</code> lets the same <code>source_id</code> coexist with different <code>variant_id</code>s &mdash; one row per variant.</li>
         <li><code>deleteVariant()</code> automatically cascades your rows via <code>specDb.deleteFieldCandidatesByVariantId(...)</code> + JSON mirror filter. No per-feature cleanup code needed.</li>
         <li>Reseed (<code>candidateReseed.js</code>) round-trips <code>variant_id</code> through <code>product.json &rarr; field_candidates</code>.</li>
+        <li><strong>Publisher path ③ (variant-scoped)</strong> fires automatically when <code>candidateRow.variant_id</code> is set. Published value lands in <code>product.json.variant_fields[variant_id][fieldKey]</code> &mdash; the scalar <code>fields[fieldKey]</code> is untouched. Candidate resolution (<code>markFieldCandidateResolved</code>, <code>demoteResolvedCandidates</code>) is scoped to <code>(productId, fieldKey, variantId)</code>, so two variants publishing the same field are independent. See <a href="publisher-pipeline.html">Publisher Pipeline &sect; 3b</a>.</li>
+        <li>Delete cascade for <code>variant_fields</code>: <code>cascadeVariantIdFromCandidates()</code> in <code>variantLifecycle.js</code> drops <code>product.json.variant_fields[vid]</code> when the variant is removed. No per-feature code.</li>
       </ul>
     </div>
 
@@ -1094,6 +1096,7 @@ const variants = useMemo(() =&gt; buildFinderVariantRows(cefData), [cefData]);
         <tr><td><code>DiscoverySummaryBar</code></td><td>Discovery log summary bar</td></tr>
         <tr><td><code>ColorSwatch</code></td><td>Multi-color gradient circle</td></tr>
         <tr><td><code>FinderVariantRow</code></td><td><strong>Variant-dependent finders</strong>: shared row chrome (panel + arrow + swatch + label + ED/CLR chip) with <code>trailing</code> and <code>children</code> slots for module chips/buttons/expanded body. First used by PIF/RDF; next variant-dependent finder drops in free.</td></tr>
+        <tr><td><code>FinderRunHistoryRow</code></td><td><strong>Every finder</strong>: shared run-history chrome (panel + arrow + <code>#runNumber</code> + date + <code>FinderRunTimestamp</code> + <code>FinderRunModelBadge</code> + Del) with <code>leftContent</code>/<code>rightContent</code> chip slots and expandable body. Use with <code>FinderDiscoveryDetails</code> + <code>FinderRunPromptDetails</code> inside. New finders MUST use this instead of hand-rolling run rows.</td></tr>
         <tr><td><code>buildFinderVariantRows(cefData)</code></td><td>Pure: variant list with title-cased labels (<code>color_names</code> + <code>formatAtomLabel</code>). Preferred over inline mapping.</td></tr>
         <tr><td><code>buildEditionsMap(cefData)</code></td><td>Pure: <code>edition_details</code> accessor. Feeds <code>resolveVariantColorAtoms</code>.</td></tr>
         <tr><td><code>resolveVariantColorAtoms(variantKey, editions)</code></td><td>Pure: splits <code>color:</code> atoms or looks up edition combo. Used to seed <code>ColorSwatch</code>.</td></tr>
@@ -1311,7 +1314,7 @@ const merged = mergeDiscovery({ ... });        // clean write</pre>
 <!-- ================================================================== -->
 
 <div style="text-align:center; padding:32px 0; color:var(--text-muted); font-size:13px;">
-  Spec Factory Finder Module Guide &mdash; Updated 2026-04-17 (shared variant-row scaffolding for variant-dependent finders: FinderVariantRow + buildFinderVariantRows + useFinderColorHexMap)<br>
+  Spec Factory Finder Module Guide &mdash; Updated 2026-04-17 (variant-scoped publish path ③ + shared variant-row + run-history scaffolding)<br>
   Registry-driven &bull; O(1) scaling &bull; 17 auto-wired systems &bull; dual-state persistence &bull; fire-and-forget<br>
   <span style="margin-top:6px; display:block;">
     Source: <code>src/core/finder/finderModuleRegistry.js</code> &bull;

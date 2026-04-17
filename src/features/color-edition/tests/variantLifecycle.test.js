@@ -942,6 +942,120 @@ describe('deleteVariant', () => {
     assert.ok(pj.candidates.colors, 'JSON: CEF colors candidate survives');
     assert.ok(!pj.candidates.release_date, 'JSON: feature release_date entry removed');
   }));
+
+  // WHY: Generic variant-delete cascade for variantFieldProducer modules.
+  // RDF (and any future SKU/price/availability finder) stores per-variant
+  // state in three places: selected.candidates[], runs[].selected.candidates[],
+  // runs[].response.candidates[]. cascadeVariantIdFromCandidates only cleans
+  // field_candidates — not the module-internal JSON runs or SQL run blobs.
+  // The registry-driven cleanup must strip all three, for every module
+  // declared moduleClass='variantFieldProducer' in finderModuleRegistry.
+  it('strips deleted variant from every variantFieldProducer (RDF JSON runs + SQL summary + SQL run blobs)', withEnv(({ specDb, root, ensureProductJson, ensureCefJson }) => {
+    specDb.variants.syncFromRegistry(PID, [
+      { variant_id: 'v_target', variant_key: 'color:black', variant_type: 'color', variant_label: 'Black', color_atoms: ['black'], created_at: '2026-04-14T00:00:00Z' },
+      { variant_id: 'v_keep',   variant_key: 'color:white', variant_type: 'color', variant_label: 'White', color_atoms: ['white'], created_at: '2026-04-14T00:00:00Z' },
+    ]);
+    seedCefSummary(specDb);
+    ensureProductJson(PID);
+    ensureCefJson(PID, {
+      product_id: PID, category: 'mouse',
+      selected: { colors: ['black', 'white'], editions: {}, default_color: 'black' },
+      variant_registry: [
+        { variant_id: 'v_target', variant_key: 'color:black', variant_type: 'color', color_atoms: ['black'] },
+        { variant_id: 'v_keep',   variant_key: 'color:white', variant_type: 'color', color_atoms: ['white'] },
+      ],
+      runs: [], run_count: 0, next_run_number: 1,
+    });
+
+    // Seed RDF JSON with 2 variants spread across 2 runs.
+    const rdfJsonPath = path.join(root, PID, 'release_date.json');
+    fs.writeFileSync(rdfJsonPath, JSON.stringify({
+      product_id: PID, category: 'mouse',
+      selected: {
+        candidates: [
+          { variant_id: 'v_target', variant_key: 'color:black', value: '2026-06-15', confidence: 90 },
+          { variant_id: 'v_keep',   variant_key: 'color:white', value: '2026-07-01', confidence: 88 },
+        ],
+      },
+      runs: [
+        {
+          run_number: 1, ran_at: '2026-04-14T00:00:00Z', model: 'test', fallback_used: false,
+          selected: {
+            candidates: [
+              { variant_id: 'v_target', variant_key: 'color:black', value: '2026-06-15', confidence: 90 },
+              { variant_id: 'v_keep',   variant_key: 'color:white', value: '2026-07-01', confidence: 88 },
+            ],
+          },
+          prompt: { system: '', user: '' },
+          response: {
+            candidates: [
+              { variant_id: 'v_target', variant_key: 'color:black', value: '2026-06-15' },
+              { variant_id: 'v_keep',   variant_key: 'color:white', value: '2026-07-01' },
+            ],
+          },
+        },
+      ],
+      run_count: 1, next_run_number: 2,
+      last_ran_at: '2026-04-14T00:00:00Z',
+    }, null, 2));
+
+    // Seed RDF SQL summary + runs to mirror the JSON
+    const rdfStore = specDb.getFinderStore('releaseDateFinder');
+    rdfStore.upsert({
+      category: 'mouse', product_id: PID,
+      candidates: [
+        { variant_id: 'v_target', variant_key: 'color:black', value: '2026-06-15', confidence: 90 },
+        { variant_id: 'v_keep',   variant_key: 'color:white', value: '2026-07-01', confidence: 88 },
+      ],
+      candidate_count: 2,
+      cooldown_until: '', latest_ran_at: '2026-04-14T00:00:00Z', run_count: 1,
+    });
+    rdfStore.insertRun({
+      category: 'mouse', product_id: PID, run_number: 1,
+      ran_at: '2026-04-14T00:00:00Z', model: 'test', fallback_used: false,
+      effort_level: '', access_mode: '', thinking: false, web_search: false,
+      selected: {
+        candidates: [
+          { variant_id: 'v_target', variant_key: 'color:black', value: '2026-06-15', confidence: 90 },
+          { variant_id: 'v_keep',   variant_key: 'color:white', value: '2026-07-01', confidence: 88 },
+        ],
+      },
+      prompt: {},
+      response: {
+        candidates: [
+          { variant_id: 'v_target', variant_key: 'color:black', value: '2026-06-15' },
+          { variant_id: 'v_keep',   variant_key: 'color:white', value: '2026-07-01' },
+        ],
+      },
+    });
+
+    deleteVariant({ specDb, productId: PID, variantId: 'v_target', productRoot: root });
+
+    // JSON: runs[].selected.candidates[], runs[].response.candidates[], and
+    // top-level selected.candidates[] must all be stripped of v_target.
+    const rdf = JSON.parse(fs.readFileSync(rdfJsonPath, 'utf8'));
+    assert.equal(rdf.selected.candidates.length, 1, 'JSON top-level selected has one variant');
+    assert.equal(rdf.selected.candidates[0].variant_id, 'v_keep');
+    assert.equal(rdf.runs[0].selected.candidates.length, 1, 'JSON run[0].selected stripped');
+    assert.equal(rdf.runs[0].selected.candidates[0].variant_id, 'v_keep');
+    assert.equal(rdf.runs[0].response.candidates.length, 1, 'JSON run[0].response stripped');
+    assert.equal(rdf.runs[0].response.candidates[0].variant_id, 'v_keep');
+
+    // SQL summary: candidates column + candidate_count reflect the strip.
+    const summary = rdfStore.get(PID);
+    assert.ok(summary, 'SQL summary row exists');
+    assert.equal(summary.candidate_count, 1, 'SQL candidate_count = 1');
+    assert.equal(summary.candidates.length, 1);
+    assert.equal(summary.candidates[0].variant_id, 'v_keep');
+
+    // SQL run blobs: selected_json + response_json stripped of v_target.
+    const sqlRuns = rdfStore.listRuns(PID);
+    assert.equal(sqlRuns.length, 1);
+    assert.equal(sqlRuns[0].selected.candidates.length, 1);
+    assert.equal(sqlRuns[0].selected.candidates[0].variant_id, 'v_keep');
+    assert.equal(sqlRuns[0].response.candidates.length, 1);
+    assert.equal(sqlRuns[0].response.candidates[0].variant_id, 'v_keep');
+  }));
 });
 
 describe('deleteAllVariants', () => {

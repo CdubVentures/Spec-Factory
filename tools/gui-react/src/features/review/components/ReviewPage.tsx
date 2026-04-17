@@ -474,6 +474,7 @@ export function ReviewPage() {
             <FieldReviewDrawer
               title={getLabel(selectedField)}
               subtitle={`${activeProduct.identity.brand} ${activeProduct.identity.model}${activeProduct.identity.id ? ` #${activeProduct.identity.id}` : ''}`}
+              fieldKey={selectedField}
               onClose={closeDrawer}
               currentValue={{
                 value: activeFieldState.selected.value != null ? String(activeFieldState.selected.value) : '',

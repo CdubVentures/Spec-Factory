@@ -31,35 +31,40 @@ CEF makes the leak maximally visible: CEF runs capture URLs in `color_edition.js
 
 ## Evidence Model
 
-Evidence shape is source-type-specific; count is universal.
+**Universal shape** — same across all finders (CEF, PIF, RDF):
 
-| Source type | Evidence shape |
-|---|---|
-| **Feature** (CEF, future finders) | URLs the LLM cited/consulted per discovered value |
-| **Pipeline** (indexing/snippet extraction) | Saved artifacts: screenshot paths, PDF paths, JSON metadata, snippet refs with tier |
-| **Review / manual override** | Reviewer identity + reason (+ optional proof URL) |
-
-All stored as a tagged-object array. Publisher counts length; each source type owns its shape.
-
-Tagged-object examples:
 ```js
-{ type: 'url', value: 'https://razer.com/viper-v3' }                // feature
-{ type: 'artifact', path: '.workspace/runs/.../screen.png' }         // pipeline
-{ type: 'snippet', snippet_id: 'abc123', url: '...', tier: 'tier1' } // pipeline
-{ type: 'manual', reviewer: 'chris', reason: '...', proof_url? }     // override
+evidence_refs: [
+  { url: string, tier: string }
+]
 ```
+
+Two fields. Publisher counts length (`min_evidence_refs`), nothing else. `tier` is pure metadata — LLM classifies per prompt-injected definitions, surfaces in GUI/analytics, but is never a publisher gate and the prompt never asks the LLM to prefer one tier over another.
+
+**Tier vocabulary** (6 values; taught via prompt, stored as string):
+- `tier1` — manufacturer / brand-official / press release
+- `tier2` — professional testing lab / review lab
+- `tier3` — authorized retailer / marketplace
+- `tier4` — community / forum / blog / user-generated
+- `tier5` — specs aggregator / product database
+- `other` — anything that doesn't fit the above
+
+No runtime enum enforcement. The LLM classifies; we collect; we don't gate on tier.
 
 ---
 
-## Knob Retirement: `evidence.required`
+## Knob Retirement
 
-**Retire.** Anything submitted to the candidate gate was produced by some source; `required: true` is tautological. The real knob is `min_evidence_refs` (how many proofs must be attached). `required: true` ≡ `min_evidence_refs >= 1`.
+Both of these retire alongside the new evidence model:
 
-Retirement scope:
-- Remove `evidence.required` from all `category_authority/*/\_generated/field_rules.json` via the compile step
-- Remove the toggle from Field Studio GUI surfaces (it does not exist in the frontend today per user)
-- Delete any code that reads `rule.evidence.required`
-- One-time retirement test (per CLAUDE.md rule: observable behavior, not source-text search)
+- **`evidence.required`** — tautological. Anything submitted to the candidate gate was produced by some source. `required: true` ≡ `min_evidence_refs >= 1`.
+- **`evidence.tier_preference`** — publisher doesn't enforce tier. Tier is metadata on each URL, never a gate input. Dead knob.
+
+**Retirement scope:**
+- Remove both fields from all `category_authority/*/\_generated/field_rules.json` via the compile step
+- Remove any Field Studio GUI surfaces (per user confirmation neither exists in the frontend today)
+- Delete code that reads `rule.evidence.required` or `rule.evidence.tier_preference`
+- Single observable-behavior test per retirement (per CLAUDE.md: observable behavior, not source-text search)
 
 ---
 
@@ -85,13 +90,13 @@ evidence_refs_json TEXT DEFAULT '[]'
 
 ### 1.3 `product.json.candidates[]` entry shape
 
-Mirror SQL — each entry gets optional `evidence_refs: [...]`. Absent = empty array.
+Mirror SQL — each entry gets optional `evidence_refs: [{url, tier}, ...]`. Absent = empty array.
 
 ### 1.4 `color_edition.json` per-run variant evidence
 
 Current: `discovery_log.urls_checked` is run-level, not per-variant.
 
-New shape (additive, behind variants array):
+New shape (additive):
 
 ```json
 {
@@ -102,58 +107,66 @@ New shape (additive, behind variants array):
     "discovery_log": { "urls_checked": [...], "queries_run": [...] }
   },
   "variants_evidence": [
-    { "variant_key": "color:black",      "evidence_refs": [{"type":"url","value":"..."}] },
-    { "variant_key": "edition:launch-ed", "evidence_refs": [{"type":"url","value":"..."}] }
+    { "variant_key": "color:black",       "evidence_refs": [{"url":"...","tier":"tier1"}] },
+    { "variant_key": "edition:launch-ed", "evidence_refs": [{"url":"...","tier":"tier2"}] }
   ]
 }
 ```
 
-`discovery_log.urls_checked` stays as the run-level feed-forward dedupe (prevents LLM from re-visiting). `variants_evidence` is the authoritative per-variant attribution used to rebuild variants from JSON.
+`discovery_log.urls_checked` stays as run-level feed-forward dedupe (prevents LLM from re-visiting). `variants_evidence` is the authoritative per-variant attribution.
 
 ---
 
-## Phase 2 — CEF Data Capture (LLM Contract)
+## Phase 2 — Data Capture (LLM Contract)
 
-### 2.1 Prompt change (`colorEditionLlmAdapter.js`)
+### 2.1 Shared prompt fragment
 
-Inject `min_evidence_refs` into the prompt, resolved from `fieldRules.colors.evidence.min_evidence_refs` at prompt-build time. If unset or zero, no requirement is stated.
+**Location:** `src/core/finder/evidencePromptFragment.js` (finder-level shared module, no feature-to-feature dependency)
 
-Prompt text (draft):
-> For every color and every edition you identify, you MUST cite at least {min_evidence_refs} official URLs that verify the color/edition exists on THIS specific product. Attach URLs per-discovery under `evidence_refs`. Do not share a URL across discoveries unless it genuinely documents each one.
-
-### 2.2 Response schema (`colorEditionSchema.js`)
-
-Current:
+**Export:**
 ```js
-colors: z.array(z.string())
-editions: z.record(z.object({ colors: z.array(z.string()), ... }))
+export const EVIDENCE_PROMPT_FRAGMENT = `
+For each discovery, cite at least {{MIN_EVIDENCE_REFS}} URL(s) as evidence_refs[]:
+- url: the source URL
+- tier: classify the source using one of these codes (no ranking, just classification):
+    tier1 = manufacturer / brand-official / press release
+    tier2 = professional testing lab / review lab
+    tier3 = authorized retailer / marketplace
+    tier4 = community / forum / blog / user-generated
+    tier5 = specs aggregator / product database
+    other = anything that doesn't fit the above
+`;
 ```
 
-Extended:
-```js
-colors: z.array(z.object({
-  value: z.string(),
-  evidence_refs: z.array(z.object({
-    type: z.literal('url'),
-    value: z.string().url()
-  })).default([])
-}))
-editions: z.record(z.object({
-  colors: z.array(z.string()),
-  evidence_refs: z.array(z.object({
-    type: z.literal('url'),
-    value: z.string().url()
-  })).default([]),
-  // ... existing fields
-}))
-```
+**Single template variable:** `{{MIN_EVIDENCE_REFS}}`, resolved from `fieldRules[fieldKey].evidence.min_evidence_refs` at prompt-build time. Defaults to `1` if unset.
 
-### 2.3 Evidence flow through `colorEditionFinder.js`
+Each feature's prompt template gets a new `{{EVIDENCE_REQUIREMENTS}}` placeholder; the value is pre-rendered via the shared fragment.
 
-After Gate 1 (palette) and Gate 2 (identity) pass, evidence routing:
+### 2.2 Per-feature prompt + schema changes
 
-- Each color/edition's `evidence_refs` → attached to the corresponding entry in `merged.variant_registry[n].evidence_refs`
-- Aggregated into `sourceMeta.evidence_refs` for each `submitCandidate` call (so the candidate row carries the union of all colors'/editions' refs for that run)
+**CEF** — `colorEditionLlmAdapter.js`, `colorEditionSchema.js`
+- Inject `{{EVIDENCE_REQUIREMENTS}}` into `CEF_DISCOVERY_DEFAULT_TEMPLATE` AND the identity-check template
+- Add `evidence_refs: z.array(z.object({url: z.string(), tier: z.string()})).default([])` per-color and per-edition in `colorEditionFinderResponseSchema`
+- Route refs → `variant_registry[n].evidence_refs` → `variants_evidence[]` in color_edition.json → `sourceMeta.evidence_refs` for submitCandidate
+
+**PIF** — `productImageLlmAdapter.js`, `productImageSchema.js`
+- Inject `{{EVIDENCE_REQUIREMENTS}}` into `PIF_VIEW_DEFAULT_TEMPLATE`
+- Add `evidence_refs: z.array(z.object({url: z.string(), tier: z.string()})).default([])` per-image in `productImageFinderResponseSchema`
+- PIF doesn't call `submitCandidate` — refs flow only into `product_images.json` + SQL summary. Publisher interaction is N/A for images.
+
+**RDF** — `releaseDateLlmAdapter.js` only (for this slice)
+- Replace hardcoded evidence block (lines 75–89 in adapter) with `{{EVIDENCE_REQUIREMENTS}}` placeholder so tier vocabulary matches CEF/PIF
+- Keep `releaseDateSchema.js` unchanged — RDF's existing `evidence[]` shape stays authoritative for this slice
+- Schema simplification (`evidence` → `evidence_refs`, shape cleanup) deferred to a dedicated RDF cleanup slice; cascades through orchestrator + store + candidate routing and isn't blocking
+
+**Eval / QA judge (`src/features/review/domain/qaJudge.js`)** — explicitly out of scope. Eval judges candidates; it doesn't discover values from URLs. No evidence citation applies.
+
+### 2.3 CEF evidence flow through `colorEditionFinder.js`
+
+After Gate 1 (palette) and Gate 2 (identity) pass:
+
+- Each color/edition's `evidence_refs` → attached to corresponding entry in `merged.variant_registry[n].evidence_refs`
+- Aggregated into `sourceMeta.evidence_refs` for each `submitCandidate` call
 - Per-variant refs written to `color_edition.json.runs[n].variants_evidence[]`
 - `specDb.variants.syncFromRegistry` propagates per-variant evidence into the variants table
 
@@ -166,13 +179,8 @@ After Gate 1 (palette) and Gate 2 (identity) pass, evidence routing:
 Insert after confidence gate (currently at `publishCandidate.js:80-84`), before manual-override lock:
 
 ```js
-const ruleEvidence = fieldRule?.evidence || {};
-const minRefs = typeof ruleEvidence.min_evidence_refs === 'number'
-  ? ruleEvidence.min_evidence_refs
-  : 0;
-
+const minRefs = fieldRule?.evidence?.min_evidence_refs ?? 0;
 if (minRefs > 0) {
-  // Count refs across this candidate + previously-linked candidates for the same value
   const linkedSoFar = buildLinkedCandidates(specDb, productId, fieldKey, value, fieldRule);
   const totalRefs = linkedSoFar.reduce(
     (acc, row) => acc + (Array.isArray(row.evidence_refs) ? row.evidence_refs.length : 0),
@@ -189,23 +197,14 @@ if (minRefs > 0) {
 }
 ```
 
-Counting rule: sum of `evidence_refs.length` across all candidates linked to the same published value (so a single candidate with enough refs OR multiple candidates collectively meeting the count both satisfy the gate).
+Counting rule: sum of `evidence_refs.length` across all candidates linked to the same published value. A single candidate with enough refs OR multiple candidates collectively meeting the count both satisfy the gate.
 
-### 3.2 `tier_preference` (Phase 3b follow-up)
+### 3.2 Retire `evidence.required` + `evidence.tier_preference`
 
-Tier classification of URLs is not implemented in this phase. When it lands:
-- Publisher counts tier-matching refs first
-- Falls back to lower-tier refs with a `tier_downgrade` tag on the write
-- No change to the count rule
-
-Out of scope for first merge.
-
-### 3.3 Retire `evidence.required`
-
-- Strip `required` from Field Studio compile output (`_generated/field_rules.json`)
-- Remove any remaining frontend surfaces
-- Delete code branches that read `rule.evidence.required`
-- Single observable-behavior test confirming the field no longer participates in any gate decision
+- Strip both fields from Field Studio compile output (`_generated/field_rules.json`)
+- Remove any frontend surfaces if they exist
+- Delete code branches that read either field
+- One observable-behavior test per retirement confirming the field no longer participates in any gate decision
 
 ---
 
@@ -231,7 +230,7 @@ Gate 3 (evidence)   → filter out colors/editions whose evidence_refs.length < 
 
 **Consequence for the variants path:**
 - Variants table receives only entries that passed Gate 3 — failed entries never enter the registry
-- `derivePublishedFromVariants` can only publish what's in variants — so Write #2 naturally reflects the gate outcome without additional plumbing
+- `derivePublishedFromVariants` can only publish what's in variants — so Write #2 naturally reflects the gate outcome
 - A variant that failed Gate 3 is NOT created; no silent publish via the variant backdoor
 
 ### Interaction with the "skip publishCandidate for variant-backed fields" fix
@@ -252,13 +251,14 @@ Same rule (`min_evidence_refs`), enforced at the appropriate boundary for each d
 
 ## Staging Order
 
-Ship in small independent slices, each with its own plan + tests. Each slice is additive or flag-gated so prior behavior is preserved until the next slice flips the gate.
+Ship in small independent slices, each additive or flag-gated so prior behavior is preserved until the next slice flips the gate.
 
-1. **Schema additions** — add `evidence_refs_json` columns to `field_candidates` and `variants`. Default empty array. No behavior change.
-2. **CEF data capture** — LLM prompt + schema + `colorEditionFinder.js` routing. Evidence is captured, stored, rebuilt. **No gate yet.** User verifies runs attach evidence correctly.
-3. **Publisher evidence gate** — enforcement in `publishCandidate.js`, behind a config flag defaulting to warn-only. Flip to enforce after backfill is verified on at least one product.
-4. **CEF Gate 3** — per-variant evidence filter before variant registry update.
-5. **Retirement of `evidence.required`** — strip from field rules, delete code, one observable-behavior test.
+1. **Prompt injection + response schemas** — add shared fragment + `{{EVIDENCE_REQUIREMENTS}}` to CEF, PIF, RDF templates; extend response schemas to accept `evidence_refs` (default empty). LLM starts returning evidence; responses log to existing `runs[n].response` JSON for inspection. No storage routing, no gate.
+2. **Schema additions (SQL)** — add `evidence_refs_json` columns to `field_candidates` and `variants`. Default empty array. No behavior change.
+3. **Data routing** — wire evidence from LLM response → candidate row, variants row, `color_edition.json.variants_evidence[]`. Rebuild paths updated.
+4. **Publisher evidence gate** — enforcement in `publishCandidate.js`, behind a config flag defaulting to warn-only. Flip to enforce after backfill is verified on at least one product.
+5. **CEF Gate 3** — per-variant evidence filter before variant registry update.
+6. **Retirement** — strip `evidence.required` + `evidence.tier_preference`, delete code, observable-behavior tests.
 
 ---
 
@@ -272,13 +272,18 @@ Ship in small independent slices, each with its own plan + tests. Each slice is 
 - CEF: `LLM response with no evidence_refs for a color drops that color from variant registry`
 - CEF: `evidence_refs flow from LLM → candidate row → variants row → color_edition.json variants_evidence`
 - CEF: `variant delete preserves evidence_refs on remaining variants`
-- Retirement: `evidence.required no longer participates in any gate decision` (observable; single test)
+- PIF: `evidence_refs persist on image record through merge`
+- RDF: `evidence_refs shape matches {url, tier} (migrated from legacy shape)`
+- Shared fragment: `EVIDENCE_PROMPT_FRAGMENT substitutes MIN_EVIDENCE_REFS correctly`
+- Retirement: `evidence.required no longer participates in any gate decision`
+- Retirement: `evidence.tier_preference no longer participates in any gate decision`
 
 ### Characterization tests before refactor
 
 - Golden-master: current `color_edition.json` shape (lock existing runs)
 - Golden-master: current `field_candidates` row shape (lock `metadata_json`)
 - Golden-master: current publisher response shapes for `publishCandidate`
+- Golden-master: current RDF `evidence[]` shape (before rename to evidence_refs)
 
 ### Rebuild contract
 
@@ -290,16 +295,16 @@ Ship in small independent slices, each with its own plan + tests. Each slice is 
 
 ## Out of Scope (for this doc)
 
-- **Skipping `publishCandidate` for variant-backed fields** — tracked separately. Complementary but independent plan. Referenced above for interaction.
-- **Tier classification of URLs** (`tier1`/`tier2`/`tier3` mapping) — Phase 3b follow-up; requires a domain classification service not yet built.
+- **Skipping `publishCandidate` for variant-backed fields** — tracked separately. Complementary but independent plan.
+- **Eval / QA judge prompts** — judges don't discover values from URLs. No evidence citation applies.
 - **Manual override evidence shape** — not defined here. Review workflow owns this.
 - **GUI changes to the candidate drawer** — rendering evidence refs, filtering by evidence status, surfacing Gate 3 drops. Separate UI plan.
-- **Backfill of legacy runs** with evidence — a one-time audit/script, not part of the code path. Out of scope.
+- **Backfill of legacy runs** with evidence — one-time audit/script, not part of the code path.
+- **Pipeline (indexing) evidence shape** — the indexing rail has snippet-based provenance via runtimeGate. Aligning shape with finders is a separate question.
 
 ---
 
 ## Open Items (non-blocking)
 
-- Decide per-source-type evidence shape contract at the schema level (vs freeform JSON). Current plan is freeform — source type tags own their shape. Tighter validation can be layered in later.
-- Decide whether the evidence gate should also enforce URL *uniqueness* per candidate (prevent the LLM from padding with duplicate URLs). Lean: yes, at Gate 3 in CEF; no, at publisher (too expensive to dedupe globally).
+- Decide whether to enforce URL *uniqueness* per candidate (prevent the LLM from padding with duplicate URLs). Lean: yes, at Gate 3 in CEF; no, at publisher (too expensive to dedupe globally).
 - Decide logging format for Gate 3 drops in the CEF run record — structured `rejections[]` with `reason_code: 'insufficient_evidence'` is the natural fit.

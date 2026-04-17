@@ -212,6 +212,22 @@ export function createFinderSqlStore({ db, category, module: mod }) {
     stmts._removeRun.run(category, productId, runNumber);
   }
 
+  // WHY: Targeted JSON-blob update for existing runs. Used by the variant
+  // delete cascade to strip per-variant entries from selected_json +
+  // response_json without deleting/re-inserting the row. Preserves run_number,
+  // ran_at, model, and other metadata columns.
+  function updateRunJson(productId, runNumber, { selected, response }) {
+    db.prepare(
+      `UPDATE ${runsTableName}
+       SET selected_json = ?, response_json = ?
+       WHERE category = ? AND product_id = ? AND run_number = ?`,
+    ).run(
+      JSON.stringify(selected || {}),
+      JSON.stringify(response || {}),
+      category, productId, runNumber,
+    );
+  }
+
   function removeAllRuns(productId) {
     stmts._removeAllRuns.run(category, productId);
   }
@@ -266,7 +282,7 @@ export function createFinderSqlStore({ db, category, module: mod }) {
   return {
     upsert, get, listByCategory, remove,
     getIfOnCooldown,
-    insertRun, listRuns, getLatestRun, removeRun, removeAllRuns,
+    insertRun, listRuns, getLatestRun, removeRun, removeAllRuns, updateRunJson,
     getSetting, setSetting, getAllSettings, deleteSetting,
     updateSummaryField, updateBookkeeping,
   };

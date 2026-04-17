@@ -12,6 +12,7 @@
 
 import { zodToLlmSchema } from '../../core/llm/zodToLlmSchema.js';
 import { resolvePromptTemplate } from '../../core/llm/resolvePromptTemplate.js';
+import { buildEvidencePromptBlock } from '../../core/finder/evidencePromptFragment.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
 import { colorEditionFinderResponseSchema, variantIdentityCheckResponseSchema } from './colorEditionSchema.js';
 
@@ -137,15 +138,19 @@ Edition output rules:
 - The edition's combo entry MUST also appear in the master colors array
 - Plain color variants, bundles, refurbs, and aftermarket skins are NOT editions
 
+{{EVIDENCE_REQUIREMENTS}}
+Attach the refs under "evidence_refs", a map keyed by the color atom (e.g. "black", "dark-gray+black+orange") or edition slug (e.g. "launch-edition"). Every entry in colors[] and every edition slug in editions should have its own evidence_refs key.
+
 Return JSON with these exact keys and shapes:
 - "colors": ["atom", ...] (first = default)
 - "default_color": "atom" (must equal colors[0])
 - "color_names": { "atom": "Marketing Name", ... } (omit when atom IS the name)
 - "editions": { "slug": { "display_name": "Official Name", "colors": ["atom+atom+atom"] }, ... } or {} if none found (colors is a single combo entry)
 - "siblings_excluded": ["Model Name", ...]
-- "discovery_log": { "confirmed_from_known": [], "added_new": [], "rejected_from_known": [], "urls_checked": [], "queries_run": [] }`;
+- "discovery_log": { "confirmed_from_known": [], "added_new": [], "rejected_from_known": [], "urls_checked": [], "queries_run": [] }
+- "evidence_refs": { "color-atom-or-edition-slug": [{ "url": "...", "tier": "tier1|tier2|tier3|tier4|tier5|other" }, ...], ... }`;
 
-export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], product = {}, previousRuns = [], familyModelCount = 1, ambiguityLevel = 'easy', siblingModels = [], templateOverride = '' }) {
+export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], product = {}, previousRuns = [], familyModelCount = 1, ambiguityLevel = 'easy', siblingModels = [], templateOverride = '', minEvidenceRefs = 1 }) {
   const brand = product.brand || '';
   const baseModel = product.base_model || '';
   const model = product.model || '';
@@ -181,6 +186,7 @@ export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], pr
     KNOWN_FINDINGS: knownSection,
     IDENTITY_WARNING: identityWarning,
     PALETTE: palette,
+    EVIDENCE_REQUIREMENTS: buildEvidencePromptBlock({ minEvidenceRefs }),
   });
 }
 
@@ -196,6 +202,7 @@ export const COLOR_EDITION_FINDER_SPEC = {
     familyModelCount: domainArgs.familyModelCount || 1,
     ambiguityLevel: domainArgs.ambiguityLevel || 'easy',
     siblingModels: domainArgs.siblingModels || [],
+    minEvidenceRefs: domainArgs.minEvidenceRefs,
   }),
   jsonSchema: zodToLlmSchema(colorEditionFinderResponseSchema),
 };
@@ -235,7 +242,7 @@ export function createColorEditionFinderCallLlm(deps) {
  * @param {string} [opts.promptOverride] — user override from settings
  * @returns {string} system prompt
  */
-export function buildVariantIdentityCheckPrompt({ product = {}, existingRegistry = [], newColors = [], newColorNames = {}, newEditions = {}, promptOverride = '', familyModelCount = 1, ambiguityLevel = 'easy', siblingModels = [], runCount = 0, orphanedPifKeys = [] }) {
+export function buildVariantIdentityCheckPrompt({ product = {}, existingRegistry = [], newColors = [], newColorNames = {}, newEditions = {}, promptOverride = '', familyModelCount = 1, ambiguityLevel = 'easy', siblingModels = [], runCount = 0, orphanedPifKeys = [], minEvidenceRefs = 1 }) {
   if (promptOverride.trim()) return promptOverride.trim();
 
   const brand = product.brand || '';
@@ -324,15 +331,21 @@ Common hallucination patterns:
 - Colors or editions that existed for a previous generation but not this model
 Use your web access to verify — scoped queries, not endless searching.
 
+─── EVIDENCE REQUIREMENTS ───
+
+${buildEvidencePromptBlock({ minEvidenceRefs })}
+
+Attach evidence_refs to each mapping (for match, new, and reject actions alike — cite what you checked).
+
 ─── RESPONSE FORMAT ───
 
 Respond with JSON:
 {
   "mappings": [
-    { "new_key": "color:black", "match": "v_existing_id", "action": "match", "reason": "confirmed on ${brand.toLowerCase() || 'manufacturer'}.com — same color", "verified": true },
-    { "new_key": "color:deep-ocean-blue", "match": "v_rename_target", "action": "match", "reason": "renamed from ocean-blue, official name per manufacturer", "verified": true, "preferred_label": "Deep Ocean Blue" },
-    { "new_key": "color:crimson-red", "match": null, "action": "new", "reason": "confirmed on ${brand.toLowerCase() || 'manufacturer'}.com and bestbuy.com", "verified": true },
-    { "new_key": "color:rainbow-sparkle", "match": null, "action": "reject", "reason": "not found on official site or any retailer — likely hallucinated", "verified": true }
+    { "new_key": "color:black", "match": "v_existing_id", "action": "match", "reason": "confirmed on ${brand.toLowerCase() || 'manufacturer'}.com — same color", "verified": true, "evidence_refs": [{"url": "https://${brand.toLowerCase() || 'manufacturer'}.com/product", "tier": "tier1"}] },
+    { "new_key": "color:deep-ocean-blue", "match": "v_rename_target", "action": "match", "reason": "renamed from ocean-blue, official name per manufacturer", "verified": true, "preferred_label": "Deep Ocean Blue", "evidence_refs": [{"url": "https://${brand.toLowerCase() || 'manufacturer'}.com/product", "tier": "tier1"}] },
+    { "new_key": "color:crimson-red", "match": null, "action": "new", "reason": "confirmed on ${brand.toLowerCase() || 'manufacturer'}.com and bestbuy.com", "verified": true, "evidence_refs": [{"url": "https://${brand.toLowerCase() || 'manufacturer'}.com/crimson", "tier": "tier1"}, {"url": "https://bestbuy.com/listing", "tier": "tier3"}] },
+    { "new_key": "color:rainbow-sparkle", "match": null, "action": "reject", "reason": "not found on official site or any retailer — likely hallucinated", "verified": true, "evidence_refs": [] }
   ],
   "remove": [],
   "orphan_remaps": []
@@ -384,6 +397,7 @@ export const VARIANT_IDENTITY_CHECK_SPEC = {
     siblingModels: domainArgs.siblingModels || [],
     runCount: domainArgs.runCount,
     orphanedPifKeys: domainArgs.orphanedPifKeys || [],
+    minEvidenceRefs: domainArgs.minEvidenceRefs,
   }),
   jsonSchema: zodToLlmSchema(variantIdentityCheckResponseSchema),
 };

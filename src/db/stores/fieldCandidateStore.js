@@ -50,10 +50,15 @@ export function createFieldCandidateStore({ db, category, stmts }) {
     );
   }
 
-  function getByProductAndField(productId, fieldKey) {
-    return stmts._getFieldCandidatesByProductAndField
+  function getByProductAndField(productId, fieldKey, variantId) {
+    const rows = stmts._getFieldCandidatesByProductAndField
       .all(category, String(productId || ''), String(fieldKey || ''))
       .map(hydrateRow);
+    // WHY: variantId === undefined means caller wants all rows (variant-blind).
+    // variantId === null means caller wants only variant-less rows (scalar path).
+    // variantId === 'v_xxx' means caller wants only that variant's rows.
+    if (variantId === undefined) return rows;
+    return rows.filter((r) => (r.variant_id ?? null) === (variantId ?? null));
   }
 
   function getAllByProduct(productId) {
@@ -97,18 +102,43 @@ export function createFieldCandidateStore({ db, category, stmts }) {
     };
   }
 
-  function markResolved(productId, fieldKey, value) {
+  function markResolved(productId, fieldKey, value, variantId) {
+    // WHY: variantId === undefined → legacy variant-blind update (scalar fields).
+    // variantId === null → scope to rows with NULL variant_id only.
+    // variantId === 'v_xxx' → scope to that variant only.
+    if (variantId === undefined) {
+      db.prepare(
+        `UPDATE field_candidates SET status = 'resolved', updated_at = datetime('now')
+         WHERE category = ? AND product_id = ? AND field_key = ? AND value = ?`
+      ).run(category, String(productId || ''), String(fieldKey || ''), value ?? null);
+      return;
+    }
+    const vidClause = variantId === null ? 'variant_id IS NULL' : 'variant_id = ?';
+    const params = variantId === null
+      ? [category, String(productId || ''), String(fieldKey || ''), value ?? null]
+      : [category, String(productId || ''), String(fieldKey || ''), value ?? null, variantId];
     db.prepare(
       `UPDATE field_candidates SET status = 'resolved', updated_at = datetime('now')
-       WHERE category = ? AND product_id = ? AND field_key = ? AND value = ?`
-    ).run(category, String(productId || ''), String(fieldKey || ''), value ?? null);
+       WHERE category = ? AND product_id = ? AND field_key = ? AND value = ? AND ${vidClause}`
+    ).run(...params);
   }
 
-  function demoteResolved(productId, fieldKey) {
+  function demoteResolved(productId, fieldKey, variantId) {
+    if (variantId === undefined) {
+      db.prepare(
+        `UPDATE field_candidates SET status = 'candidate', updated_at = datetime('now')
+         WHERE category = ? AND product_id = ? AND field_key = ? AND status = 'resolved'`
+      ).run(category, String(productId || ''), String(fieldKey || ''));
+      return;
+    }
+    const vidClause = variantId === null ? 'variant_id IS NULL' : 'variant_id = ?';
+    const params = variantId === null
+      ? [category, String(productId || ''), String(fieldKey || '')]
+      : [category, String(productId || ''), String(fieldKey || ''), variantId];
     db.prepare(
       `UPDATE field_candidates SET status = 'candidate', updated_at = datetime('now')
-       WHERE category = ? AND product_id = ? AND field_key = ? AND status = 'resolved'`
-    ).run(category, String(productId || ''), String(fieldKey || ''));
+       WHERE category = ? AND product_id = ? AND field_key = ? AND status = 'resolved' AND ${vidClause}`
+    ).run(...params);
   }
 
   function getResolved(productId, fieldKey) {

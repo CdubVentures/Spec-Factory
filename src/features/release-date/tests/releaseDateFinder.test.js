@@ -25,22 +25,21 @@ function cleanup(dir) {
   try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* */ }
 }
 
-function writeFieldRules(category = 'mouse') {
-  const dir = path.join(CATEGORY_ROOT, category, 'generated');
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, 'field_rules.json'), JSON.stringify({
-    fields: {
-      release_date: {
-        key: 'release_date',
-        contract: { type: 'date', shape: 'scalar', list_rules: {} },
-        parse: { accepted_formats: ['YYYY-MM-DD', 'YYYY-MM', 'YYYY'] },
-        enum_policy: 'open',
-        enum: { policy: 'open', new_value_policy: { accept_if_evidence: true } },
-        evidence: { min_evidence_refs: 1, tier_preference: ['tier1', 'tier2', 'tier3'] },
-      },
+// WHY: RDF now reads field rules via specDb.getCompiledRules() (SSOT). The test
+// stub returns the same shape the compile pipeline produces.
+const COMPILED_FIELD_RULES = {
+  fields: {
+    release_date: {
+      key: 'release_date',
+      contract: { type: 'date', shape: 'scalar', list_rules: {} },
+      parse: { accepted_formats: ['YYYY-MM-DD', 'YYYY-MM', 'YYYY'] },
+      enum_policy: 'open',
+      enum: { policy: 'open', new_value_policy: { accept_if_evidence: true } },
+      evidence: { min_evidence_refs: 1, tier_preference: ['tier1', 'tier2', 'tier3'] },
     },
-  }));
-}
+  },
+  known_values: {},
+};
 
 function writeProductJson(productId, category = 'mouse') {
   const dir = path.join(PRODUCT_ROOT, productId);
@@ -75,16 +74,22 @@ function makeSpecDbStub({ finderStore, variants = DEFAULT_VARIANTS, category = '
     category,
     getFinderStore: () => finderStore,
     getProduct: () => null,
+    getCompiledRules: () => COMPILED_FIELD_RULES,
     variants: {
       listActive: () => variants,
       listByProduct: () => variants,
     },
     // submitCandidate machinery
     insertFieldCandidate: (entry) => { submittedCandidates.push(entry); },
-    getFieldCandidateBySourceId: (pid, fk, sid) => ({ id: submittedCandidates.findIndex(c => c.sourceId === sid) + 1 }),
+    getFieldCandidateBySourceId: (pid, fk, sid) => ({ id: submittedCandidates.findIndex(c => c.sourceId === sid) + 1, variant_id: submittedCandidates.find(c => c.sourceId === sid)?.variantId ?? null }),
     getFieldCandidatesByProductAndField: () => [],
+    getFieldCandidatesByValue: () => [],
+    getFieldCandidate: () => null,
+    upsertFieldCandidate: () => {},
     // Publisher auto-publish needs these
     getResolvedFieldCandidate: () => null,
+    markFieldCandidateResolved: () => {},
+    demoteResolvedCandidates: () => {},
     publishCandidate: () => {},
     _submittedCandidates: submittedCandidates,
   };
@@ -102,7 +107,6 @@ const PRODUCT = {
 describe('runReleaseDateFinder', () => {
   before(() => {
     fs.mkdirSync(PRODUCT_ROOT, { recursive: true });
-    writeFieldRules('mouse');
   });
 
   after(() => cleanup(TMP));

@@ -1,13 +1,20 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { isVariantBackedField } from '../../color-edition/index.js';
+import { republishField } from '../../publisher/publish/republishField.js';
 
 /**
  * Delete a single candidate by source_id.
- * Self-isolated: SQL row → product.json candidates[]. Fields[] untouched.
- * Candidates never touch their source's artifacts or published state.
  *
- * WHY: Published state is managed by source deletion (operations 2/3),
- * not candidate deletion. Candidates are evidence tracking only.
+ * Two policies (see CEF rules):
+ *  - Variant-backed fields (colors, editions): candidate stripped; published is
+ *    untouched because the variants table is the SSOT for those fields.
+ *  - All other fields: candidate stripped + republishField() re-derives the
+ *    published value from remaining candidates (and unpublishes if none remain
+ *    above threshold).
+ *
+ * Source artifacts (finder runs, discover log, disk files) are never touched
+ * here — that is source/run deletion's job.
  *
  * @returns {{ deleted: boolean, republished: boolean, artifacts_cleaned: boolean }}
  */
@@ -17,54 +24,70 @@ export function deleteCandidateBySourceId({ specDb, category, productId, fieldKe
     return { deleted: false, republished: false, artifacts_cleaned: false };
   }
 
-  // Location 1: SQL
   specDb.deleteFieldCandidateBySourceId(productId, fieldKey, sourceId);
 
-  // Location 2: product.json candidates only (NOT fields)
   const productJson = readProductJson(productRoot, productId);
-  if (productJson) {
-    if (Array.isArray(productJson.candidates?.[fieldKey])) {
-      productJson.candidates[fieldKey] = productJson.candidates[fieldKey]
-        .filter(e => e.source_id !== sourceId);
-    }
-    productJson.updated_at = new Date().toISOString();
-    writeProductJson(productRoot, productId, productJson);
+  if (!productJson) {
+    return { deleted: true, republished: false, artifacts_cleaned: false };
   }
 
-  return { deleted: true, republished: false, artifacts_cleaned: false };
+  if (Array.isArray(productJson.candidates?.[fieldKey])) {
+    productJson.candidates[fieldKey] = productJson.candidates[fieldKey]
+      .filter(e => e.source_id !== sourceId);
+  }
+
+  const republished = rederiveIfNonVariant({ specDb, productId, fieldKey, config, productJson });
+
+  productJson.updated_at = new Date().toISOString();
+  writeProductJson(productRoot, productId, productJson);
+
+  return { deleted: true, republished, artifacts_cleaned: false };
 }
 
 /**
  * Delete all candidates for a field.
- * Self-isolated: bulk SQL delete → clean product.json → no artifact cascade.
  *
- * @returns {{ deleted: number, artifacts_cleaned: boolean }}
+ * Same two-policy split as deleteCandidateBySourceId. For non-variant fields,
+ * republishField() will unpublish the field (there are no remaining candidates).
+ *
+ * @returns {{ deleted: number, republished: boolean, artifacts_cleaned: boolean }}
  */
 export function deleteAllCandidatesForField({ specDb, category, productId, fieldKey, config, productRoot }) {
   const rows = specDb.getFieldCandidatesByProductAndField(productId, fieldKey);
   if (rows.length === 0) {
-    return { deleted: 0, artifacts_cleaned: false };
+    return { deleted: 0, republished: false, artifacts_cleaned: false };
   }
 
   const deletedCount = rows.length;
 
-  // Location 1: SQL bulk delete
   specDb.deleteFieldCandidatesByProductAndField(productId, fieldKey);
 
-  // Location 2: product.json candidates only (NOT fields)
   const productJson = readProductJson(productRoot, productId);
-  if (productJson) {
-    delete productJson.candidates?.[fieldKey];
-    // WHY: Do NOT delete productJson.fields — published state is managed by
-    // source deletion, not candidate deletion.
-    productJson.updated_at = new Date().toISOString();
-    writeProductJson(productRoot, productId, productJson);
+  if (!productJson) {
+    return { deleted: deletedCount, republished: false, artifacts_cleaned: false };
   }
 
-  return { deleted: deletedCount, artifacts_cleaned: false };
+  delete productJson.candidates?.[fieldKey];
+
+  const republished = rederiveIfNonVariant({ specDb, productId, fieldKey, config, productJson });
+
+  productJson.updated_at = new Date().toISOString();
+  writeProductJson(productRoot, productId, productJson);
+
+  return { deleted: deletedCount, republished, artifacts_cleaned: false };
 }
 
 // ── Internal helpers ────────────────────────────────────────────────
+
+/**
+ * Re-derive published for non-variant fields. Variant fields (colors, editions)
+ * are skipped because their published state lives on the variants table.
+ */
+function rederiveIfNonVariant({ specDb, productId, fieldKey, config, productJson }) {
+  if (isVariantBackedField(fieldKey)) return false;
+  const result = republishField({ specDb, productId, fieldKey, config: config || {}, productJson });
+  return result.status === 'republished' || result.status === 'unpublished';
+}
 
 function readProductJson(productRoot, productId) {
   try {

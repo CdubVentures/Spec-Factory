@@ -74,13 +74,16 @@ Date format rules:
 
 Evidence requirements (CRITICAL — publisher will reject low-evidence candidates):
 - Provide AT LEAST 1 evidence entry with a source URL and excerpt showing the release date
-- Prefer tier1 (manufacturer / official press release) over tier2 (retailer listings, PCPartPicker) over tier3 (reviews)
 - Include an excerpt string copied from the source that contains the date
+- Tag each source with a tier (classification only, no ranking)
 
 Source tiers:
-- tier1: manufacturer press kit / official announcement / brand product page with launch date
-- tier2: retailer "first available" date (Amazon), PCPartPicker, TechPowerUp DB, authorized retailer listings
-- tier3: reviews with explicit launch date, third-party product databases
+- tier1: manufacturer / brand-official / press release
+- tier2: professional testing lab / review lab
+- tier3: authorized retailer / marketplace (Amazon first-available, PCPartPicker, TechPowerUp DB)
+- tier4: community / forum / blog / user-generated
+- tier5: specs aggregator / product database
+- other: anything that doesn't fit the above
 
 Confidence guidance:
 - 90-100: multiple tier1/tier2 sources agree on exact date
@@ -98,7 +101,7 @@ Return JSON:
 - "release_date": "YYYY-MM-DD" | "YYYY-MM" | "YYYY" | "MMM YYYY" | "Month YYYY" | "unk"
 - "confidence": 0-100
 - "unknown_reason": "..." (required if release_date is "unk"; empty string otherwise)
-- "evidence": [{ "source_url": "...", "source_page": "...", "source_type": "manufacturer|retailer|review|press|other", "tier": "tier1|tier2|tier3", "excerpt": "..." }, ...]
+- "evidence": [{ "source_url": "...", "source_page": "...", "source_type": "manufacturer|retailer|review|press|other", "tier": "tier1|tier2|tier3|tier4|tier5|other", "excerpt": "..." }, ...]
 - "discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }`;
 
 /**

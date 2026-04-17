@@ -168,10 +168,11 @@ export function submitCandidate({
   if (config) {
     publishResult = autoPublish({
       specDb, category, productId, fieldKey,
-      candidateRow: candidateRow || { id: candidateId },
+      candidateRow: candidateRow || { id: candidateId, variant_id: normalizedVariantId },
       value: repairedValue, unit: repairedUnit,
       confidence,
       config, fieldRule, productRoot,
+      variantId: normalizedVariantId,
     });
   }
 

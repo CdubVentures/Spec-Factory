@@ -13,6 +13,7 @@ import {
   FinderPanelHeader,
   FinderKpiCard,
   FinderPanelFooter,
+  FinderRunModelBadge,
   FinderDeleteConfirmModal,
   FinderSectionCard,
   FinderHowItWorks,
@@ -402,16 +403,22 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
           </div>
         }
       >
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold tracking-[0.04em] sf-chip-purple border-[1.5px] border-current">
-          <ModelBadgeGroup {...badgeProps} />
-          {modelDisplay}
-          {effortLevel && <span className="sf-text-muted font-normal">{effortLevel}</span>}
-        </span>
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold tracking-[0.04em] sf-chip-accent border-[1.5px] border-current">
-          <ModelBadgeGroup {...evalBadgeProps} />
-          {evalModelDisplay}
-          {evalEffortLevel && <span className="sf-text-muted font-normal">{evalEffortLevel}</span>}
-        </span>
+        <FinderRunModelBadge
+          labelPrefix="PIF"
+          model={modelDisplay}
+          accessMode={resolvedAccessMode}
+          thinking={resolvedModel?.thinking ?? false}
+          webSearch={resolvedModel?.webSearch ?? false}
+          effortLevel={effortLevel}
+        />
+        <FinderRunModelBadge
+          labelPrefix="EVAL"
+          model={evalModelDisplay}
+          accessMode={evalAccessMode}
+          thinking={evalModel?.thinking ?? false}
+          webSearch={evalModel?.webSearch ?? false}
+          effortLevel={evalEffortLevel}
+        />
       </FinderPanelHeader>
 
       {/* Body */}

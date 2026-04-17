@@ -137,33 +137,82 @@ describe('publisher routes', () => {
   });
 
   // WHY: Published state for colors/editions must come from field_candidates
-  // resolved rows (the review grid's source of truth), NOT from the variant
-  // aggregate. An active variant is "discovered" but not "published" until a
-  // resolved field_candidates row exists for that value.
-  it('GET /publisher/:category/published/:productId reads colors/editions from resolved field_candidates (not CEF summary)', async () => {
-    seedCandidate(specDb, 'rt-fc-colors', 'colors', ['black', 'white+silver'], 0.95, 'resolved');
-    seedCandidate(specDb, 'rt-fc-colors', 'editions', ['special-ed'], 0.9, 'resolved');
+  // WHY (CEF rule): "variant is directly connected to published for colors
+  // and editions". The variants table is the SSOT for these two fields —
+  // field_candidates is evidence only, not the publish source.
+  it('GET /publisher/:category/published/:productId reads colors/editions from the variants table (SSOT)', async () => {
+    const pid = 'rt-variants-colors';
+    specDb.variants.upsert({
+      productId: pid, variantId: 'v_black',
+      variantKey: 'color:black', variantType: 'color',
+      variantLabel: 'black', colorAtoms: ['black'],
+    });
+    specDb.variants.upsert({
+      productId: pid, variantId: 'v_frost',
+      variantKey: 'color:white+silver', variantType: 'color',
+      variantLabel: 'Frost White', colorAtoms: ['white', 'silver'],
+    });
+    specDb.variants.upsert({
+      productId: pid, variantId: 'v_special',
+      variantKey: 'edition:special-ed', variantType: 'edition',
+      variantLabel: 'Special Edition', colorAtoms: ['ruby'],
+      editionSlug: 'special-ed', editionDisplayName: 'Special Edition',
+    });
 
     const { ctx, responses } = makeCtx(specDb);
     const handler = registerPublisherRoutes(ctx);
 
     await handler(
-      ['publisher', 'mouse', 'published', 'rt-fc-colors'],
+      ['publisher', 'mouse', 'published', pid],
       new URLSearchParams(),
       'GET', {}, {},
     );
 
     assert.equal(responses[0].status, 200);
-    assert.ok(responses[0].body.fields.colors, 'colors populated from field_candidates');
-    assert.deepEqual(responses[0].body.fields.colors.value, ['black', 'white+silver']);
+    assert.ok(responses[0].body.fields.colors, 'colors populated from variants');
+    // WHY: Edition combo cascades into colors natively (edition IS a color variant).
+    assert.deepEqual(responses[0].body.fields.colors.value, ['black', 'white+silver', 'ruby']);
+    assert.equal(responses[0].body.fields.colors.source, 'variant_registry');
 
-    assert.ok(responses[0].body.fields.editions, 'editions populated from field_candidates');
+    assert.ok(responses[0].body.fields.editions, 'editions populated from variants');
     assert.deepEqual(responses[0].body.fields.editions.value, ['special-ed']);
+    assert.equal(responses[0].body.fields.editions.source, 'variant_registry');
   });
 
-  it('GET /publisher/:category/published/:productId omits colors/editions when field_candidates has no resolved rows — even if CEF summary has variant-derived data', async () => {
-    // Variants exist in CEF summary, but NO resolved candidate for colors/editions.
-    // Expect: endpoint returns empty fields (review grid is empty → nothing published).
+  it('GET /publisher/:category/published/:productId: delete-all-runs scenario (candidates stripped, variants preserved) keeps colors/editions published', async () => {
+    const pid = 'rt-post-delete-all';
+    // NO candidates (they were stripped by delete-all-runs).
+    // Variants survive — that's the CEF contract.
+    specDb.variants.upsert({
+      productId: pid, variantId: 'v_p',
+      variantKey: 'color:black', variantType: 'color',
+      variantLabel: 'black', colorAtoms: ['black'],
+    });
+    specDb.variants.upsert({
+      productId: pid, variantId: 'v_e',
+      variantKey: 'edition:launch', variantType: 'edition',
+      variantLabel: 'Launch', colorAtoms: ['red', 'black'],
+      editionSlug: 'launch', editionDisplayName: 'Launch',
+    });
+
+    const { ctx, responses } = makeCtx(specDb);
+    const handler = registerPublisherRoutes(ctx);
+
+    await handler(
+      ['publisher', 'mouse', 'published', pid],
+      new URLSearchParams(),
+      'GET', {}, {},
+    );
+
+    assert.equal(responses[0].status, 200);
+    assert.ok(responses[0].body.fields.colors, 'colors survive delete-all-runs');
+    assert.deepEqual(responses[0].body.fields.colors.value, ['black', 'red+black']);
+    assert.ok(responses[0].body.fields.editions, 'editions survive delete-all-runs');
+    assert.deepEqual(responses[0].body.fields.editions.value, ['launch']);
+  });
+
+  it('GET /publisher/:category/published/:productId omits colors/editions when no variants exist — even if CEF summary has variant-derived data', async () => {
+    // CEF summary has legacy data, but variants table is the SSOT and has nothing.
     specDb.getFinderStore('colorEditionFinder').upsert({
       category: 'mouse',
       product_id: 'rt-variants-no-resolve',
@@ -204,20 +253,20 @@ describe('publisher routes', () => {
     assert.equal(responses[0].body.fields.editions, undefined);
   });
 
-  // WHY: An edition IS a color — its combo must cascade into the published
-  // colors list. Resolving an edition implicitly publishes its color combo.
-  it('GET /publisher/:category/published/:productId cascades resolved edition combos into published colors', async () => {
+  // WHY: An edition IS a color — its combo cascades into published colors
+  // natively via the variants table (no separate cascade step required).
+  it('GET /publisher/:category/published/:productId cascades an edition variant combo into published colors', async () => {
     const pid = 'rt-edition-cascade';
-    // Colors: only 'black' explicitly resolved as standalone
-    seedCandidate(specDb, pid, 'colors', ['black'], 0.95, 'resolved');
-    // Editions: 'cod-bo6' resolved — its combo 'dark-gray+black+orange' must cascade
-    seedCandidate(specDb, pid, 'editions', ['cod-bo6'], 0.9, 'resolved');
-    // Seed an edition variant so the endpoint can look up its combo
+    // Standalone color variant
     specDb.variants.upsert({
-      productId: pid,
-      variantId: 'v_cod_bo6',
-      variantKey: 'edition:cod-bo6',
-      variantType: 'edition',
+      productId: pid, variantId: 'v_black',
+      variantKey: 'color:black', variantType: 'color',
+      variantLabel: 'black', colorAtoms: ['black'],
+    });
+    // Edition variant with its own combo — combo must appear in colors too
+    specDb.variants.upsert({
+      productId: pid, variantId: 'v_cod_bo6',
+      variantKey: 'edition:cod-bo6', variantType: 'edition',
       variantLabel: 'Call of Duty: Black Ops 6 Edition',
       colorAtoms: ['dark-gray', 'black', 'orange'],
       editionSlug: 'cod-bo6',
@@ -239,19 +288,20 @@ describe('publisher routes', () => {
     assert.ok(responses[0].body.fields.colors.value.includes('dark-gray+black+orange'), 'edition combo cascaded into colors');
   });
 
-  it('GET /publisher/:category/published/:productId does not cascade an edition combo twice when the combo is also resolved as a standalone color', async () => {
+  it('GET /publisher/:category/published/:productId does not cascade an edition combo twice when a color variant also uses the same combo', async () => {
     const pid = 'rt-edition-dedupe';
-    seedCandidate(specDb, pid, 'colors', ['dark-gray+black+orange'], 0.95, 'resolved');
-    seedCandidate(specDb, pid, 'editions', ['cod-bo6-dup'], 0.9, 'resolved');
+    // Color variant and edition variant with the same combo — combo must appear once.
     specDb.variants.upsert({
-      productId: pid,
-      variantId: 'v_cod_bo6_dup',
-      variantKey: 'edition:cod-bo6-dup',
-      variantType: 'edition',
-      variantLabel: 'Dup',
+      productId: pid, variantId: 'v_combo',
+      variantKey: 'color:dark-gray+black+orange', variantType: 'color',
+      variantLabel: 'Dark Gray Black Orange',
       colorAtoms: ['dark-gray', 'black', 'orange'],
-      editionSlug: 'cod-bo6-dup',
-      editionDisplayName: 'Dup',
+    });
+    specDb.variants.upsert({
+      productId: pid, variantId: 'v_cod_bo6_dup',
+      variantKey: 'edition:cod-bo6-dup', variantType: 'edition',
+      variantLabel: 'Dup', colorAtoms: ['dark-gray', 'black', 'orange'],
+      editionSlug: 'cod-bo6-dup', editionDisplayName: 'Dup',
     });
 
     const { ctx, responses } = makeCtx(specDb);

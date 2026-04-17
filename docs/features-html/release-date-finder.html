@@ -137,7 +137,7 @@
 
     <div class="callout callout-info" style="margin-top:8px;">
       <strong>Reconciliation with the pipeline</strong>
-      The main indexing pipeline publishes a <em>product-level</em> <code>release_date</code> (no <code>variant_id</code>). RDF publishes <em>variant-level</em> candidates. They coexist in <code>field_candidates</code> via the <code>UNIQUE(category, product_id, field_key, source_id, variant_id_key)</code> index. Deleting a variant via <code>deleteVariant()</code> cascades that variant&rsquo;s candidates automatically (SQL + JSON mirror).
+      The main indexing pipeline publishes a <em>product-scalar</em> <code>release_date</code> into <code>product.json.fields.release_date</code> (no <code>variant_id</code>). RDF publishes <em>variant-scoped</em> values into <code>product.json.variant_fields[vid].release_date</code>. They coexist in <code>field_candidates</code> via the <code>UNIQUE(category, product_id, field_key, source_id, variant_id_key)</code> index and live in different containers in <code>product.json</code>, so neither stomps the other. Deleting a variant via <code>deleteVariant()</code> cascades that variant&rsquo;s rows and drops its <code>variant_fields[vid]</code> entry automatically.
     </div>
   </div>
 </div>
@@ -172,6 +172,7 @@
       <dt>Confidence gate</dt><dd>Below-threshold candidates are persisted with <code>below_confidence: true</code> but <em>not</em> submitted to the publisher. Run still counts and cooldown still sets.</dd>
       <dt>Unknown path</dt><dd>LLM returns empty <code>release_date</code> + <code>unknown_reason</code>. Run persists, no publisher submit, no cooldown reset.</dd>
       <dt>Publisher error path</dt><dd>If <code>submitCandidate()</code> throws, the error lands on <code>candidate.publisher_error</code>. The run itself still persists &mdash; the publisher is advisory, not a hard dependency.</dd>
+      <dt>Published SSOT</dt><dd><code>product.json.variant_fields[vid].release_date</code> &mdash; written by publisher path ③ (variant-scoped). The feature&rsquo;s own <code>release_date_finder</code> SQL table is a UI-speed cache, not authoritative. See <a href="publisher-pipeline.html#">Publisher Pipeline &sect; 3b</a>.</dd>
     </dl>
   </div>
 </div>
@@ -338,7 +339,7 @@ for (const v of targets) {
       <li><strong>KPI grid (4 cards):</strong> <em>Release Dates</em> &bull; <em>Variants</em> &bull; <em>Runs</em> &bull; <em>Published&nbsp;N/total</em>. Order mirrors PIF&rsquo;s <em>Images &bull; Variants &bull; Runs &bull; Carousel&nbsp;N/total</em>.</li>
       <li><strong>How It Works</strong> collapsible explainer (content: <code>rdfHowItWorksContent.ts</code>).</li>
       <li><strong>All Release Dates</strong> section &mdash; two-column grid of <code>FinderVariantRow</code>s. Each row: arrow, ColorSwatch, label, ED/CLR chip, date/unk chip, confidence %, Run button. Expanded body lists evidence and publisher candidates.</li>
-      <li><strong>Run History</strong> section &mdash; per-run row with model, duration, variant label, resolved date, evidence count. Expandable for prompt/response audit.</li>
+      <li><strong>Run History</strong> section &mdash; uses shared <code>FinderRunHistoryRow</code> (<code>shared/ui/finder/</code>). Header: arrow &bull; <code>#runNumber</code> &bull; date &bull; <code>FinderRunTimestamp</code> &bull; <code>FinderRunModelBadge</code> &bull; variant swatch + label &bull; date chip &bull; confidence &bull; evidence count &bull; Del. Expanded body: <code>FinderDiscoveryDetails</code> (URLs checked / queries run / notes) + <code>FinderRunPromptDetails</code> (system / user / response). Identical shape to PIF and CEF.</li>
       <li><strong>Footer:</strong> last run, run count, model badge.</li>
     </ul>
     <div class="callout callout-info" style="margin-top:8px;">

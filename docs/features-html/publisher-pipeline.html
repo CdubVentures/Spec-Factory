@@ -303,6 +303,111 @@
 </div>
 
 <!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">3b</span> Variant-Scoped Publish Dispatch</div>
+
+<p style="margin-bottom:12px; font-size:14px; color:var(--text-muted);">
+  Inside <code>publishCandidate()</code>, dispatch branches on whether the candidate carries a
+  <code>variant_id</code>. Three distinct paths; only path 3 is new, paths 1 and 2 are untouched.
+</p>
+
+<div class="flow-row">
+  <div class="flow-box flow-gate">publishCandidate(row)<br><small>dispatch on row.variant_id<br>+ fieldKey</small></div>
+</div>
+<div class="flow-row">
+  <div class="flow-box flow-pass">① Normal Scalar<br><small>variant_id == null<br>fieldKey not colors/editions</small></div>
+  <span style="width:12px"></span>
+  <div class="flow-box flow-neutral">② Variant Identifier<br><small>fieldKey ∈ {colors, editions}<br>(CEF post-publish, orchestrator-owned)</small></div>
+  <span style="width:12px"></span>
+  <div class="flow-box flow-write">③ Variant Scoped<br><small>variant_id != null<br>(RDF, discontinued, per-variant SKU…)</small></div>
+</div>
+<div class="flow-row">
+  <div class="flow-box flow-pass">Write<br>fields[key]</div>
+  <span style="width:12px"></span>
+  <div class="flow-box flow-neutral">Write fields[key]<br>+ CEF orchestrator calls<br>syncFromRegistry →<br>derivePublishedFromVariants</div>
+  <span style="width:12px"></span>
+  <div class="flow-box flow-write">Write<br>variant_fields[vid][key]<br>demote/resolve scoped to vid</div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <div class="card-header" style="background:var(--teal-bg);">Dispatch Rules &mdash; Where Each Path Writes</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Path</th><th>Trigger</th><th>Published target</th><th>Resolution scope</th><th>Owned by</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>① Normal</strong></td>
+          <td><code>variant_id == null</code> &amp; not a variant-identifier field</td>
+          <td><code>product.json.fields[fieldKey]</code></td>
+          <td>All rows for (productId, fieldKey)</td>
+          <td>Publisher (unchanged)</td>
+        </tr>
+        <tr>
+          <td><strong>② Variant Identifier</strong></td>
+          <td><code>fieldKey ∈ {colors, editions}</code></td>
+          <td><code>product.json.fields[fieldKey]</code> (source: <code>'variant_registry'</code>)</td>
+          <td>Whole field re-derived from variants table</td>
+          <td>CEF orchestrator &mdash; calls <code>specDb.variants.syncFromRegistry(..., { onAfterSync: derivePublishedFromVariants })</code>. Publisher does not special-case these fieldKeys.</td>
+        </tr>
+        <tr>
+          <td><strong>③ Variant Scoped</strong></td>
+          <td><code>candidateRow.variant_id != null</code></td>
+          <td><code>product.json.variant_fields[variant_id][fieldKey]</code></td>
+          <td>Only rows matching (productId, fieldKey, variantId)</td>
+          <td>Publisher &mdash; <code>publishVariantScopedCandidate()</code> branch inside <code>publishCandidate()</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top:12px; background: var(--surface-alt); padding: 12px 14px; border-radius: 6px; font-size: 13px;">
+      <strong style="display:block; margin-bottom:6px;">What path 3 does differently</strong>
+      <ul style="margin:4px 0 0 18px;">
+        <li>Writes to <code>product.json.variant_fields[vid][fieldKey]</code> &mdash; never stomps scalar <code>fields[fieldKey]</code>.</li>
+        <li>Calls <code>specDb.markFieldCandidateResolved(pid, fieldKey, value, variantId)</code> (scoped to that variant) and <code>demoteResolvedCandidates(pid, fieldKey, variantId)</code>.</li>
+        <li>Manual-override lock is checked per-variant: <code>variant_fields[vid][fieldKey].source === 'manual_override'</code> locks only that variant.</li>
+        <li>Set-union merge, when applicable, is scoped to a single variant's existing list &mdash; never merges across variants.</li>
+        <li>Two variants publishing the same field have independent resolution; neither blocks the other.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header" style="background:var(--orange-bg);">Lifecycle Cascade &mdash; What Deletes Touch <code>variant_fields</code></div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Action</th><th>Effect on <code>variant_fields[vid][fieldKey]</code></th><th>Mechanism</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Delete variant-scoped candidate (single source) &rarr; last source removed</td>
+          <td>Entry deleted. If the variant has no other keys, <code>variant_fields[vid]</code> itself is removed.</td>
+          <td><code>republishField({ variantId })</code> inside <code>republishAfterDelete</code> (finderRoutes.js)</td>
+        </tr>
+        <tr>
+          <td>Delete variant-scoped candidate (other sources remain)</td>
+          <td>Re-thresholded from remaining candidates scoped to <code>(fieldKey, vid)</code>.</td>
+          <td><code>republishField({ variantId })</code></td>
+        </tr>
+        <tr>
+          <td>Delete variant (e.g. color removed from CEF)</td>
+          <td>Whole <code>variant_fields[vid]</code> dropped; empty container removed.</td>
+          <td><code>cascadeVariantIdFromCandidates()</code> in <code>variantLifecycle.js</code> &rarr; <code>specDb.deleteFieldCandidatesByVariantId</code> plus JSON cleanup</td>
+        </tr>
+        <tr>
+          <td>Delete product</td>
+          <td>Whole product directory &amp; all SQL rows removed (cascades everywhere).</td>
+          <td>Product-level delete path (unchanged).</td>
+        </tr>
+        <tr>
+          <td>Rebuild (deleted <code>spec.sqlite</code>)</td>
+          <td>Re-marked resolved from <code>product.json.variant_fields[vid][fieldKey]</code> scoped to variantId.</td>
+          <td><code>rebuildPublishedFieldsFromJson</code> iterates <code>variant_fields</code> after <code>fields</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
 <div class="section-title"><span class="num">4</span> Dual-Write Architecture</div>
 
 <p style="margin-bottom:12px; font-size:14px; color:var(--text-muted);">
@@ -318,28 +423,36 @@
   category     TEXT NOT NULL,
   product_id   TEXT NOT NULL,
   field_key    TEXT NOT NULL,
+  source_id    TEXT NOT NULL,
+  source_type  TEXT NOT NULL,
   value        TEXT,
   unit         TEXT DEFAULT NULL,
   confidence   REAL DEFAULT 0,
-  source_count INTEGER DEFAULT 1,
-  sources_json TEXT DEFAULT '[]',
+  model        TEXT DEFAULT '',
   validation_json TEXT DEFAULT '{}',
   metadata_json   TEXT DEFAULT '{}',
   status       TEXT DEFAULT 'candidate',
+  variant_id   TEXT DEFAULT NULL,
+  variant_id_key TEXT GENERATED ALWAYS AS
+                 (COALESCE(variant_id, '')) STORED,
   submitted_at TEXT DEFAULT (datetime('now')),
   updated_at   TEXT DEFAULT (datetime('now')),
-  UNIQUE(category, product_id, field_key, value)
+  UNIQUE(category, product_id, field_key,
+         source_id, variant_id_key)
 );
 
 CREATE INDEX idx_fc_product
   ON field_candidates(product_id);
 CREATE INDEX idx_fc_field
-  ON field_candidates(category, product_id, field_key);</pre>
+  ON field_candidates(category, product_id, field_key);
+CREATE INDEX idx_fc_variant
+  ON field_candidates(category, product_id, variant_id);</pre>
       <dl class="detail-grid" style="margin-top:8px;">
         <dt>status</dt><dd><code>'candidate'</code> (pending) or <code>'resolved'</code> (published)</dd>
-        <dt>sources_json</dt><dd>Array of <code>{ source, confidence, submitted_at, run_id, model, artifact, url }</code></dd>
+        <dt>source_id</dt><dd>Deterministic per extraction: <code>{moduleType}-{productId}-{runNumber}</code>. Immutable.</dd>
+        <dt>variant_id</dt><dd><code>NULL</code> for product-scalar fields (CEF colors/editions, pipeline weight, etc.). <code>v_&lt;hex&gt;</code> for variant-scoped fields (RDF release_date, per-variant SKU/price). UNIQUE constraint uses the generated <code>variant_id_key</code> (COALESCE) so the same <code>source_id</code> can coexist with distinct variants.</dd>
         <dt>validation_json</dt><dd><code>{ valid, repairs[], rejections[], llmRepair?: {} }</code></dd>
-        <dt>metadata_json</dt><dd><code>{ source, method, publish_result, reviewer, reason, evidence }</code></dd>
+        <dt>metadata_json</dt><dd><code>{ publish_result, variant_key, variant_label, variant_type, evidence_sources, ...llm_meta }</code></dd>
       </dl>
     </div>
   </div>
@@ -351,35 +464,45 @@ CREATE INDEX idx_fc_field
     "fieldKey": [
       {
         "value": "*",
-        "unit": "string|null",
-        "validation": {
-          "valid": true,
-          "repairs": [],
-          "rejections": []
-        },
-        "sources": [
-          { "source": "pipeline",
-            "confidence": 0.85,
-            "submitted_at": "..." }
-        ],
-        "metadata": { "..." }
+        "source_id": "rdf-pid-3",
+        "source_type": "release_date_finder",
+        "variant_id": "v_a1b2c3d4",  // omitted if null
+        "confidence": 90,
+        "validation": { "...": "..." },
+        "metadata": { "...": "..." }
       }
     ]
   },
   "fields": {
+    // Product-scalar published (paths ① + ②)
     "fieldKey": {
       "value": "*",
       "confidence": 0.85,
       "source": "pipeline",
       "resolved_at": "2026-04-11T...",
-      "sources": [{ "..." }]
+      "sources": [{ "..." }],
+      "linked_candidates": [ ... ]
+    }
+  },
+  "variant_fields": {
+    // Variant-scoped published (path ③)
+    "v_a1b2c3d4": {
+      "release_date": {
+        "value": "2024-03-15",
+        "confidence": 90,
+        "source": "pipeline",
+        "resolved_at": "...",
+        "sources": [{ "...": "..." }],
+        "linked_candidates": [ ... ]
+      }
     }
   }
 }</pre>
       <dl class="detail-grid" style="margin-top:8px;">
-        <dt>candidates[]</dt><dd>All accepted submissions per field (array of entries)</dd>
-        <dt>fields{}</dt><dd>Current published/resolved value per field (single winner)</dd>
-        <dt>Reseed</dt><dd><code>rebuildFieldCandidatesFromJson()</code> rebuilds SQL from JSON on hash mismatch</dd>
+        <dt>candidates[]</dt><dd>All accepted submissions per field (array of entries). Entries carry optional <code>variant_id</code>.</dd>
+        <dt>fields{}</dt><dd>Product-scalar published state. Written by paths ① (normal) and ② (variant identifier / CEF).</dd>
+        <dt>variant_fields{}</dt><dd>Variant-scoped published state, indexed by <code>variant_id</code> then <code>fieldKey</code>. Written only by path ③. Each variant's entries are independent &mdash; deleting one variant removes only its <code>variant_fields[vid]</code>; siblings are untouched.</dd>
+        <dt>Reseed</dt><dd><code>rebuildFieldCandidatesFromJson()</code> rebuilds SQL from JSON; <code>rebuildPublishedFieldsFromJson()</code> marks resolved candidates from both <code>fields</code> and <code>variant_fields</code>.</dd>
       </dl>
     </div>
   </div>

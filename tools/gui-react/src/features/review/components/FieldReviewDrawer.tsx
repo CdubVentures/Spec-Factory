@@ -16,6 +16,8 @@ import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.t
 import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTypes.ts';
 import { resolveEffortLabel } from '../../llm-config/state/resolveEffortLabel.ts';
 import { CandidateDeleteConfirm } from './CandidateDeleteConfirm.tsx';
+import { PublishedBadge } from '../../../shared/ui/feedback/PublishedBadge.tsx';
+import { resolveDrawerBadge } from '../selectors/drawerBadgeSelector.ts';
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
@@ -74,6 +76,7 @@ function compactId(value: string, max = 28): string {
 interface FieldReviewDrawerProps {
   title: string;
   subtitle: string;
+  fieldKey: string;
   onClose: () => void;
   currentValue: {
     value: string;
@@ -361,6 +364,7 @@ function CandidateCard({
 export function FieldReviewDrawer({
   title,
   subtitle,
+  fieldKey,
   onClose,
   currentValue,
   onManualOverride,
@@ -377,6 +381,8 @@ export function FieldReviewDrawer({
 }: FieldReviewDrawerProps) {
   const hasCandidates = candidates.length > 0;
   const publishedParsed = tryParseJsonArray(currentValue.value);
+  const hasPublished = hasKnownValue(currentValue.value);
+  const badgeKind = resolveDrawerBadge(fieldKey, hasPublished);
   const [deleteConfirm, setDeleteConfirm] = useState<{ mode: 'single'; sourceId: string } | { mode: 'all' } | null>(null);
 
   // Drawer scroll persistence
@@ -400,8 +406,13 @@ export function FieldReviewDrawer({
 
   return (
     <DrawerShell title={title} subtitle={subtitle} onClose={onClose} bodyRef={drawerBodyRef}>
-      {/* Section 1: Published Value */}
-      <DrawerSection title="Published Value">
+      {/* Section 1: Published value / variant */}
+      <DrawerSection title={badgeKind === 'variant' ? 'Published Variant' : 'Published Value'}>
+        {badgeKind && (
+          <div className="mb-2">
+            <PublishedBadge kind={badgeKind} />
+          </div>
+        )}
         <div className="space-y-1">
           {/* Header row: dot + source + confidence */}
           <div className="flex items-center gap-2">

@@ -46,6 +46,7 @@ export { DataIntegrityBanner } from './DataIntegrityBanner.tsx';
 export { FinderKpiCard } from './FinderKpiCard.tsx';
 export { FinderPanelHeader } from './FinderPanelHeader.tsx';
 export { FinderVariantRow } from './FinderVariantRow.tsx';
+export { FinderRunHistoryRow } from './FinderRunHistoryRow.tsx';
 export { useFinderColorHexMap } from './useFinderColorHexMap.ts';
 export { buildFinderVariantRows, buildEditionsMap } from './variantRowHelpers.ts';
 export type { FinderVariantRowData, CefLikeData, CefLikeRegistryEntry, CefLikePublished } from './variantRowHelpers.ts';

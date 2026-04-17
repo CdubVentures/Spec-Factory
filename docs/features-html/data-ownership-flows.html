@@ -854,6 +854,54 @@
   </div>
 </div>
 
+<!-- ════════════════════════════════════════════════════════════════ -->
+<h2 class="section-title"><span class="num">12b</span> variant_fields in product.json (Published Target)</h2>
+
+<div class="flow-diagram">
+  <h3>Where variant-scoped published values live</h3>
+
+  <p style="font-size:13px; color:var(--text-muted); margin-bottom: 16px;">
+    When <code>publishCandidate()</code> sees a row with <code>variant_id != null</code>, it takes
+    <strong>path ③ (variant-scoped)</strong> and writes to <code>product.json.variant_fields[vid][fieldKey]</code>
+    instead of the scalar <code>fields[fieldKey]</code>. Two variants publishing the same field have independent
+    entries; neither stomps the other. Full dispatch rules in
+    <a href="publisher-pipeline.html">Publisher Pipeline &sect; 3b</a>.
+  </p>
+
+  <table class="cascade-table">
+    <thead>
+      <tr><th>Container</th><th>Shape</th><th>Populated by</th><th>Scope</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>product.json.fields[fieldKey]</code></td>
+        <td><code>{ value, confidence, source, resolved_at, sources, linked_candidates }</code></td>
+        <td>Pipeline scalars (weight, width, …), CEF's <code>derivePublishedFromVariants</code> (colors/editions)</td>
+        <td>Product-scalar. One entry per fieldKey.</td>
+      </tr>
+      <tr style="color:var(--pink);">
+        <td><code>product.json.variant_fields[vid][fieldKey]</code></td>
+        <td>Same shape as <code>fields[fieldKey]</code>, one copy per variant</td>
+        <td>Publisher path ③ when candidate has <code>variant_id</code> (RDF today, future: per-variant SKU/price/<code>discontinued</code>)</td>
+        <td>Variant-scoped. One entry per (variantId, fieldKey).</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="margin: 16px 0; padding: 12px 16px; background: var(--green-bg); border: 1px solid var(--green-border); border-radius: 6px; font-size: 13px;">
+    <strong>Rebuild contract:</strong> <code>rebuildPublishedFieldsFromJson()</code> iterates <strong>both</strong>
+    <code>fields</code> and <code>variant_fields</code>. Variant-scoped entries re-mark their candidate rows as
+    <code>resolved</code> scoped to <code>(productId, fieldKey, variantId)</code>. Deleting the SQLite file and
+    replaying JSON reconstructs every variant's published state.
+  </div>
+
+  <div style="margin: 16px 0; padding: 12px 16px; background: var(--orange-bg); border: 1px solid var(--orange-border); border-radius: 6px; font-size: 13px;">
+    <strong>Delete cascade:</strong> <code>cascadeVariantIdFromCandidates()</code> in <code>variantLifecycle.js</code>
+    drops <code>product.json.variant_fields[vid]</code> when a variant is deleted, in the same atomic step that
+    removes its <code>field_candidates</code> rows. The sibling variants and scalar <code>fields[]</code> are untouched.
+  </div>
+</div>
+
 
 <!-- ════════════════════════════════════════════════════════════════ -->
 <h2 class="section-title"><span class="num">13</span> All Source Types Compared</h2>

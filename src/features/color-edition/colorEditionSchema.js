@@ -1,11 +1,20 @@
 import { z } from 'zod';
 
+// WHY: Shared evidence-ref shape — {url, tier} per source, per-discovery.
+// Used by evidence_refs on the response (keyed by color atom / edition slug)
+// and by variant identity-check mappings.
+const evidenceRefSchema = z.object({
+  url: z.string(),
+  tier: z.string(),
+});
+
 /**
  * Zod schema for the Color & Edition Finder LLM response.
  *
  * - colors: flat array of ALL product colors (colors[0] = default)
  * - editions: keyed by slug, each with its own colors subset
  * - default_color: must equal colors[0]
+ * - evidence_refs: keyed by color atom or edition slug → array of {url, tier}
  */
 export const colorEditionFinderResponseSchema = z.object({
   colors: z.array(z.string()),
@@ -29,6 +38,7 @@ export const colorEditionFinderResponseSchema = z.object({
     urls_checked: [],
     queries_run: [],
   }),
+  evidence_refs: z.record(z.string(), z.array(evidenceRefSchema)).default({}),
 });
 
 /* ── Variant identity check response schema ───────────────────── */
@@ -48,6 +58,7 @@ const variantMappingSchema = z.object({
   reason: z.string(),
   verified: z.boolean().default(false),
   preferred_label: z.string().optional(),
+  evidence_refs: z.array(evidenceRefSchema).default([]),
 });
 
 const orphanRemapSchema = z.object({

@@ -118,6 +118,34 @@ export function rebuildPublishedFieldsFromJson({ specDb, productRoot }) {
       productFieldCount++;
     }
 
+    // WHY: Variant-scoped published fields live in variant_fields[vid][fieldKey].
+    // Reseed them scoped — mark only the candidate rows with matching variant_id
+    // as resolved. Never touch the scalar fields[] equivalent.
+    const variantFields = data.variant_fields;
+    if (variantFields && typeof variantFields === 'object') {
+      for (const [variantId, keyMap] of Object.entries(variantFields)) {
+        if (!keyMap || typeof keyMap !== 'object') continue;
+        for (const [fieldKey, fieldEntry] of Object.entries(keyMap)) {
+          if (!fieldEntry || fieldEntry.value === undefined) continue;
+          const serialized = serializeValue(fieldEntry.value);
+          // Mark scoped to (productId, fieldKey, variantId). If the row exists, set it resolved.
+          // If it doesn't exist (JSON ahead of SQL), linked_candidates mirror the legacy path below.
+          specDb.markFieldCandidateResolved(productId, fieldKey, serialized, variantId);
+          if (Array.isArray(fieldEntry.linked_candidates)) {
+            for (const linked of fieldEntry.linked_candidates) {
+              if (linked.source_id) {
+                const row = specDb.getFieldCandidateBySourceId?.(productId, fieldKey, linked.source_id);
+                if (row && (row.variant_id ?? null) === variantId) {
+                  specDb.markFieldCandidateResolved(productId, fieldKey, row.value, variantId);
+                }
+              }
+            }
+          }
+          productFieldCount++;
+        }
+      }
+    }
+
     if (productFieldCount > 0) {
       stats.seeded++;
       stats.fields_seeded += productFieldCount;

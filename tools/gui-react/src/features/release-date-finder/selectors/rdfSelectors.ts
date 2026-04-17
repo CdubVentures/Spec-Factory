@@ -72,31 +72,10 @@ export function deriveVariantRows(
   }));
 }
 
-export interface RunHistoryRow {
-  readonly runNumber: number;
-  readonly ranAt: string;
-  readonly model: string;
-  readonly variantKey: string;
-  readonly variantLabel: string;
-  readonly releaseDate: string;
-  readonly confidence: number;
-  readonly evidenceCount: number;
-  readonly durationMs: number | null;
-}
+import type { ReleaseDateFinderRun } from '../types.ts';
 
-export function deriveRunHistoryRows(result: ReleaseDateFinderResult | null): RunHistoryRow[] {
+/** Returns runs sorted newest-first. Raw shape — panel consumes directly. */
+export function sortRunsNewestFirst(result: ReleaseDateFinderResult | null): readonly ReleaseDateFinderRun[] {
   if (!result?.runs) return [];
-  return [...result.runs]
-    .sort((a, b) => b.run_number - a.run_number)
-    .map(r => ({
-      runNumber: r.run_number,
-      ranAt: r.ran_at,
-      model: r.model,
-      variantKey: r.response?.variant_key || '',
-      variantLabel: r.response?.variant_label || '',
-      releaseDate: r.response?.release_date || '',
-      confidence: r.response?.confidence ?? 0,
-      evidenceCount: r.response?.evidence?.length ?? 0,
-      durationMs: r.duration_ms ?? null,
-    }));
+  return [...result.runs].sort((a, b) => b.run_number - a.run_number);
 }

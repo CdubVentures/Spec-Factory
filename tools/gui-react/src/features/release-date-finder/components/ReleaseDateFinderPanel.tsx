@@ -5,18 +5,22 @@ import {
   FinderPanelHeader,
   FinderKpiCard,
   FinderPanelFooter,
+  FinderRunModelBadge,
   FinderDeleteConfirmModal,
   FinderSectionCard,
   FinderHowItWorks,
   FinderVariantRow,
+  FinderRunHistoryRow,
+  FinderDiscoveryDetails,
+  FinderRunPromptDetails,
+  ColorSwatch,
   useResolvedFinderModel,
   useFinderColorHexMap,
-  deriveFinderStatusChip,
   resolveVariantColorAtoms,
   buildFinderVariantRows,
   buildEditionsMap,
 } from '../../../shared/ui/finder/index.ts';
-import type { DeleteTarget } from '../../../shared/ui/finder/types.ts';
+import type { DeleteTarget, DiscoverySection } from '../../../shared/ui/finder/index.ts';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { usePersistedExpandMap } from '../../../stores/tabStore.ts';
@@ -28,23 +32,13 @@ import {
   useDeleteReleaseDateFinderRunMutation,
   useDeleteReleaseDateFinderAllMutation,
 } from '../api/releaseDateFinderQueries.ts';
-import { deriveFinderKpiCards, deriveVariantRows, deriveRunHistoryRows } from '../selectors/rdfSelectors.ts';
+import { deriveFinderKpiCards, deriveVariantRows, sortRunsNewestFirst } from '../selectors/rdfSelectors.ts';
 import { rdfHowItWorksSections } from '../rdfHowItWorksContent.ts';
 import type { EvidenceSource } from '../types.ts';
 
 interface ReleaseDateFinderPanelProps {
   readonly productId: string;
   readonly category: string;
-}
-
-function formatDuration(ms: number | null): string {
-  if (ms == null || !Number.isFinite(ms)) return '';
-  if (ms < 1000) return `${ms}ms`;
-  const s = ms / 1000;
-  if (s < 60) return `${s.toFixed(1)}s`;
-  const m = Math.floor(s / 60);
-  const rem = Math.round(s % 60);
-  return `${m}m ${rem}s`;
 }
 
 function tierTone(tier: EvidenceSource['tier']): string {
@@ -109,7 +103,6 @@ export function ReleaseDateFinderPanel({ productId, category }: ReleaseDateFinde
   const runningVariantKeys = useRunningVariantKeys('rdf', productId, '');
 
   const effectiveResult = isError ? null : result;
-  const statusChip = deriveFinderStatusChip(effectiveResult);
   const kpiCards = useMemo(
     () => deriveFinderKpiCards(effectiveResult, cefVariants.length),
     [effectiveResult, cefVariants.length],
@@ -118,7 +111,7 @@ export function ReleaseDateFinderPanel({ productId, category }: ReleaseDateFinde
     () => deriveVariantRows(cefVariants, effectiveResult),
     [cefVariants, effectiveResult],
   );
-  const runHistoryRows = useMemo(() => deriveRunHistoryRows(effectiveResult), [effectiveResult]);
+  const runHistoryRuns = useMemo(() => sortRunsNewestFirst(effectiveResult), [effectiveResult]);
 
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
@@ -164,13 +157,15 @@ export function ReleaseDateFinderPanel({ productId, category }: ReleaseDateFinde
         isRunning={isRunningModule}
         onRun={handleRunAll}
         runLabel="Run All"
-        statusChip={statusChip ?? undefined}
       >
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold tracking-[0.04em] sf-chip-warning border-[1.5px] border-current">
-          <ModelBadgeGroup {...badgeProps} />
-          {modelDisplay}
-          {effortLevel && <span className="sf-text-muted font-normal">{effortLevel}</span>}
-        </span>
+        <FinderRunModelBadge
+          labelPrefix="RDF"
+          model={modelDisplay}
+          accessMode={accessMode}
+          thinking={resolvedModel?.thinking ?? false}
+          webSearch={resolvedModel?.webSearch ?? false}
+          effortLevel={effortLevel}
+        />
       </FinderPanelHeader>
 
       {collapsed ? null : isLoading ? (
@@ -303,14 +298,14 @@ export function ReleaseDateFinderPanel({ productId, category }: ReleaseDateFinde
             </div>
           </FinderSectionCard>
 
-          {runHistoryRows.length > 0 && (
+          {runHistoryRuns.length > 0 && (
             <FinderSectionCard
               title="Run History"
-              count={`${runHistoryRows.length} run${runHistoryRows.length !== 1 ? 's' : ''}`}
+              count={`${runHistoryRuns.length} run${runHistoryRuns.length !== 1 ? 's' : ''}`}
               storeKey={`rdf:history:${productId}`}
               trailing={
                 <button
-                  onClick={() => setDeleteTarget({ kind: 'all', count: runHistoryRows.length })}
+                  onClick={() => setDeleteTarget({ kind: 'all', count: runHistoryRuns.length })}
                   disabled={isAnyDeletePending}
                   className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded sf-action-button sf-status-text-danger border sf-border-soft opacity-60 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
                 >
@@ -319,50 +314,74 @@ export function ReleaseDateFinderPanel({ productId, category }: ReleaseDateFinde
               }
             >
               <div className="space-y-1.5">
-                {runHistoryRows.map((row) => {
-                  const expanded = Boolean(runExpand[String(row.runNumber)]);
+                {runHistoryRuns.map((run) => {
+                  const expanded = Boolean(runExpand[String(run.run_number)]);
+                  const resp = run.response;
+                  const variantKey = resp?.variant_key ?? '';
+                  const variantLabel = resp?.variant_label || variantKey || '--';
+                  const atoms = resolveVariantColorAtoms(variantKey, editions);
+                  const hexParts = atoms.map((a) => hexMap.get(a.trim()) || '');
+                  const dateValue = resp?.release_date || '';
+                  const evidenceCount = resp?.evidence?.length ?? 0;
+                  const log = resp?.discovery_log;
+                  const discoverySections: DiscoverySection[] = [];
+                  if (log?.queries_run?.length) discoverySections.push({ title: 'Queries Run', format: 'lines', items: log.queries_run });
+                  if (log?.urls_checked?.length) discoverySections.push({ title: 'URLs Checked', format: 'lines', items: log.urls_checked });
+                  if (log?.notes?.length) discoverySections.push({ title: 'Notes', format: 'lines', items: log.notes });
+
                   return (
-                    <div key={row.runNumber} className="sf-surface-panel border sf-border-soft rounded-md">
-                      <div className="flex items-center gap-3 px-3 py-2">
-                        <button
-                          onClick={() => toggleRunExpand(String(row.runNumber))}
-                          className="w-5 h-5 flex items-center justify-center sf-text-muted hover:sf-text-primary"
-                        >
-                          {expanded ? '▾' : '▸'}
-                        </button>
-                        <span className="text-[10px] font-mono font-bold sf-chip-neutral px-1.5 py-0.5 rounded">
-                          #{row.runNumber}
+                    <FinderRunHistoryRow
+                      key={run.run_number}
+                      runNumber={run.run_number}
+                      ranAt={run.ran_at}
+                      startedAt={run.started_at ?? resp?.started_at}
+                      durationMs={run.duration_ms ?? resp?.duration_ms ?? null}
+                      model={run.model}
+                      accessMode={run.access_mode}
+                      effortLevel={run.effort_level}
+                      fallbackUsed={run.fallback_used}
+                      thinking={run.thinking}
+                      webSearch={run.web_search}
+                      expanded={expanded}
+                      onToggle={() => toggleRunExpand(String(run.run_number))}
+                      onDelete={(rn) => setDeleteTarget({ kind: 'run', runNumber: rn })}
+                      deleteDisabled={isAnyDeletePending}
+                      leftContent={
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium sf-surface-panel border sf-border-soft">
+                          <ColorSwatch hexParts={hexParts} />
+                          <span className="sf-text-primary truncate max-w-[180px]">{variantLabel}</span>
                         </span>
-                        <span className="text-[11px] font-semibold sf-text-primary flex-1 truncate">
-                          {row.variantLabel || row.variantKey}
-                        </span>
-                        <span className="text-[11px] font-mono sf-text-primary">
-                          {row.releaseDate || '—'}
-                        </span>
-                        {row.confidence > 0 && (
-                          <span className="text-[10px] font-mono sf-text-muted">{row.confidence}%</span>
-                        )}
-                        <span className="text-[10px] font-mono sf-text-muted">
-                          {row.evidenceCount} evidence
-                        </span>
-                        {row.durationMs != null && (
-                          <span className="text-[10px] font-mono sf-text-subtle">{formatDuration(row.durationMs)}</span>
-                        )}
-                        <span className="text-[10px] font-mono sf-text-subtle">{new Date(row.ranAt).toLocaleString()}</span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setDeleteTarget({ kind: 'run', runNumber: row.runNumber }); }}
-                          disabled={isAnyDeletePending}
-                          className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded sf-status-text-danger border sf-border-soft opacity-50 hover:opacity-100"
-                        >
-                          Del
-                        </button>
-                      </div>
-                      {expanded && (
-                        <div className="border-t sf-border-soft px-3 py-2 text-[11px] sf-text-muted font-mono">
-                          Model: <span className="sf-text-primary">{row.model}</span>
-                        </div>
+                      }
+                      rightContent={
+                        <>
+                          <Chip
+                            label={dateValue || 'unk'}
+                            className={dateValue ? 'sf-chip-success font-mono' : 'sf-chip-warning font-mono'}
+                          />
+                          {(resp?.confidence ?? 0) > 0 && (
+                            <span className="text-[10px] font-mono sf-text-muted">{resp?.confidence}%</span>
+                          )}
+                          <Chip
+                            label={`${evidenceCount} evidence`}
+                            className={evidenceCount > 0 ? 'sf-chip-info' : 'sf-chip-neutral'}
+                          />
+                        </>
+                      }
+                    >
+                      {log && discoverySections.length > 0 && (
+                        <FinderDiscoveryDetails
+                          title="Discovery Log"
+                          sections={discoverySections}
+                          storageKey={`rdf:discoveryLog:${run.run_number}`}
+                        />
                       )}
-                    </div>
+                      <FinderRunPromptDetails
+                        systemPrompt={run.prompt?.system}
+                        userMessage={run.prompt?.user}
+                        response={resp}
+                        storageKeyPrefix={`rdf:runPrompt:${run.run_number}`}
+                      />
+                    </FinderRunHistoryRow>
                   );
                 })}
               </div>

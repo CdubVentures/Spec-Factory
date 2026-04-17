@@ -173,10 +173,26 @@ function republishAfterDelete(specDb, productId, fieldKeys, sourceType, runSet, 
     }
 
     // Re-publish or clean stale fields[] — skip when module handles publish separately
-    if (!skipRepublish && data.fields) {
-      for (const key of fieldKeys) {
-        const result = republishField({ specDb, productId, fieldKey: key, config, productJson: data });
-        if (result.status !== 'unchanged') changed = true;
+    if (!skipRepublish) {
+      // Scalar fields (variant-blind)
+      if (data.fields) {
+        for (const key of fieldKeys) {
+          const result = republishField({ specDb, productId, fieldKey: key, config, productJson: data });
+          if (result.status !== 'unchanged') changed = true;
+        }
+      }
+      // Variant-scoped fields (one entry per variant per field key)
+      // WHY: Variant-producing finders write to variant_fields[vid][key]. On source
+      // delete, re-threshold each (fieldKey, variantId) independently so deleting
+      // a run affects only the variants that source touched, not siblings.
+      if (data.variant_fields && typeof data.variant_fields === 'object') {
+        for (const variantId of Object.keys(data.variant_fields)) {
+          for (const key of fieldKeys) {
+            if (!data.variant_fields[variantId]?.[key]) continue;
+            const result = republishField({ specDb, productId, fieldKey: key, config, productJson: data, variantId });
+            if (result.status !== 'unchanged') changed = true;
+          }
+        }
       }
     }
 

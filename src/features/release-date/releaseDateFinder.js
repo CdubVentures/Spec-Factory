@@ -11,7 +11,6 @@
  * table for fast UI GET (no product-level field_rules pollution).
  */
 
-import fs from 'node:fs';
 import path from 'node:path';
 import { buildLlmCallDeps } from '../../core/llm/buildLlmCallDeps.js';
 import { buildBillingOnUsage } from '../../billing/costLedger.js';
@@ -38,21 +37,6 @@ import {
 function isoCutoffForDays(days) {
   if (!days || days <= 0) return '';
   return new Date(Date.now() - days * 86400000).toISOString();
-}
-
-function readFieldRules(productRoot, category, config) {
-  // WHY: The publisher needs compiled field rules to validate candidates.
-  // Read from category_authority/generated/{category}/field_rules.json
-  // (same path structure used by other finders).
-  const helperRoot = config?.categoryAuthorityRoot || 'category_authority';
-  const rulesPath = path.join(helperRoot, category, 'generated', 'field_rules.json');
-  try {
-    const raw = fs.readFileSync(rulesPath, 'utf8');
-    const parsed = JSON.parse(raw);
-    return parsed.fields || null;
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -154,7 +138,10 @@ export async function runReleaseDateFinder({
     llmDeps,
   });
 
-  const fieldRules = readFieldRules(productRoot, product.category, config);
+  // WHY: Source field rules from specDb (compiled SSOT) — same pattern as CEF.
+  // Reading files directly risks path drift and bypasses the compile pipeline.
+  const compiled = specDb.getCompiledRules?.();
+  const fieldRules = compiled?.fields || null;
   const ranAt = new Date().toISOString();
 
   async function produceForVariant(variant) {

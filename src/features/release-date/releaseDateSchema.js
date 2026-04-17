@@ -18,7 +18,7 @@ export const releaseDateFinderResponseSchema = z.object({
     source_url: z.string().default(''),
     source_page: z.string().default(''),
     source_type: z.enum(['manufacturer', 'retailer', 'review', 'press', 'other']).default('other'),
-    tier: z.enum(['tier1', 'tier2', 'tier3', 'unknown']).default('unknown'),
+    tier: z.enum(['tier1', 'tier2', 'tier3', 'tier4', 'tier5', 'other', 'unknown']).default('unknown'),
     excerpt: z.string().default(''),
   })).default([]),
   discovery_log: z.object({

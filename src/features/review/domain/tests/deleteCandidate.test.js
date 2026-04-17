@@ -61,7 +61,7 @@ const baseOpts = (specDb, root, productId = 'mouse-001') => ({
 
 describe('deleteCandidateBySourceId', () => {
 
-  it('deletes SQL row + product.json candidate — fields unchanged', withFreshEnv(({ specDb, root, ensureProductJson, readProductJson, seed }) => {
+  it('non-variant field with multiple sources → republishes to remaining winner', withFreshEnv(({ specDb, root, ensureProductJson, readProductJson, seed }) => {
     const sid1 = seed('mouse-001', 'weight', '58', 0.9);
     const sid2 = seed('mouse-001', 'weight', '60', 0.85);
     const seededField = { value: 58, confidence: 0.9, source: 'pipeline', sources: [], linked_candidates: [] };
@@ -75,8 +75,9 @@ describe('deleteCandidateBySourceId', () => {
 
     const result = deleteCandidateBySourceId({ ...baseOpts(specDb, root), sourceId: sid1 });
     assert.equal(result.deleted, true);
-    // WHY: Candidate deletion never touches published fields (policy shift)
-    assert.equal(result.republished, false);
+    // WHY: Non-variant field + sole source deleted is no longer the case here, but we
+    // still republish to the remaining winner because candidate evidence is the truth.
+    assert.equal(result.republished, true);
 
     // SQL row gone
     assert.equal(specDb.getFieldCandidateBySourceId('mouse-001', 'weight', sid1), null);
@@ -84,11 +85,12 @@ describe('deleteCandidateBySourceId', () => {
     const pj = readProductJson('mouse-001');
     assert.equal(pj.candidates.weight.length, 1);
     assert.equal(pj.candidates.weight[0].source_id, sid2);
-    // Field UNCHANGED — candidate deletion does not republish
-    assert.deepEqual(pj.fields.weight, seededField);
+    // Field RE-DERIVED to the remaining candidate (value 60, confidence 0.85)
+    assert.equal(pj.fields.weight.value, 60);
+    assert.equal(pj.fields.weight.confidence, 0.85);
   }));
 
-  it('only candidate for field → field still exists (not unpublished)', withFreshEnv(({ specDb, root, ensureProductJson, readProductJson, seed }) => {
+  it('non-variant field with sole source → unpublishes', withFreshEnv(({ specDb, root, ensureProductJson, readProductJson, seed }) => {
     const sid = seed('mouse-001', 'weight', '58', 0.9);
     const seededField = { value: 58, confidence: 0.9, source: 'pipeline', sources: [], linked_candidates: [] };
     ensureProductJson('mouse-001', {
@@ -98,12 +100,62 @@ describe('deleteCandidateBySourceId', () => {
 
     const result = deleteCandidateBySourceId({ ...baseOpts(specDb, root), sourceId: sid });
     assert.equal(result.deleted, true);
-    assert.equal(result.republished, false);
+    // WHY: Rule 6 — candidate was the only source above threshold, so published unpublishes.
+    assert.equal(result.republished, true);
 
     const pj = readProductJson('mouse-001');
     assert.deepEqual(pj.candidates.weight, []);
-    // WHY: Published field persists — source deletion handles unpublish, not candidate deletion
-    assert.deepEqual(pj.fields.weight, seededField);
+    // Field REMOVED because no candidates remain above threshold.
+    assert.equal(pj.fields.weight, undefined);
+  }));
+
+  it('non-variant field with remaining below-threshold candidate → unpublishes', withFreshEnv(({ specDb, root, ensureProductJson, readProductJson, seed }) => {
+    const sid1 = seed('mouse-001', 'weight', '58', 0.9);
+    const sid2 = seed('mouse-001', 'weight', '60', 0.5); // below 0.7 default threshold
+    const seededField = { value: 58, confidence: 0.9, source: 'pipeline', sources: [], linked_candidates: [] };
+    ensureProductJson('mouse-001', {
+      candidates: { weight: [
+        { source_id: sid1, source_type: 'cef', value: '58', confidence: 0.9 },
+        { source_id: sid2, source_type: 'cef', value: '60', confidence: 0.5 },
+      ] },
+      fields: { weight: seededField },
+    });
+
+    const result = deleteCandidateBySourceId({ ...baseOpts(specDb, root), sourceId: sid1 });
+    assert.equal(result.republished, true);
+
+    const pj = readProductJson('mouse-001');
+    // Field UNPUBLISHED — remaining candidate is below threshold
+    assert.equal(pj.fields.weight, undefined);
+  }));
+
+  it('non-variant set_union field → recomputes union of remaining candidates', withFreshEnv(({ specDb, root, ensureProductJson, readProductJson, seed }) => {
+    // Inject compiled rules to mark 'tags' as set_union
+    specDb.getCompiledRules = () => ({
+      fields: { tags: { contract: { list_rules: { item_union: 'set_union' } } } },
+    });
+
+    const sid1 = seed('mouse-001', 'tags', JSON.stringify(['a', 'b']), 0.9);
+    const sid2 = seed('mouse-001', 'tags', JSON.stringify(['b', 'c']), 0.85);
+    const sid3 = seed('mouse-001', 'tags', JSON.stringify(['c', 'd']), 0.8);
+    ensureProductJson('mouse-001', {
+      candidates: { tags: [
+        { source_id: sid1, source_type: 'cef', value: '["a","b"]', confidence: 0.9 },
+        { source_id: sid2, source_type: 'cef', value: '["b","c"]', confidence: 0.85 },
+        { source_id: sid3, source_type: 'cef', value: '["c","d"]', confidence: 0.8 },
+      ] },
+      fields: { tags: { value: ['a', 'b', 'c', 'd'], confidence: 0.9, source: 'pipeline', sources: [], linked_candidates: [] } },
+    });
+
+    const result = deleteCandidateBySourceId({
+      ...baseOpts(specDb, root), fieldKey: 'tags', sourceId: sid1,
+    });
+    assert.equal(result.republished, true);
+
+    const pj = readProductJson('mouse-001');
+    // WHY: set_union merges arrays across candidates — after removing sid1 (which had 'a'),
+    // remaining union is ['b','c','d'] from sid2 + sid3.
+    assert.deepEqual(pj.fields.tags.value.sort(), ['b', 'c', 'd']);
   }));
 
   it('manual_override last source_id globally → artifacts_cleaned false (no artifacts exist)', withFreshEnv(({ specDb, root, ensureProductJson, seed }) => {
@@ -333,7 +385,7 @@ describe('deleteCandidateBySourceId', () => {
 
 describe('deleteAllCandidatesForField', () => {
 
-  it('bulk deletes all candidates — field persists', withFreshEnv(({ specDb, root, ensureProductJson, readProductJson, seed }) => {
+  it('non-variant field: bulk deletes all candidates → unpublishes', withFreshEnv(({ specDb, root, ensureProductJson, readProductJson, seed }) => {
     const sid1 = seed('mouse-001', 'weight', '58', 0.9);
     const sid2 = seed('mouse-001', 'weight', '60', 0.85, 'manual_override');
     const seededField = { value: 58, confidence: 0.9, source: 'pipeline', sources: [], linked_candidates: [] };
@@ -347,14 +399,41 @@ describe('deleteAllCandidatesForField', () => {
 
     const result = deleteAllCandidatesForField({ ...baseOpts(specDb, root) });
     assert.equal(result.deleted, 2);
+    // WHY: Rule 6 — all candidates gone for a non-variant field, so no evidence backs published.
+    assert.equal(result.republished, true);
 
     const pj = readProductJson('mouse-001');
     assert.equal(pj.candidates.weight, undefined);
-    // WHY: Published field persists — source deletion handles unpublish, not candidate deletion
-    assert.deepEqual(pj.fields.weight, seededField);
+    // Field UNPUBLISHED — no candidates remain to back it.
+    assert.equal(pj.fields.weight, undefined);
 
     // SQL rows all gone
     assert.equal(specDb.getFieldCandidatesByProductAndField('mouse-001', 'weight').length, 0);
+  }));
+
+  it('variant-owned colors field: bulk delete all candidates → published unchanged', withFreshEnv(({ specDb, root, ensureProductJson, readProductJson, seed }) => {
+    const sid1 = seed('mouse-001', 'colors', '["black"]', 0.9, 'cef');
+    const sid2 = seed('mouse-001', 'colors', '["white"]', 0.85, 'cef');
+    const seededField = { value: ['black', 'white'], confidence: 1.0, source: 'variant_registry', sources: [{ source: 'variant_registry' }], linked_candidates: [] };
+    ensureProductJson('mouse-001', {
+      candidates: { colors: [
+        { source_id: sid1, source_type: 'cef', value: '["black"]', confidence: 0.9 },
+        { source_id: sid2, source_type: 'cef', value: '["white"]', confidence: 0.85 },
+      ] },
+      fields: { colors: seededField },
+    });
+
+    const result = deleteAllCandidatesForField({
+      ...baseOpts(specDb, root), fieldKey: 'colors',
+    });
+    assert.equal(result.deleted, 2);
+    // WHY: Rule 3 — variant-backed field ignores candidate deletion for published state.
+    assert.equal(result.republished, false);
+
+    const pj = readProductJson('mouse-001');
+    assert.equal(pj.candidates.colors, undefined);
+    // Field PRESERVED because variants (not candidates) back it.
+    assert.deepEqual(pj.fields.colors, seededField);
   }));
 
   it('shared source with another field → artifacts kept for shared source', withFreshEnv(({ specDb, root, ensureProductJson, seed }) => {

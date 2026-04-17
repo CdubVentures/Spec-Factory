@@ -112,6 +112,96 @@ describe('finderJsonStore — generic factory', () => {
     assert.deepEqual(merged.selected, { items: ['good'], label: 'G' });
   });
 
+  // ── LLM metadata persistence on runEntry ──────────────────────────
+  // WHY: Finder run history rows render access mode / thinking / web-search /
+  // effort icons from the persisted run record. These fields must survive the
+  // merge() pipeline — a prior bug silently dropped them from runEntry.
+
+  it('merge persists access_mode / thinking / web_search / effort_level on runEntry', () => {
+    const store = makeStore('llm_meta_all');
+    const merged = store.merge({
+      productId: 'llm-m1', productRoot: TMP_ROOT,
+      newDiscovery: { category: 'cat', last_ran_at: '2026-04-17' },
+      run: {
+        model: 'gpt-5.4',
+        fallback_used: false,
+        access_mode: 'lab',
+        effort_level: 'xhigh',
+        thinking: true,
+        web_search: true,
+        selected: { items: ['x'], label: 'X' },
+        prompt: {}, response: {},
+      },
+    });
+    const entry = merged.runs[0];
+    assert.equal(entry.access_mode, 'lab');
+    assert.equal(entry.effort_level, 'xhigh');
+    assert.equal(entry.thinking, true);
+    assert.equal(entry.web_search, true);
+  });
+
+  it('merge persists thinking=false and web_search=false (not dropped as falsy)', () => {
+    const store = makeStore('llm_meta_false');
+    const merged = store.merge({
+      productId: 'llm-m2', productRoot: TMP_ROOT,
+      newDiscovery: { category: 'cat', last_ran_at: '2026-04-17' },
+      run: {
+        model: 'gpt-5.4-mini',
+        access_mode: 'api',
+        thinking: false,
+        web_search: false,
+        selected: { items: [], label: '' },
+        prompt: {}, response: {},
+      },
+    });
+    const entry = merged.runs[0];
+    assert.equal(entry.access_mode, 'api');
+    assert.equal(entry.thinking, false);
+    assert.equal(entry.web_search, false);
+  });
+
+  it('merge omits LLM metadata keys entirely when upstream did not provide them', () => {
+    const store = makeStore('llm_meta_absent');
+    const merged = store.merge({
+      productId: 'llm-m3', productRoot: TMP_ROOT,
+      newDiscovery: { category: 'cat', last_ran_at: '2026-04-17' },
+      run: { model: 'gpt', selected: {}, prompt: {}, response: {} },
+    });
+    const entry = merged.runs[0];
+    assert.ok(!('access_mode' in entry), 'access_mode must not appear when not provided');
+    assert.ok(!('effort_level' in entry), 'effort_level must not appear when not provided');
+    assert.ok(!('thinking' in entry), 'thinking must not appear when not provided');
+    assert.ok(!('web_search' in entry), 'web_search must not appear when not provided');
+  });
+
+  it('merge persists LLM metadata on rejected runs too (for failure triage)', () => {
+    const store = makeStore('llm_meta_rej');
+    store.merge({
+      productId: 'llm-m4', productRoot: TMP_ROOT,
+      newDiscovery: { category: 'cat', last_ran_at: '2026-04-17' },
+      run: { model: 'gpt', selected: { items: ['a'], label: 'A' }, prompt: {}, response: {} },
+    });
+    const merged = store.merge({
+      productId: 'llm-m4', productRoot: TMP_ROOT,
+      newDiscovery: { category: 'cat', last_ran_at: '2026-04-17' },
+      run: {
+        model: 'gpt-5.4',
+        status: 'rejected',
+        access_mode: 'lab',
+        thinking: true,
+        web_search: false,
+        effort_level: 'high',
+        selected: {}, prompt: {}, response: {},
+      },
+    });
+    const rejectedEntry = merged.runs[1];
+    assert.equal(rejectedEntry.status, 'rejected');
+    assert.equal(rejectedEntry.access_mode, 'lab');
+    assert.equal(rejectedEntry.thinking, true);
+    assert.equal(rejectedEntry.web_search, false);
+    assert.equal(rejectedEntry.effort_level, 'high');
+  });
+
   // ── eval field preservation across merge ─────────────────────────
 
   it('merge preserves eval fields on selected.images when new run is added', () => {

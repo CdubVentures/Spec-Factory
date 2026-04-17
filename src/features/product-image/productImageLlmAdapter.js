@@ -15,6 +15,7 @@
 
 import { zodToLlmSchema } from '../../core/llm/zodToLlmSchema.js';
 import { resolvePromptTemplate } from '../../core/llm/resolvePromptTemplate.js';
+import { buildEvidencePromptBlock } from '../../core/finder/evidencePromptFragment.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
 import { productImageFinderResponseSchema } from './productImageSchema.js';
 
@@ -634,8 +635,11 @@ Every image you return MUST use one of these view names: {{ALL_VIEW_KEYS}}
 
 If a specific view is genuinely unavailable for this variant, omit it rather than returning a wrong angle.
 
+{{EVIDENCE_REQUIREMENTS}}
+Attach evidence_refs to each image — the URL(s) where you found this image being used as the product's image for this exact variant (typically the product page or review page it appears on).
+
 Return JSON:
-- "images": [{ "view": "view-name", "url": "direct-image-url", "source_page": "page-where-found", "alt_text": "image alt text if available" }, ...]
+- "images": [{ "view": "view-name", "url": "direct-image-url", "source_page": "page-where-found", "alt_text": "image alt text if available", "evidence_refs": [{ "url": "...", "tier": "tier1|tier2|tier3|tier4|tier5|other" }, ...] }, ...]
 - "discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }`;
 
 export function buildProductImageFinderPrompt({
@@ -652,6 +656,7 @@ export function buildProductImageFinderPrompt({
   previousDiscovery = { urlsChecked: [], queriesRun: [] },
   promptOverride = '',
   templateOverride = '',
+  minEvidenceRefs = 1,
 }) {
   const brand = product.brand || '';
   const baseModel = product.base_model || '';
@@ -733,6 +738,7 @@ export function buildProductImageFinderPrompt({
     IMAGE_REQUIREMENTS: imageRequirements,
     PREVIOUS_DISCOVERY: previousDiscoverySection,
     VARIANT_TYPE_WORD: variantType === 'edition' ? 'edition' : 'color',
+    EVIDENCE_REQUIREMENTS: buildEvidencePromptBlock({ minEvidenceRefs }),
   });
 }
 
@@ -753,6 +759,7 @@ export const PRODUCT_IMAGE_FINDER_SPEC = {
     previousDiscovery: domainArgs.previousDiscovery || { urlsChecked: [], queriesRun: [] },
     promptOverride: domainArgs.promptOverride || '',
     viewQualityMap: domainArgs.viewQualityMap || null,
+    minEvidenceRefs: domainArgs.minEvidenceRefs,
   }),
   jsonSchema: zodToLlmSchema(productImageFinderResponseSchema),
 };

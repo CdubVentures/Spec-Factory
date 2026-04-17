@@ -133,6 +133,38 @@ describe('handleCandidateDeletionRoute', () => {
     assert.equal(broadcasts[0].channel, 'data-change');
   }));
 
+  it('non-variant field delete → response body carries republished=true', withFreshEnv(async ({ specDb, root, ensureProductJson, seed, context, responses }) => {
+    const sid = seed('mouse-001', 'weight', '58', 0.9);
+    ensureProductJson('mouse-001', {
+      candidates: { weight: [{ source_id: sid, source_type: 'cef', value: '58', confidence: 0.9 }] },
+      fields: { weight: { value: 58, confidence: 0.9, source: 'pipeline', sources: [], linked_candidates: [] } },
+    });
+
+    await handleCandidateDeletionRoute({
+      parts: ['review', 'mouse', 'candidates', 'mouse-001', 'weight', sid],
+      method: 'DELETE', req: {}, res: {},
+      context,
+    });
+    assert.equal(responses[0].body.ok, true);
+    assert.equal(responses[0].body.republished, true);
+  }));
+
+  it('variant-backed colors field delete → response body carries republished=false', withFreshEnv(async ({ specDb, root, ensureProductJson, seed, context, responses }) => {
+    const sid = seed('mouse-001', 'colors', '["black"]', 0.9, 'cef');
+    ensureProductJson('mouse-001', {
+      candidates: { colors: [{ source_id: sid, source_type: 'cef', value: '["black"]', confidence: 0.9 }] },
+      fields: { colors: { value: ['black'], confidence: 1.0, source: 'variant_registry', sources: [], linked_candidates: [] } },
+    });
+
+    await handleCandidateDeletionRoute({
+      parts: ['review', 'mouse', 'candidates', 'mouse-001', 'colors', sid],
+      method: 'DELETE', req: {}, res: {},
+      context,
+    });
+    assert.equal(responses[0].body.ok, true);
+    assert.equal(responses[0].body.republished, false);
+  }));
+
   it('specDb not found → 404', async () => {
     const responses = [];
     const result = await handleCandidateDeletionRoute({

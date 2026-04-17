@@ -514,7 +514,7 @@ export class SpecDb {
 
   upsertFieldCandidate(opts) { this._fieldCandidateStore.upsert(opts); }
   getFieldCandidate(pid, fk, val) { return this._fieldCandidateStore.get(pid, fk, val); }
-  getFieldCandidatesByProductAndField(pid, fk) { return this._fieldCandidateStore.getByProductAndField(pid, fk); }
+  getFieldCandidatesByProductAndField(pid, fk, variantId) { return this._fieldCandidateStore.getByProductAndField(pid, fk, variantId); }
   getAllFieldCandidatesByProduct(pid) { return this._fieldCandidateStore.getAllByProduct(pid); }
   deleteFieldCandidatesByProduct(pid) { this._fieldCandidateStore.deleteByProduct(pid); }
   deleteFieldCandidatesByProductAndField(pid, fk) { this._fieldCandidateStore.deleteByProductAndField(pid, fk); }
@@ -522,8 +522,8 @@ export class SpecDb {
   getFieldCandidatesPaginated(opts) { return this._fieldCandidateStore.getPaginated(opts); }
   countFieldCandidates() { return this._fieldCandidateStore.count(); }
   getFieldCandidatesStats() { return this._fieldCandidateStore.stats(); }
-  markFieldCandidateResolved(pid, fk, val) { this._fieldCandidateStore.markResolved(pid, fk, val); }
-  demoteResolvedCandidates(pid, fk) { this._fieldCandidateStore.demoteResolved(pid, fk); }
+  markFieldCandidateResolved(pid, fk, val, variantId) { this._fieldCandidateStore.markResolved(pid, fk, val, variantId); }
+  demoteResolvedCandidates(pid, fk, variantId) { this._fieldCandidateStore.demoteResolved(pid, fk, variantId); }
   getResolvedFieldCandidate(pid, fk) { return this._fieldCandidateStore.getResolved(pid, fk); }
   getDistinctCandidateProducts() { return this._fieldCandidateStore.getDistinctProducts(); }
 

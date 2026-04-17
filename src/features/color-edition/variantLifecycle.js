@@ -9,6 +9,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
+import { FINDER_MODULES } from '../../core/finder/finderModuleRegistry.js';
+import { stripVariantFromFieldProducerHistory } from '../../core/finder/variantCleanup.js';
 import { readColorEdition, writeColorEdition } from './colorEditionStore.js';
 import { propagateVariantDelete } from '../product-image/index.js';
 
@@ -83,6 +85,43 @@ export function deriveColorNamesFromVariants(variants, publishedColors, publishe
 // ── Derive published state from variants ────────────────────────────
 
 /**
+ * Pure: project a list of variant rows into published colors/editions arrays.
+ *
+ * WHY: Variants are the SSOT for colors/editions. This helper is the
+ * single place that knows how to turn variant rows into published arrays;
+ * reused by both the write path (derivePublishedFromVariants) and the
+ * read path (publisher GET /published/:productId).
+ *
+ * Rules:
+ *  - Color variants contribute their combo (e.g. "white+silver") to colors.
+ *  - Edition variants contribute their slug to editions AND their combo to
+ *    colors (an edition IS a color variant).
+ *  - Combos stay intact — never split into atoms.
+ *
+ * @param {object[]} variants — rows from variants.listActive
+ * @returns {{ colors: string[], editions: string[], defaultColor: string }}
+ */
+export function computePublishedArraysFromVariants(variants) {
+  const colors = [];
+  const editions = [];
+
+  for (const v of variants || []) {
+    if (v.variant_type === 'color') {
+      const combo = getColorVariantCombo(v);
+      if (combo && !colors.includes(combo)) colors.push(combo);
+    } else if (v.variant_type === 'edition') {
+      if (v.edition_slug && !editions.includes(v.edition_slug)) {
+        editions.push(v.edition_slug);
+      }
+      const editionCombo = getEditionColorCombo(v);
+      if (editionCombo && !colors.includes(editionCombo)) colors.push(editionCombo);
+    }
+  }
+
+  return { colors, editions, defaultColor: colors[0] || '' };
+}
+
+/**
  * Read active variants → build published colors/editions → write to
  * product.json fields[] and CEF summary columns.
  *
@@ -96,28 +135,8 @@ export function derivePublishedFromVariants({ specDb, productId, productRoot }) 
   productRoot = productRoot || defaultProductRoot();
   const variants = specDb.variants.listActive(productId);
 
-  const colors = [];
-  const editions = [];
+  const { colors, editions, defaultColor } = computePublishedArraysFromVariants(variants);
 
-  for (const v of variants) {
-    if (v.variant_type === 'color') {
-      // WHY: Publish the combo string (e.g. "white+silver"), not individual atoms.
-      // Atom splitting is only for palette validation. The combo is the variant key
-      // and the contract buildVariantList / PIF depend on.
-      const combo = getColorVariantCombo(v);
-      if (combo && !colors.includes(combo)) colors.push(combo);
-    } else if (v.variant_type === 'edition') {
-      if (v.edition_slug && !editions.includes(v.edition_slug)) {
-        editions.push(v.edition_slug);
-      }
-      // WHY: An edition IS a color variant — its combo (e.g. "dark-gray+black+orange")
-      // must also appear in published colors. Combo stays intact; no atom split.
-      const editionCombo = getEditionColorCombo(v);
-      if (editionCombo && !colors.includes(editionCombo)) colors.push(editionCombo);
-    }
-  }
-
-  const defaultColor = colors[0] || '';
   const now = new Date().toISOString();
 
   // Update product.json fields[colors] and fields[editions]
@@ -319,20 +338,35 @@ function cascadeVariantIdFromCandidates({ specDb, productId, variantId, productR
   specDb.deleteFieldCandidatesByVariantId(productId, variantId);
 
   const productJson = readProductJson(productRoot, productId);
-  if (!productJson?.candidates) return;
+  if (!productJson) return;
 
   let jsonChanged = false;
-  for (const [fieldKey, entries] of Object.entries(productJson.candidates)) {
-    if (!Array.isArray(entries)) continue;
 
-    for (let i = entries.length - 1; i >= 0; i--) {
-      if (entries[i]?.variant_id === variantId) {
-        entries.splice(i, 1);
-        jsonChanged = true;
+  // Strip variant_id-anchored candidates from product.json.candidates[]
+  if (productJson.candidates) {
+    for (const [fieldKey, entries] of Object.entries(productJson.candidates)) {
+      if (!Array.isArray(entries)) continue;
+
+      for (let i = entries.length - 1; i >= 0; i--) {
+        if (entries[i]?.variant_id === variantId) {
+          entries.splice(i, 1);
+          jsonChanged = true;
+        }
       }
-    }
 
-    if (entries.length === 0) delete productJson.candidates[fieldKey];
+      if (entries.length === 0) delete productJson.candidates[fieldKey];
+    }
+  }
+
+  // WHY: Variant-scoped published values live in variant_fields[vid][fieldKey].
+  // Delete-variant must drop the whole variant_fields[vid] entry — otherwise the
+  // published release_date / SKU / price for a non-existent variant persists.
+  if (productJson.variant_fields && productJson.variant_fields[variantId]) {
+    delete productJson.variant_fields[variantId];
+    jsonChanged = true;
+    if (Object.keys(productJson.variant_fields).length === 0) {
+      delete productJson.variant_fields;
+    }
   }
 
   if (jsonChanged) {
@@ -352,7 +386,10 @@ function cascadeVariantIdFromCandidates({ specDb, productId, variantId, productR
  *   3. field_candidates (feature source) → DELETE WHERE variant_id = ? (FK cascade)
  *   4. color_edition.json variant_registry + selected → filter out
  *   5. published state → re-derive from remaining variants
- *   6. PIF → remove images, evals, carousel_slots for this variant
+ *   6. PIF (variantArtifactProducer) → remove images, evals, carousel_slots for this variant
+ *   7. Every variantFieldProducer module (RDF, and future SKU/price/etc.)
+ *      → strip per-variant entries from its own JSON runs + SQL summary/runs blobs.
+ *      Driven by finderModuleRegistry so new modules auto-inherit the cascade.
  *
  * @param {{ specDb, productId: string, variantId: string, productRoot?: string }} opts
  * @returns {{ deleted: boolean, variant?: object }}
@@ -374,10 +411,10 @@ export function deleteVariant({ specDb, productId, variantId, productRoot }) {
   // 4. Remove from JSON SSOT
   removeVariantFromJson({ productId, variantId, productRoot });
 
-  // 4. Re-derive published state from remaining variants
+  // 5. Re-derive published state from remaining variants
   const published = derivePublishedFromVariants({ specDb, productId, productRoot });
 
-  // 5. Cascade to PIF
+  // 6. Cascade to PIF (variantArtifactProducer — custom disk + eval cleanup)
   const pifResult = propagateVariantDelete({
     productId,
     variantId: variant.variant_id,
@@ -386,7 +423,22 @@ export function deleteVariant({ specDb, productId, variantId, productRoot }) {
     specDb,
   });
 
-  return { deleted: true, variant, published, pif: pifResult };
+  // 7. Generic cascade: every variantFieldProducer module strips its own history.
+  // O(1) scaling: a new variantFieldProducer entry in finderModuleRegistry
+  // automatically gets this cleanup — no edits here required.
+  const fieldProducerResults = {};
+  for (const mod of FINDER_MODULES) {
+    if (mod.moduleClass !== 'variantFieldProducer') continue;
+    fieldProducerResults[mod.id] = stripVariantFromFieldProducerHistory({
+      specDb, productId,
+      variantId: variant.variant_id,
+      variantKey: variant.variant_key,
+      module: mod,
+      productRoot,
+    });
+  }
+
+  return { deleted: true, variant, published, pif: pifResult, fieldProducers: fieldProducerResults };
 }
 
 // ── Delete all variants + cascade ─────────────────────────────────

@@ -199,6 +199,78 @@ describe('colorEditionFinderResponseSchema', () => {
     assert.deepEqual(result.colors, ['black', 'white']);
     assert.deepEqual(result.color_names, { 'white': 'Arctic White' });
   });
+
+  // ── evidence_refs ──
+
+  it('parses evidence_refs record keyed by color atom', () => {
+    const input = {
+      colors: ['black', 'white'],
+      default_color: 'black',
+      evidence_refs: {
+        'black': [{ url: 'https://razer.com/m1', tier: 'tier1' }],
+        'white': [{ url: 'https://amazon.com/white', tier: 'tier3' }],
+      },
+    };
+    const result = colorEditionFinderResponseSchema.parse(input);
+    assert.deepEqual(result.evidence_refs.black, [{ url: 'https://razer.com/m1', tier: 'tier1' }]);
+    assert.deepEqual(result.evidence_refs.white, [{ url: 'https://amazon.com/white', tier: 'tier3' }]);
+  });
+
+  it('parses evidence_refs keyed by edition slug', () => {
+    const input = {
+      colors: ['black'],
+      editions: { 'launch-edition': { colors: ['black+red'] } },
+      default_color: 'black',
+      evidence_refs: {
+        'launch-edition': [{ url: 'https://razer.com/launch', tier: 'tier1' }],
+      },
+    };
+    const result = colorEditionFinderResponseSchema.parse(input);
+    assert.deepEqual(result.evidence_refs['launch-edition'], [{ url: 'https://razer.com/launch', tier: 'tier1' }]);
+  });
+
+  it('evidence_refs defaults to empty object when omitted', () => {
+    const input = { colors: ['black'], default_color: 'black' };
+    const result = colorEditionFinderResponseSchema.parse(input);
+    assert.deepEqual(result.evidence_refs, {});
+  });
+
+  it('rejects evidence_refs entry missing url', () => {
+    const input = {
+      colors: ['black'],
+      default_color: 'black',
+      evidence_refs: { 'black': [{ tier: 'tier1' }] },
+    };
+    assert.throws(() => colorEditionFinderResponseSchema.parse(input));
+  });
+
+  it('rejects evidence_refs entry missing tier', () => {
+    const input = {
+      colors: ['black'],
+      default_color: 'black',
+      evidence_refs: { 'black': [{ url: 'https://razer.com/m1' }] },
+    };
+    assert.throws(() => colorEditionFinderResponseSchema.parse(input));
+  });
+
+  it('accepts all 6 tier codes on evidence_refs entries', () => {
+    const input = {
+      colors: ['black'],
+      default_color: 'black',
+      evidence_refs: {
+        'black': [
+          { url: 'u1', tier: 'tier1' },
+          { url: 'u2', tier: 'tier2' },
+          { url: 'u3', tier: 'tier3' },
+          { url: 'u4', tier: 'tier4' },
+          { url: 'u5', tier: 'tier5' },
+          { url: 'u6', tier: 'other' },
+        ],
+      },
+    };
+    const result = colorEditionFinderResponseSchema.parse(input);
+    assert.equal(result.evidence_refs.black.length, 6);
+  });
 });
 
 /* ── variantIdentityCheckResponseSchema ────────────────────────── */
@@ -436,5 +508,57 @@ describe('variantIdentityCheckResponseSchema', () => {
     const result = variantIdentityCheckResponseSchema.safeParse(oldResponse);
     assert.ok(result.success);
     assert.deepEqual(result.data.orphan_remaps, [], 'defaults to empty array');
+  });
+
+  // ── evidence_refs on mappings ──
+
+  it('mapping accepts evidence_refs array', () => {
+    const result = variantIdentityCheckResponseSchema.safeParse({
+      mappings: [{
+        new_key: 'color:black',
+        match: null,
+        action: 'new',
+        reason: 'confirmed on razer.com',
+        verified: true,
+        evidence_refs: [{ url: 'https://razer.com/m1', tier: 'tier1' }],
+      }],
+      remove: [],
+    });
+    assert.ok(result.success);
+    assert.deepEqual(
+      result.data.mappings[0].evidence_refs,
+      [{ url: 'https://razer.com/m1', tier: 'tier1' }],
+    );
+  });
+
+  it('mapping evidence_refs defaults to empty array when omitted', () => {
+    const result = variantIdentityCheckResponseSchema.safeParse({
+      mappings: [validMapping],
+      remove: [],
+    });
+    assert.ok(result.success);
+    assert.deepEqual(result.data.mappings[0].evidence_refs, []);
+  });
+
+  it('mapping rejects evidence_refs entry missing url', () => {
+    const result = variantIdentityCheckResponseSchema.safeParse({
+      mappings: [{
+        new_key: 'color:black', match: null, action: 'new', reason: 'new',
+        evidence_refs: [{ tier: 'tier1' }],
+      }],
+      remove: [],
+    });
+    assert.ok(!result.success);
+  });
+
+  it('mapping rejects evidence_refs entry missing tier', () => {
+    const result = variantIdentityCheckResponseSchema.safeParse({
+      mappings: [{
+        new_key: 'color:black', match: null, action: 'new', reason: 'new',
+        evidence_refs: [{ url: 'https://razer.com' }],
+      }],
+      remove: [],
+    });
+    assert.ok(!result.success);
   });
 });

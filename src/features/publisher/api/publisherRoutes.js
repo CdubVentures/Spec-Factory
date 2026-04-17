@@ -11,6 +11,7 @@
 import { reconcileThreshold } from '../publish/reconcileThreshold.js';
 import { registerOperation, updateStage, completeOperation, failOperation } from '../../../core/operations/operationsRegistry.js';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
+import { computePublishedArraysFromVariants } from '../../color-edition/index.js';
 
 // WHY: colors/editions store their value as a JSON-stringified array in
 // field_candidates.value (e.g. '["black","white+silver"]'). UI consumers
@@ -119,10 +120,9 @@ export function registerPublisherRoutes(ctx) {
       const productId = parts[3];
       const allCandidates = specDb.getAllFieldCandidatesByProduct(productId);
       const fields = {};
-      // WHY: field_candidates (status='resolved') is the SSOT for published
-      // state — it mirrors the review grid. Discovery state (active variants)
-      // is a separate concept and must NOT imply publication; only explicit
-      // resolution in field_candidates marks a value as published.
+      // WHY: For evidence-backed fields, field_candidates (status='resolved')
+      // is the SSOT. Variant-backed fields (colors/editions) are handled
+      // below via the variants table.
       for (const row of allCandidates) {
         if (row.status !== 'resolved') continue;
         fields[row.field_key] = {
@@ -133,31 +133,36 @@ export function registerPublisherRoutes(ctx) {
         };
       }
 
-      // WHY: An edition IS a color variant — resolving an edition implicitly
-      // publishes its color combo. Cascade resolved edition slugs → their
-      // combo (from variants.color_atoms joined with '+') into fields.colors.value.
-      // Dedup against colors already present. Combos stay intact (no atom split).
-      if (fields.editions && Array.isArray(fields.editions.value) && specDb.variants) {
+      // WHY: Variants are directly connected to published for colors/editions
+      // (per CEF rules). The variants table is the SSOT for these two fields
+      // — not field_candidates — so that delete-all-runs (which strips
+      // candidates but preserves variants) leaves published state intact.
+      // Combos stay intact; an edition's combo cascades into colors natively.
+      if (specDb.variants) {
         const activeVariants = specDb.variants.listActive(productId) || [];
-        const editionCombos = [];
-        for (const slug of fields.editions.value) {
-          const variant = activeVariants.find(v => v.variant_type === 'edition' && v.edition_slug === slug);
-          if (!variant) continue;
-          const combo = Array.isArray(variant.color_atoms) ? variant.color_atoms.join('+') : '';
-          if (combo && !editionCombos.includes(combo)) editionCombos.push(combo);
-        }
-        if (editionCombos.length > 0) {
-          const existing = fields.colors && Array.isArray(fields.colors.value) ? fields.colors.value : [];
-          const union = [...existing];
-          for (const combo of editionCombos) {
-            if (!union.includes(combo)) union.push(combo);
-          }
+        const { colors: variantColors, editions: variantEditions } = computePublishedArraysFromVariants(activeVariants);
+        const now = new Date().toISOString();
+
+        if (variantColors.length > 0) {
           fields.colors = {
-            value: union,
+            value: variantColors,
             confidence: fields.colors?.confidence ?? 1.0,
-            source: fields.colors?.source || 'edition_cascade',
-            resolved_at: fields.colors?.resolved_at || fields.editions.resolved_at,
+            source: 'variant_registry',
+            resolved_at: fields.colors?.resolved_at || now,
           };
+        } else {
+          delete fields.colors;
+        }
+
+        if (variantEditions.length > 0) {
+          fields.editions = {
+            value: variantEditions,
+            confidence: fields.editions?.confidence ?? 1.0,
+            source: 'variant_registry',
+            resolved_at: fields.editions?.resolved_at || now,
+          };
+        } else {
+          delete fields.editions;
         }
       }
 

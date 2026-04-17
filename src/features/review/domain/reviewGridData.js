@@ -39,6 +39,20 @@ import {
 } from './reviewGridHelpers.js';
 
 
+/**
+ * Decide whether a product has any meaningful pipeline/variant state.
+ *
+ * WHY: After delete-all-runs for CEF, candidates are stripped but variants +
+ * published survive. The review row must remain visible, so "has run" must
+ * consider published field states too — not just candidate count.
+ *
+ * @param {{ candidateCount: number, knownFieldStateCount: number }} opts
+ * @returns {boolean}
+ */
+export function deriveHasRun({ candidateCount, knownFieldStateCount }) {
+  return (candidateCount || 0) > 0 || (knownFieldStateCount || 0) > 0;
+}
+
 export function buildFieldLabelsMap(categoryConfig) {
   const fields = (isObject(categoryConfig) && isObject(categoryConfig.fieldRules) && isObject(categoryConfig.fieldRules.fields))
     ? categoryConfig.fieldRules.fields
@@ -544,7 +558,11 @@ export async function buildProductReviewPayload({
       confidence: computedConfidence,
       coverage: computedCoverage,
       missing: missingCount,
-      has_run: allCandidates.length > 0,
+      // WHY: "has run" means the product has any meaningful state. Candidates are
+      // one signal; variant-backed published fields (colors, editions) are another.
+      // After delete-all-runs for CEF, candidates are stripped but variants +
+      // published survive, and the row must remain visible in the review grid.
+      has_run: deriveHasRun({ candidateCount: allCandidates.length, knownFieldStateCount: knownFieldStates.length }),
       updated_at: updatedAt,
     },
   };
