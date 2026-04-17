@@ -1,6 +1,6 @@
 // WHY: callLlmWithRouting fallback path did not respect phaseDisableLimits.
 // When disableLimits=true, BOTH primary and fallback must get maxTokens=0
-// and timeoutMs=600000. This test file uses mock.module to intercept
+// and timeoutMs=1200000. This test file uses mock.module to intercept
 // callLlmProvider so we can inspect the args passed on each attempt.
 
 import { describe, it, mock, beforeEach } from 'node:test';
@@ -106,7 +106,7 @@ function baseConfig(phaseOverrides = {}) {
 describe('callLlmWithRouting — disableLimits applies to both primary and fallback', () => {
   beforeEach(() => { calls.length = 0; });
 
-  it('needset: disableLimits=true → fallback gets maxTokens=0 and timeout=600000', async () => {
+  it('needset: disableLimits=true → fallback gets maxTokens=0 and timeout=1200000', async () => {
     const config = baseConfig({ _resolvedNeedsetDisableLimits: true });
     await callLlmWithRouting({
       config,
@@ -119,7 +119,7 @@ describe('callLlmWithRouting — disableLimits applies to both primary and fallb
     assert.equal(calls.length, 2, 'should have primary (fail) + fallback (success)');
     const fallbackCall = calls[1];
     assert.equal(fallbackCall.maxTokens, 0, 'fallback maxTokens must be 0 when disableLimits=true');
-    assert.equal(fallbackCall.timeoutMs, 600000, 'fallback timeoutMs must be 600000 when disableLimits=true');
+    assert.equal(fallbackCall.timeoutMs, 1200000, 'fallback timeoutMs must be 1200000 when disableLimits=true');
   });
 
   it('brandResolver: disableLimits=true → fallback gets maxTokens=0', async () => {
@@ -135,7 +135,7 @@ describe('callLlmWithRouting — disableLimits applies to both primary and fallb
     assert.equal(calls.length, 2);
     const fallbackCall = calls[1];
     assert.equal(fallbackCall.maxTokens, 0, 'fallback maxTokens must be 0 when disableLimits=true');
-    assert.equal(fallbackCall.timeoutMs, 600000);
+    assert.equal(fallbackCall.timeoutMs, 1200000);
   });
 
   it('serpSelector: disableLimits=true → fallback gets maxTokens=0', async () => {
@@ -151,7 +151,7 @@ describe('callLlmWithRouting — disableLimits applies to both primary and fallb
     assert.equal(calls.length, 2);
     const fallbackCall = calls[1];
     assert.equal(fallbackCall.maxTokens, 0, 'fallback maxTokens must be 0 when disableLimits=true');
-    assert.equal(fallbackCall.timeoutMs, 600000);
+    assert.equal(fallbackCall.timeoutMs, 1200000);
   });
 
   it('needset: disableLimits=false → fallback gets normal token cap', async () => {
@@ -167,6 +167,6 @@ describe('callLlmWithRouting — disableLimits applies to both primary and fallb
     assert.equal(calls.length, 2);
     const fallbackCall = calls[1];
     assert.ok(fallbackCall.maxTokens > 0, 'fallback maxTokens must be > 0 when disableLimits=false');
-    assert.notEqual(fallbackCall.timeoutMs, 600000, 'timeout must not be 600000 when disableLimits=false');
+    assert.notEqual(fallbackCall.timeoutMs, 1200000, 'timeout must not be the disable-limits sentinel when disableLimits=false');
   });
 });

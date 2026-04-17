@@ -12,7 +12,7 @@
     "setup:bootstrap": "node tools/setup-deps.mjs",
     "setup:gui": "node tools/specfactory-launcher.mjs",
     "setup:exe": "node tools/build-setup-exe.mjs",
-    "test": "node --test --test-force-exit",
+    "test": "node --test --test-force-exit --experimental-test-module-mocks",
     "run:indexlab": "node src/app/cli/spec.js indexlab",
     "discover": "node src/app/cli/spec.js discover",
     "discover-sources": "node src/app/cli/spec.js discover",

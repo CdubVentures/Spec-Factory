@@ -81,9 +81,8 @@ function VariantDeleteButton({ variantId, variantLabel, onDelete, isPending }: {
   );
 }
 
-function SelectedStateCard({ display, isPublished, onDeleteVariant, deleteVariantPending, onDeleteAllVariants, deleteAllVariantsPending }: {
+function SelectedStateCard({ display, onDeleteVariant, deleteVariantPending, onDeleteAllVariants, deleteAllVariantsPending }: {
   readonly display: ReturnType<typeof deriveSelectedStateDisplay>;
-  readonly isPublished: (fieldKey: string) => boolean;
   readonly onDeleteVariant?: (variantId: string, variantLabel: string) => void;
   readonly deleteVariantPending?: boolean;
   readonly onDeleteAllVariants?: (count: number) => void;
@@ -97,7 +96,7 @@ function SelectedStateCard({ display, isPublished, onDeleteVariant, deleteVarian
     <div className="sf-surface-elevated border sf-border-soft rounded-lg p-5 flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-bold uppercase tracking-[0.08em] sf-text-muted">
-          Published State
+          Variant State
         </span>
         <div className="flex items-center gap-3">
           <PubLegend />
@@ -118,7 +117,6 @@ function SelectedStateCard({ display, isPublished, onDeleteVariant, deleteVarian
         <div>
           <div className="text-[10px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-2 inline-flex items-center gap-1.5">
             Colors ({display.colors.length})
-            <PubMark published={isPublished('colors')} />
           </div>
           <div className="flex flex-wrap gap-1.5">
             {display.colors.map(pill => (
@@ -126,6 +124,7 @@ function SelectedStateCard({ display, isPublished, onDeleteVariant, deleteVarian
                 <ColorSwatch hexParts={pill.hexParts} size="md" />
                 {pill.displayName && <span className="sf-text-primary">{pill.displayName}</span>}
                 <span className="font-mono sf-text-muted">{pill.name}</span>
+                <PubMark published={pill.isPublished} size={10} />
                 {onDeleteVariant && (
                   <VariantDeleteButton variantId={pill.variantId} variantLabel={pill.displayName || pill.name} onDelete={onDeleteVariant} isPending={deleteVariantPending ?? false} />
                 )}
@@ -138,7 +137,6 @@ function SelectedStateCard({ display, isPublished, onDeleteVariant, deleteVarian
         <div>
           <div className="text-[10px] font-bold uppercase tracking-[0.06em] sf-text-muted mb-2 inline-flex items-center gap-1.5">
             Editions ({display.editions.length})
-            <PubMark published={isPublished('editions')} />
           </div>
           {display.editions.length === 0 ? (
             <span className="text-[11px] sf-text-muted">None</span>
@@ -153,6 +151,7 @@ function SelectedStateCard({ display, isPublished, onDeleteVariant, deleteVarian
                     <span className="text-[12px] font-mono font-bold sf-chip-purple inline-block px-1.5 py-0.5 rounded">
                       {ed.slug}
                     </span>
+                    <PubMark published={ed.isPublished} size={10} />
                     {ed.sourceCount > 0 && (
                       <span className="px-1 py-0.5 rounded text-[9px] font-bold sf-text-muted sf-surface-soft">
                         {ed.sourceCount}x
@@ -192,7 +191,7 @@ interface ColorEditionFinderPanelProps {
 
 export function ColorEditionFinderPanel({ productId, category }: ColorEditionFinderPanelProps) {
   const [collapsed, toggleCollapsed] = usePersistedToggle(`indexing:cef:collapsed:${productId}`, true);
-  const { isPublished } = usePublishedFields(category, productId);
+  const { published } = usePublishedFields(category, productId);
 
   const { data: result = null, isLoading, isError } = useColorEditionFinderQuery(category, productId);
   const fire = useFireAndForget({ type: 'cef', category, productId });
@@ -238,7 +237,9 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
   const effectiveResult = isError ? null : result;
   const statusChip = deriveFinderStatusChip(effectiveResult);
   const kpiCards = deriveFinderKpiCards(effectiveResult);
-  const selectedState = deriveSelectedStateDisplay(effectiveResult, colorRegistry);
+  const publishedColors = Array.isArray(published.colors?.value) ? published.colors.value : [];
+  const publishedEditions = Array.isArray(published.editions?.value) ? published.editions.value : [];
+  const selectedState = deriveSelectedStateDisplay(effectiveResult, colorRegistry, { colors: publishedColors, editions: publishedEditions });
   const runHistoryRows = deriveRunHistoryRows(effectiveResult);
   const cefPag = usePagination({ totalItems: runHistoryRows.length, storageKey: 'finder-page-size:cef-history' });
   const visibleCefRows = runHistoryRows.slice(cefPag.startIndex, cefPag.endIndex);
@@ -295,7 +296,6 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
           {/* Selected State */}
           <SelectedStateCard
             display={selectedState}
-            isPublished={isPublished}
             onDeleteVariant={(variantId, variantLabel) => setDeleteTarget({ kind: 'variant', variantId, label: variantLabel })}
             deleteVariantPending={deleteVariantMut.isPending}
             onDeleteAllVariants={(count) => setDeleteTarget({ kind: 'variant-all', count })}

@@ -27,7 +27,6 @@
 - `src/features/studio/api/tests/studioFieldStudioMapContracts.test.js`
 - `tools/gui-react/src/features/pipeline-settings/state/__tests__/settingsSurfaceContracts.test.js`
 - `tools/gui-react/src/features/runtime-ops/panels/workers/__tests__/llmDashboardHelpers.test.ts`
-- `tools/test-image-finder.js`
 
 ## Notes
 

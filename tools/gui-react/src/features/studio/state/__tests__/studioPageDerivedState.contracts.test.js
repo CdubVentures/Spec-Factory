@@ -239,15 +239,13 @@ test('studio page process state keeps compile and validate routing semantics sta
 
   assert.deepEqual(
     deriveStudioPageProcessState({
-      processCommand: 'category-compile --category keyboards',
-      processRunning: true,
-      processExitCode: null,
+      compileRunning: true,
+      validateRunning: false,
+      compileError: null,
       compilePending: false,
       validatePending: false,
     }),
     {
-      isCompileProcessCommand: true,
-      isValidateProcessCommand: false,
       compileProcessRunning: true,
       compileProcessFailed: false,
       reportsTabRunning: true,
@@ -256,15 +254,13 @@ test('studio page process state keeps compile and validate routing semantics sta
 
   assert.deepEqual(
     deriveStudioPageProcessState({
-      processCommand: 'validate-rules --category keyboards',
-      processRunning: true,
-      processExitCode: null,
+      compileRunning: false,
+      validateRunning: true,
+      compileError: null,
       compilePending: false,
       validatePending: false,
     }),
     {
-      isCompileProcessCommand: false,
-      isValidateProcessCommand: true,
       compileProcessRunning: false,
       compileProcessFailed: false,
       reportsTabRunning: true,
@@ -273,15 +269,13 @@ test('studio page process state keeps compile and validate routing semantics sta
 
   assert.deepEqual(
     deriveStudioPageProcessState({
-      processCommand: 'compile-rules --category keyboards',
-      processRunning: false,
-      processExitCode: 9,
+      compileRunning: false,
+      validateRunning: false,
+      compileError: 'exit code 9',
       compilePending: false,
       validatePending: false,
     }),
     {
-      isCompileProcessCommand: true,
-      isValidateProcessCommand: false,
       compileProcessRunning: false,
       compileProcessFailed: true,
       reportsTabRunning: false,
@@ -290,15 +284,13 @@ test('studio page process state keeps compile and validate routing semantics sta
 
   assert.deepEqual(
     deriveStudioPageProcessState({
-      processCommand: 'sync-snapshots',
-      processRunning: false,
-      processExitCode: 0,
+      compileRunning: false,
+      validateRunning: false,
+      compileError: null,
       compilePending: true,
       validatePending: false,
     }),
     {
-      isCompileProcessCommand: false,
-      isValidateProcessCommand: false,
       compileProcessRunning: false,
       compileProcessFailed: false,
       reportsTabRunning: true,

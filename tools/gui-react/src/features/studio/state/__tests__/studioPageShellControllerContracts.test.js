@@ -19,6 +19,15 @@ function createBaseInput(overrides = {}) {
     activeTab: 'keys',
     autoSaveAllEnabled: false,
     selectedKey: 'dpi',
+    operations: new Map([
+      ['op-compile-1', {
+        id: 'op-compile-1',
+        type: 'compile',
+        category: 'mouse',
+        status: 'running',
+        error: null,
+      }],
+    ]),
     processStatus: {
       running: true,
       command: 'compile-rules',

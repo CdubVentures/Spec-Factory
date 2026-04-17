@@ -40,7 +40,7 @@ function makeLlmResponse(overrides = {}) {
 function stubCallLlm(response) {
   let called = false;
   let capturedArgs = null;
-  const fn = async (args) => { called = true; capturedArgs = args; return response; };
+  const fn = async (args) => { called = true; capturedArgs = args; return { result: response, usage: null }; };
   fn.wasCalled = () => called;
   fn.args = () => capturedArgs;
   return fn;

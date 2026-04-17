@@ -32,10 +32,10 @@ import {
   createHeroImageFinderCallLlm,
   resolveViewConfig,
   resolveViewBudget,
-  migrateFromLegacyViews,
   CANONICAL_VIEW_KEYS,
   accumulateVariantDiscoveryLog,
 } from './productImageLlmAdapter.js';
+import { runPerVariant } from '../../core/finder/runPerVariant.js';
 import { evaluateCarousel } from './carouselStrategy.js';
 import { resolveViewQualityConfig } from './viewQualityDefaults.js';
 import { resolveViewAttemptBudgets } from './viewAttemptDefaults.js';
@@ -565,19 +565,9 @@ export async function runProductImageFinder({
   // Read per-category settings
   const finderStore = specDb.getFinderStore('productImageFinder');
 
-  // View config: new viewConfig setting → legacy view1/view2 migration → category defaults
+  // View config: explicit viewConfig setting → category defaults
   const rawViewConfig = finderStore.getSetting('viewConfig');
-  const legacyView1 = finderStore.getSetting('view1');
-  const legacyView2 = finderStore.getSetting('view2');
-
-  let viewConfig;
-  if (rawViewConfig && rawViewConfig.trim()) {
-    viewConfig = resolveViewConfig(rawViewConfig, product.category);
-  } else if (legacyView1 || legacyView2) {
-    viewConfig = migrateFromLegacyViews(legacyView1, legacyView2, product.category);
-  } else {
-    viewConfig = resolveViewConfig('', product.category);
-  }
+  const viewConfig = resolveViewConfig(rawViewConfig || '', product.category);
 
   const minWidth = parseInt(finderStore.getSetting('minWidth'), 10) || 800;
   const minHeight = parseInt(finderStore.getSetting('minHeight'), 10) || 600;
@@ -630,26 +620,14 @@ export async function runProductImageFinder({
     if (m && !siblingsExcluded.includes(m)) siblingsExcluded.push(m);
   }
 
-  // WHY: Read variants from SQL (SSOT) — not from cefData.selected on disk.
-  // The variants table is the runtime authority; JSON is durable memory only.
-  const dbVariants = specDb.variants?.listActive(product.product_id) || [];
-  if (dbVariants.length === 0) {
+  // WHY: Read variants from SQL (SSOT) to pre-check before expensive RMBG model load.
+  // The runner also loads variants, but this short-circuit avoids the ~140MB ONNX
+  // download + load on the no-variants / unknown-variant rejection paths.
+  const dbVariantsPre = specDb.variants?.listActive(product.product_id) || [];
+  if (dbVariantsPre.length === 0) {
     return { images: [], rejected: true, rejections: [{ reason_code: 'no_cef_data', message: 'Run CEF first — no color data found' }] };
   }
-
-  const allVariants = dbVariants.map(v => ({
-    variant_id: v.variant_id,
-    key: v.variant_key,
-    label: v.variant_label,
-    type: v.variant_type,
-  }));
-
-  // Filter to single variant if requested
-  const variants = variantKey
-    ? allVariants.filter(v => v.key === variantKey)
-    : allVariants;
-
-  if (variants.length === 0) {
+  if (variantKey && !dbVariantsPre.some((v) => v.variant_key === variantKey)) {
     return { images: [], rejected: true, rejections: [{ reason_code: 'unknown_variant', message: `Variant not found: ${variantKey}` }] };
   }
 
@@ -685,159 +663,155 @@ export async function runProductImageFinder({
   const rmbgConcurrency = parseInt(finderStore.getSetting('rmbgConcurrency'), 10) || 0;
   if (rmbgConcurrency > 0) setInferenceConcurrency(rmbgConcurrency);
 
-  // Fire all variants concurrently with 1s stagger
   const ranAt = new Date().toISOString();
   const STAGGER_MS = 1000;
 
-  // Fire all variants with 1s stagger, persist each as it completes
-  const allImages = [];
-  const allErrors = [];
+  // Per-variant body: discovery + carousel strategy + LLM call + download/RMBG + persist.
+  // Called by runPerVariant for each variant; return value is aggregated below.
+  async function produceForVariant(variant) {
+    const previousDiscovery = accumulateVariantDiscoveryLog(previousPifRuns, variant.key, variant.variant_id, { cutoffIso: urlCooldownCutoffIso });
 
-  const variantPromises = variants.map((variant, i) => {
-    const delay = i * STAGGER_MS;
-    return new Promise((resolve) => setTimeout(resolve, delay)).then(async () => {
-      onStageAdvance?.(`${variant.type === 'edition' ? 'Ed' : 'Color'}: ${variant.label}`);
-      onVariantProgress?.(i, variants.length, variant.key);
+    const variantImages = (pifDoc?.selected?.images || []).filter(img => matchVariant(img, { variantId: variant.variant_id, variantKey: variant.key }));
+    const alreadyDownloadedUrls = new Set(variantImages.map(img => normalizeImageUrl(img.url)).filter(Boolean));
 
-      try {
-        // Accumulate discovery logs from previous runs for this specific variant
-        const previousDiscovery = accumulateVariantDiscoveryLog(previousPifRuns, variant.key, variant.variant_id, { cutoffIso: urlCooldownCutoffIso });
-
-        // Build hard URL dedup set from all previously downloaded images for this variant
-        const variantImages = (pifDoc?.selected?.images || []).filter(img => matchVariant(img, { variantId: variant.variant_id, variantKey: variant.key }));
-        const alreadyDownloadedUrls = new Set(variantImages.map(img => normalizeImageUrl(img.url)).filter(Boolean));
-
-        // Strategy engine: determine which views still need images (view mode only)
-        let effectiveViewConfig = viewConfig;
-        if (mode === 'view') {
-          const allSelectedImages = (pifDoc?.selected?.images || []).map((img) => ({
-            view: img.view, variant_key: img.variant_key, quality_pass: img.quality_pass !== false,
-          }));
-          const strategy = evaluateCarousel({
-            collectedImages: allSelectedImages,
-            viewBudget, satisfactionThreshold, heroEnabled, heroCount,
-            variantKey: variant.key, variantId: variant.variant_id,
-            viewAttemptBudgets,
-          });
-          // Filter viewConfig to only include unsatisfied views from strategy
-          if (strategy.viewsToSearch.length > 0) {
-            const needed = new Set(strategy.viewsToSearch);
-            effectiveViewConfig = viewConfig.map((v) => ({
-              ...v,
-              priority: needed.has(v.key) ? true : false,
-            })).filter((v) => needed.has(v.key) || v.priority);
-            // Keep needed views as priority, drop unneeded ones
-            effectiveViewConfig = viewConfig.filter((v) => needed.has(v.key));
-          }
-        }
-
-        // Build prompt BEFORE call so operations modal shows it immediately
-        const promptBuilder = mode === 'hero' ? buildHeroImageFinderPrompt : buildProductImageFinderPrompt;
-        const heroQuality = viewQualityMap.hero || {};
-        const promptArgs = mode === 'hero'
-          ? { product, variantLabel: variant.label, variantType: variant.type, minWidth: heroQuality.minWidth || 600, minHeight: heroQuality.minHeight || 400, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: heroPromptOverride }
-          : { product, variantLabel: variant.label, variantType: variant.type, viewConfig: effectiveViewConfig, minWidth, minHeight, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: viewPromptOverride };
-        const systemPrompt = promptBuilder(promptArgs);
-        const userMsg = JSON.stringify({ brand: product.brand, model: product.model, base_model: product.base_model, variant: variant.key });
-
-        const variantStartedAt = new Date().toISOString();
-        const variantStartMs = Date.now();
-
-        onLlmCallComplete?.({
-          prompt: { system: systemPrompt, user: userMsg },
-          response: null,
-          model: _mt.actualModel,
-          variant: variant.label,
-          mode,
-          label: mode === 'hero' ? 'Discovery Hero' : 'Discovery',
-        });
-
-        const result = await runSingleVariant({
-          product, variant, viewConfig: effectiveViewConfig, viewQualityMap,
-          callLlm, productRoot, specDb, actualModel: _mt.actualModel, actualFallbackUsed: _mt.actualFallbackUsed, logger,
-          siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery,
-          rmbgSession,
-          promptOverride: mode === 'hero' ? heroPromptOverride : viewPromptOverride,
-          mode,
-          onPhaseChange: onStageAdvance,
-          alreadyDownloadedUrls,
-        });
-
-        const variantDurationMs = Date.now() - variantStartMs;
-
-        allImages.push(...result.images);
-        allErrors.push(...result.errors);
-
-        const selected = { images: result.images };
-        const responsePayload = { mode, started_at: variantStartedAt, duration_ms: variantDurationMs, images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_id: variant.variant_id || null, variant_key: variant.key, variant_label: variant.label };
-
-        // Smart update — fills response into the pending prompt entry
-        onLlmCallComplete?.({
-          prompt: { system: systemPrompt, user: userMsg },
-          response: responsePayload,
-          model: _mt.actualModel,
-          variant: variant.label,
-          mode,
-          usage: result.usage,
-          label: mode === 'hero' ? 'Discovery Hero' : 'Discovery',
-        });
-
-        const merged = mergeProductImageDiscovery({
-          productId: product.product_id,
-          productRoot,
-          newDiscovery: { category: product.category, last_ran_at: ranAt },
-          run: {
-            mode,
-            started_at: variantStartedAt,
-            duration_ms: variantDurationMs,
-            model: _mt.actualModel,
-            fallback_used: _mt.actualFallbackUsed,
-            effort_level: _mt.actualEffortLevel,
-            access_mode: _mt.actualAccessMode,
-            thinking: _mt.actualThinking,
-            web_search: _mt.actualWebSearch,
-            selected,
-            prompt: { system: systemPrompt, user: userMsg },
-            response: responsePayload,
-          },
-        });
-
-        const store = specDb.getFinderStore('productImageFinder');
-        const latestRun = merged.runs[merged.runs.length - 1];
-        store.insertRun({
-          category: product.category,
-          product_id: product.product_id,
-          run_number: latestRun.run_number,
-          ran_at: ranAt,
-          model: _mt.actualModel,
-          fallback_used: _mt.actualFallbackUsed,
-          effort_level: _mt.actualEffortLevel,
-          access_mode: _mt.actualAccessMode,
-          thinking: _mt.actualThinking,
-          web_search: _mt.actualWebSearch,
-          selected,
-          prompt: latestRun.prompt,
-          response: latestRun.response,
-        });
-
-        store.upsert({
-          category: product.category,
-          product_id: product.product_id,
-          images: merged.selected.images.map(img => ({ view: img.view, filename: img.filename, variant_key: img.variant_key })),
-          image_count: merged.selected.images.length,
-          latest_ran_at: ranAt,
-          run_count: merged.run_count,
-        });
-      } catch (err) {
-        logger?.error?.('pif_variant_failed', { product_id: product.product_id, variant: variant.key, error: err.message });
-        allErrors.push({ view: '*', url: '', error: `variant ${variant.key} failed: ${err.message}` });
+    let effectiveViewConfig = viewConfig;
+    if (mode === 'view') {
+      const allSelectedImages = (pifDoc?.selected?.images || []).map((img) => ({
+        view: img.view, variant_key: img.variant_key, quality_pass: img.quality_pass !== false,
+      }));
+      const strategy = evaluateCarousel({
+        collectedImages: allSelectedImages,
+        viewBudget, satisfactionThreshold, heroEnabled, heroCount,
+        variantKey: variant.key, variantId: variant.variant_id,
+        viewAttemptBudgets,
+      });
+      if (strategy.viewsToSearch.length > 0) {
+        const needed = new Set(strategy.viewsToSearch);
+        effectiveViewConfig = viewConfig.map((v) => ({
+          ...v,
+          priority: needed.has(v.key) ? true : false,
+        })).filter((v) => needed.has(v.key) || v.priority);
+        effectiveViewConfig = viewConfig.filter((v) => needed.has(v.key));
       }
+    }
+
+    const promptBuilder = mode === 'hero' ? buildHeroImageFinderPrompt : buildProductImageFinderPrompt;
+    const heroQuality = viewQualityMap.hero || {};
+    const promptArgs = mode === 'hero'
+      ? { product, variantLabel: variant.label, variantType: variant.type, minWidth: heroQuality.minWidth || 600, minHeight: heroQuality.minHeight || 400, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: heroPromptOverride }
+      : { product, variantLabel: variant.label, variantType: variant.type, viewConfig: effectiveViewConfig, minWidth, minHeight, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: viewPromptOverride };
+    const systemPrompt = promptBuilder(promptArgs);
+    const userMsg = JSON.stringify({ brand: product.brand, model: product.model, base_model: product.base_model, variant: variant.key });
+
+    const variantStartedAt = new Date().toISOString();
+    const variantStartMs = Date.now();
+
+    onLlmCallComplete?.({
+      prompt: { system: systemPrompt, user: userMsg },
+      response: null,
+      model: _mt.actualModel,
+      variant: variant.label,
+      mode,
+      label: mode === 'hero' ? 'Discovery Hero' : 'Discovery',
     });
+
+    const result = await runSingleVariant({
+      product, variant, viewConfig: effectiveViewConfig, viewQualityMap,
+      callLlm, productRoot, specDb, actualModel: _mt.actualModel, actualFallbackUsed: _mt.actualFallbackUsed, logger,
+      siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery,
+      rmbgSession,
+      promptOverride: mode === 'hero' ? heroPromptOverride : viewPromptOverride,
+      mode,
+      onPhaseChange: onStageAdvance,
+      alreadyDownloadedUrls,
+    });
+
+    const variantDurationMs = Date.now() - variantStartMs;
+
+    const selected = { images: result.images };
+    const responsePayload = { mode, started_at: variantStartedAt, duration_ms: variantDurationMs, images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_id: variant.variant_id || null, variant_key: variant.key, variant_label: variant.label };
+
+    onLlmCallComplete?.({
+      prompt: { system: systemPrompt, user: userMsg },
+      response: responsePayload,
+      model: _mt.actualModel,
+      variant: variant.label,
+      mode,
+      usage: result.usage,
+      label: mode === 'hero' ? 'Discovery Hero' : 'Discovery',
+    });
+
+    const merged = mergeProductImageDiscovery({
+      productId: product.product_id,
+      productRoot,
+      newDiscovery: { category: product.category, last_ran_at: ranAt },
+      run: {
+        mode,
+        started_at: variantStartedAt,
+        duration_ms: variantDurationMs,
+        model: _mt.actualModel,
+        fallback_used: _mt.actualFallbackUsed,
+        effort_level: _mt.actualEffortLevel,
+        access_mode: _mt.actualAccessMode,
+        thinking: _mt.actualThinking,
+        web_search: _mt.actualWebSearch,
+        selected,
+        prompt: { system: systemPrompt, user: userMsg },
+        response: responsePayload,
+      },
+    });
+
+    const store = specDb.getFinderStore('productImageFinder');
+    const latestRun = merged.runs[merged.runs.length - 1];
+    store.insertRun({
+      category: product.category,
+      product_id: product.product_id,
+      run_number: latestRun.run_number,
+      ran_at: ranAt,
+      model: _mt.actualModel,
+      fallback_used: _mt.actualFallbackUsed,
+      effort_level: _mt.actualEffortLevel,
+      access_mode: _mt.actualAccessMode,
+      thinking: _mt.actualThinking,
+      web_search: _mt.actualWebSearch,
+      selected,
+      prompt: latestRun.prompt,
+      response: latestRun.response,
+    });
+
+    store.upsert({
+      category: product.category,
+      product_id: product.product_id,
+      images: merged.selected.images.map(img => ({ view: img.view, filename: img.filename, variant_key: img.variant_key })),
+      image_count: merged.selected.images.length,
+      latest_ran_at: ranAt,
+      run_count: merged.run_count,
+    });
+
+    return { images: result.images, errors: result.errors };
+  }
+
+  const { perVariantResults, variants } = await runPerVariant({
+    specDb, product, variantKey,
+    staggerMs: STAGGER_MS,
+    onStageAdvance, onVariantProgress, logger,
+    produceForVariant,
   });
 
-  await Promise.all(variantPromises);
+  const allImages = [];
+  const allErrors = [];
+  for (const { variant, result, error } of perVariantResults) {
+    if (error) {
+      logger?.error?.('pif_variant_failed', { product_id: product.product_id, variant: variant.key, error });
+      allErrors.push({ view: '*', url: '', error: `variant ${variant.key} failed: ${error}` });
+      continue;
+    }
+    if (result) {
+      allImages.push(...result.images);
+      allErrors.push(...result.errors);
+    }
+  }
 
-  onVariantProgress?.(variants.length, variants.length, 'done');
   onStageAdvance?.('Complete');
 
   // Compute post-run carousel progress for all processed variants
@@ -903,17 +877,7 @@ export async function runCarouselLoop({
   const finderStore = specDb.getFinderStore('productImageFinder');
 
   const rawViewConfig = finderStore.getSetting('viewConfig');
-  const legacyView1 = finderStore.getSetting('view1');
-  const legacyView2 = finderStore.getSetting('view2');
-
-  let viewConfig;
-  if (rawViewConfig && rawViewConfig.trim()) {
-    viewConfig = resolveViewConfig(rawViewConfig, product.category);
-  } else if (legacyView1 || legacyView2) {
-    viewConfig = migrateFromLegacyViews(legacyView1, legacyView2, product.category);
-  } else {
-    viewConfig = resolveViewConfig('', product.category);
-  }
+  const viewConfig = resolveViewConfig(rawViewConfig || '', product.category);
 
   const minWidth = parseInt(finderStore.getSetting('minWidth'), 10) || 800;
   const minHeight = parseInt(finderStore.getSetting('minHeight'), 10) || 600;

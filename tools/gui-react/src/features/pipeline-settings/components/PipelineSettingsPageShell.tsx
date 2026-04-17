@@ -103,8 +103,33 @@ const PIPELINE_SECTIONS = [
   },
 ];
 
+// Icons for finder sidebar sections. Keyed by iconName from the registry so a
+// new finder picks an existing name (zero edits here) or adds one entry below.
+// Record<FinderIconName, ReactNode> forces TS to fail compile if the registry
+// references an icon name with no corresponding entry in this table.
+type FinderIconName = typeof MODULE_SETTINGS_SECTIONS[number]['iconName'];
+
+const FINDER_ICONS: Record<FinderIconName, ReactNode> = {
+  palette: (
+    <>
+      <circle cx="8" cy="8" r="4" />
+      <circle cx="16" cy="8" r="4" />
+      <circle cx="12" cy="15" r="4" />
+    </>
+  ),
+  image: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="8.5" cy="10" r="2" />
+      <path d="m21 15-3.5-4.5L13 16l-3-3-7 5" />
+    </>
+  ),
+};
+
 export function SectionNavIcon({ id, active }: { id: PipelineSectionId; active: boolean }) {
   const toneClass = active ? 'sf-callout sf-callout-info' : 'sf-callout sf-callout-neutral';
+  const finderSection = MODULE_SETTINGS_SECTIONS.find((s) => s.id === id);
+  const finderIcon = finderSection ? FINDER_ICONS[finderSection.iconName] : null;
   return (
     <span className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded ${toneClass}`}>
       <svg
@@ -190,22 +215,7 @@ export function SectionNavIcon({ id, active }: { id: PipelineSectionId; active: 
             <path d="M19 17v3" />
           </>
         )}
-        {/* CEF — color palette */}
-        {id === 'module-cef' && (
-          <>
-            <circle cx="8" cy="8" r="4" />
-            <circle cx="16" cy="8" r="4" />
-            <circle cx="12" cy="15" r="4" />
-          </>
-        )}
-        {/* PIF — image/photo */}
-        {id === 'module-pif' && (
-          <>
-            <rect x="3" y="4" width="18" height="16" rx="2" />
-            <circle cx="8.5" cy="10" r="2" />
-            <path d="m21 15-3.5-4.5L13 16l-3-3-7 5" />
-          </>
-        )}
+        {finderIcon}
       </svg>
     </span>
   );

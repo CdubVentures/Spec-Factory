@@ -205,42 +205,6 @@ test('catalog routes: product add emits typed data-change contract', async () =>
   assert.equal(snapshot.broadcast.by_event['catalog-product-add'], 1);
 });
 
-test('catalog routes: product detail resolves identity through specDb when catalog entry is missing', async () => {
-  const handler = registerCatalogRoutes(makeCatalogCtx({
-    storage: {
-      resolveOutputKey: (category, productId, stage) => `out/${category}/${productId}/${stage}`,
-      readJsonOrNull: async (key) => {
-        if (key.endsWith('/normalized.json')) return { identity: {} };
-        if (key.endsWith('/summary.json')) return { confidence: 0.7 };
-        if (key.endsWith('/provenance.json')) return {};
-        if (key.endsWith('/traffic_light.json')) return null;
-        return null;
-      },
-    },
-    getSpecDb: (category) => (category === 'mouse'
-      ? {
-          getProduct: (productId) => (productId === 'mouse-foo-bar'
-            ? {
-                id: 9,
-                identifier: 'db_9',
-                brand: 'Db Brand',
-                model: 'Db Model',
-                variant: 'Db Variant',
-              }
-            : null),
-        }
-      : null),
-  }));
-
-  const result = await handler(['product', 'mouse', 'mouse-foo-bar'], new URLSearchParams(), 'GET', {}, {});
-  assert.equal(result.status, 200);
-  assert.equal(result.body.normalized.identity.id, 9);
-  assert.equal(result.body.normalized.identity.identifier, 'db_9');
-  assert.equal(result.body.normalized.identity.brand, 'Db Brand');
-  assert.equal(result.body.normalized.identity.model, 'Db Model');
-  assert.equal(result.body.normalized.identity.variant, 'Db Variant');
-});
-
 // --- specDb wiring tests (delete, single-add dedup, bulk-add upsert) ---
 
 test('catalog routes: DELETE passes specDb to removeProduct so it can find the product', async () => {

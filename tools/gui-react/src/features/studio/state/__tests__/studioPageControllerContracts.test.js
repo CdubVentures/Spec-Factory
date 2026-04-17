@@ -186,14 +186,13 @@ test('useStudioPageQueries preserves tab-scoped query enablement and reports pol
   }
 });
 
-test('useStudioPageMutations preserves compile, enum-consistency, refresh, and process-finish invalidation behavior', async () => {
+test('useStudioPageMutations preserves compile, enum-consistency, and refresh behavior', async () => {
   globalThis.__studioPageMutationHarness = {
     apiCalls: [],
     invalidations: [],
     mutationConfigs: [],
     queryInvalidations: [],
     setActiveTabCalls: [],
-    setProcessStatusCalls: [],
     validationCalls: [],
   };
 
@@ -208,26 +207,11 @@ test('useStudioPageMutations preserves compile, enum-consistency, refresh, and p
 
     const hook = useStudioPageMutations({
       category: 'mouse',
-      processStatus: {
-        running: false,
-        exitCode: 0,
-      },
       queryClient,
       setActiveTab(nextTab) {
         globalThis.__studioPageMutationHarness.setActiveTabCalls.push(nextTab);
       },
-      setProcessStatus(status) {
-        globalThis.__studioPageMutationHarness.setProcessStatusCalls.push(status);
-      },
     });
-
-    assert.deepEqual(globalThis.__studioPageMutationHarness.invalidations, [
-      {
-        kind: 'field-rules',
-        category: 'mouse',
-        queryClient,
-      },
-    ]);
 
     await hook.runCompileFromStudio();
 
@@ -254,13 +238,6 @@ test('useStudioPageMutations preserves compile, enum-consistency, refresh, and p
         },
       ],
     );
-    assert.deepEqual(globalThis.__studioPageMutationHarness.setProcessStatusCalls, [
-      {
-        running: true,
-        command: 'compile-rules',
-        pid: 41,
-      },
-    ]);
 
     await hook.runEnumConsistency('dpi', {
       reviewEnabled: false,
@@ -294,7 +271,6 @@ test('useStudioPageMutations preserves compile, enum-consistency, refresh, and p
       ),
       true,
     );
-    assert.equal(globalThis.__studioPageMutationHarness.invalidations.length, 2);
     assert.equal(globalThis.__studioPageMutationHarness.validationCalls.length, 1);
   } finally {
     delete globalThis.__studioPageMutationHarness;

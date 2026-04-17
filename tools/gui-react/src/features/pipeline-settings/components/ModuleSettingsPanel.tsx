@@ -6,9 +6,12 @@
 import { Suspense, useCallback } from 'react';
 import { useUiStore } from '../../../stores/uiStore.ts';
 import { useModuleSettingsAuthority } from '../state/moduleSettingsAuthority.ts';
-import { MODULE_SETTINGS_FORMS } from '../state/moduleSettingsSections.generated.ts';
+import {
+  MODULE_SETTINGS_FORMS,
+  type ModuleSettingsModuleId,
+} from '../state/moduleSettingsSections.generated.ts';
 
-export function ModuleSettingsPanel({ moduleId }: { moduleId: string }) {
+export function ModuleSettingsPanel({ moduleId }: { moduleId: ModuleSettingsModuleId }) {
   const category = useUiStore((s) => s.category);
   const { settings, isLoading, isSaving, saveSetting } = useModuleSettingsAuthority({ category, moduleId });
   const handleSave = useCallback((key: string, value: string) => {
@@ -32,13 +35,6 @@ export function ModuleSettingsPanel({ moduleId }: { moduleId: string }) {
   }
 
   const Form = MODULE_SETTINGS_FORMS[moduleId];
-  if (!Form) {
-    return (
-      <p className="sf-text-caption sf-text-muted">
-        No settings form registered for "{moduleId}".
-      </p>
-    );
-  }
 
   return (
     <Suspense fallback={<p className="sf-text-caption sf-text-muted">Loading form...</p>}>

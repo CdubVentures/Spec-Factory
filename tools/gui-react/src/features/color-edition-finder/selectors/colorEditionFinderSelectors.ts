@@ -8,6 +8,7 @@ export interface ColorPill {
   readonly isDefault: boolean;
   readonly sourceCount: number;
   readonly variantId: string | null;
+  readonly isPublished: boolean;
 }
 
 export interface EditionBlock {
@@ -16,12 +17,18 @@ export interface EditionBlock {
   readonly pairedColors: readonly ColorPill[];
   readonly sourceCount: number;
   readonly variantId: string | null;
+  readonly isPublished: boolean;
 }
 
 export interface SelectedStateDisplay {
   readonly colors: readonly ColorPill[];
   readonly editions: readonly EditionBlock[];
   readonly defaultColorHex: string;
+}
+
+export interface PublishedItemSets {
+  readonly colors: readonly string[];
+  readonly editions: readonly string[];
 }
 
 export interface RunDiscoveryLog {
@@ -100,8 +107,8 @@ function resolveHex(name: string, hexMap: Map<string, string>): string {
   return hexMap.get(firstAtom) || hexMap.get(name) || '';
 }
 
-function toColorPill(name: string, defaultColor: string, hexMap: Map<string, string>, displayName = '', sourceCount = 0, variantId: string | null = null): ColorPill {
-  return { name, displayName, hex: resolveHex(name, hexMap), hexParts: resolveHexParts(name, hexMap), isDefault: name === defaultColor, sourceCount, variantId };
+function toColorPill(name: string, defaultColor: string, hexMap: Map<string, string>, displayName = '', sourceCount = 0, variantId: string | null = null, isPublished = true): ColorPill {
+  return { name, displayName, hex: resolveHex(name, hexMap), hexParts: resolveHexParts(name, hexMap), isDefault: name === defaultColor, sourceCount, variantId, isPublished };
 }
 
 /**
@@ -123,6 +130,7 @@ function findItemSourceCount(candidates: readonly CefCandidateEntry[], item: str
 export function deriveSelectedStateDisplay(
   result: ColorEditionFinderResult | null,
   colorRegistry: ColorRegistryEntry[],
+  publishedSets?: PublishedItemSets,
 ): SelectedStateDisplay {
   const hexMap = new Map(colorRegistry.map(c => [c.name, c.hex]));
 
@@ -142,8 +150,17 @@ export function deriveSelectedStateDisplay(
     const registry = result?.variant_registry ?? [];
     const variantByKey = new Map(registry.map(v => [v.variant_key, v.variant_id]));
 
+    // WHY: When publishedSets is omitted, every rendered item is treated as
+    // published (back-compat). When provided (from the publisher endpoint's
+    // resolved arrays), isPublished is set by Set containment per item.
+    const hasPublishedSets = publishedSets !== undefined;
+    const publishedColorSet = hasPublishedSets ? new Set(publishedSets.colors) : null;
+    const publishedEditionSet = hasPublishedSets ? new Set(publishedSets.editions) : null;
+    const colorPublished = (name: string) => publishedColorSet ? publishedColorSet.has(name) : true;
+    const editionPublished = (slug: string) => publishedEditionSet ? publishedEditionSet.has(slug) : true;
+
     const colors = pub.colors.map(name =>
-      toColorPill(name, defaultColor, hexMap, colorNameMap[name] || '', findItemSourceCount(colorCands, name), variantByKey.get(`color:${name}`) ?? null)
+      toColorPill(name, defaultColor, hexMap, colorNameMap[name] || '', findItemSourceCount(colorCands, name), variantByKey.get(`color:${name}`) ?? null, colorPublished(name))
     );
 
     const editions: EditionBlock[] = pub.editions.map(slug => {
@@ -152,10 +169,11 @@ export function deriveSelectedStateDisplay(
         slug,
         displayName: edMeta?.display_name || '',
         pairedColors: (edMeta?.colors ?? []).map((name: string) =>
-          toColorPill(name, defaultColor, hexMap, colorNameMap[name] || '', findItemSourceCount(colorCands, name), variantByKey.get(`color:${name}`) ?? null)
+          toColorPill(name, defaultColor, hexMap, colorNameMap[name] || '', findItemSourceCount(colorCands, name), variantByKey.get(`color:${name}`) ?? null, colorPublished(name))
         ),
         sourceCount: findItemSourceCount(editionCands, slug),
         variantId: variantByKey.get(`edition:${slug}`) ?? null,
+        isPublished: editionPublished(slug),
       };
     });
 

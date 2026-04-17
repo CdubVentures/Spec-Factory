@@ -136,15 +136,37 @@ describe('publisher routes', () => {
     assert.deepEqual(responses[0].body.fields, {});
   });
 
-  // WHY: CLAUDE.md Dual-State Architecture Mandate — variant-derived fields
-  // (colors, editions) must come from the color_edition_finder SQL summary,
-  // not from product.json. Asserting colors/editions resolve WITHOUT any
-  // product.json on disk proves the endpoint reads SQL, not JSON.
-  it('GET /publisher/:category/published/:productId reads variant-derived fields from CEF SQL (not product.json)', async () => {
-    // No product.json created — CEF summary in SQL is the only source
+  // WHY: Published state for colors/editions must come from field_candidates
+  // resolved rows (the review grid's source of truth), NOT from the variant
+  // aggregate. An active variant is "discovered" but not "published" until a
+  // resolved field_candidates row exists for that value.
+  it('GET /publisher/:category/published/:productId reads colors/editions from resolved field_candidates (not CEF summary)', async () => {
+    seedCandidate(specDb, 'rt-fc-colors', 'colors', ['black', 'white+silver'], 0.95, 'resolved');
+    seedCandidate(specDb, 'rt-fc-colors', 'editions', ['special-ed'], 0.9, 'resolved');
+
+    const { ctx, responses } = makeCtx(specDb);
+    const handler = registerPublisherRoutes(ctx);
+
+    await handler(
+      ['publisher', 'mouse', 'published', 'rt-fc-colors'],
+      new URLSearchParams(),
+      'GET', {}, {},
+    );
+
+    assert.equal(responses[0].status, 200);
+    assert.ok(responses[0].body.fields.colors, 'colors populated from field_candidates');
+    assert.deepEqual(responses[0].body.fields.colors.value, ['black', 'white+silver']);
+
+    assert.ok(responses[0].body.fields.editions, 'editions populated from field_candidates');
+    assert.deepEqual(responses[0].body.fields.editions.value, ['special-ed']);
+  });
+
+  it('GET /publisher/:category/published/:productId omits colors/editions when field_candidates has no resolved rows — even if CEF summary has variant-derived data', async () => {
+    // Variants exist in CEF summary, but NO resolved candidate for colors/editions.
+    // Expect: endpoint returns empty fields (review grid is empty → nothing published).
     specDb.getFinderStore('colorEditionFinder').upsert({
       category: 'mouse',
-      product_id: 'rt-variant-sql',
+      product_id: 'rt-variants-no-resolve',
       colors: ['black', 'white+silver'],
       editions: ['special-ed'],
       default_color: 'black',
@@ -157,30 +179,22 @@ describe('publisher routes', () => {
     const handler = registerPublisherRoutes(ctx);
 
     await handler(
-      ['publisher', 'mouse', 'published', 'rt-variant-sql'],
+      ['publisher', 'mouse', 'published', 'rt-variants-no-resolve'],
       new URLSearchParams(),
       'GET', {}, {},
     );
 
     assert.equal(responses[0].status, 200);
-    assert.ok(responses[0].body.fields.colors, 'colors field populated from CEF SQL');
-    assert.deepEqual(responses[0].body.fields.colors.value, ['black', 'white+silver']);
-    assert.equal(responses[0].body.fields.colors.source, 'variant_registry');
-    assert.equal(responses[0].body.fields.colors.confidence, 1.0);
-    assert.equal(responses[0].body.fields.colors.resolved_at, '2026-04-16T00:00:00Z');
-
-    assert.ok(responses[0].body.fields.editions, 'editions field populated from CEF SQL');
-    assert.deepEqual(responses[0].body.fields.editions.value, ['special-ed']);
-    assert.equal(responses[0].body.fields.editions.source, 'variant_registry');
+    assert.equal(responses[0].body.fields.colors, undefined);
+    assert.equal(responses[0].body.fields.editions, undefined);
   });
 
-  it('GET /publisher/:category/published/:productId omits colors/editions when CEF summary is absent or empty', async () => {
-    // No CEF summary seeded — no product.json either
+  it('GET /publisher/:category/published/:productId omits colors/editions when neither field_candidates nor CEF summary has data', async () => {
     const { ctx, responses } = makeCtx(specDb);
     const handler = registerPublisherRoutes(ctx);
 
     await handler(
-      ['publisher', 'mouse', 'published', 'rt-no-variants'],
+      ['publisher', 'mouse', 'published', 'rt-nothing'],
       new URLSearchParams(),
       'GET', {}, {},
     );

@@ -18,19 +18,24 @@ function createStorageStub({ keys = [], textByKey = {}, jsonByKey = {} } = {}) {
 }
 
 function createSpecDbStub() {
-  const billingEntries = [];
   let closed = false;
   return {
-    billingEntries,
     wasClosed: () => closed,
-    insertBillingEntry(entry) {
-      billingEntries.push(entry);
-    },
     counts() {
-      return { queue_products: 2, billing_ledger: billingEntries.length };
+      return { queue_products: 2, billing_ledger: 0 };
     },
     close() {
       closed = true;
+    },
+  };
+}
+
+function createAppDbStub() {
+  const billingEntries = [];
+  return {
+    billingEntries,
+    insertBillingEntry(entry) {
+      billingEntries.push(entry);
     },
   };
 }
@@ -82,6 +87,7 @@ test('migrate-to-sqlite phase 1 is a no-op and closes SpecDb', async () => {
 
 test('migrate-to-sqlite phase 2 imports valid ledger lines and skips malformed lines', async () => {
   const specDb = createSpecDbStub();
+  const appDb = createAppDbStub();
   const ledgerKey = 'output/_billing/2026-03-ledger.jsonl';
   const storage = createStorageStub({
     keys: [ledgerKey, 'output/_billing/readme.txt'],
@@ -113,11 +119,11 @@ test('migrate-to-sqlite phase 2 imports valid ledger lines and skips malformed l
     toPosixKey: (...parts) => parts.filter(Boolean).join('/'),
   });
 
-  const result = await command({}, storage, { category: 'mouse', phase: '2' });
+  const result = await command({ appDb }, storage, { category: 'mouse', phase: '2' });
 
   assert.equal(result.results.phase2_billing.status, 'imported');
   assert.equal(result.results.phase2_billing.files, 1);
   assert.equal(result.results.phase2_billing.entries, 2);
-  assert.equal(specDb.billingEntries.length, 2);
+  assert.equal(appDb.billingEntries.length, 2);
   assert.equal(specDb.wasClosed(), true);
 });

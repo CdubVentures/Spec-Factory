@@ -1,8 +1,17 @@
-import { describe, it } from 'node:test';
+import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { confidenceColorClass } from '../colors.js';
+import { loadBundledModule } from '../../../../../src/shared/tests/helpers/loadBundledModule.js';
+
+let confidenceColorClass;
 
 describe('confidenceColorClass', () => {
+  before(async () => {
+    ({ confidenceColorClass } = await loadBundledModule(
+      'tools/gui-react/src/utils/colors.ts',
+      { prefix: 'utils-colors-' },
+    ));
+  });
+
   const cases = [
     [1.0,  'conf-100'],
     [0.95, 'conf-100'],

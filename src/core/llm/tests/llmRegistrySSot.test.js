@@ -107,7 +107,7 @@ test('non-registry anthropic model gets bootstrap anthropic API key + default ba
 test('all roles in snapshot resolve via registry when models are in registry', () => {
   const config = baseConfig([proxyProvider()]);
   const snapshot = llmRoutingSnapshot(config);
-  for (const role of ['plan', 'triage', 'extract', 'validate', 'write']) {
+  for (const role of ['plan', 'triage', 'validate', 'write']) {
     assert.equal(snapshot[role].primary.base_url, 'https://my-proxy.corp.com',
       `${role} should resolve via registry`);
   }

@@ -217,6 +217,68 @@ describe('deriveSelectedStateDisplay', () => {
     const display = deriveSelectedStateDisplay(SAMPLE_RESULT, REGISTRY);
     assert.equal(display.defaultColorHex, '#000000');
   });
+
+  // ── isPublished per-item flags ───────────────────────────────────
+  // WHY: CEF panel renders per-chip Published (P) badges driven by the
+  // publisher endpoint's resolved colors/editions arrays. The selector
+  // decorates each pill/edition with isPublished so the component stays dumb.
+
+  it('defaults isPublished to true on every pill and edition when publishedSets omitted', () => {
+    const display = deriveSelectedStateDisplay(SAMPLE_RESULT, REGISTRY);
+    assert.ok(display.colors.every(p => p.isPublished === true));
+    assert.ok(display.editions.every(e => e.isPublished === true));
+    assert.ok(display.editions.every(e => e.pairedColors.every(p => p.isPublished === true)));
+  });
+
+  it('marks isPublished=true only for colors present in publishedSets.colors', () => {
+    const display = deriveSelectedStateDisplay(SAMPLE_RESULT, REGISTRY, {
+      colors: ['black', 'black+red'],
+      editions: [],
+    });
+    const byName = new Map(display.colors.map(p => [p.name, p]));
+    assert.equal(byName.get('black')?.isPublished, true);
+    assert.equal(byName.get('white')?.isPublished, false);
+    assert.equal(byName.get('black+red')?.isPublished, true);
+  });
+
+  it('marks isPublished=true only for editions present in publishedSets.editions', () => {
+    const display = deriveSelectedStateDisplay(SAMPLE_RESULT, REGISTRY, {
+      colors: [],
+      editions: ['launch-edition'],
+    });
+    assert.equal(display.editions[0].slug, 'launch-edition');
+    assert.equal(display.editions[0].isPublished, true);
+  });
+
+  it('marks an edition isPublished=false when its slug is absent from publishedSets.editions', () => {
+    const display = deriveSelectedStateDisplay(SAMPLE_RESULT, REGISTRY, {
+      colors: [],
+      editions: ['unrelated-edition'],
+    });
+    assert.equal(display.editions[0].isPublished, false);
+  });
+
+  it('propagates publishedSets.colors into pairedColors inside editions', () => {
+    const display = deriveSelectedStateDisplay(SAMPLE_RESULT, REGISTRY, {
+      colors: ['black'],
+      editions: ['launch-edition'],
+    });
+    const paired = display.editions[0].pairedColors;
+    const black = paired.find(p => p.name === 'black');
+    const white = paired.find(p => p.name === 'white');
+    assert.equal(black?.isPublished, true);
+    assert.equal(white?.isPublished, false);
+  });
+
+  it('marks all items isPublished=false when publishedSets has empty arrays', () => {
+    const display = deriveSelectedStateDisplay(SAMPLE_RESULT, REGISTRY, {
+      colors: [],
+      editions: [],
+    });
+    assert.ok(display.colors.every(p => p.isPublished === false));
+    assert.ok(display.editions.every(e => e.isPublished === false));
+    assert.ok(display.editions.every(e => e.pairedColors.every(p => p.isPublished === false)));
+  });
 });
 
 // ── deriveRunHistoryRows ────────────────────────────────────────────

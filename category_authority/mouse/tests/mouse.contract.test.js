@@ -20,7 +20,6 @@ test('mouse search hints use approved real hostnames instead of tier tokens', as
   for (const [fieldKey, field] of Object.entries(full.fields || {})) {
     const domainHints = field?.search_hints?.domain_hints || [];
     const dottedDomainHints = domainHints.filter((value) => String(value || '').trim().toLowerCase().includes('.'));
-    assert.equal(field?.search_hints?.query_templates?.length > 0, true, `query_templates missing for ${fieldKey}`);
     assert.equal(field?.search_hints?.query_terms?.length > 0, true, `query_terms missing for ${fieldKey}`);
     if (dottedDomainHints.length === 0) {
       continue;

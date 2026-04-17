@@ -555,20 +555,6 @@ export function resolveViewConfig(viewConfigSetting, category) {
   }));
 }
 
-/**
- * Legacy migration: build viewConfig from old view1/view2 settings.
- * Marks legacy views as priority, fills remaining from category defaults.
- */
-export function migrateFromLegacyViews(view1, view2, category) {
-  const base = resolveViewConfig('', category);
-  const legacyKeys = new Set([view1, view2].filter(Boolean));
-
-  return base.map(v => ({
-    ...v,
-    priority: legacyKeys.has(v.key) ? true : v.priority,
-  }));
-}
-
 /* ── Per-variant discovery log accumulation ───────────────────────── */
 
 /**

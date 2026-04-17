@@ -9,9 +9,21 @@ import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { FINDER_MODULES } from '../src/core/finder/finderModuleRegistry.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
+
+// WHY: Finder stores are dispatched via `this.getFinderStore('moduleId').method()`,
+// not `this._field = createStore(...)`. Static analyzer needs an explicit map from
+// module id → tables so specDb methods delegating through getFinderStore are traced
+// to their underlying tables for schema usage detection.
+const FINDER_MODULE_TABLES = new Map(
+  FINDER_MODULES.map((mod) => [
+    mod.id,
+    [mod.tableName, mod.runsTableName, `${mod.tableName}_settings`].filter(Boolean),
+  ])
+);
 
 // ── Load schema sources ──
 const specSchema = fs.readFileSync(path.join(root, 'src/db/specDbSchema.js'), 'utf8');
@@ -941,7 +953,16 @@ function buildSpecDbUsageInfo(tableNames, specStatementTables, storeUsageInfo) {
   for (const [name, body] of methodBodies.entries()) {
     const symbolId = `specDb#${name}`;
     bodies.set(symbolId, body);
-    bodyDirectTables.set(symbolId, collectDirectTablesFromText(body, tableNames));
+    const direct = collectDirectTablesFromText(body, tableNames);
+    const finderStoreRe = /this\.getFinderStore\(\s*['"]([^'"]+)['"]\s*\)/g;
+    let finderMatch;
+    while ((finderMatch = finderStoreRe.exec(body)) !== null) {
+      const tables = FINDER_MODULE_TABLES.get(finderMatch[1]) || [];
+      for (const t of tables) {
+        if (tableNames.includes(t)) direct.add(t);
+      }
+    }
+    bodyDirectTables.set(symbolId, direct);
   }
 
   const resolved = resolveSymbolTables({

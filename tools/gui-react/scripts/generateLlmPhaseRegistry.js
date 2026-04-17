@@ -436,14 +436,22 @@ function generateModuleSettingsSections() {
     lines.push(`    label: ${quote(m.settingsLabel)},`);
     lines.push(`    subtitle: ${quote(m.settingsSubtitle || '')},`);
     lines.push(`    tip: ${quote(m.settingsTip || '')},`);
+    lines.push(`    iconName: ${quote(m.iconName || 'default')} as const,`);
     lines.push(`    group: 'modules',`);
     lines.push(`  },`);
   }
   lines.push('] as const;\n');
 
-  // Form components map — keyed by moduleId. Adding a finder = add settingsFormPath + settingsFormExport
-  // to its FINDER_MODULES entry; ModuleSettingsPanel resolves the form at render time. Zero panel edits.
-  lines.push('export const MODULE_SETTINGS_FORMS: Record<string, ComponentType<ModuleSettingsFormProps>> = {');
+  // Narrow moduleId tuple — lets consumers (panel props, hooks, type guards) use the literal union
+  // instead of plain `string`, catching typos at compile time without hand-maintaining a type alias.
+  const moduleIdEntries = FINDER_MODULES.filter((m) => m.settingsLabel).map((m) => quote(m.id));
+  lines.push(`export const MODULE_IDS = [${moduleIdEntries.join(', ')}] as const;`);
+  lines.push('export type ModuleSettingsModuleId = typeof MODULE_IDS[number];\n');
+
+  // Form components map — keyed by moduleId. Record<ModuleSettingsModuleId, ...> forces TS to fail
+  // at codegen time if any section lacks a matching form. Adding a finder = add settingsFormPath +
+  // settingsFormExport to its FINDER_MODULES entry; ModuleSettingsPanel resolves at render. Zero panel edits.
+  lines.push('export const MODULE_SETTINGS_FORMS: Record<ModuleSettingsModuleId, ComponentType<ModuleSettingsFormProps>> = {');
   for (const m of FINDER_MODULES) {
     if (!m.settingsFormPath || !m.settingsFormExport) continue;
     lines.push(`  ${quote(m.id)}: lazy(() => import('../../${m.settingsFormPath}.tsx').then((mod) => ({ default: mod.${m.settingsFormExport} }))),`);

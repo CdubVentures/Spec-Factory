@@ -12,6 +12,20 @@ import { reconcileThreshold } from '../publish/reconcileThreshold.js';
 import { registerOperation, updateStage, completeOperation, failOperation } from '../../../core/operations/operationsRegistry.js';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 
+// WHY: colors/editions store their value as a JSON-stringified array in
+// field_candidates.value (e.g. '["black","white+silver"]'). UI consumers
+// expect a parsed array. Scalars pass through untouched.
+const ARRAY_VALUED_FIELDS = new Set(['colors', 'editions']);
+function decodeFieldValue(fieldKey, rawValue) {
+  if (!ARRAY_VALUED_FIELDS.has(fieldKey)) return rawValue;
+  if (Array.isArray(rawValue)) return rawValue;
+  if (typeof rawValue !== 'string') return rawValue;
+  try {
+    const parsed = JSON.parse(rawValue);
+    return Array.isArray(parsed) ? parsed : rawValue;
+  } catch { return rawValue; }
+}
+
 export function registerPublisherRoutes(ctx) {
   const { jsonRes, readJsonBody, getSpecDb, broadcastWs, config, productRoot } = ctx;
 
@@ -105,41 +119,18 @@ export function registerPublisherRoutes(ctx) {
       const productId = parts[3];
       const allCandidates = specDb.getAllFieldCandidatesByProduct(productId);
       const fields = {};
+      // WHY: field_candidates (status='resolved') is the SSOT for published
+      // state — it mirrors the review grid. Discovery state (active variants)
+      // is a separate concept and must NOT imply publication; only explicit
+      // resolution in field_candidates marks a value as published.
       for (const row of allCandidates) {
         if (row.status !== 'resolved') continue;
         fields[row.field_key] = {
-          value: row.value,
+          value: decodeFieldValue(row.field_key, row.value),
           confidence: row.confidence,
           source: row.metadata_json?.source || 'pipeline',
           resolved_at: row.updated_at,
         };
-      }
-
-      // WHY: Variant-derived fields (colors, editions) are authoritative from
-      // the variants table → color_edition_finder SQL summary (maintained by
-      // derivePublishedFromVariants). CLAUDE.md Dual-State mandate: runtime
-      // UI reads must come from SQL, never product.json.
-      // NOTE: resolved_at uses the last CEF run time as a proxy — precise
-      // variant-mutation timestamp isn't projected to SQL today. Functionally
-      // identical for consumers since both bump when variants change.
-      const cefRow = specDb.getFinderStore?.('colorEditionFinder')?.get?.(productId);
-      if (cefRow) {
-        if (Array.isArray(cefRow.colors) && cefRow.colors.length > 0) {
-          fields.colors = {
-            value: cefRow.colors,
-            confidence: 1.0,
-            source: 'variant_registry',
-            resolved_at: cefRow.latest_ran_at || '',
-          };
-        }
-        if (Array.isArray(cefRow.editions) && cefRow.editions.length > 0) {
-          fields.editions = {
-            value: cefRow.editions,
-            confidence: 1.0,
-            source: 'variant_registry',
-            resolved_at: cefRow.latest_ran_at || '',
-          };
-        }
       }
 
       jsonRes(res, 200, { product_id: productId, fields });

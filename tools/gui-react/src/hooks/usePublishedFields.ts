@@ -12,7 +12,7 @@ import { api } from '../api/client.ts';
  */
 
 export interface PublishedFieldEntry {
-  value: string | null;
+  value: string | readonly string[] | null;
   confidence: number;
   source: string;
   resolved_at: string;

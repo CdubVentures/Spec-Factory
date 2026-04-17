@@ -38,6 +38,7 @@ export function makeCtx(overrides = {}) {
       getCompiledRules: () => ({ fields: {}, field_order: [], ui_field_catalog: null, known_values: null }),
       getFieldStudioMap: () => null,
       getFieldKeyOrder: () => null,
+      upsertFieldStudioMap: () => {},
     }),
     getSpecDbReady: async () => null,
     broadcastWs: () => {},

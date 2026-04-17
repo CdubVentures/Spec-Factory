@@ -14,6 +14,7 @@ export const MODULE_SETTINGS_SECTIONS = [
     label: 'Color & Edition Finder',
     subtitle: 'CEF module settings',
     tip: 'Per-category settings for the Color & Edition Finder discovery module.',
+    iconName: 'palette' as const,
     group: 'modules',
   },
   {
@@ -22,11 +23,15 @@ export const MODULE_SETTINGS_SECTIONS = [
     label: 'Product Image Finder',
     subtitle: 'PIF module settings',
     tip: 'Per-category settings for the Product Image Finder: view angles and image quality.',
+    iconName: 'image' as const,
     group: 'modules',
   },
 ] as const;
 
-export const MODULE_SETTINGS_FORMS: Record<string, ComponentType<ModuleSettingsFormProps>> = {
+export const MODULE_IDS = ['colorEditionFinder', 'productImageFinder'] as const;
+export type ModuleSettingsModuleId = typeof MODULE_IDS[number];
+
+export const MODULE_SETTINGS_FORMS: Record<ModuleSettingsModuleId, ComponentType<ModuleSettingsFormProps>> = {
   'colorEditionFinder': lazy(() => import('../../pipeline-settings/components/forms/CefSettingsForm.tsx').then((mod) => ({ default: mod.CefSettingsForm }))),
   'productImageFinder': lazy(() => import('../../pipeline-settings/components/forms/PifSettingsForm.tsx').then((mod) => ({ default: mod.PifSettingsForm }))),
 };

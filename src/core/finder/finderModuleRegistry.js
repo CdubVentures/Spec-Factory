@@ -101,6 +101,7 @@ export const FINDER_MODULES = Object.freeze([
     settingsTip: 'Per-category settings for the Color & Edition Finder discovery module.',
     settingsFormPath: 'pipeline-settings/components/forms/CefSettingsForm',
     settingsFormExport: 'CefSettingsForm',
+    iconName: 'palette',
   },
   {
     // Identity
@@ -209,6 +210,7 @@ export const FINDER_MODULES = Object.freeze([
     settingsTip: 'Per-category settings for the Product Image Finder: view angles and image quality.',
     settingsFormPath: 'pipeline-settings/components/forms/PifSettingsForm',
     settingsFormExport: 'PifSettingsForm',
+    iconName: 'image',
   },
 ]);
 

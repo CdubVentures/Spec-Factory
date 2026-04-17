@@ -1,8 +1,17 @@
-import { describe, it } from 'node:test';
+import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { tryParseJsonArray } from '../fieldNormalize.js';
+import { loadBundledModule } from '../../../../../src/shared/tests/helpers/loadBundledModule.js';
+
+let tryParseJsonArray;
 
 describe('tryParseJsonArray', () => {
+  before(async () => {
+    ({ tryParseJsonArray } = await loadBundledModule(
+      'tools/gui-react/src/utils/fieldNormalize.ts',
+      { prefix: 'utils-field-normalize-' },
+    ));
+  });
+
   const cases = [
     // JSON array strings → parsed
     ['["black","white","silver"]', ['black', 'white', 'silver']],

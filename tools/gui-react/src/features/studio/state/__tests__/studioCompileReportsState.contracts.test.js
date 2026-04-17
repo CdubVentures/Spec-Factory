@@ -4,15 +4,18 @@ import {
   loadStudioCompileReportsState,
 } from './helpers/studioPageContractsHarness.js';
 
-test('studio compile reports state keeps running, failed, and completion badges stable', async () => {
+test('studio compile reports state keeps running, failed, and idle badges stable', async () => {
   const { deriveCompileReportsViewState } = await loadStudioCompileReportsState();
+
+  const IDLE_CLASS =
+    'sf-border-default sf-bg-surface-soft sf-text-muted dark:sf-border-default sf-dk-surface-900a30 dark:sf-text-subtle';
 
   assert.deepEqual(
     deriveCompileReportsViewState({
-      processCommand: 'compile-rules --category keyboards',
-      processRunning: true,
-      processExitCode: null,
-      processStartedAt: '',
+      compileRunning: true,
+      validateRunning: false,
+      compileError: null,
+      validateError: null,
       compilePending: false,
       compileIsError: false,
       validatePending: false,
@@ -29,8 +32,7 @@ test('studio compile reports state keeps running, failed, and completion badges 
       compileBadgeLabel: 'Compile running',
       compileBadgeClass: 'sf-callout sf-callout-info',
       validateBadgeLabel: 'Validation idle',
-      validateBadgeClass:
-        'sf-border-default sf-bg-surface-soft sf-text-muted dark:sf-border-default sf-dk-surface-900a30 dark:sf-text-subtle',
+      validateBadgeClass: IDLE_CLASS,
       artifactProgressLabel: 'Artifacts 1 of 9',
       artifactProgressPercent: 11,
     },
@@ -38,12 +40,13 @@ test('studio compile reports state keeps running, failed, and completion badges 
 
   assert.deepEqual(
     deriveCompileReportsViewState({
-      processCommand: 'category-compile --category keyboards',
-      processRunning: false,
-      processExitCode: 7,
-      processStartedAt: '',
+      compileRunning: false,
+      validateRunning: false,
+      compileError: null,
+      validateError: null,
       compilePending: false,
-      compileIsError: false,
+      compileIsError: true,
+      compileErrorMessage: 'Compile failed (7)',
       validatePending: false,
       validateIsError: false,
       artifacts: [],
@@ -58,8 +61,7 @@ test('studio compile reports state keeps running, failed, and completion badges 
       compileBadgeLabel: 'Compile failed (7)',
       compileBadgeClass: 'sf-callout sf-callout-danger',
       validateBadgeLabel: 'Validation idle',
-      validateBadgeClass:
-        'sf-border-default sf-bg-surface-soft sf-text-muted dark:sf-border-default sf-dk-surface-900a30 dark:sf-text-subtle',
+      validateBadgeClass: IDLE_CLASS,
       artifactProgressLabel: 'Artifacts 0 of 1',
       artifactProgressPercent: 0,
     },
@@ -67,10 +69,10 @@ test('studio compile reports state keeps running, failed, and completion badges 
 
   assert.deepEqual(
     deriveCompileReportsViewState({
-      processCommand: 'validate-rules --category keyboards',
-      processRunning: false,
-      processExitCode: 0,
-      processStartedAt: '',
+      compileRunning: false,
+      validateRunning: false,
+      compileError: null,
+      validateError: null,
       compilePending: false,
       compileIsError: false,
       validatePending: false,
@@ -85,10 +87,9 @@ test('studio compile reports state keeps running, failed, and completion badges 
       anyProcessRunning: false,
       progressActive: false,
       compileBadgeLabel: 'Compile idle',
-      compileBadgeClass:
-        'sf-border-default sf-bg-surface-soft sf-text-muted dark:sf-border-default sf-dk-surface-900a30 dark:sf-text-subtle',
-      validateBadgeLabel: 'Validation complete',
-      validateBadgeClass: 'sf-callout sf-callout-success',
+      compileBadgeClass: IDLE_CLASS,
+      validateBadgeLabel: 'Validation idle',
+      validateBadgeClass: IDLE_CLASS,
       artifactProgressLabel: 'Artifacts 0 of 1',
       artifactProgressPercent: 0,
     },

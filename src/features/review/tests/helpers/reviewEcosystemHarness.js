@@ -624,6 +624,7 @@ function seedFieldCandidatesFromProducts(db) {
         db.upsertFieldCandidate({
           productId,
           fieldKey,
+          sourceId: cand.candidate_id,
           value: cand.value,
           confidence: cand.score,
           sourceCount: 1,
@@ -642,6 +643,7 @@ function seedFieldCandidatesFromProducts(db) {
         db.upsertFieldCandidate({
           productId,
           fieldKey,
+          sourceId: `manual-${productId}-${fieldKey}`,
           value: override.override_value,
           confidence: 1.0,
           sourceCount: 1,
