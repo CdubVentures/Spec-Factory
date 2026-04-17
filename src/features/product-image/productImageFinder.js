@@ -612,6 +612,19 @@ export async function runProductImageFinder({
     specDb, resolveFn: resolveIdentityAmbiguitySnapshot,
   });
 
+  // Read siblings from CEF runs (identity context — still from JSON) BEFORE
+  // merging with siblingModels to avoid TDZ on siblingsExcluded.
+  const cefPath = path.join(productRoot, product.product_id, 'color_edition.json');
+  let cefData;
+  try { cefData = JSON.parse(fs.readFileSync(cefPath, 'utf8')); } catch { cefData = null; }
+
+  const siblingsExcluded = [];
+  for (const run of (cefData?.runs || [])) {
+    for (const s of (run.response?.siblings_excluded || run.selected?.siblings_excluded || [])) {
+      if (s && !siblingsExcluded.includes(s)) siblingsExcluded.push(s);
+    }
+  }
+
   // WHY: Merge DB-known sibling model names with LLM-discovered siblings.
   for (const m of siblingModels) {
     if (m && !siblingsExcluded.includes(m)) siblingsExcluded.push(m);
@@ -630,18 +643,6 @@ export async function runProductImageFinder({
     label: v.variant_label,
     type: v.variant_type,
   }));
-
-  // Read siblings from CEF runs (identity context — still from JSON)
-  const cefPath = path.join(productRoot, product.product_id, 'color_edition.json');
-  let cefData;
-  try { cefData = JSON.parse(fs.readFileSync(cefPath, 'utf8')); } catch { cefData = null; }
-
-  const siblingsExcluded = [];
-  for (const run of (cefData?.runs || [])) {
-    for (const s of (run.response?.siblings_excluded || run.selected?.siblings_excluded || [])) {
-      if (s && !siblingsExcluded.includes(s)) siblingsExcluded.push(s);
-    }
-  }
 
   // Filter to single variant if requested
   const variants = variantKey
@@ -935,6 +936,12 @@ export async function runCarouselLoop({
   const reRunBudget = Number.isNaN(reRunBudgetRaw) ? 1 : reRunBudgetRaw;
   const viewPromptOverride = finderStore.getSetting('viewPromptOverride') || '';
   const heroPromptOverride = finderStore.getSetting('heroPromptOverride') || '';
+
+  // URL cooldown: skip discovery logs older than this cutoff (same contract as runProductImageFinder)
+  const urlCooldownDays = configInt(config, 'urlCooldownDays') ?? 90;
+  const urlCooldownCutoffIso = urlCooldownDays > 0
+    ? new Date(Date.now() - urlCooldownDays * 86400000).toISOString()
+    : '';
 
   const { familyModelCount, ambiguityLevel, siblingModels } = await resolveAmbiguityContext({
     config, category: product.category, brand: product.brand,

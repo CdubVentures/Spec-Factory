@@ -53,12 +53,22 @@ function makeFinderStoreStub(settingsOverrides = {}) {
   };
 }
 
-function makeSpecDbStub(finderStore) {
+function makeSpecDbStub(finderStore, variants = DEFAULT_VARIANTS) {
   return {
     getFinderStore: () => finderStore,
     getAllProducts: () => [],
+    // WHY: variants.listActive is SSOT for variants at runtime (replaced CEF JSON reads).
+    variants: {
+      listActive: () => variants,
+      listByProduct: () => variants,
+    },
   };
 }
+
+// Matches SIMPLE_CEF's single color variant. Tests with different variants can override.
+const DEFAULT_VARIANTS = [
+  { variant_id: 'v_black', variant_key: 'color:black', variant_label: 'Black', variant_type: 'color', color_atoms: ['black'] },
+];
 
 const PRODUCT = {
   product_id: 'loop-test-001',
@@ -93,9 +103,18 @@ before(async () => {
   fs.mkdirSync(PRODUCT_ROOT, { recursive: true });
   testPngBuffer = await sharp(createNoisyPixels(1000, 800), { raw: { width: 1000, height: 800, channels: 3 } }).png().toBuffer();
 
-  testServer = http.createServer((req, res) => {
-    res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': testPngBuffer.length });
-    res.end(testPngBuffer);
+  // WHY: Each request returns unique bytes so downloaded images produce distinct
+  // content hashes. Production code dedupes by content hash to block the LLM from
+  // returning the same image at different URLs — if the server returned identical
+  // bytes every time, every download after the first would be rejected as a dupe
+  // and the loop couldn't exercise satisfaction, side-catches, or re-run budget.
+  testServer = http.createServer(async (req, res) => {
+    const uniqueBuf = await sharp(
+      createNoisyPixels(1000, 800),
+      { raw: { width: 1000, height: 800, channels: 3 } },
+    ).png().toBuffer();
+    res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': uniqueBuf.length });
+    res.end(uniqueBuf);
   });
   await new Promise((resolve) => testServer.listen(0, resolve));
   serverPort = testServer.address().port;
@@ -275,7 +294,8 @@ describe('runCarouselLoop', () => {
     // Don't write CEF data
     fs.mkdirSync(path.join(PRODUCT_ROOT, pid), { recursive: true });
     const finderStore = makeFinderStoreStub();
-    const specDb = makeSpecDbStub(finderStore);
+    // WHY: empty variants simulates "no CEF data" — variants table is the SSOT
+    const specDb = makeSpecDbStub(finderStore, []);
 
     const result = await runCarouselLoop({
       product: { ...PRODUCT, product_id: pid },

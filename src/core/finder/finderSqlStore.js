@@ -74,6 +74,14 @@ export function createFinderSqlStore({ db, category, module: mod }) {
     _remove: db.prepare(
       `DELETE FROM ${tableName} WHERE category = ? AND product_id = ?`
     ),
+    // WHY: Opt-in cooldown query for modules that declare a cooldown_until column.
+    // Returns the summary row only if its cooldown is still in the future.
+    ...(customColNames.includes('cooldown_until') ? {
+      _getIfOnCooldown: db.prepare(
+        `SELECT * FROM ${tableName}
+         WHERE category = ? AND product_id = ? AND cooldown_until > ?`
+      ),
+    } : {}),
     _insertRun: db.prepare(
       `INSERT OR REPLACE INTO ${runsTableName} (category, product_id, run_number, ran_at, model, fallback_used, effort_level, access_mode, thinking, web_search, selected_json, prompt_json, response_json)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -153,6 +161,16 @@ export function createFinderSqlStore({ db, category, module: mod }) {
 
   function remove(productId) {
     stmts._remove.run(category, productId);
+  }
+
+  // ── Cooldown (opt-in) ───────────────────────────────────────────
+  // WHY: Only provided when module declares a cooldown_until column.
+  // Returns the row only if the stored cooldown_until is still in the future.
+  function getIfOnCooldown(productId) {
+    if (!stmts._getIfOnCooldown) return null;
+    const now = new Date().toISOString();
+    const row = stmts._getIfOnCooldown.get(category, productId, now);
+    return row ? hydrateSummaryRow(row) : null;
   }
 
   // ── Run methods ─────────────────────────────────────────────────
@@ -240,6 +258,7 @@ export function createFinderSqlStore({ db, category, module: mod }) {
 
   return {
     upsert, get, listByCategory, remove,
+    getIfOnCooldown,
     insertRun, listRuns, getLatestRun, removeRun, removeAllRuns,
     getSetting, setSetting, getAllSettings, deleteSetting,
     updateSummaryField, updateBookkeeping,

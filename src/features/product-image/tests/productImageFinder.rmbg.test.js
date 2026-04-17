@@ -46,8 +46,19 @@ function makeFinderStoreStub() {
   };
 }
 
-function makeSpecDbStub(store) {
-  return { getFinderStore: () => store, getAllProducts: () => [] };
+const DEFAULT_VARIANTS = [
+  { variant_id: 'v_black', variant_key: 'color:black', variant_label: 'Black', variant_type: 'color', color_atoms: ['black'] },
+];
+
+function makeSpecDbStub(store, variants = DEFAULT_VARIANTS) {
+  return {
+    getFinderStore: () => store,
+    getAllProducts: () => [],
+    variants: {
+      listActive: () => variants,
+      listByProduct: () => variants,
+    },
+  };
 }
 
 const PRODUCT = {

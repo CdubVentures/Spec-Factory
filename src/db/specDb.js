@@ -30,7 +30,6 @@ import { createTelemetryIndexStore } from './stores/telemetryIndexStore.js';
 import { createFieldStudioMapStore } from './stores/fieldStudioMapStore.js';
 import { createFieldKeyOrderStore } from './stores/fieldKeyOrderStore.js';
 import { createCrawlLedgerStore } from './stores/crawlLedgerStore.js';
-import { createColorEditionFinderStore } from './stores/colorEditionFinderStore.js';
 import { FINDER_MODULES } from '../core/finder/finderModuleRegistry.js';
 import { createFinderSqlStore } from '../core/finder/finderSqlStore.js';
 import { generateFinderDdl } from '../core/finder/finderSqlDdl.js';
@@ -137,22 +136,6 @@ export class SpecDb {
         _getQueryCooldownRaw: this._getQueryCooldownRaw,
         _getQueryCooldownsByProduct: this._getQueryCooldownsByProduct,
         _purgeExpiredCooldowns: this._purgeExpiredCooldowns,
-      },
-    });
-    this._colorEditionFinderStore = createColorEditionFinderStore({
-      db: this.db,
-      category: this.category,
-      stmts: {
-        _upsertColorEditionFinder: this._upsertColorEditionFinder,
-        _getColorEditionFinder: this._getColorEditionFinder,
-        _listColorEditionFinderByCategory: this._listColorEditionFinderByCategory,
-        _getColorEditionFinderOnCooldown: this._getColorEditionFinderOnCooldown,
-        _deleteColorEditionFinder: this._deleteColorEditionFinder,
-        _insertColorEditionFinderRun: this._insertColorEditionFinderRun,
-        _listColorEditionFinderRuns: this._listColorEditionFinderRuns,
-        _getLatestColorEditionFinderRun: this._getLatestColorEditionFinderRun,
-        _deleteColorEditionFinderRunByNumber: this._deleteColorEditionFinderRunByNumber,
-        _deleteAllColorEditionFinderRuns: this._deleteAllColorEditionFinderRuns,
       },
     });
     // WHY: Generic finder store map — auto-wires all registered finder modules.
@@ -470,7 +453,7 @@ export class SpecDb {
   upsertColorEditionFinder(row) { this.getFinderStore('colorEditionFinder').upsert(row); }
   getColorEditionFinder(pid) { return this.getFinderStore('colorEditionFinder').get(pid); }
   listColorEditionFinderByCategory(cat) { return this.getFinderStore('colorEditionFinder').listByCategory(cat); }
-  getColorEditionFinderIfOnCooldown(pid) { return this._colorEditionFinderStore.getIfOnCooldown(pid); }
+  getColorEditionFinderIfOnCooldown(pid) { return this.getFinderStore('colorEditionFinder').getIfOnCooldown(pid); }
   deleteColorEditionFinder(pid) { return this.getFinderStore('colorEditionFinder').remove(pid); }
 
   // --- Color & Edition Finder Runs (backward-compat) ---

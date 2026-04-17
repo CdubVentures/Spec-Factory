@@ -12,7 +12,7 @@ Exported from `index.js`:
 - `recalculateCumulativeFromRuns(runs, productId, category)` — Pure: derive all state from runs array
 - `deleteColorEditionFinderRun({ productId, productRoot?, runNumber })` — Delete single run, recalculate. Returns null if no runs remain.
 - `deleteColorEditionFinderAll({ productId, productRoot? })` — Delete JSON file entirely
-- `rebuildColorEditionFinderFromJson({ specDb, productRoot? })` — Scan all product dirs, re-populate SQL. Handles legacy + new format.
+- `rebuildColorEditionFinderFromJson({ specDb, productRoot? })` — Scan all product dirs, re-populate SQL from `selected` shape in JSON.
 - `colorEditionFinderResponseSchema` — Zod schema: `{ colors: string[], color_names: Record, editions: Record<slug, { display_name, colors }>, default_color: string, siblings_excluded: string[], discovery_log: { confirmed_from_known, added_new, rejected_from_known, urls_checked, queries_run } }`
 - `buildColorEditionFinderPrompt({ colorNames, colors, product, previousRuns? })` — Dynamic system prompt with historical context
 - `createColorEditionFinderCallLlm(deps)` — Factory: creates bound LLM caller

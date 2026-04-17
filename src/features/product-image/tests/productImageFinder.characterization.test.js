@@ -52,10 +52,21 @@ function makeFinderStoreStub() {
   };
 }
 
-function makeSpecDbStub(finderStore) {
+// Default variants — matches a single color:black variant. Tests with different
+// CEF colors can pass their own variants array.
+const DEFAULT_VARIANTS = [
+  { variant_id: 'v_black', variant_key: 'color:black', variant_label: 'Black', variant_type: 'color', color_atoms: ['black'] },
+];
+
+function makeSpecDbStub(finderStore, variants = DEFAULT_VARIANTS) {
   return {
     getFinderStore: () => finderStore,
     getAllProducts: () => [],
+    // WHY: variants.listActive is SSOT at runtime (replaced CEF JSON reads).
+    variants: {
+      listActive: () => variants,
+      listByProduct: () => variants,
+    },
   };
 }
 
@@ -274,7 +285,7 @@ describe('characterization: runProductImageFinder', () => {
     const result = await runProductImageFinder({
       product: { ...PRODUCT, product_id: 'no-cef-product' },
       appDb: {},
-      specDb: makeSpecDbStub(store),
+      specDb: makeSpecDbStub(store, []), // WHY: empty variants simulates "no CEF data"
       config: {},
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: async () => ({ result: { images: [] }, usage: null }),
@@ -284,21 +295,24 @@ describe('characterization: runProductImageFinder', () => {
     assert.equal(result.rejections[0].reason_code, 'no_cef_data');
   });
 
-  it('rejects when CEF has empty colors array', async () => {
+  it('rejects when variants table is empty', async () => {
+    // WHY: Previously asserted 'no_colors' when CEF JSON had empty colors array.
+    // PIF now reads variants from SQL (SSOT), so empty variants → no_cef_data.
+    // The 'no_colors' reason code was retired with the JSON→SQL migration.
     writeCefData('empty-colors-product', { selected: { colors: [] } });
 
     const store = makeFinderStoreStub();
     const result = await runProductImageFinder({
       product: { ...PRODUCT, product_id: 'empty-colors-product' },
       appDb: {},
-      specDb: makeSpecDbStub(store),
+      specDb: makeSpecDbStub(store, []),
       config: {},
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: async () => ({ result: { images: [] }, usage: null }),
     });
 
     assert.equal(result.rejected, true);
-    assert.equal(result.rejections[0].reason_code, 'no_colors');
+    assert.equal(result.rejections[0].reason_code, 'no_cef_data');
   });
 
   it('rejects when unknown variantKey is requested', async () => {
@@ -357,7 +371,7 @@ describe('characterization: runProductImageFinder', () => {
     assert.equal(img.height, 800);
     assert.equal(img.quality_pass, true);
     assert.equal(img.variant_key, 'color:black');
-    assert.equal(img.variant_label, 'black');
+    assert.equal(img.variant_label, 'Black'); // WHY: variants table stores display-cased labels
     assert.equal(img.variant_type, 'color');
     assert.equal(typeof img.downloaded_at, 'string');
 
@@ -606,7 +620,8 @@ describe('characterization: runProductImageFinder', () => {
     assert.ok(doc.selected.images.length >= 1);
     assert.ok(Array.isArray(doc.runs));
     assert.ok(doc.runs.length >= 1);
-    assert.equal(typeof doc.cooldown_until, 'string');
+    // WHY: cooldown_until removed from PIF JSON — PIF never had a cooldown concept,
+    // the field was copied over from CEF and has since been dropped.
     assert.equal(typeof doc.run_count, 'number');
   });
 
@@ -670,7 +685,10 @@ describe('characterization: runProductImageFinder', () => {
     const result = await runProductImageFinder({
       product: { ...PRODUCT, product_id: pid },
       appDb: {},
-      specDb: makeSpecDbStub(store),
+      specDb: makeSpecDbStub(store, [
+        { variant_id: 'v_black', variant_key: 'color:black', variant_label: 'Black', variant_type: 'color', color_atoms: ['black'] },
+        { variant_id: 'v_white', variant_key: 'color:white', variant_label: 'White', variant_type: 'color', color_atoms: ['white'] },
+      ]),
       config: {},
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: async (args) => {
@@ -716,7 +734,11 @@ describe('characterization: runProductImageFinder', () => {
     const result = await runProductImageFinder({
       product: { ...PRODUCT, product_id: pid },
       appDb: {},
-      specDb: makeSpecDbStub(store),
+      specDb: makeSpecDbStub(store, [
+        { variant_id: 'v_black', variant_key: 'color:black', variant_label: 'Black', variant_type: 'color', color_atoms: ['black'] },
+        { variant_id: 'v_white', variant_key: 'color:white', variant_label: 'White', variant_type: 'color', color_atoms: ['white'] },
+        { variant_id: 'v_blue', variant_key: 'color:blue', variant_label: 'Blue', variant_type: 'color', color_atoms: ['blue'] },
+      ]),
       config: {},
       productRoot: PRODUCT_ROOT,
       variantKey: 'color:white',
@@ -802,7 +824,17 @@ describe('characterization: runProductImageFinder', () => {
     const result = await runProductImageFinder({
       product: { ...PRODUCT, product_id: pid },
       appDb: {},
-      specDb: makeSpecDbStub(store),
+      specDb: makeSpecDbStub(store, [
+        {
+          variant_id: 'v_cod',
+          variant_key: 'edition:cod-bo6',
+          variant_label: 'Call of Duty BO6 Edition',
+          variant_type: 'edition',
+          edition_slug: 'cod-bo6',
+          edition_display_name: 'Call of Duty BO6 Edition',
+          color_atoms: ['black', 'red'],
+        },
+      ]),
       config: {},
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: async () => ({ result: {

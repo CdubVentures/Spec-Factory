@@ -1,3 +1,5 @@
+import { FINDER_MODULES } from '../../core/finder/finderModuleRegistry.js';
+
 export const GUI_API_ROUTE_ORDER = [
   'infra',
   'config',
@@ -6,7 +8,7 @@ export const GUI_API_ROUTE_ORDER = [
   'catalog',
   'brand',
   'color',
-  'colorEditionFinder',
+  ...FINDER_MODULES.map((m) => m.id),
   'studio',
   'dataAuthority',
   'queueBillingLearning',

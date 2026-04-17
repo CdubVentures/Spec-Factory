@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory - Review Grid Candidate Contract</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --border: #dee2e6;
+    --text: #212529;
+    --text-muted: #6c757d;
+    --accent: #4263eb;
+    --mono: 'SF Mono', 'Cascadia Code', Consolas, monospace;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); margin: 0; padding: 2rem; line-height: 1.55; }
+  main { max-width: 960px; margin: 0 auto; background: var(--surface); padding: 2rem 2.5rem; border: 1px solid var(--border); border-radius: 8px; }
+  h1, h2, h3 { color: var(--text); }
+  h1 { border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem; }
+  h2 { margin-top: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
+  h3 { margin-top: 1.5rem; color: var(--accent); }
+  code { font-family: var(--mono); font-size: 0.9em; background: #eef; padding: 0.1em 0.3em; border-radius: 3px; }
+  pre { font-family: var(--mono); font-size: 0.85em; background: #f5f5f5; padding: 1rem; border-radius: 6px; overflow-x: auto; border: 1px solid var(--border); }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+  th { background: #f1f3f5; }
+  .muted { color: var(--text-muted); font-size: 0.9em; }
+  .callout { background: #fff9db; border-left: 4px solid #e67700; padding: 0.75rem 1rem; margin: 1rem 0; border-radius: 4px; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Review Grid Candidate Contract</h1>
+
+<p class="muted">The single shape contract for everything that feeds the review grid. Any finder module that emits candidates — CEF (colors, editions), future Release Date Finder, SKU Finder, Discontinued Finder, Price Finder, Affiliate Links Finder — produces rows that conform to this contract. Anchors the shape before the next wave of <code>variantFieldProducer</code> modules ships.</p>
+
+<h2>1. The two surfaces</h2>
+
+<p>There are two shapes to understand, on opposite ends of the pipeline:</p>
+
+<ul>
+  <li><strong>Storage shape</strong> — <code>field_candidates</code> SQL row. What gets written when <code>submitCandidate</code> runs.</li>
+  <li><strong>Display shape</strong> — the object that <code>ensureCandidateShape()</code> returns. What the review grid UI actually renders.</li>
+</ul>
+
+<p>Storage is the source of truth; display is derived. The review grid hydrates display candidates from storage rows.</p>
+
+<h2>2. Storage shape — the <code>field_candidates</code> row</h2>
+
+<p>Defined in <code>src/db/specDbSchema.js</code>:</p>
+
+<pre>CREATE TABLE field_candidates (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category TEXT NOT NULL,
+  product_id TEXT NOT NULL,
+  field_key TEXT NOT NULL,
+  value TEXT,
+  unit TEXT DEFAULT NULL,
+  confidence REAL DEFAULT 0,
+  source_id TEXT NOT NULL DEFAULT '',
+  source_type TEXT NOT NULL DEFAULT '',
+  model TEXT DEFAULT '',
+  validation_json TEXT DEFAULT '{}',
+  metadata_json TEXT DEFAULT '{}',
+  status TEXT DEFAULT 'candidate' CHECK(status IN ('candidate', 'resolved')),
+  variant_id TEXT DEFAULT NULL,
+  variant_id_key TEXT GENERATED ALWAYS AS (COALESCE(variant_id, '')) STORED,
+  submitted_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(category, product_id, field_key, source_id, variant_id_key)
+);</pre>
+
+<table>
+<tr><th>Column</th><th>Role</th></tr>
+<tr><td><code>field_key</code></td><td>Which field this candidate is for (<code>colors</code>, <code>editions</code>, <code>release_date</code>, <code>sku</code>, etc.). Matches Field Studio rule keys.</td></tr>
+<tr><td><code>value</code></td><td>The candidate value. String, number, or stringified JSON depending on the field's type.</td></tr>
+<tr><td><code>confidence</code></td><td>0.0–1.0 score assigned by the finder.</td></tr>
+<tr><td><code>source_id</code></td><td>Stable per-run identifier — see conventions below.</td></tr>
+<tr><td><code>source_type</code></td><td>Short module tag (<code>cef</code>, <code>rdf</code>, <code>pipeline</code>, <code>user</code>). Used by the review grid for icon/color routing.</td></tr>
+<tr><td><code>variant_id</code></td><td>NULL = item-default (shown as the primary value in the grid). String = variant-scoped (drill-in / per-variant breakdown).</td></tr>
+<tr><td><code>variant_id_key</code></td><td>Generated column: <code>COALESCE(variant_id, '')</code>. SQLite treats NULL as distinct in UNIQUE constraints, so this is the real unique key. <strong>Do not write to this column directly</strong> — it's auto-computed.</td></tr>
+<tr><td><code>metadata_json</code></td><td>Arbitrary per-source metadata. For item-default rows emitted by <code>variantFieldProducer</code> modules, should include <code>per_variant: { variant_id: value, ... }</code> so downstream can access the full variant breakdown without a second query.</td></tr>
+</table>
+
+<div class="callout">
+<strong>Uniqueness:</strong> <code>UNIQUE(category, product_id, field_key, source_id, variant_id_key)</code>. Two candidates with the same <code>source_id</code> but different <code>variant_id</code> values are distinct rows — that's how one CEF run can produce one candidate per variant.
+</div>
+
+<h2>3. Variant scoping semantics</h2>
+
+<p>Three cases:</p>
+
+<table>
+<tr><th><code>variant_id</code></th><th>Meaning</th><th>Example</th></tr>
+<tr><td><code>NULL</code></td><td>Item-default. Applies to the whole product. Rendered as the primary value in the grid.</td><td>A pipeline weight measurement, or the chosen "primary" release date a <code>variantFieldProducer</code> picked.</td></tr>
+<tr><td>string (e.g. <code>v_abc123</code>)</td><td>Variant-scoped. Applies only to that specific variant.</td><td>The release date for the Black color variant, the SKU for the CoD BO6 edition variant.</td></tr>
+<tr><td>string + NULL pair</td><td>Both exist simultaneously. Item-default carries <code>metadata_json.per_variant</code> with the full map; per-variant rows carry the variant-specific value.</td><td>RDF emits one row per variant <em>and</em> one item-default row whose <code>per_variant</code> metadata holds every variant's release date.</td></tr>
+</table>
+
+<p>Pulling everything for one variant — both variant-scoped rows and item-defaults — is the job of the <code>getVariantDossier</code> helper at <code>src/db/helpers/variantDossierHelper.js</code>. Any UI or publisher code that asks "what do we know about variant X?" should go through it.</p>
+
+<h2>4. <code>source_id</code> convention</h2>
+
+<p>Format: <code>{modulePrefix}-{productId}-{runNumber}</code>.</p>
+
+<ul>
+  <li>CEF: <code>cef-mouse-001-3</code> — the 3rd CEF run on product <code>mouse-001</code>.</li>
+  <li>Future RDF: <code>rdf-mouse-001-1</code>.</li>
+  <li>Pipeline extractions: <code>pipeline</code> (no run number; pipeline is a continuous source).</li>
+  <li>User override in review: <code>user</code>.</li>
+</ul>
+
+<p>The run-numbered variants matter because deleting run N of a finder cascades to <code>DELETE FROM field_candidates WHERE source_id = '{prefix}-{productId}-{N}'</code> — a clean, surgical deletion without touching other runs' candidates.</p>
+
+<h2>5. Display shape — <code>ensureCandidateShape()</code></h2>
+
+<p>Defined in <code>src/features/review/domain/candidateInfrastructure.js</code>. The review grid calls this to normalize a raw candidate (from <code>field_candidates</code> or elsewhere) into the shape the UI renders:</p>
+
+<pre>{
+  candidate_id:   string,            // stable identifier within a product/field scope
+  value:          any,               // the value itself
+  score:          number in [0,1],   // confidence
+  source_id:      string,            // normalized source token (e.g. 'cef', 'pipeline', 'user')
+  source:         string,            // human-readable label (e.g. 'CEF', 'Pipeline', 'Reference')
+  tier:           string | null,     // optional tier ranking
+  method:         string,            // e.g. 'pipeline_extraction', 'specdb_lookup'
+  evidence: {
+    url:           string,
+    retrieved_at:  string,
+    snippet_id:    string,
+    snippet_hash:  string,
+    quote:         string,
+    quote_span:    [number, number] | null,
+    snippet_text:  string,
+    source_id:     string,
+  },
+  is_synthetic_selected: boolean,    // true when derived from the current slot state
+}</pre>
+
+<p>This is a read-side contract. Writers don't need to produce this shape directly — they produce storage-shape rows via <code>submitCandidate</code>, and the hydration path into the grid applies <code>ensureCandidateShape()</code> automatically.</p>
+
+<h2>6. The write API — <code>submitCandidate</code></h2>
+
+<p>Single entry point for every source: <code>src/features/publisher/candidate-gate/submitCandidate.js</code>.</p>
+
+<pre>submitCandidate({
+  category, productId, fieldKey,
+  value, confidence, sourceMeta,
+  fieldRules, knownValues, componentDb,
+  specDb, productRoot,
+  variantId,        // nullable — null for item-default, string for variant-scoped
+  metadata,         // for variantFieldProducer item-default rows: { per_variant: { ... } }
+  // ... other opts
+}) → { status: 'accepted' | 'rejected', candidateId, value, validationResult }</pre>
+
+<p>The gate validates via <code>validateField()</code> before any write. Hard rejections (shape, type, range, closed enum) block the write; soft rejections (<code>unknown_enum_prefer_known</code>) are accepted. A successful call dual-writes to <code>field_candidates</code> (SQL projection) and <code>product.json candidates[]</code> (durable SSOT).</p>
+
+<h2>7. Contract checklist for new finders</h2>
+
+<p>A new <code>variantFieldProducer</code> module (release date, SKU, etc.) is conformant if:</p>
+
+<ol>
+  <li>Every per-variant candidate is submitted with a non-null <code>variantId</code>.</li>
+  <li>Every item-default candidate is submitted with <code>variantId: null</code> and a <code>metadata.per_variant</code> map.</li>
+  <li>Every call uses a <code>source_id</code> of the form <code>{modulePrefix}-{productId}-{runNumber}</code>.</li>
+  <li>Values pass the Field Studio rule for the declared <code>fieldKey</code> (the gate will reject otherwise).</li>
+  <li>Run deletion cascades via <code>source_id</code> prefix — the module doesn't need to emit its own delete logic.</li>
+</ol>
+
+<p>If those hold, the module lights up in the review grid automatically — no grid-side code needed.</p>
+
+</main>
+</body>
+</html>

@@ -492,64 +492,6 @@ export function prepareStatements(db) {
       'DELETE FROM field_key_order WHERE category = ?'
     ),
 
-    // --- Color & Edition Finder ---
-    _upsertColorEditionFinder: db.prepare(`
-      INSERT INTO color_edition_finder (
-        category, product_id, colors, editions, default_color,
-        cooldown_until, latest_ran_at, run_count
-      ) VALUES (
-        @category, @product_id, @colors, @editions, @default_color,
-        @cooldown_until, @latest_ran_at, @run_count
-      )
-      ON CONFLICT(category, product_id) DO UPDATE SET
-        colors = excluded.colors,
-        editions = excluded.editions,
-        default_color = excluded.default_color,
-        cooldown_until = excluded.cooldown_until,
-        latest_ran_at = excluded.latest_ran_at,
-        run_count = excluded.run_count
-    `),
-    _getColorEditionFinder: db.prepare(
-      'SELECT * FROM color_edition_finder WHERE category = ? AND product_id = ?'
-    ),
-    _listColorEditionFinderByCategory: db.prepare(
-      'SELECT * FROM color_edition_finder WHERE category = ? ORDER BY product_id'
-    ),
-    _getColorEditionFinderOnCooldown: db.prepare(
-      'SELECT * FROM color_edition_finder WHERE category = ? AND product_id = ? AND cooldown_until > ?'
-    ),
-    _deleteColorEditionFinder: db.prepare(
-      'DELETE FROM color_edition_finder WHERE category = ? AND product_id = ?'
-    ),
-
-    // --- Color & Edition Finder Runs ---
-    _insertColorEditionFinderRun: db.prepare(`
-      INSERT INTO color_edition_finder_runs (
-        category, product_id, run_number, ran_at, model,
-        fallback_used, cooldown_until, selected_json, prompt_json, response_json
-      ) VALUES (
-        @category, @product_id, @run_number, @ran_at, @model,
-        @fallback_used, @cooldown_until, @selected_json, @prompt_json, @response_json
-      )
-      ON CONFLICT(category, product_id, run_number) DO UPDATE SET
-        ran_at = excluded.ran_at, model = excluded.model,
-        fallback_used = excluded.fallback_used, cooldown_until = excluded.cooldown_until,
-        selected_json = excluded.selected_json, prompt_json = excluded.prompt_json,
-        response_json = excluded.response_json
-    `),
-    _listColorEditionFinderRuns: db.prepare(
-      'SELECT * FROM color_edition_finder_runs WHERE category = ? AND product_id = ? ORDER BY run_number ASC'
-    ),
-    _getLatestColorEditionFinderRun: db.prepare(
-      'SELECT * FROM color_edition_finder_runs WHERE category = ? AND product_id = ? ORDER BY run_number DESC LIMIT 1'
-    ),
-    _deleteColorEditionFinderRunByNumber: db.prepare(
-      'DELETE FROM color_edition_finder_runs WHERE category = ? AND product_id = ? AND run_number = ?'
-    ),
-    _deleteAllColorEditionFinderRuns: db.prepare(
-      'DELETE FROM color_edition_finder_runs WHERE category = ? AND product_id = ?'
-    ),
-
     // --- Field Candidates ---
 
     // WHY: Legacy upsert — kept for backward compat during transition (candidateReseed old-format path).

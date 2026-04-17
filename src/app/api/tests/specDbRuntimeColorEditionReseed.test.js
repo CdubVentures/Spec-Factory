@@ -41,9 +41,11 @@ function sampleColorEditionJson({ category, productId }) {
   return {
     category,
     product_id: productId,
-    colors: { black: { hex: '#000' }, white: { hex: '#fff' } },
-    editions: { standard: {} },
-    default_color: 'black',
+    selected: {
+      colors: ['black', 'white'],
+      editions: { standard: {} },
+      default_color: 'black',
+    },
     cooldown_until: '',
     last_ran_at: '2026-04-01T00:00:00.000Z',
     run_count: 3,

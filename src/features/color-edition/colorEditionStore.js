@@ -28,7 +28,6 @@ export const deleteColorEditionFinderAll = store.deleteAll;
 
 /**
  * Rebuild the color_edition_finder SQL table from per-product JSON files.
- * Handles both new format (selected.colors) and legacy format (colors as object keys).
  *
  * @param {object} opts
  * @param {object} opts.specDb — SpecDb instance with upsertColorEditionFinder
@@ -57,18 +56,9 @@ export function rebuildColorEditionFinderFromJson({ specDb, productRoot }) {
       continue;
     }
 
-    // Handle new format (selected.colors) and legacy format (colors as object keys)
-    const colors = data.selected?.colors
-      ? data.selected.colors
-      : (data.colors ? Object.keys(data.colors) : []);
-
-    const editions = data.selected?.editions
-      ? Object.keys(data.selected.editions)
-      : (data.editions ? Object.keys(data.editions) : []);
-
-    const defaultColor = data.selected?.default_color
-      || data.default_color
-      || '';
+    const colors = data.selected?.colors || [];
+    const editions = data.selected?.editions ? Object.keys(data.selected.editions) : [];
+    const defaultColor = data.selected?.default_color || '';
 
     const productId = data.product_id || entry.name;
 

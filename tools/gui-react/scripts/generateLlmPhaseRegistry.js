@@ -421,7 +421,10 @@ function generateFinderPanelRegistry() {
 function generateModuleSettingsSections() {
   const lines = [HEADER];
   lines.push('// WHY: Derived from src/core/finder/finderModuleRegistry.js');
-  lines.push('// Pipeline Settings auto-renders module sections from this registry.\n');
+  lines.push('// Pipeline Settings auto-renders module sections + form components from this registry.\n');
+
+  lines.push("import { lazy, type ComponentType } from 'react';");
+  lines.push("import type { ModuleSettingsFormProps } from '../types/moduleSettingsFormProps.ts';\n");
 
   lines.push('export const MODULE_SETTINGS_SECTIONS = [');
   for (const m of FINDER_MODULES) {
@@ -437,6 +440,15 @@ function generateModuleSettingsSections() {
     lines.push(`  },`);
   }
   lines.push('] as const;\n');
+
+  // Form components map — keyed by moduleId. Adding a finder = add settingsFormPath + settingsFormExport
+  // to its FINDER_MODULES entry; ModuleSettingsPanel resolves the form at render time. Zero panel edits.
+  lines.push('export const MODULE_SETTINGS_FORMS: Record<string, ComponentType<ModuleSettingsFormProps>> = {');
+  for (const m of FINDER_MODULES) {
+    if (!m.settingsFormPath || !m.settingsFormExport) continue;
+    lines.push(`  ${quote(m.id)}: lazy(() => import('../../${m.settingsFormPath}.tsx').then((mod) => ({ default: mod.${m.settingsFormExport} }))),`);
+  }
+  lines.push('};\n');
 
   lines.push('export type ModuleSettingsSectionId = typeof MODULE_SETTINGS_SECTIONS[number][\'id\'];\n');
 

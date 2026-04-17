@@ -117,7 +117,6 @@ describe('rebuildProductImageFinderFromJson', () => {
     assert.strictEqual(row.product_id, productId);
     assert.strictEqual(row.category, 'mouse');
     assert.strictEqual(row.image_count, 2);
-    assert.strictEqual(row.cooldown_until, '2025-06-01');
     assert.strictEqual(row.latest_ran_at, '2025-05-15');
     assert.strictEqual(row.run_count, 2);
 

@@ -47,10 +47,18 @@ function makeFinderStoreStub() {
   };
 }
 
-function makeSpecDbStub(finderStore) {
+const DEFAULT_VARIANTS = [
+  { variant_id: 'v_black', variant_key: 'color:black', variant_label: 'Black', variant_type: 'color', color_atoms: ['black'] },
+];
+
+function makeSpecDbStub(finderStore, variants = DEFAULT_VARIANTS) {
   return {
     getFinderStore: () => finderStore,
     getAllProducts: () => [],
+    variants: {
+      listActive: () => variants,
+      listByProduct: () => variants,
+    },
   };
 }
 

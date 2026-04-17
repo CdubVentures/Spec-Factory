@@ -8,6 +8,18 @@
  * Each entry declares everything the system needs to auto-wire a finder
  * module: identity, DB schema, route config, LLM phase, field keys,
  * and UI metadata.
+ *
+ * Module taxonomy (`moduleClass`):
+ *   - 'variantGenerator'        Produces variants + the item default (e.g. CEF).
+ *                               Upstream of all sub-features; has no `variantSource`.
+ *   - 'variantFieldProducer'    Iterates an upstream generator's variants, does one
+ *                               LLM search per variant, emits `field_candidates` rows
+ *                               (per-variant + one item-default). Requires `variantSource`
+ *                               and `perVariantAttemptBudget`. Example: release date, SKU,
+ *                               discontinued, price, affiliate links.
+ *   - 'variantArtifactProducer' Iterates an upstream generator's variants, produces
+ *                               non-field artifacts (e.g. PIF → images). Requires
+ *                               `variantSource`. Has no `field_candidates` output.
  */
 
 export const FINDER_MODULES = Object.freeze([
@@ -15,6 +27,7 @@ export const FINDER_MODULES = Object.freeze([
     // Identity
     id: 'colorEditionFinder',
     routePrefix: 'color-edition-finder',
+    moduleClass: 'variantGenerator',
     moduleType: 'cef',
     moduleLabel: 'CEF',
     chipStyle: 'sf-chip-accent',
@@ -26,8 +39,11 @@ export const FINDER_MODULES = Object.freeze([
       { name: 'colors', type: 'TEXT', default: "'[]'" },
       { name: 'editions', type: 'TEXT', default: "'[]'" },
       { name: 'default_color', type: 'TEXT', default: "''" },
+      { name: 'cooldown_until', type: 'TEXT', default: "''" },
     ],
-    summaryIndexes: [],
+    summaryIndexes: [
+      { name: 'idx_cef_cooldown', columns: ['cooldown_until'] },
+    ],
 
     // Fields this finder populates (for candidate cleanup on delete-all)
     fieldKeys: ['colors', 'editions'],
@@ -83,11 +99,15 @@ export const FINDER_MODULES = Object.freeze([
     settingsLabel: 'Color & Edition Finder',
     settingsSubtitle: 'CEF module settings',
     settingsTip: 'Per-category settings for the Color & Edition Finder discovery module.',
+    settingsFormPath: 'pipeline-settings/components/forms/CefSettingsForm',
+    settingsFormExport: 'CefSettingsForm',
   },
   {
     // Identity
     id: 'productImageFinder',
     routePrefix: 'product-image-finder',
+    moduleClass: 'variantArtifactProducer',
+    variantSource: 'colorEditionFinder',
     moduleType: 'pif',
     moduleLabel: 'PIF',
     chipStyle: 'sf-chip-info',
@@ -187,6 +207,8 @@ export const FINDER_MODULES = Object.freeze([
     settingsLabel: 'Product Image Finder',
     settingsSubtitle: 'PIF module settings',
     settingsTip: 'Per-category settings for the Product Image Finder: view angles and image quality.',
+    settingsFormPath: 'pipeline-settings/components/forms/PifSettingsForm',
+    settingsFormExport: 'PifSettingsForm',
   },
 ]);
 

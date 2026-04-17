@@ -493,26 +493,6 @@ describe('colorEditionStore — rebuild JSON → SQL', () => {
     assert.equal(row.run_count, 3);
   });
 
-  it('rebuild legacy-format product JSON → SQL row (backward compat)', () => {
-    writeColorEdition({
-      productId: 'rebuild-legacy', productRoot: REBUILD_ROOT,
-      data: {
-        product_id: 'rebuild-legacy', category: 'mouse',
-        default_color: 'red', run_count: 1, last_ran_at: '',
-        colors: { red: { found_run: 1, found_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4' } },
-        editions: { 'wilderness': { found_run: 1, found_at: '2026-04-01T00:00:00Z', model: 'gpt-5.4' } },
-      },
-    });
-
-    const stats = rebuildColorEditionFinderFromJson({ specDb, productRoot: REBUILD_ROOT });
-    assert.ok(stats.seeded >= 1);
-
-    const row = specDb.getColorEditionFinder('rebuild-legacy');
-    assert.ok(row);
-    assert.deepEqual(row.colors, ['red']);
-    assert.deepEqual(row.editions, ['wilderness']);
-  });
-
   it('category filter — only seeds rows matching specDb.category', () => {
     writeColorEdition({
       productId: 'rebuild-wrong-cat', productRoot: REBUILD_ROOT,

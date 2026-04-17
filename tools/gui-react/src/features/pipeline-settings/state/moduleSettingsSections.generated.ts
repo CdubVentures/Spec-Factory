@@ -2,7 +2,10 @@
 // Run: node tools/gui-react/scripts/generateLlmPhaseRegistry.js
 
 // WHY: Derived from src/core/finder/finderModuleRegistry.js
-// Pipeline Settings auto-renders module sections from this registry.
+// Pipeline Settings auto-renders module sections + form components from this registry.
+
+import { lazy, type ComponentType } from 'react';
+import type { ModuleSettingsFormProps } from '../types/moduleSettingsFormProps.ts';
 
 export const MODULE_SETTINGS_SECTIONS = [
   {
@@ -22,5 +25,10 @@ export const MODULE_SETTINGS_SECTIONS = [
     group: 'modules',
   },
 ] as const;
+
+export const MODULE_SETTINGS_FORMS: Record<string, ComponentType<ModuleSettingsFormProps>> = {
+  'colorEditionFinder': lazy(() => import('../../pipeline-settings/components/forms/CefSettingsForm.tsx').then((mod) => ({ default: mod.CefSettingsForm }))),
+  'productImageFinder': lazy(() => import('../../pipeline-settings/components/forms/PifSettingsForm.tsx').then((mod) => ({ default: mod.PifSettingsForm }))),
+};
 
 export type ModuleSettingsSectionId = typeof MODULE_SETTINGS_SECTIONS[number]['id'];

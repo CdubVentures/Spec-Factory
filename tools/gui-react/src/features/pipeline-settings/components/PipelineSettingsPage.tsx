@@ -346,7 +346,7 @@ export function PipelineSettingsPage() {
         {MODULE_SETTINGS_SECTIONS.map(({ id, moduleId }) =>
           activeSection === id ? (
             <Suspense key={id} fallback={<p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Loading module settings...</p>}>
-              <ModuleSettingsPanel moduleId={moduleId as 'colorEditionFinder' | 'productImageFinder'} />
+              <ModuleSettingsPanel moduleId={moduleId} />
             </Suspense>
           ) : null
         )}
