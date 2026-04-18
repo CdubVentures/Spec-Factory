@@ -1,6 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { api } from '../../../api/client.ts';
+import { FINDER_PANELS } from '../../../features/indexing/state/finderPanelRegistry.generated.ts';
 import type {
   ColorEditionFinderResult,
   AcceptedResponse,
@@ -9,6 +10,21 @@ import type {
   VariantDeleteResponse,
   VariantDeleteAllResponse,
 } from '../types.ts';
+
+// WHY: Variant delete cascades into every downstream finder (variantFieldProducer
+// like RDF, variantArtifactProducer like PIF). Their panel queries must refetch
+// or stale runs / discovery history badges keep showing. Derived from the
+// registry so a new downstream finder is invalidated automatically.
+function invalidateDownstreamFinderPanels(
+  queryClient: QueryClient,
+  category: string,
+  productId: string,
+): void {
+  for (const panel of FINDER_PANELS) {
+    if (panel.moduleClass === 'variantGenerator') continue;
+    queryClient.invalidateQueries({ queryKey: [panel.routePrefix, category, productId] });
+  }
+}
 
 export function useColorEditionFinderQuery(category: string, productId: string) {
   return useQuery<ColorEditionFinderResult>({
@@ -83,6 +99,9 @@ export function useDeleteAllVariantsMutation(category: string, productId: string
     queryClient.invalidateQueries({ queryKey: ['colors'] });
     queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
     queryClient.invalidateQueries({ queryKey: ['product', category] });
+    queryClient.invalidateQueries({ queryKey: ['candidates', category] });
+    queryClient.invalidateQueries({ queryKey: ['publisher', 'published', category, productId] });
+    invalidateDownstreamFinderPanels(queryClient, category, productId);
   }, [queryClient, category, productId]);
 
   return useMutation<VariantDeleteAllResponse>({
@@ -101,6 +120,9 @@ export function useDeleteVariantMutation(category: string, productId: string) {
     queryClient.invalidateQueries({ queryKey: ['colors'] });
     queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
     queryClient.invalidateQueries({ queryKey: ['product', category] });
+    queryClient.invalidateQueries({ queryKey: ['candidates', category] });
+    queryClient.invalidateQueries({ queryKey: ['publisher', 'published', category, productId] });
+    invalidateDownstreamFinderPanels(queryClient, category, productId);
   }, [queryClient, category, productId]);
 
   return useMutation<VariantDeleteResponse, Error, string>({

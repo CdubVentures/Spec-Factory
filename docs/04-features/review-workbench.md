@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified scalar, component, and enum review flows from the GUI to review mutation handlers and SQLite state. Override functions no longer write directly to DB; overrides persist to JSON SSOT and sync through the publisher pipeline.
 > **Prerequisites:** [../03-architecture/data-model.md](../03-architecture/data-model.md), [catalog-and-product-selection.md](./catalog-and-product-selection.md)
-> **Last validated:** 2026-04-10
+> **Last validated:** 2026-04-18
 
 ## Entry Points
 
@@ -65,6 +65,44 @@ Overrides persist to JSON SSOT only; DB sync is deferred to the publisher pipeli
 | Component row | pending review -> accepted alias/new component/dismissed |
 | Enum row | pending review -> mapped to existing / kept new / removed / uncertain |
 | Key review state | uninitialized -> confirmed/accepted/overridden |
+| `publishConfidenceThreshold` setting | updated in Publisher settings | auto-triggers `reconcileThreshold()` for every category; review grid cells + drawer source lists refresh live (no manual Reconcile click) |
+
+## Field Review Drawer — Published-Source Display
+
+The drawer renders every published field (scalar, non-variant list, variant-dependent attribute, variant-generator) through a single collapsible-row pattern powered by `tools/gui-react/src/features/review/selectors/publishedSourceSelectors.ts`:
+
+1. **Selection**: for each row, pull candidates where `status === 'resolved'` (the publisher's equivalent of its `linked_candidates[]` audit set).
+2. **Per-variant scope**:
+   - Variant-dependent fields (release_date) filter by `candidateMatchesVariant` **and** `candidateValueMatches` (exact value).
+   - Variant-generator fields (colors, editions) filter by "candidate's array includes this variant's combo/slug" (the single CEF candidate value is the full published list).
+3. **Per-source evidence**: flatten `candidate.metadata.evidence_refs` (or `metadata.evidence_by_variant[variant_key]` when CEF's Run 2+ identity-check projection is present), dedupe by URL keeping max confidence, sort by confidence desc with URL asc tiebreak.
+4. **Threshold gate**: hide any source where `confidence / 100 < publishConfidenceThreshold` (null confidence fails any positive threshold). The hook `useSourceThreshold` reads the setting via `useRuntimeSettingsValueStore`, so changing it in Publisher settings re-filters live.
+5. **Row confidence**: displayed as `maxSourceConfidence(sources) / 100` (falls back to `entry.confidence` only when no usable sources exist). This replaces the previously-displayed candidate-level 100% with an honest per-source signal.
+6. **Collapsible UX**: header rows are collapsed by default via `usePersistedToggle` (persists per field, per variant); source count shown in header; click to expand. For colors/editions, each combo/slug renders its own row with a `ColorSwatch` derived from `variant.color_atoms`.
+
+Candidate cards in the drawer's Candidates section continue to show the stored candidate-level confidence for audit purposes. For CEF/RDF rows submitted under the old finder code (hardcoded 100 / LLM self-rating), re-running the finder is required to backfill honest `max(evidence_refs.confidence)` values — see [publisher.md](./publisher.md) for the single-threshold contract.
+
+## Field Review Drawer — Published Badge
+
+A drawer-level header badge announces the deletion semantics class for the field:
+
+- **`'variant'` ("Published Variant")** — colors, editions, and any field whose backend `field_rule.variant_dependent` flag is true (release_date today; future SKU/price/availability). Signals that deleting a candidate will NOT demote published — only deleting the variant itself will. Drives the per-variant value table layout instead of a single scalar header.
+- **`'value'` ("Published Value")** — every other field. Signals that deleting the sole-source candidate WILL unpublish.
+
+Decision: `tools/gui-react/src/features/review/selectors/drawerBadgeSelector.ts:resolveDrawerBadge(fieldKey, hasPublished, variantDependent?)`. The set of CEF-owned variant fields is the constant `VARIANT_BACKED_FIELDS` from `tools/gui-react/src/features/color-edition-finder/index.ts` (mirror of backend `src/features/color-edition/index.js`). Other variant-dependent fields opt in via the backend's `field_rule.variant_dependent` flag, which `reviewGridData.js` projects onto each layout row.
+
+## Candidate Deletion — Variant-Aware Republish
+
+`DELETE /review/:category/candidates/:productId/:fieldKey/:sourceId` and `/:fieldKey` (bulk) branch on `isVariantBackedField(fieldKey)` from `src/features/color-edition/index.js`:
+
+- **Variant-backed fields (`colors`, `editions`)**: the candidate row + product.json entry are stripped. `field_candidate_evidence` rows for that candidate cascade-delete via FK. Published is **not** touched (variants table is the SSOT). Returns `{ republished: false }`.
+- **All other fields**: candidate stripped, then `republishField` re-derives published from the remaining `field_candidates.status='resolved'` rows. If the deleted candidate was the only source above `publishConfidenceThreshold`, the field unpublishes. Returns `{ republished: true }`.
+
+`has_run` (from `reviewGridData.js:deriveHasRun`) returns true if the product has any candidate **or** any known published field. Variant-derived published state keeps the row visible in the grid even after delete-all-runs strips every CEF candidate.
+
+## Variant Delete Cascade — Downstream Cache Invalidation
+
+`useDeleteVariantMutation` and `useDeleteAllVariantsMutation` (`tools/gui-react/src/features/color-edition-finder/api/colorEditionFinderQueries.ts`) invalidate every downstream finder panel query in addition to the review caches: a registry-driven sweep over `FINDER_PANELS` invalidates `[panel.routePrefix, category, productId]` for each non-variantGenerator panel (PIF, RDF, future). This ensures the PIF discovery-history badge and RDF run list refresh immediately after variant cascade — no reload required.
 
 ## Diagram
 

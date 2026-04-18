@@ -1,0 +1,18 @@
+{
+  "httpStatus": 500,
+  "httpHeaders": {
+    "access-control-allow-headers": "Authorization, Content-Type, Accept",
+    "access-control-allow-methods": "POST, GET, OPTIONS",
+    "access-control-allow-origin": "*",
+    "access-control-max-age": "86400",
+    "connection": "close",
+    "content-length": "265",
+    "content-type": "text/html; charset=utf-8",
+    "date": "Sat, 18 Apr 2026 07:23:46 GMT",
+    "server": "Werkzeug/3.1.3 Python/3.10.12"
+  },
+  "finishReason": null,
+  "usage": null,
+  "duration_ms": 901409,
+  "fetchError": null
+}

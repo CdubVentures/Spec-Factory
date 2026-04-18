@@ -60,7 +60,6 @@ async function setupReleaseDateFinderRun({
 
   const finderStore = specDb.getFinderStore('releaseDateFinder');
   const promptOverride = finderStore?.getSetting?.('discoveryPromptTemplate') || '';
-  const minConfidence = parseInt(finderStore?.getSetting?.('minConfidence') || '70', 10) || 70;
   const urlHistoryEnabled = finderStore?.getSetting?.('urlHistoryEnabled') === 'true';
   const queryHistoryEnabled = finderStore?.getSetting?.('queryHistoryEnabled') === 'true';
 
@@ -123,7 +122,7 @@ async function setupReleaseDateFinderRun({
       productRoot: resolvedProductRoot,
       specDb, appDb, config, logger,
       callLlm, fieldRules,
-      minConfidence, urlHistoryEnabled, queryHistoryEnabled,
+      urlHistoryEnabled, queryHistoryEnabled,
       siblingsExcluded, familyModelCount, ambiguityLevel,
       _mt, ranAt,
       onLlmCallComplete,
@@ -143,7 +142,7 @@ function buildProduceForVariant(ctx, previousRunsProvider) {
   const {
     product, productRoot, specDb, appDb, config, logger,
     callLlm, fieldRules,
-    minConfidence, urlHistoryEnabled, queryHistoryEnabled,
+    urlHistoryEnabled, queryHistoryEnabled,
     siblingsExcluded, familyModelCount, ambiguityLevel,
     _mt, ranAt,
     onLlmCallComplete, promptOverride,
@@ -236,7 +235,6 @@ function buildProduceForVariant(ctx, previousRunsProvider) {
     }
     const unknownReason = String(llmResult?.unknown_reason || '').trim();
     const isUnknown = releaseDate === '' || releaseDate.toLowerCase() === 'unk';
-    const belowConfidence = !isUnknown && confidence < minConfidence;
 
     const candidateEntry = {
       variant_id: variant.variant_id || null,
@@ -246,7 +244,6 @@ function buildProduceForVariant(ctx, previousRunsProvider) {
       value: isUnknown ? '' : releaseDate,
       confidence,
       unknown_reason: isUnknown ? unknownReason : '',
-      below_confidence: belowConfidence,
       sources: evidenceRefs.map((e) => ({
         url: String(e.url || ''),
         tier: String(e.tier || 'unknown'),
@@ -278,14 +275,14 @@ function buildProduceForVariant(ctx, previousRunsProvider) {
       label: 'Discovery',
     });
 
-    // Submit to publisher gate — skip for unknown or low-confidence results.
-    // WHY: The publisher's field rule (min_evidence_refs, tier_preference) is the
-    // authority on what qualifies for publication. RDF only gates on confidence
-    // locally to avoid spamming the candidate table with explicit 'unk' rows.
+    // Submit to publisher gate — skip only for LLM-declared unknowns or
+    // no-evidence results. All other candidates go to the publisher, which
+    // applies the single source-of-truth confidence gate
+    // (publishConfidenceThreshold) + field-rule evidence requirements.
     // WHY: Publisher failures must NOT abort the run — persistence of the RDF
     // run data is independent. Errors go to the logger so they stay auditable.
     let publishResult = null;
-    if (!isUnknown && !belowConfidence && fieldRules && evidenceRefs.length > 0) {
+    if (!isUnknown && fieldRules && evidenceRefs.length > 0) {
       try {
         const submitResult = submitCandidate({
           category: product.category,
@@ -380,11 +377,19 @@ function buildProduceForVariant(ctx, previousRunsProvider) {
       run_count: merged.run_count,
     });
 
+    // WHY: `publishResult` is submitCandidate's return ({status:'accepted',
+    // ..., publishResult: { status: 'published'|'below_threshold'|... }}). We
+    // want the INNER publisher gate decision, not the outer accept flag — the
+    // loop's satisfaction predicate retries on below-threshold results and
+    // stops on 'published'. Previously we read the outer status and treated
+    // 'accepted' as satisfied, which short-circuited the loop once the local
+    // minConfidence gate was removed.
+    const innerPublishStatus = publishResult?.publishResult?.status || 'skipped';
     return {
       candidate: candidateEntry,
       persisted: true,
-      publishStatus: publishResult?.status || 'skipped',
-      published: publishResult?.publishResult?.status === 'published',
+      publishStatus: innerPublishStatus,
+      published: innerPublishStatus === 'published',
     };
   };
 }
@@ -405,14 +410,15 @@ function collectCandidatesAndErrors(perVariantResults) {
 /**
  * RDF loop satisfaction predicate:
  *  - stop on definitive unknown (LLM said "unk" with a reason → no retry helps)
- *  - stop once the candidate reached the publisher (any status other than 'skipped'
- *    means we cleared the local gate; publisher-side rejection won't be fixed by
- *    another LLM call with the same evidence)
+ *  - stop once the publisher actually PUBLISHED the candidate — weaker
+ *    outcomes (below_threshold, manual_override_locked, skipped) mean the
+ *    bar isn't cleared; the loop retries with fresh evidence unless budget
+ *    is exhausted.
  */
 function rdfLoopSatisfied(result) {
   if (!result) return false;
   if (result.candidate?.unknown_reason && result.candidate?.value === '') return true;
-  if (result.publishStatus && result.publishStatus !== 'skipped') return true;
+  if (result.publishStatus === 'published') return true;
   return false;
 }
 

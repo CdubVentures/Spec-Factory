@@ -66,6 +66,11 @@ const ENDPOINT = args.endpoint || 'http://localhost:5001/v1/chat/completions';
 const API_KEY = args.key || process.env.LAB_API_KEY || '';
 const USE_WEB_SEARCH = !args['no-web-search'];
 const USE_JSON_SCHEMA = !args['no-json-schema'];
+// WHY: Production routing.js:526 sends reasoning_effort when phaseThinking is
+// on AND the model name doesn't already carry a baked effort suffix. Recorded
+// run 178 has effort_level='xhigh' + thinking=true on plain 'gpt-5.4-mini',
+// so it sent reasoning_effort='xhigh'. Match that to reproduce 15-min runs.
+const REASONING_EFFORT = args.effort || (args['no-thinking'] ? '' : 'xhigh');
 // WHY: Production PIF view calls have median duration ~900s on gpt-5.4-mini
 // with xhigh+web_search. Node undici's default headersTimeout/bodyTimeout
 // (both 300s) cut the fetch at ~5 min before the proxy returns headers,
@@ -80,50 +85,77 @@ setGlobalDispatcher(new Agent({
   keepAliveTimeout: TIMEOUT_MS
 }));
 
-const pifPath = join(REPO_ROOT, '.workspace', 'products', PRODUCT_ID, 'product_images.json');
-if (!existsSync(pifPath)) {
-  console.error(`Not found: ${pifPath}`);
-  process.exit(1);
-}
-const pifDoc = JSON.parse(readFileSync(pifPath, 'utf-8'));
-const runs = Array.isArray(pifDoc.runs) ? pifDoc.runs : [];
+// Source A: replay from a previously-captured results folder.
+// Useful when the source .workspace/products/<id>/product_images.json has
+// been wiped (e.g., user reset state) but we still have the saved prompts.
+let system = '';
+let user = '';
+let variantLabel = '(unknown)';
+let recordedModel = 'gpt-5.4-mini';
+let sourceDescriptor = '';
 
-let chosenRun;
-if (RUN_NUMBER !== null) {
-  chosenRun = runs.find(r => r.run_number === RUN_NUMBER);
-  if (!chosenRun) {
-    console.error(`Run ${RUN_NUMBER} not found in ${PRODUCT_ID}.`);
+if (args['from-results']) {
+  const resultsInputDir = args['from-results'];
+  const resolvedDir = resultsInputDir.startsWith('/') || resultsInputDir.match(/^[A-Z]:/i)
+    ? resultsInputDir
+    : join(__dirname, 'results', resultsInputDir);
+  const sysPath = join(resolvedDir, 'prompt-system.txt');
+  const usrPath = join(resolvedDir, 'prompt-user.txt');
+  if (!existsSync(sysPath) || !existsSync(usrPath)) {
+    console.error(`--from-results needs prompt-system.txt and prompt-user.txt in: ${resolvedDir}`);
     process.exit(1);
   }
+  system = readFileSync(sysPath, 'utf-8');
+  user = readFileSync(usrPath, 'utf-8');
+  sourceDescriptor = `from-results: ${resolvedDir}`;
 } else {
-  chosenRun = [...runs].reverse().find(r =>
-    r.mode === 'view' &&
-    Array.isArray(r.response?.download_errors) &&
-    r.response.download_errors.some(e => String(e?.error || '').includes('not valid JSON'))
-  );
-  if (!chosenRun) {
-    console.error(`No view-mode parse-fail run found in ${PRODUCT_ID}. Specify --run=N.`);
+  // Source B: pull from live .workspace recorded runs
+  const pifPath = join(REPO_ROOT, '.workspace', 'products', PRODUCT_ID, 'product_images.json');
+  if (!existsSync(pifPath)) {
+    console.error(`Not found: ${pifPath}`);
     process.exit(1);
   }
+  const pifDoc = JSON.parse(readFileSync(pifPath, 'utf-8'));
+  const runs = Array.isArray(pifDoc.runs) ? pifDoc.runs : [];
+
+  let chosenRun;
+  if (RUN_NUMBER !== null) {
+    chosenRun = runs.find(r => r.run_number === RUN_NUMBER);
+    if (!chosenRun) {
+      console.error(`Run ${RUN_NUMBER} not found in ${PRODUCT_ID}.`);
+      process.exit(1);
+    }
+  } else {
+    chosenRun = [...runs].reverse().find(r =>
+      r.mode === 'view' &&
+      Array.isArray(r.response?.download_errors) &&
+      r.response.download_errors.some(e => String(e?.error || '').includes('not valid JSON'))
+    );
+    if (!chosenRun) {
+      console.error(`No view-mode parse-fail run found in ${PRODUCT_ID}. Specify --run=N or --from-results=<dir>.`);
+      process.exit(1);
+    }
+  }
+
+  system = chosenRun.prompt?.system || '';
+  user = chosenRun.prompt?.user || '';
+  variantLabel = chosenRun.response?.variant_label || '(unknown)';
+  recordedModel = chosenRun.model || 'gpt-5.4-mini';
+  sourceDescriptor = `run_number ${chosenRun.run_number} (${chosenRun.ran_at || ''})`;
 }
 
-const system = chosenRun.prompt?.system || '';
-const user = chosenRun.prompt?.user || '';
-const variantLabel = chosenRun.response?.variant_label || '(unknown)';
-const recordedModel = chosenRun.model || 'gpt-5.4-mini';
 const MODEL = args.model || recordedModel;
 
 if (!system || !user) {
-  console.error(`Run ${chosenRun.run_number} has no prompt data.`);
+  console.error(`No prompt data loaded from source.`);
   process.exit(1);
 }
 
 console.log('='.repeat(70));
 console.log(`PIF raw-response capture`);
 console.log(`  product:      ${PRODUCT_ID}`);
-console.log(`  run_number:   ${chosenRun.run_number}  (${chosenRun.ran_at || ''})`);
+console.log(`  source:       ${sourceDescriptor}`);
 console.log(`  variant:      ${variantLabel}`);
-console.log(`  mode:         ${chosenRun.mode}`);
 console.log(`  recorded model: ${recordedModel}`);
 console.log(`  using model:  ${MODEL}`);
 console.log(`  endpoint:     ${ENDPOINT}`);
@@ -132,13 +164,15 @@ console.log(`  json_schema:  ${USE_JSON_SCHEMA}`);
 console.log(`  web_search:   ${USE_WEB_SEARCH}`);
 console.log(`  auth:         ${API_KEY ? `bearer (${API_KEY.length} chars)` : '(none)'}`);
 console.log(`  timeout_ms:   ${TIMEOUT_MS}  (${Math.round(TIMEOUT_MS / 1000)}s)`);
+console.log(`  reasoning:    ${REASONING_EFFORT || '(none / server default)'}`);
 console.log('='.repeat(70));
 
 const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+const runTag = RUN_NUMBER !== null ? `r${RUN_NUMBER}` : (args['from-results'] ? 'replay' : 'latest');
 const resultsDir = join(
   __dirname,
   'results',
-  `${PRODUCT_ID}-r${chosenRun.run_number}-${timestamp}`
+  `${PRODUCT_ID}-${runTag}-${timestamp}`
 );
 mkdirSync(resultsDir, { recursive: true });
 console.log(`Results: ${resultsDir}\n`);
@@ -199,6 +233,7 @@ if (USE_JSON_SCHEMA) {
 
 const requestOptions = { json_mode: true };
 if (USE_WEB_SEARCH) requestOptions.web_search = true;
+if (REASONING_EFFORT) requestOptions.reasoning_effort = REASONING_EFFORT;
 body.request_options = requestOptions;
 
 writeFileSync(join(resultsDir, 'request-body.json'), JSON.stringify(body, null, 2));
@@ -223,11 +258,15 @@ function categorizeFailure({ httpStatus, httpBody, content, parsedContent, conte
 const summary = {
   started_at: new Date().toISOString(),
   product_id: PRODUCT_ID,
-  source_run_number: chosenRun.run_number,
+  source: sourceDescriptor,
   variant_label: variantLabel,
   model: MODEL,
   endpoint: ENDPOINT,
-  options: { use_json_schema: USE_JSON_SCHEMA, use_web_search: USE_WEB_SEARCH },
+  options: {
+    use_json_schema: USE_JSON_SCHEMA,
+    use_web_search: USE_WEB_SEARCH,
+    reasoning_effort: REASONING_EFFORT || null
+  },
   repeats: REPEATS,
   attempts: [],
   totals: {

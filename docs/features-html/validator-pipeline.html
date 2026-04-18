@@ -227,7 +227,7 @@
 <table>
 <thead><tr><th>Namespace</th><th>Reason</th></tr></thead>
 <tbody>
-  <tr><td><code>evidence.*</code></td><td>Pipeline-level enforcement (min_evidence_refs, tier_preference)</td></tr>
+  <tr><td><code>evidence.*</code></td><td>Indexing rail enforces <code>min_evidence_refs</code> via <code>src/engine/runtimeGate.js</code>; publisher rail enforces it via <code>src/features/publisher/publish/evidenceGate.js</code> against the <code>field_candidate_evidence</code> SQL projection. <code>evidence.required</code> retired (tautological); <code>evidence.tier_preference</code> classifies only &mdash; no gate keys on tier.</td></tr>
   <tr><td><code>search_hints.*</code></td><td>IndexLab search planning only</td></tr>
   <tr><td><code>ui.*</code></td><td>Display/rendering only</td></tr>
   <tr><td><code>ai_assist.*</code></td><td>Extraction LLM configuration</td></tr>

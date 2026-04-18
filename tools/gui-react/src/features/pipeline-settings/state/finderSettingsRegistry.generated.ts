@@ -73,7 +73,6 @@ export const FINDER_SETTINGS_REGISTRY: Record<FinderIdWithSettings, readonly Fin
   'releaseDateFinder': [
     { key: 'discoveryPromptTemplate', type: 'string', default: "", allowEmpty: true, hidden: true },
     { key: 'perVariantAttemptBudget', type: 'int', default: 3, min: 1, max: 5, uiLabel: 'Per-Variant Attempt Budget', uiTip: 'Max LLM calls per variant when looping. 1 = single shot. Higher values retry on low confidence / missing evidence until the candidate reaches the publisher gate (or LLM returns a definitive unknown). Only applies to the "Loop" / "Loop All" buttons; plain "Run" is always single-shot.', uiGroup: 'Discovery' },
-    { key: 'minConfidence', type: 'int', default: 70, min: 0, max: 100, uiLabel: 'Min Confidence', uiTip: 'Minimum LLM confidence score (0-100) to accept a date candidate. Below this, the variant run is marked unknown.', uiGroup: 'Discovery' },
     { key: 'urlHistoryEnabled', type: 'bool', default: false, uiLabel: 'URL history', uiTip: 'When on, prior run URLs are injected into the prompt so the LLM can avoid re-crawling them. Variant-scoped for RDF. Off by default.', uiGroup: 'Discovery History' },
     { key: 'queryHistoryEnabled', type: 'bool', default: false, uiLabel: 'Query history', uiTip: 'When on, prior run search queries are injected into the prompt. Off by default — queries rot faster than URLs.', uiGroup: 'Discovery History' },
   ],

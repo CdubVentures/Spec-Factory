@@ -81,13 +81,13 @@ export const rdfHowItWorksSections: HiwSection[] = [
     blocks: [
       {
         kind: 'text',
-        content: 'Candidates flow through the shared **field_candidates** publisher. A date is resolved only when its confidence passes the module threshold **and** evidence count satisfies the field rule minimum.',
+        content: 'Candidates flow through the shared **field_candidates** publisher. A date is resolved only when its confidence passes the global **publishConfidenceThreshold** (Publisher settings) **and** evidence count satisfies the field rule minimum.',
       },
       {
         kind: 'flow',
         boxes: [
           { label: 'LLM Result', sub: 'date + evidence', tone: 'accent' },
-          { label: 'Confidence Gate', sub: 'minConfidence %', tone: 'purple' },
+          { label: 'Confidence Gate', sub: 'publishConfidenceThreshold', tone: 'purple' },
           { label: 'Evidence Gate', sub: 'min_evidence_refs', tone: 'teal' },
           { label: '\u2713 Published', sub: 'variant-scoped', tone: 'green' },
         ],

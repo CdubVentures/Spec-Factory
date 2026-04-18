@@ -314,9 +314,11 @@ export const FINDER_MODULES = Object.freeze([
       { key: 'perVariantAttemptBudget', type: 'int', default: 3, min: 1, max: 5,
         uiLabel: 'Per-Variant Attempt Budget', uiGroup: 'Discovery',
         uiTip: 'Max LLM calls per variant when looping. 1 = single shot. Higher values retry on low confidence / missing evidence until the candidate reaches the publisher gate (or LLM returns a definitive unknown). Only applies to the "Loop" / "Loop All" buttons; plain "Run" is always single-shot.' },
-      { key: 'minConfidence', type: 'int', default: 70, min: 0, max: 100,
-        uiLabel: 'Min Confidence', uiGroup: 'Discovery',
-        uiTip: 'Minimum LLM confidence score (0-100) to accept a date candidate. Below this, the variant run is marked unknown.' },
+
+      // WHY: No local confidence gate here. publishConfidenceThreshold (global
+      // Publisher setting) is the single source of truth for confidence gating
+      // across ALL finders. Don't copy-paste a per-finder minConfidence into
+      // future variantFieldProducer modules — let the publisher decide.
 
       // Universal discovery history (shared with CEF/PIF). Scope: per variant.
       { key: 'urlHistoryEnabled', type: 'bool', default: false,

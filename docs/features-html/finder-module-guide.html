@@ -992,7 +992,7 @@ const result = await submitCandidate({
     </div>
 
     <div class="callout callout-success" style="margin-top:8px;">
-      <strong>Variant-scoped fields (release-date, SKU, per-variant pricing, &hellip;)</strong>
+      <strong>Variant-scoped fields (release-date, SKU, per-variant pricing, &hellip;) &mdash; <code>moduleClass: 'variantFieldProducer'</code></strong>
       <p style="margin:4px 0 0; font-size:13px;">If your finder produces one value <em>per variant</em>, iterate over <code>specDb.variants.listByProduct(productId)</code> (CEF-built &mdash; do not re-derive) and submit one candidate per variant with that variant&rsquo;s <code>variant_id</code>:</p>
       <pre class="code-block">const variants = specDb.variants.listByProduct(productId);
 for (const v of variants) {

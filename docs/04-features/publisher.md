@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified publisher feature as both a validation pipeline boundary and the read-only `/publisher` audit surface exposed to operators.
 > **Prerequisites:** [../03-architecture/data-model.md](../03-architecture/data-model.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md), [unit-registry.md](./unit-registry.md)
-> **Last validated:** 2026-04-10
+> **Last validated:** 2026-04-18
 
 ## Entry Points
 
@@ -71,6 +71,24 @@
 | `field_candidates` row | publisher pipeline writes or updates a candidate | API and GUI audit surface show new value, repair history, and status |
 | `list_values` discovered enum rows | `persistDiscoveredValue()` accepts a new enum value | future publisher validation and test-mode audits can see the discovered value |
 | GUI table filters | operator changes date/status/field/product filters | table view changes client-side; no backend mutation occurs |
+| `publishConfidenceThreshold` setting | user updates it in Publisher → Evaluation settings | `configRuntimeSettingsHandler` auto-fires `reconcileThreshold()` per category (no manual Reconcile button required), flipping `field_candidates.status`, rewriting `product.json.fields[]`, and rebuilding `linked_candidates[]` for every product. Per-category `publisher-reconcile` WS events invalidate downstream GUI queries (review grid cells, drawer candidate lists). |
+
+## Single confidence threshold
+
+`publishConfidenceThreshold` (from `src/shared/settingsRegistry.js`, 0–1 float, default 0.7) is the single source of truth for confidence gating across **every** finder. Per-finder local `minConfidence` gates are forbidden — finders submit every candidate with a real value + evidence, and the publisher decides whether to resolve.
+
+At the data layer, each finder derives the candidate's `confidence` from `max(evidence_refs.confidence)` so the publisher's gate reflects honest per-source strength rather than a hardcoded claim (CEF used to submit `100` unconditionally; RDF used to submit the LLM's overall self-rating). The review drawer also reads this — both the row-header % and the per-source chip are derived from the same `evidence_refs` data, gated by the same threshold.
+
+The publisher writes `linked_candidates[]` into `product.json.fields[fk]` (and `product.json.variant_fields[vid][fk]` for variant-scoped publishes) — the audit set of every value-matching, above-threshold candidate at publish time. The review drawer does **not** consume that JSON; it derives the equivalent set by filtering `candidates` where `status === 'resolved'` so a single SpecDb query powers both views.
+
+## `/publisher/:category/published/:productId` — published-state read
+
+`GET /publisher/:category/published/:productId` returns the per-product `fields` map consumed by the review drawer's `PublishedBadge`, the CEF panel's variant pills, and any other surface that asks "is this value published?". Two SSOT branches:
+
+- **Variant-backed fields (`colors`, `editions`)** read from the `variants` SQL table via `computePublishedArraysFromVariants` (`src/features/color-edition/index.js`). `source` is reported as `'variant_registry'`. Edition combos cascade into colors natively (an edition variant publishes both its slug into `editions` and its color combo into `colors`). After delete-all-runs strips CEF candidates, variants survive — so colors/editions stay published.
+- **Everything else** reads `field_candidates.status='resolved'` rows. `metadata.evidence_refs` is parsed for array-typed fields. The `field_candidate_evidence` SQL table is a read projection of those evidence_refs (FK CASCADE wipes it on candidate delete).
+
+The set of variant-backed fields is the constant `VARIANT_BACKED_FIELDS` exported from `src/features/color-edition/index.js`, mirrored on the UI side at `tools/gui-react/src/features/color-edition-finder/index.ts`. Adding a third variant-backed field is a two-file change today; promoting to a `variant_dependent: true` flag on the field rule is the future direction (see review-workbench.md).
 
 ## Diagram
 

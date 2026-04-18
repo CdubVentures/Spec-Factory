@@ -17,7 +17,7 @@ export function deriveFinderKpiCards(
   totalVariants: number,
 ): KpiCard[] {
   const candidates = result?.candidates ?? [];
-  const withDate = candidates.filter((c) => c.value && !c.below_confidence).length;
+  const withDate = candidates.filter((c) => c.value).length;
   const runCount = result?.run_count ?? 0;
   const publishedCount = candidates.filter((c) => {
     const pcs = c.publisher_candidates ?? [];

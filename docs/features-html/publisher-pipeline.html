@@ -171,9 +171,11 @@
     repairPrompt?: object
   },
   publishResult?: {                  // Only if auto-publish attempted
-    status: 'published' | 'below_threshold' | 'manual_override_locked' | 'skipped',
+    status: 'published' | 'below_threshold' | 'below_evidence_refs' | 'manual_override_locked' | 'skipped',
     confidence?: number,
     threshold?: number,
+    required?: number,    // when status === 'below_evidence_refs' (fieldRule.evidence.min_evidence_refs)
+    actual?: number,      // when status === 'below_evidence_refs' (count of distinct evidence URLs)
     reason?: string
   }
 }</pre>
@@ -293,8 +295,9 @@
     <table>
       <thead><tr><th>Status</th><th>Condition</th><th>What Happens</th></tr></thead>
       <tbody>
-        <tr><td><code>published</code></td><td>confidence &ge; threshold AND no manual lock</td><td>SQL: demote previous resolved, mark this resolved. JSON: write to <code>product.json fields[fieldKey]</code></td></tr>
+        <tr><td><code>published</code></td><td>confidence &ge; threshold AND distinct evidence URLs &ge; <code>min_evidence_refs</code> AND no manual lock</td><td>SQL: demote previous resolved, mark this resolved. JSON: write to <code>product.json fields[fieldKey]</code></td></tr>
         <tr><td><code>below_threshold</code></td><td>confidence &lt; threshold</td><td>Candidate stays pending. Metadata records threshold miss.</td></tr>
+        <tr><td><code>below_evidence_refs</code></td><td>distinct evidence URLs &lt; <code>fieldRule.evidence.min_evidence_refs</code></td><td>Candidate stays pending. Metadata records <code>{required, actual}</code>. No-op when rule's <code>min_evidence_refs</code> is 0 or unset. Pure helper: <code>publish/evidenceGate.js</code>; counts via <code>specDb.countFieldCandidateEvidenceByCandidateId</code> (<code>COUNT(DISTINCT url)</code> &mdash; duplicates do not inflate). Same gate runs in <code>reconcileThreshold</code> (loosening) and <code>republishField</code> (post-delete recompute).</td></tr>
         <tr><td><code>manual_override_locked</code></td><td>Existing published field has <code>source='manual_override'</code></td><td>Candidate stays pending. Lock prevents auto-publish.</td></tr>
         <tr><td><code>skipped</code></td><td>No product.json file exists</td><td>Candidate stays pending. Reason: <code>no_product_json</code></td></tr>
       </tbody>
@@ -708,7 +711,7 @@ CREATE INDEX idx_fc_variant
         <tr><td><code>PublisherLlmRepairDecision</code></td><td><code>value</code>, <code>decision</code> (<code>map_to_existing</code> | <code>keep_new</code> | <code>set_unk</code> | <code>reject</code>), <code>resolved_to?</code>, <code>reasoning?</code></td></tr>
         <tr><td><code>PublisherLlmRepair</code></td><td><code>promptId</code>, <code>status</code>, <code>decisions[]</code></td></tr>
         <tr><td><code>PublisherValidationJson</code></td><td><code>valid?</code>, <code>repairs[]</code>, <code>rejections[]</code>, <code>llmRepair?</code></td></tr>
-        <tr><td><code>PublisherPublishResult</code></td><td><code>status</code> (<code>published</code> | <code>below_threshold</code> | <code>manual_override_locked</code> | <code>skipped</code>), <code>confidence?</code>, <code>threshold?</code>, <code>reason?</code>, <code>published_at?</code></td></tr>
+        <tr><td><code>PublisherPublishResult</code></td><td><code>status</code> (<code>published</code> | <code>below_threshold</code> | <code>below_evidence_refs</code> | <code>manual_override_locked</code> | <code>skipped</code>), <code>confidence?</code>, <code>threshold?</code>, <code>required?</code>, <code>actual?</code>, <code>reason?</code>, <code>published_at?</code></td></tr>
         <tr><td><code>PublisherMetadataJson</code></td><td><code>source?</code>, <code>method?</code>, <code>publish_result?</code></td></tr>
         <tr><td><code>PublisherCandidateRow</code></td><td><code>id</code>, <code>category</code>, <code>product_id</code>, <code>field_key</code>, <code>value</code>, <code>confidence</code>, <code>source_count</code>, <code>sources_json</code>, <code>validation_json</code>, <code>metadata_json</code>, <code>status</code>, <code>submitted_at</code>, <code>updated_at</code>, <code>brand?</code>, <code>model?</code>, <code>variant?</code></td></tr>
         <tr><td><code>PublisherStats</code></td><td><code>total</code>, <code>resolved</code>, <code>pending</code>, <code>repaired</code>, <code>products</code></td></tr>
@@ -793,7 +796,9 @@ CREATE INDEX idx_fc_variant
       <tbody>
         <tr><td><code>index.js</code></td><td>Public API barrel</td><td>Feature module entry point</td></tr>
         <tr><td><code>candidate-gate/submitCandidate.js</code></td><td><code>submitCandidate()</code></td><td>Single entry point for all submissions</td></tr>
-        <tr><td><code>publish/publishCandidate.js</code></td><td><code>publishCandidate()</code></td><td>Auto-publish with confidence + lock gates</td></tr>
+        <tr><td><code>publish/publishCandidate.js</code></td><td><code>publishCandidate()</code></td><td>Auto-publish with confidence + evidence + lock gates</td></tr>
+        <tr><td><code>publish/evidenceGate.js</code></td><td><code>checkEvidenceGate()</code>, <code>readMinEvidenceRefs()</code></td><td>Pure helper: counts distinct evidence URLs vs <code>fieldRule.evidence.min_evidence_refs</code></td></tr>
+        <tr><td><code>publish/republishField.js</code></td><td><code>republishField()</code></td><td>Post-delete recompute &mdash; filters by both confidence + evidence gates</td></tr>
         <tr><td><code>publish/publishManualOverride.js</code></td><td><code>publishManualOverride()</code></td><td>Manual override publish (locks field)</td></tr>
         <tr><td><code>publish/publishCandidateOverride.js</code></td><td><code>publishCandidateOverride()</code></td><td>Candidate override from review grid</td></tr>
         <tr><td><code>publish/reconcileThreshold.js</code></td><td><code>reconcileThreshold()</code></td><td>Threshold tightening/loosening</td></tr>
@@ -822,6 +827,9 @@ CREATE INDEX idx_fc_variant
         <tr><td>Field Studio rules are SSOT for validity</td><td>Compiled field rules drive all checks</td></tr>
         <tr><td>Every publish operation dual-writes SQL + JSON</td><td>All publish paths update both stores</td></tr>
         <tr><td>Manual overrides lock fields from auto-publish</td><td><code>publishCandidate()</code> checks <code>source === 'manual_override'</code></td></tr>
+        <tr><td>Publish is dual-gated: confidence AND evidence</td><td>Every publish path runs <code>publishConfidenceThreshold</code> first, then <code>checkEvidenceGate</code> from <code>publish/evidenceGate.js</code> against <code>fieldRule.evidence.min_evidence_refs</code>. Failure status: <code>below_evidence_refs</code> with <code>{required, actual}</code>.</td></tr>
+        <tr><td>Candidate lookup is variant-aware</td><td><code>submitCandidate</code> uses <code>getFieldCandidateBySourceIdAndVariant(pid, fk, sid, vid)</code> matching the UNIQUE on <code>(source_id, variant_id_key = COALESCE(variant_id, ''))</code>. Required so dual-write rows (same source_id, different variant_id) each get their own evidence projected.</td></tr>
+        <tr><td>Retired knob: <code>evidence.required</code></td><td>Tautological with <code>min_evidence_refs &gt;= 1</code>. Stripped at compile (<code>compileFieldRuleBuilder.js</code>) and defensively at <code>compiler.js:normalizeFieldRulesForPhase1</code>.</td></tr>
         <tr><td>Threshold reconciliation never touches manual overrides</td><td><code>reconcileThreshold()</code> filters locked fields</td></tr>
         <tr><td>Confidence normalization: mixed scales handled</td><td><code>c &gt; 1 ? c / 100 : c</code> everywhere</td></tr>
         <tr><td>Candidates are unique per (category, product_id, field_key, value)</td><td>SQL UNIQUE constraint + source merge on collision</td></tr>

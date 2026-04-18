@@ -26,7 +26,6 @@ export interface ReleaseDateFinderCandidate {
   readonly value: string;
   readonly confidence: number;
   readonly unknown_reason: string;
-  readonly below_confidence: boolean;
   readonly sources: readonly EvidenceSource[];
   readonly ran_at: string;
   readonly rejected_by_gate?: boolean;

@@ -87,7 +87,15 @@
 <div class="container">
 
 <div class="callout callout-info" style="margin-bottom:24px;">
-  <strong>Module class:</strong> <code>variantFieldProducer</code> &mdash; RDF is the first of its class. It iterates CEF variants, runs the LLM per-variant, and routes each result through the shared publisher gate with a <code>variant_id</code>-scoped candidate row. The next variant-scoped field finder (e.g. <code>discontinued</code>) follows this exact pattern.
+  <strong>Module class:</strong> <code>variantFieldProducer</code> &mdash; RDF is the first of its class. It iterates CEF variants, runs the LLM per-variant, and routes each result through the shared publisher gate with a <code>variant_id</code>-scoped candidate row. The next variant-scoped field finder (e.g. <code>discontinued</code>, MSRP, weight, dimensions) follows this exact pattern and inherits the standardized budget loop for free &mdash; see <a href="finder-module-guide.html">Finder Module Guide</a> &sect; 9.
+</div>
+
+<div class="callout callout-ok" style="margin-bottom:24px;">
+  <strong>Two firing modes (both 202 fire-and-forget):</strong>
+  <ul style="margin:4px 0 0 16px; font-size:13px;">
+    <li><strong>Run</strong> &mdash; single LLM call per variant, no retry. Header <em>Run</em> button fires one per variant; per-row <em>Run</em> fires one for that variant. Always clickable, spammable (mirrors PIF's View/Hero).</li>
+    <li><strong>Loop</strong> &mdash; budget loop per variant (up to <code>perVariantAttemptBudget</code> calls, default <strong>3</strong>) until the candidate reaches the publisher gate or LLM returns definitive unknown. Header <em>Loop</em> fires one loop per variant in parallel; per-row <em>Loop</em> locks while that variant's loop is in flight. All runs emitted by a single loop call share <code>response.loop_id</code> so the UI can group them.</li>
+  </ul>
 </div>
 
 <!-- ================================================================== -->
@@ -151,11 +159,11 @@
   <div class="card-header" style="background:var(--green-bg);">Request &rarr; LLM &rarr; Gate &rarr; Publish &rarr; Persist</div>
   <div class="card-body">
     <div class="flow-row">
-      <div class="flow-box flow-accent">POST /release-date-finder/:cat/:pid<br><small>body: { variant_key? }</small></div>
+      <div class="flow-box flow-accent">POST /release-date-finder/:cat/:pid<br><small>Run (single shot) or<br>/loop (budget retry)</small></div>
       <span class="flow-arrow">&rarr;</span>
-      <div class="flow-box flow-neutral">Register Op<br><small>202 Accepted</small></div>
+      <div class="flow-box flow-neutral">Register Op<br><small>202 Accepted<br><code>subType: 'loop'</code> on /loop</small></div>
       <span class="flow-arrow">&rarr;</span>
-      <div class="flow-box flow-teal">Per-Variant Loop<br><small>runPerVariant.js</small></div>
+      <div class="flow-box flow-teal">Per-Variant Loop<br><small><code>runPerVariant.js</code> (Run)<br><code>variantFieldLoop.js</code> (Loop)</small></div>
       <span class="flow-arrow">&rarr;</span>
       <div class="flow-box flow-repair">LLM + Zod parse<br><small>releaseDateSchema.js</small></div>
       <span class="flow-arrow">&rarr;</span>
@@ -163,17 +171,33 @@
       <span class="flow-arrow">&rarr;</span>
       <div class="flow-box flow-pass">submitCandidate()<br><small>variant_id-scoped</small></div>
       <span class="flow-arrow">&rarr;</span>
-      <div class="flow-box flow-pass">JSON + SQL Write<br><small>durable + projection</small></div>
+      <div class="flow-box flow-pass">JSON + SQL Write<br><small>durable + projection<br>(tagged with <code>loop_id</code> in Loop mode)</small></div>
+    </div>
+    <div class="flow-row" style="margin-top:4px;">
+      <div class="flow-box flow-teal" style="min-width:220px;">Loop satisfaction check<br><small>After each attempt: publisher-reached<br>OR definitive unknown &rarr; stop</small></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box flow-accent" style="min-width:180px;">Budget exhausted or satisfied<br><small>Next variant / done</small></div>
     </div>
     <dl class="detail-grid">
-      <dt>Endpoint (all variants)</dt><dd><code>POST /api/release-date-finder/:category/:productId</code> &mdash; body empty fires one run per variant.</dd>
-      <dt>Endpoint (one variant)</dt><dd>Same URL with <code>{ "variant_key": "color:black" }</code> &mdash; single variant.</dd>
-      <dt>Schema</dt><dd><code>src/features/release-date/releaseDateSchema.js</code> &mdash; Zod: <code>release_date</code> string, <code>confidence</code> 0&ndash;100, <code>unknown_reason</code>, <code>evidence[]</code> (<code>source_url</code>, <code>source_type</code>, <code>tier</code>, <code>excerpt</code>), <code>discovery_log</code>.</dd>
-      <dt>Confidence gate</dt><dd>Below-threshold candidates are persisted with <code>below_confidence: true</code> but <em>not</em> submitted to the publisher. Run still counts and cooldown still sets.</dd>
-      <dt>Unknown path</dt><dd>LLM returns empty <code>release_date</code> + <code>unknown_reason</code>. Run persists, no publisher submit, no cooldown reset.</dd>
+      <dt>Endpoint (Run, all variants)</dt><dd><code>POST /api/release-date-finder/:category/:productId</code> &mdash; body empty fires one run per variant. Orchestrator: <code>runReleaseDateFinder()</code>.</dd>
+      <dt>Endpoint (Run, one variant)</dt><dd>Same URL with <code>{ "variant_key": "color:black" }</code> &mdash; single variant, single call.</dd>
+      <dt>Endpoint (Loop)</dt><dd><code>POST /api/release-date-finder/:category/:productId/loop</code> &mdash; body empty fires one loop per variant; with <code>{ "variant_key": "..." }</code> loops that variant only. Orchestrator: <code>runReleaseDateFinderLoop()</code>, registered op carries <code>subType: 'loop'</code>.</dd>
+      <dt>Schema</dt><dd><code>src/features/release-date/releaseDateSchema.js</code> &mdash; Zod: <code>release_date</code> string, <code>confidence</code> 0&ndash;100, <code>unknown_reason</code>, <code>evidence_refs[]</code> via shared <code>evidenceRefsSchema</code> from <code>src/core/finder/evidencePromptFragment.js</code> (universal <code>{url, tier, confidence}</code> shape), <code>discovery_log</code>. Legacy keys (<code>source_url</code>, <code>source_page</code>, <code>source_type</code>, <code>excerpt</code>) were retired in the universal-evidence convergence.</dd>
+      <dt>Confidence gate</dt><dd>Below-threshold candidates are persisted with <code>below_confidence: true</code> but <em>not</em> submitted to the publisher. Run still counts.</dd>
+      <dt>Unknown path</dt><dd>LLM returns empty <code>release_date</code> + <code>unknown_reason</code>. Run persists, no publisher submit.</dd>
       <dt>Publisher error path</dt><dd>If <code>submitCandidate()</code> throws, the error lands on <code>candidate.publisher_error</code>. The run itself still persists &mdash; the publisher is advisory, not a hard dependency.</dd>
       <dt>Published SSOT</dt><dd><code>product.json.variant_fields[vid].release_date</code> &mdash; written by publisher path ③ (variant-scoped). The feature&rsquo;s own <code>release_date_finder</code> SQL table is a UI-speed cache, not authoritative. See <a href="publisher-pipeline.html#">Publisher Pipeline &sect; 3b</a>.</dd>
     </dl>
+
+    <div class="callout callout-ok" style="margin-top:12px;">
+      <strong>Loop mode satisfaction predicate</strong>
+      <p style="margin:4px 0 0; font-size:13px;"><code>runReleaseDateFinderLoop</code> retries each variant up to <code>perVariantAttemptBudget</code> attempts and stops early when <strong>either</strong>:</p>
+      <ul style="margin:4px 0 0 16px; font-size:13px;">
+        <li><code>submitCandidate()</code> was reached (any status other than <code>'skipped'</code>) &mdash; the candidate made it past the local confidence + evidence gate. Publisher-side rejection won&rsquo;t improve with another LLM call on the same evidence.</li>
+        <li>LLM returned <code>release_date = 'unk'</code> <strong>with</strong> an <code>unknown_reason</code> &mdash; a definitive "no release date exists" answer. Retrying won&rsquo;t conjure a date that doesn&rsquo;t exist.</li>
+      </ul>
+      <p style="margin:6px 0 0; font-size:13px;">It retries on: LLM failure, below-confidence result, missing evidence, empty/transient response. Loop mode re-reads <code>previousRuns</code> fresh before each attempt so retries see the URLs/queries emitted by prior attempts (single-shot <code>runReleaseDateFinder</code> keeps a frozen snapshot &mdash; behavior preserved).</p>
+    </div>
   </div>
 </div>
 
@@ -226,26 +250,23 @@ for (const v of targets) {
 <div class="card">
   <div class="card-header" style="background:var(--teal-bg);">Every Date Must Cite a Source</div>
   <div class="card-body">
-    <p>The LLM is required to return at least one <code>evidence</code> entry. Each entry carries:</p>
+    <p>The LLM is required to return at least one <code>evidence_refs</code> entry. Universal shape (shared with CEF) &mdash; owned by <code>src/core/finder/evidencePromptFragment.js</code>:</p>
     <table>
       <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
       <tbody>
-        <tr><td><code>source_url</code></td><td>string</td><td>Canonical URL of the source page.</td></tr>
-        <tr><td><code>source_page</code></td><td>string?</td><td>Page title or article heading.</td></tr>
-        <tr><td><code>source_type</code></td><td>enum</td><td><code>manufacturer</code> / <code>retailer</code> / <code>review</code> / <code>press</code> / <code>other</code></td></tr>
-        <tr><td><code>tier</code></td><td>enum</td><td><code>tier1</code> (manufacturer, press release) / <code>tier2</code> (major retailer, pro review) / <code>tier3</code> (secondary press)</td></tr>
-        <tr><td><code>excerpt</code></td><td>string</td><td>Short quoted snippet anchoring the date.</td></tr>
+        <tr><td><code>url</code></td><td>string</td><td>Canonical URL of the source page.</td></tr>
+        <tr><td><code>tier</code></td><td>string</td><td>Classification only (no enforcement). 6 codes: <code>tier1</code> mfr / press release, <code>tier2</code> testing lab / review lab, <code>tier3</code> authorized retailer / marketplace, <code>tier4</code> community / forum, <code>tier5</code> specs aggregator, <code>other</code>.</td></tr>
+        <tr><td><code>confidence</code></td><td>integer 0&ndash;100</td><td>Per-source &mdash; how sure the LLM is THIS URL supports the claim. Distinct from candidate-level <code>confidence</code>.</td></tr>
       </tbody>
     </table>
     <div class="callout callout-info" style="margin-top:8px;">
-      <strong>Publisher threshold</strong>
-      A candidate is submitted to the publisher only when <strong>all</strong> of:
+      <strong>Publisher threshold (dual gate)</strong>
+      Every publish path runs both gates:
       <ul style="margin:4px 0 0 16px; font-size:13px;">
-        <li>Date value is non-empty (not <code>unk</code>)</li>
-        <li><code>confidence &ge; minConfidence</code> (default 70, per-module setting)</li>
-        <li><code>evidence.length &ge; 1</code> (field rule: <code>min_evidence_refs = 1</code>)</li>
+        <li>Confidence: candidate <code>confidence &ge; publishConfidenceThreshold</code></li>
+        <li>Evidence: distinct evidence URLs &ge; <code>fieldRule.evidence.min_evidence_refs</code> (default <code>1</code> for release_date) &mdash; checked via <code>specDb.countFieldCandidateEvidenceByCandidateId</code> against the relational <code>field_candidate_evidence</code> projection</li>
       </ul>
-      Below-threshold candidates still persist with <code>below_confidence: true</code> so you can audit them in the panel.
+      Failure status: <code>below_threshold</code> or <code>below_evidence_refs</code> &mdash; persisted to <code>metadata_json.publish_result</code>. RDF dual-writes one source under variant + scalar; the variant-aware lookup (<code>getFieldCandidateBySourceIdAndVariant</code>) ensures each row's evidence projects against its own <code>candidate_id</code>.
     </div>
   </div>
 </div>
@@ -285,17 +306,20 @@ for (const v of targets) {
   rebuildFnKey: 'rebuildReleaseDateFinderFromJson',
   settingsSchema: [
     { key: 'discoveryPromptTemplate', type: 'string', default: '', allowEmpty: true, hidden: true },
-    { key: 'perVariantAttemptBudget', type: 'int', default: 1, min: 1, max: 5 },
+    { key: 'perVariantAttemptBudget', type: 'int', default: 3, min: 1, max: 5 },
     { key: 'minConfidence',           type: 'int', default: 70, min: 0, max: 100 },
+    { key: 'urlHistoryEnabled',       type: 'bool', default: false },
+    { key: 'queryHistoryEnabled',     type: 'bool', default: false },
   ],
   promptBuilderExport: 'buildReleaseDateFinderPrompt',
   responseSchemaExport: 'releaseDateFinderResponseSchema',
   panelFeaturePath: 'release-date-finder',
   panelExport: 'ReleaseDateFinderPanel',
   dataChangeEvents: {
-    'run': ['review', 'product', 'publisher'],
+    'run':         ['review', 'product', 'publisher'],
     'run-deleted': ['review', 'product', 'publisher'],
-    'deleted': ['review', 'product', 'publisher'],
+    'deleted':     ['review', 'product', 'publisher'],
+    'loop':        ['review', 'product', 'publisher'],
   },
   settingsLabel: 'Release Date Finder',
   iconName: 'calendar',
@@ -314,9 +338,11 @@ for (const v of targets) {
     <table>
       <thead><tr><th>Setting</th><th>Default</th><th>Controls</th></tr></thead>
       <tbody>
-        <tr><td><code>perVariantAttemptBudget</code></td><td>1</td><td>Max LLM calls per variant per Run invocation (1&ndash;5).</td></tr>
-        <tr><td><code>minConfidence</code></td><td>70</td><td>Confidence gate for publisher submission. Below &rarr; candidate persists locally only.</td></tr>
-        <tr><td><code>discoveryPromptTemplate</code></td><td>&ldquo;&rdquo; (uses default)</td><td>Optional per-category prompt override. See <code>RDF_DEFAULT_TEMPLATE</code>.</td></tr>
+        <tr><td><code>perVariantAttemptBudget</code></td><td><strong>3</strong></td><td>Max LLM calls per variant in <em>Loop</em> mode (1&ndash;5). <code>1</code> = single shot (Loop becomes equivalent to Run). Higher values retry on low confidence / missing evidence / LLM failure until the candidate reaches the publisher gate or returns definitive unknown. <strong>Does not apply to plain Run / Run All</strong> &mdash; those are always single-shot.</td></tr>
+        <tr><td><code>minConfidence</code></td><td>70</td><td>Confidence gate for publisher submission. Below &rarr; candidate persists locally only with <code>below_confidence: true</code>; Loop will retry.</td></tr>
+        <tr><td><code>discoveryPromptTemplate</code></td><td>&ldquo;&rdquo; (uses default)</td><td>Optional per-category prompt override. Hidden in the Module Settings panel (edited in LLM Config).</td></tr>
+        <tr><td><code>urlHistoryEnabled</code></td><td><code>false</code></td><td>Inject prior run URLs into the prompt (variant-scoped). In Loop mode this refreshes per attempt so retries don&rsquo;t re-crawl.</td></tr>
+        <tr><td><code>queryHistoryEnabled</code></td><td><code>false</code></td><td>Inject prior search queries into the prompt (variant-scoped, per attempt in Loop mode).</td></tr>
         <tr><td><code>urlCooldownDays</code> <span class="tag tag-accent">global</span></td><td>90</td><td>Global URL re-check window. Shared with all finders. Pipeline Settings &rarr; Cooldowns.</td></tr>
         <tr><td><code>queryCooldownDays</code> <span class="tag tag-accent">global</span></td><td>90</td><td>Global query re-run window. Shared with all finders.</td></tr>
       </tbody>
@@ -335,16 +361,23 @@ for (const v of targets) {
   <div class="card-body">
     <p>The RDF panel follows the same shape as PIF &mdash; the user should feel no shift between them:</p>
     <ul style="margin:4px 0 0 20px; font-size:13.5px;">
-      <li><strong>Header:</strong> title + model chip + status chip + &ldquo;Run All&rdquo; button.</li>
+      <li><strong>Header:</strong> title + model chip + status chip + <em>Run</em> button + <em>Loop</em> button. ("All" is implied &mdash; buttons are in the header.) <em>Run</em> is always clickable; <em>Loop</em> disables when every variant is already looping.</li>
       <li><strong>KPI grid (4 cards):</strong> <em>Release Dates</em> &bull; <em>Variants</em> &bull; <em>Runs</em> &bull; <em>Published&nbsp;N/total</em>. Order mirrors PIF&rsquo;s <em>Images &bull; Variants &bull; Runs &bull; Carousel&nbsp;N/total</em>.</li>
       <li><strong>How It Works</strong> collapsible explainer (content: <code>rdfHowItWorksContent.ts</code>).</li>
-      <li><strong>All Release Dates</strong> section &mdash; two-column grid of <code>FinderVariantRow</code>s. Each row: arrow, ColorSwatch, label, ED/CLR chip, date/unk chip, confidence %, Run button. Expanded body lists evidence and publisher candidates.</li>
+      <li><strong>All Release Dates</strong> section &mdash; two-column grid of <code>FinderVariantRow</code>s. Each row: arrow, ColorSwatch, label, ED/CLR chip, date/unk chip, confidence %, <em>Run</em> button (always clickable &mdash; spammable), <em>Loop</em> button (disables while that variant&rsquo;s loop is in flight). Expanded body lists evidence and publisher candidates.</li>
       <li><strong>Run History</strong> section &mdash; uses shared <code>FinderRunHistoryRow</code> (<code>shared/ui/finder/</code>). Header: arrow &bull; <code>#runNumber</code> &bull; date &bull; <code>FinderRunTimestamp</code> &bull; <code>FinderRunModelBadge</code> &bull; variant swatch + label &bull; date chip &bull; confidence &bull; evidence count &bull; Del. Expanded body: <code>FinderDiscoveryDetails</code> (URLs checked / queries run / notes) + <code>FinderRunPromptDetails</code> (system / user / response). Identical shape to PIF and CEF.</li>
       <li><strong>Footer:</strong> last run, run count, model badge.</li>
     </ul>
+    <div class="callout callout-ok" style="margin-top:8px;">
+      <strong>Run vs Loop button semantics (mirrors PIF)</strong>
+      <ul style="margin:4px 0 0 16px; font-size:13px;">
+        <li><strong>Run</strong> fires single-shot &mdash; one LLM call per variant (or one for the per-row variant). Always enabled, safe to spam. Backend hits <code>POST /release-date-finder/:cat/:pid</code>.</li>
+        <li><strong>Loop</strong> fires the budget loop &mdash; up to <code>perVariantAttemptBudget</code> calls per variant with early stop on publisher-reached or definitive unknown. Locks per-variant via <code>useRunningVariantKeys('rdf', productId, 'loop')</code>. Header <em>Loop</em> fires one loop per variant <em>in parallel</em> (not one multi-variant loop) so per-variant UI feedback stays independent. Backend hits <code>POST /release-date-finder/:cat/:pid/loop</code> with <code>subType: 'loop'</code> on the registered operation.</li>
+      </ul>
+    </div>
     <div class="callout callout-info" style="margin-top:8px;">
       <strong>For the next variant-dependent finder</strong>
-      Copy the RDF panel shape: header &rarr; KPI grid (same 4 card order) &rarr; HIW &rarr; &ldquo;All &lt;Thing&gt;&rdquo; grid &rarr; Run History &rarr; footer. Swap only the module-specific chips, expanded body, KPI derivations, and HIW content. The shared scaffolding (<code>FinderVariantRow</code>, <code>useFinderColorHexMap</code>, <code>buildFinderVariantRows</code>) stays identical.
+      Copy the RDF panel shape: header (Run + Loop) &rarr; KPI grid (same 4 card order) &rarr; HIW &rarr; &ldquo;All &lt;Thing&gt;&rdquo; grid (per-row Run + Loop) &rarr; Run History &rarr; footer. Swap only the module-specific chips, expanded body, KPI derivations, and HIW content. The shared scaffolding (<code>FinderVariantRow</code>, <code>useFinderColorHexMap</code>, <code>buildFinderVariantRows</code>, <code>useFireAndForget</code>, <code>useRunningVariantKeys</code>) stays identical. Backend: declare <code>perVariantAttemptBudget</code> in the registry entry, export a <code>runXxxFinderLoop</code> that wraps <code>runVariantFieldLoop</code>, and register one <code>createVariantFieldLoopHandler</code> call in the routes file.
     </div>
   </div>
 </div>
@@ -360,13 +393,14 @@ for (const v of targets) {
     <table>
       <thead><tr><th>File</th><th>Role</th></tr></thead>
       <tbody>
-        <tr><td><code>releaseDateFinder.js</code></td><td>Orchestrator &mdash; per-variant loop, submitCandidate, persist.</td></tr>
+        <tr><td><code>releaseDateFinder.js</code></td><td>Orchestrators &mdash; exports <code>runReleaseDateFinder</code> (single-shot) and <code>runReleaseDateFinderLoop</code> (budget loop). Shares <code>setupReleaseDateFinderRun</code> + <code>buildProduceForVariant</code> helpers internally.</td></tr>
         <tr><td><code>releaseDateLlmAdapter.js</code></td><td>Prompt builder + <code>RDF_DEFAULT_TEMPLATE</code> + discovery log accumulator.</td></tr>
         <tr><td><code>releaseDateSchema.js</code></td><td>Zod schema for LLM response.</td></tr>
         <tr><td><code>releaseDateStore.js</code></td><td>JSON store wrapper + latest-wins-per-variant <code>recalculateSelected</code> + rebuild fn.</td></tr>
-        <tr><td><code>api/releaseDateFinderRoutes.js</code></td><td>Thin route handler via <code>createFinderRouteHandler</code>.</td></tr>
+        <tr><td><code>api/releaseDateFinderRoutes.js</code></td><td>Thin route handler: <code>createFinderRouteHandler</code> for GET/Run/DELETE + <code>createVariantFieldLoopHandler</code> for <code>POST /loop</code>.</td></tr>
         <tr><td><code>index.js</code></td><td>Public exports.</td></tr>
-        <tr><td><code>tests/*.test.js</code></td><td>Schema, adapter, store, orchestrator tests (41 total).</td></tr>
+        <tr><td><code>README.md</code></td><td>Domain contract (public API, dependencies, invariants, settings).</td></tr>
+        <tr><td><code>tests/*.test.js</code></td><td>Schema, adapter, store, orchestrator, loop tests.</td></tr>
       </tbody>
     </table>
   </div>
@@ -379,11 +413,12 @@ for (const v of targets) {
       <thead><tr><th>File</th><th>Role</th></tr></thead>
       <tbody>
         <tr><td><code>types.ts</code></td><td>TS interfaces: <code>EvidenceSource</code>, <code>PublisherCandidateRef</code>, <code>ReleaseDateFinderCandidate</code>, <code>ReleaseDateFinderRun</code>, <code>ReleaseDateFinderResult</code>.</td></tr>
-        <tr><td><code>api/releaseDateFinderQueries.ts</code></td><td>React Query hooks (GET, POST, DELETE run, DELETE all).</td></tr>
+        <tr><td><code>api/releaseDateFinderQueries.ts</code></td><td>React Query hooks: GET + <code>useReleaseDateFinderRunMutation</code> (single shot) + <code>useReleaseDateFinderLoopMutation</code> (<code>POST /loop</code>) + DELETE run + DELETE all.</td></tr>
         <tr><td><code>selectors/rdfSelectors.ts</code></td><td>Pure derivations: KPI cards, variant rows, run history rows.</td></tr>
-        <tr><td><code>components/ReleaseDateFinderPanel.tsx</code></td><td>Indexing Lab panel &mdash; uses shared scaffolding.</td></tr>
+        <tr><td><code>components/ReleaseDateFinderPanel.tsx</code></td><td>Indexing Lab panel &mdash; uses shared scaffolding. Header: Run + Loop. Per-row: Run (always clickable) + Loop (locks via <code>useRunningVariantKeys('rdf', productId, 'loop')</code>).</td></tr>
         <tr><td><code>rdfHowItWorksContent.ts</code></td><td>&ldquo;How It Works&rdquo; content (typed <code>HiwSection[]</code>).</td></tr>
         <tr><td><code>index.ts</code></td><td>Barrel export (codegen lazy-imports from here).</td></tr>
+        <tr><td><code>README.md</code></td><td>Frontend domain contract (panel public API, dependencies, button invariants).</td></tr>
       </tbody>
     </table>
   </div>
@@ -411,8 +446,8 @@ for (const v of targets) {
 <!-- ================================================================== -->
 
 <div style="text-align:center; padding:32px 0; color:var(--text-muted); font-size:13px;">
-  Spec Factory Release Date Finder Reference &mdash; 2026-04-17<br>
-  Module class: <code>variantFieldProducer</code> &bull; Shared variant-row scaffolding &bull; Per-variant publisher gate<br>
+  Spec Factory Release Date Finder Reference &mdash; 2026-04-18<br>
+  Module class: <code>variantFieldProducer</code> &bull; Shared variant-row scaffolding &bull; Shared budget loop (<code>runVariantFieldLoop</code>) &bull; Per-variant publisher gate<br>
   <span style="margin-top:6px; display:block;">
     Backend: <code>src/features/release-date/</code> &bull;
     Frontend: <code>tools/gui-react/src/features/release-date-finder/</code>

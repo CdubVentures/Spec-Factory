@@ -2,7 +2,7 @@
 
 > **Purpose:** Identify the repository patterns that new work must not introduce, even if legacy code still contains examples of them.
 > **Prerequisites:** [../01-project-overview/conventions.md](../01-project-overview/conventions.md), [./canonical-examples.md](./canonical-examples.md), [../03-architecture/auth-and-sessions.md](../03-architecture/auth-and-sessions.md)
-> **Last validated:** 2026-04-10
+> **Last validated:** 2026-04-18
 
 ## Route Logic Or New Route Families Wired Outside `src/app/api/guiServerRuntime.js`
 
@@ -198,6 +198,46 @@ Never:
 - Hardcoded `timeZone: 'America/Los_Angeles'` in a component's `Intl.DateTimeFormat`
 - A per-component local `formatDate` / `formatDateTime` helper
 
+## Per-Finder Confidence Gates (Double-Gating The Publisher)
+
+Wrong:
+
+```js
+// src/features/<some-finder>/someFinder.js
+const minConfidence = parseInt(finderStore?.getSetting?.('minConfidence') || '70', 10);
+const belowConfidence = !isUnknown && confidence < minConfidence;
+if (!isUnknown && !belowConfidence && fieldRules && evidenceRefs.length > 0) {
+  submitCandidate({ ... });
+}
+```
+
+Wrong on the settings side:
+
+```js
+// src/core/finder/finderModuleRegistry.js
+settingsSchema: [
+  { key: 'minConfidence', type: 'int', default: 70, min: 0, max: 100,
+    uiLabel: 'Min Confidence',
+    uiTip: 'Minimum LLM confidence score to accept a candidate. Below this, the run is marked unknown.' },
+]
+```
+
+Why it is wrong:
+
+- `publishConfidenceThreshold` (from `src/shared/settingsRegistry.js`, wired into `src/features/publisher/publish/publishCandidate.js`) is the **single source of truth** for confidence gating. Every candidate is meant to pass through the publisher; the publisher decides.
+- A per-finder local gate silently skips submission, so below-threshold evidence never reaches `field_candidates`, never appears in the review drawer's Candidates section, and never gets a chance at `reconcileThreshold` when the operator loosens the bar. The operator must reason about two overlapping thresholds with no shared UI affordance.
+- Copy-pasting this pattern into new `variantFieldProducer` modules (SKU, price, dimensions, weight, etc.) proliferates the drift — each finder ends up with its own dial that must be kept in sync with the global publisher threshold forever.
+- The loop retry signal (satisfactionPredicate) then has to distinguish "reached publisher" from "skipped locally," which is a weaker and fuzzier contract than "actually published."
+
+Do instead:
+
+- Submit every real candidate with a real value + evidence to `submitCandidate()` and let the publisher's `publishConfidenceThreshold` gate decide. The only local skip conditions that remain legitimate are:
+  - `isUnknown` — LLM returned an explicit "unk"; no value to submit.
+  - `evidence_refs.length === 0` — the publisher's evidence gate would reject anyway; saves a DB write.
+- Derive the submitted `confidence` from `max(evidence_refs.confidence)` so the publisher sees honest per-source evidence strength instead of a hardcoded 100 or the LLM's overall self-rating. See `src/features/color-edition/colorEditionFinder.js` (`pickMaxRefConfidence`) and `src/features/release-date/releaseDateFinder.js` for canonical examples.
+- Set loop satisfaction on `publishStatus === 'published'` (read from `submitCandidate().publishResult.status`), not on "submit reached the publisher." This ties retry behavior to the single SoT gate.
+- If a per-finder budget / cost concern truly requires local filtering, add a comment explaining why and make it deliberately **looser** than the global publisher threshold so it can only ever skip obvious noise (e.g., skip when `evidence_refs.length === 0`, not when confidence is below some local number).
+
 ## Implementation-Coupled Tests
 
 Wrong:
@@ -242,6 +282,11 @@ Do instead:
 | source | `src/features/indexing/index.js` | public feature entrypoint available for cross-boundary imports |
 | source | `src/features/review/index.js` | public feature entrypoint available for cross-boundary imports |
 | source | `docs/03-architecture/auth-and-sessions.md` | verified absence of a current auth/session subsystem |
+| source | `src/shared/settingsRegistry.js` | `publishConfidenceThreshold` as the single confidence-gating SoT (0-1 float, review-publisher > publish-gate) |
+| source | `src/features/publisher/publish/publishCandidate.js` | publisher enforces the confidence gate; finders must submit through it |
+| source | `src/core/finder/finderModuleRegistry.js` | RDF `settingsSchema` no longer carries `minConfidence` — comment in place warning future variantFieldProducers not to reintroduce it |
+| source | `src/features/color-edition/colorEditionFinder.js` | canonical pattern: candidate confidence = `max(evidence_refs.confidence)` |
+| source | `src/features/release-date/releaseDateFinder.js` | RDF migrated off `minConfidence` gate; confidence derived from evidence_refs max |
 | test | `src/features/settings/api/tests/uiSettingsRoutes.test.js` | public-behavior test structure using route handler invocation and persistence assertions |
 
 ## Related Documents

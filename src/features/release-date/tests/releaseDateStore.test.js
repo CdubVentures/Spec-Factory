@@ -31,7 +31,6 @@ function makeCandidate({ variantId, variantKey, value, confidence = 85, sources 
     value,
     confidence,
     unknown_reason: '',
-    below_confidence: false,
     sources,
     ran_at: ranAt || new Date().toISOString(),
   };

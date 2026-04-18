@@ -282,11 +282,6 @@ export function ReleaseDateFinderPanel({ productId, category }: ReleaseDateFinde
                             Unknown: {c.unknown_reason}
                           </div>
                         )}
-                        {c.below_confidence && (
-                          <div className="text-[11px] sf-status-text-warning">
-                            Below confidence threshold — candidate not sent to publisher.
-                          </div>
-                        )}
                         {c.rejected_by_gate && (
                           <div className="text-[11px] sf-status-text-danger">
                             Rejected by publisher gate:

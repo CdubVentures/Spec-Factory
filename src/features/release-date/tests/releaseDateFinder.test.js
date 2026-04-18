@@ -57,9 +57,7 @@ const DEFAULT_VARIANTS = [
 function makeFinderStoreStub(settings = {}) {
   const upserts = [];
   const runs = [];
-  // WHY: default minConfidence='70' preserves pre-loop test expectations while
-  // allowing loop tests to override perVariantAttemptBudget et al.
-  const resolved = { minConfidence: '70', ...settings };
+  const resolved = { ...settings };
   return {
     store: {
       getSetting: (k) => (k in resolved ? String(resolved[k]) : ''),
@@ -73,6 +71,12 @@ function makeFinderStoreStub(settings = {}) {
 
 function makeSpecDbStub({ finderStore, variants = DEFAULT_VARIANTS, category = 'mouse' } = {}) {
   const submittedCandidates = [];
+  // WHY: field_candidate_evidence projection — the publisher's evidence gate
+  // (checkEvidenceGate) reads `countFieldCandidateEvidenceByCandidateId` to
+  // decide if min_evidence_refs is satisfied. Simulate it here so
+  // publishCandidate can actually reach 'published' in test runs; otherwise
+  // every attempt would fail on below_evidence_refs regardless of confidence.
+  const evidenceByCandidateId = new Map();
   return {
     category,
     getFinderStore: () => finderStore,
@@ -102,6 +106,13 @@ function makeSpecDbStub({ finderStore, variants = DEFAULT_VARIANTS, category = '
     markFieldCandidateResolved: () => {},
     demoteResolvedCandidates: () => {},
     publishCandidate: () => {},
+    // Evidence projection (submitCandidate → publisher evidence gate)
+    replaceFieldCandidateEvidence: (candidateId, refs) => {
+      evidenceByCandidateId.set(Number(candidateId), Array.isArray(refs) ? refs.length : 0);
+    },
+    countFieldCandidateEvidenceByCandidateId: (candidateId) => (
+      evidenceByCandidateId.get(Number(candidateId)) || 0
+    ),
     _submittedCandidates: submittedCandidates,
   };
 }
@@ -203,7 +214,12 @@ describe('runReleaseDateFinder', () => {
     }
   });
 
-  it('low confidence: below minConfidence → no publisher submission, candidate marked', async () => {
+  it('low confidence values submit to the publisher (single SoT gate = publishConfidenceThreshold)', async () => {
+    // WHY: RDF used to have its own minConfidence gate that blocked low-conf
+    // LLM results from reaching the publisher. That's redundant with the
+    // global publishConfidenceThreshold and was removed — now RDF submits
+    // everything with a real date + evidence, and the publisher makes the
+    // single gating decision. This test locks in the one-gate contract.
     const pid = 'rdf-low-conf';
     writeProductJson(pid);
     const fs_ = makeFinderStoreStub();
@@ -217,7 +233,7 @@ describe('runReleaseDateFinder', () => {
       _callLlmOverride: async () => ({
         result: {
           release_date: '2024',
-          confidence: 40, // below default minConfidence of 70
+          confidence: 40, // overall LLM confidence — unused after unification
           unknown_reason: '',
           evidence_refs: [{ url: 'https://example.com', tier: 'tier3', confidence: 50 }],
           discovery_log: { urls_checked: [], queries_run: [], notes: [] },
@@ -226,12 +242,14 @@ describe('runReleaseDateFinder', () => {
       }),
     });
 
-    assert.equal(specDb._submittedCandidates.length, 0, 'low-confidence values must NOT submit candidates');
+    assert.ok(specDb._submittedCandidates.length > 0,
+      'low-confidence values still reach the publisher — the publisher decides');
 
     const doc = readReleaseDates({ productId: pid, productRoot: PRODUCT_ROOT });
     for (const c of doc.selected.candidates) {
       assert.equal(c.value, '2024');
-      assert.equal(c.below_confidence, true, 'below_confidence flag set');
+      assert.ok(!('below_confidence' in c),
+        'below_confidence is no longer emitted — publisher owns the gate');
     }
   });
 
@@ -347,7 +365,7 @@ describe('runReleaseDateFinderLoop', () => {
   const LOW_CONF_RESPONSE = {
     result: {
       release_date: '2024',
-      confidence: 40, // below default minConfidence 70
+      confidence: 40, // overall LLM self-claim (unused — publisher gates on per-source max)
       unknown_reason: '',
       evidence_refs: [{ url: 'https://x.example.com', tier: 'tier3', confidence: 50 }],
       discovery_log: { urls_checked: [], queries_run: [], notes: [] },
@@ -402,8 +420,11 @@ describe('runReleaseDateFinderLoop', () => {
     // 2 variants × 2 attempts each (low → high) = 4 LLM calls
     assert.equal(counters['Black'], 2, 'Black retried once then satisfied');
     assert.equal(counters['White'], 2, 'White retried once then satisfied');
-    // Publisher called once per variant (only after satisfaction)
-    assert.equal(specDb._submittedCandidates.length, 2, 'one publisher submit per variant');
+    // WHY: Every attempt reaches the publisher now (no local RDF gate) —
+    // submitCandidate persists even below-threshold rows so the publisher
+    // gate is the single SoT. The loop still stops the moment an attempt
+    // actually publishes, so the LLM call count is unchanged (2 per variant).
+    assert.equal(specDb._submittedCandidates.length, 4, 'every attempt writes to field_candidates; publisher decides');
     // Runs persisted for every attempt (audit trail)
     const doc = readReleaseDates({ productId: pid, productRoot: PRODUCT_ROOT });
     assert.equal(doc.runs.length, 4, 'all 4 attempts persisted as runs');
@@ -427,9 +448,14 @@ describe('runReleaseDateFinderLoop', () => {
       _callLlmOverride: async () => { callCount++; return LOW_CONF_RESPONSE; },
     });
 
-    // 2 variants × 3 attempts each = 6 calls
+    // 2 variants × 3 attempts each = 6 calls (budget exhausted on every variant)
     assert.equal(callCount, 6);
-    assert.equal(specDb._submittedCandidates.length, 0, 'low-conf never submits');
+    // WHY: All 6 low-conf attempts still write to field_candidates — the
+    // publisher gate (publishConfidenceThreshold) is the one SoT that
+    // separates "attempted" from "published". None of these will clear
+    // the 0.7 default threshold (per-source max is 50 → 0.5 < 0.7), so
+    // the loop retries until budget is exhausted without ever publishing.
+    assert.equal(specDb._submittedCandidates.length, 6, 'every attempt writes a candidate; publisher rejects all');
     const doc = readReleaseDates({ productId: pid, productRoot: PRODUCT_ROOT });
     assert.equal(doc.runs.length, 6, 'every attempt persisted');
   });

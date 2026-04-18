@@ -63,6 +63,22 @@ function filterCandidates(arr, variantId, variantKey) {
   return { result, changed: result.length !== arr.length };
 }
 
+// WHY: variantFieldProducer runs identify their target variant on the run
+// response (e.g. RDF puts variant_id / variant_key on run.response). This is
+// orthogonal to candidates — a failed/empty-result LLM call still owns its
+// target variant and must be purged on variant delete. We also accept
+// run-level variant fields for robustness across module shapes.
+function runTargetsVariant(run, variantId, variantKey) {
+  if (!run) return false;
+  const matches = (vid, vkey) => (
+    (variantId && vid === variantId) || (variantKey && vkey === variantKey)
+  );
+  if (matches(run.variant_id, run.variant_key)) return true;
+  if (run.response && matches(run.response.variant_id, run.response.variant_key)) return true;
+  if (run.selected && matches(run.selected.variant_id, run.selected.variant_key)) return true;
+  return false;
+}
+
 // WHY: variantFieldProducer aggregation convention — latest run per variant wins.
 // RDF uses this via finderJsonStore's recalculateSelected. Re-derived here so
 // the cleanup stays independent of the module's own store instance.
@@ -111,6 +127,15 @@ export function stripVariantFromFieldProducerHistory({
   const remaining = [];
 
   for (const run of runs) {
+    // Check 1: does this run's identity (response.variant_id, etc.) target the
+    // deleted variant? If yes, the run is wholly that variant's — delete it.
+    if (runTargetsVariant(run, variantId, variantKey)) {
+      deletedRunNumbers.push(run.run_number);
+      continue;
+    }
+
+    // Check 2: candidate-level filtering for runs without explicit identity
+    // (e.g. mixed-variant runs).
     const selBefore = Array.isArray(run?.selected?.candidates) ? run.selected.candidates.length : 0;
     const respBefore = Array.isArray(run?.response?.candidates) ? run.response.candidates.length : 0;
     const hadAnyBefore = selBefore > 0 || respBefore > 0;
@@ -130,7 +155,6 @@ export function stripVariantFromFieldProducerHistory({
     const hasAnyAfter = selAfter > 0 || respAfter > 0;
 
     if (filtered && hadAnyBefore && !hasAnyAfter) {
-      // Run's only candidates were the deleted variant — delete the whole run.
       deletedRunNumbers.push(run.run_number);
       continue;
     }

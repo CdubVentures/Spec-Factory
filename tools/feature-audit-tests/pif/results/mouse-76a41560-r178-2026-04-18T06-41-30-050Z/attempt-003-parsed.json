@@ -1,0 +1,81 @@
+{
+  "images": [
+    {
+      "view": "top",
+      "url": "https://assets.corsair.com/image/upload/f_auto%2Cq_auto/v1735855631/products/Gaming-Mice/base-m75-wireless-apple-config/gallery/glacial-blue/M75_GLACIAL_BLUE_11.png",
+      "source_page": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na?position=16&queryID=86992dc742a14ac0e917fdf52a651d55",
+      "alt_text": "Product Image",
+      "evidence_refs": [
+        {
+          "url": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na?position=16&queryID=86992dc742a14ac0e917fdf52a651d55",
+          "tier": "tier1"
+        }
+      ]
+    },
+    {
+      "view": "angle",
+      "url": "https://assets.corsair.com/image/upload/c_pad%2Cq_85%2Ch_1100%2Cw_1100%2Cf_auto/products/Gaming-Mice/base-m75-wireless-apple-config/gallery/glacial-blue/M75_GLACIAL_BLUE_01.webp",
+      "source_page": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na?position=16&queryID=86992dc742a14ac0e917fdf52a651d55",
+      "alt_text": "Product Image",
+      "evidence_refs": [
+        {
+          "url": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na?position=16&queryID=86992dc742a14ac0e917fdf52a651d55",
+          "tier": "tier1"
+        }
+      ]
+    },
+    {
+      "view": "top",
+      "url": "https://www.tanotis.com/cdn/shop/files/1756470888_IMG_2562505_800x.jpg?v=1765931521",
+      "source_page": "https://www.tanotis.com/products/corsair-m75-wireless-gaming-mouse-glacier-blue",
+      "alt_text": "CORSAIR M75 WIRELESS Gaming Mouse (Glacier Blue)",
+      "evidence_refs": [
+        {
+          "url": "https://www.tanotis.com/products/corsair-m75-wireless-gaming-mouse-glacier-blue",
+          "tier": "tier3"
+        }
+      ]
+    },
+    {
+      "view": "angle",
+      "url": "https://www.tanotis.com/cdn/shop/files/1756470896_1915333_800x.jpg?v=1765931520",
+      "source_page": "https://www.tanotis.com/products/corsair-m75-wireless-gaming-mouse-glacier-blue",
+      "alt_text": "CORSAIR M75 WIRELESS Gaming Mouse (Glacier Blue)",
+      "evidence_refs": [
+        {
+          "url": "https://www.tanotis.com/products/corsair-m75-wireless-gaming-mouse-glacier-blue",
+          "tier": "tier3"
+        }
+      ]
+    }
+  ],
+  "discovery_log": {
+    "urls_checked": [
+      "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na?position=16&queryID=86992dc742a14ac0e917fdf52a651d55",
+      "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/intrinsic",
+      "https://www.corsair.com/us/en/explorer/gamer/mice/m75-wireless/",
+      "https://www.tanotis.com/products/corsair-m75-wireless-gaming-mouse-glacier-blue",
+      "https://www.cyberpuerta.mx/Computo-Hardware/Dispositivos-de-Entrada/Mouse/Mouse-Gamer-Corsair-M75-Inalambrico-Optico-26-000DPI-RF-Wireless-Bluetooth-USB-A-Azul.html",
+      "https://ir.corsair.com/news-releases/news-release-details/corsair-unveils-exclusive-award-winning-k65-plus-wireless/"
+    ],
+    "queries_run": [
+      "site:assets.corsair.com/image/upload \"M75_GLACIAL_BLUE\" Corsair",
+      "\"M75_GLACIAL_BLUE_01.webp\"",
+      "site:corsair.com/us/en/p/gaming-mouse/ch-931d01g-na m75 wireless glacier blue",
+      "site:apple.com/shop/product/HRYU2ZM/A \"Corsair M75 Wireless\"",
+      "site:apple.com/shop/product/HRYU2ZM/A \"Glacier Blue\" \"Corsair\"",
+      "\"pr.cor.sr/K65_M75_ForMac\"",
+      "\"AP67kmww!@\" \"K65_M75_ForMac\"",
+      "\"Corsair M75 Wireless\" underside image Glacier Blue",
+      "\"CH-931D01G-NA\" image product blue corsair",
+      "\"Corsair M75 Wireless\" \"bottom\" image"
+    ],
+    "notes": [
+      "Exact product verified as Corsair M75 Wireless, Glacier Blue / CH-931D01G-NA.",
+      "Clean product-only official images found for top and angle views on Corsair's product page.",
+      "Additional clean retailer images found on Tanotis for the same exact variant.",
+      "No acceptable clean bottom/left/right/front/rear studio shot was found in the accessible sources, so those views were omitted rather than guessed.",
+      "Sibling models M75 Air Wireless and M75 Wired were not used."
+    ]
+  }
+}

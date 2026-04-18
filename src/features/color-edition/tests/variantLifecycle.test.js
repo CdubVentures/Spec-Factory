@@ -1249,6 +1249,119 @@ describe('deleteVariant', () => {
     assert.equal(summary.candidate_count, 1);
     assert.equal(summary.run_count, 2);
   }));
+
+  // WHY: Failed/empty LLM runs identify their target variant via
+  // run.response.variant_id / variant_key (or run.variant_id top-level), not
+  // via candidates (which are empty when the LLM finds nothing). On variant
+  // delete we must still purge those run shells — otherwise the History badge
+  // keeps counting their discovery_log queries/URLs forever.
+  it('deletes empty-result runs identified by run.response.variant_id when the variant is removed', withEnv(({ specDb, root, ensureProductJson, ensureCefJson }) => {
+    specDb.variants.syncFromRegistry(PID, [
+      { variant_id: 'v_frost', variant_key: 'color:white+silver', variant_type: 'color', variant_label: 'Frost White', color_atoms: ['white', 'silver'], created_at: '2026-04-14T00:00:00Z' },
+      { variant_id: 'v_keep',  variant_key: 'color:black',        variant_type: 'color', variant_label: 'Black',       color_atoms: ['black'],           created_at: '2026-04-14T00:00:00Z' },
+    ]);
+    seedCefSummary(specDb);
+    ensureProductJson(PID);
+    ensureCefJson(PID, {
+      product_id: PID, category: 'mouse',
+      selected: { colors: ['white+silver', 'black'], editions: {}, default_color: 'white+silver' },
+      variant_registry: [
+        { variant_id: 'v_frost', variant_key: 'color:white+silver', variant_type: 'color', color_atoms: ['white', 'silver'] },
+        { variant_id: 'v_keep',  variant_key: 'color:black',        variant_type: 'color', color_atoms: ['black'] },
+      ],
+      runs: [], run_count: 0, next_run_number: 1,
+    });
+
+    const rdfJsonPath = path.join(root, PID, 'release_date.json');
+    fs.writeFileSync(rdfJsonPath, JSON.stringify({
+      product_id: PID, category: 'mouse',
+      selected: { candidates: [
+        { variant_id: 'v_keep', variant_key: 'color:black', value: '2024-02-29', confidence: 95 },
+      ] },
+      runs: [
+        // Two empty-result runs targeting Frost White (LLM searched, found no date).
+        {
+          run_number: 1, ran_at: '2026-04-14T01:00:00Z', model: 'test', fallback_used: false,
+          selected: { candidates: [] },
+          prompt: { system: '', user: '' },
+          response: {
+            variant_id: 'v_frost', variant_key: 'color:white+silver', variant_label: 'Frost White',
+            candidates: [],
+            discovery_log: { queries_run: ['q1', 'q2'], urls_checked: ['u1'] },
+          },
+        },
+        {
+          run_number: 2, ran_at: '2026-04-14T02:00:00Z', model: 'test', fallback_used: false,
+          selected: { candidates: [] },
+          prompt: { system: '', user: '' },
+          response: {
+            variant_id: 'v_frost', variant_key: 'color:white+silver',
+            candidates: [],
+            discovery_log: { queries_run: ['q3'], urls_checked: ['u2', 'u3'] },
+          },
+        },
+        // A successful run for v_keep — must survive.
+        {
+          run_number: 3, ran_at: '2026-04-14T03:00:00Z', model: 'test', fallback_used: false,
+          selected: { candidates: [{ variant_id: 'v_keep', variant_key: 'color:black', value: '2024-02-29', confidence: 95 }] },
+          prompt: { system: '', user: '' },
+          response: {
+            variant_id: 'v_keep', variant_key: 'color:black',
+            candidates: [{ variant_id: 'v_keep', variant_key: 'color:black', value: '2024-02-29' }],
+          },
+        },
+      ],
+      run_count: 3, next_run_number: 4,
+      last_ran_at: '2026-04-14T03:00:00Z',
+    }, null, 2));
+
+    const rdfStore = specDb.getFinderStore('releaseDateFinder');
+    rdfStore.upsert({
+      category: 'mouse', product_id: PID,
+      candidates: [{ variant_id: 'v_keep', variant_key: 'color:black', value: '2024-02-29', confidence: 95 }],
+      candidate_count: 1,
+      cooldown_until: '', latest_ran_at: '2026-04-14T03:00:00Z', run_count: 3,
+    });
+    rdfStore.insertRun({
+      category: 'mouse', product_id: PID, run_number: 1,
+      ran_at: '2026-04-14T01:00:00Z', model: 'test', fallback_used: false,
+      effort_level: '', access_mode: '', thinking: false, web_search: false,
+      selected: { candidates: [] },
+      prompt: {},
+      response: { variant_id: 'v_frost', variant_key: 'color:white+silver', candidates: [] },
+    });
+    rdfStore.insertRun({
+      category: 'mouse', product_id: PID, run_number: 2,
+      ran_at: '2026-04-14T02:00:00Z', model: 'test', fallback_used: false,
+      effort_level: '', access_mode: '', thinking: false, web_search: false,
+      selected: { candidates: [] },
+      prompt: {},
+      response: { variant_id: 'v_frost', variant_key: 'color:white+silver', candidates: [] },
+    });
+    rdfStore.insertRun({
+      category: 'mouse', product_id: PID, run_number: 3,
+      ran_at: '2026-04-14T03:00:00Z', model: 'test', fallback_used: false,
+      effort_level: '', access_mode: '', thinking: false, web_search: false,
+      selected: { candidates: [{ variant_id: 'v_keep', variant_key: 'color:black', value: '2024-02-29', confidence: 95 }] },
+      prompt: {},
+      response: { variant_id: 'v_keep', variant_key: 'color:black', candidates: [{ variant_id: 'v_keep', variant_key: 'color:black', value: '2024-02-29' }] },
+    });
+
+    deleteVariant({ specDb, productId: PID, variantId: 'v_frost', productRoot: root });
+
+    const rdf = JSON.parse(fs.readFileSync(rdfJsonPath, 'utf8'));
+    // Both Frost-targeted runs (1 and 2) gone — even though they had no candidates.
+    assert.equal(rdf.runs.length, 1, 'JSON: only the v_keep run survives');
+    assert.equal(rdf.runs[0].run_number, 3);
+    assert.equal(rdf.run_count, 1);
+
+    const sqlRuns = rdfStore.listRuns(PID);
+    assert.equal(sqlRuns.length, 1, 'SQL: only run 3 survives');
+    assert.equal(sqlRuns[0].run_number, 3);
+
+    const summary = rdfStore.get(PID);
+    assert.equal(summary.run_count, 1);
+  }));
 });
 
 describe('deleteAllVariants', () => {
