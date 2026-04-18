@@ -422,14 +422,16 @@ export function prepareStatements(db) {
     // --- Field Candidates ---
 
     // WHY: Legacy upsert — kept for backward compat during transition (candidateReseed old-format path).
-    // Uses ON CONFLICT(source_id) since value-based UNIQUE was removed in Phase 8 migration.
+    // ON CONFLICT keys on variant_id_key (COALESCE(variant_id, '')), so the INSERT must include
+    // variant_id or the conflict resolution targets the wrong row (variant-scoped upserts would
+    // create a phantom NULL-variant row instead of updating the variant-scoped one).
     _upsertFieldCandidate: db.prepare(`
       INSERT INTO field_candidates (
         category, product_id, field_key, value, unit,
-        confidence, source_id, source_type, model, validation_json, metadata_json, status
+        confidence, source_id, source_type, model, validation_json, metadata_json, status, variant_id
       ) VALUES (
         @category, @product_id, @field_key, @value, @unit,
-        @confidence, @source_id, @source_type, @model, @validation_json, @metadata_json, @status
+        @confidence, @source_id, @source_type, @model, @validation_json, @metadata_json, @status, @variant_id
       )
       ON CONFLICT(category, product_id, field_key, source_id, variant_id_key) DO UPDATE SET
         confidence = MAX(excluded.confidence, field_candidates.confidence),

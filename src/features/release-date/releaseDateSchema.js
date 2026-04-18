@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { evidenceRefsSchema } from '../../core/finder/evidencePromptFragment.js';
+import { valueConfidenceSchema } from '../../core/finder/valueConfidencePromptFragment.js';
 
 /**
  * Zod schema for the Release Date Finder LLM response.
@@ -13,12 +14,13 @@ import { evidenceRefsSchema } from '../../core/finder/evidencePromptFragment.js'
  *
  * WHY: `evidence_refs` shape is the universal {url, tier, confidence} imported
  * from the shared evidence module — no local definition. `confidence` on the
- * response root is the overall candidate confidence (distinct from the
- * per-source confidence inside each evidence_refs entry).
+ * response root is the LLM's overall candidate confidence, sourced from the
+ * shared valueConfidenceSchema (distinct from the per-source confidence inside
+ * each evidence_refs entry).
  */
 export const releaseDateFinderResponseSchema = z.object({
   release_date: z.string(),
-  confidence: z.number().int().min(0).max(100).default(0),
+  confidence: valueConfidenceSchema.default(0),
   unknown_reason: z.string().default(''),
   evidence_refs: evidenceRefsSchema,
   discovery_log: z.object({

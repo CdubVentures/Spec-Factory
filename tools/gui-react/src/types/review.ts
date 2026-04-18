@@ -82,11 +82,14 @@ export interface VariantValueEntry {
   variant_type?: 'color' | 'edition' | string | null;
   color_atoms?: string[] | null;
   edition_slug?: string | null;
-  // WHY: Stable variant key ("color:<combo>" or "edition:<slug>") used to look
-  // up per-variant sources in metadata.evidence_by_variant (populated by CEF's
-  // identity-check mappings). Optional for backward compat with fixtures that
-  // don't populate it.
+  // WHY: Stable variant key ("color:<combo>" or "edition:<slug>") — the drawer's
+  // per-variant source lookup matches this against candidate.metadata.variant_key.
   variant_key?: string | null;
+  // WHY: True for the variant that drives the grid cell's value for
+  // variant-dependent fields. Exactly one color variant per product (matches
+  // CEF's default_color = colors[0]); false on editions and all non-default
+  // variants. Drives the drawer's default marker + sort order.
+  is_default?: boolean;
 }
 
 export interface FieldState {

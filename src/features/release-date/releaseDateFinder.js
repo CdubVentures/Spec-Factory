@@ -221,18 +221,11 @@ function buildProduceForVariant(ctx, previousRunsProvider) {
     const durationMs = Date.now() - callStartMs;
     const releaseDate = String(llmResult?.release_date || '').trim();
     const evidenceRefs = Array.isArray(llmResult?.evidence_refs) ? llmResult.evidence_refs : [];
-    // WHY: Candidate confidence drives the publisher threshold gate. The
-    // LLM's overall self-rated confidence (llmResult.confidence) is less
-    // honest than the strongest per-source confidence — the LLM can claim
-    // 90% overall while citing only tier5@55 sources. Derive from max
-    // per-source so the publisher's gate (publishConfidenceThreshold)
-    // reflects real evidence strength, consistent with the drawer's
-    // row-header derivation (maxSourceConfidence).
-    let confidence = 0;
-    for (const r of evidenceRefs) {
-      const n = Number(r?.confidence);
-      if (Number.isFinite(n) && n > confidence) confidence = n;
-    }
+    // WHY: Trust the LLM's overall confidence. The shared valueConfidencePrompt
+    // fragment anchors the number to a tier-based rubric against the cited
+    // evidence, so the LLM's self-rating is calibrated at prompt time. The
+    // schema (valueConfidenceSchema) already clamps to 0-100 integer.
+    const confidence = Number.isFinite(llmResult?.confidence) ? llmResult.confidence : 0;
     const unknownReason = String(llmResult?.unknown_reason || '').trim();
     const isUnknown = releaseDate === '' || releaseDate.toLowerCase() === 'unk';
 

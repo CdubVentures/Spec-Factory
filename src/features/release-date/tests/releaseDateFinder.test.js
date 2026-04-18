@@ -3,8 +3,9 @@
  *
  * Stubs specDb (variants + finder store + field candidate store) and injects
  * LLM responses via _callLlmOverride. Verifies:
- *   - publisher candidate submitted only when confidence >= minConfidence
- *     and evidence present and release_date not 'unk'
+ *   - publisher candidate submitted when evidence present and release_date not 'unk'
+ *     (publisher's publishConfidenceThreshold is the single gate — no per-finder min)
+ *   - LLM's overall confidence flows through verbatim to submitCandidate
  *   - JSON + SQL state persisted per variant even on unknown/low-conf responses
  *   - no_cef_data / unknown_variant rejections
  */
@@ -233,7 +234,7 @@ describe('runReleaseDateFinder', () => {
       _callLlmOverride: async () => ({
         result: {
           release_date: '2024',
-          confidence: 40, // overall LLM confidence — unused after unification
+          confidence: 40, // LLM's overall confidence — trusted verbatim
           unknown_reason: '',
           evidence_refs: [{ url: 'https://example.com', tier: 'tier3', confidence: 50 }],
           discovery_log: { urls_checked: [], queries_run: [], notes: [] },
@@ -251,6 +252,52 @@ describe('runReleaseDateFinder', () => {
       assert.ok(!('below_confidence' in c),
         'below_confidence is no longer emitted — publisher owns the gate');
     }
+  });
+
+  it('LLM overall confidence flows through to submitCandidate verbatim (not overridden by max(per-source))', async () => {
+    // WHY: The LLM is asked for an overall confidence number calibrated against
+    // its cited evidence (via shared valueConfidencePromptFragment). The finder
+    // must trust that number and pass it through to submitCandidate — the
+    // publisher's threshold gate should see the LLM's honest assessment, not a
+    // mechanically-derived max(per-source) that inflates past what the LLM
+    // itself claimed. The rubric in the shared fragment is the guardrail.
+    const pid = 'rdf-trust-llm-conf';
+    writeProductJson(pid);
+    const fs_ = makeFinderStoreStub();
+    const specDb = makeSpecDbStub({
+      finderStore: fs_.store,
+      variants: [{ variant_id: 'v_black', variant_key: 'color:black', variant_label: 'Black', variant_type: 'color' }],
+    });
+
+    await runReleaseDateFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: null, specDb,
+      config: { categoryAuthorityRoot: CATEGORY_ROOT },
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: async () => ({
+        result: {
+          release_date: '2024-06-01',
+          // LLM says 75 — even though per-source evidence hits 95, the LLM is
+          // being honest about its overall confidence (maybe the tier1 page was
+          // ambiguous about launch vs announce). We trust the LLM's number.
+          confidence: 75,
+          unknown_reason: '',
+          evidence_refs: [
+            { url: 'https://mfr.example.com', tier: 'tier1', confidence: 95 },
+            { url: 'https://news.example.com', tier: 'tier2', confidence: 90 },
+          ],
+          discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+        },
+        usage: null,
+      }),
+    });
+
+    assert.equal(specDb._submittedCandidates.length, 1);
+    assert.equal(
+      specDb._submittedCandidates[0].confidence,
+      75,
+      'submitCandidate must receive the LLM overall confidence (75), not max(per-source) (95)',
+    );
   });
 
   it('no variants → rejected with no_cef_data', async () => {

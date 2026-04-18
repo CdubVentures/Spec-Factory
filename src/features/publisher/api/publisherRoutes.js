@@ -11,7 +11,7 @@
 import { reconcileThreshold } from '../publish/reconcileThreshold.js';
 import { registerOperation, updateStage, completeOperation, failOperation } from '../../../core/operations/operationsRegistry.js';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
-import { computePublishedArraysFromVariants } from '../../color-edition/index.js';
+import { computePublishedArraysFromVariants, aggregateCefFieldConfidence } from '../../color-edition/index.js';
 
 // WHY: colors/editions store their value as a JSON-stringified array in
 // field_candidates.value (e.g. '["black","white+silver"]'). UI consumers
@@ -146,7 +146,7 @@ export function registerPublisherRoutes(ctx) {
         if (variantColors.length > 0) {
           fields.colors = {
             value: variantColors,
-            confidence: fields.colors?.confidence ?? 1.0,
+            confidence: aggregateCefFieldConfidence(specDb, productId, 'colors', activeVariants),
             source: 'variant_registry',
             resolved_at: fields.colors?.resolved_at || now,
           };
@@ -157,7 +157,7 @@ export function registerPublisherRoutes(ctx) {
         if (variantEditions.length > 0) {
           fields.editions = {
             value: variantEditions,
-            confidence: fields.editions?.confidence ?? 1.0,
+            confidence: aggregateCefFieldConfidence(specDb, productId, 'editions', activeVariants),
             source: 'variant_registry',
             resolved_at: fields.editions?.resolved_at || now,
           };

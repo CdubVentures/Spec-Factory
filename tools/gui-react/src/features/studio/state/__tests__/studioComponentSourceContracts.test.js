@@ -43,6 +43,43 @@ test('studio component sources migrate legacy property keys and normalize varian
   );
 });
 
+test('studio component sources preserve component_only flag through migrateProperty', async () => {
+  const { migrateProperty } = await loadStudioComponentSources();
+
+  // WHY: The flag must round-trip via save → load, otherwise toggling the
+  // checkbox in Mapping Studio appears to "stick" but is silently lost.
+  assert.deepEqual(
+    migrateProperty({
+      field_key: 'encoder_steps',
+      variance_policy: 'authoritative',
+      tolerance: null,
+      component_only: true,
+    }),
+    {
+      field_key: 'encoder_steps',
+      variance_policy: 'authoritative',
+      tolerance: null,
+      component_only: true,
+    },
+  );
+
+  // Absent / falsy stays absent (keeps shape minimal for default case)
+  const withoutFlag = migrateProperty({
+    field_key: 'dpi',
+    variance_policy: 'upper_bound',
+    tolerance: null,
+  });
+  assert.equal(withoutFlag.component_only, undefined);
+
+  const withFalse = migrateProperty({
+    field_key: 'dpi',
+    variance_policy: 'upper_bound',
+    tolerance: null,
+    component_only: false,
+  });
+  assert.equal(withFalse.component_only, undefined);
+});
+
 test('studio component sources create empty component rows with stable default priority and ai assist state', async () => {
   const { createEmptyComponentSource } = await loadStudioComponentSources();
 

@@ -320,8 +320,8 @@ describe('CEF candidate gate integration', () => {
     assert.ok(candidates.length >= 1);
   });
 
-  // --- 8. Editions candidate written with reconciled colors ---
-  it('editions candidate has reconciled colors matching repaired colors', async () => {
+  // --- 8. Edition candidates (per-variant) carry repaired values ---
+  it('editions candidates are per-variant rows with repaired slugs', async () => {
     const pid = 'mouse-ed-recon';
     ensureProductJson(pid);
 
@@ -340,26 +340,22 @@ describe('CEF candidate gate integration', () => {
 
     assert.equal(result.rejected, false);
 
-    // Editions candidate in DB stores normalized slug list (field rule: shape=list, type=string)
+    // One field_candidates row per edition variant; slugs normalized by validation pipeline.
     const edCandidates = specDb.getFieldCandidatesByProductAndField(pid, 'editions');
-    assert.equal(edCandidates.length, 1);
-    const edValue = JSON.parse(edCandidates[0].value);
-    assert.ok(Array.isArray(edValue), 'editions candidate is slug array');
-    // WHY: slugs are normalized (lowercase, spaces→hyphens) by the validation pipeline
-    assert.ok(edValue.includes('cyberpunk-edition'));
-    assert.ok(edValue.includes('halo-edition'));
+    assert.equal(edCandidates.length, 2, 'one row per edition variant');
+    const slugs = edCandidates.map(r => JSON.parse(r.value)[0]);
+    assert.ok(slugs.includes('cyberpunk-edition'));
+    assert.ok(slugs.includes('halo-edition'));
+    for (const r of edCandidates) {
+      assert.ok(r.variant_id, 'edition row is variant-scoped');
+    }
 
-    // Edition details preserved in candidate metadata (original keys)
-    const edMeta = edCandidates[0].metadata_json;
-    assert.deepEqual(edMeta.edition_details?.['Cyberpunk Edition']?.colors, ['black']);
-    assert.deepEqual(edMeta.edition_details?.['Halo Edition']?.colors, ['red']);
-
-    // product.json also has normalized slug list
+    // product.json mirror also has per-variant entries
     const pj = readProductJson(pid);
     assert.ok(pj.candidates.editions);
-    const jsonEd = pj.candidates.editions[0].value;
-    assert.ok(Array.isArray(jsonEd));
-    assert.ok(jsonEd.includes('cyberpunk-edition'));
+    const jsonSlugs = pj.candidates.editions.map(e => (Array.isArray(e.value) ? e.value[0] : JSON.parse(e.value)[0]));
+    assert.ok(jsonSlugs.includes('cyberpunk-edition'));
+    assert.ok(jsonSlugs.includes('halo-edition'));
   });
 
   // --- 8b. Edition combo surfaces as a colors candidate — INTACT ---
@@ -386,15 +382,14 @@ describe('CEF candidate gate integration', () => {
 
     assert.equal(result.rejected, false);
 
+    // Per-variant: one color row for 'black', one for edition combo 'black+white'
     const colorCandidates = specDb.getFieldCandidatesByProductAndField(pid, 'colors');
-    assert.equal(colorCandidates.length, 1);
-    const colorsValue = JSON.parse(colorCandidates[0].value);
-    assert.ok(Array.isArray(colorsValue));
-    assert.ok(colorsValue.includes('black'), 'standalone black present');
-    assert.ok(colorsValue.includes('black+white'), 'edition combo surfaces as colors candidate intact');
+    const values = colorCandidates.map(r => JSON.parse(r.value)[0]);
+    assert.ok(values.includes('black'), 'standalone black present');
+    assert.ok(values.includes('black+white'), 'edition combo surfaces as colors candidate intact');
     // The combo must NOT be split into atoms — "white" alone must not leak in
     // unless the LLM explicitly declared it as a standalone color.
-    assert.ok(!colorsValue.includes('white'), 'combo not split into standalone atom');
+    assert.ok(!values.includes('white'), 'combo not split into standalone atom');
   });
 
   it('does not duplicate a combo already present in standalone colors', async () => {
@@ -416,11 +411,11 @@ describe('CEF candidate gate integration', () => {
 
     assert.equal(result.rejected, false);
 
+    // Per-variant: one variant (edition holding the combo) → one row for fieldKey='colors'
     const colorCandidates = specDb.getFieldCandidatesByProductAndField(pid, 'colors');
-    assert.equal(colorCandidates.length, 1);
-    const colorsValue = JSON.parse(colorCandidates[0].value);
-    const combos = colorsValue.filter(v => v === 'black+white');
-    assert.equal(combos.length, 1, 'combo present exactly once');
+    const values = colorCandidates.map(r => JSON.parse(r.value)[0]);
+    const combos = values.filter(v => v === 'black+white');
+    assert.equal(combos.length, 1, 'combo present exactly once across per-variant rows');
   });
 
   it('preserves a single-color edition combo as its atom entry (no spurious splits)', async () => {
@@ -443,10 +438,9 @@ describe('CEF candidate gate integration', () => {
     assert.equal(result.rejected, false);
 
     const colorCandidates = specDb.getFieldCandidatesByProductAndField(pid, 'colors');
-    const colorsValue = JSON.parse(colorCandidates[0].value);
-    // Single-color edition: combo === its single atom. Merged intact.
-    assert.ok(colorsValue.includes('red'), 'single-color edition combo merged as-is');
-    assert.ok(!colorsValue.some(v => v.includes('+')), 'no spurious + combo for single-color edition');
+    const values = colorCandidates.map(r => JSON.parse(r.value)[0]);
+    assert.ok(values.includes('red'), 'single-color edition combo merged as-is');
+    assert.ok(!values.some(v => v.includes('+')), 'no spurious + combo for single-color edition');
   });
 
   // --- 9. Editions record passes shape=record validation ---

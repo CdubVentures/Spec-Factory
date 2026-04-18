@@ -71,6 +71,7 @@ export function registerColorEditionFinderRoutes(ctx) {
         status: r.status,
         metadata: r.metadata_json || {},
         submitted_at: r.submitted_at,
+        variant_id: r.variant_id || null,
       });
 
       // WHY: Derive display names from variants (SSOT), not selected (run snapshot).

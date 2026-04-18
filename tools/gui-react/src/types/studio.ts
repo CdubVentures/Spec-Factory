@@ -44,6 +44,7 @@ export interface ComponentSourceProperty {
   variance_policy?: 'authoritative' | 'upper_bound' | 'lower_bound' | 'range' | 'override_allowed';
   tolerance?: number | null;
   constraints?: string[];
+  component_only?: boolean;
   [k: string]: unknown;
 }
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useCallback, useState, useRef } from 'react';
-import { useOperationsStore, type Operation } from '../state/operationsStore.ts';
+import { useOperationsStore, isCarouselLoopProgress, type Operation } from '../state/operationsStore.ts';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { api } from '../../../api/client.ts';
 import {
@@ -85,8 +85,16 @@ function StagePipeline({ stages, currentIndex, status }: {
 
 /* ── Loop progress grid ──────────────────────────────────────────── */
 
-function LoopProgressGrid({ lp }: { readonly lp: NonNullable<Operation['loopProgress']> }) {
-  const variantPos = lp.variantTotal > 1 ? ` (${lp.variantIndex + 1}/${lp.variantTotal})` : '';
+// WHY: `lp` is narrowed to the carousel shape by isCarouselLoopProgress at the
+// call site — so `lp.views` is guaranteed to be an array here.
+type CarouselLoopProgress = NonNullable<Operation['loopProgress']> & {
+  readonly views: NonNullable<NonNullable<Operation['loopProgress']>['views']>;
+};
+
+function LoopProgressGrid({ lp }: { readonly lp: CarouselLoopProgress }) {
+  const variantTotal = lp.variantTotal ?? 1;
+  const variantIndex = lp.variantIndex ?? 0;
+  const variantPos = variantTotal > 1 ? ` (${variantIndex + 1}/${variantTotal})` : '';
   const target = lp.mode === 'hero' ? 'hero' : (lp.focusView || '\u2013');
 
   // Merge views + hero into one grid
@@ -252,8 +260,10 @@ function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
       {/* Row 2–3: stage pipeline grid */}
       <StagePipeline stages={op.stages} currentIndex={op.currentStageIndex} status={op.status} />
 
-      {/* Loop progress grid (structured) or fallback progress text */}
-      {op.loopProgress ? (
+      {/* Loop progress grid (structured — carousel shape only) or fallback progress text.
+          WHY: `loopProgress` is written by two finders with different shapes (PIF carousel
+          vs RDF/variantFieldLoop simple). Only render the grid for the carousel shape. */}
+      {isCarouselLoopProgress(op.loopProgress) ? (
         <LoopProgressGrid lp={op.loopProgress} />
       ) : op.progressText ? (
         <span className="text-[9px] font-mono sf-text-subtle whitespace-pre-wrap leading-[1.4]">{op.progressText}</span>

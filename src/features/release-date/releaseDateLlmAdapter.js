@@ -13,6 +13,7 @@ import { zodToLlmSchema } from '../../core/llm/zodToLlmSchema.js';
 import { resolvePromptTemplate } from '../../core/llm/resolvePromptTemplate.js';
 import { buildPreviousDiscoveryBlock } from '../../core/finder/discoveryLog.js';
 import { buildEvidencePromptBlock } from '../../core/finder/evidencePromptFragment.js';
+import { buildValueConfidencePromptBlock } from '../../core/finder/valueConfidencePromptFragment.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
 import { releaseDateFinderResponseSchema } from './releaseDateSchema.js';
 
@@ -28,12 +29,18 @@ GOAL: The date this specific {{VARIANT_TYPE_WORD}} variant first became availabl
   - pre-order open dates (do NOT use unless they coincide with shipping)
   - regional re-launches (use the EARLIEST global ship date)
 
-Date format rules:
-- Preferred: YYYY-MM-DD (full date)
-- Accepted: YYYY-MM, YYYY, MMM YYYY, Month YYYY
-- Return the highest precision the evidence actually supports — under-promising beats over-promising
-- NEVER return ranges ("Q1 2024"), relative phrases ("last year"), seasons ("Spring 2024"), or announcements without a confirmed ship date
-- If no evidence yields a defensible date, return "unk" and explain in unknown_reason
+Precision ladder — return the most precise date the evidence actually supports, and fall through when you can't hit the top:
+  1. YYYY-MM-DD — exact day (tier1 press release, product page, retail "Date First Available", reviewer's purchase/ship date)
+  2. YYYY-MM — month only (evidence narrows it to a calendar month but not a specific day)
+  3. Month YYYY or MMM YYYY — equivalent to YYYY-MM, whichever form the evidence uses
+  4. YYYY — year only (any combination of sources places it in a specific calendar year)
+  5. "unk" — ONLY if you genuinely cannot defend a single calendar year
+
+Important framing:
+- Under-promising beats over-promising. A confidently-defended YYYY beats a shaky YYYY-MM-DD.
+- Older or obscure products often only yield YYYY — that is a valid, useful answer. Do not return "unk" just because a specific day isn't findable.
+- NEVER return ranges ("Q1 2024"), relative phrases ("last year"), seasons ("Spring 2024"), or announcements without a confirmed ship date.
+- Before returning "unk", ask: can I defensibly name the calendar year? If yes, return YYYY with appropriate confidence and explain your reasoning in discovery_log.notes.
 
 {{EVIDENCE_REQUIREMENTS}}
 
@@ -57,20 +64,21 @@ Source guidance — use the strongest signal available, fall back as needed:
     Use to corroborate primary/retail, not as a sole source.
 
   COMMUNITY / AGGREGATOR (tag as tier4 or tier5)
-    Forum posts, spec databases. Lowest signal; use only as cross-reference.
+    Forum posts, spec databases, review aggregators.
+    - For YYYY-MM-DD / YYYY-MM precision: cross-reference only, never sole source.
+    - For YYYY precision: multiple independent tier4/tier5 sources agreeing on a
+      calendar year are acceptable standalone evidence (e.g. a forum thread from
+      2018 discussing the product as current places it in 2018).
 
 You decide which sources to query and in what order — the above describes
 what kind of evidence counts and how to tag it, not a script to execute.
 
-Confidence guidance (0-100):
-- 90+:   multiple tier1 sources agree, or tier1 + tier3 agree on the date
-- 70-89: single tier1, or two tier3 sources agree on month/year
-- 50-69: single tier3 only, or multiple tier2 agreeing on year
-- <50:   contradicting or weak evidence — prefer returning "unk"
+{{VALUE_CONFIDENCE_GUIDANCE}}
+RDF-specific: below 50, prefer returning the broadest precision level (YYYY) you can defend over returning "unk". Only return "unk" when you cannot defensibly place the product in any calendar year.
 
 {{PREVIOUS_DISCOVERY}}Return JSON:
 - "release_date": "YYYY-MM-DD" | "YYYY-MM" | "YYYY" | "MMM YYYY" | "Month YYYY" | "unk"
-- "confidence": 0-100 (your overall confidence in the returned date)
+- "confidence": 0-100 (your overall confidence in the returned date — see rubric above)
 - "unknown_reason": "..." (required if release_date is "unk"; empty string otherwise)
 - "evidence_refs": [{ "url": "...", "tier": "tier1|tier2|tier3|tier4|tier5|other", "confidence": 0-100 }, ...]
 - "discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }`;
@@ -144,6 +152,7 @@ export function buildReleaseDateFinderPrompt({
     VARIANT_TYPE_WORD: variantType === 'edition' ? 'edition' : 'color',
     PREVIOUS_DISCOVERY: discoverySection,
     EVIDENCE_REQUIREMENTS: buildEvidencePromptBlock({ minEvidenceRefs }),
+    VALUE_CONFIDENCE_GUIDANCE: buildValueConfidencePromptBlock(),
   });
 }
 

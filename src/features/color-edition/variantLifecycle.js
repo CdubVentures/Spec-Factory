@@ -39,6 +39,40 @@ function getEditionColorCombo(variant) {
   return atoms.join('+');
 }
 
+/**
+ * Aggregate CEF-source candidate confidence for a field across active variants.
+ *
+ * Reads field_candidates (the SSOT for confidence — written by submitCandidate
+ * when CEF publishes a per-variant candidate) and aggregates with min():
+ * a field's overall confidence is only as strong as its weakest accepted
+ * variant. No caller should ever stamp 1.0 here — use this helper.
+ *
+ * @param {object} specDb
+ * @param {string} productId
+ * @param {'colors'|'editions'} fieldKey
+ * @param {object[]} activeVariants — rows from variants.listActive
+ * @returns {number} min per-variant confidence, or 0 when no CEF candidates exist
+ */
+export function aggregateCefFieldConfidence(specDb, productId, fieldKey, activeVariants) {
+  if (!specDb?.getFieldCandidatesByProductAndField || !Array.isArray(activeVariants) || activeVariants.length === 0) {
+    return 0;
+  }
+  const activeIds = new Set(activeVariants.map((v) => v.variant_id).filter(Boolean));
+  if (activeIds.size === 0) return 0;
+  const rows = specDb.getFieldCandidatesByProductAndField(productId, fieldKey) || [];
+  const perVariant = new Map();
+  for (const r of rows) {
+    if (r?.source_type !== 'cef') continue;
+    if (!activeIds.has(r.variant_id)) continue;
+    const conf = Number(r.confidence);
+    if (!Number.isFinite(conf)) continue;
+    const existing = perVariant.get(r.variant_id);
+    if (existing == null || conf > existing) perVariant.set(r.variant_id, conf);
+  }
+  if (perVariant.size === 0) return 0;
+  return Math.min(...perVariant.values());
+}
+
 // ── Derive display names from variant table (pure) ─────────────────
 
 /**
@@ -136,6 +170,8 @@ export function derivePublishedFromVariants({ specDb, productId, productRoot }) 
   const variants = specDb.variants.listActive(productId);
 
   const { colors, editions, defaultColor } = computePublishedArraysFromVariants(variants);
+  const colorsConfidence = aggregateCefFieldConfidence(specDb, productId, 'colors', variants);
+  const editionsConfidence = aggregateCefFieldConfidence(specDb, productId, 'editions', variants);
 
   const now = new Date().toISOString();
 
@@ -147,7 +183,7 @@ export function derivePublishedFromVariants({ specDb, productId, productRoot }) 
     if (colors.length > 0) {
       productJson.fields.colors = {
         value: colors,
-        confidence: 1.0,
+        confidence: colorsConfidence,
         source: 'variant_registry',
         resolved_at: now,
         sources: [{ source: 'variant_registry' }],
@@ -159,7 +195,7 @@ export function derivePublishedFromVariants({ specDb, productId, productRoot }) 
     if (editions.length > 0) {
       productJson.fields.editions = {
         value: editions,
-        confidence: 1.0,
+        confidence: editionsConfidence,
         source: 'variant_registry',
         resolved_at: now,
         sources: [{ source: 'variant_registry' }],
@@ -268,6 +304,13 @@ function stripVariantFromCandidates({ specDb, productId, variant, productRoot })
       // may independently discover the same color — that evidence is unrelated
       // to the variant entity and must not be touched.
       if (row.source_type !== 'cef') continue;
+
+      // WHY: Per-variant rows (variant_id set) cascade via cascadeVariantIdFromCandidates.
+      // This legacy array-splice path only applies to pre-per-variant rows where the
+      // value is a multi-item array and variant_id is null. Skipping here prevents
+      // cross-variant clobber (updateValue keys on source_id, which is shared across
+      // all variants within a single CEF run).
+      if (row.variant_id) continue;
 
       let parsed;
       try { parsed = typeof row.value === 'string' ? JSON.parse(row.value) : row.value; }

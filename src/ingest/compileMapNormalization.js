@@ -16,6 +16,45 @@ import {
   isNumericContractType
 } from './compileUtils.js';
 
+// WHY: Variant-generator keys must always promote to product fields even if
+// authors mistakenly mark them component_only.
+// Source: src/features/studio/contracts/egPresets.js:EG_LOCKED_KEYS.
+const EG_LOCKED_KEYS = new Set(['colors', 'editions', 'release_date']);
+
+// WHY: Walk normalized component_sources, return Set of keys flagged
+// component_only — except EG-locked keys which override the flag.
+function collectComponentOnlyKeys(componentSheets) {
+  const out = new Set();
+  for (const row of toArray(componentSheets)) {
+    if (!isObject(row)) continue;
+    const props = isObject(row.roles) ? toArray(row.roles.properties) : [];
+    for (const prop of props) {
+      if (!isObject(prop)) continue;
+      if (prop.component_only !== true) continue;
+      const key = normalizeFieldKey(prop.field_key || prop.key || '');
+      if (key && !EG_LOCKED_KEYS.has(key)) out.add(key);
+    }
+  }
+  return out;
+}
+
+// WHY: A key marked component_only in component_sources cannot also live in
+// selected_keys (they're mutually exclusive intents). Auto-prune with a
+// warning so the user knows what happened at compile time.
+function pruneComponentOnlySelected(selectedKeys, componentSheets, warnings) {
+  const componentOnly = collectComponentOnlyKeys(componentSheets);
+  if (componentOnly.size === 0) return selectedKeys;
+  const out = [];
+  for (const key of selectedKeys) {
+    if (componentOnly.has(key)) {
+      if (warnings) warnings.push(`selected_keys: '${key}' removed because it is declared component_only in component_sources`);
+      continue;
+    }
+    out.push(key);
+  }
+  return out;
+}
+
 function guessComponentType(sheetName) {
   const token = normalizeToken(sheetName);
   if (token.includes('sensor')) return 'sensor';
@@ -296,15 +335,33 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
         if (coerced && warnings) {
           warnings.push(`component_sources: variance_policy '${entry.variance_policy}' on string property '${fieldKey || legacyKey || '?'}' coerced to 'authoritative' (numeric policies require type 'number' or 'integer')`);
         }
-        return {
-          key: fieldKey || legacyKey,
+        const normalizedConstraints = Array.isArray(entry.constraints) ? entry.constraints.map((c) => normalizeText(c)) : [];
+        const componentOnly = entry.component_only === true;
+        const resolvedKey = fieldKey || legacyKey;
+        // WHY: component_only + non-empty constraints — the constraints will not
+        // be enforced via cross-validation because the field never enters
+        // fieldsRuntime. Warn so authors don't expect them to fire.
+        if (componentOnly && warnings && normalizedConstraints.length > 0) {
+          warnings.push(`component_sources: property '${resolvedKey || '?'}' has component_only=true; constraints '${JSON.stringify(normalizedConstraints)}' will not be enforced in cross-validation`);
+        }
+        // WHY: EG-locked keys (colors/editions/release_date) are variant
+        // generators that must remain product fields. component_only is
+        // semantically invalid here — warn but leave promotion behavior intact
+        // (the gate in compileComponentHelpers handles the override).
+        if (componentOnly && warnings && EG_LOCKED_KEYS.has(resolvedKey)) {
+          warnings.push(`component_sources: EG-locked key '${resolvedKey}' cannot be component_only; ignoring flag`);
+        }
+        const out = {
+          key: resolvedKey,
           column: normalizeText(entry.column || entry.col || '').toUpperCase(),
           type: propType,
           unit: normalizeText(entry.unit || ''),
           field_key: fieldKey || undefined,
           variance_policy: effectivePolicy,
-          constraints: Array.isArray(entry.constraints) ? entry.constraints.map((c) => normalizeText(c)) : []
+          constraints: normalizedConstraints,
         };
+        if (componentOnly) out.component_only = true;
+        return out;
       })
       .filter((entry) => entry.column || entry.field_key);
     if (propertyMappings.length === 0) {
@@ -470,7 +527,11 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
       expected_sometimes_fields: [],
       deep_fields: []
     },
-    selected_keys: orderedUniqueStrings(toArray(map.selected_keys).map((field) => normalizeFieldKey(field))),
+    selected_keys: pruneComponentOnlySelected(
+      orderedUniqueStrings(toArray(map.selected_keys).map((field) => normalizeFieldKey(field))),
+      componentSheets,
+      warnings,
+    ),
     version_note: normalizeText(map.version_note || ''),
     field_overrides: stripRetiredEvidenceKnobs(isObject(map.field_overrides) ? map.field_overrides : {}),
     ui_defaults: isObject(map.ui_defaults) ? map.ui_defaults : {},

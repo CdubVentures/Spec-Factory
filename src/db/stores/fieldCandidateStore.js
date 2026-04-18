@@ -27,7 +27,10 @@ export function createFieldCandidateStore({ db, category, stmts }) {
 
   // WHY: Legacy upsert — kept for backward compat (candidateReseed old-format, finderRoutes legacy).
   // Callers may still pass sourceCount/sourcesJson — these are ignored (columns dropped in Phase 8).
-  function upsert({ productId, fieldKey, value, unit, confidence, sourceId, sourceType, model, validationJson, metadataJson, status }) {
+  // variant_id is threaded through so that upserts targeting a variant-scoped row land on that row
+  // (ON CONFLICT keys on variant_id_key); without it, the upsert silently inserts a phantom
+  // NULL-variant row instead of updating the intended variant-scoped row.
+  function upsert({ productId, fieldKey, value, unit, confidence, sourceId, sourceType, model, validationJson, metadataJson, status, variantId }) {
     stmts._upsertFieldCandidate.run({
       category,
       product_id: String(productId || ''),
@@ -41,6 +44,7 @@ export function createFieldCandidateStore({ db, category, stmts }) {
       validation_json: JSON.stringify(validationJson ?? {}),
       metadata_json: JSON.stringify(metadataJson ?? {}),
       status: status || 'candidate',
+      variant_id: variantId ?? null,
     });
   }
 

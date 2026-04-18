@@ -1,6 +1,6 @@
 {
   "category": "mouse",
-  "generated_at": "2026-04-17T21:32:33.888Z",
+  "generated_at": "2026-04-18T08:21:24.752Z",
   "group_index": {
     "buttons_features": [
       "adjustable_scroll_wheel",
@@ -31,9 +31,6 @@
       "material",
       "weight"
     ],
-    "controls": [
-      "switch_life_span"
-    ],
     "dimensions": [
       "height",
       "lngth",
@@ -62,13 +59,9 @@
       "design",
       "discontinued",
       "editions",
-      "encoder_life_span",
-      "encoder_steps",
-      "encoder_type",
       "lighting",
       "price_range",
       "release_date",
-      "releasing_force",
       "rgb",
       "sku"
     ],
@@ -156,14 +149,6 @@
       "group_key": "construction"
     },
     {
-      "count": 1,
-      "display_name": "controls",
-      "field_keys": [
-        "switch_life_span"
-      ],
-      "group_key": "controls"
-    },
-    {
       "count": 3,
       "display_name": "Dimensions",
       "field_keys": [
@@ -207,20 +192,16 @@
       "group_key": "ergonomics"
     },
     {
-      "count": 13,
+      "count": 9,
       "display_name": "general",
       "field_keys": [
         "colors",
         "design",
         "discontinued",
         "editions",
-        "encoder_life_span",
-        "encoder_steps",
-        "encoder_type",
         "lighting",
         "price_range",
         "release_date",
-        "releasing_force",
         "rgb",
         "sku"
       ],

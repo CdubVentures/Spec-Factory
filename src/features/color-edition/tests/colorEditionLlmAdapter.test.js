@@ -129,6 +129,29 @@ describe('buildColorEditionFinderPrompt', () => {
     assert.ok(prompt.length > 0);
   });
 
+  it('injects the shared value-confidence rubric for overall per-item confidence', () => {
+    const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
+    assert.ok(prompt.includes('Overall confidence'), 'rubric heading present');
+    assert.ok(prompt.includes('90+'), 'rubric band 90+ present');
+    assert.ok(prompt.includes('30-49'), 'rubric band 30-49 present');
+    assert.ok(prompt.toLowerCase().includes('not inflate'), 'inflation warning present');
+  });
+
+  it('response contract shows per-color + per-edition value-level confidence field', () => {
+    const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
+    // Item-level confidence sits next to "name" on colors[] items and next to
+    // "display_name" on editions[<slug>] — distinct from the per-source
+    // confidence on each evidence_refs entry.
+    assert.ok(
+      /"name":\s*"atom"[^{]*?"confidence":\s*0-100/.test(prompt),
+      'colors[] item example must show "confidence" adjacent to "name"',
+    );
+    assert.ok(
+      /"display_name":[^{]*?"confidence":\s*0-100/.test(prompt),
+      'editions[<slug>] example must show "confidence" adjacent to "display_name"',
+    );
+  });
+
   it('prompt is compact (under 8000 chars with small palette)', () => {
     const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
     assert.ok(prompt.length < 8000, `prompt is ${prompt.length} chars`);
@@ -221,6 +244,36 @@ describe('buildVariantIdentityCheckPrompt', () => {
   it('contains slug immutability rule', () => {
     const result = buildVariantIdentityCheckPrompt({ product, existingRegistry, newColors: ['black'], newColorNames: {}, newEditions: {} });
     assert.ok(result.toLowerCase().includes('slug'), 'mentions slug protection');
+  });
+
+  it('injects the shared value-confidence rubric for per-mapping confidence', () => {
+    const prompt = buildVariantIdentityCheckPrompt({
+      product: { brand: 'Razer', model: 'Viper V3 Pro' },
+      existingRegistry: [],
+      newColors: ['black'],
+      newColorNames: {},
+      newEditions: {},
+    });
+    assert.ok(prompt.includes('Overall confidence'), 'rubric heading present');
+    assert.ok(prompt.includes('90+'), 'rubric band 90+ present');
+    assert.ok(prompt.toLowerCase().includes('not inflate'), 'inflation warning present');
+  });
+
+  it('response example mappings include value-level confidence field', () => {
+    const prompt = buildVariantIdentityCheckPrompt({
+      product: { brand: 'Razer', model: 'Viper V3 Pro' },
+      existingRegistry: [],
+      newColors: ['black'],
+      newColorNames: {},
+      newEditions: {},
+    });
+    // Mapping-level confidence lives between "verified" and "evidence_refs"
+    // in the example JSON. Must be adjacent to mapping fields (not a nested
+    // per-source confidence inside evidence_refs).
+    assert.ok(
+      /"verified":\s*(true|false)[^[]*?"confidence":\s*\d+/.test(prompt),
+      'identity prompt mapping example must show mapping-level "confidence" (between "verified" and evidence_refs)',
+    );
   });
 
   it('does NOT contain prefer-update bias', () => {

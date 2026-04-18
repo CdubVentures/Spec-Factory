@@ -47,7 +47,7 @@ export interface ColorEditionFinderRunEntry {
   };
 }
 
-/** A single candidate row — one per extraction event (source-centric). */
+/** A single candidate row — one per variant per extraction event (source-centric). */
 export interface CefCandidateEntry {
   readonly candidate_id: number;
   readonly source_id: string;
@@ -58,6 +58,7 @@ export interface CefCandidateEntry {
   readonly status: 'candidate' | 'resolved';
   readonly metadata: Readonly<Record<string, unknown>>;
   readonly submitted_at: string;
+  readonly variant_id: string | null;
 }
 
 /** Published truth from summary table + detail from latest run. */

@@ -282,24 +282,27 @@ test('collectPublishedSources: resolved candidates with no refs → empty output
   assert.deepEqual(mod.collectPublishedSources(cs), []);
 });
 
-// ── collectPublishedSourcesForVariant (colors/editions per-variant path) ─
+// ── collectPublishedSourcesForVariant (per-variant candidate rows) ─
+// WHY: Under the per-variant candidate model, each variant gets its own
+// field_candidates row with metadata.variant_key set. The selector matches
+// candidates to a target variantKey via metadata.variant_key and pulls the
+// candidate's own evidence_refs — no more shared-evidence fallback.
 
-test('collectPublishedSourcesForVariant: uses evidence_by_variant[key] when present', async () => {
+test('collectPublishedSourcesForVariant: returns only the matching variant candidate evidence', async () => {
   const mod = await load();
   const cs = [
     cand({
-      candidate_id: '1',
-      status: 'resolved',
+      candidate_id: '1', status: 'resolved',
       metadata: {
-        evidence_refs: [{ url: 'https://global.com', tier: 'tier1', confidence: 50 }],
-        evidence_by_variant: {
-          'color:black': [
-            { url: 'https://black-specific.com', tier: 'tier1', confidence: 92 },
-          ],
-          'color:white': [
-            { url: 'https://white-specific.com', tier: 'tier2', confidence: 80 },
-          ],
-        },
+        variant_key: 'color:black',
+        evidence_refs: [{ url: 'https://black-specific.com', tier: 'tier1', confidence: 92 }],
+      },
+    }),
+    cand({
+      candidate_id: '2', status: 'resolved',
+      metadata: {
+        variant_key: 'color:white',
+        evidence_refs: [{ url: 'https://white-specific.com', tier: 'tier2', confidence: 80 }],
       },
     }),
   ];
@@ -309,63 +312,52 @@ test('collectPublishedSourcesForVariant: uses evidence_by_variant[key] when pres
   assert.equal(out[0].confidence, 92);
 });
 
-test('collectPublishedSourcesForVariant: falls back to global evidence_refs when variantKey missing', async () => {
+test('collectPublishedSourcesForVariant: returns empty when no candidate matches the variantKey', async () => {
   const mod = await load();
   const cs = [
     cand({
-      candidate_id: '1',
-      status: 'resolved',
+      candidate_id: '1', status: 'resolved',
       metadata: {
-        evidence_refs: [{ url: 'https://global.com', tier: 'tier1', confidence: 70 }],
-        evidence_by_variant: {
-          'color:black': [{ url: 'https://black.com', tier: 'tier1', confidence: 90 }],
-        },
+        variant_key: 'color:black',
+        evidence_refs: [{ url: 'https://black.com', tier: 'tier1', confidence: 90 }],
       },
     }),
   ];
   const out = mod.collectPublishedSourcesForVariant(cs, 'color:white');
-  assert.equal(out.length, 1);
-  assert.equal(out[0].url, 'https://global.com');
+  assert.equal(out.length, 0);
 });
 
-test('collectPublishedSourcesForVariant: falls back to global when evidence_by_variant absent entirely', async () => {
+test('collectPublishedSourcesForVariant: excludes candidates with no variant_key from per-variant queries', async () => {
   const mod = await load();
   const cs = [
     cand({
-      candidate_id: '1',
-      status: 'resolved',
+      candidate_id: '1', status: 'resolved',
       metadata: refsMeta([{ url: 'https://g.com', tier: 'tier1', confidence: 75 }]),
     }),
   ];
+  // No variant_key in metadata → does not contribute to any variant query
   const out = mod.collectPublishedSourcesForVariant(cs, 'color:anything');
-  assert.equal(out.length, 1);
-  assert.equal(out[0].url, 'https://g.com');
+  assert.equal(out.length, 0);
 });
 
-test('collectPublishedSourcesForVariant: aggregates per-variant refs across multiple resolved candidates', async () => {
+test('collectPublishedSourcesForVariant: aggregates across multiple per-variant candidates for the same variant', async () => {
   const mod = await load();
   const cs = [
     cand({
-      candidate_id: 'run1',
-      status: 'resolved',
+      candidate_id: 'run1', status: 'resolved',
       metadata: {
-        evidence_refs: [],
-        evidence_by_variant: {
-          'color:black': [{ url: 'https://a.com', tier: 'tier1', confidence: 60 }],
-        },
+        variant_key: 'color:black',
+        evidence_refs: [{ url: 'https://a.com', tier: 'tier1', confidence: 60 }],
       },
     }),
     cand({
-      candidate_id: 'run2',
-      status: 'resolved',
+      candidate_id: 'run2', status: 'resolved',
       metadata: {
-        evidence_refs: [],
-        evidence_by_variant: {
-          'color:black': [
-            { url: 'https://b.com', tier: 'tier2', confidence: 85 },
-            { url: 'https://a.com', tier: 'tier1', confidence: 90 },
-          ],
-        },
+        variant_key: 'color:black',
+        evidence_refs: [
+          { url: 'https://b.com', tier: 'tier2', confidence: 85 },
+          { url: 'https://a.com', tier: 'tier1', confidence: 90 },
+        ],
       },
     }),
   ];
@@ -378,46 +370,41 @@ test('collectPublishedSourcesForVariant: aggregates per-variant refs across mult
   assert.equal(out[1].confidence, 85);
 });
 
-test('collectPublishedSourcesForVariant: skips non-resolved candidates', async () => {
+test('collectPublishedSourcesForVariant: skips non-resolved candidates even when variant_key matches', async () => {
   const mod = await load();
   const cs = [
     cand({
-      candidate_id: '1',
-      status: 'candidate',
+      candidate_id: '1', status: 'candidate',
       metadata: {
-        evidence_by_variant: {
-          'color:black': [{ url: 'https://a.com', tier: 'tier1', confidence: 99 }],
-        },
+        variant_key: 'color:black',
+        evidence_refs: [{ url: 'https://a.com', tier: 'tier1', confidence: 99 }],
       },
     }),
   ];
   assert.deepEqual(mod.collectPublishedSourcesForVariant(cs, 'color:black'), []);
 });
 
-test('collectPublishedSourcesForVariant: mixes per-variant and global-fallback sources across candidates', async () => {
+test('collectPublishedSourcesForVariant: ignores candidates for other variants', async () => {
   const mod = await load();
   const cs = [
     cand({
-      candidate_id: 'run1',
-      status: 'resolved',
+      candidate_id: 'run1', status: 'resolved',
       metadata: {
-        evidence_refs: [{ url: 'https://global.com', tier: 'tier1', confidence: 70 }],
-        evidence_by_variant: {
-          'color:black': [{ url: 'https://black.com', tier: 'tier1', confidence: 95 }],
-        },
+        variant_key: 'color:black',
+        evidence_refs: [{ url: 'https://black.com', tier: 'tier1', confidence: 95 }],
       },
     }),
     cand({
-      candidate_id: 'run2',
-      status: 'resolved',
-      metadata: refsMeta([{ url: 'https://older.com', tier: 'tier1', confidence: 60 }]),
+      candidate_id: 'run2', status: 'resolved',
+      metadata: {
+        variant_key: 'color:white',
+        evidence_refs: [{ url: 'https://white.com', tier: 'tier1', confidence: 80 }],
+      },
     }),
   ];
   const out = mod.collectPublishedSourcesForVariant(cs, 'color:black');
-  // run1: per-variant black.com (95), run2: no evidence_by_variant, fallback to older.com (60)
-  assert.equal(out.length, 2);
+  assert.equal(out.length, 1);
   assert.equal(out[0].url, 'https://black.com');
-  assert.equal(out[1].url, 'https://older.com');
 });
 
 // ── Threshold filter (per-source confidence gate) ──────────────
@@ -499,20 +486,18 @@ test('collectPublishedSources: dedupe then threshold (max confidence wins, then 
   assert.equal(out[0].confidence, 85);
 });
 
-test('collectPublishedSourcesForVariant: threshold applies to per-variant path too', async () => {
+test('collectPublishedSourcesForVariant: threshold applies to per-variant candidate evidence', async () => {
   const mod = await load();
   const cs = [
     cand({
       candidate_id: '1',
       status: 'resolved',
       metadata: {
-        evidence_refs: [],
-        evidence_by_variant: {
-          'color:black': [
-            { url: 'https://high.com', tier: 'tier1', confidence: 90 },
-            { url: 'https://low.com', tier: 'tier3', confidence: 55 },
-          ],
-        },
+        variant_key: 'color:black',
+        evidence_refs: [
+          { url: 'https://high.com', tier: 'tier1', confidence: 90 },
+          { url: 'https://low.com', tier: 'tier3', confidence: 55 },
+        ],
       },
     }),
   ];
@@ -521,21 +506,20 @@ test('collectPublishedSourcesForVariant: threshold applies to per-variant path t
   assert.equal(out[0].url, 'https://high.com');
 });
 
-test('collectPublishedSourcesForVariant: threshold applies to global-fallback too', async () => {
+test('collectPublishedSourcesForVariant: candidate without variant_key contributes nothing (no global fallback)', async () => {
   const mod = await load();
   const cs = [
     cand({
       candidate_id: '1',
       status: 'resolved',
+      // No variant_key in metadata → excluded from per-variant collection entirely.
       metadata: refsMeta([
         { url: 'https://global-high.com', tier: 'tier1', confidence: 90 },
-        { url: 'https://global-low.com', tier: 'tier3', confidence: 30 },
       ]),
     }),
   ];
   const out = mod.collectPublishedSourcesForVariant(cs, 'color:any', 0.7);
-  assert.equal(out.length, 1);
-  assert.equal(out[0].url, 'https://global-high.com');
+  assert.equal(out.length, 0);
 });
 
 // ── maxSourceConfidence (derived row confidence) ────────────────

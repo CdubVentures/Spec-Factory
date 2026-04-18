@@ -750,7 +750,7 @@ export function EditableComponentSource({
                           key={pidx}
                           className="border sf-border-default dark:sf-border-soft rounded overflow-hidden"
                         >
-                          <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end p-3 pb-2">
+                          <div className="grid grid-cols-[1fr_1fr_auto_auto] gap-2 items-end p-3 pb-2">
                             <div>
                               <div className="text-[10px] sf-text-subtle mb-0.5">
                                 Field Key
@@ -865,6 +865,24 @@ export function EditableComponentSource({
                               </select>
                             </div>
                             <div>
+                              <div className="text-[10px] sf-text-subtle mb-0.5">Component only</div>
+                              <label
+                                className="flex items-center gap-1 py-1.5 cursor-pointer"
+                                title="When checked, this attribute stays scoped to the component DB and won't appear in Key Navigator or the product Review grid."
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={prop.component_only === true}
+                                  onChange={(e) =>
+                                    updatePropertyField(pidx, {
+                                      component_only: e.target.checked,
+                                    })
+                                  }
+                                />
+                                <span className="text-[10px] sf-text-subtle">scoped</span>
+                              </label>
+                            </div>
+                            <div>
                               <button
                                 onClick={() => removePropertyRow(pidx)}
                                 className="text-xs sf-danger-text-soft sf-status-danger-hover py-1.5 px-2"
@@ -874,6 +892,13 @@ export function EditableComponentSource({
                               </button>
                             </div>
                           </div>
+                          {prop.component_only === true ? (
+                            <div className="px-3 pb-2">
+                              <span className="text-[10px] sf-text-subtle">
+                                Attribute of the component itself; not promoted to product fields.
+                              </span>
+                            </div>
+                          ) : null}
 
                           {/* Variance lock reason + enriched type metadata */}
                           {varianceLocked && inherited ? (

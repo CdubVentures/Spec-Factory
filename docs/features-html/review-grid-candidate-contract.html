@@ -38,6 +38,24 @@
 
 <p class="muted">The single shape contract for everything that feeds the review grid. Any finder module that emits candidates — CEF (colors, editions), future Release Date Finder, SKU Finder, Discontinued Finder, Price Finder, Affiliate Links Finder — produces rows that conform to this contract. Anchors the shape before the next wave of <code>variantFieldProducer</code> modules ships.</p>
 
+<div class="callout">
+  <strong>Date/Time Display &mdash; always route through the central time module.</strong>
+  Every date and time rendered in this feature must flow through <code>tools/gui-react/src/utils/dateTime.ts</code>. User picks timezone (default <strong>PST</strong>) and date format (default <strong>MM-DD-YY</strong>) in the top-right Appearance panel; every panel honors those settings. Storage stays UTC &mdash; only the display layer converts.
+  <table>
+    <thead><tr><th>Context</th><th>Use</th></tr></thead>
+    <tbody>
+      <tr><td>Reactive page component (single call site)</td><td><code>useFormatDate()</code> / <code>useFormatTime()</code> / <code>useFormatDateTime()</code></td></tr>
+      <tr><td>Hot or shared component (table cells, tooltips, run rows)</td><td><code>pullFormatDate</code> / <code>pullFormatTime</code> / <code>pullFormatDateTime</code></td></tr>
+      <tr><td>Field-cell value carrying a date (e.g. <code>release_date</code>)</td><td><code>formatCellValue</code> from <code>utils/fieldNormalize.ts</code> (or <code>maybeFormatDateValue</code> when the value is known to be a date)</td></tr>
+      <tr><td>Elapsed / relative timer (compares against <code>Date.now()</code>)</td><td><code>parseBackendMs(iso)</code> then guard with <code>Number.isFinite</code></td></tr>
+      <tr><td>Column header showing the active zone label</td><td><code>useTimezoneLabel()</code></td></tr>
+      <tr><td>Non-React context (sort / filter / comparator)</td><td>Pure <code>formatDate</code> / <code>formatTime</code> / <code>formatDateTime</code> with explicit args</td></tr>
+    </tbody>
+  </table>
+  <p><strong>Never:</strong> <code>toLocaleDateString</code> / <code>toLocaleTimeString</code> / <code>toLocaleString</code> on dates; <code>new Date(iso).getTime()</code> or <code>Date.parse(iso)</code> when comparing to <code>Date.now()</code> (SQLite emits TZ-less UTC &mdash; must use <code>parseBackendMs</code>); hardcoded <code>America/Los_Angeles</code> or <code>timeZone:</code> literals; 24-hour clocks (<code>hour12:false</code>, <code>useFormatTime(false)</code>, <code>useFormatDateTime(false)</code>); <code>.split('T')[0]</code> / <code>.slice(0, 10)</code> to strip to YMD; one-off formatter helpers colocated with components.</p>
+  <p><strong>Adding a new timezone or date format option:</strong> extend <code>SF_TIMEZONE_OPTIONS</code> / <code>SF_DATE_FORMAT_OPTIONS</code> in <code>tools/gui-react/src/stores/uiStore.ts</code> and the <code>switch</code> in <code>formatDate</code> + <code>formatDateYMD</code>. One-file-rule &mdash; no other changes needed.</p>
+</div>
+
 <h2>1. The two surfaces</h2>
 
 <p>There are two shapes to understand, on opposite ends of the pipeline:</p>

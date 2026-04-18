@@ -206,30 +206,11 @@ export function collectPublishedSources(
 }
 
 // ── Per-variant source collection (colors / editions) ──────────
-// WHY: CEF's identity-check prompt (Run 2+) emits per-mapping evidence_refs
-// keyed by variant_key (e.g. "color:black", "edition:cod-bo6"). The finder
-// lifts these into metadata.evidence_by_variant on the single colors/editions
-// candidate. For a given variant_key, prefer the per-variant refs; if absent
-// (Run 1, or this variant unchanged in the latest identity check), fall back
-// to the candidate's global evidence_refs so the row still shows the
-// discovery-level sources that backed the run.
-
-function normalizeEvidenceRefArray(raw: unknown): EvidenceSource[] {
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .map((s): EvidenceSource | null => {
-      if (!s || typeof s !== 'object') return null;
-      const rec = s as Record<string, unknown>;
-      const url = typeof rec.url === 'string' ? rec.url : '';
-      if (!url) return null;
-      return {
-        url,
-        tier: normalizeTier(rec.tier),
-        confidence: normalizeConfidence(rec.confidence),
-      };
-    })
-    .filter((s): s is EvidenceSource => s !== null);
-}
+// WHY: Variant-scoped finders (CEF, RDF, and other variantFieldProducers) submit
+// one field_candidates row per variant. Each row has its own variant_id and
+// metadata.variant_key, with evidence_refs scoped to that variant. To collect
+// a single variant's sources, match candidates where metadata.variant_key ===
+// variantKey and pull their evidence_refs directly.
 
 function sourcesForVariantFromCandidate(
   candidate: CandidateLike,
@@ -238,14 +219,8 @@ function sourcesForVariantFromCandidate(
   const meta = candidate.metadata && typeof candidate.metadata === 'object'
     ? (candidate.metadata as Record<string, unknown>)
     : null;
-  const byVariant = meta?.evidence_by_variant;
-  if (byVariant && typeof byVariant === 'object' && !Array.isArray(byVariant)) {
-    const entry = (byVariant as Record<string, unknown>)[variantKey];
-    if (Array.isArray(entry)) {
-      const refs = normalizeEvidenceRefArray(entry);
-      if (refs.length > 0) return refs;
-    }
-  }
+  const candVariantKey = typeof meta?.variant_key === 'string' ? (meta.variant_key as string) : null;
+  if (candVariantKey !== variantKey) return [];
   return resolveEvidenceSources(candidate);
 }
 

@@ -13,6 +13,7 @@
 import { zodToLlmSchema } from '../../core/llm/zodToLlmSchema.js';
 import { resolvePromptTemplate } from '../../core/llm/resolvePromptTemplate.js';
 import { buildEvidencePromptBlock } from '../../core/finder/evidencePromptFragment.js';
+import { buildValueConfidencePromptBlock } from '../../core/finder/valueConfidencePromptFragment.js';
 import { buildPreviousDiscoveryBlock } from '../../core/finder/discoveryLog.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
 import { colorEditionFinderResponseSchema, variantIdentityCheckResponseSchema } from './colorEditionSchema.js';
@@ -101,9 +102,9 @@ Color output rules:
 - Lowercase, modifier-first ("light-blue" not "blue-light"), normalize "grey" to "gray"
 - Multi-color shells: atoms joined by "+" in dominant order ("black+red")
 - Standard colorways should almost always be a SINGLE atom matching how retailers list the product. Reserve "+" for when the product is genuinely marketed as a named multi-color variant (e.g. "Frost White" = "white+silver"). Minor accents (trim, scroll wheels, logos, RGB lighting) do not warrant "+". Use color_names for the full marketing name instead (e.g. "black": "Translucent Black and Silver"). Editions typically ARE multi-color — a Cyberpunk edition with a black body, red accents, and yellow highlights = "black+red+yellow" is correct.
-- colors[0] must be the default color shown on the official product page
+- colors[0].name must be the default color shown on the official product page
 - Map marketing names in color_names (e.g. "light-blue": "Glacier Blue"). REQUIRED when the atom is not an exact match for the manufacturer's color name. If the manufacturer calls it "Navy Sky Blue" and you normalize to "light-blue", you MUST record "light-blue": "Navy Sky Blue". Only omit the color_names entry when the atom IS the exact name (e.g. "black" = "Black").
-- UNIQUE ENTRIES REQUIRED: Every colorway must have a unique entry in the colors array. Single-color products use a single atom ("black"). Multi-color products use atoms joined by "+" in dominant order ("dark-gray+black+orange"). No duplicates.
+- UNIQUE ENTRIES REQUIRED: Every colorway must have a unique entry (by name) in the colors array. Single-color products use a single atom ("black"). Multi-color products use atoms joined by "+" in dominant order ("dark-gray+black+orange"). No duplicate names.
 - COMPLETE LIST: The colors array must contain EVERY colorway — standard single colors, standard multi-color combos, AND edition combos. One entry per SKU/colorway.
 
 Edition output rules:
@@ -112,19 +113,27 @@ Edition output rules:
 - display_name is the EDITION NAME ONLY — the collaboration/franchise/limited descriptor. Do NOT include the brand, base model, or model-line marketing copy. Strip any "{{BRAND}} {{MODEL}} –" style prefix (or equivalent suffix) so only the edition descriptor remains. Good: "Call of Duty: Black Ops 6 Edition", "Cyberpunk 2077: Arasaka Edition", "DOOM: The Dark Ages Edition", "Witcher 3: Wild Hunt 10th Anniversary Edition". Bad: "M75 WIRELESS Lightweight RGB Gaming Mouse – CALL OF DUTY® BLACK OPS 6 EDITION", "DOOM™: The Dark Ages: M75 WIRELESS".
 - Each edition also needs a colors array with a SINGLE combo entry
 - The combo entry joins all visible shell/body colors with "+" in dominant order (most dominant first). Example: a dark gray body with black accents and orange highlights = ["dark-gray+black+orange"]. A black and red edition = ["black+red"]. Use the same registered atoms.
-- The edition's combo entry MUST also appear in the master colors array
+- The edition's combo entry MUST also appear in the master colors array (as a colors[] entry with that combo as its name)
 - Plain color variants, bundles, refurbs, and aftermarket skins are NOT editions
 
 {{EVIDENCE_REQUIREMENTS}}
 
+Per-item evidence rules:
+- Attach evidence_refs to EACH colors[] entry and to EACH editions[<slug>] entry.
+- Each item's evidence_refs must be the sources that specifically support THAT color or THAT edition.
+- The SAME source URL may appear on multiple items if it genuinely covers all of them (e.g. an official product page listing every colorway). Do NOT fabricate distinct sources per item when one source truly covers them all.
+- If you cannot find any source for an item, omit the item entirely rather than invent evidence.
+
+{{VALUE_CONFIDENCE_GUIDANCE}}
+Rate the per-item "confidence" on each colors[] entry and each editions[<slug>] entry against its own cited evidence — a color you cross-confirmed on two tier1 pages may be 95 while a single-source color may be 70 in the same response.
+
 {{PREVIOUS_DISCOVERY}}Return JSON with these exact keys and shapes:
-- "colors": ["atom", ...] (first = default)
-- "default_color": "atom" (must equal colors[0])
+- "colors": [{ "name": "atom", "confidence": 0-100, "evidence_refs": [{ "url": "...", "tier": "tier1|tier2|tier3|tier4|tier5|other", "confidence": 0-100 }, ...] }, ...] (first entry = default)
+- "default_color": "atom" (must equal colors[0].name)
 - "color_names": { "atom": "Marketing Name", ... } (omit when atom IS the name)
-- "editions": { "slug": { "display_name": "Edition Name Only (e.g. 'Cyberpunk 2077: Arasaka Edition' — NOT '<brand> <model> – Cyberpunk 2077: Arasaka Edition')", "colors": ["atom+atom+atom"] }, ... } or {} if none found (colors is a single combo entry)
+- "editions": { "slug": { "display_name": "Edition Name Only (e.g. 'Cyberpunk 2077: Arasaka Edition' — NOT '<brand> <model> – Cyberpunk 2077: Arasaka Edition')", "confidence": 0-100, "colors": ["atom+atom+atom"], "evidence_refs": [{ "url": "...", "tier": "...", "confidence": 0-100 }, ...] }, ... } or {} if none found (colors is a single combo entry)
 - "siblings_excluded": ["Model Name", ...]
-- "discovery_log": { "confirmed_from_known": [], "added_new": [], "rejected_from_known": [], "urls_checked": [], "queries_run": [] }
-- "evidence_refs": [{ "url": "...", "tier": "tier1|tier2|tier3|tier4|tier5|other", "confidence": 0-100 }, ...]`;
+- "discovery_log": { "confirmed_from_known": [], "added_new": [], "rejected_from_known": [], "urls_checked": [], "queries_run": [] }`;
 
 export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], product = {}, previousRuns = [], previousDiscovery = { urlsChecked: [], queriesRun: [] }, familyModelCount = 1, ambiguityLevel = 'easy', siblingModels = [], templateOverride = '', minEvidenceRefs = 1 }) {
   const brand = product.brand || '';
@@ -169,6 +178,7 @@ export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], pr
     IDENTITY_WARNING: identityWarning,
     PALETTE: palette,
     EVIDENCE_REQUIREMENTS: buildEvidencePromptBlock({ minEvidenceRefs }),
+    VALUE_CONFIDENCE_GUIDANCE: buildValueConfidencePromptBlock(),
     PREVIOUS_DISCOVERY: discoverySection,
   });
 }
@@ -321,15 +331,20 @@ ${buildEvidencePromptBlock({ minEvidenceRefs })}
 
 Attach evidence_refs to each mapping (for match, new, and reject actions alike — cite what you checked).
 
+─── CONFIDENCE ───
+
+${buildValueConfidencePromptBlock()}
+Rate the per-mapping "confidence" against the evidence you cited for that specific mapping. A match confirmed by two tier1 sources may be 95; a reject based on absence-of-evidence may be 80 (you are confident it's bogus). Keep each mapping's confidence scoped to that mapping.
+
 ─── RESPONSE FORMAT ───
 
 Respond with JSON:
 {
   "mappings": [
-    { "new_key": "color:black", "match": "v_existing_id", "action": "match", "reason": "confirmed on ${brand.toLowerCase() || 'manufacturer'}.com — same color", "verified": true, "evidence_refs": [{"url": "https://${brand.toLowerCase() || 'manufacturer'}.com/product", "tier": "tier1", "confidence": 95}] },
-    { "new_key": "color:deep-ocean-blue", "match": "v_rename_target", "action": "match", "reason": "renamed from ocean-blue, official name per manufacturer", "verified": true, "preferred_label": "Deep Ocean Blue", "evidence_refs": [{"url": "https://${brand.toLowerCase() || 'manufacturer'}.com/product", "tier": "tier1", "confidence": 95}] },
-    { "new_key": "color:crimson-red", "match": null, "action": "new", "reason": "confirmed on ${brand.toLowerCase() || 'manufacturer'}.com and bestbuy.com", "verified": true, "evidence_refs": [{"url": "https://${brand.toLowerCase() || 'manufacturer'}.com/crimson", "tier": "tier1", "confidence": 90}, {"url": "https://bestbuy.com/listing", "tier": "tier3", "confidence": 70}] },
-    { "new_key": "color:rainbow-sparkle", "match": null, "action": "reject", "reason": "not found on official site or any retailer — likely hallucinated", "verified": true, "evidence_refs": [] }
+    { "new_key": "color:black", "match": "v_existing_id", "action": "match", "reason": "confirmed on ${brand.toLowerCase() || 'manufacturer'}.com — same color", "verified": true, "confidence": 95, "evidence_refs": [{"url": "https://${brand.toLowerCase() || 'manufacturer'}.com/product", "tier": "tier1", "confidence": 95}] },
+    { "new_key": "color:deep-ocean-blue", "match": "v_rename_target", "action": "match", "reason": "renamed from ocean-blue, official name per manufacturer", "verified": true, "preferred_label": "Deep Ocean Blue", "confidence": 92, "evidence_refs": [{"url": "https://${brand.toLowerCase() || 'manufacturer'}.com/product", "tier": "tier1", "confidence": 95}] },
+    { "new_key": "color:crimson-red", "match": null, "action": "new", "reason": "confirmed on ${brand.toLowerCase() || 'manufacturer'}.com and bestbuy.com", "verified": true, "confidence": 85, "evidence_refs": [{"url": "https://${brand.toLowerCase() || 'manufacturer'}.com/crimson", "tier": "tier1", "confidence": 90}, {"url": "https://bestbuy.com/listing", "tier": "tier3", "confidence": 70}] },
+    { "new_key": "color:rainbow-sparkle", "match": null, "action": "reject", "reason": "not found on official site or any retailer — likely hallucinated", "verified": true, "confidence": 80, "evidence_refs": [] }
   ],
   "remove": [],
   "orphan_remaps": []

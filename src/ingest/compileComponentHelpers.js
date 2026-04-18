@@ -193,6 +193,14 @@ export function declaredComponentPropertyKeysFromMap(map = {}) {
       if (!isObject(prop)) {
         continue;
       }
+      // WHY: component_only properties stay scoped to the component DB. They
+      // must NOT enter componentPropertyKeySet — that's the gate that lets
+      // properties promote into product-level field_rules + ui_field_catalog.
+      // EG-locked keys (colors/editions/release_date) override this — they are
+      // variant generators that must always be product fields regardless.
+      if (prop.component_only === true && !EG_LOCKED_KEYS.has(normalizeFieldKey(prop.field_key || prop.key || prop.property_key || ''))) {
+        continue;
+      }
       const key = normalizeFieldKey(prop.field_key || prop.key || prop.property_key || '');
       if (key) {
         out.add(key);
@@ -201,6 +209,10 @@ export function declaredComponentPropertyKeysFromMap(map = {}) {
   }
   return out;
 }
+
+// WHY: Variant-generator keys must always promote to product fields even if
+// authors mistakenly mark them component_only. Source: src/features/studio/contracts/egPresets.js:EG_LOCKED_KEYS.
+const EG_LOCKED_KEYS = new Set(['colors', 'editions', 'release_date']);
 
 export function inferComponentTypeForField(fieldKey = '', componentTypes = new Set()) {
   const keyToken = normalizeFieldKey(fieldKey);

@@ -1,0 +1,67 @@
+{
+  "images": [
+    {
+      "view": "top",
+      "url": "https://assets.corsair.com/image/upload/f_auto%2Cq_auto/v1735855631/products/Gaming-Mice/base-m75-wireless-apple-config/gallery/glacial-blue/M75_GLACIAL_BLUE_11.png",
+      "source_page": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na",
+      "alt_text": "Corsair M75 WIRELESS Lightweight RGB Gaming Mouse – Glacier Blue, top view",
+      "evidence_refs": [
+        {
+          "url": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na",
+          "tier": "tier1"
+        },
+        {
+          "url": "https://www.corsair.com/ww/en/p/gaming-mouse/ch-931d01g-ww/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ww-ch-931d01g-ww",
+          "tier": "tier1"
+        }
+      ]
+    },
+    {
+      "view": "angle",
+      "url": "https://assets.corsair.com/image/upload/c_pad%2Cq_85%2Ch_1100%2Cw_1100%2Cf_auto/products/Gaming-Mice/base-m75-wireless-apple-config/gallery/glacial-blue/M75_GLACIAL_BLUE_01.webp",
+      "source_page": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na",
+      "alt_text": "Corsair M75 WIRELESS Lightweight RGB Gaming Mouse – Glacier Blue, rear/top three-quarter angle",
+      "evidence_refs": [
+        {
+          "url": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na",
+          "tier": "tier1"
+        },
+        {
+          "url": "https://www.bhphotovideo.com/c/product/1915333-REG/corsair_ch_931d01g_na_m75_wireless_gaming_mouse.html",
+          "tier": "tier3"
+        }
+      ]
+    }
+  ],
+  "discovery_log": {
+    "urls_checked": [
+      "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na",
+      "https://www.corsair.com/ww/en/p/gaming-mouse/ch-931d01g-ww/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ww-ch-931d01g-ww",
+      "https://retail.corsair.com/products/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na",
+      "https://www.bhphotovideo.com/c/product/1915333-REG/corsair_ch_931d01g_na_m75_wireless_gaming_mouse.html",
+      "https://ir.corsair.com/news-releases/news-release-details/corsair-unveils-exclusive-award-winning-k65-plus-wireless/",
+      "https://www.businesswire.com/news/home/20241118475901/en/CORSAIR-Unveils-Exclusive-Award-Winning-K65-PLUS-WIRELESS-Keyboard-and-M75-WIRELESS-Gaming-Mouse-Colorways-for-Mac",
+      "https://www.apple.com/shop/product/hryt2zm/a/corsair-m75-wireless-lightweight-rgb-gaming-mouse",
+      "https://www.apple.com/shop/product/HRYU2ZM/A/corsair-m75-wireless-lightweight-rgb-gaming-mouse",
+      "https://pr.cor.sr/K65_M75_ForMac",
+      "https://assets.corsair.com/image/upload/c_pad%2Cq_85%2Ch_1100%2Cw_1100%2Cf_auto/products/Gaming-Mice/base-m75-wireless-apple-config/gallery/glacial-blue/M75_GLACIAL_BLUE_01.webp",
+      "https://assets.corsair.com/image/upload/f_auto%2Cq_auto/v1735855631/products/Gaming-Mice/base-m75-wireless-apple-config/gallery/glacial-blue/M75_GLACIAL_BLUE_11.png"
+    ],
+    "queries_run": [
+      "site:assets.corsair.com/image/upload \"M75_GLACIAL_BLUE\" Corsair",
+      "site:assets.corsair.com/image/upload/products/Gaming-Mice/base-m75-wireless-apple-config/gallery/glacial-blue/ \"M75_GLACIAL_BLUE_\"",
+      "site:bhphotovideo.com \"M75 WIRELESS\" \"Glacier Blue\" \"CH-931D01G-NA\"",
+      "site:apple.com/shop/product/HRYU2ZM/A Corsair M75 Wireless Glacier Blue",
+      "\"pr.cor.sr/K65_M75_ForMac\"",
+      "site:accelerated-cf-usca.mediavalet.com K65_M75_ForMac",
+      "site:store.storeimages.cdn-apple.com \"Corsair M75 Wireless Lightweight RGB Gaming Mouse\" Glacier Blue",
+      "\"M75_GLACIAL_BLUE_12.png\"",
+      "\"M75_GLACIAL_BLUE_02\" Corsair"
+    ],
+    "notes": [
+      "Only two clean, exact-match Glacier Blue product shots were verified: one angled studio render and one overhead top view. Both came from Corsair's official product assets.",
+      "Other checked media were excluded because they were lifestyle/desk compositions, UI/feature graphics, or white-variant imagery rather than isolated Glacier Blue product shots.",
+      "I did not find a verified clean bottom-view Glacier Blue image, so it is omitted."
+    ]
+  }
+}

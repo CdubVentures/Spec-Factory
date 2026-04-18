@@ -25,15 +25,21 @@ export interface Operation {
   readonly variantKey?: string;
   readonly variantId?: string;
   readonly progressText?: string;
+  // WHY: Two shapes flow into this slot from different finders.
+  //   PIF (carousel) — rich per-view + hero fields (views, hero, mode, focusView, ...).
+  //   RDF + anything using core/finder/variantFieldLoop — simple {attempt, budget, satisfied, loopId}.
+  // Only `variantLabel` is shared. All other fields are optional at the type level;
+  // use `isCarouselLoopProgress` to narrow before reading carousel-specific fields.
   readonly loopProgress?: {
     readonly variantLabel: string;
-    readonly variantIndex: number;
-    readonly variantTotal: number;
-    readonly callNumber: number;
-    readonly estimatedRemaining: number;
-    readonly mode: string;
-    readonly focusView: string | null;
-    readonly views: ReadonlyArray<{
+    // Carousel shape (PIF):
+    readonly variantIndex?: number;
+    readonly variantTotal?: number;
+    readonly callNumber?: number;
+    readonly estimatedRemaining?: number;
+    readonly mode?: string;
+    readonly focusView?: string | null;
+    readonly views?: ReadonlyArray<{
       readonly view: string;
       readonly count: number;
       readonly target: number;
@@ -42,7 +48,7 @@ export interface Operation {
       readonly attempts: number;
       readonly attemptBudget: number;
     }>;
-    readonly hero: {
+    readonly hero?: {
       readonly count: number;
       readonly target: number;
       readonly satisfied: boolean;
@@ -50,6 +56,12 @@ export interface Operation {
       readonly attempts: number;
       readonly attemptBudget: number;
     } | null;
+    // Simple-loop shape (RDF / variantFieldLoop):
+    readonly variantKey?: string;
+    readonly attempt?: number;
+    readonly budget?: number;
+    readonly satisfied?: boolean;
+    readonly loopId?: string;
   } | null;
   /** Set on optimistic insert (202 returned, server hasn't started yet). Cleared on first real WS update. */
   readonly queuedAt?: string;
@@ -173,3 +185,15 @@ export const useOperationsStore = create<OperationsState>((set) => ({
       return { operations: next };
     }),
 }));
+
+// WHY: Narrow `loopProgress` to the carousel shape (PIF). Consumers that read
+// carousel-specific fields (views, hero, mode, ...) must gate on this first —
+// otherwise they can crash on RDF/variantFieldLoop emissions that share the
+// `loopProgress` slot with a different shape.
+export function isCarouselLoopProgress(
+  lp: Operation['loopProgress'],
+): lp is NonNullable<Operation['loopProgress']> & {
+  readonly views: NonNullable<NonNullable<Operation['loopProgress']>['views']>;
+} {
+  return !!lp && Array.isArray(lp.views);
+}

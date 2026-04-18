@@ -2057,37 +2057,6 @@
       "unit": ""
     },
     {
-      "aliases": [
-        "Encoder Life Span",
-        "encoder_life_span"
-      ],
-      "array_handling": "none",
-      "availability": "sometimes",
-      "canonical_key": "encoder_life_span",
-      "difficulty": "easy",
-      "display_decimals": 0,
-      "display_mode": "all",
-      "effort": 3,
-      "examples": [],
-      "group": "general",
-      "guidance_md": null,
-      "key": "encoder_life_span",
-      "label": "Encoder Life Span",
-      "order": 76,
-      "placeholder": "",
-      "prefix": null,
-      "required_level": "expected",
-      "shape": "scalar",
-      "short_label": null,
-      "suffix": null,
-      "surfaces": {},
-      "tooltip_key": null,
-      "tooltip_md": "",
-      "tooltip_source": null,
-      "type": "number",
-      "unit": ""
-    },
-    {
       "aliases": [],
       "array_handling": "none",
       "availability": "expected",
@@ -2113,37 +2082,6 @@
       "tooltip_md": "Count of side buttons (excluding main clicks and wheel).",
       "tooltip_source": "hbs_tooltipsMouse.js",
       "type": "integer",
-      "unit": ""
-    },
-    {
-      "aliases": [
-        "Encoder Steps",
-        "encoder_steps"
-      ],
-      "array_handling": "none",
-      "availability": "sometimes",
-      "canonical_key": "encoder_steps",
-      "difficulty": "easy",
-      "display_decimals": 0,
-      "display_mode": "all",
-      "effort": 3,
-      "examples": [],
-      "group": "general",
-      "guidance_md": null,
-      "key": "encoder_steps",
-      "label": "Encoder Steps",
-      "order": 77,
-      "placeholder": "",
-      "prefix": null,
-      "required_level": "expected",
-      "shape": "scalar",
-      "short_label": null,
-      "suffix": null,
-      "surfaces": {},
-      "tooltip_key": null,
-      "tooltip_md": "",
-      "tooltip_source": null,
-      "type": "number",
       "unit": ""
     },
     {
@@ -2175,37 +2113,6 @@
       "unit": ""
     },
     {
-      "aliases": [
-        "Encoder Type",
-        "encoder_type"
-      ],
-      "array_handling": "none",
-      "availability": "sometimes",
-      "canonical_key": "encoder_type",
-      "difficulty": "easy",
-      "display_decimals": 0,
-      "display_mode": "all",
-      "effort": 3,
-      "examples": [],
-      "group": "general",
-      "guidance_md": null,
-      "key": "encoder_type",
-      "label": "Encoder Type",
-      "order": 78,
-      "placeholder": "",
-      "prefix": null,
-      "required_level": "expected",
-      "shape": "scalar",
-      "short_label": null,
-      "suffix": null,
-      "surfaces": {},
-      "tooltip_key": null,
-      "tooltip_md": "",
-      "tooltip_source": null,
-      "type": "string",
-      "unit": ""
-    },
-    {
       "aliases": [],
       "array_handling": "none",
       "availability": "expected",
@@ -2232,37 +2139,6 @@
       "tooltip_source": "hbs_tooltipsMouse.js",
       "type": "integer",
       "unit": ""
-    },
-    {
-      "aliases": [
-        "Releasing Force",
-        "releasing_force"
-      ],
-      "array_handling": "none",
-      "availability": "sometimes",
-      "canonical_key": "releasing_force",
-      "difficulty": "easy",
-      "display_decimals": 0,
-      "display_mode": "all",
-      "effort": 3,
-      "examples": [],
-      "group": "general",
-      "guidance_md": null,
-      "key": "releasing_force",
-      "label": "Releasing Force",
-      "order": 79,
-      "placeholder": "",
-      "prefix": null,
-      "required_level": "expected",
-      "shape": "scalar",
-      "short_label": null,
-      "suffix": null,
-      "surfaces": {},
-      "tooltip_key": null,
-      "tooltip_md": "",
-      "tooltip_source": null,
-      "type": "number",
-      "unit": "g"
     },
     {
       "aliases": [],
@@ -2318,37 +2194,6 @@
       "tooltip_md": "Define 'Adjustable Scroll Wheel' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
       "tooltip_source": "hbs_tooltipsMouse.js",
       "type": "boolean",
-      "unit": ""
-    },
-    {
-      "aliases": [
-        "Switch Life Span",
-        "switch_life_span"
-      ],
-      "array_handling": "none",
-      "availability": "sometimes",
-      "canonical_key": "switch_life_span",
-      "difficulty": "easy",
-      "display_decimals": 0,
-      "display_mode": "all",
-      "effort": 3,
-      "examples": [],
-      "group": "controls",
-      "guidance_md": null,
-      "key": "switch_life_span",
-      "label": "Switch Life Span",
-      "order": 80,
-      "placeholder": "",
-      "prefix": null,
-      "required_level": "expected",
-      "shape": "scalar",
-      "short_label": null,
-      "suffix": null,
-      "surfaces": {},
-      "tooltip_key": null,
-      "tooltip_md": "",
-      "tooltip_source": null,
-      "type": "string",
       "unit": ""
     },
     {
@@ -2468,6 +2313,6 @@
       "unit": ""
     }
   ],
-  "generated_at": "2026-04-17T21:32:33.888Z",
+  "generated_at": "2026-04-18T20:42:09.593Z",
   "version": 1
 }

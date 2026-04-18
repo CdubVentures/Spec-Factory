@@ -1,6 +1,6 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { useOperationsStore } from '../operationsStore.ts';
+import { useOperationsStore, isCarouselLoopProgress } from '../operationsStore.ts';
 import type { Operation } from '../operationsStore.ts';
 
 /* ── Factory ────────────────────────────────────────────────────── */
@@ -313,5 +313,70 @@ describe('operationsStore (streamTexts isolation)', () => {
       useOperationsStore.getState().clear();
       assert.equal(getStreamTexts().size, 0);
     });
+  });
+});
+
+/* ── isCarouselLoopProgress predicate ───────────────────────────── */
+
+describe('isCarouselLoopProgress', () => {
+  it('returns false for null', () => {
+    assert.equal(isCarouselLoopProgress(null), false);
+  });
+
+  it('returns false for undefined', () => {
+    assert.equal(isCarouselLoopProgress(undefined), false);
+  });
+
+  it('returns false for RDF simple-loop shape (no views)', () => {
+    // Shape emitted by src/core/finder/variantFieldLoop.js
+    const rdfShape = {
+      variantLabel: 'black',
+      variantKey: 'color:black',
+      attempt: 1,
+      budget: 3,
+      satisfied: true,
+      loopId: 'loop-abc',
+    } as unknown as Operation['loopProgress'];
+    assert.equal(isCarouselLoopProgress(rdfShape), false);
+  });
+
+  it('returns false when views is explicitly not an array', () => {
+    const badShape = {
+      variantLabel: 'x',
+      views: 'not an array',
+    } as unknown as Operation['loopProgress'];
+    assert.equal(isCarouselLoopProgress(badShape), false);
+  });
+
+  it('returns true for PIF carousel shape (views is array, even empty)', () => {
+    const pifShape: Operation['loopProgress'] = {
+      variantLabel: 'Launch Edition',
+      variantIndex: 0,
+      variantTotal: 1,
+      callNumber: 1,
+      estimatedRemaining: 10,
+      mode: 'view',
+      focusView: 'top',
+      views: [],
+      hero: null,
+    };
+    assert.equal(isCarouselLoopProgress(pifShape), true);
+  });
+
+  it('returns true for PIF carousel shape with populated views', () => {
+    const pifShape: Operation['loopProgress'] = {
+      variantLabel: 'black',
+      variantIndex: 0,
+      variantTotal: 1,
+      callNumber: 2,
+      estimatedRemaining: 5,
+      mode: 'hero',
+      focusView: null,
+      views: [
+        { view: 'top', count: 1, target: 3, satisfied: false, exhausted: false, attempts: 1, attemptBudget: 4 },
+      ],
+      hero: { count: 0, target: 3, satisfied: false, exhausted: false, attempts: 0, attemptBudget: 3 },
+    };
+    assert.equal(isCarouselLoopProgress(pifShape), true);
   });
 });

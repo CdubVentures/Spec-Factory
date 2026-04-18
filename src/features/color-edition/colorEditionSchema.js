@@ -1,21 +1,36 @@
 import { z } from 'zod';
 import { evidenceRefsSchema } from '../../core/finder/evidencePromptFragment.js';
+import { valueConfidenceSchema } from '../../core/finder/valueConfidencePromptFragment.js';
 
 /**
- * Zod schema for the Color & Edition Finder LLM response.
+ * Zod schema for the Color & Edition Finder LLM response (per-variant evidence).
  *
- * - colors: flat array of ALL product colors (colors[0] = default)
- * - editions: keyed by slug, each with its own colors subset
- * - default_color: must equal colors[0]
- * - evidence_refs: flat array of {url, tier} — sources backing this run
+ * Shape:
+ * - colors[i] = { name: "<atom>", confidence, evidence_refs: [...] }
+ *   evidence_refs are scoped to THAT color atom; confidence is the LLM's
+ *   overall rating for this value, calibrated against the cited evidence.
+ * - editions[slug] = { display_name, colors: [combo], confidence, evidence_refs: [...] }
+ * - default_color must equal colors[0].name
+ *
+ * A source URL may appear on multiple items if it genuinely covers them all.
  */
-export const colorEditionFinderResponseSchema = z.object({
+const colorItemSchema = z.object({
+  name: z.string(),
+  confidence: valueConfidenceSchema.default(0),
+  evidence_refs: evidenceRefsSchema,
+});
+
+const editionItemSchema = z.object({
+  display_name: z.string().default(''),
   colors: z.array(z.string()),
+  confidence: valueConfidenceSchema.default(0),
+  evidence_refs: evidenceRefsSchema,
+});
+
+export const colorEditionFinderResponseSchema = z.object({
+  colors: z.array(colorItemSchema),
   color_names: z.record(z.string(), z.string()).default({}),
-  editions: z.record(z.string(), z.object({
-    display_name: z.string().default(''),
-    colors: z.array(z.string()),
-  })).default({}),
+  editions: z.record(z.string(), editionItemSchema).default({}),
   default_color: z.string().default(''),
   siblings_excluded: z.array(z.string()).default([]),
   discovery_log: z.object({
@@ -31,7 +46,6 @@ export const colorEditionFinderResponseSchema = z.object({
     urls_checked: [],
     queries_run: [],
   }),
-  evidence_refs: evidenceRefsSchema,
 });
 
 /* ── Variant identity check response schema ───────────────────── */
@@ -51,6 +65,7 @@ const variantMappingSchema = z.object({
   reason: z.string(),
   verified: z.boolean().default(false),
   preferred_label: z.string().optional(),
+  confidence: valueConfidenceSchema.default(0),
   evidence_refs: evidenceRefsSchema,
 });
 

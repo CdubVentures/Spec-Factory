@@ -4,6 +4,36 @@
 > first-class SQL entity that acts as the Single Source of Truth for all
 > variant-dependent features.
 
+## Date/Time Display — Always Route Through The Central Time Module
+
+Every date and time rendered in this feature must flow through
+`tools/gui-react/src/utils/dateTime.ts`. The user picks timezone
+(default **PST**) and date format (default **MM-DD-YY**) in the top-right
+Appearance panel, and every panel must honor those settings. Storage stays
+UTC — only the display layer converts.
+
+| Context | Use |
+| --- | --- |
+| Reactive page component (single call site) | `useFormatDate()` / `useFormatTime()` / `useFormatDateTime()` |
+| Hot or shared component (table cells, tooltips, run rows) | `pullFormatDate` / `pullFormatTime` / `pullFormatDateTime` |
+| Field-cell value carrying a date (e.g. `release_date`) | `formatCellValue` from `utils/fieldNormalize.ts` (or `maybeFormatDateValue` when the value is known to be a date) |
+| Elapsed / relative timer (compares against `Date.now()`) | `parseBackendMs(iso)` then guard with `Number.isFinite` |
+| Column header showing the active zone label | `useTimezoneLabel()` |
+| Non-React context (sort / filter / comparator) | Pure `formatDate` / `formatTime` / `formatDateTime` with explicit args |
+
+**Never:** `toLocaleDateString` / `toLocaleTimeString` / `toLocaleString` on
+dates; `new Date(iso).getTime()` or `Date.parse(iso)` when comparing to
+`Date.now()` (SQLite emits TZ-less UTC — must use `parseBackendMs`);
+hardcoded `America/Los_Angeles` or `timeZone:` literals; 24-hour clocks
+(`hour12: false`, `useFormatTime(false)`, `useFormatDateTime(false)`);
+`.split('T')[0]` / `.slice(0, 10)` to strip to YMD; one-off formatter
+helpers colocated with components.
+
+**Adding a new timezone or date format option:** extend
+`SF_TIMEZONE_OPTIONS` / `SF_DATE_FORMAT_OPTIONS` in
+`tools/gui-react/src/stores/uiStore.ts` and the `switch` in `formatDate` +
+`formatDateYMD`. One-file-rule — no other changes needed.
+
 ## Status
 
 - ✅ **Phase 0** — Run-deletion data-loss fix (custom column preservation)

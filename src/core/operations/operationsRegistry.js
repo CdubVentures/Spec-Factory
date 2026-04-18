@@ -24,11 +24,13 @@ const controllers = new Map();
 /** @type {Function|null} */
 let _broadcastWs = null;
 
-/** @type {Map<string, ReturnType<typeof setTimeout>>} */
-const evictionTimers = new Map();
-
 let _seq = 0;
-const EVICTION_DELAY_MS = 60_000;
+
+// WHY: Cap the registry to bound memory and frontend render cost. When a
+// registration or terminal transition leaves the count above MAX_OPS, the
+// oldest terminal op (done | error | cancelled) is evicted. Running ops are
+// never evicted — concurrency is not capped here.
+const MAX_OPS = 50;
 
 function broadcast(operation, action = 'upsert') {
   if (!_broadcastWs) return;
@@ -43,16 +45,20 @@ function broadcastRemove(id) {
   _broadcastWs('operations', { action: 'remove', id });
 }
 
-function scheduleEviction(id) {
-  if (evictionTimers.has(id)) clearTimeout(evictionTimers.get(id));
-  const timer = setTimeout(() => {
-    ops.delete(id);
-    evictionTimers.delete(id);
-    broadcastRemove(id);
-  }, EVICTION_DELAY_MS);
-  // WHY: unref prevents the timer from keeping the process alive on shutdown
-  if (timer.unref) timer.unref();
-  evictionTimers.set(id, timer);
+function enforceCap() {
+  if (ops.size <= MAX_OPS) return;
+  const terminals = [...ops.values()]
+    .filter(o => o.status !== 'running')
+    .sort((a, b) => {
+      const cmp = a.startedAt.localeCompare(b.startedAt);
+      return cmp !== 0 ? cmp : a._seq - b._seq;
+    });
+  while (ops.size > MAX_OPS && terminals.length > 0) {
+    const victim = terminals.shift();
+    ops.delete(victim.id);
+    controllers.delete(victim.id);
+    broadcastRemove(victim.id);
+  }
 }
 
 /**
@@ -92,6 +98,7 @@ export function registerOperation({ type, subType, category, productId, productL
   ops.set(id, operation);
   controllers.set(id, new AbortController());
   broadcast(operation);
+  enforceCap();
   return { id };
 }
 
@@ -207,7 +214,6 @@ export function updateModelInfo({ id, model, provider, isFallback, accessMode, t
 
 /**
  * Mark operation as completed. Idempotent.
- * No auto-eviction — operations persist until manually dismissed.
  */
 export function completeOperation({ id }) {
   const op = ops.get(id);
@@ -216,11 +222,11 @@ export function completeOperation({ id }) {
   op.endedAt = new Date().toISOString();
   controllers.delete(id);
   broadcast(op);
+  enforceCap();
 }
 
 /**
  * Mark operation as failed with an error message.
- * No auto-eviction — operations persist until manually dismissed.
  */
 export function failOperation({ id, error }) {
   const op = ops.get(id);
@@ -230,6 +236,7 @@ export function failOperation({ id, error }) {
   op.endedAt = new Date().toISOString();
   controllers.delete(id);
   broadcast(op);
+  enforceCap();
 }
 
 /**
@@ -244,6 +251,7 @@ export function cancelOperation({ id }) {
   op.status = 'cancelled';
   op.endedAt = new Date().toISOString();
   broadcast(op);
+  enforceCap();
 }
 
 /**
@@ -263,10 +271,6 @@ export function dismissOperation({ id }) {
   controllers.get(id)?.abort();
   controllers.delete(id);
   ops.delete(id);
-  if (evictionTimers.has(id)) {
-    clearTimeout(evictionTimers.get(id));
-    evictionTimers.delete(id);
-  }
   broadcastRemove(id);
 }
 
@@ -289,6 +293,4 @@ export function _resetForTest() {
   controllers.clear();
   _broadcastWs = null;
   _seq = 0;
-  for (const timer of evictionTimers.values()) clearTimeout(timer);
-  evictionTimers.clear();
 }

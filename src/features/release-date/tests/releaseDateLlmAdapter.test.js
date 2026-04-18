@@ -179,5 +179,36 @@ describe('buildReleaseDateFinderPrompt', () => {
     assert.ok(/you decide|your judgment|in what order/i.test(RDF_DEFAULT_TEMPLATE),
       'must explicitly hand source-ordering to the LLM');
   });
+
+  // ── Precision fallback contract ───────────────────────────────────
+  // WHY: Prefer imprecise data over no data. Teach the LLM to fall through
+  // day → month → year before returning "unk". Confidence stays honest via
+  // the existing per-source max derivation; this just unlocks lower-precision
+  // answers for products that don't expose a day-level signal.
+
+  it('default template teaches a precision fallback ladder (day → month → year)', () => {
+    assert.ok(/precision/i.test(RDF_DEFAULT_TEMPLATE),
+      'must frame the output as a precision ladder, not a single target');
+    assert.ok(/fall through|fall back|fall-through|fallback/i.test(RDF_DEFAULT_TEMPLATE),
+      'must explicitly instruct falling through precision levels');
+  });
+
+  it('default template discourages "unk" when a calendar year can be defended', () => {
+    assert.ok(/defensibly name the calendar year|defend (?:a|the) (?:calendar )?year|before returning ["']?unk["']?/i.test(RDF_DEFAULT_TEMPLATE),
+      'must instruct the LLM to prefer YYYY over "unk" when a year is defensible');
+  });
+
+  it('default template acknowledges older/obscure products may only yield YYYY', () => {
+    assert.ok(/older|obscure|old.*product/i.test(RDF_DEFAULT_TEMPLATE),
+      'must tell the LLM that YYYY is a valid answer for older/obscure products');
+  });
+
+  it('default template allows community/forum/spec-DB sources for year-level corroboration', () => {
+    // The LLM must understand tier4/tier5 are not just cross-reference — for
+    // YYYY precision, they can be standalone evidence when they agree.
+    assert.ok(/year.*(?:tier4|tier5|forum|community|spec[- ]?(?:DB|database))/i.test(RDF_DEFAULT_TEMPLATE)
+      || /(?:tier4|tier5|forum|community|spec[- ]?(?:DB|database)).*year/i.test(RDF_DEFAULT_TEMPLATE),
+      'must allow low-tier sources for YYYY-level corroboration');
+  });
 });
 

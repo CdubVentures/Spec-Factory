@@ -47,9 +47,13 @@ export async function loadCompileContext({
   const providedMap = isObject(fieldStudioMap)
     ? fieldStudioMap
     : (isObject(workbookMap) ? workbookMap : null);
+  // WHY: Capture warnings from normalize so component_only/EG-locked/selected_keys
+  // pruning hints reach the compile report regardless of whether the map is
+  // loaded from disk or passed in directly.
+  const normalizationWarnings = [];
   const controlMap = providedMap
-    ? { map: normalizeFieldStudioMap(providedMap), file_path: mapPath ? path.resolve(mapPath) : null }
-    : await loadFieldStudioMap({ category, config, mapPath });
+    ? { map: normalizeFieldStudioMap(providedMap, { warnings: normalizationWarnings }), file_path: mapPath ? path.resolve(mapPath) : null }
+    : await loadFieldStudioMap({ category, config, mapPath, warnings: normalizationWarnings });
   if (!controlMap?.map) {
     throw new Error('field_studio_map_missing');
   }
@@ -67,11 +71,14 @@ export async function loadCompileContext({
     : false;
   const compileMode = 'field_studio';
 
+  // WHY: controlMap.map was already normalized once (with normalizationWarnings
+  // captured above); reuse it as the validated normalized form. Renormalizing
+  // here would duplicate warnings.
   const mapValidation = {
     valid: true,
     errors: [],
-    warnings: [],
-    normalized: normalizeFieldStudioMap(controlMap.map)
+    warnings: normalizationWarnings,
+    normalized: controlMap.map
   };
   if (resolvedFieldStudioSourcePath && !fieldStudioSourceExists) {
     mapValidation.warnings.push(`field_studio_source_not_found:${resolvedFieldStudioSourcePath}; using app-native compile fallback from saved map + generated artifacts`);
@@ -90,6 +97,8 @@ export async function loadCompileContext({
       },
     };
   }
+  // WHY: Re-normalize the post-validation result is idempotent and safe; do
+  // not pass warnings here to avoid duplicating them in the report.
   const map = normalizeFieldStudioMap(mapValidation.normalized);
   const mapWarnings = [...mapValidation.warnings];
   const mapHash = hashJson(map);

@@ -205,8 +205,18 @@ export function resolvePropertyFieldMeta(propertyKey, fieldRules) {
   if (!propertyKey || propertyKey.startsWith('__')) return null;
   const fields = fieldRules?.rules?.fields ?? fieldRules?.fields ?? {};
   const rule = fields[propertyKey];
-  if (!rule) return null;
+  if (rule) return readMetaFromFieldRule(rule, fieldRules);
 
+  // WHY: component_only properties are intentionally absent from fields[] but
+  // still need metadata for Component Review. Fall back to the property entry
+  // declared on the component source itself.
+  const fallback = findComponentSourceProperty(propertyKey, fieldRules);
+  if (fallback) return readMetaFromComponentSourceProperty(fallback, propertyKey, fieldRules);
+
+  return null;
+}
+
+function readMetaFromFieldRule(rule, fieldRules) {
   const variance_policy = rule.variance_policy ?? null;
   const constraints = Array.isArray(rule.constraints) ? rule.constraints : [];
 
@@ -217,16 +227,44 @@ export function resolvePropertyFieldMeta(propertyKey, fieldRules) {
     const source = String(rule.enum.source || '');
     if (source.startsWith('data_lists.')) {
       const listKey = source.slice('data_lists.'.length);
-      const enums = fieldRules?.knownValues?.enums ?? {};
-      const entry = enums[listKey];
-      if (entry) {
-        const vals = Array.isArray(entry.values) ? entry.values : (Array.isArray(entry) ? entry : []);
-        enum_values = vals
-          .map(v => typeof v === 'object' ? String(v.canonical ?? v.value ?? '') : String(v))
-          .filter(Boolean);
-      }
+      enum_values = readEnumValues(fieldRules, listKey);
     }
   }
-
   return { variance_policy, constraints, enum_values, enum_policy };
+}
+
+function readMetaFromComponentSourceProperty(prop, propertyKey, fieldRules) {
+  const variance_policy = prop.variance_policy ?? null;
+  const constraints = Array.isArray(prop.constraints) ? prop.constraints : [];
+  // WHY: For component_only properties, knownValues.enums[propertyKey] is the
+  // best-effort enum source — populated when authors declared a data_list for
+  // the property. If absent, return null (open enum / unknown).
+  const enum_values = readEnumValues(fieldRules, propertyKey);
+  const enum_policy = enum_values && enum_values.length > 0 ? 'closed' : null;
+  return { variance_policy, constraints, enum_values, enum_policy };
+}
+
+function readEnumValues(fieldRules, listKey) {
+  const enums = fieldRules?.knownValues?.enums ?? {};
+  const entry = enums[listKey];
+  if (!entry) return null;
+  const vals = Array.isArray(entry.values) ? entry.values : (Array.isArray(entry) ? entry : []);
+  const out = vals
+    .map(v => typeof v === 'object' ? String(v.canonical ?? v.value ?? '') : String(v))
+    .filter(Boolean);
+  return out.length > 0 ? out : null;
+}
+
+function findComponentSourceProperty(propertyKey, fieldRules) {
+  const sources = fieldRules?.component_db_sources ?? fieldRules?.rules?.component_db_sources ?? {};
+  if (!sources || typeof sources !== 'object') return null;
+  for (const sourceBlock of Object.values(sources)) {
+    const props = sourceBlock?.roles?.properties;
+    if (!Array.isArray(props)) continue;
+    for (const prop of props) {
+      if (!prop || typeof prop !== 'object') continue;
+      if (prop.field_key === propertyKey || prop.key === propertyKey) return prop;
+    }
+  }
+  return null;
 }

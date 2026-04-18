@@ -1,4 +1,6 @@
 import type { ColorEditionFinderResult, ColorEditionFinderSelected, ColorRegistryEntry, CefCandidateEntry } from '../types.ts';
+import type { EvidenceSource } from '../../review/selectors/publishedSourceSelectors.ts';
+import { normalizeTier, normalizeConfidence } from '../../review/selectors/publishedSourceSelectors.ts';
 
 export interface ColorPill {
   readonly name: string;
@@ -6,7 +8,8 @@ export interface ColorPill {
   readonly hex: string;
   readonly hexParts: readonly string[];
   readonly isDefault: boolean;
-  readonly sourceCount: number;
+  readonly sources: readonly EvidenceSource[];
+  readonly confidenceMax: number | null;
   readonly variantId: string | null;
   readonly isPublished: boolean;
 }
@@ -15,7 +18,8 @@ export interface EditionBlock {
   readonly slug: string;
   readonly displayName: string;
   readonly pairedColors: readonly ColorPill[];
-  readonly sourceCount: number;
+  readonly sources: readonly EvidenceSource[];
+  readonly confidenceMax: number | null;
   readonly variantId: string | null;
   readonly isPublished: boolean;
 }
@@ -107,24 +111,72 @@ function resolveHex(name: string, hexMap: Map<string, string>): string {
   return hexMap.get(firstAtom) || hexMap.get(name) || '';
 }
 
-function toColorPill(name: string, defaultColor: string, hexMap: Map<string, string>, displayName = '', sourceCount = 0, variantId: string | null = null, isPublished = true): ColorPill {
-  return { name, displayName, hex: resolveHex(name, hexMap), hexParts: resolveHexParts(name, hexMap), isDefault: name === defaultColor, sourceCount, variantId, isPublished };
+function toColorPill(
+  name: string,
+  defaultColor: string,
+  hexMap: Map<string, string>,
+  displayName = '',
+  sources: readonly EvidenceSource[] = [],
+  confidenceMax: number | null = null,
+  variantId: string | null = null,
+  isPublished = true,
+): ColorPill {
+  return {
+    name,
+    displayName,
+    hex: resolveHex(name, hexMap),
+    hexParts: resolveHexParts(name, hexMap),
+    isDefault: name === defaultColor,
+    sources,
+    confidenceMax,
+    variantId,
+    isPublished,
+  };
 }
 
 /**
- * Count how many extraction events (source-centric rows) contain a given item.
- * WHY: Source-centric model — each row is one extraction event, so count = matching rows.
+ * Extract this variant's evidence from its candidate row(s).
+ * WHY: Per-variant model — each candidate row has variant_id set and metadata.evidence_refs
+ * scoped to that variant. Union across rows (Run 1 + Run 2 submissions for the same variant),
+ * dedupe by url+tier, keep the max per-source confidence.
  */
-function findItemSourceCount(candidates: readonly CefCandidateEntry[], item: string): number {
-  let total = 0;
+function variantSources(candidates: readonly CefCandidateEntry[], variantId: string | null): EvidenceSource[] {
+  if (!variantId) return [];
+  const byUrl = new Map<string, EvidenceSource>();
   for (const c of candidates) {
-    let items: string[];
-    try { items = typeof c.value === 'string' ? JSON.parse(c.value) : []; }
-    catch { items = []; }
-    if (!Array.isArray(items)) items = [c.value as string];
-    if (items.some(v => String(v) === item)) total += 1;
+    if (c.variant_id !== variantId) continue;
+    const meta = c.metadata as Record<string, unknown> | null | undefined;
+    const refs = meta?.evidence_refs;
+    if (!Array.isArray(refs)) continue;
+    for (const ref of refs) {
+      if (!ref || typeof ref !== 'object') continue;
+      const rec = ref as Record<string, unknown>;
+      const url = typeof rec.url === 'string' ? rec.url : '';
+      if (!url) continue;
+      const key = `${url}|${rec.tier ?? ''}`;
+      const next: EvidenceSource = {
+        url,
+        tier: normalizeTier(rec.tier),
+        confidence: normalizeConfidence(rec.confidence),
+      };
+      const existing = byUrl.get(key);
+      if (!existing) {
+        byUrl.set(key, next);
+      } else if ((next.confidence ?? -1) > (existing.confidence ?? -1)) {
+        byUrl.set(key, next);
+      }
+    }
   }
-  return total;
+  return Array.from(byUrl.values()).sort((a, b) => (b.confidence ?? -1) - (a.confidence ?? -1));
+}
+
+function maxConfidence(sources: readonly EvidenceSource[]): number | null {
+  let best: number | null = null;
+  for (const s of sources) {
+    if (s.confidence == null) continue;
+    if (best == null || s.confidence > best) best = s.confidence;
+  }
+  return best;
 }
 
 export function deriveSelectedStateDisplay(
@@ -192,20 +244,61 @@ export function deriveSelectedStateDisplay(
       }
     }
 
-    const colors = allColorNames.map(name =>
-      toColorPill(name, defaultColor, hexMap, colorNameMap[name] || '', findItemSourceCount(colorCands, name), variantByKey.get(`color:${name}`) ?? null, colorPublished(name))
-    );
+    // Each published color maps to either a color variant (variant_key='color:<atom>')
+    // OR to an edition variant (when the color IS a combo that belongs to an edition —
+    // its variant_key='edition:<slug>'). Look up BOTH to find the right variant_id.
+    const editionVariantByCombo = new Map<string, string>();
+    for (const v of registry) {
+      if (v.variant_type !== 'edition') continue;
+      const combo = (v.color_atoms || []).join('+');
+      if (combo) editionVariantByCombo.set(combo, v.variant_id);
+    }
+    const resolveColorVariantId = (name: string): string | null => {
+      const direct = variantByKey.get(`color:${name}`);
+      if (direct) return direct;
+      const fromEdition = editionVariantByCombo.get(name);
+      return fromEdition ?? null;
+    };
+
+    const colors = allColorNames.map(name => {
+      const vid = resolveColorVariantId(name);
+      const sources = variantSources(colorCands, vid);
+      return toColorPill(
+        name,
+        defaultColor,
+        hexMap,
+        colorNameMap[name] || '',
+        sources,
+        maxConfidence(sources),
+        vid,
+        colorPublished(name),
+      );
+    });
 
     const editions: EditionBlock[] = pub.editions.map(slug => {
       const edMeta = editionDetailsMap[slug];
+      const editionVariantId = variantByKey.get(`edition:${slug}`) ?? null;
+      const editionSources = variantSources(editionCands, editionVariantId);
       return {
         slug,
         displayName: edMeta?.display_name || '',
-        pairedColors: (edMeta?.colors ?? []).map((name: string) =>
-          toColorPill(name, defaultColor, hexMap, colorNameMap[name] || '', findItemSourceCount(colorCands, name), variantByKey.get(`color:${name}`) ?? null, colorPublished(name))
-        ),
-        sourceCount: findItemSourceCount(editionCands, slug),
-        variantId: variantByKey.get(`edition:${slug}`) ?? null,
+        pairedColors: (edMeta?.colors ?? []).map((name: string) => {
+          const vid = resolveColorVariantId(name);
+          const sources = variantSources(colorCands, vid);
+          return toColorPill(
+            name,
+            defaultColor,
+            hexMap,
+            colorNameMap[name] || '',
+            sources,
+            maxConfidence(sources),
+            vid,
+            colorPublished(name),
+          );
+        }),
+        sources: editionSources,
+        confidenceMax: maxConfidence(editionSources),
+        variantId: editionVariantId,
         isPublished: editionPublished(slug),
       };
     });

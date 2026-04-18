@@ -30,6 +30,27 @@ import { derivePublishedFromVariants } from './variantLifecycle.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 
 /**
+ * Union two evidence_refs arrays by (url, tier), keeping the max confidence
+ * when the same source appears in both. Same source URL may legitimately
+ * appear on multiple VARIANTS — this only dedupes WITHIN a single variant's
+ * evidence list.
+ */
+function unionEvidenceRefs(a = [], b = []) {
+  const seen = new Map();
+  for (const ref of [...a, ...b]) {
+    if (!ref || typeof ref !== 'object' || typeof ref.url !== 'string') continue;
+    const key = `${ref.url}|${ref.tier || ''}`;
+    const existing = seen.get(key);
+    if (!existing) {
+      seen.set(key, ref);
+    } else if (Number(ref.confidence || 0) > Number(existing.confidence || 0)) {
+      seen.set(key, ref);
+    }
+  }
+  return [...seen.values()];
+}
+
+/**
  * Merge each edition's color combo into the master colors array as ONE intact
  * combo string per edition (e.g. "black+white"). Idempotent — skips combos
  * already present. Mutates `colors` in place.
@@ -309,13 +330,31 @@ export async function runColorEditionFinder({
     return { colors: [], editions: {}, default_color: '', fallbackUsed: false, rejected: true, rejections: [{ reason_code: 'llm_error', message: err.message }] };
   }
 
-  const colors = Array.isArray(response?.colors) ? response.colors : [];
+  // WHY: LLM schema returns per-item: colors[]={name, evidence_refs}, editions[slug]={display_name, colors, evidence_refs}.
+  // Extract atom names for validation/registry work, keep per-item evidence in parallel maps.
+  const rawColors = Array.isArray(response?.colors) ? response.colors : [];
+  const colors = rawColors
+    .map((c) => (c && typeof c === 'object' ? c.name : (typeof c === 'string' ? c : '')))
+    .filter((n) => typeof n === 'string' && n.length > 0);
+  // Map: raw atom name (pre-repair) → evidence_refs from discovery
+  const discoveryEvidenceByAtomRaw = new Map();
+  // Map: raw atom name (pre-repair) → LLM's overall value-level confidence
+  const discoveryConfidenceByAtomRaw = new Map();
+  for (const c of rawColors) {
+    if (c && typeof c === 'object' && typeof c.name === 'string') {
+      if (Array.isArray(c.evidence_refs)) {
+        discoveryEvidenceByAtomRaw.set(c.name, c.evidence_refs);
+      }
+      if (Number.isFinite(c.confidence)) {
+        discoveryConfidenceByAtomRaw.set(c.name, c.confidence);
+      }
+    }
+  }
   const colorNamesMap = (response?.color_names && typeof response.color_names === 'object' && !Array.isArray(response.color_names))
     ? response.color_names
     : {};
-  // WHY: LLM may return editions as either a Record<slug, {display_name, colors}>
-  // (schema-constrained) or an Array<{slug, display_name, colors}> (free-form).
-  // Normalize both shapes into the expected Record format.
+  // WHY: LLM may return editions as Record<slug, {display_name, colors, evidence_refs}> or
+  // Array<{slug, display_name, colors, evidence_refs}>. Normalize to Record.
   let editions = {};
   if (response?.editions && typeof response.editions === 'object' && !Array.isArray(response.editions)) {
     editions = response.editions;
@@ -325,6 +364,18 @@ export async function runColorEditionFinder({
         const { slug, ...rest } = entry;
         editions[slug] = rest;
       }
+    }
+  }
+  // Map: edition slug → evidence_refs from discovery
+  const discoveryEvidenceByEditionSlug = new Map();
+  // Map: edition slug → LLM's overall value-level confidence
+  const discoveryConfidenceByEditionSlug = new Map();
+  for (const [slug, ed] of Object.entries(editions)) {
+    if (ed && Array.isArray(ed.evidence_refs)) {
+      discoveryEvidenceByEditionSlug.set(slug, ed.evidence_refs);
+    }
+    if (ed && Number.isFinite(ed.confidence)) {
+      discoveryConfidenceByEditionSlug.set(slug, ed.confidence);
     }
   }
   const defaultColor = response?.default_color || colors[0] || '';
@@ -346,21 +397,23 @@ export async function runColorEditionFinder({
   // --- Candidate gate: validate ALL fields before any writes ---
   // WHY: If any field fails validation, the entire LLM response is compromised.
   // No candidate writes, no CEF writes, no cooldown. Failure stored for history.
-  // Candidate writes are DEFERRED — the closure is set here but only invoked
-  // after Gate 1 (palette) and Gate 2 (identity check) both pass.
-  let deferredCandidateWrite = null;
+  // Per-variant candidate writes run AFTER Gate 1 (palette) + Gate 2 (identity check)
+  // both pass, once the variant registry is finalized.
   const compiled = specDb.getCompiledRules?.();
   const fieldRules = compiled?.fields || null;
   const knownValues = compiled?.known_values || null;
 
   let gateColors = colors;
   let gateEditions = editions;
+  let cefSourceId = null;
+  let cefSourceMeta = null;
+  const repairMap = {};
 
   if (fieldRules && fieldRules.colors) {
     const nextRunNumber = existing?.next_run_number || (previousRuns.length + 1);
     // WHY: Deterministic source_id — stable across rebuilds (product_id + run_number).
-    const cefSourceId = `cef-${product.product_id}-${nextRunNumber}`;
-    const cefSourceMeta = { source: 'cef', source_id: cefSourceId, model: modelTracking.actualModel, run_number: nextRunNumber };
+    cefSourceId = `cef-${product.product_id}-${nextRunNumber}`;
+    cefSourceMeta = { source: 'cef', source_id: cefSourceId, model: modelTracking.actualModel, run_number: nextRunNumber };
 
     // Step 1: Validate colors (pure — no writes yet)
     const colorsValidation = validateField({
@@ -377,7 +430,6 @@ export async function runColorEditionFinder({
     // Step 2: Build repair map from colors validation
     // WHY: Repairs may be array-level (template_dispatch: ['Black','Red'] → ['black','red']).
     // Zip before/after arrays element-by-element to build per-value map.
-    const repairMap = {};
     for (const r of colorsValidation.repairs) {
       if (Array.isArray(r.before) && Array.isArray(r.after)) {
         for (let i = 0; i < r.before.length; i++) {
@@ -414,80 +466,8 @@ export async function runColorEditionFinder({
     // Any edition color surviving repair but missing from gateColors gets
     // appended so the publisher validates the complete color inventory.
     mergeEditionColorsInto(gateColors, gateEditions);
-
-    // WHY: Candidate writes are DEFERRED until after Gate 1 + Gate 2 pass.
-    // Writing here would leak candidates into product.json for runs that
-    // later get rejected by palette validation or identity check validation.
-    deferredCandidateWrite = () => {
-      // WHY: Persist LLM model metadata so candidate cards can display
-      // the same SVG badges (thinking, web search, access mode, effort)
-      // shown in the operations sidebar and finder run history rows.
-      const llmMeta = {
-        llm_access_mode: modelTracking.actualAccessMode || 'api',
-        llm_thinking: modelTracking.actualThinking,
-        llm_web_search: modelTracking.actualWebSearch,
-        llm_effort_level: modelTracking.actualEffortLevel || '',
-      };
-      // WHY: Universal evidence shape across finders — {url, tier, confidence}.
-      // Pulled from the discovery-phase response root so candidates carry
-      // their URL citations into field_candidates.metadata_json.
-      const evidenceRefs = Array.isArray(response?.evidence_refs) ? response.evidence_refs : [];
-      // WHY: Identity-check (Run 2+) emits evidence_refs PER mapping keyed by
-      // variant_key (e.g. "color:black", "edition:cod-bo6"). Project those into
-      // evidence_by_variant so the review drawer can render per-variant source
-      // lists for colors/editions rows. Only match/new actions — reject mappings
-      // are dropped from the registry and won't have drawer rows. On Run 1
-      // (no identity check), the map is empty and the drawer falls back to the
-      // global evidence_refs.
-      const evidenceByVariant = {};
-      for (const m of identityCheckResult?.mappings || []) {
-        if ((m.action !== 'match' && m.action !== 'new') || typeof m.new_key !== 'string') continue;
-        if (!Array.isArray(m.evidence_refs) || m.evidence_refs.length === 0) continue;
-        evidenceByVariant[m.new_key] = m.evidence_refs;
-      }
-      const hasPerVariantEvidence = Object.keys(evidenceByVariant).length > 0;
-      // WHY: Candidate confidence drives the publisher threshold gate
-      // (publishConfidenceThreshold). Hardcoding 100 disables the gate —
-      // CEF would always publish regardless of evidence strength. Derive
-      // from the strongest per-source confidence across the whole run so
-      // the gate reflects real signal. Floor at 0 when evidence_refs is
-      // empty so the publisher properly rejects no-evidence runs.
-      const pickMaxRefConfidence = (refs) => {
-        let best = 0;
-        for (const r of refs || []) {
-          const n = Number(r?.confidence);
-          if (Number.isFinite(n) && n > best) best = n;
-        }
-        return best;
-      };
-      const candidateConfidence = pickMaxRefConfidence(evidenceRefs);
-      const colorsMeta = {
-        ...(Object.keys(colorNamesMap).length > 0 ? { color_names: colorNamesMap } : {}),
-        evidence_refs: evidenceRefs,
-        ...(hasPerVariantEvidence ? { evidence_by_variant: evidenceByVariant } : {}),
-        ...llmMeta,
-      };
-      submitCandidate({
-        category: product.category, productId: product.product_id,
-        fieldKey: 'colors', value: gateColors, confidence: candidateConfidence,
-        sourceMeta: cefSourceMeta, fieldRules, knownValues, componentDb: null, specDb, productRoot,
-        metadata: colorsMeta, appDb, config,
-      });
-      const editionsMeta = {
-        ...(Object.keys(gateEditions).length > 0 ? { edition_details: gateEditions } : {}),
-        evidence_refs: evidenceRefs,
-        ...(hasPerVariantEvidence ? { evidence_by_variant: evidenceByVariant } : {}),
-        ...llmMeta,
-      };
-      submitCandidate({
-        category: product.category, productId: product.product_id,
-        fieldKey: 'editions', value: Object.keys(gateEditions), confidence: candidateConfidence,
-        sourceMeta: cefSourceMeta, fieldRules, knownValues, componentDb: null, specDb, productRoot,
-        metadata: editionsMeta, appDb, config,
-      });
-    };
   }
-  // If no compiled rules available, gate is skipped — CEF proceeds as before
+  // If no compiled rules available, per-variant submission is skipped below
 
   // Safety net: ensure edition-exclusive colors are always in the master array.
   // Idempotent — skips atoms already merged by the gated path above.
@@ -673,9 +653,9 @@ export async function runColorEditionFinder({
     }
   }
 
-  // WHY: All gates passed — safe to commit candidates now.
-  // Deferred from candidate gate to prevent leaking candidates for rejected runs.
-  if (deferredCandidateWrite) deferredCandidateWrite();
+  // WHY: Per-variant candidate submission is deferred until after registry build
+  // (below). That keeps variant_id references valid — we only write candidates
+  // once the final registry (with minted variant_ids) exists.
 
   // Merge into JSON (durable memory — both gates passed)
   const merged = mergeColorEditionDiscovery({
@@ -804,6 +784,158 @@ export async function runColorEditionFinder({
       editions: gateEditions,
     });
     writeColorEdition({ productId: product.product_id, productRoot, data: merged });
+  }
+
+  // ── Per-variant candidate submission ──────────────────────────
+  // WHY: Each color atom and each edition becomes its OWN field_candidates row,
+  // scoped by variant_id, with that variant's evidence_refs. This mirrors how RDF
+  // persists per-variant candidates and lets the review grid render per-row
+  // evidence / source / tier / confidence instead of one shared set.
+  // A source URL may legitimately appear on multiple variants — no cross-variant
+  // dedupe; each variant owns its own evidence list.
+  if (fieldRules && fieldRules.colors && cefSourceId && merged.variant_registry?.length > 0) {
+    // Apply repair map to discovery evidence so the map is keyed by the
+    // repaired atom name that appears in the final variant registry.
+    const discoveryEvidenceByAtom = new Map();
+    for (const [atom, refs] of discoveryEvidenceByAtomRaw) {
+      const repaired = repairMap[atom] ?? atom;
+      const existing = discoveryEvidenceByAtom.get(repaired) || [];
+      discoveryEvidenceByAtom.set(repaired, unionEvidenceRefs(existing, refs));
+    }
+    // Parallel: discovery confidence, repaired-keyed. If two raw atoms collapse
+    // to the same repaired atom, take the max — the strongest signal wins.
+    const discoveryConfidenceByAtom = new Map();
+    for (const [atom, conf] of discoveryConfidenceByAtomRaw) {
+      const repaired = repairMap[atom] ?? atom;
+      const existing = discoveryConfidenceByAtom.get(repaired);
+      discoveryConfidenceByAtom.set(repaired, existing == null ? conf : Math.max(existing, conf));
+    }
+
+    // Identity check (Run 2+) emits per-mapping evidence_refs. Union those in
+    // for match/new actions — reject actions are dropped from the registry.
+    const identityEvidenceByKey = new Map();
+    // Parallel: identity's per-mapping overall confidence (the authoritative
+    // signal on Run 2+, since identity has more context than discovery).
+    const identityConfidenceByKey = new Map();
+    for (const m of identityCheckResult?.mappings || []) {
+      if ((m.action !== 'match' && m.action !== 'new') || typeof m.new_key !== 'string') continue;
+      if (Array.isArray(m.evidence_refs) && m.evidence_refs.length > 0) {
+        identityEvidenceByKey.set(m.new_key, m.evidence_refs);
+      }
+      if (Number.isFinite(m.confidence)) {
+        identityConfidenceByKey.set(m.new_key, m.confidence);
+      }
+    }
+
+    const llmMeta = {
+      llm_access_mode: modelTracking.actualAccessMode || 'api',
+      llm_thinking: modelTracking.actualThinking,
+      llm_web_search: modelTracking.actualWebSearch,
+      llm_effort_level: modelTracking.actualEffortLevel || '',
+    };
+
+    // Clean break: wipe prior CEF-source candidates for this product's CEF fields
+    // so the DB state matches the current variant registry exactly. Prior-run
+    // evidence remains preserved in color_edition.json.runs[].response.
+    specDb.deleteFieldCandidatesBySourceType?.(product.product_id, 'colors', 'cef');
+    specDb.deleteFieldCandidatesBySourceType?.(product.product_id, 'editions', 'cef');
+
+    for (const variant of merged.variant_registry) {
+      if (variant.retired) continue;
+
+      let discoveryRefs = [];
+      let discoveryConfidence;
+      if (variant.variant_type === 'color') {
+        const atom = variant.variant_key.replace(/^color:/, '');
+        discoveryRefs = discoveryEvidenceByAtom.get(atom) || [];
+        discoveryConfidence = discoveryConfidenceByAtom.get(atom);
+      } else if (variant.variant_type === 'edition') {
+        discoveryRefs = discoveryEvidenceByEditionSlug.get(variant.edition_slug || '') || [];
+        discoveryConfidence = discoveryConfidenceByEditionSlug.get(variant.edition_slug || '');
+      }
+      const identityRefs = identityEvidenceByKey.get(variant.variant_key) || [];
+      const perVariantEvidence = unionEvidenceRefs(discoveryRefs, identityRefs);
+      // Precedence: identity checker (Run 2+, more context) > discovery (Run 1
+      // or identity miss) > 0. Identity's confidence is scoped to the mapping
+      // decision — when it exists we prefer it over discovery's self-rating.
+      const identityConfidence = identityConfidenceByKey.get(variant.variant_key);
+      const perVariantConfidence = identityConfidence ?? discoveryConfidence ?? 0;
+
+      const baseMetadata = {
+        variant_key: variant.variant_key,
+        variant_label: variant.variant_label || '',
+        variant_type: variant.variant_type,
+        evidence_refs: perVariantEvidence,
+        ...llmMeta,
+      };
+
+      if (variant.variant_type === 'color') {
+        const atom = variant.variant_key.replace(/^color:/, '');
+        const name = colorNamesMap[atom];
+        submitCandidate({
+          category: product.category,
+          productId: product.product_id,
+          fieldKey: 'colors',
+          value: [atom],
+          confidence: perVariantConfidence,
+          sourceMeta: cefSourceMeta,
+          fieldRules,
+          knownValues,
+          componentDb: null,
+          specDb,
+          productRoot,
+          metadata: name ? { ...baseMetadata, color_name: name } : baseMetadata,
+          appDb,
+          config,
+          variantId: variant.variant_id,
+        });
+      } else if (variant.variant_type === 'edition') {
+        const slug = variant.edition_slug || variant.variant_key.replace(/^edition:/, '');
+        const combo = Array.isArray(variant.color_atoms) ? variant.color_atoms.join('+') : '';
+        const editionMeta = { ...baseMetadata, edition_display_name: variant.edition_display_name || variant.variant_label || slug };
+
+        // Row under 'editions': the edition slug itself
+        submitCandidate({
+          category: product.category,
+          productId: product.product_id,
+          fieldKey: 'editions',
+          value: [slug],
+          confidence: perVariantConfidence,
+          sourceMeta: cefSourceMeta,
+          fieldRules,
+          knownValues,
+          componentDb: null,
+          specDb,
+          productRoot,
+          metadata: editionMeta,
+          appDb,
+          config,
+          variantId: variant.variant_id,
+        });
+
+        // Row under 'colors': the edition's combo, so the colors grid row for
+        // this combo has the same per-variant evidence as the edition row.
+        if (combo) {
+          submitCandidate({
+            category: product.category,
+            productId: product.product_id,
+            fieldKey: 'colors',
+            value: [combo],
+            confidence: perVariantConfidence,
+            sourceMeta: cefSourceMeta,
+            fieldRules,
+            knownValues,
+            componentDb: null,
+            specDb,
+            productRoot,
+            metadata: editionMeta,
+            appDb,
+            config,
+            variantId: variant.variant_id,
+          });
+        }
+      }
+    }
   }
 
   // Project run into SQL (frontend reads from DB, not JSON)

@@ -6,7 +6,7 @@
     },
     "field_rules": {
       "changed": true,
-      "hash": "bf78c5d385b0a0ce36cc4f4ae62efe6efb41acb8caad2379cdb8dc5b03e7f29c",
+      "hash": "2e08cf438b8b63a2d99977c8d229f329852abb122d702e51db19268f056ed27e",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\field_rules.json"
     },
     "key_migrations": {
@@ -14,32 +14,32 @@
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\key_migrations.json"
     },
     "known_values": {
-      "hash": "566cf045b6b4680fb9177f929e99a0d1e5c18d80eacb7dfc9796bd1963fd7e9e",
+      "hash": "6583b1e340d37f4a476a506a05520bff448c6801ba5a679b5a03af354c92f42c",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\known_values.json"
     },
     "ui_field_catalog": {
-      "hash": "e2430513fbce757ffdb1334dd502ff97ca6706fe36c4be37c37a5f1432cffaf1",
+      "hash": "bb41289820a8557da29f51f22e7cde44fd24ab668383f8946677627956dd3526",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\ui_field_catalog.json"
     }
   },
   "category": "mouse",
   "compile_mode": "field_studio",
   "compiled": true,
-  "compiled_at": "2026-04-17T21:32:33.888Z",
+  "compiled_at": "2026-04-18T20:42:09.593Z",
   "counts": {
     "component_types": 4,
     "critical": 1,
     "deep": 14,
-    "enums": 15,
-    "expected_easy": 48,
+    "enums": 14,
+    "expected_easy": 43,
     "expected_sometimes": 8,
-    "fields": 85,
+    "fields": 80,
     "identity": 1,
     "required": 13
   },
   "diff": {
     "changed": true,
-    "current_hash": "bf78c5d385b0a0ce36cc4f4ae62efe6efb41acb8caad2379cdb8dc5b03e7f29c",
+    "current_hash": "2e08cf438b8b63a2d99977c8d229f329852abb122d702e51db19268f056ed27e",
     "fields": {
       "added_count": 0,
       "added_keys": [],
@@ -48,31 +48,25 @@
       "removed_count": 0,
       "removed_keys": []
     },
-    "previous_hash": "9f30cb729f2b8981e5df321ea2ff8a4143c008479a41e4bb6ba3afb4ff57d624"
+    "previous_hash": "f8f76f41c4b403a53f5d9baa9737622bd8e8cee9883cd740cb342c8de3a0dd49"
   },
   "errors": [],
-  "field_studio_map_hash": "be7baa96a392104dc7a8b153f69dff35997c2811edb4bd9eedfb7332f16bc383",
+  "field_studio_map_hash": "7ba23d120e04058b3df5b5a61348475731ed4981c4057a6c423c43d2a46fa18c",
   "field_studio_map_path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_control_plane\\field_studio_map.json",
   "field_studio_source_hash": null,
   "field_studio_source_path": "",
-  "generated_at": "2026-04-17T21:32:33.888Z",
+  "generated_at": "2026-04-18T20:42:09.593Z",
   "source_summary": {
     "component_sheets": 4,
     "component_sources": 4,
     "enum_lists": 0,
-    "key_rows": 85,
+    "key_rows": 80,
     "sampled_product_columns": 0,
     "sampled_values": 0
   },
   "version": 1,
   "warnings": [
     "key_migrations: reversed 'lngth -> length' to 'length -> lngth' because 'length' is not a generated field key",
-    "field encoder_life_span: numeric type 'number' without unit declared",
-    "field encoder_life_span: enum_policy=open but parse_rules is empty",
-    "field encoder_steps: numeric type 'number' without unit declared",
-    "field encoder_type: enum_policy=open but parse_rules is empty",
-    "field releasing_force: enum_policy=open but parse_rules is empty",
-    "field switch_life_span: enum_policy=open but parse_rules is empty",
     "component_db.encoder: property \"encoder_steps\" coverage 38/40 (95%), missing 2; examples: Magnetic Encoder, Optical Encoder",
     "component_db.sensor: property \"acceleration\" coverage 111/116 (95.7%), missing 5; examples: PAW3392, PMW3367, PAW3393",
     "component_db.sensor: property \"dpi\" coverage 111/116 (95.7%), missing 5; examples: PAW3392, PMW3367, PAW3393",

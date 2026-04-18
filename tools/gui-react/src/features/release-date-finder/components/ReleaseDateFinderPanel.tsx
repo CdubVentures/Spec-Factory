@@ -35,6 +35,7 @@ import {
 } from '../api/releaseDateFinderQueries.ts';
 import { deriveFinderKpiCards, deriveVariantRows, sortRunsNewestFirst } from '../selectors/rdfSelectors.ts';
 import { rdfHowItWorksSections } from '../rdfHowItWorksContent.ts';
+import { maybeFormatDateValue } from '../../../utils/dateTime.ts';
 import type { EvidenceSource } from '../types.ts';
 
 interface ReleaseDateFinderPanelProps {
@@ -233,7 +234,7 @@ export function ReleaseDateFinderPanel({ productId, category }: ReleaseDateFinde
                 const hexParts = atoms.map((a) => hexMap.get(a.trim()) || '');
                 const c = row.candidate;
                 const isLooping = loopingVariantKeys.has(row.variant_key);
-                const valueDisplay = c?.value || '';
+                const valueDisplay = maybeFormatDateValue(c?.value);
                 const hasValue = Boolean(c?.value);
                 return (
                   <FinderVariantRow
@@ -315,7 +316,7 @@ export function ReleaseDateFinderPanel({ productId, category }: ReleaseDateFinde
                                 <span className={`px-1.5 py-0.5 rounded ${pc.status === 'resolved' ? 'sf-chip-success' : 'sf-chip-neutral'}`}>
                                   {pc.status}
                                 </span>
-                                <span className="sf-text-primary">{pc.value}</span>
+                                <span className="sf-text-primary">{maybeFormatDateValue(pc.value)}</span>
                                 <span>· {pc.confidence}%</span>
                                 <span className="sf-text-subtle">· {pc.model}</span>
                               </div>
@@ -353,7 +354,7 @@ export function ReleaseDateFinderPanel({ productId, category }: ReleaseDateFinde
                   const variantLabel = resp?.variant_label || variantKey || '--';
                   const atoms = resolveVariantColorAtoms(variantKey, editions);
                   const hexParts = atoms.map((a) => hexMap.get(a.trim()) || '');
-                  const dateValue = resp?.release_date || '';
+                  const dateValue = maybeFormatDateValue(resp?.release_date);
                   const evidenceCount = resp?.evidence?.length ?? 0;
                   const log = resp?.discovery_log;
                   const discoverySections: DiscoverySection[] = [];

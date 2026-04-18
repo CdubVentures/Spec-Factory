@@ -121,6 +121,7 @@
           },
           {
             "column": "E",
+            "component_only": true,
             "constraints": [],
             "field_key": "switch_life_span",
             "key": "switch_life_span",
@@ -139,6 +140,7 @@
           },
           {
             "column": "G",
+            "component_only": true,
             "constraints": [],
             "field_key": "releasing_force",
             "key": "releasing_force",
@@ -178,6 +180,7 @@
         "properties": [
           {
             "column": "D",
+            "component_only": true,
             "constraints": [],
             "field_key": "encoder_type",
             "key": "encoder_type",
@@ -187,6 +190,7 @@
           },
           {
             "column": "E",
+            "component_only": true,
             "constraints": [],
             "field_key": "encoder_steps",
             "key": "encoder_steps",
@@ -196,6 +200,7 @@
           },
           {
             "column": "F",
+            "component_only": true,
             "constraints": [],
             "field_key": "encoder_life_span",
             "key": "encoder_life_span",
@@ -7813,6 +7818,7 @@
       "parse": {
         "accepted_formats": [
           "YYYY-MM-DD",
+          "YYYY-MM",
           "YYYY",
           "MMM YYYY",
           "Month YYYY"

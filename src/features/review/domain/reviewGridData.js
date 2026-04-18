@@ -406,6 +406,26 @@ export async function buildProductReviewPayload({
     }
   }
 
+  // WHY: Resolve the product's default variant from CEF's default_color
+  // (i.e. colors[0]). This variant gets an is_default marker in the drawer
+  // for colors and all variant-dependent fields (release_date, future
+  // price/sku/discontinued). Its value also drives the grid cell for those
+  // scalar variant-dependent fields so the row isn't blank at product level.
+  // Editions never have an is_default entry — they branch, no canonical one.
+  let defaultVariantId = null;
+  try {
+    const cefRow = specDb?.getColorEditionFinder?.(productId) || null;
+    const defaultColor = typeof cefRow?.default_color === 'string' && cefRow.default_color.trim()
+      ? cefRow.default_color.trim()
+      : null;
+    if (defaultColor) {
+      const targetKey = `color:${defaultColor}`;
+      for (const v of variantById.values()) {
+        if (v.variant_key === targetKey) { defaultVariantId = v.variant_id; break; }
+      }
+    }
+  } catch { /* best-effort */ }
+
   // Group candidates by field_key, track resolved (published) per field.
   // For variant-dependent fields, collect ALL resolved rows keyed by variant_id.
   const candidatesByField = new Map();
@@ -471,6 +491,7 @@ export async function buildProductReviewPayload({
             color_atoms: colorAtoms,
             edition_slug: null,
             variant_key: v.variant_key ?? null,
+            is_default: v.variant_id === defaultVariantId,
           };
         }
       } else if (v.variant_type === 'edition') {
@@ -478,6 +499,7 @@ export async function buildProductReviewPayload({
           variantEditions.push(v.edition_slug);
         }
         if (v.edition_slug) {
+          // WHY: Editions never carry is_default — they branch, so no canonical one.
           editionsVariantValues[v.variant_id] = {
             value: v.edition_slug,
             confidence: 1.0,
@@ -488,6 +510,7 @@ export async function buildProductReviewPayload({
             color_atoms: colorAtoms,
             edition_slug: v.edition_slug,
             variant_key: v.variant_key ?? null,
+            is_default: false,
           };
         }
         // WHY: An edition IS a color variant — its combo cascades into the
@@ -495,6 +518,7 @@ export async function buildProductReviewPayload({
         // Edition entries in colorsVariantValues keep variant_type='edition'
         // so the drawer can badge them distinctly and resolve variant_key
         // against CEF identity-check mappings (new_key: "edition:<slug>").
+        // is_default stays false — only the color:<default_color> variant is default.
         if (combo && !variantColors.includes(combo)) variantColors.push(combo);
         if (combo) {
           colorsVariantValues[v.variant_id] = {
@@ -507,6 +531,7 @@ export async function buildProductReviewPayload({
             color_atoms: colorAtoms,
             edition_slug: v.edition_slug ?? null,
             variant_key: v.variant_key ?? null,
+            is_default: false,
           };
         }
       }
@@ -543,16 +568,28 @@ export async function buildProductReviewPayload({
     const resolvedRow = resolvedByField.get(field) || null;
     const isOverridden = resolvedRow?.metadata_json?.source === 'manual_override';
 
-    const resolvedValue = resolvedRow?.value != null && String(resolvedRow.value).trim() !== ''
-      ? resolvedRow.value : null;
-    const resolvedConfidence = resolvedRow
-      ? Math.max(0, Math.min(1, toNumber(resolvedRow.confidence, 0)))
-      : 0;
-    const hasValue = hasKnownValue(resolvedValue);
-
     const fieldIsVariantDependent = isVariantDependentField(field, specDb);
     const variantValuesForField = fieldIsVariantDependent ? variantValuesByField.get(field) : null;
     const hasVariantValues = !!(variantValuesForField && variantValuesForField.size > 0);
+
+    // WHY: Variant-dependent scalar fields (release_date, future price/sku)
+    // don't publish at product level — values live per-variant. Seed the
+    // grid cell from the default variant so the row shows a concrete value
+    // instead of being blank. Drawer still renders all variants via
+    // row.variant_values. A manual override at the product level still wins.
+    const defaultVariantRow = (fieldIsVariantDependent && defaultVariantId && variantValuesForField)
+      ? variantValuesForField.get(defaultVariantId) || null
+      : null;
+    const effectiveRow = (!isOverridden && defaultVariantRow?.value != null && String(defaultVariantRow.value).trim() !== '')
+      ? defaultVariantRow
+      : resolvedRow;
+
+    const resolvedValue = effectiveRow?.value != null && String(effectiveRow.value).trim() !== ''
+      ? effectiveRow.value : null;
+    const resolvedConfidence = effectiveRow
+      ? Math.max(0, Math.min(1, toNumber(effectiveRow.confidence, 0)))
+      : 0;
+    const hasValue = hasKnownValue(resolvedValue);
 
     if (!hasValue) missingCount += 1;
 
@@ -604,10 +641,10 @@ export async function buildProductReviewPayload({
     if (isOverridden) {
       source = 'user';
       method = 'manual_override';
-    } else if (resolvedRow) {
-      const st = String(resolvedRow.source_type || resolvedRow.metadata_json?.source || '').trim();
+    } else if (effectiveRow) {
+      const st = String(effectiveRow.source_type || effectiveRow.metadata_json?.source || '').trim();
       source = dbSourceLabel(st) || st;
-      method = String(resolvedRow.metadata_json?.method || '').trim() || null;
+      method = String(effectiveRow.metadata_json?.method || '').trim() || null;
     }
 
     const color = hasValue
@@ -631,7 +668,7 @@ export async function buildProductReviewPayload({
       evidence_url: '',
       evidence_quote: '',
       overridden: isOverridden,
-      source_timestamp: String(resolvedRow?.updated_at || '').trim() || null,
+      source_timestamp: String(effectiveRow?.updated_at || '').trim() || null,
     };
 
     // WHY: Variant-dependent fields (owned by a variantFieldProducer module) expose
@@ -655,6 +692,7 @@ export async function buildProductReviewPayload({
           color_atoms: Array.isArray(vinfo?.color_atoms) ? vinfo.color_atoms : null,
           edition_slug: vinfo?.edition_slug ?? null,
           variant_key: vinfo?.variant_key ?? null,
+          is_default: vid === defaultVariantId,
         };
       }
       row.variant_values = variantValues;
@@ -662,9 +700,10 @@ export async function buildProductReviewPayload({
 
     // WHY: Variant-generator fields (colors, editions) expose per-variant rows
     // too — built from the active-variant list rather than from candidate rows.
-    // The single CEF candidate (value = full array) is matched against each
-    // row's value via array-includes in the drawer, and per-variant sources
-    // come from metadata.evidence_by_variant[variant_key].
+    // Each variant candidate row carries metadata.variant_key so the drawer's
+    // per-variant source lookup (sourcesForVariantFromCandidate) scopes
+    // evidence to the matching variant. Colors' default-color variant is
+    // flagged is_default; editions don't (they branch).
     const generatorVariantValues = generatorVariantValuesByField.get(field);
     if (generatorVariantValues && Object.keys(generatorVariantValues).length > 0) {
       row.variant_values = generatorVariantValues;

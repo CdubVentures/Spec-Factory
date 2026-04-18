@@ -3,7 +3,7 @@
  *
  * Uses REAL field rules and known values from the category authority.
  * Proves that a realistic CEF LLM response lands correctly in both
- * the DB projection and the durable JSON SSOT.
+ * the DB projection and the durable JSON SSOT under the per-variant shape.
  */
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -89,6 +89,11 @@ function readProductJson(productId) {
   catch { return null; }
 }
 
+// Per-item evidence helper — keeps test stubs tidy.
+function ev(url, tier = 'tier1', confidence = 90) {
+  return { url, tier, confidence };
+}
+
 const PRODUCT = {
   product_id: 'mouse-e2e',
   category: 'mouse',
@@ -112,11 +117,11 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
     fs.rmSync(TMP_ROOT, { recursive: true, force: true });
   });
 
-  it('realistic CEF output → accepted → dual-written to DB + JSON', async () => {
+  it('realistic CEF output → accepted → per-variant rows written to DB + JSON', async () => {
     const pid = 'mouse-viper-e2e';
     ensureProductJson(pid);
 
-    // Realistic Razer Viper color response (edition uses multi-atom combo)
+    // Razer Viper — each colorway carries its own evidence (shared URL allowed when it covers all)
     const result = await runColorEditionFinder({
       product: { ...PRODUCT, product_id: pid },
       appDb: makeAppDbStub(),
@@ -124,37 +129,62 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
       config: { llmModelPlan: 'gemini-2.5-flash' },
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
-        colors: ['black', 'white', 'pink', 'red', 'purple', 'black+red'],
-        editions: { 'cyberpunk-2077-edition': { colors: ['black+red'] } },
+        colors: [
+          { name: 'black', evidence_refs: [ev('https://razer.com/viper-v3-pro')] },
+          { name: 'white', evidence_refs: [ev('https://razer.com/viper-v3-pro')] },
+          { name: 'pink', evidence_refs: [ev('https://razer.com/viper-v3-pro')] },
+          { name: 'red', evidence_refs: [ev('https://razer.com/viper-v3-pro')] },
+          { name: 'purple', evidence_refs: [ev('https://razer.com/viper-v3-pro')] },
+          { name: 'black+red', evidence_refs: [ev('https://razer.com/viper-cp')] },
+        ],
+        editions: {
+          'cyberpunk-2077-edition': {
+            display_name: 'Cyberpunk 2077 Edition',
+            colors: ['black+red'],
+            evidence_refs: [ev('https://razer.com/viper-cp')],
+          },
+        },
         default_color: 'black',
       }),
     });
 
-    // --- Acceptance ---
     assert.equal(result.rejected, false, 'should be accepted');
-    // WHY: Edition IS a color — 'black+red' is both the standalone color AND the
-    // edition combo. It stays intact (not split) and is published as a color.
     assert.ok(result.colors.includes('black'));
     assert.ok(result.colors.includes('white'));
     assert.ok(result.colors.includes('black+red'), 'edition combo cascades into result colors');
 
-    // --- DB: field_candidates row exists (source-centric format) ---
-    const dbCandidates = specDb.getFieldCandidatesByProductAndField(pid, 'colors');
-    assert.equal(dbCandidates.length, 1, 'one candidate row for colors');
-    assert.equal(dbCandidates[0].source_type, 'cef', 'source_type is cef');
-    assert.ok(dbCandidates[0].source_id, 'source_id populated');
+    // --- DB: per-variant field_candidates rows ---
+    const colorRows = specDb.getFieldCandidatesByProductAndField(pid, 'colors');
+    // 5 standalone colors + 1 edition combo (variant row under 'colors' for the combo) = 6
+    assert.equal(colorRows.length, 6, 'six per-variant color rows');
+    for (const r of colorRows) {
+      assert.ok(r.variant_id, 'each row has variant_id set');
+      assert.equal(r.source_type, 'cef');
+      const parsed = JSON.parse(r.value);
+      assert.equal(parsed.length, 1, 'each row is single-item array');
+    }
+    const colorValues = colorRows.map(r => JSON.parse(r.value)[0]);
+    assert.ok(colorValues.includes('black'));
+    assert.ok(colorValues.includes('black+red'), 'edition combo is its own row under colors');
 
-    // --- JSON: product.json candidates[] exists ---
+    // Editions field — one row per edition
+    const editionRows = specDb.getFieldCandidatesByProductAndField(pid, 'editions');
+    assert.equal(editionRows.length, 1, 'one edition row');
+    assert.deepEqual(JSON.parse(editionRows[0].value), ['cyberpunk-2077-edition']);
+
+    // --- JSON: product.json candidates[] mirror ---
     const pj = readProductJson(pid);
-    assert.ok(pj.candidates, 'candidates key exists');
-    assert.ok(pj.candidates.colors, 'colors candidates exist');
-    assert.equal(pj.candidates.colors.length, 1, 'one candidate entry');
+    assert.ok(pj.candidates?.colors, 'colors candidates exist');
+    assert.equal(pj.candidates.colors.length, 6, 'six candidate entries in JSON mirror');
+    for (const entry of pj.candidates.colors) {
+      assert.ok(entry.variant_id, 'candidate entry carries variant_id');
+    }
 
-    // --- CEF's own tables also populated ---
+    // --- CEF summary table populated from variants ---
     const cefRow = specDb.getColorEditionFinder(pid);
-    assert.ok(cefRow, 'CEF summary row exists');
-    assert.ok(cefRow.colors.includes('black'), 'standalone color in summary');
-    assert.ok(cefRow.colors.includes('black+red'), 'edition combo in summary (edition IS a color)');
+    assert.ok(cefRow);
+    assert.ok(cefRow.colors.includes('black'));
+    assert.ok(cefRow.colors.includes('black+red'));
   });
 
   it('CEF output with case repairs → repaired values in all targets', async () => {
@@ -169,7 +199,10 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
       config: { llmModelPlan: 'gemini-2.5-flash' },
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
-        colors: ['Black', 'White'],
+        colors: [
+          { name: 'Black', evidence_refs: [ev('https://razer.com/b')] },
+          { name: 'White', evidence_refs: [ev('https://razer.com/w')] },
+        ],
         editions: {},
         default_color: 'Black',
       }),
@@ -179,17 +212,20 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
     assert.ok(result.colors.includes('black'), 'Black repaired to black');
     assert.ok(result.colors.includes('white'), 'White repaired to white');
 
-    // DB has repaired value
-    const dbCandidates = specDb.getFieldCandidatesByProductAndField(pid, 'colors');
-    const dbValue = JSON.parse(dbCandidates[0].value);
-    assert.ok(dbValue.includes('black'), 'DB has black (repaired)');
+    // DB rows carry the repaired value
+    const rows = specDb.getFieldCandidatesByProductAndField(pid, 'colors');
+    const values = rows.map(r => JSON.parse(r.value)[0]);
+    assert.ok(values.includes('black'), 'DB has black (repaired)');
+    assert.ok(values.includes('white'));
+    // None retain the uppercase form
+    assert.ok(!values.includes('Black'));
 
-    // CEF tables have repaired value
+    // CEF summary reflects repair
     const cefRow = specDb.getColorEditionFinder(pid);
-    assert.ok(cefRow.colors.includes('black'), 'CEF summary has black (repaired)');
+    assert.ok(cefRow.colors.includes('black'));
   });
 
-  it('invalid color in closed enum → entire run rejected', async () => {
+  it('invalid color in closed enum → entire run rejected, no candidates', async () => {
     const pid = 'mouse-invalid-e2e';
     ensureProductJson(pid);
 
@@ -200,7 +236,10 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
       config: {},
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
-        colors: ['black', 'cosmic-twilight-shimmer'], // not in registered colors
+        colors: [
+          { name: 'black', evidence_refs: [ev('https://razer.com/b')] },
+          { name: 'cosmic-twilight-shimmer', evidence_refs: [ev('https://fake')] },
+        ],
         editions: {},
         default_color: 'black',
       }),
@@ -208,17 +247,14 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
 
     assert.equal(result.rejected, true, 'should be rejected');
 
-    // No candidates
     const dbCandidates = specDb.getAllFieldCandidatesByProduct(pid);
     assert.equal(dbCandidates.length, 0, 'no candidates written');
 
-    // CEF summary exists but with empty colors (rejected run counted)
     const cefRow = specDb.getColorEditionFinder(pid);
     assert.ok(cefRow, 'summary row exists after rejected run');
     assert.deepEqual(cefRow.colors, [], 'no valid colors from rejected run');
     assert.equal(cefRow.run_count, 1, 'rejected run counted');
 
-    // product.json unchanged (no candidates key added)
     const pj = readProductJson(pid);
     assert.ok(!pj.candidates || !pj.candidates.colors, 'no candidates in product.json');
   });
@@ -227,7 +263,7 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
     const pid = 'mouse-gate2-leak';
     ensureProductJson(pid);
 
-    // Run 1: establish registry with basic colors + one edition
+    // Run 1: establish registry with basic colors
     const run1Result = await runColorEditionFinder({
       product: { ...PRODUCT, product_id: pid },
       appDb: makeAppDbStub(),
@@ -235,29 +271,24 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
       config: {},
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
-        colors: ['black', 'white'],
+        colors: [
+          { name: 'black', evidence_refs: [ev('https://razer.com/b')] },
+          { name: 'white', evidence_refs: [ev('https://razer.com/w')] },
+        ],
         editions: {},
         default_color: 'black',
       }),
     });
     assert.equal(run1Result.rejected, false, 'Run 1 accepted');
 
-    // Snapshot: count candidates after Run 1
-    const run1ColorCandidates = specDb.getFieldCandidatesByProductAndField(pid, 'colors');
-    const run1EditionCandidates = specDb.getFieldCandidatesByProductAndField(pid, 'editions');
-    const run1ColorCount = run1ColorCandidates.length;
-    const run1EditionCount = run1EditionCandidates.length;
+    const run1ColorCount = specDb.getFieldCandidatesByProductAndField(pid, 'colors').length;
+    const run1EditionCount = specDb.getFieldCandidatesByProductAndField(pid, 'editions').length;
 
-    const pjAfterRun1 = readProductJson(pid);
-    const run1JsonColorCount = pjAfterRun1?.candidates?.colors?.length || 0;
-    const run1JsonEditionCount = pjAfterRun1?.candidates?.editions?.length || 0;
-
-    // Run 2: valid colors+editions pass candidate gate, but identity check
-    // has duplicate match → Gate 2 rejects the run
     const { readColorEdition } = await import('../colorEditionStore.js');
     const afterRun1 = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
     const blackId = afterRun1.variant_registry.find(e => e.variant_key === 'color:black')?.variant_id;
 
+    // Run 2: Gate 2 rejects (duplicate match target)
     const run2Result = await runColorEditionFinder({
       product: { ...PRODUCT, product_id: pid },
       appDb: makeAppDbStub(),
@@ -265,14 +296,20 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
       config: {},
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
-        colors: ['black', 'white', 'red'],
-        editions: { 'doom-edition': { display_name: 'DOOM Edition', colors: ['black+red'] } },
+        colors: [
+          { name: 'black', evidence_refs: [ev('https://razer.com/b2')] },
+          { name: 'white', evidence_refs: [ev('https://razer.com/w2')] },
+          { name: 'red', evidence_refs: [ev('https://razer.com/r')] },
+        ],
+        editions: {
+          'doom-edition': { display_name: 'DOOM Edition', colors: ['black+red'], evidence_refs: [ev('https://razer.com/doom')] },
+        },
         default_color: 'black',
       }),
       _callIdentityCheckOverride: makeLlmStub({
         mappings: [
           { new_key: 'color:black', match: blackId, action: 'match', reason: 'same' },
-          { new_key: 'color:white', match: blackId, action: 'match', reason: 'also same?' },
+          { new_key: 'color:white', match: blackId, action: 'match', reason: 'also same?' }, // duplicate match target
           { new_key: 'color:red', match: null, action: 'new', reason: 'new' },
           { new_key: 'edition:doom-edition', match: null, action: 'new', reason: 'new' },
         ],
@@ -282,25 +319,14 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
 
     assert.equal(run2Result.rejected, true, 'Run 2 must be rejected (duplicate match)');
 
-    // Candidates must NOT have grown — Run 2's candidates must not leak
-    const run2ColorCandidates = specDb.getFieldCandidatesByProductAndField(pid, 'colors');
-    const run2EditionCandidates = specDb.getFieldCandidatesByProductAndField(pid, 'editions');
-    assert.equal(run2ColorCandidates.length, run1ColorCount,
-      'DB color candidates must not grow from rejected run');
-    assert.equal(run2EditionCandidates.length, run1EditionCount,
-      'DB edition candidates must not grow from rejected run');
-
-    // product.json candidates must not grow either
-    const pjAfterRun2 = readProductJson(pid);
-    const run2JsonColorCount = pjAfterRun2?.candidates?.colors?.length || 0;
-    const run2JsonEditionCount = pjAfterRun2?.candidates?.editions?.length || 0;
-    assert.equal(run2JsonColorCount, run1JsonColorCount,
-      'JSON color candidates must not grow from rejected run');
-    assert.equal(run2JsonEditionCount, run1JsonEditionCount,
-      'JSON edition candidates must not grow from rejected run');
+    // Candidates from Run 1 remain untouched — Run 2 writes nothing.
+    assert.equal(specDb.getFieldCandidatesByProductAndField(pid, 'colors').length, run1ColorCount,
+      'color candidates unchanged after rejected run');
+    assert.equal(specDb.getFieldCandidatesByProductAndField(pid, 'editions').length, run1EditionCount,
+      'edition candidates unchanged after rejected run');
   });
 
-  it('multi-color atom (black+red) passes validation', async () => {
+  it('multi-color atom (black+red) passes validation as its own variant row', async () => {
     const pid = 'mouse-multi-atom';
     ensureProductJson(pid);
 
@@ -311,7 +337,11 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
       config: {},
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
-        colors: ['black', 'white', 'black+red'],
+        colors: [
+          { name: 'black', evidence_refs: [ev('https://x')] },
+          { name: 'white', evidence_refs: [ev('https://x')] },
+          { name: 'black+red', evidence_refs: [ev('https://x')] },
+        ],
         editions: {},
         default_color: 'black',
       }),
@@ -320,7 +350,9 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
     assert.equal(result.rejected, false);
     assert.ok(result.colors.includes('black+red'), 'multi-atom preserved');
 
-    const dbCandidates = specDb.getFieldCandidatesByProductAndField(pid, 'colors');
-    assert.equal(dbCandidates.length, 1);
+    const rows = specDb.getFieldCandidatesByProductAndField(pid, 'colors');
+    assert.equal(rows.length, 3, 'one row per color variant, combos included');
+    const values = rows.map(r => JSON.parse(r.value)[0]);
+    assert.ok(values.includes('black+red'));
   });
 });

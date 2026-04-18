@@ -63,6 +63,11 @@ export const ComponentSourcePropertySchema = z.object({
   ]).optional(),
   tolerance: z.number().nullable().optional(),
   constraints: z.array(z.string()).optional(),
+  // WHY: When true, the property stays scoped to the component DB and is NOT
+  // promoted to product-level field_rules / ui_field_catalog / Key Navigator.
+  // Lets authors model deep component attributes (encoder steps, switch life
+  // span) without polluting the product schema.
+  component_only: z.boolean().optional(),
 }).passthrough();
 
 export const ComponentSourceSchema = z.object({

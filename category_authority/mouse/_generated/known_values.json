@@ -113,20 +113,6 @@
         "unk"
       ]
     },
-    "encoder_steps": {
-      "policy": "closed",
-      "values": [
-        "16",
-        "18",
-        "20",
-        "24",
-        "25",
-        "26",
-        "30",
-        "5",
-        "59"
-      ]
-    },
     "feet_material": {
       "policy": "open_prefer_known",
       "values": [
@@ -261,6 +247,6 @@
       ]
     }
   },
-  "generated_at": "2026-04-17T21:32:33.888Z",
+  "generated_at": "2026-04-18T20:42:09.593Z",
   "version": 1
 }

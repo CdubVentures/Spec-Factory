@@ -102,7 +102,8 @@ export function resolveControlPlaneMapPaths(controlPlaneRoot) {
 export async function loadFieldStudioMap({
   category,
   config = {},
-  mapPath = null
+  mapPath = null,
+  warnings = null,
 }) {
   const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const categoryRoot = path.join(helperRoot, category);
@@ -119,7 +120,10 @@ export async function loadFieldStudioMap({
     if (!loaded) continue;
     return {
       file_path: filePath,
-      map: normalizeFieldStudioMap(loaded)
+      // WHY: Pass warnings through so component_only/EG-locked/selected_keys
+      // pruning surfaces its decisions to whoever loaded the map (typically
+      // the compile context).
+      map: normalizeFieldStudioMap(loaded, warnings ? { warnings } : undefined)
     };
   }
   return null;
@@ -130,7 +134,8 @@ export async function saveFieldStudioMap({
   fieldStudioMap = null,
   workbookMap = null,
   config = {},
-  mapPath = null
+  mapPath = null,
+  warnings = null,
 } = {}) {
   const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const categoryRoot = path.join(helperRoot, category);
@@ -140,7 +145,12 @@ export async function saveFieldStudioMap({
   const incomingMap = isObject(fieldStudioMap)
     ? fieldStudioMap
     : (isObject(workbookMap) ? workbookMap : {});
-  const normalized = normalizeFieldStudioMap(incomingMap);
+  // WHY: Capture normalization warnings (component_only auto-prune of
+  // selected_keys, EG-locked overrides, constraint hints) so they reach the
+  // save result. Mapping Studio's save handler relays these to the GUI so the
+  // user sees what was modified during normalization.
+  const normalizationWarnings = Array.isArray(warnings) ? warnings : [];
+  const normalized = normalizeFieldStudioMap(incomingMap, { warnings: normalizationWarnings });
   await writeJsonStable(filePath, normalized);
   if (!mapPath && filePath !== fieldStudioPath) {
     await writeJsonStable(fieldStudioPath, normalized);
@@ -150,6 +160,7 @@ export async function saveFieldStudioMap({
     map_hash: hashJson(normalized),
     field_studio_map: normalized,
     version_snapshot: { version_id: null, path: null },
+    warnings: normalizationWarnings,
   };
 }
 

@@ -168,6 +168,55 @@ describe('derivePublishedFromVariants', () => {
     assert.ok(pj.fields.editions.value.includes('special-ed'));
   }));
 
+  it('product.json fields.colors.confidence reflects the min per-variant confidence from field_candidates (not hardcoded 1.0)', withEnv(({ specDb, root, ensureProductJson, readProductJson }) => {
+    seedVariants(specDb);
+    seedCefSummary(specDb);
+    ensureProductJson(PID);
+
+    // Seed field_candidates with distinct per-variant confidences. Min across variants
+    // = 72 (the weakest-link aggregate for the colors field).
+    specDb.insertFieldCandidate({
+      productId: PID, fieldKey: 'colors', sourceId: 'cef-v-aa', sourceType: 'cef',
+      value: JSON.stringify(['black']), confidence: 85, variantId: 'v_aa',
+      model: 'test', validationJson: {}, metadataJson: {},
+    });
+    specDb.insertFieldCandidate({
+      productId: PID, fieldKey: 'colors', sourceId: 'cef-v-bb', sourceType: 'cef',
+      value: JSON.stringify(['white']), confidence: 72, variantId: 'v_bb',
+      model: 'test', validationJson: {}, metadataJson: {},
+    });
+    specDb.insertFieldCandidate({
+      productId: PID, fieldKey: 'editions', sourceId: 'cef-v-cc', sourceType: 'cef',
+      value: JSON.stringify(['special-ed']), confidence: 90, variantId: 'v_cc',
+      model: 'test', validationJson: {}, metadataJson: {},
+    });
+
+    derivePublishedFromVariants({ specDb, productId: PID, productRoot: root });
+
+    const pj = readProductJson(PID);
+    // Min(85, 72) = 72 — the weakest color variant dictates the field's honest confidence.
+    assert.equal(pj.fields.colors.confidence, 72,
+      'colors.confidence = min across per-variant CEF confidences, NOT 1.0');
+    // Only one edition variant → its confidence IS the field's confidence.
+    assert.equal(pj.fields.editions.confidence, 90,
+      'editions.confidence = min across per-variant CEF confidences, NOT 1.0');
+  }));
+
+  it('product.json fields.colors.confidence = 0 when no field_candidates rows exist (no stamped fallback)', withEnv(({ specDb, root, ensureProductJson, readProductJson }) => {
+    seedVariants(specDb);
+    seedCefSummary(specDb);
+    ensureProductJson(PID);
+
+    // No field_candidates seeded — variants present but no candidate data behind them.
+    derivePublishedFromVariants({ specDb, productId: PID, productRoot: root });
+
+    const pj = readProductJson(PID);
+    assert.equal(pj.fields.colors.confidence, 0,
+      'without candidate data, confidence is 0, NOT a silently-stamped 1.0');
+    assert.equal(pj.fields.editions.confidence, 0,
+      'without candidate data, confidence is 0, NOT a silently-stamped 1.0');
+  }));
+
   it('CEF summary columns updated', withEnv(({ specDb, root, ensureProductJson }) => {
     seedVariants(specDb);
     seedCefSummary(specDb);

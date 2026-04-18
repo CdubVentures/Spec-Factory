@@ -48,7 +48,6 @@ Backend routes (registered in `api/releaseDateFinderRoutes.js`):
 | Key | Default | Purpose |
 |---|---|---|
 | `perVariantAttemptBudget` | **3** | Max LLM calls per variant in loop mode (1–5). Does NOT affect single-shot Run. |
-| `minConfidence` | 70 | Local confidence gate before `submitCandidate`. Below → candidate persists with `below_confidence: true`, publisher skipped. |
 | `discoveryPromptTemplate` | `''` | Optional per-category prompt override (hidden in UI; edited in LLM Config). |
 | `urlHistoryEnabled` | `false` | Inject prior run URLs into the prompt (variant-scoped, per attempt in loop mode). |
 | `queryHistoryEnabled` | `false` | Inject prior run search queries (variant-scoped). |

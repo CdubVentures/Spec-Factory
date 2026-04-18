@@ -17,6 +17,7 @@ import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTy
 import { resolveEffortLabel } from '../../llm-config/state/resolveEffortLabel.ts';
 import { CandidateDeleteConfirm } from './CandidateDeleteConfirm.tsx';
 import { PublishedBadge } from '../../../shared/ui/feedback/PublishedBadge.tsx';
+import { DefaultVariantMark } from '../../../shared/ui/feedback/DefaultVariantMark.tsx';
 import { resolveDrawerBadge } from '../selectors/drawerBadgeSelector.ts';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
 import { ColorSwatch } from '../../../shared/ui/finder/ColorSwatch.tsx';
@@ -349,6 +350,7 @@ function PublishedVariantRow({
   const headerContent = (
     <>
       <ColorSwatch hexParts={hexParts} />
+      <DefaultVariantMark isDefault={Boolean(entry.is_default)} size={10} />
       <span className="text-[11px] font-semibold sf-text-primary truncate min-w-0 flex-1" title={displayName}>
         {displayName}
       </span>
@@ -386,7 +388,14 @@ function PublishedVariantTable({
 
   const isGenerator = VARIANT_GENERATOR_FIELDS.has(fieldKey);
 
+  // Sort: default variant first (only one per product, pinned to top),
+  // then editions, then alpha by label. WHY: the default variant drives the
+  // grid cell value for scalar variant-dependent fields, so surfacing it first
+  // in the drawer keeps the user's mental model aligned.
   const sorted = [...entries].sort(([, a], [, b]) => {
+    const aIsDefault = a.is_default ? 0 : 1;
+    const bIsDefault = b.is_default ? 0 : 1;
+    if (aIsDefault !== bIsDefault) return aIsDefault - bIsDefault;
     const aIsEdition = a.variant_type === 'edition' ? 0 : 1;
     const bIsEdition = b.variant_type === 'edition' ? 0 : 1;
     if (aIsEdition !== bIsEdition) return aIsEdition - bIsEdition;

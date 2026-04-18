@@ -56,9 +56,9 @@ function ColorPillInline({ pill }: { readonly pill: ColorPill }) {
       {pill.isDefault && (
         <span className="w-1.5 h-1.5 rounded-full bg-[var(--sf-token-accent-strong)] shrink-0" />
       )}
-      {pill.sourceCount > 0 && (
+      {pill.sources.length > 0 && (
         <span className="px-1 py-0.5 rounded text-[9px] font-bold sf-text-muted sf-surface-soft">
-          {pill.sourceCount}x
+          {pill.sources.length} src
         </span>
       )}
     </span>
@@ -154,9 +154,14 @@ function SelectedStateCard({ display, onDeleteVariant, deleteVariantPending, onD
                       {ed.slug}
                     </span>
                     <PubMark published={ed.isPublished} size={10} />
-                    {ed.sourceCount > 0 && (
-                      <span className="px-1 py-0.5 rounded text-[9px] font-bold sf-text-muted sf-surface-soft">
-                        {ed.sourceCount}x
+                    {ed.sources.length > 0 && (
+                      <span className="px-1 py-0.5 rounded text-[9px] font-bold sf-text-muted sf-surface-soft" title="evidence sources">
+                        {ed.sources.length} src
+                      </span>
+                    )}
+                    {ed.confidenceMax != null && (
+                      <span className="px-1 py-0.5 rounded text-[9px] font-bold sf-text-muted sf-surface-soft" title="max per-source confidence">
+                        {ed.confidenceMax}%
                       </span>
                     )}
                     {onDeleteVariant && (
