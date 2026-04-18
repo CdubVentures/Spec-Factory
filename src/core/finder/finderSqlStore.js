@@ -45,6 +45,7 @@ export function createFinderSqlStore({ db, category, module: mod }) {
     ? deriveFinderSettingsDefaults(settingsSchema)
     : null;
   const settingsTableName = `${tableName}_settings`;
+  const suppressionsTableName = `${tableName}_suppressions`;
   const customColNames = summaryColumns.map(c => c.name);
   // WHY: Map column name → default value for use when upsert receives undefined.
   // Includes both common and custom columns.
@@ -121,6 +122,26 @@ export function createFinderSqlStore({ db, category, module: mod }) {
       _allSettings: db.prepare(`SELECT key, value FROM ${settingsTableName}`),
       _deleteSetting: db.prepare(`DELETE FROM ${settingsTableName} WHERE key = ?`),
     } : {}),
+    // Suppressions statements — always present (table always created).
+    _listSuppressions: db.prepare(
+      `SELECT item, kind, variant_id, mode, suppressed_at FROM ${suppressionsTableName}
+       WHERE category = ? AND product_id = ?`
+    ),
+    _addSuppression: db.prepare(
+      `INSERT OR IGNORE INTO ${suppressionsTableName} (category, product_id, item, kind, variant_id, mode)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    ),
+    _removeSuppression: db.prepare(
+      `DELETE FROM ${suppressionsTableName}
+       WHERE category = ? AND product_id = ? AND item = ? AND kind = ? AND variant_id = ? AND mode = ?`
+    ),
+    _removeAllSuppressionsForProduct: db.prepare(
+      `DELETE FROM ${suppressionsTableName} WHERE category = ? AND product_id = ?`
+    ),
+    _removeSuppressionsByScope: db.prepare(
+      `DELETE FROM ${suppressionsTableName}
+       WHERE category = ? AND product_id = ? AND variant_id = ? AND mode = ?`
+    ),
   };
 
   // ── Summary methods ─────────────────────────────────────────────
@@ -279,11 +300,37 @@ export function createFinderSqlStore({ db, category, module: mod }) {
     );
   }
 
+  // ── Suppressions methods (non-destructive discovery-log pruning) ─
+
+  function listSuppressions(productId) {
+    return stmts._listSuppressions.all(category, productId);
+  }
+
+  function addSuppression(productId, { item, kind, variant_id = '', mode = '' }) {
+    if (!item || !kind) return;
+    stmts._addSuppression.run(category, productId, item, kind, variant_id || '', mode || '');
+  }
+
+  function removeSuppression(productId, { item, kind, variant_id = '', mode = '' }) {
+    if (!item || !kind) return;
+    stmts._removeSuppression.run(category, productId, item, kind, variant_id || '', mode || '');
+  }
+
+  function removeAllSuppressionsForProduct(productId) {
+    stmts._removeAllSuppressionsForProduct.run(category, productId);
+  }
+
+  function removeSuppressionsByScope(productId, { variant_id = '', mode = '' } = {}) {
+    stmts._removeSuppressionsByScope.run(category, productId, variant_id || '', mode || '');
+  }
+
   return {
     upsert, get, listByCategory, remove,
     getIfOnCooldown,
     insertRun, listRuns, getLatestRun, removeRun, removeAllRuns, updateRunJson,
     getSetting, setSetting, getAllSettings, deleteSetting,
     updateSummaryField, updateBookkeeping,
+    listSuppressions, addSuppression, removeSuppression,
+    removeAllSuppressionsForProduct, removeSuppressionsByScope,
   };
 }

@@ -1346,6 +1346,22 @@ html[data-sf-theme-mode='dark'] .sf-custom-select-panel {
   filter: brightness(0.94);
 }
 
+/* WHY: Neutral "informational" action button — sits between the accented
+   primary button and the danger button. Used for secondary actions like
+   "Discovery History" that open inspection panels (not destructive, not
+   the main run action). Muted border + subtle fill. */
+.sf-secondary-button {
+  border: 1px solid var(--sf-color-border-soft);
+  border-radius: var(--sf-radius-sm);
+  color: rgb(var(--sf-color-text-primary-rgb));
+  background: var(--sf-surface-raised);
+}
+
+.sf-secondary-button:hover {
+  background: var(--sf-surface-hover);
+  border-color: var(--sf-color-border-default);
+}
+
 .sf-danger-button {
   border: 1px solid var(--sf-state-danger-border);
   border-radius: var(--sf-radius-sm);

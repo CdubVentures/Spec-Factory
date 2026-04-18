@@ -2,7 +2,6 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildColorEditionFinderPrompt,
-  accumulateUrlsChecked,
   COLOR_EDITION_FINDER_SPEC,
   buildVariantIdentityCheckPrompt,
   VARIANT_IDENTITY_CHECK_SPEC,
@@ -133,66 +132,6 @@ describe('buildColorEditionFinderPrompt', () => {
   it('prompt is compact (under 8000 chars with small palette)', () => {
     const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
     assert.ok(prompt.length < 8000, `prompt is ${prompt.length} chars`);
-  });
-});
-
-describe('accumulateUrlsChecked', () => {
-  it('returns empty array for empty runs', () => {
-    const result = accumulateUrlsChecked([]);
-    assert.deepEqual(result.urlsAlreadyChecked, []);
-  });
-
-  it('extracts urls from single run', () => {
-    const result = accumulateUrlsChecked([{
-      run_number: 1,
-      response: {
-        discovery_log: {
-          urls_checked: ['https://corsair.com/m75', 'https://amazon.com/dp/B123'],
-        },
-      },
-    }]);
-    assert.deepEqual(result.urlsAlreadyChecked, ['https://corsair.com/m75', 'https://amazon.com/dp/B123']);
-  });
-
-  it('unions urls across multiple runs, no duplicates', () => {
-    const result = accumulateUrlsChecked([
-      { run_number: 1, response: { discovery_log: { urls_checked: ['https://corsair.com/m75', 'https://amazon.com/dp/B123'] } } },
-      { run_number: 2, response: { discovery_log: { urls_checked: ['https://corsair.com/m75', 'https://bestbuy.com/sku/123'] } } },
-    ]);
-    assert.equal(result.urlsAlreadyChecked.length, 3);
-  });
-
-  it('handles runs without discovery_log gracefully', () => {
-    const result = accumulateUrlsChecked([
-      { run_number: 1, response: { colors: ['black'] } },
-      { run_number: 2, response: {} },
-      { run_number: 3 },
-    ]);
-    assert.deepEqual(result.urlsAlreadyChecked, []);
-  });
-
-  it('filters out runs older than cutoffIso', () => {
-    const result = accumulateUrlsChecked([
-      { run_number: 1, ran_at: '2026-01-01T00:00:00Z', response: { discovery_log: { urls_checked: ['https://old.com'] } } },
-      { run_number: 2, ran_at: '2026-04-10T00:00:00Z', response: { discovery_log: { urls_checked: ['https://recent.com'] } } },
-    ], { cutoffIso: '2026-03-01T00:00:00Z' });
-    assert.deepEqual(result.urlsAlreadyChecked, ['https://recent.com']);
-  });
-
-  it('includes all runs when cutoffIso is empty', () => {
-    const result = accumulateUrlsChecked([
-      { run_number: 1, ran_at: '2026-01-01T00:00:00Z', response: { discovery_log: { urls_checked: ['https://old.com'] } } },
-      { run_number: 2, ran_at: '2026-04-10T00:00:00Z', response: { discovery_log: { urls_checked: ['https://recent.com'] } } },
-    ], { cutoffIso: '' });
-    assert.equal(result.urlsAlreadyChecked.length, 2);
-  });
-
-  it('includes all runs when no options passed (backward compat)', () => {
-    const result = accumulateUrlsChecked([
-      { run_number: 1, ran_at: '2026-01-01T00:00:00Z', response: { discovery_log: { urls_checked: ['https://old.com'] } } },
-      { run_number: 2, ran_at: '2026-04-10T00:00:00Z', response: { discovery_log: { urls_checked: ['https://recent.com'] } } },
-    ]);
-    assert.equal(result.urlsAlreadyChecked.length, 2);
   });
 });
 

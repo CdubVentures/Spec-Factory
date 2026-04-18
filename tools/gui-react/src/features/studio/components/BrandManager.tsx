@@ -661,7 +661,7 @@ export function BrandManager() {
   }
   const totalProducts = impactData?.total_products ?? 0;
   const productsByCategory = impactData?.products_by_category ?? {};
-  if (isLoading) return <Spinner />;
+  if (isLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
   return (
     <>
       {" "}

@@ -31,15 +31,28 @@ CEF makes the leak maximally visible: CEF runs capture URLs in `color_edition.js
 
 ## Evidence Model
 
-**Universal shape** — same across all finders (CEF, PIF, RDF):
+**Universal shape** — same across CEF + RDF (PIF is the exception; see below):
 
 ```js
 evidence_refs: [
-  { url: string, tier: string }
+  { url: string, tier: string, confidence: number /* 0-100 */ }
 ]
 ```
 
-Two fields. Publisher counts length (`min_evidence_refs`), nothing else. `tier` is pure metadata — LLM classifies per prompt-injected definitions, surfaces in GUI/analytics, but is never a publisher gate and the prompt never asks the LLM to prefer one tier over another.
+Three fields. Publisher counts length (`min_evidence_refs`). `tier` is pure classification metadata (no publisher gate). `confidence` is **per-source** (0-100) — how sure the LLM is that THIS URL supports the claim. Distinct from candidate-level confidence (an overall run judgment).
+
+**Shared module** — `src/core/finder/evidencePromptFragment.js` owns the full contract:
+- `evidenceRefSchema` / `evidenceRefsSchema` (Zod)
+- `EVIDENCE_PROMPT_FRAGMENT` / `buildEvidencePromptBlock({minEvidenceRefs})`
+
+Feature schemas `import { evidenceRefsSchema }` directly — no local redefinition.
+
+**PIF is the exception.** Product-image finder does NOT carry `evidence_refs`. Reasons:
+- The image URL itself IS the evidence — no separate citation adds information
+- Images don't flow through the publisher candidate gate (they write directly to `product_images.json` + SQL summary)
+- `min_evidence_refs` has no field-rule entry for images, and no publisher rail to enforce against
+
+So CEF and RDF prompts include the shared evidence fragment + schema field; PIF prompts + schema deliberately do not.
 
 **Tier vocabulary** (6 values; taught via prompt, stored as string):
 - `tier1` — manufacturer / brand-official / press release
@@ -49,7 +62,44 @@ Two fields. Publisher counts length (`min_evidence_refs`), nothing else. `tier` 
 - `tier5` — specs aggregator / product database
 - `other` — anything that doesn't fit the above
 
-No runtime enum enforcement. The LLM classifies; we collect; we don't gate on tier.
+No runtime enum enforcement on tier string. The LLM classifies; we collect; we don't gate on tier.
+
+---
+
+## Storage (Dual-State, CLAUDE.md-aligned)
+
+Two surfaces, one canonical source:
+
+1. **JSON SSOT** — `product.json.candidates[n].metadata.evidence_refs`. Durable memory; survives DB deletion.
+2. **SQL projection** — `field_candidate_evidence` relational table. Indexed read-side for tier/confidence queries.
+
+```sql
+CREATE TABLE field_candidate_evidence (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  candidate_id INTEGER NOT NULL REFERENCES field_candidates(id) ON DELETE CASCADE,
+  url TEXT NOT NULL,
+  tier TEXT NOT NULL,
+  confidence REAL,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX idx_fce_candidate ON field_candidate_evidence(candidate_id);
+CREATE INDEX idx_fce_tier ON field_candidate_evidence(tier);
+```
+
+Design notes:
+- `candidate_id` FK only — variant scope derives through the candidate row's `variant_id`. One owner of variant linkage; no denormalization.
+- `ON DELETE CASCADE` with `PRAGMA foreign_keys = ON` — evidence disappears automatically on candidate delete.
+- **Rebuild contract** — `rebuildFieldCandidatesFromJson` re-populates both tables from JSON metadata. Deleted-DB rebuild is fully supported.
+- **Projection points** — `submitCandidate` and `candidateReseed` both call `specDb.replaceFieldCandidateEvidence(candidateId, refs)` for atomic clear-then-insert on re-submit / rebuild.
+
+Query example — tier1 evidence for a variant:
+```sql
+SELECT e.url, e.confidence
+FROM field_candidate_evidence e
+JOIN field_candidates c ON e.candidate_id = c.id
+WHERE c.variant_id = ? AND e.tier = 'tier1'
+ORDER BY e.confidence DESC;
+```
 
 ---
 
@@ -149,10 +199,11 @@ Each feature's prompt template gets a new `{{EVIDENCE_REQUIREMENTS}}` placeholde
 - Add `evidence_refs: z.array(z.object({url: z.string(), tier: z.string()})).default([])` per-color and per-edition in `colorEditionFinderResponseSchema`
 - Route refs → `variant_registry[n].evidence_refs` → `variants_evidence[]` in color_edition.json → `sourceMeta.evidence_refs` for submitCandidate
 
-**PIF** — `productImageLlmAdapter.js`, `productImageSchema.js`
-- Inject `{{EVIDENCE_REQUIREMENTS}}` into `PIF_VIEW_DEFAULT_TEMPLATE`
-- Add `evidence_refs: z.array(z.object({url: z.string(), tier: z.string()})).default([])` per-image in `productImageFinderResponseSchema`
-- PIF doesn't call `submitCandidate` — refs flow only into `product_images.json` + SQL summary. Publisher interaction is N/A for images.
+**PIF** — **SKIPPED ENTIRELY (the exception).**
+- No `{{EVIDENCE_REQUIREMENTS}}` in `PIF_VIEW_DEFAULT_TEMPLATE` or `PIF_HERO_DEFAULT_TEMPLATE`
+- No `evidence_refs` field in `productImageFinderResponseSchema`
+- `productImageLlmAdapter.js` deliberately does NOT import `buildEvidencePromptBlock` — marked with an explicit WHY comment
+- Rationale: image URL is self-evident; PIF doesn't submit to the publisher; no `min_evidence_refs` rule exists for images
 
 **RDF** — `releaseDateLlmAdapter.js` only (for this slice)
 - Replace hardcoded evidence block (lines 75–89 in adapter) with `{{EVIDENCE_REQUIREMENTS}}` placeholder so tier vocabulary matches CEF/PIF
@@ -272,7 +323,7 @@ Ship in small independent slices, each additive or flag-gated so prior behavior 
 - CEF: `LLM response with no evidence_refs for a color drops that color from variant registry`
 - CEF: `evidence_refs flow from LLM → candidate row → variants row → color_edition.json variants_evidence`
 - CEF: `variant delete preserves evidence_refs on remaining variants`
-- PIF: `evidence_refs persist on image record through merge`
+- PIF: `productImageFinderResponseSchema does NOT add evidence_refs to image records (PIF exception)`
 - RDF: `evidence_refs shape matches {url, tier} (migrated from legacy shape)`
 - Shared fragment: `EVIDENCE_PROMPT_FRAGMENT substitutes MIN_EVIDENCE_REFS correctly`
 - Retirement: `evidence.required no longer participates in any gate decision`

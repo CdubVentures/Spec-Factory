@@ -6,7 +6,9 @@ import { api } from '../../api/client.ts';
 import { useUiStore } from '../../stores/uiStore.ts';
 import { DataTable } from '../../shared/ui/data-display/DataTable.tsx';
 import { Chip } from '../../shared/ui/feedback/Chip.tsx';
-import { useFormatDateTime, useTimezoneLabel } from '../../utils/dateTime.ts';
+import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
+import { useFormatDateTime, useTimezoneLabel, parseBackendMs } from '../../utils/dateTime.ts';
+import { formatCellValue } from '../../utils/fieldNormalize.ts';
 import type {
   PublisherCandidatesResponse,
   PublisherCandidateRow,
@@ -121,8 +123,8 @@ function FilterChip({ label, active, onClick }: FilterChipProps) {
 // ── Expanded row sub-components ──────────────────────────────────────
 
 function RepairDetail({ repair }: { repair: PublisherRepairEntry }) {
-  const before = typeof repair.before === 'object' ? JSON.stringify(repair.before) : String(repair.before ?? '');
-  const after = typeof repair.after === 'object' ? JSON.stringify(repair.after) : String(repair.after ?? '');
+  const before = typeof repair.before === 'object' ? JSON.stringify(repair.before) : formatCellValue(repair.before);
+  const after = typeof repair.after === 'object' ? JSON.stringify(repair.after) : formatCellValue(repair.after);
   return (
     <tr>
       <td className="px-2 py-1 sf-text-subtle" style={{ fontFamily: 'var(--sf-token-font-family-mono)', fontSize: 11 }}>{repair.step}</td>
@@ -147,13 +149,13 @@ function LlmDecisionRow({ decision }: { decision: PublisherLlmRepairDecision }) 
   return (
     <tr>
       <td className="px-2 py-1" style={{ fontFamily: 'var(--sf-token-font-family-mono)', fontSize: 11 }}>
-        {decision.value}
+        {formatCellValue(decision.value)}
       </td>
       <td className="px-2 py-1">
         <Chip label={decision.decision} className={decisionChipClass} />
       </td>
       <td className="px-2 py-1 sf-status-text-success" style={{ fontFamily: 'var(--sf-token-font-family-mono)', fontSize: 11 }}>
-        {decision.resolved_to ?? '—'}
+        {decision.resolved_to != null ? formatCellValue(decision.resolved_to) : '—'}
       </td>
       <td className="px-2 py-1 sf-text-muted" style={{ fontSize: 11, whiteSpace: 'normal', maxWidth: 260 }}>
         {decision.reasoning ?? '—'}
@@ -163,7 +165,7 @@ function LlmDecisionRow({ decision }: { decision: PublisherLlmRepairDecision }) 
 }
 
 function SourceRow({ source }: { source: PublisherSourceEntry }) {
-  const formatDate = useFormatDateTime(false);
+  const formatDate = useFormatDateTime();
   const identifier = source.model ?? source.artifact?.slice(0, 10) ?? source.overridden_by ?? '—';
   return (
     <tr>
@@ -184,7 +186,7 @@ const detailHeadRowStyle = { background: 'rgb(var(--sf-color-surface-rgb) / 0.5)
 // ── Expanded row content ─────────────────────────────────────────────
 
 function ExpandedRowContent({ row }: { row: PublisherCandidateRow }) {
-  const formatDate = useFormatDateTime(false);
+  const formatDate = useFormatDateTime();
   const repairs = row.validation_json?.repairs ?? [];
   const rejections = row.validation_json?.rejections ?? [];
   const llmRepair = row.validation_json?.llmRepair ?? null;
@@ -195,7 +197,9 @@ function ExpandedRowContent({ row }: { row: PublisherCandidateRow }) {
   try {
     const parsed = JSON.parse(formattedValue);
     formattedValue = JSON.stringify(parsed, null, 2);
-  } catch { /* raw string is fine */ }
+  } catch {
+    formattedValue = formatCellValue(formattedValue);
+  }
 
   return (
     <div className="flex gap-4 p-4" style={{ background: 'rgb(var(--sf-color-panel-rgb) / 0.45)' }}>
@@ -399,7 +403,7 @@ const STATUS_FILTERS: StatusFilter[] = ['all', 'candidate', 'resolved'];
 
 export function PublisherPage() {
   const category = useUiStore((s) => s.category);
-  const formatDate = useFormatDateTime(false);
+  const formatDate = useFormatDateTime();
   const tzLabel = useTimezoneLabel();
 
   // Filter state (persisted)
@@ -426,7 +430,7 @@ export function PublisherPage() {
     if (dateRange !== 'all') {
       const now = Date.now();
       const ms = dateRange === '24h' ? 86_400_000 : dateRange === '7d' ? 604_800_000 : 2_592_000_000;
-      rows = rows.filter((r) => new Date(r.submitted_at).getTime() > now - ms);
+      rows = rows.filter((r) => parseBackendMs(r.submitted_at) > now - ms);
     }
 
     if (statusFilter !== 'all') {
@@ -532,11 +536,15 @@ export function PublisherPage() {
     {
       accessorKey: 'value',
       header: 'Value',
-      cell: ({ getValue }) => (
-        <span className="sf-text-muted" style={{ fontFamily: 'var(--sf-token-font-family-mono)', fontSize: 11, maxWidth: 260, display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {truncateValue(getValue() as string | null)}
-        </span>
-      ),
+      cell: ({ getValue }) => {
+        const raw = getValue();
+        const formatted = formatCellValue(raw);
+        return (
+          <span className="sf-text-muted" style={{ fontFamily: 'var(--sf-token-font-family-mono)', fontSize: 11, maxWidth: 260, display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {formatted ? truncateValue(formatted) : '—'}
+          </span>
+        );
+      },
     },
     {
       accessorKey: 'status',
@@ -695,9 +703,7 @@ export function PublisherPage() {
 
       {/* Table */}
       {isLoading ? (
-        <div className="sf-surface-elevated rounded border sf-border-default py-12 text-center">
-          <span className="sf-text-muted text-sm">Loading candidates...</span>
-        </div>
+        <Spinner className="h-8 w-8 mx-auto mt-12" />
       ) : (
         <DataTable
           data={filteredRows}

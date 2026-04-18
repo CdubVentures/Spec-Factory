@@ -435,28 +435,80 @@ export async function buildProductReviewPayload({
   // variants SQL table (SSOT), not from candidates or product.json. Derive inline
   // so the review grid always shows the correct published state from SQL.
   //
-  // These are variant-GENERATORS, not variant-dependent attributes — the field
-  // values ARE the variant identities. They publish to product.json.fields.<key>
-  // as a JSON list, not to variant_fields[vid][key]. No variant_values emitted.
+  // These are variant-GENERATORS (NOT variant-dependent attributes) — the field
+  // values ARE the variant identities. Publish to product.json.fields.<key> as a
+  // JSON list, not to variant_fields[vid][key].
+  //
+  // WHY emit variant_values here: the drawer renders per-variant rows (one per
+  // color combo, one per edition slug) so each row can display its own color
+  // swatch + resolved value + per-variant source list (CEF identity-check
+  // evidence). Drawer matches these entries against the single colors/editions
+  // candidate using value-includes on the published JSON array.
+  const generatorVariantValuesByField = new Map(); // fk → Record<vid, VariantValueEntry>
   if (specDb?.variants) {
     const activeVariants = specDb.variants.listActive(productId);
     const variantColors = [];
     const variantEditions = [];
+    const colorsVariantValues = {};
+    const editionsVariantValues = {};
     for (const v of activeVariants) {
+      const colorAtoms = Array.isArray(v.color_atoms) ? v.color_atoms : null;
+      const combo = colorAtoms ? colorAtoms.join('+') : '';
+      const entryTimestamp = String(v.updated_at || '').trim() || null;
       if (v.variant_type === 'color') {
         // WHY: Combos stay intact as a single entry (e.g. "black+white"), not
         // split into individual atoms. Atom splitting is reserved for palette
         // validation / repair. Storage + display layers see the combo.
-        const combo = Array.isArray(v.color_atoms) ? v.color_atoms.join('+') : '';
         if (combo && !variantColors.includes(combo)) variantColors.push(combo);
+        if (combo) {
+          colorsVariantValues[v.variant_id] = {
+            value: combo,
+            confidence: 1.0,
+            source: 'cef',
+            source_timestamp: entryTimestamp,
+            variant_label: v.variant_label ?? null,
+            variant_type: 'color',
+            color_atoms: colorAtoms,
+            edition_slug: null,
+            variant_key: v.variant_key ?? null,
+          };
+        }
       } else if (v.variant_type === 'edition') {
         if (v.edition_slug && !variantEditions.includes(v.edition_slug)) {
           variantEditions.push(v.edition_slug);
         }
+        if (v.edition_slug) {
+          editionsVariantValues[v.variant_id] = {
+            value: v.edition_slug,
+            confidence: 1.0,
+            source: 'cef',
+            source_timestamp: entryTimestamp,
+            variant_label: v.variant_label ?? null,
+            variant_type: 'edition',
+            color_atoms: colorAtoms,
+            edition_slug: v.edition_slug,
+            variant_key: v.variant_key ?? null,
+          };
+        }
         // WHY: An edition IS a color variant — its combo cascades into the
         // colors list so the review grid shows the full published color set.
-        const editionCombo = Array.isArray(v.color_atoms) ? v.color_atoms.join('+') : '';
-        if (editionCombo && !variantColors.includes(editionCombo)) variantColors.push(editionCombo);
+        // Edition entries in colorsVariantValues keep variant_type='edition'
+        // so the drawer can badge them distinctly and resolve variant_key
+        // against CEF identity-check mappings (new_key: "edition:<slug>").
+        if (combo && !variantColors.includes(combo)) variantColors.push(combo);
+        if (combo) {
+          colorsVariantValues[v.variant_id] = {
+            value: combo,
+            confidence: 1.0,
+            source: 'cef',
+            source_timestamp: entryTimestamp,
+            variant_label: v.variant_label ?? null,
+            variant_type: 'edition',
+            color_atoms: colorAtoms,
+            edition_slug: v.edition_slug ?? null,
+            variant_key: v.variant_key ?? null,
+          };
+        }
       }
     }
     if (variantColors.length > 0) {
@@ -467,6 +519,9 @@ export async function buildProductReviewPayload({
         metadata_json: { source: 'variant_registry' },
         updated_at: '',
       });
+      if (Object.keys(colorsVariantValues).length > 0) {
+        generatorVariantValuesByField.set(normalizeField('colors'), colorsVariantValues);
+      }
     }
     if (variantEditions.length > 0) {
       resolvedByField.set(normalizeField('editions'), {
@@ -476,6 +531,9 @@ export async function buildProductReviewPayload({
         metadata_json: { source: 'variant_registry' },
         updated_at: '',
       });
+      if (Object.keys(editionsVariantValues).length > 0) {
+        generatorVariantValuesByField.set(normalizeField('editions'), editionsVariantValues);
+      }
     }
   }
 
@@ -493,6 +551,19 @@ export async function buildProductReviewPayload({
     const hasValue = hasKnownValue(resolvedValue);
 
     const fieldIsVariantDependent = isVariantDependentField(field, specDb);
+    const variantValuesForField = fieldIsVariantDependent ? variantValuesByField.get(field) : null;
+    const hasVariantValues = !!(variantValuesForField && variantValuesForField.size > 0);
+
+    if (!hasValue) missingCount += 1;
+
+    // WHY: Skip emission when the field carries no information — no resolved value,
+    // no candidates, no override, no per-variant data. Frontend grid renders from
+    // layout.rows and falls back when fields[key] is missing (all accessors are
+    // null-safe). Keeps products-index size linear in real data rather than
+    // layout × products. missingCount still increments so metrics stay correct.
+    if (!hasValue && fieldCandidateRows.length === 0 && !isOverridden && !hasVariantValues) {
+      continue;
+    }
 
     // Map field_candidates rows → candidate shape.
     // For variant-dependent fields, project variant_id + enrich with variant metadata
@@ -543,8 +614,6 @@ export async function buildProductReviewPayload({
       ? confidenceColor(isOverridden ? 1 : resolvedConfidence, [])
       : 'gray';
 
-    if (!hasValue) missingCount += 1;
-
     const row = {
       selected: {
         value: resolvedValue,
@@ -567,31 +636,38 @@ export async function buildProductReviewPayload({
 
     // WHY: Variant-dependent fields (owned by a variantFieldProducer module) expose
     // per-variant published state keyed by variant_id. Drawer renders a variant×value
-    // table from this map. Scalar fields (colors/editions are handled by the variants
-    // SSOT branch above) don't emit variant_values. Each entry is enriched with variant
-    // metadata (label/type/color_atoms/edition_slug) so the drawer renders without an
-    // extra API call.
-    if (fieldIsVariantDependent) {
-      const byVid = variantValuesByField.get(field);
-      if (byVid && byVid.size > 0) {
-        const variantValues = {};
-        for (const [vid, r] of byVid.entries()) {
-          const vmeta = isObject(r.metadata_json) ? r.metadata_json : {};
-          const vsourceToken = String(r.source_type || vmeta.source || '').trim().toLowerCase();
-          const vinfo = variantById.get(vid) || null;
-          variantValues[vid] = {
-            value: r.value,
-            confidence: Math.max(0, Math.min(1, toNumber(r.confidence, 0))),
-            source: dbSourceLabel(vsourceToken) || vsourceToken || '',
-            source_timestamp: String(r.updated_at || '').trim() || null,
-            variant_label: vinfo?.variant_label ?? null,
-            variant_type: vinfo?.variant_type ?? null,
-            color_atoms: Array.isArray(vinfo?.color_atoms) ? vinfo.color_atoms : null,
-            edition_slug: vinfo?.edition_slug ?? null,
-          };
-        }
-        row.variant_values = variantValues;
+    // table from this map. Each entry is enriched with variant metadata
+    // (label/type/color_atoms/edition_slug/variant_key) so the drawer renders
+    // without an extra API call.
+    if (hasVariantValues) {
+      const variantValues = {};
+      for (const [vid, r] of variantValuesForField.entries()) {
+        const vmeta = isObject(r.metadata_json) ? r.metadata_json : {};
+        const vsourceToken = String(r.source_type || vmeta.source || '').trim().toLowerCase();
+        const vinfo = variantById.get(vid) || null;
+        variantValues[vid] = {
+          value: r.value,
+          confidence: Math.max(0, Math.min(1, toNumber(r.confidence, 0))),
+          source: dbSourceLabel(vsourceToken) || vsourceToken || '',
+          source_timestamp: String(r.updated_at || '').trim() || null,
+          variant_label: vinfo?.variant_label ?? null,
+          variant_type: vinfo?.variant_type ?? null,
+          color_atoms: Array.isArray(vinfo?.color_atoms) ? vinfo.color_atoms : null,
+          edition_slug: vinfo?.edition_slug ?? null,
+          variant_key: vinfo?.variant_key ?? null,
+        };
       }
+      row.variant_values = variantValues;
+    }
+
+    // WHY: Variant-generator fields (colors, editions) expose per-variant rows
+    // too — built from the active-variant list rather than from candidate rows.
+    // The single CEF candidate (value = full array) is matched against each
+    // row's value via array-includes in the drawer, and per-variant sources
+    // come from metadata.evidence_by_variant[variant_key].
+    const generatorVariantValues = generatorVariantValuesByField.get(field);
+    if (generatorVariantValues && Object.keys(generatorVariantValues).length > 0) {
+      row.variant_values = generatorVariantValues;
     }
 
     rows[field] = row;

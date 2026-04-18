@@ -122,8 +122,21 @@ export function submitCandidate({
     variantId: normalizedVariantId,
   });
 
-  const candidateRow = specDb.getFieldCandidateBySourceId(productId, fieldKey, sourceId);
+  // WHY: Same source_id can back two rows (variant-scoped + scalar, variant_id NULL)
+  // via UNIQUE(source_id, variant_id_key). Lookup must include variant_id so the
+  // evidence projection and autoPublish target the row we just inserted — not its
+  // variant twin.
+  const candidateRow = specDb.getFieldCandidateBySourceIdAndVariant(productId, fieldKey, sourceId, normalizedVariantId);
   const candidateId = candidateRow?.id ?? null;
+
+  // --- Evidence projection (SQL read-side, JSON metadata stays SSOT) ---
+  // WHY: metadata_json.evidence_refs is canonical. We project into
+  // field_candidate_evidence so tier/confidence queries are indexed. Cascade
+  // delete on the candidate row cleans this up automatically. Re-submissions
+  // (same source_id) replace existing rows for the candidate.
+  if (candidateId && hasMetadata && Array.isArray(metadata.evidence_refs) && metadata.evidence_refs.length > 0) {
+    specDb.replaceFieldCandidateEvidence?.(candidateId, metadata.evidence_refs);
+  }
 
   // --- Product.json write (source-centric: flat entries, no source merge) ---
   const productDir = path.join(productRoot, productId);

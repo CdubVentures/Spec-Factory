@@ -51,6 +51,9 @@ export function registerConfigRoutes(ctx) {
 
   const runtimeHandler = createRuntimeSettingsHandler({
     jsonRes, readJsonBody, toInt, config, broadcastWs, persistenceCtx,
+    // WHY: Threaded in so the handler can auto-fire reconcileThreshold
+    // across all categories when publishConfidenceThreshold changes.
+    getSpecDb,
   });
 
   const llmPolicyHandler = createLlmPolicyHandler({

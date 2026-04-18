@@ -15,9 +15,13 @@
 
 import { zodToLlmSchema } from '../../core/llm/zodToLlmSchema.js';
 import { resolvePromptTemplate } from '../../core/llm/resolvePromptTemplate.js';
-import { buildEvidencePromptBlock } from '../../core/finder/evidencePromptFragment.js';
+import { buildPreviousDiscoveryBlock } from '../../core/finder/discoveryLog.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
 import { productImageFinderResponseSchema } from './productImageSchema.js';
+
+// WHY: PIF is the evidence-refs exception across finders — the image URL IS
+// the evidence, and images don't flow through the publisher candidate gate.
+// The shared evidencePromptFragment is deliberately NOT imported here.
 
 /* ── Canonical view vocabulary ───────────────────────────────────── */
 
@@ -556,45 +560,6 @@ export function resolveViewConfig(viewConfigSetting, category) {
   }));
 }
 
-/* ── Per-variant discovery log accumulation ───────────────────────── */
-
-/**
- * Accumulate discovery logs from previous PIF runs for a specific variant.
- * Unions urls_checked and queries_run across all runs matching the variant_key.
- *
- * @param {object[]} previousRuns — all PIF runs from the JSON store
- * @param {string} variantKey — e.g. "color:black" or "edition:cod-bo6"
- * @returns {{ urlsChecked: string[], queriesRun: string[] }}
- */
-export function accumulateVariantDiscoveryLog(previousRuns, variantKey, variantId, { cutoffIso = '' } = {}) {
-  const urlSet = new Set();
-  const querySet = new Set();
-
-  for (const run of previousRuns) {
-    if (cutoffIso && run.ran_at && run.ran_at < cutoffIso) continue;
-    // WHY: Match by variant_id first (survives renames), fall back to variant_key
-    const rId = run.response?.variant_id;
-    const rKey = run.response?.variant_key;
-    const matches = (variantId && rId) ? rId === variantId : rKey === variantKey;
-    if (!matches) continue;
-
-    const log = run.response?.discovery_log;
-    if (!log) continue;
-
-    if (Array.isArray(log.urls_checked)) {
-      for (const u of log.urls_checked) urlSet.add(u);
-    }
-    if (Array.isArray(log.queries_run)) {
-      for (const q of log.queries_run) querySet.add(q);
-    }
-  }
-
-  return {
-    urlsChecked: [...urlSet],
-    queriesRun: [...querySet],
-  };
-}
-
 /* ── Prompt builder ──────────────────────────────────────────────── */
 
 /**
@@ -635,11 +600,8 @@ Every image you return MUST use one of these view names: {{ALL_VIEW_KEYS}}
 
 If a specific view is genuinely unavailable for this variant, omit it rather than returning a wrong angle.
 
-{{EVIDENCE_REQUIREMENTS}}
-Attach evidence_refs to each image — the URL(s) where you found this image being used as the product's image for this exact variant (typically the product page or review page it appears on).
-
 Return JSON:
-- "images": [{ "view": "view-name", "url": "direct-image-url", "source_page": "page-where-found", "alt_text": "image alt text if available", "evidence_refs": [{ "url": "...", "tier": "tier1|tier2|tier3|tier4|tier5|other" }, ...] }, ...]
+- "images": [{ "view": "view-name", "url": "direct-image-url", "source_page": "page-where-found", "alt_text": "image alt text if available" }, ...]
 - "discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }`;
 
 export function buildProductImageFinderPrompt({
@@ -656,7 +618,6 @@ export function buildProductImageFinderPrompt({
   previousDiscovery = { urlsChecked: [], queriesRun: [] },
   promptOverride = '',
   templateOverride = '',
-  minEvidenceRefs = 1,
 }) {
   const brand = product.brand || '';
   const baseModel = product.base_model || '';
@@ -719,9 +680,11 @@ export function buildProductImageFinderPrompt({
 - Prefer images where the product fills most of the frame with minimal background
 - Images below the per-view minimum resolution will be rejected — do not return small thumbnails or icons`;
 
-  const previousDiscoverySection = (previousDiscovery.urlsChecked.length > 0 || previousDiscovery.queriesRun.length > 0)
-    ? `Previous searches for this variant (do not repeat — find NEW sources or verify these still work):\n${previousDiscovery.urlsChecked.length > 0 ? `- URLs already checked: ${JSON.stringify(previousDiscovery.urlsChecked)}\n` : ''}${previousDiscovery.queriesRun.length > 0 ? `- Queries already run: ${JSON.stringify(previousDiscovery.queriesRun)}\n` : ''}\n`
-    : '';
+  const previousDiscoverySection = buildPreviousDiscoveryBlock({
+    urlsChecked: previousDiscovery.urlsChecked,
+    queriesRun: previousDiscovery.queriesRun,
+    scopeLabel: "this variant's view searches",
+  });
 
   const template = templateOverride || PIF_VIEW_DEFAULT_TEMPLATE;
 
@@ -738,7 +701,6 @@ export function buildProductImageFinderPrompt({
     IMAGE_REQUIREMENTS: imageRequirements,
     PREVIOUS_DISCOVERY: previousDiscoverySection,
     VARIANT_TYPE_WORD: variantType === 'edition' ? 'edition' : 'color',
-    EVIDENCE_REQUIREMENTS: buildEvidencePromptBlock({ minEvidenceRefs }),
   });
 }
 
@@ -759,7 +721,6 @@ export const PRODUCT_IMAGE_FINDER_SPEC = {
     previousDiscovery: domainArgs.previousDiscovery || { urlsChecked: [], queriesRun: [] },
     promptOverride: domainArgs.promptOverride || '',
     viewQualityMap: domainArgs.viewQualityMap || null,
-    minEvidenceRefs: domainArgs.minEvidenceRefs,
   }),
   jsonSchema: zodToLlmSchema(productImageFinderResponseSchema),
 };
@@ -806,10 +767,8 @@ IDENTITY: You are looking for the EXACT product "{{BRAND}} {{MODEL}}"{{VARIANT_S
 {{SIBLINGS_LINE}}
 Every image you return MUST use the view name "hero".
 
-{{EVIDENCE_REQUIREMENTS}}
-
 {{PREVIOUS_DISCOVERY}}Return JSON:
-- "images": [{ "view": "hero", "url": "direct-image-url", "source_page": "page-where-found", "alt_text": "image alt text if available", "evidence_refs": [{ "url": "...", "tier": "tier1|tier2|tier3|tier4|tier5|other" }, ...] }, ...]
+- "images": [{ "view": "hero", "url": "direct-image-url", "source_page": "page-where-found", "alt_text": "image alt text if available" }, ...]
 - "discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }`;
 
 export function buildHeroImageFinderPrompt({
@@ -824,7 +783,6 @@ export function buildHeroImageFinderPrompt({
   previousDiscovery = { urlsChecked: [], queriesRun: [] },
   promptOverride = '',
   templateOverride = '',
-  minEvidenceRefs = 1,
 }) {
   const brand = product.brand || '';
   const model = product.model || '';
@@ -850,11 +808,11 @@ export function buildHeroImageFinderPrompt({
     ? `\nKnown sibling models to EXCLUDE: ${siblingsExcluded.join(', ')}\n`
     : '';
 
-  const discoverySection = (previousDiscovery.urlsChecked.length > 0 || previousDiscovery.queriesRun.length > 0)
-    ? `Previous searches (do not repeat — find NEW sources):
-${previousDiscovery.urlsChecked.length > 0 ? `- URLs already checked: ${JSON.stringify(previousDiscovery.urlsChecked)}` : ''}
-${previousDiscovery.queriesRun.length > 0 ? `- Queries already run: ${JSON.stringify(previousDiscovery.queriesRun)}` : ''}
-` : '';
+  const discoverySection = buildPreviousDiscoveryBlock({
+    urlsChecked: previousDiscovery.urlsChecked,
+    queriesRun: previousDiscovery.queriesRun,
+    scopeLabel: "this variant's hero searches",
+  });
 
   // Use custom override or built-in instructions
   const heroInstructions = promptOverride || `Find high-quality lifestyle and contextual product images for: ${brand} ${model} — ${variantDesc}
@@ -902,7 +860,6 @@ Do NOT use images from editorial review sites — even if the photo looks contex
     SIBLINGS_LINE: siblingLine,
     PREVIOUS_DISCOVERY: discoverySection,
     HERO_INSTRUCTIONS: heroInstructions,
-    EVIDENCE_REQUIREMENTS: buildEvidencePromptBlock({ minEvidenceRefs }),
   });
 }
 
@@ -921,7 +878,6 @@ export const HERO_IMAGE_FINDER_SPEC = {
     ambiguityLevel: domainArgs.ambiguityLevel || 'easy',
     previousDiscovery: domainArgs.previousDiscovery || { urlsChecked: [], queriesRun: [] },
     promptOverride: domainArgs.promptOverride || '',
-    minEvidenceRefs: domainArgs.minEvidenceRefs,
   }),
   jsonSchema: zodToLlmSchema(productImageFinderResponseSchema),
 };

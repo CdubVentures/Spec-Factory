@@ -14,6 +14,7 @@ import {
   FinderDiscoveryDetails,
   FinderRunPromptDetails,
   ColorSwatch,
+  DiscoveryHistoryButton,
   useResolvedFinderModel,
   useFinderColorHexMap,
   resolveVariantColorAtoms,
@@ -93,6 +94,7 @@ export function ReleaseDateFinderPanel({ productId, category }: ReleaseDateFinde
 
   const fire = useFireAndForget({ type: 'rdf', category, productId });
   const runAllUrl = `/release-date-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`;
+  const loopUrl = `${runAllUrl}/loop`;
 
   const deleteRunMut = useDeleteReleaseDateFinderRunMutation(category, productId);
   const deleteAllMut = useDeleteReleaseDateFinderAllMutation(category, productId);
@@ -100,7 +102,7 @@ export function ReleaseDateFinderPanel({ productId, category }: ReleaseDateFinde
   const { model: resolvedModel, accessMode, modelDisplay, effortLevel } = useResolvedFinderModel('releaseDateFinder');
 
   const isRunningModule = useIsModuleRunning('rdf', productId);
-  const runningVariantKeys = useRunningVariantKeys('rdf', productId, '');
+  const loopingVariantKeys = useRunningVariantKeys('rdf', productId, 'loop');
 
   const effectiveResult = isError ? null : result;
   const kpiCards = useMemo(
@@ -129,11 +131,22 @@ export function ReleaseDateFinderPanel({ productId, category }: ReleaseDateFinde
 
   const handleRunAll = useCallback(() => {
     for (const row of variantRows) {
-      if (!runningVariantKeys.has(row.variant_key)) {
-        fire(runAllUrl, { variant_key: row.variant_key });
+      fire(runAllUrl, { variant_key: row.variant_key });
+    }
+  }, [fire, runAllUrl, variantRows]);
+
+  const handleLoopVariant = useCallback((variantKey: string) => {
+    if (loopingVariantKeys.has(variantKey)) return;
+    fire(loopUrl, { variant_key: variantKey }, { subType: 'loop', variantKey });
+  }, [fire, loopUrl, loopingVariantKeys]);
+
+  const handleLoopAll = useCallback(() => {
+    for (const row of variantRows) {
+      if (!loopingVariantKeys.has(row.variant_key)) {
+        fire(loopUrl, { variant_key: row.variant_key }, { subType: 'loop', variantKey: row.variant_key });
       }
     }
-  }, [fire, runAllUrl, variantRows, runningVariantKeys]);
+  }, [fire, loopUrl, variantRows, loopingVariantKeys]);
 
   if (!productId || !category) return null;
 
@@ -156,10 +169,25 @@ export function ReleaseDateFinderPanel({ productId, category }: ReleaseDateFinde
         tip="Discovers per-variant first-availability release dates via web search. Candidates flow through the publisher gate."
         isRunning={isRunningModule}
         onRun={handleRunAll}
-        runLabel="Run All"
-        // WHY: RDF iterates CEF's variant registry. If there are no variants yet,
-        // there's nothing to loop over. Mirrors PIF's CEF-gate pattern.
-        runDisabled={cefVariants.length === 0}
+        historyActionSlot={<DiscoveryHistoryButton finderId="releaseDateFinder" productId={productId} category={category} />}
+        actionSlot={
+          <div className="ml-auto flex items-center gap-1.5">
+            <button
+              onClick={(e) => { e.stopPropagation(); handleRunAll(); }}
+              disabled={cefVariants.length === 0}
+              className="w-28 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-primary-button disabled:opacity-40 disabled:cursor-not-allowed text-center"
+            >
+              Run
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleLoopAll(); }}
+              disabled={cefVariants.length === 0 || (variantRows.length > 0 && variantRows.every((r) => loopingVariantKeys.has(r.variant_key)))}
+              className="w-28 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed text-center"
+            >
+              Loop
+            </button>
+          </div>
+        }
       >
         <FinderRunModelBadge
           labelPrefix="RDF"
@@ -204,7 +232,7 @@ export function ReleaseDateFinderPanel({ productId, category }: ReleaseDateFinde
                 const atoms = resolveVariantColorAtoms(row.variant_key, editions);
                 const hexParts = atoms.map((a) => hexMap.get(a.trim()) || '');
                 const c = row.candidate;
-                const isRunning = runningVariantKeys.has(row.variant_key);
+                const isLooping = loopingVariantKeys.has(row.variant_key);
                 const valueDisplay = c?.value || '';
                 const hasValue = Boolean(c?.value);
                 return (
@@ -232,10 +260,16 @@ export function ReleaseDateFinderPanel({ productId, category }: ReleaseDateFinde
                         <div className="shrink-0 flex items-center gap-1">
                           <button
                             onClick={(e) => { e.stopPropagation(); handleRunVariant(row.variant_key); }}
-                            disabled={isRunning}
-                            className="px-2 py-1 text-[9px] font-bold uppercase tracking-wide rounded sf-primary-button disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="px-2 py-1 text-[9px] font-bold uppercase tracking-wide rounded sf-primary-button"
                           >
-                            {isRunning ? '...' : 'Run'}
+                            Run
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleLoopVariant(row.variant_key); }}
+                            disabled={isLooping}
+                            className="px-2 py-1 text-[9px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            {isLooping ? '...' : 'Loop'}
                           </button>
                         </div>
                       </>

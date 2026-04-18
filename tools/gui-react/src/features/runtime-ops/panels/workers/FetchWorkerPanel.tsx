@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { RuntimeOpsWorkerRow } from '../../types.ts';
 import { BrowserStream } from '../overview/BrowserStream.tsx';
+import { parseBackendMs } from '../../../../utils/dateTime.ts';
 
 interface FetchWorkerPanelProps {
   worker: RuntimeOpsWorkerRow;
@@ -26,7 +27,7 @@ function ElapsedTimer({ startedAt, state }: { startedAt: string; state: string }
 
   useEffect(() => {
     if (state !== 'running' && state !== 'stuck' && state !== 'crawling' && state !== 'retrying') return;
-    const startMs = new Date(startedAt).getTime();
+    const startMs = parseBackendMs(startedAt);
     if (!Number.isFinite(startMs) || startMs <= 0) return;
 
     const tick = () => {

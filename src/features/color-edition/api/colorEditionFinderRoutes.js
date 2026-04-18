@@ -21,6 +21,7 @@ export function registerColorEditionFinderRoutes(ctx) {
 
   const genericHandler = createFinderRouteHandler({
     routePrefix: 'color-edition-finder',
+    moduleId: 'colorEditionFinder',
     moduleType: 'cef',
     phase: 'colorFinder',
     fieldKeys: ['colors', 'editions'],

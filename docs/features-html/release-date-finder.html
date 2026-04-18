@@ -111,7 +111,7 @@
     <dl class="detail-grid">
       <dt>Dependency</dt><dd>Requires CEF data (<code>specDb.variants.listByProduct(productId)</code>) &mdash; one RDF run per variant.</dd>
       <dt>Module class</dt><dd><code>variantFieldProducer</code> &mdash; new class alongside <code>variantArtifactProducer</code> (PIF) and <code>variantGenerator</code> (CEF).</dd>
-      <dt>Field rule</dt><dd>EG-locked <code>release_date</code>: scalar date. Accepted formats: <code>YYYY-MM-DD</code>, <code>YYYY</code>, <code>MMM YYYY</code>, <code>Month YYYY</code>.</dd>
+      <dt>Field rule</dt><dd>EG-locked <code>release_date</code>: scalar date. Accepted formats: <code>YYYY-MM-DD</code>, <code>YYYY-MM</code>, <code>YYYY</code>, <code>MMM YYYY</code>, <code>Month YYYY</code>.</dd>
       <dt>Accumulation</dt><dd><strong>Latest-wins per variant</strong>. Each new run for a variant replaces its candidate. Distinct variants accumulate independently.</dd>
       <dt>Discovery learning</dt><dd>URLs and queries feed-forward per variant with global URL/Query cooldown windows (default 90 days).</dd>
       <dt>Phase</dt><dd><code>releaseDateFinder</code> (<code>llmPhaseDefs.js</code>) &mdash; triage role, planner model family.</dd>

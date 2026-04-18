@@ -81,6 +81,12 @@ export function rebuildFieldCandidatesFromJson({ specDb, productRoot }) {
             metadataJson: candidate.metadata ?? {},
             variantId: candidate.variant_id || null,
           });
+          // WHY: Project evidence_refs from metadata JSON into the relational
+          // table so tier/confidence queries work after a DB-deleted rebuild.
+          const row = specDb.getFieldCandidateBySourceId(productId, fieldKey, candidate.source_id);
+          if (row?.id && Array.isArray(candidate.metadata?.evidence_refs) && candidate.metadata.evidence_refs.length > 0) {
+            specDb.replaceFieldCandidateEvidence?.(row.id, candidate.metadata.evidence_refs);
+          }
           productCandidateCount++;
         } else {
           // Old format: sources array → upsert with legacy path (backward compat)

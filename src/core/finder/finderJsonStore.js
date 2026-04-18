@@ -86,8 +86,9 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
 
   // WHY: Extra fields live alongside runs on the doc but are NOT derived from runs.
   // recalculateFromRuns must carry them forward from the existing doc.
-  // Default: PIF's evaluations + carousel_slots. CEF passes ['variant_registry'].
-  const EXTRA_FIELDS = extraFields || ['evaluations', 'carousel_slots'];
+  // Default: PIF's evaluations + carousel_slots + every finder's suppressions.
+  // CEF passes ['variant_registry', 'suppressions'].
+  const EXTRA_FIELDS = extraFields || ['evaluations', 'carousel_slots', 'suppressions'];
 
   function pickExtraFields(doc) {
     if (!doc) return {};

@@ -11,49 +11,10 @@
 
 import { zodToLlmSchema } from '../../core/llm/zodToLlmSchema.js';
 import { resolvePromptTemplate } from '../../core/llm/resolvePromptTemplate.js';
+import { buildPreviousDiscoveryBlock } from '../../core/finder/discoveryLog.js';
+import { buildEvidencePromptBlock } from '../../core/finder/evidencePromptFragment.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
 import { releaseDateFinderResponseSchema } from './releaseDateSchema.js';
-
-/* ── Per-variant discovery log accumulation ───────────────────────── */
-
-/**
- * Accumulate discovery logs from previous RDF runs for a specific variant.
- * Unions urls_checked and queries_run across all matching runs, respecting cooldown cutoffs.
- *
- * @param {object[]} previousRuns — RDF runs from the JSON store
- * @param {string} variantKey
- * @param {string|null} variantId
- * @param {{urlCutoffIso?: string, queryCutoffIso?: string}} opts
- * @returns {{ urlsChecked: string[], queriesRun: string[] }}
- */
-export function accumulateVariantDiscoveryLog(previousRuns, variantKey, variantId, { urlCutoffIso = '', queryCutoffIso = '' } = {}) {
-  const urlSet = new Set();
-  const querySet = new Set();
-
-  for (const run of previousRuns) {
-    const rId = run.response?.variant_id;
-    const rKey = run.response?.variant_key;
-    const matches = (variantId && rId) ? rId === variantId : rKey === variantKey;
-    if (!matches) continue;
-
-    const log = run.response?.discovery_log;
-    if (!log) continue;
-
-    const ranAt = run.ran_at || '';
-    if (!urlCutoffIso || !ranAt || ranAt >= urlCutoffIso) {
-      if (Array.isArray(log.urls_checked)) {
-        for (const u of log.urls_checked) urlSet.add(u);
-      }
-    }
-    if (!queryCutoffIso || !ranAt || ranAt >= queryCutoffIso) {
-      if (Array.isArray(log.queries_run)) {
-        for (const q of log.queries_run) querySet.add(q);
-      }
-    }
-  }
-
-  return { urlsChecked: [...urlSet], queriesRun: [...querySet] };
-}
 
 /* ── Prompt builder ──────────────────────────────────────────────── */
 
@@ -62,46 +23,56 @@ export const RDF_DEFAULT_TEMPLATE = `Find the first-availability release date fo
 IDENTITY: You are looking for the EXACT product "{{BRAND}} {{MODEL}}"{{VARIANT_SUFFIX}}. Not a different model in the same product family. If you encounter sibling models, skip them.
 {{IDENTITY_WARNING}}
 {{SIBLINGS_LINE}}
-GOAL: Determine the date this specific {{VARIANT_TYPE_WORD}} variant first became available for purchase (retail release, not announcement date).
+GOAL: The date this specific {{VARIANT_TYPE_WORD}} variant first became available for purchase and shipping to customers. Distinguish from:
+  - announcement / reveal dates (do NOT use)
+  - pre-order open dates (do NOT use unless they coincide with shipping)
+  - regional re-launches (use the EARLIEST global ship date)
 
 Date format rules:
 - Preferred: YYYY-MM-DD (full date)
 - Accepted: YYYY-MM, YYYY, MMM YYYY, Month YYYY
-- If you can only prove the year, return "YYYY"
-- If you can only prove month+year, return "YYYY-MM" or "MMM YYYY"
-- NEVER return ranges (e.g. "Q1 2024"), relative phrases ("last year"), or announcements without launch dates
-- If you cannot prove any release date with evidence, return "unk" and explain why in unknown_reason
+- Return the highest precision the evidence actually supports — under-promising beats over-promising
+- NEVER return ranges ("Q1 2024"), relative phrases ("last year"), seasons ("Spring 2024"), or announcements without a confirmed ship date
+- If no evidence yields a defensible date, return "unk" and explain in unknown_reason
 
-Evidence requirements (CRITICAL — publisher will reject low-evidence candidates):
-- Provide AT LEAST 1 evidence entry with a source URL and excerpt showing the release date
-- Include an excerpt string copied from the source that contains the date
-- Tag each source with a tier (classification only, no ranking)
+{{EVIDENCE_REQUIREMENTS}}
 
-Source tiers:
-- tier1: manufacturer / brand-official / press release
-- tier2: professional testing lab / review lab
-- tier3: authorized retailer / marketplace (Amazon first-available, PCPartPicker, TechPowerUp DB)
-- tier4: community / forum / blog / user-generated
-- tier5: specs aggregator / product database
-- other: anything that doesn't fit the above
+Source guidance — use the strongest signal available, fall back as needed:
 
-Confidence guidance:
-- 90-100: multiple tier1/tier2 sources agree on exact date
-- 70-89:  single tier1 source OR multiple tier2 agreeing on month/year
-- 50-69:  single tier2 source OR multiple tier3 agreeing on year
-- 0-49:   only weak/contradicting sources — prefer returning "unk" with unknown_reason
+  PRIMARY — manufacturer authority (tag as tier1)
+    Brand product page, press release, official news/blog, support article.
+    Typically yields YYYY-MM-DD. Treat as authoritative when present.
 
-{{PREVIOUS_DISCOVERY}}Search strategy:
-- Query manufacturer's product page, press page, and news archive
-- Check PCPartPicker, TechPowerUp DB, mousespecs.org (for mice), eloshapes.com
-- Retailer listings often show "Date first available"
-- Reviews typically cite launch dates in opening paragraphs
+  STRUCTURED RETAIL BACKUPS (tag as tier3)
+    Use when manufacturer sources are dead, redesigned, or undated.
+    - Keepa.com, camelcamelcamel.com — price-history start date for the SKU
+    - Amazon "Date First Available" in product details
+    - Amazon JSON-LD releaseDate / datePublished if populated
+    For peripherals, Amazon listing is typically within days of launch.
+    But if Amazon/Keepa is your ONLY signal, return YYYY-MM (not YYYY-MM-DD)
+    — listing dates can predate shipping by 1–3 months on pre-order launches.
 
-Return JSON:
+  INDEPENDENT CORROBORATION (tag as tier2)
+    Reviews, hands-on coverage, launch posts citing a specific date.
+    Use to corroborate primary/retail, not as a sole source.
+
+  COMMUNITY / AGGREGATOR (tag as tier4 or tier5)
+    Forum posts, spec databases. Lowest signal; use only as cross-reference.
+
+You decide which sources to query and in what order — the above describes
+what kind of evidence counts and how to tag it, not a script to execute.
+
+Confidence guidance (0-100):
+- 90+:   multiple tier1 sources agree, or tier1 + tier3 agree on the date
+- 70-89: single tier1, or two tier3 sources agree on month/year
+- 50-69: single tier3 only, or multiple tier2 agreeing on year
+- <50:   contradicting or weak evidence — prefer returning "unk"
+
+{{PREVIOUS_DISCOVERY}}Return JSON:
 - "release_date": "YYYY-MM-DD" | "YYYY-MM" | "YYYY" | "MMM YYYY" | "Month YYYY" | "unk"
-- "confidence": 0-100
+- "confidence": 0-100 (your overall confidence in the returned date)
 - "unknown_reason": "..." (required if release_date is "unk"; empty string otherwise)
-- "evidence": [{ "source_url": "...", "source_page": "...", "tier": "tier1|tier2|tier3|tier4|tier5|other", "excerpt": "..." }, ...]
+- "evidence_refs": [{ "url": "...", "tier": "tier1|tier2|tier3|tier4|tier5|other", "confidence": 0-100 }, ...]
 - "discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }`;
 
 /**
@@ -129,6 +100,7 @@ export function buildReleaseDateFinderPrompt({
   previousDiscovery = { urlsChecked: [], queriesRun: [] },
   promptOverride = '',
   templateOverride = '',
+  minEvidenceRefs = 1,
 } = {}) {
   const brand = product.brand || '';
   const model = product.model || '';
@@ -154,9 +126,11 @@ export function buildReleaseDateFinderPrompt({
     ? `\nKnown sibling models to EXCLUDE (do NOT use release dates of these): ${siblingsExcluded.join(', ')}\n`
     : '';
 
-  const discoverySection = (previousDiscovery.urlsChecked.length > 0 || previousDiscovery.queriesRun.length > 0)
-    ? `Previous searches for this variant (do not repeat — find NEW sources or confirm these):\n${previousDiscovery.urlsChecked.length > 0 ? `- URLs already checked: ${JSON.stringify(previousDiscovery.urlsChecked)}\n` : ''}${previousDiscovery.queriesRun.length > 0 ? `- Queries already run: ${JSON.stringify(previousDiscovery.queriesRun)}\n` : ''}\n`
-    : '';
+  const discoverySection = buildPreviousDiscoveryBlock({
+    urlsChecked: previousDiscovery.urlsChecked,
+    queriesRun: previousDiscovery.queriesRun,
+    scopeLabel: 'this variant',
+  });
 
   const template = templateOverride || promptOverride || RDF_DEFAULT_TEMPLATE;
 
@@ -169,6 +143,7 @@ export function buildReleaseDateFinderPrompt({
     SIBLINGS_LINE: siblingLine,
     VARIANT_TYPE_WORD: variantType === 'edition' ? 'edition' : 'color',
     PREVIOUS_DISCOVERY: discoverySection,
+    EVIDENCE_REQUIREMENTS: buildEvidencePromptBlock({ minEvidenceRefs }),
   });
 }
 
@@ -185,6 +160,7 @@ export const RELEASE_DATE_FINDER_SPEC = {
     ambiguityLevel: domainArgs.ambiguityLevel || 'easy',
     previousDiscovery: domainArgs.previousDiscovery || { urlsChecked: [], queriesRun: [] },
     promptOverride: domainArgs.promptOverride || '',
+    minEvidenceRefs: domainArgs.minEvidenceRefs,
   }),
   jsonSchema: zodToLlmSchema(releaseDateFinderResponseSchema),
 };

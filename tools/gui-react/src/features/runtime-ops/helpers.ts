@@ -13,6 +13,7 @@ import {
   resolveDomainRoleBadge,
   resolveSafetyClassBadge,
 } from './badgeRegistries.ts';
+import { parseBackendMs } from '../../utils/dateTime.ts';
 
 export { POOL_STAGE_KEYS as STAGE_ORDER };
 
@@ -147,7 +148,9 @@ export function friendlyMethod(method: string): string {
 
 export function timeUntil(isoStr: string): string {
   if (!isoStr) return '';
-  const diffMs = new Date(isoStr).getTime() - Date.now();
+  const targetMs = parseBackendMs(isoStr);
+  if (!Number.isFinite(targetMs)) return '';
+  const diffMs = targetMs - Date.now();
   if (diffMs <= 0) return 'now';
   const sec = Math.floor(diffMs / 1000);
   if (sec < 60) return `in ${sec}s`;

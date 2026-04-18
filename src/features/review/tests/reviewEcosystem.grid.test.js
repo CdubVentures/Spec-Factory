@@ -74,11 +74,16 @@ test('review ecosystem grid contracts share one fixture without weakening field-
       assert.equal(resolvedCandidate.evidence.quote, 'Max DPI: 25,600');
     });
 
-    await t.test('GRID-04: Missing value shows gray color and strips visual treatment codes', async () => {
+    await t.test('GRID-04: Missing-value fields are omitted from sparse payload (frontend derives gray from layout)', async () => {
+      // WHY: Fields with no value, no candidates, no variant_values, and no override
+      // carry zero information — the frontend grid renders gray empty cells for
+      // them by falling through to layout.rows when fields[key] is absent. This
+      // keeps the products-index payload linear in real data rather than in
+      // layout × products (critical at thousands-of-products scale).
       const payload = await buildProductReviewPayload({ storage, config, category: CATEGORY, specDb: db, productId: 'mouse-zowie-ec2-c' });
-      assert.equal(payload.fields.encoder.selected.value, null);
-      assert.equal(payload.fields.encoder.selected.color, 'gray');
-      assert.equal(payload.fields.encoder.selected.status, 'ok');
+      assert.equal(payload.fields.encoder, undefined, 'encoder has no signal on zowie — must be absent from sparse fields map');
+      assert.equal(typeof payload.metrics.missing, 'number');
+      assert.ok(payload.metrics.missing >= 1, 'encoder still counted as missing for coverage math');
     });
 
     await t.test('GRID-05: Multiple fields maintain independent sources across products', async () => {

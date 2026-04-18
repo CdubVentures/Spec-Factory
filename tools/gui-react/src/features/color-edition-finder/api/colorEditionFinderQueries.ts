@@ -33,9 +33,16 @@ export function useColorEditionFinderRunMutation(category: string, productId: st
 export function useDeleteColorEditionFinderRunMutation(category: string, productId: string) {
   const queryClient = useQueryClient();
 
+  // WHY: CEF run delete strips field_candidates evidence sourced by that run
+  // and re-derives published state. The review grid, candidate drawer, and
+  // publisher query all read that projection — must refresh without a reload.
   const invalidate = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['color-edition-finder', category, productId] });
     queryClient.invalidateQueries({ queryKey: ['colors'] });
+    queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
+    queryClient.invalidateQueries({ queryKey: ['product', category] });
+    queryClient.invalidateQueries({ queryKey: ['candidates', category] });
+    queryClient.invalidateQueries({ queryKey: ['publisher', 'published', category, productId] });
   }, [queryClient, category, productId]);
 
   return useMutation<ColorEditionFinderDeleteRunResponse, Error, number>({
@@ -49,9 +56,15 @@ export function useDeleteColorEditionFinderRunMutation(category: string, product
 export function useDeleteColorEditionFinderAllMutation(category: string, productId: string) {
   const queryClient = useQueryClient();
 
+  // WHY: Delete-all-runs wipes every CEF-sourced candidate — same consumer set
+  // as single-run delete must refresh (review grid / candidates / publisher).
   const invalidate = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['color-edition-finder', category, productId] });
     queryClient.invalidateQueries({ queryKey: ['colors'] });
+    queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
+    queryClient.invalidateQueries({ queryKey: ['product', category] });
+    queryClient.invalidateQueries({ queryKey: ['candidates', category] });
+    queryClient.invalidateQueries({ queryKey: ['publisher', 'published', category, productId] });
   }, [queryClient, category, productId]);
 
   return useMutation<ColorEditionFinderDeleteAllResponse>({

@@ -165,6 +165,39 @@ Do instead:
 - Treat workstation access as the current operator boundary.
 - If auth work is ever explicitly commissioned, re-audit `src/app/api/guiServerRuntime.js`, `src/features/settings/api/configRoutes.js`, and the DB schema files as part of that boundary change.
 
+## Rendering Dates Or Times Without `tools/gui-react/src/utils/dateTime.ts`
+
+Wrong:
+
+```tsx
+// Ignores user-selected timezone + date format; drifts from every other panel
+<span>{new Date(row.submitted_at).toLocaleString()}</span>
+<span>{row.ran_at?.split('T')[0]}</span>
+<span>{row.submitted_at.slice(0, 10)}</span>
+<span>{d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+```
+
+Why it is wrong:
+
+- User-facing timezone and date format are persisted in `useUiStore` (top-right Appearance panel). Raw `Date` / `toLocaleString` calls bypass them and display browser-local time with ad-hoc formats, producing inconsistent output across panels.
+- SQLite returns timestamps as `"YYYY-MM-DD HH:MM:SS"` with no TZ suffix — `new Date()` treats that as local time, silently skewing the displayed value by the viewer's UTC offset. Only `dateTime.ts` normalizes this to UTC before formatting.
+- Every cell that mints its own `Intl.DateTimeFormat` on render pays ICU locale-load cost (~1-5 ms each). At 1000+ cells that compounds into multi-second blocking. `dateTime.ts` caches formatters by option-key.
+
+Do instead (decision tree):
+
+- **Reactive, page-level component with one formatter call site** → `useFormatDate()`, `useFormatTime()`, `useFormatDateTime()`, `useFormatDateYMD()`, `useTimezoneLabel()` from `tools/gui-react/src/utils/dateTime.ts`. Each returns a `useCallback`-memoized formatter; one combined Zustand subscription per consumer.
+- **Shared/hot component rendered in large counts** (cell tooltips, table cells, run-history rows) → `pullFormatDate()`, `pullFormatTime()`, `pullFormatDateTime()`. No subscription, no re-render cost. Trade-off: picks up a new setting only on the next render the component already needs to do (scroll, hover, data update) — acceptable for ephemeral UI.
+- **Product-field DATA values** (e.g. `release_date` rendered as a cell value) → `formatCellValue()` from `tools/gui-react/src/utils/fieldNormalize.ts`. Already detects `YYYY-MM-DD` strings and reformats via `maybeFormatDateValue()`.
+- **Non-React context (sort comparators, filter math)** → import the pure `formatDate` / `formatTime` / `formatDateTime` / `formatDateYMD` functions and pass `timeZone` / `fmt` explicitly. Do not use `Intl` directly.
+- **Adding a new timezone or new date format option** → extend `SF_TIMEZONE_OPTIONS` / `SF_DATE_FORMAT_OPTIONS` in `tools/gui-react/src/stores/uiStore.ts` (single source of truth) and add a corresponding case in `formatDate` / `formatDateYMD`. No other file change required.
+
+Never:
+
+- `new Date(iso).toLocaleString()` / `.toLocaleDateString()` / `.toLocaleTimeString()` in a component
+- `.split('T')[0]` / `.slice(0, 10)` to chop an ISO string into a date
+- Hardcoded `timeZone: 'America/Los_Angeles'` in a component's `Intl.DateTimeFormat`
+- A per-component local `formatDate` / `formatDateTime` helper
+
 ## Implementation-Coupled Tests
 
 Wrong:

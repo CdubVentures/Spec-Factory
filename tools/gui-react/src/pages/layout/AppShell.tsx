@@ -3,6 +3,7 @@ import { Outlet, Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { TabNav } from './TabNav.tsx';
 import { Sidebar } from './Sidebar.tsx';
+import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
 import { useUiStore } from '../../stores/uiStore.ts';
 import { usePersistedToggle } from '../../stores/collapseStore.ts';
 import {
@@ -295,9 +296,7 @@ export function AppShell() {
         <Sidebar />
         <main className="sf-shell-main flex-1 overflow-auto p-4">
           {blockUntilSettingsReady ? (
-            <div className="sf-shell-elevated h-full min-h-[180px] flex items-center justify-center">
-              <p className="text-sm text-sf-text-muted">Hydrating settings...</p>
-            </div>
+            <Spinner className="h-8 w-8 mx-auto mt-12" />
           ) : (
             <>
               {settingsSnapshot.uiSettingsPersistState === 'saving' && (

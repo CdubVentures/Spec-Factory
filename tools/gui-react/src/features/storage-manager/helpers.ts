@@ -1,4 +1,5 @@
 import type { RunInventoryRow } from './types.ts';
+import { parseBackendMs } from '../../utils/dateTime.ts';
 
 export function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -9,7 +10,7 @@ export function formatBytes(bytes: number): string {
 }
 
 export function formatDuration(startedAt: string, endedAt: string): string {
-  const ms = new Date(endedAt).getTime() - new Date(startedAt).getTime();
+  const ms = parseBackendMs(endedAt) - parseBackendMs(startedAt);
   if (!Number.isFinite(ms) || ms < 0) return '--';
   const totalSec = Math.round(ms / 1000);
   const min = Math.floor(totalSec / 60);
@@ -19,7 +20,9 @@ export function formatDuration(startedAt: string, endedAt: string): string {
 
 export function formatRelativeDate(iso: string | null): string {
   if (!iso) return '--';
-  const diff = Date.now() - new Date(iso).getTime();
+  const startMs = parseBackendMs(iso);
+  if (!Number.isFinite(startMs)) return '--';
+  const diff = Date.now() - startMs;
   const days = Math.floor(diff / 86400000);
   if (days === 0) return 'today';
   if (days === 1) return 'yesterday';
@@ -66,7 +69,7 @@ export function groupRunsByProduct(runs: RunInventoryRow[]): ProductGroup[] {
         key: displayName,
         brand,
         model,
-        runs: prodRuns.sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()),
+        runs: prodRuns.sort((a, b) => parseBackendMs(b.started_at) - parseBackendMs(a.started_at)),
         totalSize: prodRuns.reduce((s, r) => s + runSizeBytes(r), 0),
       };
     })

@@ -943,6 +943,71 @@ describe('deleteVariant', () => {
     assert.ok(!pj.candidates.release_date, 'JSON: feature release_date entry removed');
   }));
 
+  // WHY: Evidence rows are a read-projection of metadata_json.evidence_refs,
+  // keyed by field_candidates.id with ON DELETE CASCADE. Any path that deletes
+  // a field_candidates row (cascadeVariantIdFromCandidates for variant-anchored
+  // feature candidates, stripRunSourceFromCandidates for run deletion, or
+  // deleteFieldCandidateBySourceId for per-candidate delete) must sweep the
+  // projected evidence rows via the FK. This test locks that invariant so
+  // future schema changes can't silently leave orphan evidence behind.
+  it('FK CASCADE wipes field_candidate_evidence when variant-anchored candidates are deleted', withEnv(({ specDb, root, ensureProductJson, ensureCefJson }) => {
+    specDb.variants.syncFromRegistry(PID, [
+      { variant_id: 'v_target', variant_key: 'color:black', variant_type: 'color', variant_label: 'Black', color_atoms: ['black'], created_at: '2026-04-14T00:00:00Z' },
+      { variant_id: 'v_keep',   variant_key: 'color:white', variant_type: 'color', variant_label: 'White', color_atoms: ['white'], created_at: '2026-04-14T00:00:00Z' },
+    ]);
+    seedCefSummary(specDb);
+    ensureProductJson(PID);
+    ensureCefJson(PID, {
+      product_id: PID, category: 'mouse',
+      selected: { colors: ['black', 'white'], editions: {}, default_color: 'black' },
+      variant_registry: [
+        { variant_id: 'v_target', variant_key: 'color:black', variant_type: 'color', color_atoms: ['black'] },
+        { variant_id: 'v_keep',   variant_key: 'color:white', variant_type: 'color', color_atoms: ['white'] },
+      ], runs: [], run_count: 0, next_run_number: 1,
+    });
+
+    // Seed variant-anchored feature candidates (RDF-shape) + their evidence projection.
+    specDb.insertFieldCandidate({
+      productId: PID, fieldKey: 'release_date', sourceId: 'rdf-m-1', sourceType: 'release_date_finder',
+      value: '2026-06-15', confidence: 0.95, model: 'test',
+      validationJson: {}, metadataJson: {}, variantId: 'v_target',
+    });
+    specDb.insertFieldCandidate({
+      productId: PID, fieldKey: 'release_date', sourceId: 'rdf-m-2', sourceType: 'release_date_finder',
+      value: '2026-07-01', confidence: 0.9, model: 'test',
+      validationJson: {}, metadataJson: {}, variantId: 'v_keep',
+    });
+
+    const targetRow = specDb.getFieldCandidateBySourceId(PID, 'release_date', 'rdf-m-1');
+    const keepRow   = specDb.getFieldCandidateBySourceId(PID, 'release_date', 'rdf-m-2');
+    assert.ok(targetRow?.id && keepRow?.id, 'candidate rows inserted');
+
+    specDb.replaceFieldCandidateEvidence(targetRow.id, [
+      { url: 'https://example.com/target-1', tier: 'tier1', confidence: 95 },
+      { url: 'https://example.com/target-2', tier: 'tier2', confidence: 80 },
+    ]);
+    specDb.replaceFieldCandidateEvidence(keepRow.id, [
+      { url: 'https://example.com/keep-1', tier: 'tier1', confidence: 90 },
+    ]);
+
+    assert.equal(specDb.listFieldCandidateEvidenceByCandidateId(targetRow.id).length, 2);
+    assert.equal(specDb.listFieldCandidateEvidenceByCandidateId(keepRow.id).length, 1);
+
+    deleteVariant({ specDb, productId: PID, variantId: 'v_target', productRoot: root });
+
+    // Deleted variant's feature candidate is gone → FK CASCADE removed its evidence.
+    assert.equal(
+      specDb.listFieldCandidateEvidenceByCandidateId(targetRow.id).length, 0,
+      'evidence rows for deleted candidate removed via ON DELETE CASCADE',
+    );
+
+    // Untouched variant's evidence survives.
+    assert.equal(
+      specDb.listFieldCandidateEvidenceByCandidateId(keepRow.id).length, 1,
+      'evidence for surviving variant preserved',
+    );
+  }));
+
   // WHY: Generic variant-delete cascade for variantFieldProducer modules.
   // RDF (and any future SKU/price/availability finder) stores per-variant
   // state in three places: selected.candidates[], runs[].selected.candidates[],
@@ -1055,6 +1120,134 @@ describe('deleteVariant', () => {
     assert.equal(sqlRuns[0].selected.candidates[0].variant_id, 'v_keep');
     assert.equal(sqlRuns[0].response.candidates.length, 1);
     assert.equal(sqlRuns[0].response.candidates[0].variant_id, 'v_keep');
+  }));
+
+  // WHY: variantFieldProducer modules (RDF, future SKU/price/availability)
+  // do one LLM call PER variant — so a run's purpose IS that variant. When
+  // the variant is deleted, the run has no reason to exist. Runs whose
+  // candidates were exclusively for the deleted variant must be removed
+  // entirely (JSON run entry + SQL run row + bookkeeping). Runs that still
+  // have surviving variants keep going with filtered candidates.
+  it('deletes single-variant run shells while preserving mixed-variant runs', withEnv(({ specDb, root, ensureProductJson, ensureCefJson }) => {
+    specDb.variants.syncFromRegistry(PID, [
+      { variant_id: 'v_target', variant_key: 'color:black', variant_type: 'color', variant_label: 'Black', color_atoms: ['black'], created_at: '2026-04-14T00:00:00Z' },
+      { variant_id: 'v_keep',   variant_key: 'color:white', variant_type: 'color', variant_label: 'White', color_atoms: ['white'], created_at: '2026-04-14T00:00:00Z' },
+    ]);
+    seedCefSummary(specDb);
+    ensureProductJson(PID);
+    ensureCefJson(PID, {
+      product_id: PID, category: 'mouse',
+      selected: { colors: ['black', 'white'], editions: {}, default_color: 'black' },
+      variant_registry: [
+        { variant_id: 'v_target', variant_key: 'color:black', variant_type: 'color', color_atoms: ['black'] },
+        { variant_id: 'v_keep',   variant_key: 'color:white', variant_type: 'color', color_atoms: ['white'] },
+      ],
+      runs: [], run_count: 0, next_run_number: 1,
+    });
+
+    const rdfJsonPath = path.join(root, PID, 'release_date.json');
+    // Three runs, mimicking RDF's one-call-per-variant pattern:
+    //   run 1: v_target only
+    //   run 2: v_keep only
+    //   run 3: mixed (both variants)
+    fs.writeFileSync(rdfJsonPath, JSON.stringify({
+      product_id: PID, category: 'mouse',
+      selected: {
+        candidates: [
+          { variant_id: 'v_target', variant_key: 'color:black', value: '2026-06-15', confidence: 90 },
+          { variant_id: 'v_keep',   variant_key: 'color:white', value: '2026-07-01', confidence: 88 },
+        ],
+      },
+      runs: [
+        {
+          run_number: 1, ran_at: '2026-04-14T01:00:00Z', model: 'test', fallback_used: false,
+          selected: { candidates: [{ variant_id: 'v_target', variant_key: 'color:black', value: '2026-06-15', confidence: 90 }] },
+          prompt: { system: '', user: '' },
+          response: { candidates: [{ variant_id: 'v_target', variant_key: 'color:black', value: '2026-06-15' }] },
+        },
+        {
+          run_number: 2, ran_at: '2026-04-14T02:00:00Z', model: 'test', fallback_used: false,
+          selected: { candidates: [{ variant_id: 'v_keep', variant_key: 'color:white', value: '2026-07-01', confidence: 88 }] },
+          prompt: { system: '', user: '' },
+          response: { candidates: [{ variant_id: 'v_keep', variant_key: 'color:white', value: '2026-07-01' }] },
+        },
+        {
+          run_number: 3, ran_at: '2026-04-14T03:00:00Z', model: 'test', fallback_used: false,
+          selected: {
+            candidates: [
+              { variant_id: 'v_target', variant_key: 'color:black', value: '2026-06-16', confidence: 95 },
+              { variant_id: 'v_keep',   variant_key: 'color:white', value: '2026-07-02', confidence: 92 },
+            ],
+          },
+          prompt: { system: '', user: '' },
+          response: {
+            candidates: [
+              { variant_id: 'v_target', variant_key: 'color:black', value: '2026-06-16' },
+              { variant_id: 'v_keep',   variant_key: 'color:white', value: '2026-07-02' },
+            ],
+          },
+        },
+      ],
+      run_count: 3, next_run_number: 4,
+      last_ran_at: '2026-04-14T03:00:00Z',
+    }, null, 2));
+
+    const rdfStore = specDb.getFinderStore('releaseDateFinder');
+    rdfStore.upsert({
+      category: 'mouse', product_id: PID,
+      candidates: [
+        { variant_id: 'v_target', variant_key: 'color:black', value: '2026-06-15', confidence: 90 },
+        { variant_id: 'v_keep',   variant_key: 'color:white', value: '2026-07-01', confidence: 88 },
+      ],
+      candidate_count: 2,
+      cooldown_until: '', latest_ran_at: '2026-04-14T03:00:00Z', run_count: 3,
+    });
+    for (const rn of [1, 2, 3]) {
+      rdfStore.insertRun({
+        category: 'mouse', product_id: PID, run_number: rn,
+        ran_at: `2026-04-14T0${rn}:00:00Z`, model: 'test', fallback_used: false,
+        effort_level: '', access_mode: '', thinking: false, web_search: false,
+        selected: { candidates: [] }, prompt: {}, response: { candidates: [] },
+      });
+    }
+
+    deleteVariant({ specDb, productId: PID, variantId: 'v_target', productRoot: root });
+
+    const rdf = JSON.parse(fs.readFileSync(rdfJsonPath, 'utf8'));
+    // Run 1 was single-variant (v_target) → removed entirely.
+    // Run 2 was single-variant (v_keep) → preserved untouched.
+    // Run 3 was mixed → filtered to only v_keep.
+    assert.equal(rdf.runs.length, 2, 'JSON: run 1 removed; 2 and 3 survive');
+    assert.deepEqual(rdf.runs.map(r => r.run_number), [2, 3]);
+
+    const run3 = rdf.runs.find(r => r.run_number === 3);
+    assert.equal(run3.selected.candidates.length, 1, 'mixed run stripped to survivor');
+    assert.equal(run3.selected.candidates[0].variant_id, 'v_keep');
+    assert.equal(run3.response.candidates.length, 1);
+
+    // Aggregate recomputed as latest-wins-per-variant across remaining runs.
+    // v_keep latest entry comes from run 3 (value '2026-07-02', confidence 92).
+    assert.equal(rdf.selected.candidates.length, 1);
+    assert.equal(rdf.selected.candidates[0].variant_id, 'v_keep');
+    assert.equal(rdf.selected.candidates[0].value, '2026-07-02', 'latest-wins reduction');
+
+    // Bookkeeping: run_count dropped; last_ran_at is the latest surviving run.
+    assert.equal(rdf.run_count, 2);
+    assert.equal(rdf.last_ran_at, '2026-04-14T03:00:00Z');
+    // next_run_number must not reuse deleted numbers.
+    assert.ok(rdf.next_run_number >= 4, 'next_run_number never reuses deleted numbers');
+
+    // SQL: run 1 row gone; runs 2 and 3 present.
+    const sqlRuns = rdfStore.listRuns(PID);
+    assert.deepEqual(sqlRuns.map(r => r.run_number).sort(), [2, 3]);
+    const sqlRun3 = sqlRuns.find(r => r.run_number === 3);
+    assert.equal(sqlRun3.selected.candidates.length, 1, 'SQL run 3 blob stripped');
+    assert.equal(sqlRun3.selected.candidates[0].variant_id, 'v_keep');
+
+    // SQL summary bookkeeping matches JSON.
+    const summary = rdfStore.get(PID);
+    assert.equal(summary.candidate_count, 1);
+    assert.equal(summary.run_count, 2);
   }));
 });
 

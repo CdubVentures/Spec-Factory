@@ -14,6 +14,7 @@ import {
 import { useSettingsAuthorityStore } from '../../../stores/settingsAuthorityStore.ts';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
 import { LlmConfigPageShell } from './LlmConfigPageShell.tsx';
+import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import { LLM_PHASE_IDS } from '../state/llmPhaseRegistry.generated.ts';
 import type { LlmPhaseId } from '../types/llmPhaseTypes.generated.ts';
 import { uiPhaseIdToOverrideKey } from '../state/llmPhaseOverridesBridge.generated.ts';
@@ -292,7 +293,7 @@ export function LlmConfigPage() {
   let activePanel = null;
   if (activePhase === 'global') {
     activePanel = (
-      <Suspense fallback={null}>
+      <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
         <LlmGlobalSection
           runtimeDraft={runtimeDraft}
           inputCls={inputCls}
@@ -308,7 +309,7 @@ export function LlmConfigPage() {
     );
   } else if (uiPhaseIdToOverrideKey(activePhase) !== undefined) {
     activePanel = (
-      <Suspense fallback={null}>
+      <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
         <LlmPhaseSection
           phaseId={activePhase}
           inputCls={inputCls}

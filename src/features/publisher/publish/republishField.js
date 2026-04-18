@@ -1,4 +1,5 @@
 import { normalizeConfidence } from './publishCandidate.js';
+import { checkEvidenceGate } from './evidenceGate.js';
 
 /**
  * Re-evaluate and republish a single field from its remaining candidates.
@@ -38,7 +39,14 @@ export function republishField({ specDb, productId, fieldKey, config, productJso
   }
 
   const threshold = config?.publishConfidenceThreshold ?? 0.7;
-  const aboveThreshold = remaining.filter(c => normalizeConfidence(c.confidence) >= threshold);
+  const compiled = specDb.getCompiledRules?.();
+  const compiledFields = compiled?.fields || {};
+  const fieldRule = compiledFields[fieldKey] || null;
+
+  // WHY: A candidate must clear BOTH gates to contribute to the republished value.
+  const aboveThreshold = remaining
+    .filter(c => normalizeConfidence(c.confidence) >= threshold)
+    .filter(c => checkEvidenceGate({ specDb, candidateId: c.id, fieldRule }).ok);
 
   if (aboveThreshold.length === 0) {
     specDb.demoteResolvedCandidates(productId, fieldKey, isVariantScoped ? variantId : undefined);
@@ -51,9 +59,6 @@ export function republishField({ specDb, productId, fieldKey, config, productJso
 
   specDb.demoteResolvedCandidates(productId, fieldKey, isVariantScoped ? variantId : undefined);
 
-  const compiled = specDb.getCompiledRules?.();
-  const compiledFields = compiled?.fields || {};
-  const fieldRule = compiledFields[fieldKey] || null;
   const itemUnion = fieldRule?.contract?.list_rules?.item_union;
 
   let publishedValue;

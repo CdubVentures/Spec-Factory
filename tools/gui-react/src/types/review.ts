@@ -82,6 +82,11 @@ export interface VariantValueEntry {
   variant_type?: 'color' | 'edition' | string | null;
   color_atoms?: string[] | null;
   edition_slug?: string | null;
+  // WHY: Stable variant key ("color:<combo>" or "edition:<slug>") used to look
+  // up per-variant sources in metadata.evidence_by_variant (populated by CEF's
+  // identity-check mappings). Optional for backward compat with fixtures that
+  // don't populate it.
+  variant_key?: string | null;
 }
 
 export interface FieldState {

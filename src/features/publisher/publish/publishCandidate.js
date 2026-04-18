@@ -10,6 +10,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { checkEvidenceGate } from './evidenceGate.js';
 
 function safeReadJson(filePath) {
   try { return JSON.parse(fs.readFileSync(filePath, 'utf8')); }
@@ -95,6 +96,17 @@ export function publishCandidate({
   if (normalizeConfidence(confidence) < threshold) {
     persistPublishResult(specDb, productId, fieldKey, serializeValue(value), { status: 'below_threshold', confidence, threshold });
     return { status: 'below_threshold', confidence, threshold };
+  }
+
+  // --- Evidence gate (min_evidence_refs from field rule) ---
+  const evidenceCheck = checkEvidenceGate({ specDb, candidateId: candidateRow?.id, fieldRule });
+  if (!evidenceCheck.ok) {
+    persistPublishResult(specDb, productId, fieldKey, serializeValue(value), {
+      status: 'below_evidence_refs',
+      required: evidenceCheck.required,
+      actual: evidenceCheck.actual,
+    });
+    return { status: 'below_evidence_refs', required: evidenceCheck.required, actual: evidenceCheck.actual };
   }
 
   // --- Product.json read ---
@@ -203,6 +215,16 @@ function publishVariantScopedCandidate({
   if (normalizeConfidence(confidence) < threshold) {
     persistPublishResult(specDb, productId, fieldKey, serializeValue(value), { status: 'below_threshold', confidence, threshold }, variantId);
     return { status: 'below_threshold', confidence, threshold };
+  }
+
+  const evidenceCheck = checkEvidenceGate({ specDb, candidateId: candidateRow?.id, fieldRule });
+  if (!evidenceCheck.ok) {
+    persistPublishResult(specDb, productId, fieldKey, serializeValue(value), {
+      status: 'below_evidence_refs',
+      required: evidenceCheck.required,
+      actual: evidenceCheck.actual,
+    }, variantId);
+    return { status: 'below_evidence_refs', required: evidenceCheck.required, actual: evidenceCheck.actual };
   }
 
   const productDir = path.join(productRoot, productId);

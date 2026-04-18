@@ -183,7 +183,7 @@ export function buildEgReleaseDatePreset(_ctx?: EgPresetCtx): FieldRule {
     },
     parse: {
       delimiters: [],
-      accepted_formats: ['YYYY-MM-DD', 'YYYY', 'MMM YYYY', 'Month YYYY'],
+      accepted_formats: ['YYYY-MM-DD', 'YYYY-MM', 'YYYY', 'MMM YYYY', 'Month YYYY'],
       token_map: {},
     },
     enum_policy: 'open',
@@ -203,12 +203,12 @@ export function buildEgReleaseDatePreset(_ctx?: EgPresetCtx): FieldRule {
       tier_preference: ['tier1', 'tier2', 'tier3'],
     },
     ai_assist: {
-      reasoning_note: 'Return the release date in one of the accepted formats: YYYY-MM-DD (preferred), YYYY, MMM YYYY (e.g. "Jan 2024"), or "Month YYYY" (e.g. "January 2024"). Do not return date ranges, relative phrases like "Q1 2024", seasons, or vague terms like "early 2024". If the exact date is not provable from evidence, emit unk with unknown_reason.',
+      reasoning_note: 'Return the release date in one of the accepted formats: YYYY-MM-DD (preferred), YYYY-MM (e.g. "2024-03"), YYYY, MMM YYYY (e.g. "Jan 2024"), or "Month YYYY" (e.g. "January 2024"). Do not return date ranges, relative phrases like "Q1 2024", seasons, or vague terms like "early 2024". If the exact date is not provable from evidence, emit unk with unknown_reason.',
     },
     ui: {
       label: 'Release Date',
       group: 'general',
-      tooltip_md: 'First date the product was available for purchase. Accept YYYY-MM-DD, YYYY, MMM YYYY, or Month YYYY. If not provable with evidence, output unk with unknown_reason.',
+      tooltip_md: 'First date the product was available for purchase. Accept YYYY-MM-DD, YYYY-MM, YYYY, MMM YYYY, or Month YYYY. If not provable with evidence, output unk with unknown_reason.',
     },
     search_hints: {
       domain_hints: ['mousespecs.org', 'eloshapes.com', 'pcpartpicker.com', 'techpowerup.com'],

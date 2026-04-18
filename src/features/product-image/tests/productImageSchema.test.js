@@ -2,6 +2,10 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { productImageFinderResponseSchema } from '../productImageSchema.js';
 
+// WHY: PIF is the evidence-refs exception across finders. The image URL IS
+// the evidence, and images don't flow through the publisher candidate gate.
+// There are no tier/evidence_refs assertions here on purpose.
+
 describe('productImageFinderResponseSchema', () => {
   const baseImage = {
     view: 'top',
@@ -23,71 +27,20 @@ describe('productImageFinderResponseSchema', () => {
     assert.throws(() => productImageFinderResponseSchema.parse(input));
   });
 
-  // ── evidence_refs ──
-
-  it('parses an image with evidence_refs', () => {
-    const input = {
-      images: [{
-        ...baseImage,
-        evidence_refs: [{ url: 'https://razer.com/m1', tier: 'tier1' }],
-      }],
-    };
+  it('parses image with minimum required fields (view + url)', () => {
+    const input = { images: [{ view: 'hero', url: 'https://cdn.example.com/x.jpg' }] };
     const result = productImageFinderResponseSchema.parse(input);
-    assert.deepEqual(
-      result.images[0].evidence_refs,
-      [{ url: 'https://razer.com/m1', tier: 'tier1' }],
-    );
+    assert.equal(result.images.length, 1);
+    assert.equal(result.images[0].source_page, '');
+    assert.equal(result.images[0].alt_text, '');
   });
 
-  it('evidence_refs defaults to empty array when omitted from image', () => {
+  it('does not add an evidence_refs field (PIF exception — image URL is its own evidence)', () => {
     const input = { images: [baseImage] };
     const result = productImageFinderResponseSchema.parse(input);
-    assert.deepEqual(result.images[0].evidence_refs, []);
-  });
-
-  it('rejects evidence_refs entry missing url', () => {
-    const input = {
-      images: [{ ...baseImage, evidence_refs: [{ tier: 'tier1' }] }],
-    };
-    assert.throws(() => productImageFinderResponseSchema.parse(input));
-  });
-
-  it('rejects evidence_refs entry missing tier', () => {
-    const input = {
-      images: [{ ...baseImage, evidence_refs: [{ url: 'https://razer.com' }] }],
-    };
-    assert.throws(() => productImageFinderResponseSchema.parse(input));
-  });
-
-  it('accepts all 6 tier codes on image evidence_refs', () => {
-    const input = {
-      images: [{
-        ...baseImage,
-        evidence_refs: [
-          { url: 'u1', tier: 'tier1' },
-          { url: 'u2', tier: 'tier2' },
-          { url: 'u3', tier: 'tier3' },
-          { url: 'u4', tier: 'tier4' },
-          { url: 'u5', tier: 'tier5' },
-          { url: 'u6', tier: 'other' },
-        ],
-      }],
-    };
-    const result = productImageFinderResponseSchema.parse(input);
-    assert.equal(result.images[0].evidence_refs.length, 6);
-  });
-
-  it('backward compat: legacy response without evidence_refs still parses', () => {
-    const legacy = {
-      images: [{ view: 'top', url: 'https://cdn.razer.com/m1-top.jpg' }],
-      discovery_log: {
-        urls_checked: ['https://razer.com/m1'],
-        queries_run: ['razer m1'],
-        notes: [],
-      },
-    };
-    const result = productImageFinderResponseSchema.parse(legacy);
-    assert.equal(result.images.length, 1);
-    assert.deepEqual(result.images[0].evidence_refs, []);
+    assert.ok(
+      !('evidence_refs' in result.images[0]),
+      'PIF images must not carry evidence_refs — the URL itself is the evidence',
+    );
   });
 });

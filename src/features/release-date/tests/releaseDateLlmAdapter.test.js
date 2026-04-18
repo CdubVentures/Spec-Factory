@@ -6,7 +6,6 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildReleaseDateFinderPrompt,
-  accumulateVariantDiscoveryLog,
   RDF_DEFAULT_TEMPLATE,
 } from '../releaseDateLlmAdapter.js';
 
@@ -91,8 +90,18 @@ describe('buildReleaseDateFinderPrompt', () => {
     const prompt = buildReleaseDateFinderPrompt({ product, variantLabel: 'Black' });
     assert.ok(prompt.includes('"release_date"'));
     assert.ok(prompt.includes('"confidence"'));
-    assert.ok(prompt.includes('"evidence"'));
+    assert.ok(prompt.includes('"evidence_refs"'));
     assert.ok(prompt.includes('"discovery_log"'));
+  });
+
+  it('default template injects the shared evidence fragment (tier taxonomy)', () => {
+    const prompt = buildReleaseDateFinderPrompt({ product, variantLabel: 'Black' });
+    // Shared fragment teaches all 6 tier codes
+    for (const tier of ['tier1', 'tier2', 'tier3', 'tier4', 'tier5', 'other']) {
+      assert.ok(prompt.includes(tier), `tier "${tier}" present`);
+    }
+    // Includes the confidence-per-source instruction
+    assert.ok(prompt.toLowerCase().includes('confidence'));
   });
 
   it('default template names accepted date formats', () => {
@@ -101,70 +110,74 @@ describe('buildReleaseDateFinderPrompt', () => {
     assert.ok(RDF_DEFAULT_TEMPLATE.includes('YYYY'));
     assert.ok(RDF_DEFAULT_TEMPLATE.includes('unk'));
   });
+
+  // ── Source-hierarchy contract ─────────────────────────────────────
+  // WHY: The default prompt shifted from a mouse-specific source list to a
+  // category-agnostic, tier-tagged hierarchy. These tests lock the shape so
+  // the mouse-bias regressions don't sneak back in.
+
+  it('default template does NOT name mouse-specific spec sites', () => {
+    // Old prompt prescribed PCPartPicker / TechPowerUp / mousespecs / eloshapes
+    // for every category — broken for keyboards/monitors and unreliable for mice.
+    for (const banned of ['PCPartPicker', 'TechPowerUp', 'mousespecs', 'eloshapes']) {
+      assert.ok(
+        !RDF_DEFAULT_TEMPLATE.includes(banned),
+        `mouse-bias source "${banned}" must not appear in the generic prompt`,
+      );
+    }
+  });
+
+  it('default template names structured retail backups (Keepa / CamelCamelCamel / Amazon)', () => {
+    for (const expected of ['Keepa', 'camelcamelcamel', 'Amazon', 'JSON-LD']) {
+      assert.ok(
+        RDF_DEFAULT_TEMPLATE.includes(expected),
+        `structured retail backup "${expected}" must be named`,
+      );
+    }
+  });
+
+  it('default template distinguishes purchase-and-shipping from pre-order / announcement', () => {
+    assert.ok(RDF_DEFAULT_TEMPLATE.includes('purchase and shipping'),
+      'GOAL must specify "purchase and shipping" (not just "available")');
+    assert.ok(/pre-order/i.test(RDF_DEFAULT_TEMPLATE),
+      'must explicitly call out pre-order ambiguity');
+    assert.ok(/announcement/i.test(RDF_DEFAULT_TEMPLATE),
+      'must call out announcement dates as not-the-answer');
+  });
+
+  it('default template enforces Amazon-only → YYYY-MM precision rule', () => {
+    // The single most important honesty rule: don't promise YYYY-MM-DD
+    // when the only source is a retail listing date.
+    assert.ok(/Amazon\/Keepa is your ONLY signal/i.test(RDF_DEFAULT_TEMPLATE)
+      || /Amazon.*ONLY signal/i.test(RDF_DEFAULT_TEMPLATE),
+      'must include the "Amazon/Keepa-only → YYYY-MM" precision rule');
+  });
+
+  it('default template tags source tiers explicitly so the LLM knows which tier code to attach', () => {
+    // Source hierarchy maps each kind of evidence to a concrete tier code
+    // matching the universal evidence taxonomy.
+    assert.ok(/tier1/i.test(RDF_DEFAULT_TEMPLATE) && /manufacturer/i.test(RDF_DEFAULT_TEMPLATE),
+      'manufacturer authority must be tagged as tier1');
+    assert.ok(/tier3/i.test(RDF_DEFAULT_TEMPLATE),
+      'retail backups must reference tier3 explicitly');
+    assert.ok(/tier2/i.test(RDF_DEFAULT_TEMPLATE),
+      'independent corroboration must reference tier2 explicitly');
+  });
+
+  it('default template forbids seasons + quarter ranges (not just relative phrases)', () => {
+    assert.ok(/Spring|season/i.test(RDF_DEFAULT_TEMPLATE),
+      'must forbid season-style imprecision (e.g. "Spring 2024")');
+    assert.ok(/Q1|range/i.test(RDF_DEFAULT_TEMPLATE),
+      'must forbid quarter ranges');
+  });
+
+  it('default template does NOT prescribe a search-step checklist (LLM picks the order)', () => {
+    // The old prompt had bullets like "Query manufacturer's product page,
+    // press page, and news archive" — replaced with autonomy + evidence bar.
+    assert.ok(!/Query manufacturer's product page/i.test(RDF_DEFAULT_TEMPLATE),
+      'old prescriptive search-step bullet must be gone');
+    assert.ok(/you decide|your judgment|in what order/i.test(RDF_DEFAULT_TEMPLATE),
+      'must explicitly hand source-ordering to the LLM');
+  });
 });
 
-describe('accumulateVariantDiscoveryLog', () => {
-  const runs = [
-    {
-      ran_at: '2026-01-01T00:00:00Z',
-      response: {
-        variant_id: 'v_black', variant_key: 'color:black',
-        discovery_log: { urls_checked: ['u1'], queries_run: ['q1'] },
-      },
-    },
-    {
-      ran_at: '2026-02-01T00:00:00Z',
-      response: {
-        variant_id: 'v_black', variant_key: 'color:black',
-        discovery_log: { urls_checked: ['u2'], queries_run: ['q2'] },
-      },
-    },
-    {
-      ran_at: '2026-02-01T00:00:00Z',
-      response: {
-        variant_id: 'v_white', variant_key: 'color:white',
-        discovery_log: { urls_checked: ['u3'], queries_run: ['q3'] },
-      },
-    },
-  ];
-
-  it('unions urls and queries for matching variant', () => {
-    const acc = accumulateVariantDiscoveryLog(runs, 'color:black', 'v_black');
-    assert.deepEqual(acc.urlsChecked.sort(), ['u1', 'u2']);
-    assert.deepEqual(acc.queriesRun.sort(), ['q1', 'q2']);
-  });
-
-  it('matches by variant_id first, falls back to variant_key', () => {
-    const acc = accumulateVariantDiscoveryLog(runs, 'color:black', null);
-    assert.ok(acc.urlsChecked.includes('u1'));
-    assert.ok(acc.urlsChecked.includes('u2'));
-    assert.ok(!acc.urlsChecked.includes('u3'));
-  });
-
-  it('excludes other variants', () => {
-    const acc = accumulateVariantDiscoveryLog(runs, 'color:white', 'v_white');
-    assert.deepEqual(acc.urlsChecked, ['u3']);
-  });
-
-  it('respects urlCutoffIso for urls only', () => {
-    const acc = accumulateVariantDiscoveryLog(runs, 'color:black', 'v_black', {
-      urlCutoffIso: '2026-01-15T00:00:00Z',
-    });
-    assert.deepEqual(acc.urlsChecked, ['u2'], 'old urls filtered by cutoff');
-    assert.deepEqual(acc.queriesRun.sort(), ['q1', 'q2'], 'queries unaffected by url cutoff');
-  });
-
-  it('respects queryCutoffIso for queries only', () => {
-    const acc = accumulateVariantDiscoveryLog(runs, 'color:black', 'v_black', {
-      queryCutoffIso: '2026-01-15T00:00:00Z',
-    });
-    assert.deepEqual(acc.queriesRun, ['q2'], 'old queries filtered by cutoff');
-    assert.deepEqual(acc.urlsChecked.sort(), ['u1', 'u2'], 'urls unaffected by query cutoff');
-  });
-
-  it('returns empty when no runs match', () => {
-    const acc = accumulateVariantDiscoveryLog([], 'color:black', 'v_black');
-    assert.deepEqual(acc.urlsChecked, []);
-    assert.deepEqual(acc.queriesRun, []);
-  });
-});

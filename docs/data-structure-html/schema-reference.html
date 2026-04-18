@@ -267,9 +267,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   <div class="surface-head">
     <h2>SpecDb</h2>
     <span class="tag" style="background:var(--accent-s);color:var(--accent)">Per-Category</span>
-    <span class="tag tag-cols">28 tables (28 schema + 0 migration)</span>
+    <span class="tag tag-cols">29 tables (29 schema + 0 migration)</span>
   </div>
-  <p class="surface-desc">One SQLite database per category (<code>.workspace/db/{category}/spec.sqlite</code>). 28 tables from DDL (28 in specDbSchema.js + 0 migration-created). Holds all domain data: products, components, reviews, evidence, billing, telemetry, source intelligence, URL crawl ledger, and query cooldowns.</p>
+  <p class="surface-desc">One SQLite database per category (<code>.workspace/db/{category}/spec.sqlite</code>). 29 tables from DDL (29 in specDbSchema.js + 0 migration-created). Holds all domain data: products, components, reviews, candidate evidence (relational projection of <code>metadata_json.evidence_refs</code>), billing, telemetry, source intelligence, URL crawl ledger, and query cooldowns.</p>
   <div class="domain-group">
   <div class="domain-label">Component Identity</div>
   <details class="table-card" data-table="component_identity">
@@ -1905,7 +1905,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
       </div>
       <div class="life-item life-item-wide">
         <div class="life-k">Audit note</div>
-        <div class="life-v">Validated candidate values per (product, field, value). Rebuilds from product.json candidates[]. Status column tracks candidate vs resolved.</div>
+        <div class="life-v">Validated candidate values per (product, field, value). Rebuilds from product.json candidates[]. Status column tracks candidate vs resolved. Evidence (URL + tier + per-source confidence) is stored as a JSON array inside <code>metadata_json.evidence_refs</code> &mdash; the universal shape owned by <code>src/core/finder/evidencePromptFragment.js</code>. That JSON is the canonical source; it projects to the relational <code>field_candidate_evidence</code> table for indexed tier/confidence queries. Future pipeline reviewer MUST route through <code>submitCandidate()</code> with the same <code>evidence_refs</code> metadata shape &mdash; do not redefine or bypass.</div>
       </div>
     </div>
   </div>
@@ -1942,6 +1942,61 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
       <div class="usage-count">3 files</div>
     </div>
     <ul class="usage-file-list"><li><code>tools/gui-react/src/features/color-edition-finder/cefHowItWorksContent.ts</code></li><li><code>tools/gui-react/src/features/color-edition-finder/selectors/colorEditionFinderSelectors.ts</code></li><li><code>tools/gui-react/src/features/release-date-finder/rdfHowItWorksContent.ts</code></li></ul>
+  </div>
+  </div>
+</details>
+<details class="table-card" data-table="field_candidate_evidence">
+  <summary><span class="tname">field_candidate_evidence</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-usage-src">SRC: 4</span><span class="tag tag-usage-gui">GUI: 1</span><span class="tag tag-cols">6 cols</span><span class="tag tag-store">fieldCandidateEvidenceStore</span><span class="tag tag-life-yes">rebuild yes</span><span class="tag tag-sync-yes">source edit yes</span><span class="tag tag-persist-db">projection</span><span class="tag tag-strict-yes">strict yes</span><span class="tag tag-cqrs-pass">&#10003;</span></span></summary>
+  <div class="card-body">
+    <div class="life-section">
+    <div class="idx-label">Rebuild Audit</div>
+    <div class="life-grid">
+      <div class="life-item">
+        <div class="life-k">Durable source</div>
+        <div class="life-v"><code>product.json.candidates[n].metadata.evidence_refs</code> (SSOT; this table is projection)</div>
+      </div>
+      <div class="life-item">
+        <div class="life-k">Deleted-DB rebuild</div>
+        <div class="life-v"><span class="tag tag-life-yes">rebuild yes</span></div>
+      </div>
+      <div class="life-item">
+        <div class="life-k">Source add/remove honored</div>
+        <div class="life-v"><span class="tag tag-sync-yes">source edit yes</span></div>
+      </div>
+      <div class="life-item">
+        <div class="life-k">No-known-caveat audit</div>
+        <div class="life-v"><span class="tag tag-strict-yes">strict yes</span></div>
+      </div>
+      <div class="life-item life-item-wide">
+        <div class="life-k">Audit note</div>
+        <div class="life-v">
+          Read-side projection of <code>metadata_json.evidence_refs</code> for indexed tier/confidence queries. Universal <code>{url, tier, confidence}</code> shape owned by the shared evidence module (<code>src/core/finder/evidencePromptFragment.js</code>). Populated by <code>submitCandidate</code> and <code>candidateReseed</code> via <code>specDb.replaceFieldCandidateEvidence(candidateId, refs)</code>. Variant scope derives through the candidate FK &mdash; no <code>variant_id</code> column here. Cascade delete with <code>ON DELETE CASCADE</code> + <code>PRAGMA foreign_keys = ON</code>. PIF deliberately does not contribute (image URL is self-evident).
+        </div>
+      </div>
+    </div>
+  </div>
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">candidate_id</td><td class="ct">INTEGER</td><td class="cc">NOT NULL REFERENCES field_candidates(id) ON DELETE CASCADE</td></tr>
+<tr><td class="cn">url</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">tier</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">confidence</td><td class="ct">REAL</td><td class="cc"></td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_fce_candidate (candidate_id)</div><div class="idx-item">idx_fce_tier (tier)</div></div>
+    <div class="usage-section">
+    <div class="usage-head">
+      <div class="usage-title">Source Files</div>
+      <div class="usage-count">4 files</div>
+    </div>
+    <ul class="usage-file-list"><li><code>src/db/specDb.js</code></li><li><code>src/db/specDbSchema.js</code></li><li><code>src/db/specDbStatements.js</code></li><li><code>src/db/stores/fieldCandidateEvidenceStore.js</code></li><li><code>src/features/publisher/candidate-gate/submitCandidate.js</code></li><li><code>src/features/publisher/candidateReseed.js</code></li></ul>
+  </div>
+    <div class="usage-section">
+    <div class="usage-head">
+      <div class="usage-title">GUI / Tools Files</div>
+      <div class="usage-count">1 file</div>
+    </div>
+    <ul class="usage-file-list"><li><code>tools/gui-react/src/features/review/components/FieldReviewDrawer.tsx</code></li></ul>
   </div>
   </div>
 </details>

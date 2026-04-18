@@ -202,6 +202,18 @@ export function createFieldCandidateStore({ db, category, stmts }) {
     );
   }
 
+  function getBySourceIdAndVariant(productId, fieldKey, sourceId, variantId) {
+    return hydrateRow(
+      stmts._getFieldCandidateBySourceIdAndVariant.get(
+        category,
+        String(productId || ''),
+        String(fieldKey || ''),
+        String(sourceId || ''),
+        variantId ?? null,
+      )
+    );
+  }
+
   function deleteBySourceId(productId, fieldKey, sourceId) {
     stmts._deleteFieldCandidateBySourceId.run(
       category, String(productId || ''), String(fieldKey || ''), String(sourceId || '')
@@ -252,6 +264,6 @@ export function createFieldCandidateStore({ db, category, stmts }) {
 
   return {
     upsert, get, getByProductAndField, getAllByProduct, deleteByProduct, deleteByProductAndField, deleteByProductFieldValue, getPaginated, count, stats, markResolved, demoteResolved, getResolved, getDistinctProducts,
-    insert, getBySourceId, deleteBySourceId, deleteBySourceType, getByValue, markResolvedByValue, countBySourceId, updateValue, deleteByVariantId,
+    insert, getBySourceId, getBySourceIdAndVariant, deleteBySourceId, deleteBySourceType, getByValue, markResolvedByValue, countBySourceId, updateValue, deleteByVariantId,
   };
 }

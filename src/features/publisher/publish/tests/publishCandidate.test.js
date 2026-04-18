@@ -274,4 +274,63 @@ describe('publishCandidate', () => {
 
     assert.equal(result.status, 'skipped');
   });
+
+  // ── Evidence gate (min_evidence_refs) ───────────────────────────────
+
+  it('rejects with below_evidence_refs when rule requires refs and none are projected', () => {
+    ensureProductJson('pub-ev-missing');
+    const row = seedCandidate(specDb, 'pub-ev-missing', 'weight', 58, 95);
+    const gatedRule = { ...fieldRule, evidence: { min_evidence_refs: 1 } };
+
+    const result = publishCandidate({
+      specDb, category: 'mouse', productId: 'pub-ev-missing', fieldKey: 'weight',
+      candidateRow: row, value: 58, unit: null, confidence: 95,
+      config: { publishConfidenceThreshold: 0.7 },
+      fieldRule: gatedRule, productRoot: PRODUCT_ROOT,
+    });
+
+    assert.equal(result.status, 'below_evidence_refs');
+    assert.equal(result.required, 1);
+    assert.equal(result.actual, 0);
+    const pj = readProductJson('pub-ev-missing');
+    assert.equal(pj.fields.weight, undefined, 'must not publish when evidence gate fails');
+    const dbRow = specDb.getFieldCandidate('pub-ev-missing', 'weight', '58');
+    assert.equal(dbRow.metadata_json.publish_result.status, 'below_evidence_refs');
+  });
+
+  it('publishes when refs meet min_evidence_refs', () => {
+    ensureProductJson('pub-ev-ok');
+    const row = seedCandidate(specDb, 'pub-ev-ok', 'weight', 58, 95);
+    specDb.replaceFieldCandidateEvidence(row.id, [
+      { url: 'https://mfr.example', tier: 'tier1', confidence: 90 },
+      { url: 'https://review.example', tier: 'tier2', confidence: 75 },
+    ]);
+    const gatedRule = { ...fieldRule, evidence: { min_evidence_refs: 2 } };
+
+    const result = publishCandidate({
+      specDb, category: 'mouse', productId: 'pub-ev-ok', fieldKey: 'weight',
+      candidateRow: row, value: 58, unit: null, confidence: 95,
+      config: { publishConfidenceThreshold: 0.7 },
+      fieldRule: gatedRule, productRoot: PRODUCT_ROOT,
+    });
+
+    assert.equal(result.status, 'published');
+    const pj = readProductJson('pub-ev-ok');
+    assert.ok(pj.fields.weight);
+  });
+
+  it('evidence gate precedes product.json write — candidate not resolved on failure', () => {
+    ensureProductJson('pub-ev-guard');
+    const row = seedCandidate(specDb, 'pub-ev-guard', 'weight', 58, 99);
+    const gatedRule = { ...fieldRule, evidence: { min_evidence_refs: 2 } };
+
+    publishCandidate({
+      specDb, category: 'mouse', productId: 'pub-ev-guard', fieldKey: 'weight',
+      candidateRow: row, value: 58, unit: null, confidence: 99,
+      config: { publishConfidenceThreshold: 0.7 },
+      fieldRule: gatedRule, productRoot: PRODUCT_ROOT,
+    });
+
+    assert.equal(specDb.getResolvedFieldCandidate('pub-ev-guard', 'weight'), null);
+  });
 });

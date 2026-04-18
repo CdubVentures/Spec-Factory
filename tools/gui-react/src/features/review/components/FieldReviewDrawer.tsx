@@ -22,6 +22,48 @@ import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
 import { ColorSwatch } from '../../../shared/ui/finder/ColorSwatch.tsx';
 import { useFinderColorHexMap } from '../../../shared/ui/finder/useFinderColorHexMap.ts';
 import { useFormatDate, useFormatDateTime } from '../../../utils/dateTime.ts';
+import {
+  collectPublishedSources,
+  collectPublishedSourcesForVariant,
+  candidateMatchesVariant,
+  candidateValueMatches,
+  maxSourceConfidence,
+  resolveEvidenceSources,
+  type EvidenceSource,
+} from '../selectors/publishedSourceSelectors.ts';
+import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
+
+// WHY: Gate the per-source display list on the same publisher threshold that
+// decides candidate publishing. A candidate can be resolved (i.e. its overall
+// confidence cleared the bar) while still carrying individual evidence_refs
+// whose per-source confidence (0-100 in evidence_refs[]) is below the bar.
+// Those low-confidence sources shouldn't pose as "published sources" — hide
+// them. Reads the setting via Zustand so the list live-updates when the user
+// changes publishConfidenceThreshold in Publisher settings.
+function useSourceThreshold(): number {
+  const raw = useRuntimeSettingsValueStore((s) => s.values?.publishConfidenceThreshold);
+  return typeof raw === 'number' && Number.isFinite(raw) ? raw : 0;
+}
+
+// WHY: Variant-generator fields (colors, editions) ship ONE candidate per CEF
+// run whose value is the full JSON array. Per-variant rows match by
+// "published combo/slug appears in candidate.value array" rather than
+// candidateMatchesVariant (candidate has no variant_id for generators).
+const VARIANT_GENERATOR_FIELDS = new Set(['colors', 'editions']);
+
+function candidateValueIncludes(candidateValue: unknown, entryValue: unknown): boolean {
+  let parsed: unknown = candidateValue;
+  if (typeof candidateValue === 'string') {
+    try {
+      parsed = JSON.parse(candidateValue);
+    } catch {
+      return false;
+    }
+  }
+  if (!Array.isArray(parsed)) return false;
+  const target = String(entryValue ?? '');
+  return parsed.some((item) => String(item ?? '') === target);
+}
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
@@ -88,53 +130,90 @@ interface FieldReviewDrawerProps {
   variantValues?: Record<string, VariantValueEntry>;
 }
 
-// ── Collapsible source table (derived from resolved candidates) ─────
+// ── Source list (universal URL + tier + confidence row) ────────────
 
-function PublishedSourceTable({ candidates }: { candidates: ReviewCandidate[] }) {
-  const resolved = candidates.filter((c) => c.status === 'resolved');
-  const [open, toggleOpen] = usePersistedToggle('review:drawer:sourcesOpen', true);
+function SourceListItem({ src }: { src: EvidenceSource }) {
+  const host = extractHost(src.url);
+  return (
+    <li className="flex items-center gap-1.5 text-[10px] min-w-0">
+      <a
+        href={src.url}
+        target="_blank"
+        rel="noreferrer"
+        title={src.url}
+        className="sf-review-link-accent hover:underline truncate flex-1 min-w-0"
+      >
+        {host || src.url}
+      </a>
+      {src.tier && (
+        <span className="font-mono text-[9px] px-1 py-0.5 rounded sf-chip-neutral shrink-0">
+          {src.tier}
+        </span>
+      )}
+      {src.confidence != null && (
+        <span
+          className="font-mono text-[9px] px-1 py-0.5 rounded sf-chip-success shrink-0"
+          title="Per-source confidence (0-100)"
+        >
+          {src.confidence}
+        </span>
+      )}
+    </li>
+  );
+}
 
-  if (resolved.length === 0) return null;
+function SourceList({ sources }: { sources: readonly EvidenceSource[] }) {
+  return (
+    <ul className="space-y-0.5 px-3 py-1.5 border-t sf-border-subtle">
+      {sources.map((src, i) => (
+        <SourceListItem key={`${src.url}-${i}`} src={src} />
+      ))}
+    </ul>
+  );
+}
+
+// ── Collapsible source-row primitive ───────────────────────────────
+// WHY: Unified shell shared across variant rows, scalar rows, and list rows
+// so every published field renders the same header + collapsed-by-default
+// URL list. Header gets a caret + source count; body is SourceList when open.
+
+function CollapsibleSourceRow({
+  persistKey,
+  headerContent,
+  sources,
+}: {
+  persistKey: string;
+  headerContent: React.ReactNode;
+  sources: readonly EvidenceSource[];
+}) {
+  const [open, toggleOpen] = usePersistedToggle(persistKey, false);
+  const hasSources = sources.length > 0;
 
   return (
-    <div className="mt-1.5">
+    <div className="border-b sf-border-soft last:border-b-0">
       <button
-        onClick={toggleOpen}
-        className="flex items-center gap-1.5 sf-text-nano sf-text-subtle font-medium cursor-pointer select-none hover:text-blue-500 transition-colors"
+        type="button"
+        onClick={hasSources ? toggleOpen : undefined}
+        disabled={!hasSources}
+        className={`w-full flex items-center gap-2 px-2 py-1.5 text-left ${hasSources ? 'cursor-pointer hover:bg-[var(--sf-token-surface-hover,transparent)]' : 'cursor-default'}`}
       >
-        <span className={`inline-block transition-transform text-[9px] ${open ? 'rotate-90' : ''}`}>&#9656;</span>
-        {resolved.length} linked source{resolved.length !== 1 ? 's' : ''}
+        <span
+          className={`inline-block transition-transform text-[9px] shrink-0 ${open ? 'rotate-90' : ''} ${hasSources ? 'sf-text-subtle' : 'sf-text-subtle opacity-30'}`}
+          aria-hidden="true"
+        >
+          &#9656;
+        </span>
+        <span className="flex items-center gap-2 flex-1 min-w-0">{headerContent}</span>
+        {hasSources && (
+          <span
+            className="font-mono text-[9px] sf-text-subtle shrink-0"
+            title={`${sources.length} source${sources.length !== 1 ? 's' : ''}`}
+          >
+            {sources.length}
+          </span>
+        )}
       </button>
-      {open && (
-        <table className="mt-1.5 w-full text-[10px] border-collapse">
-          <thead>
-            <tr className="sf-text-subtle">
-              <th className="text-left font-semibold py-1 px-1.5 border-b sf-border-subtle uppercase tracking-wide text-[9px]">Source</th>
-              <th className="text-left font-semibold py-1 px-1.5 border-b sf-border-subtle uppercase tracking-wide text-[9px]">Model</th>
-              <th className="text-left font-semibold py-1 px-1.5 border-b sf-border-subtle uppercase tracking-wide text-[9px]">Conf</th>
-              <th className="text-left font-semibold py-1 px-1.5 border-b sf-border-subtle uppercase tracking-wide text-[9px]">Link</th>
-            </tr>
-          </thead>
-          <tbody>
-            {resolved
-              .sort((a, b) => (b.score || 0) - (a.score || 0))
-              .map((c, i) => (
-                <tr key={`${c.candidate_id}-${i}`} className="sf-text-muted">
-                  <td className="py-1 px-1.5 border-b sf-border-subtle">{c.source ? sourceDisplayLabel(c.source) : '—'}</td>
-                  <td className="py-1 px-1.5 border-b sf-border-subtle font-mono">{c.model || '—'}</td>
-                  <td className="py-1 px-1.5 border-b sf-border-subtle font-mono font-semibold">{pct(c.score)}</td>
-                  <td className="py-1 px-1.5 border-b sf-border-subtle">
-                    {c.evidence_url ? (
-                      <a href={c.evidence_url} target="_blank" rel="noreferrer" className="sf-review-link-accent hover:underline truncate max-w-[120px] inline-block">
-                        {extractHost(c.evidence_url)} &#8599;
-                      </a>
-                    ) : '—'}
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      )}
+      {open && hasSources && <SourceList sources={sources} />}
     </div>
   );
 }
@@ -246,110 +325,66 @@ function colorAtomsToHexParts(
 
 // ── Published variant table (variant-dependent fields) ─────────────
 
-function candidateMatchesVariant(
-  candidate: ReviewCandidate,
-  entry: VariantValueEntry,
-  variantId: string,
-): boolean {
-  if (candidate.variant_id && candidate.variant_id === variantId) return true;
-  const meta = candidate.metadata && typeof candidate.metadata === 'object'
-    ? (candidate.metadata as Record<string, unknown>)
-    : null;
-  const metaLabel = typeof meta?.variant_label === 'string' ? meta.variant_label : null;
-  const metaType = typeof meta?.variant_type === 'string' ? meta.variant_type : null;
-  const candLabel = candidate.variant_label || metaLabel;
-  const candType = candidate.variant_type || metaType;
-  if (!entry.variant_label || !candLabel || candLabel !== entry.variant_label) return false;
-  if (entry.variant_type && candType && entry.variant_type !== candType) return false;
-  return true;
-}
-
-function dedupeEvidenceSources(sources: readonly EvidenceSource[]): EvidenceSource[] {
-  const seen = new Set<string>();
-  const result: EvidenceSource[] = [];
-  for (const s of sources) {
-    if (seen.has(s.url)) continue;
-    seen.add(s.url);
-    result.push(s);
-  }
-  return result;
-}
-
-function VariantSourceList({ sources }: { sources: readonly EvidenceSource[] }) {
-  return (
-    <ul className="space-y-0.5 px-3 py-1.5 border-t sf-border-subtle">
-      {sources.map((src, i) => {
-        const host = extractHost(src.url);
-        return (
-          <li key={`${src.url}-${i}`} className="flex items-center gap-1.5 text-[10px] min-w-0">
-            <a
-              href={src.url}
-              target="_blank"
-              rel="noreferrer"
-              title={src.url}
-              className="sf-review-link-accent hover:underline truncate flex-1 min-w-0"
-            >
-              {host || src.url}
-            </a>
-            {src.tier && (
-              <span className="font-mono text-[9px] px-1 py-0.5 rounded sf-chip-neutral shrink-0">
-                {src.tier}
-              </span>
-            )}
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
 function PublishedVariantRow({
   entry,
   hexParts,
   sources,
   displayName,
+  persistKey,
 }: {
   entry: VariantValueEntry;
   hexParts: readonly string[];
   sources: readonly EvidenceSource[];
   displayName: string;
+  persistKey: string;
 }) {
   const displayValue = entry.value != null ? formatCellValue(entry.value) || 'unk' : 'unk';
+  // WHY: Candidate-level confidence is effectively always 100 (CEF hardcodes,
+  // RDF defaults). Derive the row badge from the strongest post-threshold
+  // source so the displayed % reflects honest evidence strength. Fall back
+  // to entry.confidence when there are no usable sources (e.g. pre-Run 2
+  // generators with global-only refs).
+  const derivedConfidence = maxSourceConfidence(sources) ?? entry.confidence;
+
+  const headerContent = (
+    <>
+      <ColorSwatch hexParts={hexParts} />
+      <span className="text-[11px] font-semibold sf-text-primary truncate min-w-0 flex-1" title={displayName}>
+        {displayName}
+      </span>
+      <span className="font-mono text-[11px] font-semibold sf-text-primary shrink-0" title={displayValue}>
+        {displayValue}
+      </span>
+      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono text-center shrink-0 ${confidenceColorClass(derivedConfidence)}`}>
+        {pct(derivedConfidence)}
+      </span>
+    </>
+  );
 
   return (
-    <div className="border-b sf-border-soft last:border-b-0">
-      <div className="flex items-center gap-2 px-2 py-1.5">
-        <ColorSwatch hexParts={hexParts} />
-        <span className="text-[11px] font-semibold sf-text-primary truncate min-w-0 flex-1" title={displayName}>
-          {displayName}
-        </span>
-        <span className="font-mono text-[11px] font-semibold sf-text-primary shrink-0" title={displayValue}>
-          {displayValue}
-        </span>
-        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono text-center shrink-0 ${confidenceColorClass(entry.confidence)}`}>
-          {pct(entry.confidence)}
-        </span>
-        {sources.length > 0 && (
-          <span className="font-mono text-[9px] sf-text-subtle shrink-0" title={`${sources.length} source${sources.length !== 1 ? 's' : ''}`}>
-            {sources.length}
-          </span>
-        )}
-      </div>
-      {sources.length > 0 && <VariantSourceList sources={sources} />}
-    </div>
+    <CollapsibleSourceRow
+      persistKey={persistKey}
+      headerContent={headerContent}
+      sources={sources}
+    />
   );
 }
 
 function PublishedVariantTable({
   variantValues,
   candidates,
+  fieldKey,
 }: {
   variantValues: Record<string, VariantValueEntry>;
   candidates: readonly ReviewCandidate[];
+  fieldKey: string;
 }) {
   const hexMap = useFinderColorHexMap();
+  const threshold = useSourceThreshold();
   const entries = Object.entries(variantValues);
   if (entries.length === 0) return null;
+
+  const isGenerator = VARIANT_GENERATOR_FIELDS.has(fieldKey);
 
   const sorted = [...entries].sort(([, a], [, b]) => {
     const aIsEdition = a.variant_type === 'edition' ? 0 : 1;
@@ -361,7 +396,18 @@ function PublishedVariantTable({
   return (
     <div className="sf-surface-panel rounded-lg overflow-hidden border sf-border-soft">
       {sorted.map(([vid, entry]) => {
-        const matched = candidates.filter((c) => candidateMatchesVariant(c, entry, vid));
+        // WHY: Two matching strategies:
+        //  - Variant-dependent (release_date etc.): candidate is scoped to a
+        //    variant_id AND its value is the per-variant published value.
+        //    Match = candidateMatchesVariant AND candidateValueMatches.
+        //  - Variant-generator (colors, editions): candidate carries the full
+        //    array (no variant_id). Match = candidate.value array INCLUDES
+        //    this entry's combo/slug.
+        const matched = candidates.filter((c) => {
+          if (c.status !== 'resolved') return false;
+          if (isGenerator) return candidateValueIncludes(c.value, entry.value);
+          return candidateMatchesVariant(c, entry, vid) && candidateValueMatches(c.value, entry.value);
+        });
         const firstMeta = matched.reduce<Record<string, unknown> | null>((acc, c) => {
           if (acc) return acc;
           return c.metadata && typeof c.metadata === 'object'
@@ -381,13 +427,15 @@ function PublishedVariantTable({
               ? entry.variant_label.split('+').map((s) => s.trim()).filter(Boolean)
               : null;
 
-        const allSources = matched.flatMap((c) => {
-          const meta = c.metadata && typeof c.metadata === 'object'
-            ? (c.metadata as Record<string, unknown>)
-            : null;
-          return resolveEvidenceSources(c, meta);
-        });
-        const sources = dedupeEvidenceSources(allSources);
+        // WHY: For generators, route per-variant source lookup through
+        // variant_key so CEF identity-check evidence (keyed by "color:<combo>"
+        // / "edition:<slug>") lights up. Falls back to the candidate's global
+        // evidence_refs when per-variant entries aren't present (Run 1). Both
+        // selectors apply the publisher threshold per-source to hide refs
+        // whose self-rated confidence doesn't clear the bar.
+        const sources = isGenerator && entry.variant_key
+          ? collectPublishedSourcesForVariant(matched, entry.variant_key, threshold)
+          : collectPublishedSources(matched, threshold);
 
         return (
           <PublishedVariantRow
@@ -396,6 +444,7 @@ function PublishedVariantTable({
             hexParts={colorAtomsToHexParts(atoms, hexMap)}
             sources={sources}
             displayName={displayName}
+            persistKey={`review:drawer:variantSources:${fieldKey}:${vid}`}
           />
         );
       })}
@@ -440,41 +489,6 @@ function resolveVariantDisplayName(
   return variantLabel;
 }
 
-// ── Evidence metadata (count + clickable URL list + tier per source) ──
-
-interface EvidenceSource {
-  url: string;
-  tier: string | null;
-}
-
-function resolveEvidenceSources(
-  candidate: ReviewCandidate,
-  meta: Record<string, unknown> | null,
-): EvidenceSource[] {
-  const metaSources = meta?.evidence_sources;
-  if (Array.isArray(metaSources) && metaSources.length > 0) {
-    return metaSources
-      .map((s): EvidenceSource | null => {
-        if (!s || typeof s !== 'object') return null;
-        const rec = s as Record<string, unknown>;
-        const url = typeof rec.source_url === 'string' ? rec.source_url : '';
-        if (!url) return null;
-        const raw = rec.tier;
-        const tier =
-          typeof raw === 'string' && raw ? raw
-          : typeof raw === 'number' ? `tier${raw}`
-          : null;
-        return { url, tier };
-      })
-      .filter((s): s is EvidenceSource => s !== null);
-  }
-  if (candidate.evidence_url) {
-    const tier = candidate.tier != null ? `tier${candidate.tier}` : null;
-    return [{ url: candidate.evidence_url, tier }];
-  }
-  return [];
-}
-
 function MetadataBlock({ sources }: { sources: readonly EvidenceSource[] }) {
   return (
     <div className="text-[10px] sf-text-muted p-1.5 rounded sf-review-evidence-card mt-0.5">
@@ -501,6 +515,11 @@ function MetadataBlock({ sources }: { sources: readonly EvidenceSource[] }) {
                 {src.tier && (
                   <span className="font-mono text-[9px] px-1 py-0.5 rounded sf-chip-neutral shrink-0">
                     {src.tier}
+                  </span>
+                )}
+                {src.confidence != null && (
+                  <span className="font-mono text-[9px] px-1 py-0.5 rounded sf-chip-neutral shrink-0" title="Per-source confidence (0-100)">
+                    {src.confidence}
                   </span>
                 )}
               </li>
@@ -559,7 +578,7 @@ function CandidateCard({
     <DrawerCard className={cardClass}>
       {/* Value + confidence badge */}
       <div className="flex items-center gap-2">
-        <span className="font-mono text-sm font-bold flex-1 truncate break-all" title={String(candidate.value)}>
+        <span className="font-mono text-sm font-bold flex-1 truncate break-all" title={parsedArray ? parsedArray.join(', ') : formatCellValue(candidate.value)}>
           {parsedArray ? parsedArray.join(', ') : formatCellValue(candidate.value)}
         </span>
         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono min-w-[2.2rem] text-center ${confidenceColorClass(candidate.score)}`}>
@@ -630,7 +649,7 @@ function CandidateCard({
       )}
 
       {/* Evidence block */}
-      <MetadataBlock sources={resolveEvidenceSources(candidate, meta)} />
+      <MetadataBlock sources={resolveEvidenceSources(candidate)} />
 
       {/* Artifact link */}
       {candidate.run_id && (
@@ -673,6 +692,79 @@ function CandidateCard({
   );
 }
 
+// ── Published non-variant row (scalar + list fields) ───────────────
+// WHY: Single collapsible row matching the variant-row pattern — header
+// shows the published value (or "N values" for lists) + source badge +
+// confidence + source count; body expands to the deduped source list. For
+// list fields the value chips render below the row so the user can see the
+// full published set alongside the sources that back it.
+
+function PublishedNonVariantRow({
+  currentValue,
+  fieldKey,
+  publishedParsed,
+  candidates,
+  hexMap,
+  formatDate,
+}: {
+  currentValue: FieldReviewDrawerProps['currentValue'];
+  fieldKey: string;
+  publishedParsed: string[] | null;
+  candidates: ReviewCandidate[];
+  hexMap: ReadonlyMap<string, string>;
+  formatDate: (raw: string | null | undefined) => string;
+}) {
+  const threshold = useSourceThreshold();
+  const sources = collectPublishedSources(candidates, threshold);
+  // WHY: Candidate-level confidence is usually 100 (LLM default). Derive the
+  // row badge from the strongest post-threshold source for an honest signal,
+  // fall back to currentValue.confidence when no usable sources exist.
+  const derivedConfidence = maxSourceConfidence(sources) ?? currentValue.confidence;
+
+  const headerContent = (
+    <>
+      <span className={`inline-block w-3 h-3 rounded-full shrink-0 ${trafficColor(currentValue.color)}`} />
+      {publishedParsed ? (
+        <span className={`text-xs font-semibold ${trafficTextColor(currentValue.color)}`}>
+          {publishedParsed.length} values
+        </span>
+      ) : (
+        <span className={`font-mono text-sm font-semibold break-words min-w-0 flex-1 ${trafficTextColor(currentValue.color)}`}>
+          {currentValue.value}
+        </span>
+      )}
+      {currentValue.source && (
+        <span className={`sf-text-nano px-1.5 py-0.5 rounded font-medium ${sourceBadgeClass[currentValue.source] || SOURCE_BADGE_FALLBACK}`}>
+          {currentValue.source}
+        </span>
+      )}
+      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono min-w-[2.2rem] text-center ${confidenceColorClass(derivedConfidence)}`}>
+        {pct(derivedConfidence)}
+      </span>
+    </>
+  );
+
+  return (
+    <div className="sf-surface-panel rounded-lg overflow-hidden border sf-border-soft">
+      <CollapsibleSourceRow
+        persistKey={`review:drawer:nonVariantSources:${fieldKey}`}
+        headerContent={headerContent}
+        sources={sources}
+      />
+      {publishedParsed && publishedParsed.length > 0 && (
+        <div className="px-2 py-1.5 border-t sf-border-subtle">
+          <PublishedArrayList items={publishedParsed} fieldKey={fieldKey} hexMap={hexMap} />
+        </div>
+      )}
+      {currentValue.sourceTimestamp && (
+        <div className="sf-text-nano sf-drawer-meta px-3 py-1 border-t sf-border-subtle">
+          set {formatDate(currentValue.sourceTimestamp)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main component ──────────────────────────────────────────────────
 
 export function FieldReviewDrawer({
@@ -701,7 +793,13 @@ export function FieldReviewDrawer({
   const hasPublished = hasKnownValue(currentValue.value);
   const hexMap = useFinderColorHexMap();
   const variantValueEntries = variantValues ? Object.keys(variantValues).length : 0;
-  const hasVariantTable = variantDependent && variantValueEntries > 0;
+  // WHY: variant_values drives the per-variant table regardless of whether
+  // field_rule.variant_dependent is true. Variant-dependent fields
+  // (release_date, sku) and variant-generator fields (colors, editions) both
+  // emit variant_values from the backend — the drawer renders them the same
+  // way, only the candidate-matching strategy inside PublishedVariantTable
+  // differs (see VARIANT_GENERATOR_FIELDS).
+  const hasVariantTable = variantValueEntries > 0;
   const badgeKind = resolveDrawerBadge(fieldKey, hasPublished || hasVariantTable, variantDependent);
   const [deleteConfirm, setDeleteConfirm] = useState<{ mode: 'single'; sourceId: string } | { mode: 'all' } | null>(null);
 
@@ -734,47 +832,21 @@ export function FieldReviewDrawer({
           </div>
         )}
         {hasVariantTable ? (
-          <PublishedVariantTable variantValues={variantValues!} candidates={candidates} />
+          <PublishedVariantTable variantValues={variantValues!} candidates={candidates} fieldKey={fieldKey} />
         ) : (
-          <div className="space-y-1">
-            {/* Header row: dot + source + confidence */}
-            <div className="flex items-center gap-2">
-              <span className={`inline-block w-3 h-3 rounded-full shrink-0 ${trafficColor(currentValue.color)}`} />
-              {publishedParsed ? (
-                <span className={`text-xs font-semibold ${trafficTextColor(currentValue.color)}`}>
-                  {publishedParsed.length} values
-                </span>
-              ) : (
-                <span className={`font-mono text-sm font-semibold break-words min-w-0 ${trafficTextColor(currentValue.color)}`}>
-                  {currentValue.value}
-                </span>
-              )}
-              {currentValue.source && (
-                <span className={`sf-text-nano px-1.5 py-0.5 rounded font-medium ${sourceBadgeClass[currentValue.source] || SOURCE_BADGE_FALLBACK}`}>
-                  {currentValue.source}
-                </span>
-              )}
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono min-w-[2.2rem] text-center ml-auto ${confidenceColorClass(currentValue.confidence)}`}>
-                {pct(currentValue.confidence)}
-              </span>
-            </div>
-            {publishedParsed && (
-              <PublishedArrayList items={publishedParsed} fieldKey={fieldKey} hexMap={hexMap} />
-            )}
-            {currentValue.sourceTimestamp && (
-              <div className="sf-text-nano sf-drawer-meta pl-5">
-                set {formatDate(currentValue.sourceTimestamp)}
-              </div>
-            )}
-          </div>
+          <PublishedNonVariantRow
+            currentValue={currentValue}
+            fieldKey={fieldKey}
+            publishedParsed={publishedParsed}
+            candidates={candidates}
+            hexMap={hexMap}
+            formatDate={formatDate}
+          />
         )}
         {currentValue.overridden && (
           <div className="mt-1 px-2 py-1 text-center font-medium sf-status sf-status-info">
             Overridden (manual)
           </div>
-        )}
-        {!candidatesLoading && !hasVariantTable && (
-          <PublishedSourceTable candidates={candidates} />
         )}
       </DrawerSection>
 

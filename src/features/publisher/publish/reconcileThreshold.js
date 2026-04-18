@@ -11,6 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { normalizeConfidence, buildLinkedCandidates } from './publishCandidate.js';
+import { checkEvidenceGate } from './evidenceGate.js';
 
 function safeReadJson(filePath) {
   try { return JSON.parse(fs.readFileSync(filePath, 'utf8')); }
@@ -97,9 +98,11 @@ export function reconcileThreshold({
         // Resolved and still above threshold — no action
         result.unaffected++;
       } else {
-        // LOOSENING: no resolved candidate — find best above threshold
+        // LOOSENING: no resolved candidate — find best above threshold that also clears the evidence gate
+        const fieldRuleForGate = fieldRules[fieldKey] || null;
         const best = candidates
           .filter(c => normalizeConfidence(c.confidence) >= threshold)
+          .filter(c => checkEvidenceGate({ specDb, candidateId: c.id, fieldRule: fieldRuleForGate }).ok)
           .sort((a, b) => normalizeConfidence(b.confidence) - normalizeConfidence(a.confidence))[0];
 
         if (best) {

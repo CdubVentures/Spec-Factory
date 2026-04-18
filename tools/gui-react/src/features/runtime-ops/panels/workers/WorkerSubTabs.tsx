@@ -5,6 +5,7 @@ import { resolvePoolStage } from '../../poolStageRegistry.ts';
 import { buildWorkerButtonLabel, buildWorkerButtonSubtitle, sortWorkersForTabs } from '../../selectors/workerTabHelpers.js';
 import { SearchProviderIcon } from '../../../../shared/ui/icons/SearchProviderIcon.tsx';
 import { accessBadgeClass, accessBadgeLabel } from '../../selectors/llmModelHelpers.ts';
+import { parseBackendMs } from '../../../../utils/dateTime.ts';
 
 interface WorkerSubTabsProps {
   workers: RuntimeOpsWorkerRow[];
@@ -96,11 +97,11 @@ function WorkerBadgeStack({ worker }: { worker: RuntimeOpsWorkerRow }) {
 
 function TabTimer({ startTs }: { startTs: string }) {
   const [elapsed, setElapsed] = useState(() => {
-    const start = new Date(startTs).getTime();
+    const start = parseBackendMs(startTs);
     return Number.isFinite(start) ? Math.max(0, Math.round((Date.now() - start) / 1000)) : 0;
   });
   useEffect(() => {
-    const start = new Date(startTs).getTime();
+    const start = parseBackendMs(startTs);
     if (!Number.isFinite(start)) return;
     const id = setInterval(() => setElapsed(Math.max(0, Math.round((Date.now() - start) / 1000))), 1000);
     return () => clearInterval(id);
@@ -111,12 +112,12 @@ function TabTimer({ startTs }: { startTs: string }) {
 // WHY: Countdown from handler timeout budget so you know when the retry will give up.
 function CountdownTimer({ startTs, budgetSecs }: { startTs: string; budgetSecs: number }) {
   const [remaining, setRemaining] = useState(() => {
-    const start = new Date(startTs).getTime();
+    const start = parseBackendMs(startTs);
     if (!Number.isFinite(start)) return budgetSecs;
     return Math.max(0, budgetSecs - Math.round((Date.now() - start) / 1000));
   });
   useEffect(() => {
-    const start = new Date(startTs).getTime();
+    const start = parseBackendMs(startTs);
     if (!Number.isFinite(start)) return;
     const id = setInterval(() => {
       setRemaining(Math.max(0, budgetSecs - Math.round((Date.now() - start) / 1000)));

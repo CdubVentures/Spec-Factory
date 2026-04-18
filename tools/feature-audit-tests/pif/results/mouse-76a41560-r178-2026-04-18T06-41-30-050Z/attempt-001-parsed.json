@@ -1,0 +1,80 @@
+{
+  "images": [
+    {
+      "view": "top",
+      "url": "https://assets.corsair.com/image/upload/f_auto%2Cq_auto/v1735855631/products/Gaming-Mice/base-m75-wireless-apple-config/gallery/glacial-blue/M75_GLACIAL_BLUE_11.png",
+      "source_page": "https://www.corsair.com/ww/en/p/gaming-mouse/ch-931d01g-ww/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ww-ch-931d01g-ww?position=7&queryID=f135edb192c4b2fc4da7cb349fefb5e2",
+      "alt_text": "Corsair M75 Wireless Glacier Blue top-down product shot on a plain light background",
+      "evidence_refs": [
+        {
+          "url": "https://www.corsair.com/ww/en/p/gaming-mouse/ch-931d01g-ww/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ww-ch-931d01g-ww?position=7&queryID=f135edb192c4b2fc4da7cb349fefb5e2",
+          "tier": "tier1"
+        }
+      ]
+    },
+    {
+      "view": "top",
+      "url": "https://www.cyberpuerta.mx/img/product/XL/CP-CORSAIR-CH-931D01G-NA-df0a9a.png",
+      "source_page": "https://www.cyberpuerta.mx/Computo-Hardware/Dispositivos-de-Entrada/Mouse/Mouse-Gamer-Corsair-M75-Inalambrico-Optico-26-000DPI-RF-Wireless-Bluetooth-USB-A-Azul.html",
+      "alt_text": "Corsair M75 Wireless Glacier Blue overhead product shot on white background",
+      "evidence_refs": [
+        {
+          "url": "https://www.cyberpuerta.mx/Computo-Hardware/Dispositivos-de-Entrada/Mouse/Mouse-Gamer-Corsair-M75-Inalambrico-Optico-26-000DPI-RF-Wireless-Bluetooth-USB-A-Azul.html",
+          "tier": "tier3"
+        },
+        {
+          "url": "https://www.corsair.com/ww/en/p/gaming-mouse/ch-931d01g-ww/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ww-ch-931d01g-ww?position=7&queryID=f135edb192c4b2fc4da7cb349fefb5e2",
+          "tier": "tier1"
+        }
+      ]
+    },
+    {
+      "view": "angle",
+      "url": "https://assets.corsair.com/image/upload/c_pad%2Cq_85%2Ch_1100%2Cw_1100%2Cf_auto/products/Gaming-Mice/base-m75-wireless-apple-config/gallery/glacial-blue/M75_GLACIAL_BLUE_01.webp",
+      "source_page": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na",
+      "alt_text": "Corsair M75 Wireless Glacier Blue rear/top three-quarter product shot",
+      "evidence_refs": [
+        {
+          "url": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na",
+          "tier": "tier1"
+        }
+      ]
+    }
+  ],
+  "discovery_log": {
+    "urls_checked": [
+      "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na",
+      "https://www.corsair.com/ww/en/p/gaming-mouse/ch-931d01g-ww/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ww-ch-931d01g-ww?position=7&queryID=f135edb192c4b2fc4da7cb349fefb5e2",
+      "https://www.corsair.com/newsroom/press-release/corsair-unveils-exclusive-award-winning-k65-plus-wireless-keyboard-and-m75-wireless-gaming-mouse-colorways-for-mac?amp=1",
+      "https://www.businesswire.com/news/home/20241118475901/en/CORSAIR-Unveils-Exclusive-Award-Winning-K65-PLUS-WIRELESS-Keyboard-and-M75-WIRELESS-Gaming-Mouse-Colorways-for-Mac",
+      "https://www.bhphotovideo.com/c/product/1915333-REG/corsair_ch_931d01g_na_m75_wireless_gaming_mouse.html",
+      "https://www.bhphotovideo.com/c/product/1915333-REG/corsair_ch_931d01g_na_m75_wireless_gaming_mouse.html/overview",
+      "https://www.tanotis.com/products/corsair-m75-wireless-gaming-mouse-glacier-blue",
+      "https://www.cyberpuerta.mx/Computo-Hardware/Dispositivos-de-Entrada/Mouse/Mouse-Gamer-Corsair-M75-Inalambrico-Optico-26-000DPI-RF-Wireless-Bluetooth-USB-A-Azul.html",
+      "https://files.bbystatic.com/sEk07MmCmk8O9ow8wbTdQQ%3D%3D/CORSAIR-%2BM75%2B%2BWireless%2B-%2BQuick%2BStart%2BGuide",
+      "https://www.apple.com/shop/product/HRYU2ZM/A/corsair-m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue"
+    ],
+    "queries_run": [
+      "site:assets.corsair.com/image/upload \"M75_GLACIAL_BLUE_01\"",
+      "site:assets.corsair.com/image/upload \"M75_GLACIAL_BLUE_02\"",
+      "site:assets.corsair.com/image/upload \"M75_GLACIAL_BLUE_03\"",
+      "\"Corsair M75 Wireless\" \"Glacier Blue\" image",
+      "\"CH-931D01G-NA\" image",
+      "\"Corsair M75 Wireless\" \"Glacier Blue\" \"product shot\"",
+      "\"Corsair M75 Wireless\" \"Glacier Blue\" top view",
+      "\"Corsair M75 Wireless\" \"Glacier Blue\" side view",
+      "\"Corsair M75 Wireless\" \"Glacier Blue\" bottom view",
+      "site:bhphotovideo.com Corsair M75 Wireless Glacier Blue",
+      "site:tanotis.com Corsair M75 Wireless Glacier Blue",
+      "site:cyberpuerta.mx Corsair M75 Wireless Azul",
+      "site:corsair.com M75 Wireless Glacier Blue images",
+      "\"pr.cor.sr/K65_M75_ForMac\""
+    ],
+    "notes": [
+      "Verified the exact product family/model as Corsair M75 Wireless, color Glacier Blue; excluded M75 Air Wireless and base M75 sibling pages/images.",
+      "Found clean, high-resolution official product-gallery images for the exact Glacier Blue variant.",
+      "Found a second clean overhead image from Cyberpuerta that matches the exact SKU CH-931D01G-NA / Glacier Blue.",
+      "No clean isolated bottom-view product shot was found for this variant; the available manual/diagram images were not clean studio product shots, so they were omitted."
+    ]
+  }
+}

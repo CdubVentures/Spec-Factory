@@ -10,6 +10,7 @@ import { HeroBand } from '../../../../shared/ui/data-display/HeroBand.tsx';
 import { HeroStat, HeroStatGrid } from '../../components/HeroStat.tsx';
 import { Chip } from '../../../../shared/ui/feedback/Chip.tsx';
 import { shortModel, modelChipClass, accessBadgeClass, accessBadgeLabel } from '../../selectors/llmModelHelpers.ts';
+import { parseBackendMs } from '../../../../utils/dateTime.ts';
 import {
   type CallTypeDef, type DonutSegment, type NarrativeData,
   CALL_TYPE_ORDER, FILTER_GROUPS,
@@ -604,11 +605,11 @@ function TokenBar({ promptPct }: { promptPct: number }) {
 
 function LiveTimer({ startTs }: { startTs: string }) {
   const [elapsed, setElapsed] = useState(() => {
-    const start = new Date(startTs).getTime();
+    const start = parseBackendMs(startTs);
     return Number.isFinite(start) ? Math.max(0, (Date.now() - start) / 1000) : 0;
   });
   useEffect(() => {
-    const start = new Date(startTs).getTime();
+    const start = parseBackendMs(startTs);
     if (!Number.isFinite(start)) return;
     const id = setInterval(() => setElapsed(Math.max(0, (Date.now() - start) / 1000)), 1000);
     return () => clearInterval(id);

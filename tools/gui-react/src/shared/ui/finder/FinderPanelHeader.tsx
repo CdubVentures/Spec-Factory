@@ -24,6 +24,9 @@ interface FinderPanelHeaderProps {
   children?: ReactNode;
   /** When provided, replaces the default Run button entirely */
   actionSlot?: ReactNode;
+  /** Slot rendered immediately to the LEFT of the Run/actionSlot button.
+   *  Intended for secondary-action buttons like "Discovery History". */
+  historyActionSlot?: ReactNode;
 }
 
 export function FinderPanelHeader({
@@ -41,6 +44,7 @@ export function FinderPanelHeader({
   onRun,
   children,
   actionSlot,
+  historyActionSlot,
 }: FinderPanelHeaderProps) {
   return (
     <div className={`flex items-center gap-2.5 px-6 pt-4 ${collapsed ? 'pb-3' : 'pb-0'}`}>
@@ -64,17 +68,20 @@ export function FinderPanelHeader({
         <Chip label={statusChip.label} className={toneToChipClass(statusChip.tone)} />
       ) : null}
 
-      {actionSlot ?? (
-        <button
-          onClick={(e) => { e.stopPropagation(); onRun(); }}
-          disabled={sendBusy || runDisabled || isRunning}
-          className="ml-auto w-28 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-primary-button disabled:opacity-40 disabled:cursor-not-allowed text-center"
-        >
-          {sendBusy ? (
-            <span className="flex items-center justify-center gap-1.5"><Spinner className="h-3 w-3" /> Sending...</span>
-          ) : runLabel}
-        </button>
-      )}
+      <div className="ml-auto flex items-center gap-2">
+        {historyActionSlot}
+        {actionSlot ?? (
+          <button
+            onClick={(e) => { e.stopPropagation(); onRun(); }}
+            disabled={sendBusy || runDisabled || isRunning}
+            className="w-28 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-primary-button disabled:opacity-40 disabled:cursor-not-allowed text-center"
+          >
+            {sendBusy ? (
+              <span className="flex items-center justify-center gap-1.5"><Spinner className="h-3 w-3" /> Sending...</span>
+            ) : runLabel}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

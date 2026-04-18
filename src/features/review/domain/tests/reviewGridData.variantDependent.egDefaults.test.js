@@ -1,13 +1,21 @@
-// WHY: Regression guard. Colors and editions are variant-GENERATORS (CEF), not
-// variant-dependent attributes. The field values ARE the variant identities
-// (variant v_black IS the color "black") — so they publish to product.json.fields
-// as a list, never to product.json.variant_fields[vid]. The review drawer must
-// render them as "Published Variant" + flat list (existing CEF path), not as a
-// per-variant value table.
+// WHY: Regression guard for the review drawer payload shape.
+//
+// Colors and editions are variant-GENERATORS (CEF) — their VALUES are the
+// variant identities. They publish to product.json.fields.<key> as a JSON
+// list (not to product.json.variant_fields[vid][key]) — that part is owned
+// by the publisher and is not under test here.
+//
+// The review grid drawer, however, renders colors/editions as per-variant
+// rows so each combo/slug can show its own color swatch and per-variant
+// source list (from CEF identity-check evidence). The backend therefore
+// emits variant_values on the drawer payload for these fields too —
+// keyed by variant_id, value = combo/slug, enriched with variant metadata
+// and variant_key. This test locks in that drawer-payload contract.
 //
 // Only variant-attribute fields (release_date, future discontinued/SKU/price)
-// get variant_dependent: true and emit variant_values — see the sibling test
-// reviewGridData.variantDependent.test.js for the positive assertions.
+// get field_rule.variant_dependent: true. Variant-generator fields keep
+// variant_dependent: false — the drawer treats them uniformly via the
+// variant_values map regardless of the flag.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -45,7 +53,7 @@ function makeSpecDbStub({ variants = [], candidates = [] }) {
   };
 }
 
-test('colors does NOT emit variant_values even when variants exist (CEF is variant-backed, not variant-dependent)', async () => {
+test('colors emits variant_values keyed by variant_id with combo values + variant metadata', async () => {
   const variants = [
     { variant_id: 'v_black', variant_key: 'color:black', variant_label: 'Black',
       variant_type: 'color', color_atoms: ['black'], edition_slug: null },
@@ -60,14 +68,26 @@ test('colors does NOT emit variant_values even when variants exist (CEF is varia
     layout, specDb, catalogProduct: { brand: 'Corsair', model: 'M75' },
   });
 
-  assert.equal(payload.fields.colors.variant_values, undefined,
-    'colors is variant-backed, NOT variant-dependent — drawer renders list, not per-variant table');
-  // Published value is still the list projected from variants.
+  // Published value is still the flat list projected from variants (publish
+  // contract unchanged — goes to product.json.fields.colors, not variant_fields).
   const parsed = JSON.parse(payload.fields.colors.selected.value);
   assert.deepEqual(parsed, ['black', 'white']);
+
+  // Drawer payload now carries per-variant rows so each combo gets its own
+  // row + source list.
+  const vv = payload.fields.colors.variant_values;
+  assert.ok(vv, 'colors must emit variant_values for drawer per-variant rendering');
+  assert.equal(vv.v_black.value, 'black');
+  assert.equal(vv.v_black.variant_label, 'Black');
+  assert.equal(vv.v_black.variant_type, 'color');
+  assert.deepEqual(vv.v_black.color_atoms, ['black']);
+  assert.equal(vv.v_black.variant_key, 'color:black');
+  assert.equal(vv.v_black.confidence, 1.0);
+  assert.equal(vv.v_white.value, 'white');
+  assert.equal(vv.v_white.variant_key, 'color:white');
 });
 
-test('editions does NOT emit variant_values even when edition variants exist', async () => {
+test('editions emits variant_values keyed by variant_id with edition_slug values', async () => {
   const variants = [
     { variant_id: 'v_ed1', variant_key: 'edition:cod-bo7',
       variant_label: 'Call of Duty® Black Ops 7 Edition',
@@ -81,10 +101,46 @@ test('editions does NOT emit variant_values even when edition variants exist', a
     layout, specDb, catalogProduct: {},
   });
 
-  assert.equal(payload.fields.editions.variant_values, undefined,
-    'editions is variant-backed, NOT variant-dependent');
   const parsed = JSON.parse(payload.fields.editions.selected.value);
   assert.deepEqual(parsed, ['cod-bo7']);
+
+  const vv = payload.fields.editions.variant_values;
+  assert.ok(vv, 'editions must emit variant_values for drawer per-variant rendering');
+  assert.equal(vv.v_ed1.value, 'cod-bo7');
+  assert.equal(vv.v_ed1.variant_type, 'edition');
+  assert.equal(vv.v_ed1.edition_slug, 'cod-bo7');
+  assert.equal(vv.v_ed1.variant_key, 'edition:cod-bo7');
+  assert.deepEqual(vv.v_ed1.color_atoms, ['black']);
+});
+
+test('edition combo cascades into colors variant_values with variant_type=edition', async () => {
+  // WHY: An edition IS a color variant — its combo is also a colors entry.
+  // The colors field's variant_values entry for that edition's variant_id
+  // must keep variant_type='edition' so the drawer can badge it distinctly
+  // and resolve variant_key against CEF's identity-check mappings.
+  const variants = [
+    { variant_id: 'v_ed1', variant_key: 'edition:cod-bo7',
+      variant_label: 'Call of Duty® Black Ops 7 Edition',
+      variant_type: 'edition', color_atoms: ['black', 'red'], edition_slug: 'cod-bo7' },
+    { variant_id: 'v_black', variant_key: 'color:black', variant_label: 'Black',
+      variant_type: 'color', color_atoms: ['black'], edition_slug: null },
+  ];
+  const specDb = makeSpecDbStub({ variants });
+  const layout = makeLayout([{ key: 'colors', variant_dependent: false }]);
+
+  const payload = await buildProductReviewPayload({
+    storage: {}, config: {}, category: 'mouse', productId: 'p1',
+    layout, specDb, catalogProduct: {},
+  });
+
+  const vv = payload.fields.colors.variant_values;
+  assert.ok(vv);
+  assert.equal(vv.v_ed1.value, 'black+red', 'edition combo string lands in colors vv');
+  assert.equal(vv.v_ed1.variant_type, 'edition');
+  assert.equal(vv.v_ed1.variant_key, 'edition:cod-bo7');
+  assert.equal(vv.v_black.value, 'black');
+  assert.equal(vv.v_black.variant_type, 'color');
+  assert.equal(vv.v_black.variant_key, 'color:black');
 });
 
 test('release_date DOES emit variant_values (regression: variant-attribute path still works)', async () => {
@@ -109,4 +165,5 @@ test('release_date DOES emit variant_values (regression: variant-attribute path 
   assert.ok(vv, 'release_date is variant-dependent — must emit variant_values');
   assert.equal(vv.v_black.value, '2025-12-09');
   assert.equal(vv.v_black.variant_label, 'Black');
+  assert.equal(vv.v_black.variant_key, 'color:black', 'variant_key propagated from variant registry');
 });

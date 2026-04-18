@@ -1,0 +1,7 @@
+{
+  "discoveryPromptTemplate": "",
+  "perVariantAttemptBudget": "3",
+  "minConfidence": "70",
+  "urlHistoryEnabled": "true",
+  "queryHistoryEnabled": "true"
+}

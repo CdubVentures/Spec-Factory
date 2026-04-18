@@ -3,6 +3,7 @@
 // Column 2: header card + settings for the SELECTED section only.
 
 import { Suspense, lazy } from 'react';
+import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import { GenericSectionPanel } from './GenericSectionPanel.tsx';
 import { findCategory } from '../state/SettingsCategoryRegistry.ts';
 import type { SettingsCategoryId, SettingsSectionDef } from '../state/SettingsCategoryRegistry.ts';
@@ -12,6 +13,7 @@ import { usePersistedTab } from '../../../stores/tabStore.ts';
 const TierHierarchyPanel = lazy(() => import('../sections/TierHierarchyPanel.tsx'));
 const VideoSectionPanel = lazy(() => import('./VideoSectionPanel.tsx').then((m) => ({ default: m.VideoSectionPanel })));
 const PublisherReconcileSection = lazy(() => import('../sections/PublisherReconcileSection.tsx'));
+const RmbgModelSection = lazy(() => import('../sections/RmbgModelSection.tsx'));
 
 export interface CategoryPanelProps {
   categoryId: SettingsCategoryId;
@@ -204,7 +206,7 @@ export function CategoryPanel({
             {/* Settings for this section */}
             <div className="space-y-4">
               {activeSectionDef.customComponent === 'TierHierarchy' ? (
-                <Suspense fallback={<p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Loading...</p>}>
+                <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
                   <TierHierarchyPanel
                     runtimeDraft={runtimeDraft}
                     onStringChange={onStringChange}
@@ -212,12 +214,24 @@ export function CategoryPanel({
                   />
                 </Suspense>
               ) : activeSectionDef.customComponent === 'PublisherReconcile' ? (
-                <Suspense fallback={<p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Loading...</p>}>
+                <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
                   <PublisherReconcileSection />
                 </Suspense>
               ) : activeSectionDef.customComponent === 'VideoRecording' ? (
-                <Suspense fallback={<p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Loading...</p>}>
+                <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
                   <VideoSectionPanel
+                    categoryId={categoryId}
+                    sectionId={activeSection}
+                    runtimeDraft={runtimeDraft}
+                    onBoolChange={onBoolChange}
+                    onNumberChange={onNumberChange}
+                    onStringChange={onStringChange}
+                    disabled={disabled}
+                  />
+                </Suspense>
+              ) : activeSectionDef.customComponent === 'RmbgModelSection' ? (
+                <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
+                  <RmbgModelSection
                     categoryId={categoryId}
                     sectionId={activeSection}
                     runtimeDraft={runtimeDraft}

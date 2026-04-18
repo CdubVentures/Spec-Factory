@@ -1,8 +1,55 @@
+import fs from 'node:fs';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import {
   RUNTIME_SETTINGS_ROUTE_GET,
   RUNTIME_SETTINGS_ROUTE_PUT,
 } from '../../settings-authority/index.js';
+import { reconcileThreshold } from '../../publisher/publish/reconcileThreshold.js';
+import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
+
+// WHY: publishConfidenceThreshold changes are globally reactive — the value
+// gates every candidate across every category. When the user adjusts it in
+// Publisher settings, SQL field_candidates.status and product.json.fields[]
+// must re-evaluate for every active category; otherwise the drawer and grid
+// keep showing stale resolved sets until someone manually hits the Publisher
+// Reconcile button per category. Enumerate category directories under
+// config.specDbDir, open each specDb, and call the same reconcileThreshold
+// path the manual button uses. Per-category publisher-reconcile events let
+// the GUI refresh downstream queries.
+function autoReconcileForAllCategories({ config, getSpecDb, broadcastWs, threshold }) {
+  if (typeof getSpecDb !== 'function') return { reconciled: 0 };
+  const specDbDir = config?.specDbDir || '.workspace/db';
+  const productRoot = defaultProductRoot();
+  let categories = [];
+  try {
+    categories = fs.readdirSync(specDbDir, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name);
+  } catch {
+    return { reconciled: 0 };
+  }
+  let reconciled = 0;
+  for (const category of categories) {
+    const specDb = getSpecDb(category);
+    if (!specDb) continue;
+    try {
+      reconcileThreshold({
+        specDb, category, threshold, productRoot, dryRun: false,
+      });
+      reconciled += 1;
+      emitDataChange({
+        broadcastWs,
+        event: 'publisher-reconcile',
+        category,
+      });
+    } catch {
+      // WHY: Per-category failure must not abort the settings write or
+      // block other categories from reconciling. Failures surface via
+      // the missing data-change event (UI won't refresh for that category).
+    }
+  }
+  return { reconciled };
+}
 
 function buildRuntimeSettingsGetSnapshot(cfg, toInt) {
   const STRING_MAP = RUNTIME_SETTINGS_ROUTE_GET.stringMap;
@@ -33,6 +80,7 @@ export function createRuntimeSettingsHandler({
   config,
   broadcastWs,
   persistenceCtx,
+  getSpecDb,
 }) {
   return async function handleRuntimeSettings(parts, params, method, req, res) {
     if (parts[0] !== 'runtime-settings') return false;
@@ -134,8 +182,23 @@ export function createRuntimeSettingsHandler({
           applied,
         },
       });
+
+      // WHY: publishConfidenceThreshold is the publisher gate — changing it
+      // must flip SQL resolved/candidate status + product.json fields across
+      // every category immediately, not wait for a manual Reconcile click.
+      let reconcileMeta = null;
+      if ('publishConfidenceThreshold' in runtimePatch) {
+        const { reconciled } = autoReconcileForAllCategories({
+          config,
+          getSpecDb,
+          broadcastWs,
+          threshold: runtimePatch.publishConfidenceThreshold,
+        });
+        reconcileMeta = { threshold: runtimePatch.publishConfidenceThreshold, categories: reconciled };
+      }
+
       const snapshot = buildRuntimeSettingsGetSnapshot(config, toInt);
-      return jsonRes(res, 200, { ok: true, applied, snapshot, rejected });
+      return jsonRes(res, 200, { ok: true, applied, snapshot, rejected, ...(reconcileMeta ? { reconciled: reconcileMeta } : {}) });
     }
 
     return false;

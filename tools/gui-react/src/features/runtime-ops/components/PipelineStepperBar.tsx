@@ -5,6 +5,7 @@ import {
   resolveStageState,
 } from '../pipelineStepperRegistry.ts';
 import type { StepperStageState } from '../pipelineStepperRegistry.ts';
+import { parseBackendMs } from '../../../utils/dateTime.ts';
 
 interface PipelineStepperBarProps {
   stageCursor: string;
@@ -49,10 +50,10 @@ function ElapsedTimer({ startedAt, endedAt, isRunning }: { startedAt: string; en
     return () => clearInterval(id);
   }, [isRunning]);
 
-  const startMs = Date.parse(startedAt);
+  const startMs = parseBackendMs(startedAt);
   if (!Number.isFinite(startMs)) return null;
 
-  const endMs = endedAt ? Date.parse(endedAt) : 0;
+  const endMs = endedAt ? parseBackendMs(endedAt) : 0;
   const elapsed = (Number.isFinite(endMs) && endMs > startMs ? endMs : now) - startMs;
 
   return (

@@ -18,6 +18,7 @@ import { defaultSourceFormEntry, entryToFormEntry, formEntryToPayload, updateFor
 import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
 import { useRuntimeSettingsAuthority, type RuntimeEditorSaveStatus } from '../state/runtimeSettingsAuthority.ts';
 import type { NumberBound } from '../../../shared/registryDerivedSettingsMaps.ts';
+import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import { parseBoundedNumber, toRuntimeDraft } from '../state/RuntimeFlowDraftNormalization.ts';
 import {
   RUNTIME_SETTING_DEFAULTS,
@@ -306,7 +307,7 @@ export function PipelineSettingsPage() {
 
         {/* Source Strategy */}
         {activeSection === 'source-strategy' && (
-          <Suspense fallback={<p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Loading source strategy section...</p>}>
+          <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
             <SourceStrategySection
               category={category}
               sourceStrategyHydrated={sourceStrategyHydrated}
@@ -337,7 +338,7 @@ export function PipelineSettingsPage() {
 
         {/* Deterministic Strategy */}
         {activeSection === 'deterministic-strategy' && (
-          <Suspense fallback={<p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Loading deterministic strategy...</p>}>
+          <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
             <DeterministicStrategySection />
           </Suspense>
         )}
@@ -345,7 +346,7 @@ export function PipelineSettingsPage() {
         {/* Module Settings (auto-derived from generated sections) */}
         {MODULE_SETTINGS_SECTIONS.map(({ id, moduleId }) =>
           activeSection === id ? (
-            <Suspense key={id} fallback={<p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Loading module settings...</p>}>
+            <Suspense key={id} fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
               <ModuleSettingsPanel moduleId={moduleId} />
             </Suspense>
           ) : null

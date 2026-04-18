@@ -14,7 +14,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { runReleaseDateFinder } from '../releaseDateFinder.js';
+import { runReleaseDateFinder, runReleaseDateFinderLoop } from '../releaseDateFinder.js';
 import { readReleaseDates } from '../releaseDateStore.js';
 
 const TMP = path.join(os.tmpdir(), `rdf-orch-test-${Date.now()}`);
@@ -54,12 +54,15 @@ const DEFAULT_VARIANTS = [
   { variant_id: 'v_white', variant_key: 'color:white', variant_label: 'White', variant_type: 'color' },
 ];
 
-function makeFinderStoreStub() {
+function makeFinderStoreStub(settings = {}) {
   const upserts = [];
   const runs = [];
+  // WHY: default minConfidence='70' preserves pre-loop test expectations while
+  // allowing loop tests to override perVariantAttemptBudget et al.
+  const resolved = { minConfidence: '70', ...settings };
   return {
     store: {
-      getSetting: (k) => (k === 'minConfidence' ? '70' : ''),
+      getSetting: (k) => (k in resolved ? String(resolved[k]) : ''),
       upsert: (row) => { upserts.push(row); },
       insertRun: (row) => { runs.push(row); },
     },
@@ -82,6 +85,14 @@ function makeSpecDbStub({ finderStore, variants = DEFAULT_VARIANTS, category = '
     // submitCandidate machinery
     insertFieldCandidate: (entry) => { submittedCandidates.push(entry); },
     getFieldCandidateBySourceId: (pid, fk, sid) => ({ id: submittedCandidates.findIndex(c => c.sourceId === sid) + 1, variant_id: submittedCandidates.find(c => c.sourceId === sid)?.variantId ?? null }),
+    // WHY: submitCandidate looks up the freshly-inserted row by (sourceId, variantId)
+    // to derive candidateId + evidence projection. Without this, the throw bubbles
+    // to produceForVariant's catch → publishStatus='skipped' → loop never satisfies.
+    getFieldCandidateBySourceIdAndVariant: (pid, fk, sid, vid) => {
+      const idx = submittedCandidates.findIndex(c => c.sourceId === sid && (c.variantId || null) === (vid || null));
+      if (idx < 0) return null;
+      return { id: idx + 1, variant_id: submittedCandidates[idx].variantId ?? null };
+    },
     getFieldCandidatesByProductAndField: () => [],
     getFieldCandidatesByValue: () => [],
     getFieldCandidate: () => null,
@@ -128,7 +139,7 @@ describe('runReleaseDateFinder', () => {
           release_date: '2024-03-15',
           confidence: 92,
           unknown_reason: '',
-          evidence: [{ source_url: 'https://mfr.example.com', source_type: 'manufacturer', tier: 'tier1', excerpt: 'Released March 15, 2024' }],
+          evidence_refs: [{ url: 'https://mfr.example.com', tier: 'tier1', confidence: 95 }],
           discovery_log: { urls_checked: ['https://mfr.example.com'], queries_run: ['testmodel x release date'], notes: [] },
         },
         usage: null,
@@ -208,7 +219,7 @@ describe('runReleaseDateFinder', () => {
           release_date: '2024',
           confidence: 40, // below default minConfidence of 70
           unknown_reason: '',
-          evidence: [{ source_url: 'https://example.com', source_type: 'review', tier: 'tier3', excerpt: 'Launched sometime in 2024' }],
+          evidence_refs: [{ url: 'https://example.com', tier: 'tier3', confidence: 50 }],
           discovery_log: { urls_checked: [], queries_run: [], notes: [] },
         },
         usage: null,
@@ -276,7 +287,7 @@ describe('runReleaseDateFinder', () => {
       _callLlmOverride: async () => ({
         result: {
           release_date: '2024-04-01', confidence: 85,
-          evidence: [{ source_url: 'x', source_type: 'manufacturer', tier: 'tier1', excerpt: 'date' }],
+          evidence_refs: [{ url: 'https://x.example.com', tier: 'tier1', confidence: 90 }],
           discovery_log: { urls_checked: [], queries_run: [], notes: [] },
         },
         usage: null,
@@ -311,5 +322,178 @@ describe('runReleaseDateFinder', () => {
     });
 
     assert.equal(specDb._submittedCandidates.length, 0, 'no evidence → no candidate submission');
+  });
+});
+
+/**
+ * Loop orchestrator contract: retries per variant up to perVariantAttemptBudget,
+ * stops early when the call reaches the publisher gate or LLM returned a
+ * definitive unknown. Satisfaction predicate lives inside runReleaseDateFinderLoop.
+ */
+describe('runReleaseDateFinderLoop', () => {
+  before(() => { fs.mkdirSync(PRODUCT_ROOT, { recursive: true }); });
+  after(() => cleanup(TMP));
+
+  const HIGH_CONF_RESPONSE = {
+    result: {
+      release_date: '2024-03-15',
+      confidence: 92,
+      unknown_reason: '',
+      evidence_refs: [{ url: 'https://mfr.example.com', tier: 'tier1', confidence: 95 }],
+      discovery_log: { urls_checked: ['https://mfr.example.com'], queries_run: ['q'], notes: [] },
+    },
+    usage: null,
+  };
+  const LOW_CONF_RESPONSE = {
+    result: {
+      release_date: '2024',
+      confidence: 40, // below default minConfidence 70
+      unknown_reason: '',
+      evidence_refs: [{ url: 'https://x.example.com', tier: 'tier3', confidence: 50 }],
+      discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+    },
+    usage: null,
+  };
+  const UNKNOWN_DEFINITIVE_RESPONSE = {
+    result: {
+      release_date: 'unk',
+      confidence: 0,
+      unknown_reason: 'No sources cite a launch date',
+      evidence_refs: [],
+      discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+    },
+    usage: null,
+  };
+
+  function makeCounterOverride(responsesByVariant) {
+    // responsesByVariant: { [variantLabel]: [response1, response2, ...] }
+    const counters = {};
+    return async (args) => {
+      const label = args.variantLabel;
+      counters[label] = (counters[label] || 0) + 1;
+      const list = responsesByVariant[label] || responsesByVariant._default || [];
+      const idx = Math.min(counters[label] - 1, list.length - 1);
+      return list[idx];
+    };
+  }
+
+  it('budget=3 with low-conf first then high-conf second → stops at 2, publisher called once per variant', async () => {
+    const pid = 'rdf-loop-lowthenhigh';
+    writeProductJson(pid);
+    const fs_ = makeFinderStoreStub({ perVariantAttemptBudget: '3' });
+    const specDb = makeSpecDbStub({ finderStore: fs_.store });
+
+    const counters = {};
+    const llmOverride = async (args) => {
+      const label = args.variantLabel;
+      counters[label] = (counters[label] || 0) + 1;
+      return counters[label] === 1 ? LOW_CONF_RESPONSE : HIGH_CONF_RESPONSE;
+    };
+
+    const result = await runReleaseDateFinderLoop({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: null, specDb,
+      config: { categoryAuthorityRoot: CATEGORY_ROOT },
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: llmOverride,
+    });
+
+    assert.equal(result.rejected, false);
+    // 2 variants × 2 attempts each (low → high) = 4 LLM calls
+    assert.equal(counters['Black'], 2, 'Black retried once then satisfied');
+    assert.equal(counters['White'], 2, 'White retried once then satisfied');
+    // Publisher called once per variant (only after satisfaction)
+    assert.equal(specDb._submittedCandidates.length, 2, 'one publisher submit per variant');
+    // Runs persisted for every attempt (audit trail)
+    const doc = readReleaseDates({ productId: pid, productRoot: PRODUCT_ROOT });
+    assert.equal(doc.runs.length, 4, 'all 4 attempts persisted as runs');
+    // Every run in this loop shares a loop_id
+    const loopIds = new Set(doc.runs.map((r) => r.response?.loop_id).filter(Boolean));
+    assert.equal(loopIds.size, 1, 'all runs in this loop call share one loop_id');
+  });
+
+  it('budget=3 with all low-conf → exhausts budget, 0 publisher submits', async () => {
+    const pid = 'rdf-loop-all-low';
+    writeProductJson(pid);
+    const fs_ = makeFinderStoreStub({ perVariantAttemptBudget: '3' });
+    const specDb = makeSpecDbStub({ finderStore: fs_.store });
+
+    let callCount = 0;
+    await runReleaseDateFinderLoop({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: null, specDb,
+      config: { categoryAuthorityRoot: CATEGORY_ROOT },
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: async () => { callCount++; return LOW_CONF_RESPONSE; },
+    });
+
+    // 2 variants × 3 attempts each = 6 calls
+    assert.equal(callCount, 6);
+    assert.equal(specDb._submittedCandidates.length, 0, 'low-conf never submits');
+    const doc = readReleaseDates({ productId: pid, productRoot: PRODUCT_ROOT });
+    assert.equal(doc.runs.length, 6, 'every attempt persisted');
+  });
+
+  it('first call returns unk with unknown_reason → stops at attempt 1 (definitive unknown)', async () => {
+    const pid = 'rdf-loop-definitive-unk';
+    writeProductJson(pid);
+    const fs_ = makeFinderStoreStub({ perVariantAttemptBudget: '3' });
+    const specDb = makeSpecDbStub({ finderStore: fs_.store });
+
+    let callCount = 0;
+    await runReleaseDateFinderLoop({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: null, specDb,
+      config: { categoryAuthorityRoot: CATEGORY_ROOT },
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: async () => { callCount++; return UNKNOWN_DEFINITIVE_RESPONSE; },
+    });
+
+    // 2 variants × 1 attempt each = 2 calls (no retry on definitive unknown)
+    assert.equal(callCount, 2, 'definitive unknown short-circuits the loop');
+    assert.equal(specDb._submittedCandidates.length, 0);
+  });
+
+  it('variantKey filter retries only the targeted variant', async () => {
+    const pid = 'rdf-loop-single';
+    writeProductJson(pid);
+    const fs_ = makeFinderStoreStub({ perVariantAttemptBudget: '3' });
+    const specDb = makeSpecDbStub({ finderStore: fs_.store });
+
+    const counters = {};
+    await runReleaseDateFinderLoop({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: null, specDb,
+      config: { categoryAuthorityRoot: CATEGORY_ROOT },
+      productRoot: PRODUCT_ROOT,
+      variantKey: 'color:black',
+      _callLlmOverride: async (args) => {
+        const label = args.variantLabel;
+        counters[label] = (counters[label] || 0) + 1;
+        return LOW_CONF_RESPONSE; // always unsatisfied → exhausts budget
+      },
+    });
+
+    assert.equal(counters['Black'], 3, 'targeted variant hit budget');
+    assert.equal(counters['White'], undefined, 'non-targeted variant untouched');
+  });
+
+  it('budget=1 behaves identically to single-call runReleaseDateFinder (regression guard)', async () => {
+    const pid = 'rdf-loop-budget-one';
+    writeProductJson(pid);
+    const fs_ = makeFinderStoreStub({ perVariantAttemptBudget: '1' });
+    const specDb = makeSpecDbStub({ finderStore: fs_.store });
+
+    let callCount = 0;
+    await runReleaseDateFinderLoop({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: null, specDb,
+      config: { categoryAuthorityRoot: CATEGORY_ROOT },
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: async () => { callCount++; return LOW_CONF_RESPONSE; },
+    });
+
+    // budget=1 → one call per variant, no retry
+    assert.equal(callCount, 2);
   });
 });

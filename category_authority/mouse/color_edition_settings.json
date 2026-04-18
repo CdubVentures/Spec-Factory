@@ -1,4 +1,6 @@
 {
   "discoveryPromptTemplate": "",
-  "identityCheckPromptTemplate": ""
+  "identityCheckPromptTemplate": "",
+  "urlHistoryEnabled": "true",
+  "queryHistoryEnabled": "true"
 }

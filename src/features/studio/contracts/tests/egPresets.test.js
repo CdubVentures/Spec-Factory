@@ -195,9 +195,12 @@ describe('buildEgReleaseDateFieldRule', () => {
     assert.deepEqual(rule.parse.delimiters, []);
   });
 
-  it('has accepted_formats matching canonical field_studio_map definition', () => {
+  it('has accepted_formats covering every precision the prompt asks the LLM to return', () => {
     const rule = buildEgReleaseDateFieldRule();
-    assert.deepEqual(rule.parse.accepted_formats, ['YYYY-MM-DD', 'YYYY', 'MMM YYYY', 'Month YYYY']);
+    assert.deepEqual(
+      rule.parse.accepted_formats,
+      ['YYYY-MM-DD', 'YYYY-MM', 'YYYY', 'MMM YYYY', 'Month YYYY'],
+    );
   });
 
   it('has open enum policy (new dates acceptable with evidence)', () => {

@@ -9,7 +9,7 @@
  */
 
 import { emitDataChange } from '../events/dataChangeContract.js';
-import { registerOperation, getOperationSignal, updateStage, updateModelInfo, updateQueueDelay, appendLlmCall, completeOperation, failOperation, cancelOperation, fireAndForget } from '../operations/index.js';
+import { registerOperation, getOperationSignal, updateStage, updateModelInfo, updateLoopProgress, updateQueueDelay, appendLlmCall, completeOperation, failOperation, cancelOperation, fireAndForget } from '../operations/index.js';
 import { createStreamBatcher } from '../llm/streamBatcher.js';
 import { defaultProductRoot } from '../config/runtimeArtifactRoots.js';
 import { normalizeConfidence } from '../../features/publisher/publish/publishCandidate.js';
@@ -225,7 +225,7 @@ function republishAfterDelete(specDb, productId, fieldKeys, sourceType, runSet, 
  */
 export function createFinderRouteHandler(finderConfig) {
   const {
-    routePrefix, moduleType, phase, fieldKeys,
+    routePrefix, moduleType, moduleId, phase, fieldKeys,
     runFinder, deleteRun, deleteAll,
     getOne, listByCategory, listRuns,
     upsertSummary, updateBookkeeping, deleteOneSql, deleteRunSql, deleteAllRunsSql,
@@ -233,7 +233,7 @@ export function createFinderRouteHandler(finderConfig) {
   } = finderConfig;
 
   return function bindContext(ctx) {
-    const { jsonRes, config, appDb, getSpecDb, broadcastWs, logger } = ctx;
+    const { jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs, logger } = ctx;
 
     return async function handleFinderRoutes(parts, params, method, req, res) {
       if (parts[0] !== routePrefix) return false;
@@ -250,7 +250,7 @@ export function createFinderRouteHandler(finderConfig) {
       }
 
       // ── GET /:prefix/:category/:productId — single with runs ───
-      if (method === 'GET' && category && productId) {
+      if (method === 'GET' && category && productId && !parts[3]) {
         const specDb = getSpecDb(category);
         if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
         const row = getOne(specDb, productId);
@@ -537,7 +537,192 @@ export function createFinderRouteHandler(finderConfig) {
         return jsonRes(res, 200, { ok: true });
       }
 
+      // ── Suppressions (non-destructive discovery-log pruning) ─────
+      // Routes mirror for every finder since the store methods are universal.
+      if (moduleId && category && productId && parts[3] === 'suppressions') {
+        const specDb = getSpecDb(category);
+        if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+        const store = specDb.getFinderStore(moduleId);
+        if (!store) return jsonRes(res, 500, { error: `store missing: ${moduleId}` });
+
+        if (method === 'GET' && !parts[4]) {
+          return jsonRes(res, 200, { suppressions: store.listSuppressions(productId) });
+        }
+
+        if (method === 'POST' && !parts[4]) {
+          const body = await readJsonBody(req).catch(() => ({}));
+          const { item, kind, variant_id = '', mode = '' } = body || {};
+          if (!item || !kind) return jsonRes(res, 400, { error: 'item and kind required' });
+          if (kind !== 'url' && kind !== 'query') return jsonRes(res, 400, { error: 'kind must be url|query' });
+          store.addSuppression(productId, { item, kind, variant_id, mode });
+          emitDataChange({
+            broadcastWs, event: `${routePrefix}-suppression-added`,
+            category, entities: { productIds: [productId] }, meta: { productId, kind },
+          });
+          return jsonRes(res, 200, { ok: true });
+        }
+
+        if (method === 'DELETE' && parts[4] === 'all') {
+          store.removeAllSuppressionsForProduct(productId);
+          emitDataChange({
+            broadcastWs, event: `${routePrefix}-suppression-cleared`,
+            category, entities: { productIds: [productId] }, meta: { productId },
+          });
+          return jsonRes(res, 200, { ok: true });
+        }
+
+        if (method === 'DELETE' && parts[4] === 'item') {
+          const body = await readJsonBody(req).catch(() => ({}));
+          const { item, kind, variant_id = '', mode = '' } = body || {};
+          if (!item || !kind) return jsonRes(res, 400, { error: 'item and kind required' });
+          store.removeSuppression(productId, { item, kind, variant_id, mode });
+          emitDataChange({
+            broadcastWs, event: `${routePrefix}-suppression-cleared`,
+            category, entities: { productIds: [productId] }, meta: { productId, kind },
+          });
+          return jsonRes(res, 200, { ok: true });
+        }
+
+        if (method === 'DELETE' && !parts[4]) {
+          // Scope-wide delete — variantId + mode from query string.
+          const variant_id = params?.variantId || '';
+          const mode = params?.mode || '';
+          store.removeSuppressionsByScope(productId, { variant_id, mode });
+          emitDataChange({
+            broadcastWs, event: `${routePrefix}-suppression-cleared`,
+            category, entities: { productIds: [productId] },
+            meta: { productId, variant_id, mode },
+          });
+          return jsonRes(res, 200, { ok: true });
+        }
+      }
+
       return false;
+    };
+  };
+}
+
+/**
+ * Generic /loop route handler for variantFieldProducer modules.
+ *
+ * Used by RDF today; ready for any future simple field finder (MSRP, weight,
+ * dimensions, ...). The module provides its own loop orchestrator (one that
+ * wraps runVariantFieldLoop with a module-specific satisfaction predicate);
+ * this factory owns operations lifecycle + WS emission so route files stay
+ * thin.
+ *
+ * Expects the orchestrator signature to match runReleaseDateFinderLoop
+ * (standard opts + onLoopProgress callback).
+ *
+ * @param {object} cfg
+ * @param {string} cfg.routePrefix       — e.g. 'release-date-finder'
+ * @param {string} cfg.moduleType        — operations tracker type (e.g. 'rdf')
+ * @param {string} cfg.phase             — LLM phase id (e.g. 'releaseDateFinder')
+ * @param {string[]} [cfg.requiredFields]— Field Studio gate check
+ * @param {Function} cfg.loopOrchestrator — module's runXxxLoop function
+ * @returns {Function} (ctx) => async (parts, params, method, req, res) => boolean
+ */
+export function createVariantFieldLoopHandler(cfg) {
+  const { routePrefix, moduleType, phase, requiredFields = [], loopOrchestrator } = cfg;
+
+  return function bindContext(ctx) {
+    const { jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs, logger } = ctx;
+
+    return async function handleVariantFieldLoop(parts, params, method, req, res) {
+      if (parts[0] !== routePrefix) return false;
+      if (method !== 'POST') return false;
+      if (parts[3] !== 'loop') return false;
+
+      const category = parts[1] || '';
+      const productId = parts[2] || '';
+      if (!category || !productId) return false;
+
+      let op = null;
+      let batcher = null;
+      try {
+        const specDb = getSpecDb(category);
+        if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+
+        const productRow = specDb.getProduct(productId);
+        if (!productRow) return jsonRes(res, 404, { error: 'product not found', product_id: productId, category });
+
+        if (requiredFields.length > 0) {
+          const compiled = specDb.getCompiledRules?.();
+          const fields = compiled?.fields || {};
+          for (const key of requiredFields) {
+            if (!fields[key]) {
+              return jsonRes(res, 403, { error: `${routePrefix} disabled: field '${key}' not enabled in field studio` });
+            }
+          }
+        }
+
+        const body = await readJsonBody(req).catch(() => ({}));
+        const variantKey = body?.variant_key || null;
+
+        const jsonStrictKey = `_resolved${capitalize(phase)}JsonStrict`;
+        const useWriterPhase = config[jsonStrictKey] === false;
+        const stages = cfg.customStages
+          || (useWriterPhase ? ['Research', 'Writer', 'Validate', 'Publish'] : ['Discovery', 'Validate', 'Publish']);
+
+        op = registerOperation({
+          type: moduleType,
+          subType: 'loop',
+          category,
+          productId,
+          productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
+          variantKey: variantKey || '',
+          stages,
+        });
+        batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
+        const signal = getOperationSignal(op.id);
+
+        return fireAndForget({
+          res,
+          jsonRes,
+          op,
+          batcher,
+          broadcastWs,
+          signal,
+          emitArgs: {
+            event: `${routePrefix}-loop`,
+            category,
+            entities: { productIds: [productId] },
+            meta: { productId },
+          },
+          asyncWork: () => loopOrchestrator({
+            product: {
+              product_id: productId,
+              category,
+              brand: productRow.brand || '',
+              model: productRow.model || '',
+              base_model: productRow.base_model || '',
+              variant: productRow.variant || '',
+            },
+            appDb,
+            specDb,
+            config,
+            logger: logger || null,
+            variantKey,
+            signal,
+            onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
+            onModelResolved: (info) => updateModelInfo({ id: op.id, ...info }),
+            onStreamChunk: (delta) => { if (delta.reasoning) batcher.push(delta.reasoning); if (delta.content) batcher.push(delta.content); },
+            onQueueWait: (ms) => updateQueueDelay({ id: op.id, queueDelayMs: ms }),
+            onLlmCallComplete: (call) => appendLlmCall({ id: op.id, call }),
+            onLoopProgress: (loopProgress) => updateLoopProgress({ id: op.id, loopProgress }),
+          }),
+          completeOperation,
+          failOperation,
+          cancelOperation,
+          emitDataChange,
+        });
+      } catch (err) {
+        if (batcher) batcher.dispose();
+        if (op) failOperation({ id: op.id, error: err instanceof Error ? err.message : String(err) });
+        const message = err instanceof Error ? err.message : String(err);
+        logger?.error?.(`[${routePrefix}] POST /loop failed:`, message);
+        return jsonRes(res, 500, { error: 'loop failed', message });
+      }
     };
   };
 }

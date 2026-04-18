@@ -1,6 +1,24 @@
 // Central date/time formatting for the GUI frontend.
-// Storage stays UTC; display is driven by user-selected timezone + date format.
+// Storage stays UTC; display is driven by user-selected timezone + date format
+// (persisted in useUiStore, top-right Appearance panel).
 // Uses native Intl.DateTimeFormat — no external date library.
+//
+// ── WHICH HELPER TO USE ──────────────────────────────────────────────────────
+// Reactive page component (single call site)        → useFormatDate/Time/DateTime
+// Shared or hot component (tooltips, table cells)   → pullFormatDate/Time/DateTime
+// Product-field cell values (release_date etc.)     → formatCellValue (fieldNormalize.ts)
+// Non-React context (sort, filter, comparators)     → pure formatDate/Time/DateTime
+// Column header showing the active zone label       → useTimezoneLabel
+// Elapsed / relative timer (compare against Date.now()) → parseBackendMs
+//
+// Never render dates via new Date().toLocaleString() / .split('T')[0] / .slice(0, 10)
+// or hardcode 'America/Los_Angeles'. Never parse backend timestamps with
+// new Date(iso).getTime() or Date.parse(iso) when comparing to Date.now() —
+// SQLite emits TZ-less UTC strings that those paths treat as local time.
+// See docs/07-patterns/anti-patterns.md.
+// Adding a new timezone or date format option: extend SF_TIMEZONE_OPTIONS /
+// SF_DATE_FORMAT_OPTIONS in stores/uiStore.ts plus the switch in formatDate +
+// formatDateYMD. One-file-rule — no other changes required.
 
 import { useCallback } from 'react';
 import { useShallow } from 'zustand/react/shallow';
@@ -38,6 +56,16 @@ function toValidDate(iso: Nullable): Date | null {
     : iso;
   const d = new Date(normalized);
   return Number.isNaN(d.getTime()) ? null : d;
+}
+
+// WHY: Elapsed/relative timers that compare backend timestamps against Date.now()
+// must use this normalizer. SQLite's datetime('now') returns TZ-less UTC strings
+// that JavaScript would otherwise parse as local time (causing 7h PDT skew).
+// Returns epoch-ms for arithmetic; NaN for missing/invalid input — callers should
+// guard with Number.isFinite() before using the result.
+export function parseBackendMs(iso: Nullable): number {
+  const d = toValidDate(iso);
+  return d ? d.getTime() : Number.NaN;
 }
 
 // WHY: formatToParts returns a small array. Single pass via for-loop is faster than

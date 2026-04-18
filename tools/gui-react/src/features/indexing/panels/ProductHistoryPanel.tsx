@@ -13,6 +13,7 @@ import { Sparkline } from '../../runtime-ops/components/Sparkline.tsx';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { relativeTime } from '../../../utils/formatting.ts';
+import { parseBackendMs } from '../../../utils/dateTime.ts';
 import type {
   ProductHistoryResponse,
   ProductHistoryRunRow,
@@ -28,8 +29,8 @@ import type {
 
 function fmtDur(a: string, b: string): string {
   if (!a || !b) return '-';
-  const ms = new Date(b).getTime() - new Date(a).getTime();
-  if (ms <= 0) return '-';
+  const ms = parseBackendMs(b) - parseBackendMs(a);
+  if (!Number.isFinite(ms) || ms <= 0) return '-';
   const s = Math.floor(ms / 1000);
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
@@ -447,7 +448,7 @@ export function ProductHistoryPanel({ productId, category }: ProductHistoryPanel
   }), [data?.runs]);
   const sparkDuration = useMemo(() => (data?.runs ?? []).map((r) => {
     if (!r.started_at || !r.ended_at) return 0;
-    return new Date(r.ended_at).getTime() - new Date(r.started_at).getTime();
+    return parseBackendMs(r.ended_at) - parseBackendMs(r.started_at);
   }), [data?.runs]);
 
   const tierDonutData = useMemo(() => {

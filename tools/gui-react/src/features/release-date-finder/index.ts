@@ -2,6 +2,7 @@ export { ReleaseDateFinderPanel } from './components/ReleaseDateFinderPanel.tsx'
 export {
   useReleaseDateFinderQuery,
   useReleaseDateFinderRunMutation,
+  useReleaseDateFinderLoopMutation,
   useDeleteReleaseDateFinderRunMutation,
   useDeleteReleaseDateFinderAllMutation,
 } from './api/releaseDateFinderQueries.ts';

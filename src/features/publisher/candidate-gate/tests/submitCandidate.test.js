@@ -605,6 +605,45 @@ describe('submitCandidate', () => {
     assert.deepEqual(jsonVids, ['v_alpha', 'v_beta']);
   });
 
+  it('projects evidence to the correct row for variant+scalar dual-write (regression)', () => {
+    // WHY: RDF writes the same field under a variant_id AND the scalar (variant_id NULL).
+    // Both rows share one source_id; only variant_id differs (UNIQUE uses variant_id_key).
+    // The candidate-gate lookup must be variant-aware so each row's metadata.evidence_refs
+    // projects into field_candidate_evidence against its OWN candidate_id — not its twin.
+    ensureProductJson('mouse-vid-evidence');
+    const refs = [
+      { url: 'https://mfr.example/spec', tier: 'tier1', confidence: 95 },
+      { url: 'https://review.example/full', tier: 'tier2', confidence: 80 },
+    ];
+    submitCandidate({
+      ...baseDeps(specDb),
+      productId: 'mouse-vid-evidence',
+      fieldKey: 'weight',
+      value: 65,
+      confidence: 95,
+      sourceMeta: { source: 'feature', model: 'gpt-5', run_number: 11 },
+      variantId: 'v_white',
+      metadata: { evidence_refs: refs },
+    });
+    submitCandidate({
+      ...baseDeps(specDb),
+      productId: 'mouse-vid-evidence',
+      fieldKey: 'weight',
+      value: 65,
+      confidence: 95,
+      sourceMeta: { source: 'feature', model: 'gpt-5', run_number: 11 },
+      variantId: null,
+      metadata: { evidence_refs: refs },
+    });
+
+    const rows = specDb.getFieldCandidatesByProductAndField('mouse-vid-evidence', 'weight');
+    assert.equal(rows.length, 2, 'scalar and variant-scoped rows both exist');
+    for (const row of rows) {
+      const count = specDb.countFieldCandidateEvidenceByCandidateId(row.id);
+      assert.equal(count, 2, `candidate ${row.id} (variant_id=${row.variant_id}) must have its own evidence projected`);
+    }
+  });
+
   it('variantId="" is normalized to NULL (no key in JSON)', () => {
     ensureProductJson('mouse-vid-empty');
     submitCandidate({

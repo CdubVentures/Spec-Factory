@@ -143,7 +143,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
 <!-- ═══════════════════════ STATS ═══════════════════════ -->
 <div class="stats">
   <div class="stat"><div class="n">8</div><div class="l">Pipeline Phases</div></div>
-  <div class="stat"><div class="n">37</div><div class="l">SQL Tables (base)</div></div>
+  <div class="stat"><div class="n">38</div><div class="l">SQL Tables (base)</div></div>
   <div class="stat"><div class="n">11</div><div class="l">RuntimeOps Panels</div></div>
   <div class="stat"><div class="n">6</div><div class="l">Fetch Plugins</div></div>
   <div class="stat"><div class="n">5</div><div class="l">Worker Pools</div></div>
@@ -840,6 +840,134 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <ul class="op-list ipc">
           <li><code>run_completed</code> &mdash; pipeline finalization complete</li>
           <li>WebSocket broadcast: <code>process-status: idle</code></li>
+        </ul>
+      </div>
+    </div>
+  </details>
+</section>
+
+<!-- ═══════════════════════ CANDIDATE GATE & EVIDENCE CONTRACT ═══════════════════════ -->
+<section class="surface">
+  <div class="surface-head">
+    <h2>Candidate Gate &amp; Evidence Contract</h2>
+  </div>
+  <p class="surface-desc">
+    All candidate-producing code &mdash; finders (CEF, RDF), the pipeline reviewer/extractor, and review overrides &mdash; flows through a single entry point: <code>submitCandidate()</code> in <code>src/features/publisher/candidate-gate/submitCandidate.js</code>. Evidence attached to each candidate uses the universal <code>{url, tier, confidence}</code> shape defined by the shared evidence module. This is the invariant the future pipeline reviewer MUST honor when it starts writing to <code>field_candidates</code>.
+  </p>
+
+  <details class="phase-card" open>
+    <summary>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="phase-num" style="background:var(--accent-s);color:var(--accent)">MODULE</span>
+        <span class="phase-title">src/core/finder/evidencePromptFragment.js</span>
+        <span class="tag tag-info">single source of truth</span>
+      </div>
+      <div class="phase-tags">
+        <span class="tag tag-info">Zod schema</span>
+        <span class="tag tag-info">Prompt fragment</span>
+      </div>
+    </summary>
+    <div class="phase-body">
+      <div class="phase-section">
+        <div class="phase-section-label label-info">Exports</div>
+        <ul class="op-list">
+          <li><code>evidenceRefSchema</code> &mdash; <code>z.object({url, tier, confidence})</code> &mdash; per-source shape. <code>confidence</code> is 0-100, defaults to 0.</li>
+          <li><code>evidenceRefsSchema</code> &mdash; <code>z.array(evidenceRefSchema).default([])</code> &mdash; the field shape every producer imports</li>
+          <li><code>EVIDENCE_PROMPT_FRAGMENT</code> &mdash; prompt text teaching the LLM the 6-tier taxonomy + confidence rating</li>
+          <li><code>buildEvidencePromptBlock({minEvidenceRefs})</code> &mdash; renders the fragment with <code>{{MIN_EVIDENCE_REFS}}</code> bound</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-info">Import contract (features MUST NOT redefine the shape locally)</div>
+        <ul class="op-list">
+          <li><code>src/features/color-edition/colorEditionSchema.js</code> &mdash; imports <code>evidenceRefsSchema</code></li>
+          <li><code>src/features/release-date/releaseDateSchema.js</code> &mdash; imports <code>evidenceRefsSchema</code></li>
+          <li><em>Future pipeline reviewer</em> &mdash; when adding evidence output, import <code>evidenceRefsSchema</code>. Do not redefine <code>{url, tier, confidence}</code> inline. Schema + prompt live in one place.</li>
+          <li><code>src/features/product-image/*</code> &mdash; exception (image URL is self-evident, no publisher gate involvement)</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-info">Tier vocabulary (classification only &mdash; not a publisher gate)</div>
+        <ul class="op-list">
+          <li><code>tier1</code> &mdash; manufacturer / brand-official / press release</li>
+          <li><code>tier2</code> &mdash; professional testing lab / review lab</li>
+          <li><code>tier3</code> &mdash; authorized retailer / marketplace</li>
+          <li><code>tier4</code> &mdash; community / forum / blog / user-generated</li>
+          <li><code>tier5</code> &mdash; specs aggregator / product database</li>
+          <li><code>other</code> &mdash; anything else</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <details class="phase-card">
+    <summary>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="phase-num" style="background:var(--green-s);color:var(--green)">WRITE</span>
+        <span class="phase-title">submitCandidate &rarr; dual-state projection</span>
+        <span class="tag tag-info">JSON SSOT + SQL projection</span>
+      </div>
+      <div class="phase-tags">
+        <span class="tag tag-sql">SQL Write</span>
+        <span class="tag tag-file">File Write</span>
+      </div>
+    </summary>
+    <div class="phase-body">
+      <div class="phase-section">
+        <div class="phase-section-label label-file">JSON (canonical SSOT)</div>
+        <ul class="op-list file">
+          <li><code>product.json.candidates[fieldKey][]</code> &mdash; each entry carries <code>metadata.evidence_refs: [{url, tier, confidence}]</code></li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-sql">SQL (indexed read projection)</div>
+        <ul class="op-list sql">
+          <li><code>INSERT field_candidates</code> &mdash; one row per (source_id, variant_id); <code>metadata_json</code> column holds the JSON blob</li>
+          <li><code>INSERT field_candidate_evidence</code> &mdash; one row per evidence entry, FK to <code>field_candidates.id</code>, indexed on <code>tier</code> and <code>candidate_id</code>. Cascade delete when candidate is removed.</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-info">Rebuild contract</div>
+        <ul class="op-list">
+          <li><code>rebuildFieldCandidatesFromJson</code> (<code>src/features/publisher/candidateReseed.js</code>) re-populates both tables from <code>product.json.candidates[n].metadata.evidence_refs</code></li>
+          <li>Deleted-DB rebuild: fully supported &mdash; JSON is SSOT, SQL is derived</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-info">Query by tier (indexed)</div>
+        <ul class="op-list">
+          <li><code>SELECT e.url, e.confidence FROM field_candidate_evidence e JOIN field_candidates c ON e.candidate_id = c.id WHERE c.variant_id = ? AND e.tier = 'tier1'</code></li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <details class="phase-card">
+    <summary>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="phase-num" style="background:var(--amber-s);color:var(--amber)">FUTURE</span>
+        <span class="phase-title">Pipeline Reviewer Integration (not yet implemented)</span>
+        <span class="tag tag-info">contract to follow</span>
+      </div>
+    </summary>
+    <div class="phase-body">
+      <div class="phase-section">
+        <div class="phase-section-label label-info">Requirements when the pipeline reviewer starts writing to field_candidates</div>
+        <ul class="op-list">
+          <li>Import <code>evidenceRefsSchema</code> from <code>src/core/finder/evidencePromptFragment.js</code>. Do not redefine the shape.</li>
+          <li>When the LLM produces evidence alongside candidate values, map each snippet / source to the universal <code>{url, tier, confidence}</code> shape. Snippet-based evidence can set <code>tier</code> based on domain classification; <code>confidence</code> is the LLM's per-source reliability rating.</li>
+          <li>Submit via <code>submitCandidate()</code> with <code>metadata.evidence_refs</code> &mdash; the gate will project to both JSON SSOT and the <code>field_candidate_evidence</code> SQL table.</li>
+          <li>Do not bypass <code>submitCandidate</code> to write directly to <code>field_candidates</code>. The projection, dual-state invariants, and rebuild contract are enforced there.</li>
+          <li>Variant-backed values: populate <code>variantId</code> on submitCandidate. Variant scope derives through the candidate row; evidence rows inherit it via FK.</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-info">Anti-patterns (do not repeat past divergence)</div>
+        <ul class="op-list">
+          <li>Defining a local Zod schema for evidence. Use the shared <code>evidenceRefsSchema</code>.</li>
+          <li>Using alternate keys like <code>source_url</code>, <code>source_type</code>, <code>source_page</code>, <code>excerpt</code>, <code>evidence_sources</code>. The universal shape is <code>{url, tier, confidence}</code>.</li>
+          <li>Writing evidence directly to <code>metadata_json</code> outside the submitCandidate path. The SQL projection won't populate and tier queries will miss the rows.</li>
+          <li>Denormalizing <code>variant_id</code> onto evidence rows. Only <code>candidate_id</code> FK; variant scope derives through the candidate.</li>
         </ul>
       </div>
     </div>

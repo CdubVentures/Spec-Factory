@@ -3,6 +3,7 @@ import { HashRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppShell } from './pages/layout/AppShell.tsx';
 import { ErrorBoundary } from './shared/ui/feedback/ErrorBoundary.tsx';
+import { Spinner } from './shared/ui/feedback/Spinner.tsx';
 import { ROUTE_ENTRIES } from './registries/pageRegistry.ts';
 
 function lazyNamedPage(loader: () => Promise<Record<string, unknown>>, exportName: string) {
@@ -34,18 +35,10 @@ const queryClient = new QueryClient({
   },
 });
 
-function RouteFallback() {
-  return (
-    <div className="text-sm text-gray-500 dark:text-gray-400">
-      Loading page...
-    </div>
-  );
-}
-
 function wrap(Component: ComponentType) {
   return (
     <ErrorBoundary>
-      <Suspense fallback={<RouteFallback />}>
+      <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
         <Component />
       </Suspense>
     </ErrorBoundary>

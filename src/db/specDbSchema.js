@@ -134,6 +134,21 @@ CREATE TABLE IF NOT EXISTS field_candidates (
 CREATE INDEX IF NOT EXISTS idx_fc_product ON field_candidates(product_id);
 CREATE INDEX IF NOT EXISTS idx_fc_field ON field_candidates(category, product_id, field_key);
 
+-- WHY: Relational projection of metadata_json.evidence_refs for CEF + RDF.
+-- JSON in metadata_json remains canonical (SSOT). This table is a read-side
+-- projection so tier/confidence queries are indexed. Cascade delete keeps
+-- evidence tied to its candidate — variant scope derives via candidate.variant_id.
+CREATE TABLE IF NOT EXISTS field_candidate_evidence (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  candidate_id INTEGER NOT NULL REFERENCES field_candidates(id) ON DELETE CASCADE,
+  url TEXT NOT NULL,
+  tier TEXT NOT NULL,
+  confidence REAL,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_fce_candidate ON field_candidate_evidence(candidate_id);
+CREATE INDEX IF NOT EXISTS idx_fce_tier ON field_candidate_evidence(tier);
+
 -- Phase 2 tables
 
 CREATE TABLE IF NOT EXISTS products (

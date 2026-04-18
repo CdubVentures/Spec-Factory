@@ -73,6 +73,12 @@ export const FINDER_MODULES = Object.freeze([
     settingsSchema: [
       { key: 'discoveryPromptTemplate', type: 'string', default: '', allowEmpty: true, hidden: true },
       { key: 'identityCheckPromptTemplate', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'urlHistoryEnabled', type: 'bool', default: false,
+        uiLabel: 'URL history', uiGroup: 'Discovery History',
+        uiTip: 'When on, prior run URLs are injected into the prompt so the LLM can avoid re-crawling them. Product-scoped for CEF. Off by default.' },
+      { key: 'queryHistoryEnabled', type: 'bool', default: false,
+        uiLabel: 'Query history', uiGroup: 'Discovery History',
+        uiTip: 'When on, prior run search queries are injected into the prompt. Off by default — queries rot faster than URLs.' },
     ],
 
     // LLM phase schema (codegen: phaseSchemaRegistry.generated.js)
@@ -217,6 +223,14 @@ export const FINDER_MODULES = Object.freeze([
       { key: 'evalViewCriteria_sangle', type: 'string', default: '', allowEmpty: true, hidden: true },
       { key: 'evalViewCriteria_angle', type: 'string', default: '', allowEmpty: true, hidden: true },
       { key: 'heroEvalCriteria', type: 'string', default: '', allowEmpty: true, hidden: true },
+
+      // Universal discovery history (shared with CEF/RDF). Scope: variant + mode.
+      { key: 'urlHistoryEnabled', type: 'bool', default: false,
+        uiLabel: 'URL history', uiGroup: 'Discovery History',
+        uiTip: 'When on, prior run URLs are injected into the prompt so the LLM can avoid re-crawling them. Scoped per variant per mode (view/hero). Off by default.' },
+      { key: 'queryHistoryEnabled', type: 'bool', default: false,
+        uiLabel: 'Query history', uiGroup: 'Discovery History',
+        uiTip: 'When on, prior run search queries are injected into the prompt. Scoped per variant per mode. Off by default — queries rot faster than URLs.' },
     ],
 
 
@@ -297,12 +311,20 @@ export const FINDER_MODULES = Object.freeze([
     // so they're `hidden: true` — the settings table still stores them.
     settingsSchema: [
       { key: 'discoveryPromptTemplate', type: 'string', default: '', allowEmpty: true, hidden: true },
-      { key: 'perVariantAttemptBudget', type: 'int', default: 1, min: 1, max: 5,
+      { key: 'perVariantAttemptBudget', type: 'int', default: 3, min: 1, max: 5,
         uiLabel: 'Per-Variant Attempt Budget', uiGroup: 'Discovery',
-        uiTip: 'LLM calls per variant before giving up. 1 = one shot; higher values enable retries with widening query strategy.' },
+        uiTip: 'Max LLM calls per variant when looping. 1 = single shot. Higher values retry on low confidence / missing evidence until the candidate reaches the publisher gate (or LLM returns a definitive unknown). Only applies to the "Loop" / "Loop All" buttons; plain "Run" is always single-shot.' },
       { key: 'minConfidence', type: 'int', default: 70, min: 0, max: 100,
         uiLabel: 'Min Confidence', uiGroup: 'Discovery',
         uiTip: 'Minimum LLM confidence score (0-100) to accept a date candidate. Below this, the variant run is marked unknown.' },
+
+      // Universal discovery history (shared with CEF/PIF). Scope: per variant.
+      { key: 'urlHistoryEnabled', type: 'bool', default: false,
+        uiLabel: 'URL history', uiGroup: 'Discovery History',
+        uiTip: 'When on, prior run URLs are injected into the prompt so the LLM can avoid re-crawling them. Variant-scoped for RDF. Off by default.' },
+      { key: 'queryHistoryEnabled', type: 'bool', default: false,
+        uiLabel: 'Query history', uiGroup: 'Discovery History',
+        uiTip: 'When on, prior run search queries are injected into the prompt. Off by default — queries rot faster than URLs.' },
     ],
 
     // LLM phase schema (codegen: phaseSchemaRegistry.generated.js)
@@ -320,6 +342,7 @@ export const FINDER_MODULES = Object.freeze([
       'run': ['review', 'product', 'publisher'],
       'run-deleted': ['review', 'product', 'publisher'],
       'deleted': ['review', 'product', 'publisher'],
+      'loop': ['review', 'product', 'publisher'],
     },
 
     // Module Settings (codegen: moduleSettingsSections.generated.ts)

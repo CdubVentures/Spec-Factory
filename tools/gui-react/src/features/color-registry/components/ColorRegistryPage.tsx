@@ -8,6 +8,7 @@ import { AddColorForm } from './AddColorForm.tsx';
 import { AddGroupForm } from './AddGroupForm.tsx';
 import { btnPrimary } from '../../../shared/ui/buttonClasses.ts';
 import { inputCls } from '../../../utils/studioConstants.ts';
+import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 
 export function ColorRegistryPage() {
   const queryClient = useQueryClient();
@@ -74,9 +75,7 @@ export function ColorRegistryPage() {
     setShowAddGroup(false);
   }, []);
 
-  if (isLoading) {
-    return <div className="p-6 sf-text-subtle text-sm">Loading colors...</div>;
-  }
+  if (isLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
 
   return (
     <div className="p-6 max-w-7xl mx-auto">

@@ -28,6 +28,18 @@ export function useReleaseDateFinderRunMutation(category: string, productId: str
   });
 }
 
+// Loop: retries per variant up to perVariantAttemptBudget until the candidate
+// reaches the publisher gate or LLM returns definitive unknown. Fire this for
+// both "Loop" (single variant) and "Loop All" (per variant, in parallel).
+export function useReleaseDateFinderLoopMutation(category: string, productId: string) {
+  return useMutation<AcceptedResponse, Error, { variant_key?: string; variant_id?: string }>({
+    mutationFn: (body) => api.post<AcceptedResponse>(
+      `/release-date-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/loop`,
+      body,
+    ),
+  });
+}
+
 export function useDeleteReleaseDateFinderRunMutation(category: string, productId: string) {
   const queryClient = useQueryClient();
 

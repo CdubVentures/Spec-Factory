@@ -14,6 +14,7 @@ import {
   resolveAmbiguityContext,
   buildFinderLlmCaller,
 } from '../../core/finder/finderOrchestrationHelpers.js';
+import { accumulateDiscoveryLog } from '../../core/finder/discoveryLog.js';
 import {
   buildColorEditionFinderPrompt,
   createColorEditionFinderCallLlm,
@@ -210,6 +211,8 @@ export async function runColorEditionFinder({
   const finderStore = specDb.getFinderStore('colorEditionFinder');
   const discoveryPromptTemplate = finderStore.getSetting('discoveryPromptTemplate') || '';
   const identityCheckPromptTemplate = finderStore.getSetting('identityCheckPromptTemplate') || '';
+  const urlHistoryEnabled = finderStore.getSetting('urlHistoryEnabled') === 'true';
+  const queryHistoryEnabled = finderStore.getSetting('queryHistoryEnabled') === 'true';
   const modelTracking = resolveModelTracking({ config, phaseKey: 'colorFinder', onModelResolved });
   const { wrappedOnModelResolved } = modelTracking;
 
@@ -225,6 +228,26 @@ export async function runColorEditionFinder({
   // Read existing runs for historical context
   const existing = readColorEdition({ productId: product.product_id, productRoot });
   const previousRuns = Array.isArray(existing?.runs) ? existing.runs : [];
+
+  // Universal discovery-log history — product-scoped (no runMatcher) for CEF.
+  // WHY: CEF is two-gate (discovery + identity_check) so its response nests
+  // discovery_log under .response.discovery.discovery_log. Lift it to the
+  // canonical flat path before the helper reads it.
+  const normalizedRuns = previousRuns.map((r) => ({
+    ...r,
+    response: { ...(r.response || {}), discovery_log: r.response?.discovery?.discovery_log },
+  }));
+  // CEF is product-scoped → suppressions match variant_id='' && mode=''.
+  const cefSuppRows = (finderStore.listSuppressions?.(product.product_id) || [])
+    .filter((s) => s.variant_id === '' && s.mode === '');
+  const previousDiscovery = accumulateDiscoveryLog(normalizedRuns, {
+    includeUrls: urlHistoryEnabled,
+    includeQueries: queryHistoryEnabled,
+    suppressions: {
+      urlsChecked: new Set(cefSuppRows.filter((s) => s.kind === 'url').map((s) => s.item)),
+      queriesRun: new Set(cefSuppRows.filter((s) => s.kind === 'query').map((s) => s.item)),
+    },
+  });
 
   // Build or use overridden LLM caller
   const callLlm = buildFinderLlmCaller({
@@ -251,6 +274,7 @@ export async function runColorEditionFinder({
     colors: allColors,
     product,
     previousRuns,
+    previousDiscovery,
     templateOverride: discoveryPromptTemplate,
   });
   const userMessage = JSON.stringify({
@@ -276,7 +300,7 @@ export async function runColorEditionFinder({
 
   let response, usage;
   try {
-    ({ result: response, usage } = await callLlm({ colorNames, colors: allColors, product, previousRuns, familyModelCount, ambiguityLevel, siblingModels }));
+    ({ result: response, usage } = await callLlm({ colorNames, colors: allColors, product, previousRuns, previousDiscovery, familyModelCount, ambiguityLevel, siblingModels }));
   } catch (err) {
     logger?.error?.('color_edition_finder_llm_failed', {
       product_id: product.product_id,
@@ -404,23 +428,60 @@ export async function runColorEditionFinder({
         llm_web_search: modelTracking.actualWebSearch,
         llm_effort_level: modelTracking.actualEffortLevel || '',
       };
+      // WHY: Universal evidence shape across finders — {url, tier, confidence}.
+      // Pulled from the discovery-phase response root so candidates carry
+      // their URL citations into field_candidates.metadata_json.
+      const evidenceRefs = Array.isArray(response?.evidence_refs) ? response.evidence_refs : [];
+      // WHY: Identity-check (Run 2+) emits evidence_refs PER mapping keyed by
+      // variant_key (e.g. "color:black", "edition:cod-bo6"). Project those into
+      // evidence_by_variant so the review drawer can render per-variant source
+      // lists for colors/editions rows. Only match/new actions — reject mappings
+      // are dropped from the registry and won't have drawer rows. On Run 1
+      // (no identity check), the map is empty and the drawer falls back to the
+      // global evidence_refs.
+      const evidenceByVariant = {};
+      for (const m of identityCheckResult?.mappings || []) {
+        if ((m.action !== 'match' && m.action !== 'new') || typeof m.new_key !== 'string') continue;
+        if (!Array.isArray(m.evidence_refs) || m.evidence_refs.length === 0) continue;
+        evidenceByVariant[m.new_key] = m.evidence_refs;
+      }
+      const hasPerVariantEvidence = Object.keys(evidenceByVariant).length > 0;
+      // WHY: Candidate confidence drives the publisher threshold gate
+      // (publishConfidenceThreshold). Hardcoding 100 disables the gate —
+      // CEF would always publish regardless of evidence strength. Derive
+      // from the strongest per-source confidence across the whole run so
+      // the gate reflects real signal. Floor at 0 when evidence_refs is
+      // empty so the publisher properly rejects no-evidence runs.
+      const pickMaxRefConfidence = (refs) => {
+        let best = 0;
+        for (const r of refs || []) {
+          const n = Number(r?.confidence);
+          if (Number.isFinite(n) && n > best) best = n;
+        }
+        return best;
+      };
+      const candidateConfidence = pickMaxRefConfidence(evidenceRefs);
       const colorsMeta = {
         ...(Object.keys(colorNamesMap).length > 0 ? { color_names: colorNamesMap } : {}),
+        evidence_refs: evidenceRefs,
+        ...(hasPerVariantEvidence ? { evidence_by_variant: evidenceByVariant } : {}),
         ...llmMeta,
       };
       submitCandidate({
         category: product.category, productId: product.product_id,
-        fieldKey: 'colors', value: gateColors, confidence: 100,
+        fieldKey: 'colors', value: gateColors, confidence: candidateConfidence,
         sourceMeta: cefSourceMeta, fieldRules, knownValues, componentDb: null, specDb, productRoot,
         metadata: colorsMeta, appDb, config,
       });
       const editionsMeta = {
         ...(Object.keys(gateEditions).length > 0 ? { edition_details: gateEditions } : {}),
+        evidence_refs: evidenceRefs,
+        ...(hasPerVariantEvidence ? { evidence_by_variant: evidenceByVariant } : {}),
         ...llmMeta,
       };
       submitCandidate({
         category: product.category, productId: product.product_id,
-        fieldKey: 'editions', value: Object.keys(gateEditions), confidence: 100,
+        fieldKey: 'editions', value: Object.keys(gateEditions), confidence: candidateConfidence,
         sourceMeta: cefSourceMeta, fieldRules, knownValues, componentDb: null, specDb, productRoot,
         metadata: editionsMeta, appDb, config,
       });

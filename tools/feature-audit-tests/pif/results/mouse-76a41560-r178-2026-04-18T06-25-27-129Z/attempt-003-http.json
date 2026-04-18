@@ -1,0 +1,8 @@
+{
+  "httpStatus": 0,
+  "httpHeaders": {},
+  "finishReason": null,
+  "usage": null,
+  "duration_ms": 303988,
+  "fetchError": "fetch failed"
+}

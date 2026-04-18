@@ -68,7 +68,7 @@ interface EventLogProps {
 }
 
 export function EventLog({ events, maxHeight = 'max-h-72' }: EventLogProps) {
-  const formatTime = useFormatTime(false, true);
+  const formatTime = useFormatTime(true, true);
   const reversed = useMemo(() => [...events].reverse(), [events]);
   const columns: ColumnDef<RuntimeEvent, unknown>[] = useMemo(() => [
     {

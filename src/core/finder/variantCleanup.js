@@ -23,6 +23,15 @@
  *   - SQL runs_table rows have selected_json / response_json blobs
  *
  * Each candidate entry carries variant_id (optional) and variant_key.
+ *
+ * Run-deletion semantics: a variantFieldProducer does one LLM call per variant,
+ * so a run's purpose IS that variant. If all of a run's candidates were for
+ * the deleted variant, the run itself is removed (JSON entry + SQL row). Runs
+ * with mixed variants stay, filtered to surviving variants.
+ *
+ * Aggregate recomputation: after filtering, the top-level selected.candidates
+ * is rebuilt as latest-wins-per-variant across remaining runs — the shared
+ * reduction pattern for variantFieldProducer modules.
  */
 
 import fs from 'node:fs';
@@ -54,6 +63,24 @@ function filterCandidates(arr, variantId, variantKey) {
   return { result, changed: result.length !== arr.length };
 }
 
+// WHY: variantFieldProducer aggregation convention — latest run per variant wins.
+// RDF uses this via finderJsonStore's recalculateSelected. Re-derived here so
+// the cleanup stays independent of the module's own store instance.
+function latestWinsPerVariant(runs) {
+  const latestByKey = new Map();
+  const sorted = [...runs]
+    .filter(r => r?.status !== 'rejected')
+    .sort((a, b) => (a.run_number || 0) - (b.run_number || 0));
+  for (const run of sorted) {
+    for (const c of (run?.selected?.candidates || [])) {
+      const key = c?.variant_id || c?.variant_key || '';
+      if (!key) continue;
+      latestByKey.set(key, c);
+    }
+  }
+  return [...latestByKey.values()];
+}
+
 /**
  * Strip a variant's entries from one variantFieldProducer module's history.
  *
@@ -64,58 +91,84 @@ function filterCandidates(arr, variantId, variantKey) {
  * @param {string} [opts.variantKey]  — fallback match
  * @param {object} opts.module        — finderModuleRegistry entry (filePrefix, id, ...)
  * @param {string} [opts.productRoot]
- * @returns {{ changed: boolean, runsTouched: number }}
+ * @returns {{ changed: boolean, runsTouched: number, runsDeleted: number }}
  */
 export function stripVariantFromFieldProducerHistory({
   specDb, productId, variantId, variantKey, module, productRoot,
 }) {
   if (!module || module.moduleClass !== 'variantFieldProducer') {
-    return { changed: false, runsTouched: 0 };
+    return { changed: false, runsTouched: 0, runsDeleted: 0 };
   }
-  if (!variantId && !variantKey) return { changed: false, runsTouched: 0 };
+  if (!variantId && !variantKey) return { changed: false, runsTouched: 0, runsDeleted: 0 };
 
   productRoot = productRoot || defaultProductRoot();
   const data = readFinderJson(productRoot, productId, module.filePrefix);
-  if (!data) return { changed: false, runsTouched: 0 };
-
-  let jsonChanged = false;
-  const touchedRuns = [];
+  if (!data) return { changed: false, runsTouched: 0, runsDeleted: 0 };
 
   const runs = Array.isArray(data.runs) ? data.runs : [];
+  const touchedRuns = [];          // runs that survived with candidates filtered
+  const deletedRunNumbers = [];    // runs whose only candidates were for the deleted variant
+  const remaining = [];
+
   for (const run of runs) {
-    let runChanged = false;
+    const selBefore = Array.isArray(run?.selected?.candidates) ? run.selected.candidates.length : 0;
+    const respBefore = Array.isArray(run?.response?.candidates) ? run.response.candidates.length : 0;
+    const hadAnyBefore = selBefore > 0 || respBefore > 0;
 
-    if (run.selected && Array.isArray(run.selected.candidates)) {
+    let filtered = false;
+    if (run?.selected && Array.isArray(run.selected.candidates)) {
       const { result, changed } = filterCandidates(run.selected.candidates, variantId, variantKey);
-      if (changed) {
-        run.selected.candidates = result;
-        runChanged = true;
-      }
+      if (changed) { run.selected.candidates = result; filtered = true; }
     }
-
-    if (run.response && Array.isArray(run.response.candidates)) {
+    if (run?.response && Array.isArray(run.response.candidates)) {
       const { result, changed } = filterCandidates(run.response.candidates, variantId, variantKey);
-      if (changed) {
-        run.response.candidates = result;
-        runChanged = true;
-      }
+      if (changed) { run.response.candidates = result; filtered = true; }
     }
 
-    if (runChanged) {
-      jsonChanged = true;
-      touchedRuns.push(run);
+    const selAfter = Array.isArray(run?.selected?.candidates) ? run.selected.candidates.length : 0;
+    const respAfter = Array.isArray(run?.response?.candidates) ? run.response.candidates.length : 0;
+    const hasAnyAfter = selAfter > 0 || respAfter > 0;
+
+    if (filtered && hadAnyBefore && !hasAnyAfter) {
+      // Run's only candidates were the deleted variant — delete the whole run.
+      deletedRunNumbers.push(run.run_number);
+      continue;
     }
+
+    if (filtered) touchedRuns.push(run);
+    remaining.push(run);
   }
 
+  const hadRunChanges = touchedRuns.length > 0 || deletedRunNumbers.length > 0;
+
+  // Also filter the top-level aggregate even if no run was touched (defensive).
+  let aggregateChanged = false;
   if (data.selected && Array.isArray(data.selected.candidates)) {
     const { result, changed } = filterCandidates(data.selected.candidates, variantId, variantKey);
-    if (changed) {
-      data.selected.candidates = result;
-      jsonChanged = true;
-    }
+    if (changed) { data.selected.candidates = result; aggregateChanged = true; }
   }
 
-  if (!jsonChanged) return { changed: false, runsTouched: 0 };
+  if (!hadRunChanges && !aggregateChanged) {
+    return { changed: false, runsTouched: 0, runsDeleted: 0 };
+  }
+
+  // Recompute aggregate as latest-wins-per-variant across remaining runs.
+  // WHY: Filtering alone could leave a stale aggregate entry from a now-deleted
+  // run. Reducing from the surviving runs keeps the aggregate honest.
+  if (hadRunChanges) {
+    data.selected = data.selected || {};
+    data.selected.candidates = latestWinsPerVariant(remaining);
+  }
+
+  data.runs = remaining;
+  data.run_count = remaining.length;
+  data.last_ran_at = remaining.length
+    ? (remaining[remaining.length - 1].ran_at || data.last_ran_at || '')
+    : '';
+
+  // next_run_number never reuses deleted numbers.
+  const maxRemaining = remaining.length ? Math.max(...remaining.map(r => r.run_number || 0)) : 0;
+  data.next_run_number = Math.max(data.next_run_number || 0, maxRemaining + 1, 1);
 
   data.updated_at = new Date().toISOString();
   writeFinderJson(productRoot, productId, module.filePrefix, data);
@@ -126,6 +179,22 @@ export function stripVariantFromFieldProducerHistory({
     finderStore.updateSummaryField(productId, 'candidates', JSON.stringify(aggregate));
     finderStore.updateSummaryField(productId, 'candidate_count', aggregate.length);
 
+    // Bookkeeping on the SQL summary row.
+    if (typeof finderStore.updateBookkeeping === 'function') {
+      finderStore.updateBookkeeping(productId, {
+        latest_ran_at: data.last_ran_at || '',
+        run_count: data.run_count || 0,
+      });
+    }
+
+    // Remove SQL rows for fully-deleted runs.
+    if (typeof finderStore.removeRun === 'function') {
+      for (const runNumber of deletedRunNumbers) {
+        finderStore.removeRun(productId, runNumber);
+      }
+    }
+
+    // Rewrite SQL blobs for survived-but-filtered runs.
     if (typeof finderStore.updateRunJson === 'function') {
       for (const run of touchedRuns) {
         finderStore.updateRunJson(productId, run.run_number, {
@@ -136,5 +205,5 @@ export function stripVariantFromFieldProducerHistory({
     }
   }
 
-  return { changed: true, runsTouched: touchedRuns.length };
+  return { changed: true, runsTouched: touchedRuns.length, runsDeleted: deletedRunNumbers.length };
 }

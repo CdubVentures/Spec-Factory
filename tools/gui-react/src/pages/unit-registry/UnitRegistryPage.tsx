@@ -3,6 +3,7 @@ import { useUnitRegistryQuery, useUpsertUnitMutation, useDeleteUnitMutation } fr
 import type { UnitRegistryEntry, UnitConversion } from './unitRegistryTypes.ts';
 import { btnPrimary } from '../../shared/ui/buttonClasses.ts';
 import { inputCls } from '../../utils/studioConstants.ts';
+import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
 
 // ── Unit grouping (presentation-only, fallback = "Other") ────────────
 
@@ -215,9 +216,7 @@ export function UnitRegistryPage() {
     deleteMut.mutate(canonical, { onSuccess: () => setEditing(null) });
   }, [deleteMut]);
 
-  if (isLoading) {
-    return <div className="p-6 sf-text-muted">Loading unit registry...</div>;
-  }
+  if (isLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
 
   return (
     <div className="p-6 max-w-6xl mx-auto">

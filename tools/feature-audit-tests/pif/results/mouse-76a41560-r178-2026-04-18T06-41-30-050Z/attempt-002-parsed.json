@@ -1,0 +1,83 @@
+{
+  "images": [
+    {
+      "view": "top",
+      "url": "https://assets.corsair.com/image/upload/f_auto%2Cq_auto/v1735855631/products/Gaming-Mice/base-m75-wireless-apple-config/gallery/glacial-blue/M75_GLACIAL_BLUE_11.png",
+      "source_page": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/intrinsic",
+      "alt_text": "M75 WIRELESS Lightweight RGB Gaming Mouse – Glacier Blue",
+      "evidence_refs": [
+        {
+          "url": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na",
+          "tier": "tier1"
+        },
+        {
+          "url": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/intrinsic",
+          "tier": "tier1"
+        }
+      ]
+    },
+    {
+      "view": "angle",
+      "url": "https://assets.corsair.com/image/upload/c_pad%2Cq_85%2Ch_1100%2Cw_1100%2Cf_auto/products/Gaming-Mice/base-m75-wireless-apple-config/gallery/glacial-blue/M75_GLACIAL_BLUE_01.webp",
+      "source_page": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na",
+      "alt_text": "M75 WIRELESS Lightweight RGB Gaming Mouse – Glacier Blue",
+      "evidence_refs": [
+        {
+          "url": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na",
+          "tier": "tier1"
+        },
+        {
+          "url": "https://retail.corsair.com/products/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na",
+          "tier": "tier1"
+        }
+      ]
+    },
+    {
+      "view": "bottom",
+      "url": "https://assets.corsair.com/image/upload/f_auto%2Cq_auto/v1736471905/products/Gaming-Mice/base-m75-wireless-apple-config/content/m75-plus-apple-pdp-panel08.png",
+      "source_page": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/intrinsic",
+      "alt_text": "Studio panel showing the M75 Wireless in Glacier Blue with top and underside views",
+      "evidence_refs": [
+        {
+          "url": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/intrinsic",
+          "tier": "tier1"
+        },
+        {
+          "url": "https://www.corsair.com/newsroom/press-release/corsair-unveils-exclusive-award-winning-k65-plus-wireless-keyboard-and-m75-wireless-gaming-mouse-colorways-for-mac?amp=1",
+          "tier": "tier1"
+        }
+      ]
+    }
+  ],
+  "discovery_log": {
+    "urls_checked": [
+      "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na",
+      "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/intrinsic",
+      "https://retail.corsair.com/products/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na",
+      "https://www.corsair.com/newsroom/press-release/corsair-unveils-exclusive-award-winning-k65-plus-wireless-keyboard-and-m75-wireless-gaming-mouse-colorways-for-mac?amp=1",
+      "https://www.bhphotovideo.com/c/product/1915333-REG/corsair_ch_931d01g_na_m75_wireless_gaming_mouse.html/accessories",
+      "https://www.tomsguide.com/computing/peripherals/corsair-m75-mac-mouse-review",
+      "https://www.apple.com/shop/product/HRYU2ZM/A/corsair-m75-wireless-lightweight-rgb-gaming-mouse",
+      "https://cdn.mos.cms.futurecdn.net/bXbp3rK3eq5NyDxbPtZ9ZB.jpg",
+      "https://assets.corsair.com/image/upload/f_auto%2Cq_auto/v1735855631/products/Gaming-Mice/base-m75-wireless-apple-config/gallery/glacial-blue/M75_GLACIAL_BLUE_11.png",
+      "https://assets.corsair.com/image/upload/c_pad%2Cq_85%2Ch_1100%2Cw_1100%2Cf_auto/products/Gaming-Mice/base-m75-wireless-apple-config/gallery/glacial-blue/M75_GLACIAL_BLUE_01.webp",
+      "https://assets.corsair.com/image/upload/f_auto%2Cq_auto/v1736471905/products/Gaming-Mice/base-m75-wireless-apple-config/content/m75-plus-apple-pdp-panel08.png"
+    ],
+    "queries_run": [
+      "\"M75 WIRELESS Lightweight RGB Gaming Mouse – Glacier Blue\" retailer image",
+      "\"Corsair M75 Wireless\" \"Glacier Blue\" image file",
+      "site:corsair.com \"M75 Wireless\" \"Glacier Blue\" gallery",
+      "site:assets.corsair.com/image/upload \"M75_GLACIAL_BLUE_01\"",
+      "site:assets.corsair.com/image/upload \"M75_GLACIAL_BLUE_02\"",
+      "\"base-m75-wireless-apple-config\"",
+      "\"Corsair M75 Wireless\" \"Glacier Blue\" product shot",
+      "\"HRYU2ZM/A\"",
+      "site:bhphotovideo.com/c/product/1915333-REG image Corsair Glacier Blue"
+    ],
+    "notes": [
+      "Exact Corsair M75 Wireless Glacier Blue variant confirmed on Corsair product pages and the CORSAIR newsroom release.",
+      "The clearest clean shots found were the official Corsair studio images. The bottom candidate is a studio panel that shows the underside clearly, but it also includes a top view in the same frame; I kept it because a strict isolated underside shot was not found.",
+      "Excluded sibling models M75 Air Wireless and M75, and ignored lifestyle/in-hand/banner images."
+    ]
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "images": [
+    {
+      "view": "angle",
+      "url": "https://assets.corsair.com/image/upload/c_pad%2Cq_85%2Ch_1100%2Cw_1100%2Cf_auto/products/Gaming-Mice/base-m75-wireless-apple-config/gallery/glacial-blue/M75_GLACIAL_BLUE_01.webp",
+      "source_page": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/intrinsic",
+      "alt_text": "Corsair M75 Wireless Glacier Blue product render on a plain black background, rear/top three-quarter angle",
+      "evidence_refs": [
+        {
+          "url": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na",
+          "tier": "tier1"
+        },
+        {
+          "url": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/intrinsic",
+          "tier": "tier1"
+        }
+      ]
+    },
+    {
+      "view": "top",
+      "url": "https://assets.corsair.com/image/upload/f_auto%2Cq_auto/v1735855631/products/Gaming-Mice/base-m75-wireless-apple-config/gallery/glacial-blue/M75_GLACIAL_BLUE_11.png",
+      "source_page": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/intrinsic",
+      "alt_text": "Corsair M75 Wireless Glacier Blue top view render on a light purple background",
+      "evidence_refs": [
+        {
+          "url": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na",
+          "tier": "tier1"
+        },
+        {
+          "url": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/intrinsic",
+          "tier": "tier1"
+        }
+      ]
+    },
+    {
+      "view": "bottom",
+      "url": "https://assets.corsair.com/image/upload/f_auto%2Cq_auto/v1736471905/products/Gaming-Mice/base-m75-wireless-apple-config/content/m75-plus-apple-pdp-panel08.png",
+      "source_page": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/intrinsic",
+      "alt_text": "Corsair M75 Wireless Glacier Blue bottom view shown alongside the top view on a dark background",
+      "evidence_refs": [
+        {
+          "url": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na",
+          "tier": "tier1"
+        },
+        {
+          "url": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/intrinsic",
+          "tier": "tier1"
+        }
+      ]
+    }
+  ],
+  "discovery_log": {
+    "urls_checked": [
+      "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na",
+      "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/intrinsic",
+      "https://retail.corsair.com/products/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na",
+      "https://assets.corsair.com/image/upload/c_pad,q_85,h_1100,w_1100,f_auto/products/Gaming-Mice/base-m75-wireless-apple-config/gallery/glacial-blue/M75_GLACIAL_BLUE_01.webp",
+      "https://assets.corsair.com/image/upload/f_auto,q_auto/v1735855631/products/Gaming-Mice/base-m75-wireless-apple-config/gallery/glacial-blue/M75_GLACIAL_BLUE_11.png",
+      "https://assets.corsair.com/image/upload/f_auto,q_auto/v1736471905/products/Gaming-Mice/base-m75-wireless-apple-config/content/m75-plus-apple-pdp-panel08.png",
+      "https://www.corsair.com/ww/en/p/gaming-mouse/ch-931d01g-ww/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ww-ch-931d01g-ww",
+      "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/fill"
+    ],
+    "queries_run": [
+      "site:assets.corsair.com/image/upload \"M75_GLACIAL_BLUE\" Corsair",
+      "site:corsair.com \"M75 Wireless\" \"Glacier Blue\" image",
+      "site:corsair.com \"M75_GLACIAL_BLUE\"",
+      "site:assets.corsair.com \"M75_GLACIAL_BLUE_01\""
+    ],
+    "notes": [
+      "Verified the exact SKU/model family is CORSAIR M75 WIRELESS (CH-931D01G-NA) in Glacier Blue; excluded sibling models M75 Air Wireless and M75.",
+      "Found one clean angle render, one clean overhead render, and one official render showing the underside/bottom clearly (composite top+bottom product image).",
+      "No additional clean left/right/front/rear-only studio shots were found in accessible official assets; avoided lifestyle and styled multi-product banner images."
+    ]
+  }
+}

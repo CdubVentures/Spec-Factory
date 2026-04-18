@@ -23,10 +23,10 @@ import { useFieldLabels } from '../../../hooks/useFieldLabels.ts';
 import { computeReviewDashboardMetrics, deriveReviewKpiCards } from '../selectors/reviewMetricsSelectors.ts';
 import { useDebouncedCallback } from '../../../hooks/useDebounce.ts';
 import { readReviewGridSessionState, writeReviewGridSessionState } from '../state/reviewGridSessionState.ts';
-import { readReviewDrawerSessionState, writeReviewDrawerSessionState } from '../state/reviewDrawerSessionState.ts';
 import type { ReviewLayout, ProductsIndexResponse, CandidateResponse, CandidateDeleteResponse, ReviewCandidate } from '../../../types/review.ts';
 import { parseCatalogProducts } from '../../catalog/api/catalogParsers.ts';
 import { deleteCandidateBySourceId, deleteAllCandidatesForField } from '../api/reviewApi.ts';
+import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
 
 const SORT_OPTIONS: { value: SortMode; label: string }[] = [
   { value: 'brand', label: 'Brand' },
@@ -85,13 +85,9 @@ export function ReviewPage() {
   const queryClient = useQueryClient();
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reviewGridHydratedRef = useRef<string>('');
-  const reviewDrawerHydratedRef = useRef<string>('');
+  const categoryRef = useRef<string>(category);
   const persistedGridState = useMemo(
     () => readReviewGridSessionState(category),
-    [category],
-  );
-  const persistedDrawerState = useMemo(
-    () => readReviewDrawerSessionState(category),
     [category],
   );
 
@@ -127,6 +123,21 @@ export function ReviewPage() {
     }
   }, [indexData?.brands, setAvailableBrands]);
 
+  // WHY: Publisher threshold drives which candidates are 'resolved' in SQL.
+  // When the user changes publishConfidenceThreshold in Publisher settings,
+  // backend reconcileThreshold runs and flips candidate statuses — the drawer's
+  // source list (derived from status==='resolved') must refetch so the
+  // displayed sources match the new resolved set. Products index also reflects
+  // publisher state per-field, so invalidate both.
+  const publishConfidenceThreshold = useRuntimeSettingsValueStore(
+    (s) => s.values?.publishConfidenceThreshold,
+  );
+  useEffect(() => {
+    if (publishConfidenceThreshold == null) return;
+    queryClient.invalidateQueries({ queryKey: ['candidates'] });
+    queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
+  }, [publishConfidenceThreshold, queryClient, category]);
+
   useEffect(() => {
     if (!indexData?.brands || indexData.brands.length === 0) return;
     if (reviewGridHydratedRef.current === category) return;
@@ -153,17 +164,15 @@ export function ReviewPage() {
     setFilter,
   ]);
 
-  // WHY: Hydrate drawer state (activeCell + drawerOpen) from localStorage on category load.
-  // Gated on indexData so the restored productId can be validated against available products.
+  // WHY: Drawer selection belongs to a single category context — a product
+  // from category A is meaningless in category B. Resetting on switch prevents
+  // the drawer from stranding with a stale activeCell.
   useEffect(() => {
-    if (!indexData?.products || indexData.products.length === 0) return;
-    if (reviewDrawerHydratedRef.current === category) return;
-    reviewDrawerHydratedRef.current = category;
-    if (!persistedDrawerState.drawerOpen || !persistedDrawerState.productId || !persistedDrawerState.field) return;
-    const productExists = indexData.products.some((p) => p.product_id === persistedDrawerState.productId);
-    if (!productExists) return;
-    openDrawer(persistedDrawerState.productId, persistedDrawerState.field);
-  }, [category, indexData?.products, persistedDrawerState, openDrawer]);
+    if (categoryRef.current !== category) {
+      categoryRef.current = category;
+      closeDrawer();
+    }
+  }, [category, closeDrawer]);
 
   useEffect(() => {
     if (reviewGridHydratedRef.current !== category) return;
@@ -176,16 +185,6 @@ export function ReviewPage() {
       runStatusFilter,
     });
   }, [category, sortMode, brandFilter.mode, brandFilter.selected, confidenceFilter, coverageFilter, runStatusFilter]);
-
-  // Persist drawer state (activeCell + drawerOpen) to localStorage on change
-  useEffect(() => {
-    if (reviewDrawerHydratedRef.current !== category) return;
-    writeReviewDrawerSessionState(category, {
-      drawerOpen,
-      productId: activeCell?.productId ?? '',
-      field: activeCell?.field ?? '',
-    });
-  }, [category, drawerOpen, activeCell?.productId, activeCell?.field]);
 
   // Auto-clear "saved" status after 2 seconds
   useEffect(() => {

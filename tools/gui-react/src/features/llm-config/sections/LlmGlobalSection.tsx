@@ -10,6 +10,7 @@ import { buildModelDropdownOptions } from '../state/llmModelDropdownOptions.ts';
 import { detectMixIssues, detectStaleModelIssues, resolveRingColor } from '../state/llmMixDetection.ts';
 import { detectEmptyModelFields } from '../state/llmModelValidation.ts';
 import { AlertBanner } from '../../../shared/ui/feedback/AlertBanner.tsx';
+import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import { usePersistedExpandMap } from '../../../stores/tabStore.ts';
 import { LlmAllModelsSection } from './LlmAllModelsSection.tsx';
 import { ModelSelectDropdown } from '../components/ModelSelectDropdown.tsx';
@@ -119,7 +120,7 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
         collapsible
         storageKey="sf:llm-global:provider-registry"
       >
-        <Suspense fallback={null}>
+        <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
           <LlmProviderRegistrySection
             registry={registry}
             onRegistryChange={onRegistryChange}

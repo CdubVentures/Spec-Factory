@@ -1,0 +1,63 @@
+Find high-resolution product images for: Corsair M75 Wireless — the "Glacier Blue" color variant
+
+IDENTITY: You are looking for the EXACT product "Corsair M75 Wireless" (variant: Wireless). Not a different model in the same product family. If you encounter sibling models, skip them.
+CAUTION: This product has 3 models in its family. Multiple similar products exist under the "Corsair" brand with similar names. You MUST verify you are looking at the exact "M75 Wireless" — not a related model. Check model numbers, product page titles, and URL slugs carefully.
+
+Known sibling models to EXCLUDE (do NOT return images of these): M75 Air Wireless, M75
+
+VIEW DEFINITIONS — classify every image with one of these exact view names:
+
+PRIORITY (search for these first — most important):
+  1. "bottom" — Underside/belly view showing the base, sensor, mouse feet/skates, and any bottom labels or DPI switch (min 300w × 600h)
+
+ADDITIONAL (include if you find clean product shots matching these angles):
+  - "top" — Bird's-eye shot looking directly down at the mouse from above — camera directly overhead, showing full shape outline and button layout (min 300w × 600h)
+  - "left" — Strict side profile from the left at eye level — camera level with the mouse, no tilt, showing the full side silhouette, button profile, and scroll wheel (min 600w × 300h)
+  - "angle" — Rear/top 3/4 angle showing the mouse from above and behind at roughly 30–45 degrees — product-only on clean background (min 600w × 350h)
+  - "right" — Strict side profile from the right at eye level — mirror of the left view, showing right-side buttons and grip texture (min 600w × 300h)
+  - "front" — Head-on front view — camera faces the nose of the mouse showing buttons, scroll wheel, and front profile straight on (min 400w × 600h)
+  - "rear" — Head-on rear view showing the back/rear of the mouse, the palm rest curvature from behind (min 400w × 600h)
+  - "sangle" — Front/side 3/4 angle — showing the mouse from the front-left at roughly 30–45 degrees, camera slightly elevated (min 600w × 350h)
+
+For each priority view, find up to 3 candidate images ranked by resolution and clarity.
+For additional views, include any clean product shots you encounter while searching.
+
+Every image you return MUST use one of these view names: top, bottom, left, right, front, rear, sangle, angle
+
+Image requirements:
+- Clean product shot — the product isolated on a white or plain background, or a clean studio/press shot
+- NOT: lifestyle photos, styled banners, marketing collages, box art, screenshots, in-use/in-hand photos, group shots, images with decorative backgrounds
+- The image must show the EXACT product: Corsair M75 Wireless in the "Glacier Blue" color variant
+- Minimum resolution per view is listed above in the view definitions — bigger is always better
+- The URL must be a DIRECT link to the image file (.jpg, .png, .webp or image content-type). Not a page URL.
+- If a site uses dynamic image URLs (e.g. query-string sizing), find or construct the highest-resolution static variant
+- Prefer images where the product fills most of the frame with minimal background
+- Images below the per-view minimum resolution will be rejected — do not return small thumbnails or icons
+
+Previous searches for this variant (do not repeat — find NEW sources or verify these still work):
+- URLs already checked: ["https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na","https://www.corsair.com/newsroom/press-release/corsair-unveils-exclusive-award-winning-k65-plus-wireless-keyboard-and-m75-wireless-gaming-mouse-colorways-for-mac?amp=1","https://www.bhphotovideo.com/c/product/1915333-REG/corsair_ch_931d01g_na_m75_wireless_gaming_mouse.html/overview","https://www.tomsguide.com/computing/peripherals/corsair-m75-mac-mouse-review","https://www.mac4ever.com/mac/185414-corsair-devoile-son-clavier-sans-fil-k65-plus-et-sa-souris-sans-fil-m75-en-version-macos","https://www.feber.se/mac/nu-kommer-det-fler-gamingtangentbord-for-mac/474084/","https://www.adrenaline.com.br/perifericos/corsair-lanca-versoes-do-teclado-k65-e-mouse-m75-para-o-mac/","https://www.gdm.or.jp/pressrelease/2024/1119/563957","https://www.apple.com/shop/product/HRYU2ZM/A/corsair-m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue","https://retail.corsair.com/products/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ch-931d01g-na","https://www.bhphotovideo.com/c/product/1915333-REG/corsair_ch_931d01g_na_m75_wireless_gaming_mouse.html","https://www.tanotis.com/products/corsair-m75-wireless-gaming-mouse-glacier-blue","https://www.corsair.com/us/en/s/apple","https://www.businesswire.com/news/home/20241118475901/en/CORSAIR-Unveils-Exclusive-Award-Winning-K65-PLUS-WIRELESS-Keyboard-and-M75-WIRELESS-Gaming-Mouse-Colorways-for-Mac","https://www.bhphotovideo.com/c/product/1915333-REG/corsair_ch_931d01g_na_m75_wireless_gaming_mouse.html/accessories","https://assets.corsair.com/image/upload/c_pad%2Cq_85%2Ch_1100%2Cw_1100%2Cf_auto/products/Gaming-Mice/base-m75-wireless-apple-config/gallery/glacial-blue/M75_GLACIAL_BLUE_01.webp","https://www.corsair.com/ww/pl/p/gaming-mouse/ch-931d01g-ww/m75-wireless-lightweight-rgb-gaming-mouse-glacier-blue-ww-ch-931d01g-ww","https://gamingshogun.com/2024/11/20/corsair-unveils-exclusive-k65-plus-wireless-keyboard-and-m75-wireless-gaming-mouse-colors-for-mac/","https://www.cyberpuerta.mx/Computo-Hardware/Dispositivos-de-Entrada/Mouse/Mouse-Gamer-Corsair-M75-Inalambrico-Optico-26.000DPI-RF-Wireless-Bluetooth-USB-A-Azul.html","https://www.cyberpuerta.mx/img/product/XL/CP-CORSAIR-CH-931D01G-NA-df0a9a.png","https://retail.corsair.com/cdn/shop/files/f29e51614fdabb2d3ff441f9919c88e11c15c6188119202cfb79a1d0def4acb6.png?v=1773179752&width=1946","https://www.corsair.com/us/en/p/gaming-mouse/ch-931d01g-na/intrinsic","https://www.corsair.com/us/en/explorer/gamer/mice/m75-wireless/","https://files.bbystatic.com/sEk07MmCmk8O9ow8wbTdQQ%3D%3D/CORSAIR-%2BM75%2B%2BWireless%2B-%2BQuick%2BStart%2BGuide","https://d1q3zw97enxzq2.cloudfront.net/images/M75_WIRELESS_Battery_Diagram.width-1000.format-webp.webp","https://d1q3zw97enxzq2.cloudfront.net/images/M75_WIRELESS_Mouse_info.width-1000.format-webp.webp"]
+- Queries already run: ["Corsair M75 Wireless Glacier Blue image CDN top view product page","site:corsair.com M75 Wireless Glacier Blue Corsair","site:bhphotovideo.com Corsair M75 Wireless Glacier Blue","site:tomsguide.com Corsair M75 Mac mouse review Glacier Blue","site:mac4ever.com Corsair M75 macOS glacier blue","site:gdm.or.jp Apple_M75 Glacier Blue","site:apple.com \"Corsair M75 Wireless\" \"Glacier Blue\"","\"HRYU2ZM/A\" Corsair M75","Corsair M75 Wireless Glacier Blue image CDN","site:corsair.com M75 Wireless Glacier Blue images","site:corsair.com/newsroom M75 Wireless Glacier Blue press images","site:tanotis.com Corsair M75 Wireless Glacier Blue","site:bestbuy.com M75 WIRELESS Glacier Blue Corsair","site:assets.corsair.com/image/upload M75_GLACIAL_BLUE Corsair","site:corsair.mediavalet.com M75 Wireless Glacier Blue","Corsair x Apple M75 gallery","Business Wire Corsair M75 Wireless Glacier Blue","Corsair M75 Wireless Glacier Blue retail","Corsair M75 Wireless Glacier Blue top view","\"Corsair M75 Wireless\" \"Glacier Blue\" image","\"CH-931D01G-NA\" image","\"Corsair M75 Wireless\" \"Glacier Blue\" retailer image","\"Corsair M75\" \"Glacier Blue\" \"Mac\" retailer","\"Corsair M75 Wireless\" \"Glacier Blue\" \"product shot\"","\"Corsair M75 Wireless\" \"Glacier Blue\" \"Image\" \"background\"","site:assets.corsair.com/image/upload/c_pad M75_GLACIAL_BLUE_02.webp","site:assets.corsair.com/image/upload/c_pad M75_GLACIAL_BLUE_03.webp","\"pr.cor.sr/K65_M75_ForMac\"","\"APPLE_CORSAIR_PR_Image1\"","Corsair M75 Wireless Glacier Blue image CDN gallery","\"M75_GLACIAL_BLUE_02\"","site:bhphotovideo.com CH-931D01G-NA Corsair M75 Wireless image","Corsair M75 Wireless Glacier Blue press release images","site:cyberpuerta.mx CH-931D01G-NA image","site:assets.corsair.com/image/upload base-m75-wireless-apple-config","M75 WIRELESS Apple Special Edition Glacier Blue manual","\"CP-CORSAIR-CH-931D01G-NA-90c8ef\" XL"]
+
+Search strategy:
+- Search broadly: manufacturer product pages, Amazon, Best Buy, Newegg, retailer CDNs, press kits, review sites with high-res product galleries
+- Look for the specific color variant page or color selector
+- Prioritize the highest-resolution version you can find from ANY reliable source
+
+If a specific view is genuinely unavailable for this variant, omit it rather than returning a wrong angle.
+
+Evidence requirements (CRITICAL — publisher will reject low-evidence candidates):
+- Provide AT LEAST 1 evidence entry with a source URL
+- Tag each source with a tier (classification only, no ranking)
+
+Source tiers:
+- tier1: manufacturer / brand-official / press release
+- tier2: professional testing lab / review lab
+- tier3: authorized retailer / marketplace
+- tier4: community / forum / blog / user-generated
+- tier5: specs aggregator / product database
+- other: anything that doesn't fit the above
+Attach evidence_refs to each image — the URL(s) where you found this image being used as the product's image for this exact variant (typically the product page or review page it appears on).
+
+Return JSON:
+- "images": [{ "view": "view-name", "url": "direct-image-url", "source_page": "page-where-found", "alt_text": "image alt text if available", "evidence_refs": [{ "url": "...", "tier": "tier1|tier2|tier3|tier4|tier5|other" }, ...] }, ...]
+- "discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }

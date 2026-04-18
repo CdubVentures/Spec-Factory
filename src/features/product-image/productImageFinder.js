@@ -33,8 +33,8 @@ import {
   resolveViewConfig,
   resolveViewBudget,
   CANONICAL_VIEW_KEYS,
-  accumulateVariantDiscoveryLog,
 } from './productImageLlmAdapter.js';
+import { accumulateDiscoveryLog } from '../../core/finder/discoveryLog.js';
 import { runPerVariant } from '../../core/finder/runPerVariant.js';
 import { evaluateCarousel } from './carouselStrategy.js';
 import { resolveViewQualityConfig } from './viewQualityDefaults.js';
@@ -43,7 +43,6 @@ import { resolveIdentityAmbiguitySnapshot } from '../indexing/orchestration/shar
 import { readProductImages, mergeProductImageDiscovery } from './productImageStore.js';
 import { matchVariant } from './variantMatch.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
-import { configInt } from '../../shared/settingsAccessor.js';
 import { processImage, processHeroImage, loadModel, releaseModel, setInferenceConcurrency } from './imageProcessor.js';
 import { ensureModelReady } from './modelDownloader.js';
 import { computeFileContentHash } from '../../shared/contentHash.js';
@@ -556,14 +555,10 @@ export async function runProductImageFinder({
   const _mt = resolveModelTracking({ config, phaseKey: 'imageFinder', onModelResolved });
   const wrappedOnModelResolved = _mt.wrappedOnModelResolved;
 
-  // URL cooldown: skip discovery logs older than this cutoff
-  const urlCooldownDays = configInt(config, 'urlCooldownDays') ?? 90;
-  const urlCooldownCutoffIso = urlCooldownDays > 0
-    ? new Date(Date.now() - urlCooldownDays * 86400000).toISOString()
-    : '';
-
   // Read per-category settings
   const finderStore = specDb.getFinderStore('productImageFinder');
+  const urlHistoryEnabled = finderStore.getSetting('urlHistoryEnabled') === 'true';
+  const queryHistoryEnabled = finderStore.getSetting('queryHistoryEnabled') === 'true';
 
   // View config: explicit viewConfig setting → category defaults
   const rawViewConfig = finderStore.getSetting('viewConfig');
@@ -669,7 +664,24 @@ export async function runProductImageFinder({
   // Per-variant body: discovery + carousel strategy + LLM call + download/RMBG + persist.
   // Called by runPerVariant for each variant; return value is aggregated below.
   async function produceForVariant(variant) {
-    const previousDiscovery = accumulateVariantDiscoveryLog(previousPifRuns, variant.key, variant.variant_id, { cutoffIso: urlCooldownCutoffIso });
+    // Universal discovery-log history — scope: variant + mode (view vs hero).
+    // View-mode runs don't leak URLs to hero-mode runs and vice versa.
+    const pifSuppRows = (finderStore.listSuppressions?.(product.product_id) || [])
+      .filter((s) => s.variant_id === (variant.variant_id || '') && s.mode === mode);
+    const previousDiscovery = accumulateDiscoveryLog(previousPifRuns, {
+      runMatcher: (r) => {
+        const rId = r.response?.variant_id;
+        const rKey = r.response?.variant_key;
+        const variantMatch = (variant.variant_id && rId) ? rId === variant.variant_id : rKey === variant.key;
+        return variantMatch && r.response?.mode === mode;
+      },
+      includeUrls: urlHistoryEnabled,
+      includeQueries: queryHistoryEnabled,
+      suppressions: {
+        urlsChecked: new Set(pifSuppRows.filter((s) => s.kind === 'url').map((s) => s.item)),
+        queriesRun: new Set(pifSuppRows.filter((s) => s.kind === 'query').map((s) => s.item)),
+      },
+    });
 
     const variantImages = (pifDoc?.selected?.images || []).filter(img => matchVariant(img, { variantId: variant.variant_id, variantKey: variant.key }));
     const alreadyDownloadedUrls = new Set(variantImages.map(img => normalizeImageUrl(img.url)).filter(Boolean));
@@ -901,11 +913,8 @@ export async function runCarouselLoop({
   const viewPromptOverride = finderStore.getSetting('viewPromptOverride') || '';
   const heroPromptOverride = finderStore.getSetting('heroPromptOverride') || '';
 
-  // URL cooldown: skip discovery logs older than this cutoff (same contract as runProductImageFinder)
-  const urlCooldownDays = configInt(config, 'urlCooldownDays') ?? 90;
-  const urlCooldownCutoffIso = urlCooldownDays > 0
-    ? new Date(Date.now() - urlCooldownDays * 86400000).toISOString()
-    : '';
+  const urlHistoryEnabled = finderStore.getSetting('urlHistoryEnabled') === 'true';
+  const queryHistoryEnabled = finderStore.getSetting('queryHistoryEnabled') === 'true';
 
   const { familyModelCount, ambiguityLevel, siblingModels } = await resolveAmbiguityContext({
     config, category: product.category, brand: product.brand,
@@ -981,7 +990,24 @@ export async function runCarouselLoop({
     // Re-read fresh state from disk (discovery log accumulates across all calls)
     const pifDoc = readProductImages({ productId: product.product_id, productRoot });
     const previousPifRuns = Array.isArray(pifDoc?.runs) ? pifDoc.runs : [];
-    const previousDiscovery = accumulateVariantDiscoveryLog(previousPifRuns, variant.key, variant.variant_id, { cutoffIso: urlCooldownCutoffIso });
+    // Scope matches the current call's mode so view/hero histories stay separate.
+    const loopFinderStore = specDb.getFinderStore('productImageFinder');
+    const loopSuppRows = (loopFinderStore?.listSuppressions?.(product.product_id) || [])
+      .filter((s) => s.variant_id === (variant.variant_id || '') && s.mode === callMode);
+    const previousDiscovery = accumulateDiscoveryLog(previousPifRuns, {
+      runMatcher: (r) => {
+        const rId = r.response?.variant_id;
+        const rKey = r.response?.variant_key;
+        const variantMatch = (variant.variant_id && rId) ? rId === variant.variant_id : rKey === variant.key;
+        return variantMatch && r.response?.mode === callMode;
+      },
+      includeUrls: urlHistoryEnabled,
+      includeQueries: queryHistoryEnabled,
+      suppressions: {
+        urlsChecked: new Set(loopSuppRows.filter((s) => s.kind === 'url').map((s) => s.item)),
+        queriesRun: new Set(loopSuppRows.filter((s) => s.kind === 'query').map((s) => s.item)),
+      },
+    });
 
     const llmDeps = buildLlmCallDeps({
       config, logger,

@@ -10,11 +10,11 @@
  * enables the generic handler's source-aware candidate cleanup on run delete.
  */
 
-import { createFinderRouteHandler } from '../../../core/finder/finderRoutes.js';
+import { createFinderRouteHandler, createVariantFieldLoopHandler } from '../../../core/finder/finderRoutes.js';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { registerOperation, getOperationSignal, updateStage, updateModelInfo, updateQueueDelay, appendLlmCall, completeOperation, failOperation, cancelOperation, fireAndForget } from '../../../core/operations/index.js';
 import { createStreamBatcher } from '../../../core/llm/streamBatcher.js';
-import { runReleaseDateFinder } from '../releaseDateFinder.js';
+import { runReleaseDateFinder, runReleaseDateFinderLoop } from '../releaseDateFinder.js';
 import {
   deleteReleaseDateFinderRun,
   deleteReleaseDateFinderRuns,
@@ -30,6 +30,7 @@ export function registerReleaseDateFinderRoutes(ctx) {
 
   const genericHandler = createFinderRouteHandler({
     routePrefix: 'release-date-finder',
+    moduleId: 'releaseDateFinder',
     moduleType: 'rdf',
     phase: 'releaseDateFinder',
     fieldKeys: ['release_date'],
@@ -106,11 +107,26 @@ export function registerReleaseDateFinderRoutes(ctx) {
 
   const { jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs, logger } = ctx;
 
+  // Generic /loop handler — retries per variant up to perVariantAttemptBudget
+  // until the candidate reaches the publisher or LLM returns definitive unknown.
+  const loopHandler = createVariantFieldLoopHandler({
+    routePrefix: 'release-date-finder',
+    moduleType: 'rdf',
+    phase: 'releaseDateFinder',
+    requiredFields: ['release_date'],
+    loopOrchestrator: runReleaseDateFinderLoop,
+  })(ctx);
+
   return async function handleReleaseDateFinderRoutes(parts, params, method, req, res) {
     if (parts[0] !== 'release-date-finder') return false;
 
     const category = parts[1] || '';
     const productId = parts[2] || '';
+
+    // POST /release-date-finder/:category/:productId/loop — budget loop
+    if (method === 'POST' && category && productId && parts[3] === 'loop') {
+      return loopHandler(parts, params, method, req, res);
+    }
 
     // Custom POST: reads body for { variant_key } to support per-variant Run
     if (method === 'POST' && category && productId && !parts[3]) {

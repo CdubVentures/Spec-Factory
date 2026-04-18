@@ -5,6 +5,7 @@ import {
   formatTime,
   formatDateTime,
   formatTimezoneLabel,
+  parseBackendMs,
 } from '../dateTime.ts';
 
 const REF_ISO = '2026-04-17T18:30:45.123Z';
@@ -192,5 +193,35 @@ describe('formatTimezoneLabel', () => {
 
   it('returns UTC for UTC zone', () => {
     strictEqual(formatTimezoneLabel('UTC', WINTER), 'UTC');
+  });
+});
+
+describe('parseBackendMs', () => {
+  it('parses ISO-Z timestamp as UTC epoch ms', () => {
+    strictEqual(parseBackendMs('2026-04-17T21:24:10Z'), Date.UTC(2026, 3, 17, 21, 24, 10));
+  });
+
+  it('parses SQLite TZ-less timestamp as UTC (not local)', () => {
+    strictEqual(parseBackendMs('2026-04-17 21:24:10'), Date.UTC(2026, 3, 17, 21, 24, 10));
+  });
+
+  it('parses SQLite with fractional seconds as UTC', () => {
+    strictEqual(parseBackendMs('2026-04-17 21:24:10.500'), Date.UTC(2026, 3, 17, 21, 24, 10, 500));
+  });
+
+  it('returns NaN for null', () => {
+    strictEqual(Number.isNaN(parseBackendMs(null)), true);
+  });
+
+  it('returns NaN for undefined', () => {
+    strictEqual(Number.isNaN(parseBackendMs(undefined)), true);
+  });
+
+  it('returns NaN for empty string', () => {
+    strictEqual(Number.isNaN(parseBackendMs('')), true);
+  });
+
+  it('returns NaN for garbage', () => {
+    strictEqual(Number.isNaN(parseBackendMs('not-a-date')), true);
   });
 });

@@ -498,6 +498,17 @@ export function prepareStatements(db) {
       'SELECT * FROM field_candidates WHERE category = ? AND product_id = ? AND field_key = ? AND source_id = ?'
     ),
 
+    // WHY: Same source_id + different variant_id = distinct rows (UNIQUE uses
+    // variant_id_key = COALESCE(variant_id, '')). Lookup must match that key so
+    // callers can target a specific (source, variant) cell — e.g. submitCandidate
+    // threading evidence projection to the correct row when RDF dual-writes a
+    // variant-scoped row and a scalar (variant_id NULL) row under one source_id.
+    _getFieldCandidateBySourceIdAndVariant: db.prepare(
+      `SELECT * FROM field_candidates
+        WHERE category = ? AND product_id = ? AND field_key = ? AND source_id = ?
+          AND variant_id_key = COALESCE(?, '')`
+    ),
+
     _deleteFieldCandidateBySourceId: db.prepare(
       'DELETE FROM field_candidates WHERE category = ? AND product_id = ? AND field_key = ? AND source_id = ?'
     ),
@@ -512,6 +523,27 @@ export function prepareStatements(db) {
 
     _countFieldCandidatesBySourceId: db.prepare(
       'SELECT COUNT(*) AS total FROM field_candidates WHERE category = ? AND product_id = ? AND source_id = ?'
+    ),
+
+    // ── Field candidate evidence (relational projection) ───────────
+    _insertFieldCandidateEvidence: db.prepare(
+      `INSERT INTO field_candidate_evidence (candidate_id, url, tier, confidence)
+       VALUES (@candidate_id, @url, @tier, @confidence)`
+    ),
+    _deleteFieldCandidateEvidenceByCandidateId: db.prepare(
+      'DELETE FROM field_candidate_evidence WHERE candidate_id = ?'
+    ),
+    _listFieldCandidateEvidenceByCandidateId: db.prepare(
+      'SELECT * FROM field_candidate_evidence WHERE candidate_id = ? ORDER BY id ASC'
+    ),
+    _listFieldCandidateEvidenceByTier: db.prepare(
+      `SELECT e.* FROM field_candidate_evidence e
+         JOIN field_candidates c ON c.id = e.candidate_id
+         WHERE c.category = ? AND e.tier = ?
+         ORDER BY e.candidate_id, e.id`
+    ),
+    _countFieldCandidateEvidenceByCandidateId: db.prepare(
+      'SELECT COUNT(DISTINCT url) AS total FROM field_candidate_evidence WHERE candidate_id = ?'
     ),
 
     // ── Variants ────────────────────────────────────────────────────

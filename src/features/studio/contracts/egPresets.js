@@ -169,7 +169,7 @@ export function buildEgReleaseDateFieldRule(ctx) {
     },
     parse: {
       delimiters: [],
-      accepted_formats: ['YYYY-MM-DD', 'YYYY', 'MMM YYYY', 'Month YYYY'],
+      accepted_formats: ['YYYY-MM-DD', 'YYYY-MM', 'YYYY', 'MMM YYYY', 'Month YYYY'],
       range_separators: [],
       unit: null,
     },
@@ -194,7 +194,7 @@ export function buildEgReleaseDateFieldRule(ctx) {
     ui: {
       label: 'Release Date',
       group: 'general',
-      tooltip_md: 'First date the product was available for purchase. Accept YYYY-MM-DD, YYYY, MMM YYYY, or Month YYYY. If not provable with evidence, output unk with unknown_reason.',
+      tooltip_md: 'First date the product was available for purchase. Accept YYYY-MM-DD, YYYY-MM, YYYY, MMM YYYY, or Month YYYY. If not provable with evidence, output unk with unknown_reason.',
     },
     search_hints: {
       domain_hints: ['mousespecs.org', 'eloshapes.com', 'pcpartpicker.com', 'techpowerup.com'],

@@ -1,0 +1,1 @@
+{"brand":"Corsair","model":"M75 Wireless","base_model":"M75","variant":"color:light-blue"}

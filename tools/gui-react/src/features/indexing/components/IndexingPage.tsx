@@ -44,6 +44,7 @@ import {
 import { PickerPanel } from '../panels/PickerPanel.tsx';
 import { ProductHistoryPanel } from '../panels/ProductHistoryPanel.tsx';
 import { FINDER_PANELS } from '../state/finderPanelRegistry.generated.ts';
+import { DiscoveryHistoryDrawer } from '../../../shared/ui/finder/index.ts';
 
 export function IndexingPage() {
   const category = useUiStore((s) => s.category);
@@ -304,6 +305,8 @@ export function IndexingPage() {
           action failed: {actionError}
         </div>
       )}
+
+      <DiscoveryHistoryDrawer />
     </div>
   );
 }

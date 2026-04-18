@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useMutation, useQuery, type QueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client.ts';
 import { trafficColor, trafficTextColor, sourceBadgeClass, SOURCE_BADGE_FALLBACK } from '../../utils/colors.ts';
-import { hasKnownValue } from '../../utils/fieldNormalize.ts';
+import { hasKnownValue, formatCellValue } from '../../utils/fieldNormalize.ts';
 import { useFieldLabels } from '../../hooks/useFieldLabels.ts';
 import { pct } from '../../utils/formatting.ts';
 import {
@@ -121,9 +121,9 @@ function PropertyCard({
         </span>
         <span
           className={`font-mono text-sm font-semibold flex-1 truncate ${trafficTextColor(state.selected.color)}`}
-          title={String(state.selected.value ?? '')}
+          title={formatCellValue(state.selected.value)}
         >
-          {state.selected.value !== null && state.selected.value !== undefined ? String(state.selected.value) : ''}
+          {formatCellValue(state.selected.value)}
         </span>
         <span className="text-xs sf-text-muted ml-auto flex-shrink-0">
           {pct(state.selected.confidence)} conf

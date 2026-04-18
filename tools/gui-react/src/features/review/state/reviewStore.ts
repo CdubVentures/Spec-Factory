@@ -31,7 +31,6 @@ function resolveBrandFilterMode(selectedSize: number, availableSize: number): Br
 
 interface ReviewState {
   activeCell: ActiveCell | null;
-  drawerOpen: boolean;
 
   // Cell mode + inline editing
   cellMode: CellMode;
@@ -77,7 +76,6 @@ interface ReviewState {
 
 export const useReviewStore = create<ReviewState>((set, get) => ({
   activeCell: null,
-  drawerOpen: false,
 
   cellMode: 'viewing',
   editingValue: '',
@@ -94,9 +92,15 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
   runStatusFilter: 'all',
 
   openDrawer: (productId, field) => {
-    set({ activeCell: { productId, field }, drawerOpen: true });
+    set({ activeCell: { productId, field } });
   },
-  closeDrawer: () => set({ drawerOpen: false }),
+  closeDrawer: () => set({
+    activeCell: null,
+    cellMode: 'viewing',
+    editingValue: '',
+    originalEditingValue: '',
+    saveStatus: 'idle',
+  }),
 
   // Cell mode actions
   selectCell: (productId, field) => {
@@ -223,17 +227,20 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
   },
 }));
 
-// WHY: selectedField and selectedProductId are derived from activeCell, not stored.
+// WHY: selectedField, selectedProductId, and drawerOpen are derived from activeCell.
 export function selectSelectedField(state: ReviewState): string {
   return state.activeCell?.field ?? '';
 }
 export function selectSelectedProductId(state: ReviewState): string {
   return state.activeCell?.productId ?? '';
 }
+export function selectDrawerOpen(state: ReviewState): boolean {
+  return state.activeCell !== null;
+}
 
 // ── Focused state selectors (each subscribes to ONE field) ──
 export const useActiveCell = () => useReviewStore((s) => s.activeCell);
-export const useDrawerOpen = () => useReviewStore((s) => s.drawerOpen);
+export const useDrawerOpen = () => useReviewStore(selectDrawerOpen);
 export const useCellMode = () => useReviewStore((s) => s.cellMode);
 export const useEditingValue = () => useReviewStore((s) => s.editingValue);
 export const useOriginalEditingValue = () => useReviewStore((s) => s.originalEditingValue);

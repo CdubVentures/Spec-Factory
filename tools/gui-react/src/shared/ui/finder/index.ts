@@ -70,6 +70,8 @@ export { useShowMore } from './useShowMore.ts';
 export { FinderDiscoveryDetails } from './FinderDiscoveryDetails.tsx';
 export type { DiscoverySection } from './FinderDiscoveryDetails.tsx';
 export { FinderHowItWorks } from './FinderHowItWorks.tsx';
+export { DiscoveryHistoryButton } from './DiscoveryHistoryButton.tsx';
+export { DiscoveryHistoryDrawer } from './DiscoveryHistoryDrawer.tsx';
 export type {
   FinderHowItWorksProps,
   HiwSection,

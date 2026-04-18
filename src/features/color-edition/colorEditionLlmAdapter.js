@@ -13,39 +13,15 @@
 import { zodToLlmSchema } from '../../core/llm/zodToLlmSchema.js';
 import { resolvePromptTemplate } from '../../core/llm/resolvePromptTemplate.js';
 import { buildEvidencePromptBlock } from '../../core/finder/evidencePromptFragment.js';
+import { buildPreviousDiscoveryBlock } from '../../core/finder/discoveryLog.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
 import { colorEditionFinderResponseSchema, variantIdentityCheckResponseSchema } from './colorEditionSchema.js';
-
-/**
- * Accumulate urls_checked from all previous runs' discovery_logs.
- * Pure function — unions across runs, deduplicates.
- *
- * @param {object[]} previousRuns
- * @param {{ cutoffIso?: string }} [opts]
- * @returns {{ urlsAlreadyChecked: string[] }}
- */
-export function accumulateUrlsChecked(previousRuns, { cutoffIso = '' } = {}) {
-  const urlSet = new Set();
-  for (const run of previousRuns) {
-    if (cutoffIso && run.ran_at && run.ran_at < cutoffIso) continue;
-    const urls = run?.response?.discovery_log?.urls_checked;
-    if (Array.isArray(urls)) {
-      for (const u of urls) urlSet.add(u);
-    }
-  }
-
-  return { urlsAlreadyChecked: [...urlSet] };
-}
 
 /**
  * Build the known-inputs block for run N+1.
  * Accumulates colors, color_names, and editions across ALL non-rejected
  * runs (not just the latest). A color found in run 1 stays visible even
  * if run 2 missed it. The candidate gate is the safety net, not the prompt.
- *
- * WHY: URLs are NOT fed forward. The LLM should decide its own search
- * strategy fresh each run — injecting prior URLs suppresses exploration
- * and makes the LLM re-verify instead of discovering new sources.
  *
  * @param {object[]} previousRuns
  * @returns {object} { knownColors, knownColorNames, knownEditions }
@@ -141,16 +117,16 @@ Edition output rules:
 
 {{EVIDENCE_REQUIREMENTS}}
 
-Return JSON with these exact keys and shapes:
+{{PREVIOUS_DISCOVERY}}Return JSON with these exact keys and shapes:
 - "colors": ["atom", ...] (first = default)
 - "default_color": "atom" (must equal colors[0])
 - "color_names": { "atom": "Marketing Name", ... } (omit when atom IS the name)
 - "editions": { "slug": { "display_name": "Edition Name Only (e.g. 'Cyberpunk 2077: Arasaka Edition' — NOT '<brand> <model> – Cyberpunk 2077: Arasaka Edition')", "colors": ["atom+atom+atom"] }, ... } or {} if none found (colors is a single combo entry)
 - "siblings_excluded": ["Model Name", ...]
 - "discovery_log": { "confirmed_from_known": [], "added_new": [], "rejected_from_known": [], "urls_checked": [], "queries_run": [] }
-- "evidence_refs": [{ "url": "...", "tier": "tier1|tier2|tier3|tier4|tier5|other" }, ...]`;
+- "evidence_refs": [{ "url": "...", "tier": "tier1|tier2|tier3|tier4|tier5|other", "confidence": 0-100 }, ...]`;
 
-export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], product = {}, previousRuns = [], familyModelCount = 1, ambiguityLevel = 'easy', siblingModels = [], templateOverride = '', minEvidenceRefs = 1 }) {
+export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], product = {}, previousRuns = [], previousDiscovery = { urlsChecked: [], queriesRun: [] }, familyModelCount = 1, ambiguityLevel = 'easy', siblingModels = [], templateOverride = '', minEvidenceRefs = 1 }) {
   const brand = product.brand || '';
   const baseModel = product.base_model || '';
   const model = product.model || '';
@@ -180,6 +156,12 @@ export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], pr
 
   const template = templateOverride || CEF_DISCOVERY_DEFAULT_TEMPLATE;
 
+  const discoverySection = buildPreviousDiscoveryBlock({
+    urlsChecked: previousDiscovery.urlsChecked,
+    queriesRun: previousDiscovery.queriesRun,
+    scopeLabel: 'this product',
+  });
+
   return resolvePromptTemplate(template, {
     BRAND: brand,
     MODEL: model,
@@ -187,6 +169,7 @@ export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], pr
     IDENTITY_WARNING: identityWarning,
     PALETTE: palette,
     EVIDENCE_REQUIREMENTS: buildEvidencePromptBlock({ minEvidenceRefs }),
+    PREVIOUS_DISCOVERY: discoverySection,
   });
 }
 
@@ -199,6 +182,7 @@ export const COLOR_EDITION_FINDER_SPEC = {
     colors: domainArgs.colors,
     product: domainArgs.product,
     previousRuns: domainArgs.previousRuns || [],
+    previousDiscovery: domainArgs.previousDiscovery || { urlsChecked: [], queriesRun: [] },
     familyModelCount: domainArgs.familyModelCount || 1,
     ambiguityLevel: domainArgs.ambiguityLevel || 'easy',
     siblingModels: domainArgs.siblingModels || [],
@@ -342,9 +326,9 @@ Attach evidence_refs to each mapping (for match, new, and reject actions alike �
 Respond with JSON:
 {
   "mappings": [
-    { "new_key": "color:black", "match": "v_existing_id", "action": "match", "reason": "confirmed on ${brand.toLowerCase() || 'manufacturer'}.com — same color", "verified": true, "evidence_refs": [{"url": "https://${brand.toLowerCase() || 'manufacturer'}.com/product", "tier": "tier1"}] },
-    { "new_key": "color:deep-ocean-blue", "match": "v_rename_target", "action": "match", "reason": "renamed from ocean-blue, official name per manufacturer", "verified": true, "preferred_label": "Deep Ocean Blue", "evidence_refs": [{"url": "https://${brand.toLowerCase() || 'manufacturer'}.com/product", "tier": "tier1"}] },
-    { "new_key": "color:crimson-red", "match": null, "action": "new", "reason": "confirmed on ${brand.toLowerCase() || 'manufacturer'}.com and bestbuy.com", "verified": true, "evidence_refs": [{"url": "https://${brand.toLowerCase() || 'manufacturer'}.com/crimson", "tier": "tier1"}, {"url": "https://bestbuy.com/listing", "tier": "tier3"}] },
+    { "new_key": "color:black", "match": "v_existing_id", "action": "match", "reason": "confirmed on ${brand.toLowerCase() || 'manufacturer'}.com — same color", "verified": true, "evidence_refs": [{"url": "https://${brand.toLowerCase() || 'manufacturer'}.com/product", "tier": "tier1", "confidence": 95}] },
+    { "new_key": "color:deep-ocean-blue", "match": "v_rename_target", "action": "match", "reason": "renamed from ocean-blue, official name per manufacturer", "verified": true, "preferred_label": "Deep Ocean Blue", "evidence_refs": [{"url": "https://${brand.toLowerCase() || 'manufacturer'}.com/product", "tier": "tier1", "confidence": 95}] },
+    { "new_key": "color:crimson-red", "match": null, "action": "new", "reason": "confirmed on ${brand.toLowerCase() || 'manufacturer'}.com and bestbuy.com", "verified": true, "evidence_refs": [{"url": "https://${brand.toLowerCase() || 'manufacturer'}.com/crimson", "tier": "tier1", "confidence": 90}, {"url": "https://bestbuy.com/listing", "tier": "tier3", "confidence": 70}] },
     { "new_key": "color:rainbow-sparkle", "match": null, "action": "reject", "reason": "not found on official site or any retailer — likely hallucinated", "verified": true, "evidence_refs": [] }
   ],
   "remove": [],

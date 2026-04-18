@@ -408,12 +408,26 @@ function generateFinderPanelRegistry() {
     if (!m.panelFeaturePath || !m.panelExport) continue;
     lines.push(`  {`);
     lines.push(`    id: ${quote(m.id)},`);
+    lines.push(`    label: ${quote(m.moduleLabel || m.id)},`);
+    lines.push(`    moduleClass: ${quote(m.moduleClass || '')},`);
+    lines.push(`    scopeLevel: ${quote(deriveScopeLevel(m.moduleClass))},`);
+    lines.push(`    routePrefix: ${quote(m.routePrefix || '')},`);
     lines.push(`    component: lazy(() => import('../../${m.panelFeaturePath}/components/${m.panelExport}.tsx').then(m => ({ default: m.${m.panelExport} }))),`);
     lines.push(`  },`);
   }
   lines.push('] as const;\n');
 
   return lines.join('\n');
+}
+
+// WHY: Discovery-history drawer dispatches on scopeLevel — derived from moduleClass.
+// variantGenerator → product-scoped (flat), variantFieldProducer → variant-scoped
+// (2-level), variantArtifactProducer → variant+mode-scoped (3-level).
+function deriveScopeLevel(moduleClass) {
+  if (moduleClass === 'variantGenerator') return 'product';
+  if (moduleClass === 'variantFieldProducer') return 'variant';
+  if (moduleClass === 'variantArtifactProducer') return 'variant+mode';
+  return '';
 }
 
 // ── Generate moduleSettingsSections.generated.ts (Pipeline Settings sidebar) ──

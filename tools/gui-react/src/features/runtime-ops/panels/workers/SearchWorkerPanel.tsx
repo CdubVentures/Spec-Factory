@@ -372,7 +372,7 @@ function AttemptDetail({ attempt, workerId, onJourney, onResults, category }: {
   onJourney: () => void; onResults: () => void; category: string;
 }) {
   const [rawOpen, toggleRawOpen] = usePersistedToggle(`runtimeOps:searchDash:raw:${category}:${attempt.attempt_no}`, false);
-  const formatTime = useFormatTime(false, true);
+  const formatTime = useFormatTime(true, true);
   const triage = useMemo(() => computeTriageSummary(attempt.results ?? []), [attempt.results]);
   const results = attempt.results ?? [];
 

@@ -17,6 +17,7 @@ import {
   FinderDeleteConfirmModal,
   FinderSectionCard,
   FinderHowItWorks,
+  DiscoveryHistoryButton,
   useResolvedFinderModel,
   deriveFinderStatusChip,
   usePagination,
@@ -381,6 +382,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
         runDisabled={false}
         runLabel="Loop"
         onRun={handleLoopAll}
+        historyActionSlot={<DiscoveryHistoryButton finderId="productImageFinder" productId={productId} category={category} />}
         actionSlot={
           <div className="ml-auto flex items-center gap-1.5">
             <button

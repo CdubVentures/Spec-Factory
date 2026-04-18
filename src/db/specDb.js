@@ -33,6 +33,7 @@ import { FINDER_MODULES } from '../core/finder/finderModuleRegistry.js';
 import { createFinderSqlStore } from '../core/finder/finderSqlStore.js';
 import { generateFinderDdl } from '../core/finder/finderSqlDdl.js';
 import { createFieldCandidateStore } from './stores/fieldCandidateStore.js';
+import { createFieldCandidateEvidenceStore } from './stores/fieldCandidateEvidenceStore.js';
 import { createVariantStore } from './stores/variantStore.js';
 
 export class SpecDb {
@@ -40,6 +41,9 @@ export class SpecDb {
     this.db = new Database(dbPath);
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('synchronous = NORMAL');
+    // WHY: field_candidate_evidence.candidate_id FK uses ON DELETE CASCADE —
+    // SQLite requires this pragma to enforce references at runtime.
+    this.db.pragma('foreign_keys = ON');
     this.db.exec(SCHEMA);
     // WHY: Auto-create tables for all registered finder modules.
     // Uses IF NOT EXISTS so existing tables (like CEF in static SCHEMA) are no-ops.
@@ -154,10 +158,22 @@ export class SpecDb {
         _getFieldCandidatesStats: this._getFieldCandidatesStats,
         _insertFieldCandidate: this._insertFieldCandidate,
         _getFieldCandidateBySourceId: this._getFieldCandidateBySourceId,
+        _getFieldCandidateBySourceIdAndVariant: this._getFieldCandidateBySourceIdAndVariant,
         _deleteFieldCandidateBySourceId: this._deleteFieldCandidateBySourceId,
         _deleteFieldCandidatesBySourceType: this._deleteFieldCandidatesBySourceType,
         _getFieldCandidatesByValue: this._getFieldCandidatesByValue,
         _countFieldCandidatesBySourceId: this._countFieldCandidatesBySourceId,
+      },
+    });
+    this._fieldCandidateEvidenceStore = createFieldCandidateEvidenceStore({
+      db: this.db,
+      category: this.category,
+      stmts: {
+        _insertFieldCandidateEvidence: this._insertFieldCandidateEvidence,
+        _deleteFieldCandidateEvidenceByCandidateId: this._deleteFieldCandidateEvidenceByCandidateId,
+        _listFieldCandidateEvidenceByCandidateId: this._listFieldCandidateEvidenceByCandidateId,
+        _listFieldCandidateEvidenceByTier: this._listFieldCandidateEvidenceByTier,
+        _countFieldCandidateEvidenceByCandidateId: this._countFieldCandidateEvidenceByCandidateId,
       },
     });
     this._variantStore = createVariantStore({
@@ -515,6 +531,7 @@ export class SpecDb {
   // --- Source-centric field candidate methods ---
   insertFieldCandidate(opts) { this._fieldCandidateStore.insert(opts); }
   getFieldCandidateBySourceId(pid, fk, sid) { return this._fieldCandidateStore.getBySourceId(pid, fk, sid); }
+  getFieldCandidateBySourceIdAndVariant(pid, fk, sid, vid) { return this._fieldCandidateStore.getBySourceIdAndVariant(pid, fk, sid, vid); }
   deleteFieldCandidateBySourceId(pid, fk, sid) { this._fieldCandidateStore.deleteBySourceId(pid, fk, sid); }
   deleteFieldCandidatesBySourceType(pid, fk, st) { this._fieldCandidateStore.deleteBySourceType(pid, fk, st); }
   getFieldCandidatesByValue(pid, fk, val) { return this._fieldCandidateStore.getByValue(pid, fk, val); }
@@ -522,5 +539,14 @@ export class SpecDb {
   countFieldCandidatesBySourceId(pid, sid) { return this._fieldCandidateStore.countBySourceId(pid, sid); }
   updateFieldCandidateValue(pid, fk, sid, val) { this._fieldCandidateStore.updateValue(pid, fk, sid, val); }
   deleteFieldCandidatesByVariantId(pid, vid) { this._fieldCandidateStore.deleteByVariantId(pid, vid); }
+
+  // ── Field candidate evidence (relational projection) ─────────────
+  insertFieldCandidateEvidence(opts) { this._fieldCandidateEvidenceStore.insert(opts); }
+  insertFieldCandidateEvidenceMany(candidateId, refs) { return this._fieldCandidateEvidenceStore.insertMany(candidateId, refs); }
+  deleteFieldCandidateEvidenceByCandidateId(candidateId) { this._fieldCandidateEvidenceStore.deleteByCandidateId(candidateId); }
+  listFieldCandidateEvidenceByCandidateId(candidateId) { return this._fieldCandidateEvidenceStore.listByCandidateId(candidateId); }
+  listFieldCandidateEvidenceByTier(tier) { return this._fieldCandidateEvidenceStore.listByTier(tier); }
+  countFieldCandidateEvidenceByCandidateId(candidateId) { return this._fieldCandidateEvidenceStore.countByCandidateId(candidateId); }
+  replaceFieldCandidateEvidence(candidateId, refs) { return this._fieldCandidateEvidenceStore.replaceForCandidate(candidateId, refs); }
 
 }

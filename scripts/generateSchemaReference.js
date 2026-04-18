@@ -396,6 +396,13 @@ const lifecycleMap = {
     'Validated candidate values per (product, field, value). Rebuilds from product.json candidates[]. Status column tracks candidate vs resolved.',
     'yes'
   ),
+  field_candidate_evidence: life(
+    '.workspace/products/{pid}/product.json → candidates[].evidence_refs[]',
+    'yes',
+    'yes',
+    'Per-candidate evidence references (url, tier, confidence). Cascade-deleted with parent candidate; rebuilds from product.json evidence_refs alongside field_candidates.',
+    'yes'
+  ),
   field_audit_cache: life(
     'Re-run via POST /api/v1/test-mode/validate',
     'yes',

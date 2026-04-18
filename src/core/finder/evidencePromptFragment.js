@@ -1,16 +1,33 @@
 /**
- * Shared evidence-citation prompt fragment for finder LLMs (CEF, PIF).
+ * Shared evidence contract for finder LLMs (CEF, RDF; PIF excepted).
  *
- * Contract: teach the LLM how many URLs to cite and how to classify each by
- * tier. Tier is pure metadata — the fragment deliberately uses no preference
- * or ranking language. Publisher gates on `min_evidence_refs` count only.
+ * Single source of truth for the evidence shape — features import
+ * `evidenceRefsSchema` directly instead of re-declaring it locally.
+ *
+ * Shape: { url, tier, confidence } — confidence is per-source (0-100),
+ * distinct from candidate-level confidence. Tier is pure metadata; the
+ * prompt deliberately uses no preference or ranking language.
  */
 
+import { z } from 'zod';
 import { resolvePromptTemplate } from '../llm/resolvePromptTemplate.js';
+
+// ── Zod schema (universal shape) ─────────────────────────────────────
+
+export const evidenceRefSchema = z.object({
+  url: z.string(),
+  tier: z.string(),
+  confidence: z.number().int().min(0).max(100).default(0),
+});
+
+export const evidenceRefsSchema = z.array(evidenceRefSchema).default([]);
+
+// ── Prompt fragment ──────────────────────────────────────────────────
 
 export const EVIDENCE_PROMPT_FRAGMENT = `Evidence requirements (CRITICAL — publisher will reject low-evidence candidates):
 - Provide AT LEAST {{MIN_EVIDENCE_REFS}} evidence entry with a source URL
 - Tag each source with a tier (classification only, no ranking)
+- Rate your confidence (0-100) that each source supports the claim
 
 Source tiers:
 - tier1: manufacturer / brand-official / press release

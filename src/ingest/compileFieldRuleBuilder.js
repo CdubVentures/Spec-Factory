@@ -701,7 +701,6 @@ export function buildStudioFieldRule({
   }
 
   const nestedEvidence = isObject(rule.evidence) ? { ...rule.evidence } : {};
-  nestedEvidence.required = nestedEvidence.required !== false;
   nestedEvidence.min_evidence_refs = asInt(
     nestedEvidence.min_evidence_refs,
     asInt(rule.min_evidence_refs, 1)
@@ -710,6 +709,7 @@ export function buildStudioFieldRule({
     .map((value) => normalizeText(value))
     .filter(Boolean);
   nestedEvidence.tier_preference = evidenceTierPreference.length ? evidenceTierPreference : ['tier1', 'tier2', 'tier3'];
+  delete nestedEvidence.required;
   delete nestedEvidence.conflict_policy;
 
   // Build ai_assist block (auto-derive if not explicitly set)

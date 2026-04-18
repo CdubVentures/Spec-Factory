@@ -232,6 +232,76 @@ describe('rebuildFieldCandidatesFromJson', () => {
     assert.equal(row.variant_id, 'v_round_trip', 'variant_id preserved through reseed');
   });
 
+  // WHY: Rebuild Contract — field_candidate_evidence is a read projection of
+  // metadata.evidence_refs. Deleting the DB and reseeding from JSON must
+  // reconstruct both field_candidates AND field_candidate_evidence, otherwise
+  // the projection is silently empty after rebuild.
+  it('rebuild projects metadata.evidence_refs into field_candidate_evidence', () => {
+    writeProduct('mouse-ev-rebuild', {
+      category: 'mouse', product_id: 'mouse-ev-rebuild',
+      candidates: {
+        release_date: [
+          {
+            value: '2026-06-15',
+            source_id: 'rdf-mouse-ev-rebuild-1',
+            source_type: 'release_date_finder',
+            confidence: 90,
+            model: 'gpt-5',
+            variant_id: 'v_ev_rt',
+            validation: { valid: true, repairs: [], rejections: [] },
+            metadata: {
+              evidence_refs: [
+                { url: 'https://example.com/ev-a', tier: 'tier1', confidence: 95 },
+                { url: 'https://example.com/ev-b', tier: 'tier2', confidence: 70 },
+              ],
+            },
+          },
+        ],
+      },
+    });
+
+    rebuildFieldCandidatesFromJson({ specDb, productRoot: PRODUCT_ROOT });
+
+    const row = specDb.getFieldCandidateBySourceId('mouse-ev-rebuild', 'release_date', 'rdf-mouse-ev-rebuild-1');
+    assert.ok(row?.id, 'candidate row inserted');
+
+    const evidenceRows = specDb.listFieldCandidateEvidenceByCandidateId(row.id);
+    assert.equal(evidenceRows.length, 2, 'evidence rows projected on rebuild');
+
+    const byUrl = new Map(evidenceRows.map(r => [r.url, r]));
+    const a = byUrl.get('https://example.com/ev-a');
+    const b = byUrl.get('https://example.com/ev-b');
+    assert.ok(a && b, 'both evidence rows present');
+    assert.equal(a.tier, 'tier1');
+    assert.equal(a.confidence, 95);
+    assert.equal(b.tier, 'tier2');
+    assert.equal(b.confidence, 70);
+  });
+
+  it('rebuild skips evidence projection when metadata.evidence_refs is missing or empty', () => {
+    writeProduct('mouse-ev-empty', {
+      category: 'mouse', product_id: 'mouse-ev-empty',
+      candidates: {
+        release_date: [
+          {
+            value: '2026-07-01',
+            source_id: 'rdf-mouse-ev-empty-1',
+            source_type: 'release_date_finder',
+            confidence: 80,
+            variant_id: 'v_ev_empty',
+            validation: { valid: true, repairs: [], rejections: [] },
+            metadata: {}, // no evidence_refs
+          },
+        ],
+      },
+    });
+
+    rebuildFieldCandidatesFromJson({ specDb, productRoot: PRODUCT_ROOT });
+    const row = specDb.getFieldCandidateBySourceId('mouse-ev-empty', 'release_date', 'rdf-mouse-ev-empty-1');
+    assert.ok(row?.id);
+    assert.equal(specDb.listFieldCandidateEvidenceByCandidateId(row.id).length, 0);
+  });
+
   it('old-format: single source with run_number (no run_id) gets deterministic source_id', () => {
     writeProduct('mouse-rn-only', {
       category: 'mouse', product_id: 'mouse-rn-only',

@@ -207,14 +207,37 @@ describe('colorEditionFinderResponseSchema', () => {
       colors: ['black', 'white'],
       default_color: 'black',
       evidence_refs: [
-        { url: 'https://razer.com/m1', tier: 'tier1' },
-        { url: 'https://amazon.com/m1', tier: 'tier3' },
+        { url: 'https://razer.com/m1', tier: 'tier1', confidence: 95 },
+        { url: 'https://amazon.com/m1', tier: 'tier3', confidence: 70 },
       ],
     };
     const result = colorEditionFinderResponseSchema.parse(input);
     assert.equal(result.evidence_refs.length, 2);
-    assert.deepEqual(result.evidence_refs[0], { url: 'https://razer.com/m1', tier: 'tier1' });
-    assert.deepEqual(result.evidence_refs[1], { url: 'https://amazon.com/m1', tier: 'tier3' });
+    assert.deepEqual(result.evidence_refs[0], { url: 'https://razer.com/m1', tier: 'tier1', confidence: 95 });
+    assert.deepEqual(result.evidence_refs[1], { url: 'https://amazon.com/m1', tier: 'tier3', confidence: 70 });
+  });
+
+  it('evidence_refs entry defaults confidence to 0 when omitted', () => {
+    const input = {
+      colors: ['black'],
+      default_color: 'black',
+      evidence_refs: [{ url: 'https://razer.com/m1', tier: 'tier1' }],
+    };
+    const result = colorEditionFinderResponseSchema.parse(input);
+    assert.equal(result.evidence_refs[0].confidence, 0);
+  });
+
+  it('rejects evidence_refs entry with confidence out of 0-100 range', () => {
+    const inputLow = {
+      colors: ['black'], default_color: 'black',
+      evidence_refs: [{ url: 'u', tier: 'tier1', confidence: -5 }],
+    };
+    const inputHigh = {
+      colors: ['black'], default_color: 'black',
+      evidence_refs: [{ url: 'u', tier: 'tier1', confidence: 101 }],
+    };
+    assert.throws(() => colorEditionFinderResponseSchema.parse(inputLow));
+    assert.throws(() => colorEditionFinderResponseSchema.parse(inputHigh));
   });
 
   it('evidence_refs defaults to empty array when omitted', () => {
@@ -228,10 +251,10 @@ describe('colorEditionFinderResponseSchema', () => {
       colors: ['black'],
       default_color: 'black',
       evidence_refs: [
-        { url: 'u1', tier: 'tier1' },
-        { url: 'u2', tier: 'tier1' },
-        { url: 'u3', tier: 'tier3' },
-        { url: 'u4', tier: 'tier4' },
+        { url: 'u1', tier: 'tier1', confidence: 90 },
+        { url: 'u2', tier: 'tier1', confidence: 80 },
+        { url: 'u3', tier: 'tier3', confidence: 50 },
+        { url: 'u4', tier: 'tier4', confidence: 30 },
       ],
     };
     const result = colorEditionFinderResponseSchema.parse(input);
@@ -261,12 +284,12 @@ describe('colorEditionFinderResponseSchema', () => {
       colors: ['black'],
       default_color: 'black',
       evidence_refs: [
-        { url: 'u1', tier: 'tier1' },
-        { url: 'u2', tier: 'tier2' },
-        { url: 'u3', tier: 'tier3' },
-        { url: 'u4', tier: 'tier4' },
-        { url: 'u5', tier: 'tier5' },
-        { url: 'u6', tier: 'other' },
+        { url: 'u1', tier: 'tier1', confidence: 95 },
+        { url: 'u2', tier: 'tier2', confidence: 90 },
+        { url: 'u3', tier: 'tier3', confidence: 70 },
+        { url: 'u4', tier: 'tier4', confidence: 40 },
+        { url: 'u5', tier: 'tier5', confidence: 30 },
+        { url: 'u6', tier: 'other', confidence: 10 },
       ],
     };
     const result = colorEditionFinderResponseSchema.parse(input);
@@ -521,14 +544,14 @@ describe('variantIdentityCheckResponseSchema', () => {
         action: 'new',
         reason: 'confirmed on razer.com',
         verified: true,
-        evidence_refs: [{ url: 'https://razer.com/m1', tier: 'tier1' }],
+        evidence_refs: [{ url: 'https://razer.com/m1', tier: 'tier1', confidence: 95 }],
       }],
       remove: [],
     });
     assert.ok(result.success);
     assert.deepEqual(
       result.data.mappings[0].evidence_refs,
-      [{ url: 'https://razer.com/m1', tier: 'tier1' }],
+      [{ url: 'https://razer.com/m1', tier: 'tier1', confidence: 95 }],
     );
   });
 

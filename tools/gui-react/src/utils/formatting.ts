@@ -1,3 +1,5 @@
+import { parseBackendMs } from './dateTime.ts';
+
 export function pct(value: number, decimals = 1): string {
   return `${(value * 100).toFixed(decimals)}%`;
 }
@@ -14,7 +16,9 @@ export function compactNumber(value: number): string {
 
 export function relativeTime(isoStr: string): string {
   if (!isoStr) return '';
-  const diffMs = Date.now() - new Date(isoStr).getTime();
+  const startMs = parseBackendMs(isoStr);
+  if (!Number.isFinite(startMs)) return '';
+  const diffMs = Date.now() - startMs;
   const diffSec = Math.floor(diffMs / 1000);
   if (diffSec < 60) return `${diffSec}s ago`;
   const diffMin = Math.floor(diffSec / 60);

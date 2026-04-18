@@ -11,6 +11,7 @@ import {
   FinderDeleteConfirmModal,
   FinderSectionCard,
   FinderHowItWorks,
+  DiscoveryHistoryButton,
   useResolvedFinderModel,
   deriveFinderStatusChip,
   ColorSwatch,
@@ -260,6 +261,7 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
         tip="Discovers color variants and edition slugs for this product via LLM analysis."
         isRunning={isRunningCef}
         onRun={() => fire(cefRunUrl, {})}
+        historyActionSlot={<DiscoveryHistoryButton finderId="colorEditionFinder" productId={productId} category={category} />}
       >
         <FinderRunModelBadge
           labelPrefix="CEF"

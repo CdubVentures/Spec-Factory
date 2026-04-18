@@ -106,7 +106,7 @@ export const SETTINGS_CATEGORY_REGISTRY: readonly SettingsCategoryDef[] = Object
     label: 'Global',
     subtitle: 'Shared one-time module setup',
     sections: Object.freeze([
-      { id: 'rmbg-model', label: 'RMBG Model', tip: 'One-time HuggingFace access for the background-removal model used by the Product Image Finder. Not read after the model weights are downloaded.' },
+      { id: 'rmbg-model', label: 'RMBG Model', tip: 'One-time HuggingFace access for the background-removal model used by the Product Image Finder. Not read after the model weights are downloaded.', customComponent: 'RmbgModelSection' },
     ]),
   },
 ]);

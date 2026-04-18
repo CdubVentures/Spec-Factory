@@ -5,7 +5,7 @@ import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.t
 import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTypes.ts';
 import { extractEffortFromModelName } from '../../llm-config/state/llmEffortFromModelName.ts';
 import { resolveEffortLabel } from '../../llm-config/state/resolveEffortLabel.ts';
-import { useFormatTime } from '../../../utils/dateTime.ts';
+import { useFormatTime, parseBackendMs } from '../../../utils/dateTime.ts';
 import {
   MODULE_STYLES,
   MODULE_LABELS,
@@ -49,8 +49,10 @@ function hasStreamContent(raw: string): boolean {
 }
 
 function formatElapsed(startedAt: string, endedAt: string | null): string {
-  const end = endedAt ? new Date(endedAt).getTime() : Date.now();
-  const sec = Math.max(0, Math.floor((end - new Date(startedAt).getTime()) / 1000));
+  const end = endedAt ? parseBackendMs(endedAt) : Date.now();
+  const start = parseBackendMs(startedAt);
+  if (!Number.isFinite(end) || !Number.isFinite(start)) return '0:00';
+  const sec = Math.max(0, Math.floor((end - start) / 1000));
   const m = Math.floor(sec / 60);
   const s = sec % 60;
   return `${m}:${String(s).padStart(2, '0')}`;

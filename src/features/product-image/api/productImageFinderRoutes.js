@@ -32,6 +32,7 @@ export function registerProductImageFinderRoutes(ctx) {
   // Generic handler for GET list, GET single, DELETE run, DELETE all
   const genericHandler = createFinderRouteHandler({
     routePrefix: 'product-image-finder',
+    moduleId: 'productImageFinder',
     moduleType: 'pif',
     phase: 'imageFinder',
     fieldKeys: [],
@@ -135,6 +136,13 @@ export function registerProductImageFinderRoutes(ctx) {
 
   return async function handleProductImageFinderRoutes(parts, params, method, req, res) {
     if (parts[0] !== 'product-image-finder') return false;
+
+    // GET /product-image-finder/rmbg/status — report whether RMBG model weights are on disk
+    if (method === 'GET' && parts[1] === 'rmbg' && parts[2] === 'status') {
+      const productRoot = defaultProductRoot();
+      const modelPath = path.join(productRoot, '..', 'models', 'rmbg-2.0', 'model_int8.onnx');
+      return jsonRes(res, 200, { ready: fs.existsSync(modelPath), path: modelPath });
+    }
 
     const category = parts[1] || '';
     const productId = parts[2] || '';

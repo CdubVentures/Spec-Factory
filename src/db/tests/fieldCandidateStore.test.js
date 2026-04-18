@@ -586,6 +586,31 @@ describe('fieldCandidateStore', () => {
     assert.deepEqual(vids, ['v_black', 'v_white']);
   });
 
+  it('getFieldCandidateBySourceIdAndVariant disambiguates scalar vs variant-scoped rows', () => {
+    db.insertFieldCandidate({
+      productId: 'mouse-disambig', fieldKey: 'release_date',
+      sourceId: 'rdf-mouse-disambig-1', sourceType: 'rdf',
+      value: '2026-05-01', confidence: 95, model: '',
+      validationJson: {}, metadataJson: {},
+      variantId: 'v_color_white',
+    });
+    db.insertFieldCandidate({
+      productId: 'mouse-disambig', fieldKey: 'release_date',
+      sourceId: 'rdf-mouse-disambig-1', sourceType: 'rdf',
+      value: '2026-05-01', confidence: 95, model: '',
+      validationJson: {}, metadataJson: {},
+      variantId: null,
+    });
+
+    const scoped = db.getFieldCandidateBySourceIdAndVariant('mouse-disambig', 'release_date', 'rdf-mouse-disambig-1', 'v_color_white');
+    const scalar = db.getFieldCandidateBySourceIdAndVariant('mouse-disambig', 'release_date', 'rdf-mouse-disambig-1', null);
+    assert.ok(scoped, 'scoped row must be findable');
+    assert.ok(scalar, 'scalar row must be findable');
+    assert.notEqual(scoped.id, scalar.id, 'must resolve to distinct rows');
+    assert.equal(scoped.variant_id, 'v_color_white');
+    assert.equal(scalar.variant_id, null);
+  });
+
   it('deleteByVariantId removes all candidates for that variant across fields', () => {
     db.insertFieldCandidate({
       productId: 'mouse-vid-del', fieldKey: 'price',
