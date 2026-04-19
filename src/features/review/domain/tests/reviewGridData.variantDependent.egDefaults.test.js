@@ -82,9 +82,40 @@ test('colors emits variant_values keyed by variant_id with combo values + varian
   assert.equal(vv.v_black.variant_type, 'color');
   assert.deepEqual(vv.v_black.color_atoms, ['black']);
   assert.equal(vv.v_black.variant_key, 'color:black');
-  assert.equal(vv.v_black.confidence, 1.0);
+  // WHY: No CEF field_candidates seeded → no honest confidence to report.
+  // Contract: confidence is derived from field_candidates (LLM-rated, normalized
+  // to 0-1), not stamped. Falls to 0 when no candidate data exists for the variant.
+  assert.equal(vv.v_black.confidence, 0);
   assert.equal(vv.v_white.value, 'white');
   assert.equal(vv.v_white.variant_key, 'color:white');
+});
+
+test('colors variant_values.confidence reads from CEF field_candidates, normalized to 0-1', async () => {
+  const variants = [
+    { variant_id: 'v_black', variant_key: 'color:black', variant_label: 'Black',
+      variant_type: 'color', color_atoms: ['black'], edition_slug: null },
+    { variant_id: 'v_white', variant_key: 'color:white', variant_label: 'White',
+      variant_type: 'color', color_atoms: ['white'], edition_slug: null },
+  ];
+  // Backend stores integer 0-100 (LLM scale); frontend grid expects fraction 0-1.
+  const candidates = [
+    { field_key: 'colors', source_type: 'cef', variant_id: 'v_black', confidence: 85, value: '["black"]', status: 'candidate' },
+    { field_key: 'colors', source_type: 'cef', variant_id: 'v_white', confidence: 72, value: '["white"]', status: 'candidate' },
+  ];
+  const specDb = makeSpecDbStub({ variants, candidates });
+  const layout = makeLayout([{ key: 'colors', variant_dependent: false }]);
+
+  const payload = await buildProductReviewPayload({
+    storage: {}, config: {}, category: 'mouse', productId: 'p1',
+    layout, specDb, catalogProduct: { brand: 'Corsair', model: 'M75' },
+  });
+
+  const vv = payload.fields.colors.variant_values;
+  assert.equal(vv.v_black.confidence, 0.85, 'integer 85 → fraction 0.85');
+  assert.equal(vv.v_white.confidence, 0.72, 'integer 72 → fraction 0.72');
+  // Field-level selected.confidence = min across per-variant = min(0.85, 0.72) = 0.72
+  assert.equal(payload.fields.colors.selected.confidence, 0.72,
+    'field-level colors.confidence = min per-variant (weakest-link aggregate)');
 });
 
 test('editions emits variant_values keyed by variant_id with edition_slug values', async () => {

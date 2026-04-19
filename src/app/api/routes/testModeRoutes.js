@@ -1,3 +1,5 @@
+import { loadComponentDbsFromSpecDb } from '../../../db/helpers/componentDbLoader.js';
+
 export function registerTestModeRoutes(ctx) {
   const {
     jsonRes,
@@ -42,7 +44,9 @@ export function registerTestModeRoutes(ctx) {
       }
       const auditFieldRules = { fields: compiledRules.fields };
       let auditKnownValues = compiledRules.known_values || {};
-      const auditComponentDBs = compiledRules.component_dbs || {};
+      // WHY: Source component DBs from SQL (component_identity/values/aliases)
+      // — the blob no longer carries this data.
+      const auditComponentDBs = loadComponentDbsFromSpecDb(runtimeSpecDb);
 
       // WHY: Merge DB-discovered enum values into the compiled known values
       if (runtimeSpecDb && mergeDiscoveredEnums && buildDiscoveredEnumMap) {

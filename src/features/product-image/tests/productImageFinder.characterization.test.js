@@ -274,9 +274,12 @@ describe('characterization: runProductImageFinder', () => {
     specDb = new SpecDb({ dbPath: DB_PATH, category: 'mouse' });
   });
 
-  after(() => {
+  after(async () => {
     specDb?.close();
-    testServer?.close();
+    // WHY: close() alone only stops new connections — lingering keep-alives
+    // keep the event loop busy and block the suite from exiting.
+    testServer?.closeAllConnections?.();
+    await new Promise((resolve) => (testServer ? testServer.close(resolve) : resolve()));
     cleanup(TMP_ROOT);
   });
 

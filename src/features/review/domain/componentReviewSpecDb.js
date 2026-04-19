@@ -6,6 +6,7 @@
 import path from 'node:path';
 import { confidenceColor } from './confidenceColor.js';
 import { evaluateVarianceBatch } from './varianceEvaluator.js';
+import { loadComponentDbsFromSpecDb } from '../../../db/helpers/componentDbLoader.js';
 import {
   buildComponentReviewSyntheticCandidateId,
   buildReferenceComponentCandidateId,
@@ -45,15 +46,17 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
     resolveDeclaredComponentPropertyColumns({ fieldRules, componentType })
   );
 
-  // Immutable reference baseline for this component type from compiled_rules blob.
+  // WHY: Reference baseline sourced from SQL (component_identity/values/aliases)
+  // via loadComponentDbsFromSpecDb — no longer from a stale blob copy. After this
+  // change the baseline converges with the live identity, so user edits are
+  // reflected without requiring a recompile.
   const refDbByIdentity = new Map();
   const refDbByName = new Map();
   try {
-    const compiledRules = specDb.getCompiledRules() || {};
-    const allComponentDbs = compiledRules.component_dbs || {};
+    const allComponentDbs = loadComponentDbsFromSpecDb(specDb);
     const matchedDb = Object.values(allComponentDbs).find(db => db?.component_type === componentType);
     if (matchedDb) {
-      const items = toArray(matchedDb.items || Object.values(matchedDb.entries || {}));
+      const items = Object.values(matchedDb.entries || {});
       for (const item of items) {
         const name = String(item?.name || item?.canonical_name || '').trim();
         if (!name) continue;

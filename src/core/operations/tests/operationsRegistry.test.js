@@ -233,6 +233,91 @@ describe('appendLlmCall', () => {
     assert.equal(listOperations()[0].llmCalls[0].label, 'Discovery');
     assert.deepEqual(listOperations()[0].llmCalls[0].response, { ok: true });
   });
+
+  // ── Per-call model-context fields (isFallback, thinking, webSearch, effortLevel, accessMode) ──
+
+  it('preserves isFallback on initial append', () => {
+    const op = registerOperation(VALID_OP);
+    appendLlmCall({ id: op.id, call: { prompt: { system: 's', user: 'u' }, response: null, model: 'gpt-5.4-mini', isFallback: false, label: 'Discovery' } });
+    assert.equal(listOperations()[0].llmCalls[0].isFallback, false);
+  });
+
+  it('preserves all model-context fields on initial append', () => {
+    const op = registerOperation(VALID_OP);
+    appendLlmCall({
+      id: op.id,
+      call: {
+        prompt: { system: 's', user: 'u' }, response: null, model: 'gpt-5.4',
+        isFallback: true, thinking: true, webSearch: true, effortLevel: 'xhigh', accessMode: 'lab',
+        label: 'Discovery',
+      },
+    });
+    const call = listOperations()[0].llmCalls[0];
+    assert.equal(call.isFallback, true);
+    assert.equal(call.thinking, true);
+    assert.equal(call.webSearch, true);
+    assert.equal(call.effortLevel, 'xhigh');
+    assert.equal(call.accessMode, 'lab');
+  });
+
+  it('preserves model-context fields through smart update (pending → response)', () => {
+    const op = registerOperation(VALID_OP);
+    appendLlmCall({
+      id: op.id,
+      call: { prompt: { system: 's', user: 'u' }, response: null, model: 'gpt-5.4-mini',
+        isFallback: false, thinking: true, webSearch: false, effortLevel: 'xhigh', accessMode: 'lab', label: 'Discovery' },
+    });
+    appendLlmCall({
+      id: op.id,
+      call: { prompt: { system: 's', user: 'u' }, response: { ok: true }, model: 'gpt-5.4-mini',
+        isFallback: false, thinking: true, webSearch: false, effortLevel: 'xhigh', accessMode: 'lab', label: 'Discovery' },
+    });
+    assert.equal(listOperations()[0].llmCalls.length, 1);
+    const call = listOperations()[0].llmCalls[0];
+    assert.equal(call.isFallback, false);
+    assert.equal(call.thinking, true);
+    assert.equal(call.webSearch, false);
+    assert.equal(call.effortLevel, 'xhigh');
+    assert.equal(call.accessMode, 'lab');
+    assert.deepEqual(call.response, { ok: true });
+  });
+
+  it('each call keeps its own isFallback independent of others', () => {
+    // Two separate calls — primary (mini, not fallback) and fallback (gpt-5.4, is fallback)
+    const op = registerOperation(VALID_OP);
+    appendLlmCall({
+      id: op.id,
+      call: { prompt: { system: 's1', user: 'u1' }, response: { ok: true }, model: 'gpt-5.4-mini',
+        isFallback: false, effortLevel: 'xhigh', label: 'Discovery' },
+    });
+    appendLlmCall({
+      id: op.id,
+      call: { prompt: { system: 's2', user: 'u2' }, response: { ok: true }, model: 'gpt-5.4',
+        isFallback: true, effortLevel: 'xhigh', label: 'Discovery' },
+    });
+    const calls = listOperations()[0].llmCalls;
+    assert.equal(calls.length, 2);
+    assert.equal(calls[0].isFallback, false);
+    assert.equal(calls[0].model, 'gpt-5.4-mini');
+    assert.equal(calls[1].isFallback, true);
+    assert.equal(calls[1].model, 'gpt-5.4');
+  });
+
+  it('broadcasts llm-call-append with isFallback field', () => {
+    const broadcastSpy = [];
+    initOperationsRegistry({ broadcastWs: (channel, data) => broadcastSpy.push({ channel, data }) });
+    const op = registerOperation(VALID_OP);
+    broadcastSpy.length = 0;
+    appendLlmCall({
+      id: op.id,
+      call: { prompt: { system: 's', user: 'u' }, response: null, model: 'gpt-5.4',
+        isFallback: true, effortLevel: 'xhigh', label: 'Discovery' },
+    });
+    const append = broadcastSpy.find((m) => m.channel === 'operations' && m.data.action === 'llm-call-append');
+    assert.ok(append, 'append broadcast fired');
+    assert.equal(append.data.call.isFallback, true);
+    assert.equal(append.data.call.effortLevel, 'xhigh');
+  });
 });
 
 // ── updateModelInfo ──────────────────────────────────────────────────

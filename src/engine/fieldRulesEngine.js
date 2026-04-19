@@ -5,8 +5,8 @@ import {
   normalizeKnownValues,
   normalizeParseTemplates,
   normalizeCrossValidation,
-  normalizeComponentDbPayload
 } from '../field-rules/loader.js';
+import { loadComponentDbsFromSpecDb } from '../db/helpers/componentDbLoader.js';
 import { applyKeyMigrations as applyMigrationDoc } from '../field-rules/migrations.js';
 import { projectFieldRulesForConsumer } from '../field-rules/consumerGate.js';
 import {
@@ -90,10 +90,9 @@ export class FieldRulesEngine {
       const knownValues = normalizeKnownValues(blob.known_values || {});
       const parseTemplates = normalizeParseTemplates(blob.parse_templates || {}, rules);
       const crossValidation = normalizeCrossValidation(blob.cross_validation_rules || {}, rules);
-      const componentDBs = {};
-      for (const [key, raw] of Object.entries(blob.component_dbs || {})) {
-        componentDBs[normalizeFieldKey(key)] = normalizeComponentDbPayload(raw, key);
-      }
+      // WHY: componentDBs now source from SQL (component_identity/values/aliases)
+      // instead of a duplicate copy in the blob. Loader pre-builds __index Maps.
+      const componentDBs = loadComponentDbsFromSpecDb(options.specDb);
       const uiFieldCatalog = blob.ui_field_catalog || { category, fields: [] };
       keyMigrations = blob.key_migrations || {};
       loaded = { category, rules, knownValues, parseTemplates,

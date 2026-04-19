@@ -80,6 +80,14 @@ export interface LlmCallRecord {
   readonly variant?: string;
   readonly mode?: string;
   readonly label?: string;
+  // WHY: Per-call model context — captured at the moment of call.
+  //   `op.modelInfo` is overwrite-only (fallback replaces primary), so these
+  //   per-call fields are the only honest record of what was used per attempt.
+  readonly isFallback?: boolean;
+  readonly thinking?: boolean;
+  readonly webSearch?: boolean;
+  readonly effortLevel?: string;
+  readonly accessMode?: string;
   // WHY: Mirrors llmClient.js emitUsage wire format (snake_case). No transform needed.
   readonly usage?: {
     readonly prompt_tokens: number;

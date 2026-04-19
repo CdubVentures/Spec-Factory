@@ -42,7 +42,6 @@ export interface RuntimeSettingDefaults {
   llmCostOutputPer1M: number;
   llmMaxOutputTokens: number;
   llmMaxOutputTokensPlan: number;
-  llmMaxOutputTokensPlanFallback: number;
   llmMaxOutputTokensTriage: number;
   llmMaxOutputTokensReasoning: number;
   llmMaxTokens: number;

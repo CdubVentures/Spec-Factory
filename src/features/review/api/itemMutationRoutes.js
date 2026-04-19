@@ -62,7 +62,7 @@ async function handleReviewItemOverrideMutationEndpoint({
       const sourceToken = body?.candidateSource ?? body?.candidate_source ?? 'candidate_override';
 
       // Flow through submitCandidate — validates, dual-writes, auto-publishes.
-      const result = submitCandidate({
+      const result = await submitCandidate({
         category,
         productId,
         fieldKey: field,
@@ -98,7 +98,7 @@ async function handleReviewItemOverrideMutationEndpoint({
     const manualEvidence = buildManualOverrideEvidence({ mode, value, body });
 
     // Flow through submitCandidate with confidence 1.0 so it auto-publishes.
-    const result = submitCandidate({
+    const result = await submitCandidate({
       category,
       productId,
       fieldKey: field,

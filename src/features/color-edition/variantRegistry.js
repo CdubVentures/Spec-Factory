@@ -43,19 +43,26 @@ export function generateVariantId(productId, variantKey) {
 export function buildVariantRegistry({ productId, colors = [], colorNames = {}, editions = {} }) {
   const now = new Date().toISOString();
 
-  // WHY: Same reverse lookup as buildVariantList — maps edition combo string
-  // to its slug so we can detect which colors[] entries are edition combos.
-  const comboToEdition = new Map();
+  // WHY: Only MULTI-ATOM combos dedupe against editions. The CEF prompt requires
+  // every edition's combo entry to also appear in colors[] — for multi-atom
+  // combos like "black+red+yellow", that entry IS the edition, so we collapse.
+  // Single-atom entries are always plain colorways: "black" is the base black
+  // colorway, not the same thing as an edition that happens to be black-bodied.
+  // Pre-fix regression (M75 Wireless): single-atom editions absorbed the plain
+  // color entry, losing a variant and routing edition URLs onto the plain color.
+  const multiAtomComboToEdition = new Map();
   for (const [slug, ed] of Object.entries(editions)) {
     const combo = (ed.colors || [])[0];
-    if (combo) comboToEdition.set(combo, { slug, displayName: ed.display_name || slug });
+    if (combo && combo.includes('+')) {
+      multiAtomComboToEdition.set(combo, { slug, displayName: ed.display_name || slug });
+    }
   }
 
   const registry = [];
   const seenEditionSlugs = new Set();
 
   for (const entry of colors) {
-    const edition = comboToEdition.get(entry);
+    const edition = multiAtomComboToEdition.get(entry);
     if (edition) {
       seenEditionSlugs.add(edition.slug);
       const variantKey = `edition:${edition.slug}`;
@@ -86,7 +93,10 @@ export function buildVariantRegistry({ productId, colors = [], colorNames = {}, 
     }
   }
 
-  // WHY: Editions whose combo is NOT in the colors array still need registry entries.
+  // WHY: All editions not already collapsed via a multi-atom combo get their
+  // own entry here. Single-atom editions always land here (since they never
+  // dedupe against plain colors), as do editions whose combo was never listed
+  // in colors[].
   for (const [slug, ed] of Object.entries(editions)) {
     if (seenEditionSlugs.has(slug)) continue;
     const combo = (ed.colors || [])[0] || '';

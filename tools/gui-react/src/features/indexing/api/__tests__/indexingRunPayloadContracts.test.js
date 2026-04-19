@@ -94,7 +94,6 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
       llmModelValidate: '  gpt-validate  ',
       llmModelWrite: '  gpt-write  ',
       llmPlanFallbackModel: '  gpt-plan-fallback  ',
-      llmMaxOutputTokensPlanFallback: '135',
     }),
     parsedValues: createParsedValues({
       parsedIdentityGatePublishThreshold: 1.5,
@@ -124,8 +123,6 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
       // In the real flow, deriveIndexingRunStartParsedValues generates these.
       parsedLlmMaxOutputTokensPlan: 128,
       parsedLlmMaxOutputTokensReasoning: 131,
-      parsedLlmMaxOutputTokensPlanFallback: 135,
-      parsedLlmMaxOutputTokensReasoningFallback: 138,
     }),
     runControlPayload: {
       reviewMode: true,

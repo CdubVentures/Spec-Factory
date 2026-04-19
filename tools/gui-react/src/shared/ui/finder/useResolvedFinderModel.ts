@@ -53,6 +53,7 @@ export function useResolvedFinderModel(phaseId: LlmOverridePhaseId): ResolvedFin
       llmMaxOutputTokensTriage: policy.tokens?.triage ?? 0,
       llmTimeoutMs: policy.timeoutMs ?? 0,
       llmMaxTokens: policy.tokens?.maxTokens ?? 0,
+      llmReasoningBudget: policy.reasoning?.budget ?? 0,
     };
     const overrides: LlmPhaseOverrides = (policy.phaseOverrides ?? {}) as LlmPhaseOverrides;
     const resolved = resolvePhaseModel(overrides, phaseId, globalDraft);

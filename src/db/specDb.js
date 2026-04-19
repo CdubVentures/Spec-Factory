@@ -174,6 +174,7 @@ export class SpecDb {
         _listFieldCandidateEvidenceByCandidateId: this._listFieldCandidateEvidenceByCandidateId,
         _listFieldCandidateEvidenceByTier: this._listFieldCandidateEvidenceByTier,
         _countFieldCandidateEvidenceByCandidateId: this._countFieldCandidateEvidenceByCandidateId,
+        _countFieldCandidateEvidenceSplitByCandidateId: this._countFieldCandidateEvidenceSplitByCandidateId,
       },
     });
     this._variantStore = createVariantStore({
@@ -547,6 +548,7 @@ export class SpecDb {
   listFieldCandidateEvidenceByCandidateId(candidateId) { return this._fieldCandidateEvidenceStore.listByCandidateId(candidateId); }
   listFieldCandidateEvidenceByTier(tier) { return this._fieldCandidateEvidenceStore.listByTier(tier); }
   countFieldCandidateEvidenceByCandidateId(candidateId) { return this._fieldCandidateEvidenceStore.countByCandidateId(candidateId); }
+  countFieldCandidateEvidenceSplitByCandidateId(candidateId) { return this._fieldCandidateEvidenceStore.countSplitByCandidateId(candidateId); }
   replaceFieldCandidateEvidence(candidateId, refs) { return this._fieldCandidateEvidenceStore.replaceForCandidate(candidateId, refs); }
 
 }

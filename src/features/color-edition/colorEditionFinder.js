@@ -311,6 +311,11 @@ export async function runColorEditionFinder({
     prompt: { system: systemPrompt, user: userMessage },
     response: null,
     model: modelTracking.actualModel,
+    isFallback: modelTracking.actualFallbackUsed,
+    thinking: modelTracking.actualThinking,
+    webSearch: modelTracking.actualWebSearch,
+    effortLevel: modelTracking.actualEffortLevel,
+    accessMode: modelTracking.actualAccessMode,
     label: 'Discovery',
   });
 
@@ -390,6 +395,11 @@ export async function runColorEditionFinder({
       siblings_excluded: Array.isArray(response?.siblings_excluded) ? response.siblings_excluded : [],
       discovery_log: response?.discovery_log || {} },
     model: modelTracking.actualModel,
+    isFallback: modelTracking.actualFallbackUsed,
+    thinking: modelTracking.actualThinking,
+    webSearch: modelTracking.actualWebSearch,
+    effortLevel: modelTracking.actualEffortLevel,
+    accessMode: modelTracking.actualAccessMode,
     usage,
     label: 'Discovery',
   });
@@ -554,6 +564,11 @@ export async function runColorEditionFinder({
         prompt: { system: identityCheckPrompt, user: identityCheckUser },
         response: null,
         model: modelTracking.actualModel,
+        isFallback: modelTracking.actualFallbackUsed,
+        thinking: modelTracking.actualThinking,
+        webSearch: modelTracking.actualWebSearch,
+        effortLevel: modelTracking.actualEffortLevel,
+        accessMode: modelTracking.actualAccessMode,
         label: 'Identity Check',
       });
 
@@ -570,6 +585,11 @@ export async function runColorEditionFinder({
         prompt: { system: identityCheckPrompt, user: identityCheckUser },
         response: identityCheckResult,
         model: modelTracking.actualModel,
+        isFallback: modelTracking.actualFallbackUsed,
+        thinking: modelTracking.actualThinking,
+        webSearch: modelTracking.actualWebSearch,
+        effortLevel: modelTracking.actualEffortLevel,
+        accessMode: modelTracking.actualAccessMode,
         usage: idUsage || null,
         label: 'Identity Check',
       });
@@ -840,6 +860,10 @@ export async function runColorEditionFinder({
     specDb.deleteFieldCandidatesBySourceType?.(product.product_id, 'colors', 'cef');
     specDb.deleteFieldCandidatesBySourceType?.(product.product_id, 'editions', 'cef');
 
+    // WHY: Run-scoped HEAD-check dedup cache. The same tier1 URL may appear on
+    // every variant when one product page covers all colorways — we fetch once.
+    const evidenceCache = new Map();
+
     for (const variant of merged.variant_registry) {
       if (variant.retired) continue;
 
@@ -872,7 +896,7 @@ export async function runColorEditionFinder({
       if (variant.variant_type === 'color') {
         const atom = variant.variant_key.replace(/^color:/, '');
         const name = colorNamesMap[atom];
-        submitCandidate({
+        await submitCandidate({
           category: product.category,
           productId: product.product_id,
           fieldKey: 'colors',
@@ -888,6 +912,7 @@ export async function runColorEditionFinder({
           appDb,
           config,
           variantId: variant.variant_id,
+          evidenceCache,
         });
       } else if (variant.variant_type === 'edition') {
         const slug = variant.edition_slug || variant.variant_key.replace(/^edition:/, '');
@@ -895,7 +920,7 @@ export async function runColorEditionFinder({
         const editionMeta = { ...baseMetadata, edition_display_name: variant.edition_display_name || variant.variant_label || slug };
 
         // Row under 'editions': the edition slug itself
-        submitCandidate({
+        await submitCandidate({
           category: product.category,
           productId: product.product_id,
           fieldKey: 'editions',
@@ -911,12 +936,13 @@ export async function runColorEditionFinder({
           appDb,
           config,
           variantId: variant.variant_id,
+          evidenceCache,
         });
 
         // Row under 'colors': the edition's combo, so the colors grid row for
         // this combo has the same per-variant evidence as the edition row.
         if (combo) {
-          submitCandidate({
+          await submitCandidate({
             category: product.category,
             productId: product.product_id,
             fieldKey: 'colors',
@@ -932,6 +958,7 @@ export async function runColorEditionFinder({
             appDb,
             config,
             variantId: variant.variant_id,
+            evidenceCache,
           });
         }
       }

@@ -522,48 +522,6 @@ test('collectPublishedSourcesForVariant: candidate without variant_key contribut
   assert.equal(out.length, 0);
 });
 
-// ── maxSourceConfidence (derived row confidence) ────────────────
-
-test('maxSourceConfidence: empty array returns null', async () => {
-  const mod = await load();
-  assert.equal(mod.maxSourceConfidence([]), null);
-});
-
-test('maxSourceConfidence: all-null array returns null', async () => {
-  const mod = await load();
-  const sources = [
-    { url: 'a', tier: null, confidence: null },
-    { url: 'b', tier: null, confidence: null },
-  ];
-  assert.equal(mod.maxSourceConfidence(sources), null);
-});
-
-test('maxSourceConfidence: picks max and normalizes to 0-1 scale', async () => {
-  const mod = await load();
-  const sources = [
-    { url: 'a', tier: 'tier1', confidence: 85 },
-    { url: 'b', tier: 'tier2', confidence: 98 },
-    { url: 'c', tier: 'tier1', confidence: 70 },
-  ];
-  assert.equal(mod.maxSourceConfidence(sources), 0.98);
-});
-
-test('maxSourceConfidence: ignores null entries when computing max', async () => {
-  const mod = await load();
-  const sources = [
-    { url: 'a', tier: null, confidence: null },
-    { url: 'b', tier: 'tier1', confidence: 72 },
-    { url: 'c', tier: null, confidence: null },
-  ];
-  assert.equal(mod.maxSourceConfidence(sources), 0.72);
-});
-
-test('maxSourceConfidence: single source returns its value normalized', async () => {
-  const mod = await load();
-  const sources = [{ url: 'a', tier: 'tier1', confidence: 55 }];
-  assert.equal(mod.maxSourceConfidence(sources), 0.55);
-});
-
 test('collectPublishedSources: handles large input and dedupes + sorts correctly', async () => {
   const mod = await load();
   const cs = [];

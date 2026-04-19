@@ -14,6 +14,7 @@ export interface LlmPhaseOverride {
   maxOutputTokens: number | null;
   timeoutMs: number | null;
   maxContextTokens: number | null;
+  reasoningBudget: number | null;
   webSearch: boolean;
   thinking: boolean;
   thinkingEffort: string;

@@ -45,7 +45,6 @@ export function deriveRuntimeLlmTokenContractPresetMax({
     ...(Array.isArray(indexingLlmConfig?.token_presets) ? indexingLlmConfig.token_presets : []),
     runtimeManifestDefaults.llmMaxOutputTokensPlan,
     runtimeManifestDefaults.llmMaxOutputTokensReasoning,
-    runtimeManifestDefaults.llmMaxOutputTokensPlanFallback,
   ];
   const cleaned = seeded
     .map((row) => parseRuntimeLlmTokenCap(row))

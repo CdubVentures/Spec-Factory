@@ -16,7 +16,7 @@ import { shouldBlockUnkPublish } from '../features/publisher/validation/shouldBl
  * @param {string} fieldKey
  * @param {object} fieldRule
  * @param {object|null} knownValues - { policy, values }
- * @param {object|null} componentDb - { items: [{ name, aliases? }] }
+ * @param {object|null} componentDb - { entries: { [key]: { canonical_name, maker, aliases? } } }
  * @returns {{ rejects: object[], repairs: object[], good: object }}
  */
 export function deriveTestValues(fieldKey, fieldRule, knownValues, componentDb) {

@@ -92,7 +92,7 @@ export async function repairField({ validationResult, fieldKey, fieldRule, known
  * Cross-field LLM repair orchestrator (P6).
  * Builds P6 prompt from cross-field failures -> calls LLM -> re-validates via validateRecord.
  *
- * @param {{ crossFieldFailures: object[], fields: object, productName: string, fieldRules: object, knownValues?: object, componentDbs?: object, callLlm: Function }} opts
+ * @param {{ crossFieldFailures: object[], fields: object, productName: string, fieldRules: object, knownValues?: object, callLlm: Function }} opts
  * @returns {Promise<{ status: string, repairs: object[]|null, revalidation: object|null, promptId: string|null, error?: string }>}
  */
 export async function repairCrossField({ crossFieldFailures, fields, productName, fieldRules, knownValues, crossRules, callLlm, consistencyMode, appDb }) {

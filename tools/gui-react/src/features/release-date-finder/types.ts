@@ -1,10 +1,7 @@
-export interface EvidenceSource {
-  readonly source_url: string;
-  readonly source_page: string;
-  readonly source_type: 'manufacturer' | 'retailer' | 'review' | 'press' | 'other';
-  readonly tier: 'tier1' | 'tier2' | 'tier3' | 'unknown';
-  readonly excerpt: string;
-}
+import type { EvidenceRefGen, ReleaseDateFinderLlmResponseGen } from './types.generated.ts';
+
+// Evidence entry shape (single source of truth: backend Zod evidenceRefsSchema).
+export type EvidenceRef = EvidenceRefGen;
 
 export interface PublisherCandidateRef {
   readonly candidate_id: number;
@@ -26,7 +23,7 @@ export interface ReleaseDateFinderCandidate {
   readonly value: string;
   readonly confidence: number;
   readonly unknown_reason: string;
-  readonly sources: readonly EvidenceSource[];
+  readonly sources: readonly EvidenceRef[];
   readonly ran_at: string;
   readonly rejected_by_gate?: boolean;
   readonly rejection_reasons?: readonly { reason_code: string; detail?: unknown }[];
@@ -47,17 +44,13 @@ export interface ReleaseDateFinderRun {
   readonly duration_ms?: number | null;
   readonly selected: { candidates: readonly ReleaseDateFinderCandidate[] };
   readonly prompt: { system: string; user: string };
-  readonly response: {
+  // Raw LLM response (Zod-validated) + backend-added variant/timing metadata.
+  readonly response: ReleaseDateFinderLlmResponseGen & {
     readonly started_at?: string;
     readonly duration_ms?: number;
     readonly variant_id: string | null;
     readonly variant_key: string;
     readonly variant_label: string;
-    readonly release_date: string;
-    readonly confidence: number;
-    readonly unknown_reason: string;
-    readonly evidence: readonly EvidenceSource[];
-    readonly discovery_log: { urls_checked: string[]; queries_run: string[]; notes: string[] };
   };
 }
 

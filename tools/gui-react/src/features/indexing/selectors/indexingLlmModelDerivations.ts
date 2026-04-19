@@ -16,7 +16,6 @@ const LLM_MIN_OUTPUT_TOKENS = LLM_SETTING_LIMITS.maxTokens.min;
 interface LlmTokenPresetBootstrapLike {
   llmMaxOutputTokensPlan: string | number | boolean;
   llmMaxOutputTokensReasoning: string | number | boolean;
-  llmMaxOutputTokensPlanFallback: string | number | boolean;
 }
 
 interface UseIndexingLlmModelDerivationsInput {
@@ -58,12 +57,10 @@ export function useIndexingLlmModelDerivations(input: UseIndexingLlmModelDerivat
     () => deriveLlmTokenPresetFallbackOptions({
       llmMaxOutputTokensPlan: Number(runtimeSettingsBootstrap.llmMaxOutputTokensPlan || 0),
       llmMaxOutputTokensReasoning: Number(runtimeSettingsBootstrap.llmMaxOutputTokensReasoning || 0),
-      llmMaxOutputTokensPlanFallback: Number(runtimeSettingsBootstrap.llmMaxOutputTokensPlanFallback || 0),
     }),
     [
       runtimeSettingsBootstrap.llmMaxOutputTokensPlan,
       runtimeSettingsBootstrap.llmMaxOutputTokensReasoning,
-      runtimeSettingsBootstrap.llmMaxOutputTokensPlanFallback,
     ],
   );
 
@@ -87,7 +84,7 @@ export function useIndexingLlmModelDerivations(input: UseIndexingLlmModelDerivat
       llmTokenProfileLookup,
       indexingLlmConfig,
       llmTokenPresetOptions,
-      llmMaxOutputTokensPlanFallback: llmTokensPlanBootstrap,
+      llmMaxOutputTokensPlan: llmTokensPlanBootstrap,
       llmMinOutputTokens: LLM_MIN_OUTPUT_TOKENS,
     }),
     [

@@ -25,7 +25,6 @@ export interface LlmPolicyBudget {
 export interface LlmPolicyTokens {
   maxOutput: number;
   plan: number;
-  planFallback: number;
   triage: number;
   reasoning: number;
   maxTokens: number;
@@ -71,7 +70,6 @@ export const FLAT_TO_GROUP: Record<string, { group: LlmPolicyGroup; field: strin
   llmCostOutputPer1M:                        { group: 'budget', field: 'costOutputPer1M' },
   llmMaxOutputTokens:                        { group: 'tokens', field: 'maxOutput' },
   llmMaxOutputTokensPlan:                    { group: 'tokens', field: 'plan' },
-  llmMaxOutputTokensPlanFallback:            { group: 'tokens', field: 'planFallback' },
   llmMaxOutputTokensTriage:                  { group: 'tokens', field: 'triage' },
   llmMaxOutputTokensReasoning:               { group: 'tokens', field: 'reasoning' },
   llmMaxTokens:                              { group: 'tokens', field: 'maxTokens' },
@@ -101,7 +99,6 @@ export const LLM_POLICY_MANAGED_KEYS = [
   'llmCostOutputPer1M',
   'llmMaxOutputTokens',
   'llmMaxOutputTokensPlan',
-  'llmMaxOutputTokensPlanFallback',
   'llmMaxOutputTokensTriage',
   'llmMaxOutputTokensReasoning',
   'llmMaxTokens',
@@ -162,7 +159,6 @@ export function assembleLlmPolicyFromFlat(source: Record<string, unknown>): LlmP
     tokens: {
       maxOutput: readNum(source, 'llmMaxOutputTokens', 1400),
       plan: readNum(source, 'llmMaxOutputTokensPlan', 4096),
-      planFallback: readNum(source, 'llmMaxOutputTokensPlanFallback', 2048),
       triage: readNum(source, 'llmMaxOutputTokensTriage', 20000),
       reasoning: readNum(source, 'llmMaxOutputTokensReasoning', 4096),
       maxTokens: readNum(source, 'llmMaxTokens', 16384),

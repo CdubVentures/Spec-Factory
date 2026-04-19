@@ -227,6 +227,7 @@ export function LlmConfigPage() {
     llmMaxOutputTokensTriage: policy.tokens.triage,
     llmTimeoutMs: policy.timeoutMs,
     llmMaxTokens: policy.tokens.maxTokens,
+    llmReasoningBudget: policy.reasoning.budget,
   }), [
     policy.models.plan,
     policy.models.reasoning,
@@ -237,6 +238,7 @@ export function LlmConfigPage() {
     policy.tokens.triage,
     policy.timeoutMs,
     policy.tokens.maxTokens,
+    policy.reasoning.budget,
   ]);
 
   const inputCls = 'sf-input w-full py-2 sf-text-label leading-5 focus:outline-none focus:ring-2 focus:ring-accent/25 disabled:opacity-60';

@@ -270,10 +270,6 @@ describe('registry enrichment aliases', () => {
     ok(byKey.llmMaxOutputTokensReasoning.aliases?.includes('llmTokensReasoning'));
   });
 
-  it('llmMaxOutputTokensPlanFallback has llmTokensPlanFallback alias', () => {
-    ok(byKey.llmMaxOutputTokensPlanFallback.aliases?.includes('llmTokensPlanFallback'));
-  });
-
 });
 
 describe('registry enrichment deprecated', () => {

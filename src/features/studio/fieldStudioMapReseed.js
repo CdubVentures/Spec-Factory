@@ -163,7 +163,6 @@ export async function reseedCompiledRulesAndBootConfig({ specDb, helperRoot, sto
     parse_templates: loaded?.parseTemplates || {},
     cross_validation_rules: loaded?.crossValidation || [],
     ui_field_catalog: loaded?.uiFieldCatalog || categoryConfig.uiFieldCatalog || {},
-    component_dbs: stripComponentDbMaps(loaded?.componentDBs || {}),
     key_migrations: await readKeyMigrationsJson(helperRoot, category),
     ...(await (async () => {
       const manifest = await readManifestMeta(helperRoot, category);
@@ -188,18 +187,6 @@ export async function reseedCompiledRulesAndBootConfig({ specDb, helperRoot, sto
 
   specDb.upsertCompiledRules(JSON.stringify(compiledRules), JSON.stringify(bootConfig));
   return { reseeded: true };
-}
-
-// WHY: __index and __indexAll are Maps (can't serialize to JSON).
-// Strip them before storing; the engine rebuilds them via normalizeComponentDbPayload on load.
-function stripComponentDbMaps(componentDBs) {
-  const out = {};
-  for (const [key, db] of Object.entries(componentDBs)) {
-    if (!db || typeof db !== 'object') continue;
-    const { __index, __indexAll, ...rest } = db;
-    out[key] = rest;
-  }
-  return out;
 }
 
 async function readKeyMigrationsJson(helperRoot, category) {

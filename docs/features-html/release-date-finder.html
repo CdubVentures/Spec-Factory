@@ -430,7 +430,8 @@ for (const v of targets) {
     <table>
       <thead><tr><th>File</th><th>Role</th></tr></thead>
       <tbody>
-        <tr><td><code>types.ts</code></td><td>TS interfaces: <code>EvidenceSource</code>, <code>PublisherCandidateRef</code>, <code>ReleaseDateFinderCandidate</code>, <code>ReleaseDateFinderRun</code>, <code>ReleaseDateFinderResult</code>.</td></tr>
+        <tr><td><code>types.ts</code></td><td>TS interfaces: <code>EvidenceRef</code> (re-export of <code>EvidenceRefGen</code>), <code>PublisherCandidateRef</code>, <code>ReleaseDateFinderCandidate</code>, <code>ReleaseDateFinderRun</code>, <code>ReleaseDateFinderResult</code>. The LLM-response sub-shape is Zod-derived, not hand-written.</td></tr>
+        <tr><td><code>types.generated.ts</code></td><td><strong>Auto-generated</strong> from <code>releaseDateSchema.js</code> via <code>scripts/generateRdfTypes.js</code>. Contains <code>EvidenceRefGen</code> + <code>ReleaseDateFinderLlmResponseGen</code>. Do not edit manually &mdash; rerun the codegen when the backend Zod schema changes.</td></tr>
         <tr><td><code>api/releaseDateFinderQueries.ts</code></td><td>React Query hooks: GET + <code>useReleaseDateFinderRunMutation</code> (single shot) + <code>useReleaseDateFinderLoopMutation</code> (<code>POST /loop</code>) + DELETE run + DELETE all.</td></tr>
         <tr><td><code>selectors/rdfSelectors.ts</code></td><td>Pure derivations: KPI cards, variant rows, run history rows.</td></tr>
         <tr><td><code>components/ReleaseDateFinderPanel.tsx</code></td><td>Indexing Lab panel &mdash; uses shared scaffolding. Header: Run + Loop. Per-row: Run (always clickable) + Loop (locks via <code>useRunningVariantKeys('rdf', productId, 'loop')</code>).</td></tr>
@@ -464,8 +465,8 @@ for (const v of targets) {
 <!-- ================================================================== -->
 
 <div style="text-align:center; padding:32px 0; color:var(--text-muted); font-size:13px;">
-  Spec Factory Release Date Finder Reference &mdash; 2026-04-18<br>
-  Module class: <code>variantFieldProducer</code> &bull; Shared variant-row scaffolding &bull; Shared budget loop (<code>runVariantFieldLoop</code>) &bull; Per-variant publisher gate<br>
+  Spec Factory Release Date Finder Reference &mdash; 2026-04-18 (Zod-derived FE types + <code>variantDependent</code> signal in review drawer)<br>
+  Module class: <code>variantFieldProducer</code> &bull; Shared variant-row scaffolding &bull; Shared budget loop (<code>runVariantFieldLoop</code>) &bull; Per-variant publisher gate &bull; Zod-derived UI types (<code>types.generated.ts</code>)<br>
   <span style="margin-top:6px; display:block;">
     Backend: <code>src/features/release-date/</code> &bull;
     Frontend: <code>tools/gui-react/src/features/release-date-finder/</code>

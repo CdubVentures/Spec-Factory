@@ -13,6 +13,7 @@
 import { zodToLlmSchema } from '../../core/llm/zodToLlmSchema.js';
 import { resolvePromptTemplate } from '../../core/llm/resolvePromptTemplate.js';
 import { buildEvidencePromptBlock } from '../../core/finder/evidencePromptFragment.js';
+import { buildEvidenceVerificationPromptBlock } from '../../core/finder/evidenceVerificationPromptFragment.js';
 import { buildValueConfidencePromptBlock } from '../../core/finder/valueConfidencePromptFragment.js';
 import { buildPreviousDiscoveryBlock } from '../../core/finder/discoveryLog.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
@@ -177,7 +178,7 @@ export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], pr
     KNOWN_FINDINGS: knownSection,
     IDENTITY_WARNING: identityWarning,
     PALETTE: palette,
-    EVIDENCE_REQUIREMENTS: buildEvidencePromptBlock({ minEvidenceRefs }),
+    EVIDENCE_REQUIREMENTS: `${buildEvidencePromptBlock({ minEvidenceRefs })}\n\n${buildEvidenceVerificationPromptBlock()}`,
     VALUE_CONFIDENCE_GUIDANCE: buildValueConfidencePromptBlock(),
     PREVIOUS_DISCOVERY: discoverySection,
   });
@@ -328,6 +329,8 @@ Use your web access to verify — scoped queries, not endless searching.
 ─── EVIDENCE REQUIREMENTS ───
 
 ${buildEvidencePromptBlock({ minEvidenceRefs })}
+
+${buildEvidenceVerificationPromptBlock()}
 
 Attach evidence_refs to each mapping (for match, new, and reject actions alike — cite what you checked).
 

@@ -20,6 +20,7 @@ import {
   isKnownSlotValue,
 } from '../../../utils/slotValueShape.js';
 import { normalizeHost } from '../../../shared/hostParser.js';
+import { normalizeConfidence } from '../../publisher/publish/publishCandidate.js';
 
 // ── Number Parsing ──────────────────────────────────────────────────
 
@@ -182,11 +183,15 @@ export function candidateEvidenceFromRows(candidate = {}, provenanceRow = {}) {
 export function candidateScore(candidate = {}, provenanceRow = {}) {
   const score = toNumber(candidate.score, NaN);
   if (Number.isFinite(score)) {
-    return Math.max(0, Math.min(1, score));
+    return Math.max(0, Math.min(1, normalizeConfidence(score)));
+  }
+  const rawConfidence = toNumber(candidate.confidence, NaN);
+  if (Number.isFinite(rawConfidence)) {
+    return Math.max(0, Math.min(1, normalizeConfidence(rawConfidence)));
   }
   const confidence = toNumber(provenanceRow.confidence, NaN);
   if (Number.isFinite(confidence)) {
-    return Math.max(0, Math.min(1, confidence));
+    return Math.max(0, Math.min(1, normalizeConfidence(confidence)));
   }
   return candidate.approvedDomain ? 0.8 : 0.5;
 }

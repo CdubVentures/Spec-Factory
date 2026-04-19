@@ -20,6 +20,12 @@ describe('resolveDrawerBadge', () => {
     assert.equal(resolveDrawerBadge('release_date', true, true), 'variant');
   });
 
+  it('treats variant_dependent as the signal for any field key (forward-compat for future variantFieldProducers like sku/pricing)', () => {
+    assert.equal(resolveDrawerBadge('sku', true, true), 'variant');
+    assert.equal(resolveDrawerBadge('price', true, true), 'variant');
+    assert.equal(resolveDrawerBadge('discontinued', true, true), 'variant');
+  });
+
   it('returns "value" for name field with published value', () => {
     assert.equal(resolveDrawerBadge('name', true), 'value');
   });

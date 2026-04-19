@@ -56,6 +56,14 @@ export interface PublisherMetadataJson {
   [key: string]: unknown;
 }
 
+export interface EvidenceRef {
+  url: string;
+  tier: string;
+  confidence: number | null;
+  http_status: number | null;
+  accepted: 0 | 1;
+}
+
 export interface PublisherCandidateRow {
   id: number;
   category: string;
@@ -74,6 +82,9 @@ export interface PublisherCandidateRow {
   brand?: string;
   model?: string;
   variant?: string;
+  evidence?: EvidenceRef[];
+  evidence_accepted_count?: number;
+  evidence_rejected_count?: number;
 }
 
 export interface PublisherStats {

@@ -260,26 +260,17 @@ function reasonTokenGroup(reason = '') {
 
 // WHY: extract/validate/write all alias to the plan model (configPostMerge).
 // registryEntry is optional; when present its maxOutputTokens acts as a hard ceiling.
-export function roleTokenCap(config = {}, role = 'extract', reason = '', isFallback = false, registryEntry) {
+// Fallback uses the same phase cap as primary — no separate fallback budget.
+export function roleTokenCap(config = {}, role = 'extract', reason = '', registryEntry) {
   const group = reasonTokenGroup(reason);
   let cap;
   if (role === 'plan' && group === 'triage') {
-    cap = isFallback
-      ? configInt(config, 'llmMaxOutputTokensPlanFallback')
-      : configInt(config, 'llmMaxOutputTokensTriage');
+    cap = configInt(config, 'llmMaxOutputTokensTriage');
   } else if (role === 'plan' && group === 'reasoning') {
-    cap = isFallback
-      ? configInt(config, 'llmMaxOutputTokensPlanFallback')
-      : configInt(config, 'llmMaxOutputTokensReasoning');
-  } else if (role === 'plan') {
-    cap = isFallback
-      ? configInt(config, 'llmMaxOutputTokensPlanFallback')
-      : configInt(config, 'llmMaxOutputTokensPlan');
+    cap = configInt(config, 'llmMaxOutputTokensReasoning');
   } else {
-    // extract, validate, write, and any unknown role — all use plan default path
-    cap = isFallback
-      ? configInt(config, 'llmMaxOutputTokensPlanFallback')
-      : configInt(config, 'llmMaxOutputTokensPlan');
+    // plan, extract, validate, write, and any unknown role — all use plan default path
+    cap = configInt(config, 'llmMaxOutputTokensPlan');
   }
 
   // Registry ceiling: never exceed the model's declared maxOutputTokens
@@ -313,6 +304,14 @@ export function resolvePhaseMaxContextTokens(config = {}, phase = '') {
   return Math.max(0, Number(config[`_resolved${cap}MaxContextTokens`] || 0));
 }
 
+// WHY: Phase-level reasoning budget from LLM panel. configPostMerge writes _resolved${Phase}ReasoningBudget.
+// Returns 0 when no phase-level budget is configured, letting roleReasoningCap fall back to global.
+export function resolvePhaseReasoningBudget(config = {}, phase = '') {
+  const cap = capitalize(String(phase || '').trim());
+  if (!cap) return 0;
+  return Math.max(0, Number(config[`_resolved${cap}ReasoningBudget`] || 0));
+}
+
 // WHY: Resolves per-phase boolean flags from config.
 // configPostMerge writes _resolved${Phase}WebSearch, _resolved${Phase}Thinking.
 function resolvePhaseFlag(config = {}, phase = '', flagSuffix = '') {
@@ -329,8 +328,8 @@ function resolvePhaseString(config = {}, phase = '', suffix = '') {
   return String(config[`_resolved${cap}${suffix}`] || '');
 }
 
-function roleReasoningCap(config = {}, role = 'extract', reason = '', isFallback = false) {
-  const fallbackCap = roleTokenCap(config, role, reason, isFallback);
+function roleReasoningCap(config = {}, role = 'extract', reason = '') {
+  const fallbackCap = roleTokenCap(config, role, reason);
   const configured = configInt(config, 'llmReasoningBudget');
   if (configured <= 0) return fallbackCap;
   if (fallbackCap <= 0) return configured;
@@ -531,10 +530,11 @@ export async function callLlmWithRouting({
   // The LLM Settings panel is the SSOT — configPostMerge writes _resolved${Phase}* keys.
   const reasoningMode = resolvePhaseReasoning(config, phase);
 
-  const primaryTokenCap = roleTokenCap(config, resolvedRole, reason, false, primary._registryEntry);
-  const fallbackTokenCap = roleTokenCap(config, resolvedRole, reason, true, fallback?._registryEntry);
-  const primaryReasoningBudget = roleReasoningCap(config, resolvedRole, reason, false);
-  const fallbackReasoningBudget = roleReasoningCap(config, resolvedRole, reason, true);
+  // WHY: Fallback shares the phase's call-level caps with the primary. Only
+  // the registry ceiling may differ per model, so we compute both role caps
+  // independently, but the phase cap gates both identically.
+  const primaryTokenCap = roleTokenCap(config, resolvedRole, reason, primary._registryEntry);
+  const fallbackTokenCap = roleTokenCap(config, resolvedRole, reason, fallback?._registryEntry);
   // WHY: Phase-level token cap from panel takes precedence over role-level cap.
   // When disableLimits is on, skip all artificial caps — model hardware max applies in llmClient.
   const phaseDisableLimits = resolvePhaseDisableLimits(config, phase);
@@ -544,11 +544,27 @@ export async function callLlmWithRouting({
     : (phaseTokenCap > 0
       ? Math.min(phaseTokenCap, primaryTokenCap || phaseTokenCap)
       : primaryTokenCap);
-  // WHY: disableLimits must also zero the reasoning budget, otherwise
-  // roleReasoningCap's min(llmReasoningBudget, roleTokenCap) re-imposes
-  // a cap that starves the visible output (e.g. 4096 total with xhigh
-  // reasoning → model spends 6K on thinking, truncates the JSON).
-  const resolvedReasoningBudget = phaseDisableLimits ? 0 : primaryReasoningBudget;
+  const fallbackMaxTokens = phaseDisableLimits
+    ? 0
+    : (phaseTokenCap > 0
+      ? Math.min(phaseTokenCap, fallbackTokenCap || phaseTokenCap)
+      : fallbackTokenCap);
+
+  // WHY: Phase-level reasoning budget takes precedence over global.
+  // disableLimits zeroes the reasoning budget, otherwise roleReasoningCap's
+  // min(llmReasoningBudget, roleTokenCap) re-imposes a cap that starves the
+  // visible output (e.g. 4096 total with xhigh reasoning → model spends 6K
+  // on thinking, truncates the JSON). Fallback inherits the same budget.
+  const phaseReasoningBudget = resolvePhaseReasoningBudget(config, phase);
+  const baseReasoningCap = roleReasoningCap(config, resolvedRole, reason);
+  const resolvedReasoningBudget = phaseDisableLimits
+    ? 0
+    : (phaseReasoningBudget > 0 ? phaseReasoningBudget : baseReasoningCap);
+
+  // WHY: Phase-level context token cap from panel. Passed through to the
+  // provider for telemetry and any future input-side enforcement.
+  const phaseMaxContextTokens = resolvePhaseMaxContextTokens(config, phase);
+  const resolvedMaxContextTokens = phaseDisableLimits ? 0 : phaseMaxContextTokens;
 
   // WHY: Phase-level timeout from panel. Falls back to caller's timeoutMs param.
   const phaseTimeoutMs = resolvePhaseTimeoutMs(config, phase);
@@ -585,7 +601,10 @@ export async function callLlmWithRouting({
     output_token_cap: primaryTokenCap,
     output_token_cap_fallback: fallbackTokenCap,
     reasoning_mode: reasoningMode,
+    reasoning_budget: resolvedReasoningBudget,
     phase_token_cap: phaseTokenCap,
+    phase_context_cap: phaseMaxContextTokens,
+    phase_reasoning_budget: phaseReasoningBudget,
     json_strict: jsonStrictEnabled,
     two_phase_writer: !jsonStrictEnabled && Boolean(jsonSchema),
     phase: phase || null,
@@ -608,12 +627,14 @@ export async function callLlmWithRouting({
       deepseek_default_max_output_tokens: 8192,
       effort_level: primaryBakedEffort || (phaseThinking ? (phaseThinkingEffort || 'medium') : ''),
       web_search_enabled: Boolean(phaseWebSearch),
+      max_context_tokens: Number(resolvedMaxContextTokens || 0),
     },
     costRates,
     onUsage,
     reasoningMode: Boolean(reasoningMode),
     reasoningBudget: Number(resolvedReasoningBudget || 0),
     maxTokens: Number(resolvedMaxTokens || 0),
+    maxContextTokens: Number(resolvedMaxContextTokens || 0),
     timeoutMs: resolvedTimeoutMs,
     logger,
     onStreamChunk,
@@ -630,27 +651,13 @@ export async function callLlmWithRouting({
     throw new Error('cortex provider dispatch not yet re-implemented — route via openai-compatible provider or remove cortex entry');
   }
 
-  // WHY: Shared fallback dispatch — extracted to avoid duplicating fallback logic
-  // in both the single-call and two-phase paths.
-  const dispatchFallback = (error) => {
-    if (!fallback) throw error;
-    logger?.warn?.('llm_route_fallback', {
-      reason,
-      role: resolvedRole,
-      primary_provider: primary.provider || null,
-      primary_model: primary.model || null,
-      primary_base_url: primary.baseUrl || null,
-      fallback_provider: fallback.provider || null,
-      fallback_model: fallback.model || null,
-      fallback_base_url: fallback.baseUrl || null,
-      message: error.message
-    });
+  // WHY: Fallback inherits every call-level limit (maxTokens, maxContextTokens,
+  // reasoningBudget, timeoutMs, jsonSchema, disableLimits) from the phase —
+  // sharedParams already carries those. Only model-capability overrides differ:
+  // fallback model id, cost rates, Fallback{WebSearch,Thinking,ThinkingEffort,UseReasoning},
+  // and the fallback model's registry maxOutputTokens ceiling (fallbackMaxTokens).
+  const buildFallbackCallParams = (extras = {}) => {
     const effectiveFallbackCostRates = buildEffectiveCostRates(fallback._registryEntry, costRates);
-    const fallbackMaxTokens = phaseDisableLimits
-      ? 0
-      : (phaseTokenCap > 0
-        ? Math.min(phaseTokenCap, fallbackTokenCap || phaseTokenCap)
-        : fallbackTokenCap);
     const fbWebSearch = resolvePhaseFlag(config, phase, 'FallbackWebSearch');
     const fbThinking = resolvePhaseFlag(config, phase, 'FallbackThinking');
     const fbThinkingEffort = resolvePhaseString(config, phase, 'FallbackThinkingEffort');
@@ -665,7 +672,7 @@ export async function callLlmWithRouting({
     };
     const effectiveFbRequestOptions = Object.keys(fbRequestOptions).length > 0 ? fbRequestOptions : baseRequestOptions;
 
-    return wrapLabQueue(fallback, () => callLlmProvider({
+    return {
       ...sharedParams,
       costRates: effectiveFallbackCostRates,
       requestOptions: effectiveFbRequestOptions,
@@ -674,7 +681,8 @@ export async function callLlmWithRouting({
         model: fallback.model, apiKey: fallback.apiKey, baseUrl: fallback.baseUrl,
         provider: fallback.provider, accessMode: fallback._registryEntry?.accessMode || '',
       },
-      reasoningBudget: Number(fallbackReasoningBudget || 0),
+      // Override maxTokens to apply the fallback model's registry ceiling;
+      // reasoningBudget / maxContextTokens / timeoutMs inherit from sharedParams.
       maxTokens: Number(fallbackMaxTokens || 0),
       providerHealth,
       usageContext: {
@@ -684,8 +692,45 @@ export async function callLlmWithRouting({
         fallback_from_model: primary.model || null,
         effort_level: fallbackBakedEffort || (fbThinking ? (fbThinkingEffort || 'medium') : ''),
         web_search_enabled: Boolean(fbWebSearch),
-      }
-    }));
+      },
+      ...extras,
+    };
+  };
+
+  // WHY: Shared single-call fallback (for jsonStrict=true or no schema).
+  const dispatchFallback = (error) => {
+    if (!fallback) throw error;
+    logger?.warn?.('llm_route_fallback', {
+      reason,
+      role: resolvedRole,
+      primary_provider: primary.provider || null,
+      primary_model: primary.model || null,
+      primary_base_url: primary.baseUrl || null,
+      fallback_provider: fallback.provider || null,
+      fallback_model: fallback.model || null,
+      fallback_base_url: fallback.baseUrl || null,
+      message: error.message
+    });
+    return wrapLabQueue(fallback, () => callLlmProvider(buildFallbackCallParams()));
+  };
+
+  // WHY: Research-phase fallback. When jsonStrict=false and primary research
+  // fails, the fallback model also runs research (no schema, rawTextMode) so the
+  // writer phase can proceed with fallback-produced findings. Writer model is
+  // phase-level (not per-attempt) and runs the same way regardless.
+  const dispatchFallbackResearch = (error) => {
+    if (!fallback) throw error;
+    logger?.warn?.('llm_route_fallback_research', {
+      reason,
+      role: resolvedRole,
+      primary_model: primary.model || null,
+      fallback_model: fallback.model || null,
+      message: error.message
+    });
+    return wrapLabQueue(fallback, () => callLlmProvider(buildFallbackCallParams({
+      jsonSchema: null,
+      rawTextMode: true,
+    })));
   };
 
   // WHY: When jsonStrict is false AND a jsonSchema is provided, split into two phases:
@@ -708,14 +753,15 @@ export async function callLlmWithRouting({
         providerHealth,
       }));
     } catch (error) {
-      // Research failed → fall back to single-call WITH schema (existing fallback behavior)
+      // WHY: Fallback mirrors primary's two-phase behavior — research (no schema)
+      // with the fallback model, then the same writer phase continues.
       logger?.warn?.('llm_writer_research_failed_falling_back', {
         reason,
         role: resolvedRole,
         phase: phase || null,
         message: error.message,
       });
-      return dispatchFallback(error);
+      researchText = await dispatchFallbackResearch(error);
     }
 
     onPhaseChange?.('writer');

@@ -58,7 +58,6 @@ function makeInput(
     searxngMinQueryIntervalMs: 1000,
     llmMaxOutputTokensPlan: 4096,
     llmMaxOutputTokensReasoning: 4096,
-    llmMaxOutputTokensPlanFallback: 4096,
     crawleeRequestHandlerTimeoutSecs: 60,
     autoScrollPasses: 0,
     autoScrollDelayMs: 500,
@@ -89,43 +88,32 @@ function makeInput(
 }
 
 /* ------------------------------------------------------------------ */
-/*  Fix 1: Fallback token clamping uses correct (fallback) model        */
+/*  Retired fallback-token knobs: must not be serialized                */
 /* ------------------------------------------------------------------ */
 
-describe('collectRuntimeSettingsPayload — fallback token clamping', () => {
-  it('clamps plan fallback tokens against fallback model, not primary', () => {
-    // gpt-4o max=16384, gpt-4o-mini max=8192
-    // Setting 12000 tokens: should be clamped to 8192 by fallback model limit
+describe('collectRuntimeSettingsPayload — retired fallback tokens', () => {
+  it('does not serialize llmMaxOutputTokensPlanFallback (retired — fallback inherits phase cap)', () => {
     const result = collectRuntimeSettingsPayload(makeInput({
       llmModelPlan: 'gpt-4o',
       llmPlanFallbackModel: 'gpt-4o-mini',
-      llmMaxOutputTokensPlanFallback: 12000,
-    }));
-    strictEqual(result.llmMaxOutputTokensPlanFallback, 8192);
+    } as never));
+    strictEqual(
+      Object.prototype.hasOwnProperty.call(result, 'llmMaxOutputTokensPlanFallback'),
+      false,
+    );
+    strictEqual(result.llmPlanFallbackModel, 'gpt-4o-mini');
   });
 
   it('does not serialize the retired reasoning fallback token knob', () => {
     const result = collectRuntimeSettingsPayload(makeInput({
       llmModelReasoning: 'claude-sonnet',
       llmReasoningFallbackModel: 'claude-haiku',
-      llmMaxOutputTokensReasoningFallback: 10000,
-    }));
+    } as never));
     strictEqual(
       Object.prototype.hasOwnProperty.call(result, 'llmMaxOutputTokensReasoningFallback'),
       false,
     );
     strictEqual(result.llmReasoningFallbackModel, 'claude-haiku');
-  });
-
-  it('falls back to primary model when no fallback model is configured', () => {
-    // If no fallback model set, clamping should use primary model limits
-    const result = collectRuntimeSettingsPayload(makeInput({
-      llmModelPlan: 'gpt-4o',
-      llmPlanFallbackModel: '',
-      llmMaxOutputTokensPlanFallback: 12000,
-    }));
-    // Should clamp to gpt-4o max (16384), so 12000 passes through
-    strictEqual(result.llmMaxOutputTokensPlanFallback, 12000);
   });
 });
 

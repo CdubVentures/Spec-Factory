@@ -41,12 +41,14 @@ export function createIndexingMetricsHandler({
         triage: toInt(knobDefaults['llm:triage']?.token_cap, 1200),
         reasoning: toInt(knobDefaults.reasoning_pass?.token_cap, 4096)
       };
+      // WHY: Fallback inherits its token caps from the phase (primary) — no
+      // separate fallback-token knob. Report the primary caps here.
       const fallbackDefaults = {
         enabled: Boolean(String(config.llmPlanFallbackModel || '').trim()),
         plan: String(config.llmPlanFallbackModel || '').trim(),
         reasoning: String(config.llmReasoningFallbackModel || '').trim(),
-        plan_tokens: toInt(config.llmMaxOutputTokensPlanFallback, roleTokenDefaults.plan),
-        reasoning_tokens: toInt(config.llmMaxOutputTokensPlanFallback, roleTokenDefaults.reasoning)
+        plan_tokens: roleTokenDefaults.plan,
+        reasoning_tokens: roleTokenDefaults.reasoning
       };
       return jsonRes(res, 200, {
         generated_at: new Date().toISOString(),

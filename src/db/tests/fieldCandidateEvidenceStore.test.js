@@ -173,4 +173,86 @@ describe('fieldCandidateEvidenceStore', () => {
     assert.equal(rows.length, 1);
     assert.equal(rows[0].confidence, null);
   });
+
+  // ── URL verification projection (http_status / verified_at / accepted) ──
+
+  it('insert stores http_status, verified_at, accepted when provided', () => {
+    const candidate = seedCandidate(db);
+    db.insertFieldCandidateEvidence({
+      candidateId: candidate.id,
+      url: 'https://verified.example.com',
+      tier: 'tier1',
+      confidence: 95,
+      http_status: 200,
+      verified_at: '2026-04-18T22:30:00.000Z',
+      accepted: 1,
+    });
+    const rows = db.listFieldCandidateEvidenceByCandidateId(candidate.id);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].http_status, 200);
+    assert.equal(rows[0].verified_at, '2026-04-18T22:30:00.000Z');
+    assert.equal(rows[0].accepted, 1);
+  });
+
+  it('insert defaults: http_status=NULL, verified_at=NULL, accepted=1 when omitted', () => {
+    const candidate = seedCandidate(db);
+    db.insertFieldCandidateEvidence({
+      candidateId: candidate.id,
+      url: 'https://legacy.example.com',
+      tier: 'tier1',
+      confidence: 90,
+    });
+    const rows = db.listFieldCandidateEvidenceByCandidateId(candidate.id);
+    assert.equal(rows[0].http_status, null);
+    assert.equal(rows[0].verified_at, null);
+    assert.equal(rows[0].accepted, 1);
+  });
+
+  it('insertMany preserves http_status / verified_at / accepted per ref', () => {
+    const candidate = seedCandidate(db);
+    db.insertFieldCandidateEvidenceMany(candidate.id, [
+      { url: 'https://good.example.com', tier: 'tier1', confidence: 95, http_status: 200, verified_at: '2026-04-18T22:30:00.000Z', accepted: 1 },
+      { url: 'https://bad.example.com', tier: 'tier2', confidence: 80, http_status: 404, verified_at: '2026-04-18T22:30:01.000Z', accepted: 0 },
+    ]);
+    const rows = db.listFieldCandidateEvidenceByCandidateId(candidate.id);
+    assert.equal(rows.length, 2);
+    const good = rows.find(r => r.url === 'https://good.example.com');
+    const bad = rows.find(r => r.url === 'https://bad.example.com');
+    assert.equal(good.http_status, 200);
+    assert.equal(good.accepted, 1);
+    assert.equal(bad.http_status, 404);
+    assert.equal(bad.accepted, 0);
+  });
+
+  it('countSplitByCandidateId returns { accepted, rejected } counts', () => {
+    const candidate = seedCandidate(db);
+    db.insertFieldCandidateEvidenceMany(candidate.id, [
+      { url: 'a', tier: 'tier1', confidence: 95, http_status: 200, accepted: 1 },
+      { url: 'b', tier: 'tier2', confidence: 80, http_status: 200, accepted: 1 },
+      { url: 'c', tier: 'tier1', confidence: 70, http_status: 404, accepted: 0 },
+    ]);
+    const split = db.countFieldCandidateEvidenceSplitByCandidateId(candidate.id);
+    assert.equal(split.accepted, 2);
+    assert.equal(split.rejected, 1);
+  });
+
+  it('countSplitByCandidateId returns zeros for candidate with no evidence', () => {
+    const candidate = seedCandidate(db);
+    const split = db.countFieldCandidateEvidenceSplitByCandidateId(candidate.id);
+    assert.equal(split.accepted, 0);
+    assert.equal(split.rejected, 0);
+  });
+
+  it('countSplitByCandidateId treats legacy NULL http_status + accepted=1 as accepted', () => {
+    // Legacy rows (pre-verification feature) have http_status NULL and accepted DEFAULT 1.
+    // They must count as "accepted" so historical data stays visible.
+    const candidate = seedCandidate(db);
+    db.insertFieldCandidateEvidenceMany(candidate.id, [
+      { url: 'legacy-1', tier: 'tier1', confidence: 95 },  // no http_status
+      { url: 'legacy-2', tier: 'tier2', confidence: 80 },  // no http_status
+    ]);
+    const split = db.countFieldCandidateEvidenceSplitByCandidateId(candidate.id);
+    assert.equal(split.accepted, 2);
+    assert.equal(split.rejected, 0);
+  });
 });

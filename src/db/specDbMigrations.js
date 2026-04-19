@@ -64,6 +64,15 @@ export const MIGRATIONS = [
   // WHY: Evaluations array projected to SQL — runtime GET must read SQL per
   // CLAUDE.md Dual-State mandate. JSON stays as durable memory.
   `ALTER TABLE product_image_finder ADD COLUMN evaluations TEXT DEFAULT '[]'`,
+  // WHY: URL verification projection — publisher HEAD-checks each evidence_ref
+  // before accepting it. http_status is the observed HTTP code (NULL = unverified
+  // legacy row; 0 = network error/invalid URL treated as unknown; 2xx = accepted;
+  // 4xx/5xx = rejected). accepted=1 means the ref counts toward the candidate's
+  // evidence; accepted=0 is kept in the DB so the publisher GUI can surface the
+  // failed URL for human review.
+  `ALTER TABLE field_candidate_evidence ADD COLUMN http_status INTEGER DEFAULT NULL`,
+  `ALTER TABLE field_candidate_evidence ADD COLUMN verified_at TEXT DEFAULT NULL`,
+  `ALTER TABLE field_candidate_evidence ADD COLUMN accepted INTEGER NOT NULL DEFAULT 1`,
 ];
 
 export const SECONDARY_INDEXES = `
@@ -71,6 +80,7 @@ export const SECONDARY_INDEXES = `
   CREATE INDEX IF NOT EXISTS idx_lv_list_id ON list_values(list_id);
   CREATE INDEX IF NOT EXISTS idx_prod_brand_id ON products(category, brand_identifier);
   CREATE INDEX IF NOT EXISTS idx_fc_source_id ON field_candidates(category, product_id, field_key, source_id);
+  CREATE INDEX IF NOT EXISTS idx_fce_accepted ON field_candidate_evidence(candidate_id, accepted);
 `;
 
 /**

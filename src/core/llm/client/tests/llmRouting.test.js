@@ -801,7 +801,7 @@ test('callLlmWithRouting: jsonStrict true (default) does single call with schema
   }
 });
 
-test('callLlmWithRouting: jsonStrict false Phase 1 failure falls back to schema call', async () => {
+test('callLlmWithRouting: jsonStrict false Phase 1 failure triggers fallback research then writer', async () => {
   const originalFetch = global.fetch;
   const fetchCalls = [];
   let callCount = 0;
@@ -812,14 +812,28 @@ test('callLlmWithRouting: jsonStrict false Phase 1 failure falls back to schema 
     fetchCalls.push({ url, body });
 
     if (callCount === 1) {
-      // Phase 1 research call fails
+      // Phase 1 research (primary) fails
       return {
         ok: false,
         status: 500,
         async text() { return 'Internal Server Error'; },
       };
     }
-    // Fallback single call with schema succeeds
+    if (callCount === 2) {
+      // Phase 1 research (fallback) succeeds with raw findings
+      return {
+        ok: true,
+        status: 200,
+        async text() {
+          return JSON.stringify({
+            choices: [{ message: { content: 'Findings: 3 editions and 2 colors.' } }],
+            model: body.model,
+            usage: { prompt_tokens: 40, completion_tokens: 20, total_tokens: 60 },
+          });
+        },
+      };
+    }
+    // Phase 2 writer call with schema
     return {
       ok: true,
       status: 200,
@@ -844,13 +858,16 @@ test('callLlmWithRouting: jsonStrict false Phase 1 failure falls back to schema 
       jsonSchema: TEST_SCHEMA,
     });
 
-    assert.equal(callCount, 2, 'should try research then fallback');
-    // Phase 1 must be the research call (no response_format)
+    assert.equal(callCount, 3, 'should try primary research, fallback research, then writer');
+    // Call 1 (primary research): no schema
     assert.equal(fetchCalls[0].body.response_format, undefined,
-      'Phase 1 research call must not have response_format');
-    // Fallback call must have response_format
-    assert.ok(fetchCalls[1].body.response_format,
-      'fallback call must have response_format');
+      'primary research call must not have response_format');
+    // Call 2 (fallback research): no schema
+    assert.equal(fetchCalls[1].body.response_format, undefined,
+      'fallback research call must not have response_format');
+    // Call 3 (writer): has schema
+    assert.ok(fetchCalls[2].body.response_format,
+      'writer call must have response_format');
     assert.deepEqual(result, { editions: 3, colors: 2 });
   } finally {
     global.fetch = originalFetch;

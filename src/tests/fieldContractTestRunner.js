@@ -227,7 +227,7 @@ function extractAllKnobs(fieldRule, knownValues, componentDb) {
 
   // component.* — informational, no dedicated validation step in pipeline
   if (p.component_type) {
-    const itemCount = componentDb?.items?.length ?? 0;
+    const itemCount = Object.keys(componentDb?.entries || {}).length;
     knobs.push({ knob: 'component.type', value: `${p.component_type} (${itemCount} items in DB)`, step: null, action: 'info', code: null });
     if (comp.allow_new_components) knobs.push({ knob: 'component.allow_new_components', value: 'true', step: null, action: 'pass-through', code: null });
   }

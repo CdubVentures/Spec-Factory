@@ -5,17 +5,24 @@
  * Legacy rows (have sources_json array): fan out into N cards per source entry.
  *
  * Contract:
- *   Input:  Array of hydrated field_candidate rows
+ *   Input:  Array of hydrated field_candidate rows. field_candidates.confidence
+ *           is stored as integer 0-100 (matches the LLM schema scale written by
+ *           valueConfidenceSchema + submitCandidate). Some legacy rows store
+ *           fraction 0-1 — normalizeConfidence handles both.
  *   Output: Flat array of candidate objects, sorted by score DESC then submitted_at DESC
  *   Invariants:
- *     - score always 0-1 (clamped)
+ *     - score always 0-1 (fraction, clamped, normalized via publisher's
+ *       normalizeConfidence helper — the single source of truth for the
+ *       integer↔fraction conversion)
  *     - status always 'candidate' or 'resolved'
  */
+
+import { normalizeConfidence } from '../../publisher/publish/publishCandidate.js';
 
 function clampScore(raw) {
   const n = Number(raw);
   if (Number.isNaN(n)) return 0;
-  return Math.max(0, Math.min(1, n));
+  return Math.max(0, Math.min(1, normalizeConfidence(n)));
 }
 
 function extractMeta(c) {

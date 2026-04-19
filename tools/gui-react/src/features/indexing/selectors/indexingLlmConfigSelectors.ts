@@ -34,7 +34,6 @@ export interface LlmTokenDefaults {
 interface LlmTokenPresetBootstrap {
   llmMaxOutputTokensPlan: number | string;
   llmMaxOutputTokensReasoning: number | string;
-  llmMaxOutputTokensPlanFallback: number | string;
 }
 
 interface LlmModelOptionsWithCurrentInput {
@@ -48,7 +47,6 @@ interface SelectedLlmPricingRowsInput {
   llmModelReasoning: string;
   llmMaxOutputTokensPlan: number;
   llmMaxOutputTokensReasoning: number;
-  llmMaxOutputTokensPlanFallback: number;
   modelPricingLookup: ModelPricingLookup;
   indexingLlmConfig: IndexingLlmConfigResponse | undefined;
 }
@@ -86,7 +84,6 @@ export function deriveLlmTokenPresetFallbackOptions(runtimeSettingsBootstrap: Ll
   const seeded = [
     runtimeSettingsBootstrap.llmMaxOutputTokensPlan,
     runtimeSettingsBootstrap.llmMaxOutputTokensReasoning,
-    runtimeSettingsBootstrap.llmMaxOutputTokensPlanFallback,
   ];
   const cleaned = seeded
     .map((value) => parseRuntimeLlmTokenCap(value))
@@ -98,11 +95,11 @@ export function deriveLlmTokenPresetFallbackOptions(runtimeSettingsBootstrap: Ll
 export function deriveLlmTokenPresetOptions(
   indexingLlmConfig: IndexingLlmConfigResponse | undefined,
   llmTokenPresetFallbackOptions: number[],
-  llmMaxOutputTokensPlanFallback: number
+  llmMaxOutputTokensPlan: number
 ): number[] {
   const fallbackPresets = llmTokenPresetFallbackOptions.length > 0
     ? llmTokenPresetFallbackOptions
-    : [llmMaxOutputTokensPlanFallback];
+    : [llmMaxOutputTokensPlan];
   const raw = Array.isArray(indexingLlmConfig?.token_presets)
     ? indexingLlmConfig.token_presets
     : fallbackPresets;
@@ -131,12 +128,12 @@ export function deriveModelTokenDefaults(options: {
   llmTokenProfileLookup: Map<string, LlmTokenDefaults>;
   indexingLlmConfig: IndexingLlmConfigResponse | undefined;
   llmTokenPresetOptions: number[];
-  llmMaxOutputTokensPlanFallback: number;
+  llmMaxOutputTokensPlan: number;
   llmMinOutputTokens: number;
 }): LlmTokenDefaults {
   const profile = options.llmTokenProfileLookup.get(normalizeToken(options.model));
   const defaultFromConfig = parseRuntimeLlmTokenCap(options.indexingLlmConfig?.token_defaults?.plan);
-  const fallbackDefault = options.llmTokenPresetOptions[0] || options.llmMaxOutputTokensPlanFallback;
+  const fallbackDefault = options.llmTokenPresetOptions[0] || options.llmMaxOutputTokensPlan;
   const globalDefault = defaultFromConfig || parseRuntimeLlmTokenCap(fallbackDefault) || options.llmMinOutputTokens;
   const fallbackMaxOutputTokens = options.llmTokenPresetOptions[options.llmTokenPresetOptions.length - 1] || globalDefault;
   const default_output_tokens = parseRuntimeLlmTokenCap(profile?.default_output_tokens) || globalDefault;

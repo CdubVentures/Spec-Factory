@@ -46,9 +46,11 @@ export function resolveLlmKnobDefaults(cfg = {}) {
       model: modelDefaults.reasoning,
       token_cap: tokenDefaults.reasoning
     },
+    // WHY: Fallback inherits the phase's token cap from the primary. Surface
+    // the plan-phase cap here so knob-defaults consumers see the same ceiling.
     fallback_plan: {
       model: String(cfg.llmPlanFallbackModel || '').trim(),
-      token_cap: toInt(cfg.llmMaxOutputTokensPlanFallback, tokenDefaults.plan)
+      token_cap: tokenDefaults.plan
     }
   };
 }

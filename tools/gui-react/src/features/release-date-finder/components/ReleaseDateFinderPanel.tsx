@@ -36,46 +36,41 @@ import {
 import { deriveFinderKpiCards, deriveVariantRows, sortRunsNewestFirst } from '../selectors/rdfSelectors.ts';
 import { rdfHowItWorksSections } from '../rdfHowItWorksContent.ts';
 import { maybeFormatDateValue } from '../../../utils/dateTime.ts';
-import type { EvidenceSource } from '../types.ts';
+import type { EvidenceRef } from '../types.ts';
 
 interface ReleaseDateFinderPanelProps {
   readonly productId: string;
   readonly category: string;
 }
 
-function tierTone(tier: EvidenceSource['tier']): string {
+function tierTone(tier: string): string {
   if (tier === 'tier1') return 'sf-chip-success';
   if (tier === 'tier2') return 'sf-chip-info';
   if (tier === 'tier3') return 'sf-chip-warning';
   return 'sf-chip-neutral';
 }
 
-function EvidenceRow({ source }: { readonly source: EvidenceSource }) {
+function EvidenceRow({ source }: { readonly source: EvidenceRef }) {
   return (
     <div className="sf-surface-panel border sf-border-soft rounded-md p-2 flex flex-col gap-1.5">
       <div className="flex items-center gap-2 flex-wrap">
         <span className={`${tierTone(source.tier)} text-[9px] font-bold uppercase tracking-[0.04em] px-1.5 py-0.5 rounded`}>
           {source.tier}
         </span>
-        <span className="text-[10px] font-semibold sf-text-muted uppercase tracking-[0.04em]">
-          {source.source_type}
+        <span className="text-[10px] font-mono sf-text-muted">
+          {source.confidence}%
         </span>
-        {source.source_url && (
+        {source.url && (
           <a
-            href={source.source_url}
+            href={source.url}
             target="_blank"
             rel="noreferrer"
             className="text-[11px] font-mono sf-text-accent hover:underline truncate max-w-full"
           >
-            {source.source_url}
+            {source.url}
           </a>
         )}
       </div>
-      {source.excerpt && (
-        <div className="text-[11px] sf-text-primary italic leading-snug">
-          &ldquo;{source.excerpt}&rdquo;
-        </div>
-      )}
     </div>
   );
 }
@@ -355,7 +350,7 @@ export function ReleaseDateFinderPanel({ productId, category }: ReleaseDateFinde
                   const atoms = resolveVariantColorAtoms(variantKey, editions);
                   const hexParts = atoms.map((a) => hexMap.get(a.trim()) || '');
                   const dateValue = maybeFormatDateValue(resp?.release_date);
-                  const evidenceCount = resp?.evidence?.length ?? 0;
+                  const evidenceCount = resp?.evidence_refs?.length ?? 0;
                   const log = resp?.discovery_log;
                   const discoverySections: DiscoverySection[] = [];
                   if (log?.queries_run?.length) discoverySections.push({ title: 'Queries Run', format: 'lines', items: log.queries_run });

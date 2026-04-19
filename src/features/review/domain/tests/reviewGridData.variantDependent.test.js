@@ -62,6 +62,46 @@ test('buildProductReviewPayload populates variant_values for variant-dependent f
   assert.equal(field.variant_values.v_black.confidence, 1.0);
 });
 
+test('RDF candidates (variant-dependent) surface real LLM confidence, not 100%', async () => {
+  // WHY: Backend stores confidence as integer 0-100 (matches LLM schema + publisher
+  // normalizeConfidence convention). Review grid projection must normalize to
+  // fraction 0-1 so the drawer's pct() renders the real honest percentage. Before
+  // the fix, Math.min(1, 95) clamped integer 95 to 1.0 → drawer showed 100%.
+  const variants = [
+    { variant_id: 'v_black', variant_key: 'color:black', variant_label: 'Black', variant_type: 'color', color_atoms: ['black'], edition_slug: null },
+    { variant_id: 'v_white', variant_key: 'color:white', variant_label: 'White', variant_type: 'color', color_atoms: ['white'], edition_slug: null },
+  ];
+  const candidates = [
+    { id: 1, field_key: 'release_date', variant_id: 'v_black', value: '2023-10-12', confidence: 95, status: 'resolved', source_type: 'release_date_finder', source_id: 'rdf_b', metadata_json: {}, updated_at: '2026-04-18T22:00:00Z' },
+    { id: 2, field_key: 'release_date', variant_id: 'v_white', value: '2024-04-19', confidence: 68, status: 'candidate', source_type: 'release_date_finder', source_id: 'rdf_w', metadata_json: {}, updated_at: '2026-04-18T22:00:00Z' },
+  ];
+  const specDb = {
+    getProduct: () => ({ product_id: 'p1', brand: 'Corsair', model: 'M75', variant: 'Wireless' }),
+    getAllFieldCandidatesByProduct: () => candidates,
+    variants: { listActive: () => variants },
+    getCompiledRules: () => ({ fields: { release_date: { variant_dependent: true } } }),
+  };
+  const layout = makeLayout([{ key: 'release_date', variant_dependent: true }]);
+
+  const payload = await buildProductReviewPayload({
+    storage: {}, config: {}, category: 'mouse', productId: 'p1',
+    layout, specDb, catalogProduct: { brand: 'Corsair', model: 'M75' },
+  });
+
+  const field = payload.fields.release_date;
+  const blackCandidate = field.candidates.find((c) => c.variant_id === 'v_black');
+  const whiteCandidate = field.candidates.find((c) => c.variant_id === 'v_white');
+  assert.ok(blackCandidate, 'black candidate in payload');
+  assert.ok(whiteCandidate, 'white candidate in payload');
+  // Drawer reads candidate.score and renders pct(score) → "95.0%" / "68.0%"
+  assert.equal(blackCandidate.score, 0.95, 'integer 95 normalized to fraction 0.95');
+  assert.equal(whiteCandidate.score, 0.68, 'integer 68 normalized to fraction 0.68');
+
+  // Per-variant published (resolved status wins) also surfaces real numbers
+  assert.equal(field.variant_values.v_black.confidence, 0.95,
+    'resolved candidate surfaces real fraction, not clamped to 1.0');
+});
+
 test('buildProductReviewPayload omits variant_values for scalar field', async () => {
   const candidates = [
     { id: 1, field_key: 'weight', variant_id: null, value: '59', confidence: 0.95, status: 'resolved', source_type: 'pipeline', source_id: 'p_1', metadata_json: {}, updated_at: '' },

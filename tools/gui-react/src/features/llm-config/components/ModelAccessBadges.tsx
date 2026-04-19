@@ -63,11 +63,23 @@ function WebSearchIcon() {
   );
 }
 
+// WHY: "Fallback" — diverted-arrow metaphor. Primary path failed, call rerouted.
+function FallbackIcon() {
+  return (
+    <svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2 4h6a4 4 0 0 1 4 4v4" />
+      <path d="M9 9l3 3 3-3" />
+      <path d="M1.5 2.5l1 1.5-1 1.5" />
+    </svg>
+  );
+}
+
 interface ModelBadgeGroupProps {
   accessMode?: LlmAccessMode;
   role?: LlmModelRole;
   thinking?: boolean;
   webSearch?: boolean;
+  isFallback?: boolean;
 }
 
 export const ModelBadgeGroup = memo(function ModelBadgeGroup({
@@ -75,6 +87,7 @@ export const ModelBadgeGroup = memo(function ModelBadgeGroup({
   role,
   thinking,
   webSearch,
+  isFallback,
 }: ModelBadgeGroupProps) {
   const modeStyle = accessMode ? ACCESS_MODE_BADGE_STYLE[accessMode] : ACCESS_MODE_BADGE_STYLE.api;
   const roleStyle = role ? ROLE_ICON_STYLE[role] : null;
@@ -96,6 +109,16 @@ export const ModelBadgeGroup = memo(function ModelBadgeGroup({
           title={roleStyle.title}
         >
           {role === 'reasoning' ? <ReasoningIcon /> : <PrimaryIcon />}
+        </span>
+      )}
+      {isFallback && (
+        <span
+          className="sf-custom-select-badge"
+          style={{ color: CAPABILITY_BADGE_STYLE.fallback.fg, backgroundColor: CAPABILITY_BADGE_STYLE.fallback.bg }}
+          title={CAPABILITY_BADGE_STYLE.fallback.title}
+        >
+          <FallbackIcon />
+          <span>FB</span>
         </span>
       )}
       {thinking && (

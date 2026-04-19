@@ -20,10 +20,11 @@ describe('LLM_MODEL_ROLES', () => {
     }
   });
 
-  it('every primary role has fallbackModelKey and fallbackTokenKey', () => {
+  it('every primary role has a fallbackModelKey', () => {
+    // WHY: fallbackTokenKey was retired — fallback inherits the primary's
+    // token cap. Only fallbackModelKey remains on each role.
     for (const entry of LLM_MODEL_ROLES) {
       ok(entry.fallbackModelKey, `missing fallbackModelKey on ${entry.role}`);
-      ok(entry.fallbackTokenKey, `missing fallbackTokenKey on ${entry.role}`);
     }
   });
 });
@@ -67,11 +68,13 @@ describe('LLM_TOKEN_VALIDATION_ENTRIES (derived)', () => {
   });
 
   it('matches the expected entries order and values', () => {
+    // WHY: Fallback validation entries use the primary's token key — fallback
+    // inherits the phase cap, no separate fallback-tokens registry key.
     const expected = [
       { phase: 'Plan', modelKey: 'llmModelPlan', tokenKey: 'llmMaxOutputTokensPlan' },
-      { phase: 'Plan Fallback', modelKey: 'llmPlanFallbackModel', tokenKey: 'llmMaxOutputTokensPlanFallback' },
+      { phase: 'Plan Fallback', modelKey: 'llmPlanFallbackModel', tokenKey: 'llmMaxOutputTokensPlan' },
       { phase: 'Reasoning', modelKey: 'llmModelReasoning', tokenKey: 'llmMaxOutputTokensReasoning' },
-      { phase: 'Reasoning Fallback', modelKey: 'llmReasoningFallbackModel', tokenKey: 'llmMaxOutputTokensPlanFallback' },
+      { phase: 'Reasoning Fallback', modelKey: 'llmReasoningFallbackModel', tokenKey: 'llmMaxOutputTokensReasoning' },
     ];
     deepStrictEqual(LLM_TOKEN_VALIDATION_ENTRIES, expected);
   });

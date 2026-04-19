@@ -28,7 +28,8 @@ export const ROLE_ICON_STYLE: Record<LlmModelRole, { fg: string; bg: string; tit
   embedding: { fg: 'var(--sf-state-success-fg)', bg: 'var(--sf-state-success-bg)', title: 'Embedding' },
 };
 
-export const CAPABILITY_BADGE_STYLE: Record<'thinking' | 'webSearch', { fg: string; bg: string; title: string }> = {
+export const CAPABILITY_BADGE_STYLE: Record<'thinking' | 'webSearch' | 'fallback', { fg: string; bg: string; title: string }> = {
   thinking: { fg: 'var(--sf-state-run-ai-fg)', bg: 'rgb(var(--sf-color-accent-strong-rgb) / 0.08)', title: 'Extended thinking' },
   webSearch: { fg: 'var(--sf-state-success-fg)', bg: 'var(--sf-state-success-bg)', title: 'Web search' },
+  fallback: { fg: 'var(--sf-state-warning-fg)', bg: 'var(--sf-state-warning-bg)', title: 'Fallback model — primary failed, this call used the configured fallback' },
 };

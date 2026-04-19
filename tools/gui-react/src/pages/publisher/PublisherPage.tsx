@@ -16,6 +16,7 @@ import type {
   PublisherRepairEntry,
   PublisherSourceEntry,
   PublisherLlmRepairDecision,
+  EvidenceRef,
 } from './types.ts';
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -182,6 +183,106 @@ function SourceRow({ source }: { source: PublisherSourceEntry }) {
 const detailThCls = "px-2 py-1 text-left sf-text-caption sf-status-text-muted uppercase";
 const detailThStyle = { fontSize: 9, letterSpacing: '0.05em' } as const;
 const detailHeadRowStyle = { background: 'rgb(var(--sf-color-surface-rgb) / 0.5)' } as const;
+
+// ── Evidence URL classification helpers ─────────────────────────────
+
+function statusChipClass(status: number | null): string {
+  if (status === null) return 'sf-chip-neutral';
+  if (status >= 200 && status < 300) return 'sf-chip-success';
+  if (status === 0) return 'sf-chip-warning';  // network error / unknown
+  return 'sf-chip-danger';  // 4xx / 5xx
+}
+
+function statusLabel(status: number | null): string {
+  if (status === null) return '—';
+  if (status === 0) return 'net err';
+  return String(status);
+}
+
+function EvidenceUrlRow({ entry }: { entry: EvidenceRef }) {
+  return (
+    <tr className="sf-border-subtle" style={{ borderBottom: '1px solid' }}>
+      <td className="py-1 px-1.5"><Chip label={entry.tier} className="sf-chip-neutral" /></td>
+      <td className="py-1 px-1.5"><Chip label={statusLabel(entry.http_status)} className={statusChipClass(entry.http_status)} /></td>
+      <td className="py-1 px-1.5">
+        <a
+          href={entry.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="sf-text-muted"
+          style={{ fontFamily: 'var(--sf-token-font-family-mono)', fontSize: 10, wordBreak: 'break-all' }}
+        >
+          {entry.url}
+        </a>
+      </td>
+    </tr>
+  );
+}
+
+function EvidenceUrlsCard({ row }: { row: PublisherCandidateRow }) {
+  const refs = row.evidence ?? [];
+  const accepted = refs.filter((r) => r.accepted === 1);
+  const rejected = refs.filter((r) => r.accepted === 0);
+
+  if (refs.length === 0) {
+    return (
+      <div className="sf-surface-elevated rounded border sf-border-default p-3">
+        <div className="sf-text-caption sf-status-text-muted uppercase tracking-wider font-bold mb-2" style={{ fontSize: 10 }}>
+          Evidence URLs
+        </div>
+        <div className="sf-text-subtle" style={{ fontSize: 11 }}>No evidence URLs cited.</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="sf-surface-elevated rounded border sf-border-default p-3">
+      <div className="sf-text-caption sf-status-text-muted uppercase tracking-wider font-bold mb-2" style={{ fontSize: 10 }}>
+        Evidence URLs
+      </div>
+      {accepted.length > 0 && (
+        <div className="mb-2">
+          <div className="sf-text-caption sf-status-text-muted uppercase tracking-wider font-bold mb-1.5 flex items-center gap-2" style={{ fontSize: 10 }}>
+            Accepted
+            <Chip label={String(accepted.length)} className="sf-chip-success" />
+          </div>
+          <table className="w-full" style={{ borderCollapse: 'collapse', fontSize: 11 }}>
+            <thead>
+              <tr style={detailHeadRowStyle}>
+                <th className={detailThCls} style={detailThStyle}>Tier</th>
+                <th className={detailThCls} style={detailThStyle}>Status</th>
+                <th className={detailThCls} style={detailThStyle}>URL</th>
+              </tr>
+            </thead>
+            <tbody>
+              {accepted.map((r, i) => <EvidenceUrlRow key={`acc-${i}`} entry={r} />)}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {rejected.length > 0 && (
+        <div className={accepted.length > 0 ? 'mt-2' : ''}>
+          <div className="sf-text-caption sf-status-text-muted uppercase tracking-wider font-bold mb-1.5 flex items-center gap-2" style={{ fontSize: 10 }}>
+            Rejected
+            <Chip label={String(rejected.length)} className="sf-chip-danger" />
+          </div>
+          <table className="w-full" style={{ borderCollapse: 'collapse', fontSize: 11 }}>
+            <thead>
+              <tr style={detailHeadRowStyle}>
+                <th className={detailThCls} style={detailThStyle}>Tier</th>
+                <th className={detailThCls} style={detailThStyle}>Status</th>
+                <th className={detailThCls} style={detailThStyle}>URL</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rejected.map((r, i) => <EvidenceUrlRow key={`rej-${i}`} entry={r} />)}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── Expanded row content ─────────────────────────────────────────────
 
@@ -386,6 +487,8 @@ function ExpandedRowContent({ row }: { row: PublisherCandidateRow }) {
             </div>
           </div>
         </div>
+
+        <EvidenceUrlsCard row={row} />
       </div>
     </div>
   );
@@ -601,6 +704,24 @@ export function PublisherPage() {
       cell: ({ row }) => {
         const count = repairCount(row.original);
         return <Chip label={String(count)} className={count > 0 ? 'sf-chip-info' : 'sf-chip-neutral'} />;
+      },
+      size: 60,
+    },
+    {
+      id: 'evidence_accepted',
+      header: 'Evid ✓',
+      cell: ({ row }) => {
+        const n = row.original.evidence_accepted_count ?? 0;
+        return <Chip label={String(n)} className={n > 0 ? 'sf-chip-success' : 'sf-chip-neutral'} />;
+      },
+      size: 60,
+    },
+    {
+      id: 'evidence_rejected',
+      header: 'Evid ✗',
+      cell: ({ row }) => {
+        const n = row.original.evidence_rejected_count ?? 0;
+        return <Chip label={String(n)} className={n > 0 ? 'sf-chip-danger' : 'sf-chip-neutral'} />;
       },
       size: 60,
     },

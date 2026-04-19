@@ -69,7 +69,6 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
   // --- llmMaxOutputTokens chain ---
   merged.llmMaxOutputTokensPlan = toTokenInt(merged.llmMaxOutputTokensPlan, toTokenInt(merged.llmMaxOutputTokens, 1200));
   merged.llmMaxOutputTokensReasoning = toTokenInt(merged.llmMaxOutputTokensReasoning, toTokenInt(merged.llmReasoningBudget, merged.llmMaxOutputTokens));
-  merged.llmMaxOutputTokensPlanFallback = toTokenInt(merged.llmMaxOutputTokensPlanFallback, merged.llmMaxOutputTokensPlan);
 
   // --- Token profile upserts ---
   const upsertTokenProfile = (modelName, defaults = {}) => {
@@ -162,6 +161,7 @@ export function resolvePhaseOverrides(merged) {
     merged[`${prefix}MaxOutputTokens`] = phaseOverride.maxOutputTokens ?? merged[def.globalTokens];
     merged[`${prefix}TimeoutMs`] = phaseOverride.timeoutMs ?? merged[def.globalTimeout];
     merged[`${prefix}MaxContextTokens`] = phaseOverride.maxContextTokens ?? merged[def.globalContextTokens];
+    merged[`${prefix}ReasoningBudget`] = phaseOverride.reasoningBudget ?? merged[def.globalReasoningBudget];
     merged[`${prefix}WebSearch`] = primaryGated.webSearch;
     merged[`${prefix}Thinking`] = primaryGated.thinking;
     merged[`${prefix}ThinkingEffort`] = primaryGated.thinkingEffort;

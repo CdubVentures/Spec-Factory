@@ -9,6 +9,7 @@ import {
   isNumericContractType,
   stableSortStrings
 } from './compileUtils.js';
+import { EG_LOCKED_KEYS as EG_LOCKED_KEYS_LIST } from '../features/studio/contracts/egPresets.js';
 
 export function buildPropertyConstraintsFromMap(map, fieldKey) {
   const meta = resolveComponentPropertyMetaFromMap(map, fieldKey);
@@ -211,8 +212,8 @@ export function declaredComponentPropertyKeysFromMap(map = {}) {
 }
 
 // WHY: Variant-generator keys must always promote to product fields even if
-// authors mistakenly mark them component_only. Source: src/features/studio/contracts/egPresets.js:EG_LOCKED_KEYS.
-const EG_LOCKED_KEYS = new Set(['colors', 'editions', 'release_date']);
+// authors mistakenly mark them component_only.
+const EG_LOCKED_KEYS = new Set(EG_LOCKED_KEYS_LIST);
 
 export function inferComponentTypeForField(fieldKey = '', componentTypes = new Set()) {
   const keyToken = normalizeFieldKey(fieldKey);

@@ -15,6 +15,7 @@ import { validateField } from '../validation/validateField.js';
 import { persistDiscoveredValue } from '../persistDiscoveredValues.js';
 import { publishCandidate as autoPublish } from '../publish/publishCandidate.js';
 import { buildSourceId } from './buildSourceId.js';
+import { batchHeadCheck } from '../../../core/http/urlHeadCheck.js';
 
 function safeReadJson(filePath) {
   try { return JSON.parse(fs.readFileSync(filePath, 'utf8')); }
@@ -31,7 +32,7 @@ function serializeValue(value) {
  * @param {{ category: string, productId: string, fieldKey: string, value: *, confidence: number, sourceMeta: object, fieldRules: object, knownValues: object|null, componentDb: object|null, specDb: object, productRoot: string, config?: object }} opts
  * @returns {{ status: 'accepted'|'rejected', candidateId: number|null, value: *, validationResult: object, publishResult?: object }}
  */
-export function submitCandidate({
+export async function submitCandidate({
   category, productId, fieldKey,
   value, confidence, sourceMeta,
   fieldRules, knownValues, componentDb, specDb, productRoot,
@@ -40,6 +41,9 @@ export function submitCandidate({
   appDb,
   config,
   variantId,
+  verifyEvidenceUrls,
+  evidenceCache,
+  strictEvidence,
 }) {
   // WHY: Normalize falsy variantId (undefined/null/'') to null so SQL stores NULL
   // and the JSON entry omits the key. Truthy strings are the FK anchor for
@@ -107,6 +111,56 @@ export function submitCandidate({
   const sourceType = String(sourceMeta.source || '').trim();
   const sourceModel = String(sourceMeta.model || '').trim();
   const hasMetadata = metadata && typeof metadata === 'object' && Object.keys(metadata).length > 0;
+
+  // --- Evidence URL verification (HEAD-check gate) ---
+  // WHY: LLMs can hallucinate plausible-looking URLs that 404 (e.g. Corsair CEF
+  // run citing `/gaming-mice/` when the real path is `/gaming-mouse/<sku>`).
+  // HEAD-check each ref deterministically. Network errors (http_status 0) are
+  // treated as "unknown = accepted" so a flaky network doesn't nuke legitimate
+  // sources — only actual 4xx/5xx counts as rejection.
+  // Config knobs (flat, per settingsRegistry): evidenceVerificationEnabled,
+  // evidenceVerificationTimeoutMs, evidenceVerificationStrict.
+  const shouldVerify = verifyEvidenceUrls ?? (config?.evidenceVerificationEnabled !== false);
+  const strictMode = strictEvidence ?? Boolean(config?.evidenceVerificationStrict);
+  const timeoutMs = config?.evidenceVerificationTimeoutMs ?? 5000;
+
+  if (hasMetadata && shouldVerify && Array.isArray(metadata.evidence_refs) && metadata.evidence_refs.length > 0) {
+    const urls = metadata.evidence_refs.map(r => r?.url).filter(u => typeof u === 'string' && u.length > 0);
+    const statusMap = await batchHeadCheck(urls, { timeoutMs, cache: evidenceCache });
+
+    const stamped = [];
+    let acceptedCount = 0;
+    let rejectedCount = 0;
+    for (const ref of metadata.evidence_refs) {
+      const status = statusMap.get(ref?.url);
+      const httpStatus = Number.isInteger(status?.http_status) ? status.http_status : null;
+      const verifiedAt = status?.verified_at ?? null;
+      // 2xx → accepted. Network error (0) or invalid_url → unknown, accepted.
+      // 4xx / 5xx → rejected. No status at all (URL omitted) → accepted pass-through.
+      const isRejected = httpStatus !== null && httpStatus >= 400;
+      const accepted = isRejected ? 0 : 1;
+      if (accepted === 1) acceptedCount++; else rejectedCount++;
+      stamped.push({ ...ref, http_status: httpStatus, verified_at: verifiedAt, accepted });
+    }
+    metadata.evidence_refs = stamped;
+
+    if (strictMode && acceptedCount === 0 && rejectedCount > 0) {
+      const rejectedUrls = stamped.filter(r => r.accepted === 0).map(r => r.url);
+      return {
+        status: 'rejected',
+        candidateId: null,
+        value: validationResult.value,
+        validationResult: {
+          ...validationRecord,
+          valid: false,
+          rejections: [...validationRecord.rejections, {
+            reason_code: 'all_evidence_404',
+            detail: { rejected_urls: rejectedUrls },
+          }],
+        },
+      };
+    }
+  }
 
   // --- DB write (source-centric: one row per extraction, immutable) ---
   specDb.insertFieldCandidate({

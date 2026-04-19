@@ -10,5 +10,5 @@ export type {
   ReleaseDateFinderResult,
   ReleaseDateFinderCandidate,
   ReleaseDateFinderRun,
-  EvidenceSource,
+  EvidenceRef,
 } from './types.ts';

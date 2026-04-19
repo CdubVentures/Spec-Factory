@@ -83,6 +83,61 @@ describe('publisher routes', () => {
     assert.ok(responses[0].body.stats);
   });
 
+  it('GET /publisher/:category/candidates projects evidence + accepted/rejected counts per row', async () => {
+    const pid = 'rt-evidence';
+    specDb.insertFieldCandidate({
+      productId: pid, fieldKey: 'colors', sourceId: 'cef-rt-evidence-1',
+      sourceType: 'cef', value: '["black"]', unit: null, confidence: 95,
+      model: 'gpt-5.4-mini', validationJson: { valid: true, repairs: [], rejections: [] },
+      metadataJson: { variant_key: 'color:black' }, variantId: 'v_black',
+    });
+    const row = specDb.getFieldCandidateBySourceId(pid, 'colors', 'cef-rt-evidence-1');
+    specDb.insertFieldCandidateEvidenceMany(row.id, [
+      { url: 'https://good.example.com', tier: 'tier1', confidence: 95, http_status: 200, verified_at: '2026-04-18T22:30:00.000Z', accepted: 1 },
+      { url: 'https://bad.example.com', tier: 'tier2', confidence: 80, http_status: 404, verified_at: '2026-04-18T22:30:01.000Z', accepted: 0 },
+      { url: 'https://also-good.example.com', tier: 'tier3', confidence: 70, http_status: 200, verified_at: '2026-04-18T22:30:02.000Z', accepted: 1 },
+    ]);
+
+    const { ctx, responses } = makeCtx(specDb);
+    const handler = registerPublisherRoutes(ctx);
+    await handler(
+      ['publisher', 'mouse', 'candidates'],
+      new URLSearchParams('page=1&limit=50'),
+      'GET', {}, {},
+    );
+
+    assert.equal(responses[0].status, 200);
+    const rtRow = responses[0].body.rows.find(r => r.source_id === 'cef-rt-evidence-1');
+    assert.ok(rtRow, 'seeded row should appear in response');
+    assert.equal(rtRow.evidence_accepted_count, 2);
+    assert.equal(rtRow.evidence_rejected_count, 1);
+    assert.ok(Array.isArray(rtRow.evidence));
+    assert.equal(rtRow.evidence.length, 3);
+    const good = rtRow.evidence.find(e => e.url === 'https://good.example.com');
+    const bad = rtRow.evidence.find(e => e.url === 'https://bad.example.com');
+    assert.equal(good.http_status, 200);
+    assert.equal(good.accepted, 1);
+    assert.equal(good.tier, 'tier1');
+    assert.equal(bad.http_status, 404);
+    assert.equal(bad.accepted, 0);
+  });
+
+  it('GET /publisher/:category/candidates shows zero counts + empty evidence for candidates without refs', async () => {
+    seedCandidate(specDb, 'rt-no-evidence', 'weight', 70, 85);
+    const { ctx, responses } = makeCtx(specDb);
+    const handler = registerPublisherRoutes(ctx);
+    await handler(
+      ['publisher', 'mouse', 'candidates'],
+      new URLSearchParams('page=1&limit=50'),
+      'GET', {}, {},
+    );
+    const rtRow = responses[0].body.rows.find(r => r.product_id === 'rt-no-evidence');
+    assert.ok(rtRow);
+    assert.equal(rtRow.evidence_accepted_count, 0);
+    assert.equal(rtRow.evidence_rejected_count, 0);
+    assert.deepEqual(rtRow.evidence, []);
+  });
+
   // --- GET /publisher/:category/stats ---
 
   it('GET /publisher/:category/stats returns stats object', async () => {

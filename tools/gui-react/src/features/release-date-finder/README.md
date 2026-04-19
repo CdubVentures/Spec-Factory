@@ -10,7 +10,7 @@ Embedded finder panel in IndexLab for discovering per-variant first-availability
   - `useReleaseDateFinderRunMutation(category, productId)` — POST single-shot run (one LLM call per variant).
   - `useReleaseDateFinderLoopMutation(category, productId)` — POST budget loop (retries until publisher-reached or definitive unknown).
   - `useDeleteReleaseDateFinderRunMutation(category, productId)` / `useDeleteReleaseDateFinderAllMutation(category, productId)`.
-- Types: `ReleaseDateFinderResult`, `ReleaseDateFinderCandidate`, `ReleaseDateFinderRun`, `EvidenceSource`.
+- Types: `ReleaseDateFinderResult`, `ReleaseDateFinderCandidate`, `ReleaseDateFinderRun`, `EvidenceRef` — the response shape is auto-derived from the backend Zod schema via `scripts/generateRdfTypes.js` → `types.generated.ts`.
 
 ## Dependencies
 

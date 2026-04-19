@@ -46,10 +46,31 @@ export function registerPublisherRoutes(ctx) {
       const offset = (page - 1) * limit;
 
       const rows = specDb.getFieldCandidatesPaginated({ limit, offset });
+      // WHY: Augment each row with per-row evidence refs + accepted/rejected
+      // counts so the publisher panel can render the Evid ✓ / ✗ count chips
+      // and the row-drawer URL lists without a second roundtrip per row.
+      // field_candidate_evidence is the SQL projection of metadata_json.evidence_refs.
+      const rowsWithEvidence = rows.map((row) => {
+        const raw = specDb.listFieldCandidateEvidenceByCandidateId(row.id) || [];
+        const evidence = raw.map((e) => ({
+          url: e.url,
+          tier: e.tier,
+          confidence: e.confidence,
+          http_status: e.http_status,
+          accepted: e.accepted,
+        }));
+        const split = specDb.countFieldCandidateEvidenceSplitByCandidateId(row.id);
+        return {
+          ...row,
+          evidence,
+          evidence_accepted_count: split.accepted,
+          evidence_rejected_count: split.rejected,
+        };
+      });
       const total = specDb.countFieldCandidates();
       const stats = specDb.getFieldCandidatesStats();
 
-      jsonRes(res, 200, { rows, total, page, limit, stats });
+      jsonRes(res, 200, { rows: rowsWithEvidence, total, page, limit, stats });
       return true;
     }
 

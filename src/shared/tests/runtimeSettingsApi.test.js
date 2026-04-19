@@ -75,7 +75,6 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
 
     const INT_KEYS = [
       'llmMaxOutputTokensPlan', 'llmMaxOutputTokensReasoning',
-      'llmMaxOutputTokensPlanFallback',
       'crawleeRequestHandlerTimeoutSecs',
       'autoScrollPasses', 'autoScrollDelayMs',
     ];
@@ -93,6 +92,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     }
 
     const RETIRED_KEYS = [
+      'llmMaxOutputTokensPlanFallback',
       'bingSearchKey',
       'googleCseCx',
       'googleCseKey',

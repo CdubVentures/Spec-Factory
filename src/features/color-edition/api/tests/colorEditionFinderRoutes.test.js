@@ -15,14 +15,16 @@ function makeSpecDbStub(finderRow = null, listRows = [], productRow = null, runR
   const candidateDeleteCalls = [];
   const candidateDeleteByValueCalls = [];
   const candidateUpsertCalls = [];
+  const removeRunCalls = [];
+  const removeAllRunsCalls = [];
   const finderStore = {
     get: () => finderRow,
     listByCategory: () => listRows,
     listRuns: () => runRows,
     upsert: () => {},
     remove: () => {},
-    removeRun: () => {},
-    removeAllRuns: () => {},
+    removeRun: (pid, rn) => { removeRunCalls.push({ productId: pid, runNumber: rn }); },
+    removeAllRuns: (pid) => { removeAllRunsCalls.push({ productId: pid }); },
     insertRun: () => {},
     updateBookkeeping: () => {},
     updateSummaryField: () => {},
@@ -49,6 +51,8 @@ function makeSpecDbStub(finderRow = null, listRows = [], productRow = null, runR
     _candidateDeleteCalls: candidateDeleteCalls,
     _candidateDeleteByValueCalls: candidateDeleteByValueCalls,
     _candidateUpsertCalls: candidateUpsertCalls,
+    _removeRunCalls: removeRunCalls,
+    _removeAllRunsCalls: removeAllRunsCalls,
     category: 'mouse',
   };
 }
@@ -73,11 +77,6 @@ function makeCtx(overrides = {}) {
       getSpecDb: () => specDb,
       broadcastWs: () => {},
       logger: { info: () => {}, warn: () => {}, error: () => {} },
-      runColorEditionFinder: overrides.runFn || (async () => ({
-        colors: ['black'], editions: {}, default_color: 'black', fallbackUsed: false,
-      })),
-      deleteColorEditionFinderRun: overrides.deleteRunFn || (() => null),
-      deleteColorEditionFinderAll: overrides.deleteAllFn || (() => ({ deleted: true })),
     },
     calls,
     specDb,
@@ -142,12 +141,7 @@ describe('colorEditionFinderRoutes', () => {
 
   describe('POST /color-edition-finder/:category/:productId', () => {
     it('triggers finder and returns 202 with operationId', async () => {
-      let runCalled = false;
-      const runFn = async () => {
-        runCalled = true;
-        return { colors: ['black', 'white'], editions: { 'launch': { colors: ['black'] } }, default_color: 'black', fallbackUsed: false };
-      };
-      const { ctx, calls } = makeCtx({ runFn });
+      const { ctx, calls } = makeCtx();
       const handler = registerColorEditionFinderRoutes(ctx);
       const result = await handler(['color-edition-finder', 'mouse', 'mouse-001'], new Map(), 'POST', {}, {});
       assert.equal(result, true);
@@ -159,24 +153,20 @@ describe('colorEditionFinderRoutes', () => {
 
   describe('DELETE /color-edition-finder/:category/:productId/runs/:runNumber', () => {
     it('deletes a run and returns remaining count', async () => {
-      let deletedRun = null;
-      const deleteRunFn = ({ runNumber }) => {
-        deletedRun = runNumber;
-        return { run_count: 1, selected: { colors: ['black'], editions: {}, default_color: 'black' }, last_ran_at: '' };
-      };
-      const { ctx, calls } = makeCtx({ deleteRunFn });
+      const { ctx, calls, specDb } = makeCtx();
       const handler = registerColorEditionFinderRoutes(ctx);
       const result = await handler(['color-edition-finder', 'mouse', 'mouse-001', 'runs', '2'], new Map(), 'DELETE', {}, {});
       assert.equal(result, true);
       assert.equal(calls[0].status, 200);
       assert.equal(calls[0].body.ok, true);
-      assert.equal(calls[0].body.remaining_runs, 1);
-      assert.equal(deletedRun, 2);
+      assert.equal(typeof calls[0].body.remaining_runs, 'number');
+      assert.equal(specDb._removeRunCalls.length, 1, 'SQL removeRun must be invoked');
+      assert.equal(specDb._removeRunCalls[0].productId, 'mouse-001');
+      assert.equal(specDb._removeRunCalls[0].runNumber, 2);
     });
 
     it('does NOT delete candidates on single-run deletion', async () => {
-      const deleteRunFn = () => ({ run_count: 1, selected: { colors: ['black'], editions: {}, default_color: 'black' }, last_ran_at: '' });
-      const { ctx, specDb } = makeCtx({ deleteRunFn });
+      const { ctx, specDb } = makeCtx();
       const handler = registerColorEditionFinderRoutes(ctx);
       await handler(['color-edition-finder', 'mouse', 'mouse-001', 'runs', '2'], new Map(), 'DELETE', {}, {});
       assert.equal(specDb._candidateDeleteCalls.length, 0, 'candidates must NOT be deleted on single-run delete');
@@ -193,20 +183,18 @@ describe('colorEditionFinderRoutes', () => {
 
   describe('DELETE /color-edition-finder/:category/:productId', () => {
     it('deletes all data and returns ok', async () => {
-      let allDeleted = false;
-      const deleteAllFn = () => { allDeleted = true; return { deleted: true }; };
-      const { ctx, calls } = makeCtx({ deleteAllFn });
+      const { ctx, calls, specDb } = makeCtx();
       const handler = registerColorEditionFinderRoutes(ctx);
       const result = await handler(['color-edition-finder', 'mouse', 'mouse-001'], new Map(), 'DELETE', {}, {});
       assert.equal(result, true);
       assert.equal(calls[0].status, 200);
       assert.equal(calls[0].body.ok, true);
-      assert.ok(allDeleted);
+      assert.equal(specDb._removeAllRunsCalls.length, 1, 'SQL removeAllRuns must be invoked');
+      assert.equal(specDb._removeAllRunsCalls[0].productId, 'mouse-001');
     });
 
     it('deletes candidates on delete-all', async () => {
-      const deleteAllFn = () => ({ deleted: true });
-      const { ctx, specDb } = makeCtx({ deleteAllFn });
+      const { ctx, specDb } = makeCtx();
       const handler = registerColorEditionFinderRoutes(ctx);
       await handler(['color-edition-finder', 'mouse', 'mouse-001'], new Map(), 'DELETE', {}, {});
       // Source-aware cleanup: CEF-only candidates are deleted by value, not blanket

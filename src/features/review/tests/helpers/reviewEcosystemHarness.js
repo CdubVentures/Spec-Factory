@@ -661,37 +661,6 @@ function seedFieldCandidatesFromProducts(db) {
   }
 }
 
-function seedCompiledRulesComponentDbs(db) {
-  const componentDbs = {};
-  const types = [
-    { type: 'sensor', items: SENSOR_ITEMS },
-    { type: 'switch', items: SWITCH_ITEMS },
-    { type: 'encoder', items: ENCODER_ITEMS },
-    { type: 'material', items: MATERIAL_ITEMS },
-  ];
-  for (const { type, items } of types) {
-    componentDbs[type] = {
-      component_type: type,
-      items: items.map(i => ({
-        name: i.name,
-        canonical_name: i.name,
-        maker: i.maker || '',
-        aliases: i.aliases || [],
-        links: i.links || [],
-        properties: i.properties || {},
-      })),
-    };
-  }
-  const existing = db.getCompiledRules() || {};
-  db.upsertCompiledRules(JSON.stringify({
-    ...existing,
-    component_dbs: componentDbs,
-    fields: existing.fields || Object.fromEntries(
-      Object.entries(FIELD_RULES_FIELDS).map(([k, v]) => [k, v])
-    ),
-  }));
-}
-
 async function withSeededSpecDb(config, run) {
   const { SpecDb } = await import('../../../../db/specDb.js');
   const { seedSpecDb } = await import('../../../../db/seed.js');
@@ -712,8 +681,6 @@ async function withSeededSpecDb(config, run) {
       logger: null,
     });
     seedFieldCandidatesFromProducts(db);
-    // Seed compiled_rules with component_dbs so reference candidates appear
-    seedCompiledRulesComponentDbs(db);
     return await run({ db, seedResult, fieldRules });
   } finally {
     try {

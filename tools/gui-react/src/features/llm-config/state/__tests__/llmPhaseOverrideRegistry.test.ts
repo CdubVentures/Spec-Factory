@@ -75,6 +75,7 @@ describe('resolvePhaseModel — webSearch defaults', () => {
     llmMaxOutputTokensTriage: 20000,
     llmTimeoutMs: 30000,
     llmMaxTokens: 16384,
+    llmReasoningBudget: 32768,
   };
 
   it('webSearch defaults to false when no override set', () => {
@@ -111,6 +112,7 @@ describe('resolvePhaseModel — thinking defaults', () => {
     llmMaxOutputTokensTriage: 20000,
     llmTimeoutMs: 30000,
     llmMaxTokens: 16384,
+    llmReasoningBudget: 32768,
   };
 
   it('thinking defaults to false when no override set', () => {
@@ -147,6 +149,7 @@ describe('resolvePhaseModel — thinkingEffort defaults', () => {
     llmMaxOutputTokensTriage: 20000,
     llmTimeoutMs: 30000,
     llmMaxTokens: 16384,
+    llmReasoningBudget: 32768,
   };
 
   it('thinkingEffort defaults to empty string when no override set', () => {
@@ -183,6 +186,7 @@ describe('resolvePhaseModel — fallback panel defaults', () => {
     llmMaxOutputTokensTriage: 20000,
     llmTimeoutMs: 30000,
     llmMaxTokens: 16384,
+    llmReasoningBudget: 32768,
   };
 
   it('fallbackModel defaults to global llmPlanFallbackModel', () => {
@@ -249,6 +253,7 @@ describe('resolvePhaseModel — disableLimits defaults', () => {
     llmMaxOutputTokensTriage: 20000,
     llmTimeoutMs: 30000,
     llmMaxTokens: 16384,
+    llmReasoningBudget: 32768,
   };
 
   it('disableLimits defaults to false when no override set', () => {
@@ -260,6 +265,43 @@ describe('resolvePhaseModel — disableLimits defaults', () => {
     const overrides = { needset: { disableLimits: true } };
     const result = resolvePhaseModel(overrides, 'needset', globalDraft);
     strictEqual(result?.disableLimits, true);
+  });
+});
+
+describe('resolvePhaseModel — reasoningBudget defaults', () => {
+  const globalDraft = {
+    llmModelPlan: 'gemini-2.5-flash',
+    llmModelReasoning: 'deepseek-reasoner',
+    llmPlanFallbackModel: 'deepseek-chat',
+    llmReasoningFallbackModel: 'gemini-2.5-pro',
+    llmPlanUseReasoning: false,
+    llmMaxOutputTokensPlan: 4096,
+    llmMaxOutputTokensTriage: 20000,
+    llmTimeoutMs: 30000,
+    llmMaxTokens: 16384,
+    llmReasoningBudget: 32768,
+  };
+
+  it('reasoningBudget defaults to global llmReasoningBudget when no override set', () => {
+    const result = resolvePhaseModel({}, 'needset', globalDraft);
+    strictEqual(result?.reasoningBudget, 32768);
+  });
+
+  it('reasoningBudget resolves to override value when phase override is set', () => {
+    const overrides = { needset: { reasoningBudget: 8192 } };
+    const result = resolvePhaseModel(overrides, 'needset', globalDraft);
+    strictEqual(result?.reasoningBudget, 8192);
+  });
+
+  it('reasoningBudget is independent per phase', () => {
+    const overrides = {
+      needset: { reasoningBudget: 8192 },
+      brandResolver: { reasoningBudget: 2048 },
+    };
+    const needset = resolvePhaseModel(overrides, 'needset', globalDraft);
+    const brand = resolvePhaseModel(overrides, 'brandResolver', globalDraft);
+    strictEqual(needset?.reasoningBudget, 8192);
+    strictEqual(brand?.reasoningBudget, 2048);
   });
 });
 
@@ -275,6 +317,7 @@ describe('resolvePhaseModel with unmapped phase', () => {
       llmMaxOutputTokensTriage: 20000,
       llmTimeoutMs: 30000,
       llmMaxTokens: 16384,
+      llmReasoningBudget: 32768,
     });
     strictEqual(result, null);
   });

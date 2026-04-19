@@ -33,6 +33,7 @@ export function serializePhaseOverrides(overrides: LlmPhaseOverrides): string {
       phase.maxOutputTokens !== undefined ||
       phase.timeoutMs !== undefined ||
       phase.maxContextTokens !== undefined ||
+      phase.reasoningBudget !== undefined ||
       phase.webSearch !== undefined ||
       phase.thinking !== undefined ||
       phase.thinkingEffort !== undefined ||
@@ -63,6 +64,7 @@ export interface ResolvedPhaseModel {
   maxOutputTokens: number | null;
   timeoutMs: number | null;
   maxContextTokens: number | null;
+  reasoningBudget: number | null;
   webSearch: boolean;
   thinking: boolean;
   thinkingEffort: string;
@@ -87,6 +89,7 @@ export interface GlobalDraftSlice {
   llmMaxOutputTokensTriage: number;
   llmTimeoutMs: number;
   llmMaxTokens: number;
+  llmReasoningBudget: number;
 }
 
 export interface PhaseOverrideRegistryEntry {
@@ -97,20 +100,21 @@ export interface PhaseOverrideRegistryEntry {
   globalTokens: keyof GlobalDraftSlice;
   globalTimeout: keyof GlobalDraftSlice;
   globalContextTokens: keyof GlobalDraftSlice;
+  globalReasoningBudget: keyof GlobalDraftSlice;
   globalFallbackModel: keyof GlobalDraftSlice;
   globalFallbackReasoningModel: keyof GlobalDraftSlice;
 }
 
 export const PHASE_OVERRIDE_REGISTRY: readonly PhaseOverrideRegistryEntry[] = [
-  { uiPhaseId: 'needset', overrideKey: 'needset', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel' },
-  { uiPhaseId: 'search-planner', overrideKey: 'searchPlanner', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel' },
-  { uiPhaseId: 'brand-resolver', overrideKey: 'brandResolver', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel' },
-  { uiPhaseId: 'serp-selector', overrideKey: 'serpSelector', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensTriage', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel' },
-  { uiPhaseId: 'validate', overrideKey: 'validate', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel' },
-  { uiPhaseId: 'color-finder', overrideKey: 'colorFinder', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel' },
-  { uiPhaseId: 'image-finder', overrideKey: 'imageFinder', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel' },
-  { uiPhaseId: 'image-evaluator', overrideKey: 'imageEvaluator', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel' },
-  { uiPhaseId: 'release-date-finder', overrideKey: 'releaseDateFinder', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel' },
+  { uiPhaseId: 'needset', overrideKey: 'needset', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalReasoningBudget: 'llmReasoningBudget', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel' },
+  { uiPhaseId: 'search-planner', overrideKey: 'searchPlanner', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalReasoningBudget: 'llmReasoningBudget', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel' },
+  { uiPhaseId: 'brand-resolver', overrideKey: 'brandResolver', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalReasoningBudget: 'llmReasoningBudget', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel' },
+  { uiPhaseId: 'serp-selector', overrideKey: 'serpSelector', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensTriage', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalReasoningBudget: 'llmReasoningBudget', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel' },
+  { uiPhaseId: 'validate', overrideKey: 'validate', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalReasoningBudget: 'llmReasoningBudget', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel' },
+  { uiPhaseId: 'color-finder', overrideKey: 'colorFinder', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalReasoningBudget: 'llmReasoningBudget', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel' },
+  { uiPhaseId: 'image-finder', overrideKey: 'imageFinder', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalReasoningBudget: 'llmReasoningBudget', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel' },
+  { uiPhaseId: 'image-evaluator', overrideKey: 'imageEvaluator', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalReasoningBudget: 'llmReasoningBudget', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel' },
+  { uiPhaseId: 'release-date-finder', overrideKey: 'releaseDateFinder', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalReasoningBudget: 'llmReasoningBudget', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel' },
 ];
 
 const PHASE_GLOBAL_MAP: ReadonlyMap<LlmOverridePhaseId, PhaseOverrideRegistryEntry> =
@@ -152,6 +156,7 @@ export function resolvePhaseModel(
   const maxOutputTokens = phaseOverride.maxOutputTokens ?? (globalDraft[mapping.globalTokens] as number);
   const timeoutMs = phaseOverride.timeoutMs ?? (globalDraft[mapping.globalTimeout] as number);
   const maxContextTokens = phaseOverride.maxContextTokens ?? (globalDraft[mapping.globalContextTokens] as number);
+  const reasoningBudget = phaseOverride.reasoningBudget ?? (globalDraft[mapping.globalReasoningBudget] as number);
   const webSearch = phaseOverride.webSearch ?? false;
   const thinking = phaseOverride.thinking ?? false;
   const thinkingEffort = phaseOverride.thinkingEffort ?? '';
@@ -177,6 +182,7 @@ export function resolvePhaseModel(
     maxOutputTokens,
     timeoutMs,
     maxContextTokens,
+    reasoningBudget,
     webSearch,
     thinking,
     thinkingEffort,

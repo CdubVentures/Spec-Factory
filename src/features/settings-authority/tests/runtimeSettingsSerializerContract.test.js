@@ -74,17 +74,18 @@ test('runtime settings serializer emits every runtime PUT frontend key', async (
   assert.equal(payload.llmPlanFallbackModel, 'gpt-plan-fallback');
 });
 
-test('runtime settings serializer applies fallback baselines and shared token defaults', async () => {
+test('runtime settings serializer applies shared token defaults when input is malformed', async () => {
   const harness = await runtimeSettingsDomainHarnessPromise;
   const payload = harness.collectRuntimeSettingsPayload(createSerializerInput({
     llmMaxOutputTokens: 'bad-token-count',
     llmMaxOutputTokensPlan: 'bad-plan-tokens',
-    llmMaxOutputTokensPlanFallback: 'bad-fallback-plan-tokens',
   }));
 
   assert.equal(payload.llmMaxOutputTokens, 11);
   assert.equal(payload.llmMaxOutputTokensPlan, 4096);
-  assert.equal(payload.llmMaxOutputTokensPlanFallback, 4096);
+  // WHY: llmMaxOutputTokensPlanFallback has been retired — fallback inherits
+  // the primary's phase cap. Payload must not surface it.
+  assert.equal(Object.hasOwn(payload, 'llmMaxOutputTokensPlanFallback'), false);
 });
 
 test('runtime settings serializer preserves parsed reasoning, timeout, and cost knobs', async () => {

@@ -101,6 +101,7 @@ function generatePhaseOverrideTypes() {
   lines.push('  maxOutputTokens: number | null;');
   lines.push('  timeoutMs: number | null;');
   lines.push('  maxContextTokens: number | null;');
+  lines.push('  reasoningBudget: number | null;');
   lines.push('  webSearch: boolean;');
   lines.push('  thinking: boolean;');
   lines.push('  thinkingEffort: string;');
@@ -160,6 +161,7 @@ export function serializePhaseOverrides(overrides: LlmPhaseOverrides): string {
       phase.maxOutputTokens !== undefined ||
       phase.timeoutMs !== undefined ||
       phase.maxContextTokens !== undefined ||
+      phase.reasoningBudget !== undefined ||
       phase.webSearch !== undefined ||
       phase.thinking !== undefined ||
       phase.thinkingEffort !== undefined ||
@@ -190,6 +192,7 @@ export interface ResolvedPhaseModel {
   maxOutputTokens: number | null;
   timeoutMs: number | null;
   maxContextTokens: number | null;
+  reasoningBudget: number | null;
   webSearch: boolean;
   thinking: boolean;
   thinkingEffort: string;
@@ -214,6 +217,7 @@ export interface GlobalDraftSlice {
   llmMaxOutputTokensTriage: number;
   llmTimeoutMs: number;
   llmMaxTokens: number;
+  llmReasoningBudget: number;
 }
 
 export interface PhaseOverrideRegistryEntry {
@@ -224,6 +228,7 @@ export interface PhaseOverrideRegistryEntry {
   globalTokens: keyof GlobalDraftSlice;
   globalTimeout: keyof GlobalDraftSlice;
   globalContextTokens: keyof GlobalDraftSlice;
+  globalReasoningBudget: keyof GlobalDraftSlice;
   globalFallbackModel: keyof GlobalDraftSlice;
   globalFallbackReasoningModel: keyof GlobalDraftSlice;
 }
@@ -232,7 +237,7 @@ export interface PhaseOverrideRegistryEntry {
   // Generated registry entries
   lines.push('export const PHASE_OVERRIDE_REGISTRY: readonly PhaseOverrideRegistryEntry[] = [');
   for (const p of LLM_PHASE_DEFS) {
-    lines.push(`  { uiPhaseId: ${quote(p.uiId)}, overrideKey: ${quote(p.id)}, globalModel: ${quote(p.globalModel)}, groupToggle: ${quote(p.groupToggle)}, globalTokens: ${quote(p.globalTokens)}, globalTimeout: ${quote(p.globalTimeout)}, globalContextTokens: ${quote(p.globalContextTokens)}, globalFallbackModel: ${quote(p.globalFallbackModel)}, globalFallbackReasoningModel: ${quote(p.globalFallbackReasoningModel)} },`);
+    lines.push(`  { uiPhaseId: ${quote(p.uiId)}, overrideKey: ${quote(p.id)}, globalModel: ${quote(p.globalModel)}, groupToggle: ${quote(p.groupToggle)}, globalTokens: ${quote(p.globalTokens)}, globalTimeout: ${quote(p.globalTimeout)}, globalContextTokens: ${quote(p.globalContextTokens)}, globalReasoningBudget: ${quote(p.globalReasoningBudget)}, globalFallbackModel: ${quote(p.globalFallbackModel)}, globalFallbackReasoningModel: ${quote(p.globalFallbackReasoningModel)} },`);
   }
   lines.push('];\n');
 
@@ -276,6 +281,7 @@ export function resolvePhaseModel(
   const maxOutputTokens = phaseOverride.maxOutputTokens ?? (globalDraft[mapping.globalTokens] as number);
   const timeoutMs = phaseOverride.timeoutMs ?? (globalDraft[mapping.globalTimeout] as number);
   const maxContextTokens = phaseOverride.maxContextTokens ?? (globalDraft[mapping.globalContextTokens] as number);
+  const reasoningBudget = phaseOverride.reasoningBudget ?? (globalDraft[mapping.globalReasoningBudget] as number);
   const webSearch = phaseOverride.webSearch ?? false;
   const thinking = phaseOverride.thinking ?? false;
   const thinkingEffort = phaseOverride.thinkingEffort ?? '';
@@ -301,6 +307,7 @@ export function resolvePhaseModel(
     maxOutputTokens,
     timeoutMs,
     maxContextTokens,
+    reasoningBudget,
     webSearch,
     thinking,
     thinkingEffort,

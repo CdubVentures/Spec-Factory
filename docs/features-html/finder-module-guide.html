@@ -89,6 +89,23 @@
 </div>
 
 <div class="container">
+  <div class="card" style="border-color: var(--green); background: var(--green-bg);">
+    <div class="card-header" style="background: var(--green); color: white;">
+      <span>Update &mdash; 2026-04-18: Zod-derived FE types + <code>variantDependent</code> signal (Phase 1)</span>
+    </div>
+    <div class="card-body" style="font-size: 13px;">
+      <p><strong>Four registry-hardening fixes landed.</strong> Future variantFieldProducer modules (SKU, pricing, discontinued) now auto-light-up in the review drawer and can derive their frontend response types from their backend Zod schema.</p>
+      <ol style="padding-left: 20px; margin-top: 6px;">
+        <li><strong>Review drawer uses <code>variantDependent</code>, not field-key equality.</strong> <code>FieldReviewDrawer.tsx:915</code> previously read <code>fieldKey === 'release_date'</code> to trigger variant attribution. Now it reads the <code>variantDependent</code> prop sourced from <code>field_rule.variant_dependent</code>. Any new <code>variantFieldProducer</code> field gets correct attribution automatically &mdash; no drawer edit needed. Backend helper <code>isVariantDependentField(fieldKey, specDb)</code> in <code>src/core/finder/finderModuleRegistry.js</code> is the authoritative signal.</li>
+        <li><strong>EG_LOCKED_KEYS imported from SSOT.</strong> <code>src/ingest/compileComponentHelpers.js</code> and <code>src/ingest/compileMapNormalization.js</code> used to hardcode <code>new Set(['colors','editions','release_date'])</code>. They now import from <code>src/features/studio/contracts/egPresets.js</code> (derived from <code>EG_PRESET_REGISTRY</code>). When you add an EG-locked field, both ingest compilers pick it up automatically.</li>
+        <li><strong>Frontend types derived from Zod.</strong> New pattern: <code>scripts/generateRdfTypes.js</code> reads the backend Zod schema via <code>schema.toJSONSchema()</code> and emits <code>types.generated.ts</code> with exact types. <code>types.ts</code> imports the generated type and composes it with UI-layer wrapper types (variant metadata, timing). Kills silent drift bugs &mdash; the pre-fix hand-written type declared fields (<code>source_url</code>, <code>excerpt</code>) the backend never emitted, so the RDF evidence card silently rendered blank URLs. Compile-time errors now.</li>
+        <li><strong>Two safe patterns for evidence rendering.</strong> New finders rendering evidence should pick one: (a) use the review's <code>resolveEvidenceSources()</code> adapter from <code>tools/gui-react/src/features/review/selectors/publishedSourceSelectors.ts</code> which normalizes modern <code>evidence_refs</code> + legacy <code>evidence_sources</code> shapes, or (b) derive types from Zod (RDF pattern). <strong>Never</strong> hand-write a local evidence interface &mdash; TypeScript cannot verify it matches runtime JSON.</li>
+      </ol>
+      <p style="margin-top: 8px;"><strong>Impact on new-finder checklist:</strong> step "Define types" below can be partially auto-generated when the backend has a Zod schema. Follow RDF's pattern &mdash; see <a href="release-date-finder.html#">Release Date Finder Reference</a> &sect; 9 (Frontend Files).</p>
+      <p style="margin-top: 6px;"><strong>CEF and PIF were not touched</strong> &mdash; their schemas and panels remain custom (legitimately &mdash; CEF has identity-check phase, PIF has image/carousel/eval machinery). The four fixes apply only to shared infrastructure used by all modules.</p>
+    </div>
+  </div>
+
   <div class="card" style="border-color: var(--accent); background: var(--accent-light);">
     <div class="card-header" style="background: var(--accent); color: white;">
       <span>Update &mdash; 2026-04-16: Finder Settings Renderer + Route Context Dedup</span>
@@ -364,7 +381,7 @@
         <tr><td><code>myFinderLlmAdapter.js</code> (prompt builder)</td><td>100&ndash;200</td><td>Your prompt engineering: what context to inject, formatting rules, examples</td></tr>
         <tr><td><code>myFinderSchema.js</code> (Zod schema)</td><td>30&ndash;60</td><td>Your LLM response shape: which fields, types, constraints</td></tr>
         <tr><td><code>MyFinderPanel.tsx</code> (GUI panel)</td><td>200&ndash;400</td><td>Your domain UI: how to display results (dates, weights, prices, etc.)</td></tr>
-        <tr><td><code>types.ts</code> (frontend types)</td><td>30&ndash;80</td><td>TypeScript interfaces matching your GET response shape</td></tr>
+        <tr><td><code>types.ts</code> (frontend types)</td><td>30&ndash;80</td><td>TypeScript interfaces matching your GET response shape. <strong>LLM-response sub-shape should be Zod-derived</strong> &mdash; see the <code>scripts/generateRdfTypes.js</code> pattern. Only hand-write UI wrapper types (variant metadata, timing, computed fields).</td></tr>
         <tr><td><code>myFinderQueries.ts</code> (React Query)</td><td>30&ndash;60</td><td>GET/POST/DELETE hooks with your route prefix</td></tr>
       </tbody>
     </table>
@@ -698,8 +715,15 @@ rebuildMyFinderFromJson,</pre>
       </li>
       <li>
         <div>
-          <strong>Define types</strong><br>
-          <code>types.ts</code> &mdash; interfaces matching your API GET response shape. Derive from your backend Zod schema + <code>buildGetResponse</code> hook.
+          <strong>Define types (Zod-derived, not hand-written)</strong><br>
+          The LLM-response sub-shape of your GET response must be derived from the backend Zod schema to prevent silent drift. Follow RDF's pattern:
+          <ol style="margin:6px 0 0 20px; font-size:13px;">
+            <li>Copy <code>tools/gui-react/scripts/generateRdfTypes.js</code> &rarr; <code>generateMyFinderTypes.js</code>. Change the import to your backend schema and the output path to <code>tools/gui-react/src/features/my-finder/types.generated.ts</code>.</li>
+            <li>Run it: <code>node tools/gui-react/scripts/generateMyFinderTypes.js</code>. Emits <code>{YourSchema}Gen</code> interfaces derived from <code>schema.toJSONSchema()</code>.</li>
+            <li>In <code>types.ts</code>, <code>import type</code> the generated types and compose them with your UI-layer wrapper types (variant metadata, timing, publisher refs, etc.). Hand-written <code>buildGetResponse</code>-shape additions stay in <code>types.ts</code>; the Zod-validated part stays generated.</li>
+            <li>Rerun codegen whenever the backend Zod schema changes. Commit the <code>.generated.ts</code> output.</li>
+          </ol>
+          <p style="margin-top:6px; font-size:13px;"><strong>Why:</strong> TypeScript has no way to verify hand-written interface fields exist in actual backend JSON. RDF's evidence card silently rendered blank URLs for months because the local <code>EvidenceSource</code> interface declared <code>source_url</code>/<code>excerpt</code> that the backend never emitted. Deriving from Zod turns drift into a compile error.</p>
         </div>
       </li>
       <li>
@@ -1280,7 +1304,9 @@ const merged = mergeDiscovery({ ... });        // clean write</pre>
         <tr><td><span class="tag tag-green">CREATE</span></td><td><code>src/features/my-feature/index.js</code></td><td>Public exports</td></tr>
         <tr><td><span class="tag tag-green">CREATE</span></td><td><code>src/features/my-feature/README.md</code></td><td>Domain contract</td></tr>
         <tr><td><span class="tag tag-green">CREATE</span></td><td><code>src/features/my-feature/tests/*.test.js</code></td><td>Tests (schema, orchestrator, routes)</td></tr>
-        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>tools/gui-react/src/features/my-finder/types.ts</code></td><td>Frontend type interfaces</td></tr>
+        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>tools/gui-react/src/features/my-finder/types.ts</code></td><td>Frontend type interfaces &mdash; import Zod-derived response shape from <code>types.generated.ts</code></td></tr>
+        <tr><td><span class="tag tag-green">CREATE</span></td><td><code>tools/gui-react/scripts/generateMyFinderTypes.js</code></td><td>Codegen script: reads backend Zod schema, emits <code>types.generated.ts</code> via <code>schema.toJSONSchema()</code>. Copy from <code>generateRdfTypes.js</code>.</td></tr>
+        <tr><td><span class="tag tag-purple">CODEGEN</span></td><td><code>node tools/gui-react/scripts/generateMyFinderTypes.js</code></td><td>Produces <code>tools/gui-react/src/features/my-finder/types.generated.ts</code> (commit it)</td></tr>
         <tr><td><span class="tag tag-green">CREATE</span></td><td><code>tools/gui-react/src/features/my-finder/api/myFinderQueries.ts</code></td><td>React Query hooks</td></tr>
         <tr><td><span class="tag tag-green">CREATE</span></td><td><code>tools/gui-react/src/features/my-finder/components/MyFinderPanel.tsx</code></td><td>Indexing Lab panel</td></tr>
         <tr><td><span class="tag tag-green">CREATE</span></td><td><code>tools/gui-react/src/features/my-finder/myFinderHowItWorksContent.ts</code></td><td>&ldquo;How It Works&rdquo; content (typed <code>HiwSection[]</code>, pure data)</td></tr>
@@ -1332,8 +1358,8 @@ const merged = mergeDiscovery({ ... });        // clean write</pre>
 <!-- ================================================================== -->
 
 <div style="text-align:center; padding:32px 0; color:var(--text-muted); font-size:13px;">
-  Spec Factory Finder Module Guide &mdash; Updated 2026-04-17 (variant-scoped publish path ③ + shared variant-row + run-history scaffolding)<br>
-  Registry-driven &bull; O(1) scaling &bull; 17 auto-wired systems &bull; dual-state persistence &bull; fire-and-forget<br>
+  Spec Factory Finder Module Guide &mdash; Updated 2026-04-18 (Phase 1: Zod-derived FE types + <code>variantDependent</code> signal in review drawer + <code>EG_LOCKED_KEYS</code> SSOT imports)<br>
+  Registry-driven &bull; O(1) scaling &bull; 17 auto-wired systems &bull; dual-state persistence &bull; fire-and-forget &bull; type drift surfaced at compile time<br>
   <span style="margin-top:6px; display:block;">
     Source: <code>src/core/finder/finderModuleRegistry.js</code> &bull;
     Codegen: <code>node tools/gui-react/scripts/generateLlmPhaseRegistry.js</code>

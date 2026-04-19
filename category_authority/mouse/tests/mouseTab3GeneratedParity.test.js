@@ -65,6 +65,9 @@ test('mouse tab3 map keys are covered by generated field rules (with migrations)
   for (const sourceRow of Array.isArray(fieldStudioMap.component_sources) ? fieldStudioMap.component_sources : []) {
     const properties = Array.isArray(sourceRow?.roles?.properties) ? sourceRow.roles.properties : [];
     for (const property of properties) {
+      // WHY: component_only properties live on the component sheet and are not
+      // expected to resolve against top-level generated field_rules.
+      if (property?.component_only === true) continue;
       const key = normalizeKey(property?.field_key || property?.key);
       if (!key) continue;
       const resolved = resolveGeneratedKey(key);

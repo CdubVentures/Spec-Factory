@@ -81,8 +81,33 @@ describe('fanOutCandidates', () => {
     assert.equal(result[0].score, 0.75);
   });
 
-  it('clamps score > 1 to 1', () => {
-    const row = makeRow({ sources_json: [{ source: 'cef', confidence: 1.5 }] });
+  it('normalizes integer 0-100 confidence to fraction 0-1 (backend-stored scale → UI scale)', () => {
+    // Backend stores integer 0-100 (LLM schema scale), UI expects fraction 0-1.
+    // The row-level source-centric path (has source_id column, no sources_json).
+    const row = {
+      id: 100,
+      source_id: 'cef-p1-v_black',
+      source_type: 'cef',
+      value: '["black"]',
+      confidence: 93,
+      status: 'resolved',
+      submitted_at: '2026-04-18T22:00:00Z',
+      metadata_json: {},
+    };
+    const result = fanOutCandidates([row]);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].score, 0.93,
+      'integer 93 must normalize to fraction 0.93, not clamp to 1.0');
+  });
+
+  it('leaves already-fraction confidence alone (legacy fraction rows)', () => {
+    const row = makeRow({ confidence: 0.87, sources_json: [{ source: 'cef', confidence: 0.87 }] });
+    const result = fanOutCandidates([row]);
+    assert.equal(result[0].score, 0.87);
+  });
+
+  it('clamps out-of-range integer (> 100) to 1', () => {
+    const row = makeRow({ sources_json: [{ source: 'cef', confidence: 150 }] });
     const result = fanOutCandidates([row]);
     assert.equal(result[0].score, 1);
   });

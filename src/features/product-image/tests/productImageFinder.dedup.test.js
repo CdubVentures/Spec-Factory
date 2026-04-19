@@ -125,8 +125,11 @@ describe('dedup: URL dedup self-heal + content hash gate', () => {
     });
   });
 
-  after(() => {
-    testServer?.close();
+  after(async () => {
+    // WHY: close() alone only stops new connections — lingering keep-alives
+    // keep the event loop busy and block the suite from exiting.
+    testServer?.closeAllConnections?.();
+    await new Promise((resolve) => (testServer ? testServer.close(resolve) : resolve()));
     cleanup(TMP_ROOT);
   });
 

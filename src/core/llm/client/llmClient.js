@@ -548,6 +548,10 @@ export async function callLlmProvider({
   reasoningMode = false,
   reasoningBudget = 0,
   maxTokens = 0,
+  // WHY: Phase-level input context window cap (from LLM panel). 0 = unlimited
+  // (model hardware max applies). Surfaced via usageContext.max_context_tokens
+  // for provider adapters and telemetry; no runtime clamp applied here yet.
+  maxContextTokens = 0,
   timeoutMs = 40_000,
   // WHY: When true, return raw content string instead of parsed JSON.
   // Used by two-phase routing (jsonStrict=false) for the research phase.

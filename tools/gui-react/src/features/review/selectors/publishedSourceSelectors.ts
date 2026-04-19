@@ -159,22 +159,6 @@ function compareSources(a: EvidenceSource, b: EvidenceSource): number {
   return a.url.localeCompare(b.url);
 }
 
-// ── Derived row confidence ─────────────────────────────────────
-// WHY: Candidate-level confidence is effectively always 100 (CEF hardcodes,
-// RDF's LLM typically returns 100). That hides real signal — a variant
-// backed only by tier5@55 sources shouldn't show 100% at the row header.
-// Derive the row's headline confidence from the strongest supporting source
-// instead. Callers pass the already-threshold-filtered + sorted sources and
-// fall back to the candidate confidence when no usable sources exist.
-export function maxSourceConfidence(sources: readonly EvidenceSource[]): number | null {
-  let best: number | null = null;
-  for (const s of sources) {
-    if (s.confidence == null) continue;
-    if (best == null || s.confidence > best) best = s.confidence;
-  }
-  return best == null ? null : best / 100;
-}
-
 // ── Per-source threshold gate ──────────────────────────────────
 // WHY: publishConfidenceThreshold (0-1) gates candidate-level publishing.
 // The same rule applies per-source: a source backing the value only counts

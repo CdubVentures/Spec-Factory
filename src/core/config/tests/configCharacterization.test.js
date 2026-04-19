@@ -75,12 +75,11 @@ test('config: token profile map stays usable for active resolved models', () => 
   }
 });
 
-test('config: token fallback chain resolves to non-negative numbers', () => {
+test('config: token chain resolves to non-negative numbers', () => {
   const cfg = makeResolvedConfig();
   const tokenKeys = [
     'llmMaxOutputTokensPlan',
     'llmMaxOutputTokensReasoning',
-    'llmMaxOutputTokensPlanFallback',
   ];
 
   for (const key of tokenKeys) {

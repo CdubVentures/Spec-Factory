@@ -212,6 +212,24 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
           />
         </div>
       </SettingRow>
+      <SettingRow label="Reasoning Budget" tip="Thinking/reasoning token budget for this phase. Inherited by the fallback model. Leave empty to inherit the global default.">
+        <div className="flex items-center gap-1.5">
+          {phaseOverrides[overrideKey]?.reasoningBudget == null && !resolved.disableLimits && <GlobalDefaultIcon />}
+          <input
+            className={inputCls}
+            type="number"
+            min={0}
+            step={1}
+            value={resolved.disableLimits ? '' : (phaseOverrides[overrideKey]?.reasoningBudget ?? '')}
+            placeholder={resolved.disableLimits ? 'hardware max' : `↩ ${resolved.reasoningBudget ?? 'auto'}`}
+            disabled={resolved.disableLimits}
+            onChange={(e) => {
+              const raw = e.target.value;
+              updateOverrideField('reasoningBudget', raw === '' ? null : (Number.parseInt(raw, 10) || 0));
+            }}
+          />
+        </div>
+      </SettingRow>
       <SettingRow label="Timeout (ms)" tip="LLM request timeout for this phase. Leave empty to inherit global default.">
         <div className="flex items-center gap-1.5">
           {phaseOverrides[overrideKey]?.timeoutMs == null && !resolved.disableLimits && <GlobalDefaultIcon />}

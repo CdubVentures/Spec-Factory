@@ -2,27 +2,10 @@
 // so the operations tracker can show which model is handling a request,
 // and update in real-time if the fallback fires.
 
-import { describe, it, mock, beforeEach } from 'node:test';
+import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildRegistryLookup } from '../../routeResolver.js';
-
-// ---------------------------------------------------------------------------
-// Mock callLlmProvider before importing routing.js
-// ---------------------------------------------------------------------------
-const calls = [];
-let shouldFailPrimary = false;
-
-mock.module('../llmClient.js', {
-  namedExports: {
-    callLlmProvider: async (args) => {
-      calls.push(args);
-      if (shouldFailPrimary && calls.length === 1) throw new Error('primary-fail-stub');
-      return { content: '{}' };
-    },
-  },
-});
-
-const { callLlmWithRouting } = await import('../routing.js');
+import { callLlmWithRouting } from '../routing.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -71,61 +54,99 @@ function baseConfig() {
   };
 }
 
+// WHY: Stub global.fetch to control primary success/failure and observe calls.
+// Mirrors the pattern used by the passing tests in llmRouting.test.js.
+function installFetchStub({ failPrimary = false } = {}) {
+  const original = global.fetch;
+  const calls = [];
+  global.fetch = async (url, opts) => {
+    const body = JSON.parse(opts.body);
+    calls.push({ url, body });
+    if (failPrimary && calls.length === 1) {
+      throw new Error('primary-fail-stub');
+    }
+    return {
+      ok: true,
+      status: 200,
+      async text() {
+        return JSON.stringify({
+          choices: [{ message: { content: '{}' } }],
+          model: body.model,
+          usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
+        });
+      },
+    };
+  };
+  return { calls, restore: () => { global.fetch = original; } };
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
 describe('callLlmWithRouting — onModelResolved callback', () => {
-  beforeEach(() => {
-    calls.length = 0;
-    shouldFailPrimary = false;
-  });
+  let stub;
+  beforeEach(() => { stub?.restore?.(); stub = null; });
 
   it('fires once with isFallback=false when primary succeeds', async () => {
-    const resolved = [];
-    await callLlmWithRouting({
-      config: baseConfig(),
-      reason: 'needset_search_planner',
-      role: 'plan',
-      phase: 'needset',
-      system: 'test',
-      user: 'test',
-      onModelResolved: (info) => resolved.push(info),
-    });
-    assert.equal(resolved.length, 1, 'should fire exactly once');
-    assert.equal(resolved[0].model, 'model-a');
-    assert.equal(resolved[0].isFallback, false);
-  });
-
-  it('fires twice when primary fails and fallback succeeds', async () => {
-    shouldFailPrimary = true;
-    const resolved = [];
-    await callLlmWithRouting({
-      config: baseConfig(),
-      reason: 'needset_search_planner',
-      role: 'plan',
-      phase: 'needset',
-      system: 'test',
-      user: 'test',
-      onModelResolved: (info) => resolved.push(info),
-    });
-    assert.equal(resolved.length, 2, 'should fire for primary then fallback');
-    assert.equal(resolved[0].model, 'model-a');
-    assert.equal(resolved[0].isFallback, false);
-    assert.equal(resolved[1].model, 'model-b');
-    assert.equal(resolved[1].isFallback, true);
-  });
-
-  it('does not crash when onModelResolved is not provided', async () => {
-    await assert.doesNotReject(
-      callLlmWithRouting({
+    stub = installFetchStub();
+    try {
+      const resolved = [];
+      await callLlmWithRouting({
         config: baseConfig(),
         reason: 'needset_search_planner',
         role: 'plan',
         phase: 'needset',
         system: 'test',
         user: 'test',
-      }),
-    );
+        onModelResolved: (info) => resolved.push(info),
+      });
+      assert.equal(resolved.length, 1, 'should fire exactly once');
+      assert.equal(resolved[0].model, 'model-a');
+      assert.equal(resolved[0].isFallback, false);
+    } finally {
+      stub.restore();
+    }
+  });
+
+  it('fires twice when primary fails and fallback succeeds', async () => {
+    stub = installFetchStub({ failPrimary: true });
+    try {
+      const resolved = [];
+      await callLlmWithRouting({
+        config: baseConfig(),
+        reason: 'needset_search_planner',
+        role: 'plan',
+        phase: 'needset',
+        system: 'test',
+        user: 'test',
+        onModelResolved: (info) => resolved.push(info),
+      });
+      assert.equal(resolved.length, 2, 'should fire for primary then fallback');
+      assert.equal(resolved[0].model, 'model-a');
+      assert.equal(resolved[0].isFallback, false);
+      assert.equal(resolved[1].model, 'model-b');
+      assert.equal(resolved[1].isFallback, true);
+    } finally {
+      stub.restore();
+    }
+  });
+
+  it('does not crash when onModelResolved is not provided', async () => {
+    stub = installFetchStub();
+    try {
+      await assert.doesNotReject(
+        callLlmWithRouting({
+          config: baseConfig(),
+          reason: 'needset_search_planner',
+          role: 'plan',
+          phase: 'needset',
+          system: 'test',
+          user: 'test',
+        }),
+      );
+    } finally {
+      stub.restore();
+    }
   });
 });

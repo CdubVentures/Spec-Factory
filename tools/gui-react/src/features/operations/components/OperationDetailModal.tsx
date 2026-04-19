@@ -185,11 +185,22 @@ function LlmCallRow({ call }: { readonly call: LlmCallRecord }) {
         <span className="text-[11px] font-mono font-bold text-[var(--sf-token-accent-strong)]">
           {call.label || call.mode || `Call #${call.callIndex + 1}`}
         </span>
+        <span className="inline-flex items-center gap-0.5">
+          <ModelBadgeGroup
+            accessMode={(call.accessMode || 'api') as LlmAccessMode}
+            thinking={call.thinking}
+            webSearch={call.webSearch}
+            isFallback={call.isFallback}
+          />
+        </span>
         {call.model && (
           <span className="text-[9px] font-mono sf-text-muted">
             {call.model}
             {(() => {
-              const e = extractEffortFromModelName(call.model);
+              // WHY: Prefer per-call effortLevel (captured at call time); fall back to name-suffix extraction for legacy records.
+              const e = call.effortLevel
+                ? resolveEffortLabel({ model: call.model, effortLevel: call.effortLevel, thinking: call.thinking })
+                : extractEffortFromModelName(call.model);
               return e ? <span className="sf-text-subtle font-normal"> {e}</span> : null;
             })()}
           </span>
@@ -413,8 +424,9 @@ export function OperationDetailModal({ op, onClose }: Props) {
                         accessMode={(op.modelInfo.accessMode || 'api') as LlmAccessMode}
                         thinking={op.modelInfo.thinking}
                         webSearch={op.modelInfo.webSearch}
+                        isFallback={op.modelInfo.isFallback}
                       />
-                      {op.modelInfo.isFallback ? '\u26A0 ' : ''}{op.modelInfo.model}
+                      {op.modelInfo.model}
                       {(() => {
                         const e = resolveEffortLabel({ model: op.modelInfo.model, effortLevel: op.modelInfo.effortLevel, thinking: op.modelInfo.thinking });
                         return e ? <span className="sf-text-muted font-normal">{e}</span> : null;

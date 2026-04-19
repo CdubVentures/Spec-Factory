@@ -15,11 +15,11 @@ import {
   parseRange,
   isNumericContractType
 } from './compileUtils.js';
+import { EG_LOCKED_KEYS as EG_LOCKED_KEYS_LIST } from '../features/studio/contracts/egPresets.js';
 
 // WHY: Variant-generator keys must always promote to product fields even if
 // authors mistakenly mark them component_only.
-// Source: src/features/studio/contracts/egPresets.js:EG_LOCKED_KEYS.
-const EG_LOCKED_KEYS = new Set(['colors', 'editions', 'release_date']);
+const EG_LOCKED_KEYS = new Set(EG_LOCKED_KEYS_LIST);
 
 // WHY: Walk normalized component_sources, return Set of keys flagged
 // component_only — except EG-locked keys which override the flag.

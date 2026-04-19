@@ -13,12 +13,15 @@
  * @param {{ db: import('better-sqlite3').Database, category: string, stmts: object }} deps
  */
 export function createFieldCandidateEvidenceStore({ category, stmts }) {
-  function insert({ candidateId, url, tier, confidence }) {
+  function insert({ candidateId, url, tier, confidence, http_status, verified_at, accepted }) {
     stmts._insertFieldCandidateEvidence.run({
       candidate_id: Number(candidateId),
       url: String(url || ''),
       tier: String(tier || 'unknown'),
       confidence: Number.isFinite(confidence) ? Number(confidence) : null,
+      http_status: Number.isInteger(http_status) ? http_status : null,
+      verified_at: typeof verified_at === 'string' && verified_at ? verified_at : null,
+      accepted: accepted === 0 ? 0 : 1,
     });
   }
 
@@ -34,6 +37,9 @@ export function createFieldCandidateEvidenceStore({ category, stmts }) {
         url,
         tier: ref.tier,
         confidence: ref.confidence,
+        http_status: ref.http_status,
+        verified_at: ref.verified_at,
+        accepted: ref.accepted,
       });
       count++;
     }
@@ -57,6 +63,14 @@ export function createFieldCandidateEvidenceStore({ category, stmts }) {
     return Number(row?.total || 0);
   }
 
+  function countSplitByCandidateId(candidateId) {
+    const row = stmts._countFieldCandidateEvidenceSplitByCandidateId.get(Number(candidateId));
+    return {
+      accepted: Number(row?.accepted || 0),
+      rejected: Number(row?.rejected || 0),
+    };
+  }
+
   function replaceForCandidate(candidateId, refs) {
     deleteByCandidateId(candidateId);
     return insertMany(candidateId, refs);
@@ -69,6 +83,7 @@ export function createFieldCandidateEvidenceStore({ category, stmts }) {
     listByCandidateId,
     listByTier,
     countByCandidateId,
+    countSplitByCandidateId,
     replaceForCandidate,
   };
 }

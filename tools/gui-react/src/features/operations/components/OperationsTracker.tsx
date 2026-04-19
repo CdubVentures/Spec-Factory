@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useCallback, useState, useRef } from 'react';
 import { useOperationsStore, isCarouselLoopProgress, type Operation } from '../state/operationsStore.ts';
+import { variantHexPartsForOp } from '../state/opVariantSwatch.ts';
+import { ColorSwatch, useFinderColorHexMap } from '../../../shared/ui/finder';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { api } from '../../../api/client.ts';
 import {
@@ -185,6 +187,8 @@ function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
   readonly confirming: boolean;
 }) {
   const streamText = useOperationsStore((s) => s.streamTexts.get(op.id) ?? '');
+  const colorHexMap = useFinderColorHexMap();
+  const variantHexParts = variantHexPartsForOp(op, colorHexMap);
   const chipCls = MODULE_STYLES[op.type] ?? 'sf-chip-neutral';
   const baseLabel = MODULE_LABELS[op.type] ?? op.type.toUpperCase().slice(0, 3);
   const label = op.subType ? `${baseLabel}.${op.subType[0]?.toUpperCase() ?? ''}` : baseLabel;
@@ -219,11 +223,16 @@ function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
         </button>
       )}
 
-      {/* Row 1: module chip + product label + elapsed */}
+      {/* Row 1: module chip + variant swatch (PIF/RDF only) + product label + elapsed */}
       <span className="flex items-center gap-1.5 min-w-0">
         <span className={`inline-flex items-center px-1 text-[8px] font-bold font-mono uppercase tracking-[0.04em] rounded-[2px] border border-current leading-[1.5] shrink-0 ${chipCls}`}>
           {label}
         </span>
+        {variantHexParts.length > 0 && (
+          <span title={op.variantKey} className="shrink-0 flex items-center">
+            <ColorSwatch hexParts={variantHexParts} />
+          </span>
+        )}
         <span className="text-[11px] font-medium sf-text-primary truncate min-w-0 flex-1 text-left">
           {op.productLabel}
         </span>
@@ -278,8 +287,9 @@ function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
               accessMode={(op.modelInfo.accessMode || 'api') as LlmAccessMode}
               thinking={op.modelInfo.thinking}
               webSearch={op.modelInfo.webSearch}
+              isFallback={op.modelInfo.isFallback}
             />
-            {op.modelInfo.isFallback ? '\u26A0 ' : ''}{op.modelInfo.model}
+            {op.modelInfo.model}
             {(() => {
               const e = resolveEffortLabel({ model: op.modelInfo.model, effortLevel: op.modelInfo.effortLevel, thinking: op.modelInfo.thinking });
               return e ? <span className="sf-text-muted font-normal">{e}</span> : null;

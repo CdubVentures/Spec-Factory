@@ -6,6 +6,7 @@ import { ruleRequiredLevel } from '../../../engine/ruleAccessors.js';
 import { projectFieldRulesForConsumer } from '../../../field-rules/consumerGate.js';
 import { isVariantDependentField } from '../../../core/finder/finderModuleRegistry.js';
 import { confidenceColor } from './confidenceColor.js';
+import { normalizeConfidence } from '../../publisher/publish/publishCandidate.js';
 import { buildFallbackFieldCandidateId } from '../../../utils/candidateIdentifier.js';
 import { resolveAuthoritativeProductIdentity } from '../../catalog/index.js';
 import {
@@ -237,7 +238,7 @@ export function buildFieldState({
     ? (slotValueToText(selectedShapeValue, normalizedShape) ?? null)
     : selectedShapeValue;
   const provenanceRow = isObject(provenance[fieldKey]) ? provenance[fieldKey] : {};
-  const selectedConfidenceHint = Math.max(0, Math.min(1, toNumber(provenanceRow.confidence, 0)));
+  const selectedConfidenceHint = Math.max(0, Math.min(1, normalizeConfidence(toNumber(provenanceRow.confidence, 0))));
   const candidateRows = toArray(candidates[fieldKey]);
   let normalizedCandidates = candidateRows
     .map((candidate, index) => {
@@ -467,6 +468,28 @@ export async function buildProductReviewPayload({
   const generatorVariantValuesByField = new Map(); // fk → Record<vid, VariantValueEntry>
   if (specDb?.variants) {
     const activeVariants = specDb.variants.listActive(productId);
+    // WHY: Per-variant confidence comes from CEF-source field_candidates rows
+    // (the SSOT for confidence — written by submitCandidate with the LLM's
+    // overall value-level rating). `allCandidates` is already loaded; filter
+    // to CEF and build per-variant lookups normalized to the 0-1 fraction
+    // scale expected by the grid.
+    const cefColorConfByVid = new Map();
+    const cefEditionConfByVid = new Map();
+    for (const c of allCandidates) {
+      if (String(c.source_type || '').trim() !== 'cef') continue;
+      if (!c.variant_id) continue;
+      const fk = normalizeField(c.field_key);
+      const conf = Math.max(0, Math.min(1, normalizeConfidence(toNumber(c.confidence, 0))));
+      if (fk === 'colors') {
+        const existing = cefColorConfByVid.get(c.variant_id);
+        if (existing == null || conf > existing) cefColorConfByVid.set(c.variant_id, conf);
+      } else if (fk === 'editions') {
+        const existing = cefEditionConfByVid.get(c.variant_id);
+        if (existing == null || conf > existing) cefEditionConfByVid.set(c.variant_id, conf);
+      }
+    }
+    const minOrZero = (map) => (map.size === 0 ? 0 : Math.min(...map.values()));
+
     const variantColors = [];
     const variantEditions = [];
     const colorsVariantValues = {};
@@ -483,7 +506,7 @@ export async function buildProductReviewPayload({
         if (combo) {
           colorsVariantValues[v.variant_id] = {
             value: combo,
-            confidence: 1.0,
+            confidence: cefColorConfByVid.get(v.variant_id) ?? 0,
             source: 'cef',
             source_timestamp: entryTimestamp,
             variant_label: v.variant_label ?? null,
@@ -502,7 +525,7 @@ export async function buildProductReviewPayload({
           // WHY: Editions never carry is_default — they branch, so no canonical one.
           editionsVariantValues[v.variant_id] = {
             value: v.edition_slug,
-            confidence: 1.0,
+            confidence: cefEditionConfByVid.get(v.variant_id) ?? 0,
             source: 'cef',
             source_timestamp: entryTimestamp,
             variant_label: v.variant_label ?? null,
@@ -523,7 +546,7 @@ export async function buildProductReviewPayload({
         if (combo) {
           colorsVariantValues[v.variant_id] = {
             value: combo,
-            confidence: 1.0,
+            confidence: cefColorConfByVid.get(v.variant_id) ?? 0,
             source: 'cef',
             source_timestamp: entryTimestamp,
             variant_label: v.variant_label ?? null,
@@ -539,7 +562,11 @@ export async function buildProductReviewPayload({
     if (variantColors.length > 0) {
       resolvedByField.set(normalizeField('colors'), {
         value: JSON.stringify(variantColors),
-        confidence: 1.0,
+        // Field-level confidence = min across per-variant CEF confidences
+        // (weakest-link aggregate — mirrors aggregateCefFieldConfidence in
+        // variantLifecycle + publisherRoutes). Falls to 0 when no CEF
+        // candidates exist (variants present but no underlying run data).
+        confidence: minOrZero(cefColorConfByVid),
         status: 'resolved',
         metadata_json: { source: 'variant_registry' },
         updated_at: '',
@@ -551,7 +578,7 @@ export async function buildProductReviewPayload({
     if (variantEditions.length > 0) {
       resolvedByField.set(normalizeField('editions'), {
         value: JSON.stringify(variantEditions),
-        confidence: 1.0,
+        confidence: minOrZero(cefEditionConfByVid),
         status: 'resolved',
         metadata_json: { source: 'variant_registry' },
         updated_at: '',
@@ -587,7 +614,7 @@ export async function buildProductReviewPayload({
     const resolvedValue = effectiveRow?.value != null && String(effectiveRow.value).trim() !== ''
       ? effectiveRow.value : null;
     const resolvedConfidence = effectiveRow
-      ? Math.max(0, Math.min(1, toNumber(effectiveRow.confidence, 0)))
+      ? Math.max(0, Math.min(1, normalizeConfidence(toNumber(effectiveRow.confidence, 0))))
       : 0;
     const hasValue = hasKnownValue(resolvedValue);
 
@@ -612,7 +639,7 @@ export async function buildProductReviewPayload({
       const base = {
         candidate_id: `fc_${c.id}`,
         value: c.value,
-        score: Math.max(0, Math.min(1, toNumber(c.confidence, 0))),
+        score: Math.max(0, Math.min(1, normalizeConfidence(toNumber(c.confidence, 0)))),
         source_id: c.source_id || sourceToken || '',
         source: dbSourceLabel(sourceToken) || sourceToken || '',
         tier: null,
@@ -684,7 +711,7 @@ export async function buildProductReviewPayload({
         const vinfo = variantById.get(vid) || null;
         variantValues[vid] = {
           value: r.value,
-          confidence: Math.max(0, Math.min(1, toNumber(r.confidence, 0))),
+          confidence: Math.max(0, Math.min(1, normalizeConfidence(toNumber(r.confidence, 0)))),
           source: dbSourceLabel(vsourceToken) || vsourceToken || '',
           source_timestamp: String(r.updated_at || '').trim() || null,
           variant_label: vinfo?.variant_label ?? null,

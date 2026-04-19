@@ -144,10 +144,16 @@ CREATE TABLE IF NOT EXISTS field_candidate_evidence (
   url TEXT NOT NULL,
   tier TEXT NOT NULL,
   confidence REAL,
+  http_status INTEGER DEFAULT NULL,
+  verified_at TEXT DEFAULT NULL,
+  accepted INTEGER NOT NULL DEFAULT 1,
   created_at TEXT DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_fce_candidate ON field_candidate_evidence(candidate_id);
 CREATE INDEX IF NOT EXISTS idx_fce_tier ON field_candidate_evidence(tier);
+-- WHY: idx_fce_accepted lives in specDbMigrations.js SECONDARY_INDEXES,
+-- created after the idempotent ALTER TABLE adds the accepted column.
+-- Placing the index here would fail on existing DBs where the column does not yet exist.
 
 -- Phase 2 tables
 

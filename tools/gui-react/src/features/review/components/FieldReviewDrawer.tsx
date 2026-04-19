@@ -28,7 +28,6 @@ import {
   collectPublishedSourcesForVariant,
   candidateMatchesVariant,
   candidateValueMatches,
-  maxSourceConfidence,
   resolveEvidenceSources,
   type EvidenceSource,
 } from '../selectors/publishedSourceSelectors.ts';
@@ -339,13 +338,12 @@ function PublishedVariantRow({
   displayName: string;
   persistKey: string;
 }) {
+  const threshold = useSourceThreshold();
   const displayValue = entry.value != null ? formatCellValue(entry.value) || 'unk' : 'unk';
-  // WHY: Candidate-level confidence is effectively always 100 (CEF hardcodes,
-  // RDF defaults). Derive the row badge from the strongest post-threshold
-  // source so the displayed % reflects honest evidence strength. Fall back
-  // to entry.confidence when there are no usable sources (e.g. pre-Run 2
-  // generators with global-only refs).
-  const derivedConfidence = maxSourceConfidence(sources) ?? entry.confidence;
+  // WHY: entry.confidence is the LLM's overall value-level rating, calibrated
+  // at prompt time against the cited evidence (via valueConfidencePromptFragment).
+  // Trust it directly — the per-source evidence breakdown renders separately below.
+  const derivedConfidence = entry.confidence;
 
   const headerContent = (
     <>
@@ -357,7 +355,7 @@ function PublishedVariantRow({
       <span className="font-mono text-[11px] font-semibold sf-text-primary shrink-0" title={displayValue}>
         {displayValue}
       </span>
-      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono text-center shrink-0 ${confidenceColorClass(derivedConfidence)}`}>
+      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono text-center shrink-0 ${confidenceColorClass(derivedConfidence, threshold)}`}>
         {pct(derivedConfidence)}
       </span>
     </>
@@ -558,6 +556,7 @@ function CandidateCard({
   forceVariantAttribution?: boolean;
 }) {
   const formatDateTime = useFormatDateTime();
+  const threshold = useSourceThreshold();
   const isResolved = candidate.status === 'resolved';
   const cardClass = isResolved ? 'sf-candidate-resolved' : '';
   const dateStr = formatDateTime(candidate.submitted_at);
@@ -590,7 +589,7 @@ function CandidateCard({
         <span className="font-mono text-sm font-bold flex-1 truncate break-all" title={parsedArray ? parsedArray.join(', ') : formatCellValue(candidate.value)}>
           {parsedArray ? parsedArray.join(', ') : formatCellValue(candidate.value)}
         </span>
-        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono min-w-[2.2rem] text-center ${confidenceColorClass(candidate.score)}`}>
+        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono min-w-[2.2rem] text-center ${confidenceColorClass(candidate.score, threshold)}`}>
           {pct(candidate.score)}
         </span>
       </div>
@@ -725,10 +724,10 @@ function PublishedNonVariantRow({
 }) {
   const threshold = useSourceThreshold();
   const sources = collectPublishedSources(candidates, threshold);
-  // WHY: Candidate-level confidence is usually 100 (LLM default). Derive the
-  // row badge from the strongest post-threshold source for an honest signal,
-  // fall back to currentValue.confidence when no usable sources exist.
-  const derivedConfidence = maxSourceConfidence(sources) ?? currentValue.confidence;
+  // WHY: currentValue.confidence is the LLM's overall value-level rating,
+  // calibrated at prompt time against cited evidence. Trust it directly —
+  // per-source breakdown renders below.
+  const derivedConfidence = currentValue.confidence;
 
   const headerContent = (
     <>
@@ -747,7 +746,7 @@ function PublishedNonVariantRow({
           {currentValue.source}
         </span>
       )}
-      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono min-w-[2.2rem] text-center ${confidenceColorClass(derivedConfidence)}`}>
+      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono min-w-[2.2rem] text-center ${confidenceColorClass(derivedConfidence, threshold)}`}>
         {pct(derivedConfidence)}
       </span>
     </>
@@ -912,7 +911,7 @@ export function FieldReviewDrawer({
                   onReviewSource={onReviewSource}
                   onDeleteCandidate={onDeleteCandidate ? (sourceId) => setDeleteConfirm({ mode: 'single', sourceId }) : undefined}
                   hexMap={hexMap}
-                  forceVariantAttribution={fieldKey === 'release_date'}
+                  forceVariantAttribution={variantDependent}
                 />
               ))}
             </div>

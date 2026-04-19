@@ -8,7 +8,6 @@ function createRuntimeManifestTokenDefaults(overrides = {}) {
     llmMaxOutputTokensPlan: 384,
     llmMaxOutputTokensTriage: 512,
     llmMaxOutputTokensReasoning: 512,
-    llmMaxOutputTokensPlanFallback: 4096,
     ...overrides,
   };
 }
@@ -61,13 +60,12 @@ test('runtime llm token preset options sanitize, sort, dedupe, and include live 
     llmMaxOutputTokensPlan: 384,
     llmMaxOutputTokensTriage: 1024,
     llmMaxOutputTokensReasoning: 512,
-    llmMaxOutputTokensPlanFallback: 4096,
     runtimeManifestDefaults: createRuntimeManifestTokenDefaults(),
   });
 
   assert.deepEqual(
     presets,
-    [minToken, 384, 512, 1024, 4096, maxToken],
+    [minToken, 384, 512, 1024, maxToken],
   );
 });
 
@@ -295,7 +293,11 @@ test('runtime hydration bindings accept active alias keys, ignore retired reason
   assert.equal(state.setLlmModelReasoning, 'alias-reasoning-model');
   assert.equal(state.setLlmPlanFallbackModel, 'alias-plan-fallback');
   assert.equal(state.setLlmMaxOutputTokensPlan, '1536');
-  assert.equal(state.setLlmMaxOutputTokensPlanFallback, '2048');
+  assert.equal(
+    state.setLlmMaxOutputTokensPlanFallback,
+    undefined,
+    'retired plan fallback token key should be ignored during hydration',
+  );
   assert.equal(
     state.setLlmMaxOutputTokensReasoningFallback,
     undefined,

@@ -529,8 +529,10 @@ export function prepareStatements(db) {
 
     // ── Field candidate evidence (relational projection) ───────────
     _insertFieldCandidateEvidence: db.prepare(
-      `INSERT INTO field_candidate_evidence (candidate_id, url, tier, confidence)
-       VALUES (@candidate_id, @url, @tier, @confidence)`
+      `INSERT INTO field_candidate_evidence
+         (candidate_id, url, tier, confidence, http_status, verified_at, accepted)
+       VALUES
+         (@candidate_id, @url, @tier, @confidence, @http_status, @verified_at, @accepted)`
     ),
     _deleteFieldCandidateEvidenceByCandidateId: db.prepare(
       'DELETE FROM field_candidate_evidence WHERE candidate_id = ?'
@@ -546,6 +548,15 @@ export function prepareStatements(db) {
     ),
     _countFieldCandidateEvidenceByCandidateId: db.prepare(
       'SELECT COUNT(DISTINCT url) AS total FROM field_candidate_evidence WHERE candidate_id = ?'
+    ),
+    // WHY: Per-candidate split count for the publisher panel — Evid ✓ / Evid ✗
+    // chips and row-drawer grouping. accepted=1 default keeps legacy rows
+    // (pre-verification) in the accepted bucket so historical data stays visible.
+    _countFieldCandidateEvidenceSplitByCandidateId: db.prepare(
+      `SELECT
+         SUM(CASE WHEN accepted = 1 THEN 1 ELSE 0 END) AS accepted,
+         SUM(CASE WHEN accepted = 0 THEN 1 ELSE 0 END) AS rejected
+       FROM field_candidate_evidence WHERE candidate_id = ?`
     ),
 
     // ── Variants ────────────────────────────────────────────────────

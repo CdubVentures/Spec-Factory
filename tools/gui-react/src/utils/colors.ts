@@ -50,19 +50,28 @@ export const sourceBadgeDarkClass: Record<string, string> = {
 export const SOURCE_BADGE_FALLBACK = 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300';
 export const SOURCE_BADGE_DARK_FALLBACK = 'bg-gray-700 text-gray-300';
 
-// ── 10-step confidence color scale (candidate badges in drawer) ──
-
-export function confidenceColorClass(score: number): string {
-  const pct = Math.round(score * 100);
-  if (pct >= 95) return 'conf-100';
-  if (pct >= 85) return 'conf-90';
-  if (pct >= 75) return 'conf-80';
-  if (pct >= 65) return 'conf-70';
-  if (pct >= 55) return 'conf-60';
-  if (pct >= 45) return 'conf-50';
-  if (pct >= 35) return 'conf-40';
-  if (pct >= 25) return 'conf-30';
-  if (pct >= 15) return 'conf-20';
+// ── Threshold-anchored 4-band confidence color scale ──
+//
+// WHY: Confidence badges should signal "would this publish under the current
+// publishConfidenceThreshold?" — not an absolute percentile. Below the bar is
+// red (not going to publish). At the bar is amber/yellow-green (borderline).
+// Well above is green (comfortably passes). The `threshold` is the global
+// `publishConfidenceThreshold` (0-1 fraction). Default 0.7 matches the
+// publisher default so callers without a runtime threshold still see
+// gate-coherent colors.
+//
+// Bands (assuming threshold = 0.7):
+//   score >= 0.80  → conf-100  (green,   strong pass)
+//   score >= 0.70  → conf-70   (yellow-green, pass / at threshold)
+//   score >= 0.60  → conf-40   (amber,   close miss / borderline)
+//   score <  0.60  → conf-10   (red,     fail)
+//
+// Non-finite input (null/undefined/NaN) maps to conf-10.
+export function confidenceColorClass(score: number, threshold: number = 0.7): string {
+  if (!Number.isFinite(score) || !Number.isFinite(threshold)) return 'conf-10';
+  if (score >= threshold + 0.1) return 'conf-100';
+  if (score >= threshold) return 'conf-70';
+  if (score >= threshold - 0.1) return 'conf-40';
   return 'conf-10';
 }
 
