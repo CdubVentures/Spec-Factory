@@ -215,6 +215,66 @@ describe('characterization: buildVariantList', () => {
     assert.equal(result[0].label, 'iron-man');
     assert.equal(result[0].type, 'edition');
   });
+
+  // ── Single-atom edition combo does NOT absorb the plain color ──
+  // WHY: M75 Wireless came back with colors=[black,white,light-blue] plus two
+  // editions both with colors=[black]. Each is its own SKU with its own image
+  // search. PIF must mirror buildVariantRegistry — single-atom combos never
+  // collapse, only multi-atom combos do.
+
+  it('single-atom edition combo does NOT absorb the plain color — both exist separately', () => {
+    const result = buildVariantList({
+      colors: ['black'],
+      colorNames: {},
+      editions: { 'cod-bo6': { display_name: 'COD BO6', colors: ['black'] } },
+    });
+    assert.equal(result.length, 2, 'plain color + edition = 2 search variants');
+    assert.ok(result.find(v => v.key === 'color:black'), 'plain color:black must exist');
+    assert.ok(result.find(v => v.key === 'edition:cod-bo6'), 'edition:cod-bo6 must exist');
+  });
+
+  it('multiple single-atom editions sharing a color atom all produce distinct variants', () => {
+    // M75 Wireless scenario. 3 plain colors + 2 black-bodied editions = 5 search variants.
+    const result = buildVariantList({
+      colors: ['black', 'white', 'light-blue'],
+      colorNames: { 'light-blue': 'Glacier Blue' },
+      editions: {
+        'cod-bo6': { display_name: 'COD BO6', colors: ['black'] },
+        'cyberpunk-arasaka': { display_name: 'Cyberpunk Arasaka', colors: ['black'] },
+      },
+    });
+    assert.equal(result.length, 5, '3 colors + 2 editions = 5 variants');
+    assert.ok(result.find(v => v.key === 'color:black'));
+    assert.ok(result.find(v => v.key === 'color:white'));
+    assert.ok(result.find(v => v.key === 'color:light-blue' && v.label === 'Glacier Blue'));
+    assert.ok(result.find(v => v.key === 'edition:cod-bo6'));
+    assert.ok(result.find(v => v.key === 'edition:cyberpunk-arasaka'));
+  });
+
+  it('multi-atom combo in colors DOES still collapse into its edition (dedup preserved)', () => {
+    // Existing contract: if LLM lists an edition's multi-atom combo inside colors[],
+    // dedup to a single edition variant. Mirror buildVariantRegistry.
+    const result = buildVariantList({
+      colors: ['black', 'black+red+yellow'],
+      colorNames: {},
+      editions: { 'doom-dark-ages': { display_name: 'DOOM: The Dark Ages', colors: ['black+red+yellow'] } },
+    });
+    assert.equal(result.length, 2, 'plain black + doom edition = 2');
+    assert.ok(result.find(v => v.key === 'color:black'));
+    assert.ok(result.find(v => v.key === 'edition:doom-dark-ages'));
+    assert.ok(!result.find(v => v.key === 'color:black+red+yellow'));
+  });
+
+  it('edition whose combo is NOT in colors[] still gets a search variant', () => {
+    const result = buildVariantList({
+      colors: ['black'],
+      colorNames: {},
+      editions: { 'special': { display_name: 'Special Ed', colors: ['red+gold'] } },
+    });
+    assert.equal(result.length, 2);
+    assert.ok(result.find(v => v.key === 'color:black'));
+    assert.ok(result.find(v => v.key === 'edition:special'));
+  });
 });
 
 /* ── runProductImageFinder (full orchestrator) ───────────────────── */

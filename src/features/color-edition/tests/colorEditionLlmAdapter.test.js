@@ -208,6 +208,67 @@ describe('buildVariantIdentityCheckPrompt', () => {
     assert.ok(result.includes('COD BO6 Edition'));
   });
 
+  // ── Single-atom shared combo: standalone color and edition coexist ──
+  // WHY: M75 Wireless has plain 'black' AND two editions both with colors:['black'].
+  // The prompt must list ALL of them so LLM 2 can issue distinct mappings.
+  // Prior bug: prompt promoted the colors[] entry to an edition: line and dropped
+  // the standalone color, then filtered the editions out via listedCombos.
+
+  // ── Helper: extract the NEW CEF DISCOVERIES block from the prompt so we
+  // assert on actual discovery lines, not JSON example substrings.
+  function discoveriesBlock(prompt) {
+    const start = prompt.indexOf('NEW CEF DISCOVERIES');
+    const end = prompt.indexOf('TRUST ANCHOR', start);
+    return prompt.slice(start, end);
+  }
+
+  it('single-atom edition combo does NOT replace plain color line — both appear', () => {
+    const result = buildVariantIdentityCheckPrompt({
+      product, existingRegistry: [],
+      newColors: ['black'],
+      newColorNames: {},
+      newEditions: { 'cod-bo6': { display_name: 'COD BO6 Edition', colors: ['black'] } },
+    });
+    const block = discoveriesBlock(result);
+    assert.ok(block.includes('color:black'), 'plain color:black line present in discoveries');
+    assert.ok(block.includes('edition:cod-bo6'), 'edition:cod-bo6 line present in discoveries');
+  });
+
+  it('M75 shape: 3 colors + 2 single-atom editions sharing same atom → all 5 lines present', () => {
+    const result = buildVariantIdentityCheckPrompt({
+      product, existingRegistry: [],
+      newColors: ['black', 'white', 'light-blue'],
+      newColorNames: { 'light-blue': 'Glacier Blue' },
+      newEditions: {
+        'cod-bo6': { display_name: 'COD BO6', colors: ['black'] },
+        'cyberpunk-arasaka': { display_name: 'Cyberpunk Arasaka', colors: ['black'] },
+      },
+    });
+    const block = discoveriesBlock(result);
+    assert.ok(block.includes('color:black'), 'standalone black present');
+    assert.ok(block.includes('color:white'), 'white present');
+    assert.ok(block.includes('color:light-blue'), 'light-blue present');
+    assert.ok(block.includes('Glacier Blue'), 'marketing name surfaced');
+    assert.ok(block.includes('edition:cod-bo6'), 'cod-bo6 present');
+    assert.ok(block.includes('edition:cyberpunk-arasaka'), 'cyberpunk present');
+  });
+
+  it('multi-atom shared combo DOES still collapse — colors[] entry promoted to edition line', () => {
+    // Existing contract: when LLM 1 puts the edition's multi-atom combo in colors[],
+    // the prompt presents it as the edition (no separate color:black+orange line),
+    // mirroring buildVariantRegistry's dual-rule.
+    const result = buildVariantIdentityCheckPrompt({
+      product, existingRegistry: [],
+      newColors: ['black', 'black+orange'],
+      newColorNames: {},
+      newEditions: { 'cod-bo6': { display_name: 'COD BO6 Edition', colors: ['black+orange'] } },
+    });
+    const block = discoveriesBlock(result);
+    assert.ok(block.includes('color:black'), 'plain black still present');
+    assert.ok(block.includes('edition:cod-bo6'), 'edition present');
+    assert.ok(!block.includes('color:black+orange'), 'multi-atom combo NOT listed as a separate color line');
+  });
+
   it('contains matching rules with match/new/reject actions', () => {
     const result = buildVariantIdentityCheckPrompt({ product, existingRegistry, newColors: ['black'], newColorNames: {}, newEditions: {} });
     assert.ok(result.includes('preferred_label'), 'rename path via preferred_label');

@@ -273,23 +273,41 @@ function slugifyLabel(label) {
  * Otherwise use the atom/combo string.
  */
 export function buildVariantList({ colors = [], colorNames = {}, editions = {} }) {
-  // Build reverse lookup: combo string → edition display name
-  const comboToEdition = new Map();
+  // WHY: Dual-rule mirrors buildVariantRegistry. Only MULTI-ATOM combos dedupe
+  // against editions — for combos like "black+red+yellow", the colors[] entry
+  // IS the edition's body. Single-atom entries are always plain colorways:
+  // "black" is the base black SKU, distinct from any edition that happens to
+  // be black-bodied. Pre-fix regression (M75 Wireless): single-atom editions
+  // absorbed the plain color, dropping a search variant and routing edition
+  // images onto the plain color slot.
+  const multiAtomComboToEdition = new Map();
   for (const [slug, ed] of Object.entries(editions)) {
     const combo = (ed.colors || [])[0];
-    if (combo) comboToEdition.set(combo, { slug, displayName: ed.display_name || slug });
+    if (combo && combo.includes('+')) {
+      multiAtomComboToEdition.set(combo, { slug, displayName: ed.display_name || slug });
+    }
   }
 
   const variants = [];
+  const seenEditionSlugs = new Set();
+
   for (const entry of colors) {
-    const edition = comboToEdition.get(entry);
+    const edition = multiAtomComboToEdition.get(entry);
     if (edition) {
+      seenEditionSlugs.add(edition.slug);
       variants.push({ key: `edition:${edition.slug}`, label: edition.displayName, type: 'edition' });
     } else {
       const name = colorNames[entry];
       const hasName = name && name.toLowerCase() !== entry.toLowerCase();
       variants.push({ key: `color:${entry}`, label: hasName ? name : entry, type: 'color' });
     }
+  }
+
+  // Single-atom editions and editions whose combo isn't in colors[] land here.
+  for (const [slug, ed] of Object.entries(editions)) {
+    if (seenEditionSlugs.has(slug)) continue;
+    const displayName = ed.display_name || slug;
+    variants.push({ key: `edition:${slug}`, label: displayName, type: 'edition' });
   }
 
   return variants;

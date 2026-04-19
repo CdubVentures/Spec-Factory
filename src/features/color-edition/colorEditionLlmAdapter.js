@@ -247,20 +247,33 @@ export function buildVariantIdentityCheckPrompt({ product = {}, existingRegistry
     .map((e) => `  ${e.variant_id} | ${e.variant_type} | ${e.variant_key} | label: "${e.variant_label}" | atoms: [${e.color_atoms.join(', ')}]${e.edition_slug ? ` | edition: ${e.edition_slug}` : ''}`)
     .join('\n');
 
+  // WHY: Dual-rule mirrors buildVariantRegistry / buildVariantList. Only
+  // MULTI-ATOM combos in colors[] dedupe against editions — for "black+red+yellow"
+  // the colors entry IS the edition. Single-atom entries like "black" are always
+  // plain colorways: distinct from any edition that happens to be black-bodied.
+  // Pre-fix regression (M75 Wireless): single-atom edition combo absorbed the
+  // standalone color line and the edition was filtered out of extraEditionLines,
+  // so LLM 2 saw neither the standalone color nor the second edition.
+  const promotedEditionSlugs = new Set();
   const newColorLines = newColors.map((c) => {
     const name = newColorNames[c];
     const hasName = name && name.toLowerCase() !== c.toLowerCase();
-    const edition = Object.entries(newEditions).find(([, ed]) => (ed.colors || [])[0] === c);
+    const isMultiAtom = c.includes('+');
+    const edition = isMultiAtom
+      ? Object.entries(newEditions).find(([, ed]) => (ed.colors || [])[0] === c)
+      : null;
     if (edition) {
+      promotedEditionSlugs.add(edition[0]);
       return `  edition:${edition[0]} — label: "${edition[1].display_name || edition[0]}", atoms: [${c.split('+').join(', ')}]`;
     }
     return `  color:${c}${hasName ? ` — label: "${name}"` : ''}, atoms: [${c.split('+').join(', ')}]`;
   }).join('\n');
 
-  // WHY: Editions not in the colors array still need to be listed
-  const listedCombos = new Set(newColors);
+  // List every edition not already promoted via a multi-atom combo above.
+  // Single-atom editions always land here even when their atom matches a
+  // standalone color, so LLM 2 sees both as distinct discoveries.
   const extraEditionLines = Object.entries(newEditions)
-    .filter(([, ed]) => !(ed.colors || []).some((c) => listedCombos.has(c)))
+    .filter(([slug]) => !promotedEditionSlugs.has(slug))
     .map(([slug, ed]) => {
       const combo = (ed.colors || [])[0] || '';
       return `  edition:${slug} — label: "${ed.display_name || slug}", atoms: [${combo.split('+').join(', ')}]`;
@@ -322,7 +335,7 @@ You are not just matching — you are judging quality. For each discovery:
 If a discovery cannot be found on the official product page or any major retailer, REJECT it.
 Common hallucination patterns:
 - Colors that belong to a sibling model, not this one
-- Standalone color combos that duplicate an edition's atoms (e.g. "olive+black+red" when a DOOM edition exists with those atoms)
+- Standalone MULTI-ATOM color combos that duplicate an edition's atoms (e.g. "olive+black+red" when a DOOM edition exists with those atoms). Single-atom standalones like "black" coexisting with a black-bodied edition are NORMAL — both are real, distinct SKUs.
 - Colors or editions that existed for a previous generation but not this model
 Use your web access to verify — scoped queries, not endless searching.
 
