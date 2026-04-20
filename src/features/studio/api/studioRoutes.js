@@ -72,10 +72,13 @@ export function registerStudioRoutes(ctx) {
       const session = await sessionCache.getSessionRules(category);
 
       // WHY: Read eg_toggles from the studio map (SQL) to determine which keys are actively locked.
+      // Merge under EG_DEFAULT_TOGGLES so keys missing from legacy-persisted toggles
+      // (categories saved before a new EG preset was added) default to true. Persisted
+      // `false` still wins — explicit opt-outs survive the merge.
       const payloadMapRow = typeof getSpecDb === 'function' ? getSpecDb(category)?.getFieldStudioMap?.() ?? null : null;
       const payloadMap = payloadMapRow ? (() => { try { return JSON.parse(payloadMapRow.map_json); } catch { return null; } })() : null;
       const rawToggles = payloadMap?.eg_toggles;
-      const egToggles = (rawToggles && typeof rawToggles === 'object' && Object.keys(rawToggles).length > 0) ? rawToggles : { ...EG_DEFAULT_TOGGLES };
+      const egToggles = { ...EG_DEFAULT_TOGGLES, ...(rawToggles && typeof rawToggles === 'object' ? rawToggles : {}) };
       const activeLockedKeys = resolveEgLockedKeys(egToggles);
 
       // WHY: Dynamic color list from color_registry DB — the SSOT for valid atoms.
@@ -114,7 +117,9 @@ export function registerStudioRoutes(ctx) {
           if (!overrides[k]) overrides[k] = getEgPresetForKey(k, egCtx);
         }
         patched.field_overrides = overrides;
-        if (!patched.eg_toggles || Object.keys(patched.eg_toggles).length === 0) patched.eg_toggles = { ...EG_DEFAULT_TOGGLES };
+        // Merge with defaults so new EG keys are persisted as true while explicit
+        // opt-outs (persisted false) survive the migration.
+        patched.eg_toggles = { ...EG_DEFAULT_TOGGLES, ...(patched.eg_toggles && typeof patched.eg_toggles === 'object' ? patched.eg_toggles : {}) };
         const keys = [...(patched.selected_keys || [])];
         for (const k of EG_LOCKED_KEYS) { if (!keys.includes(k)) keys.push(k); }
         patched.selected_keys = keys;

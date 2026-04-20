@@ -37,6 +37,26 @@ export function useBillingSummaryQuery(filters: BillingFilterState) {
   });
 }
 
+// WHY: Prior-month comparison for hero-band trend badges. Returns YYYY-MM one
+// calendar month behind the current date in local time.
+function priorMonth(now: Date = new Date()): string {
+  const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+
+export function useBillingPriorSummaryQuery(filters: BillingFilterState) {
+  const month = priorMonth();
+  const base = `/billing/global/summary?month=${month}`;
+  return useQuery<BillingSummaryResponse>({
+    queryKey: ['billing', 'summary', 'prior', month, filters],
+    queryFn: () => api.get<BillingSummaryResponse>(withFilters(base, filters)),
+    refetchInterval: BILLING_REFETCH,
+    placeholderData: keepPreviousData,
+  });
+}
+
 export function useBillingDailyQuery(filters: BillingFilterState) {
   return useQuery<BillingDailyResponse>({
     queryKey: ['billing', 'daily', filters],

@@ -64,19 +64,55 @@ Source tiers:
 - Fewer verified sources is better than many unverified sources. The publisher HEAD-checks every URL you cite and strips 4xx/5xx automatically, so citing a hallucinated URL gets you nothing.`,
   },
 
+  evidenceKindGuidance: {
+    label: 'Evidence kind guidance',
+    description: 'Tags each evidence_ref with supporting_evidence + evidence_kind. Paired with evidence contract. Does Not Apply to: CEF + PIF + Carousel Builder.',
+    appliesTo: ['rdf', 'scalar'],
+    variables: [],
+    defaultTemplate: `For EACH evidence_ref, include TWO additional fields:
+
+- "supporting_evidence": <=280 chars. Either the EXACT on-page quote that
+  supports the claim, or — for deductive cases — a one-line summary of the
+  reasoning tying the URL to the claim.
+- "evidence_kind": one of the following. Pick the most specific match.
+
+  direct_quote          — verbatim on-page text states the claim
+  structured_metadata   — JSON-LD / OG / meta tag / "Date First Available"
+  byline_timestamp      — the URL's own publish/review date IS the proxy
+  artifact_metadata     — PDF manual/datasheet file metadata (footer, rev)
+  visual_inspection     — read from product images/renders
+  lab_measurement       — third-party test lab value (RTINGS, TFT Central)
+  comparative_rebadge   — component is a known OEM-part rebadge
+  inferred_reasoning    — chain-of-reasoning across multiple signals
+  absence_of_evidence   — the negative case (no listings before X)
+  identity_only         — URL proves SKU exists, NOT the field value
+
+Rules:
+- identity_only refs do NOT satisfy the minimum-evidence threshold — at least
+  one ref per field must be a substantive kind.
+- supporting_evidence MUST be "" when evidence_kind is identity_only.
+- For direct_quote: copy text exactly as it appears, do not paraphrase.
+- For inferred_reasoning: name the signals you combined (e.g. "review dated
+  2023-10 + Corsair press release 2023-10-12 + Amazon listing from Oct 2023").`,
+  },
+
   valueConfidenceRubric: {
-    label: 'Overall value confidence rubric',
-    description: 'Tier-anchored calibration for the LLM\'s overall per-value confidence (distinct from per-source confidence).',
+    label: 'Value confidence rubric',
+    description: 'Epistemic calibration for per-source AND overall value-level confidence. Tier is a URL-type label only and does not factor into the confidence number.',
     appliesTo: ['cef', 'rdf'],
     variables: [],
-    defaultTemplate: `Overall confidence (0-100):
-Rate your overall confidence in this value, calibrated against the evidence you cite.
-- 90+:   multiple tier1 sources agree, OR a single tier1 source is explicit and unambiguous
-- 70-89: a single tier1 source without corroboration, OR multiple tier2/tier3 sources agree
-- 50-69: tier2/tier3 sources with partial agreement or minor ambiguity
-- 30-49: tier4/tier5 only, OR conflicting signals
-- 0-29:  weak, inferred, or contradicted evidence
-Do not inflate confidence above what your cited evidence supports.`,
+    defaultTemplate: `Confidence (0-100) — per-source AND overall:
+Rate how CONCRETE and UNAMBIGUOUS your interpretation of the content is. Epistemic self-rating; tier is a URL-type label ONLY and does not factor into confidence. A tier1 page with vague wording can score 60; a tier4 post stating the claim literally can score 95.
+
+- 90+:   Content states the claim literally or in clear paraphrase. Reading, not inferring.
+- 70-89: Content clearly implies the claim; light inference required.
+- 50-69: Content partially supports; meaningful interpretation needed.
+- 30-49: Content is tangentially related; heavy inference required.
+- 0-29:  Weak, contradicted, or not meaningfully supportive.
+
+Overall confidence: compose across sources — do NOT clip to the weakest. A literal 95 source + an implying 75 source = overall 95, because the literal source alone resolves the question.
+
+Do not inflate confidence beyond what the cited evidence supports.`,
   },
 
   identityWarningEasy: {

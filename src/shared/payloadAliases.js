@@ -39,6 +39,27 @@ export function resolveSearchQuery(row, payload) {
   return String(resolveAlias(payload, 'search_query', ['searchQuery']) ?? '').trim();
 }
 
+// WHY: Cache-hit counts live in different paths per provider —
+//   OpenAI / Gemini:  usage.prompt_tokens_details.cached_tokens (nested)
+//   Anthropic:        usage.cache_read_input_tokens
+//   DeepSeek:         usage.prompt_cache_hit_tokens
+// Direct fields (cached_prompt_tokens / cached_input_tokens) win first
+// so upstream-normalized payloads keep working unchanged.
+function resolveCachedPromptTokens(usage, toInt) {
+  const direct = toInt(usage.cached_prompt_tokens, toInt(usage.cached_input_tokens, -1));
+  if (direct >= 0) return direct;
+  const nested = usage.prompt_tokens_details;
+  if (nested && typeof nested === 'object') {
+    const nestedCached = toInt(nested.cached_tokens, -1);
+    if (nestedCached >= 0) return nestedCached;
+  }
+  const anthropicRead = toInt(usage.cache_read_input_tokens, -1);
+  if (anthropicRead >= 0) return anthropicRead;
+  const deepseekHit = toInt(usage.prompt_cache_hit_tokens, -1);
+  if (deepseekHit >= 0) return deepseekHit;
+  return 0;
+}
+
 export function normalizeLlmUsage(usage, toInt) {
   if (!usage || typeof usage !== 'object') {
     return { prompt_tokens: 0, completion_tokens: 0, cached_prompt_tokens: 0, total_tokens: 0 };
@@ -46,7 +67,7 @@ export function normalizeLlmUsage(usage, toInt) {
   return {
     prompt_tokens: toInt(usage.prompt_tokens, toInt(usage.input_tokens, 0)),
     completion_tokens: toInt(usage.completion_tokens, toInt(usage.output_tokens, 0)),
-    cached_prompt_tokens: toInt(usage.cached_prompt_tokens, toInt(usage.cached_input_tokens, 0)),
+    cached_prompt_tokens: resolveCachedPromptTokens(usage, toInt),
     total_tokens: toInt(usage.total_tokens, 0),
   };
 }

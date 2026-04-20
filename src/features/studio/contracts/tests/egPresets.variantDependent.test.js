@@ -17,6 +17,7 @@ import {
   buildEgColorFieldRule,
   buildEgEditionFieldRule,
   buildEgReleaseDateFieldRule,
+  buildEgSkuFieldRule,
   EG_EDITABLE_PATHS,
   sanitizeEgLockedOverrides,
   resolveEgLockedKeys,
@@ -34,6 +35,10 @@ describe('EG preset variant_dependent declarations', () => {
   it('release_date is a variant-attribute → variant_dependent: true', () => {
     strictEqual(buildEgReleaseDateFieldRule({}).variant_dependent, true);
   });
+
+  it('sku is a variant-attribute → variant_dependent: true', () => {
+    strictEqual(buildEgSkuFieldRule({}).variant_dependent, true);
+  });
 });
 
 describe('variant_dependent is locked on EG-managed fields', () => {
@@ -46,7 +51,7 @@ describe('variant_dependent is locked on EG-managed fields', () => {
     // EG-locked and variant_dependent is NOT in EG_EDITABLE_PATHS, the override is
     // discarded on save — preset value (true) wins.
     const overrides = { release_date: { variant_dependent: false } };
-    const egToggles = { colors: true, editions: true, release_date: true };
+    const egToggles = { colors: true, editions: true, release_date: true, sku: true };
     const sanitized = sanitizeEgLockedOverrides(overrides, egToggles, {});
     strictEqual(sanitized.release_date.variant_dependent, true);
   });
@@ -54,16 +59,25 @@ describe('variant_dependent is locked on EG-managed fields', () => {
   it('sanitizeEgLockedOverrides resets a user attempt to flip colors.variant_dependent true → false (preset wins)', () => {
     // Symmetric: user tried to flip colors on. Sanitizer resets to preset (false).
     const overrides = { colors: { variant_dependent: true } };
-    const egToggles = { colors: true, editions: true, release_date: true };
+    const egToggles = { colors: true, editions: true, release_date: true, sku: true };
     const sanitized = sanitizeEgLockedOverrides(overrides, egToggles, {});
     strictEqual(sanitized.colors.variant_dependent, false);
   });
 
-  it('resolveEgLockedKeys returns all three EG defaults (no regression)', () => {
-    const active = resolveEgLockedKeys({ colors: true, editions: true, release_date: true });
-    strictEqual(active.length, 3);
+  it('sanitizeEgLockedOverrides resets a user attempt to flip sku.variant_dependent true → false (preset wins)', () => {
+    // SKU is a variant-attribute like release_date — sanitizer resets to preset (true).
+    const overrides = { sku: { variant_dependent: false } };
+    const egToggles = { colors: true, editions: true, release_date: true, sku: true };
+    const sanitized = sanitizeEgLockedOverrides(overrides, egToggles, {});
+    strictEqual(sanitized.sku.variant_dependent, true);
+  });
+
+  it('resolveEgLockedKeys returns all four EG defaults (no regression)', () => {
+    const active = resolveEgLockedKeys({ colors: true, editions: true, release_date: true, sku: true });
+    strictEqual(active.length, 4);
     strictEqual(active.includes('colors'), true);
     strictEqual(active.includes('editions'), true);
     strictEqual(active.includes('release_date'), true);
+    strictEqual(active.includes('sku'), true);
   });
 });

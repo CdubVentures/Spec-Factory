@@ -7,6 +7,7 @@ export interface BillingSummaryResponse {
     cost_usd: number;
     prompt_tokens: number;
     completion_tokens: number;
+    cached_prompt_tokens: number;
   };
   models_used: number;
   categories_used: number;
@@ -109,4 +110,32 @@ export interface BillingFilterState {
   reason: string;
   model: string;
   access: string;  // '' | 'lab' | 'api'
+}
+
+// ── Derived types for hero band + filter counts + token segments ──
+
+export type TrendDirection = 'up' | 'down' | 'flat';
+
+export interface BillingTrendDelta {
+  pct: number;
+  direction: TrendDirection;
+}
+
+export interface BillingPeriodDeltas {
+  cost_usd: BillingTrendDelta;
+  calls: BillingTrendDelta;
+  prompt_tokens: BillingTrendDelta;
+  completion_tokens: BillingTrendDelta;
+}
+
+export interface FilterChipCounts {
+  model: Record<string, number>;
+  reason: Record<string, number>;
+  category: Record<string, number>;
+}
+
+export interface TokenSegments {
+  promptPct: number;
+  completionPct: number;
+  cachedPct: number;
 }

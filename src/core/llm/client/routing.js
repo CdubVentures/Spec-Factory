@@ -814,6 +814,7 @@ export async function callLlmWithRouting({
       usageContext: {
         ...sharedParams.usageContext,
         phase: 'writer',
+        reason: 'writer_formatting',
         source_phase: phase || null,
         writer_phase: true,
         research_model: primary.model,

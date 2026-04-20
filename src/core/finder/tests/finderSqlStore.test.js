@@ -97,6 +97,48 @@ describe('createFinderSqlStore — generic SQL store', () => {
     assert.deepEqual(runs[0].selected, { items: ['a'] });
   });
 
+  // WHY: Global guardrail — every finder's insertRun routes through this
+  // single function. If a caller omits ran_at (or passes empty string from
+  // legacy JSON), the store must fall back to a real ISO timestamp instead
+  // of writing '' into the audit log. Protects all existing + future finders.
+
+  it('insertRun preserves a valid ran_at verbatim', () => {
+    const ts = '2026-04-20T04:41:12.355Z';
+    store.insertRun({
+      category: 'cat', product_id: 'p-ts-keep', run_number: 1,
+      ran_at: ts, model: 'gpt', fallback_used: false,
+      selected: {}, prompt: {}, response: {},
+    });
+    const runs = store.listRuns('p-ts-keep');
+    assert.equal(runs[0].ran_at, ts, 'valid ran_at preserved verbatim');
+  });
+
+  it('insertRun falls back to a real ISO timestamp when ran_at is missing', () => {
+    const before = new Date().toISOString();
+    store.insertRun({
+      category: 'cat', product_id: 'p-ts-miss', run_number: 1,
+      model: 'gpt', fallback_used: false,
+      selected: {}, prompt: {}, response: {},
+      // ran_at omitted
+    });
+    const after = new Date().toISOString();
+    const runs = store.listRuns('p-ts-miss');
+    assert.ok(runs[0].ran_at, 'ran_at populated');
+    assert.notEqual(runs[0].ran_at, '', 'must not be empty string');
+    assert.ok(runs[0].ran_at >= before && runs[0].ran_at <= after, 'within insert window');
+  });
+
+  it('insertRun falls back to a real ISO timestamp when ran_at is empty string', () => {
+    store.insertRun({
+      category: 'cat', product_id: 'p-ts-empty', run_number: 1,
+      ran_at: '', model: 'gpt', fallback_used: false,
+      selected: {}, prompt: {}, response: {},
+    });
+    const runs = store.listRuns('p-ts-empty');
+    assert.notEqual(runs[0].ran_at, '', 'empty-string ran_at replaced with fallback');
+    assert.ok(runs[0].ran_at.length > 0);
+  });
+
   it('insertRun serializes JSON fields', () => {
     store.insertRun({
       category: 'cat', product_id: 'p1', run_number: 2,

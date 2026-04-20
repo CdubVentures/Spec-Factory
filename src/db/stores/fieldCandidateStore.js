@@ -166,7 +166,7 @@ export function createFieldCandidateStore({ db, category, stmts }) {
   // WHY: Idempotent insert — check-before-insert instead of ON CONFLICT because
   // the UNIQUE(source_id) constraint can't be added until Phase 8 data migration.
   // Also catches old UNIQUE(value) violations during transition (same value, different source).
-  function insert({ productId, fieldKey, sourceId, sourceType, value, unit, confidence, model, validationJson, metadataJson, status, variantId }) {
+  function insert({ productId, fieldKey, sourceId, sourceType, value, unit, confidence, model, validationJson, metadataJson, status, variantId, submittedAt }) {
     const sid = String(sourceId || '');
     const vid = variantId ?? null;
     if (sid) {
@@ -190,6 +190,7 @@ export function createFieldCandidateStore({ db, category, stmts }) {
         metadata_json: JSON.stringify(metadataJson ?? {}),
         status: status || 'candidate',
         variant_id: vid,
+        submitted_at: submittedAt ?? null,
       });
     } catch (e) {
       // WHY: During transition, old UNIQUE(value) constraint may fire when same value

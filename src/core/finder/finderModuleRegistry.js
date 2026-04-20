@@ -148,12 +148,14 @@ export const FINDER_MODULES = Object.freeze([
         uiTip: 'Active views + per-view attempt budgets. Empty = category defaults.',
         widgetProps: { childKeys: ['viewAttemptBudget', 'viewAttemptBudgets'] } },
       { key: 'viewAttemptBudget', type: 'int', default: 5, min: 1, max: 50,
-        uiLabel: 'Default View Attempt Budget', uiGroup: 'Carousel Strategy (Loop Run)' },
+        uiLabel: 'Default View Attempt Budget', uiGroup: 'Carousel Strategy (Loop Run)',
+        uiTip: 'Max LLM calls per view on the first Loop. Each call targets one priority view; images for other views are kept as side-catches. A view stops when it collects Satisfaction Threshold quality images OR this budget is exhausted. Plain "Run" ignores this — Run is single-shot across all priority views.' },
       { key: 'viewAttemptBudgets', type: 'string', default: '', allowEmpty: true,
-        uiLabel: 'Per-View Attempt Budgets (JSON)', uiGroup: 'Carousel Strategy (Loop Run)' },
+        uiLabel: 'Per-View Attempt Budgets (JSON)', uiGroup: 'Carousel Strategy (Loop Run)',
+        uiTip: 'JSON overrides per view (e.g. {"top":8,"left":3}). Any view not listed falls back to Default View Attempt Budget.' },
       { key: 'reRunBudget', type: 'int', default: 1, min: 0, max: 5,
         uiLabel: 'Re-run Budget', uiGroup: 'Carousel Strategy (Loop Run)',
-        uiTip: 'Extra LLM calls per view when re-looping an already-satisfied variant. 0 = skip.' },
+        uiTip: 'Extra LLM calls per view when you click Loop again on an already-satisfied variant. 0 = skip satisfied views entirely (no LLM call); Loop moves straight to unsatisfied views or hero. 1+ = allow N more targeted calls per satisfied view to fill gaps. Ignored on the first Loop.' },
 
       // Hero slots
       { key: 'heroEnabled', type: 'bool', default: true,
@@ -336,7 +338,10 @@ export const FINDER_MODULES = Object.freeze([
       { key: 'discoveryPromptTemplate', type: 'string', default: '', allowEmpty: true, hidden: true },
       { key: 'perVariantAttemptBudget', type: 'int', default: 3, min: 1, max: 5,
         uiLabel: 'Per-Variant Attempt Budget', uiGroup: 'Discovery',
-        uiTip: 'Max LLM calls per variant when looping. 1 = single shot. Higher values retry on low confidence / missing evidence until the candidate reaches the publisher gate (or LLM returns a definitive unknown). Only applies to the "Loop" / "Loop All" buttons; plain "Run" is always single-shot.' },
+        uiTip: 'Max LLM calls per variant on the first Loop. 1 = single shot. Higher values retry until either (a) the publisher gate publishes the candidate, or (b) the LLM returns a definitive "unknown" with a reason. Only applies to "Loop" / "Loop All"; plain "Run" is always single-shot.' },
+      { key: 'reRunBudget', type: 'int', default: 1, min: 0, max: 5,
+        uiLabel: 'Re-run Budget', uiGroup: 'Discovery',
+        uiTip: 'Extra LLM calls per variant when you click Loop again on an already-resolved variant. 0 = skip resolved variants entirely (no LLM call). 1+ = allow N more attempts to refine the date with new evidence. "Already-resolved" means the publisher has accepted a release_date for that variant. Ignored on the first Loop.' },
 
       // WHY: No local confidence gate here. publishConfidenceThreshold (global
       // Publisher setting) is the single source of truth for confidence gating

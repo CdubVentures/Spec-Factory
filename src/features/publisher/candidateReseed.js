@@ -80,9 +80,14 @@ export function rebuildFieldCandidatesFromJson({ specDb, productRoot }) {
             validationJson: candidate.validation ?? {},
             metadataJson: candidate.metadata ?? {},
             variantId: candidate.variant_id || null,
+            // WHY: Preserve JSON-recorded submission time across DB-deleted rebuild.
+            // Absent on legacy entries — COALESCE in SQL falls back to datetime('now').
+            submittedAt: candidate.submitted_at || null,
           });
           // WHY: Project evidence_refs from metadata JSON into the relational
           // table so tier/confidence queries work after a DB-deleted rebuild.
+          // Runs unconditionally (including when insert was a no-op for an
+          // existing row) so stale SQL evidence gets healed on any boot.
           const row = specDb.getFieldCandidateBySourceId(productId, fieldKey, candidate.source_id);
           if (row?.id && Array.isArray(candidate.metadata?.evidence_refs) && candidate.metadata.evidence_refs.length > 0) {
             specDb.replaceFieldCandidateEvidence?.(row.id, candidate.metadata.evidence_refs);
@@ -112,6 +117,8 @@ export function rebuildFieldCandidatesFromJson({ specDb, productRoot }) {
               validationJson: candidate.validation ?? {},
               metadataJson: candidate.metadata ?? {},
               variantId: candidate.variant_id || null,
+              // WHY: Legacy format stored submitted_at on the per-source object.
+              submittedAt: src.submitted_at || null,
             });
           } else {
             specDb.upsertFieldCandidate({

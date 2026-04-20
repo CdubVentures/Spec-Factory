@@ -30,13 +30,29 @@ describe('VALUE_CONFIDENCE_PROMPT_FRAGMENT', () => {
     }
   });
 
-  it('references tiers so the LLM connects confidence to evidence strength', () => {
-    for (const code of ['tier1', 'tier2', 'tier3', 'tier4', 'tier5']) {
+  it('decouples tier from confidence — bands describe epistemic strength, not URL type', () => {
+    // Confidence is an epistemic self-rating based on content explicitness,
+    // not on URL tier. The rubric must state this and must not anchor any
+    // band to a specific tier level.
+    const lower = VALUE_CONFIDENCE_PROMPT_FRAGMENT.toLowerCase();
+    assert.ok(
+      lower.includes('tier is') && (lower.includes('label') || lower.includes('url-type')),
+      'rubric must state tier is a URL-type label, not a confidence factor',
+    );
+    for (const bandAnchor of ['tier1 source', 'tier2/tier3', 'tier4/tier5']) {
       assert.ok(
-        VALUE_CONFIDENCE_PROMPT_FRAGMENT.includes(code),
-        `rubric must reference "${code}" to tie confidence to evidence`,
+        !VALUE_CONFIDENCE_PROMPT_FRAGMENT.includes(bandAnchor),
+        `rubric must not anchor confidence bands to "${bandAnchor}"`,
       );
     }
+  });
+
+  it('composes overall confidence across sources instead of clipping to the weakest', () => {
+    const lower = VALUE_CONFIDENCE_PROMPT_FRAGMENT.toLowerCase();
+    assert.ok(
+      lower.includes('compose') || lower.includes('do not clip') || lower.includes('not clip'),
+      'rubric must instruct the LLM to compose across sources, not clip to the weakest',
+    );
   });
 
   it('explicitly warns against inflating confidence beyond cited evidence', () => {

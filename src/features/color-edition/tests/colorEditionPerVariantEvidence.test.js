@@ -95,6 +95,7 @@ describe('CEF per-variant evidence (MACRO-RED)', () => {
   let specDb;
 
   before(() => {
+    fs.rmSync(TMP_ROOT, { recursive: true, force: true });
     fs.mkdirSync(DB_DIR, { recursive: true });
     specDb = new SpecDb({ dbPath: DB_PATH, category: 'mouse' });
     seedCompiledRules(specDb);

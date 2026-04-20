@@ -551,6 +551,60 @@ describe('deriveRunHistoryRows', () => {
     assert.ok(run3.responseJson.includes('\n')); // pretty-printed
   });
 
+  // WHY: CEF runs persist through SQL via response_json only — `started_at`
+  // and `duration_ms` must ride inside run.response (same pattern as PIF/RDF),
+  // not at the run top level where the SQL runs-table schema would drop them.
+  // The selector reads from both, preferring top-level when present.
+
+  it('derives startedAt + durationMs from run.response (PIF/RDF pattern)', () => {
+    const result: ColorEditionFinderResult = {
+      ...SAMPLE_RESULT,
+      runs: [
+        {
+          ...SAMPLE_RESULT.runs[0],
+          response: {
+            ...SAMPLE_RESULT.runs[0].response,
+            started_at: '2026-04-20T06:23:51.336Z',
+            duration_ms: 586761,
+          },
+        },
+      ],
+    };
+    const rows = deriveRunHistoryRows(result);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].startedAt, '2026-04-20T06:23:51.336Z');
+    assert.equal(rows[0].durationMs, 586761);
+  });
+
+  it('prefers top-level run.started_at when both top-level and response carry it', () => {
+    const result: ColorEditionFinderResult = {
+      ...SAMPLE_RESULT,
+      runs: [
+        {
+          ...SAMPLE_RESULT.runs[0],
+          started_at: '2026-04-20T06:23:51.336Z',
+          duration_ms: 12345,
+          response: {
+            ...SAMPLE_RESULT.runs[0].response,
+            started_at: '2000-01-01T00:00:00Z',
+            duration_ms: 999,
+          },
+        },
+      ],
+    };
+    const rows = deriveRunHistoryRows(result);
+    assert.equal(rows[0].startedAt, '2026-04-20T06:23:51.336Z', 'top-level wins');
+    assert.equal(rows[0].durationMs, 12345);
+  });
+
+  it('defaults startedAt="" and durationMs=null when neither top-level nor response has them', () => {
+    const rows = deriveRunHistoryRows(SAMPLE_RESULT);
+    for (const row of rows) {
+      assert.equal(row.startedAt, '');
+      assert.equal(row.durationMs, null);
+    }
+  });
+
   it('extracts systemPrompt and userMessage from run.prompt', () => {
     const rows = deriveRunHistoryRows(SAMPLE_RESULT);
     const run1 = rows.find(r => r.runNumber === 1);

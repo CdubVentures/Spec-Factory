@@ -19,7 +19,7 @@
  */
 
 import { z } from 'zod';
-import { evidenceRefsSchema } from './evidencePromptFragment.js';
+import { evidenceRefsSchema, evidenceRefsExtendedSchema } from './evidencePromptFragment.js';
 import { valueConfidenceSchema } from './valueConfidencePromptFragment.js';
 
 const VALUE_TYPE_SCHEMAS = {
@@ -32,7 +32,12 @@ const VALUE_TYPE_SCHEMAS = {
   int: () => z.number().int().nonnegative().or(z.string()),
 };
 
-export function createScalarFinderSchema({ valueKey, valueType = 'string', valueRegex } = {}) {
+export function createScalarFinderSchema({
+  valueKey,
+  valueType = 'string',
+  valueRegex,
+  includeEvidenceKind = false,
+} = {}) {
   if (!valueKey) throw new Error('createScalarFinderSchema: valueKey required');
   const builder = VALUE_TYPE_SCHEMAS[valueType];
   if (!builder) {
@@ -48,11 +53,15 @@ export function createScalarFinderSchema({ valueKey, valueType = 'string', value
     );
   }
 
+  const evidenceRefsShape = includeEvidenceKind
+    ? evidenceRefsExtendedSchema
+    : evidenceRefsSchema;
+
   return z.object({
     [valueKey]: valueSchema,
     confidence: valueConfidenceSchema.default(0),
     unknown_reason: z.string().default(''),
-    evidence_refs: evidenceRefsSchema,
+    evidence_refs: evidenceRefsShape,
     discovery_log: z.object({
       urls_checked: z.array(z.string()).default([]),
       queries_run: z.array(z.string()).default([]),

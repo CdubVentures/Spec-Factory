@@ -73,6 +73,12 @@ export const MIGRATIONS = [
   `ALTER TABLE field_candidate_evidence ADD COLUMN http_status INTEGER DEFAULT NULL`,
   `ALTER TABLE field_candidate_evidence ADD COLUMN verified_at TEXT DEFAULT NULL`,
   `ALTER TABLE field_candidate_evidence ADD COLUMN accepted INTEGER NOT NULL DEFAULT 1`,
+  // WHY: evidence-upgrade — RDF + variantScalarFieldProducer tag each ref
+  // with supporting_evidence (on-page quote or one-line reasoning) +
+  // evidence_kind (10-value enum). NULL for legacy rebuilt rows; publisher
+  // gate treats NULL as substantive so legacy data still passes.
+  `ALTER TABLE field_candidate_evidence ADD COLUMN evidence_kind TEXT DEFAULT NULL`,
+  `ALTER TABLE field_candidate_evidence ADD COLUMN supporting_evidence TEXT DEFAULT NULL`,
 ];
 
 export const SECONDARY_INDEXES = `

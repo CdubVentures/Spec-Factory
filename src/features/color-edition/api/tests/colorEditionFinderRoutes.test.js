@@ -1,6 +1,18 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { registerColorEditionFinderRoutes } from '../colorEditionFinderRoutes.js';
+import { initOperationsRegistry } from '../../../../core/operations/index.js';
+
+async function flushAsyncWork() {
+  for (let i = 0; i < 5; i += 1) await new Promise((r) => setImmediate(r));
+  await new Promise((r) => setTimeout(r, 10));
+}
+
+function getOperationsUpserts(wsMessages) {
+  return wsMessages
+    .filter((m) => m.channel === 'operations' && m.data?.action === 'upsert')
+    .map((m) => m.data.operation);
+}
 
 function makeJsonCapture() {
   const calls = [];
@@ -148,6 +160,23 @@ describe('colorEditionFinderRoutes', () => {
       assert.equal(calls[0].status, 202);
       assert.equal(calls[0].body.ok, true);
       assert.ok(calls[0].body.operationId, 'response must include operationId');
+    });
+
+    // WHY: Identity check fires on every run (Run 1 + Run 2+). Op's stage list
+    // must always show all four stages so the UI renders them consistently.
+    it('op.stages always has all four stages — ["Discovery","Validate","Identity","Confirm"]', async () => {
+      const wsMessages = [];
+      const broadcastWs = (channel, data) => { wsMessages.push({ channel, data }); };
+      initOperationsRegistry({ broadcastWs });
+      const { ctx } = makeCtx();
+      ctx.broadcastWs = broadcastWs;
+      const handler = registerColorEditionFinderRoutes(ctx);
+      await handler(['color-edition-finder', 'mouse', 'mouse-001'], new Map(), 'POST', {}, {});
+      await flushAsyncWork();
+      const op = getOperationsUpserts(wsMessages)[0];
+      assert.ok(op, 'op must be registered');
+      const stageNames = op.stages.map((s) => s.name || s);
+      assert.deepEqual(stageNames, ['Discovery', 'Validate', 'Identity', 'Confirm']);
     });
   });
 

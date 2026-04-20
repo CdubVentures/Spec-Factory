@@ -584,7 +584,7 @@ export const PIF_VIEW_DEFAULT_TEMPLATE = `Find high-resolution product images fo
 
 IDENTITY: You are looking for the EXACT product "{{BRAND}} {{MODEL}}"{{VARIANT_SUFFIX}}. Not a different model in the same product family. If you encounter sibling models, skip them.
 {{IDENTITY_WARNING}}
-{{SIBLINGS_LINE}}
+
 VIEW DEFINITIONS — classify every image with one of these exact view names:
 
 {{PRIORITY_VIEWS}}
@@ -685,7 +685,6 @@ export function buildProductImageFinderPrompt({
     VARIANT_DESC: variantDesc,
     VARIANT_SUFFIX: variant ? ` (variant: ${variant})` : '',
     IDENTITY_WARNING: identityWarning,
-    SIBLINGS_LINE: '',
     PRIORITY_VIEWS: prioritySection,
     ADDITIONAL_VIEWS: additionalSection,
     ADDITIONAL_GUIDANCE: additionalViews.length > 0
@@ -759,7 +758,7 @@ export const PIF_HERO_DEFAULT_TEMPLATE = `{{HERO_INSTRUCTIONS}}
 
 IDENTITY: You are looking for the EXACT product "{{BRAND}} {{MODEL}}"{{VARIANT_SUFFIX}}.
 {{IDENTITY_WARNING}}
-{{SIBLINGS_LINE}}
+
 Every image you return MUST use the view name "hero".
 
 {{PREVIOUS_DISCOVERY}}Return JSON:
@@ -845,7 +844,6 @@ Do NOT use images from editorial review sites — even if the photo looks contex
     MODEL: model,
     VARIANT_SUFFIX: variant ? ` (variant: ${variant})` : '',
     IDENTITY_WARNING: identityWarning,
-    SIBLINGS_LINE: '',
     PREVIOUS_DISCOVERY: discoverySection,
     HERO_INSTRUCTIONS: heroInstructions,
   });

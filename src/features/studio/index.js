@@ -17,7 +17,7 @@ export {
   summarizeStudioMapPayload,
 } from './api/studioRouteHelpers.js';
 
-// EG compatibility presets (colors + editions field rule SSOT).
+// EG compatibility presets (colors + editions + release_date + sku field rule SSOT).
 export {
   EG_PRESET_REGISTRY,
   EG_LOCKED_KEYS,
@@ -25,6 +25,8 @@ export {
   EG_DEFAULT_TOGGLES,
   buildEgColorFieldRule,
   buildEgEditionFieldRule,
+  buildEgReleaseDateFieldRule,
+  buildEgSkuFieldRule,
   buildAllEgDefaults,
   getEgPresetForKey,
   preserveEgEditablePaths,

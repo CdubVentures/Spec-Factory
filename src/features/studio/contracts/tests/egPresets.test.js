@@ -8,6 +8,7 @@ import {
   buildEgColorFieldRule,
   buildEgEditionFieldRule,
   buildEgReleaseDateFieldRule,
+  buildEgSkuFieldRule,
   buildAllEgDefaults,
   getEgPresetForKey,
   preserveEgEditablePaths,
@@ -18,8 +19,8 @@ import {
 } from '../egPresets.js';
 
 describe('EG_LOCKED_KEYS', () => {
-  it('contains colors, editions, and release_date', () => {
-    assert.deepEqual([...EG_LOCKED_KEYS].sort(), ['colors', 'editions', 'release_date']);
+  it('contains colors, editions, release_date, and sku', () => {
+    assert.deepEqual([...EG_LOCKED_KEYS].sort(), ['colors', 'editions', 'release_date', 'sku']);
   });
 
   it('is frozen', () => {
@@ -253,6 +254,80 @@ describe('buildEgReleaseDateFieldRule', () => {
   });
 });
 
+// ── buildEgSkuFieldRule ──────────────────────────────────────────────────────
+
+describe('buildEgSkuFieldRule', () => {
+  it('returns an object with key sku', () => {
+    const rule = buildEgSkuFieldRule();
+    assert.equal(rule.key, 'sku');
+  });
+
+  it('has scalar string contract', () => {
+    const rule = buildEgSkuFieldRule();
+    assert.equal(rule.contract.type, 'string');
+    assert.equal(rule.contract.shape, 'scalar');
+  });
+
+  it('is variant-dependent (per-variant MPN)', () => {
+    const rule = buildEgSkuFieldRule();
+    assert.equal(rule.variant_dependent, true);
+  });
+
+  it('has empty delimiters (scalar, not list)', () => {
+    const rule = buildEgSkuFieldRule();
+    assert.deepEqual(rule.parse.delimiters, []);
+  });
+
+  it('has empty accepted_formats (MPN formats vary per manufacturer)', () => {
+    const rule = buildEgSkuFieldRule();
+    assert.deepEqual(rule.parse.accepted_formats, []);
+  });
+
+  it('has open enum policy (new MPNs acceptable with evidence)', () => {
+    const rule = buildEgSkuFieldRule();
+    assert.equal(rule.enum_policy, 'open');
+    assert.equal(rule.enum.policy, 'open');
+    assert.equal(rule.enum.new_value_policy.accept_if_evidence, true);
+    assert.equal(rule.enum.new_value_policy.mark_needs_curation, false);
+  });
+
+  it('has required level and hard difficulty (identity-class, per-variant MPN is hard)', () => {
+    const rule = buildEgSkuFieldRule();
+    assert.equal(rule.priority.required_level, 'required');
+    assert.equal(rule.priority.availability, 'sometimes');
+    assert.equal(rule.priority.difficulty, 'hard');
+  });
+
+  it('has evidence min_refs 1 with standard tier preference', () => {
+    const rule = buildEgSkuFieldRule();
+    assert.equal(rule.evidence.min_evidence_refs, 1);
+    assert.deepEqual(rule.evidence.tier_preference, ['tier1', 'tier2', 'tier3']);
+  });
+
+  it('has UI label "SKU"', () => {
+    const rule = buildEgSkuFieldRule();
+    assert.equal(rule.ui.label, 'SKU');
+  });
+
+  it('has search_hints with MPN-oriented query terms', () => {
+    const rule = buildEgSkuFieldRule();
+    assert.ok(rule.search_hints.query_terms.includes('part number'));
+    assert.ok(rule.search_hints.query_terms.includes('mpn'));
+    assert.ok(rule.search_hints.content_types.includes('product_page'));
+  });
+
+  it('has ai_assist with reasoning_note field (empty placeholder — prompt lives in LLM adapter)', () => {
+    const rule = buildEgSkuFieldRule();
+    assert.equal(typeof rule.ai_assist.reasoning_note, 'string');
+  });
+
+  it('returns a new object each call (no shared mutation)', () => {
+    const a = buildEgSkuFieldRule();
+    const b = buildEgSkuFieldRule();
+    assert.notEqual(a, b);
+  });
+});
+
 // ── isEgLockedField ──────────────────────────────────────────────────────────
 
 describe('isEgLockedField', () => {
@@ -266,6 +341,10 @@ describe('isEgLockedField', () => {
 
   it('returns true for release_date', () => {
     assert.equal(isEgLockedField('release_date'), true);
+  });
+
+  it('returns true for sku', () => {
+    assert.equal(isEgLockedField('sku'), true);
   });
 
   it('returns false for other fields', () => {
@@ -298,10 +377,11 @@ describe('isEgEditablePath', () => {
 // ── EG_DEFAULT_TOGGLES ───────────────────────────────────────────────────────
 
 describe('EG_DEFAULT_TOGGLES', () => {
-  it('has colors, editions, and release_date all set to true', () => {
+  it('has colors, editions, release_date, and sku all set to true', () => {
     assert.equal(EG_DEFAULT_TOGGLES.colors, true);
     assert.equal(EG_DEFAULT_TOGGLES.editions, true);
     assert.equal(EG_DEFAULT_TOGGLES.release_date, true);
+    assert.equal(EG_DEFAULT_TOGGLES.sku, true);
   });
 
   it('is frozen', () => {
@@ -312,41 +392,52 @@ describe('EG_DEFAULT_TOGGLES', () => {
 // ── resolveEgLockedKeys ──────────────────────────────────────────────────────
 
 describe('resolveEgLockedKeys', () => {
-  it('returns all three keys when all toggles are true', () => {
+  it('returns all four keys when all toggles are true', () => {
     assert.deepEqual(
-      resolveEgLockedKeys({ colors: true, editions: true, release_date: true }).sort(),
-      ['colors', 'editions', 'release_date'],
+      resolveEgLockedKeys({ colors: true, editions: true, release_date: true, sku: true }).sort(),
+      ['colors', 'editions', 'release_date', 'sku'],
     );
   });
 
-  it('returns only colors when editions and release_date are false', () => {
+  it('returns only colors when editions, release_date, and sku are false', () => {
     assert.deepEqual(
-      resolveEgLockedKeys({ colors: true, editions: false, release_date: false }),
+      resolveEgLockedKeys({ colors: true, editions: false, release_date: false, sku: false }),
       ['colors'],
     );
   });
 
-  it('returns only editions when colors and release_date are false', () => {
+  it('returns only editions when colors, release_date, and sku are false', () => {
     assert.deepEqual(
-      resolveEgLockedKeys({ colors: false, editions: true, release_date: false }),
+      resolveEgLockedKeys({ colors: false, editions: true, release_date: false, sku: false }),
       ['editions'],
     );
   });
 
-  it('returns only release_date when colors and editions are false', () => {
+  it('returns only release_date when colors, editions, and sku are false', () => {
     assert.deepEqual(
-      resolveEgLockedKeys({ colors: false, editions: false, release_date: true }),
+      resolveEgLockedKeys({ colors: false, editions: false, release_date: true, sku: false }),
       ['release_date'],
     );
   });
 
+  it('returns only sku when colors, editions, and release_date are false', () => {
+    assert.deepEqual(
+      resolveEgLockedKeys({ colors: false, editions: false, release_date: false, sku: true }),
+      ['sku'],
+    );
+  });
+
   it('excludes release_date when its toggle is missing', () => {
-    assert.ok(!resolveEgLockedKeys({ colors: true, editions: true }).includes('release_date'));
+    assert.ok(!resolveEgLockedKeys({ colors: true, editions: true, sku: true }).includes('release_date'));
+  });
+
+  it('excludes sku when its toggle is missing', () => {
+    assert.ok(!resolveEgLockedKeys({ colors: true, editions: true, release_date: true }).includes('sku'));
   });
 
   it('returns empty array when all are false', () => {
     assert.deepEqual(
-      resolveEgLockedKeys({ colors: false, editions: false, release_date: false }),
+      resolveEgLockedKeys({ colors: false, editions: false, release_date: false, sku: false }),
       [],
     );
   });
@@ -397,6 +488,7 @@ describe('buildAllEgDefaults', () => {
     assert.deepEqual(defaults.colors, buildEgColorFieldRule());
     assert.deepEqual(defaults.editions, buildEgEditionFieldRule());
     assert.deepEqual(defaults.release_date, buildEgReleaseDateFieldRule());
+    assert.deepEqual(defaults.sku, buildEgSkuFieldRule());
   });
 
   it('returns fresh objects each call', () => {
@@ -423,6 +515,11 @@ describe('getEgPresetForKey', () => {
   it('returns release_date rule for "release_date"', () => {
     const rule = getEgPresetForKey('release_date');
     assert.deepEqual(rule, buildEgReleaseDateFieldRule());
+  });
+
+  it('returns sku rule for "sku"', () => {
+    const rule = getEgPresetForKey('sku');
+    assert.deepEqual(rule, buildEgSkuFieldRule());
   });
 
   it('returns null for unknown key', () => {

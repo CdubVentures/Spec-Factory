@@ -58,6 +58,19 @@ describe('generateFinderDdl', () => {
     assert.ok(joined.includes("access_mode TEXT DEFAULT ''"), 'missing access_mode column');
   });
 
+  // WHY: Global guardrail — the shared DDL generator is the single choke point
+  // for every finder's runs table. ran_at must default to a real timestamp so
+  // future finders created from this template cannot regress into empty-string
+  // timestamps that break audit-log ordering after a rebuild.
+  it('runs table ran_at defaults to datetime(now), not empty string', () => {
+    const ddl = generateFinderDdl([CEF_MODULE]);
+    const joined = ddl.join('\n');
+    assert.ok(
+      joined.includes("ran_at TEXT NOT NULL DEFAULT (datetime('now'))"),
+      'ran_at must default to a real timestamp so Publisher / Indexing panel ORDER BY ran_at is meaningful after rebuild',
+    );
+  });
+
   it('generates runs index on (category, product_id)', () => {
     const ddl = generateFinderDdl([CEF_MODULE]);
     const joined = ddl.join('\n');

@@ -10,6 +10,7 @@ import { useMemo, useCallback, useState } from 'react';
 import './ProductImageFinderPanel.css';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import {
+  AnimatedDots,
   FinderPanelHeader,
   FinderKpiCard,
   FinderPanelFooter,
@@ -396,7 +397,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
               disabled={!hasCefData || (variants.length > 0 && variants.every((v) => loopingVariants.has(v.key)))}
               className="w-28 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-primary-button disabled:opacity-40 disabled:cursor-not-allowed text-center"
             >
-              Loop
+              {variants.length > 0 && variants.every((v) => loopingVariants.has(v.key)) ? <>Loop <AnimatedDots /></> : 'Loop'}
             </button>
           </div>
         }

@@ -147,6 +147,15 @@ CREATE TABLE IF NOT EXISTS field_candidate_evidence (
   http_status INTEGER DEFAULT NULL,
   verified_at TEXT DEFAULT NULL,
   accepted INTEGER NOT NULL DEFAULT 1,
+  -- WHY: evidence-upgrade columns. evidence_kind is one of 10 enum values
+  -- (direct_quote, structured_metadata, byline_timestamp, artifact_metadata,
+  -- visual_inspection, lab_measurement, comparative_rebadge,
+  -- inferred_reasoning, absence_of_evidence, identity_only). NULL means
+  -- pre-upgrade legacy row; publisher gate treats NULL as substantive
+  -- (counts toward min_evidence_refs). Only RDF + variantScalarFieldProducer
+  -- populate these; CEF + PIF keep the base shape.
+  evidence_kind TEXT DEFAULT NULL,
+  supporting_evidence TEXT DEFAULT NULL,
   created_at TEXT DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_fce_candidate ON field_candidate_evidence(candidate_id);

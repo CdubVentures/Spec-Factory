@@ -578,6 +578,63 @@ function generateFinderSettingsRegistry() {
   return lines.join('\n');
 }
 
+// ── Generate billingCallTypeRegistry.generated.ts ──
+
+// WHY: Flattens `phase.billing.reasons[]` across LLM_PHASE_DEFS into the
+// frontend billing registry. Phase declaration order drives group order.
+function flattenBillingRows() {
+  const rows = [];
+  for (const phase of LLM_PHASE_DEFS) {
+    if (!phase.billing || !Array.isArray(phase.billing.reasons)) continue;
+    for (const r of phase.billing.reasons) {
+      rows.push({ reason: r.reason, label: r.label, color: r.color, group: phase.billing.group });
+    }
+  }
+  return rows;
+}
+
+function generateBillingCallTypeRegistry() {
+  const rows = flattenBillingRows();
+  const lines = [HEADER];
+  lines.push("// WHY: Single source of truth for billing reason → display label + chart color.");
+  lines.push("// Derived from billing blocks on LLM_PHASE_DEFS entries. Adding a new LLM call");
+  lines.push("// source = add a `billing` block to the owning phase in llmPhaseDefs.js.\n");
+
+  lines.push('export interface BillingCallTypeEntry {');
+  lines.push('  readonly reason: string;');
+  lines.push('  readonly label: string;');
+  lines.push('  readonly color: string;');
+  lines.push('  readonly group: string;');
+  lines.push('}\n');
+
+  lines.push('export const BILLING_CALL_TYPE_REGISTRY: readonly BillingCallTypeEntry[] = Object.freeze([');
+  for (const row of rows) {
+    lines.push(`  { reason: ${quote(row.reason)}, label: ${quote(row.label)}, color: ${quote(row.color)}, group: ${quote(row.group)} },`);
+  }
+  lines.push(']);\n');
+
+  lines.push('export const BILLING_CALL_TYPE_FALLBACK: BillingCallTypeEntry = Object.freeze({');
+  lines.push("  reason: 'unknown',");
+  lines.push("  label: 'Other',");
+  lines.push("  color: 'var(--sf-billing-other-1, #94a3b8)',");
+  lines.push("  group: 'Other',");
+  lines.push('});\n');
+
+  lines.push('export const BILLING_CALL_TYPE_MAP: Readonly<Record<string, BillingCallTypeEntry>> = Object.freeze(');
+  lines.push('  Object.fromEntries(BILLING_CALL_TYPE_REGISTRY.map((e) => [e.reason, e])),');
+  lines.push(');\n');
+
+  lines.push('export function resolveBillingCallType(reason: string): BillingCallTypeEntry {');
+  lines.push('  return BILLING_CALL_TYPE_MAP[reason] ?? BILLING_CALL_TYPE_FALLBACK;');
+  lines.push('}\n');
+
+  lines.push('export const BILLING_CALL_TYPE_GROUPS: readonly string[] = Object.freeze(');
+  lines.push('  [...new Set(BILLING_CALL_TYPE_REGISTRY.map((e) => e.group))],');
+  lines.push(');');
+
+  return lines.join('\n') + '\n';
+}
+
 // ── Main ──
 
 const phaseTypes = generatePhaseTypes();
@@ -589,10 +646,12 @@ const finderPhaseSchemas = generateFinderPhaseSchemaRegistry();
 const finderPanels = generateFinderPanelRegistry();
 const moduleSettingsSections = generateModuleSettingsSections();
 const finderSettingsRegistry = generateFinderSettingsRegistry();
+const billingRegistry = generateBillingCallTypeRegistry();
 
 const INDEXING_DIR = resolve(__dirname, '../src/features/indexing/state');
 const PIPELINE_DIR = resolve(__dirname, '../src/features/pipeline-settings/state');
 const BACKEND_SCHEMA_DIR = resolve(__dirname, '../../../src/features/indexing/pipeline/shared');
+const BILLING_DIR = resolve(__dirname, '../src/features/billing');
 
 writeFileSync(resolve(TYPES_DIR, 'llmPhaseTypes.generated.ts'), phaseTypes);
 writeFileSync(resolve(STATE_DIR, 'llmPhaseRegistry.generated.ts'), registry);
@@ -603,6 +662,7 @@ writeFileSync(resolve(BACKEND_SCHEMA_DIR, 'phaseSchemaRegistry.generated.js'), f
 writeFileSync(resolve(INDEXING_DIR, 'finderPanelRegistry.generated.ts'), finderPanels);
 writeFileSync(resolve(PIPELINE_DIR, 'moduleSettingsSections.generated.ts'), moduleSettingsSections);
 writeFileSync(resolve(PIPELINE_DIR, 'finderSettingsRegistry.generated.ts'), finderSettingsRegistry);
+writeFileSync(resolve(BILLING_DIR, 'billingCallTypeRegistry.generated.ts'), billingRegistry);
 
 console.log('Generated:');
 console.log('  types/llmPhaseTypes.generated.ts');
@@ -614,3 +674,4 @@ console.log('  backend/phaseSchemaRegistry.generated.js');
 console.log('  indexing/state/finderPanelRegistry.generated.ts');
 console.log('  pipeline-settings/state/moduleSettingsSections.generated.ts');
 console.log('  pipeline-settings/state/finderSettingsRegistry.generated.ts');
+console.log('  billing/billingCallTypeRegistry.generated.ts');

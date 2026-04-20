@@ -982,4 +982,79 @@ describe('submitCandidate', async () => {
       assert.equal(bad.accepted, 0);
     } finally { stub.restore(); }
   });
+
+  // ── submitted_at persistence in product.json (rebuild contract) ──────
+  // WHY: After a DB-deleted rebuild, reseed must restore historical submitted_at
+  // from product.json. The new-format JSON entry must carry it.
+
+  it('new-format JSON entry includes submitted_at as ISO8601 string', async () => {
+    ensureProductJson('mouse-ts-json');
+    const before = new Date().toISOString();
+    await submitCandidate({
+      ...baseDeps(specDb),
+      productId: 'mouse-ts-json',
+      fieldKey: 'weight',
+      value: 58,
+      confidence: 90,
+      sourceMeta: { source: 'cef', model: 'gpt-5', run_number: 1 },
+    });
+    const after = new Date().toISOString();
+
+    const entry = readProductJson('mouse-ts-json').candidates.weight[0];
+    assert.ok(entry.submitted_at, 'submitted_at present on JSON entry');
+    assert.ok(typeof entry.submitted_at === 'string');
+    assert.ok(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(entry.submitted_at), 'ISO8601 shape');
+    assert.ok(entry.submitted_at >= before && entry.submitted_at <= after, 'within submission window');
+  });
+
+  it('re-submitting same (source_id, variant_id) does not append or mutate submitted_at', async () => {
+    ensureProductJson('mouse-ts-idem');
+    const args = {
+      ...baseDeps(specDb),
+      productId: 'mouse-ts-idem',
+      fieldKey: 'weight',
+      value: 58,
+      confidence: 90,
+      sourceMeta: { source: 'cef', model: 'gpt-5', run_number: 5 },
+    };
+    await submitCandidate(args);
+    const firstTs = readProductJson('mouse-ts-idem').candidates.weight[0].submitted_at;
+    assert.ok(firstTs);
+
+    // Small delay to ensure any accidental overwrite would produce a different timestamp
+    await new Promise(r => setTimeout(r, 10));
+    await submitCandidate(args);
+
+    const entries = readProductJson('mouse-ts-idem').candidates.weight;
+    assert.equal(entries.length, 1, 'no duplicate entry appended');
+    assert.equal(entries[0].submitted_at, firstTs, 'original submitted_at preserved');
+  });
+
+  it('reseeded JSON timestamp survives through SQL row via rebuildFieldCandidatesFromJson', async () => {
+    // WHY: End-to-end proof — submit candidate, then simulate a DB-deleted
+    // rebuild by deleting the SQL row and calling reseed. The SQL row must
+    // come back with the original submitted_at from JSON.
+    const { rebuildFieldCandidatesFromJson } = await import('../../candidateReseed.js');
+
+    ensureProductJson('mouse-ts-e2e');
+    await submitCandidate({
+      ...baseDeps(specDb),
+      productId: 'mouse-ts-e2e',
+      fieldKey: 'weight',
+      value: 60,
+      confidence: 85,
+      sourceMeta: { source: 'cef', model: 'gpt-5', run_number: 3 },
+    });
+    const originalTs = readProductJson('mouse-ts-e2e').candidates.weight[0].submitted_at;
+    assert.ok(originalTs);
+
+    specDb.deleteFieldCandidatesByProduct('mouse-ts-e2e');
+    assert.equal(specDb.getAllFieldCandidatesByProduct('mouse-ts-e2e').length, 0);
+
+    rebuildFieldCandidatesFromJson({ specDb, productRoot: PRODUCT_ROOT });
+
+    const row = specDb.getFieldCandidateBySourceId('mouse-ts-e2e', 'weight', 'cef-mouse-ts-e2e-3');
+    assert.ok(row, 'row rebuilt');
+    assert.equal(row.submitted_at, originalTs, 'submitted_at round-tripped through JSON → reseed → SQL');
+  });
 });

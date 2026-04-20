@@ -131,12 +131,24 @@ Per-item evidence rules:
 {{VALUE_CONFIDENCE_GUIDANCE}}
 Rate the per-item "confidence" on each colors[] entry and each editions[<slug>] entry against its own cited evidence — a color you cross-confirmed on two tier1 pages may be 95 while a single-source color may be 70 in the same response.
 
+Atom collision self-audit (MANDATORY before finalizing):
+- Compare atom sets across every pair (color/color, color/edition, edition/edition). Atom set = name split by "+" for colors, colors[0] split by "+" for editions.
+- When a color and edition share atoms, it is EXTREMELY RARE for them to be genuinely separate SKUs. The usual causes of apparent collision:
+  (a) DUAL NAMING — one source calls the SKU by its color marketing name (e.g. "Thunderbolt Yellow"), another calls the SAME SKU by its edition name (e.g. "Launch Edition"). Same product under two labels. Do NOT emit both.
+  (b) MISSING ATOM — the color has a distinguishing accent/trim/finish you overlooked. Re-check sources and update the atom string.
+  (c) TRUE COEXISTENCE — a standalone SKU and an edition SKU sold separately. Rarest case; requires visual proof below.
+- To accept coexistence you must VISUALLY PROVE they are not the same variant: find product images on SEPARATE product pages showing visually distinct shells (different colors, different branding, different packaging). Identical images on different URLs do NOT prove distinctness.
+- Priority when resolving unresolvable collisions (edition > color with color_names entry > bare color): if you cannot visually prove distinctness, drop the lower-priority variant.
+- Color/color collisions with different color_names entries (e.g. two brands' "yellow" named differently) ARE legit — keep both.
+- Document every accepted coexisting pair in collisions[] with resolution "distinct_color_names" or "distinct_evidence" + resolution_notes showing what proved the distinction. Return [] if no pairs share atoms after resolution.
+
 {{PREVIOUS_DISCOVERY}}Return JSON with these exact keys and shapes:
 - "colors": [{ "name": "atom", "confidence": 0-100, "evidence_refs": [{ "url": "...", "tier": "tier1|tier2|tier3|tier4|tier5|other", "confidence": 0-100 }, ...] }, ...] (first entry = default)
 - "default_color": "atom" (must equal colors[0].name)
 - "color_names": { "atom": "Marketing Name", ... } (omit when atom IS the name)
 - "editions": { "slug": { "display_name": "Edition Name Only (e.g. 'Cyberpunk 2077: Arasaka Edition' — NOT '<brand> <model> – Cyberpunk 2077: Arasaka Edition')", "confidence": 0-100, "colors": ["atom+atom+atom"], "evidence_refs": [{ "url": "...", "tier": "...", "confidence": 0-100 }, ...] }, ... } or {} if none found (colors is a single combo entry)
 - "siblings_excluded": ["Model Name", ...]
+- "collisions": [{ "variants": ["color:<atom>" | "edition:<slug>", ...], "shared_atoms": ["atom", ...], "resolution": "distinct_color_names" | "distinct_evidence", "resolution_notes": "..." }, ...] or [] if no coexisting atom-sharing pairs
 - "discovery_log": { "confirmed_from_known": [], "added_new": [], "rejected_from_known": [], "urls_checked": [], "queries_run": [] }`;
 
 export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], product = {}, previousRuns = [], previousDiscovery = { urlsChecked: [], queriesRun: [] }, familyModelCount = 1, ambiguityLevel = 'easy', siblingModels = [], templateOverride = '', minEvidenceRefs = 1 }) {
@@ -343,7 +355,7 @@ You are not just matching — you are judging quality. For each discovery:
 If a discovery cannot be found on the official product page or any major retailer, REJECT it.
 Common hallucination patterns:
 - Colors that belong to a sibling model, not this one
-- Standalone MULTI-ATOM color combos that duplicate an edition's atoms (e.g. "olive+black+red" when a DOOM edition exists with those atoms). Single-atom standalones like "black" coexisting with a black-bodied edition are NORMAL — both are real, distinct SKUs.
+- Standalone MULTI-ATOM color combos that duplicate an edition's atoms (e.g. "olive+black+red" when a DOOM edition exists with those atoms). Single-atom standalones coexisting with an edition of the same atom(s) are EXTREMELY RARE. The most common cause is DUAL NAMING: one article calls the SKU by its color marketing name (e.g. "Thunderbolt Yellow"), another calls the same SKU by its edition name (e.g. "Launch Edition") — same product under two labels. To accept both as distinct you must VISUALLY PROVE they are not the same variant: find product images on SEPARATE product pages showing visually distinct shells. When you cannot visually prove distinctness, apply priority (edition > color with color_names entry > bare color) and reject the lower-priority variant.
 - Colors or editions that existed for a previous generation but not this model
 Use your web access to verify — scoped queries, not endless searching.
 

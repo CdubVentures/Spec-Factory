@@ -17,13 +17,20 @@
  */
 
 import { z } from 'zod';
-import { evidenceRefSchema } from './evidencePromptFragment.js';
+import { evidenceRefSchema, evidenceRefExtendedSchema } from './evidencePromptFragment.js';
 import { publisherCandidateRefSchema, rejectionMetadataSchema } from './editorialSchemas.js';
 
-export function createScalarFinderEditorialSchemas({ llmResponseSchema } = {}) {
+export function createScalarFinderEditorialSchemas({ llmResponseSchema, includeEvidenceKind = false } = {}) {
   if (!llmResponseSchema) {
     throw new Error('createScalarFinderEditorialSchemas: llmResponseSchema required');
   }
+
+  // WHY: when the finder opts into extended evidence (RDF/scalar), the
+  // candidate-level `sources` field also surfaces evidence_kind +
+  // supporting_evidence so the review drawer can render the kind icon
+  // + popover quote. Legacy rebuilt rows without evidence_kind parse
+  // cleanly because the field is optional on the extended schema.
+  const sourceRefSchema = includeEvidenceKind ? evidenceRefExtendedSchema : evidenceRefSchema;
 
   const candidateSchema = z.object({
     variant_id: z.string().nullable(),
@@ -33,7 +40,7 @@ export function createScalarFinderEditorialSchemas({ llmResponseSchema } = {}) {
     value: z.string(),
     confidence: z.number(),
     unknown_reason: z.string().default(''),
-    sources: z.array(evidenceRefSchema).default([]),
+    sources: z.array(sourceRefSchema).default([]),
     ran_at: z.string(),
     rejected_by_gate: z.boolean().optional(),
     rejection_reasons: z.array(rejectionMetadataSchema).optional(),

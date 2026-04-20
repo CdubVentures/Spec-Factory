@@ -52,6 +52,7 @@ export { ColorSwatch, colorCircleStyle } from './ColorSwatch.tsx';
 export { DataIntegrityBanner } from './DataIntegrityBanner.tsx';
 export { FinderKpiCard } from './FinderKpiCard.tsx';
 export { FinderPanelHeader } from './FinderPanelHeader.tsx';
+export { AnimatedDots } from './AnimatedDots.tsx';
 export { FinderVariantRow } from './FinderVariantRow.tsx';
 export { FinderRunHistoryRow } from './FinderRunHistoryRow.tsx';
 export { useFinderColorHexMap } from './useFinderColorHexMap.ts';

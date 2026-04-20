@@ -657,6 +657,40 @@ describe('fieldCandidateStore', () => {
     assert.equal(rows.length, 1, 'NULL variant_id row untouched');
   });
 
+  // ── submittedAt preservation (rebuild contract) ────────────────────
+  // WHY: Reseed reconstructs historical rows from product.json. If submittedAt
+  // is not threaded through, every reseeded row gets datetime('now'), which
+  // destroys Publisher's ORDER BY submitted_at DESC audit-log ordering.
+
+  it('insert accepts optional submittedAt and stores it verbatim', () => {
+    const ts = '2026-04-20T04:41:12.355Z';
+    db.insertFieldCandidate({
+      productId: 'mouse-ts-preserve', fieldKey: 'colors',
+      sourceId: 'cef-mouse-ts-preserve-1', sourceType: 'cef',
+      value: '["yellow+black"]', confidence: 95, model: 'gpt-5.4',
+      validationJson: {}, metadataJson: {},
+      submittedAt: ts,
+    });
+
+    const row = db.getFieldCandidateBySourceId('mouse-ts-preserve', 'colors', 'cef-mouse-ts-preserve-1');
+    assert.ok(row, 'row inserted');
+    assert.equal(row.submitted_at, ts, 'submitted_at preserved verbatim');
+  });
+
+  it('insert without submittedAt uses SQL default (datetime now)', () => {
+    db.insertFieldCandidate({
+      productId: 'mouse-ts-default', fieldKey: 'colors',
+      sourceId: 'cef-mouse-ts-default-1', sourceType: 'cef',
+      value: '["black"]', confidence: 98, model: 'gpt-5.4',
+      validationJson: {}, metadataJson: {},
+    });
+
+    const row = db.getFieldCandidateBySourceId('mouse-ts-default', 'colors', 'cef-mouse-ts-default-1');
+    assert.ok(row, 'row inserted');
+    assert.ok(row.submitted_at, 'submitted_at populated by SQL default');
+    assert.ok(row.submitted_at.length > 0);
+  });
+
   it('countFieldCandidatesBySourceId decrements after deleteBySourceId for one field', () => {
     const sid = 'cef-mouse-dec-1';
     db.insertFieldCandidate({

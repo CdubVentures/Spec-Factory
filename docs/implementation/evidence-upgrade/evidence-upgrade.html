@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory — Evidence Upgrade</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --surface-alt: #f1f3f5;
+    --border: #dee2e6;
+    --border-light: #e9ecef;
+    --text: #212529;
+    --text-muted: #6c757d;
+    --accent: #4263eb;
+    --accent-light: #edf2ff;
+    --green: #2b8a3e;
+    --green-bg: #ebfbee;
+    --red: #c92a2a;
+    --red-bg: #fff5f5;
+    --orange: #e67700;
+    --orange-bg: #fff9db;
+    --purple: #7048e8;
+    --purple-bg: #f3f0ff;
+    --teal: #0c8599;
+    --teal-bg: #e6fcf5;
+    --pink: #c2255c;
+    --pink-bg: #fff0f6;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #4263eb 0%, #7048e8 100%); color: white; padding: 40px 0; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  .header h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+  .header p { font-size: 15px; opacity: 0.92; margin-top: 4px; }
+  .header .pill { display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; letter-spacing: 0.3px; margin-top: 14px; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  .toc { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 32px; box-shadow: var(--shadow); }
+  .toc h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); margin-bottom: 12px; }
+  .toc ol { list-style: none; counter-reset: toc; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; }
+  .toc li { counter-increment: toc; font-size: 14px; }
+  .toc li::before { content: counter(toc) ". "; color: var(--text-muted); font-weight: 600; margin-right: 4px; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .section-title { font-size: 22px; font-weight: 700; margin: 48px 0 18px; padding-bottom: 10px; border-bottom: 2px solid var(--accent); display: flex; align-items: center; gap: 12px; }
+  .section-title .num { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: white; font-size: 15px; font-weight: 700; flex-shrink: 0; }
+  .subsection-title { font-size: 16px; font-weight: 700; margin: 24px 0 10px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+  .card-header { padding: 14px 20px; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-light); background: var(--surface-alt); }
+  .card-body { padding: 18px 22px; font-size: 14px; }
+  .card-body p { margin-bottom: 10px; }
+  .card-body p:last-child { margin-bottom: 0; }
+  .card-body ul, .card-body ol { margin-left: 22px; margin-bottom: 10px; }
+  .card-body li { margin-bottom: 4px; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .tag-green { background: var(--green-bg); color: var(--green); }
+  .tag-orange { background: var(--orange-bg); color: var(--orange); }
+  .tag-purple { background: var(--purple-bg); color: var(--purple); }
+  .tag-teal { background: var(--teal-bg); color: var(--teal); }
+  .tag-pink { background: var(--pink-bg); color: var(--pink); }
+  .tag-red { background: var(--red-bg); color: var(--red); }
+  code { font-family: var(--mono); background: var(--surface-alt); padding: 2px 6px; border-radius: 4px; font-size: 13px; border: 1px solid var(--border-light); }
+  pre { background: #1a1d23; color: #e9ecef; padding: 14px 18px; border-radius: var(--radius); overflow-x: auto; font-family: var(--mono); font-size: 13px; line-height: 1.5; margin: 12px 0; }
+  pre code { background: transparent; border: 0; padding: 0; color: inherit; font-size: inherit; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13.5px; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--surface-alt); font-weight: 600; color: var(--text-muted); text-transform: uppercase; font-size: 11.5px; letter-spacing: 0.3px; }
+  td code { font-size: 12.5px; }
+  .callout { padding: 14px 18px; border-radius: var(--radius); margin: 14px 0; font-size: 14px; }
+  .callout-warn { background: var(--orange-bg); border-left: 4px solid var(--orange); }
+  .callout-info { background: var(--accent-light); border-left: 4px solid var(--accent); }
+  .callout-success { background: var(--green-bg); border-left: 4px solid var(--green); }
+  .callout strong { display: block; margin-bottom: 4px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 860px) { .grid-2 { grid-template-columns: 1fr; } .toc ol { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Evidence Upgrade</h1>
+  <p>Add <code>supporting_evidence</code> + <code>evidence_kind</code> to the evidence contract so a human can audit every field value the LLM produces.</p>
+  <span class="pill">STATUS · PLANNED</span>
+</div>
+
+<div class="container">
+
+<div class="toc">
+  <h3>Table of Contents</h3>
+  <ol>
+    <li><a href="#why">Why this upgrade</a></li>
+    <li><a href="#scope">Scope — who opts in</a></li>
+    <li><a href="#enum">The evidence_kind enum</a></li>
+    <li><a href="#schema">Schema shape</a></li>
+    <li><a href="#prompt">Prompt changes</a></li>
+    <li><a href="#gate">Publisher gate</a></li>
+    <li><a href="#gui">GUI evidence drawer</a></li>
+    <li><a href="#migration">Migration + backfill</a></li>
+    <li><a href="#tests">Test strategy (MACRO-RED first)</a></li>
+    <li><a href="#done">Acceptance criteria</a></li>
+  </ol>
+</div>
+
+<h2 id="why" class="section-title"><span class="num">1</span> Why this upgrade</h2>
+
+<div class="card">
+  <div class="card-header">The M75 verification gap</div>
+  <div class="card-body">
+    <p>While auditing RDF results for the Corsair M75 Air Wireless family, a human looking at the stored <code>evidence_refs[]</code> on each release-date candidate could see only <code>{url, tier, confidence}</code>. Several URLs had no visible date signal when opened in a browser — the page simply lists the product. The LLM's reasoning (which <em>did</em> include literal quotes and inference chains) was buried inside <code>discovery_log.notes</code>, not tied to the specific URL it came from.</p>
+    <p>Verified by fetching the actual URLs on 2026-04-19:</p>
+    <ul>
+      <li>Corsair Explorer article → <strong>visible on-page text</strong>: "As of 04/19/2024, You can now get the M75 AIR in your choice of Black, Grey, or White!" — strong, verifiable</li>
+      <li>TweakTown news → <strong>byline</strong> "Published Oct 12, 2023" + body "available now for USD 199.99" — strong, verifiable</li>
+      <li>Corsair product page for Black SKU → <strong>no date anywhere</strong> on the page or in metadata — URL was likely cited for identity-only purposes, but the <code>evidence_refs</code> shape did not distinguish it</li>
+    </ul>
+    <p>The LLM sees the same rendered HTML a browser does (no hidden backend). The fix is to persist <em>what on the page supported the claim</em> alongside each URL so a human can click through and verify.</p>
+  </div>
+</div>
+
+<div class="callout callout-info">
+  <strong>The core shift</strong>
+  Evidence today: "here is a URL with a tier + my confidence." Evidence after this upgrade: "here is a URL, here is the exact text or reasoning on it that supports the claim, and here is the kind of evidence that text represents."
+</div>
+
+<h2 id="scope" class="section-title"><span class="num">2</span> Scope — who opts in</h2>
+
+<div class="card">
+  <div class="card-header">Opt-in consumers</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Consumer</th><th>Shape</th><th>Rationale</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>RDF</strong> (release-date finder)</td>
+          <td><code>{url, tier, confidence, supporting_evidence, evidence_kind}</code></td>
+          <td>Answers "what value." Often requires deduction (rebadged sensors, byline-as-proxy, artifact metadata).</td>
+        </tr>
+        <tr>
+          <td><strong>variantScalarFieldProducer</strong> (every per-variant scalar — dpi, polling_rate, sensor, switch, etc.)</td>
+          <td><code>{url, tier, confidence, supporting_evidence, evidence_kind}</code></td>
+          <td>Same as RDF — value-focused with deduction common across 80–113 keys per category.</td>
+        </tr>
+        <tr>
+          <td><strong>CEF</strong> (color/edition finder)</td>
+          <td><code>{url, tier, confidence}</code> — unchanged</td>
+          <td>Question is "does this colorway/edition exist on this product." A URL either lists it or it doesn't; a quote would be redundant to the URL page title/h1.</td>
+        </tr>
+        <tr>
+          <td><strong>PIF</strong> (product-image finder)</td>
+          <td><code>{url, tier, confidence}</code> — unchanged</td>
+          <td>Image-level validation (HEAD check + content-type + dimensions), not text evidence.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>The extended schema is <strong>built into the shared evidence prompt fragment</strong> at <code>src/core/finder/evidencePromptFragment.js</code> and gated by an <code>includeEvidenceKind</code> option. Finders opt in by passing the flag; the default is off to preserve CEF/PIF behavior.</p>
+  </div>
+</div>
+
+<h2 id="enum" class="section-title"><span class="num">3</span> The evidence_kind enum</h2>
+
+<p>Derived by surveying every field key across every current category — <strong>80 (mouse) + 103 (keyboard) + 113 (monitor) = 296 keys</strong>. Each kind maps to real cases the LLM will encounter.</p>
+
+<div class="card">
+  <div class="card-header">Enum values</div>
+  <div class="card-body">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:180px">evidence_kind</th>
+          <th>When to use</th>
+          <th>Example field keys</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>direct_quote</code> <span class="tag tag-green">common</span></td>
+          <td>Verbatim on-page text states the claim. Reader can ctrl-F to find it.</td>
+          <td><code>dpi</code>, <code>polling_rate</code>, <code>actuation_force</code>, <code>actuation_distance</code>, <code>switch_lifespan</code>, <code>refresh_rate</code>, <code>response_time_gtg</code>, <code>screen_size</code>, <code>resolution</code>, <code>weight</code>, <code>cable_length</code>, <code>key_count</code>, <code>layout</code></td>
+        </tr>
+        <tr>
+          <td><code>structured_metadata</code> <span class="tag tag-green">common</span></td>
+          <td>Machine-readable tag in HTML source — JSON-LD, OG tag, meta tag, "Date First Available".</td>
+          <td><code>sku</code>, <code>mpn</code>, <code>gtin</code>, <code>release_date</code> (Amazon/JSON-LD), any field where the answer is in <code>application/ld+json</code></td>
+        </tr>
+        <tr>
+          <td><code>byline_timestamp</code> <span class="tag tag-teal">date</span></td>
+          <td>The URL's own publish/review date is the proxy — "this review dated Oct 2023 means the product existed by then."</td>
+          <td><code>release_date</code> (bounded-from-below by a dated review), <code>discontinued</code> (bounded-from-above by last dated listing)</td>
+        </tr>
+        <tr>
+          <td><code>artifact_metadata</code> <span class="tag tag-orange">oem</span></td>
+          <td>PDF manual / datasheet / spec-sheet file metadata — revision footer, filename pattern, copyright.</td>
+          <td><code>sensor_date</code> (datasheet footer), <code>sensor_brand</code>, <code>switch_brand</code>, <code>mcu</code>, <code>encoder_brand</code></td>
+        </tr>
+        <tr>
+          <td><code>visual_inspection</code> <span class="tag tag-purple">photo</span></td>
+          <td>Read from product images/renders. Counting ports, reading finish, identifying layout from photos.</td>
+          <td><code>honeycomb_frame</code>, <code>thumb_rest</code>, <code>rgb_zones</code>, <code>coating</code>, <code>feet_material</code>, <code>layout</code> (ANSI/ISO), <code>hdmi_ports</code> count, <code>usb_c_ports</code> count, <code>stabilizer_mount</code>, <code>adjustable_feet</code>, <code>pip_pbp</code></td>
+        </tr>
+        <tr>
+          <td><code>lab_measurement</code> <span class="tag tag-pink">test</span></td>
+          <td>Third-party test lab value. RTINGS, TFT Central, LinusTechTips, NotebookCheck, etc.</td>
+          <td><code>click_latency_*</code>, <code>sensor_latency_*</code>, <code>input_lag_*</code>, <code>response_time_mprt</code>, <code>overshoot_*</code>, <code>color_gamut_dci_p3</code>, <code>color_accuracy_delta_e</code>, <code>brightness_hdr_peak</code>, <code>contrast_ratio_dynamic</code>, <code>flawless_sensor</code></td>
+        </tr>
+        <tr>
+          <td><code>comparative_rebadge</code> <span class="tag tag-orange">oem</span></td>
+          <td>Component is a known rebadge of an OEM part; OEM-level specs propagate to this product.</td>
+          <td><code>sensor</code> (PMW3360/3389/3395), <code>switch_type</code> (Omron D2FC, Kailh GM 8.0), <code>encoder</code>, <code>mcu</code> (Nordic nRF52, ARM Cortex)</td>
+        </tr>
+        <tr>
+          <td><code>inferred_reasoning</code> <span class="tag tag-orange">soft</span></td>
+          <td>Chain-of-reasoning across multiple signals when no single one is sufficient. The <code>supporting_evidence</code> field describes the reasoning.</td>
+          <td><code>form_factor</code>, <code>hand_size</code>, <code>grip</code>, <code>silent_clicks</code>, <code>hump</code>, <code>front_flare</code>, <code>shape</code>, <code>typing_feel</code>, <code>sound_profile</code></td>
+        </tr>
+        <tr>
+          <td><code>absence_of_evidence</code> <span class="tag tag-red">negative</span></td>
+          <td>The negative case. "No retailer listings exist before X" / "manufacturer page no longer carries this SKU."</td>
+          <td><code>discontinued</code>, <code>release_date</code> (lower-bound by absence of earlier listings)</td>
+        </tr>
+        <tr>
+          <td><code>identity_only</code> <span class="tag tag-red">weak</span></td>
+          <td>URL cited only to establish the product identity — not evidence for the field value itself. Must not count toward the evidence-threshold gate.</td>
+          <td>Any manufacturer product-page URL used just to prove the SKU exists</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="callout callout-warn">
+  <strong>Guardrails for the publisher gate</strong>
+  <code>identity_only</code> evidence refs do not satisfy <code>minEvidenceRefs</code>. Every value-bearing field must have at least one ref whose <code>evidence_kind</code> is something other than <code>identity_only</code>. Rationale: a URL that just proves the product exists is not evidence for the claim.
+</div>
+
+<h2 id="schema" class="section-title"><span class="num">4</span> Schema shape</h2>
+
+<div class="card">
+  <div class="card-header">Zod schema (additive — existing shape still valid)</div>
+  <div class="card-body">
+    <p>Location: <code>src/features/release-date/releaseDateSchema.js</code>, <code>src/core/finder/variantScalarFieldSchema.js</code> (or equivalent — find at plan-time). Also add to the shared <code>evidencePromptFragment</code>.</p>
+<pre><code>const EVIDENCE_KIND = z.enum([
+  'direct_quote',
+  'structured_metadata',
+  'byline_timestamp',
+  'artifact_metadata',
+  'visual_inspection',
+  'lab_measurement',
+  'comparative_rebadge',
+  'inferred_reasoning',
+  'absence_of_evidence',
+  'identity_only',
+]);
+
+const evidenceRefExtended = z.object({
+  url: z.string().url(),
+  tier: z.string(),
+  confidence: z.number().int().min(0).max(100),
+  supporting_evidence: z.string().max(280),   // quote OR reasoning summary
+  evidence_kind: EVIDENCE_KIND,
+});
+
+// RDF + scalar producers use evidenceRefExtended.
+// CEF + PIF keep evidenceRefBase ({url, tier, confidence}) — unchanged.</code></pre>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Example payload — RDF on M75 Air Wireless white variant</div>
+  <div class="card-body">
+<pre><code>{
+  "release_date": "2024-04-19",
+  "confidence": 93,
+  "evidence_refs": [
+    {
+      "url": "https://www.corsair.com/us/el/explorer/gamer/mice/corsair-m75-air-our-best-mouse-for-competitive-fps-gaming/",
+      "tier": "tier1",
+      "confidence": 93,
+      "supporting_evidence": "As of 04/19/2024, You can now get the M75 AIR in your choice of Black, Grey, or White!",
+      "evidence_kind": "direct_quote"
+    },
+    {
+      "url": "https://milled.com/corsair-ww/the-m75-air-wireless-is-now-available-in-new-colors-...",
+      "tier": "other",
+      "confidence": 91,
+      "supporting_evidence": "Email archive timestamp shows send date April 19, 2024; subject line 'M75 Air Wireless is now available in new colors'.",
+      "evidence_kind": "byline_timestamp"
+    },
+    {
+      "url": "https://www.corsair.com/us/en/p/gaming-mouse/ch-931d101-na/m75-air-wireless-...-white-ch-931d101-na",
+      "tier": "tier1",
+      "confidence": 60,
+      "supporting_evidence": "",
+      "evidence_kind": "identity_only"
+    }
+  ]
+}</code></pre>
+  </div>
+</div>
+
+<h2 id="prompt" class="section-title"><span class="num">5</span> Prompt changes</h2>
+
+<div class="card">
+  <div class="card-header">evidencePromptFragment.js gains an opt-in block</div>
+  <div class="card-body">
+    <p><code>buildEvidencePromptBlock({ minEvidenceRefs, includeEvidenceKind })</code>. When <code>includeEvidenceKind: true</code>, append this block (sourced from <code>globalPromptRegistry</code> under key <code>evidenceKindGuidance</code>):</p>
+<pre><code>For EACH evidence_ref, include:
+- "supporting_evidence": &lt;=280 chars. Either the EXACT quote from the page
+  that supports the claim, or — for inferred/deductive cases — a one-line
+  summary of the reasoning tying the URL to the claim.
+- "evidence_kind": one of the following. Pick the most specific match.
+
+  direct_quote          — verbatim on-page text states the claim
+  structured_metadata   — JSON-LD / OG / meta tags / "Date First Available"
+  byline_timestamp      — the URL's own publish/review date IS the proxy
+  artifact_metadata     — PDF manual/datasheet file metadata (footer, rev)
+  visual_inspection     — read from product images/renders
+  lab_measurement       — third-party test lab value (RTINGS, TFT Central)
+  comparative_rebadge   — component is a known OEM-part rebadge
+  inferred_reasoning    — chain-of-reasoning across multiple signals
+  absence_of_evidence   — the negative case (no listings before X)
+  identity_only         — URL proves SKU exists, NOT the field value
+
+Rules:
+- identity_only refs do NOT satisfy the minimum-evidence threshold — at least
+  one ref per field must be a substantive kind.
+- supporting_evidence must be empty string "" when evidence_kind is
+  identity_only (there is no claim-supporting content to cite).
+- For direct_quote: copy the text exactly as it appears; do not paraphrase.
+- For inferred_reasoning: name the signals you combined ("review dated
+  2023-10 + Corsair press release 2023-10-12 + Amazon listing from Oct 2023").</code></pre>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Global prompt registry additions</div>
+  <div class="card-body">
+    <p>Add to <code>src/core/llm/prompts/globalPromptRegistry.js</code>:</p>
+    <ul>
+      <li><code>evidenceKindGuidance</code> — the block above (user-editable from the GUI Global Prompts panel)</li>
+    </ul>
+    <p>No changes to <code>identityWarningEasy/Medium/Hard</code>, <code>siblingsExclusion</code>, <code>evidenceContract</code>, <code>evidenceVerification</code>, <code>valueConfidenceRubric</code>, <code>discoveryHistoryBlock</code>.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Per-finder wiring</div>
+  <div class="card-body">
+    <ul>
+      <li><strong>RDF</strong> — <code>releaseDateLlmAdapter.js</code>: pass <code>includeEvidenceKind: true</code> into <code>buildEvidencePromptBlock</code>. Update <code>releaseDateFinderResponseSchema</code> to use the extended evidence ref shape.</li>
+      <li><strong>Scalar producer</strong> — <code>variantScalarFieldProducer.js</code>: same flag, extend the response-schema builder. This propagates to every per-key finder module built on the producer.</li>
+      <li><strong>CEF / PIF</strong> — no change. Verify the default (<code>includeEvidenceKind: false</code>) preserves current behavior.</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="gate" class="section-title"><span class="num">6</span> Publisher gate</h2>
+
+<div class="card">
+  <div class="card-header">Counting rule update</div>
+  <div class="card-body">
+    <p>Find the publisher code that checks <code>evidence_refs.length &gt;= minEvidenceRefs</code> (likely in <code>src/features/publisher/</code>). Change the count to ignore refs whose <code>evidence_kind === 'identity_only'</code>.</p>
+<pre><code>const substantiveRefs = (evidence_refs || []).filter(
+  (r) =&gt; r.evidence_kind !== 'identity_only'
+);
+const meetsMinimum = substantiveRefs.length &gt;= minEvidenceRefs;</code></pre>
+    <p>Legacy refs without <code>evidence_kind</code> default to "substantive" (count toward the minimum). This keeps pre-migration data valid.</p>
+  </div>
+</div>
+
+<h2 id="gui" class="section-title"><span class="num">7</span> GUI evidence drawer</h2>
+
+<div class="card">
+  <div class="card-header">Evidence-refs list rendering</div>
+  <div class="card-body">
+    <p>In the variant/candidate evidence drawer (RDF + per-key finder panels), render each ref as:</p>
+    <ul>
+      <li><strong>URL</strong> (clickable, opens in new tab)</li>
+      <li><strong>Kind badge</strong> — color-coded: green for <code>direct_quote</code>/<code>structured_metadata</code>; teal for <code>byline_timestamp</code>; orange for <code>artifact_metadata</code>/<code>comparative_rebadge</code>; purple for <code>visual_inspection</code>; pink for <code>lab_measurement</code>; orange-soft for <code>inferred_reasoning</code>; red for <code>absence_of_evidence</code>/<code>identity_only</code></li>
+      <li><strong>Supporting evidence</strong> — quoted block for <code>direct_quote</code>/<code>structured_metadata</code>; italicized "(reasoning)" prefix for <code>inferred_reasoning</code>/<code>comparative_rebadge</code>; dim "(identity-only — not counted)" for <code>identity_only</code></li>
+      <li><strong>Tier + confidence</strong> on a secondary line</li>
+    </ul>
+    <p>Add a "copy quote" button for <code>direct_quote</code> refs so a user can ctrl-F the source page to verify.</p>
+  </div>
+</div>
+
+<h2 id="migration" class="section-title"><span class="num">8</span> Migration + backfill</h2>
+
+<div class="card">
+  <div class="card-header">Existing runs</div>
+  <div class="card-body">
+    <p>Old <code>evidence_refs[]</code> without <code>supporting_evidence</code>/<code>evidence_kind</code> remain valid. No backfill required; the GUI falls back to rendering just URL + tier + confidence when the new fields are absent.</p>
+    <p>Rerunning RDF or any scalar-producer module on a product will produce the new shape going forward. No schema version bump needed — the extended fields are additive-optional.</p>
+  </div>
+</div>
+
+<h2 id="tests" class="section-title"><span class="num">9</span> Test strategy (MACRO-RED first)</h2>
+
+<div class="card">
+  <div class="card-header">Tests to write BEFORE any code</div>
+  <div class="card-body">
+    <ul>
+      <li><strong>Prompt fragment:</strong> <code>buildEvidencePromptBlock({ includeEvidenceKind: true })</code> includes the 10 enum values and the "identity_only does not satisfy minimum" rule; <code>includeEvidenceKind: false</code> does not.</li>
+      <li><strong>Zod:</strong> extended evidenceRef rejects an unknown <code>evidence_kind</code>, rejects <code>supporting_evidence</code> &gt; 280 chars, accepts empty string when <code>evidence_kind === 'identity_only'</code>.</li>
+      <li><strong>RDF response validator:</strong> accepts the new payload shape with all 10 kinds; rejects a payload where every ref is <code>identity_only</code> (no substantive evidence).</li>
+      <li><strong>Publisher gate:</strong> a candidate with 2 refs — one <code>identity_only</code>, one <code>direct_quote</code> — passes with <code>minEvidenceRefs: 1</code>; a candidate with 2 <code>identity_only</code> refs fails with <code>minEvidenceRefs: 1</code>.</li>
+      <li><strong>CEF + PIF regression:</strong> existing evidence shape still compiles and validates; <code>includeEvidenceKind</code> defaults to <code>false</code>.</li>
+      <li><strong>End-to-end:</strong> an RDF run on a 3-sibling-family product produces stored <code>evidence_refs[]</code> with <code>supporting_evidence</code> and <code>evidence_kind</code> populated on every non-identity-only ref.</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="done" class="section-title"><span class="num">10</span> Acceptance criteria</h2>
+
+<div class="card">
+  <div class="card-header">Done when</div>
+  <div class="card-body">
+    <ul>
+      <li>A new RDF run on <code>mouse-10836a9a</code> produces <code>evidence_refs[]</code> with <code>supporting_evidence</code> matching the actual page text (e.g., "As of 04/19/2024, You can now get the M75 AIR in your choice of Black, Grey, or White!") and <code>evidence_kind: "direct_quote"</code>.</li>
+      <li>The GUI evidence drawer renders the quote inline under each URL.</li>
+      <li>A candidate whose only evidence is <code>identity_only</code> refs is rejected by the publisher gate.</li>
+      <li>CEF and PIF stored prompts are byte-identical before/after the change (regression safety).</li>
+      <li>Full finder test suite green (1710+ existing tests) plus new tests for this upgrade.</li>
+      <li>One scalar-producer field (pick <code>dpi</code> or <code>polling_rate</code>) has a live run demonstrating a mix of <code>direct_quote</code> and <code>identity_only</code> refs correctly tagged.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="callout callout-success" style="margin-top:32px">
+  <strong>Starting point for the next session</strong>
+  Open this file, then start with MACRO-RED tests (section 9) before touching any production code. Respect the CEF/PIF simpler-shape scope. The enum values and global-prompt key names are locked — do not rename them without updating this doc first.
+</div>
+
+</div>
+
+</body>
+</html>

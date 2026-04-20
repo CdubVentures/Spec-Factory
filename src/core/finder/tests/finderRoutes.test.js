@@ -323,20 +323,35 @@ describe('createFinderRouteHandler — parseVariantKey (opt-in per-variant POST)
     assert.equal(captured?.variantKey, 'color:black');
   });
 
-  it('forwards productRow.base_model as opts.product.base_model when parseVariantKey:true', async () => {
-    let captured = null;
-    const { ctx } = makeCtx();
-    ctx.readJsonBody = async () => ({ variant_key: null });
-    const handler = createFinderRouteHandler(makeFinderConfig({
+  it('forwards productRow.base_model as opts.product.base_model unconditionally (both with and without parseVariantKey)', async () => {
+    // WHY: base_model is identity — the ambiguity resolver needs it to detect
+    // sibling models. Gating it on parseVariantKey was the root cause of the
+    // M75 Corsair sibling-injection bug where CEF saw empty siblings despite
+    // 3 matching rows in specDb.
+    let capturedWith = null;
+    const { ctx: ctxA } = makeCtx();
+    ctxA.readJsonBody = async () => ({ variant_key: null });
+    const handlerWith = createFinderRouteHandler(makeFinderConfig({
       parseVariantKey: true,
-      runFinder: async (opts) => { captured = opts; return { rejected: false }; },
-    }))(ctx);
-    await handler(['test-finder', 'cat', 'p1'], new Map(), 'POST', {}, {});
+      runFinder: async (opts) => { capturedWith = opts; return { rejected: false }; },
+    }))(ctxA);
+    await handlerWith(['test-finder', 'cat', 'p1'], new Map(), 'POST', {}, {});
     await flushAsyncWork();
-    assert.equal(captured?.product.base_model, 'BM');
+    assert.equal(capturedWith?.product.base_model, 'BM');
+
+    let capturedWithout = null;
+    const { ctx: ctxB } = makeCtx();
+    ctxB.readJsonBody = async () => ({ variant_key: null });
+    const handlerWithout = createFinderRouteHandler(makeFinderConfig({
+      // parseVariantKey intentionally omitted
+      runFinder: async (opts) => { capturedWithout = opts; return { rejected: false }; },
+    }))(ctxB);
+    await handlerWithout(['test-finder', 'cat', 'p1'], new Map(), 'POST', {}, {});
+    await flushAsyncWork();
+    assert.equal(capturedWithout?.product.base_model, 'BM', 'base_model must be forwarded even without parseVariantKey');
   });
 
-  it('without parseVariantKey, opts.variantKey is undefined + base_model is omitted (baseline preserved)', async () => {
+  it('without parseVariantKey, opts.variantKey is still undefined (variant-key parsing is opt-in, base_model is not)', async () => {
     let captured = null;
     const { ctx } = makeCtx();
     ctx.readJsonBody = async () => ({ variant_key: 'ignored' });
@@ -347,7 +362,6 @@ describe('createFinderRouteHandler — parseVariantKey (opt-in per-variant POST)
     await handler(['test-finder', 'cat', 'p1'], new Map(), 'POST', {}, {});
     await flushAsyncWork();
     assert.equal(captured?.variantKey, undefined, 'non-opt-in must NOT forward variantKey');
-    assert.equal(captured?.product.base_model, undefined, 'non-opt-in must NOT forward base_model');
   });
 
   it('op registered with variantKey field when parseVariantKey:true', async () => {

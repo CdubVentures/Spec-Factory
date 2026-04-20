@@ -240,7 +240,7 @@ export async function runColorEditionFinder({
   const { familyModelCount, ambiguityLevel, siblingModels } = await resolveAmbiguityContext({
     config, category: product.category, brand: product.brand,
     baseModel: product.base_model, currentModel: product.model,
-    specDb, resolveFn: resolveIdentityAmbiguitySnapshot,
+    specDb, resolveFn: resolveIdentityAmbiguitySnapshot, logger,
   });
 
   const allColors = appDb.listColors();
@@ -289,13 +289,20 @@ export async function runColorEditionFinder({
     }),
   });
 
-  // Capture prompt snapshot BEFORE call so the operations modal shows it immediately
+  // Capture prompt snapshot BEFORE call so the operations modal shows it immediately.
+  // WHY: Must include the same identity-context args the LLM call uses (below),
+  // otherwise the stored snapshot and the operations modal both show easy-tier
+  // "no known siblings" even when the product has a real sibling family.
+  // Keep this arg set in sync with the callLlm() call further down.
   const systemPrompt = buildColorEditionFinderPrompt({
     colorNames,
     colors: allColors,
     product,
     previousRuns,
     previousDiscovery,
+    familyModelCount,
+    ambiguityLevel,
+    siblingModels,
     templateOverride: discoveryPromptTemplate,
   });
   const userMessage = JSON.stringify({
@@ -507,17 +514,17 @@ export async function runColorEditionFinder({
 
   onStageAdvance?.('Validate');
 
-  // ── Variant Identity Check (Run 2+) ────────────────────────────
-  // WHY: If a variant registry already exists, fire a second LLM call to
-  // compare new discoveries against existing variants. The LLM decides:
-  // match (same variant), new (genuinely new), or reject (hallucinated).
+  // ── Variant Identity Gate (every run) ─────────────────────────
+  // WHY: Identity gate fires on every run — Run 1 audits fresh discoveries
+  // for atom collisions and dual-naming; Run 2+ additionally matches against
+  // the existing registry. The LLM returns match/new/reject actions.
   let identityCheckResult = null;
   let identityCheckPrompt = null;
   let identityCheckUser = null;
   const hasExistingRegistry = existing?.variant_registry?.length > 0;
 
-  // WHY: Collect orphaned PIF keys before identity check so LLM 2 can reconcile
-  // them alongside normal discovery matching. Orphans = PIF image keys not in registry.
+  // WHY: Orphaned PIF keys only exist when a registry already exists; skip
+  // collection on Run 1.
   let orphanedPifKeys = [];
   if (hasExistingRegistry) {
     orphanedPifKeys = collectOrphanedPifKeys({
@@ -529,12 +536,13 @@ export async function runColorEditionFinder({
 
   // WHY: Skip identity check when _callLlmOverride is set but no identity check
   // override is provided — test mode without real LLM routing.
-  if (hasExistingRegistry && (!_callLlmOverride || _callIdentityCheckOverride)) {
+  if (!_callLlmOverride || _callIdentityCheckOverride) {
     if (signal?.aborted) throw new DOMException('Operation cancelled', 'AbortError');
     onStageAdvance?.('Identity');
 
+    const existingRegistry = existing?.variant_registry || [];
     identityCheckPrompt = buildVariantIdentityCheckPrompt({
-      product, existingRegistry: existing.variant_registry,
+      product, existingRegistry,
       newColors: gateColors, newColorNames: colorNamesMap, newEditions: gateEditions,
       promptOverride: identityCheckPromptTemplate,
       familyModelCount, ambiguityLevel, siblingModels, runCount: previousRuns.length,
@@ -542,7 +550,7 @@ export async function runColorEditionFinder({
     });
     identityCheckUser = JSON.stringify({
       brand: product.brand || '', model: product.model || '',
-      existing_variants: existing.variant_registry.length,
+      existing_variants: existingRegistry.length,
       new_colors: gateColors.length, new_editions: Object.keys(gateEditions).length,
     });
 
@@ -573,7 +581,7 @@ export async function runColorEditionFinder({
       });
 
       const { result: idResult, usage: idUsage } = await callIdentityCheck({
-        product, existingRegistry: existing.variant_registry,
+        product, existingRegistry,
         newColors: gateColors, newColorNames: colorNamesMap, newEditions: gateEditions,
         promptOverride: identityCheckPromptTemplate,
         familyModelCount, ambiguityLevel, siblingModels, runCount: previousRuns.length,
@@ -613,6 +621,26 @@ export async function runColorEditionFinder({
     }
   }
 
+  // WHY: On Run 1 (no existing registry), apply identity gate reject
+  // mappings to filter out variants LLM 2 judged as hallucinated or
+  // dual-named. Run 2+ handles rejects via applyIdentityMappings below.
+  if (!hasExistingRegistry && identityCheckResult) {
+    const rejectedKeys = new Set(
+      (identityCheckResult.mappings || [])
+        .filter((m) => m.action === 'reject')
+        .map((m) => m.new_key),
+    );
+    if (rejectedKeys.size > 0) {
+      gateColors = gateColors.filter((c) => !rejectedKeys.has(`color:${c}`));
+      for (const slug of Object.keys(gateEditions)) {
+        if (rejectedKeys.has(`edition:${slug}`)) delete gateEditions[slug];
+      }
+      for (const atom of Object.keys(colorNamesMap)) {
+        if (!gateColors.includes(atom)) delete colorNamesMap[atom];
+      }
+    }
+  }
+
   onStageAdvance?.('Confirm');
 
   // WHY: Reconcile edition slugs to canonical registry values before building
@@ -639,14 +667,19 @@ export async function runColorEditionFinder({
 
   const { ranAt } = computeRanAt();
 
-  // WHY: Nest both prompts/responses when identity check ran. On Run 1 (no identity
-  // check), keep the flat structure for backward compat with existing GUI/SQL readers.
-  const runPrompt = hasExistingRegistry && identityCheckPrompt
+  // WHY: Nest both prompts/responses whenever identity gate ran (every run now).
+  const runPrompt = identityCheckPrompt
     ? { discovery: { system: systemPrompt, user: userMessage }, identity_check: { system: identityCheckPrompt, user: identityCheckUser } }
     : { system: systemPrompt, user: userMessage };
-  const runResponse = hasExistingRegistry && identityCheckResult
-    ? { discovery: storedResponse, identity_check: identityCheckResult }
-    : storedResponse;
+  // WHY: Embed timing INSIDE the response payload (PIF/RDF pattern) so it rides
+  // through the SQL response_json column. Top-level started_at/duration_ms on
+  // the run object are dropped by the shared runs-table schema (only ran_at is
+  // persisted as a column). Keeping them inside response keeps them visible
+  // after rebuild-from-SQL in the Indexing panel.
+  const runTiming = { started_at: cefStartedAt, duration_ms: Date.now() - cefStartMs };
+  const runResponse = identityCheckResult
+    ? { ...runTiming, discovery: storedResponse, identity_check: identityCheckResult }
+    : { ...storedResponse, ...runTiming };
 
   // ── Gate 2: Identity check validation ─────────────────────────
   // WHY: Must run BEFORE persisting the merge. If identity check produced

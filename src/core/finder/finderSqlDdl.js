@@ -41,7 +41,10 @@ export function generateFinderDdl(modules) {
       `  category TEXT NOT NULL,`,
       `  product_id TEXT NOT NULL,`,
       `  run_number INTEGER NOT NULL,`,
-      `  ran_at TEXT DEFAULT '',`,
+      // WHY: Global rebuild-contract guardrail — shared DDL means every finder
+      // (current + future) gets a real timestamp default. Empty-string defaults
+      // would poison audit-log ORDER BY after a DB-deleted rebuild.
+      `  ran_at TEXT NOT NULL DEFAULT (datetime('now')),`,
       `  model TEXT DEFAULT 'unknown',`,
       `  fallback_used INTEGER DEFAULT 0,`,
       `  effort_level TEXT DEFAULT '',`,

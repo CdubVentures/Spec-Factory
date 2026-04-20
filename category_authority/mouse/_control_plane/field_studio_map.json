@@ -780,7 +780,8 @@
   "eg_toggles": {
     "colors": true,
     "editions": true,
-    "release_date": true
+    "release_date": true,
+    "sku": true
   },
   "enum_lists": [],
   "enum_sources": [],
@@ -9626,34 +9627,19 @@
       "value_form_sample": "scalar"
     },
     "sku": {
-      "aliases": [],
-      "availability": "always",
-      "canonical_key": "sku",
-      "component": null,
-      "constraints": [],
-      "consumers": {
-        "enum.match.format_hint": {
-          "review": false
-        }
-      },
       "contract": {
         "list_rules": {},
         "shape": "scalar",
-        "type": "string",
-        "unit": null
+        "type": "string"
       },
-      "data_type": "string",
-      "difficulty": "easy",
-      "display_name": "SKU / Part #",
-      "effort": 4,
       "enum": {
-        "match": {},
-        "new_value_policy": {},
-        "policy": "open_prefer_known",
-        "source": "yes_no"
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": false
+        },
+        "policy": "open"
       },
-      "enum_policy": "open_prefer_known",
-      "enum_source": "yes_no",
+      "enum_policy": "open",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -9662,42 +9648,19 @@
           "tier3"
         ]
       },
-      "field_key": "sku",
-      "field_studio_hints": {
-        "dataEntry": {
-          "key_cell": "B11",
-          "row": 11,
-          "sample_values": [
-            "570-ABCQ",
-            "570-BBBV",
-            "570-BBGJ",
-            "570-ABNC"
-          ],
-          "sheet": "dataEntry"
-        }
-      },
-      "group": "General",
       "key": "sku",
-      "min_evidence_refs": 1,
-      "output_shape": "scalar",
       "parse": {
+        "accepted_formats": [],
         "delimiters": [],
         "range_separators": [],
         "unit": null
       },
-      "parse_rules": {
-        "delimiters": [],
-        "separators": [],
-        "unit": null
-      },
       "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "effort": 4,
-        "required_level": "expected"
+        "availability": "sometimes",
+        "difficulty": "hard",
+        "effort": 5,
+        "required_level": "required"
       },
-      "required_level": "expected",
-      "round": "none",
       "search_hints": {
         "content_types": [
           "product_page"
@@ -9710,7 +9673,9 @@
           "eloshapes.com"
         ],
         "query_templates": [
-          "{brand} {model} SKU part number"
+          "{brand} {model} part number",
+          "{brand} {model} MPN",
+          "\"{model}\" part number"
         ],
         "query_terms": [
           "SKU",
@@ -9719,29 +9684,12 @@
           "product code"
         ]
       },
-      "selection_policy": {},
-      "shape": "scalar",
-      "type": "string",
       "ui": {
-        "array_handling": "none",
-        "display_decimals": 0,
-        "display_mode": "all",
-        "examples": [],
-        "group": "General",
-        "guidance_md": null,
-        "label": "SKU / Part #",
-        "order": 11,
-        "placeholder": "",
-        "prefix": null,
-        "short_label": null,
-        "suffix": null,
-        "tooltip_key": null,
-        "tooltip_md": "Define 'SKU / Part #' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
-        "tooltip_source": null
+        "group": "general",
+        "label": "SKU",
+        "tooltip_md": "Define 'SKU / Part #' according to contract. If not provable with evidence, output 'unk' with unknown_reason."
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "single",
-      "value_form_sample": "scalar"
+      "variant_dependent": true
     },
     "smoothing": {
       "aliases": [],

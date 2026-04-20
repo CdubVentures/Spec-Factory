@@ -10,7 +10,7 @@
  *   - no_cef_data / unknown_variant rejections
  */
 
-import { describe, it, before, after } from 'node:test';
+import { describe, it, before, after, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -127,12 +127,26 @@ const PRODUCT = {
   variant: 'wireless',
 };
 
+// WHY: RDF's per-variant runner uses a 1000ms stagger in production to space LLM
+// bursts. Every test stubs the LLM, so the stagger is dead wait. Zero-out setTimeout
+// delays only for the duration of these tests — `origSetTimeout(cb, 0)` preserves
+// async ordering (microtask gap) without burning wall-clock.
+const origSetTimeout = globalThis.setTimeout;
+function installImmediateStaggerMock() {
+  return mock.method(globalThis, 'setTimeout', (cb, _ms) => origSetTimeout(cb, 0));
+}
+
 describe('runReleaseDateFinder', () => {
+  let staggerMock;
   before(() => {
     fs.mkdirSync(PRODUCT_ROOT, { recursive: true });
+    staggerMock = installImmediateStaggerMock();
   });
 
-  after(() => cleanup(TMP));
+  after(() => {
+    staggerMock?.mock?.restore?.();
+    cleanup(TMP);
+  });
 
   it('happy path: valid date + evidence → candidate submitted + run persisted per variant', async () => {
     const pid = 'rdf-happy';
@@ -396,8 +410,15 @@ describe('runReleaseDateFinder', () => {
  * definitive unknown. Satisfaction predicate lives inside runReleaseDateFinderLoop.
  */
 describe('runReleaseDateFinderLoop', () => {
-  before(() => { fs.mkdirSync(PRODUCT_ROOT, { recursive: true }); });
-  after(() => cleanup(TMP));
+  let staggerMock;
+  before(() => {
+    fs.mkdirSync(PRODUCT_ROOT, { recursive: true });
+    staggerMock = installImmediateStaggerMock();
+  });
+  after(() => {
+    staggerMock?.mock?.restore?.();
+    cleanup(TMP);
+  });
 
   const HIGH_CONF_RESPONSE = {
     result: {

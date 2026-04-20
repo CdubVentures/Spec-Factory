@@ -154,8 +154,10 @@ describe('createScalarFinderSchema — error paths', () => {
 
 describe('createScalarFinderSchema — parity with RDF hand-written schema', () => {
   it('produces the same observable parse behavior as releaseDateFinderResponseSchema', async () => {
+    // WHY: RDF now opts into the extended evidence shape via includeEvidenceKind.
+    // The factory parity test must pass the same flag to remain apples-to-apples.
     const { releaseDateFinderResponseSchema } = await import('../../../features/release-date/releaseDateSchema.js');
-    const factorySchema = createScalarFinderSchema({ valueKey: 'release_date', valueType: 'date' });
+    const factorySchema = createScalarFinderSchema({ valueKey: 'release_date', valueType: 'date', includeEvidenceKind: true });
     const sample = {
       release_date: '2024-03-15',
       confidence: 90,
@@ -168,7 +170,7 @@ describe('createScalarFinderSchema — parity with RDF hand-written schema', () 
 
   it('factory default evidence_refs matches RDF default', async () => {
     const { releaseDateFinderResponseSchema } = await import('../../../features/release-date/releaseDateSchema.js');
-    const factorySchema = createScalarFinderSchema({ valueKey: 'release_date', valueType: 'date' });
+    const factorySchema = createScalarFinderSchema({ valueKey: 'release_date', valueType: 'date', includeEvidenceKind: true });
     const minimal = { release_date: '2024', confidence: 50 };
     assert.deepEqual(factorySchema.parse(minimal), releaseDateFinderResponseSchema.parse(minimal));
   });

@@ -19,6 +19,7 @@ import { PublishedBadge } from '../../../shared/ui/feedback/PublishedBadge.tsx';
 import { DefaultVariantMark } from '../../../shared/ui/feedback/DefaultVariantMark.tsx';
 import { resolveDrawerBadge } from '../selectors/drawerBadgeSelector.ts';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
+import { EvidenceKindTooltip } from '../../../shared/ui/feedback/EvidenceKindTooltip.tsx';
 import { ColorSwatch } from '../../../shared/ui/finder/ColorSwatch.tsx';
 import { useFinderColorHexMap } from '../../../shared/ui/finder/useFinderColorHexMap.ts';
 import { useFormatDate, useFormatDateTime } from '../../../utils/dateTime.ts';
@@ -142,8 +143,21 @@ interface FieldReviewDrawerProps {
 
 function SourceListItem({ src }: { src: EvidenceSource }) {
   const host = extractHost(src.url);
+  // WHY: identity_only refs are dimmed — the URL is cited only to pin SKU
+  // identity, not as evidence for the claim, and the publisher gate doesn't
+  // count them toward min_evidence_refs. Visually discount them to match.
+  const isIdentityOnly = src.evidence_kind === 'identity_only';
   return (
-    <li className="flex items-center gap-1.5 text-[10px] min-w-0">
+    <li className={`flex items-center gap-1.5 text-[10px] min-w-0 ${isIdentityOnly ? 'opacity-60' : ''}`}>
+      {src.evidence_kind ? (
+        <EvidenceKindTooltip
+          kind={src.evidence_kind}
+          supportingEvidence={src.supporting_evidence}
+          tier={src.tier}
+          confidence={src.confidence}
+          size={12}
+        />
+      ) : null}
       <a
         href={src.url}
         target="_blank"

@@ -102,7 +102,7 @@ export function resolveModelTracking({ config, phaseKey, onModelResolved = null 
  * @param {Function} opts.resolveFn — resolveIdentityAmbiguitySnapshot (injected to avoid core→feature import)
  * @returns {Promise<{ familyModelCount: number, ambiguityLevel: string }>}
  */
-export async function resolveAmbiguityContext({ config, category, brand, baseModel, currentModel, specDb, resolveFn }) {
+export async function resolveAmbiguityContext({ config, category, brand, baseModel, currentModel, specDb, resolveFn, logger = null }) {
   let familyModelCount = 1;
   let ambiguityLevel = 'easy';
   let siblingModels = [];
@@ -113,14 +113,52 @@ export async function resolveAmbiguityContext({ config, category, brand, baseMod
       identityLock: { brand, base_model: baseModel },
       specDb,
       currentModel: currentModel || '',
+      logger,
     });
     familyModelCount = snapshot.family_model_count || 1;
     ambiguityLevel = snapshot.ambiguity_level || 'easy';
     siblingModels = snapshot.sibling_models || [];
-  } catch {
-    // Non-fatal — fall back to easy
+  } catch (err) {
+    // WHY: resolver failures silently degraded prompts to easy-tier for months
+    // before anyone noticed. Log every fallback so audits can see them.
+    logger?.warn?.('identity_ambiguity_context_failed', {
+      category,
+      brand,
+      base_model: baseModel,
+      error: err?.message || String(err),
+    });
   }
   return { familyModelCount, ambiguityLevel, siblingModels };
+}
+
+/**
+ * Build the `product` object passed to every finder orchestrator.
+ *
+ * WHY: `base_model` was previously gated behind a `wantsVariantKey` flag, so
+ * finders that do not opt into parseVariantKey (CEF, PIF) received
+ * `product.base_model = ''`. That empty string cascaded into
+ * `resolveIdentityAmbiguitySnapshot` and short-circuited the sibling lookup
+ * at the `missing_identity` early return — the root cause of the M75 Corsair
+ * family never seeing CAUTION-tier identity warnings.
+ *
+ * Identity is always load-bearing for prompt construction, so it is always
+ * attached.
+ *
+ * @param {object} opts
+ * @param {string} opts.productId
+ * @param {string} opts.category
+ * @param {object} opts.productRow — SQL row with { brand, base_model, model, variant }
+ * @returns {{product_id:string, category:string, brand:string, base_model:string, model:string, variant:string}}
+ */
+export function buildOrchestratorProduct({ productId = '', category = '', productRow = {} } = {}) {
+  return {
+    product_id: productId,
+    category,
+    brand: productRow.brand || '',
+    base_model: productRow.base_model || '',
+    model: productRow.model || '',
+    variant: productRow.variant || '',
+  };
 }
 
 // ─── LLM Caller Factory ─────────────────────────────────────────────────────

@@ -113,6 +113,31 @@ export function estimateTokensFromText(value) {
   return Math.max(1, Math.ceil(text.length / 3.8));
 }
 
+// WHY: Cached-token fields live in different paths per provider —
+//   OpenAI / Gemini:  usage.prompt_tokens_details.cached_tokens (nested)
+//   Anthropic:        usage.cache_read_input_tokens
+//   DeepSeek:         usage.prompt_cache_hit_tokens
+// Direct fields + fallback are preferred to keep pre-normalized payloads working.
+function resolveCachedInputTokens(usage, fallback) {
+  const parse = (v) => {
+    const n = Number.parseInt(String(v ?? ''), 10);
+    return Number.isFinite(n) ? n : null;
+  };
+  const direct = parse(usage.cached_prompt_tokens) ?? parse(usage.cached_input_tokens);
+  if (direct != null) return direct;
+  const details = usage.prompt_tokens_details;
+  if (details && typeof details === 'object') {
+    const nested = parse(details.cached_tokens);
+    if (nested != null) return nested;
+  }
+  const anthropicRead = parse(usage.cache_read_input_tokens);
+  if (anthropicRead != null) return anthropicRead;
+  const deepseekHit = parse(usage.prompt_cache_hit_tokens);
+  if (deepseekHit != null) return deepseekHit;
+  const fromFallback = parse(fallback.cachedPromptTokens);
+  return fromFallback ?? 0;
+}
+
 export function normalizeUsage(usage = {}, fallback = {}) {
   const promptTokens = Math.max(
     0,
@@ -138,18 +163,7 @@ export function normalizeUsage(usage = {}, fallback = {}) {
       10
     ) || 0
   );
-  const cachedPromptTokens = Math.max(
-    0,
-    Number.parseInt(
-      String(
-        usage.cached_prompt_tokens ??
-        usage.cached_input_tokens ??
-        fallback.cachedPromptTokens ??
-        0
-      ),
-      10
-    ) || 0
-  );
+  const cachedPromptTokens = Math.max(0, resolveCachedInputTokens(usage, fallback));
 
   const totalTokens = Math.max(
     promptTokens + completionTokens,

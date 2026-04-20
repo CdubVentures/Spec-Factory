@@ -1,0 +1,1869 @@
+<!DOCTYPE html>
+<html lang="en" data-sf-theme-mode="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Billing Panel — Cost + Token Overview v2</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --sf-font-ui: "Segoe UI", "Inter", "Helvetica Neue", sans-serif;
+  --sf-font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+
+  --sf-surface-canvas: #060b1a;
+  --sf-surface-base: #0a1330;
+  --sf-surface-elevated: #111f41;
+  --sf-surface-panel: #0d1834;
+  --sf-surface-card: #111f41;
+  --sf-surface-row-hover: #152857;
+
+  --sf-text-primary: #ecf1ff;
+  --sf-text-muted: #adc2eb;
+  --sf-text-subtle: #94a3b8;
+  --sf-text-dim: #6b7fa0;
+
+  --sf-border-soft: #243a65;
+  --sf-border-soft-alpha: rgba(36, 58, 101, 0.6);
+  --sf-border-strong: #2f4a7e;
+
+  --sf-accent: #6366f1;
+  --sf-accent-strong: #818cf8;
+  --sf-accent-glow: rgba(99, 102, 241, 0.12);
+
+  /* Cost accent (indigo/purple family) */
+  --sf-cost-accent: #818cf8;
+  --sf-cost-accent-deep: #6366f1;
+  --sf-cost-glow: rgba(99, 102, 241, 0.14);
+
+  /* Token accent (teal/cyan family — distinct from cost) */
+  --sf-tok-accent: #22d3ee;
+  --sf-tok-accent-deep: #06b6d4;
+  --sf-tok-glow: rgba(34, 211, 238, 0.14);
+  --sf-tok-prompt: #22d3ee;
+  --sf-tok-completion: #a78bfa;
+  --sf-tok-cached: #34d399;
+  --sf-tok-reasoning: #fb7185;
+
+  --sf-success-fg: #86efac;
+  --sf-success-bg: rgba(34, 197, 94, 0.2);
+  --sf-warning-fg: #fcd34d;
+  --sf-warning-bg: rgba(234, 179, 8, 0.18);
+  --sf-danger-fg: #f87171;
+  --sf-danger-bg: rgba(248, 113, 113, 0.18);
+  --sf-info-fg: #93c5fd;
+  --sf-info-bg: rgba(14, 165, 233, 0.18);
+  --sf-neutral-fg: #94a3b8;
+  --sf-neutral-bg: rgba(148, 163, 184, 0.18);
+
+  /* Billing call-type palette */
+  --sf-bill-writer-1:       #94a3b8;
+  --sf-bill-pipeline-1:     #748ffc;
+  --sf-bill-pipeline-2:     #5c7cfa;
+  --sf-bill-pipeline-3:     #4c6ef5;
+  --sf-bill-pipeline-4:     #4263eb;
+  --sf-bill-val-1:          #38d9a9;
+  --sf-bill-val-2:          #12b886;
+  --sf-bill-color-1:        #da77f2;
+  --sf-bill-color-2:        #be4bdb;
+  --sf-bill-image-1:        #ff922b;
+  --sf-bill-image-2:        #fd7e14;
+  --sf-bill-image-3:        #f76707;
+  --sf-bill-image-4:        #e8590c;
+  --sf-bill-releasedate-1:  #fcc419;
+}
+
+body {
+  font-family: var(--sf-font-ui);
+  background: linear-gradient(180deg, var(--sf-surface-canvas), var(--sf-surface-base));
+  color: var(--sf-text-primary);
+  min-height: 100vh;
+  padding: 24px;
+  line-height: 1.45;
+  font-size: 13.5px;
+}
+
+.panel-root {
+  max-width: 1360px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.design-label {
+  text-align: center;
+  font-size: 12px;
+  color: var(--sf-text-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 2px;
+  padding: 8px 16px;
+  background: rgba(99, 102, 241, 0.07);
+  border: 1px dashed rgba(99, 102, 241, 0.3);
+  border-radius: 8px;
+}
+
+/* Section heading used to separate Cost / Token blocks */
+.section-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 4px 2px;
+}
+
+.section-heading .bar {
+  width: 4px;
+  height: 20px;
+  border-radius: 3px;
+  background: var(--sf-cost-accent);
+}
+
+.section-heading.tok .bar { background: var(--sf-tok-accent); }
+
+.section-heading h2 {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sf-text-primary);
+}
+
+.section-heading .meta {
+  font-size: 11.5px;
+  color: var(--sf-text-dim);
+}
+
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║  DUAL HERO BAND (Cost | Tokens)                                      ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+
+.hero {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.22), transparent 38%),
+    radial-gradient(circle at 100% 100%, rgba(34, 211, 238, 0.16), transparent 40%),
+    var(--sf-surface-elevated);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 14px;
+  padding: 20px 24px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hero-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.hero-title-block .eyebrow {
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--sf-text-dim);
+  margin-bottom: 4px;
+}
+
+.hero-title-block h1 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.hero-title-block p {
+  font-size: 13px;
+  color: var(--sf-text-muted);
+  margin-top: 4px;
+}
+
+.hero-period-switcher {
+  display: inline-flex;
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--sf-surface-panel);
+}
+
+.hero-period-switcher button {
+  background: transparent;
+  color: var(--sf-text-muted);
+  border: 0;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-family: inherit;
+  cursor: pointer;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.hero-period-switcher button:hover { color: var(--sf-text-primary); }
+
+.hero-period-switcher button.active {
+  background: var(--sf-accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Split hero into two halves with a soft divider */
+.hero-split {
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  gap: 18px;
+  align-items: stretch;
+}
+
+.hero-split > .divider {
+  background: linear-gradient(180deg, transparent, var(--sf-border-strong), transparent);
+  width: 1px;
+}
+
+.hero-half {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hero-half-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 0 2px 4px;
+}
+
+.hero-half-header .flame {
+  width: 10px; height: 10px; border-radius: 50%;
+}
+
+.hero-half.cost .flame { background: var(--sf-cost-accent); box-shadow: 0 0 0 3px var(--sf-cost-glow); }
+.hero-half.tok  .flame { background: var(--sf-tok-accent);  box-shadow: 0 0 0 3px var(--sf-tok-glow); }
+
+.hero-half-header h2 {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sf-text-primary);
+}
+
+.hero-half-header .meta {
+  font-size: 11px;
+  color: var(--sf-text-dim);
+  margin-left: auto;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.kpi-card {
+  position: relative;
+  background: linear-gradient(180deg, rgba(17, 31, 65, 0.6), rgba(13, 24, 52, 0.85));
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 10px;
+  padding: 12px 13px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow: hidden;
+}
+
+.kpi-card::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 2px;
+  opacity: 0.9;
+}
+
+.hero-half.cost .kpi-card::after { background: linear-gradient(90deg, var(--sf-cost-accent), transparent); }
+.hero-half.tok  .kpi-card::after { background: linear-gradient(90deg, var(--sf-tok-accent),  transparent); }
+
+.kpi-label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--sf-text-dim);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1;
+}
+
+.kpi-label .ico { font-size: 13px; }
+
+.kpi-value {
+  font-family: var(--sf-font-mono);
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--sf-text-primary);
+  line-height: 1.1;
+}
+
+.kpi-value .unit {
+  font-size: 11px;
+  color: var(--sf-text-muted);
+  margin-left: 3px;
+  font-weight: 500;
+}
+
+.kpi-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  color: var(--sf-text-muted);
+}
+
+.kpi-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 600;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-family: var(--sf-font-mono);
+}
+
+.kpi-trend.up { color: var(--sf-success-fg); background: var(--sf-success-bg); }
+.kpi-trend.down { color: var(--sf-danger-fg); background: var(--sf-danger-bg); }
+.kpi-trend.flat { color: var(--sf-neutral-fg); background: var(--sf-neutral-bg); }
+
+.sparkline { width: 100%; height: 22px; margin-top: 2px; }
+
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║  FILTER BAR                                                          ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+
+.filter-bar {
+  background: var(--sf-surface-elevated);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sf-text-dim);
+  white-space: nowrap;
+  margin-right: 4px;
+  min-width: 72px;
+}
+
+.filter-chip {
+  padding: 5px 12px;
+  border-radius: 7px;
+  border: 1px solid var(--sf-border-soft);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--sf-text-muted);
+  cursor: pointer;
+  background: var(--sf-surface-panel);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 1;
+  font-family: inherit;
+}
+
+.filter-chip:hover { border-color: var(--sf-accent); color: var(--sf-text-primary); }
+
+.filter-chip.active {
+  background: var(--sf-accent);
+  color: #fff;
+  border-color: var(--sf-accent);
+  font-weight: 600;
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.4), 0 4px 10px -4px rgba(99, 102, 241, 0.45);
+}
+
+.filter-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.25);
+}
+
+.filter-sep {
+  width: 1px; height: 22px;
+  background: var(--sf-border-soft);
+  margin: 0 6px;
+  flex-shrink: 0;
+}
+
+.filter-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px 3px 6px;
+  border-radius: 9px;
+  border: 1px solid var(--sf-border-soft);
+  background: var(--sf-surface-panel);
+  margin: 0 3px;
+}
+
+.filter-group-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sf-text-dim);
+  padding-right: 5px;
+  border-right: 1px solid var(--sf-border-soft);
+  margin-right: 3px;
+  line-height: 1.6;
+}
+
+.filter-chip-count {
+  font-family: var(--sf-font-mono);
+  font-size: 10.5px;
+  color: var(--sf-text-dim);
+  margin-left: 4px;
+}
+
+.filter-chip.active .filter-chip-count { color: rgba(255,255,255,0.75); }
+
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║  CARD / CHART GRID                                                   ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+
+.chart-grid-2-1 {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 14px;
+}
+
+.chart-grid-1-1 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.chart-grid-2-1-1 {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 14px;
+}
+
+.card {
+  background: var(--sf-surface-elevated);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card.tok-themed {
+  border-color: rgba(34, 211, 238, 0.35);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.08), 0 0 30px -12px rgba(34, 211, 238, 0.18) inset;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-title-block h3 {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--sf-text-primary);
+}
+
+.card-title-block .card-subtitle {
+  font-size: 11px;
+  color: var(--sf-text-dim);
+  margin-top: 1px;
+}
+
+.card-legend {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--sf-text-muted);
+}
+
+.card-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Chart bodies */
+.chart-body { height: 220px; width: 100%; position: relative; }
+.chart-body.sm { height: 180px; }
+
+/* Donut */
+.donut-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2px 0 4px;
+}
+
+.donut-wrap { position: relative; width: 160px; height: 160px; }
+
+.donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.donut-center .total {
+  font-family: var(--sf-font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--sf-text-primary);
+  letter-spacing: -0.02em;
+}
+
+.donut-center .total-label {
+  font-size: 10px;
+  color: var(--sf-text-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  margin-top: 8px;
+  font-size: 11px;
+}
+
+.donut-legend-row {
+  display: grid;
+  grid-template-columns: 14px 1fr auto auto;
+  gap: 7px;
+  align-items: center;
+  padding: 3px 6px;
+  border-radius: 5px;
+  color: var(--sf-text-muted);
+}
+
+.donut-legend-row:hover { background: var(--sf-surface-row-hover); color: var(--sf-text-primary); }
+
+.donut-legend-row .sq {
+  width: 10px; height: 10px; border-radius: 3px;
+  justify-self: center;
+}
+
+.donut-legend-row .pct {
+  font-family: var(--sf-font-mono);
+  color: var(--sf-text-subtle);
+  font-size: 10.5px;
+}
+
+.donut-legend-row .val {
+  font-family: var(--sf-font-mono);
+  color: var(--sf-text-primary);
+  font-weight: 600;
+}
+
+/* Horizontal bars */
+.hbar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 2px;
+}
+
+.hbar-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px 14px;
+  align-items: baseline;
+}
+
+.hbar-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.hbar-label .provider-tag {
+  font-family: var(--sf-font-mono);
+  font-size: 9.5px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--sf-text-dim);
+  background: var(--sf-surface-panel);
+  border: 1px solid var(--sf-border-soft);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.hbar-label .provider-tag.openai    { color: #6ee7b7; border-color: rgba(110, 231, 183, 0.4); }
+.hbar-label .provider-tag.anthropic { color: #fcd34d; border-color: rgba(252, 211, 77, 0.4); }
+.hbar-label .provider-tag.xai       { color: #d8b4fe; border-color: rgba(216, 180, 254, 0.4); }
+
+.hbar-label .name {
+  font-size: 12.5px;
+  color: var(--sf-text-primary);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hbar-label .calls {
+  font-family: var(--sf-font-mono);
+  font-size: 10.5px;
+  color: var(--sf-text-dim);
+  margin-left: 4px;
+}
+
+.hbar-val {
+  font-family: var(--sf-font-mono);
+  font-weight: 600;
+  color: var(--sf-text-primary);
+  font-size: 12.5px;
+  text-align: right;
+  min-width: 70px;
+}
+
+.hbar-track {
+  grid-column: 1 / -1;
+  height: 8px;
+  background: rgba(36, 58, 101, 0.35);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.hbar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--sf-cost-accent), var(--sf-cost-accent-deep));
+}
+
+.hbar-fill.tok {
+  background: linear-gradient(90deg, var(--sf-tok-accent), var(--sf-tok-accent-deep));
+}
+
+/* Token-specific composition strip (prompt vs completion vs cached) */
+.hbar-track.segmented {
+  display: flex;
+  padding: 0;
+}
+.hbar-seg {
+  height: 100%;
+}
+.hbar-seg.prompt     { background: var(--sf-tok-prompt); }
+.hbar-seg.completion { background: var(--sf-tok-completion); }
+.hbar-seg.cached     { background: var(--sf-tok-cached); opacity: 0.9; }
+
+/* Cache panel */
+.cache-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cache-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 12px 10px;
+  background: var(--sf-surface-panel);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 10px;
+}
+
+.cache-hero .hit-rate {
+  font-family: var(--sf-font-mono);
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--sf-tok-cached);
+  letter-spacing: -0.02em;
+}
+
+.cache-hero .hit-rate .unit { font-size: 18px; color: var(--sf-text-muted); margin-left: 2px; }
+
+.cache-hero .label {
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--sf-text-dim);
+  margin-top: 2px;
+}
+
+.cache-hero .savings {
+  font-size: 11.5px;
+  color: var(--sf-text-muted);
+  margin-top: 8px;
+}
+
+.cache-hero .savings strong {
+  color: var(--sf-success-fg);
+  font-family: var(--sf-font-mono);
+  font-weight: 700;
+}
+
+.cache-meter {
+  display: flex;
+  gap: 0;
+  height: 10px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(36, 58, 101, 0.35);
+}
+
+.cache-meter .seg.miss   { background: var(--sf-tok-prompt); }
+.cache-meter .seg.hit    { background: var(--sf-tok-cached); }
+
+.cache-legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.cache-legend .item {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--sf-surface-panel);
+  border: 1px solid var(--sf-border-soft);
+}
+
+.cache-legend .item .k {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sf-text-dim);
+  font-weight: 700;
+}
+
+.cache-legend .item .v {
+  font-family: var(--sf-font-mono);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--sf-text-primary);
+  margin-top: 2px;
+}
+
+.cache-legend .item .meta {
+  font-size: 10.5px;
+  color: var(--sf-text-subtle);
+  margin-top: 1px;
+}
+
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║  LLM CALL LOG TABLE                                                  ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+
+.table-card {
+  background: var(--sf-surface-elevated);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid var(--sf-border-soft);
+}
+
+.table-header h3 {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.table-header .row-count {
+  font-family: var(--sf-font-mono);
+  font-size: 11px;
+  color: var(--sf-text-dim);
+  font-weight: 400;
+}
+
+.table-toolbar { display: flex; align-items: center; gap: 8px; }
+
+.search-input {
+  background: var(--sf-surface-panel);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 7px;
+  padding: 6px 10px 6px 28px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--sf-text-primary);
+  width: 220px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 8px center;
+}
+
+.search-input:focus { outline: none; border-color: var(--sf-accent); }
+
+.table-btn {
+  background: var(--sf-surface-panel);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 7px;
+  padding: 6px 10px;
+  font-size: 11.5px;
+  color: var(--sf-text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.table-btn:hover { color: var(--sf-text-primary); border-color: var(--sf-accent); }
+
+table.llm-log {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.llm-log thead th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sf-text-dim);
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--sf-border-soft);
+  background: var(--sf-surface-panel);
+  white-space: nowrap;
+}
+
+.llm-log thead th.num { text-align: right; }
+
+.llm-log tbody td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--sf-border-soft-alpha);
+  color: var(--sf-text-muted);
+  white-space: nowrap;
+}
+
+.llm-log tbody tr:hover td { background: var(--sf-surface-row-hover); color: var(--sf-text-primary); }
+
+.llm-log td.ts      { font-family: var(--sf-font-mono); font-size: 11px; color: var(--sf-text-subtle); }
+.llm-log td.cost    { font-family: var(--sf-font-mono); font-weight: 600; color: var(--sf-text-primary); text-align: right; }
+.llm-log td.cost.high { color: var(--sf-warning-fg); }
+.llm-log td.cost.mid  { color: var(--sf-info-fg); }
+.llm-log td.tokens    { font-family: var(--sf-font-mono); font-size: 11px; text-align: right; color: var(--sf-text-muted); }
+.llm-log td.tokens.tok-prompt     { color: var(--sf-tok-prompt); }
+.llm-log td.tokens.tok-completion { color: var(--sf-tok-completion); }
+.llm-log td.tokens.tok-cached     { color: var(--sf-tok-cached); }
+
+.reason-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: var(--sf-text-primary);
+}
+
+.reason-tag .sq { width: 7px; height: 7px; border-radius: 2px; }
+
+.access-tag {
+  display: inline-block;
+  font-family: var(--sf-font-mono);
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.access-tag.lab { color: var(--sf-info-fg); background: var(--sf-info-bg); }
+.access-tag.api { color: var(--sf-text-subtle); background: var(--sf-neutral-bg); }
+
+.status-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.15);
+  background: var(--sf-success-fg);
+  vertical-align: middle;
+}
+
+.status-dot.warn { background: var(--sf-warning-fg); box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.18); }
+.status-dot.err  { background: var(--sf-danger-fg);  box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.18); }
+
+/* Inline token composition chip (used in log row) */
+.tok-composition {
+  display: inline-flex;
+  width: 68px;
+  height: 8px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: rgba(36, 58, 101, 0.35);
+  vertical-align: middle;
+}
+
+.tok-composition .p { background: var(--sf-tok-prompt); }
+.tok-composition .c { background: var(--sf-tok-completion); }
+.tok-composition .ca { background: var(--sf-tok-cached); }
+
+.table-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 18px;
+  border-top: 1px solid var(--sf-border-soft);
+  color: var(--sf-text-dim);
+  font-size: 11.5px;
+}
+
+.page-nav { display: inline-flex; gap: 4px; }
+
+.page-nav button {
+  background: var(--sf-surface-panel);
+  border: 1px solid var(--sf-border-soft);
+  color: var(--sf-text-muted);
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: var(--sf-font-mono);
+  font-size: 11.5px;
+}
+.page-nav button:hover { border-color: var(--sf-accent); color: var(--sf-text-primary); }
+.page-nav button.active { background: var(--sf-accent); color: #fff; border-color: var(--sf-accent); }
+.page-nav button[disabled] { opacity: 0.4; cursor: not-allowed; }
+</style>
+</head>
+<body>
+
+<div class="panel-root">
+  <div class="design-label">Billing Panel — Cost + Token Overview</div>
+
+  <!-- ══════════════  DUAL HERO BAND  ══════════════ -->
+  <section class="hero">
+    <div class="hero-header">
+      <div class="hero-title-block">
+        <div class="eyebrow">LLM Billing & Usage</div>
+        <h1>Cost &amp; Token Overview</h1>
+        <p>2026-04-01 → 2026-04-19 · 142 runs · 3 categories · 14 models</p>
+      </div>
+      <div class="hero-period-switcher">
+        <button>24h</button>
+        <button>7d</button>
+        <button class="active">30d</button>
+        <button>90d</button>
+        <button>All</button>
+      </div>
+    </div>
+
+    <div class="hero-split">
+
+      <!-- COST SIDE -->
+      <div class="hero-half cost">
+        <div class="hero-half-header">
+          <span class="flame"></span>
+          <h2>Cost Overview</h2>
+          <span class="meta">USD billed</span>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label"><span class="ico">$</span>Total</div>
+            <div class="kpi-value">42.78<span class="unit">USD</span></div>
+            <div class="kpi-sub"><span class="kpi-trend up">▲ 12.4%</span></div>
+            <svg class="sparkline" viewBox="0 0 120 22" preserveAspectRatio="none">
+              <defs><linearGradient id="spc1" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#818cf8" stop-opacity="0.5"/>
+                <stop offset="100%" stop-color="#818cf8" stop-opacity="0"/>
+              </linearGradient></defs>
+              <path d="M0,18 L10,17 L20,18 L30,12 L40,14 L50,9 L60,11 L70,6 L80,10 L90,4 L100,8 L110,2 L120,1 L120,22 L0,22 Z" fill="url(#spc1)"/>
+              <path d="M0,18 L10,17 L20,18 L30,12 L40,14 L50,9 L60,11 L70,6 L80,10 L90,4 L100,8 L110,2 L120,1" stroke="#818cf8" stroke-width="1.3" fill="none"/>
+            </svg>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label"><span class="ico">⚡</span>Calls</div>
+            <div class="kpi-value">1,284</div>
+            <div class="kpi-sub"><span class="kpi-trend up">▲ 8.1%</span></div>
+            <svg class="sparkline" viewBox="0 0 120 22" preserveAspectRatio="none">
+              <path d="M0,19 L10,17 L20,18 L30,15 L40,14 L50,15 L60,11 L70,12 L80,9 L90,11 L100,8 L110,10 L120,5" stroke="#818cf8" stroke-width="1.3" fill="none"/>
+            </svg>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label"><span class="ico">⊘</span>Avg / Call</div>
+            <div class="kpi-value">$0.033</div>
+            <div class="kpi-sub"><span class="kpi-trend flat">◆ 0.4%</span></div>
+            <svg class="sparkline" viewBox="0 0 120 22" preserveAspectRatio="none">
+              <path d="M0,11 L10,12 L20,11 L30,10 L40,11 L50,12 L60,11 L70,10 L80,12 L90,11 L100,11 L110,10 L120,11" stroke="#94a3b8" stroke-width="1.3" fill="none"/>
+            </svg>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label"><span class="ico">★</span>Top Type</div>
+            <div class="kpi-value" style="font-size: 16px;">Writer <span class="unit">$14.20</span></div>
+            <div class="kpi-sub"><span class="kpi-trend up">33.2%</span><span>share</span></div>
+            <svg class="sparkline" viewBox="0 0 120 22" preserveAspectRatio="none">
+              <path d="M0,16 L10,14 L20,16 L30,11 L40,13 L50,8 L60,10 L70,5 L80,8 L90,3 L100,7 L110,2 L120,1" stroke="#fcd34d" stroke-width="1.3" fill="none"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- TOKEN SIDE -->
+      <div class="hero-half tok">
+        <div class="hero-half-header">
+          <span class="flame"></span>
+          <h2>Token Overview</h2>
+          <span class="meta">billable units</span>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label"><span class="ico">#</span>Total</div>
+            <div class="kpi-value">18.4<span class="unit">M</span></div>
+            <div class="kpi-sub"><span class="kpi-trend up">▲ 14.8%</span></div>
+            <svg class="sparkline" viewBox="0 0 120 22" preserveAspectRatio="none">
+              <defs><linearGradient id="spt1" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.5"/>
+                <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+              </linearGradient></defs>
+              <path d="M0,19 L10,17 L20,18 L30,13 L40,15 L50,10 L60,12 L70,7 L80,11 L90,5 L100,9 L110,3 L120,2 L120,22 L0,22 Z" fill="url(#spt1)"/>
+              <path d="M0,19 L10,17 L20,18 L30,13 L40,15 L50,10 L60,12 L70,7 L80,11 L90,5 L100,9 L110,3 L120,2" stroke="#22d3ee" stroke-width="1.3" fill="none"/>
+            </svg>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label"><span class="ico">◐</span>Prompt</div>
+            <div class="kpi-value">14.1<span class="unit">M</span></div>
+            <div class="kpi-sub"><span style="color: var(--sf-tok-prompt);">76.6%</span></div>
+            <svg class="sparkline" viewBox="0 0 120 22" preserveAspectRatio="none">
+              <path d="M0,19 L10,18 L20,18 L30,14 L40,15 L50,11 L60,12 L70,8 L80,11 L90,6 L100,9 L110,4 L120,3" stroke="#22d3ee" stroke-width="1.3" fill="none"/>
+            </svg>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label"><span class="ico">◑</span>Completion</div>
+            <div class="kpi-value">4.3<span class="unit">M</span></div>
+            <div class="kpi-sub"><span style="color: var(--sf-tok-completion);">23.4%</span></div>
+            <svg class="sparkline" viewBox="0 0 120 22" preserveAspectRatio="none">
+              <path d="M0,18 L10,17 L20,17 L30,15 L40,14 L50,13 L60,14 L70,12 L80,13 L90,11 L100,12 L110,10 L120,9" stroke="#a78bfa" stroke-width="1.3" fill="none"/>
+            </svg>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label"><span class="ico">✦</span>Cache Hit</div>
+            <div class="kpi-value" style="color: var(--sf-tok-cached);">52.4<span class="unit">%</span></div>
+            <div class="kpi-sub"><span class="kpi-trend up">▲ 6.2pp</span><span>saves $9.82</span></div>
+            <svg class="sparkline" viewBox="0 0 120 22" preserveAspectRatio="none">
+              <path d="M0,14 L10,13 L20,12 L30,12 L40,10 L50,11 L60,9 L70,8 L80,9 L90,7 L100,6 L110,5 L120,4" stroke="#34d399" stroke-width="1.3" fill="none"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════  FILTER BAR  ══════════════ -->
+  <section class="filter-bar">
+    <div class="filter-row">
+      <span class="filter-label">Category</span>
+      <button class="filter-chip active">All <span class="filter-chip-count">1284</span></button>
+      <button class="filter-chip">Mouse <span class="filter-chip-count">624</span></button>
+      <button class="filter-chip">Keyboard <span class="filter-chip-count">412</span></button>
+      <button class="filter-chip">Monitor <span class="filter-chip-count">248</span></button>
+
+      <span class="filter-sep"></span>
+
+      <span class="filter-label">Access</span>
+      <button class="filter-chip active">All</button>
+      <button class="filter-chip"><span class="filter-dot" style="background: #38bdf8;"></span>Lab <span class="filter-chip-count">872</span></button>
+      <button class="filter-chip"><span class="filter-dot" style="background: #94a3b8;"></span>API <span class="filter-chip-count">412</span></button>
+    </div>
+
+    <div class="filter-row">
+      <span class="filter-label">Call Type</span>
+      <button class="filter-chip active">All</button>
+      <span class="filter-group">
+        <span class="filter-group-label">Writer</span>
+        <button class="filter-chip"><span class="filter-dot" style="background: var(--sf-bill-writer-1);"></span>Writer</button>
+      </span>
+      <span class="filter-group">
+        <span class="filter-group-label">Pipeline</span>
+        <button class="filter-chip"><span class="filter-dot" style="background: var(--sf-bill-pipeline-1);"></span>NeedSet</button>
+        <button class="filter-chip"><span class="filter-dot" style="background: var(--sf-bill-pipeline-2);"></span>Brand</button>
+        <button class="filter-chip"><span class="filter-dot" style="background: var(--sf-bill-pipeline-3);"></span>Planner</button>
+        <button class="filter-chip"><span class="filter-dot" style="background: var(--sf-bill-pipeline-4);"></span>SERP</button>
+      </span>
+      <span class="filter-group">
+        <span class="filter-group-label">Validation</span>
+        <button class="filter-chip"><span class="filter-dot" style="background: var(--sf-bill-val-1);"></span>Validate</button>
+        <button class="filter-chip"><span class="filter-dot" style="background: var(--sf-bill-val-2);"></span>Repair</button>
+      </span>
+      <span class="filter-group">
+        <span class="filter-group-label">Color Edition</span>
+        <button class="filter-chip"><span class="filter-dot" style="background: var(--sf-bill-color-1);"></span>CEF</button>
+        <button class="filter-chip"><span class="filter-dot" style="background: var(--sf-bill-color-2);"></span>Variant&nbsp;ID</button>
+      </span>
+      <span class="filter-group">
+        <span class="filter-group-label">Product Image</span>
+        <button class="filter-chip"><span class="filter-dot" style="background: var(--sf-bill-image-1);"></span>Finder</button>
+        <button class="filter-chip"><span class="filter-dot" style="background: var(--sf-bill-image-4);"></span>Hero</button>
+        <button class="filter-chip"><span class="filter-dot" style="background: var(--sf-bill-image-2);"></span>View&nbsp;Eval</button>
+        <button class="filter-chip"><span class="filter-dot" style="background: var(--sf-bill-image-3);"></span>Hero&nbsp;Eval</button>
+      </span>
+      <span class="filter-group">
+        <span class="filter-group-label">Release Date</span>
+        <button class="filter-chip"><span class="filter-dot" style="background: var(--sf-bill-releasedate-1);"></span>RDF</button>
+      </span>
+    </div>
+
+    <div class="filter-row">
+      <span class="filter-label">Model</span>
+      <button class="filter-chip active">All</button>
+      <button class="filter-chip">gpt-5</button>
+      <button class="filter-chip">gpt-5-mini</button>
+      <button class="filter-chip">claude-sonnet-4-6</button>
+      <button class="filter-chip">claude-haiku-4-5</button>
+      <button class="filter-chip">grok-4-fast</button>
+      <button class="filter-chip">deepseek-reasoner</button>
+    </div>
+  </section>
+
+  <!-- ══════════════  COST SECTION  ══════════════ -->
+  <div class="section-heading">
+    <span class="bar"></span>
+    <h2>Cost</h2>
+    <span class="meta">by time, type, and model</span>
+  </div>
+
+  <!-- Row A: Daily Cost (2/3) + Donut (1/3) -->
+  <div class="chart-grid-2-1">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-block">
+          <h3>Daily Cost</h3>
+          <div class="card-subtitle">Stacked by call type · 30-day window</div>
+        </div>
+        <div class="card-legend">
+          <span class="card-legend-item"><span class="filter-dot" style="background: var(--sf-bill-writer-1);"></span>Writer</span>
+          <span class="card-legend-item"><span class="filter-dot" style="background: var(--sf-bill-pipeline-3);"></span>Pipeline</span>
+          <span class="card-legend-item"><span class="filter-dot" style="background: var(--sf-bill-image-2);"></span>Image</span>
+          <span class="card-legend-item"><span class="filter-dot" style="background: var(--sf-bill-color-1);"></span>Color</span>
+          <span class="card-legend-item"><span class="filter-dot" style="background: var(--sf-bill-val-1);"></span>Val</span>
+          <span class="card-legend-item"><span class="filter-dot" style="background: var(--sf-bill-releasedate-1);"></span>RDF</span>
+        </div>
+      </div>
+      <div class="chart-body">
+        <svg width="100%" height="100%" viewBox="0 0 800 220" preserveAspectRatio="none">
+          <g stroke="rgba(36, 58, 101, 0.35)" stroke-dasharray="3,3">
+            <line x1="40" y1="30" x2="790" y2="30"/>
+            <line x1="40" y1="75" x2="790" y2="75"/>
+            <line x1="40" y1="120" x2="790" y2="120"/>
+            <line x1="40" y1="165" x2="790" y2="165"/>
+            <line x1="40" y1="200" x2="790" y2="200"/>
+          </g>
+          <g fill="#6b7fa0" font-size="10" font-family="SFMono-Regular, Consolas, monospace">
+            <text x="34" y="34" text-anchor="end">$4.00</text>
+            <text x="34" y="79" text-anchor="end">$3.00</text>
+            <text x="34" y="124" text-anchor="end">$2.00</text>
+            <text x="34" y="169" text-anchor="end">$1.00</text>
+            <text x="34" y="204" text-anchor="end">$0.00</text>
+          </g>
+
+          <!-- Compressed 25-day bars for brevity -->
+          <g>
+            <g transform="translate(50,0)"><rect width="20" height="14" y="186" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="10" y="176" fill="var(--sf-bill-image-2)"/><rect width="20" height="6" y="170" fill="var(--sf-bill-color-1)"/><rect width="20" height="4" y="166" fill="var(--sf-bill-val-1)"/><rect width="20" height="3" y="163" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="18" y="145" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(75,0)"><rect width="20" height="12" y="188" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="8" y="180" fill="var(--sf-bill-image-2)"/><rect width="20" height="10" y="170" fill="var(--sf-bill-color-1)"/><rect width="20" height="4" y="166" fill="var(--sf-bill-val-1)"/><rect width="20" height="2" y="164" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="14" y="150" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(100,0)"><rect width="20" height="16" y="184" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="14" y="170" fill="var(--sf-bill-image-2)"/><rect width="20" height="8" y="162" fill="var(--sf-bill-color-1)"/><rect width="20" height="5" y="157" fill="var(--sf-bill-val-1)"/><rect width="20" height="4" y="153" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="22" y="131" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(125,0)"><rect width="20" height="10" y="190" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="6" y="184" fill="var(--sf-bill-image-2)"/><rect width="20" height="4" y="180" fill="var(--sf-bill-color-1)"/><rect width="20" height="3" y="177" fill="var(--sf-bill-val-1)"/><rect width="20" height="2" y="175" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="12" y="163" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(150,0)"><rect width="20" height="18" y="182" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="16" y="166" fill="var(--sf-bill-image-2)"/><rect width="20" height="10" y="156" fill="var(--sf-bill-color-1)"/><rect width="20" height="6" y="150" fill="var(--sf-bill-val-1)"/><rect width="20" height="3" y="147" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="24" y="123" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(175,0)"><rect width="20" height="20" y="180" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="18" y="162" fill="var(--sf-bill-image-2)"/><rect width="20" height="14" y="148" fill="var(--sf-bill-color-1)"/><rect width="20" height="8" y="140" fill="var(--sf-bill-val-1)"/><rect width="20" height="4" y="136" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="28" y="108" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(200,0)"><rect width="20" height="14" y="186" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="10" y="176" fill="var(--sf-bill-image-2)"/><rect width="20" height="6" y="170" fill="var(--sf-bill-color-1)"/><rect width="20" height="5" y="165" fill="var(--sf-bill-val-1)"/><rect width="20" height="3" y="162" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="16" y="146" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(225,0)"><rect width="20" height="22" y="178" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="20" y="158" fill="var(--sf-bill-image-2)"/><rect width="20" height="16" y="142" fill="var(--sf-bill-color-1)"/><rect width="20" height="8" y="134" fill="var(--sf-bill-val-1)"/><rect width="20" height="5" y="129" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="30" y="99" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(250,0)"><rect width="20" height="18" y="182" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="14" y="168" fill="var(--sf-bill-image-2)"/><rect width="20" height="10" y="158" fill="var(--sf-bill-color-1)"/><rect width="20" height="6" y="152" fill="var(--sf-bill-val-1)"/><rect width="20" height="4" y="148" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="22" y="126" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(275,0)"><rect width="20" height="16" y="184" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="12" y="172" fill="var(--sf-bill-image-2)"/><rect width="20" height="8" y="164" fill="var(--sf-bill-color-1)"/><rect width="20" height="5" y="159" fill="var(--sf-bill-val-1)"/><rect width="20" height="4" y="155" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="20" y="135" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(300,0)"><rect width="20" height="24" y="176" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="22" y="154" fill="var(--sf-bill-image-2)"/><rect width="20" height="18" y="136" fill="var(--sf-bill-color-1)"/><rect width="20" height="10" y="126" fill="var(--sf-bill-val-1)"/><rect width="20" height="6" y="120" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="36" y="84" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(325,0)"><rect width="20" height="20" y="180" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="18" y="162" fill="var(--sf-bill-image-2)"/><rect width="20" height="14" y="148" fill="var(--sf-bill-color-1)"/><rect width="20" height="8" y="140" fill="var(--sf-bill-val-1)"/><rect width="20" height="5" y="135" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="28" y="107" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(350,0)"><rect width="20" height="22" y="178" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="20" y="158" fill="var(--sf-bill-image-2)"/><rect width="20" height="16" y="142" fill="var(--sf-bill-color-1)"/><rect width="20" height="9" y="133" fill="var(--sf-bill-val-1)"/><rect width="20" height="5" y="128" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="32" y="96" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(375,0)"><rect width="20" height="18" y="182" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="14" y="168" fill="var(--sf-bill-image-2)"/><rect width="20" height="12" y="156" fill="var(--sf-bill-color-1)"/><rect width="20" height="7" y="149" fill="var(--sf-bill-val-1)"/><rect width="20" height="4" y="145" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="24" y="121" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(400,0)"><rect width="20" height="12" y="188" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="8" y="180" fill="var(--sf-bill-image-2)"/><rect width="20" height="6" y="174" fill="var(--sf-bill-color-1)"/><rect width="20" height="4" y="170" fill="var(--sf-bill-val-1)"/><rect width="20" height="3" y="167" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="14" y="153" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(425,0)"><rect width="20" height="14" y="186" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="10" y="176" fill="var(--sf-bill-image-2)"/><rect width="20" height="8" y="168" fill="var(--sf-bill-color-1)"/><rect width="20" height="5" y="163" fill="var(--sf-bill-val-1)"/><rect width="20" height="3" y="160" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="18" y="142" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(450,0)"><rect width="20" height="26" y="174" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="22" y="152" fill="var(--sf-bill-image-2)"/><rect width="20" height="18" y="134" fill="var(--sf-bill-color-1)"/><rect width="20" height="10" y="124" fill="var(--sf-bill-val-1)"/><rect width="20" height="6" y="118" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="38" y="80" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(475,0)"><rect width="20" height="22" y="178" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="20" y="158" fill="var(--sf-bill-image-2)"/><rect width="20" height="16" y="142" fill="var(--sf-bill-color-1)"/><rect width="20" height="9" y="133" fill="var(--sf-bill-val-1)"/><rect width="20" height="5" y="128" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="30" y="98" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(500,0)"><rect width="20" height="20" y="180" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="18" y="162" fill="var(--sf-bill-image-2)"/><rect width="20" height="14" y="148" fill="var(--sf-bill-color-1)"/><rect width="20" height="8" y="140" fill="var(--sf-bill-val-1)"/><rect width="20" height="5" y="135" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="28" y="107" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(525,0)"><rect width="20" height="16" y="184" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="12" y="172" fill="var(--sf-bill-image-2)"/><rect width="20" height="10" y="162" fill="var(--sf-bill-color-1)"/><rect width="20" height="6" y="156" fill="var(--sf-bill-val-1)"/><rect width="20" height="4" y="152" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="22" y="130" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(550,0)"><rect width="20" height="28" y="172" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="24" y="148" fill="var(--sf-bill-image-2)"/><rect width="20" height="20" y="128" fill="var(--sf-bill-color-1)"/><rect width="20" height="12" y="116" fill="var(--sf-bill-val-1)"/><rect width="20" height="7" y="109" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="42" y="67" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(575,0)"><rect width="20" height="24" y="176" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="20" y="156" fill="var(--sf-bill-image-2)"/><rect width="20" height="18" y="138" fill="var(--sf-bill-color-1)"/><rect width="20" height="10" y="128" fill="var(--sf-bill-val-1)"/><rect width="20" height="5" y="123" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="34" y="89" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(600,0)"><rect width="20" height="18" y="182" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="14" y="168" fill="var(--sf-bill-image-2)"/><rect width="20" height="12" y="156" fill="var(--sf-bill-color-1)"/><rect width="20" height="7" y="149" fill="var(--sf-bill-val-1)"/><rect width="20" height="5" y="144" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="26" y="118" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(625,0)"><rect width="20" height="20" y="180" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="18" y="162" fill="var(--sf-bill-image-2)"/><rect width="20" height="14" y="148" fill="var(--sf-bill-color-1)"/><rect width="20" height="8" y="140" fill="var(--sf-bill-val-1)"/><rect width="20" height="5" y="135" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="28" y="107" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(650,0)"><rect width="20" height="16" y="184" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="12" y="172" fill="var(--sf-bill-image-2)"/><rect width="20" height="10" y="162" fill="var(--sf-bill-color-1)"/><rect width="20" height="6" y="156" fill="var(--sf-bill-val-1)"/><rect width="20" height="4" y="152" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="22" y="130" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(675,0)"><rect width="20" height="22" y="178" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="18" y="160" fill="var(--sf-bill-image-2)"/><rect width="20" height="14" y="146" fill="var(--sf-bill-color-1)"/><rect width="20" height="8" y="138" fill="var(--sf-bill-val-1)"/><rect width="20" height="5" y="133" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="30" y="103" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(700,0)"><rect width="20" height="28" y="172" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="24" y="148" fill="var(--sf-bill-image-2)"/><rect width="20" height="20" y="128" fill="var(--sf-bill-color-1)"/><rect width="20" height="12" y="116" fill="var(--sf-bill-val-1)"/><rect width="20" height="7" y="109" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="40" y="69" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(725,0)"><rect width="20" height="24" y="176" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="22" y="154" fill="var(--sf-bill-image-2)"/><rect width="20" height="18" y="136" fill="var(--sf-bill-color-1)"/><rect width="20" height="10" y="126" fill="var(--sf-bill-val-1)"/><rect width="20" height="5" y="121" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="36" y="85" fill="var(--sf-bill-writer-1)"/></g>
+            <g transform="translate(750,0)"><rect width="20" height="26" y="174" fill="var(--sf-bill-pipeline-3)"/><rect width="20" height="22" y="152" fill="var(--sf-bill-image-2)"/><rect width="20" height="18" y="134" fill="var(--sf-bill-color-1)"/><rect width="20" height="11" y="123" fill="var(--sf-bill-val-1)"/><rect width="20" height="6" y="117" fill="var(--sf-bill-releasedate-1)"/><rect width="20" height="38" y="79" fill="var(--sf-bill-writer-1)"/></g>
+          </g>
+
+          <g fill="#6b7fa0" font-size="10" font-family="SFMono-Regular, Consolas, monospace">
+            <text x="60" y="216">Mar 21</text>
+            <text x="235" y="216">Mar 28</text>
+            <text x="410" y="216">Apr 04</text>
+            <text x="585" y="216">Apr 11</text>
+            <text x="730" y="216">Apr 19</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-block">
+          <h3>Cost by Call Type</h3>
+          <div class="card-subtitle">Share of $42.78 total</div>
+        </div>
+      </div>
+      <div class="donut-body">
+        <div class="donut-wrap">
+          <svg viewBox="0 0 42 42" width="160" height="160">
+            <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="rgba(36, 58, 101, 0.35)" stroke-width="4"/>
+            <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="var(--sf-bill-writer-1)" stroke-width="4" stroke-dasharray="33.2 66.8" stroke-dashoffset="25" transform="rotate(-90 21 21)"/>
+            <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="var(--sf-bill-pipeline-3)" stroke-width="4" stroke-dasharray="24.1 75.9" stroke-dashoffset="-8.2" transform="rotate(-90 21 21)"/>
+            <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="var(--sf-bill-image-2)" stroke-width="4" stroke-dasharray="18.4 81.6" stroke-dashoffset="-32.3" transform="rotate(-90 21 21)"/>
+            <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="var(--sf-bill-color-1)" stroke-width="4" stroke-dasharray="11.7 88.3" stroke-dashoffset="-50.7" transform="rotate(-90 21 21)"/>
+            <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="var(--sf-bill-releasedate-1)" stroke-width="4" stroke-dasharray="6.8 93.2" stroke-dashoffset="-62.4" transform="rotate(-90 21 21)"/>
+            <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="var(--sf-bill-val-1)" stroke-width="4" stroke-dasharray="4.5 95.5" stroke-dashoffset="-69.2" transform="rotate(-90 21 21)"/>
+            <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#94a3b8" stroke-width="4" stroke-dasharray="1.3 98.7" stroke-dashoffset="-73.7" transform="rotate(-90 21 21)"/>
+          </svg>
+          <div class="donut-center">
+            <div class="total">$42.78</div>
+            <div class="total-label">Cost · 30d</div>
+          </div>
+        </div>
+        <div class="donut-legend">
+          <div class="donut-legend-row"><span class="sq" style="background: var(--sf-bill-writer-1);"></span><span>Writer</span><span class="pct">33.2%</span><span class="val">$14.20</span></div>
+          <div class="donut-legend-row"><span class="sq" style="background: var(--sf-bill-pipeline-3);"></span><span>Pipeline</span><span class="pct">24.1%</span><span class="val">$10.31</span></div>
+          <div class="donut-legend-row"><span class="sq" style="background: var(--sf-bill-image-2);"></span><span>Product Image</span><span class="pct">18.4%</span><span class="val">$7.87</span></div>
+          <div class="donut-legend-row"><span class="sq" style="background: var(--sf-bill-color-1);"></span><span>Color Edition</span><span class="pct">11.7%</span><span class="val">$5.01</span></div>
+          <div class="donut-legend-row"><span class="sq" style="background: var(--sf-bill-releasedate-1);"></span><span>Release Date</span><span class="pct">6.8%</span><span class="val">$2.91</span></div>
+          <div class="donut-legend-row"><span class="sq" style="background: var(--sf-bill-val-1);"></span><span>Validation</span><span class="pct">4.5%</span><span class="val">$1.93</span></div>
+          <div class="donut-legend-row"><span class="sq" style="background: #94a3b8;"></span><span>Other</span><span class="pct">1.3%</span><span class="val">$0.55</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row B: Cost by Model + Cost by Category -->
+  <div class="chart-grid-1-1">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-block"><h3>Cost by Model</h3><div class="card-subtitle">Top 6 of 14 models</div></div>
+      </div>
+      <div class="hbar-list">
+        <div class="hbar-row"><div class="hbar-label"><span class="provider-tag openai">OAI</span><span class="name">gpt-5</span><span class="calls">412 calls</span></div><div class="hbar-val">$18.44</div><div class="hbar-track"><div class="hbar-fill" style="width: 88%; background: linear-gradient(90deg,#6ee7b7,#10b981);"></div></div></div>
+        <div class="hbar-row"><div class="hbar-label"><span class="provider-tag anthropic">ANT</span><span class="name">claude-sonnet-4-6</span><span class="calls">298 calls</span></div><div class="hbar-val">$12.02</div><div class="hbar-track"><div class="hbar-fill" style="width: 57%; background: linear-gradient(90deg,#fcd34d,#f59e0b);"></div></div></div>
+        <div class="hbar-row"><div class="hbar-label"><span class="provider-tag openai">OAI</span><span class="name">gpt-5-mini</span><span class="calls">356 calls</span></div><div class="hbar-val">$6.48</div><div class="hbar-track"><div class="hbar-fill" style="width: 31%; background: linear-gradient(90deg,#6ee7b7,#10b981);"></div></div></div>
+        <div class="hbar-row"><div class="hbar-label"><span class="provider-tag anthropic">ANT</span><span class="name">claude-haiku-4-5</span><span class="calls">142 calls</span></div><div class="hbar-val">$3.92</div><div class="hbar-track"><div class="hbar-fill" style="width: 19%; background: linear-gradient(90deg,#fcd34d,#f59e0b);"></div></div></div>
+        <div class="hbar-row"><div class="hbar-label"><span class="provider-tag xai">XAI</span><span class="name">grok-4-fast</span><span class="calls">54 calls</span></div><div class="hbar-val">$1.28</div><div class="hbar-track"><div class="hbar-fill" style="width: 6%; background: linear-gradient(90deg,#d8b4fe,#a855f7);"></div></div></div>
+        <div class="hbar-row"><div class="hbar-label"><span class="provider-tag">DS</span><span class="name">deepseek-reasoner</span><span class="calls">22 calls</span></div><div class="hbar-val">$0.64</div><div class="hbar-track"><div class="hbar-fill" style="width: 3%; background: linear-gradient(90deg,#94a3b8,#64748b);"></div></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-block"><h3>Cost by Category</h3><div class="card-subtitle">Per-domain spend</div></div>
+      </div>
+      <div class="hbar-list">
+        <div class="hbar-row"><div class="hbar-label"><span class="name">🖱 Mouse</span><span class="calls">624 calls · 38 products</span></div><div class="hbar-val">$22.14</div><div class="hbar-track"><div class="hbar-fill" style="width: 100%;"></div></div></div>
+        <div class="hbar-row"><div class="hbar-label"><span class="name">⌨ Keyboard</span><span class="calls">412 calls · 22 products</span></div><div class="hbar-val">$14.08</div><div class="hbar-track"><div class="hbar-fill" style="width: 64%;"></div></div></div>
+        <div class="hbar-row"><div class="hbar-label"><span class="name">🖥 Monitor</span><span class="calls">248 calls · 12 products</span></div><div class="hbar-val">$6.56</div><div class="hbar-track"><div class="hbar-fill" style="width: 30%;"></div></div></div>
+      </div>
+      <div style="margin-top: 10px; padding: 10px 12px; background: var(--sf-surface-panel); border-radius: 8px; border: 1px solid var(--sf-border-soft); font-size: 11.5px; color: var(--sf-text-muted);">
+        <strong style="color: var(--sf-text-primary);">📊 Avg cost per product</strong>
+        <div style="display: flex; gap: 14px; margin-top: 5px; font-family: var(--sf-font-mono);">
+          <span>Mouse <strong style="color: var(--sf-text-primary);">$0.583</strong></span>
+          <span>Keyboard <strong style="color: var(--sf-text-primary);">$0.640</strong></span>
+          <span>Monitor <strong style="color: var(--sf-text-primary);">$0.547</strong></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════  TOKEN SECTION  ══════════════ -->
+  <div class="section-heading tok">
+    <span class="bar"></span>
+    <h2>Tokens</h2>
+    <span class="meta">prompt / completion / cached — by time, type, and model</span>
+  </div>
+
+  <!-- Row C: Daily Token Chart (2) + Cache (1) + Donut (1) -->
+  <div class="chart-grid-2-1-1">
+
+    <div class="card tok-themed">
+      <div class="card-header">
+        <div class="card-title-block">
+          <h3>Daily Tokens</h3>
+          <div class="card-subtitle">Stacked by token class · 30-day window</div>
+        </div>
+        <div class="card-legend">
+          <span class="card-legend-item"><span class="filter-dot" style="background: var(--sf-tok-prompt);"></span>Prompt</span>
+          <span class="card-legend-item"><span class="filter-dot" style="background: var(--sf-tok-completion);"></span>Completion</span>
+          <span class="card-legend-item"><span class="filter-dot" style="background: var(--sf-tok-cached);"></span>Cached</span>
+        </div>
+      </div>
+      <div class="chart-body">
+        <svg width="100%" height="100%" viewBox="0 0 800 220" preserveAspectRatio="none">
+          <g stroke="rgba(36, 58, 101, 0.35)" stroke-dasharray="3,3">
+            <line x1="40" y1="30" x2="790" y2="30"/>
+            <line x1="40" y1="75" x2="790" y2="75"/>
+            <line x1="40" y1="120" x2="790" y2="120"/>
+            <line x1="40" y1="165" x2="790" y2="165"/>
+            <line x1="40" y1="200" x2="790" y2="200"/>
+          </g>
+          <g fill="#6b7fa0" font-size="10" font-family="SFMono-Regular, Consolas, monospace">
+            <text x="34" y="34" text-anchor="end">1.2M</text>
+            <text x="34" y="79" text-anchor="end">900k</text>
+            <text x="34" y="124" text-anchor="end">600k</text>
+            <text x="34" y="169" text-anchor="end">300k</text>
+            <text x="34" y="204" text-anchor="end">0</text>
+          </g>
+
+          <!-- Stacked token bars: cached (bottom) → prompt → completion (top) -->
+          <g>
+            <g transform="translate(50,0)">
+              <rect width="20" height="20" y="180" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="28" y="152" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="14" y="138" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(75,0)">
+              <rect width="20" height="18" y="182" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="26" y="156" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="12" y="144" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(100,0)">
+              <rect width="20" height="24" y="176" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="32" y="144" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="16" y="128" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(125,0)">
+              <rect width="20" height="16" y="184" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="22" y="162" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="10" y="152" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(150,0)">
+              <rect width="20" height="26" y="174" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="36" y="138" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="16" y="122" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(175,0)">
+              <rect width="20" height="32" y="168" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="42" y="126" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="20" y="106" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(200,0)">
+              <rect width="20" height="22" y="178" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="28" y="150" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="14" y="136" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(225,0)">
+              <rect width="20" height="36" y="164" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="48" y="116" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="22" y="94" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(250,0)">
+              <rect width="20" height="28" y="172" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="36" y="136" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="18" y="118" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(275,0)">
+              <rect width="20" height="22" y="178" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="30" y="148" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="14" y="134" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(300,0)">
+              <rect width="20" height="44" y="156" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="56" y="100" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="26" y="74" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(325,0)">
+              <rect width="20" height="30" y="170" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="40" y="130" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="20" y="110" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(350,0)">
+              <rect width="20" height="38" y="162" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="50" y="112" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="24" y="88" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(375,0)">
+              <rect width="20" height="30" y="170" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="38" y="132" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="18" y="114" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(400,0)">
+              <rect width="20" height="18" y="182" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="24" y="158" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="12" y="146" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(425,0)">
+              <rect width="20" height="22" y="178" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="28" y="150" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="14" y="136" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(450,0)">
+              <rect width="20" height="46" y="154" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="58" y="96" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="28" y="68" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(475,0)">
+              <rect width="20" height="36" y="164" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="48" y="116" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="22" y="94" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(500,0)">
+              <rect width="20" height="32" y="168" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="42" y="126" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="20" y="106" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(525,0)">
+              <rect width="20" height="26" y="174" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="34" y="140" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="16" y="124" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(550,0)">
+              <rect width="20" height="50" y="150" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="64" y="86" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="30" y="56" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(575,0)">
+              <rect width="20" height="42" y="158" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="54" y="104" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="26" y="78" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(600,0)">
+              <rect width="20" height="30" y="170" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="40" y="130" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="18" y="112" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(625,0)">
+              <rect width="20" height="32" y="168" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="42" y="126" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="20" y="106" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(650,0)">
+              <rect width="20" height="26" y="174" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="34" y="140" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="16" y="124" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(675,0)">
+              <rect width="20" height="36" y="164" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="46" y="118" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="22" y="96" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(700,0)">
+              <rect width="20" height="48" y="152" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="60" y="92" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="28" y="64" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(725,0)">
+              <rect width="20" height="44" y="156" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="56" y="100" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="26" y="74" fill="var(--sf-tok-completion)"/>
+            </g>
+            <g transform="translate(750,0)">
+              <rect width="20" height="46" y="154" fill="var(--sf-tok-cached)"/>
+              <rect width="20" height="58" y="96" fill="var(--sf-tok-prompt)"/>
+              <rect width="20" height="28" y="68" fill="var(--sf-tok-completion)"/>
+            </g>
+          </g>
+
+          <g fill="#6b7fa0" font-size="10" font-family="SFMono-Regular, Consolas, monospace">
+            <text x="60" y="216">Mar 21</text>
+            <text x="235" y="216">Mar 28</text>
+            <text x="410" y="216">Apr 04</text>
+            <text x="585" y="216">Apr 11</text>
+            <text x="730" y="216">Apr 19</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Cache hit panel -->
+    <div class="card tok-themed">
+      <div class="card-header">
+        <div class="card-title-block">
+          <h3>Prompt Cache</h3>
+          <div class="card-subtitle">Hit rate &amp; savings</div>
+        </div>
+      </div>
+      <div class="cache-panel">
+        <div class="cache-hero">
+          <div class="hit-rate">52.4<span class="unit">%</span></div>
+          <div class="label">Hit Rate · 30d</div>
+          <div class="savings">saved <strong>$9.82</strong> · ~7.4M tokens</div>
+        </div>
+        <div class="cache-meter">
+          <div class="seg miss" style="width: 47.6%;"></div>
+          <div class="seg hit"  style="width: 52.4%;"></div>
+        </div>
+        <div class="cache-legend">
+          <div class="item"><span class="k">Miss</span><span class="v">6.7M</span><span class="meta">47.6% · full price</span></div>
+          <div class="item"><span class="k">Hit</span><span class="v" style="color: var(--sf-tok-cached);">7.4M</span><span class="meta">52.4% · ~10% price</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tokens by call type donut -->
+    <div class="card tok-themed">
+      <div class="card-header">
+        <div class="card-title-block">
+          <h3>Tokens by Call Type</h3>
+          <div class="card-subtitle">Share of 18.4M total</div>
+        </div>
+      </div>
+      <div class="donut-body">
+        <div class="donut-wrap">
+          <svg viewBox="0 0 42 42" width="160" height="160">
+            <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="rgba(36, 58, 101, 0.35)" stroke-width="4"/>
+            <!-- Note: token share differs from cost share (models have different prices) -->
+            <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="var(--sf-bill-writer-1)" stroke-width="4" stroke-dasharray="28.4 71.6" stroke-dashoffset="25" transform="rotate(-90 21 21)"/>
+            <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="var(--sf-bill-pipeline-3)" stroke-width="4" stroke-dasharray="30.6 69.4" stroke-dashoffset="-3.4" transform="rotate(-90 21 21)"/>
+            <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="var(--sf-bill-image-2)" stroke-width="4" stroke-dasharray="14.2 85.8" stroke-dashoffset="-34" transform="rotate(-90 21 21)"/>
+            <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="var(--sf-bill-color-1)" stroke-width="4" stroke-dasharray="12.1 87.9" stroke-dashoffset="-48.2" transform="rotate(-90 21 21)"/>
+            <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="var(--sf-bill-releasedate-1)" stroke-width="4" stroke-dasharray="8.9 91.1" stroke-dashoffset="-60.3" transform="rotate(-90 21 21)"/>
+            <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="var(--sf-bill-val-1)" stroke-width="4" stroke-dasharray="4.6 95.4" stroke-dashoffset="-69.2" transform="rotate(-90 21 21)"/>
+            <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#94a3b8" stroke-width="4" stroke-dasharray="1.2 98.8" stroke-dashoffset="-73.8" transform="rotate(-90 21 21)"/>
+          </svg>
+          <div class="donut-center">
+            <div class="total">18.4M</div>
+            <div class="total-label">Tokens · 30d</div>
+          </div>
+        </div>
+        <div class="donut-legend">
+          <div class="donut-legend-row"><span class="sq" style="background: var(--sf-bill-pipeline-3);"></span><span>Pipeline</span><span class="pct">30.6%</span><span class="val">5.6M</span></div>
+          <div class="donut-legend-row"><span class="sq" style="background: var(--sf-bill-writer-1);"></span><span>Writer</span><span class="pct">28.4%</span><span class="val">5.2M</span></div>
+          <div class="donut-legend-row"><span class="sq" style="background: var(--sf-bill-image-2);"></span><span>Image</span><span class="pct">14.2%</span><span class="val">2.6M</span></div>
+          <div class="donut-legend-row"><span class="sq" style="background: var(--sf-bill-color-1);"></span><span>Color</span><span class="pct">12.1%</span><span class="val">2.2M</span></div>
+          <div class="donut-legend-row"><span class="sq" style="background: var(--sf-bill-releasedate-1);"></span><span>RDF</span><span class="pct">8.9%</span><span class="val">1.6M</span></div>
+          <div class="donut-legend-row"><span class="sq" style="background: var(--sf-bill-val-1);"></span><span>Val</span><span class="pct">4.6%</span><span class="val">0.85M</span></div>
+          <div class="donut-legend-row"><span class="sq" style="background: #94a3b8;"></span><span>Other</span><span class="pct">1.2%</span><span class="val">0.22M</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Row D: Tokens by Model (segmented bars) + Tokens by Category -->
+  <div class="chart-grid-1-1">
+    <div class="card tok-themed">
+      <div class="card-header">
+        <div class="card-title-block">
+          <h3>Tokens by Model</h3>
+          <div class="card-subtitle">Prompt / Completion / Cached composition</div>
+        </div>
+        <div class="card-legend">
+          <span class="card-legend-item"><span class="filter-dot" style="background: var(--sf-tok-prompt);"></span>P</span>
+          <span class="card-legend-item"><span class="filter-dot" style="background: var(--sf-tok-completion);"></span>C</span>
+          <span class="card-legend-item"><span class="filter-dot" style="background: var(--sf-tok-cached);"></span>Cached</span>
+        </div>
+      </div>
+      <div class="hbar-list">
+        <div class="hbar-row">
+          <div class="hbar-label"><span class="provider-tag openai">OAI</span><span class="name">gpt-5</span><span class="calls">412 · 48% cache</span></div>
+          <div class="hbar-val">7.2M</div>
+          <div class="hbar-track segmented">
+            <div class="hbar-seg prompt"     style="width: 40%;"></div>
+            <div class="hbar-seg completion" style="width: 12%;"></div>
+            <div class="hbar-seg cached"     style="width: 48%;"></div>
+          </div>
+        </div>
+        <div class="hbar-row">
+          <div class="hbar-label"><span class="provider-tag anthropic">ANT</span><span class="name">claude-sonnet-4-6</span><span class="calls">298 · 61% cache</span></div>
+          <div class="hbar-val">5.1M</div>
+          <div class="hbar-track segmented">
+            <div class="hbar-seg prompt"     style="width: 28%;"></div>
+            <div class="hbar-seg completion" style="width: 11%;"></div>
+            <div class="hbar-seg cached"     style="width: 61%;"></div>
+          </div>
+        </div>
+        <div class="hbar-row">
+          <div class="hbar-label"><span class="provider-tag openai">OAI</span><span class="name">gpt-5-mini</span><span class="calls">356 · 55% cache</span></div>
+          <div class="hbar-val">3.4M</div>
+          <div class="hbar-track segmented">
+            <div class="hbar-seg prompt"     style="width: 32%;"></div>
+            <div class="hbar-seg completion" style="width: 13%;"></div>
+            <div class="hbar-seg cached"     style="width: 55%;"></div>
+          </div>
+        </div>
+        <div class="hbar-row">
+          <div class="hbar-label"><span class="provider-tag anthropic">ANT</span><span class="name">claude-haiku-4-5</span><span class="calls">142 · 42% cache</span></div>
+          <div class="hbar-val">1.8M</div>
+          <div class="hbar-track segmented">
+            <div class="hbar-seg prompt"     style="width: 46%;"></div>
+            <div class="hbar-seg completion" style="width: 12%;"></div>
+            <div class="hbar-seg cached"     style="width: 42%;"></div>
+          </div>
+        </div>
+        <div class="hbar-row">
+          <div class="hbar-label"><span class="provider-tag xai">XAI</span><span class="name">grok-4-fast</span><span class="calls">54 · 18% cache</span></div>
+          <div class="hbar-val">0.6M</div>
+          <div class="hbar-track segmented">
+            <div class="hbar-seg prompt"     style="width: 70%;"></div>
+            <div class="hbar-seg completion" style="width: 12%;"></div>
+            <div class="hbar-seg cached"     style="width: 18%;"></div>
+          </div>
+        </div>
+        <div class="hbar-row">
+          <div class="hbar-label"><span class="provider-tag">DS</span><span class="name">deepseek-reasoner</span><span class="calls">22 · 8% cache</span></div>
+          <div class="hbar-val">0.3M</div>
+          <div class="hbar-track segmented">
+            <div class="hbar-seg prompt"     style="width: 71%;"></div>
+            <div class="hbar-seg completion" style="width: 21%;"></div>
+            <div class="hbar-seg cached"     style="width: 8%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card tok-themed">
+      <div class="card-header">
+        <div class="card-title-block">
+          <h3>Tokens by Category</h3>
+          <div class="card-subtitle">Per-domain volume</div>
+        </div>
+      </div>
+      <div class="hbar-list">
+        <div class="hbar-row">
+          <div class="hbar-label"><span class="name">🖱 Mouse</span><span class="calls">624 calls · 38 products</span></div>
+          <div class="hbar-val">9.4M</div>
+          <div class="hbar-track segmented">
+            <div class="hbar-seg prompt"     style="width: 36%;"></div>
+            <div class="hbar-seg completion" style="width: 11%;"></div>
+            <div class="hbar-seg cached"     style="width: 53%;"></div>
+          </div>
+        </div>
+        <div class="hbar-row">
+          <div class="hbar-label"><span class="name">⌨ Keyboard</span><span class="calls">412 calls · 22 products</span></div>
+          <div class="hbar-val">6.1M</div>
+          <div class="hbar-track segmented">
+            <div class="hbar-seg prompt"     style="width: 40%;"></div>
+            <div class="hbar-seg completion" style="width: 12%;"></div>
+            <div class="hbar-seg cached"     style="width: 48%;"></div>
+          </div>
+        </div>
+        <div class="hbar-row">
+          <div class="hbar-label"><span class="name">🖥 Monitor</span><span class="calls">248 calls · 12 products</span></div>
+          <div class="hbar-val">2.9M</div>
+          <div class="hbar-track segmented">
+            <div class="hbar-seg prompt"     style="width: 44%;"></div>
+            <div class="hbar-seg completion" style="width: 14%;"></div>
+            <div class="hbar-seg cached"     style="width: 42%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 10px; padding: 10px 12px; background: var(--sf-surface-panel); border-radius: 8px; border: 1px solid var(--sf-border-soft); font-size: 11.5px; color: var(--sf-text-muted);">
+        <strong style="color: var(--sf-text-primary);">🔢 Avg tokens per call</strong>
+        <div style="display: flex; gap: 14px; margin-top: 5px; font-family: var(--sf-font-mono);">
+          <span>Mouse <strong style="color: var(--sf-text-primary);">15.1k</strong></span>
+          <span>Keyboard <strong style="color: var(--sf-text-primary);">14.8k</strong></span>
+          <span>Monitor <strong style="color: var(--sf-text-primary);">11.7k</strong></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════  CALL LOG  ══════════════ -->
+  <section class="table-card">
+    <div class="table-header">
+      <h3>LLM Call Log <span class="row-count">1,284 entries</span></h3>
+      <div class="table-toolbar">
+        <input class="search-input" type="text" placeholder="Search by model, reason, product…" />
+        <button class="table-btn">Density</button>
+        <button class="table-btn">Columns ⋯</button>
+        <button class="table-btn">Export ↓</button>
+      </div>
+    </div>
+
+    <table class="llm-log">
+      <thead>
+        <tr>
+          <th style="width:24px;"></th>
+          <th>Timestamp</th>
+          <th>Product</th>
+          <th>Call Type</th>
+          <th>Model</th>
+          <th>Access</th>
+          <th class="num">Prompt</th>
+          <th class="num">Completion</th>
+          <th class="num">Cached</th>
+          <th class="num">Tok Mix</th>
+          <th class="num">Cost</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="status-dot"></span></td>
+          <td class="ts">04-19 19:34:12</td>
+          <td>Logitech G Pro X 2</td>
+          <td><span class="reason-tag"><span class="sq" style="background: var(--sf-bill-writer-1);"></span>Writer</span></td>
+          <td>gpt-5</td>
+          <td><span class="access-tag lab">Lab</span></td>
+          <td class="tokens tok-prompt">14,220</td>
+          <td class="tokens tok-completion">2,481</td>
+          <td class="tokens tok-cached">9,820</td>
+          <td class="tokens"><span class="tok-composition"><span class="p" style="width:34%;"></span><span class="c" style="width:8%;"></span><span class="ca" style="width:58%;"></span></span></td>
+          <td class="cost high">$0.0842</td>
+        </tr>
+        <tr>
+          <td><span class="status-dot"></span></td>
+          <td class="ts">04-19 19:33:58</td>
+          <td>Logitech G Pro X 2</td>
+          <td><span class="reason-tag"><span class="sq" style="background: var(--sf-bill-color-1);"></span>CEF</span></td>
+          <td>gpt-5</td>
+          <td><span class="access-tag lab">Lab</span></td>
+          <td class="tokens tok-prompt">11,840</td>
+          <td class="tokens tok-completion">1,120</td>
+          <td class="tokens tok-cached">6,400</td>
+          <td class="tokens"><span class="tok-composition"><span class="p" style="width:44%;"></span><span class="c" style="width:8%;"></span><span class="ca" style="width:48%;"></span></span></td>
+          <td class="cost high">$0.0654</td>
+        </tr>
+        <tr>
+          <td><span class="status-dot"></span></td>
+          <td class="ts">04-19 19:31:41</td>
+          <td>Razer Viper V3 Pro</td>
+          <td><span class="reason-tag"><span class="sq" style="background: var(--sf-bill-releasedate-1);"></span>RDF</span></td>
+          <td>claude-sonnet-4-6</td>
+          <td><span class="access-tag api">API</span></td>
+          <td class="tokens tok-prompt">9,624</td>
+          <td class="tokens tok-completion">488</td>
+          <td class="tokens tok-cached">5,200</td>
+          <td class="tokens"><span class="tok-composition"><span class="p" style="width:46%;"></span><span class="c" style="width:4%;"></span><span class="ca" style="width:50%;"></span></span></td>
+          <td class="cost mid">$0.0481</td>
+        </tr>
+        <tr>
+          <td><span class="status-dot"></span></td>
+          <td class="ts">04-19 19:30:02</td>
+          <td>Razer Viper V3 Pro</td>
+          <td><span class="reason-tag"><span class="sq" style="background: var(--sf-bill-image-1);"></span>Image Finder</span></td>
+          <td>claude-sonnet-4-6</td>
+          <td><span class="access-tag api">API</span></td>
+          <td class="tokens tok-prompt">6,142</td>
+          <td class="tokens tok-completion">922</td>
+          <td class="tokens tok-cached">3,880</td>
+          <td class="tokens"><span class="tok-composition"><span class="p" style="width:44%;"></span><span class="c" style="width:9%;"></span><span class="ca" style="width:47%;"></span></span></td>
+          <td class="cost mid">$0.0312</td>
+        </tr>
+        <tr>
+          <td><span class="status-dot warn"></span></td>
+          <td class="ts">04-19 19:29:14</td>
+          <td>Keychron Q1 Max</td>
+          <td><span class="reason-tag"><span class="sq" style="background: var(--sf-bill-pipeline-1);"></span>NeedSet</span></td>
+          <td>gpt-5-mini</td>
+          <td><span class="access-tag lab">Lab</span></td>
+          <td class="tokens tok-prompt">4,280</td>
+          <td class="tokens tok-completion">612</td>
+          <td class="tokens tok-cached">1,020</td>
+          <td class="tokens"><span class="tok-composition"><span class="p" style="width:72%;"></span><span class="c" style="width:11%;"></span><span class="ca" style="width:17%;"></span></span></td>
+          <td class="cost">$0.0091</td>
+        </tr>
+        <tr>
+          <td><span class="status-dot"></span></td>
+          <td class="ts">04-19 19:27:50</td>
+          <td>Keychron Q1 Max</td>
+          <td><span class="reason-tag"><span class="sq" style="background: var(--sf-bill-pipeline-4);"></span>SERP</span></td>
+          <td>gpt-5-mini</td>
+          <td><span class="access-tag lab">Lab</span></td>
+          <td class="tokens tok-prompt">2,918</td>
+          <td class="tokens tok-completion">204</td>
+          <td class="tokens tok-cached">1,840</td>
+          <td class="tokens"><span class="tok-composition"><span class="p" style="width:58%;"></span><span class="c" style="width:4%;"></span><span class="ca" style="width:38%;"></span></span></td>
+          <td class="cost">$0.0044</td>
+        </tr>
+        <tr>
+          <td><span class="status-dot"></span></td>
+          <td class="ts">04-19 19:26:08</td>
+          <td>Keychron Q1 Max</td>
+          <td><span class="reason-tag"><span class="sq" style="background: var(--sf-bill-val-1);"></span>Validate</span></td>
+          <td>gpt-5-mini</td>
+          <td><span class="access-tag lab">Lab</span></td>
+          <td class="tokens tok-prompt">5,440</td>
+          <td class="tokens tok-completion">284</td>
+          <td class="tokens tok-cached">2,940</td>
+          <td class="tokens"><span class="tok-composition"><span class="p" style="width:60%;"></span><span class="c" style="width:3%;"></span><span class="ca" style="width:37%;"></span></span></td>
+          <td class="cost">$0.0067</td>
+        </tr>
+        <tr>
+          <td><span class="status-dot err"></span></td>
+          <td class="ts">04-19 19:20:05</td>
+          <td>Zowie EC2-CW</td>
+          <td><span class="reason-tag"><span class="sq" style="background: var(--sf-bill-val-2);"></span>Repair</span></td>
+          <td>gpt-5-mini</td>
+          <td><span class="access-tag api">API</span></td>
+          <td class="tokens tok-prompt">3,260</td>
+          <td class="tokens tok-completion">512</td>
+          <td class="tokens tok-cached">0</td>
+          <td class="tokens"><span class="tok-composition"><span class="p" style="width:86%;"></span><span class="c" style="width:14%;"></span><span class="ca" style="width:0%;"></span></span></td>
+          <td class="cost">$0.0078</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="table-footer">
+      <span>Showing <strong style="color: var(--sf-text-primary); font-family: var(--sf-font-mono);">1–50</strong> of 1,284 · 50 per page</span>
+      <div class="page-nav">
+        <button disabled>‹ Prev</button>
+        <button class="active">1</button>
+        <button>2</button>
+        <button>3</button>
+        <button>…</button>
+        <button>26</button>
+        <button>Next ›</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+</body>
+</html>

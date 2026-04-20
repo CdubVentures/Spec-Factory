@@ -537,6 +537,14 @@ describe('AppDb — billing getBillingRollup', () => {
     assert.equal(rollup.totals.completion_tokens, 150);
   });
 
+  it('aggregates cached_prompt_tokens in totals', () => {
+    db.insertBillingEntry(makeBillingEntry({ prompt_tokens: 1000, cached_prompt_tokens: 800 }));
+    db.insertBillingEntry(makeBillingEntry({ prompt_tokens: 500, cached_prompt_tokens: 200 }));
+    const rollup = db.getBillingRollup('2026-04');
+    assert.equal(rollup.totals.prompt_tokens, 1500);
+    assert.equal(rollup.totals.cached_prompt_tokens, 1000);
+  });
+
   it('groups by_day', () => {
     db.insertBillingEntry(makeBillingEntry({ day: '2026-04-10' }));
     db.insertBillingEntry(makeBillingEntry({ day: '2026-04-11' }));

@@ -97,7 +97,7 @@ export function createVariantScalarFieldProducer(cfg) {
     const { familyModelCount, ambiguityLevel, siblingModels } = await resolveAmbiguityContext({
       config, category: product.category, brand: product.brand,
       baseModel: product.base_model, currentModel: product.model,
-      specDb, resolveFn: resolveIdentityAmbiguitySnapshot,
+      specDb, resolveFn: resolveIdentityAmbiguitySnapshot, logger,
     });
 
     const siblingsExcluded = [];
@@ -258,6 +258,8 @@ export function createVariantScalarFieldProducer(cfg) {
           url: String(e.url || ''),
           tier: String(e.tier || 'unknown'),
           confidence: Number.isFinite(e.confidence) ? e.confidence : 0,
+          ...(typeof e.supporting_evidence === 'string' ? { supporting_evidence: e.supporting_evidence } : {}),
+          ...(typeof e.evidence_kind === 'string' ? { evidence_kind: e.evidence_kind } : {}),
         })),
         ran_at: ranAt,
       };
@@ -457,6 +459,23 @@ export function createVariantScalarFieldProducer(cfg) {
     const { ctx, _mt, finderStore } = setup;
 
     const perVariantAttemptBudget = parseInt(finderStore?.getSetting?.('perVariantAttemptBudget') || '1', 10) || 1;
+    // WHY: Re-run budget governs a second Loop click on a variant the publisher
+    // has already RESOLVED. 0 = skip (no LLM call). The SQL store hydrates the
+    // registry default (1) when the key is unset, so parseInt sees '0' | '1' | ...
+    const reRunBudget = parseInt(finderStore?.getSetting?.('reRunBudget') || '1', 10) || 0;
+
+    const resolvedRows = ctx.specDb?.getFieldCandidatesByProductAndField?.(
+      ctx.product.product_id, fieldKey,
+    ) || [];
+    const satisfiedVariantIds = new Set(
+      resolvedRows
+        .filter((r) => r.status === 'resolved')
+        .map((r) => String(r.variant_id ?? '')),
+    );
+    const resolveBudget = (variant) => {
+      const vid = String(variant.variant_id ?? '');
+      return satisfiedVariantIds.has(vid) ? reRunBudget : perVariantAttemptBudget;
+    };
 
     const previousRunsProvider = () => {
       const doc = readRuns({ productId: ctx.product.product_id, productRoot: ctx.productRoot });
@@ -468,7 +487,7 @@ export function createVariantScalarFieldProducer(cfg) {
       specDb: ctx.specDb,
       product: ctx.product,
       variantKey,
-      budget: perVariantAttemptBudget,
+      resolveBudget,
       staggerMs: defaultStaggerMs,
       onStageAdvance, onVariantProgress, onLoopProgress,
       logger,

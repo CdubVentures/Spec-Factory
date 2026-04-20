@@ -255,4 +255,71 @@ describe('fieldCandidateEvidenceStore', () => {
     assert.equal(split.accepted, 2);
     assert.equal(split.rejected, 0);
   });
+
+  // ── Evidence upgrade: evidence_kind + supporting_evidence columns ─────
+
+  it('persists evidence_kind + supporting_evidence when provided', () => {
+    const candidate = seedCandidate(db);
+    db.insertFieldCandidateEvidenceMany(candidate.id, [
+      {
+        url: 'https://corsair.com/explorer/m75',
+        tier: 'tier1',
+        confidence: 93,
+        evidence_kind: 'direct_quote',
+        supporting_evidence: 'As of 04/19/2024, You can now get the M75 AIR in your choice of Black, Grey, or White!',
+      },
+      {
+        url: 'https://corsair.com/p/white-sku',
+        tier: 'tier1',
+        confidence: 60,
+        evidence_kind: 'identity_only',
+        supporting_evidence: '',
+      },
+    ]);
+    const rows = db.listFieldCandidateEvidenceByCandidateId(candidate.id);
+    const direct = rows.find(r => r.evidence_kind === 'direct_quote');
+    const ident = rows.find(r => r.evidence_kind === 'identity_only');
+    assert.ok(direct.supporting_evidence.startsWith('As of 04/19/2024'));
+    assert.equal(ident.supporting_evidence, '');
+  });
+
+  it('legacy ref without evidence_kind / supporting_evidence stores NULL', () => {
+    const candidate = seedCandidate(db);
+    db.insertFieldCandidateEvidenceMany(candidate.id, [
+      { url: 'https://legacy.example.com', tier: 'tier1', confidence: 90 },
+    ]);
+    const rows = db.listFieldCandidateEvidenceByCandidateId(candidate.id);
+    assert.equal(rows[0].evidence_kind, null);
+    assert.equal(rows[0].supporting_evidence, null);
+  });
+
+  it('countSubstantiveByCandidateId excludes identity_only refs', () => {
+    const candidate = seedCandidate(db);
+    db.insertFieldCandidateEvidenceMany(candidate.id, [
+      { url: 'https://a.example.com', tier: 'tier1', confidence: 93, evidence_kind: 'direct_quote', supporting_evidence: 'quote a' },
+      { url: 'https://b.example.com', tier: 'tier1', confidence: 90, evidence_kind: 'byline_timestamp', supporting_evidence: 'byline b' },
+      { url: 'https://c.example.com', tier: 'tier1', confidence: 60, evidence_kind: 'identity_only', supporting_evidence: '' },
+    ]);
+    assert.equal(db.countFieldCandidateEvidenceByCandidateId(candidate.id), 3);
+    assert.equal(db.countFieldCandidateSubstantiveEvidenceByCandidateId(candidate.id), 2);
+  });
+
+  it('countSubstantiveByCandidateId returns 0 when every ref is identity_only', () => {
+    const candidate = seedCandidate(db);
+    db.insertFieldCandidateEvidenceMany(candidate.id, [
+      { url: 'https://a.example.com', tier: 'tier1', confidence: 60, evidence_kind: 'identity_only', supporting_evidence: '' },
+      { url: 'https://b.example.com', tier: 'tier1', confidence: 55, evidence_kind: 'identity_only', supporting_evidence: '' },
+    ]);
+    assert.equal(db.countFieldCandidateSubstantiveEvidenceByCandidateId(candidate.id), 0);
+  });
+
+  it('countSubstantiveByCandidateId treats legacy NULL evidence_kind as substantive', () => {
+    // WHY: pre-upgrade rebuilt rows have NULL evidence_kind. The gate must
+    // keep counting them or we retroactively invalidate historical data.
+    const candidate = seedCandidate(db);
+    db.insertFieldCandidateEvidenceMany(candidate.id, [
+      { url: 'https://legacy.example.com', tier: 'tier1', confidence: 95 },  // no evidence_kind
+    ]);
+    assert.equal(db.countFieldCandidateSubstantiveEvidenceByCandidateId(candidate.id), 1);
+  });
 });

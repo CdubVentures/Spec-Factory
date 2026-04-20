@@ -18,6 +18,7 @@ import type { UseQueryResult, UseMutationResult } from '@tanstack/react-query';
 import { Spinner } from '../feedback/Spinner.tsx';
 import { Chip } from '../feedback/Chip.tsx';
 import { FinderPanelHeader } from './FinderPanelHeader.tsx';
+import { AnimatedDots } from './AnimatedDots.tsx';
 import { FinderKpiCard } from './FinderKpiCard.tsx';
 import { FinderPanelFooter } from './FinderPanelFooter.tsx';
 import { FinderRunModelBadge } from './FinderRunModelBadge.tsx';
@@ -259,16 +260,16 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
             <button
               onClick={(e) => { e.stopPropagation(); handleRunAll(); }}
               disabled={cefVariants.length === 0}
-              className="w-28 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-primary-button disabled:opacity-40 disabled:cursor-not-allowed text-center"
+              className="w-28 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed text-center"
             >
               Run
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); handleLoopAll(); }}
               disabled={cefVariants.length === 0 || (variantRows.length > 0 && variantRows.every((r) => loopingVariantKeys.has(r.variant_key)))}
-              className="w-28 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed text-center"
+              className="w-28 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-primary-button disabled:opacity-40 disabled:cursor-not-allowed text-center"
             >
-              Loop
+              {variantRows.length > 0 && variantRows.every((r) => loopingVariantKeys.has(r.variant_key)) ? <>Loop <AnimatedDots /></> : 'Loop'}
             </button>
           </div>
         }
@@ -353,7 +354,7 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
                             disabled={isLooping}
                             className="px-2 py-1 text-[9px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed"
                           >
-                            {isLooping ? '...' : 'Loop'}
+                            {isLooping ? <>Loop <AnimatedDots /></> : 'Loop'}
                           </button>
                         </div>
                       </>

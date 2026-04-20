@@ -208,7 +208,11 @@ export function createFinderSqlStore({ db, category, module: mod }) {
       row.category || category,
       row.product_id,
       row.run_number,
-      row.ran_at || '',
+      // WHY: Global rebuild-contract guardrail — every finder's insertRun routes
+      // through this single function. A missing/empty ran_at would poison audit
+      // ordering after a DB-deleted rebuild, so fall back to a real ISO
+      // timestamp. Callers passing a valid ran_at are preserved verbatim.
+      row.ran_at || new Date().toISOString(),
       row.model || 'unknown',
       row.fallback_used ? 1 : 0,
       row.effort_level || '',

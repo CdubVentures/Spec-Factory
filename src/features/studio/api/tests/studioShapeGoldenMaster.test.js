@@ -54,15 +54,103 @@ test('studio payload response has exact StudioPayload shape', async () => {
   assert.ok(result.body.fieldOrder.includes('dpi'), 'dpi in fieldOrder');
   assert.ok(result.body.fieldOrder.includes('colors'), 'colors in fieldOrder');
   assert.ok(result.body.fieldOrder.includes('editions'), 'editions in fieldOrder');
-  assert.deepEqual([...result.body.egLockedKeys].sort(), ['colors', 'editions', 'release_date']);
+  assert.deepEqual([...result.body.egLockedKeys].sort(), ['colors', 'editions', 'release_date', 'sku']);
   assert.ok(Array.isArray(result.body.egEditablePaths));
   assert.ok(result.body.egToggles, 'egToggles present');
   assert.equal(result.body.egToggles.colors, true);
   assert.equal(result.body.egToggles.editions, true);
   assert.equal(result.body.egToggles.release_date, true);
+  assert.equal(result.body.egToggles.sku, true);
   assert.equal(result.body.compiledAt, '2026-03-29T00:00:00Z');
   assert.equal(result.body.compileStale, false);
   StudioPayloadSchema.parse(result.body);
+});
+
+// WHY: When a new EG preset is added (e.g. sku after colors/editions/release_date
+// shipped), existing categories have persisted eg_toggles that pre-date the new
+// key. The payload resolver must merge EG_DEFAULT_TOGGLES under persisted values
+// so the new key defaults to true without requiring a migration pass or manual
+// re-save. Explicit `false` opt-outs still survive.
+test('studio payload backfills missing EG keys from defaults (legacy persisted toggles)', async () => {
+  const legacyMap = {
+    version: 2,
+    // Persisted eg_toggles pre-dates sku being added — only 3 keys.
+    eg_toggles: { colors: true, editions: true, release_date: true },
+    // One explicit opt-out to verify persisted false survives the merge.
+    // (release_date intentionally flipped off by a user.)
+  };
+  const legacyMapWithOptOut = {
+    ...legacyMap,
+    eg_toggles: { colors: true, editions: true, release_date: false },
+  };
+
+  // Case 1: legacy toggles missing sku → sku defaults to true
+  const result = await invokeStudioRoute({
+    sessionCache: {
+      getSessionRules: async () => ({
+        mergedFields: { dpi: { label: 'DPI' } },
+        mergedFieldOrder: ['dpi'],
+        labels: { dpi: 'DPI' },
+        compiledAt: '2026-03-29T00:00:00Z',
+        mapSavedAt: '2026-03-28T00:00:00Z',
+        compileStale: false,
+      }),
+      invalidateSessionCache: () => {},
+    },
+    getSpecDb: () => ({
+      getCompiledRules: () => ({
+        fields: { dpi: { label: 'DPI' } },
+        field_order: ['dpi'],
+        ui_field_catalog: null,
+        known_values: null,
+      }),
+      getFieldStudioMap: () => ({
+        map_json: JSON.stringify(legacyMap),
+        map_hash: 'legacy-hash',
+        updated_at: '2026-03-28T00:00:00',
+      }),
+      getFieldKeyOrder: () => null,
+    }),
+  }, ['studio', 'mouse', 'payload'], 'GET');
+
+  assert.equal(result.status, 200);
+  assert.equal(result.body.egToggles.sku, true, 'missing sku defaults to true');
+  assert.ok(result.body.egLockedKeys.includes('sku'), 'sku resolved as locked');
+  assert.ok(result.body.fieldRules.sku, 'sku preset backfilled into fields');
+
+  // Case 2: explicit opt-out survives the merge
+  const result2 = await invokeStudioRoute({
+    sessionCache: {
+      getSessionRules: async () => ({
+        mergedFields: { dpi: { label: 'DPI' } },
+        mergedFieldOrder: ['dpi'],
+        labels: { dpi: 'DPI' },
+        compiledAt: '2026-03-29T00:00:00Z',
+        mapSavedAt: '2026-03-28T00:00:00Z',
+        compileStale: false,
+      }),
+      invalidateSessionCache: () => {},
+    },
+    getSpecDb: () => ({
+      getCompiledRules: () => ({
+        fields: { dpi: { label: 'DPI' } },
+        field_order: ['dpi'],
+        ui_field_catalog: null,
+        known_values: null,
+      }),
+      getFieldStudioMap: () => ({
+        map_json: JSON.stringify(legacyMapWithOptOut),
+        map_hash: 'legacy-hash-2',
+        updated_at: '2026-03-28T00:00:00',
+      }),
+      getFieldKeyOrder: () => null,
+    }),
+  }, ['studio', 'mouse', 'payload'], 'GET');
+
+  assert.equal(result2.status, 200);
+  assert.equal(result2.body.egToggles.release_date, false, 'persisted false survives merge');
+  assert.ok(!result2.body.egLockedKeys.includes('release_date'), 'opted-out key NOT in locked set');
+  assert.equal(result2.body.egToggles.sku, true, 'missing sku still defaults to true alongside opt-outs');
 });
 
 // Shape 2: FieldStudioMapResponse (GET /studio/:category/field-studio-map)

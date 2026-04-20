@@ -351,8 +351,12 @@ export function deriveRunHistoryRows(
         isLatest: run.run_number === maxRunNumber,
         validationStatus: isRejected ? 'rejected' as const : 'valid' as const,
         rejectionSummary,
-        startedAt: run.started_at ?? '',
-        durationMs: run.duration_ms ?? null,
+        // WHY: PIF/RDF pattern — started_at + duration_ms ride inside the run's
+        // response payload so they survive the shared runs-table schema, which
+        // only persists ran_at. Top-level wins when present (runtime path); the
+        // response fallback covers DB-projected runs (listRuns from SQL).
+        startedAt: run.started_at ?? run.response?.started_at ?? '',
+        durationMs: run.duration_ms ?? run.response?.duration_ms ?? null,
         selected: run.selected,
         systemPrompt,
         userMessage,

@@ -6,10 +6,15 @@ import {
 import { sha256 } from './cryptoHelpers.js';
 import { toFloat } from './typeHelpers.js';
 
-export async function resolveIdentityAmbiguitySnapshot({ config, category = '', identityLock = {}, specDb = null, currentModel = '' } = {}) {
+export async function resolveIdentityAmbiguitySnapshot({ config, category = '', identityLock = {}, specDb = null, currentModel = '', logger = null } = {}) {
   const brandToken = normalizeIdentityToken(identityLock?.brand);
   const modelToken = normalizeIdentityToken(identityLock?.base_model);
   if (!brandToken || !modelToken) {
+    logger?.warn?.('identity_ambiguity_snapshot_missing_identity', {
+      category,
+      brand: identityLock?.brand,
+      base_model: identityLock?.base_model,
+    });
     return {
       family_model_count: 0,
       ambiguity_level: 'unknown',
@@ -36,13 +41,32 @@ export async function resolveIdentityAmbiguitySnapshot({ config, category = '', 
         .filter(m => m && normalizeIdentityToken(m) !== currentModelToken)
     )];
 
+    logger?.info?.('identity_ambiguity_snapshot_resolved', {
+      category,
+      brand: identityLock?.brand,
+      base_model: identityLock?.base_model,
+      total_rows: rows.length,
+      family_rows: familyRows.length,
+      sibling_count: siblingModels.length,
+      siblings: siblingModels,
+      specDb_has_getAllProducts: typeof specDb?.getAllProducts === 'function',
+    });
+
     return {
       family_model_count: safeCount,
       ambiguity_level: ambiguityLevelFromFamilyCount(safeCount),
       sibling_models: siblingModels,
       source: 'specDb'
     };
-  } catch {
+  } catch (err) {
+    // WHY: swallowing this error silently caused the M75 Corsair sibling bug
+    // to stay invisible. Always log so audits and oncall can see fallbacks.
+    logger?.warn?.('identity_ambiguity_snapshot_failed', {
+      category,
+      brand: identityLock?.brand,
+      base_model: identityLock?.base_model,
+      error: err?.message || String(err),
+    });
     return {
       family_model_count: 1,
       ambiguity_level: 'easy',

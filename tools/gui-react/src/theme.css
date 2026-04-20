@@ -2809,6 +2809,535 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
   border-radius: var(--sf-radius-chip);
 }
 
+/* ── Billing call-type palette (consumed by BILLING_CALL_TYPE_REGISTRY) ── */
+:root {
+  --sf-billing-writer-1: #495057;
+  --sf-billing-releasedate-1: #fcc419;
+  --sf-billing-val-1: #38d9a9;
+
+  /* Cost-section accent (indigo family) */
+  --sf-cost-accent: #818cf8;
+  --sf-cost-accent-deep: #6366f1;
+  --sf-cost-glow: rgba(99, 102, 241, 0.14);
+
+  /* Token-section accent (cyan/teal family — distinct from cost) */
+  --sf-tok-accent: #22d3ee;
+  --sf-tok-accent-deep: #06b6d4;
+  --sf-tok-glow: rgba(34, 211, 238, 0.14);
+  --sf-tok-prompt: #22d3ee;
+  --sf-tok-completion: #a78bfa;
+  --sf-tok-cached: #34d399;
+}
+
+/* ── Billing hero band ── */
+.sf-hero-band {
+  background: var(--sf-token-surface-elevated);
+  border: 1px solid var(--sf-token-border-default);
+  border-radius: 14px;
+  padding: 20px 24px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sf-hero-band-skel { min-height: 12rem; border-radius: 14px; }
+
+.sf-hero-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.sf-hero-eyebrow {
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--sf-token-text-subtle);
+  margin-bottom: 4px;
+}
+
+.sf-hero-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--sf-token-text-primary);
+  margin: 0;
+}
+
+.sf-hero-meta {
+  font-size: 13px;
+  color: var(--sf-token-text-muted);
+  margin-top: 4px;
+}
+
+.sf-hero-split {
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  gap: 18px;
+  align-items: stretch;
+}
+
+.sf-hero-divider {
+  background: linear-gradient(180deg, transparent, var(--sf-token-border-default), transparent);
+  width: 1px;
+}
+
+.sf-hero-half {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sf-hero-half-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 0 2px 4px;
+}
+
+.sf-hero-flame {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  align-self: center;
+}
+
+.sf-hero-flame-cost {
+  background: var(--sf-cost-accent);
+  box-shadow: 0 0 0 3px var(--sf-cost-glow);
+}
+
+.sf-hero-flame-tok {
+  background: var(--sf-tok-accent);
+  box-shadow: 0 0 0 3px var(--sf-tok-glow);
+}
+
+.sf-hero-half-header h2 {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sf-token-text-primary);
+  margin: 0;
+}
+
+.sf-hero-half-meta {
+  font-size: 11px;
+  color: var(--sf-token-text-subtle);
+  margin-left: auto;
+}
+
+.sf-hero-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.sf-hero-kpi {
+  position: relative;
+  background: var(--sf-token-surface-elevated);
+  border: 1px solid var(--sf-token-border-default);
+  border-radius: 10px;
+  padding: 12px 13px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow: hidden;
+}
+
+.sf-hero-kpi::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 2px;
+  opacity: 0.9;
+}
+
+.sf-hero-cost .sf-hero-kpi::after {
+  background: linear-gradient(90deg, var(--sf-cost-accent), transparent);
+}
+
+.sf-hero-tok .sf-hero-kpi::after {
+  background: linear-gradient(90deg, var(--sf-tok-accent), transparent);
+}
+
+.sf-hero-kpi-label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--sf-token-text-subtle);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1;
+}
+
+.sf-hero-kpi-ico {
+  font-size: 13px;
+}
+
+.sf-hero-kpi-value {
+  font-family: 'SFMono-Regular', 'Consolas', monospace;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--sf-token-text-primary);
+  line-height: 1.1;
+}
+
+.sf-hero-kpi-value-compact {
+  font-size: 16px;
+}
+
+.sf-hero-kpi-value-placeholder {
+  color: var(--sf-token-text-subtle);
+}
+
+.sf-hero-kpi-unit {
+  font-size: 11px;
+  color: var(--sf-token-text-muted);
+  margin-left: 3px;
+  font-weight: 500;
+}
+
+.sf-hero-kpi-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  color: var(--sf-token-text-muted);
+}
+
+.sf-hero-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 600;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-family: 'SFMono-Regular', 'Consolas', monospace;
+}
+
+.sf-hero-trend-up {
+  color: var(--sf-token-state-success-fg, #16a34a);
+  background: var(--sf-token-state-success-bg, rgba(34, 197, 94, 0.12));
+}
+
+.sf-hero-trend-down {
+  color: var(--sf-token-state-confirm-fg, #ea580c);
+  background: var(--sf-token-state-confirm-bg, rgba(234, 88, 12, 0.12));
+}
+
+.sf-hero-trend-flat {
+  color: var(--sf-token-text-subtle);
+  background: var(--sf-token-surface-panel);
+}
+
+.sf-hero-sparkline {
+  width: 100%;
+  height: 22px;
+  margin-top: 2px;
+}
+
+/* ── Billing provider tags (horizontal bar rows) ── */
+.sf-provider-tag {
+  font-family: 'SFMono-Regular', 'Consolas', monospace;
+  font-size: 9.5px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--sf-token-text-subtle);
+  background: var(--sf-token-surface-panel);
+  border: 1px solid var(--sf-token-border-default);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.sf-provider-tag-openai    { color: #6ee7b7; border-color: rgba(110, 231, 183, 0.4); }
+.sf-provider-tag-anthropic { color: #fcd34d; border-color: rgba(252, 211, 77, 0.4); }
+.sf-provider-tag-xai       { color: #d8b4fe; border-color: rgba(216, 180, 254, 0.4); }
+.sf-provider-tag-google    { color: #60a5fa; border-color: rgba(96, 165, 250, 0.4); }
+.sf-provider-tag-deepseek  { color: #94a3b8; border-color: rgba(148, 163, 184, 0.4); }
+.sf-provider-tag-generic   { color: var(--sf-token-text-subtle); }
+
+/* ── Billing section headings (Cost / Tokens dividers) ── */
+.sf-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 4px 2px;
+}
+
+.sf-section-heading-bar {
+  width: 4px;
+  height: 20px;
+  border-radius: 3px;
+  background: var(--sf-cost-accent, #818cf8);
+}
+
+.sf-section-heading.is-tok .sf-section-heading-bar {
+  background: var(--sf-tok-accent, #22d3ee);
+}
+
+.sf-section-heading h2 {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sf-token-text-primary);
+  margin: 0;
+}
+
+.sf-section-heading-meta {
+  font-size: 11.5px;
+  color: var(--sf-token-text-subtle);
+}
+
+/* ── Token-themed card accent ── */
+.sf-tok-themed {
+  border-top: 2px solid var(--sf-tok-accent);
+}
+
+/* ── Donut legend (shared by Cost and Token donuts) ── */
+.sf-donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  margin-top: 4px;
+  font-size: 11px;
+}
+
+.sf-donut-legend-row {
+  display: grid;
+  grid-template-columns: 14px 1fr auto auto;
+  gap: 7px;
+  align-items: center;
+  padding: 3px 6px;
+  border-radius: 5px;
+  color: var(--sf-token-text-muted);
+}
+
+.sf-donut-legend-row:hover {
+  background: var(--sf-token-surface-panel);
+  color: var(--sf-token-text-primary);
+}
+
+.sf-donut-legend-sq {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  justify-self: center;
+}
+
+.sf-donut-legend-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sf-donut-legend-pct {
+  font-family: 'SFMono-Regular', 'Consolas', monospace;
+  color: var(--sf-token-text-subtle);
+  font-size: 10.5px;
+}
+
+.sf-donut-legend-value {
+  font-family: 'SFMono-Regular', 'Consolas', monospace;
+  color: var(--sf-token-text-primary);
+  font-weight: 600;
+}
+
+/* ── Prompt cache panel ── */
+.sf-cache-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 12px 10px;
+  background: var(--sf-token-surface-panel);
+  border: 1px solid var(--sf-token-border-default);
+  border-radius: 10px;
+}
+
+.sf-cache-hit-rate {
+  font-family: 'SFMono-Regular', 'Consolas', monospace;
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--sf-tok-accent);
+  letter-spacing: -0.02em;
+}
+
+.sf-cache-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 3px 0;
+  border-bottom: 1px dashed var(--sf-token-border-default);
+}
+
+.sf-cache-stat-row:last-of-type {
+  border-bottom: none;
+}
+
+.sf-cache-stat-label {
+  font-size: 11px;
+  color: var(--sf-token-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sf-cache-stat-value {
+  font-family: 'SFMono-Regular', 'Consolas', monospace;
+  font-size: 12px;
+  color: var(--sf-token-text-primary);
+  font-weight: 600;
+}
+
+.sf-cache-label {
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--sf-token-text-subtle);
+  margin-top: 2px;
+}
+
+.sf-cache-savings {
+  font-size: 11.5px;
+  color: var(--sf-token-text-subtle);
+  margin-top: 6px;
+  font-style: italic;
+}
+
+.sf-cache-body {
+  font-size: 11.5px;
+  color: var(--sf-token-text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sf-cache-body code {
+  font-family: 'SFMono-Regular', 'Consolas', monospace;
+  font-size: 10.5px;
+  color: var(--sf-token-text-primary);
+  background: var(--sf-token-surface-panel);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.sf-cache-body ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sf-cache-auto-note {
+  color: var(--sf-token-text-subtle);
+  font-style: italic;
+}
+
+/* ── Billing call log row flourishes ── */
+.sf-status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.sf-status-dot-ok {
+  background: var(--sf-token-state-success-fg, #16a34a);
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.15);
+}
+
+.sf-status-dot-warn {
+  background: var(--sf-token-state-warning-fg, #f59e0b);
+  box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.18);
+}
+
+.sf-status-dot-err {
+  background: var(--sf-token-state-confirm-fg, #ea580c);
+  box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.18);
+}
+
+.sf-access-tag {
+  display: inline-block;
+  font-family: 'SFMono-Regular', 'Consolas', monospace;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.sf-access-tag-lab {
+  color: var(--sf-token-state-info-fg, #38bdf8);
+  background: var(--sf-token-state-info-bg, rgba(14, 165, 233, 0.12));
+}
+
+.sf-access-tag-api {
+  color: var(--sf-token-text-subtle);
+  background: var(--sf-token-surface-panel);
+}
+
+.sf-tok-prompt-text     { color: var(--sf-tok-prompt, #22d3ee); }
+.sf-tok-completion-text { color: var(--sf-tok-completion, #a78bfa); }
+.sf-tok-cached-text     { color: var(--sf-tok-cached, #34d399); }
+
+.sf-tok-composition {
+  display: inline-flex;
+  width: 68px;
+  height: 8px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--sf-token-surface-panel);
+  vertical-align: middle;
+}
+
+.sf-tok-composition-p  { background: var(--sf-tok-prompt, #22d3ee); }
+.sf-tok-composition-c  { background: var(--sf-tok-completion, #a78bfa); }
+.sf-tok-composition-ca { background: var(--sf-tok-cached, #34d399); }
+
+.sf-cost      { color: var(--sf-token-text-primary); }
+.sf-cost-mid  { color: var(--sf-token-state-info-fg, #38bdf8); }
+.sf-cost-high { color: var(--sf-token-state-warning-fg, #f59e0b); }
+
+/* ── Meta callout strip (under bar sections) ── */
+.sf-bar-callout {
+  padding: 10px 12px;
+  background: var(--sf-token-surface-panel);
+  border-radius: 8px;
+  border: 1px solid var(--sf-token-border-default);
+  font-size: 11.5px;
+  color: var(--sf-token-text-muted);
+}
+
+.sf-bar-callout-title {
+  color: var(--sf-token-text-primary);
+  font-weight: 600;
+}
+
+.sf-bar-callout-items {
+  display: flex;
+  gap: 14px;
+  margin-top: 5px;
+  flex-wrap: wrap;
+  font-family: 'SFMono-Regular', 'Consolas', monospace;
+}
+
+.sf-bar-callout-items strong {
+  color: var(--sf-token-text-primary);
+}
+
 /* ── Billing filter chips ── */
 
 .sf-filter-bar {
@@ -2816,6 +3345,12 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
   border: 1px solid var(--sf-token-border-default);
   border-radius: var(--sf-token-radius-lg);
   padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sf-filter-row {
   display: flex;
   gap: 6px;
   align-items: center;
@@ -2849,12 +3384,42 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
   background: var(--sf-token-accent);
   color: var(--sf-token-text-inverse);
   border-color: var(--sf-token-accent);
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.35), 0 4px 10px -4px rgba(99, 102, 241, 0.45);
 }
 
 .sf-filter-chip-active:hover {
   background: var(--sf-token-accent);
   color: var(--sf-token-text-inverse);
   border-color: var(--sf-token-accent);
+}
+
+.sf-filter-chip-count {
+  font-family: 'SFMono-Regular', 'Consolas', monospace;
+  font-size: 10.5px;
+  color: var(--sf-token-text-subtle);
+  margin-left: 4px;
+}
+
+.sf-filter-chip-active .sf-filter-chip-count {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.sf-filter-clear {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--sf-token-text-subtle);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-weight: 500;
+}
+
+.sf-filter-clear:hover {
+  color: var(--sf-token-accent-strong);
+  background: var(--sf-accent-glow, rgba(99, 102, 241, 0.12));
 }
 
 .sf-filter-dot {

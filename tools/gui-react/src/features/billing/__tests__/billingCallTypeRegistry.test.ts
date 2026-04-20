@@ -6,23 +6,21 @@ import {
   BILLING_CALL_TYPE_FALLBACK,
   BILLING_CALL_TYPE_GROUPS,
   resolveBillingCallType,
-} from '../billingCallTypeRegistry.ts';
-import type { BillingCallTypeEntry } from '../billingCallTypeRegistry.ts';
+} from '../billingCallTypeRegistry.generated.ts';
+// @ts-expect-error JS import — backend SSOT with no TS declaration
+import { LLM_PHASE_DEFS } from '../../../../../../src/core/config/llmPhaseDefs.js';
 
-// WHY: All 15 verified reason keys from createPhaseCallLlm specs across the codebase.
-const KNOWN_REASONS = [
-  'needset_search_planner',
-  'brand_resolution',
-  'search_planner_enhance',
-  'serp_url_selector',
-  'product_image_finding',
-  'image_view_evaluation',
-  'image_hero_selection',
-  'hero_image_finding',
-  'color_edition_finding',
-  'variant_identity_check',
-  'field_repair',
-] as const;
+// WHY: SSOT drift detector. The registry is generated from `billing` blocks
+// on LLM_PHASE_DEFS entries. Any phase that declares a `billing.reasons[]`
+// must appear in the registry and vice versa — no hand-maintained parallel list.
+function expectedReasonsFromPhaseDefs(): string[] {
+  const reasons: string[] = [];
+  for (const phase of LLM_PHASE_DEFS as Array<{ billing?: { reasons?: Array<{ reason: string }> } }>) {
+    if (!phase.billing || !Array.isArray(phase.billing.reasons)) continue;
+    for (const r of phase.billing.reasons) reasons.push(r.reason);
+  }
+  return reasons;
+}
 
 describe('BILLING_CALL_TYPE_REGISTRY', () => {
   it('is frozen (immutable)', () => {
@@ -43,10 +41,17 @@ describe('BILLING_CALL_TYPE_REGISTRY', () => {
     strictEqual(new Set(reasons).size, reasons.length, 'duplicate reason keys found');
   });
 
-  it('includes all known pipeline reason keys', () => {
+  it('covers every reason declared in LLM_PHASE_DEFS billing blocks', () => {
     const registered = new Set(BILLING_CALL_TYPE_REGISTRY.map((e) => e.reason));
-    for (const reason of KNOWN_REASONS) {
+    for (const reason of expectedReasonsFromPhaseDefs()) {
       ok(registered.has(reason), `missing reason: "${reason}"`);
+    }
+  });
+
+  it('contains no reasons outside LLM_PHASE_DEFS billing blocks', () => {
+    const expected = new Set(expectedReasonsFromPhaseDefs());
+    for (const entry of BILLING_CALL_TYPE_REGISTRY) {
+      ok(expected.has(entry.reason), `orphan reason in registry: "${entry.reason}" (not declared in LLM_PHASE_DEFS)`);
     }
   });
 
@@ -75,6 +80,12 @@ describe('resolveBillingCallType', () => {
     strictEqual(vid.label, 'Variant ID');
   });
 
+  it('resolves newly-covered finders (writer, RDF, validate)', () => {
+    strictEqual(resolveBillingCallType('writer_formatting').group, 'Writer');
+    strictEqual(resolveBillingCallType('release_date_finding').group, 'Release Date');
+    strictEqual(resolveBillingCallType('validate').group, 'Validation');
+  });
+
   it('returns fallback for unknown reasons', () => {
     deepStrictEqual(resolveBillingCallType('totally_made_up'), BILLING_CALL_TYPE_FALLBACK);
   });
@@ -97,13 +108,10 @@ describe('BILLING_CALL_TYPE_GROUPS', () => {
   it('derives unique ordered groups from registry', () => {
     ok(Array.isArray(BILLING_CALL_TYPE_GROUPS));
     ok(BILLING_CALL_TYPE_GROUPS.length > 0);
-    deepStrictEqual(
-      BILLING_CALL_TYPE_GROUPS,
-      ['Pipeline', 'Product Image', 'Color Edition', 'Validation'],
-    );
+    strictEqual(new Set(BILLING_CALL_TYPE_GROUPS).size, BILLING_CALL_TYPE_GROUPS.length, 'groups must be unique');
   });
 
-  it('every registry entry belongs to a known group', () => {
+  it('every registry entry belongs to a listed group', () => {
     const groupSet = new Set(BILLING_CALL_TYPE_GROUPS);
     for (const entry of BILLING_CALL_TYPE_REGISTRY) {
       ok(groupSet.has(entry.group), `"${entry.reason}" has unknown group "${entry.group}"`);

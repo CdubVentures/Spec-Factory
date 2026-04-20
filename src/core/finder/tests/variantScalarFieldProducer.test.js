@@ -32,6 +32,10 @@ function makeFakeFeatureInjection(overrides = {}) {
     phase: 'fakeFinder',
     responseValueKey: 'some_date',
     logPrefix: 'fake',
+    // WHY: 0ms stagger — production default is 1000ms to space LLM bursts, but
+    // every test here injects a synchronous LLM stub where rate-limit spacing is
+    // irrelevant. Eliminates ~1s×N-variants of dead wait per test case.
+    defaultStaggerMs: 0,
 
     createCallLlm: () => async () => ({
       result: {
@@ -93,7 +97,7 @@ const COMPILED_FIELD_RULES = {
   known_values: {},
 };
 
-function makeSpecDbStub({ variants = DEFAULT_VARIANTS, storeSettings = {}, throwOnReplaceEvidence = false } = {}) {
+function makeSpecDbStub({ variants = DEFAULT_VARIANTS, storeSettings = {}, throwOnReplaceEvidence = false, resolvedVariantIds = [] } = {}) {
   const submittedCandidates = [];
   const evidenceByCandidateId = new Map();
   const finderStoreCalls = [];
@@ -106,6 +110,11 @@ function makeSpecDbStub({ variants = DEFAULT_VARIANTS, storeSettings = {}, throw
     insertRun: (row) => { insertRuns.push(row); },
     listSuppressions: () => [],
   };
+
+  const resolvedRows = resolvedVariantIds.map((vid) => ({
+    variant_id: vid === null ? null : String(vid),
+    status: 'resolved',
+  }));
 
   return {
     category: 'mouse',
@@ -129,7 +138,7 @@ function makeSpecDbStub({ variants = DEFAULT_VARIANTS, storeSettings = {}, throw
       if (idx < 0) return null;
       return { id: idx + 1, variant_id: submittedCandidates[idx].variantId ?? null };
     },
-    getFieldCandidatesByProductAndField: () => [],
+    getFieldCandidatesByProductAndField: () => resolvedRows,
     getFieldCandidatesByValue: () => [],
     getFieldCandidate: () => null,
     upsertFieldCandidate: () => {},
@@ -205,6 +214,70 @@ describe('variantScalarFieldProducer — runOnce happy path', () => {
       Object.keys(result.candidates[0]),
       ['variant_id', 'variant_key', 'variant_label', 'variant_type', 'value', 'confidence', 'unknown_reason', 'sources', 'ran_at'],
     );
+  });
+
+  it('candidateEntry.sources preserves supporting_evidence + evidence_kind when LLM returns extended refs', async () => {
+    // WHY: RDF + future per-key finders return evidence_refs with the extended
+    // shape (supporting_evidence + evidence_kind). The producer's sources
+    // mapping must carry those fields through, or the review drawer loses
+    // the data needed to render the kind icon + popover quote.
+    const injection = makeFakeFeatureInjection({
+      createCallLlm: () => async () => ({
+        result: {
+          some_date: '2024-04-19',
+          confidence: 93,
+          unknown_reason: '',
+          evidence_refs: [
+            {
+              url: 'https://corsair.com/explorer/m75',
+              tier: 'tier1',
+              confidence: 93,
+              supporting_evidence: 'As of 04/19/2024, You can now get the M75 AIR in your choice of Black, Grey, or White!',
+              evidence_kind: 'direct_quote',
+            },
+            {
+              url: 'https://corsair.com/p/white-sku',
+              tier: 'tier1',
+              confidence: 60,
+              supporting_evidence: '',
+              evidence_kind: 'identity_only',
+            },
+          ],
+          discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+        },
+        usage: null,
+      }),
+    });
+    const { runOnce } = createVariantScalarFieldProducer(injection);
+    const specDb = makeSpecDbStub({ variants: [DEFAULT_VARIANTS[0]] });
+
+    const result = await runOnce({
+      product: PRODUCT, appDb: null, specDb, config: {}, productRoot: '/tmp',
+    });
+    const [ref0, ref1] = result.candidates[0].sources;
+    assert.equal(ref0.evidence_kind, 'direct_quote');
+    assert.ok(ref0.supporting_evidence.startsWith('As of 04/19/2024'));
+    assert.equal(ref1.evidence_kind, 'identity_only');
+    assert.equal(ref1.supporting_evidence, '');
+  });
+
+  it('candidateEntry.sources omits evidence_kind when LLM returns legacy base refs', async () => {
+    // WHY: the spread-on-present-string guard prevents legacy flows from
+    // growing undefined evidence_kind / supporting_evidence keys on the
+    // stored `sources` entries.
+    const injection = makeFakeFeatureInjection();
+    const { runOnce } = createVariantScalarFieldProducer(injection);
+    const specDb = makeSpecDbStub({ variants: [DEFAULT_VARIANTS[0]] });
+
+    const result = await runOnce({
+      product: PRODUCT, appDb: null, specDb, config: {}, productRoot: '/tmp',
+    });
+    const src = result.candidates[0].sources[0];
+    assert.equal(src.url, 'https://fake.example.com');
+    assert.equal(src.tier, 'tier1');
+    assert.equal(src.confidence, 90);
+    assert.ok(!('evidence_kind' in src), 'legacy flow must not attach undefined evidence_kind');
+    assert.ok(!('supporting_evidence' in src), 'legacy flow must not attach undefined supporting_evidence');
   });
 
   it('run.response uses the injected responseValueKey for the scalar field', async () => {
@@ -461,6 +534,160 @@ describe('variantScalarFieldProducer — loop semantics', () => {
 
     const run = injection._memoryStore.runs[0];
     assert.ok('loop_id' in run.response);
+  });
+});
+
+describe('variantScalarFieldProducer — reRunBudget semantics', () => {
+  it('reRunBudget=0 skips an already-resolved variant (no LLM call)', async () => {
+    let callCount = 0;
+    const injection = makeFakeFeatureInjection({
+      createCallLlm: () => async () => {
+        callCount++;
+        return {
+          result: {
+            some_date: '2024-06-01', confidence: 95, unknown_reason: '',
+            evidence_refs: [{ url: 'https://x.example.com', tier: 'tier1', confidence: 95 }],
+            discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+          },
+          usage: null,
+        };
+      },
+      satisfactionPredicate: () => false,
+    });
+    const { runLoop } = createVariantScalarFieldProducer(injection);
+    const specDb = makeSpecDbStub({
+      variants: [DEFAULT_VARIANTS[0]],
+      storeSettings: { perVariantAttemptBudget: '3', reRunBudget: '0' },
+      resolvedVariantIds: ['v1'],
+    });
+
+    await runLoop({
+      product: PRODUCT, appDb: null, specDb, config: {}, productRoot: '/tmp',
+    });
+
+    assert.equal(callCount, 0, 'resolved variant + reRunBudget=0 → skipped entirely');
+  });
+
+  it('reRunBudget=N allows up to N retries on resolved variants', async () => {
+    let callCount = 0;
+    const injection = makeFakeFeatureInjection({
+      createCallLlm: () => async () => {
+        callCount++;
+        return {
+          result: {
+            some_date: '2024-06-01', confidence: 40, unknown_reason: '',
+            evidence_refs: [{ url: 'https://x.example.com', tier: 'tier3', confidence: 40 }],
+            discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+          },
+          usage: null,
+        };
+      },
+      satisfactionPredicate: () => false, // never satisfies → exhaust
+    });
+    const { runLoop } = createVariantScalarFieldProducer(injection);
+    const specDb = makeSpecDbStub({
+      variants: [DEFAULT_VARIANTS[0]],
+      storeSettings: { perVariantAttemptBudget: '5', reRunBudget: '2' },
+      resolvedVariantIds: ['v1'],
+    });
+
+    await runLoop({
+      product: PRODUCT, appDb: null, specDb, config: {}, productRoot: '/tmp',
+    });
+
+    assert.equal(callCount, 2, 'resolved variant + reRunBudget=2 → 2 attempts (not 5)');
+  });
+
+  it('unresolved variants ignore reRunBudget and use perVariantAttemptBudget', async () => {
+    let callCount = 0;
+    const injection = makeFakeFeatureInjection({
+      createCallLlm: () => async () => {
+        callCount++;
+        return {
+          result: {
+            some_date: '', confidence: 20, unknown_reason: '',
+            evidence_refs: [], discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+          },
+          usage: null,
+        };
+      },
+      satisfactionPredicate: () => false,
+    });
+    const { runLoop } = createVariantScalarFieldProducer(injection);
+    const specDb = makeSpecDbStub({
+      variants: [DEFAULT_VARIANTS[0]],
+      storeSettings: { perVariantAttemptBudget: '3', reRunBudget: '0' },
+      resolvedVariantIds: [], // variant is NOT resolved
+    });
+
+    await runLoop({
+      product: PRODUCT, appDb: null, specDb, config: {}, productRoot: '/tmp',
+    });
+
+    assert.equal(callCount, 3, 'unresolved variant uses perVariantAttemptBudget (3), not reRunBudget (0)');
+  });
+
+  it('mixed set: resolved variant skipped with reRunBudget=0, unresolved runs full budget', async () => {
+    const callsByVariant = { v1: 0, v2: 0 };
+    const injection = makeFakeFeatureInjection({
+      createCallLlm: () => async ({ variantLabel }) => {
+        const key = variantLabel === 'One' ? 'v1' : 'v2';
+        callsByVariant[key]++;
+        return {
+          result: {
+            some_date: '', confidence: 0, unknown_reason: 'n/a',
+            evidence_refs: [], discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+          },
+          usage: null,
+        };
+      },
+      satisfactionPredicate: () => false,
+    });
+    const { runLoop } = createVariantScalarFieldProducer(injection);
+    const specDb = makeSpecDbStub({
+      storeSettings: { perVariantAttemptBudget: '3', reRunBudget: '0' },
+      resolvedVariantIds: ['v1'], // v1 resolved, v2 not
+    });
+
+    await runLoop({
+      product: PRODUCT, appDb: null, specDb, config: {}, productRoot: '/tmp',
+    });
+
+    assert.equal(callsByVariant.v1, 0, 'resolved v1 skipped');
+    assert.equal(callsByVariant.v2, 3, 'unresolved v2 ran full budget');
+  });
+
+  it('unset reRunBudget hydrates to the registry default (1)', async () => {
+    // WHY: finderSqlStore.getSetting falls back to settingsDefaults (derived
+    // from the registry). So any production store returns '1' for reRunBudget
+    // when no user override exists. The test stub returns '' — which + the
+    // factory's literal-default guard ('|| "1"') produces the same result.
+    let callCount = 0;
+    const injection = makeFakeFeatureInjection({
+      createCallLlm: () => async () => {
+        callCount++;
+        return {
+          result: {
+            some_date: '2024', confidence: 30, unknown_reason: '',
+            evidence_refs: [], discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+          },
+          usage: null,
+        };
+      },
+      satisfactionPredicate: () => false,
+    });
+    const { runLoop } = createVariantScalarFieldProducer(injection);
+    const specDb = makeSpecDbStub({
+      variants: [DEFAULT_VARIANTS[0]],
+      storeSettings: { perVariantAttemptBudget: '3' }, // no reRunBudget
+      resolvedVariantIds: ['v1'],
+    });
+
+    await runLoop({
+      product: PRODUCT, appDb: null, specDb, config: {}, productRoot: '/tmp',
+    });
+
+    assert.equal(callCount, 1, 'unset reRunBudget → default 1 → 1 attempt on resolved variant');
   });
 });
 

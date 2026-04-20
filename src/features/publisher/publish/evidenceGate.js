@@ -18,9 +18,14 @@ export function readMinEvidenceRefs(fieldRule) {
 export function checkEvidenceGate({ specDb, candidateId, fieldRule }) {
   const required = readMinEvidenceRefs(fieldRule);
   if (required <= 0) return { ok: true, required: 0, actual: 0 };
-  if (!specDb?.countFieldCandidateEvidenceByCandidateId || !candidateId) {
+  // WHY: substantive count excludes refs tagged evidence_kind === 'identity_only'
+  // — those URLs pin the SKU but don't support the claim itself. Legacy rows
+  // with NULL evidence_kind count as substantive so pre-upgrade data still passes.
+  const counter = specDb?.countFieldCandidateSubstantiveEvidenceByCandidateId
+    || specDb?.countFieldCandidateEvidenceByCandidateId;
+  if (!counter || !candidateId) {
     return { ok: false, required, actual: 0 };
   }
-  const actual = specDb.countFieldCandidateEvidenceByCandidateId(candidateId);
+  const actual = counter.call(specDb, candidateId);
   return { ok: actual >= required, required, actual };
 }

@@ -484,15 +484,21 @@ export function prepareStatements(db) {
 
     // --- Source-centric field candidate operations ---
 
+    // WHY: submitted_at binding uses COALESCE so a caller-supplied ISO timestamp
+    // survives reseed from product.json; omitting it falls back to datetime('now').
+    // updated_at mirrors the same choice to keep the pair consistent on rebuild.
     _insertFieldCandidate: db.prepare(`
       INSERT INTO field_candidates (
         category, product_id, field_key, source_id, source_type,
         value, unit, confidence, model,
-        validation_json, metadata_json, status, variant_id
+        validation_json, metadata_json, status, variant_id,
+        submitted_at, updated_at
       ) VALUES (
         @category, @product_id, @field_key, @source_id, @source_type,
         @value, @unit, @confidence, @model,
-        @validation_json, @metadata_json, @status, @variant_id
+        @validation_json, @metadata_json, @status, @variant_id,
+        COALESCE(@submitted_at, datetime('now')),
+        COALESCE(@submitted_at, datetime('now'))
       )
     `),
 
@@ -530,9 +536,9 @@ export function prepareStatements(db) {
     // ── Field candidate evidence (relational projection) ───────────
     _insertFieldCandidateEvidence: db.prepare(
       `INSERT INTO field_candidate_evidence
-         (candidate_id, url, tier, confidence, http_status, verified_at, accepted)
+         (candidate_id, url, tier, confidence, http_status, verified_at, accepted, evidence_kind, supporting_evidence)
        VALUES
-         (@candidate_id, @url, @tier, @confidence, @http_status, @verified_at, @accepted)`
+         (@candidate_id, @url, @tier, @confidence, @http_status, @verified_at, @accepted, @evidence_kind, @supporting_evidence)`
     ),
     _deleteFieldCandidateEvidenceByCandidateId: db.prepare(
       'DELETE FROM field_candidate_evidence WHERE candidate_id = ?'
@@ -548,6 +554,16 @@ export function prepareStatements(db) {
     ),
     _countFieldCandidateEvidenceByCandidateId: db.prepare(
       'SELECT COUNT(DISTINCT url) AS total FROM field_candidate_evidence WHERE candidate_id = ?'
+    ),
+    // WHY: Publisher gate uses this count to enforce min_evidence_refs.
+    // identity_only refs (URL cited only to pin the SKU, not evidence for the
+    // claim) do NOT count. Legacy rows with NULL evidence_kind count as
+    // substantive — they predate the upgrade and we don't retroactively
+    // invalidate old data.
+    _countFieldCandidateSubstantiveEvidenceByCandidateId: db.prepare(
+      `SELECT COUNT(DISTINCT url) AS total FROM field_candidate_evidence
+         WHERE candidate_id = ?
+           AND (evidence_kind IS NULL OR evidence_kind != 'identity_only')`
     ),
     // WHY: Per-candidate split count for the publisher panel — Evid ✓ / Evid ✗
     // chips and row-drawer grouping. accepted=1 default keeps legacy rows

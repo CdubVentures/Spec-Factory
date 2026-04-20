@@ -80,9 +80,9 @@ Generic infrastructure for LLM-driven finder modules. Any module that discovers 
 - `runPerVariant({ specDb, product, variantKey?, staggerMs?, produceForVariant, onStageAdvance?, onVariantProgress?, logger? })` — loads variants via `specDb.variants.listActive(productId)`, filters to a single variant if requested, fires staggered concurrent loop calling `produceForVariant(variant, i, ctx)` per variant. Rejects fast with `no_cef_data` / `unknown_variant`.
 
 ### `variantFieldLoop.js` — generic per-variant retry loop (the "budget loop")
-- `runVariantFieldLoop({ specDb, product, variantKey?, budget, produceForVariant, satisfactionPredicate, staggerMs?, onLoopProgress?, ... })` — wraps `runPerVariant` with a per-variant retry: each variant gets up to `budget` attempts, stops early when `satisfactionPredicate(result)` is truthy. Generates one `loop_id` per top-level call (shared across all variants + attempts). Emits `onLoopProgress({ variantKey, variantLabel, attempt, budget, satisfied, loopId })` after each attempt. Used by RDF; ready for MSRP / weight / dimensions / any simple field finder.
-- `budget` is clamped to a minimum of 1 (defensive — category JSON values arrive as strings).
-- The surfaced per-variant result is the last attempt's output, augmented with `_loop: { attempts, satisfied, loopId }`.
+- `runVariantFieldLoop({ specDb, product, variantKey?, resolveBudget, produceForVariant, satisfactionPredicate, staggerMs?, onLoopProgress?, ... })` — wraps `runPerVariant` with a per-variant retry: each variant gets up to `resolveBudget(variant)` attempts, stops early when `satisfactionPredicate(result)` is truthy. `resolveBudget` returning 0 skips the variant entirely (no `produceForVariant` call; one `onLoopProgress` event with `skipped: true`). Generates one `loop_id` per top-level call (shared across all variants + attempts). Emits `onLoopProgress({ variantKey, variantLabel, attempt, budget, satisfied, skipped, loopId })` after each attempt or once for a skipped variant. Used by RDF and every `registerScalarFinder` consumer; ready for MSRP / weight / dimensions / any simple field finder.
+- Budget hygiene is the caller's responsibility — non-finite or negative values are treated as 0 (skip). `registerScalarFinder` composes `resolveBudget` from two settings: `perVariantAttemptBudget` for unresolved variants and `reRunBudget` for variants the publisher has already resolved (0 = skip on re-Loop).
+- The surfaced per-variant result is the last attempt's output, augmented with `_loop: { attempts, satisfied, skipped, loopId }`.
 
 ### `loopIdGenerator.js` — stable per-loop identifier
 - `generateLoopId()` — returns `loop-${Date.now()}-${6-char-rand}`. One call per `/loop` request; every run emitted by that call carries the same id in `response.loop_id` so the UI can group them.
@@ -94,7 +94,8 @@ Generic infrastructure for LLM-driven finder modules. Any module that discovers 
 - `COOLDOWN_DAYS` — canonical 30-day cooldown default
 - `computeCooldownUntil({ days?, now? })` — returns `{ cooldownUntil, ranAt, now }` (days=0 → no cooldown)
 - `resolveModelTracking({ config, phaseKey, onModelResolved })` — returns tracking object with `actualModel`, `actualFallbackUsed`, `wrappedOnModelResolved`
-- `resolveAmbiguityContext({ config, category, brand, baseModel, specDb, resolveFn })` — returns `{ familyModelCount, ambiguityLevel }` (non-fatal fallback)
+- `resolveAmbiguityContext({ config, category, brand, baseModel, specDb, resolveFn, logger? })` — returns `{ familyModelCount, ambiguityLevel, siblingModels }` (non-fatal fallback; logs `identity_ambiguity_context_failed` via `logger.warn` when the resolver throws)
+- `buildOrchestratorProduct({ productId, category, productRow })` — canonical `product` object for every finder orchestrator; always includes `base_model` so the ambiguity resolver can group sibling models
 - `buildFinderLlmCaller({ _callLlmOverride, wrappedOnModelResolved, createCallLlm, llmDeps })` — returns callLlm function
 
 ## Dependencies

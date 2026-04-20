@@ -12,6 +12,11 @@ export interface EvidenceSource {
   url: string;
   tier: string | null;
   confidence: number | null;
+  // WHY: Optional — only populated for RDF + variantScalarFieldProducer evidence.
+  // CEF/PIF refs stay on the base shape and omit these. The review drawer uses
+  // them to render the hoverable kind icon + popover quote.
+  supporting_evidence?: string;
+  evidence_kind?: string;
 }
 
 interface CandidateLike {
@@ -50,7 +55,7 @@ export function resolveEvidenceSources(candidate: CandidateLike): EvidenceSource
     ? (candidate.metadata as Record<string, unknown>)
     : null;
 
-  // Universal shape: metadata.evidence_refs = [{url, tier, confidence}]
+  // Universal shape: metadata.evidence_refs = [{url, tier, confidence, (supporting_evidence, evidence_kind)}]
   const refs = meta?.evidence_refs;
   if (Array.isArray(refs) && refs.length > 0) {
     return refs
@@ -59,11 +64,15 @@ export function resolveEvidenceSources(candidate: CandidateLike): EvidenceSource
         const rec = s as Record<string, unknown>;
         const url = typeof rec.url === 'string' ? rec.url : '';
         if (!url) return null;
-        return {
+        const source: EvidenceSource = {
           url,
           tier: normalizeTier(rec.tier),
           confidence: normalizeConfidence(rec.confidence),
         };
+        // Evidence-upgrade passthrough (RDF + scalar producer only; CEF/PIF omit).
+        if (typeof rec.supporting_evidence === 'string') source.supporting_evidence = rec.supporting_evidence;
+        if (typeof rec.evidence_kind === 'string') source.evidence_kind = rec.evidence_kind;
+        return source;
       })
       .filter((s): s is EvidenceSource => s !== null);
   }

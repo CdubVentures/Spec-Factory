@@ -17,6 +17,7 @@ describe('GLOBAL_PROMPTS registry', () => {
   const EXPECTED_KEYS = [
     'evidenceContract',
     'evidenceVerification',
+    'evidenceKindGuidance',
     'valueConfidenceRubric',
     'identityWarningEasy',
     'identityWarningMedium',
@@ -53,6 +54,28 @@ describe('GLOBAL_PROMPTS registry', () => {
     for (const key of ['identityWarningEasy', 'identityWarningMedium', 'identityWarningHard', 'siblingsExclusion', 'discoveryHistoryBlock']) {
       const applies = GLOBAL_PROMPTS[key].appliesTo;
       assert.deepEqual([...applies].sort(), ['cef', 'pif', 'rdf']);
+    }
+  });
+
+  it('evidenceKindGuidance applies to rdf + scalar (NOT cef/pif/carousel)', () => {
+    const applies = GLOBAL_PROMPTS.evidenceKindGuidance.appliesTo;
+    assert.deepEqual([...applies].sort(), ['rdf', 'scalar']);
+  });
+
+  it('evidenceKindGuidance description explicitly excludes CEF + PIF + Carousel Builder', () => {
+    const desc = GLOBAL_PROMPTS.evidenceKindGuidance.description;
+    assert.match(desc, /Does Not Apply to:\s*CEF\s*\+\s*PIF\s*\+\s*Carousel Builder/i);
+  });
+
+  it('evidenceKindGuidance default template lists all 10 evidence_kind values', () => {
+    const tpl = GLOBAL_PROMPTS.evidenceKindGuidance.defaultTemplate;
+    for (const kind of [
+      'direct_quote', 'structured_metadata', 'byline_timestamp',
+      'artifact_metadata', 'visual_inspection', 'lab_measurement',
+      'comparative_rebadge', 'inferred_reasoning',
+      'absence_of_evidence', 'identity_only',
+    ]) {
+      assert.ok(tpl.includes(kind), `template must list kind "${kind}"`);
     }
   });
 

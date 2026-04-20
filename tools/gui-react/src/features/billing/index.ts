@@ -3,8 +3,8 @@ export {
   BILLING_CALL_TYPE_MAP,
   BILLING_CALL_TYPE_FALLBACK,
   resolveBillingCallType,
-} from './billingCallTypeRegistry.ts';
-export type { BillingCallTypeEntry } from './billingCallTypeRegistry.ts';
+} from './billingCallTypeRegistry.generated.ts';
+export type { BillingCallTypeEntry } from './billingCallTypeRegistry.generated.ts';
 
 export {
   pivotDailyByReason,
@@ -12,10 +12,14 @@ export {
   computeDonutSlices,
   computeHorizontalBars,
   chartColor,
+  computePeriodDeltas,
+  computeFilterChipCounts,
+  computeTokenSegments,
 } from './billingTransforms.ts';
 
 export {
   useBillingSummaryQuery,
+  useBillingPriorSummaryQuery,
   useBillingDailyQuery,
   useBillingByModelQuery,
   useBillingByReasonQuery,
@@ -36,4 +40,9 @@ export type {
   PivotedDailyRow,
   DonutSlice,
   HorizontalBarItem,
+  BillingTrendDelta,
+  BillingPeriodDeltas,
+  FilterChipCounts,
+  TokenSegments,
+  TrendDirection,
 } from './billingTypes.ts';

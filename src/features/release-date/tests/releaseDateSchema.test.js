@@ -112,3 +112,91 @@ describe('releaseDateFinderResponseSchema', () => {
     assert.equal(parsed.evidence, undefined);
   });
 });
+
+describe('releaseDateFinderResponseSchema — extended evidence shape (post-upgrade)', () => {
+  it('parses evidence_refs with supporting_evidence + evidence_kind populated', () => {
+    const parsed = releaseDateFinderResponseSchema.parse({
+      release_date: '2024-04-19',
+      confidence: 93,
+      unknown_reason: '',
+      evidence_refs: [
+        {
+          url: 'https://www.corsair.com/us/el/explorer/gamer/mice/corsair-m75-air',
+          tier: 'tier1',
+          confidence: 93,
+          supporting_evidence: 'As of 04/19/2024, You can now get the M75 AIR in your choice of Black, Grey, or White!',
+          evidence_kind: 'direct_quote',
+        },
+        {
+          url: 'https://www.corsair.com/us/en/p/gaming-mouse/ch-931d101-na/white-sku',
+          tier: 'tier1',
+          confidence: 60,
+          supporting_evidence: '',
+          evidence_kind: 'identity_only',
+        },
+      ],
+      discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+    });
+    assert.equal(parsed.evidence_refs.length, 2);
+    assert.equal(parsed.evidence_refs[0].evidence_kind, 'direct_quote');
+    assert.ok(parsed.evidence_refs[0].supporting_evidence.startsWith('As of 04/19/2024'));
+    assert.equal(parsed.evidence_refs[1].evidence_kind, 'identity_only');
+    assert.equal(parsed.evidence_refs[1].supporting_evidence, '');
+  });
+
+  it('parses payload where every ref is identity_only (schema OK, publisher gate rejects later)', () => {
+    // WHY: the schema is permissive about kind mix — it validates shape only.
+    // The "must have at least one substantive ref" rule is enforced by the
+    // publisher gate's substantive-count query, not here.
+    const parsed = releaseDateFinderResponseSchema.parse({
+      release_date: '2024-04-19',
+      confidence: 50,
+      evidence_refs: [
+        { url: 'https://corsair.com/a', tier: 'tier1', confidence: 60, supporting_evidence: '', evidence_kind: 'identity_only' },
+        { url: 'https://corsair.com/b', tier: 'tier1', confidence: 55, supporting_evidence: '', evidence_kind: 'identity_only' },
+      ],
+    });
+    assert.equal(parsed.evidence_refs.length, 2);
+    for (const ref of parsed.evidence_refs) assert.equal(ref.evidence_kind, 'identity_only');
+  });
+
+  it('parses legacy payload without evidence_kind (pre-upgrade rebuild tolerance)', () => {
+    // Legacy product.json rebuild path — old runs don't carry evidence_kind;
+    // zod treats the field as optional so this still parses cleanly.
+    const parsed = releaseDateFinderResponseSchema.parse({
+      release_date: '2024-03-15',
+      confidence: 90,
+      evidence_refs: [{ url: 'https://mfr.example.com', tier: 'tier1', confidence: 95 }],
+    });
+    assert.equal(parsed.evidence_refs.length, 1);
+    assert.equal(parsed.evidence_refs[0].evidence_kind, undefined);
+  });
+
+  it('rejects evidence_refs with an unknown evidence_kind', () => {
+    assert.throws(() => releaseDateFinderResponseSchema.parse({
+      release_date: '2024-03-15',
+      confidence: 90,
+      evidence_refs: [{
+        url: 'https://mfr.example.com',
+        tier: 'tier1',
+        confidence: 95,
+        supporting_evidence: 'x',
+        evidence_kind: 'totally_made_up',
+      }],
+    }));
+  });
+
+  it('rejects supporting_evidence > 280 chars', () => {
+    assert.throws(() => releaseDateFinderResponseSchema.parse({
+      release_date: '2024-03-15',
+      confidence: 90,
+      evidence_refs: [{
+        url: 'https://mfr.example.com',
+        tier: 'tier1',
+        confidence: 95,
+        supporting_evidence: 'x'.repeat(281),
+        evidence_kind: 'direct_quote',
+      }],
+    }));
+  });
+});

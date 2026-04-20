@@ -178,6 +178,7 @@ export async function submitCandidate({
     validationJson: validationRecord,
     metadataJson: hasMetadata ? metadata : {},
     variantId: normalizedVariantId,
+    submittedAt: sourceEntry.submitted_at,
   });
 
   // WHY: Same source_id can back two rows (variant-scoped + scalar, variant_id NULL)
@@ -213,6 +214,9 @@ export async function submitCandidate({
       model: sourceModel,
       unit: repairedUnit,
       validation: validationRecord,
+      // WHY: Rebuild contract — submitted_at must survive DB-deleted reseed.
+      // Without it, reseed falls back to datetime('now') and loses audit order.
+      submitted_at: sourceEntry.submitted_at,
     };
     if (hasMetadata) entry.metadata = metadata;
     if (normalizedVariantId) entry.variant_id = normalizedVariantId;

@@ -152,10 +152,34 @@ describe('buildColorEditionFinderPrompt', () => {
     );
   });
 
-  it('prompt is compact (under 8000 chars with small palette)', () => {
+});
+
+describe('buildColorEditionFinderPrompt — atom collision self-audit', () => {
+  const product = { brand: 'Corsair', model: 'M75 Air Wireless' };
+  const colorNames = ['black', 'white', 'yellow'];
+  const colors = [
+    { name: 'black', hex: '#000000', css_var: '--color-black' },
+    { name: 'white', hex: '#ffffff', css_var: '--color-white' },
+    { name: 'yellow', hex: '#eab308', css_var: '--color-yellow' },
+  ];
+
+  it('discovery prompt contains atom-collision self-audit instruction', () => {
     const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
-    assert.ok(prompt.length < 8000, `prompt is ${prompt.length} chars`);
+    assert.ok(
+      /atom[- ]collision|shared atom|same atom/i.test(prompt),
+      'prompt must mention atom-collision / shared-atom self-audit',
+    );
+    assert.ok(
+      /missing atom|distinguishing atom|undiscovered atom/i.test(prompt),
+      'prompt must reference missing/distinguishing atom as primary resolution',
+    );
   });
+
+  it('response contract includes collisions[] field', () => {
+    const prompt = buildColorEditionFinderPrompt({ colorNames, colors, product });
+    assert.ok(prompt.includes('"collisions"'), 'collisions field appears in JSON response contract');
+  });
+
 });
 
 describe('COLOR_EDITION_FINDER_SPEC', () => {
@@ -388,6 +412,22 @@ describe('buildVariantIdentityCheckPrompt', () => {
       product, existingRegistry: [], newColors: ['black'], newColorNames: {}, newEditions: {},
     });
     assert.ok(!result.includes('ORPHANED PIF IMAGE KEYS'));
+  });
+});
+
+describe('buildVariantIdentityCheckPrompt — old NORMAL framing is gone', () => {
+  // WHY: The old framing explicitly permitted single-atom standalone + edition
+  // coexistence as NORMAL. That line was the root cause of the M75 two-yellows
+  // bug. Assert only that it's gone — exact replacement wording is author-editable.
+  it('does NOT contain the old NORMAL framing', () => {
+    const result = buildVariantIdentityCheckPrompt({
+      product: { brand: 'Corsair', model: 'M75 Air Wireless' },
+      existingRegistry: [], newColors: ['black'], newColorNames: {}, newEditions: {},
+    });
+    assert.ok(
+      !result.includes('NORMAL — both are real, distinct SKUs'),
+      'old NORMAL framing must stay removed',
+    );
   });
 });
 

@@ -14,6 +14,7 @@ import { createStreamBatcher } from '../llm/streamBatcher.js';
 import { defaultProductRoot } from '../config/runtimeArtifactRoots.js';
 import { normalizeConfidence } from '../../features/publisher/publish/publishCandidate.js';
 import { republishField } from '../../features/publisher/publish/republishField.js';
+import { buildOrchestratorProduct } from './finderOrchestrationHelpers.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -372,17 +373,11 @@ export function createFinderRouteHandler(finderConfig) {
               meta: { productId },
             },
             asyncWork: () => {
-              const product = {
-                product_id: productId,
-                category,
-                brand: productRow.brand || '',
-                model: productRow.model || '',
-                variant: productRow.variant || '',
-              };
-              // WHY: base_model feeds prompts for per-variant finders. Opt-in
-              // via parseVariantKey or loop — preserves generic-handler POST
-              // behavior for modules (e.g. CEF) that don't opt in.
-              if (wantsVariantKey) product.base_model = productRow.base_model || '';
+              // WHY: base_model is identity — every finder's ambiguity resolver
+              // requires it to group sibling models. Gating it behind
+              // parseVariantKey was the root cause of the M75 Corsair
+              // sibling-injection bug.
+              const product = buildOrchestratorProduct({ productId, category, productRow });
 
               const orchestrator = isLoopPost ? loopConfig.orchestrator : runFinder;
               const orchestratorOpts = {

@@ -166,6 +166,59 @@ test('normalizeLlmUsage: handles cached token aliases', () => {
   assert.equal(result.cached_prompt_tokens, 25);
 });
 
+test('normalizeLlmUsage: reads OpenAI prompt_tokens_details.cached_tokens (nested)', () => {
+  const usage = {
+    prompt_tokens: 2000,
+    completion_tokens: 300,
+    total_tokens: 2300,
+    prompt_tokens_details: { cached_tokens: 1800 },
+  };
+  const result = normalizeLlmUsage(usage, toInt);
+  assert.equal(result.cached_prompt_tokens, 1800);
+  assert.equal(result.prompt_tokens, 2000);
+  assert.equal(result.completion_tokens, 300);
+});
+
+test('normalizeLlmUsage: reads Anthropic cache_read_input_tokens', () => {
+  const usage = {
+    input_tokens: 200,
+    output_tokens: 500,
+    cache_read_input_tokens: 1800,
+    cache_creation_input_tokens: 0,
+  };
+  const result = normalizeLlmUsage(usage, toInt);
+  assert.equal(result.cached_prompt_tokens, 1800);
+  assert.equal(result.completion_tokens, 500);
+});
+
+test('normalizeLlmUsage: reads DeepSeek prompt_cache_hit_tokens', () => {
+  const usage = {
+    prompt_tokens: 2500,
+    completion_tokens: 400,
+    prompt_cache_hit_tokens: 2100,
+    prompt_cache_miss_tokens: 400,
+    total_tokens: 2900,
+  };
+  const result = normalizeLlmUsage(usage, toInt);
+  assert.equal(result.cached_prompt_tokens, 2100);
+});
+
+test('normalizeLlmUsage: prefers direct cached_prompt_tokens over nested details (back-compat)', () => {
+  const usage = {
+    prompt_tokens: 2000,
+    cached_prompt_tokens: 500,
+    prompt_tokens_details: { cached_tokens: 1800 },
+  };
+  const result = normalizeLlmUsage(usage, toInt);
+  assert.equal(result.cached_prompt_tokens, 500);
+});
+
+test('normalizeLlmUsage: returns 0 when prompt_tokens_details is malformed', () => {
+  const usage = { prompt_tokens: 2000, prompt_tokens_details: null };
+  const result = normalizeLlmUsage(usage, toInt);
+  assert.equal(result.cached_prompt_tokens, 0);
+});
+
 // ---------------------------------------------------------------------------
 // resolveUrl — source_url / url / href resolution
 // ---------------------------------------------------------------------------

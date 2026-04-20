@@ -224,10 +224,62 @@ export function buildEgReleaseDatePreset(_ctx?: EgPresetCtx): FieldRule {
   };
 }
 
+export function buildEgSkuPreset(_ctx?: EgPresetCtx): FieldRule {
+  return {
+    key: 'sku',
+    variant_dependent: true,
+    contract: {
+      type: 'string',
+      shape: 'scalar',
+      list_rules: {},
+    },
+    parse: {
+      delimiters: [],
+      accepted_formats: [],
+      token_map: {},
+    },
+    enum_policy: 'open',
+    enum: {
+      policy: 'open',
+      match: { strategy: 'exact' },
+      new_value_policy: { accept_if_evidence: true, mark_needs_curation: false },
+    },
+    priority: {
+      required_level: 'required',
+      availability: 'sometimes',
+      difficulty: 'hard',
+      effort: 5,
+    },
+    evidence: {
+      min_evidence_refs: 1,
+      tier_preference: ['tier1', 'tier2', 'tier3'],
+    },
+    ai_assist: {
+      reasoning_note: 'Return the manufacturer part number (MPN) for this specific variant — the code the manufacturer uses to identify this color/edition. Do NOT return retailer SKUs (Amazon ASIN, Best Buy SKU) — those are retailer-assigned, not the MPN. Prefer manufacturer product pages as the source. If no MPN is provable from evidence, emit unk with unknown_reason.',
+    },
+    ui: {
+      label: 'SKU',
+      group: 'general',
+      tooltip_md: 'Manufacturer Part Number (MPN) for this specific variant. Prefer the code the manufacturer assigns on their product page. Retailer SKUs (Amazon ASIN, Best Buy SKU) are NOT the MPN. If no MPN is provable, emit unk with unknown_reason.',
+    },
+    search_hints: {
+      domain_hints: [],
+      content_types: ['product_page', 'spec_sheet'],
+      query_terms: ['part number', 'mpn', 'model number', 'product code'],
+      query_templates: [
+        '{brand} {model} part number',
+        '{brand} {model} MPN',
+        '"{model}" part number',
+      ],
+    },
+  };
+}
+
 const EG_PRESET_BUILDERS: Record<string, (ctx?: EgPresetCtx) => FieldRule> = {
   colors: buildEgColorPreset,
   editions: buildEgEditionPreset,
   release_date: buildEgReleaseDatePreset,
+  sku: buildEgSkuPreset,
 };
 
 export const EG_PRESET_KEYS: readonly string[] = Object.freeze(Object.keys(EG_PRESET_BUILDERS));

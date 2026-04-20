@@ -3,7 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { SkeletonBlock } from '../../../shared/ui/feedback/SkeletonBlock.tsx';
 import { usd } from '../../../utils/formatting.ts';
 import { useFormatDateYMD } from '../../../utils/dateTime.ts';
-import { BILLING_CALL_TYPE_REGISTRY, resolveBillingCallType } from '../billingCallTypeRegistry.ts';
+import { BILLING_CALL_TYPE_REGISTRY, resolveBillingCallType } from '../billingCallTypeRegistry.generated.ts';
 import { pivotDailyByReason, chartColor } from '../billingTransforms.ts';
 import type { BillingDailyResponse } from '../billingTypes.ts';
 

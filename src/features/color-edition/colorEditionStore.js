@@ -79,7 +79,7 @@ export function rebuildColorEditionFinderFromJson({ specDb, productRoot }) {
         category: data.category,
         product_id: productId,
         run_number: run.run_number,
-        ran_at: run.ran_at || '',
+        ran_at: run.ran_at,
         model: run.model || 'unknown',
         fallback_used: Boolean(run.fallback_used),
         effort_level: run.effort_level || '',

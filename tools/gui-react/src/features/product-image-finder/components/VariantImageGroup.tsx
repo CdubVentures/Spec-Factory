@@ -9,6 +9,7 @@
 import { memo, useMemo } from 'react';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
 import {
+  AnimatedDots,
   ColorSwatch,
   DataIntegrityBanner,
 } from '../../../shared/ui/finder/index.ts';
@@ -139,7 +140,7 @@ export const VariantImageGroup = memo(function VariantImageGroup({
             className="px-2 py-1 text-[9px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed"
             title="Loop: views then heroes until carousel complete"
           >
-            Loop
+            {loopingVariant ? <>Loop <AnimatedDots /></> : 'Loop'}
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onEvalVariant(group.key); }}

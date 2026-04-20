@@ -5,8 +5,8 @@ import { DataTable } from '../../../shared/ui/data-display/DataTable.tsx';
 import { SkeletonBlock } from '../../../shared/ui/feedback/SkeletonBlock.tsx';
 import { usd, compactNumber } from '../../../utils/formatting.ts';
 import { useFormatDateTime } from '../../../utils/dateTime.ts';
-import { resolveBillingCallType } from '../billingCallTypeRegistry.ts';
-import { chartColor } from '../billingTransforms.ts';
+import { resolveBillingCallType } from '../billingCallTypeRegistry.generated.ts';
+import { chartColor, computeTokenSegments } from '../billingTransforms.ts';
 import { useBillingEntriesQuery } from '../billingQueries.ts';
 import type { BillingEntry, BillingFilterState } from '../billingTypes.ts';
 
@@ -52,29 +52,32 @@ function parseMeta(raw: string): ParsedBillingMeta {
   }
 }
 
-interface EntryFlag {
-  label: string;
-  cls: string;
-}
+type AccessKind = 'lab' | 'api';
 
-function parseFlags(entry: BillingEntry): EntryFlag[] {
-  const flags: EntryFlag[] = [];
+function deriveAccess(entry: BillingEntry): AccessKind {
   const provider = entry.provider || '';
   const host = entry.host || '';
+  if (provider.startsWith('lab-') || host.includes('localhost')) return 'lab';
+  return 'api';
+}
 
-  if (provider.startsWith('lab-') || host.includes('localhost')) {
-    flags.push({ label: 'LAB', cls: 'sf-chip-info' });
-  } else {
-    flags.push({ label: 'API', cls: 'sf-chip-neutral' });
+type StatusKind = 'ok' | 'warn' | 'err';
+
+function deriveStatus(entry: BillingEntry, meta: ParsedBillingMeta): StatusKind {
+  // WHY: ledger doesn't store a hard error flag today — use retry_without_schema
+  // as a soft warn signal; estimated_usage as stronger warn. Upgrade once we
+  // persist an explicit error column.
+  if (entry.estimated_usage) return 'warn';
+  if (meta.reasoning_mode === false && meta.effort_level === '' && entry.completion_tokens === 0 && entry.prompt_tokens > 0) {
+    return 'err'; // call went out but produced no output — likely failed
   }
+  return 'ok';
+}
 
-  const meta = parseMeta(entry.meta);
-
-  if (meta.reasoning_mode || meta.deepseek_mode_detected) {
-    flags.push({ label: 'THINK', cls: 'sf-chip-info-strong' });
-  }
-
-  return flags;
+function costBucket(cost: number): '' | 'mid' | 'high' {
+  if (cost >= 0.05) return 'high';
+  if (cost >= 0.01) return 'mid';
+  return '';
 }
 
 export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryTableProps) {
@@ -96,63 +99,26 @@ export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryT
 
   const columns: ColumnDef<BillingEntry, unknown>[] = useMemo(() => [
     {
+      id: 'status',
+      header: '',
+      size: 24,
+      cell: ({ row }) => {
+        const meta = parseMeta(row.original.meta);
+        const s = deriveStatus(row.original, meta);
+        return <span className={`sf-status-dot sf-status-dot-${s}`} aria-label={s} />;
+      },
+    },
+    {
       accessorKey: 'ts',
       header: 'Timestamp',
-      size: 170,
-      cell: ({ getValue }) => <span className="font-mono text-[11px] whitespace-nowrap">{formatDateTime(getValue() as string)}</span>,
-    },
-    {
-      accessorKey: 'provider',
-      header: 'Provider',
-      size: 80,
-      cell: ({ getValue }) => <span className="text-[11px] sf-text-muted">{getValue() as string}</span>,
-    },
-    {
-      accessorKey: 'model',
-      header: 'Model',
       size: 150,
-      cell: ({ getValue }) => <span className="font-mono text-[11px]">{getValue() as string}</span>,
+      cell: ({ getValue }) => <span className="font-mono text-[11px] whitespace-nowrap sf-text-subtle">{formatDateTime(getValue() as string)}</span>,
     },
     {
-      id: 'effort',
-      header: 'Effort',
-      size: 70,
-      cell: ({ row }) => {
-        const meta = parseMeta(row.original.meta);
-        return <span className="text-[11px] sf-text-muted">{meta.effort_level || '\u2014'}</span>;
-      },
-    },
-    {
-      id: 'web',
-      header: 'Web',
-      size: 50,
-      cell: ({ row }) => {
-        const meta = parseMeta(row.original.meta);
-        const host = row.original.host || '';
-        // WHY: backward compat — old rows without explicit meta field fall back to host heuristic
-        const webEnabled = meta.web_search_enabled ||
-          (host !== '' && !host.includes('localhost') && !host.includes('api.'));
-        return (
-          <span className={`text-[11px] ${webEnabled ? 'sf-text-accent' : 'sf-text-muted'}`}>
-            {webEnabled ? 'On' : 'Off'}
-          </span>
-        );
-      },
-    },
-    {
-      id: 'duration',
-      header: 'Duration',
-      size: 70,
-      cell: ({ row }) => {
-        const meta = parseMeta(row.original.meta);
-        return <span className="font-mono text-[11px] sf-text-muted">{formatDuration(meta.duration_ms)}</span>;
-      },
-    },
-    {
-      accessorKey: 'category',
-      header: 'Category',
-      size: 80,
-      cell: ({ getValue }) => <span className="text-[11px] capitalize">{getValue() as string}</span>,
+      accessorKey: 'product_id',
+      header: 'Product',
+      size: 170,
+      cell: ({ getValue }) => <span className="text-[11px] truncate block max-w-[170px]">{getValue() as string}</span>,
     },
     {
       accessorKey: 'reason',
@@ -172,42 +138,82 @@ export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryT
       },
     },
     {
-      accessorKey: 'product_id',
-      header: 'Product',
-      size: 160,
-      cell: ({ getValue }) => <span className="text-[11px] truncate block max-w-[160px]">{getValue() as string}</span>,
+      accessorKey: 'model',
+      header: 'Model',
+      size: 150,
+      cell: ({ row }) => {
+        const meta = parseMeta(row.original.meta);
+        const showThink = meta.reasoning_mode || meta.deepseek_mode_detected;
+        return (
+          <span className="flex items-center gap-1.5">
+            <span className="font-mono text-[11px]">{row.original.model}</span>
+            {showThink ? <span className="sf-billing-flag sf-chip-info-strong">THINK</span> : null}
+          </span>
+        );
+      },
+    },
+    {
+      id: 'access',
+      header: 'Access',
+      size: 65,
+      cell: ({ row }) => {
+        const a = deriveAccess(row.original);
+        return <span className={`sf-access-tag sf-access-tag-${a}`}>{a === 'lab' ? 'Lab' : 'API'}</span>;
+      },
     },
     {
       accessorKey: 'prompt_tokens',
-      header: 'In Tokens',
-      size: 80,
-      cell: ({ getValue }) => <span className="font-mono text-[11px] sf-text-muted">{formatTokens(getValue() as number)}</span>,
+      header: 'Prompt',
+      size: 75,
+      cell: ({ getValue }) => <span className="font-mono text-[11px] sf-tok-prompt-text">{formatTokens(getValue() as number)}</span>,
     },
     {
       accessorKey: 'completion_tokens',
-      header: 'Out Tokens',
+      header: 'Completion',
+      size: 90,
+      cell: ({ getValue }) => <span className="font-mono text-[11px] sf-tok-completion-text">{formatTokens(getValue() as number)}</span>,
+    },
+    {
+      accessorKey: 'cached_prompt_tokens',
+      header: 'Cached',
+      size: 75,
+      cell: ({ getValue }) => <span className="font-mono text-[11px] sf-tok-cached-text">{formatTokens(getValue() as number)}</span>,
+    },
+    {
+      id: 'tokmix',
+      header: 'Mix',
       size: 80,
-      cell: ({ getValue }) => <span className="font-mono text-[11px] sf-text-muted">{formatTokens(getValue() as number)}</span>,
+      cell: ({ row }) => {
+        const seg = computeTokenSegments(row.original);
+        if (seg.promptPct + seg.completionPct + seg.cachedPct === 0) {
+          return <span className="sf-text-subtle text-[11px]">—</span>;
+        }
+        return (
+          <span className="sf-tok-composition">
+            <span className="sf-tok-composition-p" style={{ width: `${seg.promptPct}%` }} />
+            <span className="sf-tok-composition-c" style={{ width: `${seg.completionPct}%` }} />
+            <span className="sf-tok-composition-ca" style={{ width: `${seg.cachedPct}%` }} />
+          </span>
+        );
+      },
+    },
+    {
+      id: 'duration',
+      header: 'Time',
+      size: 65,
+      cell: ({ row }) => {
+        const meta = parseMeta(row.original.meta);
+        return <span className="font-mono text-[11px] sf-text-muted">{formatDuration(meta.duration_ms)}</span>;
+      },
     },
     {
       accessorKey: 'cost_usd',
       header: 'Cost',
       size: 80,
-      cell: ({ getValue }) => <span className="font-mono text-[11px] font-semibold">{usd(getValue() as number, 4)}</span>,
-    },
-    {
-      id: 'flags',
-      header: 'Flags',
-      size: 100,
-      cell: ({ row }) => {
-        const flags = parseFlags(row.original);
-        return (
-          <div className="flex gap-0.5 flex-wrap">
-            {flags.map((f) => (
-              <span key={f.label} className={`sf-billing-flag ${f.cls}`}>{f.label}</span>
-            ))}
-          </div>
-        );
+      cell: ({ getValue }) => {
+        const cost = getValue() as number;
+        const bucket = costBucket(cost);
+        return <span className={`font-mono text-[11px] font-semibold sf-cost${bucket ? `-${bucket}` : ''}`}>{usd(cost, 4)}</span>;
       },
     },
   ], [formatDateTime]);

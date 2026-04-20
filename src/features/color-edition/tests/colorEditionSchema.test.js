@@ -347,6 +347,105 @@ describe('colorEditionFinderResponseSchema (per-item evidence)', () => {
   });
 });
 
+/* ── collisions[] atom-collision self-audit field ─────────────────────── */
+
+describe('colorEditionFinderResponseSchema — collisions[]', () => {
+  const blackItem = { name: 'black', evidence_refs: [] };
+
+  it('collisions defaults to empty array when omitted', () => {
+    const input = { colors: [blackItem], default_color: 'black' };
+    const result = colorEditionFinderResponseSchema.parse(input);
+    assert.deepEqual(result.collisions, []);
+  });
+
+  it('accepts valid collision entry with distinct_color_names resolution', () => {
+    const input = {
+      colors: [blackItem],
+      default_color: 'black',
+      collisions: [{
+        variants: ['color:yellow', 'edition:launch-edition'],
+        shared_atoms: ['yellow'],
+        resolution: 'distinct_color_names',
+        resolution_notes: 'Thunderbolt Yellow vs Launch Edition — different marketing labels',
+      }],
+    };
+    const result = colorEditionFinderResponseSchema.parse(input);
+    assert.equal(result.collisions.length, 1);
+    assert.equal(result.collisions[0].resolution, 'distinct_color_names');
+    assert.deepEqual(result.collisions[0].shared_atoms, ['yellow']);
+  });
+
+  it('accepts valid collision entry with distinct_evidence resolution', () => {
+    const input = {
+      colors: [blackItem],
+      default_color: 'black',
+      collisions: [{
+        variants: ['color:black', 'edition:cod-bo6-edition'],
+        shared_atoms: ['black'],
+        resolution: 'distinct_evidence',
+        resolution_notes: 'separate Corsair product URLs — COD edition has its own bundle SKU',
+      }],
+    };
+    const result = colorEditionFinderResponseSchema.parse(input);
+    assert.equal(result.collisions[0].resolution, 'distinct_evidence');
+  });
+
+  it('rejects collision with invalid resolution enum value', () => {
+    const input = {
+      colors: [blackItem],
+      default_color: 'black',
+      collisions: [{
+        variants: ['color:yellow', 'edition:launch-edition'],
+        shared_atoms: ['yellow'],
+        resolution: 'same_sku_merge',
+        resolution_notes: 'n',
+      }],
+    };
+    assert.throws(() => colorEditionFinderResponseSchema.parse(input));
+  });
+
+  it('rejects collision with fewer than 2 variants', () => {
+    const input = {
+      colors: [blackItem],
+      default_color: 'black',
+      collisions: [{
+        variants: ['color:yellow'],
+        shared_atoms: ['yellow'],
+        resolution: 'distinct_evidence',
+        resolution_notes: 'n',
+      }],
+    };
+    assert.throws(() => colorEditionFinderResponseSchema.parse(input));
+  });
+
+  it('rejects collision with empty shared_atoms', () => {
+    const input = {
+      colors: [blackItem],
+      default_color: 'black',
+      collisions: [{
+        variants: ['color:yellow', 'color:red'],
+        shared_atoms: [],
+        resolution: 'distinct_evidence',
+        resolution_notes: 'n',
+      }],
+    };
+    assert.throws(() => colorEditionFinderResponseSchema.parse(input));
+  });
+
+  it('rejects collision missing resolution_notes', () => {
+    const input = {
+      colors: [blackItem],
+      default_color: 'black',
+      collisions: [{
+        variants: ['color:yellow', 'edition:launch'],
+        shared_atoms: ['yellow'],
+        resolution: 'distinct_evidence',
+      }],
+    };
+    assert.throws(() => colorEditionFinderResponseSchema.parse(input));
+  });
+});
+
 /* ── variantIdentityCheckResponseSchema (unchanged) ────────────────────── */
 
 describe('variantIdentityCheckResponseSchema', () => {

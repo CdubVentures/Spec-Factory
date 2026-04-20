@@ -369,9 +369,10 @@ export class AppDb {
     const totals = this.db.prepare(`
       SELECT COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
              COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
-             COALESCE(SUM(completion_tokens), 0) as completion_tokens
+             COALESCE(SUM(completion_tokens), 0) as completion_tokens,
+             COALESCE(SUM(cached_prompt_tokens), 0) as cached_prompt_tokens
       FROM billing_entries WHERE month = ?${f.sql}
-    `).get(...baseParams) || { calls: 0, cost_usd: 0, prompt_tokens: 0, completion_tokens: 0 };
+    `).get(...baseParams) || { calls: 0, cost_usd: 0, prompt_tokens: 0, completion_tokens: 0, cached_prompt_tokens: 0 };
 
     const by_day = {};
     for (const row of this.db.prepare(`

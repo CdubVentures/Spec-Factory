@@ -6,6 +6,9 @@ import {
   computeDonutSlices,
   computeHorizontalBars,
   chartColor,
+  computePeriodDeltas,
+  computeFilterChipCounts,
+  computeTokenSegments,
 } from '../billingTransforms.ts';
 
 // ── pivotDailyByReason ──────────────────────────────────────────
@@ -154,5 +157,124 @@ describe('chartColor', () => {
 
   it('passes through bare hex', () => {
     strictEqual(chartColor('#ff0000'), '#ff0000');
+  });
+});
+
+// ── computePeriodDeltas ─────────────────────────────────────────
+
+function summary(totals: { cost_usd: number; calls: number; prompt_tokens: number; completion_tokens: number }) {
+  return { month: '2026-04', totals: { ...totals, cached_prompt_tokens: 0 }, models_used: 0, categories_used: 0 };
+}
+
+describe('computePeriodDeltas', () => {
+  it('returns all-flat zeros when both inputs are nullish', () => {
+    const d = computePeriodDeltas(null, null);
+    strictEqual(d.cost_usd.pct, 0);
+    strictEqual(d.cost_usd.direction, 'flat');
+    strictEqual(d.calls.direction, 'flat');
+    strictEqual(d.prompt_tokens.direction, 'flat');
+    strictEqual(d.completion_tokens.direction, 'flat');
+  });
+
+  it('up direction when current exceeds prior', () => {
+    const current = summary({ cost_usd: 100, calls: 100, prompt_tokens: 1000, completion_tokens: 500 });
+    const prior   = summary({ cost_usd: 80,  calls: 80,  prompt_tokens: 900,  completion_tokens: 400 });
+    const d = computePeriodDeltas(current, prior);
+    strictEqual(d.cost_usd.direction, 'up');
+    ok(d.cost_usd.pct > 24 && d.cost_usd.pct < 26, `cost delta ~25% got ${d.cost_usd.pct}`);
+  });
+
+  it('down direction when current is lower', () => {
+    const current = summary({ cost_usd: 50, calls: 50, prompt_tokens: 100, completion_tokens: 100 });
+    const prior   = summary({ cost_usd: 100, calls: 100, prompt_tokens: 200, completion_tokens: 200 });
+    const d = computePeriodDeltas(current, prior);
+    strictEqual(d.cost_usd.direction, 'down');
+    ok(d.cost_usd.pct < -49 && d.cost_usd.pct > -51, `cost delta ~-50% got ${d.cost_usd.pct}`);
+  });
+
+  it('flat direction when delta is below 0.5%', () => {
+    const current = summary({ cost_usd: 100.2, calls: 100, prompt_tokens: 100, completion_tokens: 100 });
+    const prior   = summary({ cost_usd: 100,   calls: 100, prompt_tokens: 100, completion_tokens: 100 });
+    const d = computePeriodDeltas(current, prior);
+    strictEqual(d.cost_usd.direction, 'flat');
+    strictEqual(d.cost_usd.pct, 0);
+  });
+
+  it('zero-prior with positive current surfaces as 100% up', () => {
+    const current = summary({ cost_usd: 50, calls: 10, prompt_tokens: 1000, completion_tokens: 200 });
+    const prior   = summary({ cost_usd: 0,  calls: 0,  prompt_tokens: 0,    completion_tokens: 0 });
+    const d = computePeriodDeltas(current, prior);
+    strictEqual(d.cost_usd.direction, 'up');
+    strictEqual(d.cost_usd.pct, 100);
+  });
+
+  it('zero-prior with zero current is flat', () => {
+    const d = computePeriodDeltas(summary({ cost_usd: 0, calls: 0, prompt_tokens: 0, completion_tokens: 0 }), summary({ cost_usd: 0, calls: 0, prompt_tokens: 0, completion_tokens: 0 }));
+    strictEqual(d.cost_usd.direction, 'flat');
+  });
+});
+
+// ── computeFilterChipCounts ─────────────────────────────────────
+
+describe('computeFilterChipCounts', () => {
+  it('builds maps keyed by grouped item key', () => {
+    const counts = computeFilterChipCounts(
+      { month: '2026-04', models: [
+        { key: 'gpt-5', cost_usd: 10, calls: 400, prompt_tokens: 0, completion_tokens: 0 },
+        { key: 'grok', cost_usd: 1, calls: 50, prompt_tokens: 0, completion_tokens: 0 },
+      ] },
+      { month: '2026-04', reasons: [
+        { key: 'writer_formatting', cost_usd: 14, calls: 214, prompt_tokens: 0, completion_tokens: 0 },
+      ] },
+      { month: '2026-04', categories: [
+        { key: 'mouse', cost_usd: 22, calls: 624, prompt_tokens: 0, completion_tokens: 0 },
+      ] },
+    );
+    strictEqual(counts.model['gpt-5'], 400);
+    strictEqual(counts.model['grok'], 50);
+    strictEqual(counts.reason['writer_formatting'], 214);
+    strictEqual(counts.category['mouse'], 624);
+  });
+
+  it('returns empty maps when all inputs are nullish', () => {
+    const counts = computeFilterChipCounts(undefined, undefined, undefined);
+    deepStrictEqual(counts, { model: {}, reason: {}, category: {} });
+  });
+});
+
+// ── computeTokenSegments ────────────────────────────────────────
+
+describe('computeTokenSegments', () => {
+  it('returns all-zero when total is 0', () => {
+    const s = computeTokenSegments({ prompt_tokens: 0, completion_tokens: 0, cached_prompt_tokens: 0 });
+    deepStrictEqual(s, { promptPct: 0, completionPct: 0, cachedPct: 0 });
+  });
+
+  it('all-prompt no-cache splits ~100% prompt / 0% completion / 0% cached', () => {
+    const s = computeTokenSegments({ prompt_tokens: 1000, completion_tokens: 0, cached_prompt_tokens: 0 });
+    strictEqual(s.promptPct, 100);
+    strictEqual(s.completionPct, 0);
+    strictEqual(s.cachedPct, 0);
+  });
+
+  it('when cached === prompt, billable-prompt is 0; cached takes prompt share', () => {
+    const s = computeTokenSegments({ prompt_tokens: 1000, completion_tokens: 0, cached_prompt_tokens: 1000 });
+    strictEqual(s.promptPct, 0);
+    strictEqual(s.cachedPct, 100);
+  });
+
+  it('percentages sum to ~100 for a realistic mix', () => {
+    const s = computeTokenSegments({ prompt_tokens: 14220, completion_tokens: 2481, cached_prompt_tokens: 9820 });
+    const total = s.promptPct + s.completionPct + s.cachedPct;
+    ok(Math.abs(total - 100) < 0.01, `segments sum ${total} !~ 100`);
+    // Billable prompt = 4400, completion = 2481, cached = 9820 → total 16701
+    ok(s.cachedPct > s.promptPct, 'cached should dominate in this fixture');
+  });
+
+  it('defaults cached to 0 when undefined (current ledger state)', () => {
+    const s = computeTokenSegments({ prompt_tokens: 500, completion_tokens: 100 });
+    strictEqual(s.cachedPct, 0);
+    ok(s.promptPct > 80, `prompt should dominate: ${s.promptPct}`);
+    ok(s.completionPct > 0 && s.completionPct < 20);
   });
 });

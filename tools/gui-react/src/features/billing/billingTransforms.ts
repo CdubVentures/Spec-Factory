@@ -1,5 +1,18 @@
-import { resolveBillingCallType, BILLING_CALL_TYPE_REGISTRY } from './billingCallTypeRegistry.ts';
-import type { BillingGroupedItem, PivotedDailyRow, DonutSlice, HorizontalBarItem } from './billingTypes.ts';
+import { resolveBillingCallType, BILLING_CALL_TYPE_REGISTRY } from './billingCallTypeRegistry.generated.ts';
+import type {
+  BillingGroupedItem,
+  PivotedDailyRow,
+  DonutSlice,
+  HorizontalBarItem,
+  BillingSummaryResponse,
+  BillingByModelResponse,
+  BillingByReasonResponse,
+  BillingByCategoryResponse,
+  BillingTrendDelta,
+  BillingPeriodDeltas,
+  FilterChipCounts,
+  TokenSegments,
+} from './billingTypes.ts';
 
 /**
  * Pivot flat `[{day, reason, cost_usd}]` into `[{day, reason1: cost, reason2: cost, ...}]`
@@ -79,4 +92,80 @@ export function computeHorizontalBars(items: ReadonlyArray<BillingGroupedItem>):
 export function chartColor(varStr: string): string {
   const match = varStr.match(/#[0-9a-fA-F]{6}/);
   return match ? match[0] : varStr;
+}
+
+// WHY: "flat" threshold matches conventional dashboards — tiny wobble <0.5% isn't
+// a meaningful signal and should read as stable.
+const DELTA_FLAT_THRESHOLD_PCT = 0.5;
+
+function deltaFrom(current: number, prior: number): BillingTrendDelta {
+  if (!Number.isFinite(current) || !Number.isFinite(prior)) {
+    return { pct: 0, direction: 'flat' };
+  }
+  if (prior === 0) {
+    if (current === 0) return { pct: 0, direction: 'flat' };
+    return { pct: 100, direction: 'up' };
+  }
+  const pct = ((current - prior) / prior) * 100;
+  if (Math.abs(pct) < DELTA_FLAT_THRESHOLD_PCT) return { pct: 0, direction: 'flat' };
+  return { pct, direction: pct > 0 ? 'up' : 'down' };
+}
+
+/** Build period-over-period deltas for hero-band trend badges. */
+export function computePeriodDeltas(
+  current: BillingSummaryResponse | null | undefined,
+  prior: BillingSummaryResponse | null | undefined,
+): BillingPeriodDeltas {
+  const c = current?.totals ?? { cost_usd: 0, calls: 0, prompt_tokens: 0, completion_tokens: 0 };
+  const p = prior?.totals ?? { cost_usd: 0, calls: 0, prompt_tokens: 0, completion_tokens: 0 };
+  return {
+    cost_usd: deltaFrom(c.cost_usd, p.cost_usd),
+    calls: deltaFrom(c.calls, p.calls),
+    prompt_tokens: deltaFrom(c.prompt_tokens, p.prompt_tokens),
+    completion_tokens: deltaFrom(c.completion_tokens, p.completion_tokens),
+  };
+}
+
+/** Derive per-chip call counts for the filter bar from already-fetched
+ *  unfiltered aggregations — no new API call required. */
+export function computeFilterChipCounts(
+  byModel: BillingByModelResponse | null | undefined,
+  byReason: BillingByReasonResponse | null | undefined,
+  byCategory: BillingByCategoryResponse | null | undefined,
+): FilterChipCounts {
+  const toMap = (items: ReadonlyArray<BillingGroupedItem> | undefined): Record<string, number> => {
+    const out: Record<string, number> = {};
+    for (const item of items ?? []) out[item.key] = item.calls;
+    return out;
+  };
+  return {
+    model: toMap(byModel?.models),
+    reason: toMap(byReason?.reasons),
+    category: toMap(byCategory?.categories),
+  };
+}
+
+/** Split a grouped item's token volume into prompt / completion / cached
+ *  percentages. `cached_prompt_tokens` is 0 in the current ledger — forward
+ *  compatible: once provider extraction lands, the cached slice appears
+ *  automatically. */
+export function computeTokenSegments(item: {
+  prompt_tokens: number;
+  completion_tokens: number;
+  cached_prompt_tokens?: number;
+}): TokenSegments {
+  const prompt = Math.max(0, item.prompt_tokens || 0);
+  const completion = Math.max(0, item.completion_tokens || 0);
+  const cached = Math.max(0, item.cached_prompt_tokens || 0);
+  // WHY: ledger convention — cached is a subset of prompt. Billable-prompt = prompt - cached.
+  const billablePrompt = Math.max(0, prompt - cached);
+  const total = billablePrompt + completion + cached;
+  if (total === 0) {
+    return { promptPct: 0, completionPct: 0, cachedPct: 0 };
+  }
+  return {
+    promptPct: (billablePrompt / total) * 100,
+    completionPct: (completion / total) * 100,
+    cachedPct: (cached / total) * 100,
+  };
 }

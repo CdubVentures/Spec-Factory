@@ -27,12 +27,25 @@ const editionItemSchema = z.object({
   evidence_refs: evidenceRefsSchema,
 });
 
+// WHY: The atom palette is closed, so two legitimately distinct SKUs can share
+// atoms (e.g. Thunderbolt Yellow and Launch Edition both map to "yellow"). When
+// the LLM emits a coexisting pair, it must justify in collisions[] — either the
+// color_names marketing labels differ, or the evidence URLs are non-overlapping.
+// Downstream flags any atom-sharing pair that isn't documented here.
+const atomCollisionSchema = z.object({
+  variants: z.array(z.string()).min(2),
+  shared_atoms: z.array(z.string()).min(1),
+  resolution: z.enum(['distinct_color_names', 'distinct_evidence']),
+  resolution_notes: z.string(),
+});
+
 export const colorEditionFinderResponseSchema = z.object({
   colors: z.array(colorItemSchema),
   color_names: z.record(z.string(), z.string()).default({}),
   editions: z.record(z.string(), editionItemSchema).default({}),
   default_color: z.string().default(''),
   siblings_excluded: z.array(z.string()).default([]),
+  collisions: z.array(atomCollisionSchema).default([]),
   discovery_log: z.object({
     confirmed_from_known: z.array(z.string()).default([]),
     added_new: z.array(z.string()).default([]),

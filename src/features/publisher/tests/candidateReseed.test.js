@@ -278,6 +278,98 @@ describe('rebuildFieldCandidatesFromJson', () => {
     assert.equal(b.confidence, 70);
   });
 
+  // WHY: Evidence-upgrade columns (evidence_kind + supporting_evidence) must
+  // also rebuild from JSON — the Rebuild Contract says DB is derived state.
+  // New-shape evidence_refs in product.json carry these fields; old-shape
+  // refs don't, and those columns must be NULL on reseed.
+  it('rebuild projects evidence_kind + supporting_evidence when present in JSON', () => {
+    writeProduct('mouse-ev-kind', {
+      category: 'mouse', product_id: 'mouse-ev-kind',
+      candidates: {
+        release_date: [
+          {
+            value: '2024-04-19',
+            source_id: 'rdf-mouse-ev-kind-1',
+            source_type: 'release_date_finder',
+            confidence: 93,
+            model: 'gpt-5',
+            variant_id: 'v_white',
+            validation: { valid: true, repairs: [], rejections: [] },
+            metadata: {
+              evidence_refs: [
+                {
+                  url: 'https://corsair.com/explorer/m75',
+                  tier: 'tier1',
+                  confidence: 93,
+                  evidence_kind: 'direct_quote',
+                  supporting_evidence: 'As of 04/19/2024, You can now get the M75 AIR in your choice of Black, Grey, or White!',
+                },
+                {
+                  url: 'https://corsair.com/p/white-sku',
+                  tier: 'tier1',
+                  confidence: 60,
+                  evidence_kind: 'identity_only',
+                  supporting_evidence: '',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+
+    rebuildFieldCandidatesFromJson({ specDb, productRoot: PRODUCT_ROOT });
+
+    const row = specDb.getFieldCandidateBySourceId('mouse-ev-kind', 'release_date', 'rdf-mouse-ev-kind-1');
+    assert.ok(row?.id);
+    const rows = specDb.listFieldCandidateEvidenceByCandidateId(row.id);
+    assert.equal(rows.length, 2);
+    const byUrl = new Map(rows.map(r => [r.url, r]));
+    const direct = byUrl.get('https://corsair.com/explorer/m75');
+    const ident = byUrl.get('https://corsair.com/p/white-sku');
+    assert.equal(direct.evidence_kind, 'direct_quote');
+    assert.ok(direct.supporting_evidence.startsWith('As of 04/19/2024'));
+    assert.equal(ident.evidence_kind, 'identity_only');
+    assert.equal(ident.supporting_evidence, '');
+
+    // Substantive count skips the identity_only ref.
+    assert.equal(specDb.countFieldCandidateSubstantiveEvidenceByCandidateId(row.id), 1);
+  });
+
+  it('rebuild writes NULL evidence_kind + supporting_evidence for legacy JSON refs', () => {
+    writeProduct('mouse-ev-legacy', {
+      category: 'mouse', product_id: 'mouse-ev-legacy',
+      candidates: {
+        release_date: [
+          {
+            value: '2023-01-01',
+            source_id: 'rdf-mouse-ev-legacy-1',
+            source_type: 'release_date_finder',
+            confidence: 80,
+            model: 'gpt-5',
+            variant_id: 'v_legacy',
+            validation: { valid: true, repairs: [], rejections: [] },
+            metadata: {
+              evidence_refs: [
+                { url: 'https://legacy.example.com', tier: 'tier1', confidence: 85 }, // no kind/quote
+              ],
+            },
+          },
+        ],
+      },
+    });
+
+    rebuildFieldCandidatesFromJson({ specDb, productRoot: PRODUCT_ROOT });
+
+    const row = specDb.getFieldCandidateBySourceId('mouse-ev-legacy', 'release_date', 'rdf-mouse-ev-legacy-1');
+    const rows = specDb.listFieldCandidateEvidenceByCandidateId(row.id);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].evidence_kind, null);
+    assert.equal(rows[0].supporting_evidence, null);
+    // Legacy NULL still counts as substantive.
+    assert.equal(specDb.countFieldCandidateSubstantiveEvidenceByCandidateId(row.id), 1);
+  });
+
   it('rebuild skips evidence projection when metadata.evidence_refs is missing or empty', () => {
     writeProduct('mouse-ev-empty', {
       category: 'mouse', product_id: 'mouse-ev-empty',
@@ -300,6 +392,118 @@ describe('rebuildFieldCandidatesFromJson', () => {
     const row = specDb.getFieldCandidateBySourceId('mouse-ev-empty', 'release_date', 'rdf-mouse-ev-empty-1');
     assert.ok(row?.id);
     assert.equal(specDb.listFieldCandidateEvidenceByCandidateId(row.id).length, 0);
+  });
+
+  // ── submittedAt preservation across reseed ────────────────────────
+  // WHY: Publisher ORDER BY submitted_at DESC is meaningless if every reseeded
+  // row shares the same datetime('now'). The new-format JSON entry carries
+  // submitted_at; reseed must preserve it end-to-end.
+
+  it('preserves submitted_at from new-format JSON entry', () => {
+    const ts = '2026-04-20T04:41:12.355Z';
+    writeProduct('mouse-ts-rt', {
+      category: 'mouse', product_id: 'mouse-ts-rt',
+      candidates: {
+        colors: [
+          {
+            value: ['yellow+black'],
+            source_id: 'cef-mouse-ts-rt-1',
+            source_type: 'cef',
+            confidence: 95,
+            model: 'gpt-5.4',
+            submitted_at: ts,
+            variant_id: 'v_edition',
+            validation: { valid: true, repairs: [], rejections: [] },
+            metadata: { variant_key: 'edition:launch-edition' },
+          },
+        ],
+      },
+    });
+
+    rebuildFieldCandidatesFromJson({ specDb, productRoot: PRODUCT_ROOT });
+
+    const row = specDb.getFieldCandidateBySourceId('mouse-ts-rt', 'colors', 'cef-mouse-ts-rt-1');
+    assert.ok(row, 'row inserted');
+    assert.equal(row.submitted_at, ts, 'submitted_at preserved from JSON');
+  });
+
+  it('reseed without submitted_at uses SQL default and does not throw', () => {
+    writeProduct('mouse-ts-legacy', {
+      category: 'mouse', product_id: 'mouse-ts-legacy',
+      candidates: {
+        colors: [
+          {
+            value: ['black'],
+            source_id: 'cef-mouse-ts-legacy-1',
+            source_type: 'cef',
+            confidence: 90,
+            model: 'gpt-5',
+            variant_id: 'v_black',
+            validation: { valid: true, repairs: [], rejections: [] },
+          },
+        ],
+      },
+    });
+
+    rebuildFieldCandidatesFromJson({ specDb, productRoot: PRODUCT_ROOT });
+
+    const row = specDb.getFieldCandidateBySourceId('mouse-ts-legacy', 'colors', 'cef-mouse-ts-legacy-1');
+    assert.ok(row);
+    assert.ok(row.submitted_at, 'SQL default applied when JSON has no submitted_at');
+  });
+
+  // ── Evidence re-projection heals stale SQL state ───────────────────
+  // WHY: If SQL has a candidate row whose evidence table is empty or partial
+  // (e.g. a prior reseed inserted the row from a JSON state that lacked
+  // evidence_refs, and later the JSON was updated with evidence), a subsequent
+  // reseed must heal the projection — NOT silently skip because the row
+  // already exists. This is Root cause C in the fix plan.
+
+  it('reseed heals stale field_candidate_evidence when candidate row exists with empty evidence', () => {
+    // Seed an existing candidate row with ZERO evidence rows
+    specDb.insertFieldCandidate({
+      productId: 'mouse-ev-heal', fieldKey: 'colors',
+      sourceId: 'cef-mouse-ev-heal-1', sourceType: 'cef',
+      value: '["black"]', confidence: 90, model: 'gpt-5',
+      validationJson: {}, metadataJson: {},
+      variantId: 'v_heal',
+    });
+    const preRow = specDb.getFieldCandidateBySourceId('mouse-ev-heal', 'colors', 'cef-mouse-ev-heal-1');
+    assert.ok(preRow?.id);
+    assert.equal(specDb.listFieldCandidateEvidenceByCandidateId(preRow.id).length, 0);
+
+    // JSON NOW has evidence_refs — reseed should project them even though
+    // the candidate row already exists.
+    writeProduct('mouse-ev-heal', {
+      category: 'mouse', product_id: 'mouse-ev-heal',
+      candidates: {
+        colors: [
+          {
+            value: ['black'],
+            source_id: 'cef-mouse-ev-heal-1',
+            source_type: 'cef',
+            confidence: 90,
+            model: 'gpt-5',
+            variant_id: 'v_heal',
+            validation: { valid: true, repairs: [], rejections: [] },
+            metadata: {
+              evidence_refs: [
+                { url: 'https://example.com/heal-a', tier: 'tier1', confidence: 95 },
+                { url: 'https://example.com/heal-b', tier: 'tier1', confidence: 90 },
+                { url: 'https://example.com/heal-c', tier: 'tier3', confidence: 85 },
+              ],
+            },
+          },
+        ],
+      },
+    });
+
+    rebuildFieldCandidatesFromJson({ specDb, productRoot: PRODUCT_ROOT });
+
+    const postRow = specDb.getFieldCandidateBySourceId('mouse-ev-heal', 'colors', 'cef-mouse-ev-heal-1');
+    assert.ok(postRow?.id);
+    const evidence = specDb.listFieldCandidateEvidenceByCandidateId(postRow.id);
+    assert.equal(evidence.length, 3, 'evidence re-projected from JSON despite row already existing');
   });
 
   it('old-format: single source with run_number (no run_id) gets deterministic source_id', () => {

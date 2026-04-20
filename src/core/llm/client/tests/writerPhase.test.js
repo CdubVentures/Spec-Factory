@@ -230,9 +230,13 @@ describe('global writer — billing attribution', () => {
       const [research, writer] = onUsageCalls;
       assert.equal(research.phase ?? null, null,
         'research call uses source-phase semantics (no explicit writer phase bucket)');
+      assert.equal(research.reason, 'color_finder',
+        'research call preserves source-phase reason for billing');
       assert.equal(writer.phase, 'writer', 'writer call must bill under phase=writer');
       assert.equal(writer.source_phase, 'colorFinder', 'source_phase breadcrumb preserved');
       assert.equal(writer.writer_phase, true);
+      assert.equal(writer.reason, 'writer_formatting',
+        'writer Phase-2 must emit its own billing reason, not inherit source-phase reason');
     } finally { global.fetch = original; }
   });
 });

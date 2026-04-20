@@ -38,7 +38,8 @@ Before any action (analysis, file edits, commands, plans, or commit steps), **st
 
 Additional rules:
 - Exactly **one** STATE line per response.
-- No file edits / commands / commit steps without declaring STATE first.
+- STATE must be immediately followed by a `[CLASS: ...]` line (see Mandatory CHANGE-CLASS declaration). The pair is non-optional — a STATE without a CLASS is an invalid response.
+- No file edits / commands / commit steps without BOTH STATE and CLASS declared first.
 - If the correct state is unclear, default to `[STATE: CONTRACT]` and clarify the next step.
 
 State meanings:
@@ -50,11 +51,47 @@ State meanings:
 
 ---
 
+## Mandatory CHANGE-CLASS declaration (before any action)
+
+Alongside `[STATE: ...]`, every response that proposes code changes MUST declare exactly one change class on the line immediately below STATE. This sets the test budget BEFORE work begins and prevents both under- and over-testing.
+
+- `[CLASS: BEHAVIORAL]` — new/changed domain logic, state transitions, parsers, contracts, error handling, a11y semantics, persisted settings, cross-theme invariants. **Full TDD required** per Contract-first Macro-TDD.
+- `[CLASS: STRUCTURAL]` — refactor, extract, move, rename. **No new tests required**, existing suite MUST stay green. If coverage is missing on the thing being moved, switch to `[CLASS: CHARACTERIZATION]` first.
+- `[CLASS: COSMETIC]` — CSS tokens, spacing, color, typography, copy edits, markup reshuffles preserving a11y, theme remaps with no behavior change. **No unit tests required.** Proof = light-theme checkpoint + smoke run.
+- `[CLASS: CONFIG]` — env vars, knobs, `.env.example` changes, dependency bumps with no behavioral branching. **No unit tests required.** Proof = boot + smoke.
+- `[CLASS: RETIREMENT]` — removing a setting, flag, field, or helper. Follows the existing Retirement / knob-removal testing rule. No repo-wide string-search tests.
+- `[CLASS: SPIKE]` — exploratory, thrown-away work in `.tmp/`. No tests, no merge. Must end with either deletion or a follow-up `[CLASS: BEHAVIORAL]` redo.
+
+**Rules:**
+- Exactly ONE CLASS line per response, directly below the STATE line.
+- If a change spans multiple classes, split it into separate responses/commits. One class per change.
+- If unsure, default to `[CLASS: BEHAVIORAL]`.
+- **Automatic upgrade clause:** COSMETIC, CONFIG, or RETIREMENT changes that introduce ANY new conditional, computed value, or branching are automatically BEHAVIORAL. No exceptions.
+- No file edits / commands / commit steps without declaring CLASS first.
+
+---
+### Test budget heuristic (adaptive decision)
+
+Before writing ANY test, walk this checklist in order. Stop at the first match.
+
+1. Does this change alter **observable behavior through a public API**? If no → no new test.
+2. Is this a **previously broken behavior** being fixed? If yes → regression test is mandatory.
+3. Does this change add or modify a **conditional, computed value, or state transition**? If no → no new test.
+4. Would a failure here be **caught by an existing test or smoke E2E**? If yes → no new test; note the covering test in the commit.
+5. Is this a **boundary contract** (cross-feature, cross-trust, cross-process)? If yes → full exhaustive matrix per Contract-first Macro-TDD.
+6. Otherwise → write the minimum test set that would catch a realistic regression. One happy path + the specific edge the change introduces. Not a full matrix.
+
+**Exhaustive matrices are required only at boundary contracts, not at every internal function.**
+
+Default bias: when two reasonable test sets exist, write the smaller one. Over-testing is a failure mode that slows the repo and couples tests to implementation.
+
+---
+
 ## Core development philosophy
 
 ### TDD is non‑negotiable
 
-Every single line of production code must be written in response to a failing test.
+Every line of production code that implements behavior (per [CLASS: BEHAVIORAL]) must be written in response to a failing test. Structural, cosmetic, config, and retirement changes follow the Test budget heuristic and do not require new tests by default.
 
 **RED → GREEN → REFACTOR**
 - **RED**: Write failing tests first. Zero production code without a failing test.

@@ -452,6 +452,66 @@ describe('runColorEditionFinder', () => {
     assert.equal(runs[0].fallback_used, true, 'SQL fallback_used should be true');
   });
 
+  // ── Run 1 identity gate ────────────────────────────────────────
+
+  it('Run 1: identity check fires even without existing registry', async () => {
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+      { name: 'yellow', hex: '#eab308', css_var: '--color-yellow' },
+    ]);
+    const identityCalls = { count: 0 };
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: 'mouse-run1-gate-fires' },
+      appDb, specDb, config: {}, logger: null, productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black', 'yellow'],
+        editions: { 'launch-edition': { colors: ['yellow'] } },
+        default_color: 'black',
+      }),
+      _callIdentityCheckOverride: async () => {
+        identityCalls.count++;
+        return { result: { mappings: [
+          { new_key: 'color:black', match: null, action: 'new', reason: 'ok', verified: true },
+          { new_key: 'color:yellow', match: null, action: 'new', reason: 'ok', verified: true },
+          { new_key: 'edition:launch-edition', match: null, action: 'new', reason: 'ok', verified: true },
+        ], remove: [] } };
+      },
+    });
+    assert.equal(identityCalls.count, 1, 'identity check must fire on Run 1 (no existing registry)');
+  });
+
+  it('Run 1: identity check reject action filters variant from final registry', async () => {
+    const pid = 'mouse-run1-reject';
+    const appDb = makeAppDbStub([
+      { name: 'black', hex: '#000000', css_var: '--color-black' },
+      { name: 'yellow', hex: '#eab308', css_var: '--color-yellow' },
+    ]);
+    await runColorEditionFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb, specDb, config: {}, logger: null, productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmStub({
+        colors: ['black', 'yellow'],
+        editions: { 'launch-edition': { colors: ['yellow'] } },
+        default_color: 'black',
+      }),
+      _callIdentityCheckOverride: async () => ({
+        result: {
+          mappings: [
+            { new_key: 'color:black', match: null, action: 'new', reason: 'ok', verified: true },
+            { new_key: 'color:yellow', match: null, action: 'reject', reason: 'dual-naming: same as launch edition', verified: true },
+            { new_key: 'edition:launch-edition', match: null, action: 'new', reason: 'ok', verified: true },
+          ],
+          remove: [],
+        },
+      }),
+    });
+    const json = readColorEdition({ productId: pid, productRoot: PRODUCT_ROOT });
+    const keys = json.variant_registry.map(v => v.variant_key);
+    assert.ok(!keys.includes('color:yellow'), 'color:yellow must be filtered out by reject mapping');
+    assert.ok(keys.includes('color:black'), 'color:black must remain');
+    assert.ok(keys.includes('edition:launch-edition'), 'launch edition must remain');
+  });
+
   it('Gate 1: unknown color atom rejects entire run before identity check', async () => {
     const pid = 'mouse-gate1';
     const appDb = makeAppDbStub([

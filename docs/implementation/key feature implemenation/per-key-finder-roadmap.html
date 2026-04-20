@@ -768,24 +768,61 @@ z.<span class="p">object</span>({
 
 <div class="phase-card">
   <div class="phase-header">
-    <div class="phase-title"><span class="phase-num">1</span> Axis simplification + migration</div>
-    <div><span class="tag tag-muted">~2-3 days</span></div>
+    <div class="phase-title"><span class="phase-num">1</span> Axis simplification + migration (full-repo scope)</div>
+    <div><span class="tag tag-muted">~4-6 days</span></div>
   </div>
   <div class="phase-body">
-    <p>Collapse the Field Studio vocab and remove the <code>effort</code> field. One-time data migration across all categories.</p>
+    <p>Collapse the Field Studio vocab, remove <code>effort</code>, and reconcile GUI vocabulary divergence. Full-repo scope after exhaustive audit (<a href="#appendix">§10.4</a>).</p>
+
+    <p><strong>Value migration (one-time data pass across all categories):</strong></p>
     <ul>
       <li><code>required_level</code>: identity/critical/required → <code>mandatory</code>; expected/optional → <code>non_mandatory</code></li>
       <li><code>availability</code>: always/expected → <code>always</code>; rare/editorial_only → <code>rare</code></li>
-      <li><code>difficulty</code>: unchanged, but open <code>very_hard</code> as a valid value</li>
-      <li>Remove <code>effort</code> as a stored field; keep only the derived accessor</li>
-      <li>Update <code>ruleAccessors.js</code>, <code>discoveryRankConstants.js</code>, <code>needsetEngine</code> scoring, <code>compileFieldRuleBuilder.js</code>, <code>compileAssembler.js</code></li>
-      <li>Migrate <code>category_authority/*/rules*</code> in-place; update <code>_generated/field_rules.json</code></li>
-      <li>Field Studio GUI enum dropdowns updated to new vocab</li>
+      <li><code>difficulty</code>: unchanged, but open <code>very_hard</code> as a new valid value (manual tag)</li>
+      <li>Remove <code>effort</code> everywhere (see subtractive list below)</li>
+      <li>Delete vestigial GUI-only values (<code>editorial</code>, <code>commerce</code>, <code>instrumented</code>) — no field data uses them</li>
     </ul>
+
+    <p><strong>Code to update (must migrate, 16 files):</strong></p>
+    <ul>
+      <li>Backend scoring + buckets: <code>needsetEngine.js:63,626</code>, <code>searchPlanningContext.js:39-41,425-426</code>, <code>discoveryRankConstants.js</code>, <code>automationQueueHelpers.js:9-16</code> (5-value score map recalibrate)</li>
+      <li>Schema derivation: <code>categories/loader.js:305-320</code>, <code>compileAssembler.js:139-176</code>, <code>build/generate-types.js:101-107</code></li>
+      <li>Review/UI helpers: <code>reviewGridHelpers.js:122-129</code></li>
+      <li>GUI vocabulary: <code>tools/gui-react/src/registries/fieldRuleTaxonomy.ts:18-105</code> (7-value + 4-value registries), <code>utils/studioConstants.ts:81-84</code> (tooltips), <code>features/studio/components/EditableDataList.tsx:296-318</code>, <code>EditableComponentSource.tsx:426-448</code>, <code>features/studio/state/studioPriority.ts:14-149</code></li>
+      <li>Studio contracts: <code>src/features/studio/contracts/studioSchemas.js:11-16</code>, <code>contracts/egPresets.js:87,136,185</code></li>
+    </ul>
+
+    <p><strong>Code to delete (subtractive — no graveyards, per CLAUDE.md):</strong></p>
+    <ul>
+      <li><code>ruleEffortAccessor</code> in <code>src/engine/ruleAccessors.js:21-32</code> + all derivation (easy→2/medium→5/hard→8)</li>
+      <li><code>getFieldsForRound</code> in <code>src/engine/fieldRulesEngine.js:190-205</code> <span class="tag tag-red">dead code — no callers</span></li>
+      <li>Effort validation: <code>compileValidation.js:117,192-194</code></li>
+      <li>Effort normalization: <code>compileFieldRuleBuilder.js:431,525-527,699</code>, <code>compileFieldInference.js:195-197</code> (alternate easy→3/medium→6/hard→8 formula), <code>compileUtils.js:116,124,129</code> (default effort=3), <code>categoryCompile.js:230,232,468</code>, <code>compilerArtifactBuilders.js:277-296</code>, <code>field-rules/compiler.js:105,115,121</code>, <code>compilerCategoryInit.js:81,94,129,142</code></li>
+      <li>GUI effort chip: <code>fieldRuleTaxonomy.ts:95-105</code> (<code>tagCls</code> effort case)</li>
+      <li>Zod effort field: <code>studioSchemas.js:11-16</code> <code>PriorityProfileSchema.effort</code></li>
+    </ul>
+
+    <div class="callout callout-warn">
+      <strong>DO NOT delete</strong> <code>effort_level</code> in finder SQL/JSON stores or <code>effortFromModelName.js</code>. Those describe <em>LLM reasoning effort</em> (minimal/low/medium/high/xhigh) — a separate concept unrelated to field-rule effort.
+    </div>
+
+    <p><strong>Tests to update:</strong></p>
+    <ul>
+      <li>Characterization: <code>discoveryRankConstantsCharacterization.test.js:76-85</code> (bucket mapping), <code>needSetStageWrapper.test.js</code> (critical/required fixtures), <code>searchPlanEmissionProof.test.js</code> (bucket counts + sort), <code>searchProfileStageCharacterization.test.js</code></li>
+      <li>Fixture updates: <code>sourceRegistryLoader.test.js</code>, <code>categoryGeneratedLoader.test.js</code>, <code>mouse.compile.field-overrides.test.js</code>, <code>listFieldsAndFieldReport.test.js</code>, <code>fieldRulesEngine.policy.test.js</code> (delete dead round tests)</li>
+    </ul>
+
+    <p><strong>Data migration:</strong></p>
+    <ul>
+      <li><code>category_authority/*/rules*</code> — in-place token rewrite</li>
+      <li><code>category_authority/*/_generated/field_rules.json</code> — regenerate via compiler after code updates</li>
+      <li><code>category_authority/*/_control_plane/field_studio_map.json</code> — scan for effort references; strip</li>
+    </ul>
+
     <div class="phase-grid">
       <div><dt>Blockers</dt><dd>Phase 0 green</dd></div>
-      <div><dt>Exit criterion</dt><dd>All categories migrated + full suite green + UI enum lists match</dd></div>
-      <div><dt>Risk</dt><dd>Medium — touches scoring code; characterization tests from Phase 0 protect behavior</dd></div>
+      <div><dt>Exit criterion</dt><dd>All 16 code sites migrated, all effort references gone from backend, GUI dropdowns match backend vocab (2/3/4), full suite green, migrated <code>field_rules.json</code> validate</dd></div>
+      <div><dt>Risk</dt><dd>Medium — broader than initially estimated; characterization tests from Phase 0 gate behavior parity; the GUI taxonomy reconciliation is the largest surprise but reduces future drift</dd></div>
     </div>
   </div>
 </div>
@@ -974,6 +1011,40 @@ z.<span class="p">object</span>({
 
 <!-- ────────────────────────── 10. APPENDIX ────────────────────────── -->
 <h2 id="appendix" class="section-title anchor-target"><span class="num">10</span> Appendix</h2>
+
+<h3 class="subsection-title">10.4 &nbsp; Exhaustive axis-usage audit (basis for Phase 1)</h3>
+<div class="card">
+  <div class="card-body">
+    <p>Full-repo sweep across indexing pipeline, engine, ingest, categories, field-rules, features, shared, core, build, and GUI. Records every file that reads <code>required_level</code> / <code>availability</code> / <code>difficulty</code> / <code>effort</code> or their accessors. <strong>Verified findings:</strong></p>
+    <table>
+      <thead><tr><th>Layer</th><th>Reads axes?</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>NeedSet (scoring, bucketing, sort)</td><td><span class="tag tag-orange">YES</span></td><td>5 score weights, critical-only filter, sort by avail/diff/req ranks</td></tr>
+        <tr><td>Search planning context</td><td><span class="tag tag-orange">YES</span></td><td>isCoreBucket, productivity scoring, secondary count on 'expected'</td></tr>
+        <tr><td>Search plan builder</td><td><span class="tag tag-orange">YES</span></td><td>mapRequiredLevelToBucket for output bundle</td></tr>
+        <tr><td>Automation queue helpers</td><td><span class="tag tag-orange">YES</span></td><td>Hardcoded 5-value priority score map — recalibrate</td></tr>
+        <tr><td>Categories loader</td><td><span class="tag tag-orange">YES</span></td><td>Schema partitioning (critical / expected_easy / deep)</td></tr>
+        <tr><td>compileAssembler</td><td><span class="tag tag-orange">YES</span></td><td>Field-tier lists (identityKeys, criticalKeys, expectedEasy/Sometimes, deepFields)</td></tr>
+        <tr><td>compileFieldRuleBuilder / compileValidation / compileFieldInference / compileUtils / categoryCompile / compilerArtifactBuilders / compilerCategoryInit / field-rules/compiler</td><td><span class="tag tag-red">effort only</span></td><td>All effort paths removed in Phase 1</td></tr>
+        <tr><td>Engine: ruleAccessors</td><td><span class="tag tag-orange">YES</span></td><td>4 accessors; effort accessor removed</td></tr>
+        <tr><td>Engine: fieldRulesEngine (getFieldsForRound)</td><td><span class="tag tag-red">DEAD</span></td><td><strong>No callers anywhere.</strong> Delete with effort.</td></tr>
+        <tr><td>Engine: fieldRulesEngine (other accessors)</td><td><span class="tag tag-orange">partial</span></td><td>getCriticalFields / getFieldsByRequiredLevel used by review/overrideWorkflow + qaJudge — update value list</td></tr>
+        <tr><td>Review grid helpers</td><td><span class="tag tag-orange">YES</span></td><td>required flag = level ∈ {identity, critical, required}</td></tr>
+        <tr><td>build/generate-types</td><td><span class="tag tag-orange">YES</span></td><td>TS type generation with isCore flag</td></tr>
+        <tr><td>Finder orchestration (variantScalarFieldProducer, finderSqlStore, finderJsonStore, etc.)</td><td><span class="tag tag-muted">no</span></td><td>Uses <code>effort_level</code> for LLM reasoning — unrelated concept, do not touch</td></tr>
+        <tr><td>Brand resolver, search planner, query planner, SERP selector, query journey, search execution</td><td><span class="tag tag-green">no</span></td><td>Zero axis reads — clean</td></tr>
+        <tr><td>Color-edition finder, release-date finder, product-image finder</td><td><span class="tag tag-muted">indirect</span></td><td>Consume via <code>fieldRules</code> but don't branch on axis values</td></tr>
+        <tr><td>GUI: fieldRuleTaxonomy</td><td><span class="tag tag-orange">YES</span></td><td><strong>7 required_level + 4 difficulty + 5 availability — diverges from backend (5/3/5). Reconcile to 2/4/3.</strong> Extra values (editorial/commerce/instrumented) never used in data.</td></tr>
+        <tr><td>GUI: studioConstants / studioPriority / Editable* / KeyPrioritySection</td><td><span class="tag tag-orange">YES</span></td><td>Tooltips + dropdown options + defaults + rank maps — align with new vocab</td></tr>
+        <tr><td>Studio contracts: studioSchemas / egPresets</td><td><span class="tag tag-orange">YES</span></td><td>Zod PriorityProfileSchema (remove effort); example presets</td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout-info">
+      <strong>Effort derivation divergence (to fix in Phase 1)</strong>
+      Two different formulas exist today: <code>ruleAccessors.js</code> uses <code>easy→2 / medium→5 / hard→8</code>; <code>compileFieldInference.js</code> uses <code>easy→3 / medium→6 / hard→8</code>; <code>compileUtils.js</code> defaults to 3. Since effort is being deleted, this is moot — but it's the kind of drift that justified the deletion.
+    </div>
+  </div>
+</div>
 
 <h3 class="subsection-title">10.1 &nbsp; File index (what this design touches)</h3>
 <table>

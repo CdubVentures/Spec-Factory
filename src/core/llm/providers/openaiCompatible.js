@@ -139,7 +139,16 @@ export async function requestOpenAICompatibleChatCompletion({
   // WHY: Always stream. Long-running calls (web search, xhigh reasoning) can
   // take 5-7 minutes. Without streaming, no bytes flow during that time and
   // the connection dies. Streaming keeps it alive — same as the browser.
-  const streamBody = { ...body, stream: true };
+  // stream_options.include_usage is required for providers (OpenAI spec,
+  // LLM Lab, DeepSeek) to emit a final usage chunk with real token counts
+  // including prompt_tokens_details.cached_tokens. Without it, usage is
+  // missing from the stream and the caller falls back to character-count
+  // estimation — which also hides cache hit data.
+  const streamBody = {
+    ...body,
+    stream: true,
+    stream_options: { ...(body?.stream_options || {}), include_usage: true },
+  };
 
   const response = await fetch(endpoint, {
     method: 'POST',

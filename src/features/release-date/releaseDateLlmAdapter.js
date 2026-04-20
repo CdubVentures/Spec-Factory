@@ -27,7 +27,7 @@ export const RDF_DEFAULT_TEMPLATE = `Find the first-availability release date fo
 
 IDENTITY: You are looking for the EXACT product "{{BRAND}} {{MODEL}}"{{VARIANT_SUFFIX}}. Not a different model in the same product family. If you encounter sibling models, skip them.
 {{IDENTITY_WARNING}}
-{{SIBLINGS_LINE}}
+
 GOAL: The date this specific {{VARIANT_TYPE_WORD}} variant first became available for purchase and shipping to customers. Distinguish from:
   - announcement / reveal dates (do NOT use)
   - pre-order open dates (do NOT use unless they coincide with shipping)
@@ -145,10 +145,9 @@ export function buildReleaseDateFinderPrompt({
     VARIANT_DESC: variantDesc,
     VARIANT_SUFFIX: variant ? ` (variant: ${variant})` : '',
     IDENTITY_WARNING: identityWarning,
-    SIBLINGS_LINE: '',
     VARIANT_TYPE_WORD: variantType === 'edition' ? 'edition' : 'color',
     PREVIOUS_DISCOVERY: discoverySection,
-    EVIDENCE_REQUIREMENTS: `${buildEvidencePromptBlock({ minEvidenceRefs })}\n\n${buildEvidenceVerificationPromptBlock()}`,
+    EVIDENCE_REQUIREMENTS: `${buildEvidencePromptBlock({ minEvidenceRefs, includeEvidenceKind: true })}\n\n${buildEvidenceVerificationPromptBlock()}`,
     VALUE_CONFIDENCE_GUIDANCE: buildValueConfidencePromptBlock(),
   });
 }

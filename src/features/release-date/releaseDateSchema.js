@@ -21,10 +21,12 @@ import { createScalarFinderEditorialSchemas } from '../../core/finder/createScal
 export const releaseDateFinderResponseSchema = createScalarFinderSchema({
   valueKey: 'release_date',
   valueType: 'date',
+  includeEvidenceKind: true,
 });
 
 const editorial = createScalarFinderEditorialSchemas({
   llmResponseSchema: releaseDateFinderResponseSchema,
+  includeEvidenceKind: true,
 });
 
 export const releaseDateFinderCandidateSchema = editorial.candidateSchema;

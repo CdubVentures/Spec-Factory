@@ -210,6 +210,62 @@ export function buildEgReleaseDateFieldRule(ctx) {
   };
 }
 
+// WHY: Scalar string field — per-variant manufacturer part number (MPN).
+// No accepted_formats: MPN formats vary wildly per manufacturer (alphanumeric,
+// hyphens, slashes). Evidence-gated open enum. The LLM prompt (Stage 2 SKF
+// adapter) targets MPN semantically; retailer SKUs (Amazon ASIN, Best Buy SKU)
+// are explicitly out of scope.
+export function buildEgSkuFieldRule(ctx) {
+  return {
+    key: 'sku',
+    variant_dependent: true,
+    contract: {
+      type: 'string',
+      shape: 'scalar',
+      list_rules: {},
+    },
+    parse: {
+      delimiters: [],
+      accepted_formats: [],
+      range_separators: [],
+      unit: null,
+    },
+    enum_policy: 'open',
+    enum: {
+      policy: 'open',
+      new_value_policy: { accept_if_evidence: true, mark_needs_curation: false },
+    },
+    priority: {
+      required_level: 'required',
+      availability: 'sometimes',
+      difficulty: 'hard',
+      effort: 5,
+    },
+    evidence: {
+      min_evidence_refs: 1,
+      tier_preference: ['tier1', 'tier2', 'tier3'],
+    },
+    ai_assist: {
+      reasoning_note: '',
+    },
+    ui: {
+      label: 'SKU',
+      group: 'general',
+      tooltip_md: 'Manufacturer Part Number (MPN) for this specific variant. Prefer the code the manufacturer assigns on their product page. Retailer SKUs (Amazon ASIN, Best Buy SKU) are NOT the MPN. If no MPN is provable, emit unk with unknown_reason.',
+    },
+    search_hints: {
+      domain_hints: [],
+      content_types: ['product_page', 'spec_sheet'],
+      query_terms: ['part number', 'mpn', 'model number', 'product code'],
+      query_templates: [
+        '{brand} {model} part number',
+        '{brand} {model} MPN',
+        '"{model}" part number',
+      ],
+    },
+  };
+}
+
 // ── Registry (SSOT — add new EG-locked fields here) ─────────────────────────
 // O(1): one entry here = auto-locked, auto-seeded, auto-backfilled, auto-compiled.
 
@@ -217,6 +273,7 @@ export const EG_PRESET_REGISTRY = Object.freeze({
   colors: buildEgColorFieldRule,
   editions: buildEgEditionFieldRule,
   release_date: buildEgReleaseDateFieldRule,
+  sku: buildEgSkuFieldRule,
 });
 
 // ── Derived constants (never maintain manually — derived from registry) ──────

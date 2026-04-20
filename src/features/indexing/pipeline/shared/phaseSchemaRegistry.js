@@ -164,7 +164,7 @@ const COLOR_FINDER_IDENTITY_CHECK = Object.freeze({
         { name: 'PALETTE', description: 'e.g. "black (#000000), white (#ffffff), red (#ff0000), light-blue (#add8e6)" — or "(no registered colors)" when palette is empty', required: true, category: 'deterministic' },
         { name: 'IDENTITY_WARNING', description: 'Unified block from buildIdentityWarning (src/core/llm/prompts/). 3 tiers: easy="no known siblings" | medium="CAUTION: ..." | hard="HIGH AMBIGUITY: TRIPLE-CHECK". Includes the siblings-exclusion line when sibling models are provided. Edit text via Global Prompts in LLM Config.', required: false, category: 'global-fragment' },
         { name: 'EVIDENCE_REQUIREMENTS', description: 'Evidence contract + URL verification block. Sourced from the Global Prompts panel (evidenceContract + evidenceVerification).', required: false, category: 'global-fragment' },
-        { name: 'VALUE_CONFIDENCE_GUIDANCE', description: 'Tier-anchored overall-confidence rubric. Sourced from the Global Prompts panel (valueConfidenceRubric).', required: false, category: 'global-fragment' },
+        { name: 'VALUE_CONFIDENCE_GUIDANCE', description: 'Epistemic confidence rubric (per-source + overall). Tier is a URL-type label only and does not factor into confidence. Sourced from the Global Prompts panel (valueConfidenceRubric).', required: false, category: 'global-fragment' },
         { name: 'PREVIOUS_DISCOVERY', description: 'Previously searched URLs + queries for this product. Empty on first run. Header text editable in Global Prompts (discoveryHistoryBlock).', required: false, category: 'global-fragment' },
       ], userMessageInfo: [
         { field: 'brand', description: 'e.g. "Logitech"' },
@@ -230,7 +230,6 @@ const IMAGE_FINDER_TEMPLATES = Object.freeze({
         { name: 'ALL_VIEW_KEYS', description: 'e.g. "top, bottom, left, right, front, rear, sangle, angle"', required: true, category: 'deterministic' },
         { name: 'IMAGE_REQUIREMENTS', description: 'Image quality rules section — uses promptOverride setting if set, otherwise the built-in requirements block', required: true, category: 'deterministic' },
         { name: 'IDENTITY_WARNING', description: 'Unified block from buildIdentityWarning (src/core/llm/prompts/). 3 tiers — includes siblings-exclusion line inline when provided. Edit text via Global Prompts in LLM Config.', required: false, category: 'global-fragment' },
-        { name: 'SIBLINGS_LINE', description: 'Deprecated — siblings are now inside IDENTITY_WARNING. Kept as an empty slot for backwards compat with user-customized templates. Set via the per-category template override if you need a separate injection point.', required: false, category: 'global-fragment' },
         { name: 'PREVIOUS_DISCOVERY', description: 'e.g. "Previous searches:\\n- URLs already checked: [\\"https://...\\"]\\n- Queries already run: [\\"logitech g502\\"]\\n" — empty on first run. Header text editable in Global Prompts (discoveryHistoryBlock).', required: false, category: 'global-fragment' },
       ], userMessageInfo: [
         { field: 'brand', description: 'e.g. "Logitech"' },
@@ -245,7 +244,6 @@ const IMAGE_FINDER_TEMPLATES = Object.freeze({
         { name: 'VARIANT_SUFFIX', description: 'e.g. " (variant: black)" — empty when no variant', required: false, category: 'deterministic' },
         { name: 'HERO_INSTRUCTIONS', description: 'Hero search rules block — uses promptOverride setting if set, otherwise the built-in lifestyle/contextual instructions', required: true, category: 'deterministic' },
         { name: 'IDENTITY_WARNING', description: 'Unified block from buildIdentityWarning (src/core/llm/prompts/). Same wording as view-search prompt. Edit text via Global Prompts in LLM Config.', required: false, category: 'global-fragment' },
-        { name: 'SIBLINGS_LINE', description: 'Deprecated — siblings are now inside IDENTITY_WARNING. Kept as an empty slot for backwards compat.', required: false, category: 'global-fragment' },
         { name: 'PREVIOUS_DISCOVERY', description: 'e.g. "Previous searches:\\n- URLs already checked: [...]\\n" — empty on first run. Header text editable in Global Prompts (discoveryHistoryBlock).', required: false, category: 'global-fragment' },
       ], userMessageInfo: [
         { field: 'brand', description: 'e.g. "Logitech"' },
@@ -272,9 +270,8 @@ const RELEASE_DATE_FINDER_TEMPLATES = Object.freeze({
         { name: 'VARIANT_SUFFIX', description: 'e.g. " (variant: black)" — empty when no variant', required: false, category: 'deterministic' },
         { name: 'VARIANT_TYPE_WORD', description: '"color" or "edition"', required: false, category: 'deterministic' },
         { name: 'IDENTITY_WARNING', description: 'Unified block from buildIdentityWarning (src/core/llm/prompts/). 3 tiers: easy="no known siblings" | medium="CAUTION: ..." | hard="HIGH AMBIGUITY: TRIPLE-CHECK". Includes the siblings-exclusion line when sibling models are provided. Edit text via Global Prompts in LLM Config.', required: false, category: 'global-fragment' },
-        { name: 'SIBLINGS_LINE', description: 'Deprecated — siblings are now inside IDENTITY_WARNING. Kept as an empty slot for backwards compat.', required: false, category: 'global-fragment' },
         { name: 'EVIDENCE_REQUIREMENTS', description: 'Evidence contract + URL verification block. Sourced from the Global Prompts panel (evidenceContract + evidenceVerification).', required: false, category: 'global-fragment' },
-        { name: 'VALUE_CONFIDENCE_GUIDANCE', description: 'Tier-anchored overall-confidence rubric. Sourced from the Global Prompts panel (valueConfidenceRubric).', required: false, category: 'global-fragment' },
+        { name: 'VALUE_CONFIDENCE_GUIDANCE', description: 'Epistemic confidence rubric (per-source + overall). Tier is a URL-type label only and does not factor into confidence. Sourced from the Global Prompts panel (valueConfidenceRubric).', required: false, category: 'global-fragment' },
         { name: 'PREVIOUS_DISCOVERY', description: 'Previously searched URLs + queries for this variant. Empty on first run. Header text editable in Global Prompts (discoveryHistoryBlock).', required: false, category: 'global-fragment' },
       ], userMessageInfo: [
         { field: 'brand', description: 'e.g. "Logitech"' },

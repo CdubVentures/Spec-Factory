@@ -321,7 +321,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
           </select>
         </SettingRow>
       )}
-      {effectiveModelCapabilities.webSearch && (
+      {phaseId !== 'writer' && effectiveModelCapabilities.webSearch && (
         <SettingRow label="Web Search" tip="Send web_search flag to the Lab model for this phase.">
           <SettingToggle
             checked={phaseOverrides[overrideKey]?.webSearch ?? false}

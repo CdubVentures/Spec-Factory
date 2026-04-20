@@ -150,4 +150,67 @@ describe('buildEvidencePromptBlock', () => {
       assert.ok(block.includes(code), `rendered block must list "${code}"`);
     }
   });
+
+  it('includeEvidenceKind defaults to false — output is byte-identical to base block', () => {
+    const withFlagOff = buildEvidencePromptBlock({ minEvidenceRefs: 2, includeEvidenceKind: false });
+    const withoutFlag = buildEvidencePromptBlock({ minEvidenceRefs: 2 });
+    assert.equal(withFlagOff, withoutFlag);
+  });
+});
+
+describe('buildEvidencePromptBlock — includeEvidenceKind: true', () => {
+  const EVIDENCE_KIND_VALUES = [
+    'direct_quote',
+    'structured_metadata',
+    'byline_timestamp',
+    'artifact_metadata',
+    'visual_inspection',
+    'lab_measurement',
+    'comparative_rebadge',
+    'inferred_reasoning',
+    'absence_of_evidence',
+    'identity_only',
+  ];
+
+  it('contains all 10 evidence_kind values when opted in', () => {
+    const block = buildEvidencePromptBlock({ minEvidenceRefs: 2, includeEvidenceKind: true });
+    for (const kind of EVIDENCE_KIND_VALUES) {
+      assert.ok(block.includes(kind), `opted-in block must list kind "${kind}"`);
+    }
+  });
+
+  it('includes the supporting_evidence field + 280-char cap', () => {
+    const block = buildEvidencePromptBlock({ minEvidenceRefs: 2, includeEvidenceKind: true });
+    assert.ok(block.includes('supporting_evidence'), 'block must instruct on supporting_evidence field');
+    assert.ok(block.includes('280'), 'block must specify the 280-char cap');
+  });
+
+  it('includes the identity_only does-not-count rule', () => {
+    const block = buildEvidencePromptBlock({ minEvidenceRefs: 2, includeEvidenceKind: true });
+    assert.match(block, /identity_only/);
+    assert.match(
+      block,
+      /do NOT satisfy|do not count|not count|not satisfy|not counted/i,
+      'block must state identity_only refs do not satisfy the minimum',
+    );
+  });
+
+  it('still substitutes MIN_EVIDENCE_REFS when opted in', () => {
+    const block = buildEvidencePromptBlock({ minEvidenceRefs: 3, includeEvidenceKind: true });
+    assert.ok(block.includes('AT LEAST 3'));
+    assert.ok(!block.includes('{{MIN_EVIDENCE_REFS}}'));
+  });
+
+  it('includes the evidenceContract block in addition to the kind guidance (additive, not replace)', () => {
+    const baseBlock = buildEvidencePromptBlock({ minEvidenceRefs: 2 });
+    const extendedBlock = buildEvidencePromptBlock({ minEvidenceRefs: 2, includeEvidenceKind: true });
+    // Every line in base must also appear in extended (extended is base + appended guidance)
+    for (const line of baseBlock.split('\n').filter((l) => l.trim())) {
+      assert.ok(
+        extendedBlock.includes(line),
+        `extended block must preserve base line: "${line.slice(0, 60)}"`,
+      );
+    }
+    assert.ok(extendedBlock.length > baseBlock.length, 'extended block must be longer than base');
+  });
 });

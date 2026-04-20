@@ -29,6 +29,11 @@ const SHARED_TYPE_DECLARATIONS = `export interface EvidenceRef {
   url: string;
   tier: string;
   confidence: number;
+  // Evidence-upgrade fields — populated by RDF + variantScalarFieldProducer
+  // when they opt into the extended evidence shape. CEF/PIF/carousel leave
+  // these undefined. Optional so legacy pre-upgrade refs still parse cleanly.
+  supporting_evidence?: string;
+  evidence_kind?: string;
 }
 
 export interface PublisherCandidateRef {

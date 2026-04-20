@@ -140,6 +140,9 @@ function buildCommonStubs() {
       export function useBillingSummaryQuery() {
         return useQuery({ queryKey: ['billing', 'summary'], queryFn: async () => ({}), refetchInterval: BILLING_REFETCH });
       }
+      export function useBillingPriorSummaryQuery() {
+        return useQuery({ queryKey: ['billing', 'summary', 'prior'], queryFn: async () => ({}), refetchInterval: BILLING_REFETCH });
+      }
       export function useBillingDailyQuery() {
         return useQuery({ queryKey: ['billing', 'daily'], queryFn: async () => ({}), refetchInterval: BILLING_REFETCH });
       }
@@ -165,17 +168,22 @@ function buildCommonStubs() {
       export function computeDonutSlices() { return []; }
       export function computeHorizontalBars() { return []; }
       export function chartColor(v) { return v; }
+      export function computePeriodDeltas() { return { cost_usd: { pct: 0, direction: 'flat' }, calls: { pct: 0, direction: 'flat' }, prompt_tokens: { pct: 0, direction: 'flat' }, completion_tokens: { pct: 0, direction: 'flat' } }; }
+      export function computeFilterChipCounts() { return { model: {}, reason: {}, category: {} }; }
+      export function computeTokenSegments() { return { promptPct: 0, completionPct: 0, cachedPct: 0 }; }
     `,
-    '../../features/billing/billingCallTypeRegistry.ts': `
+    '../../features/billing/billingCallTypeRegistry.generated.ts': `
       export const BILLING_CALL_TYPE_REGISTRY = Object.freeze([]);
       export const BILLING_CALL_TYPE_MAP = Object.freeze({});
       export const BILLING_CALL_TYPE_FALLBACK = Object.freeze({ reason: 'unknown', label: 'Other', color: '#888' });
       export function resolveBillingCallType() { return { reason: 'unknown', label: 'Other', color: '#888' }; }
     `,
-    '../../features/billing/components/BillingKpiStrip.tsx': componentStub.replace(/__stub__/g, 'BillingKpiStrip'),
+    '../../features/billing/components/BillingHeroBand.tsx': componentStub.replace(/__stub__/g, 'BillingHeroBand'),
     '../../features/billing/components/BillingFilterBar.tsx': componentStub.replace(/__stub__/g, 'BillingFilterBar'),
     '../../features/billing/components/DailyCostChart.tsx': componentStub.replace(/__stub__/g, 'DailyCostChart'),
-    '../../features/billing/components/CostByCallTypeDonut.tsx': componentStub.replace(/__stub__/g, 'CostByCallTypeDonut'),
+    '../../features/billing/components/DailyTokenChart.tsx': componentStub.replace(/__stub__/g, 'DailyTokenChart'),
+    '../../features/billing/components/BillingMetricDonut.tsx': componentStub.replace(/__stub__/g, 'BillingMetricDonut'),
+    '../../features/billing/components/PromptCachePanel.tsx': componentStub.replace(/__stub__/g, 'PromptCachePanel'),
     '../../features/billing/components/HorizontalBarSection.tsx': componentStub.replace(/__stub__/g, 'HorizontalBarSection'),
     '../../features/billing/components/BillingEntryTable.tsx': componentStub.replace(/__stub__/g, 'BillingEntryTable'),
   };

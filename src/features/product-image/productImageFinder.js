@@ -623,7 +623,7 @@ export async function runProductImageFinder({
   const { familyModelCount, ambiguityLevel, siblingModels } = await resolveAmbiguityContext({
     config, category: product.category, brand: product.brand,
     baseModel: product.base_model, currentModel: product.model,
-    specDb, resolveFn: resolveIdentityAmbiguitySnapshot,
+    specDb, resolveFn: resolveIdentityAmbiguitySnapshot, logger,
   });
 
   // Read siblings from CEF runs (identity context — still from JSON) BEFORE
@@ -968,7 +968,7 @@ export async function runCarouselLoop({
   const { familyModelCount, ambiguityLevel, siblingModels } = await resolveAmbiguityContext({
     config, category: product.category, brand: product.brand,
     baseModel: product.base_model, currentModel: product.model,
-    specDb, resolveFn: resolveIdentityAmbiguitySnapshot,
+    specDb, resolveFn: resolveIdentityAmbiguitySnapshot, logger,
   });
 
   // WHY: Read variants from SQL (SSOT) — not from cefData.selected on disk.

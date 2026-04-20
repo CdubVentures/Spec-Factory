@@ -31,6 +31,17 @@ function writeCefData(productId, cefData) {
   fs.writeFileSync(path.join(dir, 'color_edition.json'), JSON.stringify(cefData));
 }
 
+// WHY: override the per-view quality gate for every canonical view + hero so tiny
+// test fixtures (100×100) pass. Category defaults (e.g. mouse.top = 300×600) beat
+// the flat minWidth/minHeight finalFallback, so we have to supply viewQualityConfig
+// directly — see resolveViewQualityConfig in viewQualityDefaults.js.
+const TEST_VIEW_QUALITY_CONFIG = JSON.stringify(
+  Object.fromEntries(
+    ['top', 'bottom', 'left', 'right', 'front', 'rear', 'angle', 'sangle', 'hero']
+      .map((v) => [v, { minWidth: 50, minHeight: 50, minFileSize: 100 }]),
+  ),
+);
+
 function makeFinderStoreStub(settingsOverrides = {}) {
   const settings = {
     satisfactionThreshold: '1',
@@ -40,6 +51,7 @@ function makeFinderStoreStub(settingsOverrides = {}) {
     viewAttemptBudgets: '',
     heroAttemptBudget: '2',
     reRunBudget: '0',
+    viewQualityConfig: TEST_VIEW_QUALITY_CONFIG,
     ...settingsOverrides,
   };
   const runs = [];
@@ -89,7 +101,6 @@ const SIMPLE_CEF = {
 
 /* ── Test image server ─────────────────────────────────────────── */
 
-let testPngBuffer;
 let testServer;
 let serverPort;
 
@@ -101,17 +112,19 @@ function createNoisyPixels(width, height, channels = 3) {
 
 before(async () => {
   fs.mkdirSync(PRODUCT_ROOT, { recursive: true });
-  testPngBuffer = await sharp(createNoisyPixels(1000, 800), { raw: { width: 1000, height: 800, channels: 3 } }).png().toBuffer();
 
   // WHY: Each request returns unique bytes so downloaded images produce distinct
   // content hashes. Production code dedupes by content hash to block the LLM from
   // returning the same image at different URLs — if the server returned identical
   // bytes every time, every download after the first would be rejected as a dupe
   // and the loop couldn't exercise satisfaction, side-catches, or re-run budget.
+  // WHY: 100×100 (not 1000×800) cuts sharp encode time from ~300ms to ~5ms per
+  // request. The finder's quality gate is lowered to match via makeFinderStoreStub.
+  const IMG_DIM = 100;
   testServer = http.createServer(async (req, res) => {
     const uniqueBuf = await sharp(
-      createNoisyPixels(1000, 800),
-      { raw: { width: 1000, height: 800, channels: 3 } },
+      createNoisyPixels(IMG_DIM, IMG_DIM),
+      { raw: { width: IMG_DIM, height: IMG_DIM, channels: 3 } },
     ).png().toBuffer();
     res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': uniqueBuf.length });
     res.end(uniqueBuf);

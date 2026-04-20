@@ -28,13 +28,15 @@ const TWO_VARIANTS = [
 ];
 const PRODUCT = { product_id: 'p1', category: 'mouse' };
 
+const constBudget = (n) => () => n;
+
 describe('runVariantFieldLoop', () => {
   it('stops a variant after the first satisfied attempt', async () => {
     const calls = [];
     const out = await runVariantFieldLoop({
       specDb: makeSpecDbStub(ONE_BLACK),
       product: PRODUCT,
-      budget: 3,
+      resolveBudget: constBudget(3),
       staggerMs: 0,
       produceForVariant: (variant, i, ctx) => {
         calls.push({ key: variant.key, attempt: ctx.attempt });
@@ -53,7 +55,7 @@ describe('runVariantFieldLoop', () => {
     await runVariantFieldLoop({
       specDb: makeSpecDbStub(ONE_BLACK),
       product: PRODUCT,
-      budget: 3,
+      resolveBudget: constBudget(3),
       staggerMs: 0,
       produceForVariant: (variant, i, ctx) => {
         calls.push({ attempt: ctx.attempt });
@@ -71,7 +73,7 @@ describe('runVariantFieldLoop', () => {
     await runVariantFieldLoop({
       specDb: makeSpecDbStub(ONE_BLACK),
       product: PRODUCT,
-      budget: 1,
+      resolveBudget: constBudget(1),
       staggerMs: 0,
       produceForVariant: (variant, i, ctx) => {
         calls.push({ attempt: ctx.attempt });
@@ -83,19 +85,78 @@ describe('runVariantFieldLoop', () => {
     assert.equal(calls.length, 1);
   });
 
-  it('coerces non-integer / out-of-range budgets to a safe value (min 1)', async () => {
-    // WHY: config comes from category_authority JSON as strings; defensive clamp
-    // prevents runaway loops from mistyped settings.
-    const callsZero = [];
+  it('budget=0 skips the variant entirely (no produceForVariant call)', async () => {
+    let produceCalls = 0;
+    const events = [];
+    const out = await runVariantFieldLoop({
+      specDb: makeSpecDbStub(ONE_BLACK),
+      product: PRODUCT,
+      resolveBudget: constBudget(0),
+      staggerMs: 0,
+      produceForVariant: () => { produceCalls++; return null; },
+      satisfactionPredicate: () => false,
+      onLoopProgress: (ev) => events.push(ev),
+    });
+
+    assert.equal(produceCalls, 0, 'produceForVariant is NOT called when budget is 0');
+    assert.equal(events.length, 1, 'exactly one skip event is emitted');
+    assert.equal(events[0].skipped, true);
+    assert.equal(events[0].satisfied, true);
+    assert.equal(events[0].attempt, 0);
+    assert.equal(events[0].budget, 0);
+
+    const pvr = out.perVariantResults[0];
+    assert.equal(pvr.result._loop.skipped, true);
+    assert.equal(pvr.result._loop.attempts, 0);
+    assert.equal(pvr.result._loop.satisfied, true);
+  });
+
+  it('coerces non-integer / negative budgets to 0 (skip)', async () => {
+    // WHY: caller is responsible for budget hygiene; engine treats garbage as 0.
+    let produceCalls = 0;
     await runVariantFieldLoop({
       specDb: makeSpecDbStub(ONE_BLACK),
       product: PRODUCT,
-      budget: 0,
+      resolveBudget: () => Number.NaN,
       staggerMs: 0,
-      produceForVariant: (v, i, ctx) => { callsZero.push(ctx.attempt); return null; },
+      produceForVariant: () => { produceCalls++; return null; },
       satisfactionPredicate: () => false,
     });
-    assert.equal(callsZero.length, 1, 'budget=0 should still call at least once');
+    assert.equal(produceCalls, 0, 'NaN budget → skip');
+
+    produceCalls = 0;
+    await runVariantFieldLoop({
+      specDb: makeSpecDbStub(ONE_BLACK),
+      product: PRODUCT,
+      resolveBudget: constBudget(-3),
+      staggerMs: 0,
+      produceForVariant: () => { produceCalls++; return null; },
+      satisfactionPredicate: () => false,
+    });
+    assert.equal(produceCalls, 0, 'negative budget → skip');
+  });
+
+  it('resolveBudget can return different values per variant', async () => {
+    const calls = [];
+    const out = await runVariantFieldLoop({
+      specDb: makeSpecDbStub(TWO_VARIANTS),
+      product: PRODUCT,
+      resolveBudget: (v) => v.key === 'color:black' ? 0 : 2,
+      staggerMs: 0,
+      produceForVariant: (variant, i, ctx) => {
+        calls.push({ key: variant.key, attempt: ctx.attempt });
+        return null;
+      },
+      satisfactionPredicate: () => false,
+    });
+
+    const black = calls.filter((c) => c.key === 'color:black');
+    const white = calls.filter((c) => c.key === 'color:white');
+    assert.equal(black.length, 0, 'black skipped (budget=0)');
+    assert.equal(white.length, 2, 'white exhausts its 2-call budget');
+
+    const blackResult = out.perVariantResults.find((r) => r.variant.key === 'color:black');
+    assert.equal(blackResult.result._loop.skipped, true);
   });
 
   it('isolates variants: one satisfies early while the other exhausts', async () => {
@@ -103,7 +164,7 @@ describe('runVariantFieldLoop', () => {
     await runVariantFieldLoop({
       specDb: makeSpecDbStub(TWO_VARIANTS),
       product: PRODUCT,
-      budget: 3,
+      resolveBudget: constBudget(3),
       staggerMs: 0,
       produceForVariant: (variant, i, ctx) => {
         calls.push({ key: variant.key, attempt: ctx.attempt });
@@ -124,7 +185,7 @@ describe('runVariantFieldLoop', () => {
       specDb: makeSpecDbStub(TWO_VARIANTS),
       product: PRODUCT,
       variantKey: 'color:black',
-      budget: 2,
+      resolveBudget: constBudget(2),
       staggerMs: 0,
       produceForVariant: (variant, i, ctx) => {
         calls.push({ key: variant.key, attempt: ctx.attempt });
@@ -141,7 +202,7 @@ describe('runVariantFieldLoop', () => {
     const out = await runVariantFieldLoop({
       specDb: makeSpecDbStub([]),
       product: PRODUCT,
-      budget: 3,
+      resolveBudget: constBudget(3),
       staggerMs: 0,
       produceForVariant: () => { throw new Error('should not be called'); },
       satisfactionPredicate: () => false,
@@ -155,7 +216,7 @@ describe('runVariantFieldLoop', () => {
       specDb: makeSpecDbStub(TWO_VARIANTS),
       product: PRODUCT,
       variantKey: 'color:purple',
-      budget: 3,
+      resolveBudget: constBudget(3),
       staggerMs: 0,
       produceForVariant: () => { throw new Error('should not be called'); },
       satisfactionPredicate: () => false,
@@ -169,7 +230,7 @@ describe('runVariantFieldLoop', () => {
     const r1 = await runVariantFieldLoop({
       specDb: makeSpecDbStub(TWO_VARIANTS),
       product: PRODUCT,
-      budget: 2,
+      resolveBudget: constBudget(2),
       staggerMs: 0,
       produceForVariant: () => ({ ok: false }),
       satisfactionPredicate: () => false,
@@ -179,7 +240,7 @@ describe('runVariantFieldLoop', () => {
     const r2 = await runVariantFieldLoop({
       specDb: makeSpecDbStub(TWO_VARIANTS),
       product: PRODUCT,
-      budget: 2,
+      resolveBudget: constBudget(2),
       staggerMs: 0,
       produceForVariant: () => ({ ok: false }),
       satisfactionPredicate: () => false,
@@ -200,7 +261,7 @@ describe('runVariantFieldLoop', () => {
     await runVariantFieldLoop({
       specDb: makeSpecDbStub(ONE_BLACK),
       product: PRODUCT,
-      budget: 5,
+      resolveBudget: constBudget(5),
       staggerMs: 0,
       produceForVariant: (v, i, ctx) => ({ attempt: ctx.attempt }),
       satisfactionPredicate: (r) => r.attempt === 3,
@@ -221,7 +282,7 @@ describe('runVariantFieldLoop', () => {
     const out = await runVariantFieldLoop({
       specDb: makeSpecDbStub(ONE_BLACK),
       product: PRODUCT,
-      budget: 2,
+      resolveBudget: constBudget(2),
       staggerMs: 0,
       produceForVariant: (v, i, ctx) => ({ tag: `attempt-${ctx.attempt}` }),
       satisfactionPredicate: () => false,
@@ -238,7 +299,7 @@ describe('runVariantFieldLoop', () => {
     const out = await runVariantFieldLoop({
       specDb: makeSpecDbStub(ONE_BLACK),
       product: PRODUCT,
-      budget: 5,
+      resolveBudget: constBudget(5),
       staggerMs: 0,
       produceForVariant: (v, i, ctx) => ({ tag: `attempt-${ctx.attempt}` }),
       satisfactionPredicate: (r) => r.tag === 'attempt-2',

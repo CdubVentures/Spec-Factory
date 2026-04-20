@@ -12,9 +12,9 @@ import assert from 'node:assert/strict';
 import { createScalarFinderSchema } from '../createScalarFinderSchema.js';
 import { createScalarFinderEditorialSchemas } from '../createScalarFinderEditorialSchemas.js';
 
-function makeSchemas(valueKey = 'release_date', valueType = 'date') {
-  const llm = createScalarFinderSchema({ valueKey, valueType });
-  return { llm, ...createScalarFinderEditorialSchemas({ llmResponseSchema: llm }) };
+function makeSchemas(valueKey = 'release_date', valueType = 'date', includeEvidenceKind = false) {
+  const llm = createScalarFinderSchema({ valueKey, valueType, includeEvidenceKind });
+  return { llm, ...createScalarFinderEditorialSchemas({ llmResponseSchema: llm, includeEvidenceKind }) };
 }
 
 function baseCandidate(extras = {}) {
@@ -203,9 +203,11 @@ describe('createScalarFinderEditorialSchemas — getResponseSchema', () => {
 });
 
 describe('createScalarFinderEditorialSchemas — parity with RDF hand-written schemas', () => {
+  // WHY: RDF now opts into the extended evidence shape (includeEvidenceKind: true),
+  // so parity tests must build factory schemas with the same flag.
   it('candidateSchema matches releaseDateFinderCandidateSchema byte-for-byte on a full payload', async () => {
     const { releaseDateFinderCandidateSchema } = await import('../../../features/release-date/releaseDateSchema.js');
-    const { candidateSchema } = makeSchemas();
+    const { candidateSchema } = makeSchemas('release_date', 'date', true);
     const sample = baseCandidate({
       rejected_by_gate: false,
       publisher_candidates: [{
@@ -219,7 +221,7 @@ describe('createScalarFinderEditorialSchemas — parity with RDF hand-written sc
 
   it('getResponseSchema matches releaseDateFinderGetResponseSchema byte-for-byte', async () => {
     const { releaseDateFinderGetResponseSchema } = await import('../../../features/release-date/releaseDateSchema.js');
-    const { getResponseSchema } = makeSchemas();
+    const { getResponseSchema } = makeSchemas('release_date', 'date', true);
     const sample = baseGetResponse({ candidate_count: 1 });
     assert.deepEqual(getResponseSchema.parse(sample), releaseDateFinderGetResponseSchema.parse(sample));
   });
