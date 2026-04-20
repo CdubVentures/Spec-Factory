@@ -475,6 +475,7 @@ function makeBillingEntry(overrides = {}) {
     prompt_tokens: 100,
     completion_tokens: 50,
     cached_prompt_tokens: 0,
+    sent_tokens: 0,
     total_tokens: 150,
     cost_usd: 0.001,
     reason: 'extract',
@@ -543,6 +544,14 @@ describe('AppDb — billing getBillingRollup', () => {
     const rollup = db.getBillingRollup('2026-04');
     assert.equal(rollup.totals.prompt_tokens, 1500);
     assert.equal(rollup.totals.cached_prompt_tokens, 1000);
+  });
+
+  it('aggregates sent_tokens in totals', () => {
+    db.insertBillingEntry(makeBillingEntry({ prompt_tokens: 5000, sent_tokens: 1000 }));
+    db.insertBillingEntry(makeBillingEntry({ prompt_tokens: 3000, sent_tokens: 500 }));
+    const rollup = db.getBillingRollup('2026-04');
+    assert.equal(rollup.totals.prompt_tokens, 8000);
+    assert.equal(rollup.totals.sent_tokens, 1500);
   });
 
   it('groups by_day', () => {

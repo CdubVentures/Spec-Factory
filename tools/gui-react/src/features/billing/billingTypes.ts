@@ -8,6 +8,7 @@ export interface BillingSummaryResponse {
     prompt_tokens: number;
     completion_tokens: number;
     cached_prompt_tokens: number;
+    sent_tokens: number;
   };
   models_used: number;
   categories_used: number;
@@ -20,6 +21,8 @@ export interface BillingDailyResponse {
     cost_usd: number;
     prompt_tokens: number;
     completion_tokens: number;
+    cached_prompt_tokens: number;
+    sent_tokens: number;
   }>;
   by_day_reason: Array<{
     day: string;
@@ -35,6 +38,7 @@ export interface BillingGroupedItem {
   calls: number;
   prompt_tokens: number;
   completion_tokens: number;
+  sent_tokens: number;
 }
 
 export interface BillingByModelResponse {
@@ -66,6 +70,7 @@ export interface BillingEntry {
   prompt_tokens: number;
   completion_tokens: number;
   cached_prompt_tokens: number;
+  sent_tokens: number;
   total_tokens: number;
   cost_usd: number;
   reason: string;
@@ -136,6 +141,7 @@ export interface FilterChipCounts {
 
 export interface TokenSegments {
   promptPct: number;
+  usagePct: number;
   completionPct: number;
   cachedPct: number;
 }

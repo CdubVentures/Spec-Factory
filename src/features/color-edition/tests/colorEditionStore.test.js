@@ -548,4 +548,38 @@ describe('colorEditionStore — rebuild JSON → SQL', () => {
     assert.equal(runs[1].fallback_used, true);
     assert.deepEqual(runs[1].selected.colors, ['black', 'red']);
   });
+
+  // WHY: Rebuild Contract — CEF JSON stores started_at + duration_ms at the
+  // run object top level. The reseed path must preserve them into the SQL
+  // first-class columns so the Indexing panel shows time + duration on runs
+  // that existed before the DB was rebuilt.
+  it('rebuild preserves started_at + duration_ms from JSON into SQL columns', () => {
+    writeColorEdition({
+      productId: 'rebuild-timing', productRoot: REBUILD_ROOT,
+      data: {
+        product_id: 'rebuild-timing', category: 'mouse',
+        selected: { colors: ['black'], editions: {}, default_color: 'black' },
+        last_ran_at: '2026-04-20T06:33:38.097Z', run_count: 1,
+        runs: [
+          {
+            run_number: 1,
+            ran_at: '2026-04-20T06:33:38.097Z',
+            started_at: '2026-04-20T06:23:51.336Z',
+            duration_ms: 586761,
+            model: 'gpt-5.4', fallback_used: false,
+            selected: { colors: ['black'], editions: {}, default_color: 'black' },
+            prompt: { system: 'sys', user: 'usr' },
+            response: { colors: ['black'], editions: {}, default_color: 'black' },
+          },
+        ],
+      },
+    });
+
+    rebuildColorEditionFinderFromJson({ specDb, productRoot: REBUILD_ROOT });
+
+    const runs = specDb.listColorEditionFinderRuns('rebuild-timing');
+    assert.equal(runs.length, 1);
+    assert.equal(runs[0].started_at, '2026-04-20T06:23:51.336Z', 'JSON top-level started_at → SQL column');
+    assert.equal(runs[0].duration_ms, 586761, 'JSON top-level duration_ms → SQL column');
+  });
 });

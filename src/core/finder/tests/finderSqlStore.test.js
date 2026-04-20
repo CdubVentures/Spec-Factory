@@ -139,6 +139,36 @@ describe('createFinderSqlStore — generic SQL store', () => {
     assert.ok(runs[0].ran_at.length > 0);
   });
 
+  // WHY: First-class timing columns — all finders persist started_at +
+  // duration_ms without embedding in response_json. Every insertRun passes
+  // these through; missing values round-trip as null.
+
+  it('insertRun persists started_at + duration_ms as first-class columns', () => {
+    store.insertRun({
+      category: 'cat', product_id: 'p-timing-keep', run_number: 1,
+      ran_at: '2026-04-20T06:33:38.097Z',
+      started_at: '2026-04-20T06:23:51.336Z',
+      duration_ms: 586761,
+      model: 'gpt', fallback_used: false,
+      selected: {}, prompt: {}, response: {},
+    });
+    const runs = store.listRuns('p-timing-keep');
+    assert.equal(runs[0].started_at, '2026-04-20T06:23:51.336Z');
+    assert.equal(runs[0].duration_ms, 586761);
+  });
+
+  it('insertRun persists null started_at + duration_ms when omitted', () => {
+    store.insertRun({
+      category: 'cat', product_id: 'p-timing-omit', run_number: 1,
+      ran_at: '2026-04-20T06:33:38.097Z',
+      model: 'gpt', fallback_used: false,
+      selected: {}, prompt: {}, response: {},
+    });
+    const runs = store.listRuns('p-timing-omit');
+    assert.equal(runs[0].started_at, null);
+    assert.equal(runs[0].duration_ms, null);
+  });
+
   it('insertRun serializes JSON fields', () => {
     store.insertRun({
       category: 'cat', product_id: 'p1', run_number: 2,

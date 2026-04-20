@@ -13,7 +13,8 @@ export type LlmPhaseId =
   | 'color-finder'
   | 'image-finder'
   | 'image-evaluator'
-  | 'release-date-finder';
+  | 'release-date-finder'
+  | 'sku-finder';
 
 export type LlmPhaseGroup =
   | 'global'

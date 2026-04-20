@@ -26,7 +26,7 @@ export interface FinderSettingsEntry {
   widgetProps?: Record<string, unknown>;
 }
 
-export const FINDER_IDS_WITH_SETTINGS = ['colorEditionFinder', 'productImageFinder', 'releaseDateFinder'] as const;
+export const FINDER_IDS_WITH_SETTINGS = ['colorEditionFinder', 'productImageFinder', 'releaseDateFinder', 'skuFinder'] as const;
 export type FinderIdWithSettings = typeof FINDER_IDS_WITH_SETTINGS[number];
 
 export const FINDER_SETTINGS_REGISTRY: Record<FinderIdWithSettings, readonly FinderSettingsEntry[]> = {
@@ -101,6 +101,13 @@ export const FINDER_SETTINGS_REGISTRY: Record<FinderIdWithSettings, readonly Fin
     { key: 'perVariantAttemptBudget', type: 'int', default: 3, min: 1, max: 5, uiLabel: 'Per-Variant Attempt Budget', uiTip: 'Max LLM calls per variant on the first Loop. 1 = single shot. Higher values retry until either (a) the publisher gate publishes the candidate, or (b) the LLM returns a definitive "unknown" with a reason. Only applies to "Loop" / "Loop All"; plain "Run" is always single-shot.', uiGroup: 'Discovery' },
     { key: 'reRunBudget', type: 'int', default: 1, min: 0, max: 5, uiLabel: 'Re-run Budget', uiTip: 'Extra LLM calls per variant when you click Loop again on an already-resolved variant. 0 = skip resolved variants entirely (no LLM call). 1+ = allow N more attempts to refine the date with new evidence. "Already-resolved" means the publisher has accepted a release_date for that variant. Ignored on the first Loop.', uiGroup: 'Discovery' },
     { key: 'urlHistoryEnabled', type: 'bool', default: false, uiLabel: 'URL history', uiTip: 'When on, prior run URLs are injected into the prompt so the LLM can avoid re-crawling them. Variant-scoped for RDF. Off by default.', uiGroup: 'Discovery History' },
+    { key: 'queryHistoryEnabled', type: 'bool', default: false, uiLabel: 'Query history', uiTip: 'When on, prior run search queries are injected into the prompt. Off by default — queries rot faster than URLs.', uiGroup: 'Discovery History' },
+  ],
+  'skuFinder': [
+    { key: 'discoveryPromptTemplate', type: 'string', default: "", allowEmpty: true, hidden: true },
+    { key: 'perVariantAttemptBudget', type: 'int', default: 3, min: 1, max: 5, uiLabel: 'Per-Variant Attempt Budget', uiTip: 'Max LLM calls per variant on the first Loop. 1 = single shot. Higher values retry until either (a) the publisher gate publishes the candidate, or (b) the LLM returns a definitive "unknown" with a reason. Only applies to "Loop" / "Loop All"; plain "Run" is always single-shot.', uiGroup: 'Discovery' },
+    { key: 'reRunBudget', type: 'int', default: 1, min: 0, max: 5, uiLabel: 'Re-run Budget', uiTip: 'Extra LLM calls per variant when you click Loop again on an already-resolved variant. 0 = skip resolved variants entirely (no LLM call). 1+ = allow N more attempts to refine the MPN with new evidence. "Already-resolved" means the publisher has accepted a sku for that variant. Ignored on the first Loop.', uiGroup: 'Discovery' },
+    { key: 'urlHistoryEnabled', type: 'bool', default: false, uiLabel: 'URL history', uiTip: 'When on, prior run URLs are injected into the prompt so the LLM can avoid re-crawling them. Variant-scoped for SKF. Off by default.', uiGroup: 'Discovery History' },
     { key: 'queryHistoryEnabled', type: 'bool', default: false, uiLabel: 'Query history', uiTip: 'When on, prior run search queries are injected into the prompt. Off by default — queries rot faster than URLs.', uiGroup: 'Discovery History' },
   ],
 };

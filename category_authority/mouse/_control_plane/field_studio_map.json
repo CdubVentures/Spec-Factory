@@ -11037,11 +11037,11 @@
     "variant_row": 5
   },
   "selected_keys": [
-    "sku",
-    "design",
     "colors",
     "editions",
+    "sku",
     "release_date",
+    "design",
     "discontinued",
     "price_range",
     "lighting",

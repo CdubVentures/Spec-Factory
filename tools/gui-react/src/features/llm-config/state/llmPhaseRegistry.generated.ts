@@ -16,6 +16,7 @@ export const LLM_PHASE_IDS = [
   'image-finder',
   'image-evaluator',
   'release-date-finder',
+  'sku-finder',
 ] as const satisfies readonly LlmPhaseId[];
 
 export const LLM_PHASES: readonly LlmPhaseDefinition[] = [
@@ -31,6 +32,7 @@ export const LLM_PHASES: readonly LlmPhaseDefinition[] = [
   { id: 'image-finder', label: 'Product Image Finder', subtitle: 'Discovery', tip: 'Finds and downloads official product identity images (specific views) for each product. Runs independently of the crawl pipeline.', roles: ['triage'], group: 'discovery' },
   { id: 'image-evaluator', label: 'Carousel Builder', subtitle: 'Discovery', tip: 'Vision-based image evaluator that selects the best product image per view and picks hero carousel shots.', roles: ['triage'], group: 'discovery' },
   { id: 'release-date-finder', label: 'Release Date Finder', subtitle: 'Discovery', tip: 'Discovers per-variant first-availability release dates via web search. Candidates flow through the publisher gate with evidence validation.', roles: ['triage'], group: 'discovery' },
+  { id: 'sku-finder', label: 'SKU Finder', subtitle: 'Discovery', tip: 'Discovers per-variant manufacturer part numbers (MPNs) via web search. Candidates flow through the publisher gate with evidence validation.', roles: ['triage'], group: 'discovery' },
 ] as const;
 
 export const LLM_PHASE_GROUP_LABELS: Record<string, string> = {

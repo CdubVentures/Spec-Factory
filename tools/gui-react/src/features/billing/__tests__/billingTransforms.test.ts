@@ -163,7 +163,7 @@ describe('chartColor', () => {
 // ── computePeriodDeltas ─────────────────────────────────────────
 
 function summary(totals: { cost_usd: number; calls: number; prompt_tokens: number; completion_tokens: number }) {
-  return { month: '2026-04', totals: { ...totals, cached_prompt_tokens: 0 }, models_used: 0, categories_used: 0 };
+  return { month: '2026-04', totals: { ...totals, cached_prompt_tokens: 0, sent_tokens: 0 }, models_used: 0, categories_used: 0 };
 }
 
 describe('computePeriodDeltas', () => {
@@ -247,7 +247,7 @@ describe('computeFilterChipCounts', () => {
 describe('computeTokenSegments', () => {
   it('returns all-zero when total is 0', () => {
     const s = computeTokenSegments({ prompt_tokens: 0, completion_tokens: 0, cached_prompt_tokens: 0 });
-    deepStrictEqual(s, { promptPct: 0, completionPct: 0, cachedPct: 0 });
+    deepStrictEqual(s, { promptPct: 0, usagePct: 0, completionPct: 0, cachedPct: 0 });
   });
 
   it('all-prompt no-cache splits ~100% prompt / 0% completion / 0% cached', () => {
@@ -255,26 +255,73 @@ describe('computeTokenSegments', () => {
     strictEqual(s.promptPct, 100);
     strictEqual(s.completionPct, 0);
     strictEqual(s.cachedPct, 0);
+    strictEqual(s.usagePct, 0);
   });
 
   it('when cached === prompt, billable-prompt is 0; cached takes prompt share', () => {
     const s = computeTokenSegments({ prompt_tokens: 1000, completion_tokens: 0, cached_prompt_tokens: 1000 });
     strictEqual(s.promptPct, 0);
     strictEqual(s.cachedPct, 100);
+    strictEqual(s.usagePct, 0);
   });
 
   it('percentages sum to ~100 for a realistic mix', () => {
     const s = computeTokenSegments({ prompt_tokens: 14220, completion_tokens: 2481, cached_prompt_tokens: 9820 });
-    const total = s.promptPct + s.completionPct + s.cachedPct;
+    const total = s.promptPct + s.usagePct + s.completionPct + s.cachedPct;
     ok(Math.abs(total - 100) < 0.01, `segments sum ${total} !~ 100`);
     // Billable prompt = 4400, completion = 2481, cached = 9820 → total 16701
     ok(s.cachedPct > s.promptPct, 'cached should dominate in this fixture');
   });
 
-  it('defaults cached to 0 when undefined (current ledger state)', () => {
+  it('defaults cached + sent to 0 when undefined (current ledger state)', () => {
     const s = computeTokenSegments({ prompt_tokens: 500, completion_tokens: 100 });
     strictEqual(s.cachedPct, 0);
+    strictEqual(s.usagePct, 0);
     ok(s.promptPct > 80, `prompt should dominate: ${s.promptPct}`);
     ok(s.completionPct > 0 && s.completionPct < 20);
+  });
+
+  it('splits billable prompt into sent + usage when sent_tokens is provided', () => {
+    // prompt=1000, sent=200, cached=0 → billable=1000, promptShare=200, usageShare=800
+    const s = computeTokenSegments({
+      prompt_tokens: 1000,
+      completion_tokens: 500,
+      cached_prompt_tokens: 0,
+      sent_tokens: 200,
+    });
+    // Total = 1000 + 500 = 1500
+    // promptPct = 200/1500 ≈ 13.33, usagePct = 800/1500 ≈ 53.33, completionPct = 500/1500 ≈ 33.33
+    ok(Math.abs(s.promptPct - (200 / 1500) * 100) < 0.01, `promptPct: ${s.promptPct}`);
+    ok(Math.abs(s.usagePct - (800 / 1500) * 100) < 0.01, `usagePct: ${s.usagePct}`);
+    ok(Math.abs(s.completionPct - (500 / 1500) * 100) < 0.01, `completionPct: ${s.completionPct}`);
+    const sum = s.promptPct + s.usagePct + s.completionPct + s.cachedPct;
+    ok(Math.abs(sum - 100) < 0.01, `sum ${sum} !~ 100`);
+  });
+
+  it('clamps sent_tokens greater than billable prompt so usagePct never negative', () => {
+    const s = computeTokenSegments({
+      prompt_tokens: 500,
+      completion_tokens: 100,
+      cached_prompt_tokens: 0,
+      sent_tokens: 9999,
+    });
+    strictEqual(s.usagePct, 0);
+    ok(s.promptPct > 0, 'promptPct should own the full billable share');
+  });
+
+  it('sent_tokens with cache: prompt share is sent, usage share is (billable - sent)', () => {
+    // prompt=2000, cached=1000, billable=1000, sent=400 → promptShare=400, usageShare=600
+    const s = computeTokenSegments({
+      prompt_tokens: 2000,
+      completion_tokens: 500,
+      cached_prompt_tokens: 1000,
+      sent_tokens: 400,
+    });
+    // Total billing surface = billable(1000) + completion(500) + cached(1000) = 2500
+    ok(Math.abs(s.promptPct - (400 / 2500) * 100) < 0.01, `promptPct: ${s.promptPct}`);
+    ok(Math.abs(s.usagePct - (600 / 2500) * 100) < 0.01, `usagePct: ${s.usagePct}`);
+    ok(Math.abs(s.cachedPct - (1000 / 2500) * 100) < 0.01, `cachedPct: ${s.cachedPct}`);
+    const sum = s.promptPct + s.usagePct + s.completionPct + s.cachedPct;
+    ok(Math.abs(sum - 100) < 0.01, `sum ${sum} !~ 100`);
   });
 });

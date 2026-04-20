@@ -671,15 +671,9 @@ export async function runColorEditionFinder({
   const runPrompt = identityCheckPrompt
     ? { discovery: { system: systemPrompt, user: userMessage }, identity_check: { system: identityCheckPrompt, user: identityCheckUser } }
     : { system: systemPrompt, user: userMessage };
-  // WHY: Embed timing INSIDE the response payload (PIF/RDF pattern) so it rides
-  // through the SQL response_json column. Top-level started_at/duration_ms on
-  // the run object are dropped by the shared runs-table schema (only ran_at is
-  // persisted as a column). Keeping them inside response keeps them visible
-  // after rebuild-from-SQL in the Indexing panel.
-  const runTiming = { started_at: cefStartedAt, duration_ms: Date.now() - cefStartMs };
   const runResponse = identityCheckResult
-    ? { ...runTiming, discovery: storedResponse, identity_check: identityCheckResult }
-    : { ...storedResponse, ...runTiming };
+    ? { discovery: storedResponse, identity_check: identityCheckResult }
+    : storedResponse;
 
   // ── Gate 2: Identity check validation ─────────────────────────
   // WHY: Must run BEFORE persisting the merge. If identity check produced
@@ -1005,6 +999,8 @@ export async function runColorEditionFinder({
     product_id: product.product_id,
     run_number: latestRun.run_number,
     ran_at: ranAt,
+    started_at: cefStartedAt,
+    duration_ms: Date.now() - cefStartMs,
     model: modelTracking.actualModel,
     fallback_used: modelTracking.actualFallbackUsed,
     effort_level: modelTracking.actualEffortLevel,

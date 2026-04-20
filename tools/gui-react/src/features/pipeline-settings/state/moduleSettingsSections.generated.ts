@@ -33,9 +33,18 @@ export const MODULE_SETTINGS_SECTIONS = [
     iconName: 'calendar' as const,
     group: 'modules',
   },
+  {
+    id: 'module-skf' as const,
+    moduleId: 'skuFinder',
+    label: 'SKU Finder',
+    subtitle: 'SKF module settings',
+    tip: 'Per-category settings for the SKU Finder: per-variant discovery of manufacturer part numbers (MPNs).',
+    iconName: 'hash' as const,
+    group: 'modules',
+  },
 ] as const;
 
-export const MODULE_IDS = ['colorEditionFinder', 'productImageFinder', 'releaseDateFinder'] as const;
+export const MODULE_IDS = ['colorEditionFinder', 'productImageFinder', 'releaseDateFinder', 'skuFinder'] as const;
 export type ModuleSettingsModuleId = typeof MODULE_IDS[number];
 
 export type ModuleSettingsSectionId = typeof MODULE_SETTINGS_SECTIONS[number]['id'];

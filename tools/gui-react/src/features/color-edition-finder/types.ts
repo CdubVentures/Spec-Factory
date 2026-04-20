@@ -44,12 +44,6 @@ export interface ColorEditionFinderRunEntry {
     readonly rejections?: readonly ColorEditionFinderRejection[];
     readonly siblings_excluded?: readonly string[];
     readonly discovery_log?: DiscoveryLog;
-    // WHY: PIF/RDF pattern — timing lives inside the run's response payload so
-    // it rides through the SQL response_json column. Top-level started_at on
-    // the run object (written by backend) is dropped by the shared runs table
-    // schema, which only has ran_at as a timestamp column.
-    readonly started_at?: string;
-    readonly duration_ms?: number | null;
   };
 }
 

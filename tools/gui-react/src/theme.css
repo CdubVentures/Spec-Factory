@@ -1568,6 +1568,81 @@ html[data-sf-theme-mode='dark'] .sf-action-tooltip {
   box-shadow: 0 12px 28px rgb(2 6 23 / 0.6);
 }
 
+/* Evidence-kind popover — inherits .sf-action-tooltip base (z-index: 120,
+   theme-aware background/shadow), widens for a quote block + adds header/
+   body/copy-button layout. */
+.sf-evidence-kind-popover {
+  max-width: 22rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sf-space-1-5);
+}
+
+.sf-evidence-kind-popover__header {
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-1-5);
+  flex-wrap: wrap;
+}
+
+.sf-evidence-kind-popover__label {
+  font-weight: 600;
+  font-size: var(--sf-token-font-size-body);
+}
+
+.sf-evidence-kind-popover__chip {
+  font-family: var(--sf-token-font-family-mono);
+  font-size: var(--sf-token-font-size-nano);
+  padding: 2px var(--sf-space-1-5);
+  border-radius: var(--sf-radius-sm);
+}
+
+.sf-evidence-kind-popover__body {
+  font-size: var(--sf-token-font-size-caption);
+  line-height: var(--sf-token-line-height-normal);
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: rgb(var(--sf-color-text-primary-rgb));
+}
+
+.sf-evidence-kind-popover__note {
+  font-size: var(--sf-token-font-size-nano);
+  font-style: italic;
+  color: rgb(var(--sf-color-text-muted-rgb));
+}
+
+.sf-evidence-kind-popover__copy {
+  align-self: flex-start;
+  font-size: var(--sf-token-font-size-nano);
+  padding: 2px var(--sf-space-2);
+  border-radius: var(--sf-radius-sm);
+  border: 1px solid rgb(var(--sf-color-border-subtle-rgb) / 0.65);
+  background: transparent;
+  color: rgb(var(--sf-color-text-primary-rgb));
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.sf-evidence-kind-popover__copy:hover {
+  background: rgb(var(--sf-color-surface-hover-rgb) / 0.55);
+}
+
+/* Hoverable icon button sheds button defaults and inherits color from
+   the EVIDENCE_KIND_COLOR_CLASS applied to the SVG. */
+.sf-evidence-kind-trigger {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: help;
+  line-height: 0;
+}
+
+.sf-evidence-kind-trigger:focus-visible {
+  outline: 2px solid rgb(var(--sf-color-accent-rgb));
+  outline-offset: 2px;
+  border-radius: var(--sf-radius-sm);
+}
+
 .sf-llm-soft-button {
   border: 1px solid rgba(147, 51, 234, 0.45);
   border-radius: var(--sf-radius-sm);
@@ -2825,6 +2900,7 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
   --sf-tok-accent-deep: #06b6d4;
   --sf-tok-glow: rgba(34, 211, 238, 0.14);
   --sf-tok-prompt: #22d3ee;
+  --sf-tok-usage: #f59e0b;
   --sf-tok-completion: #a78bfa;
   --sf-tok-cached: #34d399;
 }
@@ -3222,23 +3298,6 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
   gap: 8px;
 }
 
-.sf-cache-body code {
-  font-family: 'SFMono-Regular', 'Consolas', monospace;
-  font-size: 10.5px;
-  color: var(--sf-token-text-primary);
-  background: var(--sf-token-surface-panel);
-  padding: 1px 5px;
-  border-radius: 3px;
-}
-
-.sf-cache-body ul {
-  margin: 0;
-  padding-left: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
 .sf-cache-auto-note {
   color: var(--sf-token-text-subtle);
   font-style: italic;
@@ -3290,6 +3349,7 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
 }
 
 .sf-tok-prompt-text     { color: var(--sf-tok-prompt, #22d3ee); }
+.sf-tok-usage-text      { color: var(--sf-tok-usage, #f59e0b); }
 .sf-tok-completion-text { color: var(--sf-tok-completion, #a78bfa); }
 .sf-tok-cached-text     { color: var(--sf-tok-cached, #34d399); }
 
@@ -3304,6 +3364,7 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
 }
 
 .sf-tok-composition-p  { background: var(--sf-tok-prompt, #22d3ee); }
+.sf-tok-composition-u  { background: var(--sf-tok-usage, #f59e0b); }
 .sf-tok-composition-c  { background: var(--sf-tok-completion, #a78bfa); }
 .sf-tok-composition-ca { background: var(--sf-tok-cached, #34d399); }
 

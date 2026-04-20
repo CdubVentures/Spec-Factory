@@ -731,8 +731,13 @@ export async function callLlmProvider({
   };
 
   const emitUsage = async ({ usage, content, responseModel, retryWithoutSchema = false, duration_ms = 0 }) => {
+    // WHY: sent_tokens is the locally-estimated size of what Spec Factory actually
+    // transmitted (system prompt + user message). Distinct from the API's
+    // prompt_tokens which includes tool-loop / reasoning-iteration context growth
+    // the provider tacks on. Powers the Prompt vs Usage split on the billing panel.
+    const sentTokens = estimateTokensFromText(`${effectiveSystem}\n${String(userMessage.text || '')}`);
     const fallbackUsage = {
-      promptTokens: estimateTokensFromText(`${effectiveSystem}\n${String(userMessage.text || '')}`),
+      promptTokens: sentTokens,
       completionTokens: estimateTokensFromText(content),
       cachedPromptTokens: 0,
       estimated: !usage || Object.keys(usage || {}).length === 0
@@ -761,6 +766,7 @@ export async function callLlmProvider({
       prompt_tokens: normalizedUsage.promptTokens,
       completion_tokens: normalizedUsage.completionTokens,
       cached_prompt_tokens: normalizedUsage.cachedPromptTokens,
+      sent_tokens: sentTokens,
       total_tokens: normalizedUsage.totalTokens,
       cost_usd: cost.costUsd,
       estimated_usage: Boolean(normalizedUsage.estimated),

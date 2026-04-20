@@ -389,6 +389,95 @@ export const FINDER_MODULES = Object.freeze([
     settingsTip: 'Per-category settings for the Release Date Finder: per-variant discovery of first-availability dates.',
     iconName: 'calendar',
   },
+  {
+    // Identity
+    id: 'skuFinder',
+    routePrefix: 'sku-finder',
+    moduleClass: 'variantFieldProducer',
+    variantSource: 'colorEditionFinder',
+    moduleType: 'skf',
+    moduleLabel: 'SKF',
+    chipStyle: 'sf-chip-success',
+
+    // Scalar field producer declarative config — drives registerScalarFinder.
+    valueKey: 'sku',
+    valueType: 'string',
+    candidateSourceType: 'sku_finder',
+    logPrefix: 'skf',
+
+    // DB schema (summary table — custom columns per module)
+    tableName: 'sku_finder',
+    runsTableName: 'sku_finder_runs',
+    summaryColumns: [
+      // WHY: Per-variant selected candidates projected from JSON for fast UI GET.
+      // Each entry: { variant_id, variant_key, variant_label, value, confidence, sources, ran_at, run_number }
+      { name: 'candidates', type: 'TEXT', default: "'[]'" },
+      { name: 'candidate_count', type: 'INTEGER', default: '0' },
+      { name: 'cooldown_until', type: 'TEXT', default: "''" },
+    ],
+    summaryIndexes: [
+      { name: 'idx_skf_cooldown', columns: ['cooldown_until'] },
+    ],
+
+    // Fields this finder populates (publisher-owned — SKF submits candidates via submitCandidate)
+    fieldKeys: ['sku'],
+
+    // Field Studio gate: sku must be enabled in eg_toggles
+    requiredFields: ['sku'],
+
+    // LLM phase (reference to llmPhaseDefs entry)
+    phase: 'skuFinder',
+
+    // JSON store config
+    filePrefix: 'sku',
+
+    // Reseed
+    reseedKey: 'sku',
+    rebuildFnKey: 'rebuildSkuFinderFromJson',
+
+    // Per-category settings. Mirrors RDF settings surface one-for-one.
+    settingsSchema: [
+      { key: 'discoveryPromptTemplate', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'perVariantAttemptBudget', type: 'int', default: 3, min: 1, max: 5,
+        uiLabel: 'Per-Variant Attempt Budget', uiGroup: 'Discovery',
+        uiTip: 'Max LLM calls per variant on the first Loop. 1 = single shot. Higher values retry until either (a) the publisher gate publishes the candidate, or (b) the LLM returns a definitive "unknown" with a reason. Only applies to "Loop" / "Loop All"; plain "Run" is always single-shot.' },
+      { key: 'reRunBudget', type: 'int', default: 1, min: 0, max: 5,
+        uiLabel: 'Re-run Budget', uiGroup: 'Discovery',
+        uiTip: 'Extra LLM calls per variant when you click Loop again on an already-resolved variant. 0 = skip resolved variants entirely (no LLM call). 1+ = allow N more attempts to refine the MPN with new evidence. "Already-resolved" means the publisher has accepted a sku for that variant. Ignored on the first Loop.' },
+
+      // Universal discovery history (shared with CEF/PIF/RDF). Scope: per variant.
+      { key: 'urlHistoryEnabled', type: 'bool', default: false,
+        uiLabel: 'URL history', uiGroup: 'Discovery History',
+        uiTip: 'When on, prior run URLs are injected into the prompt so the LLM can avoid re-crawling them. Variant-scoped for SKF. Off by default.' },
+      { key: 'queryHistoryEnabled', type: 'bool', default: false,
+        uiLabel: 'Query history', uiGroup: 'Discovery History',
+        uiTip: 'When on, prior run search queries are injected into the prompt. Off by default — queries rot faster than URLs.' },
+    ],
+
+    // LLM phase schema (codegen: phaseSchemaRegistry.generated.js)
+    promptBuilderExport: 'buildSkuFinderPrompt',
+    responseSchemaExport: 'skuFinderResponseSchema',
+    getResponseSchemaExport: 'skuFinderGetResponseSchema',
+
+    // Generic scalar finder panel display config.
+    panelTitle: 'SKU Finder',
+    panelTip: 'Discovers per-variant manufacturer part numbers (MPNs) via web search. Candidates flow through the publisher gate with evidence validation.',
+    valueLabelPlural: 'SKUs',
+
+    // Data-change events: suffix → extra domains beyond routePrefix.
+    dataChangeEvents: {
+      'run': ['review', 'product', 'publisher'],
+      'run-deleted': ['review', 'product', 'publisher'],
+      'deleted': ['review', 'product', 'publisher'],
+      'loop': ['review', 'product', 'publisher'],
+    },
+
+    // Module Settings (codegen: moduleSettingsSections.generated.ts)
+    settingsLabel: 'SKU Finder',
+    settingsSubtitle: 'SKF module settings',
+    settingsTip: 'Per-category settings for the SKU Finder: per-variant discovery of manufacturer part numbers (MPNs).',
+    iconName: 'hash',
+  },
 ]);
 
 // WHY: O(1) lookup by id for runtime use (SpecDb, route wiring, etc.)

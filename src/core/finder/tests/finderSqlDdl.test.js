@@ -71,6 +71,23 @@ describe('generateFinderDdl', () => {
     );
   });
 
+  // WHY: First-class timing — every finder persists started_at + duration_ms as
+  // real columns on the shared runs table so the Indexing panel can render
+  // "date · time · duration" without embedding timing inside response_json.
+  // New finders inherit these columns automatically from the DDL generator.
+  it('runs table includes started_at + duration_ms columns', () => {
+    const ddl = generateFinderDdl([CEF_MODULE]);
+    const joined = ddl.join('\n');
+    assert.ok(
+      joined.includes('started_at TEXT DEFAULT NULL'),
+      'started_at must be a first-class column on the runs table',
+    );
+    assert.ok(
+      joined.includes('duration_ms INTEGER DEFAULT NULL'),
+      'duration_ms must be a first-class column on the runs table',
+    );
+  });
+
   it('generates runs index on (category, product_id)', () => {
     const ddl = generateFinderDdl([CEF_MODULE]);
     const joined = ddl.join('\n');

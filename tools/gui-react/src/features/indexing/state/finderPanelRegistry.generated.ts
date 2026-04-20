@@ -41,4 +41,18 @@ export const FINDER_PANELS = [
     valueLabelPlural: 'Release Dates',
     component: lazy(() => import('../../release-date-finder/components/ReleaseDateFinderPanel.tsx').then(m => ({ default: m.ReleaseDateFinderPanel }))),
   },
+  {
+    id: 'skuFinder',
+    label: 'SKF',
+    moduleClass: 'variantFieldProducer',
+    scopeLevel: 'variant',
+    routePrefix: 'sku-finder',
+    moduleType: 'skf',
+    phase: 'skuFinder',
+    valueKey: 'sku',
+    panelTitle: 'SKU Finder',
+    panelTip: 'Discovers per-variant manufacturer part numbers (MPNs) via web search. Candidates flow through the publisher gate with evidence validation.',
+    valueLabelPlural: 'SKUs',
+    component: lazy(() => import('../../sku-finder/components/SkuFinderPanel.tsx').then(m => ({ default: m.SkuFinderPanel }))),
+  },
 ] as const;

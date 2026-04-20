@@ -320,8 +320,8 @@
           <td><strong>4</strong></td>
           <td>Phase Schema Overlays</td>
           <td><code>src/features/indexing/pipeline/shared/phaseSchemaRegistry.js</code></td>
-          <td>Multi-prompt preview (identity check, per-view eval), editable criteria</td>
-          <td><strong>Only if</strong> your finder has sub-prompts beyond the main discovery call</td>
+          <td>Editable prompt editor in LLM Config (variable manifest, per-category tabs, save round-trip). Without this, the GUI shows a read-only preview only.</td>
+          <td><strong>Always for finders with editable prompts</strong> &mdash; covered by integration test that fails loudly if missing</td>
         </tr>
         <tr>
           <td><strong>5</strong></td>
@@ -334,8 +334,8 @@
     </table>
 
     <div class="callout callout-ok">
-      <strong>For a simple field finder (like Release Date)</strong>
-      You touch #1 and #2 only. No EG preset, no schema overlay, no server-boot edit (auto-wired via <code>wireFinderRoutes()</code>). Two registry files modified total (plus your new feature code).
+      <strong>For a simple scalar field finder (like Release Date or SKU)</strong>
+      You touch #1, #2, and #4. The overlay in #4 is a near-byte-for-byte copy of <code>RELEASE_DATE_FINDER_TEMPLATES</code> &mdash; swap <code>moduleId</code>, <code>defaultTemplate</code>, and the import. No EG preset, no server-boot edit (auto-wired via <code>wireFinderRoutes()</code>). Three registry files modified total (plus your new feature code).
     </div>
   </div>
 </div>
@@ -960,14 +960,19 @@ import { myFinderHowItWorksSections }
       </tbody>
     </table>
 
-    <div class="callout callout-ok">
-      <strong>For most new finders</strong>
-      You get the single-column layout for free. No overlay, no manual <code>phaseSchemaRegistry.js</code> edits needed. Your prompt builder is called with a placeholder product at codegen time, and the result is displayed in the LLM Config page.
+    <div class="callout callout-warn">
+      <strong>Read-only preview vs editable surface &mdash; pick the right one</strong>
+      The default codegen output (<code>{ system_prompt, response_schema }</code>) renders a <strong>read-only preview</strong> in LLM Config: the prompt builder is invoked at codegen time with placeholder product <code>{ brand: '{brand}', model: '{model}' }</code>, and the resulting string is displayed verbatim. This means users see <code>{brand}</code> literals, no variable manifest, no per-category tabs, and no way to override the template &mdash; even though the runtime <em>is</em> wired to honor a per-category override.
     </div>
 
     <div class="callout callout-warn" style="margin-top:8px;">
-      <strong>If your finder has sub-prompts (identity check, evaluation, etc.)</strong>
-      You must manually add an overlay in <code>src/features/indexing/pipeline/shared/phaseSchemaRegistry.js</code> (the non-generated file). Spread your auto-generated entry and add the extra prompt/schema fields. See <code>COLOR_FINDER_IDENTITY_CHECK</code> or <code>CAROUSEL_BUILDER_PHASE</code> as examples.
+      <strong>To get the editable editor (variable manifest + per-category tabs + save round-trip), you MUST add a <code>prompt_templates</code> overlay</strong>
+      Add a block to <code>src/features/indexing/pipeline/shared/phaseSchemaRegistry.js</code> that spreads <code>FINDER_PHASE_SCHEMAS[&lt;your-phase-id&gt;]</code> and attaches a <code>prompt_templates: [...]</code> array. Each entry declares <code>{ promptKey, label, storageScope, moduleId, settingKey, defaultTemplate, variables, userMessageInfo }</code>. See <code>RELEASE_DATE_FINDER_TEMPLATES</code> (single discovery prompt), <code>SKU_FINDER_TEMPLATES</code> (mirror of RDF for scalar finders), <code>COLOR_FINDER_IDENTITY_CHECK</code> (multi-prompt with identity check), or <code>CAROUSEL_BUILDER_PHASE</code> (per-view tabs) as patterns. The structural test <code>src/core/finder/tests/promptCompilation.integration.test.js</code> enforces that every finder phase has a <code>prompt_templates</code> overlay &mdash; it will fail loudly if you forget.
+    </div>
+
+    <div class="callout callout-ok" style="margin-top:8px;">
+      <strong>Adding a scalar finder (mirrors RDF / SKU)</strong>
+      The minimum overlay is a copy of <code>RELEASE_DATE_FINDER_TEMPLATES</code> with three swaps: <code>moduleId</code>, <code>defaultTemplate</code> (your <code>XXX_DEFAULT_TEMPLATE</code> export), and the import. The variable list is identical across scalar finders (BRAND, MODEL, VARIANT_DESC, VARIANT_SUFFIX, VARIANT_TYPE_WORD, IDENTITY_WARNING, EVIDENCE_REQUIREMENTS, VALUE_CONFIDENCE_GUIDANCE, PREVIOUS_DISCOVERY) because they share the <code>variantScalarFieldProducer</code> contract.
     </div>
   </div>
 </div>

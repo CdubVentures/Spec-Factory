@@ -20,6 +20,7 @@ import { DefaultVariantMark } from '../../../shared/ui/feedback/DefaultVariantMa
 import { resolveDrawerBadge } from '../selectors/drawerBadgeSelector.ts';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
 import { EvidenceKindTooltip } from '../../../shared/ui/feedback/EvidenceKindTooltip.tsx';
+import { formatEvidenceTier } from '../../../shared/ui/finder/evidenceTierLabels.ts';
 import { ColorSwatch } from '../../../shared/ui/finder/ColorSwatch.tsx';
 import { useFinderColorHexMap } from '../../../shared/ui/finder/useFinderColorHexMap.ts';
 import { useFormatDate, useFormatDateTime } from '../../../utils/dateTime.ts';
@@ -169,7 +170,7 @@ function SourceListItem({ src }: { src: EvidenceSource }) {
       </a>
       {src.tier && (
         <span className="font-mono text-[9px] px-1 py-0.5 rounded sf-chip-neutral shrink-0">
-          {src.tier}
+          {formatEvidenceTier(src.tier)}
         </span>
       )}
       {src.confidence != null && (
@@ -530,8 +531,21 @@ function MetadataBlock({ sources }: { sources: readonly EvidenceSource[] }) {
         <ul className="space-y-0.5">
           {sources.map((src, i) => {
             const host = extractHost(src.url);
+            const isIdentityOnly = src.evidence_kind === 'identity_only';
             return (
-              <li key={`${src.url}-${i}`} className="flex items-center gap-1.5 min-w-0">
+              <li
+                key={`${src.url}-${i}`}
+                className={`flex items-center gap-1.5 min-w-0 ${isIdentityOnly ? 'opacity-60' : ''}`}
+              >
+                {src.evidence_kind ? (
+                  <EvidenceKindTooltip
+                    kind={src.evidence_kind}
+                    supportingEvidence={src.supporting_evidence}
+                    tier={src.tier}
+                    confidence={src.confidence}
+                    size={12}
+                  />
+                ) : null}
                 <a
                   href={src.url}
                   target="_blank"
@@ -543,7 +557,7 @@ function MetadataBlock({ sources }: { sources: readonly EvidenceSource[] }) {
                 </a>
                 {src.tier && (
                   <span className="font-mono text-[9px] px-1 py-0.5 rounded sf-chip-neutral shrink-0">
-                    {src.tier}
+                    {formatEvidenceTier(src.tier)}
                   </span>
                 )}
                 {src.confidence != null && (

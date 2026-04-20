@@ -79,6 +79,16 @@ export const MIGRATIONS = [
   // gate treats NULL as substantive so legacy data still passes.
   `ALTER TABLE field_candidate_evidence ADD COLUMN evidence_kind TEXT DEFAULT NULL`,
   `ALTER TABLE field_candidate_evidence ADD COLUMN supporting_evidence TEXT DEFAULT NULL`,
+  // WHY: First-class timing on the shared finder_runs tables. New finders
+  // inherit via the DDL generator; existing DBs need ALTER TABLE to add
+  // started_at + duration_ms. NULL for runs persisted before this migration —
+  // reseed from JSON top-level populates them on next rebuild.
+  `ALTER TABLE color_edition_finder_runs ADD COLUMN started_at TEXT DEFAULT NULL`,
+  `ALTER TABLE color_edition_finder_runs ADD COLUMN duration_ms INTEGER DEFAULT NULL`,
+  `ALTER TABLE product_image_finder_runs ADD COLUMN started_at TEXT DEFAULT NULL`,
+  `ALTER TABLE product_image_finder_runs ADD COLUMN duration_ms INTEGER DEFAULT NULL`,
+  `ALTER TABLE release_date_finder_runs ADD COLUMN started_at TEXT DEFAULT NULL`,
+  `ALTER TABLE release_date_finder_runs ADD COLUMN duration_ms INTEGER DEFAULT NULL`,
 ];
 
 export const SECONDARY_INDEXES = `

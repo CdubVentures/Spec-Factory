@@ -87,3 +87,26 @@ describe('buildBillingOnUsage meta fields', () => {
     assert.equal(meta.effort_level, '');
   });
 });
+
+describe('buildBillingOnUsage sent_tokens', () => {
+  it('persists sent_tokens from the onUsage payload into the inserted row', async () => {
+    const appDb = makeMockAppDb();
+    const onUsage = buildBillingOnUsage({ config: { specDbDir: '/tmp' }, appDb, category: 'mouse', productId: 'mouse-1' });
+    await onUsage(makeUsageRow({ sent_tokens: 500 }));
+    assert.equal(appDb.inserted[0].sent_tokens, 500);
+  });
+
+  it('defaults missing sent_tokens to 0', async () => {
+    const appDb = makeMockAppDb();
+    const onUsage = buildBillingOnUsage({ config: { specDbDir: '/tmp' }, appDb, category: 'mouse', productId: 'mouse-1' });
+    await onUsage(makeUsageRow());
+    assert.equal(appDb.inserted[0].sent_tokens, 0);
+  });
+
+  it('coerces non-numeric sent_tokens to 0', async () => {
+    const appDb = makeMockAppDb();
+    const onUsage = buildBillingOnUsage({ config: { specDbDir: '/tmp' }, appDb, category: 'mouse', productId: 'mouse-1' });
+    await onUsage(makeUsageRow({ sent_tokens: 'abc' }));
+    assert.equal(appDb.inserted[0].sent_tokens, 0);
+  });
+});

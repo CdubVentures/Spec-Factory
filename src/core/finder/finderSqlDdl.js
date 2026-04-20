@@ -45,6 +45,11 @@ export function generateFinderDdl(modules) {
       // (current + future) gets a real timestamp default. Empty-string defaults
       // would poison audit-log ORDER BY after a DB-deleted rebuild.
       `  ran_at TEXT NOT NULL DEFAULT (datetime('now')),`,
+      // WHY: First-class timing — every finder persists the wall-clock start +
+      // measured duration of the run so the Indexing panel can render
+      // "date · time · duration" without embedding timing inside response_json.
+      `  started_at TEXT DEFAULT NULL,`,
+      `  duration_ms INTEGER DEFAULT NULL,`,
       `  model TEXT DEFAULT 'unknown',`,
       `  fallback_used INTEGER DEFAULT 0,`,
       `  effort_level TEXT DEFAULT '',`,

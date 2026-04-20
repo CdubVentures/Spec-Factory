@@ -91,8 +91,8 @@ export function createFinderSqlStore({ db, category, module: mod }) {
       ),
     } : {}),
     _insertRun: db.prepare(
-      `INSERT OR REPLACE INTO ${runsTableName} (category, product_id, run_number, ran_at, model, fallback_used, effort_level, access_mode, thinking, web_search, selected_json, prompt_json, response_json)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT OR REPLACE INTO ${runsTableName} (category, product_id, run_number, ran_at, started_at, duration_ms, model, fallback_used, effort_level, access_mode, thinking, web_search, selected_json, prompt_json, response_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ),
     _listRuns: db.prepare(
       `SELECT * FROM ${runsTableName} WHERE category = ? AND product_id = ? ORDER BY run_number ASC`
@@ -213,6 +213,8 @@ export function createFinderSqlStore({ db, category, module: mod }) {
       // ordering after a DB-deleted rebuild, so fall back to a real ISO
       // timestamp. Callers passing a valid ran_at are preserved verbatim.
       row.ran_at || new Date().toISOString(),
+      row.started_at ?? null,
+      row.duration_ms ?? null,
       row.model || 'unknown',
       row.fallback_used ? 1 : 0,
       row.effort_level || '',

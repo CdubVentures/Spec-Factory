@@ -79,6 +79,8 @@ export const LLM_PHASE_DEFS = Object.freeze([
     ] } },
   { id: 'releaseDateFinder', uiId: 'release-date-finder', label: 'Release Date Finder', subtitle: 'Discovery', tip: 'Discovers per-variant first-availability release dates via web search. Candidates flow through the publisher gate with evidence validation.', roles: ['triage'], group: 'discovery', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalReasoningBudget: 'llmReasoningBudget', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel',
     billing: { group: 'Release Date', reasons: [{ reason: 'release_date_finding', label: 'RDF', color: 'var(--sf-billing-releasedate-1, #fcc419)' }] } },
+  { id: 'skuFinder', uiId: 'sku-finder', label: 'SKU Finder', subtitle: 'Discovery', tip: 'Discovers per-variant manufacturer part numbers (MPNs) via web search. Candidates flow through the publisher gate with evidence validation.', roles: ['triage'], group: 'discovery', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalReasoningBudget: 'llmReasoningBudget', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel',
+    billing: { group: 'SKU', reasons: [{ reason: 'sku_finding', label: 'SKF', color: 'var(--sf-billing-sku-1, #ae3ec9)' }] } },
 ]);
 
 export const LLM_PHASE_IDS = LLM_PHASE_DEFS.map((d) => d.id);

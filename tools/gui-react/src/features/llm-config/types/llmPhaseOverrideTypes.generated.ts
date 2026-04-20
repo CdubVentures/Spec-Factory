@@ -22,7 +22,7 @@ export interface LlmPhaseOverride {
   jsonStrict: boolean;
 }
 
-export type LlmOverridePhaseId = 'writer' | 'needset' | 'searchPlanner' | 'brandResolver' | 'serpSelector' | 'validate' | 'colorFinder' | 'imageFinder' | 'imageEvaluator' | 'releaseDateFinder';
+export type LlmOverridePhaseId = 'writer' | 'needset' | 'searchPlanner' | 'brandResolver' | 'serpSelector' | 'validate' | 'colorFinder' | 'imageFinder' | 'imageEvaluator' | 'releaseDateFinder' | 'skuFinder';
 
 export type LlmPhaseOverrides = {
   [K in LlmOverridePhaseId]?: Partial<LlmPhaseOverride>;

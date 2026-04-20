@@ -113,6 +113,7 @@ export function HorizontalBarSection({
                     {composition ? (
                       <>
                         <div className="h-full" style={{ width: `${composition.promptPct}%`, background: 'var(--sf-tok-prompt, #22d3ee)' }} />
+                        <div className="h-full" style={{ width: `${composition.usagePct}%`, background: 'var(--sf-tok-usage, #f59e0b)' }} />
                         <div className="h-full" style={{ width: `${composition.completionPct}%`, background: 'var(--sf-tok-completion, #a78bfa)' }} />
                         <div className="h-full" style={{ width: `${composition.cachedPct}%`, background: 'var(--sf-tok-cached, #34d399)' }} />
                       </>

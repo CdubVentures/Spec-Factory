@@ -162,14 +162,32 @@ export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryT
       },
     },
     {
-      accessorKey: 'prompt_tokens',
+      accessorKey: 'sent_tokens',
       header: 'Prompt',
       size: 75,
       cell: ({ getValue }) => <span className="font-mono text-[11px] sf-tok-prompt-text">{formatTokens(getValue() as number)}</span>,
     },
     {
+      id: 'usage_tokens',
+      header: 'Usage',
+      size: 75,
+      cell: ({ row }) => {
+        // WHY: Derived — tool-loop / reasoning overhead = prompt_tokens - sent_tokens.
+        // Clamped at 0 so historical rows (where sent_tokens was backfilled to equal
+        // prompt_tokens) show 0 usage rather than a negative number.
+        const usage = Math.max(0, (row.original.prompt_tokens || 0) - (row.original.sent_tokens || 0));
+        return <span className="font-mono text-[11px] sf-tok-usage-text">{formatTokens(usage)}</span>;
+      },
+    },
+    {
+      accessorKey: 'prompt_tokens',
+      header: 'Input',
+      size: 75,
+      cell: ({ getValue }) => <span className="font-mono text-[11px] sf-text-primary">{formatTokens(getValue() as number)}</span>,
+    },
+    {
       accessorKey: 'completion_tokens',
-      header: 'Completion',
+      header: 'Output',
       size: 90,
       cell: ({ getValue }) => <span className="font-mono text-[11px] sf-tok-completion-text">{formatTokens(getValue() as number)}</span>,
     },
@@ -185,12 +203,13 @@ export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryT
       size: 80,
       cell: ({ row }) => {
         const seg = computeTokenSegments(row.original);
-        if (seg.promptPct + seg.completionPct + seg.cachedPct === 0) {
+        if (seg.promptPct + seg.usagePct + seg.completionPct + seg.cachedPct === 0) {
           return <span className="sf-text-subtle text-[11px]">—</span>;
         }
         return (
           <span className="sf-tok-composition">
             <span className="sf-tok-composition-p" style={{ width: `${seg.promptPct}%` }} />
+            <span className="sf-tok-composition-u" style={{ width: `${seg.usagePct}%` }} />
             <span className="sf-tok-composition-c" style={{ width: `${seg.completionPct}%` }} />
             <span className="sf-tok-composition-ca" style={{ width: `${seg.cachedPct}%` }} />
           </span>

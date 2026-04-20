@@ -145,26 +145,43 @@ export function computeFilterChipCounts(
   };
 }
 
-/** Split a grouped item's token volume into prompt / completion / cached
- *  percentages. `cached_prompt_tokens` is 0 in the current ledger — forward
- *  compatible: once provider extraction lands, the cached slice appears
- *  automatically. */
+/** Split a grouped item's token volume into prompt / usage / completion / cached
+ *  percentages.
+ *
+ *  Ledger convention:
+ *    - `cached_prompt_tokens` is a subset of `prompt_tokens` (cache hits from provider).
+ *    - `sent_tokens` is a subset of the billable-prompt (what Spec Factory transmitted).
+ *    - Remaining billable-prompt (billable - sent) = tool-loop / reasoning overhead.
+ *
+ *  When `sent_tokens` is undefined or 0, `usagePct` is 0 and `promptPct` gets the
+ *  full billable-prompt share (matches pre-capture ledger rows).
+ */
 export function computeTokenSegments(item: {
   prompt_tokens: number;
   completion_tokens: number;
   cached_prompt_tokens?: number;
+  sent_tokens?: number;
 }): TokenSegments {
   const prompt = Math.max(0, item.prompt_tokens || 0);
   const completion = Math.max(0, item.completion_tokens || 0);
   const cached = Math.max(0, item.cached_prompt_tokens || 0);
-  // WHY: ledger convention — cached is a subset of prompt. Billable-prompt = prompt - cached.
+  const sent = Math.max(0, item.sent_tokens || 0);
   const billablePrompt = Math.max(0, prompt - cached);
   const total = billablePrompt + completion + cached;
   if (total === 0) {
-    return { promptPct: 0, completionPct: 0, cachedPct: 0 };
+    return { promptPct: 0, usagePct: 0, completionPct: 0, cachedPct: 0 };
   }
+  // Clamp sent to billable-prompt ceiling so usage can never go negative
+  // (protects against stale estimates or historical rows where sent > billable).
+  const sentShare = Math.min(sent, billablePrompt);
+  const usageShare = Math.max(0, billablePrompt - sentShare);
+  // When no sent_tokens captured (sent === 0), collapse usage into prompt
+  // so backward-compatible rendering matches pre-capture rows exactly.
+  const effectivePromptShare = sent > 0 ? sentShare : billablePrompt;
+  const effectiveUsageShare = sent > 0 ? usageShare : 0;
   return {
-    promptPct: (billablePrompt / total) * 100,
+    promptPct: (effectivePromptShare / total) * 100,
+    usagePct: (effectiveUsageShare / total) * 100,
     completionPct: (completion / total) * 100,
     cachedPct: (cached / total) * 100,
   };

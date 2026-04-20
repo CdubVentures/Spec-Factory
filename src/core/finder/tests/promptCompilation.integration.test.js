@@ -24,6 +24,10 @@ import {
   RDF_DEFAULT_TEMPLATE,
 } from '../../../features/release-date/releaseDateLlmAdapter.js';
 import {
+  buildSkuFinderPrompt,
+  SKF_DEFAULT_TEMPLATE,
+} from '../../../features/sku/skuLlmAdapter.js';
+import {
   buildProductImageFinderPrompt,
   buildHeroImageFinderPrompt,
   PIF_VIEW_DEFAULT_TEMPLATE,
@@ -31,6 +35,16 @@ import {
 } from '../../../features/product-image/productImageLlmAdapter.js';
 import { resolveAmbiguityContext, buildOrchestratorProduct } from '../finderOrchestrationHelpers.js';
 import { resolveIdentityAmbiguitySnapshot } from '../../../features/indexing/orchestration/shared/identityHelpers.js';
+import { PHASE_SCHEMA_REGISTRY } from '../../../features/indexing/pipeline/shared/phaseSchemaRegistry.js';
+import { FINDER_PHASE_SCHEMAS } from '../../../features/indexing/pipeline/shared/phaseSchemaRegistry.generated.js';
+import { FINDER_MODULES } from '../finderModuleRegistry.js';
+
+// WHY: GUI phase IDs are camelToKebab(mod.phase), not mod.routePrefix —
+// the two differ for CEF (routePrefix=color-edition-finder, phase=colorFinder
+// → GUI id 'color-finder') and PIF. FINDER_PHASE_SCHEMAS keys ARE the GUI ids.
+function guiPhaseIdFor(mod) {
+  return mod.phase.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '');
+}
 
 const UNRESOLVED_PLACEHOLDER_RE = /\{\{[A-Z_][A-Z0-9_]*\}\}/;
 
@@ -153,6 +167,72 @@ describe('compiled prompt has no unresolved {{PLACEHOLDER}} tokens', () => {
     });
     const leftover = out.match(UNRESOLVED_PLACEHOLDER_RE);
     assert.equal(leftover, null, `leftover token: ${leftover?.[0]}`);
+  });
+
+  test('SKU — single-product', () => {
+    const out = buildSkuFinderPrompt({
+      product: PRODUCT_AIR,
+      variantLabel: 'black',
+      variantType: 'color',
+      previousDiscovery: EMPTY_DISCOVERY,
+    });
+    const leftover = out.match(UNRESOLVED_PLACEHOLDER_RE);
+    assert.equal(leftover, null, `leftover token: ${leftover?.[0]}`);
+  });
+
+  test('SKU — multi-sibling family', () => {
+    const out = buildSkuFinderPrompt({
+      product: PRODUCT_AIR,
+      variantLabel: 'black',
+      variantType: 'color',
+      siblingsExcluded: FAMILY_CONTEXT.siblingModels,
+      familyModelCount: FAMILY_CONTEXT.familyModelCount,
+      ambiguityLevel: FAMILY_CONTEXT.ambiguityLevel,
+      previousDiscovery: EMPTY_DISCOVERY,
+    });
+    const leftover = out.match(UNRESOLVED_PLACEHOLDER_RE);
+    assert.equal(leftover, null, `leftover token: ${leftover?.[0]}`);
+  });
+});
+
+// ── Section 1b: GUI-editable contract — every finder phase has prompt_templates ──
+// WHY: SKU shipped without a prompt_templates overlay in phaseSchemaRegistry.js,
+// silently falling back to the pre-rendered system_prompt preview. The GUI looked
+// fine but the editor showed `{brand}` literals instead of the {{BRAND}} template
+// and had no category tabs / variable manifest. This test locks down that every
+// finder phase exposes its prompt template through the GUI-editable contract.
+describe('every finder phase exposes prompt_templates for the LLM Config GUI', () => {
+  const FINDER_PHASE_IDS = Object.keys(FINDER_PHASE_SCHEMAS);
+
+  for (const phaseId of FINDER_PHASE_IDS) {
+    test(`${phaseId} has prompt_templates overlay in PHASE_SCHEMA_REGISTRY`, () => {
+      const schema = PHASE_SCHEMA_REGISTRY[phaseId];
+      assert.ok(schema, `${phaseId} missing from PHASE_SCHEMA_REGISTRY`);
+      assert.ok(
+        Array.isArray(schema.prompt_templates) && schema.prompt_templates.length > 0,
+        `${phaseId} missing prompt_templates overlay — add to phaseSchemaRegistry.js`,
+      );
+    });
+  }
+
+  test('every variantFieldProducer wires discoveryPromptTemplate into the GUI', () => {
+    const scalarFinders = FINDER_MODULES.filter(m => m.moduleClass === 'variantFieldProducer');
+    assert.ok(scalarFinders.length >= 2, 'expected at least RDF + SKU as scalar finders');
+    for (const mod of scalarFinders) {
+      const phaseId = guiPhaseIdFor(mod);
+      const schema = PHASE_SCHEMA_REGISTRY[phaseId];
+      const discoveryEntry = schema.prompt_templates?.find(t => t.settingKey === 'discoveryPromptTemplate');
+      assert.ok(
+        discoveryEntry,
+        `${phaseId} has settingsSchema['discoveryPromptTemplate'] but no matching prompt_templates entry`,
+      );
+      assert.equal(discoveryEntry.storageScope, 'module', `${phaseId} discovery template must be storageScope:'module'`);
+      assert.equal(discoveryEntry.moduleId, mod.id, `${phaseId} discovery template moduleId must match module id`);
+      assert.ok(typeof discoveryEntry.defaultTemplate === 'string' && discoveryEntry.defaultTemplate.length > 0,
+        `${phaseId} defaultTemplate must be a non-empty string`);
+      assert.ok(/\{\{[A-Z_]+\}\}/.test(discoveryEntry.defaultTemplate),
+        `${phaseId} defaultTemplate must contain {{TEMPLATE_VARIABLES}} (canonical syntax)`);
+    }
   });
 });
 

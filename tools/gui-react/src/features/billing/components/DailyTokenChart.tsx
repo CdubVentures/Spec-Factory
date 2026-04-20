@@ -17,11 +17,14 @@ interface TokenBarTooltipProps {
   label?: string;
 }
 
-// WHY: Stacked bars — billable prompt (subset of prompt not served from cache) +
-// completion + cached. Cached is always 0 today; extraction follow-up PR fills it.
+// WHY: Stacked bars — prompt (what we sent) + usage (tool-loop overhead) +
+// completion (output) + cached (cache-hit subset of input). Four bands make
+// the input-side split visible: reasoning/web-search bloat appears as amber
+// usage on top of the sent-prompt cyan.
 interface TokenDayRow {
   day: string;
   prompt: number;
+  usage: number;
   completion: number;
   cached: number;
 }
@@ -30,17 +33,26 @@ function buildRows(days: BillingDailyResponse['days'] | undefined): TokenDayRow[
   if (!days?.length) return [];
   return [...days]
     .sort((a, b) => a.day.localeCompare(b.day))
-    .map((d) => ({
-      day: d.day,
-      prompt: d.prompt_tokens,
-      completion: d.completion_tokens,
-      cached: 0,
-    }));
+    .map((d) => {
+      const sent = Math.max(0, d.sent_tokens || 0);
+      const cached = Math.max(0, d.cached_prompt_tokens || 0);
+      const billableInput = Math.max(0, (d.prompt_tokens || 0) - cached);
+      const prompt = Math.min(sent, billableInput);
+      const usage = Math.max(0, billableInput - prompt);
+      return {
+        day: d.day,
+        prompt: sent > 0 ? prompt : billableInput,
+        usage: sent > 0 ? usage : 0,
+        completion: d.completion_tokens || 0,
+        cached,
+      };
+    });
 }
 
 const LEGEND = [
   { key: 'prompt',     label: 'Prompt',     color: 'var(--sf-tok-prompt, #22d3ee)' },
-  { key: 'completion', label: 'Completion', color: 'var(--sf-tok-completion, #a78bfa)' },
+  { key: 'usage',      label: 'Usage',      color: 'var(--sf-tok-usage, #f59e0b)' },
+  { key: 'completion', label: 'Output',     color: 'var(--sf-tok-completion, #a78bfa)' },
   { key: 'cached',     label: 'Cached',     color: 'var(--sf-tok-cached, #34d399)' },
 ] as const;
 

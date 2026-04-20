@@ -9,6 +9,8 @@ import { buildProductImageFinderPrompt } from '../../../product-image/productIma
 import { productImageFinderResponseSchema } from '../../../product-image/productImageSchema.js';
 import { buildReleaseDateFinderPrompt } from '../../../release-date/releaseDateLlmAdapter.js';
 import { releaseDateFinderResponseSchema } from '../../../release-date/releaseDateSchema.js';
+import { buildSkuFinderPrompt } from '../../../sku/skuLlmAdapter.js';
+import { skuFinderResponseSchema } from '../../../sku/skuSchema.js';
 
 export const FINDER_PHASE_SCHEMAS = Object.freeze({
   'color-finder': {
@@ -22,5 +24,9 @@ export const FINDER_PHASE_SCHEMAS = Object.freeze({
   'release-date-finder': {
     system_prompt: buildReleaseDateFinderPrompt({ product: { brand: '{brand}', model: '{model}' } }),
     response_schema: zodToLlmSchema(releaseDateFinderResponseSchema),
+  },
+  'sku-finder': {
+    system_prompt: buildSkuFinderPrompt({ product: { brand: '{brand}', model: '{model}' } }),
+    response_schema: zodToLlmSchema(skuFinderResponseSchema),
   },
 });

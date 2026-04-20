@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS billing_entries (
   prompt_tokens INTEGER DEFAULT 0,
   completion_tokens INTEGER DEFAULT 0,
   cached_prompt_tokens INTEGER DEFAULT 0,
+  sent_tokens INTEGER DEFAULT 0,
   total_tokens INTEGER DEFAULT 0,
   cost_usd REAL DEFAULT 0,
   reason TEXT DEFAULT '',

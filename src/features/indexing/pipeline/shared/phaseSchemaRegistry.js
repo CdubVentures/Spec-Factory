@@ -28,6 +28,7 @@ import {
   VIEW_PROMPT_ROLES,
 } from '../../../product-image/viewPromptDefaults.js';
 import { RDF_DEFAULT_TEMPLATE } from '../../../release-date/releaseDateLlmAdapter.js';
+import { SKF_DEFAULT_TEMPLATE } from '../../../sku/skuLlmAdapter.js';
 
 const NON_FINDER_PHASES = Object.freeze({
   'needset': {
@@ -284,6 +285,36 @@ const RELEASE_DATE_FINDER_TEMPLATES = Object.freeze({
   },
 });
 
+// WHY: Overlay sku-finder with prompt_templates metadata so the LLM Config GUI
+// exposes the discovery prompt editor + variable manifest + per-category tabs
+// (same pattern as release-date-finder overlay). SKU mirrors RDF's variable
+// surface byte-for-byte because both are scalar variantFieldProducer modules
+// sharing the same identity / evidence / confidence / discovery contract.
+const SKU_FINDER_TEMPLATES = Object.freeze({
+  'sku-finder': {
+    ...FINDER_PHASE_SCHEMAS['sku-finder'],
+    prompt_templates: [
+      { promptKey: 'discovery', label: 'Discovery Prompt', storageScope: 'module', moduleId: 'skuFinder', settingKey: 'discoveryPromptTemplate', defaultTemplate: SKF_DEFAULT_TEMPLATE, variables: [
+        { name: 'BRAND', description: 'e.g. "Logitech"', required: true, category: 'deterministic' },
+        { name: 'MODEL', description: 'e.g. "G502 X Plus"', required: true, category: 'deterministic' },
+        { name: 'VARIANT_DESC', description: 'e.g. the "black" color variant — or the "COD BO6" edition', required: true, category: 'deterministic' },
+        { name: 'VARIANT_SUFFIX', description: 'e.g. " (variant: black)" — empty when no variant', required: false, category: 'deterministic' },
+        { name: 'VARIANT_TYPE_WORD', description: '"color" or "edition"', required: false, category: 'deterministic' },
+        { name: 'IDENTITY_WARNING', description: 'Unified block from buildIdentityWarning (src/core/llm/prompts/). 3 tiers: easy="no known siblings" | medium="CAUTION: ..." | hard="HIGH AMBIGUITY: TRIPLE-CHECK". Includes the siblings-exclusion line when sibling models are provided. Edit text via Global Prompts in LLM Config.', required: false, category: 'global-fragment' },
+        { name: 'EVIDENCE_REQUIREMENTS', description: 'Evidence contract + URL verification block. Sourced from the Global Prompts panel (evidenceContract + evidenceVerification).', required: false, category: 'global-fragment' },
+        { name: 'VALUE_CONFIDENCE_GUIDANCE', description: 'Epistemic confidence rubric (per-source + overall). Tier is a URL-type label only and does not factor into confidence. Sourced from the Global Prompts panel (valueConfidenceRubric).', required: false, category: 'global-fragment' },
+        { name: 'PREVIOUS_DISCOVERY', description: 'Previously searched URLs + queries for this variant. Empty on first run. Header text editable in Global Prompts (discoveryHistoryBlock).', required: false, category: 'global-fragment' },
+      ], userMessageInfo: [
+        { field: 'brand', description: 'e.g. "Logitech"' },
+        { field: 'model', description: 'e.g. "G502 X Plus"' },
+        { field: 'base_model', description: 'e.g. "G502 X"' },
+        { field: 'variant_label', description: 'e.g. "black" or "COD BO6 Edition"' },
+        { field: 'variant_type', description: '"color" or "edition"' },
+      ] },
+    ],
+  },
+});
+
 export const PHASE_SCHEMA_REGISTRY = Object.freeze({
   ...NON_FINDER_PHASES,
   ...FINDER_PHASE_SCHEMAS,
@@ -291,4 +322,5 @@ export const PHASE_SCHEMA_REGISTRY = Object.freeze({
   ...IMAGE_FINDER_TEMPLATES,
   ...CAROUSEL_BUILDER_PHASE,
   ...RELEASE_DATE_FINDER_TEMPLATES,
+  ...SKU_FINDER_TEMPLATES,
 });

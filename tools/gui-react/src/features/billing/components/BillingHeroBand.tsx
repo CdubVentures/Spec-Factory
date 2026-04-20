@@ -127,9 +127,8 @@ export function BillingHeroBand({
   isLoading,
   isStale,
 }: BillingHeroBandProps) {
-  const totals = summary?.totals ?? { cost_usd: 0, calls: 0, prompt_tokens: 0, completion_tokens: 0 };
+  const totals = summary?.totals ?? { cost_usd: 0, calls: 0, prompt_tokens: 0, completion_tokens: 0, cached_prompt_tokens: 0, sent_tokens: 0 };
   const avg = computeAvgPerCall(totals.cost_usd, totals.calls);
-  const totalTokens = totals.prompt_tokens + totals.completion_tokens;
   const deltas = useMemo(() => computePeriodDeltas(summary, priorSummary), [summary, priorSummary]);
 
   // WHY: Top call type for hero KPI — already sorted by cost in by-reason response.
@@ -145,10 +144,6 @@ export function BillingHeroBand({
   const callsSeries = useMemo(() => days.map((d) => d.calls), [days]);
   const avgSeries = useMemo(
     () => days.map((d) => (d.calls > 0 ? d.cost_usd / d.calls : 0)),
-    [days],
-  );
-  const tokensSeries = useMemo(
-    () => days.map((d) => d.prompt_tokens + d.completion_tokens),
     [days],
   );
   const promptSeries = useMemo(() => days.map((d) => d.prompt_tokens), [days]);
@@ -227,37 +222,36 @@ export function BillingHeroBand({
           </div>
           <div className="sf-hero-kpi-grid">
             <HeroKpi
-              label="Total"
-              ico="#"
-              value={compactNumber(totalTokens)}
-              trend={sumDelta(deltas.prompt_tokens, deltas.completion_tokens)}
-              sparkValues={tokensSeries}
-              sparkStroke="var(--sf-tok-accent, #22d3ee)"
-              sparkFill="var(--sf-tok-accent, #22d3ee)"
-            />
-            <HeroKpi
               label="Prompt"
               ico="◐"
-              value={compactNumber(totals.prompt_tokens)}
-              subline={totalTokens > 0 ? `${((totals.prompt_tokens / totalTokens) * 100).toFixed(1)}%` : undefined}
+              value={compactNumber(totals.sent_tokens)}
+              subline={totals.prompt_tokens > 0 ? `${((totals.sent_tokens / totals.prompt_tokens) * 100).toFixed(1)}% of input` : undefined}
               sparkValues={promptSeries}
               sparkStroke="var(--sf-tok-prompt, #22d3ee)"
             />
             <HeroKpi
-              label="Completion"
-              ico="◑"
-              value={compactNumber(totals.completion_tokens)}
-              subline={totalTokens > 0 ? `${((totals.completion_tokens / totalTokens) * 100).toFixed(1)}%` : undefined}
-              sparkValues={completionSeries}
-              sparkStroke="var(--sf-tok-completion, #a78bfa)"
+              label="Usage"
+              ico="◈"
+              value={compactNumber(Math.max(0, totals.prompt_tokens - totals.sent_tokens))}
+              subline={totals.prompt_tokens > 0 ? `${(((totals.prompt_tokens - totals.sent_tokens) / totals.prompt_tokens) * 100).toFixed(1)}% of input` : undefined}
+              sparkStroke="var(--sf-tok-usage, #f59e0b)"
             />
             <HeroKpi
-              label="Cache Hit"
-              ico="✦"
-              value="—"
-              subline="Not yet tracked"
-              sparkStroke="var(--sf-tok-cached, #34d399)"
-              valueClass="sf-hero-kpi-value-placeholder"
+              label="Input"
+              ico="#"
+              value={compactNumber(totals.prompt_tokens)}
+              trend={deltas.prompt_tokens}
+              sparkValues={promptSeries}
+              sparkStroke="var(--sf-tok-accent, #22d3ee)"
+              sparkFill="var(--sf-tok-accent, #22d3ee)"
+            />
+            <HeroKpi
+              label="Output"
+              ico="◑"
+              value={compactNumber(totals.completion_tokens)}
+              trend={deltas.completion_tokens}
+              sparkValues={completionSeries}
+              sparkStroke="var(--sf-tok-completion, #a78bfa)"
             />
           </div>
         </div>
@@ -276,13 +270,5 @@ function buildReasonSeries(
   _byReason: BillingByReasonResponse | undefined,
 ): number[] {
   return days.map((d) => d.cost_usd);
-}
-
-// WHY: Combined token trend = weighted delta across prompt+completion. Simple
-// average of directions is meaningless; recompute against the total.
-function sumDelta(a: BillingTrendDelta, b: BillingTrendDelta): BillingTrendDelta {
-  const pct = (a.pct + b.pct) / 2;
-  if (Math.abs(pct) < 0.5) return { pct: 0, direction: 'flat' };
-  return { pct, direction: pct > 0 ? 'up' : 'down' };
 }
 
