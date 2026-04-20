@@ -322,3 +322,52 @@ describe('resolvePhaseModel with unmapped phase', () => {
     strictEqual(result, null);
   });
 });
+
+describe('resolvePhaseModel — writer phase (global formatter)', () => {
+  const globalDraft = {
+    llmModelPlan: 'gemini-2.5-flash',
+    llmModelReasoning: 'deepseek-reasoner',
+    llmPlanFallbackModel: 'deepseek-chat',
+    llmReasoningFallbackModel: 'gemini-2.5-pro',
+    llmPlanUseReasoning: false,
+    llmMaxOutputTokensPlan: 4096,
+    llmMaxOutputTokensTriage: 20000,
+    llmTimeoutMs: 30000,
+    llmMaxTokens: 16384,
+    llmReasoningBudget: 32768,
+  };
+
+  it('writer resolves from top-level writer override, jsonStrict locked true', () => {
+    const overrides = {
+      writer: { baseModel: 'custom-writer', useReasoning: false, thinking: true, thinkingEffort: 'high' },
+    };
+    const result = resolvePhaseModel(overrides as never, 'writer' as never, globalDraft);
+    strictEqual(result?.baseModel, 'custom-writer');
+    strictEqual(result?.thinking, true);
+    strictEqual(result?.thinkingEffort, 'high');
+    strictEqual(result?.jsonStrict, true, 'writer always enforces schema');
+    strictEqual(result?.fallbackModel, '', 'writer has no fallback');
+    strictEqual(result?.webSearch, false, 'writer has no web search');
+  });
+
+  it('writer with useReasoning=true swaps effectiveModel to reasoningModel', () => {
+    const overrides = {
+      writer: { baseModel: 'base-w', reasoningModel: 'reason-w', useReasoning: true },
+    };
+    const result = resolvePhaseModel(overrides as never, 'writer' as never, globalDraft);
+    strictEqual(result?.useReasoning, true);
+    strictEqual(result?.effectiveModel, 'reason-w');
+  });
+
+  it('writer with no override returns empty baseModel (no global inheritance)', () => {
+    const result = resolvePhaseModel({} as never, 'writer' as never, globalDraft);
+    strictEqual(result?.baseModel, '');
+    strictEqual(result?.jsonStrict, true);
+  });
+});
+
+describe('uiPhaseIdToOverrideKey — writer', () => {
+  it('returns "writer" for writer phase id', () => {
+    strictEqual(uiPhaseIdToOverrideKey('writer' as never), 'writer');
+  });
+});

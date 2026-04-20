@@ -42,6 +42,11 @@ const LlmPhaseSection = lazy(async () => {
   return { default: module.LlmPhaseSection };
 });
 
+const GlobalPromptsSection = lazy(async () => {
+  const module = await import('../sections/GlobalPromptsSection.tsx');
+  return { default: module.GlobalPromptsSection };
+});
+
 // WHY: Single canonical contract — no local duplicates.
 import type { IndexingLlmConfigResponse as RuntimeSettingsLlmConfigResponse } from '../../indexing/types.ts';
 
@@ -307,6 +312,12 @@ export function LlmConfigPage() {
           onRegistryChange={onRegistryChange}
           apiKeyFilter={apiKeyFilter}
         />
+      </Suspense>
+    );
+  } else if (activePhase === 'global-prompts') {
+    activePanel = (
+      <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
+        <GlobalPromptsSection />
       </Suspense>
     );
   } else if (uiPhaseIdToOverrideKey(activePhase) !== undefined) {

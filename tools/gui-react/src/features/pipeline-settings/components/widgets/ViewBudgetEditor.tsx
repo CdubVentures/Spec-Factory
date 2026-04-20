@@ -1,4 +1,5 @@
 import type { FinderSettingWidgetProps } from './widgetRegistry.ts';
+import { NumberStepper } from '../../../../shared/ui/forms/NumberStepper.tsx';
 
 const CANONICAL_VIEWS = [
   { key: 'top',    label: 'Top' },
@@ -145,17 +146,17 @@ export function ViewBudgetEditor({ entry, value, allSettings, category, isSaving
                 className="flex items-center justify-between gap-2 rounded border sf-border-soft px-2.5 py-1.5"
               >
                 <span className="text-[11px] sf-text-primary font-medium truncate">{v.label}</span>
-                <input
-                  type="number"
-                  defaultValue={getAttemptVal(v.key)}
-                  onBlur={(e) => {
-                    const val = e.target.value;
+                <NumberStepper
+                  value={String(getAttemptVal(v.key))}
+                  onCommit={(val) => {
                     if (Number(val) !== getAttemptVal(v.key)) handleAttemptChange(v.key, val);
                   }}
                   disabled={isSaving}
-                  className="sf-input w-[40px] px-1 py-0.5 rounded text-[11px] text-center font-mono sf-text-label"
-                  min="1"
-                  max="20"
+                  min={1}
+                  max={20}
+                  compact
+                  ariaLabel={`${v.label} attempts`}
+                  className="w-20 shrink-0"
                 />
               </div>
             ))}

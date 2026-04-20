@@ -1,24 +1,23 @@
 import fs from 'node:fs/promises';
+import fsSync from 'node:fs';
 import path from 'node:path';
 import { nowIso } from '../../../shared/primitives.js';
 import { loadCategoryConfig } from '../../../categories/loader.js';
+import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
 import { ruleRequiredLevel } from '../../../engine/ruleAccessors.js';
 import { projectFieldRulesForConsumer } from '../../../field-rules/consumerGate.js';
 import { isVariantDependentField } from '../../../core/finder/finderModuleRegistry.js';
 import { confidenceColor } from './confidenceColor.js';
 import { normalizeConfidence } from '../../publisher/publish/publishCandidate.js';
-import { buildFallbackFieldCandidateId } from '../../../utils/candidateIdentifier.js';
 import { resolveAuthoritativeProductIdentity } from '../../catalog/index.js';
 import {
   isKnownSlotValue,
   normalizeSlotValueForShape,
-  slotValueComparableToken,
   slotValueToText,
 } from '../../../utils/slotValueShape.js';
 import {
   isObject,
   toArray,
-  normalizeToken,
   normalizeField,
   normalizePathToken,
   toNumber,
@@ -32,12 +31,7 @@ import {
   reviewKeys,
   normalizeFieldContract,
   writeJson,
-  candidateEvidenceFromRows,
-  candidateScore,
   dbSourceLabel,
-  dbSourceMethod,
-  extractHostFromUrl,
-  candidateSourceLabel,
 } from './reviewGridHelpers.js';
 
 
@@ -213,173 +207,6 @@ export async function buildReviewLayout({
 }
 
 
-export function buildFieldState({
-  field,
-  candidates,
-  normalized,
-  provenance,
-  summary,
-  includeCandidates = true,
-  category = '',
-  productId = '',
-  fieldShape = 'scalar',
-  acceptedCandidateId = null,
-  overridden = false,
-  contractUnit = null,
-}) {
-  const fieldKey = normalizeField(field);
-  const normalizedShape = String(fieldShape || 'scalar').trim().toLowerCase() || 'scalar';
-  const normalizedFields = isObject(normalized.fields) ? normalized.fields : {};
-  const rawSelectedValue = Object.prototype.hasOwnProperty.call(normalizedFields, fieldKey)
-    ? normalizedFields[fieldKey]
-    : null;
-  const selectedShapeValue = normalizeSlotValueForShape(rawSelectedValue, normalizedShape).value;
-  const selectedValue = normalizedShape === 'list'
-    ? (slotValueToText(selectedShapeValue, normalizedShape) ?? null)
-    : selectedShapeValue;
-  const provenanceRow = isObject(provenance[fieldKey]) ? provenance[fieldKey] : {};
-  const selectedConfidenceHint = Math.max(0, Math.min(1, normalizeConfidence(toNumber(provenanceRow.confidence, 0))));
-  const candidateRows = toArray(candidates[fieldKey]);
-  let normalizedCandidates = candidateRows
-    .map((candidate, index) => {
-      const normalizedCandidateValue = normalizeSlotValueForShape(candidate.value, normalizedShape).value;
-      if (!isKnownSlotValue(normalizedCandidateValue, normalizedShape)) {
-        return null;
-      }
-      const evidence = candidateEvidenceFromRows(candidate, provenanceRow);
-      const source = candidateSourceLabel(candidate, evidence);
-      return {
-        candidate_id: String(candidate.candidate_id || buildFallbackFieldCandidateId({
-          productId,
-          fieldKey,
-          value: normalizedCandidateValue,
-          index: index + 1,
-          variant: 'candidate',
-        })),
-        value: normalizedShape === 'list'
-          ? (slotValueToText(normalizedCandidateValue, normalizedShape) ?? null)
-          : normalizedCandidateValue,
-        unit: contractUnit || null,
-        score: candidateScore(candidate, provenanceRow),
-        source_id: String(candidate.source_id || evidence.source_id || candidate.host || '').trim(),
-        source,
-        tier: toInt(candidate.tier, 0) || null,
-        method: String(candidate.method || '').trim() || null,
-        evidence,
-        llm_extract_model: candidate.llm_extract_model || null,
-        llm_extract_provider: candidate.llm_extract_provider || null,
-        llm_validate_model: candidate.llm_validate_model || null,
-        llm_validate_provider: candidate.llm_validate_provider || null
-      };
-    })
-    .filter(Boolean);
-
-  if (!overridden && normalizedCandidates.length === 0 && hasKnownValue(selectedValue)) {
-    // No candidate rows exist yet; preserve selected value as a synthetic candidate for slot provenance.
-    const provenanceHost = String(provenanceRow.host || '').trim();
-    const provenanceSourceToken = normalizeToken(provenanceRow.source || provenanceRow.source_id || '');
-    const fallbackSourceToken = provenanceSourceToken || (provenanceHost ? '' : 'reference');
-    const fallbackSource = fallbackSourceToken
-      ? (dbSourceLabel(fallbackSourceToken) || fallbackSourceToken)
-      : '';
-    const baseEvidence = candidateEvidenceFromRows({}, provenanceRow);
-    normalizedCandidates.push({
-      candidate_id: buildFallbackFieldCandidateId({
-        productId,
-        fieldKey,
-        value: selectedValue,
-        index: 0,
-        variant: 'selected',
-      }),
-      value: selectedValue,
-      unit: contractUnit || null,
-      score: Math.max(0, Math.min(1, selectedConfidenceHint || 0.5)),
-      source_id: fallbackSourceToken || '',
-      source: fallbackSource,
-      tier: null,
-      method: dbSourceMethod(fallbackSourceToken) || 'selected_value',
-      evidence: {
-        ...baseEvidence,
-        quote: category ? `Imported from ${category} Field Studio contract` : baseEvidence.quote,
-        snippet_text: category ? `Imported from ${category} Field Studio contract` : baseEvidence.snippet_text,
-        retrieved_at: summary.generated_at || baseEvidence.retrieved_at,
-        source_id: fallbackSourceToken || baseEvidence.source_id || '',
-      },
-      is_synthetic_selected: true,
-    });
-  }
-
-  if (normalizedCandidates.length > 1) {
-    normalizedCandidates.sort((left, right) => toNumber(right.score, 0) - toNumber(left.score, 0));
-  }
-
-  const acceptedCandidate = !overridden && String(acceptedCandidateId || '').trim()
-    ? normalizedCandidates.find((candidate) => normalizeToken(candidate.candidate_id) === normalizeToken(acceptedCandidateId))
-    : null;
-  const topCandidate = normalizedCandidates[0] || null;
-  const selectedToken = slotValueComparableToken(selectedValue, normalizedShape);
-  const topToken = topCandidate ? slotValueComparableToken(topCandidate.value, normalizedShape) : '';
-
-  let selectedCandidate = null;
-  let resolvedSelectedValue = selectedValue;
-  let resolvedSelectedConfidence = selectedConfidenceHint;
-  if (!overridden) {
-    if (acceptedCandidate) {
-      selectedCandidate = acceptedCandidate;
-      resolvedSelectedValue = acceptedCandidate.value;
-      resolvedSelectedConfidence = Math.max(selectedConfidenceHint, toNumber(acceptedCandidate.score, selectedConfidenceHint));
-    } else if (topCandidate) {
-      selectedCandidate = topCandidate;
-      if (!selectedToken || selectedToken !== topToken) {
-        resolvedSelectedValue = topCandidate.value;
-      }
-      resolvedSelectedConfidence = Math.max(selectedConfidenceHint, toNumber(topCandidate.score, selectedConfidenceHint));
-    } else if (!hasKnownValue(resolvedSelectedValue)) {
-      resolvedSelectedValue = null;
-      resolvedSelectedConfidence = 0;
-    }
-  }
-
-  const color = hasKnownValue(resolvedSelectedValue)
-    ? confidenceColor(resolvedSelectedConfidence)
-    : 'gray';
-
-  const sourceCandidate = selectedCandidate || topCandidate;
-  const topEvidence = sourceCandidate
-    ? (isObject(sourceCandidate.evidence)
-      ? sourceCandidate.evidence
-      : candidateEvidenceFromRows(sourceCandidate, provenanceRow))
-    : null;
-  const topSource = sourceCandidate
-    ? (String(sourceCandidate.source || '').trim() || candidateSourceLabel(sourceCandidate, topEvidence || {}))
-    : '';
-  const topMethod = sourceCandidate
-    ? (String(sourceCandidate.method || '').trim() || null)
-    : null;
-  const topTier = sourceCandidate ? (toInt(sourceCandidate.tier, 0) || null) : null;
-  const topEvidenceUrl = topEvidence?.url || '';
-  const topEvidenceQuote = topEvidence?.quote || '';
-
-  return {
-    selected: {
-      value: resolvedSelectedValue,
-      unit: contractUnit || null,
-      confidence: resolvedSelectedConfidence,
-      status: 'ok',
-      color
-    },
-    candidate_count: normalizedCandidates.length,
-    candidates: includeCandidates ? normalizedCandidates : [],
-    accepted_candidate_id: overridden ? null : (acceptedCandidate?.candidate_id || null),
-    selected_candidate_id: overridden ? null : (selectedCandidate?.candidate_id || null),
-    source: topSource,
-    method: topMethod,
-    tier: topTier,
-    evidence_url: topEvidenceUrl,
-    evidence_quote: topEvidenceQuote
-  };
-}
-
 export async function buildProductReviewPayload({
   storage,
   config = {},
@@ -450,6 +277,58 @@ export async function buildProductReviewPayload({
         }
       }
     }
+  }
+
+  // WHY: Manual overrides are user input (not extraction output) and live only
+  // in product.json — never in field_candidates. Merge them into resolvedByField
+  // and variantValuesByField so the grid's downstream logic treats overrides as
+  // the resolved value WITHOUT needing an SQL row. Overrides ALWAYS win over
+  // any pipeline-resolved candidate (confidence=1.0 + manual_override source).
+  try {
+    const productPath = path.join(defaultProductRoot(), productId, 'product.json');
+    const productJson = fsSync.existsSync(productPath)
+      ? JSON.parse(fsSync.readFileSync(productPath, 'utf8'))
+      : null;
+
+    if (productJson?.fields && typeof productJson.fields === 'object') {
+      for (const [fk, entry] of Object.entries(productJson.fields)) {
+        if (!entry || entry.source !== 'manual_override') continue;
+        const normFk = normalizeField(fk);
+        resolvedByField.set(normFk, {
+          value: typeof entry.value === 'object' ? JSON.stringify(entry.value) : String(entry.value ?? ''),
+          confidence: 1.0,
+          status: 'resolved',
+          source_type: 'manual_override',
+          source_id: 'manual_override',
+          metadata_json: { source: 'manual_override', reviewer: entry.reviewer ?? null, reason: entry.reason ?? null },
+          updated_at: String(entry.resolved_at || '').trim() || '',
+          variant_id: null,
+        });
+      }
+    }
+
+    if (productJson?.variant_fields && typeof productJson.variant_fields === 'object') {
+      for (const [vid, fieldMap] of Object.entries(productJson.variant_fields)) {
+        if (!fieldMap || typeof fieldMap !== 'object') continue;
+        for (const [fk, entry] of Object.entries(fieldMap)) {
+          if (!entry || entry.source !== 'manual_override') continue;
+          const normFk = normalizeField(fk);
+          if (!variantValuesByField.has(normFk)) variantValuesByField.set(normFk, new Map());
+          variantValuesByField.get(normFk).set(vid, {
+            value: typeof entry.value === 'object' ? JSON.stringify(entry.value) : String(entry.value ?? ''),
+            confidence: 1.0,
+            status: 'resolved',
+            source_type: 'manual_override',
+            source_id: 'manual_override',
+            metadata_json: { source: 'manual_override', reviewer: entry.reviewer ?? null, reason: entry.reason ?? null },
+            updated_at: String(entry.resolved_at || '').trim() || '',
+            variant_id: vid,
+          });
+        }
+      }
+    }
+  } catch {
+    // best-effort — product.json merge failures shouldn't break the grid
   }
 
   // WHY: Variant-derived fields (colors, editions) are authoritative from the
@@ -764,11 +643,29 @@ export async function buildProductReviewPayload({
     if (ts > parseDateMs(updatedAt)) updatedAt = new Date(ts).toISOString();
   }
 
+  // WHY: Expose the full variant catalog (not just variants that happen to have
+  // a resolved value for some field). Drawer's override-target dropdown must
+  // list every variant so users can seed a value for a variant that hasn't
+  // been extracted yet. Keyed by variant_id; caller derives labels/options.
+  const productVariants = [];
+  for (const v of variantById.values()) {
+    productVariants.push({
+      variant_id: v.variant_id,
+      variant_key: v.variant_key ?? null,
+      variant_label: v.variant_label ?? null,
+      variant_type: v.variant_type ?? null,
+      color_atoms: Array.isArray(v.color_atoms) ? v.color_atoms : null,
+      edition_slug: v.edition_slug ?? null,
+      is_default: v.variant_id === defaultVariantId,
+    });
+  }
+
   return {
     product_id: productId,
     category,
     identity: authoritativeIdentity,
     fields: rows,
+    variants: productVariants,
     metrics: {
       confidence: computedConfidence,
       coverage: computedCoverage,

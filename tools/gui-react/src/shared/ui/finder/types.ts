@@ -4,11 +4,6 @@ export interface KpiCard {
   readonly tone: string;
 }
 
-export interface StatusChipData {
-  readonly label: string;
-  readonly tone: string;
-}
-
 export interface RunDiscoveryLog {
   readonly confirmedCount: number;
   readonly addedNewCount: number;

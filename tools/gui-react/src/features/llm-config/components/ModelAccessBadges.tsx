@@ -80,6 +80,10 @@ interface ModelBadgeGroupProps {
   thinking?: boolean;
   webSearch?: boolean;
   isFallback?: boolean;
+  // WHY: Some surfaces (per-call rows in the Discover tab) already show access
+  // mode on the parent op and want a cleaner row — only capability + fallback
+  // indicators. Default true preserves behavior for the sidebar / popup header.
+  showAccessMode?: boolean;
 }
 
 export const ModelBadgeGroup = memo(function ModelBadgeGroup({
@@ -88,20 +92,23 @@ export const ModelBadgeGroup = memo(function ModelBadgeGroup({
   thinking,
   webSearch,
   isFallback,
+  showAccessMode = true,
 }: ModelBadgeGroupProps) {
   const modeStyle = accessMode ? ACCESS_MODE_BADGE_STYLE[accessMode] : ACCESS_MODE_BADGE_STYLE.api;
   const roleStyle = role ? ROLE_ICON_STYLE[role] : null;
 
   return (
     <>
-      <span
-        className="sf-custom-select-badge"
-        style={{ color: modeStyle.fg, backgroundColor: modeStyle.bg }}
-        title={accessMode === 'lab' ? 'LLM Lab (local)' : 'Cloud API'}
-      >
-        {accessMode === 'lab' ? <LabIcon /> : <ApiIcon />}
-        <span>{modeStyle.label}</span>
-      </span>
+      {showAccessMode && (
+        <span
+          className="sf-custom-select-badge"
+          style={{ color: modeStyle.fg, backgroundColor: modeStyle.bg }}
+          title={accessMode === 'lab' ? 'LLM Lab (local)' : 'Cloud API'}
+        >
+          {accessMode === 'lab' ? <LabIcon /> : <ApiIcon />}
+          <span>{modeStyle.label}</span>
+        </span>
+      )}
       {roleStyle && (
         <span
           className="sf-custom-select-badge"

@@ -14,6 +14,7 @@ interface LlmConfigPageShellProps {
 
 const PHASE_ICON_PATHS: Record<string, ReactNode> = {
   global: <><circle cx="12" cy="12" r="9" /><path d="M12 3v4M12 17v4M3 12h4M17 12h4" /></>,
+  writer: <><path d="M4 20l4-1 10-10-3-3L5 16l-1 4z" /><path d="M14 6l3 3" /></>,
   needset: <><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M8 8h8M8 12h5" /></>,
   'brand-resolver': <><path d="M4 6h16M4 12h10M4 18h14" /><circle cx="18" cy="12" r="3" /></>,
   'search-planner': <><circle cx="11" cy="11" r="7" /><path d="M16 16l5 5" /></>,

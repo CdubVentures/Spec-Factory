@@ -1,52 +1,32 @@
 /**
- * Release Date Finder — JSON store wrapper.
+ * Release Date Finder — JSON store (factory-driven) + SQL rebuild.
  *
- * Uses the generic finderJsonStore with a latest-wins-per-variant recalculation:
- * for each variant_id (or variant_key if no id), the newest non-rejected run's
- * candidate replaces any older one. Other variants are preserved.
- *
- * `rebuildReleaseDateFinderFromJson` mirrors the per-category JSON → SQL
- * projection (matches PIF / CEF pattern).
+ * Store API comes from the shared `createScalarFinderStore` factory with the
+ * `latestWinsPerVariant` recalc strategy. Only `rebuildReleaseDateFinderFromJson`
+ * stays bespoke — SQL projection shape is per-finder.
  *
  * Durable SSOT: `.workspace/products/{pid}/release_date.json`
+ *
+ * Exports (names preserved — external consumers depend on them).
  */
 
 import fs from 'node:fs';
-import { createFinderJsonStore } from '../../core/finder/finderJsonStore.js';
+import { createScalarFinderStore } from '../../core/finder/createScalarFinderStore.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 
-const store = createFinderJsonStore({
-  filePrefix: 'release_date',
-  emptySelected: () => ({ candidates: [] }),
-  // WHY: Override recalculateFromRuns so the `candidates` array contains
-  // exactly one entry per variant — the newest non-rejected run's candidate.
-  // Keying on variant_id (falls back to variant_key) so variant renames
-  // survive without orphaning prior candidates.
-  recalculateSelected: (runs) => {
-    const latestByKey = new Map();
-    const sorted = [...runs]
-      .filter(r => r.status !== 'rejected')
-      .sort((a, b) => a.run_number - b.run_number);
+// WHY: `releaseDateFinderStore` is the generic-named factory output consumed by
+// `registerScalarFinder` (it needs `.read` / `.merge` etc.). The domain-named
+// aliases below (`readReleaseDates`, ...) are the historical external surface —
+// external callers (tests, route handlers) keep working against these.
+export const releaseDateFinderStore = createScalarFinderStore({ filePrefix: 'release_date' });
 
-    for (const run of sorted) {
-      for (const cand of (run.selected?.candidates || [])) {
-        const key = cand.variant_id || cand.variant_key || '';
-        if (!key) continue;
-        latestByKey.set(key, cand);
-      }
-    }
-
-    return { candidates: [...latestByKey.values()] };
-  },
-});
-
-export const readReleaseDates = store.read;
-export const writeReleaseDates = store.write;
-export const mergeReleaseDateDiscovery = store.merge;
-export const deleteReleaseDateFinderRun = store.deleteRun;
-export const deleteReleaseDateFinderRuns = store.deleteRuns;
-export const deleteReleaseDateFinderAll = store.deleteAll;
-export const recalculateReleaseDatesFromRuns = store.recalculateFromRuns;
+export const readReleaseDates = releaseDateFinderStore.read;
+export const writeReleaseDates = releaseDateFinderStore.write;
+export const mergeReleaseDateDiscovery = releaseDateFinderStore.merge;
+export const deleteReleaseDateFinderRun = releaseDateFinderStore.deleteRun;
+export const deleteReleaseDateFinderRuns = releaseDateFinderStore.deleteRuns;
+export const deleteReleaseDateFinderAll = releaseDateFinderStore.deleteAll;
+export const recalculateReleaseDatesFromRuns = releaseDateFinderStore.recalculateFromRuns;
 
 /**
  * Rebuild the release_date_finder SQL table from per-product JSON files.

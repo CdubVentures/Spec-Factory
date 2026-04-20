@@ -6,7 +6,34 @@ import {
   deriveSelectedStateDisplay,
   deriveRunHistoryRows,
 } from '../colorEditionFinderSelectors.ts';
-import type { ColorEditionFinderResult, ColorRegistryEntry } from '../../types.ts';
+import type { ColorEditionFinderResult, ColorRegistryEntry, CefVariantRegistryEntry } from '../../types.ts';
+
+/**
+ * Build a variant_registry fixture from compact entry specs.
+ * variant_id is derived from key for predictable assertions in tests.
+ */
+function makeVariantRegistry(
+  entries: ReadonlyArray<{
+    readonly id?: string;
+    readonly key: string;
+    readonly type: 'color' | 'edition';
+    readonly label?: string;
+    readonly atoms: readonly string[];
+    readonly slug?: string;
+    readonly displayName?: string;
+  }>,
+): CefVariantRegistryEntry[] {
+  return entries.map((e, i) => ({
+    variant_id: e.id ?? `v_test${String(i).padStart(4, '0')}`,
+    variant_key: e.key,
+    variant_type: e.type,
+    variant_label: e.label ?? (e.displayName ?? e.atoms.join('+')),
+    color_atoms: e.atoms,
+    edition_slug: e.slug ?? null,
+    edition_display_name: e.displayName ?? null,
+    created_at: '2026-01-01T00:00:00Z',
+  }));
+}
 
 const SAMPLE_RESULT: ColorEditionFinderResult = {
   product_id: 'mouse-001',
@@ -22,7 +49,12 @@ const SAMPLE_RESULT: ColorEditionFinderResult = {
       'launch-edition': { display_name: '', colors: ['black', 'white'] },
     },
   },
-  variant_registry: [],
+  variant_registry: makeVariantRegistry([
+    { key: 'color:black', type: 'color', atoms: ['black'] },
+    { key: 'color:white', type: 'color', atoms: ['white'] },
+    { key: 'color:black+red', type: 'color', atoms: ['black', 'red'] },
+    { key: 'edition:launch-edition', type: 'edition', atoms: ['black', 'white'], slug: 'launch-edition', displayName: '' },
+  ]),
   candidates: { colors: [], editions: [] },
   runs: [
     {
@@ -159,6 +191,10 @@ describe('deriveSelectedStateDisplay', () => {
         editions: ['empty-edition'],
         edition_details: { 'empty-edition': { colors: [] } },
       },
+      variant_registry: makeVariantRegistry([
+        { key: 'color:black', type: 'color', atoms: ['black'] },
+        { key: 'edition:empty-edition', type: 'edition', atoms: [], slug: 'empty-edition' },
+      ]),
     };
     const display = deriveSelectedStateDisplay(result, REGISTRY);
     assert.equal(display.editions[0].slug, 'empty-edition');
@@ -175,6 +211,9 @@ describe('deriveSelectedStateDisplay', () => {
         default_color: 'unknown-color',
         edition_details: {},
       },
+      variant_registry: makeVariantRegistry([
+        { key: 'color:unknown-color', type: 'color', atoms: ['unknown-color'] },
+      ]),
     };
     const display = deriveSelectedStateDisplay(result, REGISTRY);
     assert.equal(display.colors[0].name, 'unknown-color');
@@ -195,10 +234,17 @@ describe('deriveSelectedStateDisplay', () => {
           'cod-bo6-edition': { display_name: 'Call of Duty: Black Ops 6 Edition', colors: ['black'] },
         },
       },
+      variant_registry: makeVariantRegistry([
+        { key: 'color:black', type: 'color', atoms: ['black'] },
+        { key: 'color:white+silver', type: 'color', atoms: ['white', 'silver'] },
+        { key: 'edition:cod-bo6-edition', type: 'edition', atoms: ['black'], slug: 'cod-bo6-edition', displayName: 'Call of Duty: Black Ops 6 Edition' },
+      ]),
     };
     const display = deriveSelectedStateDisplay(result, REGISTRY);
-    assert.equal(display.colors[0].displayName, '');
-    assert.equal(display.colors[1].displayName, 'Frost White');
+    const black = display.colors.find(c => c.variantId === 'v_test0000');
+    const whiteSilver = display.colors.find(c => c.variantId === 'v_test0001');
+    assert.equal(black?.displayName, '');
+    assert.equal(whiteSilver?.displayName, 'Frost White');
     assert.equal(display.editions[0].displayName, 'Call of Duty: Black Ops 6 Edition');
   });
 
@@ -212,6 +258,9 @@ describe('deriveSelectedStateDisplay', () => {
         default_color: 'black+unknown+red',
         edition_details: {},
       },
+      variant_registry: makeVariantRegistry([
+        { key: 'color:black+unknown+red', type: 'color', atoms: ['black', 'unknown', 'red'] },
+      ]),
     };
     const display = deriveSelectedStateDisplay(result, REGISTRY);
     assert.deepEqual(display.colors[0].hexParts, ['#000000', '', '#ef4444']);
@@ -296,7 +345,9 @@ describe('deriveSelectedStateDisplay', () => {
     assert.deepEqual(combo.hexParts, ['#000000', '#ffffff']);
   });
 
-  it('does not duplicate an edition combo already present as a standalone color', () => {
+  it('multi-atom edition combo collapses with matching standalone color in registry (one chip)', () => {
+    // WHY: dual-rule — multi-atom combos in colors[] dedupe with editions of the
+    // same combo. The registry holds one variant (the edition), not two.
     const result: ColorEditionFinderResult = {
       ...SAMPLE_RESULT,
       published: {
@@ -305,13 +356,17 @@ describe('deriveSelectedStateDisplay', () => {
         editions: ['launch-edition'],
         edition_details: { 'launch-edition': { colors: ['black', 'white'] } },
       },
+      variant_registry: makeVariantRegistry([
+        { key: 'color:black', type: 'color', atoms: ['black'] },
+        { key: 'edition:launch-edition', type: 'edition', atoms: ['black', 'white'], slug: 'launch-edition' },
+      ]),
     };
     const display = deriveSelectedStateDisplay(result, REGISTRY);
     const matches = display.colors.filter(c => c.name === 'black+white');
     assert.equal(matches.length, 1);
   });
 
-  it('skips editions with empty paired colors (no combo contribution)', () => {
+  it('skips registry entries with empty color_atoms (no combo contribution)', () => {
     const result: ColorEditionFinderResult = {
       ...SAMPLE_RESULT,
       published: {
@@ -320,13 +375,19 @@ describe('deriveSelectedStateDisplay', () => {
         editions: ['empty-edition'],
         edition_details: { 'empty-edition': { colors: [] } },
       },
+      variant_registry: makeVariantRegistry([
+        { key: 'color:black', type: 'color', atoms: ['black'] },
+        { key: 'edition:empty-edition', type: 'edition', atoms: [], slug: 'empty-edition' },
+      ]),
     };
     const display = deriveSelectedStateDisplay(result, REGISTRY);
     assert.equal(display.colors.length, 1);
     assert.equal(display.colors[0].name, 'black');
   });
 
-  it('collapses two editions with the same combo into a single Colors-side pill', () => {
+  it('two editions sharing same multi-atom combo each get their own chip (per-variant rule)', () => {
+    // Per-variant: each SKU is distinct even when atoms match. Two editions sharing
+    // a combo are still two separate SKUs with their own evidence/Del button.
     const result: ColorEditionFinderResult = {
       ...SAMPLE_RESULT,
       published: {
@@ -338,10 +399,16 @@ describe('deriveSelectedStateDisplay', () => {
           'ed-two': { colors: ['black', 'white'] },
         },
       },
+      variant_registry: makeVariantRegistry([
+        { key: 'edition:ed-one', type: 'edition', atoms: ['black', 'white'], slug: 'ed-one' },
+        { key: 'edition:ed-two', type: 'edition', atoms: ['black', 'white'], slug: 'ed-two' },
+      ]),
     };
     const display = deriveSelectedStateDisplay(result, REGISTRY);
     const matches = display.colors.filter(c => c.name === 'black+white');
-    assert.equal(matches.length, 1);
+    assert.equal(matches.length, 2, 'two editions = two distinct chips');
+    const variantIds = new Set(matches.map(m => m.variantId));
+    assert.equal(variantIds.size, 2, 'each chip has its own variant_id');
   });
 
   it('cascades isPublished=true onto an edition combo when the edition is in publishedSets.editions', () => {
@@ -372,6 +439,54 @@ describe('deriveSelectedStateDisplay', () => {
     const combo = display.colors.find(c => c.name === 'black+white');
     assert.ok(combo);
     assert.equal(combo.isPublished, true);
+  });
+
+  // ── Per-variant chips (M75 Wireless scenario) ────────────────────
+  // WHY: Single-atom edition combos used to collapse with the standalone color
+  // of the same atom — 3 distinct SKUs (plain Black + 2 black-bodied editions)
+  // showed as 1 chip. Each variant is its own SKU with its own evidence and
+  // its own Del button, so the Colors section emits one chip per variant.
+
+  it('M75 shape: 3 colors + 2 single-atom editions sharing same atom → 5 chips, 3 visually black', () => {
+    const result: ColorEditionFinderResult = {
+      product_id: 'mouse-76a41560',
+      category: 'mouse',
+      run_count: 1,
+      last_ran_at: '2026-04-18T23:16:57Z',
+      published: {
+        colors: ['black', 'white', 'light-blue'],
+        editions: ['cod-bo6', 'cyberpunk-arasaka'],
+        default_color: 'black',
+        color_names: { 'light-blue': 'Glacier Blue' },
+        edition_details: {
+          'cod-bo6': { display_name: 'Call of Duty Black Ops 6 Edition', colors: ['black'] },
+          'cyberpunk-arasaka': { display_name: 'Cyberpunk 2077: Arasaka Edition', colors: ['black'] },
+        },
+      },
+      variant_registry: [
+        { variant_id: 'v_blk00001', variant_key: 'color:black', variant_type: 'color', variant_label: 'black', color_atoms: ['black'], edition_slug: null, edition_display_name: null, created_at: '2026-04-18T23:16:57Z' },
+        { variant_id: 'v_wht00002', variant_key: 'color:white', variant_type: 'color', variant_label: 'white', color_atoms: ['white'], edition_slug: null, edition_display_name: null, created_at: '2026-04-18T23:16:57Z' },
+        { variant_id: 'v_lbl00003', variant_key: 'color:light-blue', variant_type: 'color', variant_label: 'Glacier Blue', color_atoms: ['light-blue'], edition_slug: null, edition_display_name: null, created_at: '2026-04-18T23:16:57Z' },
+        { variant_id: 'v_cod00004', variant_key: 'edition:cod-bo6', variant_type: 'edition', variant_label: 'Call of Duty Black Ops 6 Edition', color_atoms: ['black'], edition_slug: 'cod-bo6', edition_display_name: 'Call of Duty Black Ops 6 Edition', created_at: '2026-04-18T23:16:57Z' },
+        { variant_id: 'v_cyb00005', variant_key: 'edition:cyberpunk-arasaka', variant_type: 'edition', variant_label: 'Cyberpunk 2077: Arasaka Edition', color_atoms: ['black'], edition_slug: 'cyberpunk-arasaka', edition_display_name: 'Cyberpunk 2077: Arasaka Edition', created_at: '2026-04-18T23:16:57Z' },
+      ],
+      candidates: { colors: [], editions: [] },
+      runs: [],
+    };
+    const display = deriveSelectedStateDisplay(result, REGISTRY);
+    assert.equal(display.colors.length, 5, 'one chip per variant — no collapse');
+    const blacks = display.colors.filter(c => c.name === 'black');
+    assert.equal(blacks.length, 3, '3 visually-black chips, each tied to its own variant');
+    const blackVariantIds = new Set(blacks.map(c => c.variantId));
+    assert.equal(blackVariantIds.size, 3, 'each black chip has a distinct variant_id');
+    assert.ok(blackVariantIds.has('v_blk00001'), 'plain black variant present');
+    assert.ok(blackVariantIds.has('v_cod00004'), 'cod-bo6 black variant present');
+    assert.ok(blackVariantIds.has('v_cyb00005'), 'cyberpunk-arasaka black variant present');
+    // Edition chips inherit the edition's display_name as displayName so user can disambiguate
+    const cod = blacks.find(c => c.variantId === 'v_cod00004');
+    const cyber = blacks.find(c => c.variantId === 'v_cyb00005');
+    assert.equal(cod?.displayName, 'Call of Duty Black Ops 6 Edition');
+    assert.equal(cyber?.displayName, 'Cyberpunk 2077: Arasaka Edition');
   });
 });
 

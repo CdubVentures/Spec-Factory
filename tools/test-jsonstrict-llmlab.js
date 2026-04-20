@@ -150,7 +150,7 @@ async function testPipeline(label, jsonStrict) {
     || config._resolvedColorFinderBaseModel
     || config.llmModelPlan;
   const webSearch = config._resolvedColorFinderWebSearch;
-  const writerModel = config._resolvedColorFinderWriterModel || '(primary)';
+  const writerModel = config._resolvedWriterBaseModel || '(primary)';
   console.log(`  ${D}model: ${model} | jsonStrict: ${jsonStrict} | webSearch: ${webSearch} | writer: ${writerModel}${R}`);
 
   const logs = [];

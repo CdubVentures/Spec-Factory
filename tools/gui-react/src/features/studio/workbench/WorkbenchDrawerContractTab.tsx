@@ -1,5 +1,6 @@
 import { ComboSelect } from '../../../shared/ui/forms/ComboSelect.tsx';
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
+import { NumberStepper } from '../../../shared/ui/forms/NumberStepper.tsx';
 import {
   parseBoundedIntInput,
   parseIntegerInput,
@@ -280,16 +281,16 @@ export function ContractTab({
         </div>
         <div>
           <div className={`${labelCls} flex items-center`}><span>Effort (1-10)<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.effort} /></span><B p="priority.effort" /></div>
-          <input
-            className={`${inputCls} w-full`}
-            type="number"
+          <NumberStepper
+            className="w-full"
             min={STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.min}
             max={STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.max}
-            value={numN(rule, 'priority.effort', numN(rule, 'effort', 3))}
-            onChange={(e) => onUpdate(
+            value={String(numN(rule, 'priority.effort', numN(rule, 'effort', 3)))}
+            ariaLabel="effort"
+            onChange={(next) => onUpdate(
               'priority.effort',
               parseBoundedIntInput(
-                e.target.value,
+                next,
                 STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.min,
                 STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.max,
                 STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.fallback,

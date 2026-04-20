@@ -1,6 +1,7 @@
 import { memo, useState, type ReactNode } from 'react';
 import type { NumberBound, RuntimeDraft } from '../types/settingPrimitiveTypes.ts';
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
+import { NumberStepper } from '../../../shared/ui/forms/NumberStepper.tsx';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 
 function settingLabel(label: string, tip: string) {
@@ -255,7 +256,7 @@ export const SettingNumberInput = memo(function SettingNumberInput<K extends key
   bounds,
   step,
   disabled = false,
-  className = 'sf-input w-full rounded border px-2 py-1.5 sf-text-label',
+  className,
   onNumberChange,
 }: {
   draftKey: K;
@@ -268,15 +269,15 @@ export const SettingNumberInput = memo(function SettingNumberInput<K extends key
 }) {
   const resolvedStep = step ?? (bounds.int !== false ? 1 : 0.01);
   return (
-    <input
-      type="number"
+    <NumberStepper
+      value={String(value)}
       min={bounds.min}
       max={bounds.max}
       step={resolvedStep}
-      value={value}
-      onChange={(event) => onNumberChange(draftKey, event.target.value, bounds)}
       disabled={disabled}
       className={className}
+      ariaLabel={String(draftKey)}
+      onChange={(next) => onNumberChange(draftKey, next, bounds)}
     />
   );
 });

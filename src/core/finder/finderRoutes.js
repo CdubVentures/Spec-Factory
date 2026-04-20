@@ -221,6 +221,17 @@ function republishAfterDelete(specDb, productId, fieldKeys, sourceType, runSet, 
  * @param {Function} finderConfig.deleteAllRunsSql — (specDb, productId) => void
  * @param {Function} [finderConfig.buildGetResponse] — (row, selected, runs) => custom response
  * @param {Function} [finderConfig.buildResultMeta] — (result) => meta for data-change event
+ * @param {boolean} [finderConfig.parseVariantKey] — when true, POST reads `{variant_key}`
+ *   from body and forwards as `variantKey` into runFinder opts; op is registered with
+ *   `variantKey`; `product.base_model` is forwarded. Default: false.
+ * @param {object} [finderConfig.loop] — opt-in loop support at POST `/loop`. When set,
+ *   the handler registers op with `subType:'loop'`, wires `onLoopProgress →
+ *   updateLoopProgress`, parses `{variant_key}` body, and emits `${routePrefix}-loop`.
+ * @param {Function} finderConfig.loop.orchestrator — loop orchestrator fn
+ *   (same opts shape as runFinder + `onLoopProgress`)
+ * @param {string[]} [finderConfig.loop.stages] — override loop stages; defaults to
+ *   `['Discovery','Validate','Publish']` (or Research/Writer/Validate/Publish when
+ *   jsonStrict is off).
  * @returns {Function} (ctx) => async route handler
  */
 export function createFinderRouteHandler(finderConfig) {
@@ -277,8 +288,13 @@ export function createFinderRouteHandler(finderConfig) {
         });
       }
 
-      // ── POST /:prefix/:category/:productId — trigger run ───────
-      if (method === 'POST' && category && productId && !parts[3]) {
+      // ── POST /:prefix/:category/:productId[/loop] — trigger run or loop ───
+      // WHY: one branch dispatches both single-shot and /loop when the module
+      // opts in via `loop: { orchestrator, stages }`. Field gate, product lookup,
+      // body parse, op register, and fireAndForget scaffolding are shared.
+      const isLoopPost = parts[3] === 'loop' && finderConfig.loop;
+      if (method === 'POST' && category && productId && (!parts[3] || isLoopPost)) {
+        const loopConfig = isLoopPost ? finderConfig.loop : null;
         let op = null;
         let batcher = null;
         try {
@@ -300,19 +316,44 @@ export function createFinderRouteHandler(finderConfig) {
             }
           }
 
-          // WHY: When jsonStrict is off, LLM routing splits into Research + Writer.
+          // WHY: variant_key body parsing is opt-in for per-variant finders.
+          // Loop always parses; single-shot only when parseVariantKey is set.
+          let variantKey = null;
+          const wantsVariantKey = Boolean(finderConfig.parseVariantKey) || isLoopPost;
+          if (wantsVariantKey) {
+            const body = await readJsonBody(req).catch(() => ({}));
+            variantKey = body?.variant_key || null;
+          }
+
+          // WHY: Stage list depends on branch + caller shape. Loop uses its
+          // loopConfig.stages or the scalar-finder defaults (ends in Publish).
+          // Single-shot uses customStages; when parseVariantKey is set, it
+          // implicitly defaults to the same scalar-finder stages (RDF shape)
+          // so per-variant finders don't need to duplicate the stage list.
+          // Generic callers (CEF) fall back to the legacy LLM/Validate stages.
           const jsonStrictKey = `_resolved${capitalize(phase)}JsonStrict`;
           const useWriterPhase = config[jsonStrictKey] === false;
-          const stages = finderConfig.customStages
-            || (useWriterPhase ? ['Research', 'Writer', 'Validate'] : ['LLM', 'Validate']);
+          const scalarFinderStages = useWriterPhase
+            ? ['Research', 'Writer', 'Validate', 'Publish']
+            : ['Discovery', 'Validate', 'Publish'];
+          const genericSingleStages = useWriterPhase
+            ? ['Research', 'Writer', 'Validate']
+            : ['LLM', 'Validate'];
+          const stages = isLoopPost
+            ? (loopConfig.stages || scalarFinderStages)
+            : (finderConfig.customStages
+               || (finderConfig.parseVariantKey ? scalarFinderStages : genericSingleStages));
 
-          op = registerOperation({
+          const opArgs = {
             type: moduleType,
             category,
             productId,
             productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
             stages,
-          });
+          };
+          if (isLoopPost) opArgs.subType = 'loop';
+          if (wantsVariantKey) opArgs.variantKey = variantKey || '';
+          op = registerOperation(opArgs);
 
           batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
           const signal = getOperationSignal(op.id);
@@ -325,30 +366,44 @@ export function createFinderRouteHandler(finderConfig) {
             broadcastWs,
             signal,
             emitArgs: {
-              event: `${routePrefix}-run`,
+              event: `${routePrefix}-${isLoopPost ? 'loop' : 'run'}`,
               category,
               entities: { productIds: [productId] },
               meta: { productId },
             },
-            asyncWork: () => runFinder({
-              product: {
+            asyncWork: () => {
+              const product = {
                 product_id: productId,
                 category,
                 brand: productRow.brand || '',
                 model: productRow.model || '',
                 variant: productRow.variant || '',
-              },
-              appDb,
-              specDb,
-              config,
-              logger: logger || null,
-              signal,
-              onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
-              onModelResolved: (info) => updateModelInfo({ id: op.id, ...info }),
-              onStreamChunk: (delta) => { if (delta.reasoning) batcher.push(delta.reasoning); if (delta.content) batcher.push(delta.content); },
-              onQueueWait: (ms) => updateQueueDelay({ id: op.id, queueDelayMs: ms }),
-              onLlmCallComplete: (call) => appendLlmCall({ id: op.id, call }),
-            }),
+              };
+              // WHY: base_model feeds prompts for per-variant finders. Opt-in
+              // via parseVariantKey or loop — preserves generic-handler POST
+              // behavior for modules (e.g. CEF) that don't opt in.
+              if (wantsVariantKey) product.base_model = productRow.base_model || '';
+
+              const orchestrator = isLoopPost ? loopConfig.orchestrator : runFinder;
+              const orchestratorOpts = {
+                product,
+                appDb,
+                specDb,
+                config,
+                logger: logger || null,
+                signal,
+                onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
+                onModelResolved: (info) => updateModelInfo({ id: op.id, ...info }),
+                onStreamChunk: (delta) => { if (delta.reasoning) batcher.push(delta.reasoning); if (delta.content) batcher.push(delta.content); },
+                onQueueWait: (ms) => updateQueueDelay({ id: op.id, queueDelayMs: ms }),
+                onLlmCallComplete: (call) => appendLlmCall({ id: op.id, call }),
+              };
+              if (wantsVariantKey) orchestratorOpts.variantKey = variantKey;
+              if (isLoopPost) {
+                orchestratorOpts.onLoopProgress = (loopProgress) => updateLoopProgress({ id: op.id, loopProgress });
+              }
+              return orchestrator(orchestratorOpts);
+            },
             completeOperation,
             failOperation,
             cancelOperation,
@@ -602,127 +657,3 @@ export function createFinderRouteHandler(finderConfig) {
   };
 }
 
-/**
- * Generic /loop route handler for variantFieldProducer modules.
- *
- * Used by RDF today; ready for any future simple field finder (MSRP, weight,
- * dimensions, ...). The module provides its own loop orchestrator (one that
- * wraps runVariantFieldLoop with a module-specific satisfaction predicate);
- * this factory owns operations lifecycle + WS emission so route files stay
- * thin.
- *
- * Expects the orchestrator signature to match runReleaseDateFinderLoop
- * (standard opts + onLoopProgress callback).
- *
- * @param {object} cfg
- * @param {string} cfg.routePrefix       — e.g. 'release-date-finder'
- * @param {string} cfg.moduleType        — operations tracker type (e.g. 'rdf')
- * @param {string} cfg.phase             — LLM phase id (e.g. 'releaseDateFinder')
- * @param {string[]} [cfg.requiredFields]— Field Studio gate check
- * @param {Function} cfg.loopOrchestrator — module's runXxxLoop function
- * @returns {Function} (ctx) => async (parts, params, method, req, res) => boolean
- */
-export function createVariantFieldLoopHandler(cfg) {
-  const { routePrefix, moduleType, phase, requiredFields = [], loopOrchestrator } = cfg;
-
-  return function bindContext(ctx) {
-    const { jsonRes, readJsonBody, config, appDb, getSpecDb, broadcastWs, logger } = ctx;
-
-    return async function handleVariantFieldLoop(parts, params, method, req, res) {
-      if (parts[0] !== routePrefix) return false;
-      if (method !== 'POST') return false;
-      if (parts[3] !== 'loop') return false;
-
-      const category = parts[1] || '';
-      const productId = parts[2] || '';
-      if (!category || !productId) return false;
-
-      let op = null;
-      let batcher = null;
-      try {
-        const specDb = getSpecDb(category);
-        if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
-
-        const productRow = specDb.getProduct(productId);
-        if (!productRow) return jsonRes(res, 404, { error: 'product not found', product_id: productId, category });
-
-        if (requiredFields.length > 0) {
-          const compiled = specDb.getCompiledRules?.();
-          const fields = compiled?.fields || {};
-          for (const key of requiredFields) {
-            if (!fields[key]) {
-              return jsonRes(res, 403, { error: `${routePrefix} disabled: field '${key}' not enabled in field studio` });
-            }
-          }
-        }
-
-        const body = await readJsonBody(req).catch(() => ({}));
-        const variantKey = body?.variant_key || null;
-
-        const jsonStrictKey = `_resolved${capitalize(phase)}JsonStrict`;
-        const useWriterPhase = config[jsonStrictKey] === false;
-        const stages = cfg.customStages
-          || (useWriterPhase ? ['Research', 'Writer', 'Validate', 'Publish'] : ['Discovery', 'Validate', 'Publish']);
-
-        op = registerOperation({
-          type: moduleType,
-          subType: 'loop',
-          category,
-          productId,
-          productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
-          variantKey: variantKey || '',
-          stages,
-        });
-        batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
-        const signal = getOperationSignal(op.id);
-
-        return fireAndForget({
-          res,
-          jsonRes,
-          op,
-          batcher,
-          broadcastWs,
-          signal,
-          emitArgs: {
-            event: `${routePrefix}-loop`,
-            category,
-            entities: { productIds: [productId] },
-            meta: { productId },
-          },
-          asyncWork: () => loopOrchestrator({
-            product: {
-              product_id: productId,
-              category,
-              brand: productRow.brand || '',
-              model: productRow.model || '',
-              base_model: productRow.base_model || '',
-              variant: productRow.variant || '',
-            },
-            appDb,
-            specDb,
-            config,
-            logger: logger || null,
-            variantKey,
-            signal,
-            onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
-            onModelResolved: (info) => updateModelInfo({ id: op.id, ...info }),
-            onStreamChunk: (delta) => { if (delta.reasoning) batcher.push(delta.reasoning); if (delta.content) batcher.push(delta.content); },
-            onQueueWait: (ms) => updateQueueDelay({ id: op.id, queueDelayMs: ms }),
-            onLlmCallComplete: (call) => appendLlmCall({ id: op.id, call }),
-            onLoopProgress: (loopProgress) => updateLoopProgress({ id: op.id, loopProgress }),
-          }),
-          completeOperation,
-          failOperation,
-          cancelOperation,
-          emitDataChange,
-        });
-      } catch (err) {
-        if (batcher) batcher.dispose();
-        if (op) failOperation({ id: op.id, error: err instanceof Error ? err.message : String(err) });
-        const message = err instanceof Error ? err.message : String(err);
-        logger?.error?.(`[${routePrefix}] POST /loop failed:`, message);
-        return jsonRes(res, 500, { error: 'loop failed', message });
-      }
-    };
-  };
-}

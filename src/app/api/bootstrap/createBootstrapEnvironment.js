@@ -18,6 +18,7 @@ import {
   applyRuntimeSettingsToConfig,
   loadUserSettingsSync,
 } from '../../../features/settings-authority/index.js';
+import { loadGlobalPromptsSync } from '../../../core/llm/prompts/globalPromptStore.js';
 import { toInt } from '../../../shared/valueNormalizers.js';
 import { createConfigMutationGate } from '../../../core/config/configMutationGate.js';
 import { configValue } from '../../../shared/settingsAccessor.js';
@@ -74,6 +75,7 @@ export function createBootstrapEnvironment({ projectRoot }) {
   });
   const userSettings = loadUserSettingsSync();
   applyRuntimeSettingsToConfig(config, userSettings.runtime, { mode: 'bootstrap' });
+  loadGlobalPromptsSync();
   normalizeRuntimeArtifactWorkspaceDefaults({
     config,
     projectRoot,

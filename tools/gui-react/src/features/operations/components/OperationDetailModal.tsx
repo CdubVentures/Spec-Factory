@@ -191,6 +191,7 @@ function LlmCallRow({ call }: { readonly call: LlmCallRecord }) {
             thinking={call.thinking}
             webSearch={call.webSearch}
             isFallback={call.isFallback}
+            showAccessMode={false}
           />
         </span>
         {call.model && (

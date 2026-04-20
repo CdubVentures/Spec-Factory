@@ -235,8 +235,9 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
     }
     const requestedField = decodeURIComponent(String(field || ''));
 
-    // field_candidates is the sole SSOT for candidates.
-    // Fan out sources_json: 1 SQL row with N sources → N candidate objects.
+    // field_candidates is the sole SSOT for candidates. Post-Phase-8 schema is
+    // source-centric (1 row = 1 source = 1 drawer card) — fanOutCandidates is a
+    // pure projection into the UI shape.
     const fcRows = specDb?.getFieldCandidatesByProductAndField?.(productId, requestedField) || [];
     const allCandidates = fanOutCandidates(fcRows);
 

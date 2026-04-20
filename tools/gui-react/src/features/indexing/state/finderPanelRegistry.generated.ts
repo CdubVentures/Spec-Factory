@@ -13,6 +13,8 @@ export const FINDER_PANELS = [
     moduleClass: 'variantGenerator',
     scopeLevel: 'product',
     routePrefix: 'color-edition-finder',
+    moduleType: 'cef',
+    phase: 'colorFinder',
     component: lazy(() => import('../../color-edition-finder/components/ColorEditionFinderPanel.tsx').then(m => ({ default: m.ColorEditionFinderPanel }))),
   },
   {
@@ -21,6 +23,8 @@ export const FINDER_PANELS = [
     moduleClass: 'variantArtifactProducer',
     scopeLevel: 'variant+mode',
     routePrefix: 'product-image-finder',
+    moduleType: 'pif',
+    phase: 'imageFinder',
     component: lazy(() => import('../../product-image-finder/components/ProductImageFinderPanel.tsx').then(m => ({ default: m.ProductImageFinderPanel }))),
   },
   {
@@ -29,6 +33,12 @@ export const FINDER_PANELS = [
     moduleClass: 'variantFieldProducer',
     scopeLevel: 'variant',
     routePrefix: 'release-date-finder',
+    moduleType: 'rdf',
+    phase: 'releaseDateFinder',
+    valueKey: 'release_date',
+    panelTitle: 'Release Date Finder',
+    panelTip: 'Discovers per-variant first-availability release dates via web search. Candidates flow through the publisher gate.',
+    valueLabelPlural: 'Release Dates',
     component: lazy(() => import('../../release-date-finder/components/ReleaseDateFinderPanel.tsx').then(m => ({ default: m.ReleaseDateFinderPanel }))),
   },
 ] as const;

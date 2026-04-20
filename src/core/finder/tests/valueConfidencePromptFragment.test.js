@@ -1,10 +1,14 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  VALUE_CONFIDENCE_PROMPT_FRAGMENT,
   buildValueConfidencePromptBlock,
   valueConfidenceSchema,
 } from '../valueConfidencePromptFragment.js';
+import { GLOBAL_PROMPTS } from '../../llm/prompts/globalPromptRegistry.js';
+
+// Template text is authoritative in the registry; the fragment builder
+// calls resolveGlobalPrompt('valueConfidenceRubric') under the hood.
+const VALUE_CONFIDENCE_PROMPT_FRAGMENT = GLOBAL_PROMPTS.valueConfidenceRubric.defaultTemplate;
 
 describe('VALUE_CONFIDENCE_PROMPT_FRAGMENT', () => {
   it('asks the LLM to rate overall confidence based on cited evidence', () => {

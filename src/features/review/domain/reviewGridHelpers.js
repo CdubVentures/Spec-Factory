@@ -1,26 +1,21 @@
 // ── Review Grid Helpers ─────────────────────────────────────────────
 //
-// Private helpers extracted from reviewGridData.js.
-// Number parsing, file I/O, field studio hints, contract normalization,
-// flag inference, candidate evidence/scoring, source labels, and queue scoring.
+// Private helpers for reviewGridData.js / overrideHelpers / routes:
+// number parsing, file I/O, field studio hints, contract normalization,
+// flag inference, source labels.
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { nowIso } from '../../../shared/primitives.js';
 import { ruleRequiredLevel } from '../../../engine/ruleAccessors.js';
 import {
   isObject,
-  toArray,
   normalizeToken,
   normalizeField,
   normalizePathToken,
-  toNumber,
 } from './reviewNormalization.js';
 import {
   isKnownSlotValue,
 } from '../../../utils/slotValueShape.js';
-import { normalizeHost } from '../../../shared/hostParser.js';
-import { normalizeConfidence } from '../../publisher/publish/publishCandidate.js';
 
 // ── Number Parsing ──────────────────────────────────────────────────
 
@@ -150,52 +145,6 @@ export async function writeJson(storage, key, value) {
   );
 }
 
-// ── Candidate Evidence / Scoring ────────────────────────────────────
-
-export function candidateEvidenceFromRows(candidate = {}, provenanceRow = {}) {
-  const candidateEvidence = isObject(candidate.evidence) ? candidate.evidence : {};
-  const provenanceEvidence = toArray(provenanceRow.evidence)[0] || {};
-  const quote = String(candidateEvidence.quote || provenanceEvidence.quote || '').trim();
-  return {
-    url: String(candidateEvidence.url || candidate.url || provenanceEvidence.url || '').trim(),
-    retrieved_at: String(
-      candidateEvidence.retrieved_at ||
-      candidate.retrieved_at ||
-      provenanceEvidence.retrieved_at ||
-      nowIso()
-    ),
-    snippet_id: String(candidateEvidence.snippet_id || candidate.snippet_id || provenanceEvidence.snippet_id || '').trim(),
-    snippet_hash: String(candidateEvidence.snippet_hash || candidate.snippet_hash || provenanceEvidence.snippet_hash || '').trim(),
-    quote,
-    quote_span: Array.isArray(candidateEvidence.quote_span)
-      ? candidateEvidence.quote_span
-      : (Array.isArray(provenanceEvidence.quote_span) ? provenanceEvidence.quote_span : null),
-    snippet_text: String(candidateEvidence.snippet_text || candidate.snippet_text || '').trim() || quote,
-    source_id: String(
-      candidateEvidence.source_id ||
-      candidate.source_id ||
-      provenanceEvidence.source_id ||
-      ''
-    ).trim()
-  };
-}
-
-export function candidateScore(candidate = {}, provenanceRow = {}) {
-  const score = toNumber(candidate.score, NaN);
-  if (Number.isFinite(score)) {
-    return Math.max(0, Math.min(1, normalizeConfidence(score)));
-  }
-  const rawConfidence = toNumber(candidate.confidence, NaN);
-  if (Number.isFinite(rawConfidence)) {
-    return Math.max(0, Math.min(1, normalizeConfidence(rawConfidence)));
-  }
-  const confidence = toNumber(provenanceRow.confidence, NaN);
-  if (Number.isFinite(confidence)) {
-    return Math.max(0, Math.min(1, normalizeConfidence(confidence)));
-  }
-  return candidate.approvedDomain ? 0.8 : 0.5;
-}
-
 // ── Source Labels ───────────────────────────────────────────────────
 
 export function dbSourceLabel(source) {
@@ -204,37 +153,5 @@ export function dbSourceLabel(source) {
   if (token === 'pipeline') return 'Pipeline';
   if (token === 'user') return 'user';
   return String(source || '').trim();
-}
-
-export function dbSourceMethod(source) {
-  const token = normalizeToken(source);
-  if (token === 'component_db' || token === 'known_values' || token === 'reference') return 'contract_import';
-  if (token === 'pipeline') return 'pipeline_extract';
-  if (token === 'user') return 'manual_override';
-  return null;
-}
-
-export function extractHostFromUrl(rawUrl) {
-  const url = String(rawUrl || '').trim();
-  if (!url) return '';
-  try {
-    return normalizeHost(new URL(url).hostname);
-  } catch {
-    return '';
-  }
-}
-
-export function candidateSourceLabel(candidate = {}, evidence = {}) {
-  const host = String(candidate.host || '').trim();
-  if (host) return host;
-  const source = String(candidate.source || '').trim();
-  if (source) return source;
-  const sourceId = String(candidate.source_id || evidence.source_id || '').trim();
-  if (sourceId) {
-    const mapped = dbSourceLabel(sourceId);
-    return mapped || sourceId;
-  }
-  const evidenceUrl = String(evidence.url || candidate.url || '').trim();
-  return extractHostFromUrl(evidenceUrl);
 }
 

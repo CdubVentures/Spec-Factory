@@ -1,5 +1,5 @@
 // WHY: Contract test verifying review field contract keys match the actual
-// buildFieldState() output shape from reviewGridData.js.
+// per-field output shape emitted by buildProductReviewPayload() in reviewGridData.js.
 
 import { describe, it } from 'node:test';
 import { ok, strictEqual } from 'node:assert';

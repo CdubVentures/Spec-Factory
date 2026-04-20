@@ -4,6 +4,13 @@
 // scope which prior runs count as "history" (product, variant, variant+mode).
 // No cooldown filtering here — pipeline-level urlCooldownDays lives elsewhere
 // and governs a different concern (crawler re-crawl policy, not prompt text).
+//
+// The header line ("Previous searches for <scope> ...") template lives in
+// src/core/llm/prompts/globalPromptRegistry.js under key 'discoveryHistoryBlock'
+// so the user can edit it from the GUI.
+
+import { resolvePromptTemplate } from '../llm/resolvePromptTemplate.js';
+import { resolveGlobalPrompt } from '../llm/prompts/globalPromptRegistry.js';
 
 /**
  * @typedef {{
@@ -68,7 +75,12 @@ export function accumulateDiscoveryLog(previousRuns, opts = {}) {
  */
 export function buildPreviousDiscoveryBlock({ urlsChecked = [], queriesRun = [], scopeLabel = 'this product' } = {}) {
   if (urlsChecked.length === 0 && queriesRun.length === 0) return '';
-  const lines = [`Previous searches for ${scopeLabel} (do not repeat — find NEW sources or confirm these):`];
+  const header = resolvePromptTemplate(resolveGlobalPrompt('discoveryHistoryBlock'), {
+    SCOPE_LABEL: scopeLabel,
+    URL_LIST: urlsChecked.length > 0 ? JSON.stringify(urlsChecked) : '',
+    QUERY_LIST: queriesRun.length > 0 ? JSON.stringify(queriesRun) : '',
+  });
+  const lines = [header];
   if (urlsChecked.length > 0) lines.push(`- URLs already checked: ${JSON.stringify(urlsChecked)}`);
   if (queriesRun.length > 0) lines.push(`- Queries already run: ${JSON.stringify(queriesRun)}`);
   return `${lines.join('\n')}\n`;

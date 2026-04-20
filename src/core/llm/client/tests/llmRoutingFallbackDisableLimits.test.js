@@ -215,3 +215,84 @@ describe('callLlmWithRouting — fallback inherits phase call-level settings', (
     } finally { stub.restore(); }
   });
 });
+
+// WHY: The writer phase (two-phase mode when jsonStrict=false) must honor
+// disableLimits the same way primary and fallback do — otherwise the writer
+// silently caps at the role token limit even when the user expects unlimited.
+function installSuccessStub() {
+  const original = global.fetch;
+  const calls = [];
+  global.fetch = async (url, opts) => {
+    const body = JSON.parse(opts.body);
+    calls.push({ url, body });
+    // Return '{}' so the writer (JSON-schema) call parses; research phase
+    // uses rawTextMode so it receives '{}' as literal text, also fine.
+    return {
+      ok: true,
+      status: 200,
+      async text() {
+        return JSON.stringify({
+          choices: [{ message: { content: '{}' } }],
+          model: body.model,
+          usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
+        });
+      },
+    };
+  };
+  return { calls, restore: () => { global.fetch = original; } };
+}
+
+describe('callLlmWithRouting — writer phase honors disableLimits', () => {
+  let stub;
+  beforeEach(() => { stub?.restore?.(); stub = null; });
+
+  it('jsonStrict=false + writer disableLimits=true → writer body omits max_tokens', async () => {
+    stub = installSuccessStub();
+    try {
+      const config = baseConfig({
+        _resolvedNeedsetJsonStrict: false,
+        _resolvedWriterBaseModel: 'model-a',
+        _resolvedWriterUseReasoning: false,
+        _resolvedWriterDisableLimits: true,
+      });
+      await callLlmWithRouting({
+        config,
+        reason: 'needset_search_planner',
+        role: 'plan',
+        phase: 'needset',
+        system: 'test',
+        user: 'test',
+        jsonSchema: { type: 'object', properties: { foo: { type: 'string' } } },
+      });
+      // Call 0 = primary research (no schema). Call 1 = writer (with schema).
+      assert.equal(stub.calls.length, 2, 'two-phase should fire primary research + writer');
+      assert.equal(stub.calls[1].body.max_tokens, undefined,
+        'writer body must omit max_tokens when writer disableLimits=true');
+    } finally { stub.restore(); }
+  });
+
+  it('jsonStrict=false + writer disableLimits=false → writer body carries writer max_tokens', async () => {
+    stub = installSuccessStub();
+    try {
+      const config = baseConfig({
+        _resolvedNeedsetJsonStrict: false,
+        _resolvedWriterBaseModel: 'model-a',
+        _resolvedWriterUseReasoning: false,
+        _resolvedWriterDisableLimits: false,
+        _resolvedWriterMaxOutputTokens: 1400,
+      });
+      await callLlmWithRouting({
+        config,
+        reason: 'needset_search_planner',
+        role: 'plan',
+        phase: 'needset',
+        system: 'test',
+        user: 'test',
+        jsonSchema: { type: 'object', properties: { foo: { type: 'string' } } },
+      });
+      assert.equal(stub.calls.length, 2);
+      assert.equal(stub.calls[1].body.max_tokens, 1400,
+        'writer body must carry writer cap when writer disableLimits=false');
+    } finally { stub.restore(); }
+  });
+});

@@ -3,11 +3,13 @@
 
 export type LlmPhaseId =
   | 'global'
+  | 'writer'
   | 'needset'
   | 'search-planner'
   | 'brand-resolver'
   | 'serp-selector'
   | 'validate'
+  | 'global-prompts'
   | 'color-finder'
   | 'image-finder'
   | 'image-evaluator'
@@ -15,6 +17,7 @@ export type LlmPhaseId =
 
 export type LlmPhaseGroup =
   | 'global'
+  | 'writer'
   | 'indexing'
   | 'publish'
   | 'discovery';
@@ -24,7 +27,7 @@ export interface LlmPhaseDefinition {
   label: string;
   subtitle: string;
   tip: string;
-  roles: ReadonlyArray<'plan' | 'triage' | 'reasoning' | 'validate'>;
+  roles: ReadonlyArray<'plan' | 'triage' | 'reasoning' | 'validate' | 'write'>;
   sharedWith?: ReadonlyArray<LlmPhaseId>;
   group: LlmPhaseGroup;
 }

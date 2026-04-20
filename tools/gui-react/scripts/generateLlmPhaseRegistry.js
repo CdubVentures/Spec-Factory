@@ -5,8 +5,8 @@
 // Usage: node tools/gui-react/scripts/generateLlmPhaseRegistry.js
 // Output: writes 4 .generated.ts files in the llm-config feature directory
 
-import { LLM_PHASE_DEFS, LLM_PHASE_UI_GLOBAL, LLM_PHASE_GROUPS } from '../../../src/core/config/llmPhaseDefs.js';
-import { FINDER_MODULES } from '../../../src/core/finder/finderModuleRegistry.js';
+import { LLM_PHASE_DEFS, LLM_PHASE_UI_GLOBAL, LLM_PHASE_UI_GLOBAL_PROMPTS, LLM_PHASE_GROUPS } from '../../../src/core/config/llmPhaseDefs.js';
+import { FINDER_MODULES, deriveFinderPaths } from '../../../src/core/finder/finderModuleRegistry.js';
 import { OPERATION_TYPES } from '../../../src/core/operations/operationTypeRegistry.js';
 import { writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
@@ -23,8 +23,16 @@ function quote(s) { return `'${s}'`; }
 
 // ── Generate llmPhaseTypes.generated.ts ──
 
+// WHY: Order the sidebar as [Global, non-discovery phases, Global Prompts, discovery finders]
+// so Global Prompts sits at the top of the Discovery group it configures.
+function orderedPhasesForUi() {
+  const nonDiscovery = LLM_PHASE_DEFS.filter((p) => p.group !== 'discovery');
+  const discovery = LLM_PHASE_DEFS.filter((p) => p.group === 'discovery');
+  return [LLM_PHASE_UI_GLOBAL, ...nonDiscovery, LLM_PHASE_UI_GLOBAL_PROMPTS, ...discovery];
+}
+
 function generatePhaseTypes() {
-  const allPhases = [LLM_PHASE_UI_GLOBAL, ...LLM_PHASE_DEFS];
+  const allPhases = orderedPhasesForUi();
   const ids = allPhases.map((p) => p.uiId);
 
   const lines = [HEADER];
@@ -42,7 +50,7 @@ function generatePhaseTypes() {
   lines.push(`  label: string;`);
   lines.push(`  subtitle: string;`);
   lines.push(`  tip: string;`);
-  lines.push(`  roles: ReadonlyArray<'plan' | 'triage' | 'reasoning' | 'validate'>;`);
+  lines.push(`  roles: ReadonlyArray<'plan' | 'triage' | 'reasoning' | 'validate' | 'write'>;`);
   lines.push(`  sharedWith?: ReadonlyArray<LlmPhaseId>;`);
   lines.push(`  group: LlmPhaseGroup;`);
   lines.push(`}\n`);
@@ -53,7 +61,7 @@ function generatePhaseTypes() {
 // ── Generate llmPhaseRegistry.generated.ts ──
 
 function generatePhaseRegistry() {
-  const allPhases = [LLM_PHASE_UI_GLOBAL, ...LLM_PHASE_DEFS];
+  const allPhases = orderedPhasesForUi();
   const ids = allPhases.map((p) => p.uiId);
 
   const lines = [HEADER];
@@ -74,6 +82,7 @@ function generatePhaseRegistry() {
   // LLM_PHASE_GROUP_LABELS — display labels for sidebar section dividers
   lines.push(`export const LLM_PHASE_GROUP_LABELS: Record<string, string> = {`);
   lines.push(`  global: 'Global',`);
+  lines.push(`  writer: 'Writer',`);
   lines.push(`  indexing: 'Indexing Pipeline',`);
   lines.push(`  publish: 'Publish Pipeline',`);
   lines.push(`  discovery: 'Discovery',`);
@@ -107,11 +116,6 @@ function generatePhaseOverrideTypes() {
   lines.push('  thinkingEffort: string;');
   lines.push('  disableLimits: boolean;');
   lines.push('  jsonStrict: boolean;');
-  lines.push('  writerModel: string;');
-  lines.push('  writerReasoningModel: string;');
-  lines.push('  writerUseReasoning: boolean;');
-  lines.push('  writerThinking: boolean;');
-  lines.push('  writerThinkingEffort: string;');
   lines.push('}\n');
 
   lines.push(`export type LlmOverridePhaseId = ${ids.map(quote).join(' | ')};\n`);
@@ -166,12 +170,7 @@ export function serializePhaseOverrides(overrides: LlmPhaseOverrides): string {
       phase.thinking !== undefined ||
       phase.thinkingEffort !== undefined ||
       phase.disableLimits !== undefined ||
-      phase.jsonStrict !== undefined ||
-      (phase.writerModel !== undefined && phase.writerModel !== '') ||
-      (phase.writerReasoningModel !== undefined && phase.writerReasoningModel !== '') ||
-      phase.writerUseReasoning !== undefined ||
-      phase.writerThinking !== undefined ||
-      phase.writerThinkingEffort !== undefined
+      phase.jsonStrict !== undefined
     );
   });
   if (!hasContent) return '{}';
@@ -198,12 +197,6 @@ export interface ResolvedPhaseModel {
   thinkingEffort: string;
   disableLimits: boolean;
   jsonStrict: boolean;
-  writerModel: string;
-  writerReasoningModel: string;
-  writerUseReasoning: boolean;
-  writerThinking: boolean;
-  writerThinkingEffort: string;
-  effectiveWriterModel: string;
   effectiveModel: string;
 }
 
@@ -235,8 +228,12 @@ export interface PhaseOverrideRegistryEntry {
 `);
 
   // Generated registry entries
+  // WHY: Writer is excluded — it has no global-model inheritance (it IS the writer).
+  // resolvePhaseModel handles writer via a special branch, and uiPhaseIdToOverrideKey
+  // returns 'writer' by identity below.
   lines.push('export const PHASE_OVERRIDE_REGISTRY: readonly PhaseOverrideRegistryEntry[] = [');
   for (const p of LLM_PHASE_DEFS) {
+    if (p.globalModel === null) continue;
     lines.push(`  { uiPhaseId: ${quote(p.uiId)}, overrideKey: ${quote(p.id)}, globalModel: ${quote(p.globalModel)}, groupToggle: ${quote(p.groupToggle)}, globalTokens: ${quote(p.globalTokens)}, globalTimeout: ${quote(p.globalTimeout)}, globalContextTokens: ${quote(p.globalContextTokens)}, globalReasoningBudget: ${quote(p.globalReasoningBudget)}, globalFallbackModel: ${quote(p.globalFallbackModel)}, globalFallbackReasoningModel: ${quote(p.globalFallbackReasoningModel)} },`);
   }
   lines.push('];\n');
@@ -249,6 +246,9 @@ const UI_TO_OVERRIDE: ReadonlyMap<LlmPhaseId, LlmOverridePhaseId> =
   new Map(PHASE_OVERRIDE_REGISTRY.map((e) => [e.uiPhaseId, e.overrideKey]));
 
 export function uiPhaseIdToOverrideKey(uiPhaseId: LlmPhaseId): LlmOverridePhaseId | undefined {
+  // WHY: Writer is a first-class phase but has no PHASE_OVERRIDE_REGISTRY entry
+  // (it has no global-model inheritance). Identity mapping for the writer case.
+  if (uiPhaseId === 'writer') return 'writer';
   return UI_TO_OVERRIDE.get(uiPhaseId);
 }
 
@@ -259,11 +259,48 @@ function stripComposite(key: string): string {
   return i > 0 ? key.slice(i + 1) : key;
 }
 
+// WHY: Writer has no global-model inheritance, no fallback, no webSearch, and
+// its jsonStrict is locked to true (writer always enforces the schema). All
+// limits default to the global plan/timeout/context/reasoning settings.
+function resolveWriterPhaseModel(
+  overrides: LlmPhaseOverrides,
+  globalDraft: GlobalDraftSlice,
+): ResolvedPhaseModel {
+  const wo: Partial<LlmPhaseOverride> = overrides.writer ?? {};
+  const baseModel = wo.baseModel ?? '';
+  const reasoningModel = wo.reasoningModel || globalDraft.llmModelReasoning || '';
+  const useReasoning = wo.useReasoning ?? false;
+  return {
+    baseModel,
+    reasoningModel,
+    fallbackModel: '',
+    fallbackReasoningModel: '',
+    fallbackUseReasoning: false,
+    fallbackThinking: false,
+    fallbackThinkingEffort: '',
+    fallbackWebSearch: false,
+    effectiveFallbackModel: '',
+    useReasoning,
+    maxOutputTokens: wo.maxOutputTokens ?? globalDraft.llmMaxOutputTokensPlan,
+    timeoutMs: wo.timeoutMs ?? globalDraft.llmTimeoutMs,
+    maxContextTokens: wo.maxContextTokens ?? globalDraft.llmMaxTokens,
+    reasoningBudget: wo.reasoningBudget ?? globalDraft.llmReasoningBudget,
+    webSearch: false,
+    thinking: wo.thinking ?? false,
+    thinkingEffort: wo.thinkingEffort ?? '',
+    disableLimits: wo.disableLimits ?? false,
+    jsonStrict: true,
+    effectiveModel: stripComposite(useReasoning ? reasoningModel : baseModel),
+  };
+}
+
 export function resolvePhaseModel(
   overrides: LlmPhaseOverrides,
   phaseId: LlmOverridePhaseId,
   globalDraft: GlobalDraftSlice,
 ): ResolvedPhaseModel | null {
+  if (phaseId === 'writer') return resolveWriterPhaseModel(overrides, globalDraft);
+
   const mapping = PHASE_GLOBAL_MAP.get(phaseId);
   if (!mapping) return null;
 
@@ -287,11 +324,6 @@ export function resolvePhaseModel(
   const thinkingEffort = phaseOverride.thinkingEffort ?? '';
   const disableLimits = phaseOverride.disableLimits ?? false;
   const jsonStrict = phaseOverride.jsonStrict ?? true;
-  const writerModel = phaseOverride.writerModel || '';
-  const writerReasoningModel = phaseOverride.writerReasoningModel || '';
-  const writerUseReasoning = phaseOverride.writerUseReasoning ?? false;
-  const writerThinking = phaseOverride.writerThinking ?? false;
-  const writerThinkingEffort = phaseOverride.writerThinkingEffort ?? '';
 
   return {
     baseModel,
@@ -313,12 +345,6 @@ export function resolvePhaseModel(
     thinkingEffort,
     disableLimits,
     jsonStrict,
-    writerModel,
-    writerReasoningModel,
-    writerUseReasoning,
-    writerThinking,
-    writerThinkingEffort,
-    effectiveWriterModel: stripComposite(writerUseReasoning ? writerReasoningModel : writerModel),
     effectiveModel: stripComposite(useReasoning ? reasoningModel : baseModel),
   };
 }
@@ -382,10 +408,9 @@ function generateFinderPhaseSchemaRegistry() {
   // Static imports for each finder module's adapter + schema
   for (const m of FINDER_MODULES) {
     if (!m.promptBuilderExport || !m.responseSchemaExport) continue;
-    const adapterPath = `../../../${m.featurePath}/${m.promptBuilderExport.replace(/^build/, '').replace(/Prompt$/, '').replace(/([A-Z])/g, (_, c, i) => i === 0 ? c.toLowerCase() : c)}`;
-    // Use featurePath to derive the actual source file paths
-    lines.push(`import { ${m.promptBuilderExport} } from '../../../${m.featurePath}/${m.featurePath.split('-').map((w, i) => i === 0 ? w : w[0].toUpperCase() + w.slice(1)).join('')}LlmAdapter.js';`);
-    lines.push(`import { ${m.responseSchemaExport} } from '../../../${m.featurePath}/${m.featurePath.split('-').map((w, i) => i === 0 ? w : w[0].toUpperCase() + w.slice(1)).join('')}Schema.js';`);
+    const { featurePath, adapterModule, schemaModule } = deriveFinderPaths(m.id);
+    lines.push(`import { ${m.promptBuilderExport} } from '../../../${featurePath}/${adapterModule}.js';`);
+    lines.push(`import { ${m.responseSchemaExport} } from '../../../${featurePath}/${schemaModule}.js';`);
   }
 
   lines.push('\nexport const FINDER_PHASE_SCHEMAS = Object.freeze({');
@@ -412,14 +437,20 @@ function generateFinderPanelRegistry() {
 
   lines.push('export const FINDER_PANELS = [');
   for (const m of FINDER_MODULES) {
-    if (!m.panelFeaturePath || !m.panelExport) continue;
+    const { panelFeaturePath, panelExport } = deriveFinderPaths(m.id);
     lines.push(`  {`);
     lines.push(`    id: ${quote(m.id)},`);
     lines.push(`    label: ${quote(m.moduleLabel || m.id)},`);
     lines.push(`    moduleClass: ${quote(m.moduleClass || '')},`);
     lines.push(`    scopeLevel: ${quote(deriveScopeLevel(m.moduleClass))},`);
     lines.push(`    routePrefix: ${quote(m.routePrefix || '')},`);
-    lines.push(`    component: lazy(() => import('../../${m.panelFeaturePath}/components/${m.panelExport}.tsx').then(m => ({ default: m.${m.panelExport} }))),`);
+    lines.push(`    moduleType: ${quote(m.moduleType || '')},`);
+    lines.push(`    phase: ${quote(m.phase || '')},`);
+    if (m.valueKey) lines.push(`    valueKey: ${quote(m.valueKey)},`);
+    if (m.panelTitle) lines.push(`    panelTitle: ${quote(m.panelTitle)},`);
+    if (m.panelTip) lines.push(`    panelTip: ${quote(m.panelTip)},`);
+    if (m.valueLabelPlural) lines.push(`    valueLabelPlural: ${quote(m.valueLabelPlural)},`);
+    lines.push(`    component: lazy(() => import('../../${panelFeaturePath}/components/${panelExport}.tsx').then(m => ({ default: m.${panelExport} }))),`);
     lines.push(`  },`);
   }
   lines.push('] as const;\n');

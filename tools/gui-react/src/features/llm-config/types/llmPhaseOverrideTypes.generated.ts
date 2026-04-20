@@ -20,14 +20,9 @@ export interface LlmPhaseOverride {
   thinkingEffort: string;
   disableLimits: boolean;
   jsonStrict: boolean;
-  writerModel: string;
-  writerReasoningModel: string;
-  writerUseReasoning: boolean;
-  writerThinking: boolean;
-  writerThinkingEffort: string;
 }
 
-export type LlmOverridePhaseId = 'needset' | 'searchPlanner' | 'brandResolver' | 'serpSelector' | 'validate' | 'colorFinder' | 'imageFinder' | 'imageEvaluator' | 'releaseDateFinder';
+export type LlmOverridePhaseId = 'writer' | 'needset' | 'searchPlanner' | 'brandResolver' | 'serpSelector' | 'validate' | 'colorFinder' | 'imageFinder' | 'imageEvaluator' | 'releaseDateFinder';
 
 export type LlmPhaseOverrides = {
   [K in LlmOverridePhaseId]?: Partial<LlmPhaseOverride>;

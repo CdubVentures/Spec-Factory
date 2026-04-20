@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import type { FinderSettingWidgetProps } from './widgetRegistry.ts';
 
 const CANONICAL_VIEWS = [
@@ -14,85 +13,58 @@ const CANONICAL_VIEWS = [
 
 interface ViewEntry {
   key: string;
-  description: string;
   priority: boolean;
 }
 
-const CATEGORY_VIEW_DEFAULTS: Record<string, ViewEntry[]> = {
-  mouse: [
-    { key: 'top',    priority: true,  description: 'Bird\u2019s-eye shot looking directly down at the mouse from above' },
-    { key: 'left',   priority: true,  description: 'Strict side profile from the left at eye level' },
-    { key: 'angle',  priority: true,  description: 'Rear/top 3/4 angle showing the mouse from above and behind' },
-    { key: 'bottom', priority: false, description: 'Underside/belly view showing the base, sensor, mouse feet/skates' },
-    { key: 'right',  priority: false, description: 'Strict side profile from the right at eye level' },
-    { key: 'front',  priority: false, description: 'Head-on front view of the mouse' },
-    { key: 'rear',   priority: false, description: 'Head-on rear view showing the palm rest curvature' },
-    { key: 'sangle', priority: false, description: 'Front/side 3/4 angle at roughly 30\u201345 degrees' },
+const CATEGORY_PRIORITY_DEFAULTS: Record<string, ReadonlyArray<ViewEntry>> = {
+  mouse:    [
+    { key: 'top',    priority: true },
+    { key: 'left',   priority: true },
+    { key: 'angle',  priority: true },
+    { key: 'bottom', priority: false },
+    { key: 'right',  priority: false },
+    { key: 'front',  priority: false },
+    { key: 'rear',   priority: false },
+    { key: 'sangle', priority: false },
   ],
-  monitor: [
-    { key: 'front',  priority: true,  description: 'Head-on front view of the monitor' },
-    { key: 'angle',  priority: true,  description: 'Rear/top 3/4 angle showing the back panel' },
-    { key: 'rear',   priority: true,  description: 'Head-on rear view showing ports and VESA area' },
-    { key: 'left',   priority: false, description: 'Strict side profile from the left at eye level' },
-    { key: 'right',  priority: false, description: 'Strict side profile from the right at eye level' },
-    { key: 'top',    priority: false, description: 'Bird\u2019s-eye shot showing top edge and stand base' },
-    { key: 'bottom', priority: false, description: 'Underside view showing the bottom bezel' },
-    { key: 'sangle', priority: false, description: 'Front/side 3/4 angle at roughly 30\u201345 degrees' },
+  monitor:  [
+    { key: 'front',  priority: true },
+    { key: 'angle',  priority: true },
+    { key: 'rear',   priority: true },
+    { key: 'left',   priority: false },
+    { key: 'right',  priority: false },
+    { key: 'top',    priority: false },
+    { key: 'bottom', priority: false },
+    { key: 'sangle', priority: false },
   ],
   keyboard: [
-    { key: 'top',    priority: true,  description: 'Bird\u2019s-eye shot of the full key layout' },
-    { key: 'left',   priority: true,  description: 'Strict side profile from the left at eye level' },
-    { key: 'angle',  priority: true,  description: 'Front/top 3/4 angle at roughly 30\u201345 degrees' },
-    { key: 'bottom', priority: false, description: 'Underside view showing the base and rubber feet' },
-    { key: 'right',  priority: false, description: 'Strict side profile from the right at eye level' },
-    { key: 'front',  priority: false, description: 'Head-on front view of the front edge' },
-    { key: 'rear',   priority: false, description: 'Head-on rear view showing rear ports and cable routing' },
-    { key: 'sangle', priority: false, description: 'Front/side 3/4 angle at roughly 30\u201345 degrees' },
+    { key: 'top',    priority: true },
+    { key: 'left',   priority: true },
+    { key: 'angle',  priority: true },
+    { key: 'bottom', priority: false },
+    { key: 'right',  priority: false },
+    { key: 'front',  priority: false },
+    { key: 'rear',   priority: false },
+    { key: 'sangle', priority: false },
   ],
-};
-
-const GENERIC_DESCRIPTIONS: Record<string, string> = {
-  top: 'Bird\u2019s-eye shot looking directly down at the product from above',
-  bottom: 'Underside/belly view showing the base and any bottom features',
-  left: 'Strict side profile from the left at eye level',
-  right: 'Strict side profile from the right at eye level',
-  front: 'Head-on front view',
-  rear: 'Head-on rear view showing back panel and ports',
-  sangle: 'Front/side 3/4 angle at roughly 30\u201345 degrees',
-  angle: 'Rear/top 3/4 angle at roughly 30\u201345 degrees',
 };
 
 function getCategoryDefaults(category: string): ViewEntry[] {
-  if (CATEGORY_VIEW_DEFAULTS[category]) return CATEGORY_VIEW_DEFAULTS[category];
-  return CANONICAL_VIEWS.map((v, i) => ({
-    key: v.key,
-    priority: i < 3,
-    description: GENERIC_DESCRIPTIONS[v.key] || `${v.label} view of the product`,
-  }));
+  const defaults = CATEGORY_PRIORITY_DEFAULTS[category];
+  if (defaults) return defaults.map((v) => ({ ...v }));
+  return CANONICAL_VIEWS.map((v, i) => ({ key: v.key, priority: i < 3 }));
 }
 
 function ensureAllViews(views: ViewEntry[], category: string): ViewEntry[] {
-  const catDefaults = getCategoryDefaults(category);
-  const descMap: Record<string, string> = {};
-  for (const d of catDefaults) descMap[d.key] = d.description;
-
   const normalized = views.map((v) => ({
     key: v.key,
-    description: v.description || descMap[v.key] || GENERIC_DESCRIPTIONS[v.key] || '',
     priority: typeof v.priority === 'boolean' ? v.priority : true,
   }));
-
+  const catDefaults = getCategoryDefaults(category);
   const existing = new Set(normalized.map((v) => v.key));
-  for (const canon of CANONICAL_VIEWS) {
-    if (!existing.has(canon.key)) {
-      normalized.push({
-        key: canon.key,
-        priority: false,
-        description: descMap[canon.key] || GENERIC_DESCRIPTIONS[canon.key] || `${canon.label} view of the product`,
-      });
-    }
+  for (const d of catDefaults) {
+    if (!existing.has(d.key)) normalized.push({ key: d.key, priority: false });
   }
-
   return normalized;
 }
 
@@ -113,9 +85,11 @@ export function ViewConfigEditor({ entry, value, category, isSaving, onSave }: F
   const priorityViews = views.filter((v) => v.priority);
   const additionalViews = views.filter((v) => !v.priority);
   const isUsingDefaults = !value || !value.trim();
-  const [expandedKey, setExpandedKey] = useState<string>('');
 
-  const commit = (next: ViewEntry[]) => onSave(entry.key, JSON.stringify(next));
+  const commit = (next: ViewEntry[]) => onSave(
+    entry.key,
+    JSON.stringify(next.map((v) => ({ key: v.key, priority: v.priority }))),
+  );
 
   const handleTogglePriority = (key: string) => {
     const updated = views.map((v) =>
@@ -124,10 +98,6 @@ export function ViewConfigEditor({ entry, value, category, isSaving, onSave }: F
     const pri = updated.filter((v) => v.priority);
     const add = updated.filter((v) => !v.priority);
     commit([...pri, ...add]);
-  };
-
-  const handleDescChange = (key: string, desc: string) => {
-    commit(views.map((v) => (v.key === key ? { ...v, description: desc } : v)));
   };
 
   const handleMovePriority = (key: string, dir: -1 | 1) => {
@@ -144,7 +114,6 @@ export function ViewConfigEditor({ entry, value, category, isSaving, onSave }: F
   const handleReset = () => onSave(entry.key, '');
 
   const renderViewRow = (view: ViewEntry, isPriority: boolean, priorityIdx?: number) => {
-    const isExpanded = expandedKey === view.key;
     const canonLabel = CANONICAL_VIEWS.find((v) => v.key === view.key)?.label || view.key;
 
     return (
@@ -192,40 +161,7 @@ export function ViewConfigEditor({ entry, value, category, isSaving, onSave }: F
               </button>
             </>
           )}
-
-          <div className="flex-1" />
-
-          <button
-            onClick={() => setExpandedKey(isExpanded ? '' : view.key)}
-            className="sf-btn-ghost px-1.5 py-0.5 rounded text-[11px] sf-text-muted"
-          >
-            {isExpanded ? 'collapse' : 'edit description'}
-          </button>
         </div>
-
-        {!isExpanded && (
-          <div className="px-3 pb-2">
-            <p className="text-[11px] truncate sf-text-muted">{view.description}</p>
-          </div>
-        )}
-
-        {isExpanded && (
-          <div className="px-3 pb-3">
-            <textarea
-              defaultValue={view.description}
-              onBlur={(e) => {
-                if (e.target.value !== view.description) handleDescChange(view.key, e.target.value);
-              }}
-              disabled={isSaving}
-              rows={3}
-              className="sf-input w-full px-2 py-1.5 rounded sf-text-label text-[12px] resize-y min-h-14"
-              placeholder="Describe what this angle looks like..."
-            />
-            <p className="mt-1 text-[10px] sf-text-muted">
-              This description is sent to the LLM so it knows how to identify and name this view.
-            </p>
-          </div>
-        )}
       </div>
     );
   };
@@ -248,6 +184,9 @@ export function ViewConfigEditor({ entry, value, category, isSaving, onSave }: F
           </button>
         )}
       </div>
+      <p className="text-[10px] sf-text-muted mb-2">
+        Toggle which views are priority for single-run searches and order them. Prompt text per view is edited in LLM Config.
+      </p>
       <div className="space-y-1.5">
         {priorityViews.map((v, i) => renderViewRow(v, true, i))}
       </div>

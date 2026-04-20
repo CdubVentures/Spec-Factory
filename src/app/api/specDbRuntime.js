@@ -1,7 +1,7 @@
 import { scanAndSeedCheckpoints } from '../../pipeline/checkpoint/scanAndSeedCheckpoints.js';
 import { rebuildColorEditionFinderFromJson } from '../../features/color-edition/index.js';
 import { rebuildProductImageFinderFromJson } from '../../features/product-image/index.js';
-import { rebuildReleaseDateFinderFromJson } from '../../features/release-date/index.js';
+import { rebuildReleaseDateFinderFromJson } from '../../features/release-date/releaseDateStore.js';
 import { rebuildFieldCandidatesFromJson, rebuildPublishedFieldsFromJson } from '../../features/publisher/index.js';
 import { reseedFieldKeyOrderFromJson } from '../../features/studio/fieldKeyOrderReseed.js';
 import { reseedFieldStudioMapFromJson } from '../../features/studio/fieldStudioMapReseed.js';

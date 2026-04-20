@@ -787,6 +787,87 @@ describe('submitCandidate', async () => {
     } finally { stub.restore(); }
   });
 
+  it('HEAD-check: 503 (server error / anti-bot) treated as unknown → accepted', async () => {
+    ensureProductJson('mouse-head-503');
+    const stub = stubFetch(() => mkResponse(503));
+    try {
+      const result = await submitCandidate({
+        ...baseDeps(specDb),
+        productId: 'mouse-head-503',
+        fieldKey: 'weight',
+        value: 70,
+        confidence: 80,
+        sourceMeta: { source: 'cef', run_number: 1 },
+        metadata: { evidence_refs: [{ url: 'https://bot-blocked.example.com', tier: 'tier5', confidence: 70 }] },
+        verifyEvidenceUrls: true,
+      });
+      assert.equal(result.status, 'accepted');
+      const split = specDb.countFieldCandidateEvidenceSplitByCandidateId(result.candidateId);
+      assert.equal(split.accepted, 1, '503 is unknown, not rejected');
+      assert.equal(split.rejected, 0);
+    } finally { stub.restore(); }
+  });
+
+  it('HEAD-check: 403 (forbidden / anti-bot) treated as unknown → accepted', async () => {
+    ensureProductJson('mouse-head-403');
+    const stub = stubFetch(() => mkResponse(403));
+    try {
+      const result = await submitCandidate({
+        ...baseDeps(specDb),
+        productId: 'mouse-head-403',
+        fieldKey: 'weight',
+        value: 70,
+        confidence: 80,
+        sourceMeta: { source: 'cef', run_number: 1 },
+        metadata: { evidence_refs: [{ url: 'https://forbidden.example.com', tier: 'tier3', confidence: 60 }] },
+        verifyEvidenceUrls: true,
+      });
+      const split = specDb.countFieldCandidateEvidenceSplitByCandidateId(result.candidateId);
+      assert.equal(split.accepted, 1, '403 anti-bot is unknown, not rejected');
+      assert.equal(split.rejected, 0);
+    } finally { stub.restore(); }
+  });
+
+  it('HEAD-check: 410 (gone) is rejected — same class as 404', async () => {
+    ensureProductJson('mouse-head-410');
+    const stub = stubFetch(() => mkResponse(410));
+    try {
+      const result = await submitCandidate({
+        ...baseDeps(specDb),
+        productId: 'mouse-head-410',
+        fieldKey: 'weight',
+        value: 70,
+        confidence: 80,
+        sourceMeta: { source: 'cef', run_number: 1 },
+        metadata: { evidence_refs: [{ url: 'https://gone.example.com', tier: 'tier1', confidence: 95 }] },
+        verifyEvidenceUrls: true,
+      });
+      const split = specDb.countFieldCandidateEvidenceSplitByCandidateId(result.candidateId);
+      assert.equal(split.accepted, 0);
+      assert.equal(split.rejected, 1, '410 Gone counts as dead like 404');
+    } finally { stub.restore(); }
+  });
+
+  it('HEAD-check: 429 (rate limit) treated as unknown → accepted', async () => {
+    ensureProductJson('mouse-head-429');
+    const stub = stubFetch(() => mkResponse(429));
+    try {
+      const result = await submitCandidate({
+        ...baseDeps(specDb),
+        productId: 'mouse-head-429',
+        fieldKey: 'weight',
+        value: 70,
+        confidence: 80,
+        sourceMeta: { source: 'cef', run_number: 1 },
+        metadata: { evidence_refs: [{ url: 'https://ratelimited.example.com', tier: 'tier2', confidence: 70 }] },
+        verifyEvidenceUrls: true,
+      });
+      const split = specDb.countFieldCandidateEvidenceSplitByCandidateId(result.candidateId);
+      assert.equal(split.accepted, 1);
+      assert.equal(split.rejected, 0);
+    } finally { stub.restore(); }
+  });
+
   it('HEAD-check: network error (fetch throws) treated as unknown → accepted (no false rejection)', async () => {
     ensureProductJson('mouse-head-neterr');
     const stub = stubFetch(() => { throw new TypeError('ECONNREFUSED'); });

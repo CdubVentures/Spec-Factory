@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { useScrollStore, resolveScrollPosition } from '../../../stores/scrollStore.ts';
 import { pct } from '../../../utils/formatting.ts';
@@ -9,9 +9,8 @@ import {
   DrawerShell,
   DrawerSection,
   DrawerCard,
-  DrawerManualOverride,
 } from '../../../shared/ui/overlay/DrawerShell.tsx';
-import type { ReviewCandidate, VariantValueEntry } from '../../../types/review.ts';
+import type { ReviewCandidate, VariantValueEntry, ProductVariantInfo } from '../../../types/review.ts';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
 import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTypes.ts';
 import { resolveEffortLabel } from '../../llm-config/state/resolveEffortLabel.ts';
@@ -32,6 +31,7 @@ import {
   type EvidenceSource,
 } from '../selectors/publishedSourceSelectors.ts';
 import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
+import { deriveOverrideFormState, VARIANT_GENERATOR_FIELD_KEYS } from '../selectors/overrideFormState.ts';
 
 // WHY: Gate the per-source display list on the same publisher threshold that
 // decides candidate publishing. A candidate can be resolved (i.e. its overall
@@ -49,7 +49,9 @@ function useSourceThreshold(): number {
 // run whose value is the full JSON array. Per-variant rows match by
 // "published combo/slug appears in candidate.value array" rather than
 // candidateMatchesVariant (candidate has no variant_id for generators).
-const VARIANT_GENERATOR_FIELDS = new Set(['colors', 'editions']);
+// Single source of truth lives in selectors/overrideFormState.ts — aliased here
+// for backward-compat with existing local references in this file.
+const VARIANT_GENERATOR_FIELDS = VARIANT_GENERATOR_FIELD_KEYS;
 
 function candidateValueIncludes(candidateValue: unknown, entryValue: unknown): boolean {
   let parsed: unknown = candidateValue;
@@ -111,7 +113,11 @@ interface FieldReviewDrawerProps {
     sourceTimestamp?: string | null;
     overridden?: boolean;
   };
-  onManualOverride: (value: string) => void;
+  onManualOverride: (value: string, variantId?: string) => void;
+  onClearPublished?: (opts: { variantId?: string; allVariants?: boolean }) => void;
+  clearPending?: boolean;
+  overrideError?: string | null;
+  clearError?: string | null;
   isPending: boolean;
   candidates: ReviewCandidate[];
   candidatesLoading?: boolean;
@@ -128,6 +134,8 @@ interface FieldReviewDrawerProps {
   // expected to carry variant_id/variant_label/variant_type/color_atoms.
   variantDependent?: boolean;
   variantValues?: Record<string, VariantValueEntry>;
+  // Full variant catalog — includes variants that don't yet have a value for this field.
+  variantCatalog?: ProductVariantInfo[];
 }
 
 // ── Source list (universal URL + tier + confidence row) ────────────
@@ -773,6 +781,184 @@ function PublishedNonVariantRow({
   );
 }
 
+// ── Override + Clear section ────────────────────────────────────────
+//
+// Decides the UI shape via deriveOverrideFormState (pure selector, tested).
+// variantGenerator fields (colors/editions) render nothing — CEF is authoritative.
+// variant-dependent fields render a variant <select> + manual input + per-variant
+// Clear + "Clear all variants". Scalar fields render a single input + Clear.
+
+interface OverrideAndClearSectionProps {
+  fieldKey: string;
+  variantDependent: boolean;
+  variantValues?: Record<string, VariantValueEntry>;
+  variantCatalog?: ProductVariantInfo[];
+  onManualOverride: (value: string, variantId?: string) => void;
+  onClearPublished?: (opts: { variantId?: string; allVariants?: boolean }) => void;
+  isPending: boolean;
+  clearPending?: boolean;
+  overrideError?: string | null;
+  clearError?: string | null;
+}
+
+function OverrideAndClearSection({
+  fieldKey,
+  variantDependent,
+  variantValues,
+  variantCatalog,
+  onManualOverride,
+  onClearPublished,
+  isPending,
+  clearPending,
+  overrideError,
+  clearError,
+}: OverrideAndClearSectionProps) {
+  const moduleClass = VARIANT_GENERATOR_FIELDS.has(fieldKey) ? 'variantGenerator' : null;
+
+  // WHY: Prefer the full catalog (every variant) over the sparse variant_values
+  // map (only variants with a resolved value). Users must be able to seed a
+  // value for a variant that RDF/CEF hasn't produced yet, and the catalog
+  // survives "Clear All Variant Values" while variant_values empties.
+  const variantInputs = useMemo(() => {
+    if (Array.isArray(variantCatalog) && variantCatalog.length > 0) {
+      return variantCatalog.map((v) => ({
+        variant_id: v.variant_id,
+        variant_label: v.variant_label ?? v.variant_id,
+      }));
+    }
+    if (!variantValues) return [];
+    return Object.entries(variantValues).map(([id, entry]) => ({
+      variant_id: id,
+      variant_label: entry.variant_label ?? id,
+    }));
+  }, [variantCatalog, variantValues]);
+
+  const formState = useMemo(
+    () => deriveOverrideFormState({
+      fieldKey,
+      fieldRule: { variant_dependent: variantDependent },
+      moduleClass,
+      variants: variantInputs,
+    }),
+    [fieldKey, variantDependent, moduleClass, variantInputs],
+  );
+
+  const [selectedVariantId, setSelectedVariantId] = useState<string>(
+    formState.variantOptions[0]?.id ?? '',
+  );
+
+  useEffect(() => {
+    if (formState.mode !== 'variant') return;
+    if (formState.variantOptions.length === 0) {
+      if (selectedVariantId !== '') setSelectedVariantId('');
+      return;
+    }
+    if (!formState.variantOptions.some((opt) => opt.id === selectedVariantId)) {
+      setSelectedVariantId(formState.variantOptions[0].id);
+    }
+  }, [formState.mode, formState.variantOptions, selectedVariantId]);
+
+  if (formState.mode === 'suppressed') return null;
+
+  const variantId = formState.mode === 'variant' && selectedVariantId ? selectedVariantId : undefined;
+  const isVariant = formState.mode === 'variant';
+
+  return (
+    <DrawerSection title="Override" className="pt-3 border-t sf-border-subtle">
+      {isVariant && formState.variantOptions.length > 0 && (
+        <div className="space-y-1">
+          <p className="sf-text-nano sf-drawer-meta">Target variant</p>
+          <select
+            value={selectedVariantId}
+            onChange={(event) => setSelectedVariantId(event.target.value)}
+            className="sf-input sf-primitive-input sf-drawer-input w-full"
+          >
+            {formState.variantOptions.map((opt) => (
+              <option key={opt.id} value={opt.id}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+      )}
+      <OverrideInputRow
+        onApply={(value) => onManualOverride(value, variantId)}
+        isPending={isPending}
+        errorMessage={overrideError}
+      />
+      {onClearPublished && (
+        <div className="space-y-1">
+          <p className="sf-text-nano sf-drawer-meta">Clear published</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => onClearPublished(
+                isVariant && variantId ? { variantId } : {},
+              )}
+              disabled={clearPending || (isVariant && !variantId)}
+              className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] font-semibold rounded sf-review-source-button disabled:opacity-50"
+            >
+              {isVariant ? 'Clear Variant Value' : 'Clear Value'}
+            </button>
+            {isVariant && (
+              <button
+                type="button"
+                onClick={() => onClearPublished({ allVariants: true })}
+                disabled={clearPending}
+                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] font-semibold rounded sf-review-source-button disabled:opacity-50"
+              >
+                Clear All Variant Values
+              </button>
+            )}
+          </div>
+          {clearError && (
+            <p className="sf-text-nano text-red-500 mt-1">{clearError}</p>
+          )}
+        </div>
+      )}
+    </DrawerSection>
+  );
+}
+
+// WHY: Inline variant of DrawerManualOverride that matches the compact section
+// style — smaller text, no secondary label, just input + Apply button on a row.
+// DrawerManualOverride still used elsewhere; this stays private to the drawer.
+function OverrideInputRow({ onApply, isPending, errorMessage }: { onApply: (value: string) => void; isPending: boolean; errorMessage?: string | null }) {
+  const [value, setValue] = useState('');
+  function apply() {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    onApply(trimmed);
+    setValue('');
+  }
+  return (
+    <div className="space-y-1">
+      <p className="sf-text-nano sf-drawer-meta">Manual override</p>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          className="sf-input sf-primitive-input sf-drawer-input flex-1 text-[11px]"
+          placeholder="Enter new value..."
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') apply();
+          }}
+        />
+        <button
+          type="button"
+          onClick={apply}
+          disabled={!value.trim() || isPending}
+          className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded sf-review-source-button disabled:opacity-50"
+        >
+          Apply
+        </button>
+      </div>
+      {errorMessage && (
+        <p className="sf-text-nano text-red-500">{errorMessage}</p>
+      )}
+    </div>
+  );
+}
+
 // ── Main component ──────────────────────────────────────────────────
 
 export function FieldReviewDrawer({
@@ -782,6 +968,10 @@ export function FieldReviewDrawer({
   onClose,
   currentValue,
   onManualOverride,
+  onClearPublished,
+  clearPending,
+  overrideError,
+  clearError,
   isPending,
   candidates,
   candidatesLoading,
@@ -794,6 +984,7 @@ export function FieldReviewDrawer({
   deletePending,
   variantDependent = false,
   variantValues,
+  variantCatalog,
 }: FieldReviewDrawerProps) {
   const formatDate = useFormatDate();
   const hasCandidates = candidates.length > 0;
@@ -858,8 +1049,19 @@ export function FieldReviewDrawer({
         )}
       </DrawerSection>
 
-      {/* Section 2: Manual Override + Review All */}
-      <DrawerManualOverride onApply={onManualOverride} isPending={isPending} />
+      {/* Section 2: Manual Override + Clear Published + Review All */}
+      <OverrideAndClearSection
+        fieldKey={fieldKey}
+        variantDependent={variantDependent}
+        variantValues={variantValues}
+        variantCatalog={variantCatalog}
+        onManualOverride={onManualOverride}
+        onClearPublished={onClearPublished}
+        isPending={isPending}
+        clearPending={clearPending}
+        overrideError={overrideError}
+        clearError={clearError}
+      />
       {onRunAIReview && (
         <DrawerSection>
           <button
@@ -874,24 +1076,26 @@ export function FieldReviewDrawer({
           </button>
         </DrawerSection>
       )}
-      {onDeleteAllCandidates && hasCandidates && (
-        <DrawerSection>
-          <button
-            onClick={() => setDeleteConfirm({ mode: 'all' })}
-            disabled={deletePending}
-            className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] font-semibold rounded sf-danger-button disabled:opacity-50"
-          >
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-[13px] h-[13px]">
-              <path d="M2 4h12M5.333 4V2.667a1.333 1.333 0 011.334-1.334h2.666a1.333 1.333 0 011.334 1.334V4m2 0v9.333a1.333 1.333 0 01-1.334 1.334H4.667a1.333 1.333 0 01-1.334-1.334V4h9.334z" />
-            </svg>
-            {deletePending ? 'Deleting...' : 'Delete All Candidates'}
-          </button>
-        </DrawerSection>
-      )}
-
-      {/* Section 3: Candidates (display-only) */}
+      {/* Section 3: Candidates (delete-all + list, grouped with a border so the
+          three sections — Published / Override / Candidates — read as distinct
+          blocks at a glance). */}
       {(hasCandidates || candidatesLoading) && (
-        <DrawerSection title={`Candidates (${candidatesLoading ? '...' : candidates.length})`}>
+        <DrawerSection
+          title={`Candidates (${candidatesLoading ? '...' : candidates.length})`}
+          className="pt-3 border-t sf-border-subtle"
+          meta={onDeleteAllCandidates && hasCandidates ? (
+            <button
+              onClick={() => setDeleteConfirm({ mode: 'all' })}
+              disabled={deletePending}
+              className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded sf-danger-button disabled:opacity-50"
+            >
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-[11px] h-[11px]">
+                <path d="M2 4h12M5.333 4V2.667a1.333 1.333 0 011.334-1.334h2.666a1.333 1.333 0 011.334 1.334V4m2 0v9.333a1.333 1.333 0 01-1.334 1.334H4.667a1.333 1.333 0 01-1.334-1.334V4h9.334z" />
+              </svg>
+              {deletePending ? 'Deleting...' : 'Delete All'}
+            </button>
+          ) : undefined}
+        >
           {candidatesLoading ? (
             <div className="flex justify-center py-4">
               <Spinner className="h-5 w-5" />

@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { parseBoundedIntInput } from '../state/numericInputHelpers.ts';
 import { STUDIO_NUMERIC_KNOB_BOUNDS } from '../state/studioNumericKnobBounds.ts';
+import { NumberStepper } from '../../../shared/ui/forms/NumberStepper.tsx';
 
 interface Props {
   selectedCount: number;
@@ -61,14 +62,15 @@ export function WorkbenchBulkBar({ selectedCount, onApply, onClear }: Props) {
 
       <label className="flex items-center gap-1.5 text-xs sf-text-muted dark:sf-text-muted">
         Min Refs:
-        <input
-          type="number"
+        <NumberStepper
+          compact
           min={STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.min}
           max={STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.max}
-          className={`${selCls} w-14`}
+          className="w-20 shrink-0"
           value={bulkMinRefs}
-          onChange={(e) => setBulkMinRefs(e.target.value)}
+          onChange={(next) => setBulkMinRefs(next)}
           placeholder="\u2014"
+          ariaLabel="bulk min refs"
         />
       </label>
 

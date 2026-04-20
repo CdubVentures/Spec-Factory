@@ -8,6 +8,26 @@ Generic infrastructure for LLM-driven finder modules. Any module that discovers 
 - `FINDER_MODULES` — frozen array of module manifest objects
 - `FINDER_MODULE_MAP` — O(1) lookup by module ID
 - `FINDER_MODULE_BY_PREFIX` — O(1) lookup by route prefix
+- `deriveFinderPaths(id)` — pure helper returning `{ featurePath, routeFile, registrarExport, panelFeaturePath, panelExport, schemaModule, adapterModule }` derived from the module id (Phase 6). Replaces 5 previously-authored registry string fields. Consumed by `finderRouteWiring.js` + 3 codegen scripts (`generateLlmPhaseRegistry.js`, `generateFinderTypes.js`, `generateFinderHooks.js`); new finders declare only `id` and inherit the full wiring contract.
+
+### `editorialSchemas.js` — shared Zod schemas for finder GET responses
+- `publisherCandidateRefSchema` — shape of `field_candidates` rows merged into GET responses (candidate_id, source_id, source_type, model, value, confidence, status, submitted_at, metadata?)
+- `rejectionMetadataSchema` — `{reason_code, detail?}` for candidates blocked by the publisher gate or validation layer
+- `evidenceRefSchema` / `evidenceRefsSchema` — re-exported from `evidencePromptFragment.js` for codegen import consolidation
+- **Registry hook**: finders declare `getResponseSchemaExport: '<schemaName>'` in their `FINDER_MODULES` entry to opt into `generateFinderTypes.js` + `generateFinderHooks.js` codegen. Absence of this field = codegen skips (CEF/PIF keep hand-written types + queries due to their bespoke mutation surfaces).
+
+### `createScalarFinderSchema.js` — LLM response Zod factory for scalar finders
+- `createScalarFinderSchema({ valueKey, valueType, valueRegex? })` — returns a Zod object carrying `[valueKey]`, `confidence` (0-100 int), `unknown_reason`, `evidence_refs`, `discovery_log`. `valueType` ∈ `'date' | 'string' | 'int'`; optional `valueRegex` refines the value (still accepting `'unk'`). Consumed by RDF via `releaseDateSchema.js`; future scalar finders (sku, pricing, msrp, discontinued, upc) call this directly.
+
+### `createScalarFinderEditorialSchemas.js` — editorial GET schemas factory
+- `createScalarFinderEditorialSchemas({ llmResponseSchema })` — returns `{ candidateSchema, runSchema, getResponseSchema }`. `candidateSchema` carries variant identity + `value` + `sources` + publisher enrichment + optional rejection metadata. `runSchema` wraps with model/timing + extended response envelope (adds `variant_id`/`variant_key`/`variant_label`/optional `loop_id`). `getResponseSchema` is the full GET payload (`candidates` + `runs` + `published_value`/`published_confidence`). Drives `types.generated.ts` codegen.
+
+### `createScalarFinderStore.js` — JSON store factory for scalar finders
+- `createScalarFinderStore({ filePrefix, strategy? })` — thin wrapper over `createFinderJsonStore`. `strategy` defaults to `'latestWinsPerVariant'`: for each `variant_id` (falling back to `variant_key`), the newest non-rejected run's candidate replaces any older one. Other variants preserved. Returns the full store API (`read/write/merge/deleteRun/deleteRuns/deleteAll/recalculateFromRuns`).
+
+### `registerScalarFinder.js` — top-level scalar finder wiring factory
+- `registerScalarFinder({ finderName, fieldKey, valueKey, sourceType, phase, logPrefix, createCallLlm, buildPrompt, store, extractCandidate?, satisfactionPredicate?, buildPublisherMetadata?, buildUserMessage?, suppressionScope?, defaultStaggerMs? })` — consumes declarative registry fields + bespoke prompt/caller pair, wires `createVariantScalarFieldProducer` with sensible defaults. Returns `{ runOnce, runLoop }`. **No default `logPrefix`** — avoids collision risk (`pricing` → `'pri'`, etc.); every registry entry declares it explicitly. Default `extractCandidate` trims value, clamps confidence to finite number, treats empty string or case-insensitive `'unk'` as unknown. Default `satisfactionPredicate` stops on definitive unknown (unknown_reason present AND empty value) OR publisher `status === 'published'`.
+- Also exports `_defaultExtractCandidate(valueKey)` + `_defaultSatisfactionPredicate` as unit-test seams locking the default behavior.
 
 ### `finderSettingsSchema.js` — typed per-category settings contract
 - `finderSettingsEntrySchema` — zod discriminated union over setting types (`bool`, `int`, `float`, `string`, `enum`)
@@ -52,7 +72,9 @@ Generic infrastructure for LLM-driven finder modules. Any module that discovers 
   - GET list, GET single, POST trigger, DELETE run, DELETE all
   - POST includes: operations register → stream batcher → stage/model callbacks → complete/fail → data-change emit
   - POST includes: `requiredFields` field studio gate check
-- `createVariantFieldLoopHandler(config)` — returns curried `(ctx) => handler` for `POST /:prefix/:cat/:pid/loop`. Registers op with `subType: 'loop'`, wires `onLoopProgress` → `updateLoopProgress`, runs the module's loop orchestrator, emits `${routePrefix}-loop` data-change on completion. Opt-in: each `variantFieldProducer` route file calls this once.
+- Scalar-finder extension (opt-in, used by RDF + future sku / pricing / msrp / discontinued):
+  - `parseVariantKey: true` — POST reads `{variant_key}` from body, forwards as `variantKey` into `runFinder` opts and op register; `product.base_model` added.
+  - `loop: { orchestrator, stages? }` — absorbs `POST /:prefix/:cat/:pid/loop`. Registers op with `subType: 'loop'`, wires `onLoopProgress` → `updateLoopProgress`, emits `${routePrefix}-loop` data-change. Default stages `['Discovery','Validate','Publish']` (or Research/Writer/Validate/Publish when jsonStrict=false).
 
 ### `runPerVariant.js` — shared per-variant orchestrator
 - `runPerVariant({ specDb, product, variantKey?, staggerMs?, produceForVariant, onStageAdvance?, onVariantProgress?, logger? })` — loads variants via `specDb.variants.listActive(productId)`, filters to a single variant if requested, fires staggered concurrent loop calling `produceForVariant(variant, i, ctx)` per variant. Rejects fast with `no_cef_data` / `unknown_variant`.
@@ -77,7 +99,7 @@ Generic infrastructure for LLM-driven finder modules. Any module that discovers 
 
 ## Dependencies
 
-- **Allowed**: `src/core/config/` (runtimeArtifactRoots), `src/core/events/` (dataChangeContract), `src/core/operations/` (operationsRegistry), `src/core/llm/` (streamBatcher)
+- **Allowed**: `src/core/config/` (runtimeArtifactRoots), `src/core/events/` (dataChangeContract), `src/core/operations/` (operationsRegistry), `src/core/llm/` (streamBatcher, `prompts/` for universal fragments — `buildEvidencePromptBlock` / `buildEvidenceVerificationPromptBlock` / `buildValueConfidencePromptBlock` / `buildPreviousDiscoveryBlock` all resolve their template text from `src/core/llm/prompts/globalPromptRegistry.js`)
 - **Forbidden**: Any feature folder. Features import from `core/finder/`, not the reverse.
 
 ## Domain Invariants
@@ -87,4 +109,6 @@ Generic infrastructure for LLM-driven finder modules. Any module that discovers 
 - **Dual-State Architecture**: JSON is durable memory (write-first). SQL is frontend projection (rebuildable from JSON). Both summary and runs tables follow this contract.
 - **Field Studio gate**: Modules declare `requiredFields`. If any required field is disabled in the category's `eg_toggles`, POST returns 403.
 - **Per-module tables**: Each finder gets its own summary + runs tables with custom columns. Not a shared generic table — SQL queryability matters for the publisher.
-- **Loop standardization for `variantFieldProducer`**: Simple field finders (one value per variant) get the budget loop for free by (1) declaring `perVariantAttemptBudget` in their `settingsSchema`, (2) exporting a `runXxxFinderLoop` that wraps `runVariantFieldLoop` with a satisfaction predicate, and (3) registering one `createVariantFieldLoopHandler` call in their routes file. `runPerVariant` is domain-blind; `runVariantFieldLoop` is the only place that owns attempt counting, `loop_id` propagation, and loop-progress emission. PIF's carousel loop is intentionally separate (multi-view + satisfaction-per-view is carousel-specific) — do not retrofit PIF onto this primitive.
+- **Loop standardization for `variantFieldProducer`**: Simple field finders (one value per variant) get the budget loop for free by (1) declaring `perVariantAttemptBudget` in their `settingsSchema`, (2) exporting a `runXxxFinderLoop` that wraps `runVariantFieldLoop` with a satisfaction predicate, and (3) passing `{ parseVariantKey: true, loop: { orchestrator: runXxxFinderLoop } }` to `createFinderRouteHandler`. `runPerVariant` is domain-blind; `runVariantFieldLoop` is the only place that owns attempt counting, `loop_id` propagation, and loop-progress emission. PIF's carousel loop is intentionally separate (multi-view + satisfaction-per-view is carousel-specific) — do not retrofit PIF onto this primitive.
+- **Scalar-finder template (Phase 4)**: `variantFieldProducer` modules that emit one scalar value per variant collapse to ~20 LOC using `registerScalarFinder` + `createScalarFinderStore` + `createScalarFinderSchema` + `createScalarFinderEditorialSchemas`. The feature file ships only a prompt + LLM caller; everything else is declarative registry config (`valueKey`, `valueType`, `candidateSourceType`, `logPrefix`). RDF is the reference consumer. CEF (variant generator) + PIF (multi-asset artifact producer) do not qualify — their shapes differ.
+- **Scalar-finder panel (Phase 5)**: The frontend panel for any scalar finder collapses to ~25 LOC by wrapping `tools/gui-react/src/shared/ui/finder/GenericScalarFinderPanel.tsx` and passing the 3 generated React Query hooks + HIW content + optional `formatValue`. Registry declares 3 additional fields (`panelTitle`, `panelTip`, `valueLabelPlural`) which the codegen at `tools/gui-react/scripts/generateLlmPhaseRegistry.js` now emits into `finderPanelRegistry.generated.ts` (alongside `moduleType`, `phase`, `valueKey`). The generic panel reads its config via `FINDER_PANELS.find(p => p.id === finderId)`. CEF + PIF panels stay bespoke (different display surfaces).

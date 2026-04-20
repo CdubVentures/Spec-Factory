@@ -1,11 +1,15 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  EVIDENCE_PROMPT_FRAGMENT,
   buildEvidencePromptBlock,
   evidenceRefSchema,
   evidenceRefsSchema,
 } from '../evidencePromptFragment.js';
+import { GLOBAL_PROMPTS } from '../../llm/prompts/globalPromptRegistry.js';
+
+// Template text is authoritative in the registry; the fragment builder
+// calls resolveGlobalPrompt('evidenceContract') under the hood.
+const EVIDENCE_PROMPT_FRAGMENT = GLOBAL_PROMPTS.evidenceContract.defaultTemplate;
 
 describe('EVIDENCE_PROMPT_FRAGMENT', () => {
   it('contains the {{MIN_EVIDENCE_REFS}} placeholder', () => {

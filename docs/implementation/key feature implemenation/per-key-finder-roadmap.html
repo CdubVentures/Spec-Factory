@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory — Per-Key Finder Roadmap</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --surface-alt: #f1f3f5;
+    --border: #dee2e6;
+    --border-light: #e9ecef;
+    --text: #212529;
+    --text-muted: #6c757d;
+    --accent: #4263eb;
+    --accent-light: #edf2ff;
+    --green: #2b8a3e;
+    --green-bg: #ebfbee;
+    --red: #c92a2a;
+    --red-bg: #fff5f5;
+    --orange: #e67700;
+    --orange-bg: #fff9db;
+    --purple: #7048e8;
+    --purple-bg: #f3f0ff;
+    --teal: #0c8599;
+    --teal-bg: #e6fcf5;
+    --pink: #c2255c;
+    --pink-bg: #fff0f6;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #4263eb 0%, #7048e8 100%); color: white; padding: 40px 0; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  .header h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+  .header p { font-size: 15px; opacity: 0.92; margin-top: 4px; }
+  .header .pill { display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; letter-spacing: 0.3px; margin-top: 14px; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  .toc { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 32px; box-shadow: var(--shadow); }
+  .toc h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); margin-bottom: 12px; }
+  .toc ol { list-style: none; counter-reset: toc; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; }
+  .toc li { counter-increment: toc; font-size: 14px; }
+  .toc li::before { content: counter(toc) ". "; color: var(--text-muted); font-weight: 600; margin-right: 4px; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .section-title { font-size: 22px; font-weight: 700; margin: 48px 0 18px; padding-bottom: 10px; border-bottom: 2px solid var(--accent); display: flex; align-items: center; gap: 12px; }
+  .section-title .num { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: white; font-size: 15px; font-weight: 700; flex-shrink: 0; }
+  .subsection-title { font-size: 16px; font-weight: 700; margin: 24px 0 10px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+  .card-header { padding: 14px 20px; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-light); background: var(--surface-alt); }
+  .card-body { padding: 18px 22px; font-size: 14px; }
+  .card-body p { margin-bottom: 10px; }
+  .card-body p:last-child { margin-bottom: 0; }
+  .card-body ul, .card-body ol { margin-left: 22px; margin-bottom: 10px; }
+  .card-body li { margin-bottom: 4px; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .tag-green { background: var(--green-bg); color: var(--green); }
+  .tag-orange { background: var(--orange-bg); color: var(--orange); }
+  .tag-accent { background: var(--accent-light); color: var(--accent); }
+  .tag-purple { background: var(--purple-bg); color: var(--purple); }
+  .tag-teal { background: var(--teal-bg); color: var(--teal); }
+  .tag-red { background: var(--red-bg); color: var(--red); }
+  .tag-pink { background: var(--pink-bg); color: var(--pink); }
+  .tag-muted { background: var(--surface-alt); color: var(--text-muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 10px; background: var(--surface); border-radius: 6px; overflow: hidden; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border-light); }
+  th { background: var(--surface-alt); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
+  tr:last-child td { border-bottom: none; }
+  td code { font-family: var(--mono); font-size: 12px; background: var(--surface-alt); padding: 2px 6px; border-radius: 3px; color: var(--accent); }
+  code.inline { font-family: var(--mono); font-size: 12.5px; background: var(--surface-alt); padding: 2px 6px; border-radius: 3px; color: var(--accent); }
+  .flow-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 18px 0; flex-wrap: wrap; }
+  .flow-box { padding: 10px 16px; border-radius: var(--radius); font-weight: 600; font-size: 12.5px; text-align: center; border: 2px solid; min-width: 120px; }
+  .flow-arrow { font-size: 18px; color: var(--text-muted); }
+  .flow-pass { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+  .flow-fail { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+  .flow-neutral { background: var(--surface-alt); border-color: var(--border); color: var(--text); }
+  .flow-accent { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .flow-teal { background: var(--teal-bg); border-color: var(--teal); color: var(--teal); }
+  .flow-purple { background: var(--purple-bg); border-color: var(--purple); color: var(--purple); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+  @media (max-width: 768px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+  pre.code-block { background: #1e1e2e; color: #cdd6f4; border-radius: 6px; padding: 16px 20px; font-family: var(--mono); font-size: 12.5px; line-height: 1.55; overflow-x: auto; margin-top: 8px; }
+  pre.code-block .k { color: #cba6f7; }
+  pre.code-block .s { color: #a6e3a1; }
+  pre.code-block .n { color: #f9e2af; }
+  pre.code-block .c { color: #6c7086; font-style: italic; }
+  pre.code-block .p { color: #94e2d5; }
+  .callout { border-left: 4px solid; padding: 14px 18px; border-radius: 0 var(--radius) var(--radius) 0; margin: 14px 0; font-size: 13.5px; }
+  .callout-warn { border-color: var(--orange); background: var(--orange-bg); }
+  .callout-info { border-color: var(--accent); background: var(--accent-light); }
+  .callout-ok { border-color: var(--green); background: var(--green-bg); }
+  .callout-red { border-color: var(--red); background: var(--red-bg); }
+  .callout strong { display: block; margin-bottom: 4px; }
+  .phase-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 18px; overflow: hidden; border-left: 4px solid var(--accent); }
+  .phase-card.done { border-left-color: var(--green); }
+  .phase-card.next { border-left-color: var(--orange); }
+  .phase-card.later { border-left-color: var(--text-muted); }
+  .phase-card .phase-header { padding: 16px 22px; display: flex; align-items: center; justify-content: space-between; gap: 14px; background: var(--surface-alt); border-bottom: 1px solid var(--border-light); }
+  .phase-card .phase-title { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+  .phase-card .phase-num { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: white; font-size: 13px; font-weight: 700; }
+  .phase-card.done .phase-num { background: var(--green); }
+  .phase-card.next .phase-num { background: var(--orange); }
+  .phase-card.later .phase-num { background: var(--text-muted); }
+  .phase-card .phase-body { padding: 16px 22px; font-size: 13.5px; }
+  .phase-card .phase-body ul { margin-left: 20px; }
+  .phase-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 10px; font-size: 12.5px; }
+  .phase-grid > div { background: var(--surface-alt); padding: 10px 12px; border-radius: 6px; }
+  .phase-grid dt { font-weight: 600; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+  .phase-grid dd { font-size: 13px; }
+
+  /* Dashboard mockup styles */
+  .mockup { background: #eef2f7; border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin: 14px 0; box-shadow: inset 0 2px 6px rgba(0,0,0,0.04); }
+  .mockup-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 10px; font-weight: 700; }
+  .mockup-window { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .mockup-toolbar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--border-light); background: #fafbfc; flex-wrap: wrap; }
+  .mockup-btn { padding: 6px 12px; border-radius: 5px; font-size: 12px; font-weight: 600; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; }
+  .mockup-btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .mockup-btn.ghost { background: transparent; color: var(--text-muted); }
+  .mockup-chip { padding: 4px 10px; border-radius: 99px; font-size: 11.5px; font-weight: 600; background: var(--surface-alt); color: var(--text-muted); border: 1px solid var(--border); cursor: pointer; }
+  .mockup-chip.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .mockup-search { flex: 1; min-width: 180px; padding: 6px 12px; border-radius: 5px; border: 1px solid var(--border); font-size: 12.5px; background: var(--surface); color: var(--text-muted); }
+  .mockup-select { padding: 6px 10px; border-radius: 5px; border: 1px solid var(--border); font-size: 12px; background: var(--surface); color: var(--text); }
+  .mockup-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .mockup-table th, .mockup-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border-light); }
+  .mockup-table th { background: var(--surface-alt); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
+  .mockup-table tr:hover { background: var(--accent-light); }
+  .mockup-checkbox { width: 14px; height: 14px; accent-color: var(--accent); }
+  .mockup-row-selected { background: #fff9db !important; }
+  .mockup-footer { padding: 10px 14px; border-top: 1px solid var(--border-light); background: #fafbfc; display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--text-muted); }
+  .mockup-badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+
+  /* Status dot for in-progress */
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .dot-green { background: var(--green); }
+  .dot-orange { background: var(--orange); }
+  .dot-muted { background: var(--text-muted); }
+
+  .footer-note { color: var(--text-muted); font-size: 12.5px; text-align: center; margin-top: 32px; padding: 20px; border-top: 1px solid var(--border); }
+  .anchor-target { scroll-margin-top: 20px; }
+
+  /* Path strip at top of sections referencing actual files */
+  .file-strip { font-family: var(--mono); font-size: 12px; color: var(--text-muted); background: var(--surface-alt); padding: 6px 10px; border-radius: 4px; margin: 6px 0; display: inline-block; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Per-Key Finder — Design & Roadmap</h1>
+  <p>Universal finder for every Field Studio key, one prompt scaffold, per-key extraction guidance, tunable model/budget matrix, opt-in bundling.</p>
+  <span class="pill">DESIGN DOC · v1 · STATE: CONTRACT</span>
+</div>
+
+<div class="container">
+
+<!-- ────────────────────────── TABLE OF CONTENTS ────────────────────────── -->
+<div class="toc">
+  <h3>Contents</h3>
+  <ol>
+    <li><a href="#summary">Executive summary</a></li>
+    <li><a href="#foundations">Foundations (what exists today)</a></li>
+    <li><a href="#axes">Simplified axes + decision tables</a></li>
+    <li><a href="#architecture">Feature architecture</a></li>
+    <li><a href="#prompt">Universal prompt composition</a></li>
+    <li><a href="#bundling">Bundling — the opt-in knob</a></li>
+    <li><a href="#dashboard">GUI dashboard mockups</a></li>
+    <li><a href="#roadmap">Phased roadmap</a></li>
+    <li><a href="#open">Open decisions</a></li>
+    <li><a href="#appendix">Appendix — file index + glossary</a></li>
+  </ol>
+</div>
+
+<!-- ────────────────────────── 1. EXECUTIVE SUMMARY ────────────────────────── -->
+<h2 id="summary" class="section-title anchor-target"><span class="num">1</span> Executive summary</h2>
+
+<div class="card">
+  <div class="card-body">
+    <p><strong>What we're building:</strong> a single <code class="inline">src/features/per-key-finder/</code> module that replaces per-feature finders (release-date, product-image non-image keys, sensor, etc.) with one universal engine. Each Field Studio key drives its own prompt via <code class="inline">ai_assist.reasoning_note</code>; the engine picks the right model, attempt budget, and (optionally) bundle size from three axis→decision tables in LLM config.</p>
+    <p><strong>Why:</strong> accuracy and quality at scale demand a consistent prompt scaffold (identity lock, evidence tiers, confidence rubric, URL+query history). Today each finder reimplements most of it. The per-key architecture makes adding a new field a one-file operation — set axes in Field Studio, write extraction guidance, done.</p>
+    <p><strong>Success criteria:</strong></p>
+    <ul>
+      <li>Adding a new finder-backed key requires <strong>zero</strong> new feature code.</li>
+      <li>Model choice, attempt budget, bundle cap — all editable in llm config without code changes.</li>
+      <li>Publisher integration is unchanged (<code class="inline">submitCandidate</code> with evidence refs); finders never self-gate.</li>
+      <li>Prompt scaffold is universal + editable; per-key text flows from <code class="inline">ai_assist.reasoning_note</code>.</li>
+      <li>Run controls let us fire a single key, a group, a whole difficulty tier, or everything &mdash; from one dashboard.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ────────────────────────── 2. FOUNDATIONS ────────────────────────── -->
+<h2 id="foundations" class="section-title anchor-target"><span class="num">2</span> Foundations — what exists today</h2>
+
+<h3 class="subsection-title">2.1 &nbsp; RDF is the reference architecture</h3>
+<div class="card">
+  <div class="card-header"><span class="tag tag-accent">Reference</span> Release Date Finder — the pattern we extend</div>
+  <div class="card-body">
+    <p>RDF already composes 90&percnt; of what the per-key finder needs. The machinery is <strong>already generic</strong> via <code class="inline">registerScalarFinder</code> + <code class="inline">variantScalarFieldProducer</code> + <code class="inline">variantFieldLoop</code>. We extend that scaffolding upward into a "key registry" layer instead of cloning RDF per key.</p>
+
+    <div class="file-strip">src/features/release-date/releaseDateFinder.js · releaseDateLlmAdapter.js · releaseDateSchema.js · releaseDateStore.js · api/releaseDateFinderRoutes.js</div>
+
+    <table>
+      <thead>
+        <tr><th>Layer</th><th>File</th><th>What it does</th><th>Reusable?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Entry</td><td><code>releaseDateFinder.js</code></td><td>Wraps <code>registerScalarFinder</code> with RDF-bespoke callLlm + promptBuilder</td><td><span class="tag tag-green">yes — model for per-key</span></td></tr>
+        <tr><td>Prompt</td><td><code>releaseDateLlmAdapter.js:26</code></td><td><code>RDF_DEFAULT_TEMPLATE</code> + precision ladder + evidence + confidence + previous discovery</td><td><span class="tag tag-orange">skeleton reusable; body per-key</span></td></tr>
+        <tr><td>Schema</td><td><code>releaseDateSchema.js</code></td><td>Zod → JSON schema for LLM response (value, confidence, evidence_refs, discovery_log)</td><td><span class="tag tag-green">yes — templated per key</span></td></tr>
+        <tr><td>Store</td><td><code>releaseDateStore.js</code></td><td><code>createScalarFinderStore</code> factory → <code>.workspace/products/{pid}/release_date.json</code></td><td><span class="tag tag-green">yes — one store per key feature</span></td></tr>
+        <tr><td>Loop</td><td><code>variantFieldLoop.js:56-75</code></td><td>Per-variant retry until <code>satisfactionPredicate</code> returns true</td><td><span class="tag tag-green">yes — wraps per-key bundle</span></td></tr>
+        <tr><td>Producer</td><td><code>variantScalarFieldProducer.js:417-494</code></td><td><code>runOnce</code>/<code>runLoop</code> ; reads <code>perVariantAttemptBudget</code> from <code>finderStore</code></td><td><span class="tag tag-green">yes — source of attempt-budget pattern</span></td></tr>
+        <tr><td>Routes</td><td><code>api/releaseDateFinderRoutes.js:54-83</code></td><td>GET/POST/DELETE incl. <code>/loop</code> variant</td><td><span class="tag tag-green">yes — mirror shape for /per-key-finder</span></td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-info">
+      <strong>Insight: RDF vs PIF orchestration</strong>
+      RDF's loop is <em>simpler</em> (linear retry-until-satisfied) but perfect for a per-key engine. PIF's carousel (state machine over views + heroes) is richer than we need. The per-key finder inherits RDF's loop, lifts it one level to iterate <em>keys</em> within a group, and borrows one idea from PIF: opportunistic "additional" slots alongside a primary focus.
+    </div>
+  </div>
+</div>
+
+<h3 class="subsection-title">2.2 &nbsp; LLM Config — where the matrices plug in</h3>
+<div class="card">
+  <div class="card-header"><span class="tag tag-accent">Extension point</span> llmPhaseDefs.js + settingsRegistry.js</div>
+  <div class="card-body">
+    <p>LLM config is fully registry-driven: one entry in <code class="inline">src/shared/settingsRegistry.js</code> derives the default, manifest, GUI section, and validation. Phases (needset, searchPlanner, releaseDateFinder, etc.) live in <code class="inline">src/core/config/llmPhaseDefs.js</code> and drive the routing layer.</p>
+    <div class="file-strip">src/shared/settingsRegistry.js · src/core/config/llmPhaseDefs.js · src/core/llm/client/routing.js · src/core/llm/llmPolicySchema.js</div>
+    <p><strong>Where we plug in:</strong></p>
+    <ol>
+      <li>New phase entry in <code class="inline">llmPhaseDefs.js</code>: <code class="inline">{ id: 'keyFinder', roles: ['triage'], ... }</code></li>
+      <li>New top-level config keys in <code class="inline">settingsRegistry.js</code> (one per matrix slot): <code class="inline">keyFinderModelEasy</code>, <code class="inline">keyFinderModelMedium</code>, <code class="inline">keyFinderModelHard</code>, <code class="inline">keyFinderModelVeryHard</code>, <code class="inline">keyFinderModelFallback</code>, <code class="inline">keyFinderBudget...</code> etc.</li>
+      <li>The router already honors <code class="inline">modelOverride</code> — we just feed it the resolved model per call.</li>
+    </ol>
+    <div class="callout callout-warn">
+      <strong>No per-category LLM override exists today.</strong>
+      PIF keeps its budgets in <code class="inline">product_images_settings.json</code> per category; LLM config is global-only. For the per-key finder we decide whether to mirror PIF's per-category pattern or stay global. See <a href="#open">open decisions</a>.
+    </div>
+  </div>
+</div>
+
+<h3 class="subsection-title">2.3 &nbsp; Field Studio axes — current state, to be simplified</h3>
+<div class="card">
+  <div class="card-body">
+    <p>Every field rule already carries the axes we'll route on. They're just over-granular. Refer to the <em>feedback_field_axis_simplification</em> memory for the final collapse rules.</p>
+    <table>
+      <thead><tr><th>Axis</th><th>Today</th><th>Target</th><th>Drives (in new system)</th></tr></thead>
+      <tbody>
+        <tr><td><code>required_level</code></td><td>identity / critical / required / expected / optional <span class="tag tag-muted">5</span></td><td><strong>mandatory / non_mandatory</strong> <span class="tag tag-green">2</span></td><td>Budget (combined with difficulty)</td></tr>
+        <tr><td><code>availability</code></td><td>always / expected / sometimes / rare / editorial_only <span class="tag tag-muted">5</span></td><td><strong>always / sometimes / rare</strong> <span class="tag tag-green">3</span></td><td>Bundle cap (when knob on)</td></tr>
+        <tr><td><code>difficulty</code></td><td>easy / medium / hard <span class="tag tag-muted">3</span></td><td><strong>easy / medium / hard / very_hard</strong> <span class="tag tag-green">4</span></td><td>Model + reasoning (1:1 onto four allowed models)</td></tr>
+        <tr><td><code>effort</code></td><td>numeric 1–8 (derived) <span class="tag tag-muted">dup</span></td><td><strong>REMOVED</strong> <span class="tag tag-red">—</span></td><td>(derived from difficulty if needed)</td></tr>
+        <tr><td><code>group</code></td><td>free-text (sensor_performance, connectivity&hellip;)</td><td>unchanged</td><td>Bundling cohort</td></tr>
+        <tr><td><code>ai_assist.reasoning_note</code></td><td>per-key string (empty for most today)</td><td>unchanged (fill in)</td><td>Per-key extraction guidance (prompt injection)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<h3 class="subsection-title">2.4 &nbsp; Publisher &amp; evidence — already done</h3>
+<div class="card">
+  <div class="card-body">
+    <p>We reuse the publisher exactly as RDF does. Finder never gates; it submits every honest value with evidence.</p>
+    <div class="flow-row">
+      <div class="flow-box flow-accent">LLM response</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box flow-neutral">submitCandidate()</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box flow-teal">validateField + evidence HEAD-check</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box flow-pass">publishCandidate()<br>(confidence ≥ threshold<br>+ min_evidence_refs)</div>
+    </div>
+    <div class="file-strip">src/features/publisher/candidate-gate/submitCandidate.js · publish/evidenceGate.js · src/core/finder/evidencePromptFragment.js · src/core/finder/valueConfidencePromptFragment.js · src/core/finder/discoveryLog.js</div>
+  </div>
+</div>
+
+<!-- ────────────────────────── 3. AXES + DECISION TABLES ────────────────────────── -->
+<h2 id="axes" class="section-title anchor-target"><span class="num">3</span> Simplified axes + three decision tables</h2>
+
+<p>Three tables. Each axis owns exactly one decision. All cells live in LLM config, fully editable.</p>
+
+<h3 class="subsection-title">3.1 &nbsp; Difficulty → Model (4 cells + global fallback)</h3>
+<table>
+  <thead><tr><th>Difficulty</th><th>Model</th><th>Reasoning</th><th>Web tool</th><th>Typical keys (mouse)</th></tr></thead>
+  <tbody>
+    <tr><td><span class="tag tag-green">easy</span></td><td><code>gpt-5.4-mini</code></td><td>high</td><td>always on</td><td>form_factor, body_colors, wired_interface, adjustable_weight</td></tr>
+    <tr><td><span class="tag tag-accent">medium</span></td><td><code>gpt-5.4-mini</code></td><td>xhigh</td><td>always on</td><td>battery_hours, onboard_profiles, software_platform_support</td></tr>
+    <tr><td><span class="tag tag-orange">hard</span></td><td><code>gpt-5.4</code></td><td>high</td><td>always on</td><td>switch_manufacturer, encoder_type, dpi_max</td></tr>
+    <tr><td><span class="tag tag-red">very_hard</span></td><td><code>gpt-5.4</code></td><td>xhigh</td><td>always on</td><td>sensor_model, click_latency_ms, polling_rate_native_hz, mcu</td></tr>
+    <tr><td><span class="tag tag-purple">fallback</span></td><td><code>gpt-5.4</code></td><td>xhigh</td><td>always on</td><td>used on API/parse failure — see §9</td></tr>
+  </tbody>
+</table>
+
+<h3 class="subsection-title">3.2 &nbsp; (Difficulty × Required) → Attempt Budget (8 cells, floor 3)</h3>
+<table>
+  <thead><tr><th></th><th>easy</th><th>medium</th><th>hard</th><th>very_hard</th></tr></thead>
+  <tbody>
+    <tr><th>mandatory</th><td>3</td><td>4</td><td>5</td><td>6</td></tr>
+    <tr><th>non_mandatory</th><td>3</td><td>3</td><td>4</td><td>5</td></tr>
+  </tbody>
+</table>
+<p style="margin-top:8px; font-size:13px; color:var(--text-muted);">Never less than 3 attempts. Mandatory earns +1 at each tier where it's not already the ceiling. Very_hard non_mandatory still gets 5 — hard data stays hard whether or not it's required.</p>
+
+<h3 class="subsection-title">3.3 &nbsp; (Availability × Difficulty) → Bundle Cap (opt-in knob)</h3>
+<div class="two-col">
+  <div class="card">
+    <div class="card-header">Availability cap (on primary)</div>
+    <div class="card-body">
+      <table>
+        <tbody>
+          <tr><th>always</th><td>up to 4 secondaries</td></tr>
+          <tr><th>sometimes</th><td>up to 2 secondaries</td></tr>
+          <tr><th>rare</th><td>0 (solo call)</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:8px; font-size:12.5px; color:var(--text-muted);">Rationale: rare primaries need focus. Common primaries can carry passengers.</p>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">Difficulty cap (on primary)</div>
+    <div class="card-body">
+      <table>
+        <tbody>
+          <tr><th>easy</th><td>up to 4</td></tr>
+          <tr><th>medium</th><td>up to 3</td></tr>
+          <tr><th>hard</th><td>up to 1</td></tr>
+          <tr><th>very_hard</th><td>up to 1</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:8px; font-size:12.5px; color:var(--text-muted);">Hard/very_hard primaries focus on themselves + at most one opportunistic passenger.</p>
+    </div>
+  </div>
+</div>
+<div class="callout callout-info">
+  <strong>Effective bundle size</strong>
+  <code class="inline">min(availabilityCap[primary.availability], difficultyCap[primary.difficulty], globalMaxSecondaries)</code>. The global cap is a separate knob even when availability/difficulty would allow more.
+</div>
+
+<!-- ────────────────────────── 4. ARCHITECTURE ────────────────────────── -->
+<h2 id="architecture" class="section-title anchor-target"><span class="num">4</span> Feature architecture</h2>
+
+<h3 class="subsection-title">4.1 &nbsp; Proposed directory layout</h3>
+<pre class="code-block">
+<span class="c">src/features/per-key-finder/</span>
+  index.js                          <span class="c">// public API: runKeyFinder, runKeyGroup, runAllKeys</span>
+  README.md                         <span class="c">// local domain contract (≤150 lines)</span>
+
+  <span class="c">// ── Registry (reads Field Studio + llm config) ───────────────────</span>
+  registry/
+    keyRegistry.js                  <span class="c">// pull per-category key list from compiled field_rules</span>
+    modelMatrixRegistry.js          <span class="c">// read difficulty→model cells + fallback</span>
+    budgetMatrixRegistry.js         <span class="c">// read (diff×required)→attempts cells</span>
+    bundlingRegistry.js             <span class="c">// read availability/difficulty caps + global secondary cap</span>
+
+  <span class="c">// ── Prompt composer (universal skeleton + per-key injection) ─────</span>
+  prompt/
+    universalPromptTemplate.js      <span class="c">// {{IDENTITY}} {{PRIMARY_KEY}} {{SECONDARIES}} {{EVIDENCE}} …</span>
+    keyGuidanceInjector.js          <span class="c">// pull ai_assist.reasoning_note per key</span>
+    historyInjector.js              <span class="c">// URL+query history for PRIMARY only</span>
+    outputSchemaComposer.js         <span class="c">// compose zod schema: primary required + secondaries optional</span>
+
+  <span class="c">// ── Orchestration (per-call, per-group, per-run) ─────────────────</span>
+  orchestration/
+    keyCallPlanner.js               <span class="c">// given a set of keys, plan the call list (solo or bundled)</span>
+    keyCallExecutor.js              <span class="c">// execute a single call (1 primary + 0..N secondaries)</span>
+    groupRunner.js                  <span class="c">// iterate keys within a group, apply skip-if-resolved</span>
+    runController.js                <span class="c">// run: selected | group | difficulty | all</span>
+
+  <span class="c">// ── Persistence (reuses createScalarFinderStore) ─────────────────</span>
+  store/
+    keyFinderStore.js               <span class="c">// JSON per key per product: .workspace/products/{pid}/keys/{key}.json</span>
+    keyFinderRebuild.js             <span class="c">// SQL rebuild from JSON</span>
+
+  <span class="c">// ── API routes ───────────────────────────────────────────────────</span>
+  api/
+    keyFinderRoutes.js              <span class="c">// GET /key-finder/:cat/:pid · POST /:cat/:pid/:key · POST /:cat/:pid/bulk</span>
+    keyFinderLoopRoutes.js          <span class="c">// POST /loop for retry-until-satisfied mode</span>
+
+  tests/
+    universalPromptTemplate.test.js
+    keyCallPlanner.test.js
+    groupRunner.test.js
+    bundlingRegistry.test.js
+    keyFinderRoutes.characterization.test.js
+</pre>
+
+<h3 class="subsection-title">4.2 &nbsp; End-to-end call flow (one key, solo mode)</h3>
+<div class="flow-row">
+  <div class="flow-box flow-neutral">Run request<br>(key, variantId?)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-accent">keyCallPlanner<br>resolve model + attempts</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-teal">promptComposer<br>inject guidance + history</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-purple">callLlmWithRouting<br>modelOverride + web</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-accent">response parser<br>zod validate</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-neutral">submitCandidate<br>(per key)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-pass">publisher<br>publish or skip</div>
+</div>
+
+<h3 class="subsection-title">4.3 &nbsp; Group run with bundling ON</h3>
+<pre class="code-block">
+<span class="c">// Processing order inside a group: mandatory first, then difficulty DESC</span>
+<span class="c">// (hard primaries go first so they can surface easier secondaries for free)</span>
+
+resolvedKeys = <span class="p">new Set()</span>
+
+<span class="k">for</span> key <span class="k">in</span> groupKeys.<span class="p">sort</span>(mandatoryFirst, difficultyDesc):
+  <span class="k">if</span> key <span class="k">in</span> resolvedKeys: <span class="k">continue</span>          <span class="c">// knocked out by an earlier bundle</span>
+
+  plan = keyCallPlanner(key, bundlingEnabled=<span class="n">true</span>)
+  <span class="c">// plan.primary = key; plan.secondaries = [..] from same group, diff ≤ primary.diff, not already resolved</span>
+
+  response = keyCallExecutor.<span class="p">run</span>(plan)
+
+  <span class="k">for</span> result <span class="k">in</span> response.results:
+    submitCandidate(result)
+    <span class="k">if</span> publisher.<span class="p">published</span>(result.fieldKey, result.variantId):
+      resolvedKeys.<span class="p">add</span>(result.fieldKey)   <span class="c">// skip its own later call</span>
+</pre>
+
+<h3 class="subsection-title">4.4 &nbsp; Integration with existing layers</h3>
+<table>
+  <thead><tr><th>Existing layer</th><th>What per-key finder calls into</th><th>Path</th></tr></thead>
+  <tbody>
+    <tr><td>LLM routing</td><td><code>callLlmWithRouting({ modelOverride, requestOptions.web_search, reasoningBudget })</code></td><td><code>src/core/llm/client/routing.js:454</code></td></tr>
+    <tr><td>URL history</td><td><code>accumulateDiscoveryLog()</code> + <code>buildPreviousDiscoveryBlock()</code> per primary</td><td><code>src/core/finder/discoveryLog.js:30</code></td></tr>
+    <tr><td>Evidence prompt</td><td><code>buildEvidencePromptBlock({ minEvidenceRefs })</code></td><td><code>src/core/finder/evidencePromptFragment.js</code></td></tr>
+    <tr><td>Confidence prompt</td><td><code>buildValueConfidencePromptBlock()</code></td><td><code>src/core/finder/valueConfidencePromptFragment.js</code></td></tr>
+    <tr><td>Candidate submit</td><td><code>submitCandidate({ category, productId, fieldKey, value, confidence, sourceMeta, metadata: { evidence_refs }, variantId })</code></td><td><code>src/features/publisher/candidate-gate/submitCandidate.js:35</code></td></tr>
+    <tr><td>Field rule axes</td><td><code>ruleDifficulty</code>, <code>ruleAvailability</code>, <code>ruleRequiredLevel</code> (post-simplification)</td><td><code>src/engine/ruleAccessors.js</code></td></tr>
+    <tr><td>Extraction guidance</td><td><code>rule.ai_assist.reasoning_note</code></td><td><code>src/ingest/compileFieldRuleBuilder.js:691,715-719</code></td></tr>
+    <tr><td>Loop + budget pattern</td><td>pattern copied from <code>variantFieldLoop.js</code> + <code>variantScalarFieldProducer.js</code></td><td>same files</td></tr>
+  </tbody>
+</table>
+
+<!-- ────────────────────────── 5. PROMPT ────────────────────────── -->
+<h2 id="prompt" class="section-title anchor-target"><span class="num">5</span> Universal prompt composition</h2>
+
+<div class="card">
+  <div class="card-header">The skeleton is fixed; the key-specific pieces plug into slots</div>
+  <div class="card-body">
+    <p>A single editable template owns the scaffolding (identity, sibling exclusion, evidence tiers, confidence rubric, output schema). Key-specific text flows through slots.</p>
+    <pre class="code-block">
+{{IDENTITY_HEADER}}          <span class="c">// "You are looking for the EXACT product X — not siblings."</span>
+{{SIBLINGS_EXCLUDED}}
+
+<span class="c">// ── PRIMARY KEY (single call target) ──────────────────────────────</span>
+PRIMARY KEY: {{PRIMARY_KEY_NAME}}
+Extraction guidance:
+{{PRIMARY_EXTRACTION_GUIDANCE}}         <span class="c">// ← rule.ai_assist.reasoning_note</span>
+
+Previous searches for this key:
+{{PRIMARY_URL_HISTORY}}                 <span class="c">// ← accumulateDiscoveryLog(primaryKey)</span>
+{{PRIMARY_QUERY_HISTORY}}
+
+<span class="c">// ── OPTIONAL: opportunistic secondaries (bundling knob) ───────────</span>
+{{IF_SECONDARIES}}
+ADDITIONAL (grab if you find values while searching the primary):
+{{#each secondaries}}
+  - {{this.name}} — {{this.extraction_guidance}}
+{{/each}}
+{{/IF_SECONDARIES}}
+
+<span class="c">// ── Shared scaffolding ────────────────────────────────────────────</span>
+{{EVIDENCE_BLOCK}}                      <span class="c">// buildEvidencePromptBlock({ minEvidenceRefs })</span>
+{{CONFIDENCE_RUBRIC}}                   <span class="c">// buildValueConfidencePromptBlock()</span>
+
+<span class="c">// ── Output schema ─────────────────────────────────────────────────</span>
+{{OUTPUT_JSON_SCHEMA}}                  <span class="c">// composed: primary required, secondaries optional</span>
+</pre>
+
+    <div class="callout callout-info">
+      <strong>URL/query history is PRIMARY-only.</strong>
+      Secondaries inherit the primary's search session; they don't add their own history blocks. Keeps prompt weight linear with primary count, not with secondary count.
+    </div>
+
+    <p><strong>Output schema composition (dynamic per call):</strong></p>
+    <pre class="code-block">
+z.<span class="p">object</span>({
+  results: z.<span class="p">object</span>({
+    {{PRIMARY_KEY}}: {{PRIMARY_KEY_SCHEMA}}.<span class="p">required</span>(),
+    {{#each secondaries}}
+    {{this.name}}: {{this.schema}}.<span class="p">optional</span>().<span class="p">nullable</span>(),
+    {{/each}}
+  }),
+  discovery_log: z.<span class="p">object</span>({ urls_checked, queries_run, notes }),
+})
+</pre>
+  </div>
+</div>
+
+<!-- ────────────────────────── 6. BUNDLING ────────────────────────── -->
+<h2 id="bundling" class="section-title anchor-target"><span class="num">6</span> Bundling — the opt-in knob</h2>
+
+<div class="card">
+  <div class="card-body">
+    <p><strong>Default: OFF.</strong> One call per key. Zero risk of LLM drift from overloaded prompts.</p>
+    <p><strong>ON (per-category, like PIF's <code>heroEnabled</code>):</strong> the primary key drives the call; up to N secondaries from the same group are appended as "grab if you find." Secondaries satisfy the prompt only if the LLM stumbles on them.</p>
+    <div class="three-col">
+      <div class="card">
+        <div class="card-header"><span class="tag tag-green">eligible as secondary</span></div>
+        <div class="card-body">
+          <ul>
+            <li>Same <code>group</code> as primary</li>
+            <li>Same variant scope</li>
+            <li>Difficulty ≤ primary's difficulty</li>
+            <li>Not already resolved</li>
+            <li>Has <code>ai_assist.reasoning_note</code> or schema</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="tag tag-orange">caps</span></div>
+        <div class="card-body">
+          <ul>
+            <li>Availability cap (§3.3)</li>
+            <li>Difficulty cap (§3.3)</li>
+            <li>Global secondary cap (llm config)</li>
+            <li>Effective = min of all three</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="tag tag-red">never</span></div>
+        <div class="card-body">
+          <ul>
+            <li>Cross-group bundling</li>
+            <li>Harder secondaries than primary</li>
+            <li>Cross-variant bundling</li>
+            <li>Secondaries with their own URL/query history</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="callout callout-ok">
+      <strong>Satisfaction skip (PIF pattern lifted to keys).</strong>
+      If a secondary publishes during another key's call, its own primary call is skipped when its turn comes up in the group iteration. Maximum free lift, zero wasted calls.
+    </div>
+  </div>
+</div>
+
+<!-- ────────────────────────── 7. DASHBOARD MOCKUPS ────────────────────────── -->
+<h2 id="dashboard" class="section-title anchor-target"><span class="num">7</span> GUI dashboard mockups</h2>
+
+<p>The dashboard is a top-level panel for running the finder. The user needs: (a) see every key in the product with its axes, (b) filter/select, (c) fire runs in flexible groupings, (d) inspect per-key run + URL + query history.</p>
+
+<!-- Mockup 1: Key Explorer -->
+<div class="mockup">
+  <div class="mockup-title">Mockup A — Key explorer &amp; run panel</div>
+  <div class="mockup-window">
+    <div class="mockup-toolbar" style="background: #4263eb; color: white;">
+      <strong style="font-size: 14px;">Per-Key Finder</strong>
+      <span style="font-size: 12px; opacity: 0.8;">· Logitech MX Master 3S · mouse · 47 keys</span>
+      <div style="margin-left: auto; display: flex; gap: 8px;">
+        <button class="mockup-btn" style="background: rgba(255,255,255,0.15); color: white; border-color: rgba(255,255,255,0.3);">Solo mode <span class="mockup-badge" style="background: #a6e3a1; color: #1e3a1e;">ON</span></button>
+        <button class="mockup-btn" style="background: rgba(255,255,255,0.15); color: white; border-color: rgba(255,255,255,0.3);">Bundling <span class="mockup-badge" style="background: #6c7086; color: white;">OFF</span></button>
+      </div>
+    </div>
+    <div class="mockup-toolbar">
+      <input class="mockup-search" placeholder="Search keys…" value="sensor" />
+      <select class="mockup-select"><option>Group · all</option><option>sensor_performance (8)</option><option>connectivity (6)</option></select>
+      <select class="mockup-select"><option>Difficulty · all</option><option>easy (14)</option><option>medium (18)</option><option>hard (11)</option><option>very_hard (4)</option></select>
+      <select class="mockup-select"><option>Availability · all</option><option>always</option><option>sometimes</option><option>rare</option></select>
+      <select class="mockup-select"><option>Required · all</option><option>mandatory</option><option>non_mandatory</option></select>
+      <select class="mockup-select"><option>Status · all</option><option>unresolved (22)</option><option>resolved (25)</option></select>
+    </div>
+    <table class="mockup-table">
+      <thead>
+        <tr>
+          <th style="width:28px;"><input type="checkbox" class="mockup-checkbox" checked /></th>
+          <th>Key</th>
+          <th>Group</th>
+          <th>Difficulty</th>
+          <th>Availability</th>
+          <th>Required</th>
+          <th>Model</th>
+          <th>Budget</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="mockup-row-selected">
+          <td><input type="checkbox" class="mockup-checkbox" checked /></td>
+          <td><code>sensor_model</code></td>
+          <td>sensor_performance</td>
+          <td><span class="tag tag-red">very_hard</span></td>
+          <td><span class="tag tag-accent">always</span></td>
+          <td><span class="tag tag-purple">mandatory</span></td>
+          <td><code>gpt-5.4 · xhigh</code></td>
+          <td>6</td>
+          <td><span class="mockup-badge" style="background: var(--orange-bg); color: var(--orange);">unresolved</span></td>
+        </tr>
+        <tr class="mockup-row-selected">
+          <td><input type="checkbox" class="mockup-checkbox" checked /></td>
+          <td><code>sensor_dpi_max</code></td>
+          <td>sensor_performance</td>
+          <td><span class="tag tag-accent">medium</span></td>
+          <td><span class="tag tag-accent">always</span></td>
+          <td><span class="tag tag-purple">mandatory</span></td>
+          <td><code>mini · xhigh</code></td>
+          <td>4</td>
+          <td><span class="mockup-badge" style="background: var(--orange-bg); color: var(--orange);">unresolved</span></td>
+        </tr>
+        <tr>
+          <td><input type="checkbox" class="mockup-checkbox" /></td>
+          <td><code>polling_rate_native_hz</code></td>
+          <td>sensor_performance</td>
+          <td><span class="tag tag-red">very_hard</span></td>
+          <td><span class="tag tag-teal">sometimes</span></td>
+          <td><span class="tag tag-purple">mandatory</span></td>
+          <td><code>gpt-5.4 · xhigh</code></td>
+          <td>6</td>
+          <td><span class="mockup-badge" style="background: var(--green-bg); color: var(--green);">resolved</span></td>
+        </tr>
+        <tr class="mockup-row-selected">
+          <td><input type="checkbox" class="mockup-checkbox" checked /></td>
+          <td><code>acceleration</code></td>
+          <td>sensor_performance</td>
+          <td><span class="tag tag-green">easy</span></td>
+          <td><span class="tag tag-accent">always</span></td>
+          <td><span class="tag tag-muted">non_mand</span></td>
+          <td><code>mini · high</code></td>
+          <td>3</td>
+          <td><span class="mockup-badge" style="background: var(--orange-bg); color: var(--orange);">unresolved</span></td>
+        </tr>
+        <tr>
+          <td><input type="checkbox" class="mockup-checkbox" /></td>
+          <td><code>lift_off_distance</code></td>
+          <td>sensor_performance</td>
+          <td><span class="tag tag-green">easy</span></td>
+          <td><span class="tag tag-teal">sometimes</span></td>
+          <td><span class="tag tag-muted">non_mand</span></td>
+          <td><code>mini · high</code></td>
+          <td>3</td>
+          <td><span class="mockup-badge" style="background: var(--green-bg); color: var(--green);">resolved</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="mockup-footer">
+      <span><strong>3 selected</strong> · 15 total in view · est. cost $0.04 solo / $0.02 bundled</span>
+      <div style="display: flex; gap: 8px;">
+        <button class="mockup-btn ghost">Export</button>
+        <button class="mockup-btn">Dry-run prompt</button>
+        <button class="mockup-btn primary">▶ Run selected (solo)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mockup 2: Bulk run controls -->
+<div class="mockup">
+  <div class="mockup-title">Mockup B — Bulk run control strip (same panel, second row of actions)</div>
+  <div class="mockup-window">
+    <div class="mockup-toolbar" style="gap: 12px; padding: 14px 18px;">
+      <span style="font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px;">Bulk run:</span>
+      <button class="mockup-btn">▶ All unresolved (22)</button>
+      <button class="mockup-btn">▶ All mandatory (19)</button>
+      <button class="mockup-btn">▶ By difficulty <span class="mockup-badge" style="background:#e9ecef; color:#495057;">pick…</span></button>
+      <button class="mockup-btn">▶ By group <span class="mockup-badge" style="background:#e9ecef; color:#495057;">pick…</span></button>
+      <span style="color: var(--text-muted); margin: 0 8px;">|</span>
+      <span style="font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px;">Mode:</span>
+      <span class="mockup-chip active">Single run</span>
+      <span class="mockup-chip">Loop (retry till satisfied)</span>
+      <div style="margin-left: auto; font-size: 12px; color: var(--text-muted);">Max concurrent: <select class="mockup-select"><option>1</option><option selected>3</option><option>5</option></select></div>
+    </div>
+    <div class="mockup-toolbar" style="padding: 10px 18px; background: var(--accent-light); border-top: 1px solid var(--border-light);">
+      <span style="font-size: 12.5px; color: var(--accent); font-weight: 600;">⚡ Quick presets:</span>
+      <button class="mockup-btn" style="background: white; border-color: var(--accent); color: var(--accent);">Only very_hard (4)</button>
+      <button class="mockup-btn" style="background: white; border-color: var(--accent); color: var(--accent);">Only hard+core (6)</button>
+      <button class="mockup-btn" style="background: white; border-color: var(--accent); color: var(--accent);">Connectivity group (6)</button>
+      <button class="mockup-btn" style="background: white; border-color: var(--accent); color: var(--accent);">Switches group (4)</button>
+      <button class="mockup-btn" style="background: white; border-color: var(--accent); color: var(--accent);">Cheap mini-only (31)</button>
+    </div>
+  </div>
+</div>
+
+<!-- Mockup 3: Per-key detail / history -->
+<div class="mockup">
+  <div class="mockup-title">Mockup C — Per-key detail drawer (click a row) — history filtered to that key</div>
+  <div class="mockup-window">
+    <div class="mockup-toolbar">
+      <strong style="font-size: 13px;">sensor_model</strong>
+      <span class="tag tag-red" style="font-size:10.5px; padding: 2px 7px;">very_hard</span>
+      <span class="tag tag-accent" style="font-size:10.5px; padding: 2px 7px;">always</span>
+      <span class="tag tag-purple" style="font-size:10.5px; padding: 2px 7px;">mandatory</span>
+      <span class="tag tag-muted" style="font-size:10.5px; padding: 2px 7px;">sensor_performance</span>
+      <span style="margin-left: auto; font-size: 12px; color: var(--text-muted);">3 runs · last 2026-04-19 13:47</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 0;">
+      <div style="padding: 14px 18px; border-right: 1px solid var(--border-light);">
+        <div style="font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 8px; font-weight: 700;">Run history (this key only)</div>
+        <table class="mockup-table" style="border-radius:0;">
+          <thead><tr><th>Run</th><th>Model</th><th>Value</th><th>Conf</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>#3</td><td>gpt-5.4 xhigh</td><td><code>PixArt PAW3950</code></td><td>92</td><td><span class="mockup-badge" style="background: var(--green-bg); color: var(--green);">published</span></td></tr>
+            <tr><td>#2</td><td>gpt-5.4 xhigh</td><td><code>PAW3395-like</code></td><td>61</td><td><span class="mockup-badge" style="background: var(--red-bg); color: var(--red);">below_threshold</span></td></tr>
+            <tr><td>#1</td><td>gpt-5.4 high</td><td><code>unk</code></td><td>0</td><td><span class="mockup-badge" style="background: #f1f3f5; color: #495057;">unknown</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="padding: 14px 18px;">
+        <div style="font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 8px; font-weight: 700;">URL &amp; query history (this key)</div>
+        <div style="font-size: 12px; background: var(--surface-alt); padding: 10px 12px; border-radius: 6px; margin-bottom: 8px;">
+          <strong>Queries run (5):</strong>
+          <ul style="margin: 4px 0 0 18px; color: var(--text-muted);">
+            <li>"Logitech MX Master 3S sensor specifications"</li>
+            <li>"MX Master 3S teardown sensor model"</li>
+            <li>"MX Master 3S PixArt sensor review"</li>
+          </ul>
+        </div>
+        <div style="font-size: 12px; background: var(--surface-alt); padding: 10px 12px; border-radius: 6px;">
+          <strong>URLs checked (8):</strong>
+          <ul style="margin: 4px 0 0 18px; color: var(--text-muted);">
+            <li>logitech.com/en-us/shop/p/mx-master-3s…</li>
+            <li>ifixit.com/Device/Logitech_MX_Master_3S</li>
+            <li>pcmag.com/reviews/logitech-mx-master-3s</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="mockup-footer">
+      <span>Filter: <code>field_key = "sensor_model"</code></span>
+      <div style="display: flex; gap: 8px;">
+        <button class="mockup-btn">Clear this key's history</button>
+        <button class="mockup-btn">Re-run this key</button>
+        <button class="mockup-btn primary">Re-run in loop mode</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="callout callout-info">
+  <strong>Implementation note — per-key history filtering</strong>
+  Today <code class="inline">accumulateDiscoveryLog</code> scopes by <code class="inline">variant_id + mode</code> (see <code>variantScalarFieldProducer.js:185-188</code>). For per-key we extend the scope to <code class="inline">{ variant_id, mode, field_key }</code> and the discovery log record gains a <code class="inline">field_key</code> column in SQL. One migration, O(1) thereafter.
+</div>
+
+<!-- ────────────────────────── 8. ROADMAP ────────────────────────── -->
+<h2 id="roadmap" class="section-title anchor-target"><span class="num">8</span> Phased roadmap</h2>
+
+<div class="phase-card next">
+  <div class="phase-header">
+    <div class="phase-title"><span class="phase-num">0</span> Characterization &amp; foundations</div>
+    <div><span class="tag tag-orange">Next up</span> <span class="tag tag-muted">~1-2 days</span></div>
+  </div>
+  <div class="phase-body">
+    <p>Lock current behavior before touching anything. Characterization tests are the safety net for axis collapse and the finder extraction.</p>
+    <ul>
+      <li>Characterization tests on RDF discovery log flow (URL+query history filtering path)</li>
+      <li>Characterization tests on <code>mapRequiredLevelToBucket</code> &amp; availability sort ranks</li>
+      <li>Snapshot the current <code>releaseDateFinderResponseSchema</code> output shape for a mouse product</li>
+      <li>Commit memory files (already done) + cross-check against <code>CLAUDE.md</code></li>
+    </ul>
+    <div class="phase-grid">
+      <div><dt>Entry criterion</dt><dd>Green suite on <code>main</code></dd></div>
+      <div><dt>Exit criterion</dt><dd>New characterization tests green; no production-code changes</dd></div>
+      <div><dt>Risk</dt><dd>Low — pure tests</dd></div>
+    </div>
+  </div>
+</div>
+
+<div class="phase-card">
+  <div class="phase-header">
+    <div class="phase-title"><span class="phase-num">1</span> Axis simplification + migration</div>
+    <div><span class="tag tag-muted">~2-3 days</span></div>
+  </div>
+  <div class="phase-body">
+    <p>Collapse the Field Studio vocab and remove the <code>effort</code> field. One-time data migration across all categories.</p>
+    <ul>
+      <li><code>required_level</code>: identity/critical/required → <code>mandatory</code>; expected/optional → <code>non_mandatory</code></li>
+      <li><code>availability</code>: always/expected → <code>always</code>; rare/editorial_only → <code>rare</code></li>
+      <li><code>difficulty</code>: unchanged, but open <code>very_hard</code> as a valid value</li>
+      <li>Remove <code>effort</code> as a stored field; keep only the derived accessor</li>
+      <li>Update <code>ruleAccessors.js</code>, <code>discoveryRankConstants.js</code>, <code>needsetEngine</code> scoring, <code>compileFieldRuleBuilder.js</code>, <code>compileAssembler.js</code></li>
+      <li>Migrate <code>category_authority/*/rules*</code> in-place; update <code>_generated/field_rules.json</code></li>
+      <li>Field Studio GUI enum dropdowns updated to new vocab</li>
+    </ul>
+    <div class="phase-grid">
+      <div><dt>Blockers</dt><dd>Phase 0 green</dd></div>
+      <div><dt>Exit criterion</dt><dd>All categories migrated + full suite green + UI enum lists match</dd></div>
+      <div><dt>Risk</dt><dd>Medium — touches scoring code; characterization tests from Phase 0 protect behavior</dd></div>
+    </div>
+  </div>
+</div>
+
+<div class="phase-card">
+  <div class="phase-header">
+    <div class="phase-title"><span class="phase-num">2</span> LLM config — new <code>keyFinder</code> phase + matrices</div>
+    <div><span class="tag tag-muted">~2 days</span></div>
+  </div>
+  <div class="phase-body">
+    <p>Register the new phase + the three matrix config keys. No finder code yet — just config plumbing.</p>
+    <ul>
+      <li>Add <code>keyFinder</code> phase to <code>llmPhaseDefs.js</code></li>
+      <li>Register 5 model keys (<code>easy/medium/hard/very_hard/fallback</code>) in <code>settingsRegistry.js</code></li>
+      <li>Register 8 budget-matrix keys (or single JSON blob — TBD)</li>
+      <li>Register bundling knobs (<code>keyFinderBundlingEnabled</code>, <code>availabilityCap</code>, <code>difficultyCap</code>, <code>maxSecondaries</code>)</li>
+      <li>Add LLM config GUI section for these</li>
+    </ul>
+    <div class="phase-grid">
+      <div><dt>Blockers</dt><dd>None</dd></div>
+      <div><dt>Exit criterion</dt><dd>GUI shows editable matrices; settings persist; derivation tests green</dd></div>
+      <div><dt>Risk</dt><dd>Low — pure config additions via registry; O(1) pattern is proven</dd></div>
+    </div>
+  </div>
+</div>
+
+<div class="phase-card">
+  <div class="phase-header">
+    <div class="phase-title"><span class="phase-num">3</span> Per-key finder feature — SOLO mode only</div>
+    <div><span class="tag tag-muted">~4-6 days</span></div>
+  </div>
+  <div class="phase-body">
+    <p>Ship the new feature at <code>src/features/per-key-finder/</code> with bundling disabled. End-to-end: registry → planner → prompt composer → router → publisher.</p>
+    <ul>
+      <li>Directory skeleton (see §4.1)</li>
+      <li>Registry readers (keys from <code>field_rules</code>; matrices from llm config)</li>
+      <li>Universal prompt template + guidance injector + history injector</li>
+      <li>Output schema composer (solo = single-key schema)</li>
+      <li>Call executor wrapping <code>callLlmWithRouting</code> with resolved model + reasoning + web tool</li>
+      <li>Response parser → <code>submitCandidate</code> fan-out</li>
+      <li>Per-key JSON store (one file per key) + SQL rebuild</li>
+      <li>API routes: <code>GET /:cat/:pid</code>, <code>POST /:cat/:pid/:key</code>, <code>POST /:cat/:pid/bulk</code>, <code>/loop</code></li>
+      <li>Per-key history scope: add <code>field_key</code> to discovery log suppression matcher</li>
+      <li>Full unit + characterization test suite</li>
+    </ul>
+    <div class="phase-grid">
+      <div><dt>Blockers</dt><dd>Phase 1 + Phase 2</dd></div>
+      <div><dt>Exit criterion</dt><dd>Can run any single key on any product end-to-end; writes candidate via publisher; JSON + SQL consistent</dd></div>
+      <div><dt>Risk</dt><dd>Medium — first end-to-end flow; most work is wiring; follow RDF structure closely</dd></div>
+    </div>
+  </div>
+</div>
+
+<div class="phase-card">
+  <div class="phase-header">
+    <div class="phase-title"><span class="phase-num">4</span> Dashboard panel — filters, selection, bulk runs</div>
+    <div><span class="tag tag-muted">~3-5 days</span></div>
+  </div>
+  <div class="phase-body">
+    <p>Build the GUI per §7. This is what makes the engine usable at scale.</p>
+    <ul>
+      <li>New top-level panel: <code>tools/gui-react/src/features/key-finder/</code></li>
+      <li>Key table with group/difficulty/availability/required/status filters (Mockup A)</li>
+      <li>Bulk-run control strip with presets (Mockup B)</li>
+      <li>Per-key detail drawer with run history + URL/query history (Mockup C)</li>
+      <li>WS events wired to refresh per-key status in real time</li>
+      <li>Solo/bundled toggle (bundled still disabled at backend)</li>
+    </ul>
+    <div class="phase-grid">
+      <div><dt>Blockers</dt><dd>Phase 3</dd></div>
+      <div><dt>Exit criterion</dt><dd>All run modes in Mockup B work; history drawer filters correctly by key</dd></div>
+      <div><dt>Risk</dt><dd>Medium — pure TypeScript/React; largest scope is the key table + filters; types inferred from backend schema</dd></div>
+    </div>
+  </div>
+</div>
+
+<div class="phase-card">
+  <div class="phase-header">
+    <div class="phase-title"><span class="phase-num">5</span> Bundling enhancement — opt-in opportunistic secondaries</div>
+    <div><span class="tag tag-muted">~3-4 days</span></div>
+  </div>
+  <div class="phase-body">
+    <p>Turn on what was off. Bundled calls share the primary's URL/query history, expand the output schema, and trigger satisfaction-skip for same-group siblings.</p>
+    <ul>
+      <li>Extend <code>keyCallPlanner</code>: when bundling knob on, resolve secondary list per §6</li>
+      <li>Extend <code>outputSchemaComposer</code>: primary required, secondaries optional/nullable</li>
+      <li>Extend response parser: fan out per-key <code>submitCandidate</code> with per-key evidence slicing</li>
+      <li>Group runner: apply <code>resolvedKeys</code> skip check (§4.3)</li>
+      <li>Telemetry: track secondary-resolution-rate per key to inform future defaults</li>
+    </ul>
+    <div class="phase-grid">
+      <div><dt>Blockers</dt><dd>Phase 3 (solo flow stable)</dd></div>
+      <div><dt>Exit criterion</dt><dd>Turning bundling on for mouse delivers measurably lower total LLM cost at equal accuracy</dd></div>
+      <div><dt>Risk</dt><dd>Medium-high — prompt weight is the variable; watch drift carefully</dd></div>
+    </div>
+  </div>
+</div>
+
+<div class="phase-card">
+  <div class="phase-header">
+    <div class="phase-title"><span class="phase-num">6</span> Cutover: RDF → per-key finder (proof product)</div>
+    <div><span class="tag tag-muted">~2-3 days</span></div>
+  </div>
+  <div class="phase-body">
+    <p>RDF is the easiest finder to migrate: one key, per-variant. After cutover, <code>release_date</code> flows through the universal engine and the old <code>src/features/release-date/</code> module is deleted.</p>
+    <ul>
+      <li>Populate <code>ai_assist.reasoning_note</code> for <code>release_date</code> with today's precision-ladder + source-tier text</li>
+      <li>Delete <code>src/features/release-date/</code> entirely (<strong>subtractive</strong> per CLAUDE.md)</li>
+      <li>Remove RDF's route handlers; route <code>release_date</code> through <code>/key-finder</code></li>
+      <li>Migrate <code>release_date.json</code> stores into <code>keys/release_date.json</code> shape</li>
+      <li>Proof: full E2E on one product before declaring done</li>
+    </ul>
+    <div class="phase-grid">
+      <div><dt>Blockers</dt><dd>Phase 3 (solo mode sufficient for RDF)</dd></div>
+      <div><dt>Exit criterion</dt><dd>A product's release_date resolves via per-key finder with parity or better vs legacy RDF</dd></div>
+      <div><dt>Risk</dt><dd>Low — RDF is a well-understood 1-key flow; characterization tests gate the migration</dd></div>
+    </div>
+  </div>
+</div>
+
+<div class="phase-card later">
+  <div class="phase-header">
+    <div class="phase-title"><span class="phase-num">7</span> Broader migration — retire legacy per-key finders</div>
+    <div><span class="tag tag-muted">~ongoing</span></div>
+  </div>
+  <div class="phase-body">
+    <p>Cutover the rest of the fields on a per-group basis. Likely order: connectivity → switches → construction → buttons_features → sensor_performance (last, because hardest). CEF and PIF remain their own features (variants + images have unique shapes).</p>
+    <ul>
+      <li>Fill <code>ai_assist.reasoning_note</code> for each migrating key (one PR per group)</li>
+      <li>Smoke-test each group in solo mode first, then enable bundling for that group</li>
+      <li>Measure accuracy delta vs legacy path; roll back any group where parity drops</li>
+      <li>Delete legacy finder modules as groups complete (no graveyards, per CLAUDE.md)</li>
+    </ul>
+    <div class="phase-grid">
+      <div><dt>Blockers</dt><dd>Phase 6 (proof product)</dd></div>
+      <div><dt>Exit criterion</dt><dd>All scalar/multiple finder-backed keys on per-key finder; CEF/PIF stay on their own feature</dd></div>
+      <div><dt>Risk</dt><dd>Per-group; any single group can be rolled back independently</dd></div>
+    </div>
+  </div>
+</div>
+
+<!-- ────────────────────────── 9. OPEN DECISIONS ────────────────────────── -->
+<h2 id="open" class="section-title anchor-target"><span class="num">9</span> Open decisions (lock before Phase 3)</h2>
+
+<div class="two-col">
+  <div class="card">
+    <div class="card-header"><span class="tag tag-orange">open</span> 9.1 &nbsp; Fallback trigger</div>
+    <div class="card-body">
+      <p>When does the global fallback model (row 5 of §3.1) kick in?</p>
+      <ul>
+        <li><strong>Recommended:</strong> API / parse failure only. "unk" with good evidence is a real answer, not a failure.</li>
+        <li>Alt: also trigger on "unk" after all attempts exhausted — one last try with a stronger model.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="tag tag-orange">open</span> 9.2 &nbsp; Retry vs fallback ordering</div>
+    <div class="card-body">
+      <p>For <code>mandatory + very_hard = 6 attempts</code>: 6× the difficulty model, or 5× + 1× fallback?</p>
+      <ul>
+        <li><strong>Recommended:</strong> 5× difficulty model, final attempt on fallback. Burns fallback cost only when genuinely stuck.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="tag tag-orange">open</span> 9.3 &nbsp; "Resolved" definition for skip-check</div>
+    <div class="card-body">
+      <p>When a secondary gets knocked out during a bundled call, skip its own primary if:</p>
+      <ul>
+        <li><strong>Recommended:</strong> <em>published</em> (confidence ≥ threshold + evidence gate passed).</li>
+        <li>Alt: any submitted candidate — faster but may let shaky answers steal the slot.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="tag tag-orange">open</span> 9.4 &nbsp; Per-category override scope</div>
+    <div class="card-body">
+      <p>Mirror PIF's <code>product_images_settings.json</code> pattern for LLM config?</p>
+      <ul>
+        <li>Yes — each category gets a <code>key_finder_settings.json</code> with matrix + bundling overrides.</li>
+        <li>No — global LLM config only, keep it simple, defer category overrides to a later phase.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ────────────────────────── 10. APPENDIX ────────────────────────── -->
+<h2 id="appendix" class="section-title anchor-target"><span class="num">10</span> Appendix</h2>
+
+<h3 class="subsection-title">10.1 &nbsp; File index (what this design touches)</h3>
+<table>
+  <thead><tr><th>Area</th><th>Files</th><th>Change type</th></tr></thead>
+  <tbody>
+    <tr><td>Field Studio axes</td><td><code>src/engine/ruleAccessors.js</code>, <code>src/shared/discoveryRankConstants.js</code>, <code>src/ingest/compileFieldRuleBuilder.js</code>, <code>src/ingest/compileAssembler.js</code>, <code>src/features/indexing/pipeline/needSet/needsetEngine.js</code></td><td>Migrate 5→2/5→3/3→4 values, drop effort</td></tr>
+    <tr><td>Field rules data</td><td><code>category_authority/*/rules*</code>, <code>category_authority/*/_generated/field_rules.json</code></td><td>One-time migration</td></tr>
+    <tr><td>Field Studio GUI</td><td><code>tools/gui-react/src/features/studio/**</code></td><td>Enum dropdowns updated</td></tr>
+    <tr><td>LLM config</td><td><code>src/core/config/llmPhaseDefs.js</code>, <code>src/shared/settingsRegistry.js</code></td><td>New phase + matrix keys</td></tr>
+    <tr><td>LLM config GUI</td><td><code>tools/gui-react/src/features/llm-config/**</code></td><td>New "Key Finder" section</td></tr>
+    <tr><td>New feature</td><td><code>src/features/per-key-finder/**</code></td><td>New code (see §4.1)</td></tr>
+    <tr><td>Dashboard GUI</td><td><code>tools/gui-react/src/features/key-finder/**</code></td><td>New panel</td></tr>
+    <tr><td>RDF cutover (Phase 6)</td><td><code>src/features/release-date/</code> (delete)</td><td>Removed after migration</td></tr>
+    <tr><td>Reused (unchanged)</td><td><code>src/features/publisher/**</code>, <code>src/core/finder/**</code>, <code>src/core/llm/client/routing.js</code></td><td>No changes — consumed as-is</td></tr>
+  </tbody>
+</table>
+
+<h3 class="subsection-title">10.2 &nbsp; Key references by feature</h3>
+<table>
+  <thead><tr><th>Concept</th><th>File:line</th></tr></thead>
+  <tbody>
+    <tr><td>RDF prompt template</td><td><code>src/features/release-date/releaseDateLlmAdapter.js:26-88</code></td></tr>
+    <tr><td>RDF attempt-budget loop</td><td><code>src/features/indexing/pipeline/shared/variantFieldLoop.js:38-94</code></td></tr>
+    <tr><td>RDF producer (reads perVariantAttemptBudget)</td><td><code>src/features/indexing/pipeline/shared/variantScalarFieldProducer.js:417-494</code></td></tr>
+    <tr><td>Satisfaction predicate</td><td><code>src/features/indexing/pipeline/shared/registerScalarFinder.js:58-63</code></td></tr>
+    <tr><td>submitCandidate entry</td><td><code>src/features/publisher/candidate-gate/submitCandidate.js:35-251</code></td></tr>
+    <tr><td>Evidence gate</td><td><code>src/features/publisher/publish/evidenceGate.js:12-26</code></td></tr>
+    <tr><td>Discovery log (URL/query history)</td><td><code>src/core/finder/discoveryLog.js:30-75</code></td></tr>
+    <tr><td>Evidence prompt fragment</td><td><code>src/core/finder/evidencePromptFragment.js</code></td></tr>
+    <tr><td>Confidence rubric fragment</td><td><code>src/core/finder/valueConfidencePromptFragment.js</code></td></tr>
+    <tr><td>Router</td><td><code>src/core/llm/client/routing.js:454-475</code></td></tr>
+    <tr><td>Phase definitions</td><td><code>src/core/config/llmPhaseDefs.js:41-57</code></td></tr>
+    <tr><td>Settings registry + derivations</td><td><code>src/shared/settingsRegistry.js</code>, <code>src/shared/settingsRegistryDerivations.js</code></td></tr>
+    <tr><td>Axis accessors</td><td><code>src/engine/ruleAccessors.js:6-32</code></td></tr>
+    <tr><td>Required→bucket mapping</td><td><code>src/shared/discoveryRankConstants.js:5-29</code></td></tr>
+    <tr><td>Extraction guidance storage</td><td><code>src/ingest/compileFieldRuleBuilder.js:691,715-719</code></td></tr>
+    <tr><td>Extraction guidance capability</td><td><code>src/field-rules/capabilities.json:137-141</code></td></tr>
+    <tr><td>Studio GUI guidance control</td><td><code>tools/gui-react/src/features/studio/workbench/WorkbenchDrawerContractTab.tsx:303,350</code></td></tr>
+    <tr><td>PIF carousel (pattern reference for bundling)</td><td><code>src/features/product-image/carouselStrategy.js:46-141</code></td></tr>
+    <tr><td>PIF priority/additional views language</td><td><code>src/features/product-image/productImageLlmAdapter.js:659-698</code></td></tr>
+  </tbody>
+</table>
+
+<h3 class="subsection-title">10.3 &nbsp; Glossary</h3>
+<table>
+  <thead><tr><th>Term</th><th>Meaning here</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Per-key finder</strong></td><td>The universal finder feature this doc describes. Replaces per-field finders for any field that wants LLM-driven discovery.</td></tr>
+    <tr><td><strong>Primary key</strong></td><td>The key a given LLM call is <em>for</em>. Carries the URL/query history and the bulk of the prompt attention.</td></tr>
+    <tr><td><strong>Secondary key</strong></td><td>Opportunistic passenger in a bundled call — "if you find it, grab it." Doesn't carry its own history.</td></tr>
+    <tr><td><strong>Group</strong></td><td>The <code>group</code> string on field rules (sensor_performance, connectivity, switches, …). Bundling cohort.</td></tr>
+    <tr><td><strong>Bundle</strong></td><td>One LLM call containing one primary + 0..N secondaries. Bundle size is capped by availability × difficulty × global.</td></tr>
+    <tr><td><strong>Attempt</strong></td><td>One LLM call for a given primary (+ any secondaries). Budget matrix bounds attempts per key.</td></tr>
+    <tr><td><strong>Satisfaction skip</strong></td><td>During a group run, skip a key's own primary call if it already published via a prior bundle (lifted from PIF's per-view satisfactionThreshold).</td></tr>
+    <tr><td><strong>Resolved</strong></td><td>A field where a candidate has published (passed confidence threshold AND evidence gate).</td></tr>
+    <tr><td><strong>Extraction guidance</strong></td><td>Per-key instruction text stored at <code>rule.ai_assist.reasoning_note</code>. Injected into the primary key's prompt slot.</td></tr>
+    <tr><td><strong>Fallback model</strong></td><td>Stronger/different model used when the difficulty-cell model hits a failure condition (see §9.1).</td></tr>
+  </tbody>
+</table>
+
+<div class="footer-note">
+  v1 · design only · no code changed · open decisions tracked in §9 · ready for phase 0 on approval
+</div>
+
+</div>
+
+</body>
+</html>

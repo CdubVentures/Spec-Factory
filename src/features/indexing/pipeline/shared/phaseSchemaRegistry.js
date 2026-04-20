@@ -23,6 +23,11 @@ import {
   PIF_VIEW_DEFAULT_TEMPLATE,
   PIF_HERO_DEFAULT_TEMPLATE,
 } from '../../../product-image/productImageLlmAdapter.js';
+import {
+  resolveViewPrompt,
+  VIEW_PROMPT_ROLES,
+} from '../../../product-image/viewPromptDefaults.js';
+import { RDF_DEFAULT_TEMPLATE } from '../../../release-date/releaseDateLlmAdapter.js';
 
 const NON_FINDER_PHASES = Object.freeze({
   'needset': {
@@ -153,11 +158,14 @@ const COLOR_FINDER_IDENTITY_CHECK = Object.freeze({
     identity_check_response_schema: zodToLlmSchema(variantIdentityCheckResponseSchema),
     prompt_templates: [
       { promptKey: 'discovery', label: 'Discovery Prompt', storageScope: 'module', moduleId: 'colorEditionFinder', settingKey: 'discoveryPromptTemplate', defaultTemplate: CEF_DISCOVERY_DEFAULT_TEMPLATE, variables: [
-        { name: 'BRAND', description: 'e.g. "Logitech"', required: true },
-        { name: 'MODEL', description: 'e.g. "G502 X Plus"', required: true },
-        { name: 'KNOWN_FINDINGS', description: 'Run 2+ discovery context — includes: colors found so far e.g. ["black","white"], color marketing names e.g. {"light-blue":"Glacier Blue"}, editions found so far e.g. ["cod-bo6"], urls already checked e.g. ["https://www.logitech.com/..."]. Empty string on Run 1.', required: false },
-        { name: 'IDENTITY_WARNING', description: 'Scales by familyModelCount: empty when <=1. When >1: "\\nIDENTITY WARNING: This product has N models in its family (ambiguity: medium/hard)...\\n" with brand, model, ambiguity level injected.', required: false },
-        { name: 'PALETTE', description: 'e.g. "black (#000000), white (#ffffff), red (#ff0000), light-blue (#add8e6)" — or "(no registered colors)" when palette is empty', required: true },
+        { name: 'BRAND', description: 'e.g. "Logitech"', required: true, category: 'deterministic' },
+        { name: 'MODEL', description: 'e.g. "G502 X Plus"', required: true, category: 'deterministic' },
+        { name: 'KNOWN_FINDINGS', description: 'Run 2+ discovery context — includes: colors found so far e.g. ["black","white"], color marketing names e.g. {"light-blue":"Glacier Blue"}, editions found so far e.g. ["cod-bo6"], urls already checked e.g. ["https://www.logitech.com/..."]. Empty string on Run 1.', required: false, category: 'deterministic' },
+        { name: 'PALETTE', description: 'e.g. "black (#000000), white (#ffffff), red (#ff0000), light-blue (#add8e6)" — or "(no registered colors)" when palette is empty', required: true, category: 'deterministic' },
+        { name: 'IDENTITY_WARNING', description: 'Unified block from buildIdentityWarning (src/core/llm/prompts/). 3 tiers: easy="no known siblings" | medium="CAUTION: ..." | hard="HIGH AMBIGUITY: TRIPLE-CHECK". Includes the siblings-exclusion line when sibling models are provided. Edit text via Global Prompts in LLM Config.', required: false, category: 'global-fragment' },
+        { name: 'EVIDENCE_REQUIREMENTS', description: 'Evidence contract + URL verification block. Sourced from the Global Prompts panel (evidenceContract + evidenceVerification).', required: false, category: 'global-fragment' },
+        { name: 'VALUE_CONFIDENCE_GUIDANCE', description: 'Tier-anchored overall-confidence rubric. Sourced from the Global Prompts panel (valueConfidenceRubric).', required: false, category: 'global-fragment' },
+        { name: 'PREVIOUS_DISCOVERY', description: 'Previously searched URLs + queries for this product. Empty on first run. Header text editable in Global Prompts (discoveryHistoryBlock).', required: false, category: 'global-fragment' },
       ], userMessageInfo: [
         { field: 'brand', description: 'e.g. "Logitech"' },
         { field: 'base_model', description: 'e.g. "G502 X" — family model name' },
@@ -179,24 +187,51 @@ const COLOR_FINDER_IDENTITY_CHECK = Object.freeze({
   },
 });
 
+// WHY: Per-view per-role discovery prompt defaults for the LLM Config GUI.
+// Each (category, view, role) combo maps to a string the user can override via
+// loopViewPrompt_<view>, priorityViewPrompt_<view>, additionalViewPrompt_<view>
+// finder settings. Seeds are byte-identical to the current per-category view
+// descriptions so default output is unchanged.
+const VIEW_PROMPT_CATEGORIES = ['mouse', 'keyboard', 'monitor', 'mousepad'];
+
+function buildViewPromptDefaults() {
+  const out = {};
+  for (const cat of VIEW_PROMPT_CATEGORIES) {
+    const catOut = {};
+    for (const view of CANONICAL_VIEW_KEYS) {
+      const roles = {};
+      for (const role of VIEW_PROMPT_ROLES) {
+        roles[role] = resolveViewPrompt({ role, category: cat, view });
+      }
+      catOut[view] = roles;
+    }
+    out[cat] = catOut;
+  }
+  return out;
+}
+
 // WHY: Overlay image-finder with prompt_templates metadata (same pattern as color-finder overlay).
 const IMAGE_FINDER_TEMPLATES = Object.freeze({
   'image-finder': {
     ...FINDER_PHASE_SCHEMAS['image-finder'],
+    view_prompt_defaults: Object.freeze(buildViewPromptDefaults()),
+    view_prompt_categories: VIEW_PROMPT_CATEGORIES,
+    view_prompt_roles: VIEW_PROMPT_ROLES,
     prompt_templates: [
       { promptKey: 'view', label: 'View Search Prompt', storageScope: 'module', moduleId: 'productImageFinder', settingKey: 'viewPromptOverride', defaultTemplate: PIF_VIEW_DEFAULT_TEMPLATE, variables: [
-        { name: 'BRAND', description: 'e.g. "Logitech"', required: true },
-        { name: 'MODEL', description: 'e.g. "G502 X Plus"', required: true },
-        { name: 'VARIANT_DESC', description: 'e.g. the "black" color variant — or the "COD BO6" edition', required: true },
-        { name: 'VARIANT_SUFFIX', description: 'e.g. " (variant: black)" — empty when no variant', required: false },
-        { name: 'IDENTITY_WARNING', description: '3 tiers: easy="This product has no known siblings — standard identity matching applies." | medium="CAUTION: N models in family...MUST verify exact model" | hard="HIGH AMBIGUITY: TRIPLE-CHECK every image for exact model". Always populated.', required: false },
-        { name: 'SIBLINGS_LINE', description: 'e.g. "\\nKnown sibling models to EXCLUDE (do NOT return images of these): G502 Hero, G502 SE\\n" — empty when none', required: false },
-        { name: 'PRIORITY_VIEWS', description: 'e.g. "PRIORITY (search first):\\n  1. \\"top\\" — Bird\'s-eye shot... (min 800w x 600h)\\n  2. \\"left\\" — Side profile..." — includes per-view min dimensions when viewQualityMap is set', required: true },
-        { name: 'ADDITIONAL_VIEWS', description: 'e.g. "\\nADDITIONAL:\\n  - \\"bottom\\" — Underside view..." — empty when all views are priority. Also includes per-view min dimensions.', required: false },
-        { name: 'ALL_VIEW_KEYS', description: 'e.g. "top, bottom, left, right, front, rear, sangle, angle"', required: true },
-        { name: 'IMAGE_REQUIREMENTS', description: 'Image quality rules section — uses promptOverride setting if set, otherwise the built-in requirements block', required: true },
-        { name: 'PREVIOUS_DISCOVERY', description: 'e.g. "Previous searches:\\n- URLs already checked: [\\"https://...\\"]\\n- Queries already run: [\\"logitech g502\\"]\\n" — empty on first run', required: false },
-        { name: 'VARIANT_TYPE_WORD', description: '"color" or "edition"', required: false },
+        { name: 'BRAND', description: 'e.g. "Logitech"', required: true, category: 'deterministic' },
+        { name: 'MODEL', description: 'e.g. "G502 X Plus"', required: true, category: 'deterministic' },
+        { name: 'VARIANT_DESC', description: 'e.g. the "black" color variant — or the "COD BO6" edition', required: true, category: 'deterministic' },
+        { name: 'VARIANT_SUFFIX', description: 'e.g. " (variant: black)" — empty when no variant', required: false, category: 'deterministic' },
+        { name: 'VARIANT_TYPE_WORD', description: '"color" or "edition"', required: false, category: 'deterministic' },
+        { name: 'PRIORITY_VIEWS', description: 'e.g. "PRIORITY (search first):\\n  1. \\"top\\" — Bird\'s-eye shot... (min 800w x 600h)\\n  2. \\"left\\" — Side profile..." — includes per-view min dimensions when viewQualityMap is set', required: true, category: 'deterministic' },
+        { name: 'ADDITIONAL_VIEWS', description: 'e.g. "\\nADDITIONAL:\\n  - \\"bottom\\" — Underside view..." — empty when all views are priority. Also includes per-view min dimensions.', required: false, category: 'deterministic' },
+        { name: 'ADDITIONAL_GUIDANCE', description: 'One-line note appended after the priority-views instructions when additional views are supplied. Empty when only priority views are requested.', required: false, category: 'deterministic' },
+        { name: 'ALL_VIEW_KEYS', description: 'e.g. "top, bottom, left, right, front, rear, sangle, angle"', required: true, category: 'deterministic' },
+        { name: 'IMAGE_REQUIREMENTS', description: 'Image quality rules section — uses promptOverride setting if set, otherwise the built-in requirements block', required: true, category: 'deterministic' },
+        { name: 'IDENTITY_WARNING', description: 'Unified block from buildIdentityWarning (src/core/llm/prompts/). 3 tiers — includes siblings-exclusion line inline when provided. Edit text via Global Prompts in LLM Config.', required: false, category: 'global-fragment' },
+        { name: 'SIBLINGS_LINE', description: 'Deprecated — siblings are now inside IDENTITY_WARNING. Kept as an empty slot for backwards compat with user-customized templates. Set via the per-category template override if you need a separate injection point.', required: false, category: 'global-fragment' },
+        { name: 'PREVIOUS_DISCOVERY', description: 'e.g. "Previous searches:\\n- URLs already checked: [\\"https://...\\"]\\n- Queries already run: [\\"logitech g502\\"]\\n" — empty on first run. Header text editable in Global Prompts (discoveryHistoryBlock).', required: false, category: 'global-fragment' },
       ], userMessageInfo: [
         { field: 'brand', description: 'e.g. "Logitech"' },
         { field: 'model', description: 'e.g. "G502 X Plus"' },
@@ -205,18 +240,47 @@ const IMAGE_FINDER_TEMPLATES = Object.freeze({
         { field: 'variant_type', description: '"color" or "edition"' },
       ] },
       { promptKey: 'hero', label: 'Hero Search Prompt', storageScope: 'module', moduleId: 'productImageFinder', settingKey: 'heroPromptOverride', defaultTemplate: PIF_HERO_DEFAULT_TEMPLATE, variables: [
-        { name: 'BRAND', description: 'e.g. "Logitech"', required: true },
-        { name: 'MODEL', description: 'e.g. "G502 X Plus"', required: true },
-        { name: 'VARIANT_SUFFIX', description: 'e.g. " (variant: black)" — empty when no variant', required: false },
-        { name: 'IDENTITY_WARNING', description: '3 tiers (shorter than view search): easy="no known siblings" | medium="CAUTION: N models in family. Verify exact model." | hard="HIGH AMBIGUITY: TRIPLE-CHECK every image". Always populated.', required: false },
-        { name: 'SIBLINGS_LINE', description: 'e.g. "\\nKnown sibling models to EXCLUDE: G502 Hero\\n" — empty when none', required: false },
-        { name: 'PREVIOUS_DISCOVERY', description: 'e.g. "Previous searches:\\n- URLs already checked: [...]\\n" — empty on first run', required: false },
-        { name: 'HERO_INSTRUCTIONS', description: 'Hero search rules block — uses promptOverride setting if set, otherwise the built-in lifestyle/contextual instructions', required: true },
+        { name: 'BRAND', description: 'e.g. "Logitech"', required: true, category: 'deterministic' },
+        { name: 'MODEL', description: 'e.g. "G502 X Plus"', required: true, category: 'deterministic' },
+        { name: 'VARIANT_SUFFIX', description: 'e.g. " (variant: black)" — empty when no variant', required: false, category: 'deterministic' },
+        { name: 'HERO_INSTRUCTIONS', description: 'Hero search rules block — uses promptOverride setting if set, otherwise the built-in lifestyle/contextual instructions', required: true, category: 'deterministic' },
+        { name: 'IDENTITY_WARNING', description: 'Unified block from buildIdentityWarning (src/core/llm/prompts/). Same wording as view-search prompt. Edit text via Global Prompts in LLM Config.', required: false, category: 'global-fragment' },
+        { name: 'SIBLINGS_LINE', description: 'Deprecated — siblings are now inside IDENTITY_WARNING. Kept as an empty slot for backwards compat.', required: false, category: 'global-fragment' },
+        { name: 'PREVIOUS_DISCOVERY', description: 'e.g. "Previous searches:\\n- URLs already checked: [...]\\n" — empty on first run. Header text editable in Global Prompts (discoveryHistoryBlock).', required: false, category: 'global-fragment' },
       ], userMessageInfo: [
         { field: 'brand', description: 'e.g. "Logitech"' },
         { field: 'model', description: 'e.g. "G502 X Plus"' },
         { field: 'base_model', description: 'e.g. "G502 X"' },
         { field: 'variant_label', description: 'e.g. "black"' },
+        { field: 'variant_type', description: '"color" or "edition"' },
+      ] },
+    ],
+  },
+});
+
+// WHY: Overlay release-date-finder with prompt_templates metadata so the
+// LLM Config GUI exposes the discovery prompt editor and its variable
+// reference panel (same pattern as color-finder + image-finder overlays).
+const RELEASE_DATE_FINDER_TEMPLATES = Object.freeze({
+  'release-date-finder': {
+    ...FINDER_PHASE_SCHEMAS['release-date-finder'],
+    prompt_templates: [
+      { promptKey: 'discovery', label: 'Discovery Prompt', storageScope: 'module', moduleId: 'releaseDateFinder', settingKey: 'discoveryPromptTemplate', defaultTemplate: RDF_DEFAULT_TEMPLATE, variables: [
+        { name: 'BRAND', description: 'e.g. "Logitech"', required: true, category: 'deterministic' },
+        { name: 'MODEL', description: 'e.g. "G502 X Plus"', required: true, category: 'deterministic' },
+        { name: 'VARIANT_DESC', description: 'e.g. the "black" color variant — or the "COD BO6" edition', required: true, category: 'deterministic' },
+        { name: 'VARIANT_SUFFIX', description: 'e.g. " (variant: black)" — empty when no variant', required: false, category: 'deterministic' },
+        { name: 'VARIANT_TYPE_WORD', description: '"color" or "edition"', required: false, category: 'deterministic' },
+        { name: 'IDENTITY_WARNING', description: 'Unified block from buildIdentityWarning (src/core/llm/prompts/). 3 tiers: easy="no known siblings" | medium="CAUTION: ..." | hard="HIGH AMBIGUITY: TRIPLE-CHECK". Includes the siblings-exclusion line when sibling models are provided. Edit text via Global Prompts in LLM Config.', required: false, category: 'global-fragment' },
+        { name: 'SIBLINGS_LINE', description: 'Deprecated — siblings are now inside IDENTITY_WARNING. Kept as an empty slot for backwards compat.', required: false, category: 'global-fragment' },
+        { name: 'EVIDENCE_REQUIREMENTS', description: 'Evidence contract + URL verification block. Sourced from the Global Prompts panel (evidenceContract + evidenceVerification).', required: false, category: 'global-fragment' },
+        { name: 'VALUE_CONFIDENCE_GUIDANCE', description: 'Tier-anchored overall-confidence rubric. Sourced from the Global Prompts panel (valueConfidenceRubric).', required: false, category: 'global-fragment' },
+        { name: 'PREVIOUS_DISCOVERY', description: 'Previously searched URLs + queries for this variant. Empty on first run. Header text editable in Global Prompts (discoveryHistoryBlock).', required: false, category: 'global-fragment' },
+      ], userMessageInfo: [
+        { field: 'brand', description: 'e.g. "Logitech"' },
+        { field: 'model', description: 'e.g. "G502 X Plus"' },
+        { field: 'base_model', description: 'e.g. "G502 X"' },
+        { field: 'variant_label', description: 'e.g. "black" or "COD BO6 Edition"' },
         { field: 'variant_type', description: '"color" or "edition"' },
       ] },
     ],
@@ -229,4 +293,5 @@ export const PHASE_SCHEMA_REGISTRY = Object.freeze({
   ...COLOR_FINDER_IDENTITY_CHECK,
   ...IMAGE_FINDER_TEMPLATES,
   ...CAROUSEL_BUILDER_PHASE,
+  ...RELEASE_DATE_FINDER_TEMPLATES,
 });

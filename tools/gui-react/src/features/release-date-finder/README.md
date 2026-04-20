@@ -2,15 +2,17 @@
 
 Embedded finder panel in IndexLab for discovering per-variant first-availability release dates. Fires single-shot Run and budget-loop Loop against the backend RDF orchestrator, renders one row per CEF variant with evidence chain + publisher chain, and groups runs by `loop_id` when emitted by a loop call.
 
+**Phase 5 (panel collapse):** `ReleaseDateFinderPanel.tsx` is a ~25 LOC thin wrapper around `shared/ui/finder/GenericScalarFinderPanel.tsx` — passes the 3 generated React Query hooks + RDF HIW content + `maybeFormatDateValue` formatter. All scaffolding (header, KPI grid, variant rows, run history, modals) lives in the shared generic panel. Future scalar finders (sku, pricing, etc.) copy this wrapper shape.
+
 ## Public API (The Contract)
 
-- `ReleaseDateFinderPanel` — React component (lazy-loaded via `finderPanelRegistry.generated.ts`).
+- `ReleaseDateFinderPanel` — React component (lazy-loaded via `finderPanelRegistry.generated.ts`). Thin wrapper around `GenericScalarFinderPanel`.
 - Hooks:
   - `useReleaseDateFinderQuery(category, productId)` — GET state + runs + publisher candidates per variant.
   - `useReleaseDateFinderRunMutation(category, productId)` — POST single-shot run (one LLM call per variant).
   - `useReleaseDateFinderLoopMutation(category, productId)` — POST budget loop (retries until publisher-reached or definitive unknown).
   - `useDeleteReleaseDateFinderRunMutation(category, productId)` / `useDeleteReleaseDateFinderAllMutation(category, productId)`.
-- Types: `ReleaseDateFinderResult`, `ReleaseDateFinderCandidate`, `ReleaseDateFinderRun`, `EvidenceRef` — the response shape is auto-derived from the backend Zod schema via `scripts/generateRdfTypes.js` → `types.generated.ts`.
+- Types: `ReleaseDateFinderResult`, `ReleaseDateFinderCandidate`, `ReleaseDateFinderRun`, `EvidenceRef` — the response shape is auto-derived from the backend Zod schema via `scripts/generateFinderTypes.js` → `types.generated.ts`.
 
 ## Dependencies
 

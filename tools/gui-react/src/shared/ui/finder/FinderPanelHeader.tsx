@@ -2,8 +2,6 @@ import type { ReactNode } from 'react';
 import { Chip } from '../feedback/Chip.tsx';
 import { Tip } from '../feedback/Tip.tsx';
 import { Spinner } from '../feedback/Spinner.tsx';
-import { toneToChipClass } from './toneMappings.ts';
-import type { StatusChipData } from './types.ts';
 
 interface FinderPanelHeaderProps {
   collapsed: boolean;
@@ -11,7 +9,6 @@ interface FinderPanelHeaderProps {
   title: string;
   chipLabel?: string;
   chipClass?: string;
-  statusChip?: StatusChipData;
   tip: string;
   isRunning: boolean;
   /** True while the POST is in-flight (~50ms). Disables the button during send. */
@@ -35,7 +32,6 @@ export function FinderPanelHeader({
   title,
   chipLabel,
   chipClass = 'sf-chip-accent',
-  statusChip,
   tip,
   isRunning,
   sendBusy = false,
@@ -62,11 +58,9 @@ export function FinderPanelHeader({
 
       {children}
 
-      {isRunning ? (
+      {isRunning && (
         <Chip label="Running" className="sf-chip-purple animate-pulse" />
-      ) : statusChip ? (
-        <Chip label={statusChip.label} className={toneToChipClass(statusChip.tone)} />
-      ) : null}
+      )}
 
       <div className="ml-auto flex items-center gap-2">
         {historyActionSlot}

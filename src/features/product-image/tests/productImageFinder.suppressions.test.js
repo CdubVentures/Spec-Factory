@@ -19,7 +19,7 @@ const runs = [
 
 const product = { brand: 'Corsair', model: 'M75' };
 const variant = { variant_id: 'v_black', key: 'color:black' };
-const viewConfig = [{ key: 'top', description: 'top', priority: true }];
+const priorityViews = [{ key: 'top', description: 'top' }];
 
 function matcher(v, mode) {
   return (r) => (v.variant_id && r.response?.variant_id)
@@ -35,7 +35,7 @@ describe('PIF suppressions — mode-scope boundary', () => {
       suppressions: { urlsChecked: new Set(['https://bad.com']), queriesRun: new Set() },
     });
     const prompt = buildProductImageFinderPrompt({
-      product, variantLabel: 'Black', viewConfig, previousDiscovery: acc,
+      product, variantLabel: 'Black', priorityViews, previousDiscovery: acc,
     });
     ok(!prompt.includes('https://bad.com'));
   });

@@ -51,7 +51,7 @@ function variantMatcher(variant, targetMode) {
 
 const product = { brand: 'Corsair', model: 'M75' };
 const variant = { variant_id: 'v_black', key: 'color:black' };
-const viewConfig = [{ key: 'top', description: 'top view', priority: true }];
+const priorityViews = [{ key: 'top', description: 'top view' }];
 
 describe('PIF discovery history — integration', () => {
   it('flags off → no "Previous searches" block in either prompt', () => {
@@ -61,7 +61,7 @@ describe('PIF discovery history — integration', () => {
       includeQueries: false,
     });
     const viewPrompt = buildProductImageFinderPrompt({
-      product, variantLabel: 'Black', viewConfig, previousDiscovery: acc,
+      product, variantLabel: 'Black', priorityViews, previousDiscovery: acc,
     });
     const heroPrompt = buildHeroImageFinderPrompt({
       product, variantLabel: 'Black', previousDiscovery: acc,
@@ -77,7 +77,7 @@ describe('PIF discovery history — integration', () => {
       includeQueries: false,
     });
     const prompt = buildProductImageFinderPrompt({
-      product, variantLabel: 'Black', viewConfig, previousDiscovery: acc,
+      product, variantLabel: 'Black', priorityViews, previousDiscovery: acc,
     });
     ok(prompt.includes('https://mfr.com/black-view'));
     ok(!prompt.includes('https://mfr.com/black-hero'), 'hero URLs must not leak into view prompt');
@@ -104,7 +104,7 @@ describe('PIF discovery history — integration', () => {
       includeQueries: true,
     });
     const prompt = buildProductImageFinderPrompt({
-      product, variantLabel: 'Black', viewConfig, previousDiscovery: acc,
+      product, variantLabel: 'Black', priorityViews, previousDiscovery: acc,
     });
     ok(prompt.includes("this variant's view searches"));
   });

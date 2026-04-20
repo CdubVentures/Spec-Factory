@@ -4,6 +4,7 @@ import { createIndexingMetricsHandler } from './configIndexingMetricsHandler.js'
 import { createUiSettingsHandler } from './configUiSettingsHandler.js';
 import { createRuntimeSettingsHandler } from './configRuntimeSettingsHandler.js';
 import { createLlmPolicyHandler } from '../../settings-authority/llmPolicyHandler.js';
+import { createGlobalPromptsHandler } from '../../settings-authority/globalPromptsHandler.js';
 
 export function registerConfigRoutes(ctx) {
   const {
@@ -60,10 +61,18 @@ export function registerConfigRoutes(ctx) {
     jsonRes, readJsonBody, config, broadcastWs, persistenceCtx,
   });
 
+  const globalPromptsHandler = createGlobalPromptsHandler({
+    jsonRes, readJsonBody, broadcastWs,
+  });
+
   return async function handleConfigRoutes(parts, params, method, req, res) {
     if (parts[0] === 'ui-settings') return uiHandler(parts, params, method, req, res);
     if (parts[0] === 'indexing') return metricsHandler(parts, params, method, req, res);
     if (parts[0] === 'runtime-settings') return runtimeHandler(parts, params, method, req, res);
+    // Global prompts subroute must match before generic llm-policy (same prefix).
+    if (parts[0] === 'llm-policy' && parts[1] === 'global-prompts') {
+      return globalPromptsHandler(parts, params, method, req, res);
+    }
     if (parts[0] === 'llm-policy') return llmPolicyHandler(parts, params, method, req, res);
     return false;
   };

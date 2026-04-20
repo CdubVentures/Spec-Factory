@@ -13,7 +13,6 @@ import {
   FinderHowItWorks,
   DiscoveryHistoryButton,
   useResolvedFinderModel,
-  deriveFinderStatusChip,
   ColorSwatch,
   usePagination,
   PagerSizeSelector,
@@ -122,10 +121,16 @@ function SelectedStateCard({ display, onDeleteVariant, deleteVariantPending, onD
           </div>
           <div className="flex flex-wrap gap-1.5">
             {display.colors.map(pill => (
-              <span key={pill.name} className="inline-flex items-center gap-1.5 px-2 py-1 sf-surface-panel border sf-border-soft rounded-md text-[11px] font-semibold sf-text-primary">
+              <span key={pill.variantId ?? pill.name} className="inline-flex items-center gap-1.5 px-2 py-1 sf-surface-panel border sf-border-soft rounded-md text-[11px] font-semibold sf-text-primary">
                 <ColorSwatch hexParts={pill.hexParts} size="md" />
-                {pill.displayName && <span className="sf-text-primary">{pill.displayName}</span>}
-                <span className="font-mono sf-text-muted">{pill.name}</span>
+                <span className="sf-text-muted">—</span>
+                <span className="font-mono sf-text-primary">{pill.name}</span>
+                {pill.displayName && (
+                  <>
+                    <span className="sf-text-muted">·</span>
+                    <span className="font-normal sf-text-muted">{pill.displayName}</span>
+                  </>
+                )}
                 <PubMark published={pill.isPublished} size={10} />
                 {onDeleteVariant && (
                   <VariantDeleteButton variantId={pill.variantId} variantLabel={pill.displayName || pill.name} onDelete={onDeleteVariant} isPending={deleteVariantPending ?? false} />
@@ -240,7 +245,6 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
   const isRunningCef = useIsModuleRunning('cef', productId);
 
   const effectiveResult = isError ? null : result;
-  const statusChip = deriveFinderStatusChip(effectiveResult);
   const kpiCards = deriveFinderKpiCards(effectiveResult);
   const publishedColors = Array.isArray(published.colors?.value) ? published.colors.value : [];
   const publishedEditions = Array.isArray(published.editions?.value) ? published.editions.value : [];

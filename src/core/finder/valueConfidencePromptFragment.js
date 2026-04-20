@@ -12,21 +12,15 @@
  */
 
 import { z } from 'zod';
+import { resolveGlobalPrompt } from '../llm/prompts/globalPromptRegistry.js';
 
 // ── Zod schema (universal shape) ─────────────────────────────────────
 
 export const valueConfidenceSchema = z.number().int().min(0).max(100);
 
 // ── Prompt fragment ──────────────────────────────────────────────────
-
-export const VALUE_CONFIDENCE_PROMPT_FRAGMENT = `Overall confidence (0-100):
-Rate your overall confidence in this value, calibrated against the evidence you cite.
-- 90+:   multiple tier1 sources agree, OR a single tier1 source is explicit and unambiguous
-- 70-89: a single tier1 source without corroboration, OR multiple tier2/tier3 sources agree
-- 50-69: tier2/tier3 sources with partial agreement or minor ambiguity
-- 30-49: tier4/tier5 only, OR conflicting signals
-- 0-29:  weak, inferred, or contradicted evidence
-Do not inflate confidence above what your cited evidence supports.`;
+// Template text lives in src/core/llm/prompts/globalPromptRegistry.js
+// under key 'valueConfidenceRubric' so the user can edit it from the GUI.
 
 /**
  * Render the overall-confidence prompt block.
@@ -39,5 +33,5 @@ Do not inflate confidence above what your cited evidence supports.`;
  * @returns {string}
  */
 export function buildValueConfidencePromptBlock() {
-  return VALUE_CONFIDENCE_PROMPT_FRAGMENT;
+  return resolveGlobalPrompt('valueConfidenceRubric');
 }

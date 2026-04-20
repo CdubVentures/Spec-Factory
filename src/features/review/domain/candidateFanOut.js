@@ -1,20 +1,22 @@
 /**
  * Map field_candidates SQL rows into candidate objects for the review grid.
  *
- * Source-centric rows (have source_id column): 1 row = 1 card, direct mapping.
- * Legacy rows (have sources_json array): fan out into N cards per source entry.
+ * field_candidates is source-centric post-Phase 8: one row = one source =
+ * one drawer card. `source_id` is the authoritative identifier. The legacy
+ * multi-source `sources_json` column was dropped in the migration at
+ * `src/db/specDbMigrations.js` and cannot appear on live rows.
  *
  * Contract:
- *   Input:  Array of hydrated field_candidate rows. field_candidates.confidence
- *           is stored as integer 0-100 (matches the LLM schema scale written by
- *           valueConfidenceSchema + submitCandidate). Some legacy rows store
- *           fraction 0-1 — normalizeConfidence handles both.
- *   Output: Flat array of candidate objects, sorted by score DESC then submitted_at DESC
+ *   Input:  Array of hydrated field_candidate rows. `confidence` is stored as
+ *           integer 0-100 (matches the LLM schema scale written by
+ *           valueConfidenceSchema + submitCandidate). Legacy fraction 0-1
+ *           rows are handled by normalizeConfidence.
+ *   Output: Flat array of candidate objects, sorted by score DESC then
+ *           submitted_at DESC.
  *   Invariants:
- *     - score always 0-1 (fraction, clamped, normalized via publisher's
- *       normalizeConfidence helper — the single source of truth for the
- *       integer↔fraction conversion)
- *     - status always 'candidate' or 'resolved'
+ *     - score is always 0-1 (fraction, clamped, normalized via the publisher's
+ *       canonical normalizeConfidence helper)
+ *     - status is always 'candidate' or 'resolved'
  */
 
 import { normalizeConfidence } from '../../publisher/publish/publishCandidate.js';
@@ -40,76 +42,28 @@ export function fanOutCandidates(fcRows) {
   for (const c of fcRows) {
     const { meta, evidenceUrl, evidenceQuote, metaMethod, hasMetadata } = extractMeta(c);
     const status = c.status || 'candidate';
+    // Prefer the source_id column. Defensive fallback to metadata.source for
+    // any malformed row where source_id wasn't populated — the card still
+    // renders with a best-effort source label.
+    const sourceToken = String(c.source_type || meta.source || '').trim().toLowerCase();
+    const sourceId = c.source_id || sourceToken;
 
-    // WHY: Source-centric rows have source_id column — 1 row = 1 card, direct mapping.
-    if (c.source_id) {
-      const sourceToken = String(c.source_type || '').trim().toLowerCase();
-      all.push({
-        candidate_id: `fc_${c.id}`,
-        value: c.value,
-        status,
-        score: clampScore(c.confidence),
-        source: sourceToken,
-        source_id: c.source_id,
-        model: String(c.model || '').trim() || null,
-        run_id: null,
-        submitted_at: c.submitted_at || null,
-        evidence_url: evidenceUrl,
-        evidence: { url: evidenceUrl || '', quote: evidenceQuote, source_id: sourceToken },
-        metadata: hasMetadata ? meta : null,
-        method: metaMethod || sourceToken || null,
-        tier: null,
-      });
-      continue;
-    }
-
-    // Legacy path: fan out sources_json array into N cards
-    const sources = Array.isArray(c.sources_json) ? c.sources_json : [];
-
-    if (sources.length === 0) {
-      const sourceToken = String(meta.source || '').trim().toLowerCase();
-      all.push({
-        candidate_id: `fc_${c.id}`,
-        value: c.value,
-        status,
-        score: clampScore(c.confidence),
-        source: sourceToken,
-        source_id: sourceToken,
-        model: null,
-        run_id: null,
-        submitted_at: c.submitted_at || null,
-        evidence_url: evidenceUrl,
-        evidence: { url: evidenceUrl || '', quote: evidenceQuote, source_id: sourceToken },
-        metadata: hasMetadata ? meta : null,
-        method: metaMethod || sourceToken || null,
-        tier: null,
-      });
-      continue;
-    }
-
-    for (let i = 0; i < sources.length; i++) {
-      const src = sources[i] && typeof sources[i] === 'object' ? sources[i] : {};
-      const sourceToken = String(src.source || '').trim().toLowerCase();
-      const score = clampScore(src.confidence ?? c.confidence);
-      const model = String(src.model || '').trim() || null;
-
-      all.push({
-        candidate_id: `fc_${c.id}_${i}`,
-        value: c.value,
-        status,
-        score,
-        source: sourceToken,
-        source_id: sourceToken,
-        model,
-        run_id: src.run_id || null,
-        submitted_at: src.submitted_at || c.submitted_at || null,
-        evidence_url: evidenceUrl,
-        evidence: { url: evidenceUrl || '', quote: evidenceQuote, source_id: sourceToken },
-        metadata: hasMetadata ? meta : null,
-        method: metaMethod || sourceToken || null,
-        tier: null,
-      });
-    }
+    all.push({
+      candidate_id: `fc_${c.id}`,
+      value: c.value,
+      status,
+      score: clampScore(c.confidence),
+      source: sourceToken,
+      source_id: sourceId,
+      model: String(c.model || '').trim() || null,
+      run_id: null,
+      submitted_at: c.submitted_at || null,
+      evidence_url: evidenceUrl,
+      evidence: { url: evidenceUrl || '', quote: evidenceQuote, source_id: sourceToken },
+      metadata: hasMetadata ? meta : null,
+      method: metaMethod || sourceToken || null,
+      tier: null,
+    });
   }
 
   all.sort((a, b) => {

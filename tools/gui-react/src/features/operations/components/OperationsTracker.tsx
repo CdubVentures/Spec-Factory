@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useCallback, useState, useRef } from 'react';
 import { useOperationsStore, isCarouselLoopProgress, type Operation } from '../state/operationsStore.ts';
 import { variantHexPartsForOp } from '../state/opVariantSwatch.ts';
+import { useOpVariantAtomsMap } from '../state/useOpVariantAtomsMap.ts';
+import { sortOperations, readSortMode, writeSortMode, SORT_MODES, type OpSortMode } from '../state/opSort.ts';
 import { ColorSwatch, useFinderColorHexMap } from '../../../shared/ui/finder';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { api } from '../../../api/client.ts';
@@ -14,18 +16,6 @@ import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTy
 import { resolveEffortLabel } from '../../llm-config/state/resolveEffortLabel.ts';
 import { parseBackendMs } from '../../../utils/dateTime.ts';
 
-/* ── Sort: running (newest-first) → error → done ──────────────────── */
-
-const STATUS_ORDER: Readonly<Record<string, number>> = { running: 0, error: 1, cancelled: 2, done: 3 };
-
-function sortOperations(ops: ReadonlyMap<string, Operation>): Operation[] {
-  return [...ops.values()].sort((a, b) => {
-    const sa = STATUS_ORDER[a.status] ?? 0;
-    const sb = STATUS_ORDER[b.status] ?? 0;
-    if (sa !== sb) return sa - sb;
-    return b.startedAt.localeCompare(a.startedAt);
-  });
-}
 
 /* ── Elapsed timer ─────────────────────────────────────────────────── */
 
@@ -188,7 +178,8 @@ function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
 }) {
   const streamText = useOperationsStore((s) => s.streamTexts.get(op.id) ?? '');
   const colorHexMap = useFinderColorHexMap();
-  const variantHexParts = variantHexPartsForOp(op, colorHexMap);
+  const variantAtomsMap = useOpVariantAtomsMap(op);
+  const variantHexParts = variantHexPartsForOp(op, colorHexMap, variantAtomsMap);
   const chipCls = MODULE_STYLES[op.type] ?? 'sf-chip-neutral';
   const baseLabel = MODULE_LABELS[op.type] ?? op.type.toUpperCase().slice(0, 3);
   const label = op.subType ? `${baseLabel}.${op.subType[0]?.toUpperCase() ?? ''}` : baseLabel;
@@ -216,7 +207,7 @@ function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
         <button
           type="button"
           onClick={onDismiss}
-          className="absolute -top-[5px] -right-[5px] w-[13px] h-[13px] flex items-center justify-center rounded-full text-[7px] font-bold leading-none sf-text-subtle bg-[rgb(var(--sf-color-surface-elevated-rgb))] border border-[rgb(var(--sf-color-border-subtle-rgb)/0.5)] opacity-0 group-hover:opacity-100 hover:text-[var(--sf-state-danger-fg)] hover:border-[var(--sf-state-danger-fg)] transition-all z-10"
+          className="absolute -top-[6px] -right-[6px] w-[15px] h-[15px] flex items-center justify-center rounded-full text-[8px] font-bold leading-none sf-text-subtle bg-[rgb(var(--sf-color-surface-elevated-rgb))] border border-[rgb(var(--sf-color-border-subtle-rgb)/0.5)] opacity-0 group-hover:opacity-100 hover:text-[var(--sf-state-danger-fg)] hover:border-[var(--sf-state-danger-fg)] transition-all z-10"
           title="Dismiss"
         >
           &times;
@@ -312,8 +303,14 @@ export function OperationsTracker() {
   const [selectedOpId, setSelectedOpId] = useState<string | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [sortMode, setSortMode] = useState<OpSortMode>(readSortMode);
 
-  const sorted = useMemo(() => sortOperations(operations), [operations]);
+  const handleSortModeChange = useCallback((mode: OpSortMode) => {
+    setSortMode(mode);
+    writeSortMode(mode);
+  }, []);
+
+  const sorted = useMemo(() => sortOperations(operations, sortMode), [operations, sortMode]);
   const runningCount = useMemo(() => sorted.filter((o) => o.status === 'running').length, [sorted]);
   const selectedOp = useMemo(() => {
     if (!selectedOpId) return null;
@@ -385,9 +382,31 @@ export function OperationsTracker() {
         </span>
       </button>
 
+      {/* Sort selector (only when expanded and at least 1 op) */}
+      {isOpen && sorted.length > 0 && (
+        <div className="flex items-center gap-0.5 pb-1 mb-0.5 border-b border-[rgb(var(--sf-color-border-subtle-rgb)/0.25)]">
+          {SORT_MODES.map((m) => (
+            <button
+              key={m.value}
+              type="button"
+              onClick={() => handleSortModeChange(m.value)}
+              title={m.title}
+              className={`
+                flex-1 text-[9px] font-mono font-semibold uppercase tracking-[0.04em] px-1 py-0.5 rounded-[2px] border transition-colors
+                ${sortMode === m.value
+                  ? 'sf-text-primary border-[rgb(var(--sf-color-accent-strong-rgb)/0.6)] bg-[rgb(var(--sf-color-accent-strong-rgb)/0.10)]'
+                  : 'sf-text-subtle border-[rgb(var(--sf-color-border-subtle-rgb)/0.3)] hover:sf-text-primary hover:border-[rgb(var(--sf-color-border-subtle-rgb)/0.6)]'}
+              `}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Card list or empty state */}
       {isOpen && (
-        <div className="flex-1 min-h-0 flex flex-col gap-1.5 overflow-y-auto overflow-x-hidden pt-0.5 pr-0.5" style={{ scrollbarWidth: 'thin' }}>
+        <div className="flex-1 min-h-0 flex flex-col gap-1.5 overflow-y-auto overflow-x-hidden pt-2 pr-2" style={{ scrollbarWidth: 'thin' }}>
           {sorted.length === 0 ? (
             <div className="flex items-center justify-center py-4 px-2">
               <span className="text-[10px] sf-text-subtle italic">No active operations</span>

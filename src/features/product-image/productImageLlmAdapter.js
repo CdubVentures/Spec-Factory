@@ -16,12 +16,16 @@
 import { zodToLlmSchema } from '../../core/llm/zodToLlmSchema.js';
 import { resolvePromptTemplate } from '../../core/llm/resolvePromptTemplate.js';
 import { buildPreviousDiscoveryBlock } from '../../core/finder/discoveryLog.js';
+import { buildIdentityWarning } from '../../core/llm/prompts/identityContext.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
 import { productImageFinderResponseSchema } from './productImageSchema.js';
 
 // WHY: PIF is the evidence-refs exception across finders — the image URL IS
 // the evidence, and images don't flow through the publisher candidate gate.
 // The shared evidencePromptFragment is deliberately NOT imported here.
+// Identity warning + siblings exclusion ARE shared via buildIdentityWarning.
+
+const FIELD_DOMAIN_NOUN = 'product images';
 
 /* ── Canonical view vocabulary ───────────────────────────────────── */
 
@@ -586,8 +590,7 @@ VIEW DEFINITIONS — classify every image with one of these exact view names:
 {{PRIORITY_VIEWS}}
 {{ADDITIONAL_VIEWS}}
 
-For each priority view, find up to 3 candidate images ranked by resolution and clarity.
-For additional views, include any clean product shots you encounter while searching.
+For each priority view, find up to 3 candidate images ranked by resolution and clarity.{{ADDITIONAL_GUIDANCE}}
 
 Every image you return MUST use one of these view names: {{ALL_VIEW_KEYS}}
 
@@ -608,7 +611,8 @@ export function buildProductImageFinderPrompt({
   product = {},
   variantLabel = '',
   variantType = 'color',
-  viewConfig = [],
+  priorityViews = [],
+  additionalViews = [],
   minWidth = 800,
   minHeight = 600,
   viewQualityMap = null,
@@ -631,29 +635,16 @@ export function buildProductImageFinderPrompt({
     ? `the "${variantLabel}" edition`
     : `the "${variantLabel}" color variant`;
 
-  // Identity block scales with ambiguity
-  const familyCount = Math.max(1, familyModelCount || 1);
-  const ambiguity = ambiguityLevel || 'easy';
+  const identityWarning = buildIdentityWarning({
+    familyModelCount,
+    ambiguityLevel,
+    brand,
+    model,
+    siblingModels: siblingsExcluded,
+    fieldDomainNoun: FIELD_DOMAIN_NOUN,
+  });
 
-  let identityWarning = '';
-  if (ambiguity === 'easy') {
-    identityWarning = 'This product has no known siblings — standard identity matching applies.';
-  } else if (ambiguity === 'medium') {
-    identityWarning = `CAUTION: This product has ${familyCount} models in its family. Multiple similar products exist under the "${brand}" brand with similar names. You MUST verify you are looking at the exact "${model}" — not a related model. Check model numbers, product page titles, and URL slugs carefully.`;
-  } else {
-    // hard, very_hard, extra_hard
-    identityWarning = `HIGH AMBIGUITY: This product has ${familyCount} models in its family. Many similar products exist under "${brand}" with overlapping names. TRIPLE-CHECK every image: verify the exact model name "${model}" appears on the product page, in the URL, or in the image alt text. Do NOT guess — if you cannot confirm the exact model, skip the image.`;
-  }
-
-  const siblingLine = siblingsExcluded.length > 0
-    ? `\nKnown sibling models to EXCLUDE (do NOT return images of these): ${siblingsExcluded.join(', ')}\n`
-    : '';
-
-  // Split views into priority and additional
-  const priorityViews = viewConfig.filter(v => v.priority);
-  const additionalViews = viewConfig.filter(v => !v.priority);
-
-  // Build view definitions — ALL views get full descriptions + per-view minimums
+  // Build view definitions — each view gets its description + per-view minimums
   const viewMinLabel = (v) => {
     if (!viewQualityMap?.[v.key]) return '';
     const vq = viewQualityMap[v.key];
@@ -694,9 +685,12 @@ export function buildProductImageFinderPrompt({
     VARIANT_DESC: variantDesc,
     VARIANT_SUFFIX: variant ? ` (variant: ${variant})` : '',
     IDENTITY_WARNING: identityWarning,
-    SIBLINGS_LINE: siblingLine,
+    SIBLINGS_LINE: '',
     PRIORITY_VIEWS: prioritySection,
     ADDITIONAL_VIEWS: additionalSection,
+    ADDITIONAL_GUIDANCE: additionalViews.length > 0
+      ? '\nFor additional views, include any clean product shots you encounter while searching.'
+      : '',
     ALL_VIEW_KEYS: allViewKeys,
     IMAGE_REQUIREMENTS: imageRequirements,
     PREVIOUS_DISCOVERY: previousDiscoverySection,
@@ -712,7 +706,8 @@ export const PRODUCT_IMAGE_FINDER_SPEC = {
     product: domainArgs.product,
     variantLabel: domainArgs.variantLabel || '',
     variantType: domainArgs.variantType || 'color',
-    viewConfig: domainArgs.viewConfig || [],
+    priorityViews: domainArgs.priorityViews || [],
+    additionalViews: domainArgs.additionalViews || [],
     minWidth: domainArgs.minWidth || 800,
     minHeight: domainArgs.minHeight || 600,
     siblingsExcluded: domainArgs.siblingsExcluded || [],
@@ -792,21 +787,14 @@ export function buildHeroImageFinderPrompt({
     ? `the "${variantLabel}" edition`
     : `the "${variantLabel}" color variant`;
 
-  const familyCount = Math.max(1, familyModelCount || 1);
-  const ambiguity = ambiguityLevel || 'easy';
-
-  let identityWarning = '';
-  if (ambiguity === 'easy') {
-    identityWarning = 'This product has no known siblings — standard identity matching applies.';
-  } else if (ambiguity === 'medium') {
-    identityWarning = `CAUTION: This product has ${familyCount} models in its family. Verify you are looking at the exact "${model}".`;
-  } else {
-    identityWarning = `HIGH AMBIGUITY: ${familyCount} models in family. TRIPLE-CHECK every image for exact model "${model}".`;
-  }
-
-  const siblingLine = siblingsExcluded.length > 0
-    ? `\nKnown sibling models to EXCLUDE: ${siblingsExcluded.join(', ')}\n`
-    : '';
+  const identityWarning = buildIdentityWarning({
+    familyModelCount,
+    ambiguityLevel,
+    brand,
+    model,
+    siblingModels: siblingsExcluded,
+    fieldDomainNoun: FIELD_DOMAIN_NOUN,
+  });
 
   const discoverySection = buildPreviousDiscoveryBlock({
     urlsChecked: previousDiscovery.urlsChecked,
@@ -857,7 +845,7 @@ Do NOT use images from editorial review sites — even if the photo looks contex
     MODEL: model,
     VARIANT_SUFFIX: variant ? ` (variant: ${variant})` : '',
     IDENTITY_WARNING: identityWarning,
-    SIBLINGS_LINE: siblingLine,
+    SIBLINGS_LINE: '',
     PREVIOUS_DISCOVERY: discoverySection,
     HERO_INSTRUCTIONS: heroInstructions,
   });

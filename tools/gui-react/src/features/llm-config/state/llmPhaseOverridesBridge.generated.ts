@@ -38,12 +38,7 @@ export function serializePhaseOverrides(overrides: LlmPhaseOverrides): string {
       phase.thinking !== undefined ||
       phase.thinkingEffort !== undefined ||
       phase.disableLimits !== undefined ||
-      phase.jsonStrict !== undefined ||
-      (phase.writerModel !== undefined && phase.writerModel !== '') ||
-      (phase.writerReasoningModel !== undefined && phase.writerReasoningModel !== '') ||
-      phase.writerUseReasoning !== undefined ||
-      phase.writerThinking !== undefined ||
-      phase.writerThinkingEffort !== undefined
+      phase.jsonStrict !== undefined
     );
   });
   if (!hasContent) return '{}';
@@ -70,12 +65,6 @@ export interface ResolvedPhaseModel {
   thinkingEffort: string;
   disableLimits: boolean;
   jsonStrict: boolean;
-  writerModel: string;
-  writerReasoningModel: string;
-  writerUseReasoning: boolean;
-  writerThinking: boolean;
-  writerThinkingEffort: string;
-  effectiveWriterModel: string;
   effectiveModel: string;
 }
 
@@ -124,6 +113,9 @@ const UI_TO_OVERRIDE: ReadonlyMap<LlmPhaseId, LlmOverridePhaseId> =
   new Map(PHASE_OVERRIDE_REGISTRY.map((e) => [e.uiPhaseId, e.overrideKey]));
 
 export function uiPhaseIdToOverrideKey(uiPhaseId: LlmPhaseId): LlmOverridePhaseId | undefined {
+  // WHY: Writer is a first-class phase but has no PHASE_OVERRIDE_REGISTRY entry
+  // (it has no global-model inheritance). Identity mapping for the writer case.
+  if (uiPhaseId === 'writer') return 'writer';
   return UI_TO_OVERRIDE.get(uiPhaseId);
 }
 
@@ -134,11 +126,48 @@ function stripComposite(key: string): string {
   return i > 0 ? key.slice(i + 1) : key;
 }
 
+// WHY: Writer has no global-model inheritance, no fallback, no webSearch, and
+// its jsonStrict is locked to true (writer always enforces the schema). All
+// limits default to the global plan/timeout/context/reasoning settings.
+function resolveWriterPhaseModel(
+  overrides: LlmPhaseOverrides,
+  globalDraft: GlobalDraftSlice,
+): ResolvedPhaseModel {
+  const wo: Partial<LlmPhaseOverride> = overrides.writer ?? {};
+  const baseModel = wo.baseModel ?? '';
+  const reasoningModel = wo.reasoningModel || globalDraft.llmModelReasoning || '';
+  const useReasoning = wo.useReasoning ?? false;
+  return {
+    baseModel,
+    reasoningModel,
+    fallbackModel: '',
+    fallbackReasoningModel: '',
+    fallbackUseReasoning: false,
+    fallbackThinking: false,
+    fallbackThinkingEffort: '',
+    fallbackWebSearch: false,
+    effectiveFallbackModel: '',
+    useReasoning,
+    maxOutputTokens: wo.maxOutputTokens ?? globalDraft.llmMaxOutputTokensPlan,
+    timeoutMs: wo.timeoutMs ?? globalDraft.llmTimeoutMs,
+    maxContextTokens: wo.maxContextTokens ?? globalDraft.llmMaxTokens,
+    reasoningBudget: wo.reasoningBudget ?? globalDraft.llmReasoningBudget,
+    webSearch: false,
+    thinking: wo.thinking ?? false,
+    thinkingEffort: wo.thinkingEffort ?? '',
+    disableLimits: wo.disableLimits ?? false,
+    jsonStrict: true,
+    effectiveModel: stripComposite(useReasoning ? reasoningModel : baseModel),
+  };
+}
+
 export function resolvePhaseModel(
   overrides: LlmPhaseOverrides,
   phaseId: LlmOverridePhaseId,
   globalDraft: GlobalDraftSlice,
 ): ResolvedPhaseModel | null {
+  if (phaseId === 'writer') return resolveWriterPhaseModel(overrides, globalDraft);
+
   const mapping = PHASE_GLOBAL_MAP.get(phaseId);
   if (!mapping) return null;
 
@@ -162,11 +191,6 @@ export function resolvePhaseModel(
   const thinkingEffort = phaseOverride.thinkingEffort ?? '';
   const disableLimits = phaseOverride.disableLimits ?? false;
   const jsonStrict = phaseOverride.jsonStrict ?? true;
-  const writerModel = phaseOverride.writerModel || '';
-  const writerReasoningModel = phaseOverride.writerReasoningModel || '';
-  const writerUseReasoning = phaseOverride.writerUseReasoning ?? false;
-  const writerThinking = phaseOverride.writerThinking ?? false;
-  const writerThinkingEffort = phaseOverride.writerThinkingEffort ?? '';
 
   return {
     baseModel,
@@ -188,12 +212,6 @@ export function resolvePhaseModel(
     thinkingEffort,
     disableLimits,
     jsonStrict,
-    writerModel,
-    writerReasoningModel,
-    writerUseReasoning,
-    writerThinking,
-    writerThinkingEffort,
-    effectiveWriterModel: stripComposite(writerUseReasoning ? writerReasoningModel : writerModel),
     effectiveModel: stripComposite(useReasoning ? reasoningModel : baseModel),
   };
 }

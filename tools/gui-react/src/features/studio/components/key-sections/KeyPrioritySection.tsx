@@ -1,6 +1,7 @@
 import type { KeySectionBaseProps } from "./keySectionContracts.ts";
 import { Section } from "../Section.tsx";
 import { Tip } from "../../../../shared/ui/feedback/Tip.tsx";
+import { NumberStepper } from "../../../../shared/ui/forms/NumberStepper.tsx";
 import { strN, numN, boolN } from "../../state/nestedValueHelpers.ts";
 import {
   parseBoundedIntInput,
@@ -150,22 +151,22 @@ export function KeyPrioritySection({
             </span>
             <B p="priority.effort" />
           </div>
-          <input
-            className={`${inputCls} w-full`}
-            type="number"
+          <NumberStepper
+            className="w-full"
             min={STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.min}
             max={STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.max}
-            value={numN(
+            value={String(numN(
               currentRule,
               "priority.effort",
               numN(currentRule, "effort", 3),
-            )}
-            onChange={(e) =>
+            ))}
+            ariaLabel="effort"
+            onChange={(next) =>
               updateField(
                 selectedKey,
                 "priority.effort",
                 parseBoundedIntInput(
-                  e.target.value,
+                  next,
                   STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.min,
                   STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.max,
                   STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.fallback,

@@ -502,10 +502,9 @@ const override = store.getSetting('promptOverride'); // returns '' if unset</pre
   jsonSchema: zodToLlmSchema(myFinderResponseSchema),
 };</pre>
           <div class="callout callout-info" style="margin-top:8px;">
-            <strong>Naming convention (required by codegen)</strong>
-            The codegen script derives import paths from <code>featurePath</code> using kebab-to-camelCase conversion.<br>
-            <code>featurePath: 'my-feature'</code> &rarr; codegen imports from <code>myFeatureLlmAdapter.js</code> + <code>myFeatureSchema.js</code>.<br>
-            Your files <strong>must</strong> follow this naming or the import will fail at runtime.
+            <strong>Naming convention (required by codegen — Phase 6)</strong>
+            The codegen script calls <code>deriveFinderPaths(id)</code> to compute import paths from your module <code>id</code>. For <code>id: 'myFinder'</code> (strip <code>Finder</code>, kebab-case) &rarr; <code>featurePath: 'my'</code> &rarr; imports from <code>myLlmAdapter.js</code> + <code>mySchema.js</code>. For multi-word ids like <code>releaseDateFinder</code> &rarr; <code>release-date</code> folder + <code>releaseDateLlmAdapter.js</code>.<br>
+            Your folder + filenames <strong>must</strong> follow this derivation or the import will fail at runtime.
           </div>
         </div>
       </li>
@@ -661,10 +660,10 @@ Forbidden: other feature folders
       <li>
         <div>
           <strong>Wire routes at server boot</strong> &mdash; nothing to do.
-          <code>wireFinderRoutes()</code> in <code>src/core/finder/finderRouteWiring.js</code> dynamically imports your
-          <code>routeFile</code> + <code>contextFile</code> from the registry entry and spreads them into <code>routeCtx</code> /
-          <code>routeDefinitions</code> at boot. Naming convention is enforced (<code>registrarExport</code> +
-          <code>contextExport</code> from the registry must exist on the imported modules).
+          <code>wireFinderRoutes()</code> in <code>src/core/finder/finderRouteWiring.js</code> calls
+          <code>deriveFinderPaths(mod.id)</code> to compute the route file + registrar export names, dynamically imports,
+          and spreads them into <code>routeCtx</code> / <code>routeDefinitions</code> at boot. Naming convention is enforced
+          (<code>registerXxxRoutes</code> from the imported module must match the derived registrar name).
         </div>
       </li>
       <li>
@@ -767,7 +766,7 @@ import { myFinderHowItWorksSections }
       <li>
         <div>
           <strong>Export panel</strong><br>
-          The codegen-generated <code>finderPanelRegistry.generated.ts</code> lazy-imports your panel by the path declared in <code>panelFeaturePath</code> + <code>panelExport</code>. No manual wiring needed.
+          The codegen-generated <code>finderPanelRegistry.generated.ts</code> lazy-imports your panel via paths derived from your module <code>id</code> through <code>deriveFinderPaths(id)</code> (Phase 6). No manual wiring needed.
         </div>
       </li>
       <li>
@@ -821,7 +820,7 @@ import { myFinderHowItWorksSections }
 
     <p><strong>How prompt previews work:</strong> The codegen script reads <code>promptBuilderExport</code> and <code>responseSchemaExport</code> from each <code>FINDER_MODULES</code> entry. It generates <code>phaseSchemaRegistry.generated.js</code> which:</p>
     <ol style="margin:8px 0 0 20px; font-size:13.5px;">
-      <li>Dynamically imports your prompt builder function from <code>src/features/{featurePath}/{camelCase}LlmAdapter.js</code></li>
+      <li>Dynamically imports your prompt builder function from <code>src/features/{featurePath}/{adapterModule}.js</code> — where both paths derive from <code>deriveFinderPaths(id)</code></li>
       <li>Calls it with a placeholder: <code>buildMyFinderPrompt({ product: { brand: '{brand}', model: '{model}' } })</code></li>
       <li>Wraps your Zod schema in <code>zodToLlmSchema()</code></li>
       <li>Exports both as <code>FINDER_PHASE_SCHEMAS['my-finder']</code></li>
@@ -829,8 +828,8 @@ import { myFinderHowItWorksSections }
     <p style="margin-top:8px;">The backend serves this via <code>GET /api/indexing/llm-config</code>. The frontend <code>LlmPhaseSection.tsx</code> renders the prompt preview (left column) and schema preview (right column) automatically.</p>
 
     <div class="callout callout-info" style="margin-top:12px;">
-      <strong>Naming convention (critical)</strong>
-      <code>featurePath: 'my-feature'</code> &rarr; codegen derives <code>myFeatureLlmAdapter.js</code> and <code>myFeatureSchema.js</code> using kebab-to-camelCase conversion. If your file is named differently, the import succeeds at codegen time but <strong>fails at runtime</strong>.
+      <strong>Naming convention (critical — Phase 6)</strong>
+      <code>deriveFinderPaths(id)</code> computes both folder + filenames. For <code>id: 'releaseDateFinder'</code> &rarr; folder <code>src/features/release-date/</code> with <code>releaseDateLlmAdapter.js</code> + <code>releaseDateSchema.js</code>. If your folder/file names don&rsquo;t match the derivation, the import fails at runtime.
     </div>
   </div>
 </div>
@@ -841,9 +840,9 @@ import { myFinderHowItWorksSections }
     <table>
       <thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead>
       <tbody>
-        <tr><td>Runtime: <code>Cannot find module</code></td><td><code>featurePath</code> doesn&rsquo;t match actual folder name, or file isn&rsquo;t named <code>{camelCase}LlmAdapter.js</code></td><td>Verify: <code>featurePath: 'my-feature'</code> &rarr; file must be <code>myFeatureLlmAdapter.js</code></td></tr>
+        <tr><td>Runtime: <code>Cannot find module</code></td><td>Folder or filename doesn&rsquo;t follow the <code>deriveFinderPaths(id)</code> convention (backend uses strip-Finder + kebab-case; adapter is <code>{camelStem}LlmAdapter.js</code>)</td><td>Verify your id derives to matching paths — run <code>deriveFinderPaths('yourId')</code> in a scratch file and match folder + filenames exactly</td></tr>
         <tr><td>Runtime: <code>X is not a function</code></td><td><code>promptBuilderExport</code> or <code>responseSchemaExport</code> string doesn&rsquo;t match actual export name</td><td>Verify the exact export name in your adapter/schema file</td></tr>
-        <tr><td>Panel not showing in Indexing Lab</td><td><code>panelFeaturePath</code> or <code>panelExport</code> doesn&rsquo;t match</td><td>Verify: <code>panelFeaturePath: 'my-finder'</code> &rarr; <code>tools/gui-react/src/features/my-finder/components/MyFinderPanel.tsx</code></td></tr>
+        <tr><td>Panel not showing in Indexing Lab</td><td>Panel path or export name doesn&rsquo;t match derivation (frontend uses kebab-case of full id; export is <code>{Pascal(id)}Panel</code>)</td><td>Verify: for <code>id: 'myFinder'</code> &rarr; <code>tools/gui-react/src/features/my-finder/components/MyFinderPanel.tsx</code></td></tr>
         <tr><td>No prompt preview in LLM Config</td><td>Prompt builder returns empty string or throws with placeholder args</td><td>Ensure your builder handles missing/placeholder product gracefully</td></tr>
         <tr><td>Settings sidebar missing</td><td>Missing <code>settingsLabel</code> / <code>settingsSubtitle</code> / <code>settingsTip</code> in registry</td><td>Add all three fields to your registry entry</td></tr>
       </tbody>
@@ -886,12 +885,9 @@ import { myFinderHowItWorksSections }
   // ── LLM Phase ──
   phase: 'myFinder',                 // must match llmPhaseDefs entry id
 
-  // ── Feature Module Paths (for route auto-wiring) ──
-  featurePath: 'my-feature',         // src/features/{featurePath}/
-  routeFile: 'myFinderRoutes',       // api/{routeFile}.js
-  contextFile: 'myFinderRouteContext',
-  registrarExport: 'registerMyFinderRoutes',
-  contextExport: 'createMyFinderRouteContext',
+  // ── Feature Module Paths (Phase 6: derived from id via deriveFinderPaths(id)) ──
+  // For id: 'myFinder' → folder 'my', routeFile 'myFinderRoutes', registrar 'registerMyFinderRoutes'
+  // Do NOT declare these fields — they are derived at runtime.
 
   // ── JSON Store ──
   filePrefix: 'my_feature',          // .workspace/products/{pid}/{filePrefix}.json
@@ -910,9 +906,9 @@ import { myFinderHowItWorksSections }
   promptBuilderExport: 'buildMyFinderPrompt',       // must match actual export
   responseSchemaExport: 'myFinderResponseSchema',    // must match actual export
 
-  // ── Codegen: GUI Panel ──
-  panelFeaturePath: 'my-finder',     // tools/gui-react/src/features/{panelFeaturePath}/
-  panelExport: 'MyFinderPanel',
+  // ── Codegen: GUI Panel (Phase 6: derived from id) ──
+  // For id: 'myFinder' → panelFeaturePath 'my-finder', panelExport 'MyFinderPanel'
+  // Do NOT declare these fields — they are derived at runtime.
 
   // ── Data-Change Events ──
   dataChangeEvents: {

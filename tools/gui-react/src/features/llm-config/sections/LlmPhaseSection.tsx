@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   SettingGroupBlock,
   SettingRow,
@@ -15,8 +15,9 @@ import { ModelSelectDropdown, GlobalDefaultIcon } from '../components/ModelSelec
 import { extractEffortFromModelName } from '../state/llmEffortFromModelName.ts';
 import { useModuleSettingsAuthority } from '../../pipeline-settings/state/moduleSettingsAuthority.ts';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
-import { PromptTemplateEditor } from '../../../shared/ui/prompt-template/PromptTemplateEditor.tsx';
+import { PromptTemplateEditor, UserMessageInjectionPanel, VariableReferencePanels } from '../../../shared/ui/prompt-template/PromptTemplateEditor.tsx';
 import type { TemplateVariableDef, UserMessageInjection } from '../../../shared/ui/prompt-template/PromptTemplateEditor.tsx';
+import { NumberStepper } from '../../../shared/ui/forms/NumberStepper.tsx';
 
 /** Shape of a prompt template definition from the backend registry. */
 interface PromptTemplateDef {
@@ -59,7 +60,7 @@ interface LlmPhaseSectionProps {
   registry: LlmProviderEntry[];
   globalDraft: GlobalDraftSlice;
   apiKeyFilter?: (provider: LlmProviderEntry) => boolean;
-  phaseSchema?: { system_prompt: string; hero_system_prompt?: string; identity_check_prompt?: string; response_schema: Record<string, unknown>; hero_response_schema?: Record<string, unknown>; identity_check_response_schema?: Record<string, unknown>; view_prompts?: Record<string, string>; eval_criteria_defaults?: Record<string, Record<string, string>>; eval_criteria_categories?: readonly string[]; prompt_templates?: readonly PromptTemplateDef[] } | null;
+  phaseSchema?: { system_prompt: string; hero_system_prompt?: string; identity_check_prompt?: string; response_schema: Record<string, unknown>; hero_response_schema?: Record<string, unknown>; identity_check_response_schema?: Record<string, unknown>; view_prompts?: Record<string, string>; eval_criteria_defaults?: Record<string, Record<string, string>>; eval_criteria_categories?: readonly string[]; view_prompt_defaults?: Record<string, Record<string, Record<'loop' | 'priority' | 'additional', string>>>; view_prompt_categories?: readonly string[]; view_prompt_roles?: readonly ('loop' | 'priority' | 'additional')[]; prompt_templates?: readonly PromptTemplateDef[] } | null;
 }
 
 export const LlmPhaseSection = memo(function LlmPhaseSection({
@@ -86,11 +87,6 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
     () => buildModelDropdownOptions(llmModelOptions, registry, 'reasoning', apiKeyFilter, resolved ? [resolved.reasoningModel] : undefined),
     [llmModelOptions, registry, apiKeyFilter, resolved?.reasoningModel],
   );
-  const allOptions = useMemo(
-    () => buildModelDropdownOptions(llmModelOptions, registry, undefined, apiKeyFilter),
-    [llmModelOptions, registry, apiKeyFilter],
-  );
-
   const updateOverrideField = useCallback((field: string, value: string | boolean | number | null) => {
     if (!overrideKey) return;
     const current = phaseOverrides[overrideKey] ?? {};
@@ -127,11 +123,6 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
     [resolved?.effectiveFallbackModel, registry],
   );
 
-  const writerModelCapabilities = useMemo(
-    () => resolveCapabilities(resolved?.effectiveWriterModel),
-    [resolved?.effectiveWriterModel, registry],
-  );
-
   const phaseTokenWarnings = useMemo(() => {
     if (!overrideKey || !resolved) return [];
     const tokenCap = phaseOverrides[overrideKey]?.maxOutputTokens;
@@ -165,31 +156,32 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
           onChange={(v) => updateOverrideField('disableLimits', v)}
         />
       </SettingRow>
-      <SettingRow label="JSON Strict Mode" tip="When ON (default), one LLM call with strict JSON schema. When OFF, two-phase: free-form research then a writer model formats the JSON.">
-        <SettingToggle
-          checked={resolved.jsonStrict}
-          onChange={(v) => updateOverrideField('jsonStrict', v)}
-        />
-      </SettingRow>
-      {!resolved.jsonStrict && (
+      {phaseId !== 'writer' && (
+        <SettingRow label="JSON Strict Mode" tip="When ON (default), one LLM call with strict JSON schema. When OFF, two-phase: free-form research then the global Writer phase formats the JSON.">
+          <SettingToggle
+            checked={resolved.jsonStrict}
+            onChange={(v) => updateOverrideField('jsonStrict', v)}
+          />
+        </SettingRow>
+      )}
+      {phaseId !== 'writer' && !resolved.jsonStrict && (
         <div className="sf-text-caption sf-text-muted px-1 -mt-1">
-          Research uses the primary model freely. The fallback model formats the JSON output.
+          Research uses the primary model freely. The global <strong>Writer</strong> phase formats the JSON output.
         </div>
       )}
       <SettingRow label="Max Output Tokens" tip="Maximum output tokens for this phase. Leave empty to inherit global default.">
         <div className="flex items-center gap-1.5">
           {phaseOverrides[overrideKey]?.maxOutputTokens == null && !resolved.disableLimits && <GlobalDefaultIcon />}
-          <input
-            className={inputCls}
-            type="number"
+          <NumberStepper
+            className="w-full"
             min={0}
             step={1}
-            value={resolved.disableLimits ? '' : (phaseOverrides[overrideKey]?.maxOutputTokens ?? '')}
+            value={resolved.disableLimits ? '' : String(phaseOverrides[overrideKey]?.maxOutputTokens ?? '')}
             placeholder={resolved.disableLimits ? 'hardware max' : `↩ ${resolved.maxOutputTokens ?? 'auto'}`}
             disabled={resolved.disableLimits}
-            onChange={(e) => {
-              const raw = e.target.value;
-              updateOverrideField('maxOutputTokens', raw === '' ? null : (Number.parseInt(raw, 10) || 0));
+            ariaLabel="max output tokens"
+            onChange={(next) => {
+              updateOverrideField('maxOutputTokens', next === '' ? null : (Number.parseInt(next, 10) || 0));
             }}
           />
         </div>
@@ -197,17 +189,16 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
       <SettingRow label="Max Context Tokens" tip="Maximum context window tokens for this phase. Leave empty to inherit global default.">
         <div className="flex items-center gap-1.5">
           {phaseOverrides[overrideKey]?.maxContextTokens == null && !resolved.disableLimits && <GlobalDefaultIcon />}
-          <input
-            className={inputCls}
-            type="number"
+          <NumberStepper
+            className="w-full"
             min={128}
             step={1}
-            value={resolved.disableLimits ? '' : (phaseOverrides[overrideKey]?.maxContextTokens ?? '')}
+            value={resolved.disableLimits ? '' : String(phaseOverrides[overrideKey]?.maxContextTokens ?? '')}
             placeholder={resolved.disableLimits ? 'hardware max' : `↩ ${resolved.maxContextTokens ?? 'auto'}`}
             disabled={resolved.disableLimits}
-            onChange={(e) => {
-              const raw = e.target.value;
-              updateOverrideField('maxContextTokens', raw === '' ? null : (Number.parseInt(raw, 10) || 0));
+            ariaLabel="max context tokens"
+            onChange={(next) => {
+              updateOverrideField('maxContextTokens', next === '' ? null : (Number.parseInt(next, 10) || 0));
             }}
           />
         </div>
@@ -215,17 +206,16 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
       <SettingRow label="Reasoning Budget" tip="Thinking/reasoning token budget for this phase. Inherited by the fallback model. Leave empty to inherit the global default.">
         <div className="flex items-center gap-1.5">
           {phaseOverrides[overrideKey]?.reasoningBudget == null && !resolved.disableLimits && <GlobalDefaultIcon />}
-          <input
-            className={inputCls}
-            type="number"
+          <NumberStepper
+            className="w-full"
             min={0}
             step={1}
-            value={resolved.disableLimits ? '' : (phaseOverrides[overrideKey]?.reasoningBudget ?? '')}
+            value={resolved.disableLimits ? '' : String(phaseOverrides[overrideKey]?.reasoningBudget ?? '')}
             placeholder={resolved.disableLimits ? 'hardware max' : `↩ ${resolved.reasoningBudget ?? 'auto'}`}
             disabled={resolved.disableLimits}
-            onChange={(e) => {
-              const raw = e.target.value;
-              updateOverrideField('reasoningBudget', raw === '' ? null : (Number.parseInt(raw, 10) || 0));
+            ariaLabel="reasoning budget"
+            onChange={(next) => {
+              updateOverrideField('reasoningBudget', next === '' ? null : (Number.parseInt(next, 10) || 0));
             }}
           />
         </div>
@@ -233,17 +223,16 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
       <SettingRow label="Timeout (ms)" tip="LLM request timeout for this phase. Leave empty to inherit global default.">
         <div className="flex items-center gap-1.5">
           {phaseOverrides[overrideKey]?.timeoutMs == null && !resolved.disableLimits && <GlobalDefaultIcon />}
-          <input
-            className={inputCls}
-            type="number"
+          <NumberStepper
+            className="w-full"
             min={1000}
             step={1000}
-            value={resolved.disableLimits ? '' : (phaseOverrides[overrideKey]?.timeoutMs ?? '')}
+            value={resolved.disableLimits ? '' : String(phaseOverrides[overrideKey]?.timeoutMs ?? '')}
             placeholder={resolved.disableLimits ? '1200000 (20 min)' : `↩ ${resolved.timeoutMs ?? 'auto'}`}
             disabled={resolved.disableLimits}
-            onChange={(e) => {
-              const raw = e.target.value;
-              updateOverrideField('timeoutMs', raw === '' ? null : (Number.parseInt(raw, 10) || 0));
+            ariaLabel="timeout ms"
+            onChange={(next) => {
+              updateOverrideField('timeoutMs', next === '' ? null : (Number.parseInt(next, 10) || 0));
             }}
           />
         </div>
@@ -343,6 +332,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
     </SettingGroupBlock>
 
     {/* ── Fallback (error recovery — independent of writer) ── */}
+    {phaseId !== 'writer' && (
     <SettingGroupBlock title="Fallback" collapsible storageKey={`sf:llm-phase:${phaseId}:fallback`}>
       <SettingRow label="Model" tip="Fallback model when the primary fails. Leave on default to inherit global fallback.">
         <div className="flex items-center gap-1.5">
@@ -421,79 +411,6 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
         </SettingRow>
       )}
     </SettingGroupBlock>
-
-    {/* ── Writer Model (Phase 2 formatter — only visible when JSON Strict is OFF) ── */}
-    {!resolved.jsonStrict && (
-      <SettingGroupBlock title="Writer Model" collapsible storageKey={`sf:llm-phase:${phaseId}:writer`}>
-        <SettingRow label="Model" tip="Model used to format research output into the JSON schema. Leave empty to use the primary model.">
-          <div className="flex items-center gap-1.5">
-            {!phaseOverrides[overrideKey]?.writerModel && <GlobalDefaultIcon />}
-            <ModelSelectDropdown
-              options={allOptions}
-              className={inputCls}
-              value={phaseOverrides[overrideKey]?.writerModel ?? ''}
-              onChange={(v) => updateOverrideField('writerModel', v)}
-              disabled={resolved.writerUseReasoning}
-              allowNone
-              noneLabel={`↩ ${parseModelKey(resolved.baseModel).modelId} (primary)`}
-              noneModelId={resolved.baseModel}
-            />
-          </div>
-        </SettingRow>
-        <SettingRow label="Use Reasoning" tip="Enable reasoning model for the writer.">
-          <SettingToggle
-            checked={resolved.writerUseReasoning}
-            onChange={(v) => updateOverrideField('writerUseReasoning', v)}
-          />
-        </SettingRow>
-        {resolved.writerUseReasoning && (
-          <SettingRow label="Reasoning Model" tip="Reasoning model for the writer.">
-            <div className="flex items-center gap-1.5">
-              {!phaseOverrides[overrideKey]?.writerReasoningModel && <GlobalDefaultIcon />}
-              <ModelSelectDropdown
-                options={reasoningOptions}
-                className={inputCls}
-                value={phaseOverrides[overrideKey]?.writerReasoningModel ?? ''}
-                onChange={(v) => updateOverrideField('writerReasoningModel', v)}
-                allowNone
-                noneLabel={`↩ ${parseModelKey(globalDraft.llmModelReasoning).modelId || '(none)'}`}
-                noneModelId={globalDraft.llmModelReasoning}
-              />
-            </div>
-          </SettingRow>
-        )}
-        {writerModelCapabilities.thinking && (
-          <SettingRow label="Thinking" tip="Send thinking flag to the writer model.">
-            <SettingToggle
-              checked={phaseOverrides[overrideKey]?.writerThinking ?? false}
-              onChange={(v) => updateOverrideField('writerThinking', v)}
-            />
-          </SettingRow>
-        )}
-        {writerModelCapabilities.thinking && (phaseOverrides[overrideKey]?.writerThinking ?? false) && writerModelCapabilities.lockedEffort && (
-          <SettingRow label="Thinking Effort" tip="Effort level is locked in the model name.">
-            <div className="flex items-center gap-1.5">
-              <LockedEffortIcon />
-              <select className={inputCls} disabled value={writerModelCapabilities.lockedEffort}>
-                <option value={writerModelCapabilities.lockedEffort}>{writerModelCapabilities.lockedEffort}</option>
-              </select>
-            </div>
-          </SettingRow>
-        )}
-        {writerModelCapabilities.thinking && (phaseOverrides[overrideKey]?.writerThinking ?? false) && !writerModelCapabilities.lockedEffort && writerModelCapabilities.thinkingEffortOptions.length > 1 && (
-          <SettingRow label="Thinking Effort" tip="Reasoning effort for the writer model.">
-            <select
-              className={inputCls}
-              value={phaseOverrides[overrideKey]?.writerThinkingEffort ?? 'medium'}
-              onChange={(e) => updateOverrideField('writerThinkingEffort', e.target.value)}
-            >
-              {writerModelCapabilities.thinkingEffortOptions.map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-          </SettingRow>
-        )}
-      </SettingGroupBlock>
     )}
 
     {phaseSchema && (
@@ -514,7 +431,9 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
               phaseSchema={phaseSchema as CategoryViewPromptTabsPhaseSchema}
             />
           ) : (
-            /* CEF / Image-finder: two-column grid for multiple prompts */
+            /* CEF / Image-finder: two-column grid for multiple prompts.
+             * For image-finder, the per-view per-role editors slot inside
+             * the view column between the view template and its schema. */
             <PromptTemplatesSection
               phaseId={phaseId}
               promptTemplates={phaseSchema.prompt_templates}
@@ -525,6 +444,19 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
                 ...(phaseSchema.identity_check_response_schema ? [phaseSchema.identity_check_response_schema] : []),
                 ...(phaseSchema.hero_response_schema ? [phaseSchema.hero_response_schema] : []),
               ]}
+              renderExtraForTemplate={(tmpl, activeCategory) =>
+                tmpl.promptKey === 'view'
+                && phaseSchema.view_prompt_defaults
+                && phaseSchema.view_prompt_categories
+                && phaseSchema.view_prompt_roles
+                  ? (
+                    <DiscoveryViewPromptTabs
+                      phaseSchema={phaseSchema as DiscoveryViewPromptTabsPhaseSchema}
+                      activeCategory={activeCategory}
+                    />
+                  )
+                  : null
+              }
             />
           )
         ) : phaseSchema.eval_criteria_defaults && phaseSchema.eval_criteria_categories ? (
@@ -558,11 +490,13 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
 
 /* ── Global Prompt Template Editor (phaseOverrides storage) ──────── */
 
-function GlobalPromptTemplateEditor({ phaseId, templateDef, phaseOverrides, onPhaseOverrideChange }: {
+function GlobalPromptTemplateEditor({ phaseId, templateDef, phaseOverrides, onPhaseOverrideChange, hideVariablesPanel, hideUserMessagePanel }: {
   readonly phaseId: LlmPhaseId;
   readonly templateDef: PromptTemplateDef;
   readonly phaseOverrides: LlmPhaseOverrides;
   readonly onPhaseOverrideChange: (overrides: LlmPhaseOverrides) => void;
+  readonly hideVariablesPanel?: boolean;
+  readonly hideUserMessagePanel?: boolean;
 }) {
   const overrideKey = uiPhaseIdToOverrideKey(phaseId);
   const currentOverride = (overrideKey && (phaseOverrides as Record<string, Record<string, string>>)?.[overrideKey]?.systemPromptTemplate) || '';
@@ -587,15 +521,19 @@ function GlobalPromptTemplateEditor({ phaseId, templateDef, phaseOverrides, onPh
       onSave={handleSave}
       onReset={handleReset}
       userMessageInfo={templateDef.userMessageInfo}
+      hideVariablesPanel={hideVariablesPanel}
+      hideUserMessagePanel={hideUserMessagePanel}
     />
   );
 }
 
 /* ── Module Prompt Template Editor (finderSqlStore storage) ──────── */
 
-function ModulePromptTemplateEditor({ templateDef, category }: {
+function ModulePromptTemplateEditor({ templateDef, category, hideVariablesPanel, hideUserMessagePanel }: {
   readonly templateDef: PromptTemplateDef;
   readonly category: string;
+  readonly hideVariablesPanel?: boolean;
+  readonly hideUserMessagePanel?: boolean;
 }) {
   const { settings, saveSetting, isLoading } = useModuleSettingsAuthority({
     category,
@@ -623,6 +561,8 @@ function ModulePromptTemplateEditor({ templateDef, category }: {
       onReset={handleReset}
       isLoading={isLoading}
       userMessageInfo={templateDef.userMessageInfo}
+      hideVariablesPanel={hideVariablesPanel}
+      hideUserMessagePanel={hideUserMessagePanel}
     />
   );
 }
@@ -773,22 +713,17 @@ function EvalCriteriaEditor({ label, settingKey, defaultValue, settings, saveSet
   const displayValue = dbValue || defaultValue;
   const isOverridden = dbValue.length > 0;
 
+  // WHY: setState-during-render so the draft resyncs synchronously before paint
+  // when tabKey or displayValue changes — avoids a stale-draft frame that flashes
+  // the Save button during tab switches.
   const [draft, setDraft] = useState(displayValue);
-  const prevDisplayRef = useRef(displayValue);
-  useEffect(() => {
-    if (prevDisplayRef.current !== displayValue) {
-      prevDisplayRef.current = displayValue;
-      setDraft(displayValue);
-    }
-  }, [displayValue]);
-
-  const prevTabKeyRef = useRef(tabKey);
-  useEffect(() => {
-    if (prevTabKeyRef.current !== tabKey) {
-      prevTabKeyRef.current = tabKey;
-      setDraft(displayValue);
-    }
-  }, [tabKey, displayValue]);
+  const [syncedKey, setSyncedKey] = useState(tabKey);
+  const [syncedDisplay, setSyncedDisplay] = useState(displayValue);
+  if (syncedKey !== tabKey || syncedDisplay !== displayValue) {
+    setSyncedKey(tabKey);
+    setSyncedDisplay(displayValue);
+    setDraft(displayValue);
+  }
 
   const handleSave = useCallback(() => {
     const trimmed = draft.trim();
@@ -802,8 +737,18 @@ function EvalCriteriaEditor({ label, settingKey, defaultValue, settings, saveSet
 
   const isDirty = draft.trim() !== displayValue.trim();
 
+  // WHY: Auto-size textarea to full content height — no scrolling inside the editor.
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const autoResize = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, []);
+  useLayoutEffect(autoResize, [draft, autoResize]);
+
   return (
-    <div className="space-y-2">
+    <div className="rounded border sf-border-soft p-2 space-y-2">
       <div className="flex items-center justify-between">
         <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted">{label}</div>
         <div className="flex items-center gap-2">
@@ -814,11 +759,12 @@ function EvalCriteriaEditor({ label, settingKey, defaultValue, settings, saveSet
         </div>
       </div>
       <textarea
+        ref={textareaRef}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={handleSave}
-        className="sf-pre-block sf-text-caption font-mono rounded p-3 w-full overflow-auto whitespace-pre-wrap leading-relaxed resize-y"
-        style={{ minHeight: '200px' }}
+        className="sf-pre-block sf-text-caption font-mono rounded p-3 w-full overflow-hidden whitespace-pre-wrap leading-relaxed resize-none"
+        style={{ minHeight: '120px' }}
         spellCheck={false}
       />
       <div className="flex items-center gap-2">
@@ -835,12 +781,13 @@ function EvalCriteriaEditor({ label, settingKey, defaultValue, settings, saveSet
 
 /* ── Prompt Templates Section (generic, driven by prompt_templates array) ── */
 
-function PromptTemplatesSection({ phaseId, promptTemplates, phaseOverrides, onPhaseOverrideChange, responseSchemas }: {
+function PromptTemplatesSection({ phaseId, promptTemplates, phaseOverrides, onPhaseOverrideChange, responseSchemas, renderExtraForTemplate }: {
   readonly phaseId: LlmPhaseId;
   readonly promptTemplates: readonly PromptTemplateDef[];
   readonly phaseOverrides: LlmPhaseOverrides;
   readonly onPhaseOverrideChange: (overrides: LlmPhaseOverrides) => void;
   readonly responseSchemas: Record<string, unknown>[];
+  readonly renderExtraForTemplate?: (tmpl: PromptTemplateDef, activeCategory: string) => ReactNode;
 }) {
   // WHY: Module-scope templates need a category. Use 'mouse' as default preview category.
   const hasModuleTemplates = promptTemplates.some(t => t.storageScope === 'module');
@@ -866,34 +813,58 @@ function PromptTemplatesSection({ phaseId, promptTemplates, phaseOverrides, onPh
         </div>
       )}
 
-      {/* Template editors — each column: prompt → schema (top to bottom) */}
+      {/* Template editors — every column follows one canonical order:
+       *   1. Prompt editor (high-level system prompt textarea + Save/Reset)
+       *   2. Sub-level prompts / extras (e.g. per-view discovery prompts)
+       *   3. Template variables reference panel(s)
+       *   4. User message injection panel
+       *   5. Response schema
+       *
+       * Variables + user-message panels are always rendered externally here
+       * so the ordering is identical whether a template has extras or not.
+       */}
       <div className={promptTemplates.length > 1 ? 'grid grid-cols-2 gap-4 items-start' : ''}>
-        {promptTemplates.map((tmpl, i) => (
-          <div key={tmpl.promptKey} className="space-y-3">
-            {tmpl.storageScope === 'global' ? (
-              <GlobalPromptTemplateEditor
-                phaseId={phaseId}
-                templateDef={tmpl}
-                phaseOverrides={phaseOverrides}
-                onPhaseOverrideChange={onPhaseOverrideChange}
-              />
-            ) : (
-              <ModulePromptTemplateEditor
-                key={`${tmpl.promptKey}-${activeCategory}`}
-                templateDef={tmpl}
-                category={activeCategory}
-              />
-            )}
-            {responseSchemas[i] && (
-              <div>
-                <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Response Schema</div>
-                <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
-                  {JSON.stringify(responseSchemas[i], null, 2)}
-                </pre>
-              </div>
-            )}
-          </div>
-        ))}
+        {promptTemplates.map((tmpl, i) => {
+          const extra = renderExtraForTemplate?.(tmpl, activeCategory);
+          const hasExtra = extra !== null && extra !== undefined && extra !== false;
+          return (
+            <div key={tmpl.promptKey} className="space-y-3">
+              {tmpl.storageScope === 'global' ? (
+                <GlobalPromptTemplateEditor
+                  phaseId={phaseId}
+                  templateDef={tmpl}
+                  phaseOverrides={phaseOverrides}
+                  onPhaseOverrideChange={onPhaseOverrideChange}
+                  hideVariablesPanel
+                  hideUserMessagePanel
+                />
+              ) : (
+                <ModulePromptTemplateEditor
+                  key={`${tmpl.promptKey}-${activeCategory}`}
+                  templateDef={tmpl}
+                  category={activeCategory}
+                  hideVariablesPanel
+                  hideUserMessagePanel
+                />
+              )}
+              {hasExtra && extra}
+              {tmpl.variables.length > 0 && (
+                <VariableReferencePanels variables={tmpl.variables} />
+              )}
+              {tmpl.userMessageInfo && tmpl.userMessageInfo.length > 0 && (
+                <UserMessageInjectionPanel info={tmpl.userMessageInfo} />
+              )}
+              {responseSchemas[i] && (
+                <div>
+                  <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Response Schema</div>
+                  <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
+                    {JSON.stringify(responseSchemas[i], null, 2)}
+                  </pre>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -1013,26 +984,19 @@ function CategoryViewPromptTabs({ phaseSchema }: { readonly phaseSchema: Categor
   const defaultValue = defaults[activeCategory]?.[activeView] ?? '';
   const displayValue = dbValue || defaultValue;
   const isOverridden = dbValue.length > 0;
-
-  // WHY: Local draft prevents re-render flicker while typing.
-  const [draft, setDraft] = useState(displayValue);
-  const prevDisplayRef = useRef(displayValue);
-  useEffect(() => {
-    if (prevDisplayRef.current !== displayValue) {
-      prevDisplayRef.current = displayValue;
-      setDraft(displayValue);
-    }
-  }, [displayValue]);
-
-  // WHY: Reset draft when switching tabs.
   const tabKey = `${activeCategory}:${activeView}`;
-  const prevTabKeyRef = useRef(tabKey);
-  useEffect(() => {
-    if (prevTabKeyRef.current !== tabKey) {
-      prevTabKeyRef.current = tabKey;
-      setDraft(displayValue);
-    }
-  }, [tabKey, displayValue]);
+
+  // WHY: setState-during-render so the draft resyncs synchronously before paint
+  // when tabKey or displayValue changes — avoids a stale-draft frame that flashes
+  // the Save button during tab switches.
+  const [draft, setDraft] = useState(displayValue);
+  const [syncedKey, setSyncedKey] = useState(tabKey);
+  const [syncedDisplay, setSyncedDisplay] = useState(displayValue);
+  if (syncedKey !== tabKey || syncedDisplay !== displayValue) {
+    setSyncedKey(tabKey);
+    setSyncedDisplay(displayValue);
+    setDraft(displayValue);
+  }
 
   const handleSave = useCallback(() => {
     const trimmed = draft.trim();
@@ -1146,6 +1110,176 @@ function CategoryViewPromptTabs({ phaseSchema }: { readonly phaseSchema: Categor
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ── Discovery View Prompt Tabs (Image Finder — per-view per-role) ── */
+
+const DISCOVERY_VIEW_TABS = ['top', 'bottom', 'left', 'right', 'front', 'rear', 'sangle', 'angle'] as const;
+type DiscoveryViewTab = typeof DISCOVERY_VIEW_TABS[number];
+type DiscoveryRole = 'loop' | 'priority' | 'additional';
+
+const ROLE_LABELS: Record<DiscoveryRole, string> = {
+  loop: 'Loop Run (focus view)',
+  priority: 'Priority View (single run)',
+  additional: 'Additional View (secondary hint)',
+};
+
+const ROLE_HELPERS: Record<DiscoveryRole, string> = {
+  loop: 'Injected when this view is the sole focus of a carousel loop call.',
+  priority: 'Injected when this view appears in the PRIORITY section of a single-run prompt.',
+  additional: 'Injected when this view appears in the ADDITIONAL section as a secondary hint.',
+};
+
+function discoveryPromptSettingKey(role: DiscoveryRole, view: DiscoveryViewTab): string {
+  return `${role}ViewPrompt_${view}`;
+}
+
+interface DiscoveryViewPromptTabsPhaseSchema {
+  readonly view_prompt_defaults: Record<string, Record<string, Record<DiscoveryRole, string>>>;
+  readonly view_prompt_categories: readonly string[];
+  readonly view_prompt_roles: readonly DiscoveryRole[];
+}
+
+function DiscoveryViewPromptTabs({ phaseSchema, activeCategory }: {
+  readonly phaseSchema: DiscoveryViewPromptTabsPhaseSchema;
+  readonly activeCategory: string;
+}) {
+  const defaults = phaseSchema.view_prompt_defaults;
+  const roles = (phaseSchema.view_prompt_roles ?? ['loop', 'priority', 'additional']) as readonly DiscoveryRole[];
+
+  const [activeView, setActiveView] = usePersistedTab<DiscoveryViewTab>(
+    'llm-config:discovery-view-view',
+    'top',
+    { validValues: DISCOVERY_VIEW_TABS as unknown as readonly DiscoveryViewTab[] },
+  );
+
+  return (
+    <div className="space-y-2">
+      <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted pt-2">
+        Per-View Discovery Prompts
+      </div>
+
+      {/* View tabs (category is inherited from the parent category selector) */}
+      <div className="flex flex-wrap gap-1">
+        {DISCOVERY_VIEW_TABS.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveView(tab)}
+            className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide rounded cursor-pointer transition-opacity ${
+              activeView === tab
+                ? 'sf-primary-button'
+                : 'sf-btn-ghost sf-text-muted hover:opacity-80'
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {/* Three role editors stacked */}
+      <div className="space-y-3 mt-2">
+        {roles.map((role) => (
+          <DiscoveryRoleEditor
+            key={role}
+            role={role}
+            category={activeCategory}
+            view={activeView}
+            defaultValue={defaults[activeCategory]?.[activeView]?.[role] ?? ''}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DiscoveryRoleEditor({ role, category, view, defaultValue }: {
+  readonly role: DiscoveryRole;
+  readonly category: string;
+  readonly view: DiscoveryViewTab;
+  readonly defaultValue: string;
+}) {
+  const { settings, saveSetting, isLoading } = useModuleSettingsAuthority({
+    category,
+    moduleId: 'productImageFinder',
+  });
+  const settingKey = discoveryPromptSettingKey(role, view);
+  const dbValue = (settings[settingKey] as string) ?? '';
+  const displayValue = dbValue || defaultValue;
+  const isOverridden = dbValue.length > 0;
+  const tabKey = `${category}:${view}:${role}`;
+
+  // WHY: setState-during-render so the draft resyncs synchronously before paint
+  // when tabKey or displayValue changes — avoids a stale-draft frame that flashes
+  // the Save button during tab switches.
+  const [draft, setDraft] = useState(displayValue);
+  const [syncedKey, setSyncedKey] = useState(tabKey);
+  const [syncedDisplay, setSyncedDisplay] = useState(displayValue);
+  if (syncedKey !== tabKey || syncedDisplay !== displayValue) {
+    setSyncedKey(tabKey);
+    setSyncedDisplay(displayValue);
+    setDraft(displayValue);
+  }
+
+  const handleSave = useCallback(() => {
+    const trimmed = draft.trim();
+    if (trimmed === defaultValue.trim()) {
+      saveSetting(settingKey, '');
+    } else {
+      saveSetting(settingKey, trimmed);
+    }
+  }, [draft, defaultValue, settingKey, saveSetting]);
+
+  const handleReset = useCallback(() => {
+    saveSetting(settingKey, '');
+    setDraft(defaultValue);
+  }, [settingKey, defaultValue, saveSetting]);
+
+  const isDirty = draft.trim() !== displayValue.trim();
+
+  return (
+    <div className="rounded border sf-border-soft p-2">
+      <div className="flex items-center justify-between mb-1">
+        <div>
+          <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted">
+            {ROLE_LABELS[role]}
+          </div>
+          <div className="text-[10px] sf-text-muted mt-0.5">{ROLE_HELPERS[role]}</div>
+        </div>
+        <div className="flex items-center gap-2">
+          {isOverridden && (
+            <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded sf-chip-warning">Customized</span>
+          )}
+          {isLoading && <span className="text-[10px] sf-text-muted">Loading…</span>}
+        </div>
+      </div>
+      <textarea
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={handleSave}
+        className="sf-pre-block sf-text-caption font-mono rounded p-2 w-full overflow-auto whitespace-pre-wrap leading-relaxed resize-y"
+        style={{ minHeight: '90px' }}
+        spellCheck={false}
+      />
+      <div className="flex items-center gap-2 mt-1">
+        {isDirty && (
+          <button
+            onClick={handleSave}
+            className="sf-primary-button px-3 py-1 text-[10px] font-bold uppercase tracking-wide rounded cursor-pointer"
+          >
+            Save
+          </button>
+        )}
+        {isOverridden && (
+          <button
+            onClick={handleReset}
+            className="sf-btn-ghost sf-text-muted px-3 py-1 text-[10px] font-bold uppercase tracking-wide rounded cursor-pointer hover:opacity-80"
+          >
+            Reset to Default
+          </button>
+        )}
+      </div>
     </div>
   );
 }

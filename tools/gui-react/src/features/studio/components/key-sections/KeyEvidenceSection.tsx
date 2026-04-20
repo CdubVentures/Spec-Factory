@@ -2,11 +2,11 @@ import type { KeySectionBaseProps } from "./keySectionContracts.ts";
 import { Section } from "../Section.tsx";
 import { Tip } from "../../../../shared/ui/feedback/Tip.tsx";
 import { TierPicker } from "../../../../shared/ui/forms/TierPicker.tsx";
+import { NumberStepper } from "../../../../shared/ui/forms/NumberStepper.tsx";
 import { numN, arrN } from "../../state/nestedValueHelpers.ts";
 import { parseBoundedIntInput } from "../../state/numericInputHelpers.ts";
 import { STUDIO_NUMERIC_KNOB_BOUNDS } from "../../state/studioNumericKnobBounds.ts";
 import {
-  inputCls,
   labelCls,
   STUDIO_TIPS,
 } from "../studioConstants.ts";
@@ -42,18 +42,18 @@ export function KeyEvidenceSection({
             <span>Min Evidence Refs<Tip style={TIP_STYLE} text={STUDIO_TIPS.min_evidence_refs} /></span>
             <B p="evidence.min_evidence_refs" />
           </div>
-          <input
-            className={`${inputCls} w-full`}
-            type="number"
+          <NumberStepper
+            className="w-full"
             min={STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.min}
             max={STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.max}
-            value={minRefs}
-            onChange={(e) =>
+            value={String(minRefs)}
+            ariaLabel="min evidence refs"
+            onChange={(next) =>
               updateField(
                 selectedKey,
                 "evidence.min_evidence_refs",
                 parseBoundedIntInput(
-                  e.target.value,
+                  next,
                   STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.min,
                   STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.max,
                   STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.fallback,

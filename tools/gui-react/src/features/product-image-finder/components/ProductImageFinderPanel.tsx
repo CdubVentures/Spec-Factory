@@ -19,7 +19,6 @@ import {
   FinderHowItWorks,
   DiscoveryHistoryButton,
   useResolvedFinderModel,
-  deriveFinderStatusChip,
   usePagination,
   PagerSizeSelector,
   PagerNavFooter,
@@ -310,7 +309,6 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
 
   const hasCefData = Boolean(variants.length);
   const effectiveResult = isError ? null : pifData;
-  const statusChip = deriveFinderStatusChip(effectiveResult ?? null);
   const imageCount = galleryImages.length;
   const runCount = effectiveResult?.run_count ?? 0;
   const runs = effectiveResult?.runs || [];

@@ -4,14 +4,12 @@ import {
   buildReviewLayout,
   buildProductReviewPayload,
   writeProductReviewArtifacts,
-  buildFieldState,
 } from '../../reviewGridData.js';
 
 export {
   buildReviewLayout,
   buildProductReviewPayload,
   writeProductReviewArtifacts,
-  buildFieldState,
 };
 
 export function makeStorage(tempRoot) {

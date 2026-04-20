@@ -135,9 +135,13 @@ export async function submitCandidate({
       const status = statusMap.get(ref?.url);
       const httpStatus = Number.isInteger(status?.http_status) ? status.http_status : null;
       const verifiedAt = status?.verified_at ?? null;
-      // 2xx → accepted. Network error (0) or invalid_url → unknown, accepted.
-      // 4xx / 5xx → rejected. No status at all (URL omitted) → accepted pass-through.
-      const isRejected = httpStatus !== null && httpStatus >= 400;
+      // WHY: Only 404 (Not Found) and 410 (Gone) reliably mean "the page is dead."
+      // 401/403/429/5xx/0 all indicate the server can't or won't confirm — anti-bot
+      // blocks, auth gates, rate limits, transient outages, network errors. Those
+      // get the benefit of the doubt (accepted as unknown) rather than penalized.
+      // A human-visible page cited by the LLM shouldn't be rejected just because
+      // Cloudflare / idealo / etc. fingerprinted our HEAD request as a bot.
+      const isRejected = httpStatus === 404 || httpStatus === 410;
       const accepted = isRejected ? 0 : 1;
       if (accepted === 1) acceptedCount++; else rejectedCount++;
       stamped.push({ ...ref, http_status: httpStatus, verified_at: verifiedAt, accepted });

@@ -7,9 +7,11 @@
 // WHY: GUI-only global entry — not a pipeline phase, but the GUI renders it
 // as the first tab for provider/budget/limits configuration.
 // WHY: Group IDs for sidebar section headers in the GUI.
-// 'global' stands alone, 'indexing' groups crawl-pipeline phases,
-// 'publish' groups post-crawl validation, 'discovery' groups standalone features.
-export const LLM_PHASE_GROUPS = Object.freeze(['global', 'indexing', 'publish', 'discovery']);
+// 'global' stands alone, 'writer' is the global JSON formatter invoked
+// whenever any other phase runs with jsonStrict=false, 'indexing' groups
+// crawl-pipeline phases, 'publish' groups post-crawl validation,
+// 'discovery' groups standalone features.
+export const LLM_PHASE_GROUPS = Object.freeze(['global', 'writer', 'indexing', 'publish', 'discovery']);
 
 export const LLM_PHASE_UI_GLOBAL = Object.freeze({
   id: 'global',
@@ -21,7 +23,28 @@ export const LLM_PHASE_UI_GLOBAL = Object.freeze({
   group: 'global',
 });
 
+// WHY: GUI-only Discovery entry for editable universal prompt fragments
+// (identity warning, siblings exclusion, evidence contract, value confidence
+// rubric, discovery history header). Shared by CEF + PIF + RDF and any
+// future finder. Lives in the Discovery group so it sits with the finders
+// it configures, not with the LLM plumbing in the Global tab.
+export const LLM_PHASE_UI_GLOBAL_PROMPTS = Object.freeze({
+  id: 'global-prompts',
+  uiId: 'global-prompts',
+  label: 'Global Prompts',
+  subtitle: 'Shared finder fragments',
+  tip: 'Universal prompt fragments used by every finder (identity warning, siblings exclusion, evidence contract, value confidence rubric, discovery history header). CEF + RDF consume the evidence/confidence fragments; PIF is the documented exception.',
+  roles: [],
+  group: 'discovery',
+});
+
 export const LLM_PHASE_DEFS = Object.freeze([
+  // WHY: Writer is a global first-class phase — the dedicated JSON formatter
+  // invoked whenever any other phase runs with jsonStrict=false. It has no
+  // global-model inheritance (it IS the writer), no fallback, no JSON-strict
+  // knob (always enforces schema), no webSearch. Ordering puts it at the top
+  // of the UI (below Global, above Indexing Pipeline).
+  { id: 'writer',        uiId: 'writer',           label: 'Writer',         subtitle: 'JSON Strict Disabled Formatter', tip: 'Dedicated model that formats research output into JSON schema when any other phase runs with JSON Strict off. Global — applies to all two-phase calls.', roles: ['write'], group: 'writer', globalModel: null, groupToggle: null, globalTokens: null, globalTimeout: null, globalContextTokens: null, globalReasoningBudget: null, globalFallbackModel: null, globalFallbackReasoningModel: null },
   { id: 'needset',       uiId: 'needset',          label: 'Needset',        subtitle: 'Base Model', tip: 'Base Model shared with Search Planner. Opt-in reasoning toggle overrides with shared Reasoning Model.', roles: ['plan'],     sharedWith: ['search-planner'],  group: 'indexing', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan',   globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalReasoningBudget: 'llmReasoningBudget', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel' },
   { id: 'searchPlanner', uiId: 'search-planner',   label: 'Search Planner', subtitle: 'Base Model', tip: 'Base Model shared with Needset. Opt-in reasoning toggle overrides with shared Reasoning Model.',        roles: ['plan'],     sharedWith: ['needset'],         group: 'indexing', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan',   globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalReasoningBudget: 'llmReasoningBudget', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel' },
   { id: 'brandResolver', uiId: 'brand-resolver',   label: 'Brand Resolver', subtitle: 'Base Model', tip: 'Base Model shared with SERP Selector. Opt-in reasoning toggle overrides with shared Reasoning Model.',  roles: ['triage'],   sharedWith: ['serp-selector'],   group: 'indexing', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan',   globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalReasoningBudget: 'llmReasoningBudget', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel' },

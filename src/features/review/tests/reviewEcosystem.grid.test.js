@@ -2,46 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  buildCandidateRow,
-  buildFieldState,
-  buildFieldStateScenario,
   buildProductReviewPayload,
   CATEGORY,
   withSeededSpecDbFixture,
 } from './helpers/reviewEcosystemHarness.js';
-
-test('GRID-06: buildFieldState with multiple candidates includes evidence', () => {
-  const fieldState = buildFieldState(
-    buildFieldStateScenario({ productId: 'mouse-zowie-ec2-c', field: 'weight' }),
-  );
-  assert.equal(fieldState.source, 'zowie.benq.com');
-  assert.equal(fieldState.method, 'dom');
-  assert.equal(fieldState.tier, 1);
-  assert.equal(fieldState.candidate_count, 3);
-  assert.equal(fieldState.candidates.length, 3);
-  assert.equal(fieldState.candidates[0].source, 'zowie.benq.com');
-  assert.equal(fieldState.candidates[1].source, 'rtings.com');
-  assert.equal(fieldState.candidates[2].source, 'reddit.com');
-});
-
-test('GRID-07: Confidence maps to color via confidence dot only', () => {
-  const stateA = buildFieldState(buildFieldStateScenario({
-    field: 'weight',
-    candidates: { weight: [buildCandidateRow({ candidate_id: 'c1' })] },
-    normalizedFields: { weight: '59' },
-    provenance: { weight: { value: '59', confidence: 0.7 } },
-    summary: { fields_below_pass_target: ['weight'] },
-  }));
-  assert.equal(stateA.selected.color, 'yellow');
-
-  const stateB = buildFieldState(buildFieldStateScenario({
-    field: 'weight',
-    candidates: { weight: [buildCandidateRow({ candidate_id: 'c1' })] },
-    normalizedFields: { weight: '59' },
-    provenance: { weight: { value: '59', confidence: 0.7 } },
-  }));
-  assert.equal(stateB.selected.color, 'yellow');
-});
 
 test('review ecosystem grid contracts share one fixture without weakening field-state behavior', { timeout: 120_000 }, async (t) => {
   await withSeededSpecDbFixture(async ({ storage, config, db }) => {

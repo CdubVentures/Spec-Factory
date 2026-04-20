@@ -1,10 +1,3 @@
-export function toneToChipClass(tone: string): string {
-  if (tone === 'success') return 'sf-chip-success';
-  if (tone === 'warning') return 'sf-chip-warning';
-  if (tone === 'danger') return 'sf-chip-danger';
-  return 'sf-chip-neutral';
-}
-
 export function toneToValueClass(tone: string): string {
   if (tone === 'success') return 'sf-status-text-success';
   if (tone === 'warning') return 'sf-status-text-warning';

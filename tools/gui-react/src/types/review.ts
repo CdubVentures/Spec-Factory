@@ -116,6 +116,19 @@ export interface FieldState {
   variant_values?: Record<string, VariantValueEntry>;
 }
 
+// WHY: The complete variant catalog for a product — every variant regardless of
+// whether any field has a resolved value for it. Drawer override-target dropdowns
+// must list all variants so users can seed values for variants RDF hasn't reached.
+export interface ProductVariantInfo {
+  variant_id: string;
+  variant_key: string | null;
+  variant_label: string | null;
+  variant_type: 'color' | 'edition' | string | null;
+  color_atoms: string[] | null;
+  edition_slug: string | null;
+  is_default: boolean;
+}
+
 export interface ProductReviewPayload {
   product_id: string;
   category: string;
@@ -127,6 +140,7 @@ export interface ProductReviewPayload {
     variant: string;
   };
   fields: Record<string, FieldState>;
+  variants?: ProductVariantInfo[];
   metrics: {
     confidence: number;
     coverage: number;
@@ -173,4 +187,28 @@ export interface CandidateDeleteResponse {
   deleted: number | boolean;
   artifacts_cleaned: boolean;
   republished?: boolean;
+}
+
+export interface ManualOverrideRequest {
+  productId: string;
+  field: string;
+  value: string;
+  variantId?: string;
+  reviewer?: string;
+  reason?: string;
+}
+
+export interface ClearPublishedFieldRequest {
+  productId: string;
+  field: string;
+  variantId?: string;
+  allVariants?: boolean;
+}
+
+export interface ClearPublishedFieldResponse {
+  ok: boolean;
+  result: {
+    status: 'cleared' | 'unchanged';
+    scope: 'scalar' | 'variant-single' | 'variant-all';
+  };
 }

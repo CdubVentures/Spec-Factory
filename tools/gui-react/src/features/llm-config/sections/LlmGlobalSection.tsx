@@ -14,6 +14,7 @@ import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import { usePersistedExpandMap } from '../../../stores/tabStore.ts';
 import { LlmAllModelsSection } from './LlmAllModelsSection.tsx';
 import { ModelSelectDropdown } from '../components/ModelSelectDropdown.tsx';
+import { NumberStepper } from '../../../shared/ui/forms/NumberStepper.tsx';
 
 const LlmProviderRegistrySection = lazy(async () => {
   const module = await import('./LlmProviderRegistrySection.tsx');
@@ -241,47 +242,62 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
         <div className="grid grid-cols-2 gap-x-3.5 gap-y-2.5">
           <div className="flex flex-col gap-1">
             <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Max Output Tokens</label>
-            <input
-              className={inputCls}
-              type="number"
-              value={runtimeDraft.llmMaxOutputTokensPlan}
-              onChange={(e) => onNumberChange('llmMaxOutputTokensPlan', e.target.value, getNumberBounds('llmMaxOutputTokensPlan'))}
+            <NumberStepper
+              className="w-full"
+              value={String(runtimeDraft.llmMaxOutputTokensPlan)}
+              min={getNumberBounds('llmMaxOutputTokensPlan').min}
+              max={getNumberBounds('llmMaxOutputTokensPlan').max}
+              step={getNumberBounds('llmMaxOutputTokensPlan').int === false ? 0.01 : 1}
+              ariaLabel="max output tokens"
+              onChange={(next) => onNumberChange('llmMaxOutputTokensPlan', next, getNumberBounds('llmMaxOutputTokensPlan'))}
             />
           </div>
           <div className="flex flex-col gap-1">
             <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Max Context Tokens</label>
-            <input
-              className={inputCls}
-              type="number"
-              value={runtimeDraft.llmMaxTokens}
-              onChange={(e) => onNumberChange('llmMaxTokens', e.target.value, getNumberBounds('llmMaxTokens'))}
+            <NumberStepper
+              className="w-full"
+              value={String(runtimeDraft.llmMaxTokens)}
+              min={getNumberBounds('llmMaxTokens').min}
+              max={getNumberBounds('llmMaxTokens').max}
+              step={getNumberBounds('llmMaxTokens').int === false ? 0.01 : 1}
+              ariaLabel="max context tokens"
+              onChange={(next) => onNumberChange('llmMaxTokens', next, getNumberBounds('llmMaxTokens'))}
             />
           </div>
           <div className="flex flex-col gap-1">
             <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Timeout (ms)</label>
-            <input
-              className={inputCls}
-              type="number"
-              value={runtimeDraft.llmTimeoutMs}
-              onChange={(e) => onNumberChange('llmTimeoutMs', e.target.value, getNumberBounds('llmTimeoutMs'))}
+            <NumberStepper
+              className="w-full"
+              value={String(runtimeDraft.llmTimeoutMs)}
+              min={getNumberBounds('llmTimeoutMs').min}
+              max={getNumberBounds('llmTimeoutMs').max}
+              step={getNumberBounds('llmTimeoutMs').int === false ? 0.01 : 1000}
+              ariaLabel="timeout ms"
+              onChange={(next) => onNumberChange('llmTimeoutMs', next, getNumberBounds('llmTimeoutMs'))}
             />
           </div>
           <div className="flex flex-col gap-1">
             <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Reasoning Budget</label>
-            <input
-              className={inputCls}
-              type="number"
-              value={runtimeDraft.llmReasoningBudget}
-              onChange={(e) => onNumberChange('llmReasoningBudget', e.target.value, getNumberBounds('llmReasoningBudget'))}
+            <NumberStepper
+              className="w-full"
+              value={String(runtimeDraft.llmReasoningBudget)}
+              min={getNumberBounds('llmReasoningBudget').min}
+              max={getNumberBounds('llmReasoningBudget').max}
+              step={getNumberBounds('llmReasoningBudget').int === false ? 0.01 : 1}
+              ariaLabel="reasoning budget"
+              onChange={(next) => onNumberChange('llmReasoningBudget', next, getNumberBounds('llmReasoningBudget'))}
             />
           </div>
           <div className="flex flex-col gap-1">
             <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Lab Queue Delay (ms)</label>
-            <input
-              className={inputCls}
-              type="number"
-              value={runtimeDraft.llmLabQueueDelayMs}
-              onChange={(e) => onNumberChange('llmLabQueueDelayMs', e.target.value, getNumberBounds('llmLabQueueDelayMs'))}
+            <NumberStepper
+              className="w-full"
+              value={String(runtimeDraft.llmLabQueueDelayMs)}
+              min={getNumberBounds('llmLabQueueDelayMs').min}
+              max={getNumberBounds('llmLabQueueDelayMs').max}
+              step={getNumberBounds('llmLabQueueDelayMs').int === false ? 0.01 : 100}
+              ariaLabel="lab queue delay ms"
+              onChange={(next) => onNumberChange('llmLabQueueDelayMs', next, getNumberBounds('llmLabQueueDelayMs'))}
             />
           </div>
         </div>

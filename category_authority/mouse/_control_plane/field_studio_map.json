@@ -9627,7 +9627,7 @@
     },
     "sku": {
       "aliases": [],
-      "availability": "sometimes",
+      "availability": "always",
       "canonical_key": "sku",
       "component": null,
       "constraints": [],
@@ -9691,7 +9691,7 @@
         "unit": null
       },
       "priority": {
-        "availability": "sometimes",
+        "availability": "always",
         "difficulty": "easy",
         "effort": 4,
         "required_level": "expected"

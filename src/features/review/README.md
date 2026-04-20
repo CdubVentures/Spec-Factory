@@ -37,7 +37,7 @@ The review grid, LLM-assisted review, and component review surfaces are **active
 ### Route Layer (self-contained HTTP handling)
 - `api/reviewRoutes.js` — thin dispatcher delegating to extracted handler modules.
 - `api/fieldReviewHandlers.js`, `api/componentReviewHandlers.js` — query/read handlers.
-- `api/itemMutationRoutes.js`, `api/componentMutationRoutes.js`, `api/enumMutationRoutes.js` — mutation handlers.
+- `api/itemMutationRoutes.js`, `api/componentMutationRoutes.js`, `api/enumMutationRoutes.js` — mutation handlers. `itemMutationRoutes` hosts three POST actions: `/override`, `/manual-override`, and `/clear-published`. All three accept optional `variantId` for variant-dependent fields; clear-published also accepts `allVariants: true` for whole-field unresolve.
 - `api/candidateDeletionRoutes.js` — DELETE candidate endpoints (single + bulk).
 - `api/routeSharedHelpers.js` — shared mutation response/validation helpers.
 - `api/mutationResolvers.js` — SpecDb context resolution for mutations.
@@ -60,3 +60,14 @@ The review grid, LLM-assisted review, and component review surfaces are **active
 - **Candidate deletion is variant-aware**: `deleteCandidateBySourceId` / `deleteAllCandidatesForField` branch on `isVariantBackedField(fieldKey)` (from `src/features/color-edition/index.js`). Variant-backed fields (`colors`, `editions`) are stripped from candidates only — published is owned by the variants table. All other fields (`release_date`, `name`, future) are stripped + re-published via `republishField`, which unpublishes when no remaining candidate clears `publishConfidenceThreshold`. Cascade deletes on the candidate row sweep the `field_candidate_evidence` projection automatically via FK.
 - **`has_run` is meaningful-state, not candidate-count**: `deriveHasRun({ candidateCount, knownFieldStateCount })` in `reviewGridData.js` returns true if the product has any candidate OR any published field. Variant-derived published (post-CEF-delete-all-runs) keeps the row visible in the grid; without this rule the row would dim to invisible after `stripRunSourceFromCandidates` empties the candidate set.
 - **Drawer published badge**: `tools/gui-react/src/features/review/components/FieldReviewDrawer.tsx` renders a `PublishedBadge` whose `kind` is decided by `resolveDrawerBadge(fieldKey, hasPublished, variantDependent?)`: `'variant'` for `colors`/`editions` or any field flagged variant-dependent by the backend (`field_rule.variant_dependent`), `'value'` otherwise. Reflects the deletion semantics class so users see whether a candidate delete will demote published.
+- **Manual override contract** (trust-boundary in `services/itemMutationService.js`):
+  - `variantGenerator` fields (`colors`, `editions`) reject override → 400 `override_not_allowed` — CEF is authoritative.
+  - Variant-dependent fields require `variantId` → 400 `variant_id_required` otherwise.
+  - Scalar fields forbid `variantId` → 400 `variant_id_not_allowed` when supplied.
+  - Set-union list fields (`contract.list_rules.item_union === 'set_union'`) accept comma-separated string input and split via `parseList` before submit.
+- **Clear-published contract** (`POST /review/{category}/clear-published` via `itemMutationRoutes.js`, backed by `publisher.clearPublishedField`):
+  - Demotes `field_candidates.status resolved → candidate` and removes the JSON projection. Never deletes candidate rows.
+  - Variant-dependent requires exactly one of `{variantId, allVariants:true}` — 400 `variant_clear_scope_required` / `variant_clear_scope_conflict` otherwise.
+  - Scalar forbids both — 400 `variant_id_not_allowed` / `all_variants_not_allowed`.
+  - Broadcasts `review-clear-published` with `{productId, field, variantId?, allVariants?}` in meta. Manual-override lock in `publishCandidate.js:124-127, :241-244` naturally releases once the resolved JSON entry is gone.
+  - Also nulls `metadata_json.publish_result` on demoted candidate rows so Publisher GUI doesn't render stale "published" state.

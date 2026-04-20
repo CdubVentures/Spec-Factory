@@ -202,78 +202,46 @@ export function deriveSelectedStateDisplay(
     const registry = result?.variant_registry ?? [];
     const variantByKey = new Map(registry.map(v => [v.variant_key, v.variant_id]));
 
-    // WHY: An edition variant is also a color variant — its paired colors
-    // form a combo (joined with '+') that surfaces on the Colors side.
-    // Track contributing edition slugs per combo so P can cascade from
-    // the edition's resolved state onto the combo pill.
-    const editionsByCombo = new Map<string, string[]>();
-    for (const slug of pub.editions) {
-      const paired = editionDetailsMap[slug]?.colors ?? [];
-      if (paired.length === 0) continue;
-      const combo = paired.join('+');
-      const existing = editionsByCombo.get(combo);
-      if (existing) existing.push(slug);
-      else editionsByCombo.set(combo, [slug]);
-    }
-
     // WHY: When publishedSets is omitted, every rendered item is treated as
     // published (back-compat). When provided (from the publisher endpoint's
     // resolved arrays), isPublished is set by Set containment per item.
     const hasPublishedSets = publishedSets !== undefined;
     const publishedColorSet = hasPublishedSets ? new Set(publishedSets.colors) : null;
     const publishedEditionSet = hasPublishedSets ? new Set(publishedSets.editions) : null;
-    const colorPublished = (name: string) => {
+    const colorPublished = (combo: string, editionSlug: string | null) => {
       if (!publishedColorSet && !publishedEditionSet) return true;
-      if (publishedColorSet?.has(name)) return true;
-      const contribs = editionsByCombo.get(name);
-      if (contribs && publishedEditionSet) {
-        return contribs.some(slug => publishedEditionSet.has(slug));
-      }
+      if (publishedColorSet?.has(combo)) return true;
+      if (editionSlug && publishedEditionSet?.has(editionSlug)) return true;
       return false;
     };
     const editionPublished = (slug: string) => publishedEditionSet ? publishedEditionSet.has(slug) : true;
 
-    // Union standalone colors with edition-derived combos (dedupe by name,
-    // preserve standalone order then append new combos).
-    const seenColorNames = new Set<string>(pub.colors);
-    const allColorNames: string[] = [...pub.colors];
-    for (const combo of editionsByCombo.keys()) {
-      if (!seenColorNames.has(combo)) {
-        allColorNames.push(combo);
-        seenColorNames.add(combo);
-      }
-    }
-
-    // Each published color maps to either a color variant (variant_key='color:<atom>')
-    // OR to an edition variant (when the color IS a combo that belongs to an edition —
-    // its variant_key='edition:<slug>'). Look up BOTH to find the right variant_id.
-    const editionVariantByCombo = new Map<string, string>();
-    for (const v of registry) {
-      if (v.variant_type !== 'edition') continue;
-      const combo = (v.color_atoms || []).join('+');
-      if (combo) editionVariantByCombo.set(combo, v.variant_id);
-    }
-    const resolveColorVariantId = (name: string): string | null => {
-      const direct = variantByKey.get(`color:${name}`);
-      if (direct) return direct;
-      const fromEdition = editionVariantByCombo.get(name);
-      return fromEdition ?? null;
-    };
-
-    const colors = allColorNames.map(name => {
-      const vid = resolveColorVariantId(name);
-      const sources = variantSources(colorCands, vid);
-      return toColorPill(
-        name,
-        defaultColor,
-        hexMap,
-        colorNameMap[name] || '',
-        sources,
-        maxConfidence(sources),
-        vid,
-        colorPublished(name),
-      );
-    });
+    // WHY: One chip per variant in the registry — never collapse two variants
+    // into one chip even when their atoms match. Pre-fix bug (M75 Wireless):
+    // 3 distinct SKUs (plain Black + 2 black-bodied editions) all rendered
+    // as one "black" chip, hiding 2/3 of the evidence. Each variant carries
+    // its own variant_id, evidence trail, and Del button — registry is SSOT.
+    // Variants with empty color_atoms are skipped (degenerate edition data).
+    const colors = registry
+      .filter(v => (v.color_atoms?.length ?? 0) > 0)
+      .map(v => {
+        const combo = v.color_atoms.join('+');
+        const isEdition = v.variant_type === 'edition';
+        const displayName = isEdition
+          ? (v.edition_display_name || v.variant_label || '')
+          : (colorNameMap[combo] || '');
+        const sources = variantSources(colorCands, v.variant_id);
+        return toColorPill(
+          combo,
+          defaultColor,
+          hexMap,
+          displayName,
+          sources,
+          maxConfidence(sources),
+          v.variant_id,
+          colorPublished(combo, isEdition ? v.edition_slug : null),
+        );
+      });
 
     const editions: EditionBlock[] = pub.editions.map(slug => {
       const edMeta = editionDetailsMap[slug];
@@ -282,8 +250,14 @@ export function deriveSelectedStateDisplay(
       return {
         slug,
         displayName: edMeta?.display_name || '',
+        // pairedColors are atoms describing the edition's body — decorative.
+        // Each atom links to its standalone color variant (if one exists) so
+        // hover/click can show that color's evidence; published is a per-atom
+        // check against publishedColorSet only (does NOT cascade from parent
+        // edition — the test contract treats pairedColor presence and edition
+        // presence as independent signals).
         pairedColors: (edMeta?.colors ?? []).map((name: string) => {
-          const vid = resolveColorVariantId(name);
+          const vid = variantByKey.get(`color:${name}`) ?? null;
           const sources = variantSources(colorCands, vid);
           return toColorPill(
             name,
@@ -293,7 +267,7 @@ export function deriveSelectedStateDisplay(
             sources,
             maxConfidence(sources),
             vid,
-            colorPublished(name),
+            colorPublished(name, null),
           );
         }),
         sources: editionSources,

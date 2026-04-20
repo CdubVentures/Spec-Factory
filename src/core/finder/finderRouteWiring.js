@@ -10,7 +10,7 @@
  * each thin route wrapper, not bundled into the context.
  */
 
-import { FINDER_MODULES } from './finderModuleRegistry.js';
+import { FINDER_MODULES, deriveFinderPaths } from './finderModuleRegistry.js';
 import { createFinderRouteContext } from './finderRouteContext.js';
 
 /**
@@ -32,11 +32,12 @@ export async function wireFinderRoutes(deps) {
   const routeDefinitions = [];
 
   for (const mod of FINDER_MODULES) {
-    const routeMod = await import(`../../features/${mod.featurePath}/api/${mod.routeFile}.js`);
-    const registrar = routeMod[mod.registrarExport];
+    const { featurePath, routeFile, registrarExport } = deriveFinderPaths(mod.id);
+    const routeMod = await import(`../../features/${featurePath}/api/${routeFile}.js`);
+    const registrar = routeMod[registrarExport];
 
     if (typeof registrar !== 'function') {
-      throw new Error(`Finder "${mod.id}": missing export "${mod.registrarExport}" from ${mod.routeFile}.js`);
+      throw new Error(`Finder "${mod.id}": missing export "${registrarExport}" from ${routeFile}.js`);
     }
 
     const ctx = createFinderRouteContext({

@@ -153,19 +153,18 @@ function resolvePhaseJsonStrict(config = {}, phase = '') {
   return config[`_resolved${cap}JsonStrict`] ?? true;
 }
 
-// WHY: Writer model is an independent model for Phase 2 (formatting) when
-// jsonStrict is off. Same shape as fallback (model + useReasoning + reasoningModel)
-// but serves a different purpose. Returns null when no writer model configured.
-function resolvePhaseWriterModel(config = {}, phase = '') {
-  const cap = capitalize(String(phase || '').trim());
-  if (!cap) return '';
-  const useReasoning = Boolean(config[`_resolved${cap}WriterUseReasoning`]);
-  const suffix = useReasoning ? 'WriterReasoningModel' : 'WriterModel';
-  return normalized(config[`_resolved${cap}${suffix}`]);
+// WHY: Writer is a global first-class phase (not per-source-phase sub-keys).
+// Any source phase with jsonStrict=false triggers the same global writer for
+// Phase 2 (formatting). Reads _resolvedWriterBaseModel / _resolvedWriterReasoningModel
+// gated by _resolvedWriterUseReasoning. Returns empty when no writer configured.
+function resolveWriterModel(config = {}) {
+  const useReasoning = Boolean(config._resolvedWriterUseReasoning);
+  const suffix = useReasoning ? 'ReasoningModel' : 'BaseModel';
+  return normalized(config[`_resolvedWriter${suffix}`]);
 }
 
-function resolveWriterRoute(config = {}, { role = 'plan', phase = '' } = {}) {
-  const writerModel = resolvePhaseWriterModel(config, phase);
+function resolveWriterRoute(config = {}, { role = 'plan' } = {}) {
+  const writerModel = resolveWriterModel(config);
   if (!writerModel) return null;
 
   const resolved = resolveModelFromRegistry(config._registryLookup, writerModel);
@@ -229,14 +228,6 @@ export function buildEffectiveCostRates(registryEntry, callerCostRates) {
     llmCostOutputPer1M: costs.outputPer1M,
     llmCostCachedInputPer1M: costs.cachedPer1M,
   };
-}
-
-function routeFingerprint(route = {}) {
-  return [
-    normalized(route.provider).toLowerCase(),
-    normalized(route.baseUrl).toLowerCase(),
-    normalized(route.model).toLowerCase()
-  ].join('::');
 }
 
 function toIntToken(value, fallback = 0) {
@@ -412,20 +403,10 @@ export function resolveLlmFallbackRoute(config = {}, { reason = '', role = '', m
   if (!fallback) {
     return null;
   }
-  const alignedFallback = fallback;
-  const effectiveOverride = normalized(modelOverride) || (phase ? resolvePhaseModel(config, phase) : '');
-  if (effectiveOverride && normalized(effectiveOverride) === normalized(fallback.model)) {
-    return null;
-  }
-  const primary = resolveLlmRoute(config, {
-    reason,
-    role: resolvedRole,
-    modelOverride: effectiveOverride,
-  });
-  if (routeFingerprint(primary) === routeFingerprint(alignedFallback)) {
-    return null;
-  }
-  return alignedFallback;
+  // WHY: No dedup between primary and fallback. If the user configured the
+  // same model for both, honor that — LLM outputs are stochastic and a
+  // resample on the same model can recover from schema/parse failures.
+  return fallback;
 }
 
 export function hasLlmRouteApiKey(config = {}, { reason = '', role = '' } = {}) {
@@ -766,8 +747,8 @@ export async function callLlmWithRouting({
 
     onPhaseChange?.('writer');
 
-    // Phase 2: Format — dedicated writer model (or primary if no writer configured), WITH schema
-    const writerRoute = resolveWriterRoute(config, { role: resolvedRole, phase }) || primary;
+    // Phase 2: Format — dedicated global writer model (or primary if no writer configured), WITH schema
+    const writerRoute = resolveWriterRoute(config, { role: resolvedRole }) || primary;
     const writerSystem = [
       'You are a JSON formatter. Convert the research findings below into the required JSON schema.',
       'Do not perform additional research. Only extract, normalize, and format the findings.',
@@ -781,16 +762,37 @@ export async function callLlmWithRouting({
 
     const effectiveWriterCostRates = buildEffectiveCostRates(writerRoute._registryEntry, costRates);
 
-    // WHY: Writer panel has its own reasoning/thinking flags (same shape as fallback).
-    const capW = capitalize(String(phase || '').trim());
-    const writerReasoning = capW ? Boolean(config[`_resolved${capW}WriterUseReasoning`]) : false;
-    const writerThinking = resolvePhaseFlag(config, phase, 'WriterThinking');
-    const writerThinkingEffort = resolvePhaseString(config, phase, 'WriterThinkingEffort');
+    // WHY: Writer is global — reads _resolvedWriter* keys, not per-source-phase.
+    const writerReasoning = Boolean(config._resolvedWriterUseReasoning);
+    const writerThinking = Boolean(config._resolvedWriterThinking);
+    const writerThinkingEffort = String(config._resolvedWriterThinkingEffort || '');
     const writerBakedEffort = extractEffortFromModelName(writerRoute.model);
     const writerRequestOptions = {
       ...(writerThinking && !writerBakedEffort ? { reasoning_effort: writerThinkingEffort || 'medium' } : {}),
     };
     const effectiveWriterRequestOptions = Object.keys(writerRequestOptions).length > 0 ? writerRequestOptions : null;
+
+    // WHY: Writer owns its own limits — decoupled from source phase. disableLimits,
+    // maxOutputTokens, timeoutMs, reasoningBudget, maxContextTokens all come from
+    // _resolvedWriter* global keys (not _resolved${sourcePhase}*).
+    const writerDisableLimits = Boolean(config._resolvedWriterDisableLimits);
+    const writerPhaseTokenCap = Math.max(0, Number(config._resolvedWriterMaxOutputTokens || 0));
+    const writerTimeoutMs = Math.max(0, Number(config._resolvedWriterTimeoutMs || 0));
+    const writerReasoningBudget = Math.max(0, Number(config._resolvedWriterReasoningBudget || 0));
+    const writerMaxContextTokens = Math.max(0, Number(config._resolvedWriterMaxContextTokens || 0));
+
+    const writerRegistryMax = writerRoute._registryEntry?.tokenProfile?.maxOutputTokens;
+    const writerCappedTokens = writerPhaseTokenCap > 0 && writerRegistryMax
+      ? Math.min(writerPhaseTokenCap, writerRegistryMax)
+      : (writerPhaseTokenCap || writerRegistryMax || primaryTokenCap);
+    const writerResolvedMaxTokens = writerDisableLimits ? 0 : writerCappedTokens;
+    const writerResolvedTimeoutMs = writerDisableLimits
+      ? 1200000
+      : (writerTimeoutMs > 0 ? writerTimeoutMs : timeoutMs);
+    const writerResolvedReasoningBudget = writerDisableLimits
+      ? 0
+      : (writerReasoningBudget > 0 ? writerReasoningBudget : resolvedReasoningBudget);
+    const writerResolvedMaxContextTokens = writerDisableLimits ? 0 : writerMaxContextTokens;
 
     return wrapLabQueue(writerRoute, () => callLlmProvider({
       ...sharedParams,
@@ -800,15 +802,19 @@ export async function callLlmWithRouting({
       costRates: effectiveWriterCostRates,
       requestOptions: effectiveWriterRequestOptions,
       reasoningMode: Boolean(writerReasoning),
-      reasoningBudget: 0,
-      maxTokens: Number(primaryTokenCap || 0),
       route: {
         model: writerRoute.model, apiKey: writerRoute.apiKey, baseUrl: writerRoute.baseUrl,
         provider: writerRoute.provider, accessMode: writerRoute._registryEntry?.accessMode || '',
       },
+      maxTokens: Number(writerResolvedMaxTokens || 0),
+      timeoutMs: writerResolvedTimeoutMs,
+      reasoningBudget: Number(writerResolvedReasoningBudget || 0),
+      maxContextTokens: Number(writerResolvedMaxContextTokens || 0),
       providerHealth,
       usageContext: {
         ...sharedParams.usageContext,
+        phase: 'writer',
+        source_phase: phase || null,
         writer_phase: true,
         research_model: primary.model,
         effort_level: writerBakedEffort || (writerThinking ? (writerThinkingEffort || 'medium') : ''),

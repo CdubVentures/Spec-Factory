@@ -4,6 +4,7 @@ import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
 import { EnumConfigurator } from '../components/EnumConfigurator.tsx';
 import { TagPicker } from '../../../shared/ui/forms/TagPicker.tsx';
 import { TierPicker } from '../../../shared/ui/forms/TierPicker.tsx';
+import { NumberStepper } from '../../../shared/ui/forms/NumberStepper.tsx';
 import {
   parseBoundedIntInput,
 } from '../state/numericInputHelpers.ts';
@@ -95,16 +96,16 @@ export function EvidenceTab({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <div className={`${labelCls} flex items-center`}><span>Min Evidence Refs<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.min_evidence_refs} /></span><B p="evidence.min_evidence_refs" /></div>
-          <input
-            className={`${inputCls} w-full`}
-            type="number"
+          <NumberStepper
+            className="w-full"
             min={STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.min}
             max={STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.max}
-            value={minRefs}
-            onChange={(e) => onUpdate(
+            value={String(minRefs)}
+            ariaLabel="min evidence refs"
+            onChange={(next) => onUpdate(
               'evidence.min_evidence_refs',
               parseBoundedIntInput(
-                e.target.value,
+                next,
                 STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.min,
                 STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.max,
                 STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.fallback,

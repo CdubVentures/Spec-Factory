@@ -1,4 +1,5 @@
 import type { FinderSettingWidgetProps } from './widgetRegistry.ts';
+import { NumberStepper } from '../../../../shared/ui/forms/NumberStepper.tsx';
 
 interface ViewQualityEntry {
   minWidth: number;
@@ -105,36 +106,37 @@ export function ViewQualityGrid({ entry, value, category, isSaving, onSave }: Fi
             <tr key={view} className="sf-text-primary">
               <td className="py-1.5 pl-2 pr-2 font-medium border sf-border-soft">{VIEW_LABELS[view] ?? view}</td>
               <td className="py-1.5 px-2 border sf-border-soft">
-                <input
-                  type="number"
-                  value={getVal(view, 'minWidth')}
-                  onChange={(e) => handleChange(view, 'minWidth', e.target.value)}
+                <NumberStepper
+                  value={String(getVal(view, 'minWidth'))}
+                  onChange={(next) => handleChange(view, 'minWidth', next)}
                   disabled={isSaving}
-                  className="w-full px-1 py-0.5 sf-text-label text-[11px] bg-transparent outline-none"
-                  min="0"
-                  max="4000"
+                  min={0}
+                  max={4000}
+                  compact
+                  ariaLabel={`${view} min width`}
                 />
               </td>
               <td className="py-1.5 px-2 border sf-border-soft">
-                <input
-                  type="number"
-                  value={getVal(view, 'minHeight')}
-                  onChange={(e) => handleChange(view, 'minHeight', e.target.value)}
+                <NumberStepper
+                  value={String(getVal(view, 'minHeight'))}
+                  onChange={(next) => handleChange(view, 'minHeight', next)}
                   disabled={isSaving}
-                  className="w-full px-1 py-0.5 sf-text-label text-[11px] bg-transparent outline-none"
-                  min="0"
-                  max="4000"
+                  min={0}
+                  max={4000}
+                  compact
+                  ariaLabel={`${view} min height`}
                 />
               </td>
               <td className="py-1.5 px-2 border sf-border-soft">
-                <input
-                  type="number"
-                  value={getVal(view, 'minFileSize')}
-                  onChange={(e) => handleChange(view, 'minFileSize', e.target.value)}
+                <NumberStepper
+                  value={String(getVal(view, 'minFileSize'))}
+                  onChange={(next) => handleChange(view, 'minFileSize', next)}
                   disabled={isSaving}
-                  className="w-full px-1 py-0.5 sf-text-label text-[11px] bg-transparent outline-none"
-                  min="0"
-                  max="10000000"
+                  min={0}
+                  max={10000000}
+                  step={1000}
+                  compact
+                  ariaLabel={`${view} min file size`}
                 />
               </td>
             </tr>

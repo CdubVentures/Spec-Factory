@@ -236,8 +236,8 @@ describe('runCarouselLoop', () => {
     const calls = [];
     const callLlm = async (args) => {
       calls.push(args);
-      // Find which view is priority in the viewConfig
-      const priorityView = (args.viewConfig || []).find(v => v.priority)?.key || 'top';
+      // Loop mode sends exactly one entry in priorityViews — the focus view.
+      const priorityView = (args.priorityViews || [])[0]?.key || 'top';
       return { result: {
         images: [{ view: priorityView, url: `http://localhost:${serverPort}/${priorityView}-${calls.length}.png`, source_page: '', alt_text: '' }],
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
@@ -377,7 +377,7 @@ describe('runCarouselLoop', () => {
     const calls = [];
     const callLlm = async (args) => {
       calls.push(args);
-      const priorityView = (args.viewConfig || []).find(v => v.priority)?.key || 'top';
+      const priorityView = (args.priorityViews || [])[0]?.key || 'top';
       return { result: {
         images: [{ view: priorityView, url: `http://localhost:${serverPort}/${priorityView}-${calls.length}.png`, source_page: '', alt_text: '' }],
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
@@ -394,5 +394,62 @@ describe('runCarouselLoop', () => {
     assert.equal(result.rejected, false);
     // top: 3 calls, left: 2 calls = 5 total (not 10+10=20 from flat budget)
     assert.equal(result.totalLlmCalls, 5, `expected 5 calls (top:3 + left:2), got ${result.totalLlmCalls}`);
+  });
+
+  it('loop mode sends exactly one priority view and no additional views by default', async () => {
+    const pid = 'loop-prompt-contract';
+    writeCefData(pid, SIMPLE_CEF);
+    const finderStore = makeFinderStoreStub({
+      satisfactionThreshold: '1',
+      heroEnabled: 'false',
+      viewAttemptBudget: '1',
+      viewBudget: '["top","left","angle"]',
+    });
+    const specDb = makeSpecDbStub(finderStore);
+
+    const { callLlm, calls } = createMockLlm(['top']);
+
+    await runCarouselLoop({
+      product: { ...PRODUCT, product_id: pid },
+      specDb, config: {}, productRoot: PRODUCT_ROOT,
+      _callLlmOverride: callLlm,
+      _modelDirOverride: path.join(TMP_ROOT, 'no-model'),
+    });
+
+    assert.ok(calls.length > 0, 'at least one loop call');
+    for (const c of calls) {
+      assert.equal(c.priorityViews.length, 1, 'loop mode always has exactly one priority view');
+      assert.equal(c.additionalViews.length, 0, 'no additional views when loopRunSecondaryHints is empty');
+    }
+  });
+
+  it('loop mode injects loopRunSecondaryHints into additionalViews (focus excluded)', async () => {
+    const pid = 'loop-hints';
+    writeCefData(pid, SIMPLE_CEF);
+    const finderStore = makeFinderStoreStub({
+      satisfactionThreshold: '1',
+      heroEnabled: 'false',
+      viewAttemptBudget: '1',
+      viewBudget: '["top","left"]',
+      loopRunSecondaryHints: '["rear","bottom"]',
+    });
+    const specDb = makeSpecDbStub(finderStore);
+
+    const { callLlm, calls } = createMockLlm(['top']);
+
+    await runCarouselLoop({
+      product: { ...PRODUCT, product_id: pid },
+      specDb, config: {}, productRoot: PRODUCT_ROOT,
+      _callLlmOverride: callLlm,
+      _modelDirOverride: path.join(TMP_ROOT, 'no-model'),
+    });
+
+    assert.ok(calls.length > 0);
+    for (const c of calls) {
+      const additionalKeys = c.additionalViews.map((v) => v.key).sort();
+      const focusKey = c.priorityViews[0].key;
+      // Hints should be present, minus the focus key itself.
+      assert.deepEqual(additionalKeys, ['bottom', 'rear'].filter((k) => k !== focusKey).sort());
+    }
   });
 });

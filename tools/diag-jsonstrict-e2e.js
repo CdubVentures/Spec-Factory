@@ -40,7 +40,7 @@ function assert(condition, passMsg, failMsg) {
 // Build a realistic config as configPostMerge would produce
 // ---------------------------------------------------------------------------
 
-function buildTestConfig(phaseOverrides = {}) {
+function buildTestConfig(phaseOverrides = {}, writerOverrides = null) {
   // Minimal registry with a primary and a writer model
   const registry = [
     {
@@ -71,7 +71,9 @@ function buildTestConfig(phaseOverrides = {}) {
     },
   ];
 
-  const overridesJson = JSON.stringify({ colorFinder: phaseOverrides });
+  const overridesPayload = { colorFinder: phaseOverrides };
+  if (writerOverrides) overridesPayload.writer = writerOverrides;
+  const overridesJson = JSON.stringify(overridesPayload);
 
   // WHY: Simulate the REAL production flow.
   // Step 1: applyPostMergeNormalization builds config with canonical defaults.
@@ -184,12 +186,12 @@ async function testConfigResolution() {
     `jsonStrict omitted → got ${configDefault._resolvedColorFinderJsonStrict} (expected true)`
   );
 
-  // Writer model resolution
-  const configWriter = buildTestConfig({ jsonStrict: false, writerModel: 'gpt-4.1-mini' });
+  // Writer model resolution — now global (not per-phase)
+  const configWriter = buildTestConfig({ jsonStrict: false }, { baseModel: 'gpt-4.1-mini' });
   assert(
-    configWriter._resolvedColorFinderWriterModel === 'gpt-4.1-mini',
-    'writerModel: gpt-4.1-mini → _resolvedColorFinderWriterModel === gpt-4.1-mini',
-    `writerModel → got '${configWriter._resolvedColorFinderWriterModel}' (expected gpt-4.1-mini)`
+    configWriter._resolvedWriterBaseModel === 'gpt-4.1-mini',
+    'writer.baseModel: gpt-4.1-mini → _resolvedWriterBaseModel === gpt-4.1-mini',
+    `writer.baseModel → got '${configWriter._resolvedWriterBaseModel}' (expected gpt-4.1-mini)`
   );
 }
 
@@ -294,13 +296,12 @@ async function testTwoPhaseNoWriter() {
 // ---------------------------------------------------------------------------
 
 async function testTwoPhaseWithWriter() {
-  header('Test 4: jsonStrict=false + writerModel → Phase 2 uses dedicated writer');
+  header('Test 4: jsonStrict=false + global writer phase → Phase 2 uses dedicated writer');
 
-  const config = buildTestConfig({
-    jsonStrict: false,
-    webSearch: true,
-    writerModel: 'gpt-4.1-mini',
-  });
+  const config = buildTestConfig(
+    { jsonStrict: false, webSearch: true },
+    { baseModel: 'gpt-4.1-mini' },
+  );
   const { calls, restore } = interceptFetch();
 
   try {
@@ -386,8 +387,10 @@ async function testSettingsRoundTrip() {
   const uiOverrides = {
     colorFinder: {
       jsonStrict: false,
-      writerModel: 'gpt-4.1-mini',
       webSearch: true,
+    },
+    writer: {
+      baseModel: 'gpt-4.1-mini',
     },
   };
   const serialized = JSON.stringify(uiOverrides);
@@ -413,9 +416,9 @@ async function testSettingsRoundTrip() {
   assert(config._resolvedColorFinderJsonStrict === false,
     'After settings apply: _resolvedColorFinderJsonStrict === false',
     `After settings apply: got ${config._resolvedColorFinderJsonStrict}`);
-  assert(config._resolvedColorFinderWriterModel === 'gpt-4.1-mini',
-    'After settings apply: _resolvedColorFinderWriterModel === gpt-4.1-mini',
-    `After settings apply: got '${config._resolvedColorFinderWriterModel}'`);
+  assert(config._resolvedWriterBaseModel === 'gpt-4.1-mini',
+    'After settings apply: _resolvedWriterBaseModel === gpt-4.1-mini (global writer phase)',
+    `After settings apply: got '${config._resolvedWriterBaseModel}'`);
   assert(config._resolvedColorFinderWebSearch === true,
     'After settings apply: _resolvedColorFinderWebSearch === true',
     `After settings apply: got ${config._resolvedColorFinderWebSearch}`);

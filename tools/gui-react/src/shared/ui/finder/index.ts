@@ -18,7 +18,6 @@
  *
  * Required hooks / selectors:
  *   useResolvedFinderModel(phaseId) — LLM model resolution, parameterized by phase
- *   deriveFinderStatusChip(result)  — status chip from run count
  *   formatAtomLabel(atom)           — titlecase raw color atoms for display
  *
  * Props sourced from finderModuleRegistry.js:
@@ -38,7 +37,15 @@
  *   inside the elevated FinderSectionCard. Expanded content uses
  *   FinderRunPromptDetails for prompt/response sections.
  *
- * Canonical template: ProductImageFinderPanel.tsx
+ * Canonical templates:
+ *   - Scalar field producers (variantFieldProducer): GenericScalarFinderPanel.tsx
+ *     (RDF is the canonical consumer; future scalar finders wrap this)
+ *   - Variant artifact producers (variantArtifactProducer): ProductImageFinderPanel.tsx
+ *
+ * GenericScalarFinderPanel hook-prop convention:
+ *   The 3 hook props (useQuery, useDeleteRunMutation, useDeleteAllMutation)
+ *   are use*-prefixed so ESLint's rules-of-hooks plugin recognizes them.
+ *   Wrappers pass the generated hook references directly; do not rename.
  */
 
 export { ColorSwatch, colorCircleStyle } from './ColorSwatch.tsx';
@@ -57,11 +64,11 @@ export { FinderRunModelBadge } from './FinderRunModelBadge.tsx';
 export { FinderRunPromptDetails } from './FinderRunPromptDetails.tsx';
 export { FinderRunTimestamp } from './FinderRunTimestamp.tsx';
 export { FinderSectionCard } from './FinderSectionCard.tsx';
-export { toneToChipClass, toneToValueClass } from './toneMappings.ts';
-export { deriveFinderStatusChip, formatAtomLabel, resolveVariantColorAtoms } from './finderSelectors.ts';
+export { toneToValueClass } from './toneMappings.ts';
+export { formatAtomLabel, resolveVariantColorAtoms } from './finderSelectors.ts';
 export { useResolvedFinderModel } from './useResolvedFinderModel.ts';
 export type { ResolvedFinderModel } from './useResolvedFinderModel.ts';
-export type { KpiCard, StatusChipData, RunDiscoveryLog, DeleteTarget } from './types.ts';
+export type { KpiCard, RunDiscoveryLog, DeleteTarget } from './types.ts';
 export { computePagination } from './paginationLogic.ts';
 export { usePagination } from './usePagination.ts';
 export { PagerSizeSelector } from './PagerSizeSelector.tsx';
@@ -69,6 +76,21 @@ export { PagerNavFooter } from './PagerNavFooter.tsx';
 export { useShowMore } from './useShowMore.ts';
 export { FinderDiscoveryDetails } from './FinderDiscoveryDetails.tsx';
 export type { DiscoverySection } from './FinderDiscoveryDetails.tsx';
+export { FinderEvidenceRow } from './FinderEvidenceRow.tsx';
+export type { FinderEvidenceRowSource } from './FinderEvidenceRow.tsx';
+export { GenericScalarFinderPanel } from './GenericScalarFinderPanel.tsx';
+export type {
+  GenericScalarFinderPanelProps,
+  GenericScalarResult,
+  GenericScalarRun,
+  GenericScalarRunResponse,
+  GenericScalarCandidate,
+} from './GenericScalarFinderPanel.tsx';
+export {
+  deriveFinderKpiCards,
+  deriveVariantRows,
+  sortRunsNewestFirst,
+} from './scalarFinderSelectors.ts';
 export { FinderHowItWorks } from './FinderHowItWorks.tsx';
 export { DiscoveryHistoryButton } from './DiscoveryHistoryButton.tsx';
 export { DiscoveryHistoryDrawer } from './DiscoveryHistoryDrawer.tsx';

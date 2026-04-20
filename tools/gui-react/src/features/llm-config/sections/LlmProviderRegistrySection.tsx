@@ -10,6 +10,7 @@ import { ModelBadgeGroup } from '../components/ModelAccessBadges.tsx';
 import { isDefaultProvider } from '../state/llmDefaultProviderRegistry.ts';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { LlmProviderIcon } from '../../../shared/ui/icons/LlmProviderIcon.tsx';
+import { NumberStepper } from '../../../shared/ui/forms/NumberStepper.tsx';
 
 /* ── Model row ─────────────────────────────────────────── */
 
@@ -79,63 +80,61 @@ function ProviderModelRow({
         </div>
       </td>
       <td style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)' }}>
-        <input
-          className="sf-input sf-text-caption"
-          type="number"
+        <NumberStepper
+          compact
+          value={String(model.costInputPer1M)}
           min={0}
           step={0.01}
-          value={model.costInputPer1M}
-          onChange={(e) => onModelChange({ ...model, costInputPer1M: Number(e.target.value) || 0 })}
+          ariaLabel="cost input per 1M tokens"
+          onChange={(next) => onModelChange({ ...model, costInputPer1M: Number(next) || 0 })}
         />
       </td>
       <td style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)' }}>
-        <input
-          className="sf-input sf-text-caption"
-          type="number"
+        <NumberStepper
+          compact
+          value={String(model.costOutputPer1M)}
           min={0}
           step={0.01}
-          value={model.costOutputPer1M}
-          onChange={(e) => onModelChange({ ...model, costOutputPer1M: Number(e.target.value) || 0 })}
+          ariaLabel="cost output per 1M tokens"
+          onChange={(next) => onModelChange({ ...model, costOutputPer1M: Number(next) || 0 })}
         />
       </td>
       <td style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)' }}>
-        <input
-          className="sf-input sf-text-caption"
-          type="number"
+        <NumberStepper
+          compact
+          value={String(model.costCachedPer1M)}
           min={0}
           step={0.01}
-          value={model.costCachedPer1M}
-          onChange={(e) => onModelChange({ ...model, costCachedPer1M: Number(e.target.value) || 0 })}
+          ariaLabel="cost cached per 1M tokens"
+          onChange={(next) => onModelChange({ ...model, costCachedPer1M: Number(next) || 0 })}
         />
       </td>
       <td className="sf-text-caption" style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)', textAlign: 'center' }}>{model.thinking ? '\u2713' : '\u2014'}</td>
       <td className="sf-text-caption" style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)', textAlign: 'center', fontSize: 'var(--sf-token-font-size-micro)' }}>{model.thinkingEffortOptions?.join(', ') || '\u2014'}</td>
       <td className="sf-text-caption" style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)', textAlign: 'center' }}>{model.webSearch ? '\u2713' : '\u2014'}</td>
       <td style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)' }}>
-        <input
-          className="sf-input sf-text-caption"
-          type="number"
+        <NumberStepper
+          compact
+          value={model.maxContextTokens == null ? '' : String(model.maxContextTokens)}
           min={0}
           step={1}
-          value={model.maxContextTokens ?? ''}
           placeholder="—"
-          onChange={(e) => {
-            const raw = e.target.value;
-            onModelChange({ ...model, maxContextTokens: raw === '' ? null : (Number(raw) || 0) });
+          ariaLabel="max context tokens"
+          onChange={(next) => {
+            onModelChange({ ...model, maxContextTokens: next === '' ? null : (Number(next) || 0) });
           }}
         />
       </td>
       <td style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)' }}>
-        <input
-          className="sf-input sf-text-caption"
-          type="number"
+        <NumberStepper
+          compact
+          value={model.maxOutputTokens == null ? '' : String(model.maxOutputTokens)}
           min={0}
           step={1}
-          value={model.maxOutputTokens ?? ''}
           placeholder="—"
-          onChange={(e) => {
-            const raw = e.target.value;
-            onModelChange({ ...model, maxOutputTokens: raw === '' ? null : (Number(raw) || 0) });
+          ariaLabel="max output tokens"
+          onChange={(next) => {
+            onModelChange({ ...model, maxOutputTokens: next === '' ? null : (Number(next) || 0) });
           }}
         />
       </td>

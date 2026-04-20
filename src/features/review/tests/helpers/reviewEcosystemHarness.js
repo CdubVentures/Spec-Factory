@@ -5,7 +5,6 @@ import path from 'node:path';
 import { createStorage } from '../../../../core/storage/storage.js';
 import {
   buildProductReviewPayload,
-  buildFieldState,
 } from '../../domain/reviewGridData.js';
 import {
   buildComponentReviewPayloads,
@@ -14,7 +13,6 @@ import {
 
 export {
   buildProductReviewPayload,
-  buildFieldState,
   buildComponentReviewPayloads,
 };
 
@@ -334,26 +332,6 @@ export function buildCandidateRow(overrides = {}) {
     tier,
     source_tier: tier,
     ...cloneJson(overrides),
-  };
-}
-
-export function buildFieldStateScenario({
-  productId = null,
-  field = 'weight',
-  candidates,
-  normalizedFields,
-  provenance,
-  summary,
-} = {}) {
-  const product = productId ? PRODUCTS[productId] : null;
-  return {
-    field,
-    candidates: cloneJson(candidates ?? product?.candidates ?? {}),
-    normalized: {
-      fields: cloneJson(normalizedFields ?? product?.fields ?? {}),
-    },
-    provenance: cloneJson(provenance ?? product?.provenance ?? {}),
-    summary: buildReviewSummary(summary),
   };
 }
 

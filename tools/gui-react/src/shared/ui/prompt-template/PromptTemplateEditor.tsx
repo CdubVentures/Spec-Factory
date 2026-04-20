@@ -5,6 +5,17 @@ export interface TemplateVariableDef {
   readonly name: string;
   readonly description: string;
   readonly required: boolean;
+  /**
+   * Optional grouping hint:
+   * - 'global-fragment' — value is injected from a shared prompt fragment
+   *   (identity warning, siblings exclusion, evidence contract, confidence
+   *   rubric, discovery history header). Editable from the Global Prompts
+   *   section under Discovery.
+   * - 'deterministic' — value is a runtime-supplied string (product fields,
+   *   computed context strings, per-category config).
+   * Undefined = render in the single legacy "Template Variables" section.
+   */
+  readonly category?: 'global-fragment' | 'deterministic';
 }
 
 /** Describes data injected via the user message (not editable, informational only). */
@@ -30,6 +41,20 @@ interface PromptTemplateEditorProps {
   readonly isLoading?: boolean;
   /** Read-only info about what gets injected into the user message (not the system prompt). */
   readonly userMessageInfo?: readonly UserMessageInjection[];
+  /**
+   * Hide the inline variable reference panel. Callers can render it
+   * separately via <VariableReferencePanels variables={...}/> when the
+   * panel needs to appear after another UI block (e.g. PIF's per-view
+   * discovery prompts between the editor and the panel).
+   */
+  readonly hideVariablesPanel?: boolean;
+  /**
+   * Hide the inline user-message injection panel. Callers can render it
+   * separately via <UserMessageInjectionPanel info={...}/> when the
+   * canonical column order is prompt → extras → variables → user message
+   * → schema (per-phase panels in LLM Config).
+   */
+  readonly hideUserMessagePanel?: boolean;
 }
 
 /** Regex matching {{VARIABLE_NAME}} tokens. */
@@ -61,6 +86,8 @@ export const PromptTemplateEditor = memo(function PromptTemplateEditor({
   onReset,
   isLoading = false,
   userMessageInfo,
+  hideVariablesPanel = false,
+  hideUserMessagePanel = false,
 }: PromptTemplateEditorProps) {
   const displayValue = currentOverride || defaultTemplate;
   const isOverridden = currentOverride.length > 0;
@@ -155,50 +182,134 @@ export const PromptTemplateEditor = memo(function PromptTemplateEditor({
         )}
       </div>
 
-      {/* Variable reference panel */}
-      {variables.length > 0 && (
-        <details className="group">
-          <summary className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted cursor-pointer select-none hover:opacity-80">
-            Template Variables ({variables.length})
-          </summary>
-          <div className="mt-1.5 rounded sf-pre-block p-2.5 space-y-1">
-            {variables.map((v) => (
-              <div key={v.name} className="flex gap-2 text-[11px] font-mono leading-relaxed">
-                <span className="shrink-0 font-bold" style={{ color: 'var(--sf-accent)' }}>
-                  {`{{${v.name}}}`}
-                </span>
-                <span className="sf-text-muted">
-                  {v.description}
-                  {v.required && <span className="ml-1 font-bold" style={{ color: 'var(--sf-warning-text, #fbbf24)' }}>*</span>}
-                </span>
-              </div>
-            ))}
-            <div className="text-[10px] sf-text-muted mt-1">
-              <span className="font-bold" style={{ color: 'var(--sf-warning-text, #fbbf24)' }}>*</span> = required (removing will show a warning)
-            </div>
-          </div>
-        </details>
-      )}
+      {/* Variable reference panel(s) — split into Global Fragments + Deterministic
+          when any variable carries a category, otherwise single panel.
+          Suppressed when the caller needs to render the panel externally
+          (e.g. after a per-view discovery prompts block). */}
+      {variables.length > 0 && !hideVariablesPanel && <VariableReferencePanels variables={variables} />}
 
-      {/* User message injection info (read-only context) */}
-      {userMessageInfo && userMessageInfo.length > 0 && (
-        <details className="group">
-          <summary className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted cursor-pointer select-none hover:opacity-80">
-            User Message Injection ({userMessageInfo.length} fields)
-          </summary>
-          <div className="mt-1.5 rounded sf-pre-block p-2.5 space-y-1">
-            <div className="text-[10px] sf-text-muted mb-1.5">
-              These fields are injected into the <strong>user message</strong> (not the system prompt). They are not editable here.
-            </div>
-            {userMessageInfo.map((info) => (
-              <div key={info.field} className="flex gap-2 text-[11px] font-mono leading-relaxed">
-                <span className="shrink-0 font-bold sf-text-muted">{info.field}</span>
-                <span className="sf-text-muted">{info.description}</span>
-              </div>
-            ))}
-          </div>
-        </details>
+      {/* User message injection info (read-only context).
+          Suppressed when the caller renders it externally to enforce the
+          canonical column order (prompt → extras → variables → user message → schema). */}
+      {!hideUserMessagePanel && userMessageInfo && userMessageInfo.length > 0 && (
+        <UserMessageInjectionPanel info={userMessageInfo} />
       )}
     </div>
   );
 });
+
+/* ── User message injection panel ──────────────────────────────────── */
+
+interface UserMessageInjectionPanelProps {
+  readonly info: readonly UserMessageInjection[];
+}
+
+export function UserMessageInjectionPanel({ info }: UserMessageInjectionPanelProps) {
+  if (info.length === 0) return null;
+  return (
+    <details className="group">
+      <summary className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted cursor-pointer select-none hover:opacity-80">
+        User Message Injection ({info.length} fields)
+      </summary>
+      <div className="mt-1.5 rounded sf-pre-block p-2.5 space-y-1">
+        <div className="text-[10px] sf-text-muted mb-1.5">
+          These fields are injected into the <strong>user message</strong> (not the system prompt). They are not editable here.
+        </div>
+        {info.map((entry) => (
+          <div key={entry.field} className="flex gap-2 text-[11px] font-mono leading-relaxed">
+            <span className="shrink-0 font-bold sf-text-muted">{entry.field}</span>
+            <span className="sf-text-muted">{entry.description}</span>
+          </div>
+        ))}
+      </div>
+    </details>
+  );
+}
+
+/* ── Variable reference panels ───────────────────────────────────────
+ * If any variable carries a `category`, render two collapsible groups:
+ *   1. Global Fragments — values sourced from the Global Prompts registry.
+ *   2. Deterministic — runtime-computed strings (brand, model, config).
+ * Otherwise render a single legacy "Template Variables" panel.
+ */
+
+interface VariableRowProps {
+  readonly variable: TemplateVariableDef;
+}
+
+const VariableRow = memo(function VariableRow({ variable }: VariableRowProps) {
+  return (
+    <div className="flex gap-2 text-[11px] font-mono leading-relaxed">
+      <span className="shrink-0 font-bold" style={{ color: 'var(--sf-accent)' }}>
+        {`{{${variable.name}}}`}
+      </span>
+      <span className="sf-text-muted">
+        {variable.description}
+        {variable.required && <span className="ml-1 font-bold" style={{ color: 'var(--sf-warning-text, #fbbf24)' }}>*</span>}
+      </span>
+    </div>
+  );
+});
+
+interface VariableGroupProps {
+  readonly title: string;
+  readonly subtitle?: string;
+  readonly variables: readonly TemplateVariableDef[];
+  readonly defaultOpen?: boolean;
+}
+
+function VariableGroup({ title, subtitle, variables, defaultOpen = false }: VariableGroupProps) {
+  if (variables.length === 0) return null;
+  return (
+    <details className="group" open={defaultOpen}>
+      <summary className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted cursor-pointer select-none hover:opacity-80">
+        {title} ({variables.length})
+      </summary>
+      <div className="mt-1.5 rounded sf-pre-block p-2.5 space-y-1">
+        {subtitle && (
+          <div className="text-[10px] sf-text-muted mb-1.5">{subtitle}</div>
+        )}
+        {variables.map((v) => <VariableRow key={v.name} variable={v} />)}
+        {variables.some((v) => v.required) && (
+          <div className="text-[10px] sf-text-muted mt-1">
+            <span className="font-bold" style={{ color: 'var(--sf-warning-text, #fbbf24)' }}>*</span> = required (removing will show a warning)
+          </div>
+        )}
+      </div>
+    </details>
+  );
+}
+
+interface VariableReferencePanelsProps {
+  readonly variables: readonly TemplateVariableDef[];
+}
+
+export function VariableReferencePanels({ variables }: VariableReferencePanelsProps) {
+  const hasCategory = variables.some((v) => v.category !== undefined);
+  if (!hasCategory) {
+    return (
+      <VariableGroup title="Template Variables" variables={variables} />
+    );
+  }
+  const globalFragments = variables.filter((v) => v.category === 'global-fragment');
+  const deterministic = variables.filter((v) => v.category === 'deterministic');
+  const uncategorized = variables.filter((v) => v.category === undefined);
+  return (
+    <div className="space-y-1.5">
+      <VariableGroup
+        title="Global Template Variables"
+        subtitle="Values sourced from the Global Prompts registry — edit centrally under Discovery → Global Prompts."
+        variables={globalFragments}
+        defaultOpen
+      />
+      <VariableGroup
+        title="Deterministic Variables"
+        subtitle="Runtime-supplied strings (product fields, computed context, per-category config). Read-only here; they come from the code path that invokes this prompt."
+        variables={deterministic}
+      />
+      {uncategorized.length > 0 && (
+        <VariableGroup title="Other Variables" variables={uncategorized} />
+      )}
+    </div>
+  );
+}

@@ -110,9 +110,10 @@ test('resolveLlmRoute selects per-role provider/base/model with reason mapping v
   assert.equal(extractRoute.model, 'gemini-2.5-flash');
 });
 
-test('resolveLlmFallbackRoute returns null when fallback matches primary fingerprint', () => {
-  // WHY: All roles alias to llmModelPlan. Fallback uses llmPlanFallbackModel.
-  // When both resolve to the same fingerprint, fallback is null.
+test('resolveLlmFallbackRoute returns the fallback even when it matches primary (stochastic resample)', () => {
+  // WHY: Fallback is not dedup'd against primary — if the user configured the
+  // same model for both, honor that. LLM outputs are stochastic and a resample
+  // on the same model can recover from schema/parse failures.
   const deepseekProv = {
     id: 'default-deepseek',
     name: 'DeepSeek',
@@ -132,7 +133,8 @@ test('resolveLlmFallbackRoute returns null when fallback matches primary fingerp
   });
 
   const fallback = resolveLlmFallbackRoute(config, { reason: 'extract' });
-  assert.equal(fallback, null);
+  assert.ok(fallback, 'fallback must not be null when configured, even if it matches primary');
+  assert.equal(fallback.model, 'deepseek-chat');
 });
 
 test('route key helpers detect role-only keys and snapshot masks secrets', () => {
@@ -619,7 +621,7 @@ test('resolvePhaseFallbackModel returns empty string for empty phase', () => {
   assert.equal(resolvePhaseFallbackModel(config, ''), '');
 });
 
-test('resolveLlmFallbackRoute uses phase-specific fallback model when configured', () => {
+test('resolveLlmFallbackRoute uses phase-specific fallback model even when it matches primary', () => {
   const prov = proxyProvider();
   const config = registryConfig([prov], {
     llmModelPlan: 'gemini-2.5-flash',
@@ -629,9 +631,11 @@ test('resolveLlmFallbackRoute uses phase-specific fallback model when configured
     _resolvedNeedsetFallbackModel: 'gemini-2.5-flash',
     _resolvedNeedsetFallbackUseReasoning: false,
   });
-  // WHY: Phase fallback same as primary → dedup returns null
+  // WHY: Fallback is not dedup'd against primary — user explicitly set it,
+  // a resample on the same model can recover from stochastic failures.
   const route = resolveLlmFallbackRoute(config, { role: 'plan', phase: 'needset' });
-  assert.equal(route, null, 'same model as primary should dedup to null');
+  assert.ok(route, 'fallback must be returned even when it matches primary');
+  assert.equal(route.model, 'gemini-2.5-flash');
 });
 
 // ---------------------------------------------------------------------------
@@ -662,9 +666,9 @@ function twoPhaseConfig(overrides = {}) {
     llmPlanFallbackModel: 'claude-sonnet-4-6',
     _resolvedColorfinderFallbackModel: 'claude-sonnet-4-6',
     _resolvedColorfinderFallbackUseReasoning: false,
-    _resolvedColorfinderWriterModel: '',
-    _resolvedColorfinderWriterReasoningModel: '',
-    _resolvedColorfinderWriterUseReasoning: false,
+    _resolvedWriterBaseModel: '',
+    _resolvedWriterReasoningModel: '',
+    _resolvedWriterUseReasoning: false,
     ...overrides,
   });
 }
@@ -882,7 +886,7 @@ test('callLlmWithRouting: jsonStrict false Phase 2 uses dedicated writer model r
     // Writer model explicitly set to anthropic (claude-sonnet-4-6)
     const config = twoPhaseConfig({
       _resolvedColorfinderJsonStrict: false,
-      _resolvedColorfinderWriterModel: 'claude-sonnet-4-6',
+      _resolvedWriterBaseModel: 'claude-sonnet-4-6',
     });
 
     await callLlmWithRouting({
@@ -913,7 +917,7 @@ test('callLlmWithRouting: jsonStrict false no writer configured falls back to pr
     // No writer model set — Phase 2 should use primary
     const config = twoPhaseConfig({
       _resolvedColorfinderJsonStrict: false,
-      _resolvedColorfinderWriterModel: '',
+      _resolvedWriterBaseModel: '',
     });
 
     await callLlmWithRouting({
@@ -944,7 +948,7 @@ test('callLlmWithRouting: jsonStrict false writer model is independent of fallba
     // This proves writer is NOT the fallback — it's a separate route
     const config = twoPhaseConfig({
       _resolvedColorfinderJsonStrict: false,
-      _resolvedColorfinderWriterModel: 'claude-sonnet-4-6',
+      _resolvedWriterBaseModel: 'claude-sonnet-4-6',
       _resolvedColorfinderFallbackModel: 'gemini-2.5-flash', // same as primary → deduped
     });
 

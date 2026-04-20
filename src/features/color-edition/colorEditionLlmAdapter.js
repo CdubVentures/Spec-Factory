@@ -16,8 +16,11 @@ import { buildEvidencePromptBlock } from '../../core/finder/evidencePromptFragme
 import { buildEvidenceVerificationPromptBlock } from '../../core/finder/evidenceVerificationPromptFragment.js';
 import { buildValueConfidencePromptBlock } from '../../core/finder/valueConfidencePromptFragment.js';
 import { buildPreviousDiscoveryBlock } from '../../core/finder/discoveryLog.js';
+import { buildIdentityWarning } from '../../core/llm/prompts/identityContext.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
 import { colorEditionFinderResponseSchema, variantIdentityCheckResponseSchema } from './colorEditionSchema.js';
+
+const FIELD_DOMAIN_NOUN = 'colors or editions';
 
 /**
  * Build the known-inputs block for run N+1.
@@ -157,12 +160,14 @@ export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], pr
     ? `\nPrevious findings to verify and expand beyond:\n- colors found so far: ${knownColorsStr}\n- color marketing names: ${knownColorNamesStr}\n- editions found so far: ${knownEditionsStr}\nThese may be incomplete or wrong. Re-verify each, then find anything missing.\n`
     : '';
 
-  const siblingList = siblingModels.length > 0
-    ? `\nThis product is NOT: ${siblingModels.join(', ')}. Do not include colors or editions from those models.`
-    : '';
-  const identityWarning = familyModelCount > 1
-    ? `\nIDENTITY WARNING: This product has ${familyModelCount} models in its family (ambiguity: ${ambiguityLevel}). Similar products exist under "${brand}" with overlapping names. Verify you are researching the exact "${product.model}" — check model numbers, product page titles, and URL slugs. Do not mix colors/editions from sibling models.${siblingList}\n`
-    : '';
+  const identityWarning = buildIdentityWarning({
+    familyModelCount,
+    ambiguityLevel,
+    brand,
+    model: product.model,
+    siblingModels,
+    fieldDomainNoun: FIELD_DOMAIN_NOUN,
+  });
 
   const template = templateOverride || CEF_DISCOVERY_DEFAULT_TEMPLATE;
 
@@ -176,7 +181,7 @@ export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], pr
     BRAND: brand,
     MODEL: model,
     KNOWN_FINDINGS: knownSection,
-    IDENTITY_WARNING: identityWarning,
+    IDENTITY_WARNING: identityWarning ? `\n${identityWarning}\n` : '',
     PALETTE: palette,
     EVIDENCE_REQUIREMENTS: `${buildEvidencePromptBlock({ minEvidenceRefs })}\n\n${buildEvidenceVerificationPromptBlock()}`,
     VALUE_CONFIDENCE_GUIDANCE: buildValueConfidencePromptBlock(),
@@ -282,12 +287,15 @@ export function buildVariantIdentityCheckPrompt({ product = {}, existingRegistry
 
   const allNewLines = [newColorLines, extraEditionLines].filter(Boolean).join('\n');
 
-  const siblingList = siblingModels.length > 0
-    ? `\nThis product is NOT: ${siblingModels.join(', ')}. Do not accept colors or editions from those models.`
-    : '';
-  const ambiguityBlock = familyModelCount > 1
-    ? `\nAMBIGUITY ALERT: This product has ${familyModelCount} sibling models in its family (ambiguity: ${ambiguityLevel}). Colors or editions that look plausible may belong to a different model in the family. Verify the EXACT model name/number on product pages before confirming any discovery.${siblingList}\n`
-    : '';
+  const ambiguityText = buildIdentityWarning({
+    familyModelCount,
+    ambiguityLevel,
+    brand,
+    model,
+    siblingModels,
+    fieldDomainNoun: FIELD_DOMAIN_NOUN,
+  });
+  const ambiguityBlock = ambiguityText ? `\n${ambiguityText}\n` : '';
 
   const trustAnchor = runCount > 0
     ? `The existing registry was confirmed by ${runCount} prior analysis pass${runCount > 1 ? 'es' : ''}. Treat existing variants as "confirmed unless proven wrong." The burden of proof is on NEW discoveries.`
@@ -346,6 +354,14 @@ ${buildEvidencePromptBlock({ minEvidenceRefs })}
 ${buildEvidenceVerificationPromptBlock()}
 
 Attach evidence_refs to each mapping (for match, new, and reject actions alike — cite what you checked).
+
+Relevance check (MANDATORY):
+- Each evidence_ref URL must specifically support THAT mapping's variant. Read the URL slug, page title, and visible content before attaching it.
+- Reject and drop any URL whose slug or title explicitly names a DIFFERENT variant than the one it's attached to. Examples of wrong attribution to catch and strip:
+  - An edition-specific URL (slug contains "call-of-duty", "cyberpunk-2077", "doom-the-dark-ages", "-edition", etc.) cited under a plain colorway entry like color:black or color:white.
+  - A color-specific URL (e.g. ".../frost-white-ch-xxx") cited under a different color's entry.
+  - A sibling-model URL (e.g. a non-wireless SKU page cited under a wireless variant).
+- If every URL on a mapping fails the relevance check, strip them all and return an empty evidence_refs for that mapping — the publisher will gate it as low-evidence rather than accept misattributed proof.
 
 ─── CONFIDENCE ───
 

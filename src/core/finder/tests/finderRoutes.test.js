@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createFinderRouteHandler } from '../finderRoutes.js';
+import { initOperationsRegistry } from '../../operations/index.js';
 
 function makeJsonCapture() {
   const calls = [];
@@ -11,7 +12,8 @@ function makeJsonCapture() {
 function makeSpecDbStub(overrides = {}) {
   const candidateDeleteCalls = [];
   return {
-    getProduct: () => overrides.productRow ?? { product_id: 'p1', category: 'cat', brand: 'B', model: 'M', variant: '' },
+    getProduct: () => overrides.productRow ?? { product_id: 'p1', category: 'cat', brand: 'B', model: 'M', base_model: 'BM', variant: '' },
+    getCompiledRules: () => ({ fields: { field_a: { key: 'field_a' } } }),
     deleteFieldCandidatesByProductAndField: (...args) => candidateDeleteCalls.push(args),
     _candidateDeleteCalls: candidateDeleteCalls,
     category: 'cat',
@@ -37,12 +39,20 @@ function makeFinderConfig(overrides = {}) {
     deleteRunSql: overrides.deleteRunSql || (() => {}),
     deleteAllRunsSql: overrides.deleteAllRunsSql || (() => {}),
     skipSelectedOnDelete: overrides.skipSelectedOnDelete || false,
+    parseVariantKey: overrides.parseVariantKey || false,
+    loop: overrides.loop || undefined,
+    customStages: overrides.customStages || undefined,
   };
 }
 
 function makeCtx(specDbOverrides = {}) {
   const { jsonRes, calls } = makeJsonCapture();
   const specDb = makeSpecDbStub(specDbOverrides);
+  const wsMessages = [];
+  const broadcastWs = (channel, data) => { wsMessages.push({ channel, data }); };
+  // WHY: operations registry broadcasts via a module-level hook set once at boot.
+  // Wire it to our per-test spy so op lifecycle WS events are observable.
+  initOperationsRegistry({ broadcastWs });
   return {
     ctx: {
       jsonRes,
@@ -50,12 +60,24 @@ function makeCtx(specDbOverrides = {}) {
       config: {},
       appDb: { listColors: () => [] },
       getSpecDb: () => specDb,
-      broadcastWs: () => {},
+      broadcastWs,
       logger: null,
     },
     calls,
     specDb,
+    wsMessages,
   };
+}
+
+async function flushAsyncWork() {
+  for (let i = 0; i < 5; i += 1) await new Promise((r) => setImmediate(r));
+  await new Promise((r) => setTimeout(r, 10));
+}
+
+function getOperationsUpserts(wsMessages) {
+  return wsMessages
+    .filter((m) => m.channel === 'operations' && m.data?.action === 'upsert')
+    .map((m) => m.data.operation);
 }
 
 describe('createFinderRouteHandler — generic', () => {
@@ -280,5 +302,197 @@ describe('createFinderRouteHandler — generic', () => {
     await handler(['test-finder', 'cat', 'p1', 'runs', '1'], new Map(), 'DELETE', {}, {});
     assert.equal(upsertCalls.length, 1, 'upsertSummary must be called');
     assert.equal(bookkeepingCalls.length, 0, 'updateBookkeeping must NOT be called');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Extended config: parseVariantKey + loop (merged from createVariantFieldLoopHandler)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('createFinderRouteHandler — parseVariantKey (opt-in per-variant POST)', () => {
+  it('forwards body.variant_key as opts.variantKey to runFinder when parseVariantKey:true', async () => {
+    let captured = null;
+    const { ctx } = makeCtx();
+    ctx.readJsonBody = async () => ({ variant_key: 'color:black' });
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      parseVariantKey: true,
+      runFinder: async (opts) => { captured = opts; return { rejected: false }; },
+    }))(ctx);
+    await handler(['test-finder', 'cat', 'p1'], new Map(), 'POST', {}, {});
+    await flushAsyncWork();
+    assert.equal(captured?.variantKey, 'color:black');
+  });
+
+  it('forwards productRow.base_model as opts.product.base_model when parseVariantKey:true', async () => {
+    let captured = null;
+    const { ctx } = makeCtx();
+    ctx.readJsonBody = async () => ({ variant_key: null });
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      parseVariantKey: true,
+      runFinder: async (opts) => { captured = opts; return { rejected: false }; },
+    }))(ctx);
+    await handler(['test-finder', 'cat', 'p1'], new Map(), 'POST', {}, {});
+    await flushAsyncWork();
+    assert.equal(captured?.product.base_model, 'BM');
+  });
+
+  it('without parseVariantKey, opts.variantKey is undefined + base_model is omitted (baseline preserved)', async () => {
+    let captured = null;
+    const { ctx } = makeCtx();
+    ctx.readJsonBody = async () => ({ variant_key: 'ignored' });
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      // parseVariantKey intentionally omitted
+      runFinder: async (opts) => { captured = opts; return { rejected: false }; },
+    }))(ctx);
+    await handler(['test-finder', 'cat', 'p1'], new Map(), 'POST', {}, {});
+    await flushAsyncWork();
+    assert.equal(captured?.variantKey, undefined, 'non-opt-in must NOT forward variantKey');
+    assert.equal(captured?.product.base_model, undefined, 'non-opt-in must NOT forward base_model');
+  });
+
+  it('op registered with variantKey field when parseVariantKey:true', async () => {
+    const { ctx, wsMessages } = makeCtx();
+    ctx.readJsonBody = async () => ({ variant_key: 'color:red' });
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      parseVariantKey: true,
+      runFinder: async () => ({ rejected: false }),
+    }))(ctx);
+    await handler(['test-finder', 'cat', 'p1'], new Map(), 'POST', {}, {});
+    await flushAsyncWork();
+    const op = getOperationsUpserts(wsMessages)[0];
+    assert.ok(op, 'op must be registered');
+    assert.equal(op.variantKey, 'color:red');
+    assert.ok(!op.subType, 'single-shot must not have subType');
+  });
+});
+
+describe('createFinderRouteHandler — loop (merged from createVariantFieldLoopHandler)', () => {
+  it('POST /loop dispatches to loop.orchestrator (not runFinder) when loop config is set', async () => {
+    let runFinderCalled = false;
+    let loopOrchCalled = false;
+    const { ctx } = makeCtx();
+    ctx.readJsonBody = async () => ({});
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      runFinder: async () => { runFinderCalled = true; return { rejected: false }; },
+      loop: {
+        orchestrator: async () => { loopOrchCalled = true; return { rejected: false }; },
+      },
+    }))(ctx);
+    await handler(['test-finder', 'cat', 'p1', 'loop'], new Map(), 'POST', {}, {});
+    await flushAsyncWork();
+    assert.equal(loopOrchCalled, true, 'loop orchestrator fires on /loop');
+    assert.equal(runFinderCalled, false, 'runFinder must NOT fire on /loop');
+  });
+
+  it('POST /loop op registered with subType:"loop" and body.variant_key', async () => {
+    const { ctx, wsMessages } = makeCtx();
+    ctx.readJsonBody = async () => ({ variant_key: 'color:white' });
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      loop: { orchestrator: async () => ({ rejected: false }) },
+    }))(ctx);
+    await handler(['test-finder', 'cat', 'p1', 'loop'], new Map(), 'POST', {}, {});
+    await flushAsyncWork();
+    const op = getOperationsUpserts(wsMessages)[0];
+    assert.ok(op, 'op registered');
+    assert.equal(op.subType, 'loop');
+    assert.equal(op.variantKey, 'color:white');
+  });
+
+  it('POST /loop stages default to ["Discovery","Validate","Publish"]', async () => {
+    const { ctx, wsMessages } = makeCtx();
+    ctx.readJsonBody = async () => ({});
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      loop: { orchestrator: async () => ({ rejected: false }) },
+    }))(ctx);
+    await handler(['test-finder', 'cat', 'p1', 'loop'], new Map(), 'POST', {}, {});
+    await flushAsyncWork();
+    const op = getOperationsUpserts(wsMessages)[0];
+    const stageNames = op.stages.map((s) => s.name || s);
+    assert.deepEqual(stageNames, ['Discovery', 'Validate', 'Publish']);
+  });
+
+  it('POST /loop stages honor loop.stages override', async () => {
+    const { ctx, wsMessages } = makeCtx();
+    ctx.readJsonBody = async () => ({});
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      loop: {
+        orchestrator: async () => ({ rejected: false }),
+        stages: ['Fetch', 'Process', 'Done'],
+      },
+    }))(ctx);
+    await handler(['test-finder', 'cat', 'p1', 'loop'], new Map(), 'POST', {}, {});
+    await flushAsyncWork();
+    const op = getOperationsUpserts(wsMessages)[0];
+    const stageNames = op.stages.map((s) => s.name || s);
+    assert.deepEqual(stageNames, ['Fetch', 'Process', 'Done']);
+  });
+
+  it('POST /loop wires onLoopProgress → updateLoopProgress (observable on op)', async () => {
+    const { ctx, wsMessages } = makeCtx();
+    ctx.readJsonBody = async () => ({});
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      loop: {
+        orchestrator: async (opts) => {
+          // Stub orchestrator invokes onLoopProgress to verify the wiring
+          opts.onLoopProgress({ variantKey: 'v1', attempt: 1, budget: 3, satisfied: false });
+          return { rejected: false };
+        },
+      },
+    }))(ctx);
+    await handler(['test-finder', 'cat', 'p1', 'loop'], new Map(), 'POST', {}, {});
+    await flushAsyncWork();
+    // Operations registry broadcasts 'upsert' on every mutation, including
+    // updateLoopProgress. After the callback fires, at least one upsert must
+    // carry loopProgress in its payload.
+    const upserts = getOperationsUpserts(wsMessages);
+    const withProgress = upserts.find((op) => op.loopProgress && op.loopProgress.variantKey === 'v1');
+    assert.ok(withProgress, 'updateLoopProgress must record the loopProgress payload on the op');
+    assert.equal(withProgress.loopProgress.attempt, 1);
+    assert.equal(withProgress.loopProgress.budget, 3);
+  });
+
+  it('POST /loop forwards body.variant_key as opts.variantKey + product.base_model to orchestrator', async () => {
+    let captured = null;
+    const { ctx } = makeCtx();
+    ctx.readJsonBody = async () => ({ variant_key: 'color:blue' });
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      loop: {
+        orchestrator: async (opts) => { captured = opts; return { rejected: false }; },
+      },
+    }))(ctx);
+    await handler(['test-finder', 'cat', 'p1', 'loop'], new Map(), 'POST', {}, {});
+    await flushAsyncWork();
+    assert.equal(captured?.variantKey, 'color:blue');
+    assert.equal(captured?.product.base_model, 'BM');
+  });
+
+  it('POST /loop emits WS data-change event "{prefix}-loop"', async () => {
+    const { ctx, wsMessages } = makeCtx();
+    ctx.readJsonBody = async () => ({});
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      loop: { orchestrator: async () => ({ rejected: false }) },
+    }))(ctx);
+    await handler(['test-finder', 'cat', 'p1', 'loop'], new Map(), 'POST', {}, {});
+    await flushAsyncWork();
+    const events = wsMessages
+      .filter((m) => m.channel === 'data-change')
+      .map((m) => m.data);
+    const loopEvent = events.find((e) => e.event === 'test-finder-loop');
+    assert.ok(loopEvent, 'test-finder-loop data-change event must fire');
+  });
+
+  it('POST /loop without loop config falls through (handler returns false — legacy single-shot only)', async () => {
+    let runFinderCalled = false;
+    const { ctx, calls } = makeCtx();
+    ctx.readJsonBody = async () => ({});
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      // no loop config — /loop must not be absorbed
+      runFinder: async () => { runFinderCalled = true; return { rejected: false }; },
+    }))(ctx);
+    const result = await handler(['test-finder', 'cat', 'p1', 'loop'], new Map(), 'POST', {}, {});
+    await flushAsyncWork();
+    assert.equal(result, false, 'unmatched route must return false');
+    assert.equal(runFinderCalled, false, 'runFinder must not fire on unmatched /loop');
+    assert.equal(calls.length, 0, 'no response written for unmatched path');
   });
 });

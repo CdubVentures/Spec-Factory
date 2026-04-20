@@ -316,9 +316,7 @@ for (const v of targets) {
   fieldKeys: ['release_date'],
   requiredFields: ['release_date'],
   phase: 'releaseDateFinder',
-  featurePath: 'release-date',
-  routeFile: 'releaseDateFinderRoutes',
-  registrarExport: 'registerReleaseDateFinderRoutes',
+  // featurePath/routeFile/registrarExport derived from id via deriveFinderPaths(id) (Phase 6)
   filePrefix: 'release_date',
   reseedKey: 'release_date',
   rebuildFnKey: 'rebuildReleaseDateFinderFromJson',
@@ -331,8 +329,7 @@ for (const v of targets) {
   ],
   promptBuilderExport: 'buildReleaseDateFinderPrompt',
   responseSchemaExport: 'releaseDateFinderResponseSchema',
-  panelFeaturePath: 'release-date-finder',
-  panelExport: 'ReleaseDateFinderPanel',
+  // panelFeaturePath/panelExport derived from id via deriveFinderPaths(id) (Phase 6)
   dataChangeEvents: {
     'run':         ['review', 'product', 'publisher'],
     'run-deleted': ['review', 'product', 'publisher'],
@@ -395,7 +392,7 @@ for (const v of targets) {
     </div>
     <div class="callout callout-info" style="margin-top:8px;">
       <strong>For the next variant-dependent finder</strong>
-      Copy the RDF panel shape: header (Run + Loop) &rarr; KPI grid (same 4 card order) &rarr; HIW &rarr; &ldquo;All &lt;Thing&gt;&rdquo; grid (per-row Run + Loop) &rarr; Run History &rarr; footer. Swap only the module-specific chips, expanded body, KPI derivations, and HIW content. The shared scaffolding (<code>FinderVariantRow</code>, <code>useFinderColorHexMap</code>, <code>buildFinderVariantRows</code>, <code>useFireAndForget</code>, <code>useRunningVariantKeys</code>) stays identical. Backend: declare <code>perVariantAttemptBudget</code> in the registry entry, export a <code>runXxxFinderLoop</code> that wraps <code>runVariantFieldLoop</code>, and register one <code>createVariantFieldLoopHandler</code> call in the routes file.
+      Copy the RDF panel shape: header (Run + Loop) &rarr; KPI grid (same 4 card order) &rarr; HIW &rarr; &ldquo;All &lt;Thing&gt;&rdquo; grid (per-row Run + Loop) &rarr; Run History &rarr; footer. Swap only the module-specific chips, expanded body, KPI derivations, and HIW content. The shared scaffolding (<code>FinderVariantRow</code>, <code>useFinderColorHexMap</code>, <code>buildFinderVariantRows</code>, <code>useFireAndForget</code>, <code>useRunningVariantKeys</code>) stays identical. Backend: declare <code>perVariantAttemptBudget</code> in the registry entry, export a <code>runXxxFinderLoop</code> that wraps <code>runVariantFieldLoop</code>, and pass <code>{ parseVariantKey: true, loop: { orchestrator: runXxxFinderLoop } }</code> to <code>createFinderRouteHandler</code>.
     </div>
   </div>
 </div>
@@ -411,11 +408,11 @@ for (const v of targets) {
     <table>
       <thead><tr><th>File</th><th>Role</th></tr></thead>
       <tbody>
-        <tr><td><code>releaseDateFinder.js</code></td><td>Orchestrators &mdash; exports <code>runReleaseDateFinder</code> (single-shot) and <code>runReleaseDateFinderLoop</code> (budget loop). Shares <code>setupReleaseDateFinderRun</code> + <code>buildProduceForVariant</code> helpers internally.</td></tr>
-        <tr><td><code>releaseDateLlmAdapter.js</code></td><td>Prompt builder + <code>RDF_DEFAULT_TEMPLATE</code> + discovery log accumulator.</td></tr>
-        <tr><td><code>releaseDateSchema.js</code></td><td>Zod schema for LLM response.</td></tr>
-        <tr><td><code>releaseDateStore.js</code></td><td>JSON store wrapper + latest-wins-per-variant <code>recalculateSelected</code> + rebuild fn.</td></tr>
-        <tr><td><code>api/releaseDateFinderRoutes.js</code></td><td>Thin route handler: <code>createFinderRouteHandler</code> for GET/Run/DELETE + <code>createVariantFieldLoopHandler</code> for <code>POST /loop</code>.</td></tr>
+        <tr><td><code>releaseDateFinder.js</code></td><td>Single <code>registerScalarFinder</code> call (Phase 4) reading declarative config from <code>FINDER_MODULE_MAP.releaseDateFinder</code>. Exports <code>runReleaseDateFinder</code> (single-shot) and <code>runReleaseDateFinderLoop</code> (budget loop) with factory defaults for extract/satisfy — defaults are byte-identical to RDF&rsquo;s former inline logic.</td></tr>
+        <tr><td><code>releaseDateLlmAdapter.js</code></td><td>Prompt builder + <code>RDF_DEFAULT_TEMPLATE</code> + LLM caller factory. The only bespoke file — domain content (prompt text).</td></tr>
+        <tr><td><code>releaseDateSchema.js</code></td><td>Thin factory-driven wrappers (Phase 4): <code>releaseDateFinderResponseSchema</code> = <code>createScalarFinderSchema({valueKey:&#39;release_date&#39;, valueType:&#39;date&#39;})</code>; editorial schemas (<code>Candidate</code>/<code>Run</code>/<code>GetResponse</code>) from <code>createScalarFinderEditorialSchemas</code>.</td></tr>
+        <tr><td><code>releaseDateStore.js</code></td><td>Thin factory wrapper (Phase 4): <code>releaseDateFinderStore</code> = <code>createScalarFinderStore({filePrefix:&#39;release_date&#39;})</code>. Domain aliases (<code>readReleaseDates</code>, <code>mergeReleaseDateDiscovery</code>, ...) plus bespoke <code>rebuildReleaseDateFinderFromJson</code> (per-finder SQL projection).</td></tr>
+        <tr><td><code>api/releaseDateFinderRoutes.js</code></td><td>Thin route config passed to <code>createFinderRouteHandler</code>: <code>parseVariantKey: true</code> + <code>loop: { orchestrator }</code> absorbs GET/Run/Loop/DELETE into one call; bespoke <code>buildGetResponse</code> merges <code>field_candidates</code> into per-variant rows.</td></tr>
         <tr><td><code>index.js</code></td><td>Public exports.</td></tr>
         <tr><td><code>README.md</code></td><td>Domain contract (public API, dependencies, invariants, settings).</td></tr>
         <tr><td><code>tests/*.test.js</code></td><td>Schema, adapter, store, orchestrator, loop tests.</td></tr>
@@ -430,11 +427,9 @@ for (const v of targets) {
     <table>
       <thead><tr><th>File</th><th>Role</th></tr></thead>
       <tbody>
-        <tr><td><code>types.ts</code></td><td>TS interfaces: <code>EvidenceRef</code> (re-export of <code>EvidenceRefGen</code>), <code>PublisherCandidateRef</code>, <code>ReleaseDateFinderCandidate</code>, <code>ReleaseDateFinderRun</code>, <code>ReleaseDateFinderResult</code>. The LLM-response sub-shape is Zod-derived, not hand-written.</td></tr>
-        <tr><td><code>types.generated.ts</code></td><td><strong>Auto-generated</strong> from <code>releaseDateSchema.js</code> via <code>scripts/generateRdfTypes.js</code>. Contains <code>EvidenceRefGen</code> + <code>ReleaseDateFinderLlmResponseGen</code>. Do not edit manually &mdash; rerun the codegen when the backend Zod schema changes.</td></tr>
-        <tr><td><code>api/releaseDateFinderQueries.ts</code></td><td>React Query hooks: GET + <code>useReleaseDateFinderRunMutation</code> (single shot) + <code>useReleaseDateFinderLoopMutation</code> (<code>POST /loop</code>) + DELETE run + DELETE all.</td></tr>
-        <tr><td><code>selectors/rdfSelectors.ts</code></td><td>Pure derivations: KPI cards, variant rows, run history rows.</td></tr>
-        <tr><td><code>components/ReleaseDateFinderPanel.tsx</code></td><td>Indexing Lab panel &mdash; uses shared scaffolding. Header: Run + Loop. Per-row: Run (always clickable) + Loop (locks via <code>useRunningVariantKeys('rdf', productId, 'loop')</code>).</td></tr>
+        <tr><td><code>types.generated.ts</code></td><td><strong>Auto-generated</strong> from <code>releaseDateSchema.js</code> via <code>scripts/generateFinderTypes.js releaseDateFinder</code>. Emits shared editorial types (<code>EvidenceRef</code>, <code>PublisherCandidateRef</code>, <code>RejectionMetadata</code>) + feature-scoped types (<code>ReleaseDateFinderLlmResponse</code>, <code>ReleaseDateFinderCandidate</code>, <code>ReleaseDateFinderRun</code>, <code>ReleaseDateFinderResult</code>). Hand-written <code>types.ts</code> was deleted in Phase 3 &mdash; do not re-add.</td></tr>
+        <tr><td><code>api/releaseDateFinderQueries.generated.ts</code></td><td><strong>Auto-generated</strong> from <code>finderModuleRegistry.js</code> entry via <code>scripts/generateFinderHooks.js releaseDateFinder</code>. Emits the 5 standard hooks (Query, Run / Loop mutations, Delete run / all). Do not edit manually.</td></tr>
+        <tr><td><code>components/ReleaseDateFinderPanel.tsx</code></td><td><strong>Phase 5</strong>: ~25 LOC thin wrapper around <code>shared/ui/finder/GenericScalarFinderPanel.tsx</code>. Passes the 3 generated React Query hooks + RDF HIW + <code>maybeFormatDateValue</code> formatter. <code>finderId="releaseDateFinder"</code> drives a <code>FINDER_PANELS</code> lookup for title/tip/labels. <strong>Removed:</strong> <code>selectors/rdfSelectors.ts</code> (moved to <code>shared/ui/finder/scalarFinderSelectors.ts</code>); inline <code>EvidenceRow</code> + <code>tierTone</code> (moved to <code>shared/ui/finder/FinderEvidenceRow.tsx</code>).</td></tr>
         <tr><td><code>rdfHowItWorksContent.ts</code></td><td>&ldquo;How It Works&rdquo; content (typed <code>HiwSection[]</code>).</td></tr>
         <tr><td><code>index.ts</code></td><td>Barrel export (codegen lazy-imports from here).</td></tr>
         <tr><td><code>README.md</code></td><td>Frontend domain contract (panel public API, dependencies, button invariants).</td></tr>

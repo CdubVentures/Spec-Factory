@@ -55,11 +55,6 @@ export const FINDER_MODULES = Object.freeze([
     // LLM phase (reference to existing llmPhaseDefs entry)
     phase: 'colorFinder',
 
-    // Feature module paths (for auto-wiring routes + orchestrator)
-    featurePath: 'color-edition',
-    routeFile: 'colorEditionFinderRoutes',
-    registrarExport: 'registerColorEditionFinderRoutes',
-
     // JSON store config
     filePrefix: 'color_edition',
 
@@ -84,10 +79,6 @@ export const FINDER_MODULES = Object.freeze([
     // LLM phase schema (codegen: phaseSchemaRegistry.generated.js)
     promptBuilderExport: 'buildColorEditionFinderPrompt',
     responseSchemaExport: 'colorEditionFinderResponseSchema',
-
-    // GUI panel (codegen: finderPanelRegistry.generated.ts)
-    panelFeaturePath: 'color-edition-finder',
-    panelExport: 'ColorEditionFinderPanel',
 
     // Data-change events: suffix → extra domains beyond routePrefix.
     // Standard 3 (run, run-deleted, deleted) always included.
@@ -137,11 +128,6 @@ export const FINDER_MODULES = Object.freeze([
     // LLM phase
     phase: 'imageFinder',
 
-    // Feature module paths (for auto-wiring)
-    featurePath: 'product-image',
-    routeFile: 'productImageFinderRoutes',
-    registrarExport: 'registerProductImageFinderRoutes',
-
     // JSON store config
     filePrefix: 'product_images',
 
@@ -155,18 +141,18 @@ export const FINDER_MODULES = Object.freeze([
     settingsSchema: [
       // Carousel strategy — viewBudget widget owns viewAttemptBudget + viewAttemptBudgets
       { key: 'satisfactionThreshold', type: 'int', default: 3, min: 1, max: 20,
-        uiLabel: 'Satisfaction Threshold', uiGroup: 'Carousel Strategy',
+        uiLabel: 'Satisfaction Threshold', uiGroup: 'Carousel Strategy (Loop Run)',
         uiTip: 'Quality images per view required before that view is "satisfied"' },
       { key: 'viewBudget', type: 'string', default: '', allowEmpty: true,
-        widget: 'viewBudget', uiLabel: 'View Budget', uiGroup: 'Carousel Strategy',
+        widget: 'viewBudget', uiLabel: 'View Budget', uiGroup: 'Carousel Strategy (Loop Run)',
         uiTip: 'Active views + per-view attempt budgets. Empty = category defaults.',
         widgetProps: { childKeys: ['viewAttemptBudget', 'viewAttemptBudgets'] } },
       { key: 'viewAttemptBudget', type: 'int', default: 5, min: 1, max: 50,
-        uiLabel: 'Default View Attempt Budget', uiGroup: 'Carousel Strategy' },
+        uiLabel: 'Default View Attempt Budget', uiGroup: 'Carousel Strategy (Loop Run)' },
       { key: 'viewAttemptBudgets', type: 'string', default: '', allowEmpty: true,
-        uiLabel: 'Per-View Attempt Budgets (JSON)', uiGroup: 'Carousel Strategy' },
+        uiLabel: 'Per-View Attempt Budgets (JSON)', uiGroup: 'Carousel Strategy (Loop Run)' },
       { key: 'reRunBudget', type: 'int', default: 1, min: 0, max: 5,
-        uiLabel: 'Re-run Budget', uiGroup: 'Carousel Strategy',
+        uiLabel: 'Re-run Budget', uiGroup: 'Carousel Strategy (Loop Run)',
         uiTip: 'Extra LLM calls per view when re-looping an already-satisfied variant. 0 = skip.' },
 
       // Hero slots
@@ -179,8 +165,18 @@ export const FINDER_MODULES = Object.freeze([
 
       // Views — widget-managed priority list (JSON blob)
       { key: 'viewConfig', type: 'string', default: '', allowEmpty: true,
-        widget: 'viewConfig', uiLabel: 'View Configuration', uiGroup: 'Views',
+        widget: 'viewConfig', uiLabel: 'View Configuration', uiGroup: 'Views (Single Run)',
         uiTip: 'Priority order and descriptions per view. Empty = category defaults.' },
+
+      // Prompt hints — secondary views mentioned in the ADDITIONAL section per run type.
+      // Single run = one LLM call searching all priority views at once.
+      // Loop run = per-view focused calls driven by carousel strategy.
+      { key: 'singleRunSecondaryHints', type: 'string', default: '', allowEmpty: true,
+        widget: 'viewHintsList', uiLabel: 'Single Run Secondary Hints', uiGroup: 'Prompt Hints',
+        uiTip: 'Views mentioned in the ADDITIONAL section of single-run prompts (besides the priority views). Empty = none.' },
+      { key: 'loopRunSecondaryHints', type: 'string', default: '', allowEmpty: true,
+        widget: 'viewHintsList', uiLabel: 'Loop Run Secondary Hints', uiGroup: 'Prompt Hints',
+        uiTip: 'Views mentioned in the ADDITIONAL section of loop-run prompts (besides the focus view). Empty = none.' },
 
       // Image quality — flat primitives + optional per-view widget
       { key: 'minWidth', type: 'int', default: 800, min: 100, max: 8000,
@@ -224,6 +220,33 @@ export const FINDER_MODULES = Object.freeze([
       { key: 'evalViewCriteria_angle', type: 'string', default: '', allowEmpty: true, hidden: true },
       { key: 'heroEvalCriteria', type: 'string', default: '', allowEmpty: true, hidden: true },
 
+      // Per-view per-role discovery prompt text — edited in LLM Config under Category → View tabs.
+      // Empty string = fall back to per-category default (see viewPromptDefaults.js).
+      { key: 'loopViewPrompt_top', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'loopViewPrompt_bottom', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'loopViewPrompt_left', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'loopViewPrompt_right', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'loopViewPrompt_front', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'loopViewPrompt_rear', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'loopViewPrompt_sangle', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'loopViewPrompt_angle', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'priorityViewPrompt_top', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'priorityViewPrompt_bottom', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'priorityViewPrompt_left', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'priorityViewPrompt_right', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'priorityViewPrompt_front', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'priorityViewPrompt_rear', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'priorityViewPrompt_sangle', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'priorityViewPrompt_angle', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'additionalViewPrompt_top', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'additionalViewPrompt_bottom', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'additionalViewPrompt_left', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'additionalViewPrompt_right', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'additionalViewPrompt_front', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'additionalViewPrompt_rear', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'additionalViewPrompt_sangle', type: 'string', default: '', allowEmpty: true, hidden: true },
+      { key: 'additionalViewPrompt_angle', type: 'string', default: '', allowEmpty: true, hidden: true },
+
       // Universal discovery history (shared with CEF/RDF). Scope: variant + mode.
       { key: 'urlHistoryEnabled', type: 'bool', default: false,
         uiLabel: 'URL history', uiGroup: 'Discovery History',
@@ -237,10 +260,6 @@ export const FINDER_MODULES = Object.freeze([
     // LLM phase schema (codegen: phaseSchemaRegistry.generated.js)
     promptBuilderExport: 'buildProductImageFinderPrompt',
     responseSchemaExport: 'productImageFinderResponseSchema',
-
-    // GUI panel (codegen: finderPanelRegistry.generated.ts)
-    panelFeaturePath: 'product-image-finder',
-    panelExport: 'ProductImageFinderPanel',
 
     // Data-change events: suffix → extra domains beyond routePrefix.
     // Standard 3 (run, run-deleted, deleted) always included.
@@ -271,6 +290,15 @@ export const FINDER_MODULES = Object.freeze([
     moduleLabel: 'RDF',
     chipStyle: 'sf-chip-warning',
 
+    // Scalar field producer declarative config — drives registerScalarFinder
+    // wiring. Future scalar finders (sku, pricing, msrp, discontinued, upc)
+    // copy these 4 fields and inherit the full backend stack via a single
+    // `registerScalarFinder` call in the feature file.
+    valueKey: 'release_date',
+    valueType: 'date',
+    candidateSourceType: 'release_date_finder',
+    logPrefix: 'rdf',
+
     // DB schema (summary table — custom columns per module)
     tableName: 'release_date_finder',
     runsTableName: 'release_date_finder_runs',
@@ -293,11 +321,6 @@ export const FINDER_MODULES = Object.freeze([
 
     // LLM phase (reference to llmPhaseDefs entry)
     phase: 'releaseDateFinder',
-
-    // Feature module paths (for auto-wiring)
-    featurePath: 'release-date',
-    routeFile: 'releaseDateFinderRoutes',
-    registrarExport: 'registerReleaseDateFinderRoutes',
 
     // JSON store config
     filePrefix: 'release_date',
@@ -332,10 +355,18 @@ export const FINDER_MODULES = Object.freeze([
     // LLM phase schema (codegen: phaseSchemaRegistry.generated.js)
     promptBuilderExport: 'buildReleaseDateFinderPrompt',
     responseSchemaExport: 'releaseDateFinderResponseSchema',
+    // Editorial GET response schema — drives types.generated.ts + hooks codegen
+    // (Phase 3). Opt-in per finder: CEF/PIF don't declare one → codegen skips them.
+    getResponseSchemaExport: 'releaseDateFinderGetResponseSchema',
 
-    // GUI panel (codegen: finderPanelRegistry.generated.ts)
-    panelFeaturePath: 'release-date-finder',
-    panelExport: 'ReleaseDateFinderPanel',
+    // Generic scalar finder panel display config (Phase 5).
+    // WHY: GenericScalarFinderPanel reads these from the generated registry to
+    // render header title + tooltip + KPI label. SSOT for scalar-finder display
+    // strings — future scalar finders (sku, pricing, msrp, discontinued, upc)
+    // declare the same 3 fields and inherit the full panel.
+    panelTitle: 'Release Date Finder',
+    panelTip: 'Discovers per-variant first-availability release dates via web search. Candidates flow through the publisher gate.',
+    valueLabelPlural: 'Release Dates',
 
     // Data-change events: suffix → extra domains beyond routePrefix.
     // WHY: RDF writes field_candidates via submitCandidate, so review + product + publisher
@@ -359,6 +390,64 @@ export const FINDER_MODULES = Object.freeze([
 export const FINDER_MODULE_MAP = Object.freeze(
   Object.fromEntries(FINDER_MODULES.map(m => [m.id, m]))
 );
+
+// Pure helpers — shared between `deriveFinderPaths` callers. Derivations below
+// are byte-equivalent to previously-authored registry string fields; we fold
+// them into a single function so new finders declare `id` once and inherit the
+// full wiring contract (backend route file + registrar + frontend panel path +
+// schema filename).
+function pascalCase(id) {
+  return id ? id[0].toUpperCase() + id.slice(1) : '';
+}
+
+function camelToKebab(s) {
+  return s.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '');
+}
+
+function kebabToCamel(s) {
+  return s.split('-').map((w, i) => i === 0 ? w : pascalCase(w)).join('');
+}
+
+function stripFinderSuffix(id) {
+  return id.endsWith('Finder') ? id.slice(0, -'Finder'.length) : id;
+}
+
+/**
+ * Derive the path + export strings for a finder module from its `id`.
+ *
+ * Replaces previously-authored registry fields (`featurePath`, `routeFile`,
+ * `registrarExport`, `panelFeaturePath`, `panelExport`) + the schema-module
+ * filename special case in `generateFinderTypes.js`. All derived values are
+ * byte-identical to what the 3 existing entries used to author verbatim.
+ *
+ * Pure function — does not read the registry.
+ *
+ * @param {string} id — finder module id (camelCase, e.g. 'releaseDateFinder')
+ * @returns {{
+ *   featurePath: string,        // backend folder under src/features/
+ *   routeFile: string,          // backend api/{routeFile}.js filename (no .js)
+ *   registrarExport: string,    // named export inside {routeFile}.js
+ *   panelFeaturePath: string,   // frontend folder under tools/gui-react/src/features/
+ *   panelExport: string,        // panel React component named export
+ *   schemaModule: string,       // schema filename under src/features/{featurePath}/{schemaModule}.js
+ *   adapterModule: string,      // LLM adapter filename under src/features/{featurePath}/{adapterModule}.js
+ * }}
+ */
+export function deriveFinderPaths(id) {
+  const pascalId = pascalCase(id);
+  const stripped = stripFinderSuffix(id);
+  const featurePath = camelToKebab(stripped);
+  const camelStem = kebabToCamel(featurePath);
+  return {
+    featurePath,
+    routeFile: `${id}Routes`,
+    registrarExport: `register${pascalId}Routes`,
+    panelFeaturePath: camelToKebab(id),
+    panelExport: `${pascalId}Panel`,
+    schemaModule: `${camelStem}Schema`,
+    adapterModule: `${camelStem}LlmAdapter`,
+  };
+}
 
 // WHY: O(1) lookup by routePrefix for route matching
 export const FINDER_MODULE_BY_PREFIX = Object.freeze(

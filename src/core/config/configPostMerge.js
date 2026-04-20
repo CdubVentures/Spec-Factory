@@ -124,6 +124,32 @@ export function resolvePhaseOverrides(merged) {
 
   for (const def of LLM_PHASE_DEFS) {
     const phaseOverride = overrides[def.id] || {};
+
+    // WHY: Writer is a global phase with no inherited global model, no fallback,
+    // no jsonStrict knob, no webSearch. Resolves its own _resolvedWriter* flat keys.
+    if (def.id === 'writer') {
+      const baseModel = phaseOverride.baseModel || '';
+      const reasoningModel = phaseOverride.reasoningModel || merged.llmModelReasoning || '';
+      const useReasoning = phaseOverride.useReasoning ?? false;
+      const effectiveWriter = useReasoning ? reasoningModel : baseModel;
+      const writerCaps = capabilitiesFromLookup(merged._registryLookup, effectiveWriter);
+      const writerGated = gateCapabilities(
+        { thinking: phaseOverride.thinking, thinkingEffort: phaseOverride.thinkingEffort, webSearch: false },
+        writerCaps,
+      );
+      merged._resolvedWriterBaseModel         = baseModel;
+      merged._resolvedWriterReasoningModel    = reasoningModel;
+      merged._resolvedWriterUseReasoning      = useReasoning;
+      merged._resolvedWriterMaxOutputTokens   = phaseOverride.maxOutputTokens ?? merged.llmMaxOutputTokensPlan;
+      merged._resolvedWriterTimeoutMs         = phaseOverride.timeoutMs ?? merged.llmTimeoutMs;
+      merged._resolvedWriterMaxContextTokens  = phaseOverride.maxContextTokens ?? merged.llmMaxTokens;
+      merged._resolvedWriterReasoningBudget   = phaseOverride.reasoningBudget ?? merged.llmReasoningBudget;
+      merged._resolvedWriterThinking          = writerGated.thinking;
+      merged._resolvedWriterThinkingEffort    = writerGated.thinkingEffort;
+      merged._resolvedWriterDisableLimits     = phaseOverride.disableLimits ?? false;
+      continue;
+    }
+
     const prefix = `_resolved${capitalize(def.id)}`;
 
     const baseModel = phaseOverride.baseModel || merged[def.globalModel];
@@ -132,9 +158,6 @@ export function resolvePhaseOverrides(merged) {
     const fallbackModel = phaseOverride.fallbackModel || merged[def.globalFallbackModel] || '';
     const fallbackReasoningModel = phaseOverride.fallbackReasoningModel || merged[def.globalFallbackReasoningModel] || '';
     const fallbackUseReasoning = phaseOverride.fallbackUseReasoning ?? false;
-    const writerModel = phaseOverride.writerModel || '';
-    const writerReasoningModel = phaseOverride.writerReasoningModel || '';
-    const writerUseReasoning = phaseOverride.writerUseReasoning ?? false;
 
     // WHY: Mask stored capability toggles by each role's target model. A stale
     // thinking=true left over from a prior lab-model selection must not leak into
@@ -148,11 +171,6 @@ export function resolvePhaseOverrides(merged) {
     const fallbackGated = gateCapabilities(
       { thinking: phaseOverride.fallbackThinking, thinkingEffort: phaseOverride.fallbackThinkingEffort, webSearch: phaseOverride.fallbackWebSearch },
       fallbackCaps,
-    );
-    const writerCaps = capabilitiesFromLookup(merged._registryLookup, writerUseReasoning ? writerReasoningModel : writerModel);
-    const writerGated = gateCapabilities(
-      { thinking: phaseOverride.writerThinking, thinkingEffort: phaseOverride.writerThinkingEffort, webSearch: false },
-      writerCaps,
     );
 
     merged[`${prefix}BaseModel`] = baseModel;
@@ -173,11 +191,6 @@ export function resolvePhaseOverrides(merged) {
     merged[`${prefix}FallbackWebSearch`]      = fallbackGated.webSearch;
     merged[`${prefix}DisableLimits`]          = phaseOverride.disableLimits ?? false;
     merged[`${prefix}JsonStrict`]             = phaseOverride.jsonStrict ?? true;
-    merged[`${prefix}WriterModel`]            = writerModel;
-    merged[`${prefix}WriterReasoningModel`]   = writerReasoningModel;
-    merged[`${prefix}WriterUseReasoning`]     = writerUseReasoning;
-    merged[`${prefix}WriterThinking`]         = writerGated.thinking;
-    merged[`${prefix}WriterThinkingEffort`]   = writerGated.thinkingEffort;
   }
 
   // WHY: Cache the assembled composite so routing.js can read it without

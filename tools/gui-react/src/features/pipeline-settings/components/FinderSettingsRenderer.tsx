@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useModuleSettingsAuthority } from '../state/moduleSettingsAuthority.ts';
+import { NumberStepper } from '../../../shared/ui/forms/NumberStepper.tsx';
 import {
   FINDER_SETTINGS_REGISTRY,
   FINDER_IDS_WITH_SETTINGS,
@@ -189,19 +190,15 @@ function TypedControl({ entry, value, disabled, onSave }: TypedControlProps) {
     case 'int':
     case 'float':
       return (
-        <input
-          type="number"
-          className="sf-input w-32"
+        <NumberStepper
           value={value}
+          className="w-32"
           min={entry.min}
           max={entry.max}
-          step={entry.type === 'int' ? 1 : 'any'}
+          step={entry.type === 'int' ? 1 : 0.01}
           disabled={disabled}
-          onBlur={(e) => onSave(entry.key, e.target.value)}
-          onChange={(e) => {
-            // WHY: Local state would require a lift-up; blurring commits. Keep it simple.
-            e.currentTarget.value = e.target.value;
-          }}
+          ariaLabel={entry.key}
+          onCommit={(next) => onSave(entry.key, next)}
         />
       );
     case 'enum':

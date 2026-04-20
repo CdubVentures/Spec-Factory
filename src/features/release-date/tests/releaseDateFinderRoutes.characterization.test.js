@@ -1,32 +1,64 @@
 /**
- * releaseDateFinder route handler — GET characterization (golden-master).
+ * releaseDateFinder route handler — characterization (golden-master).
  *
- * Locks the byte-identical shape of the GET /release-date-finder/:category/:pid
- * response. The shape is consumed by tools/gui-react/src/features/release-date-finder
- * via useReleaseDateFinderQuery → ReleaseDateFinderResult. Any drift breaks the
- * frontend. This lock prevents backend refactors from shifting:
- *   - top-level keys (product_id, category, run_count, last_ran_at, candidates,
- *     candidate_count, published_value, published_confidence, selected, runs)
- *   - enrichment with publisher_candidates per variant
- *   - publisher_candidates key shape + sort-by-confidence-desc contract
+ * Locks the byte-identical shape of the RDF route surface:
+ *   - GET /release-date-finder/:category/:pid response shape (consumed by
+ *     tools/gui-react/src/features/release-date-finder via useReleaseDateFinderQuery)
+ *   - POST /release-date-finder/:category/:pid — per-variant Run body parsing,
+ *     op registration shape, stages selection, base_model forwarding
+ *   - POST /release-date-finder/:category/:pid/loop — loop body parsing,
+ *     subType:'loop' op shape, onLoopProgress wiring
+ *   - DELETE paths — WS event names (-run-deleted, -deleted)
+ *   - Field Studio gate (403 when release_date disabled)
+ *
+ * Phase 2 safety net: these tests must stay green before AND after merging
+ * createVariantFieldLoopHandler into createFinderRouteHandler. The exact
+ * observable outputs (WS event names, op register args, orchestrator opts)
+ * are load-bearing contracts.
  */
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { registerReleaseDateFinderRoutes } from '../api/releaseDateFinderRoutes.js';
+import { initOperationsRegistry } from '../../../core/operations/index.js';
 
-function makeCtx({ specDb }) {
+function makeCtx({ specDb, configOverrides = {} } = {}) {
   const responses = [];
+  const wsMessages = [];
+  const broadcastWs = (channel, data) => { wsMessages.push({ channel, data }); };
   const ctx = {
     jsonRes: (res, status, body) => { responses.push({ status, body }); return body; },
     readJsonBody: async () => ({}),
-    config: {},
+    config: configOverrides,
     appDb: null,
     getSpecDb: () => specDb,
-    broadcastWs: () => {},
-    logger: null,
+    broadcastWs,
+    logger: { error: () => {}, info: () => {}, warn: () => {} },
   };
-  return { ctx, responses };
+  // WHY: operations registry broadcasts via a module-level hook set once at boot.
+  // Wire it to our per-test spy so op lifecycle WS events are captured.
+  initOperationsRegistry({ broadcastWs });
+  return { ctx, responses, wsMessages };
+}
+
+// Wait for fireAndForget's asyncWork + emitDataChange + completeOperation to settle.
+async function flushAsyncWork() {
+  for (let i = 0; i < 5; i += 1) {
+    await new Promise((r) => setImmediate(r));
+  }
+  await new Promise((r) => setTimeout(r, 10));
+}
+
+function getOperationsUpserts(wsMessages) {
+  return wsMessages
+    .filter((m) => m.channel === 'operations' && m.data?.action === 'upsert')
+    .map((m) => m.data.operation);
+}
+
+function getDataChangeEvents(wsMessages) {
+  return wsMessages
+    .filter((m) => m.channel === 'data-change')
+    .map((m) => m.data);
 }
 
 const BASE_ROW = {
@@ -247,5 +279,270 @@ describe('release-date-finder routes — GET response shape', () => {
 
     await handler(['release-date-finder', 'mouse', 'nonexistent'], {}, 'GET', {}, {});
     assert.equal(responses[0].status, 404);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /run characterization — body parsing, op shape, stages, base_model
+// ─────────────────────────────────────────────────────────────────────────────
+
+const POST_PRODUCT_ROW = {
+  product_id: 'rdf-post-001',
+  category: 'mouse',
+  brand: 'Logitech',
+  model: 'MX Master 3S',
+  base_model: 'MX Master',
+  variant: '',
+};
+
+function makePostSpecDbStub({ compiledFields = { release_date: { key: 'release_date' } } } = {}) {
+  return {
+    category: 'mouse',
+    getProduct: () => POST_PRODUCT_ROW,
+    getCompiledRules: () => ({ fields: compiledFields }),
+    variants: {
+      listActive: () => [], // real runReleaseDateFinder will early-reject "no_cef_data"
+      listByProduct: () => [],
+    },
+    getFinderStore: () => ({
+      get: () => null,
+      listByCategory: () => [],
+      listRuns: () => [],
+      upsert: () => {},
+      remove: () => {},
+      removeRun: () => {},
+      removeAllRuns: () => {},
+      listSuppressions: () => [],
+    }),
+    getFieldCandidatesByProductAndField: () => [],
+    getResolvedFieldCandidate: () => null,
+    deleteFieldCandidatesByProductAndField: () => {},
+  };
+}
+
+describe('release-date-finder routes — POST /run characterization', () => {
+  it('returns 202 with ok:true + operationId for a valid POST', async () => {
+    const specDb = makePostSpecDbStub();
+    const { ctx, responses } = makeCtx({ specDb });
+    ctx.readJsonBody = async () => ({ variant_key: 'color:black' });
+    const handler = registerReleaseDateFinderRoutes(ctx);
+
+    await handler(['release-date-finder', 'mouse', POST_PRODUCT_ROW.product_id], {}, 'POST', {}, {});
+    await flushAsyncWork();
+
+    assert.equal(responses[0].status, 202, 'POST /run returns 202 (fireAndForget)');
+    assert.equal(responses[0].body.ok, true);
+    assert.ok(responses[0].body.operationId, 'response carries operationId');
+  });
+
+  it('op registered with type:"rdf" and variantKey populated from body', async () => {
+    const specDb = makePostSpecDbStub();
+    const { ctx, wsMessages } = makeCtx({ specDb });
+    ctx.readJsonBody = async () => ({ variant_key: 'color:white' });
+    const handler = registerReleaseDateFinderRoutes(ctx);
+
+    await handler(['release-date-finder', 'mouse', POST_PRODUCT_ROW.product_id], {}, 'POST', {}, {});
+    await flushAsyncWork();
+
+    const upserts = getOperationsUpserts(wsMessages);
+    assert.ok(upserts.length > 0, 'at least one ops WS upsert fires');
+    const firstUpsert = upserts[0];
+    assert.equal(firstUpsert.type, 'rdf', 'op.type === "rdf"');
+    assert.equal(firstUpsert.variantKey, 'color:white', 'op.variantKey carries body.variant_key');
+    assert.ok(!firstUpsert.subType, 'single-shot op must not have subType:"loop"');
+  });
+
+  it('stages are ["Discovery","Validate","Publish"] when _resolvedReleaseDateFinderJsonStrict !== false', async () => {
+    const specDb = makePostSpecDbStub();
+    const { ctx, wsMessages } = makeCtx({
+      specDb,
+      configOverrides: { _resolvedReleaseDateFinderJsonStrict: true },
+    });
+    ctx.readJsonBody = async () => ({});
+    const handler = registerReleaseDateFinderRoutes(ctx);
+
+    await handler(['release-date-finder', 'mouse', POST_PRODUCT_ROW.product_id], {}, 'POST', {}, {});
+    await flushAsyncWork();
+
+    const upserts = getOperationsUpserts(wsMessages);
+    assert.ok(upserts.length > 0);
+    const stages = upserts[0].stages.map((s) => s.name || s);
+    assert.deepEqual(stages, ['Discovery', 'Validate', 'Publish']);
+  });
+
+  it('stages are ["Research","Writer","Validate","Publish"] when _resolvedReleaseDateFinderJsonStrict === false', async () => {
+    const specDb = makePostSpecDbStub();
+    const { ctx, wsMessages } = makeCtx({
+      specDb,
+      configOverrides: { _resolvedReleaseDateFinderJsonStrict: false },
+    });
+    ctx.readJsonBody = async () => ({});
+    const handler = registerReleaseDateFinderRoutes(ctx);
+
+    await handler(['release-date-finder', 'mouse', POST_PRODUCT_ROW.product_id], {}, 'POST', {}, {});
+    await flushAsyncWork();
+
+    const upserts = getOperationsUpserts(wsMessages);
+    assert.ok(upserts.length > 0);
+    const stages = upserts[0].stages.map((s) => s.name || s);
+    assert.deepEqual(stages, ['Research', 'Writer', 'Validate', 'Publish']);
+  });
+
+  it('productLabel built from brand + model', async () => {
+    const specDb = makePostSpecDbStub();
+    const { ctx, wsMessages } = makeCtx({ specDb });
+    ctx.readJsonBody = async () => ({});
+    const handler = registerReleaseDateFinderRoutes(ctx);
+
+    await handler(['release-date-finder', 'mouse', POST_PRODUCT_ROW.product_id], {}, 'POST', {}, {});
+    await flushAsyncWork();
+
+    const upserts = getOperationsUpserts(wsMessages);
+    assert.equal(upserts[0].productLabel, 'Logitech MX Master 3S');
+  });
+
+  it('returns 403 (Field Studio gate) when release_date is NOT in compiled rules', async () => {
+    const specDb = makePostSpecDbStub({ compiledFields: {} });
+    const { ctx, responses } = makeCtx({ specDb });
+    ctx.readJsonBody = async () => ({ variant_key: 'color:black' });
+    const handler = registerReleaseDateFinderRoutes(ctx);
+
+    await handler(['release-date-finder', 'mouse', POST_PRODUCT_ROW.product_id], {}, 'POST', {}, {});
+
+    assert.equal(responses[0].status, 403);
+    assert.match(responses[0].body.error, /release_date.*not enabled/);
+  });
+
+  it('emits WS data-change event "release-date-finder-run" after asyncWork', async () => {
+    const specDb = makePostSpecDbStub();
+    const { ctx, wsMessages } = makeCtx({ specDb });
+    ctx.readJsonBody = async () => ({});
+    const handler = registerReleaseDateFinderRoutes(ctx);
+
+    await handler(['release-date-finder', 'mouse', POST_PRODUCT_ROW.product_id], {}, 'POST', {}, {});
+    await flushAsyncWork();
+
+    const events = getDataChangeEvents(wsMessages);
+    const runEvent = events.find((e) => e.event === 'release-date-finder-run');
+    assert.ok(runEvent, 'release-date-finder-run data-change event must fire');
+    assert.deepEqual(runEvent.entities.productIds, [POST_PRODUCT_ROW.product_id]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /loop characterization — subType, stages, WS event name
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('release-date-finder routes — POST /loop characterization', () => {
+  it('returns 202 and op registered with subType:"loop" + variantKey', async () => {
+    const specDb = makePostSpecDbStub();
+    const { ctx, responses, wsMessages } = makeCtx({ specDb });
+    ctx.readJsonBody = async () => ({ variant_key: 'color:red' });
+    const handler = registerReleaseDateFinderRoutes(ctx);
+
+    await handler(['release-date-finder', 'mouse', POST_PRODUCT_ROW.product_id, 'loop'], {}, 'POST', {}, {});
+    await flushAsyncWork();
+
+    assert.equal(responses[0].status, 202);
+    assert.ok(responses[0].body.operationId);
+
+    const upserts = getOperationsUpserts(wsMessages);
+    assert.ok(upserts.length > 0);
+    const op = upserts[0];
+    assert.equal(op.type, 'rdf');
+    assert.equal(op.subType, 'loop', 'loop op must declare subType:"loop"');
+    assert.equal(op.variantKey, 'color:red', 'op.variantKey carries body.variant_key');
+  });
+
+  it('emits WS data-change event "release-date-finder-loop" after asyncWork', async () => {
+    const specDb = makePostSpecDbStub();
+    const { ctx, wsMessages } = makeCtx({ specDb });
+    ctx.readJsonBody = async () => ({ variant_key: null });
+    const handler = registerReleaseDateFinderRoutes(ctx);
+
+    await handler(['release-date-finder', 'mouse', POST_PRODUCT_ROW.product_id, 'loop'], {}, 'POST', {}, {});
+    await flushAsyncWork();
+
+    const events = getDataChangeEvents(wsMessages);
+    const loopEvent = events.find((e) => e.event === 'release-date-finder-loop');
+    assert.ok(loopEvent, 'release-date-finder-loop data-change event must fire');
+    assert.deepEqual(loopEvent.entities.productIds, [POST_PRODUCT_ROW.product_id]);
+  });
+
+  it('loop 403s (Field Studio gate) when release_date is NOT in compiled rules', async () => {
+    const specDb = makePostSpecDbStub({ compiledFields: {} });
+    const { ctx, responses } = makeCtx({ specDb });
+    ctx.readJsonBody = async () => ({});
+    const handler = registerReleaseDateFinderRoutes(ctx);
+
+    await handler(['release-date-finder', 'mouse', POST_PRODUCT_ROW.product_id, 'loop'], {}, 'POST', {}, {});
+
+    assert.equal(responses[0].status, 403);
+    assert.match(responses[0].body.error, /release_date.*not enabled/);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DELETE characterization — WS event names survive merge
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('release-date-finder routes — DELETE WS event names', () => {
+  function makeDeleteSpecDb() {
+    return {
+      category: 'mouse',
+      getProduct: () => POST_PRODUCT_ROW,
+      getCompiledRules: () => ({ fields: { release_date: { key: 'release_date' } } }),
+      getFinderStore: () => ({
+        get: () => null,
+        listByCategory: () => [],
+        listRuns: () => [],
+        upsert: () => {},
+        remove: () => {},
+        removeRun: () => {},
+        removeAllRuns: () => {},
+      }),
+      getFieldCandidatesByProductAndField: () => [],
+      deleteFieldCandidatesByProductAndField: () => {},
+      getResolvedFieldCandidate: () => null,
+    };
+  }
+
+  it('DELETE /:pid/runs/:n emits WS data-change event "release-date-finder-run-deleted"', async () => {
+    const specDb = makeDeleteSpecDb();
+    const { ctx, wsMessages } = makeCtx({ specDb });
+    const handler = registerReleaseDateFinderRoutes(ctx);
+
+    await handler(
+      ['release-date-finder', 'mouse', POST_PRODUCT_ROW.product_id, 'runs', '1'],
+      {},
+      'DELETE',
+      {},
+      {},
+    );
+
+    const events = getDataChangeEvents(wsMessages);
+    const del = events.find((e) => e.event === 'release-date-finder-run-deleted');
+    assert.ok(del, 'release-date-finder-run-deleted event must fire');
+    assert.deepEqual(del.entities.productIds, [POST_PRODUCT_ROW.product_id]);
+    assert.equal(del.meta?.deletedRun, 1);
+  });
+
+  it('DELETE /:pid (all runs) emits WS data-change event "release-date-finder-deleted"', async () => {
+    const specDb = makeDeleteSpecDb();
+    const { ctx, wsMessages } = makeCtx({ specDb });
+    const handler = registerReleaseDateFinderRoutes(ctx);
+
+    await handler(
+      ['release-date-finder', 'mouse', POST_PRODUCT_ROW.product_id],
+      {},
+      'DELETE',
+      {},
+      {},
+    );
+
+    const events = getDataChangeEvents(wsMessages);
+    const del = events.find((e) => e.event === 'release-date-finder-deleted');
+    assert.ok(del, 'release-date-finder-deleted event must fire');
+    assert.deepEqual(del.entities.productIds, [POST_PRODUCT_ROW.product_id]);
   });
 });

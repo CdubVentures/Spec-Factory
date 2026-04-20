@@ -15,8 +15,11 @@ import { buildPreviousDiscoveryBlock } from '../../core/finder/discoveryLog.js';
 import { buildEvidencePromptBlock } from '../../core/finder/evidencePromptFragment.js';
 import { buildEvidenceVerificationPromptBlock } from '../../core/finder/evidenceVerificationPromptFragment.js';
 import { buildValueConfidencePromptBlock } from '../../core/finder/valueConfidencePromptFragment.js';
+import { buildIdentityWarning } from '../../core/llm/prompts/identityContext.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
 import { releaseDateFinderResponseSchema } from './releaseDateSchema.js';
+
+const FIELD_DOMAIN_NOUN = 'release dates';
 
 /* ── Prompt builder ──────────────────────────────────────────────── */
 
@@ -119,21 +122,14 @@ export function buildReleaseDateFinderPrompt({
     ? `the "${variantLabel}" edition`
     : `the "${variantLabel}" color variant`;
 
-  const familyCount = Math.max(1, familyModelCount || 1);
-  const ambiguity = ambiguityLevel || 'easy';
-
-  let identityWarning = '';
-  if (ambiguity === 'easy') {
-    identityWarning = 'This product has no known siblings — standard identity matching applies.';
-  } else if (ambiguity === 'medium') {
-    identityWarning = `CAUTION: This product has ${familyCount} models in its family. Verify you are looking at the exact "${model}".`;
-  } else {
-    identityWarning = `HIGH AMBIGUITY: ${familyCount} models in family under "${brand}". TRIPLE-CHECK every source cites the exact model "${model}".`;
-  }
-
-  const siblingLine = siblingsExcluded.length > 0
-    ? `\nKnown sibling models to EXCLUDE (do NOT use release dates of these): ${siblingsExcluded.join(', ')}\n`
-    : '';
+  const identityWarning = buildIdentityWarning({
+    familyModelCount,
+    ambiguityLevel,
+    brand,
+    model,
+    siblingModels: siblingsExcluded,
+    fieldDomainNoun: FIELD_DOMAIN_NOUN,
+  });
 
   const discoverySection = buildPreviousDiscoveryBlock({
     urlsChecked: previousDiscovery.urlsChecked,
@@ -149,7 +145,7 @@ export function buildReleaseDateFinderPrompt({
     VARIANT_DESC: variantDesc,
     VARIANT_SUFFIX: variant ? ` (variant: ${variant})` : '',
     IDENTITY_WARNING: identityWarning,
-    SIBLINGS_LINE: siblingLine,
+    SIBLINGS_LINE: '',
     VARIANT_TYPE_WORD: variantType === 'edition' ? 'edition' : 'color',
     PREVIOUS_DISCOVERY: discoverySection,
     EVIDENCE_REQUIREMENTS: `${buildEvidencePromptBlock({ minEvidenceRefs })}\n\n${buildEvidenceVerificationPromptBlock()}`,

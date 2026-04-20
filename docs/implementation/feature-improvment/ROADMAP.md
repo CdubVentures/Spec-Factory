@@ -96,7 +96,36 @@ Recommended order: **2 → 3 → 4 → 5 → 6 → 7** (each a separate plan-mod
 
 ---
 
-# Phase 2 — Generalize `createFinderRouteHandler`
+## Phase 2 — COMPLETE (2026-04-19, RDF-only narrowing)
+
+**What shipped:**
+- `createFinderRouteHandler` extended with `parseVariantKey: true` + `loop: { orchestrator, stages? }` opts. Single in-handler dispatch now covers single-shot + /loop.
+- `createVariantFieldLoopHandler` DELETED (was only used by RDF).
+- `src/features/release-date/api/releaseDateFinderRoutes.js` shrunk 220 → 82 LOC (ONE handler call; bespoke `buildGetResponse` preserved).
+- Characterization tests extended from 7 → 19 cases covering POST /run body parsing, op register shape, stages, Field Studio gate, /loop subType, WS event names, DELETE cascades.
+- 12 new unit tests in `finderRoutes.test.js` lock the extended handler contract.
+- `base_model` forwarding unified across single-shot + loop (matches RDF's pre-extraction behavior; opt-in via parseVariantKey so CEF unaffected).
+- Full repo sweep green: **9625/9625** tests pass.
+- Docs updated: `src/core/finder/README.md`, `src/features/release-date/README.md`, `docs/features-html/release-date-finder.html` (Phase 1 stale content also cleaned).
+
+**CEF + PIF narrowing rationale (from exploration):**
+- CEF (170 LOC route file) already uses the generic handler for GET/POST/DELETE; its custom DELETE `/variants` is variant-lifecycle (not finder-lifecycle) and belongs outside the shared factory.
+- PIF (1083 LOC, not 220) has bespoke image serving, RMBG processing, carousel evaluation with sub-operations (evaluate-view/hero), and a `mode` body param. Forcing these into the generic handler is a false abstraction. Deferred indefinitely pending demonstrated need.
+
+**Key invariants preserved (pre + post migration):**
+- candidateEntry + run.response key orders (Phase 1 contracts)
+- Publisher submit metadata 6-key shape
+- Two-phase `onLlmCallComplete` emission
+- Op register args: single-shot `{type, variantKey}`; loop `{type, subType:'loop', variantKey}`
+- WS event names: `release-date-finder-run | -loop | -deleted | -run-deleted`
+- `onLoopProgress → updateLoopProgress` wiring on loop branch
+- Field Studio gate returns 403 with identical message
+
+**Note on Phase 4 dependency:** Phase 4's `registerScalarFinder` will pass `parseVariantKey: true` + `loop: { orchestrator }` through to this handler, so all future scalar finders (sku, pricing, msrp, discontinued, upc) inherit the merged RDF path for free.
+
+---
+
+# Phase 2 — Generalize `createFinderRouteHandler` (original plan — kept for reference)
 
 ## Context
 
@@ -211,7 +240,105 @@ All green before + after migration.
 
 ---
 
-# Phase 3 — Frontend codegen (hooks, types, selectors)
+## Phase 3 — COMPLETE (2026-04-19, RDF-only narrowing)
+
+**What shipped:**
+- `src/core/finder/editorialSchemas.js` — shared Zod schemas (`publisherCandidateRefSchema`, `rejectionMetadataSchema`, re-exported `evidenceRefSchema`). 8 unit tests locking the shape.
+- `src/features/release-date/releaseDateSchema.js` expanded with `releaseDateFinderCandidateSchema`, `releaseDateFinderRunSchema`, `releaseDateFinderGetResponseSchema`. 9 parse tests against realistic payloads.
+- `finderModuleRegistry.js` RDF entry declares `getResponseSchemaExport: 'releaseDateFinderGetResponseSchema'` — opt-in codegen flag.
+- `tools/gui-react/scripts/generateRdfTypes.js` → **renamed + generalized** to `generateFinderTypes.js`. Reads registry, emits types.generated.ts for any finder that declares the export. 8 unit tests.
+- NEW `tools/gui-react/scripts/generateFinderHooks.js` — emits 5 standard React Query hooks (query, run mutation, loop mutation, delete run, delete all). 10 unit tests.
+- RDF frontend migrated to generated types + hooks:
+  - `types.generated.ts` now covers editorial types (107 LOC, up from 21)
+  - `api/releaseDateFinderQueries.generated.ts` emitted (77 LOC)
+  - Hand-written `types.ts` (78 LOC) + `releaseDateFinderQueries.ts` (71 LOC) DELETED
+  - Panel + selectors + index.ts imports updated to `.generated.ts` paths
+- Full repo sweep green: **9681/9681** tests (35 new).
+- `tsc --noEmit` clean in `tools/gui-react`.
+- Codegen is deterministic (regeneration is byte-identical no-op).
+- Docs updated: `src/core/finder/README.md`, `src/features/release-date/README.md`, `docs/features-html/release-date-finder.html`.
+
+**CEF + PIF narrowing rationale (from exploration):**
+- CEF frontend: 2076 LOC total (2.6× RDF). Hand-written `Queries.ts` is 134 LOC with variant-cascade invalidation calling `invalidateDownstreamFinderPanels()` (not pure boilerplate). `selectors/colorEditionFinderSelectors.ts` is 364 LOC of bespoke color-pill / edition-block / evidence-merging logic. Forcing into codegen = false abstraction.
+- PIF frontend: 3778 LOC total (4.7× RDF). 11 mutations including batch delete, carousel slot patch, eval record delete, image RMBG processing, optimistic image removal. 315 LOC of selector logic for slot resolution + loop grouping + view priority sorting. Deferred indefinitely.
+- Shared `finderSelectorPrimitives.ts` — **NOT built**. Roadmap assumed selectors are uniform; exploration proved they're bespoke. Each finder keeps its own selectors.
+
+**Phase 7 SUPERSEDED:** The generalized types codegen script originally planned for Phase 7 shipped as part of Phase 3. No separate Phase 7 work remains.
+
+**Note on Phase 4 dependency:** Phase 4's `registerScalarFinder` will emit both a backend registration AND the frontend codegen invocations (types + hooks), so future scalar finders (sku, pricing, msrp, discontinued, upc) auto-inherit the full RDF shape from a single registry entry.
+
+---
+
+## Phase 5 — COMPLETE (2026-04-19, RDF-only narrowing)
+
+**What shipped:**
+- `tools/gui-react/src/shared/ui/finder/GenericScalarFinderPanel.tsx` (~537 LOC) — full panel scaffold for variantFieldProducer (scalar) finders. Owns: CEF variant query, RDF-family query via prop, Run/Loop button orchestration, per-variant Run/Loop buttons, delete modals, KPI grid, variant grid, run history, footer. Reads finder display config from `FINDER_PANELS` lookup. Hook-as-prop convention (use*-prefixed props) established and documented.
+- `tools/gui-react/src/shared/ui/finder/scalarFinderSelectors.ts` (~104 LOC) — generic `deriveFinderKpiCards`, `deriveVariantRows`, `sortRunsNewestFirst`. Parameterized by `valueLabelPlural`. 17 unit tests.
+- `tools/gui-react/src/shared/ui/finder/FinderEvidenceRow.tsx` (~50 LOC) — extracted pure component + `tierTone()` helper. Uniform across scalar finders.
+- `FINDER_MODULE_MAP.releaseDateFinder` declares 3 new declarative fields: `panelTitle: 'Release Date Finder'`, `panelTip: 'Discovers per-variant first-availability release dates...'`, `valueLabelPlural: 'Release Dates'`.
+- `tools/gui-react/scripts/generateLlmPhaseRegistry.js` — `generateFinderPanelRegistry()` extended to emit `moduleType` + `phase` (required, all 3 finders) + `valueKey?` + `panelTitle?` + `panelTip?` + `valueLabelPlural?` (optional, RDF only).
+- `tools/gui-react/src/features/release-date-finder/components/ReleaseDateFinderPanel.tsx` shrunk **448 → 28 LOC** (94% reduction). Same path, same named export — `finderPanelRegistry.generated.ts` lazy import unchanged.
+- **Deleted**: `tools/gui-react/src/features/release-date-finder/selectors/rdfSelectors.ts` + the `selectors/` directory.
+- **Deleted**: inline `EvidenceRow` + `tierTone` from RDF panel (moved to shared `FinderEvidenceRow.tsx`).
+- Codegen byte-identity: `finderPanelRegistry.generated.ts` is the only Phase 5-attributable diff (5 new fields for RDF, 2 for CEF/PIF). All 8 other `.generated.*` files unchanged by Phase 5 (modulo pre-existing PIF/Phase 3 working-tree drift).
+- Full repo sweep green: **9839/9839** tests pass (9822 baseline + 17 new selector tests).
+- `tsc --noEmit` clean in `tools/gui-react`.
+- Docs updated: `src/core/finder/README.md`, `src/features/release-date/README.md`, `tools/gui-react/src/features/release-date-finder/README.md` (+ stale `generateRdfTypes.js` ref fixed → `generateFinderTypes.js`), `docs/features-html/release-date-finder.html`, `tools/gui-react/src/shared/ui/finder/index.ts` JSDoc (+ canonical-template clarification: scalar vs artifact templates).
+
+**Per-new-scalar-finder cost after Phase 5:**
+- Frontend wrapper: ~25 LOC (1 component, 3 hook imports, 1 HIW import, optional formatValue)
+- HIW content (`{name}HowItWorksContent.ts`): ~80 LOC (domain content)
+- Registry entry: 3 new fields (`panelTitle`, `panelTip`, `valueLabelPlural`)
+- **Total frontend: ~108 LOC, 100% domain content**
+
+**Combined with Phase 4 backend:** per-new-scalar-finder cost drops from ~1,998 LOC (pre-Phase-1) to **~340 LOC (after Phase 5) = 83% overall reduction**, almost all prompt + HIW + README domain content.
+
+**CEF + PIF panels untouched:** neither qualifies as a scalar finder panel (CEF is a variant-generator with cascade invalidation; PIF is a multi-asset producer with carousel/RMBG/lightbox bespoke surfaces). Per the user's directive "CEF and PIF are unique," they retain bespoke panel files.
+
+**Architecture decisions surfaced during exploration:**
+- Hook-as-prop pattern was new to this codebase. React permits it when prop names are `use*`-prefixed (ESLint rules-of-hooks recognizes them). Documented as the canonical pattern in `tools/gui-react/src/shared/ui/finder/index.ts` JSDoc.
+- Frontend TS cannot import `FINDER_MODULE_MAP` directly (Node-only registry, tsconfig isolation). Solution: extend codegen to emit panel display config into `finderPanelRegistry.generated.ts`. Generic panel reads via `FINDER_PANELS.find(p => p.id === finderId)`.
+- DOM snapshot tests infeasible (no jsdom in `tools/gui-react/package.json`; CLAUDE.md forbids new packages). Safety net = pure selector tests (17 cases) + `tsc --noEmit` + live E2E. Aligns with CLAUDE.md Test Scope Calibration's "markup reshuffles" exemption.
+
+**Note on Phase 6 dependency:** Phase 6's auto-register / barrel deletion is independent. The thin RDF panel wrapper is already importing only what it needs; no further panel-side coupling for Phase 6 to address.
+
+---
+
+## Phase 4 — COMPLETE (2026-04-19, RDF-only narrowing)
+
+**What shipped:**
+- `src/core/finder/createScalarFinderSchema.js` — LLM response Zod factory for scalar finders (`{ valueKey, valueType, valueRegex? }` → full response envelope with evidence + discovery + confidence). 22 unit tests.
+- `src/core/finder/createScalarFinderEditorialSchemas.js` — editorial GET schemas factory returning `{ candidateSchema, runSchema, getResponseSchema }` from an injected LLM response schema. 17 unit tests (includes RDF byte-parity).
+- `src/core/finder/createScalarFinderStore.js` — thin `createFinderJsonStore` wrapper with the `latestWinsPerVariant` strategy pulled out of RDF. 16 unit tests (includes RDF merge-output parity).
+- `src/core/finder/registerScalarFinder.js` — top-level factory wiring `createVariantScalarFieldProducer` with the default `extractCandidate` (trim + case-insensitive `unk` + finite-confidence) and default `satisfactionPredicate` (definitive unknown OR publisher-published). Requires explicit `logPrefix` (no default — avoids `pricing`→`pri` collision). 29 unit tests including RDF-inline parity.
+- `FINDER_MODULE_MAP.releaseDateFinder` declares 4 new declarative fields: `valueKey: 'release_date'`, `valueType: 'date'`, `candidateSourceType: 'release_date_finder'`, `logPrefix: 'rdf'`.
+- `releaseDateSchema.js` shrunk 116 → 34 LOC (all 4 exports preserved via factory calls).
+- `releaseDateStore.js` shrunk 119 → ~95 LOC (store wrapper shrinks to one call + `rebuildReleaseDateFinderFromJson` unchanged; also exports generic `releaseDateFinderStore` for the feature finder to consume).
+- `releaseDateFinder.js` shrunk 78 → 37 LOC (single `registerScalarFinder` call reading config from registry).
+- `releaseDateFinderRoutes.js` — `candidateSourceType` moved from inline string to `FINDER_MODULE_MAP.releaseDateFinder.candidateSourceType` (SSOT).
+- `releaseDateLlmAdapter.js` — **unchanged** (prompt text + LLM caller factory stay bespoke; that's the domain content).
+- Codegen determinism verified: `generateFinderTypes.js` + `generateFinderHooks.js` + `generateLlmPhaseRegistry.js` all regenerate byte-identical outputs (0-byte diff).
+- Full repo sweep green: **9822/9822** tests pass (9681 baseline + 84 new factory tests + pre-existing growth).
+- `tsc --noEmit` clean in `tools/gui-react`.
+- Docs updated: `src/core/finder/README.md`, `src/features/release-date/README.md`.
+
+**Per-new-scalar-finder cost after Phase 4:**
+- `{name}Schema.js`: ~25 LOC (2 factory calls)
+- `{name}Store.js`: ~35 LOC (1 factory call + rebuild boilerplate if needed)
+- `{name}Finder.js`: ~20 LOC (1 `registerScalarFinder` call)
+- `{name}LlmAdapter.js`: ~80 LOC (prompt text + caller factory — domain content)
+- Registry entry: ~80 LOC of declarative config
+- **Total: ~240 LOC per finder, ~150 LOC of which is truly bespoke (prompt + HIW + README)**
+
+Pre-Phase-1 baseline was 16 files / 1998 LOC / 755 bespoke. After Phase 4: **~4 files / ~240 LOC / ~150 bespoke = 85% LOC reduction, 80% bespoke reduction**. O(1) scaling target served.
+
+**CEF + PIF untouched:** neither qualifies as a scalar field producer (CEF is a variant generator; PIF is a multi-asset artifact producer). Per the user's directive "CEF and PIF are unique," they retain bespoke schema/store/finder files.
+
+**Note on Phase 5 dependency:** Phase 5's `GenericScalarFinderPanel` will consume Phase 3's generated hooks (`useReleaseDateFinderQuery` + 4 mutations), so RDF's panel can shrink from 448 → ~30 LOC without depending on Phase 4 internals.
+
+---
+
+# Phase 3 — Frontend codegen (hooks, types, selectors) — original plan, kept for reference
 
 ## Context
 
@@ -657,7 +784,45 @@ export default function ReleaseDateFinderPanel() {
 
 ---
 
-# Phase 6 — Auto-register from registry
+## Phase 6 — COMPLETE (2026-04-19, RDF-only narrowing + registry-derivation simplification)
+
+**What shipped:**
+- `src/core/finder/finderModuleRegistry.js` — new `deriveFinderPaths(id)` pure helper returning `{ featurePath, routeFile, registrarExport, panelFeaturePath, panelExport, schemaModule, adapterModule }` (~30 LOC + 3 pure string helpers `pascalCase` / `camelToKebab` / `kebabToCamel` / `stripFinderSuffix`). 8 unit tests locking byte-identity to prior registry values across 3 existing + 2 hypothetical future finders + edge cases + purity invariant.
+- `src/core/finder/finderRouteWiring.js` — `wireFinderRoutes()` now calls `deriveFinderPaths(mod.id)` for dynamic route import path + registrar export; 3 existing tests pass unchanged (same resolved strings).
+- `tools/gui-react/scripts/generateLlmPhaseRegistry.js` — 2 code paths migrated to `deriveFinderPaths(m.id)`: phase-schema adapter/schema imports (was inline kebab→camel duplication) + panel registry lazy-import (was reading `m.panelFeaturePath` / `m.panelExport`). Dead `const adapterPath = ...` local variable removed.
+- `tools/gui-react/scripts/generateFinderTypes.js` — destructure migrated at line 147; `release-date` special case at line 155 eliminated via canonical `schemaModule` derivation; output path at line 308 uses derived `panelFeaturePath`.
+- `tools/gui-react/scripts/generateFinderHooks.js` — `outputPathFor(module)` uses `deriveFinderPaths(module.id).panelFeaturePath`.
+- 5 fields removed from **each** of the 3 registry entries (15 field-lines total): `featurePath`, `routeFile`, `registrarExport`, `panelFeaturePath`, `panelExport`.
+- `src/features/release-date/index.js` (4 LOC) — **deleted** (single external importer `specDbRuntime.js:4` redirected to `releaseDateStore.js`; 4 other re-exports had zero external importers).
+- `tools/gui-react/src/features/release-date-finder/index.ts` (15 LOC) — **deleted** (zero external importers; panel lazy-loads via `finderPanelRegistry.generated.ts` direct-path import).
+- Test mocks updated: `generateFinderHooks.test.js` (2 fake modules drop `panelFeaturePath`); `generateFinderTypes.test.js:79` (drops `featurePath` from error-path fake module).
+- Codegen byte-identity preserved: `git diff tools/gui-react/src/**/*.generated.*` unchanged after Phase 6 codegen re-run. Derivations match previously-authored string values byte-for-byte.
+- Full repo sweep green: **9933/9933** tests pass (9839 baseline + 8 new helper tests + pre-existing growth).
+- `tsc --noEmit` clean in `tools/gui-react`.
+- Docs updated: `src/core/finder/README.md`, `src/features/release-date/README.md`, `docs/features-html/release-date-finder.html` (5 removed fields stripped from example), `docs/features-html/finder-module-guide.html` (7 references updated — callouts, troubleshooting table, registry example, route-wiring description, panel-lazy-import description).
+
+**CEF + PIF barrels preserved (load-bearing public APIs per CLAUDE.md architecture doctrine):**
+- `src/features/color-edition/index.js` — 15 exports, cross-feature public API (variantRegistry, variantLifecycle, colorEditionStore, VARIANT_BACKED_FIELDS).
+- `src/features/product-image/index.js` — **imported by `color-edition/variantLifecycle.js:15` + `colorEditionFinder.js:26,28`** for `propagateVariantDelete`, `propagateVariantRenames`, `remapOrphanedVariantKeys` (CEF→PIF variant cascade contract). Second-pass path-qualified grep exposed this load-bearing status; first-pass plan would have incorrectly deleted it.
+- `tools/gui-react/src/features/color-edition-finder/index.ts` — 5 external importers (review drawer, PIF panel, shared finder scaffolding) for `useColorEditionFinderQuery`, `ColorRegistryEntry`, `VARIANT_BACKED_FIELDS`, `isVariantBackedField`.
+
+**Per-new-scalar-finder cost after Phase 6:**
+- Registry entry: 5 mechanical path/export fields gone. Authors declare only the declarative content (`id`, `valueKey`, `valueType`, `logPrefix`, `panelTitle`, `panelTip`, `valueLabelPlural`, `moduleClass`, `phase`, `candidateSourceType`, settings schema, etc.). ~20 LOC less per entry.
+- No barrel file authoring required (unless the feature has genuine cross-feature surface like CEF/PIF).
+- **Total savings per new finder: ~20 LOC of boilerplate eliminated.**
+
+**Combined with Phases 1–5:** per-new-scalar-finder cost drops from ~1998 LOC (pre-Phase-1) to **~320 LOC (post-Phase-6)** ≈ **84% reduction**, nearly all domain content (prompt + HIW + README). Roadmap closed — the 7-phase program (Phase 7 was SUPERSEDED by Phase 3) is complete.
+
+**Architecture decisions surfaced during second-pass audit:**
+- Grep without explicit `path=` parameter returned false negatives for PIF cross-feature importers. Path-qualified grep + cross-reference with each feature's README "Public API (The Contract)" section is now the pattern for barrel-impact audits.
+- Helper return signature extended beyond the 5 originally-removed fields to include `schemaModule` + `adapterModule` — folds away the `generateFinderTypes.js:155` `release-date` special case by canonicalizing `kebabToCamel(featurePath) + 'Schema'` / `+ 'LlmAdapter'` across all finders. Removes a real divergence hazard that would have surfaced when a 4th scalar finder was added.
+- Decomposition safety rule honored via parallel-path migration: `finderRouteWiring.js` + 3 codegen scripts switched to the helper in Steps 5–6 while registry fields remained populated; Step 8 deleted the fields only after byte-identity was proven. Codegen byte-identity gate IS the characterization (no behavior drift possible without generated-output drift).
+
+**Note on future scalar-finder acceptance test:** The O(1) scaling claim (~340 LOC per new scalar finder, nearly all domain content) is validated only in theory until the first real scalar finder (SKU / pricing / msrp / discontinued / upc) lands. Deferred to a future plan.
+
+---
+
+# Phase 6 — Auto-register from registry (original plan — kept for reference)
 
 ## Context
 
@@ -724,7 +889,13 @@ Also: `finderRouteWiring.js` iterates `FINDER_MODULES` but still requires the `r
 
 ---
 
-# Phase 7 — Generalize types codegen script
+# Phase 7 — SUPERSEDED (folded into Phase 3)
+
+Generalized types codegen (`generateFinderTypes.js`) shipped in Phase 3 alongside the hooks codegen. No separate Phase 7 work remains.
+
+---
+
+# Phase 7 — Generalize types codegen script (original plan — kept for reference)
 
 ## Context
 
@@ -914,6 +1085,8 @@ Total: 12–17 days of focused work, spread across multiple sessions.
 
 ---
 
-**Last updated:** 2026-04-18 (Phase 1 shipped)
+**Last updated:** 2026-04-19 (Phase 6 shipped — RDF barrel deletion + registry-derivation simplification via `deriveFinderPaths(id)` helper; CEF + PIF barrels preserved as load-bearing cross-feature public APIs; 9933/9933 green; codegen byte-identity preserved)
 
-**Next up:** Phase 2 — Generalize `createFinderRouteHandler`. Load this roadmap's Phase 1 + Phase 2 sections into plan mode for that session.
+**Status:** **All 7 phases complete.** Phase 7 was SUPERSEDED by Phase 3 (generalized types codegen shipped there). Per-new-scalar-finder cost: ~1998 LOC → ~320 LOC (~84% reduction). Roadmap closed.
+
+**Next:** First real-world acceptance test — ship a new scalar finder (SKU, pricing, msrp, discontinued, or upc) using only the new primitives to validate the O(1) scaling claim live. Separate plan when ready.

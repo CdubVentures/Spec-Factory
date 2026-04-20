@@ -39,6 +39,11 @@ import { runPerVariant } from '../../core/finder/runPerVariant.js';
 import { evaluateCarousel } from './carouselStrategy.js';
 import { resolveViewQualityConfig } from './viewQualityDefaults.js';
 import { resolveViewAttemptBudgets } from './viewAttemptDefaults.js';
+import {
+  resolveSingleRunSecondaryHints,
+  resolveLoopRunSecondaryHints,
+} from './secondaryHintsDefaults.js';
+import { resolveViewPrompt, viewPromptSettingKey } from './viewPromptDefaults.js';
 import { resolveIdentityAmbiguitySnapshot } from '../indexing/orchestration/shared/identityHelpers.js';
 import { readProductImages, mergeProductImageDiscovery } from './productImageStore.js';
 import { matchVariant } from './variantMatch.js';
@@ -316,7 +321,7 @@ export function buildVariantList({ colors = [], colorNames = {}, editions = {} }
 /* ── Single-variant runner ─────────────────────────────────────────── */
 
 async function runSingleVariant({
-  product, variant, viewConfig, viewQualityMap,
+  product, variant, priorityViews = [], additionalViews = [], viewQualityMap,
   callLlm, productRoot, specDb, actualModel, actualFallbackUsed,
   logger, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery,
   rmbgSession = null,
@@ -368,7 +373,8 @@ async function runSingleVariant({
       product,
       variantLabel: variant.label,
       variantType: variant.type,
-      viewConfig,
+      priorityViews,
+      additionalViews,
       minWidth: promptMinWidth,
       minHeight: promptMinHeight,
       viewQualityMap,
@@ -604,6 +610,11 @@ export async function runProductImageFinder({
   const viewPromptOverride = finderStore.getSetting('viewPromptOverride') || '';
   const heroPromptOverride = finderStore.getSetting('heroPromptOverride') || '';
 
+  // Single-run secondary hints: views listed in ADDITIONAL alongside the priority views.
+  const singleRunHintKeys = resolveSingleRunSecondaryHints(
+    finderStore.getSetting('singleRunSecondaryHints') || '', product.category,
+  );
+
   // Gate: reject hero mode when heroEnabled is false
   if (mode === 'hero' && !heroEnabled) {
     return { images: [], rejected: true, rejections: [{ reason_code: 'hero_disabled', message: 'Hero search is disabled for this category' }] };
@@ -704,32 +715,37 @@ export async function runProductImageFinder({
     const variantImages = (pifDoc?.selected?.images || []).filter(img => matchVariant(img, { variantId: variant.variant_id, variantKey: variant.key }));
     const alreadyDownloadedUrls = new Set(variantImages.map(img => normalizeImageUrl(img.url)).filter(Boolean));
 
-    let effectiveViewConfig = viewConfig;
-    if (mode === 'view') {
-      const allSelectedImages = (pifDoc?.selected?.images || []).map((img) => ({
-        view: img.view, variant_key: img.variant_key, quality_pass: img.quality_pass !== false,
+    // Single-run prompt composition:
+    //   PRIORITY = priority views from viewConfig (GUI order), role='priority'.
+    //   ADDITIONAL = singleRunSecondaryHints, role='additional',
+    //                filtered to never duplicate a priority view.
+    // Each entry's description text comes from resolveViewPrompt with the
+    // appropriate role so per-role user overrides flow through cleanly.
+    const priorityViews = viewConfig
+      .filter((v) => v.priority)
+      .map((v) => ({
+        key: v.key,
+        description: resolveViewPrompt({
+          role: 'priority', category: product.category, view: v.key,
+          dbOverride: finderStore.getSetting(viewPromptSettingKey('priority', v.key)) || '',
+        }),
       }));
-      const strategy = evaluateCarousel({
-        collectedImages: allSelectedImages,
-        viewBudget, satisfactionThreshold, heroEnabled, heroCount,
-        variantKey: variant.key, variantId: variant.variant_id,
-        viewAttemptBudgets,
-      });
-      if (strategy.viewsToSearch.length > 0) {
-        const needed = new Set(strategy.viewsToSearch);
-        effectiveViewConfig = viewConfig.map((v) => ({
-          ...v,
-          priority: needed.has(v.key) ? true : false,
-        })).filter((v) => needed.has(v.key) || v.priority);
-        effectiveViewConfig = viewConfig.filter((v) => needed.has(v.key));
-      }
-    }
+    const priorityKeySet = new Set(priorityViews.map((v) => v.key));
+    const additionalViews = singleRunHintKeys
+      .filter((k) => !priorityKeySet.has(k))
+      .map((k) => ({
+        key: k,
+        description: resolveViewPrompt({
+          role: 'additional', category: product.category, view: k,
+          dbOverride: finderStore.getSetting(viewPromptSettingKey('additional', k)) || '',
+        }),
+      }));
 
     const promptBuilder = mode === 'hero' ? buildHeroImageFinderPrompt : buildProductImageFinderPrompt;
     const heroQuality = viewQualityMap.hero || {};
     const promptArgs = mode === 'hero'
       ? { product, variantLabel: variant.label, variantType: variant.type, minWidth: heroQuality.minWidth || 600, minHeight: heroQuality.minHeight || 400, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: heroPromptOverride }
-      : { product, variantLabel: variant.label, variantType: variant.type, viewConfig: effectiveViewConfig, minWidth, minHeight, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: viewPromptOverride };
+      : { product, variantLabel: variant.label, variantType: variant.type, priorityViews, additionalViews, minWidth, minHeight, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: viewPromptOverride };
     const systemPrompt = promptBuilder(promptArgs);
     const userMsg = JSON.stringify({ brand: product.brand, model: product.model, base_model: product.base_model, variant: variant.key });
 
@@ -751,7 +767,7 @@ export async function runProductImageFinder({
     });
 
     const result = await runSingleVariant({
-      product, variant, viewConfig: effectiveViewConfig, viewQualityMap,
+      product, variant, priorityViews, additionalViews, viewQualityMap,
       callLlm, productRoot, specDb, actualModel: _mt.actualModel, actualFallbackUsed: _mt.actualFallbackUsed, logger,
       siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery,
       rmbgSession,
@@ -944,6 +960,11 @@ export async function runCarouselLoop({
   const urlHistoryEnabled = finderStore.getSetting('urlHistoryEnabled') === 'true';
   const queryHistoryEnabled = finderStore.getSetting('queryHistoryEnabled') === 'true';
 
+  // Loop-run secondary hints: views listed in ADDITIONAL alongside the focus view.
+  const loopRunHintKeys = resolveLoopRunSecondaryHints(
+    finderStore.getSetting('loopRunSecondaryHints') || '', product.category,
+  );
+
   const { familyModelCount, ambiguityLevel, siblingModels } = await resolveAmbiguityContext({
     config, category: product.category, brand: product.brand,
     baseModel: product.base_model, currentModel: product.model,
@@ -1050,12 +1071,28 @@ export async function runCarouselLoop({
     const callLlmFactory = callMode === 'hero' ? createHeroImageFinderCallLlm : createProductImageFinderCallLlm;
     const callLlm = buildFinderLlmCaller({ _callLlmOverride, wrappedOnModelResolved, createCallLlm: callLlmFactory, llmDeps });
 
-    let effectiveViewConfig = viewConfig;
+    // Loop-run prompt composition:
+    //   PRIORITY = exactly the focusView (one view per call), role='loop'.
+    //   ADDITIONAL = loopRunSecondaryHints minus focusView, role='additional'.
+    let priorityViews = [];
+    let additionalViews = [];
     if (callMode === 'view' && focusView) {
-      effectiveViewConfig = viewConfig.map((v) => ({
-        ...v,
-        priority: v.key === focusView,
-      }));
+      priorityViews = [{
+        key: focusView,
+        description: resolveViewPrompt({
+          role: 'loop', category: product.category, view: focusView,
+          dbOverride: finderStore.getSetting(viewPromptSettingKey('loop', focusView)) || '',
+        }),
+      }];
+      additionalViews = loopRunHintKeys
+        .filter((k) => k !== focusView)
+        .map((k) => ({
+          key: k,
+          description: resolveViewPrompt({
+            role: 'additional', category: product.category, view: k,
+            dbOverride: finderStore.getSetting(viewPromptSettingKey('additional', k)) || '',
+          }),
+        }));
     }
 
     // Build prompt BEFORE call so operations modal shows it immediately
@@ -1063,7 +1100,7 @@ export async function runCarouselLoop({
     const heroQuality = viewQualityMap.hero || {};
     const promptArgs = callMode === 'hero'
       ? { product, variantLabel: variant.label, variantType: variant.type, minWidth: heroQuality.minWidth || 600, minHeight: heroQuality.minHeight || 400, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: heroPromptOverride }
-      : { product, variantLabel: variant.label, variantType: variant.type, viewConfig: effectiveViewConfig, minWidth, minHeight, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: viewPromptOverride };
+      : { product, variantLabel: variant.label, variantType: variant.type, priorityViews, additionalViews, minWidth, minHeight, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: viewPromptOverride };
     const systemPrompt = promptBuilder(promptArgs);
     const userMsg = JSON.stringify({ brand: product.brand, model: product.model, base_model: product.base_model, variant: variant.key });
 
@@ -1088,7 +1125,7 @@ export async function runCarouselLoop({
     });
 
     const result = await runSingleVariant({
-      product, variant, viewConfig: effectiveViewConfig, viewQualityMap,
+      product, variant, priorityViews, additionalViews, viewQualityMap,
       callLlm, productRoot, specDb, actualModel: _mtLoop.actualModel, actualFallbackUsed: _mtLoop.actualFallbackUsed, logger,
       siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery,
       rmbgSession,

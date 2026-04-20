@@ -26,6 +26,7 @@ import { readReviewGridSessionState, writeReviewGridSessionState } from '../stat
 import type { ReviewLayout, ProductsIndexResponse, CandidateResponse, CandidateDeleteResponse, ReviewCandidate } from '../../../types/review.ts';
 import { parseCatalogProducts } from '../../catalog/api/catalogParsers.ts';
 import { deleteCandidateBySourceId, deleteAllCandidatesForField } from '../api/reviewApi.ts';
+import { isVariantGeneratorField } from '../selectors/overrideFormState.ts';
 import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
 
 const SORT_OPTIONS: { value: SortMode; label: string }[] = [
@@ -265,8 +266,10 @@ export function ReviewPage() {
     // Already editing this cell — no-op
     if (isSameCell && currentMode === 'editing') return;
 
-    // Cell is selected but not editing — second click unlocks inline editor
-    if (isSameCell && currentMode === 'selected') {
+    // variantGenerator fields (colors, editions) are CEF-authoritative — no inline
+    // edit. Drawer's override UI is suppressed too; backend rejects the POST. Keep
+    // the click selecting + opening the drawer (read-only).
+    if (isSameCell && currentMode === 'selected' && !isVariantGeneratorField(field)) {
       const cached = queryClient.getQueryData<ProductsIndexResponse>(['reviewProductsIndex', category]);
       const product = cached?.products?.find(p => p.product_id === productId);
       const currentValue = product?.fields[field]?.selected.value;
@@ -281,13 +284,14 @@ export function ReviewPage() {
 
   // Start editing from keydown (typing in selected cell)
   const handleStartEditing = useCallback((productId: string, field: string, initialValue: string) => {
+    if (isVariantGeneratorField(field)) return; // CEF-authoritative fields reject inline edit
     selectCell(productId, field);
     startEditing(initialValue);
   }, [selectCell, startEditing]);
 
   // Manual override mutation (for inline edits)
   const manualOverrideMut = useMutation({
-    mutationFn: (body: { productId: string; field: string; value: string }) =>
+    mutationFn: (body: { productId: string; field: string; value: string; variantId?: string }) =>
       api.post(`/review/${category}/manual-override`, body),
     onSuccess: () => {
       setSaveStatus('saved');
@@ -295,8 +299,25 @@ export function ReviewPage() {
       queryClient.invalidateQueries({ queryKey: ['catalog', category] });
       queryClient.invalidateQueries({ queryKey: ['product', category] });
     },
-    onError: () => {
+    onError: (err: unknown) => {
       setSaveStatus('error');
+      // WHY: silent failure was confusing — surface the API error so the user
+      // sees exactly why override didn't land (validation, 400 shape, etc.).
+      console.error('manual override failed', err);
+    },
+  });
+
+  // Clear published mutation — demotes resolved row(s) + removes JSON projection.
+  const clearPublishedMut = useMutation({
+    mutationFn: (body: { productId: string; field: string; variantId?: string; allVariants?: boolean }) =>
+      api.post(`/review/${category}/clear-published`, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
+      queryClient.invalidateQueries({ queryKey: ['candidates', category] });
+      queryClient.invalidateQueries({ queryKey: ['product', category] });
+    },
+    onError: (err: unknown) => {
+      console.error('clear published failed', err);
     },
   });
 
@@ -366,11 +387,22 @@ export function ReviewPage() {
     );
   }, [queryClient, category]);
 
-  // Core save logic — shared by debounced autosave and immediate commit
+  // Core save logic — shared by debounced autosave and immediate commit.
+  //
+  // WHY variantId lookup: for variant-dependent fields (release_date, etc.)
+  // the cell displays the default variant's value (per reviewGridData seeding),
+  // so an inline edit must be scoped to that variant. The backend now rejects
+  // variant-dependent overrides without variantId (variant_id_required).
   const saveEdit = useCallback((productId: string, field: string, value: string, originalValue: string) => {
     if (value === originalValue) return;
 
-    // Inline text edits are always manual overrides.
+    const cached = queryClient.getQueryData<ProductsIndexResponse>(['reviewProductsIndex', category]);
+    const product = cached?.products?.find((p) => p.product_id === productId);
+    const fieldState = product?.fields?.[field];
+    const defaultVariantId = fieldState?.variant_values
+      ? Object.entries(fieldState.variant_values).find(([, entry]) => entry.is_default === true)?.[0]
+      : undefined;
+
     optimisticUpdateField(
       productId,
       field,
@@ -378,8 +410,13 @@ export function ReviewPage() {
       { source: 'user', method: 'manual_override', acceptedCandidateId: null },
     );
     setSaveStatus('saving');
-    manualOverrideMut.mutate({ productId, field, value });
-  }, [manualOverrideMut, setSaveStatus, optimisticUpdateField]);
+    manualOverrideMut.mutate({
+      productId,
+      field,
+      value,
+      ...(defaultVariantId ? { variantId: defaultVariantId } : {}),
+    });
+  }, [manualOverrideMut, setSaveStatus, optimisticUpdateField, queryClient, category]);
 
   // Debounced autosave for inline editing (fires while user is still typing)
   const debouncedSave = useDebouncedCallback(saveEdit, 1500);
@@ -485,19 +522,36 @@ export function ReviewPage() {
                 sourceTimestamp: activeFieldState.source_timestamp,
                 overridden: activeFieldState.overridden,
               }}
-              onManualOverride={(value) => {
-                optimisticUpdateField(
-                  selectedProductId,
-                  selectedField,
-                  value,
-                  { source: 'user', method: 'manual_override', acceptedCandidateId: null },
-                );
+              onManualOverride={(value, variantId) => {
+                // Optimistic scalar cell update only when no variantId — the grid
+                // cell reflects product-level state; per-variant overrides are
+                // visible in the drawer and will update on invalidation.
+                if (!variantId) {
+                  optimisticUpdateField(
+                    selectedProductId,
+                    selectedField,
+                    value,
+                    { source: 'user', method: 'manual_override', acceptedCandidateId: null },
+                  );
+                }
                 manualOverrideMut.mutate({
                   productId: selectedProductId,
                   field: selectedField,
                   value,
+                  ...(variantId ? { variantId } : {}),
                 });
               }}
+              onClearPublished={({ variantId, allVariants }) => {
+                clearPublishedMut.mutate({
+                  productId: selectedProductId,
+                  field: selectedField,
+                  ...(variantId ? { variantId } : {}),
+                  ...(allVariants ? { allVariants: true } : {}),
+                });
+              }}
+              clearPending={clearPublishedMut.isPending}
+              overrideError={manualOverrideMut.error instanceof Error ? manualOverrideMut.error.message : null}
+              clearError={clearPublishedMut.error instanceof Error ? clearPublishedMut.error.message : null}
               isPending={manualOverrideMut.isPending}
               candidates={drawerCandidates}
               candidatesLoading={candidatesLoading}
@@ -507,6 +561,7 @@ export function ReviewPage() {
               deletePending={deleteCandidateMut.isPending || deleteAllCandidatesMut.isPending}
               variantDependent={variantDependent}
               variantValues={activeFieldState.variant_values}
+              variantCatalog={activeProduct.variants}
             />
           );
         })()}

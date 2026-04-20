@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { usePersistedNullableTab, usePersistedTab } from '../../../stores/tabStore.ts';
+import { NumberStepper } from '../../../shared/ui/forms/NumberStepper.tsx';
 import { type SourceEntry } from '../state/sourceStrategyAuthority.ts';
 import { SectionNavIcon } from '../components/PipelineSettingsPageShell.tsx';
 // WHY: O(1) — types and enum options derived from backend contract SSOT.
@@ -319,15 +320,26 @@ function FormInput({
   return (
     <label className="space-y-1">
       <span className="sf-text-label font-semibold" style={{ color: 'var(--sf-text)' }}>{label}</span>
-      <input
-        type={type || 'text'}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={cls}
-        placeholder={placeholder}
-        min={min}
-        max={max}
-      />
+      {type === 'number' ? (
+        <NumberStepper
+          value={value}
+          onChange={onChange}
+          min={min}
+          max={max}
+          ariaLabel={label}
+          className={cls}
+        />
+      ) : (
+        <input
+          type={type || 'text'}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={cls}
+          placeholder={placeholder}
+          min={min}
+          max={max}
+        />
+      )}
     </label>
   );
 }

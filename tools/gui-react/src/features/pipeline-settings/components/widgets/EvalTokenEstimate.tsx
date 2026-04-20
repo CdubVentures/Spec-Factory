@@ -1,4 +1,5 @@
 import type { FinderSettingWidgetProps } from './widgetRegistry.ts';
+import { NumberStepper } from '../../../../shared/ui/forms/NumberStepper.tsx';
 
 // WHY: Claude vision tiles images into 512x512 blocks (~170 tokens each).
 // Surfacing the cost jump at tile boundaries (512 -> 1024 -> 1536) keeps the
@@ -18,15 +19,15 @@ export function EvalTokenEstimate({ entry, value, isSaving, onSave }: FinderSett
   return (
     <div className="sf-surface-elevated sf-border-soft rounded p-3 space-y-2">
       <div className="flex items-center gap-3">
-        <input
-          type="number"
-          className="sf-input w-24 text-center font-mono"
-          defaultValue={value}
+        <NumberStepper
+          value={value}
+          className="w-36 shrink-0"
           min={entry.min}
           max={entry.max}
           step={128}
           disabled={isSaving}
-          onBlur={(e) => { if (e.target.value !== value) onSave(entry.key, e.target.value); }}
+          onCommit={(next) => { if (next !== value) onSave(entry.key, next); }}
+          ariaLabel={entry.key}
         />
         <span className="sf-text-caption sf-text-muted">
           px ({entry.min ?? 256}–{entry.max ?? 2048}, step 128)

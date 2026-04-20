@@ -11,6 +11,7 @@
 
 import { z } from 'zod';
 import { resolvePromptTemplate } from '../llm/resolvePromptTemplate.js';
+import { resolveGlobalPrompt } from '../llm/prompts/globalPromptRegistry.js';
 
 // ── Zod schema (universal shape) ─────────────────────────────────────
 
@@ -23,19 +24,8 @@ export const evidenceRefSchema = z.object({
 export const evidenceRefsSchema = z.array(evidenceRefSchema).default([]);
 
 // ── Prompt fragment ──────────────────────────────────────────────────
-
-export const EVIDENCE_PROMPT_FRAGMENT = `Evidence requirements (CRITICAL — publisher will reject low-evidence candidates):
-- Provide AT LEAST {{MIN_EVIDENCE_REFS}} evidence entry with a source URL
-- Tag each source with a tier (classification only, no ranking)
-- Rate your confidence (0-100) that each source supports the claim
-
-Source tiers:
-- tier1: manufacturer / brand-official / press release
-- tier2: professional testing lab / review lab
-- tier3: authorized retailer / marketplace
-- tier4: community / forum / blog / user-generated
-- tier5: specs aggregator / product database
-- other: anything that doesn't fit the above`;
+// Template text lives in src/core/llm/prompts/globalPromptRegistry.js
+// under key 'evidenceContract' so the user can edit it from the GUI.
 
 /**
  * Render the evidence prompt block with MIN_EVIDENCE_REFS bound.
@@ -50,7 +40,7 @@ export function buildEvidencePromptBlock({ minEvidenceRefs } = {}) {
   const n = (typeof minEvidenceRefs === 'number' && minEvidenceRefs > 0)
     ? minEvidenceRefs
     : 1;
-  return resolvePromptTemplate(EVIDENCE_PROMPT_FRAGMENT, {
+  return resolvePromptTemplate(resolveGlobalPrompt('evidenceContract'), {
     MIN_EVIDENCE_REFS: String(n),
   });
 }

@@ -5,7 +5,7 @@
 
 // ── Field State ─────────────────────────────────────────────────────
 
-// WHY: Canonical keys returned by buildFieldState() in reviewGridData.js.
+// WHY: Canonical keys returned per field by buildProductReviewPayload() in reviewGridData.js.
 export const FIELD_STATE_SELECTED_SHAPE = Object.freeze([
   { key: 'value', coerce: 'unknown' },
   { key: 'unit', coerce: 'string', nullable: true, optional: true },

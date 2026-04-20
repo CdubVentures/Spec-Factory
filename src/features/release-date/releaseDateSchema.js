@@ -1,35 +1,32 @@
-import { z } from 'zod';
-import { evidenceRefsSchema } from '../../core/finder/evidencePromptFragment.js';
-import { valueConfidenceSchema } from '../../core/finder/valueConfidencePromptFragment.js';
-
 /**
- * Zod schema for the Release Date Finder LLM response.
+ * Release Date Finder — Zod schemas (factory-driven).
  *
- * One LLM call per variant → one date candidate + evidence refs + discovery log.
- * The orchestrator routes to submitCandidate() for publisher-gated publication
- * (min_evidence_refs checked in the candidate gate).
+ * Every shape here is derived from the shared scalar-finder factories in
+ * `src/core/finder/`. The hand-written schemas this file used to carry have
+ * been replaced by declarative factory calls; behavior is byte-identical.
+ *
+ * Exports (names preserved — do NOT rename; external consumers depend on them):
+ *   - releaseDateFinderResponseSchema    — LLM response shape (per-variant)
+ *   - releaseDateFinderCandidateSchema   — editorial per-variant candidate
+ *   - releaseDateFinderRunSchema         — per-run audit entry
+ *   - releaseDateFinderGetResponseSchema — full GET payload (drives types.generated.ts)
  *
  * Accepted date formats (aligned with release_date EG preset):
  *   YYYY-MM-DD | YYYY-MM | YYYY | MMM YYYY | Month YYYY | unk
- *
- * WHY: `evidence_refs` shape is the universal {url, tier, confidence} imported
- * from the shared evidence module — no local definition. `confidence` on the
- * response root is the LLM's overall candidate confidence, sourced from the
- * shared valueConfidenceSchema (distinct from the per-source confidence inside
- * each evidence_refs entry).
  */
-export const releaseDateFinderResponseSchema = z.object({
-  release_date: z.string(),
-  confidence: valueConfidenceSchema.default(0),
-  unknown_reason: z.string().default(''),
-  evidence_refs: evidenceRefsSchema,
-  discovery_log: z.object({
-    urls_checked: z.array(z.string()).default([]),
-    queries_run: z.array(z.string()).default([]),
-    notes: z.array(z.string()).default([]),
-  }).default({
-    urls_checked: [],
-    queries_run: [],
-    notes: [],
-  }),
+
+import { createScalarFinderSchema } from '../../core/finder/createScalarFinderSchema.js';
+import { createScalarFinderEditorialSchemas } from '../../core/finder/createScalarFinderEditorialSchemas.js';
+
+export const releaseDateFinderResponseSchema = createScalarFinderSchema({
+  valueKey: 'release_date',
+  valueType: 'date',
 });
+
+const editorial = createScalarFinderEditorialSchemas({
+  llmResponseSchema: releaseDateFinderResponseSchema,
+});
+
+export const releaseDateFinderCandidateSchema = editorial.candidateSchema;
+export const releaseDateFinderRunSchema = editorial.runSchema;
+export const releaseDateFinderGetResponseSchema = editorial.getResponseSchema;

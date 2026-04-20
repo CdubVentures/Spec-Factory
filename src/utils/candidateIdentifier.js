@@ -95,11 +95,6 @@ export function buildManualOverrideCandidateId({ category, productId, fieldKey, 
   return buildCandidateId('manual_item', [category, productId, fieldKey, value, evidenceUrl, evidenceQuote]);
 }
 
-export function buildFallbackFieldCandidateId({ productId = '', fieldKey, value = '', index = 0, variant = 'candidate' }) {
-  const prefix = variant === 'selected' ? 'selected_item' : 'cand_item';
-  return buildCandidateId(prefix, [productId, fieldKey, value, index]);
-}
-
 /**
  * Build a deterministic, item+field scoped candidate id from raw source candidate ids.
  * This prevents collisions when different fields reuse the same raw candidate_id.
