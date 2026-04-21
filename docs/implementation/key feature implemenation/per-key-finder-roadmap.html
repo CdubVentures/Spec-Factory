@@ -283,9 +283,10 @@
 
 <p>Three tables. Each axis owns exactly one decision. All cells live in LLM config, fully editable.</p>
 
-<h3 class="subsection-title">3.1 &nbsp; Difficulty → Model (4 cells + global fallback)</h3>
+<h3 class="subsection-title">3.1 &nbsp; Difficulty → LLM settings bundle (5 tiers)</h3>
+<p>Each tier stores a full settings bundle: <code>model</code>, <code>useReasoning</code>, <code>reasoningModel</code>, <code>thinking</code>, <code>thinkingEffort</code>, <code>webSearch</code>. Stored as one JSON blob <code>keyFinderTierSettingsJson</code> keyed by tier, matching the existing <code>llmPhaseOverridesJson</code> pattern in <code>configPostMerge.js</code>.</p>
 <table>
-  <thead><tr><th>Difficulty</th><th>Model</th><th>Reasoning</th><th>Web tool</th><th>Typical keys (mouse)</th></tr></thead>
+  <thead><tr><th>Tier</th><th>Typical model</th><th>Thinking effort</th><th>Web search</th><th>Typical keys (mouse)</th></tr></thead>
   <tbody>
     <tr><td><span class="tag tag-green">easy</span></td><td><code>gpt-5.4-mini</code></td><td>high</td><td>always on</td><td>form_factor, body_colors, wired_interface, adjustable_weight</td></tr>
     <tr><td><span class="tag tag-accent">medium</span></td><td><code>gpt-5.4-mini</code></td><td>xhigh</td><td>always on</td><td>battery_hours, onboard_profiles, software_platform_support</td></tr>
@@ -295,49 +296,56 @@
   </tbody>
 </table>
 
-<h3 class="subsection-title">3.2 &nbsp; (Difficulty × Required) → Attempt Budget (8 cells, floor 3)</h3>
+<h3 class="subsection-title">3.2 &nbsp; Per-key budget — scoring formula (four axes, floor 3)</h3>
+<p>Each key earns a budget (LLM calls before giving up) from a sum of four axis-point tables, clamped below by a floor. Every table is editable in LLM config — no hardcoded matrices.</p>
 <table>
-  <thead><tr><th></th><th>easy</th><th>medium</th><th>hard</th><th>very_hard</th></tr></thead>
+  <thead><tr><th>Axis</th><th>Registry key</th><th>Default</th></tr></thead>
   <tbody>
-    <tr><th>mandatory</th><td>3</td><td>4</td><td>5</td><td>6</td></tr>
-    <tr><th>non_mandatory</th><td>3</td><td>3</td><td>4</td><td>5</td></tr>
+    <tr><td>required_level</td><td><code>keyFinderBudgetRequiredPointsJson</code></td><td><code>{ mandatory: 2, non_mandatory: 1 }</code></td></tr>
+    <tr><td>availability</td><td><code>keyFinderBudgetAvailabilityPointsJson</code></td><td><code>{ always: 1, sometimes: 2, rare: 3 }</code></td></tr>
+    <tr><td>difficulty</td><td><code>keyFinderBudgetDifficultyPointsJson</code></td><td><code>{ easy: 1, medium: 2, hard: 3, very_hard: 4 }</code></td></tr>
+    <tr><td>variant count</td><td><code>keyFinderBudgetVariantPointsPerExtra</code></td><td>int; <code>1</code> per variant beyond the first</td></tr>
   </tbody>
 </table>
-<p style="margin-top:8px; font-size:13px; color:var(--text-muted);">Never less than 3 attempts. Mandatory earns +1 at each tier where it's not already the ceiling. Very_hard non_mandatory still gets 5 — hard data stays hard whether or not it's required.</p>
+<div class="callout callout-info">
+  <strong>Formula:</strong> <code class="inline">budget = max(floor, requiredPts + availabilityPts + difficultyPts + max(0, variantCount − 1) × variantPointsPerExtra)</code>. Floor stored as <code>keyFinderBudgetFloor</code> (default 3).
+</div>
+<p style="margin-top:8px; font-size:13px; color:var(--text-muted);">Example: <code>sensor_model</code> (mandatory, rare, very_hard) on a 4-variant product → 2 + 3 + 4 + 3×1 = 12 attempts. <code>form_factor</code> (non_mandatory, always, easy) on a 1-variant product → 1 + 1 + 1 + 0 = 3 (at floor).</p>
 
-<h3 class="subsection-title">3.3 &nbsp; (Availability × Difficulty) → Bundle Cap (opt-in knob)</h3>
+<h3 class="subsection-title">3.3 &nbsp; Bundling — point pool per primary (opt-in)</h3>
+<p>Bundling is off by default. When on, only Group Smart Loop and Header Smart Loop use it — per-key Run and per-key Loop always run solo. Each primary's difficulty sets its point pool; each passenger costs points based on its own difficulty; variant count scales passenger cost via the same per-extra-variant knob as §3.2.</p>
 <div class="two-col">
   <div class="card">
-    <div class="card-header">Availability cap (on primary)</div>
+    <div class="card-header">Primary pool (<code>keyFinderBundlingPoolPerPrimaryJson</code>)</div>
     <div class="card-body">
       <table>
         <tbody>
-          <tr><th>always</th><td>up to 4 secondaries</td></tr>
-          <tr><th>sometimes</th><td>up to 2 secondaries</td></tr>
-          <tr><th>rare</th><td>0 (solo call)</td></tr>
+          <tr><th>easy primary</th><td>6 points</td></tr>
+          <tr><th>medium primary</th><td>4 points</td></tr>
+          <tr><th>hard primary</th><td>2 points</td></tr>
+          <tr><th>very_hard primary</th><td>1 point</td></tr>
         </tbody>
       </table>
-      <p style="margin-top:8px; font-size:12.5px; color:var(--text-muted);">Rationale: rare primaries need focus. Common primaries can carry passengers.</p>
+      <p style="margin-top:8px; font-size:12.5px; color:var(--text-muted);">Pool = max passenger-points a primary can carry. Lower pool = tighter focus; higher pool = more free rides.</p>
     </div>
   </div>
   <div class="card">
-    <div class="card-header">Difficulty cap (on primary)</div>
+    <div class="card-header">Passenger cost (<code>keyFinderBundlingPassengerCostJson</code>)</div>
     <div class="card-body">
       <table>
         <tbody>
-          <tr><th>easy</th><td>up to 4</td></tr>
-          <tr><th>medium</th><td>up to 3</td></tr>
-          <tr><th>hard</th><td>up to 1</td></tr>
-          <tr><th>very_hard</th><td>up to 1</td></tr>
+          <tr><th>easy passenger</th><td>1 point</td></tr>
+          <tr><th>medium passenger</th><td>2 points</td></tr>
+          <tr><th>hard passenger</th><td>4 points</td></tr>
+          <tr><th>very_hard passenger</th><td>8 points</td></tr>
         </tbody>
       </table>
-      <p style="margin-top:8px; font-size:12.5px; color:var(--text-muted);">Hard/very_hard primaries focus on themselves + at most one opportunistic passenger.</p>
+      <p style="margin-top:8px; font-size:12.5px; color:var(--text-muted);">Variant scaling: <code>cost = basePassengerCost + max(0, variantCount − 1) × variantPointsPerExtra</code>.</p>
     </div>
   </div>
 </div>
 <div class="callout callout-info">
-  <strong>Effective bundle size</strong>
-  <code class="inline">min(availabilityCap[primary.availability], difficultyCap[primary.difficulty], globalMaxSecondaries)</code>. The global cap is a separate knob even when availability/difficulty would allow more.
+  <strong>Planner rule:</strong> passengers must be same group, same variant scope, difficulty ≤ primary (<code>keyFinderPassengerDifficultyPolicy = less_or_equal</code>). Pack greedily until pool exhausted. Example: easy primary on a 1-variant product with pool=6 → "4 easy (4pt) + 1 medium (2pt) = 6pt" or "6 easy = 6pt". Same primary on a 4-variant product → each easy passenger now costs 1 + 3 = 4pt, so only 1 easy passenger fits the pool.
 </div>
 
 <!-- ────────────────────────── 4. ARCHITECTURE ────────────────────────── -->
@@ -502,29 +510,29 @@ z.<span class="p">object</span>({
 
 <div class="card">
   <div class="card-body">
-    <p><strong>Default: OFF.</strong> One call per key. Zero risk of LLM drift from overloaded prompts.</p>
-    <p><strong>ON (per-category, like PIF's <code>heroEnabled</code>):</strong> the primary key drives the call; up to N secondaries from the same group are appended as "grab if you find." Secondaries satisfy the prompt only if the LLM stumbles on them.</p>
+    <p><strong>Default: OFF.</strong> One call per key. Zero risk of LLM drift from overloaded prompts. Per-key Run and per-key Loop always run solo — bundling affects only Group Smart Loop and Header Smart Loop.</p>
+    <p><strong>ON:</strong> when a Smart Loop fires, each call has a primary key; passengers from the same group are packed via the point-pool model in §3.3 until the pool is exhausted.</p>
     <div class="three-col">
       <div class="card">
-        <div class="card-header"><span class="tag tag-green">eligible as secondary</span></div>
+        <div class="card-header"><span class="tag tag-green">eligible as passenger</span></div>
         <div class="card-body">
           <ul>
             <li>Same <code>group</code> as primary</li>
             <li>Same variant scope</li>
-            <li>Difficulty ≤ primary's difficulty</li>
+            <li>Difficulty ≤ primary (<code>less_or_equal</code> policy)</li>
             <li>Not already resolved</li>
             <li>Has <code>ai_assist.reasoning_note</code> or schema</li>
           </ul>
         </div>
       </div>
       <div class="card">
-        <div class="card-header"><span class="tag tag-orange">caps</span></div>
+        <div class="card-header"><span class="tag tag-orange">pool rules</span></div>
         <div class="card-body">
           <ul>
-            <li>Availability cap (§3.3)</li>
-            <li>Difficulty cap (§3.3)</li>
-            <li>Global secondary cap (llm config)</li>
-            <li>Effective = min of all three</li>
+            <li>Primary pool = pool[primary.difficulty] (§3.3)</li>
+            <li>Passenger cost = cost[passenger.difficulty] + variant scaling</li>
+            <li>Planner packs greedily, easiest passengers first</li>
+            <li>Stops when next candidate would exceed remaining pool</li>
           </ul>
         </div>
       </div>
@@ -533,16 +541,16 @@ z.<span class="p">object</span>({
         <div class="card-body">
           <ul>
             <li>Cross-group bundling</li>
-            <li>Harder secondaries than primary</li>
+            <li>Harder passengers than primary</li>
             <li>Cross-variant bundling</li>
-            <li>Secondaries with their own URL/query history</li>
+            <li>Passengers with their own URL/query history (primary owns discovery)</li>
           </ul>
         </div>
       </div>
     </div>
-    <div class="callout callout-ok">
-      <strong>Satisfaction skip (PIF pattern lifted to keys).</strong>
-      If a secondary publishes during another key's call, its own primary call is skipped when its turn comes up in the group iteration. Maximum free lift, zero wasted calls.
+    <div class="callout callout-muted">
+      <strong>Deferred: cross-key satisfaction skip.</strong>
+      The PIF-style heuristic of "if a passenger publishes, skip its own primary call later" is future work. Initial ship prioritizes explicit user control (Run / Loop / Smart Loop buttons) over autonomous skip logic.
     </div>
   </div>
 </div>
@@ -551,6 +559,17 @@ z.<span class="p">object</span>({
 <h2 id="dashboard" class="section-title anchor-target"><span class="num">7</span> GUI dashboard mockups</h2>
 
 <p>The dashboard is a top-level panel for running the finder. The user needs: (a) see every key in the product with its axes, (b) filter/select, (c) fire runs in flexible groupings, (d) inspect per-key run + URL + query history.</p>
+
+<div class="callout callout-info">
+  <strong>Four run modes:</strong>
+  <ul>
+    <li><strong>Per-key Run</strong> — 1 call, 0 passengers, no iteration. One key, one shot.</li>
+    <li><strong>Per-key Loop</strong> — iterates one key (no passengers) until its own budget is exhausted or it resolves.</li>
+    <li><strong>Group Smart Loop</strong> — runs a full group with bundling on; fires keys in difficulty order easy→medium→hard→very_hard; each key iterates until its budget is exhausted or it resolves.</li>
+    <li><strong>Header Smart Loop</strong> — applies Group Smart Loop to every group in sequence. Top-level "run everything" button.</li>
+  </ul>
+  Smart Loop modes are wired in a separate phase after Phase 2. Phase 2 registers only the per-tier LLM, per-key budget scoring, and bundling knobs.
+</div>
 
 <!-- Mockup 1: Key Explorer -->
 <div class="mockup">
@@ -829,22 +848,30 @@ z.<span class="p">object</span>({
 
 <div class="phase-card">
   <div class="phase-header">
-    <div class="phase-title"><span class="phase-num">2</span> LLM config — new <code>keyFinder</code> phase + matrices</div>
+    <div class="phase-title"><span class="phase-num">2</span> LLM config — new <code>keyFinder</code> phase + registry keys</div>
     <div><span class="tag tag-muted">~2 days</span></div>
   </div>
   <div class="phase-body">
-    <p>Register the new phase + the three matrix config keys. No finder code yet — just config plumbing.</p>
+    <p>Register the new phase + tier/budget/bundling config keys. No finder code yet — just config plumbing.</p>
     <ul>
-      <li>Add <code>keyFinder</code> phase to <code>llmPhaseDefs.js</code></li>
-      <li>Register 5 model keys (<code>easy/medium/hard/very_hard/fallback</code>) in <code>settingsRegistry.js</code></li>
-      <li>Register 8 budget-matrix keys (or single JSON blob — TBD)</li>
-      <li>Register bundling knobs (<code>keyFinderBundlingEnabled</code>, <code>availabilityCap</code>, <code>difficultyCap</code>, <code>maxSecondaries</code>)</li>
-      <li>Add LLM config GUI section for these</li>
+      <li>Add <code>keyFinder</code> phase to <code>llmPhaseDefs.js</code> (billing group, discovery group; tier bundle ARE the per-phase override, no <code>globalModel</code> inheritance from <code>llmModelPlan</code>)</li>
+      <li>Register 10 settings in <code>settingsRegistry.js</code>:
+        <ul>
+          <li>1× LLM tier bundle: <code>keyFinderTierSettingsJson</code> — 5 tiers × 6 fields (model, useReasoning, reasoningModel, thinking, thinkingEffort, webSearch)</li>
+          <li>3× budget axis tables: <code>keyFinderBudgetRequiredPointsJson</code>, <code>…AvailabilityPointsJson</code>, <code>…DifficultyPointsJson</code></li>
+          <li>1× variant weight: <code>keyFinderBudgetVariantPointsPerExtra</code></li>
+          <li>1× budget floor: <code>keyFinderBudgetFloor</code> (default 3)</li>
+          <li>3× bundling: <code>keyFinderBundlingEnabled</code>, <code>…PassengerCostJson</code>, <code>…PoolPerPrimaryJson</code></li>
+          <li>1× policy: <code>keyFinderPassengerDifficultyPolicy</code> (default <code>less_or_equal</code>)</li>
+        </ul>
+      </li>
+      <li>Add LLM config GUI section: tier editor (5 tier cards, each the BASE MODEL shape used by existing finders) + budget editor (3 axis tables + floor + variant-per-extra knob) + bundling editor (pool table + cost table + policy enum + enable toggle)</li>
+      <li>Zod schema for each JSON blob enforcing the post-Phase-1 vocab (<code>mandatory/non_mandatory</code>, <code>always/sometimes/rare</code>, <code>easy/medium/hard/very_hard</code>) at the trust boundary</li>
     </ul>
     <div class="phase-grid">
-      <div><dt>Blockers</dt><dd>None</dd></div>
-      <div><dt>Exit criterion</dt><dd>GUI shows editable matrices; settings persist; derivation tests green</dd></div>
-      <div><dt>Risk</dt><dd>Low — pure config additions via registry; O(1) pattern is proven</dd></div>
+      <div><dt>Blockers</dt><dd>Phase 1 Step 3 (backend vocab migrated — <code>mandatory</code>/<code>very_hard</code> must be valid tokens for Zod schemas)</dd></div>
+      <div><dt>Exit criterion</dt><dd>GUI shows editable tier/budget/bundling sections; settings persist across restart; Zod validates the new vocab; derivation tests (manifest, types, policy) green</dd></div>
+      <div><dt>Risk</dt><dd>Low — pure config additions via registry; O(1) pattern is proven; largest new UI concept is the 5-tier settings editor (mirror existing llmPhaseOverrides GUI)</dd></div>
     </div>
   </div>
 </div>
@@ -988,23 +1015,15 @@ z.<span class="p">object</span>({
     </div>
   </div>
   <div class="card">
-    <div class="card-header"><span class="tag tag-orange">open</span> 9.3 &nbsp; "Resolved" definition for skip-check</div>
+    <div class="card-header"><span class="tag tag-green">deferred</span> 9.3 &nbsp; "Resolved" definition for skip-check</div>
     <div class="card-body">
-      <p>When a secondary gets knocked out during a bundled call, skip its own primary if:</p>
-      <ul>
-        <li><strong>Recommended:</strong> <em>published</em> (confidence ≥ threshold + evidence gate passed).</li>
-        <li>Alt: any submitted candidate — faster but may let shaky answers steal the slot.</li>
-      </ul>
+      <p><strong>Moot for Phase 2.</strong> Cross-key satisfaction-skip is future work; no <code>keyFinderSkipResolvedPolicy</code> knob is registered in Phase 2. Revisit when the skip heuristic is wired.</p>
     </div>
   </div>
   <div class="card">
-    <div class="card-header"><span class="tag tag-orange">open</span> 9.4 &nbsp; Per-category override scope</div>
+    <div class="card-header"><span class="tag tag-green">locked</span> 9.4 &nbsp; Per-category override scope</div>
     <div class="card-body">
-      <p>Mirror PIF's <code>product_images_settings.json</code> pattern for LLM config?</p>
-      <ul>
-        <li>Yes — each category gets a <code>key_finder_settings.json</code> with matrix + bundling overrides.</li>
-        <li>No — global LLM config only, keep it simple, defer category overrides to a later phase.</li>
-      </ul>
+      <p><strong>Locked: global only for Phase 2.</strong> All 10 registry keys are global-scope. Per-category override (PIF-style <code>key_finder_settings.json</code>) is deferred until real per-category differences surface.</p>
     </div>
   </div>
 </div>

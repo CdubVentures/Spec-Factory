@@ -10,7 +10,8 @@ import { serpSelectorOutputSchema } from '../resultProcessing/serpSelector.js';
 import { SERP_SELECT_URLS_SYSTEM_PROMPT } from '../resultProcessing/serpSelectorLlmAdapter.js';
 import { REPAIR_SYSTEM_PROMPT, HALLUCINATION_PATTERNS } from '../../../publisher/repair-adapter/promptBuilder.js';
 import { repairResponseJsonSchema } from '../../../publisher/repair-adapter/repairResponseSchema.js';
-import { FINDER_PHASE_SCHEMAS } from './phaseSchemaRegistry.generated.js';
+import { FINDER_PHASE_SCHEMAS, FINDER_SCALAR_DEFAULT_TEMPLATES } from './phaseSchemaRegistry.generated.js';
+import { buildScalarFinderPromptTemplates } from '../../../../core/finder/scalarFinderPromptContract.js';
 import { buildVariantIdentityCheckPrompt, CEF_DISCOVERY_DEFAULT_TEMPLATE } from '../../../color-edition/colorEditionLlmAdapter.js';
 import { variantIdentityCheckResponseSchema } from '../../../color-edition/colorEditionSchema.js';
 import { buildViewEvalPrompt, buildHeroSelectionPrompt, VIEW_EVAL_DEFAULT_TEMPLATE, HERO_EVAL_DEFAULT_TEMPLATE } from '../../../product-image/imageEvaluator.js';
@@ -27,9 +28,6 @@ import {
   resolveViewPrompt,
   VIEW_PROMPT_ROLES,
 } from '../../../product-image/viewPromptDefaults.js';
-import { RDF_DEFAULT_TEMPLATE } from '../../../release-date/releaseDateLlmAdapter.js';
-import { SKF_DEFAULT_TEMPLATE } from '../../../sku/skuLlmAdapter.js';
-
 const NON_FINDER_PHASES = Object.freeze({
   'needset': {
     system_prompt: PLANNER_SYSTEM_PROMPT,
@@ -230,8 +228,10 @@ const IMAGE_FINDER_TEMPLATES = Object.freeze({
         { name: 'ADDITIONAL_GUIDANCE', description: 'One-line note appended after the priority-views instructions when additional views are supplied. Empty when only priority views are requested.', required: false, category: 'deterministic' },
         { name: 'ALL_VIEW_KEYS', description: 'e.g. "top, bottom, left, right, front, rear, sangle, angle"', required: true, category: 'deterministic' },
         { name: 'IMAGE_REQUIREMENTS', description: 'Image quality rules section — uses promptOverride setting if set, otherwise the built-in requirements block', required: true, category: 'deterministic' },
+        { name: 'IDENTITY_INTRO', description: 'Opening "IDENTITY: You are looking for the EXACT product..." line with sibling-skip sentence. Shared by PIF-view, PIF-hero, RDF, SKU. Edit text via Global Prompts (identityIntro).', required: false, category: 'global-fragment' },
         { name: 'IDENTITY_WARNING', description: 'Unified block from buildIdentityWarning (src/core/llm/prompts/). 3 tiers — includes siblings-exclusion line inline when provided. Edit text via Global Prompts in LLM Config.', required: false, category: 'global-fragment' },
         { name: 'PREVIOUS_DISCOVERY', description: 'e.g. "Previous searches:\\n- URLs already checked: [\\"https://...\\"]\\n- Queries already run: [\\"logitech g502\\"]\\n" — empty on first run. Header text editable in Global Prompts (discoveryHistoryBlock).', required: false, category: 'global-fragment' },
+        { name: 'DISCOVERY_LOG_SHAPE', description: 'Basic discovery_log return-JSON shape ("urls_checked", "queries_run", "notes"). Shared by PIF-view, PIF-hero, RDF, SKU. Edit via Global Prompts (discoveryLogShape).', required: false, category: 'global-fragment' },
       ], userMessageInfo: [
         { field: 'brand', description: 'e.g. "Logitech"' },
         { field: 'model', description: 'e.g. "G502 X Plus"' },
@@ -244,8 +244,10 @@ const IMAGE_FINDER_TEMPLATES = Object.freeze({
         { name: 'MODEL', description: 'e.g. "G502 X Plus"', required: true, category: 'deterministic' },
         { name: 'VARIANT_SUFFIX', description: 'e.g. " (variant: black)" — empty when no variant', required: false, category: 'deterministic' },
         { name: 'HERO_INSTRUCTIONS', description: 'Hero search rules block — uses promptOverride setting if set, otherwise the built-in lifestyle/contextual instructions', required: true, category: 'deterministic' },
+        { name: 'IDENTITY_INTRO', description: 'Opening "IDENTITY: You are looking for the EXACT product..." line with sibling-skip sentence. Shared by PIF-view, PIF-hero, RDF, SKU. Edit text via Global Prompts (identityIntro).', required: false, category: 'global-fragment' },
         { name: 'IDENTITY_WARNING', description: 'Unified block from buildIdentityWarning (src/core/llm/prompts/). Same wording as view-search prompt. Edit text via Global Prompts in LLM Config.', required: false, category: 'global-fragment' },
         { name: 'PREVIOUS_DISCOVERY', description: 'e.g. "Previous searches:\\n- URLs already checked: [...]\\n" — empty on first run. Header text editable in Global Prompts (discoveryHistoryBlock).', required: false, category: 'global-fragment' },
+        { name: 'DISCOVERY_LOG_SHAPE', description: 'Basic discovery_log return-JSON shape ("urls_checked", "queries_run", "notes"). Shared by PIF-view, PIF-hero, RDF, SKU. Edit via Global Prompts (discoveryLogShape).', required: false, category: 'global-fragment' },
       ], userMessageInfo: [
         { field: 'brand', description: 'e.g. "Logitech"' },
         { field: 'model', description: 'e.g. "G502 X Plus"' },
@@ -257,63 +259,27 @@ const IMAGE_FINDER_TEMPLATES = Object.freeze({
   },
 });
 
-// WHY: Overlay release-date-finder with prompt_templates metadata so the
-// LLM Config GUI exposes the discovery prompt editor and its variable
-// reference panel (same pattern as color-finder + image-finder overlays).
-const RELEASE_DATE_FINDER_TEMPLATES = Object.freeze({
-  'release-date-finder': {
-    ...FINDER_PHASE_SCHEMAS['release-date-finder'],
-    prompt_templates: [
-      { promptKey: 'discovery', label: 'Discovery Prompt', storageScope: 'module', moduleId: 'releaseDateFinder', settingKey: 'discoveryPromptTemplate', defaultTemplate: RDF_DEFAULT_TEMPLATE, variables: [
-        { name: 'BRAND', description: 'e.g. "Logitech"', required: true, category: 'deterministic' },
-        { name: 'MODEL', description: 'e.g. "G502 X Plus"', required: true, category: 'deterministic' },
-        { name: 'VARIANT_DESC', description: 'e.g. the "black" color variant — or the "COD BO6" edition', required: true, category: 'deterministic' },
-        { name: 'VARIANT_SUFFIX', description: 'e.g. " (variant: black)" — empty when no variant', required: false, category: 'deterministic' },
-        { name: 'VARIANT_TYPE_WORD', description: '"color" or "edition"', required: false, category: 'deterministic' },
-        { name: 'IDENTITY_WARNING', description: 'Unified block from buildIdentityWarning (src/core/llm/prompts/). 3 tiers: easy="no known siblings" | medium="CAUTION: ..." | hard="HIGH AMBIGUITY: TRIPLE-CHECK". Includes the siblings-exclusion line when sibling models are provided. Edit text via Global Prompts in LLM Config.', required: false, category: 'global-fragment' },
-        { name: 'EVIDENCE_REQUIREMENTS', description: 'Evidence contract + URL verification block. Sourced from the Global Prompts panel (evidenceContract + evidenceVerification).', required: false, category: 'global-fragment' },
-        { name: 'VALUE_CONFIDENCE_GUIDANCE', description: 'Epistemic confidence rubric (per-source + overall). Tier is a URL-type label only and does not factor into confidence. Sourced from the Global Prompts panel (valueConfidenceRubric).', required: false, category: 'global-fragment' },
-        { name: 'PREVIOUS_DISCOVERY', description: 'Previously searched URLs + queries for this variant. Empty on first run. Header text editable in Global Prompts (discoveryHistoryBlock).', required: false, category: 'global-fragment' },
-      ], userMessageInfo: [
-        { field: 'brand', description: 'e.g. "Logitech"' },
-        { field: 'model', description: 'e.g. "G502 X Plus"' },
-        { field: 'base_model', description: 'e.g. "G502 X"' },
-        { field: 'variant_label', description: 'e.g. "black" or "COD BO6 Edition"' },
-        { field: 'variant_type', description: '"color" or "edition"' },
-      ] },
-    ],
-  },
-});
-
-// WHY: Overlay sku-finder with prompt_templates metadata so the LLM Config GUI
-// exposes the discovery prompt editor + variable manifest + per-category tabs
-// (same pattern as release-date-finder overlay). SKU mirrors RDF's variable
-// surface byte-for-byte because both are scalar variantFieldProducer modules
-// sharing the same identity / evidence / confidence / discovery contract.
-const SKU_FINDER_TEMPLATES = Object.freeze({
-  'sku-finder': {
-    ...FINDER_PHASE_SCHEMAS['sku-finder'],
-    prompt_templates: [
-      { promptKey: 'discovery', label: 'Discovery Prompt', storageScope: 'module', moduleId: 'skuFinder', settingKey: 'discoveryPromptTemplate', defaultTemplate: SKF_DEFAULT_TEMPLATE, variables: [
-        { name: 'BRAND', description: 'e.g. "Logitech"', required: true, category: 'deterministic' },
-        { name: 'MODEL', description: 'e.g. "G502 X Plus"', required: true, category: 'deterministic' },
-        { name: 'VARIANT_DESC', description: 'e.g. the "black" color variant — or the "COD BO6" edition', required: true, category: 'deterministic' },
-        { name: 'VARIANT_SUFFIX', description: 'e.g. " (variant: black)" — empty when no variant', required: false, category: 'deterministic' },
-        { name: 'VARIANT_TYPE_WORD', description: '"color" or "edition"', required: false, category: 'deterministic' },
-        { name: 'IDENTITY_WARNING', description: 'Unified block from buildIdentityWarning (src/core/llm/prompts/). 3 tiers: easy="no known siblings" | medium="CAUTION: ..." | hard="HIGH AMBIGUITY: TRIPLE-CHECK". Includes the siblings-exclusion line when sibling models are provided. Edit text via Global Prompts in LLM Config.', required: false, category: 'global-fragment' },
-        { name: 'EVIDENCE_REQUIREMENTS', description: 'Evidence contract + URL verification block. Sourced from the Global Prompts panel (evidenceContract + evidenceVerification).', required: false, category: 'global-fragment' },
-        { name: 'VALUE_CONFIDENCE_GUIDANCE', description: 'Epistemic confidence rubric (per-source + overall). Tier is a URL-type label only and does not factor into confidence. Sourced from the Global Prompts panel (valueConfidenceRubric).', required: false, category: 'global-fragment' },
-        { name: 'PREVIOUS_DISCOVERY', description: 'Previously searched URLs + queries for this variant. Empty on first run. Header text editable in Global Prompts (discoveryHistoryBlock).', required: false, category: 'global-fragment' },
-      ], userMessageInfo: [
-        { field: 'brand', description: 'e.g. "Logitech"' },
-        { field: 'model', description: 'e.g. "G502 X Plus"' },
-        { field: 'base_model', description: 'e.g. "G502 X"' },
-        { field: 'variant_label', description: 'e.g. "black" or "COD BO6 Edition"' },
-        { field: 'variant_type', description: '"color" or "edition"' },
-      ] },
-    ],
-  },
-});
+// WHY: O(1) overlay for every scalar finder (variantFieldProducer modules).
+// A new scalar finder (e.g. priceFinder) declares `defaultTemplateExport` in
+// its FINDER_MODULES entry and codegen emits FINDER_SCALAR_DEFAULT_TEMPLATES.
+// The prompt_templates array (9 variables + 5 user-message fields) is derived
+// from the shared buildScalarFinderPromptTemplates contract — zero per-finder
+// duplication here. RDF + SKU used to have 30-line hand-written blocks; now
+// they flow through this single loop.
+//
+// Not applicable to CEF (variantGenerator), PIF (variantArtifactProducer), or
+// the carousel image-evaluator — those have bespoke multi-prompt overlays.
+const SCALAR_FINDER_OVERLAYS = Object.freeze(
+  Object.fromEntries(
+    Object.entries(FINDER_SCALAR_DEFAULT_TEMPLATES).map(([phaseId, { moduleId, defaultTemplate }]) => [
+      phaseId,
+      {
+        ...FINDER_PHASE_SCHEMAS[phaseId],
+        prompt_templates: buildScalarFinderPromptTemplates({ moduleId, defaultTemplate }),
+      },
+    ]),
+  ),
+);
 
 export const PHASE_SCHEMA_REGISTRY = Object.freeze({
   ...NON_FINDER_PHASES,
@@ -321,6 +287,5 @@ export const PHASE_SCHEMA_REGISTRY = Object.freeze({
   ...COLOR_FINDER_IDENTITY_CHECK,
   ...IMAGE_FINDER_TEMPLATES,
   ...CAROUSEL_BUILDER_PHASE,
-  ...RELEASE_DATE_FINDER_TEMPLATES,
-  ...SKU_FINDER_TEMPLATES,
+  ...SCALAR_FINDER_OVERLAYS,
 });

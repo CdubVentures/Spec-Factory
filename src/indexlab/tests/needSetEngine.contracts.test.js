@@ -32,12 +32,12 @@ describe('Phase 01 â€” Identity Context in Debug', () => {
     // Same field, same provenance, different identity statuses should produce same state
     const locked = computeNeedSet(makeBaseInput({
       fieldOrder: ['weight'],
-      fieldRules: { weight: { required_level: 'required' } },
+      fieldRules: { weight: { required_level: 'mandatory' } },
       identityContext: makeIdentityLocked()
     }));
     const unlocked = computeNeedSet(makeBaseInput({
       fieldOrder: ['weight'],
-      fieldRules: { weight: { required_level: 'required' } },
+      fieldRules: { weight: { required_level: 'mandatory' } },
       identityContext: makeIdentityUnlocked()
     }));
     const lockedRow = locked.rows.find((r) => r.field_key === 'weight');
@@ -72,10 +72,10 @@ describe('Phase 01 â€” NeedSet Event Payload Shape (via runtimeBridge)', ()
       makeNeedsetComputedEvent(runId, {
         total_fields: 60,
         fields: [
-          { field_key: 'weight', required_level: 'required', state: 'missing', need_score: 10 }
+          { field_key: 'weight', required_level: 'mandatory', state: 'missing', need_score: 10 }
         ],
         rows: [
-          { field_key: 'weight', required_level: 'required', priority_bucket: 'core', state: 'missing', bundle_id: '' }
+          { field_key: 'weight', required_level: 'mandatory', priority_bucket: 'core', state: 'missing', bundle_id: '' }
         ],
         focus_fields: ['weight'],
         bundles: [],

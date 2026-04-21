@@ -19,7 +19,7 @@ export async function createEngineFixtureRoot() {
     category: 'mouse',
     fields: {
       weight: {
-        required_level: 'required',
+        required_level: 'mandatory',
         difficulty: 'easy',
         availability: 'always',
         contract: {
@@ -33,7 +33,7 @@ export async function createEngineFixtureRoot() {
         }
       },
       connection: {
-        required_level: 'required',
+        required_level: 'mandatory',
         difficulty: 'easy',
         availability: 'always',
         enum_policy: 'closed',
@@ -43,7 +43,7 @@ export async function createEngineFixtureRoot() {
         }
       },
       battery_hours: {
-        required_level: 'expected',
+        required_level: 'non_mandatory',
         difficulty: 'medium',
         availability: 'sometimes',
         contract: {
@@ -53,7 +53,7 @@ export async function createEngineFixtureRoot() {
         }
       },
       sensor: {
-        required_level: 'critical',
+        required_level: 'mandatory',
         difficulty: 'easy',
         availability: 'always',
         component_db_ref: 'sensor',
@@ -171,63 +171,63 @@ export async function createAdvancedEngineFixtureRoot() {
     category: 'mouse',
     fields: {
       sensor: {
-        required_level: 'critical',
+        required_level: 'mandatory',
         difficulty: 'easy',
         availability: 'always',
         component_db_ref: 'sensor',
         contract: { type: 'component_ref', shape: 'scalar' }
       },
       dpi: {
-        required_level: 'required',
+        required_level: 'mandatory',
         difficulty: 'easy',
         availability: 'always',
         contract: { type: 'number', shape: 'scalar', range: { min: 100, max: 50000 } }
       },
       spec_url: {
-        required_level: 'expected',
+        required_level: 'non_mandatory',
         difficulty: 'easy',
         availability: 'sometimes',
         contract: { type: 'url', shape: 'scalar' }
       },
       coating: {
-        required_level: 'optional',
+        required_level: 'non_mandatory',
         difficulty: 'medium',
         availability: 'sometimes',
         enum_policy: 'open',
         contract: { type: 'string', shape: 'scalar' }
       },
       lngth: {
-        required_level: 'expected',
+        required_level: 'non_mandatory',
         difficulty: 'easy',
         availability: 'always',
         contract: { type: 'number', shape: 'scalar', unit: 'mm' }
       },
       width: {
-        required_level: 'expected',
+        required_level: 'non_mandatory',
         difficulty: 'easy',
         availability: 'always',
         contract: { type: 'number', shape: 'scalar', unit: 'mm' }
       },
       height: {
-        required_level: 'expected',
+        required_level: 'non_mandatory',
         difficulty: 'easy',
         availability: 'always',
         contract: { type: 'number', shape: 'scalar', unit: 'mm' }
       },
       connection: {
-        required_level: 'required',
+        required_level: 'mandatory',
         difficulty: 'easy',
         availability: 'always',
         contract: { type: 'string', shape: 'scalar' }
       },
       battery_hours: {
-        required_level: 'expected',
+        required_level: 'non_mandatory',
         difficulty: 'medium',
         availability: 'sometimes',
         contract: { type: 'number', shape: 'scalar', range: { min: 1, max: 400 } }
       },
       polling_rates: {
-        required_level: 'optional',
+        required_level: 'non_mandatory',
         difficulty: 'easy',
         availability: 'sometimes',
         contract: {

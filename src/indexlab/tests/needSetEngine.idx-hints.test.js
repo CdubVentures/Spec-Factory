@@ -17,7 +17,7 @@ describe('Phase 01 â€” Logic Box 1: idx hint normalization', () => {
       fieldOrder: ['weight'],
       fieldRules: {
         weight: {
-          required_level: 'required',
+          required_level: 'mandatory',
           search_hints: { query_terms: ['  Weight ', 'GRAMS', 'Mouse Weight'] }
         }
       }
@@ -31,7 +31,7 @@ describe('Phase 01 â€” Logic Box 1: idx hint normalization', () => {
       fieldOrder: ['weight'],
       fieldRules: {
         weight: {
-          required_level: 'required',
+          required_level: 'mandatory',
           search_hints: { query_terms: ['weight', 'Weight', 'WEIGHT', ' weight '] }
         }
       }
@@ -45,7 +45,7 @@ describe('Phase 01 â€” Logic Box 1: idx hint normalization', () => {
       fieldOrder: ['weight'],
       fieldRules: {
         weight: {
-          required_level: 'required',
+          required_level: 'mandatory',
           search_hints: { domain_hints: ['https://rtings.com/mouse/reviews', 'HTTP://LOGITECHG.COM', 'sensor.fyi'] }
         }
       }
@@ -59,7 +59,7 @@ describe('Phase 01 â€” Logic Box 1: idx hint normalization', () => {
       fieldOrder: ['weight'],
       fieldRules: {
         weight: {
-          required_level: 'required',
+          required_level: 'mandatory',
           search_hints: { domain_hints: ['rtings.com', 'https://rtings.com', 'RTINGS.COM'] }
         }
       }
@@ -73,7 +73,7 @@ describe('Phase 01 â€” Logic Box 1: idx hint normalization', () => {
       fieldOrder: ['weight'],
       fieldRules: {
         weight: {
-          required_level: 'required',
+          required_level: 'mandatory',
           search_hints: { content_types: ['spec_sheet', 'product_page', 'spec_sheet', 'product_page'] }
         }
       }
@@ -87,7 +87,7 @@ describe('Phase 01 â€” Logic Box 1: idx hint normalization', () => {
       fieldOrder: ['weight'],
       fieldRules: {
         weight: {
-          required_level: 'required',
+          required_level: 'mandatory',
           search_hints: { content_types: [' Spec_Sheet ', 'PRODUCT_PAGE'] }
         }
       }
@@ -101,7 +101,7 @@ describe('Phase 01 â€” Logic Box 1: idx hint normalization', () => {
       fieldOrder: ['weight'],
       fieldRules: {
         weight: {
-          required_level: 'required',
+          required_level: 'mandatory',
           search_hints: { query_terms: ['weight', '', '  ', null, 'grams'] }
         }
       }

@@ -11,7 +11,7 @@ function compileTestField(overrides = {}) {
     category: 'mouse',
     fields: {
       test_field: {
-        required_level: 'expected',
+        required_level: 'non_mandatory',
         contract: { type: 'number', shape: 'scalar' },
         ...overrides,
       },

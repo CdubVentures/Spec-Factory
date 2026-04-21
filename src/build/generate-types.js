@@ -100,11 +100,9 @@ function isRequiredField(rule = {}) {
   const requiredLevel = normalizeText(
     rule.required_level ||
     (isObject(rule.priority) ? rule.priority.required_level : '') ||
-    'optional'
+    'non_mandatory'
   ).toLowerCase();
-  return requiredLevel === 'required'
-    || requiredLevel === 'critical'
-    || requiredLevel === 'identity';
+  return requiredLevel === 'mandatory';
 }
 
 function buildSchemaCode({

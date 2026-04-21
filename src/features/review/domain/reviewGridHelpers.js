@@ -126,7 +126,7 @@ export function normalizeFieldContract(rule = {}) {
   return {
     type: String(contract.type || 'string'),
     shape: String(contract.shape || 'scalar').trim().toLowerCase() || 'scalar',
-    required: level === 'required' || level === 'critical' || level === 'identity',
+    required: level === 'mandatory',
     units: contract.unit || null,
     enum_name: String(rule.enum_name || '').trim() || null,
     component_type: comp?.type || null,

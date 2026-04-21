@@ -88,7 +88,7 @@ describe('Phase 01 â€” Field State Derivation', () => {
   it('covered field â†’ excluded from rows', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['weight'],
-      fieldRules: { weight: { required_level: 'required' } },
+      fieldRules: { weight: { required_level: 'mandatory' } },
       provenance: {
         weight: {
           value: '58g', confidence: 0.95, pass_target: 0.8, meets_pass_target: true,
@@ -101,51 +101,21 @@ describe('Phase 01 â€” Field State Derivation', () => {
   });
 });
 
-describe('Phase 01 â€” Priority Bucket Mapping', () => {
-  it('identity required_level â†’ core bucket', () => {
-    const result = computeNeedSet(makeBaseInput({
-      fieldOrder: ['brand'],
-      fieldRules: { brand: { required_level: 'identity' } }
-    }));
-    const row = result.rows.find((r) => r.field_key === 'brand');
-    assert.ok(row);
-    assert.equal(row.priority_bucket, 'core');
-  });
-
-  it('critical required_level â†’ core bucket', () => {
+describe('Phase 01 — Priority Bucket Mapping', () => {
+  it('mandatory required_level → core bucket', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['sensor'],
-      fieldRules: { sensor: { required_level: 'critical' } }
+      fieldRules: { sensor: { required_level: 'mandatory' } }
     }));
     const row = result.rows.find((r) => r.field_key === 'sensor');
     assert.ok(row);
     assert.equal(row.priority_bucket, 'core');
   });
 
-  it('required required_level â†’ core bucket', () => {
-    const result = computeNeedSet(makeBaseInput({
-      fieldOrder: ['weight'],
-      fieldRules: { weight: { required_level: 'required' } }
-    }));
-    const row = result.rows.find((r) => r.field_key === 'weight');
-    assert.ok(row);
-    assert.equal(row.priority_bucket, 'core');
-  });
-
-  it('expected required_level â†’ secondary bucket', () => {
-    const result = computeNeedSet(makeBaseInput({
-      fieldOrder: ['polling_rate'],
-      fieldRules: { polling_rate: { required_level: 'expected' } }
-    }));
-    const row = result.rows.find((r) => r.field_key === 'polling_rate');
-    assert.ok(row);
-    assert.equal(row.priority_bucket, 'secondary');
-  });
-
-  it('optional required_level â†’ optional bucket', () => {
+  it('non_mandatory required_level → optional bucket', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['rgb'],
-      fieldRules: { rgb: { required_level: 'optional' } }
+      fieldRules: { rgb: { required_level: 'non_mandatory' } }
     }));
     const row = result.rows.find((r) => r.field_key === 'rgb');
     assert.ok(row);
@@ -159,11 +129,11 @@ describe('Phase 01 â€” Bundle Formation', () => {
       fieldOrder: ['weight', 'dpi_max'],
       fieldRules: {
         weight: {
-          required_level: 'required',
+          required_level: 'mandatory',
           search_hints: { query_terms: ['weight'], content_types: ['spec_sheet'], domain_hints: [] }
         },
         dpi_max: {
-          required_level: 'required',
+          required_level: 'mandatory',
           search_hints: { query_terms: ['dpi'], content_types: ['spec_sheet'], domain_hints: [] }
         }
       }
@@ -179,11 +149,11 @@ describe('Phase 01 â€” Bundle Formation', () => {
       fieldOrder: ['sensor', 'rgb'],
       fieldRules: {
         sensor: {
-          required_level: 'critical',
+          required_level: 'mandatory',
           search_hints: { query_terms: ['sensor'], content_types: ['spec_sheet'], domain_hints: [] }
         },
         rgb: {
-          required_level: 'optional',
+          required_level: 'non_mandatory',
           search_hints: { query_terms: ['rgb'], content_types: ['spec_sheet'], domain_hints: [] }
         }
       }
@@ -344,7 +314,7 @@ describe('Phase 01 â€” Edge Cases', () => {
   it('no search hints â€” fields still get rows and bundles', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['weight'],
-      fieldRules: { weight: { required_level: 'required' } }
+      fieldRules: { weight: { required_level: 'mandatory' } }
     }));
     assert.ok(result.rows.length >= 1);
     assert.ok(result.bundles.length >= 1);
@@ -370,8 +340,8 @@ describe('Phase 01 â€” blockers.search_exhausted derivation', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['weight', 'sensor'],
       fieldRules: {
-        weight: { required_level: 'required', search_hints: {} },
-        sensor: { required_level: 'critical', search_hints: {} }
+        weight: { required_level: 'mandatory', search_hints: {} },
+        sensor: { required_level: 'mandatory', search_hints: {} }
       },
       round: 3,
       previousFieldHistories: {
@@ -405,7 +375,7 @@ describe('Phase 01 â€” blockers.search_exhausted derivation', () => {
   it('search_exhausted = 0 when field has value despite many attempts', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['weight'],
-      fieldRules: { weight: { required_level: 'required', search_hints: {} } },
+      fieldRules: { weight: { required_level: 'mandatory', search_hints: {} } },
       provenance: { weight: { value: '58g', confidence: 0.95, pass_target: 0.8 } },
       round: 3,
       previousFieldHistories: {

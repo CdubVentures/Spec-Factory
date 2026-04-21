@@ -258,7 +258,7 @@ function deriveRequiredFieldsFromFieldRules(fieldRulesPayload) {
       continue;
     }
     const requiredLevel = ruleRequiredLevel(rawRule);
-    if (requiredLevel === 'required' || requiredLevel === 'critical') {
+    if (requiredLevel === 'mandatory') {
       out.push(`fields.${field}`);
     }
   }
@@ -296,24 +296,13 @@ function deriveSchemaFromFieldRules(category, fieldRulesPayload, uiFieldCatalog)
     });
 
   const fieldOrder = fieldEntries.map((row) => row.field);
-  const critical = [];
-  const expectedEasy = [];
-  const expectedSometimes = [];
+  const mandatory = [];
   const deep = [];
 
   for (const { field, rule } of fieldEntries) {
     const requiredLevel = ruleRequiredLevel(rule);
-    const difficulty = ruleDifficulty(rule);
-    const availability = ruleAvailability(rule);
-    if (requiredLevel === 'critical') {
-      critical.push(field);
-    }
-    if (requiredLevel === 'required' || requiredLevel === 'critical' || requiredLevel === 'expected') {
-      if (difficulty === 'easy' || availability === 'expected') {
-        expectedEasy.push(field);
-      } else {
-        expectedSometimes.push(field);
-      }
+    if (requiredLevel === 'mandatory') {
+      mandatory.push(field);
     } else {
       deep.push(field);
     }
@@ -323,9 +312,9 @@ function deriveSchemaFromFieldRules(category, fieldRulesPayload, uiFieldCatalog)
     ...defaultSchema(category),
     category,
     field_order: fieldOrder,
-    critical_fields: [...new Set(critical)],
-    expected_easy_fields: [...new Set(expectedEasy)],
-    expected_sometimes_fields: [...new Set(expectedSometimes)],
+    critical_fields: [...new Set(mandatory)],
+    expected_easy_fields: [],
+    expected_sometimes_fields: [],
     deep_fields: [...new Set(deep)]
   };
 }

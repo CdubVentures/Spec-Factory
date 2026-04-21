@@ -31,7 +31,6 @@ export function makeFocusGroup(overrides = {}) {
     search_exhausted_field_keys: [],
     search_exhausted_count: 0,
     core_unresolved_count: 2,
-    secondary_unresolved_count: 0,
     optional_unresolved_count: 0,
     no_value_attempts: 0,
     duplicate_attempts_suppressed: 0,
@@ -110,9 +109,9 @@ export function makeSearchPlanningContext(overrides = {}) {
     group_catalog: makeGroupCatalog(),
     focus_groups: [
       makeFocusGroup(),
-      makeFocusGroup({ key: 'connectivity', label: 'Connectivity', desc: 'Connection and wireless specs', source_target: 'product_page', host_class: 'manufacturer', field_keys: ['connection'], unresolved_field_keys: ['connection'], core_unresolved_count: 0, secondary_unresolved_count: 1, priority: 'secondary', phase: 'next' }),
+      makeFocusGroup({ key: 'connectivity', label: 'Connectivity', desc: 'Connection and wireless specs', source_target: 'product_page', host_class: 'manufacturer', field_keys: ['connection'], unresolved_field_keys: ['connection'], core_unresolved_count: 0, optional_unresolved_count: 1, priority: 'optional', phase: 'next' }),
     ],
-    field_priority_map: { sensor: 'critical', dpi: 'required', connection: 'expected' },
+    field_priority_map: { sensor: 'mandatory', dpi: 'mandatory', connection: 'non_mandatory' },
     learning: { query_index_hits: {}, dead_domains: ['spam.com'], dead_query_hashes: ['abc123'] },
     previous_round_fields: null,
     ...overrides

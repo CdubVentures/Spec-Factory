@@ -323,7 +323,7 @@ export function makeNeedsetComputedEvent(runId, overrides = {}) {
     total_fields: 60,
     needset_size: 25,
     identity: { state: 'locked', confidence: 0.95, manufacturer: 'TestBrand', model: 'TestModel' },
-    fields: [{ field_key: 'weight', state: 'missing', need_score: 0.85, required_level: 'required' }],
+    fields: [{ field_key: 'weight', state: 'missing', need_score: 0.85, required_level: 'mandatory' }],
     summary: { total: 60, resolved: 35, core_unresolved: 15, secondary_unresolved: 8, optional_unresolved: 2, conflicts: 2 },
     blockers: { missing: 15, weak: 8, conflict: 2 },
     ...overrides

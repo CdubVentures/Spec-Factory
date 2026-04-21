@@ -53,17 +53,15 @@ export function shardAliases(aliases, maxTokensPerShard = 8) {
 
 export { availabilityRank, difficultyRank, requiredLevelRank, deriveQueryFamilies };
 
-const NEED_SCORE_WEIGHTS = { identity: 100, critical: 80, required: 60, expected: 30, optional: 10 };
+const NEED_SCORE_WEIGHTS = { mandatory: 100, non_mandatory: 30 };
 
 import { isObject, clamp01 } from '../../../../shared/primitives.js';
 import { toFloat } from '../../../../shared/valueNormalizers.js';
 
 function normalizeRequiredLevel(value) {
   const token = String(value || '').trim().toLowerCase();
-  if (token === 'identity' || token === 'critical' || token === 'required' || token === 'expected') {
-    return token;
-  }
-  return 'optional';
+  if (token === 'mandatory') return 'mandatory';
+  return 'non_mandatory';
 }
 
 const hasKnownFieldValue = hasKnownValue;
@@ -623,7 +621,7 @@ export function computeNeedSet({
 
   // --- Planner seed (NeedSet assessment) ---
   const missingCriticalFields = fieldAssessments
-    .filter((f) => (f.required_level === 'identity' || f.required_level === 'critical') && f.state !== 'accepted')
+    .filter((f) => f.required_level === 'mandatory' && f.state !== 'accepted')
     .map((f) => f.field_key);
 
   const unresolvedFields = fieldAssessments

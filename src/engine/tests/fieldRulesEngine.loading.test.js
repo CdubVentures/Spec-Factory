@@ -18,8 +18,7 @@ test('FieldRulesEngine.create loads artifacts and exposes metadata selectors', a
     });
     const keys = engine.getAllFieldKeys();
     assert.deepEqual(keys.sort(), ['battery_hours', 'connection', 'sensor', 'weight']);
-    assert.equal(engine.getRequiredFields().length >= 2, true);
-    assert.equal(engine.getCriticalFields().length, 1);
+    assert.equal(engine.getMandatoryFields().length >= 2, true);
     assert.equal(engine.getFieldsByGroup('connectivity').length, 2);
   } finally {
     await fs.rm(fixture.root, { recursive: true, force: true });

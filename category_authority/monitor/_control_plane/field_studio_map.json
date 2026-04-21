@@ -11,10 +11,9 @@
       "header_row": 1,
       "mode": "scratch",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 5,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "roles": {
         "aliases": [],
@@ -99,10 +98,9 @@
       "mode": "scratch",
       "normalize": "uppercase_first",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -129,10 +127,9 @@
       "mode": "scratch",
       "normalize": "uppercase_first",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -164,10 +161,9 @@
       "mode": "scratch",
       "normalize": "uppercase_first",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -198,10 +194,9 @@
       "mode": "scratch",
       "normalize": "uppercase_first",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -228,10 +223,9 @@
       "mode": "scratch",
       "normalize": "uppercase_first",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -257,10 +251,9 @@
       "mode": "scratch",
       "normalize": "lowercase",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -291,10 +284,9 @@
       "mode": "scratch",
       "normalize": "lowercase",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 1,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -321,10 +313,9 @@
       "mode": "scratch",
       "normalize": "as_is",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 1,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -357,10 +348,9 @@
       "mode": "scratch",
       "normalize": "as_is",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -386,10 +376,9 @@
       "mode": "scratch",
       "normalize": "uppercase",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "hard",
-        "effort": 6,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -415,10 +404,9 @@
       "mode": "scratch",
       "normalize": "as_is",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -443,10 +431,9 @@
       "mode": "scratch",
       "normalize": "uppercase_first",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -469,10 +456,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -498,10 +484,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -528,10 +513,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -551,10 +535,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -583,10 +566,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -607,10 +589,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -631,10 +612,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -661,10 +641,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -687,10 +666,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -711,10 +689,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -737,10 +714,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -766,10 +742,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -790,10 +765,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -814,10 +788,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -838,10 +811,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -865,10 +837,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -889,10 +860,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -913,10 +883,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -937,10 +906,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -964,10 +932,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -996,10 +963,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1029,10 +995,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1056,10 +1021,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1081,10 +1045,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1108,10 +1071,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1149,10 +1111,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1191,10 +1152,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1221,10 +1181,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1247,10 +1206,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1278,10 +1236,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1302,10 +1259,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1326,10 +1282,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1353,10 +1308,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1377,10 +1331,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1405,10 +1358,9 @@
       "mode": "scratch",
       "normalize": "as_is",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1435,10 +1387,9 @@
       "mode": "scratch",
       "normalize": "as_is",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1461,10 +1412,9 @@
       "mode": "scratch",
       "normalize": "as_is",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1489,8 +1439,7 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1515,8 +1464,7 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1542,8 +1490,7 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1570,8 +1517,7 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1596,8 +1542,7 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1619,10 +1564,9 @@
       "mode": "scratch",
       "normalize": "as_is",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1647,8 +1591,7 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1673,8 +1616,7 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1696,10 +1638,9 @@
       "mode": "scratch",
       "normalize": "uppercase_first",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1721,10 +1662,9 @@
       "mode": "scratch",
       "normalize": "uppercase_first",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1748,8 +1688,7 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1845,10 +1784,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1929,7 +1867,7 @@
         "FreeSync",
         "G-Sync"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "adaptive_sync",
       "component": null,
       "constraints": [],
@@ -1942,7 +1880,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Adaptive Sync",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -1984,12 +1921,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -2046,7 +1982,7 @@
       "aliases": [
         "aspect ratio"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "aspect_ratio",
       "component": null,
       "constraints": [],
@@ -2059,7 +1995,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Aspect Ratio",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -2101,12 +2036,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -2175,7 +2109,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Audio Output",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -2219,10 +2152,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -2277,7 +2209,7 @@
         "backlight",
         "illumination"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "backlight_type",
       "component": null,
       "constraints": [],
@@ -2290,7 +2222,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Backlight Type",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -2332,12 +2263,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -2393,7 +2323,7 @@
     },
     "base_model": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "base_model",
       "component": null,
       "constraints": [],
@@ -2406,7 +2336,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Base Model",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -2448,12 +2377,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "identity"
+        "required_level": "mandatory"
       },
-      "required_level": "identity",
+      "required_level": "mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -2526,7 +2454,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Black Uniformity",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -2572,10 +2499,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -2636,7 +2562,7 @@
     },
     "brand": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "brand",
       "component": null,
       "constraints": [],
@@ -2649,7 +2575,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Brand",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -2691,12 +2616,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "identity"
+        "required_level": "mandatory"
       },
-      "required_level": "identity",
+      "required_level": "mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -2771,7 +2695,6 @@
       "data_type": "number",
       "difficulty": "medium",
       "display_name": "Peak HDR Brightness",
-      "effort": 5,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -2817,10 +2740,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 5,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -2876,7 +2798,7 @@
         "SDR brightness",
         "typical brightness"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "brightness_sdr",
       "component": null,
       "constraints": [],
@@ -2897,7 +2819,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Brightness (SDR)",
-      "effort": 4,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -2941,12 +2862,11 @@
         "unit": "nits"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -3018,7 +2938,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Cable Length",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -3064,10 +2983,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -3133,7 +3051,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Cable Type",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -3177,10 +3094,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -3251,7 +3167,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Cables Included",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -3305,10 +3220,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -3359,7 +3273,7 @@
     },
     "category": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "category",
       "component": null,
       "constraints": [],
@@ -3372,7 +3286,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Category",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -3414,12 +3327,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "identity"
+        "required_level": "mandatory"
       },
-      "required_level": "identity",
+      "required_level": "mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -3486,7 +3398,6 @@
       "data_type": "string",
       "difficulty": "medium",
       "display_name": "Color",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -3540,10 +3451,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -3619,7 +3529,6 @@
       "data_type": "integer",
       "difficulty": "hard",
       "display_name": "Color Accuracy (ΔE)",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -3663,10 +3572,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 6,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "2dp",
       "search_hints": {
         "content_types": [
@@ -3741,7 +3649,6 @@
       "data_type": "number",
       "difficulty": "medium",
       "display_name": "Adobe RGB Coverage",
-      "effort": 4,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -3787,10 +3694,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -3843,7 +3749,7 @@
         "DCI-P3 coverage",
         "P3 gamut"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "color_gamut_dci_p3",
       "component": null,
       "constraints": [],
@@ -3864,7 +3770,6 @@
       "data_type": "number",
       "difficulty": "medium",
       "display_name": "DCI-P3 Coverage",
-      "effort": 4,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -3908,12 +3813,11 @@
         "unit": "%"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -3967,7 +3871,7 @@
         "sRGB coverage",
         "sRGB gamut"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "color_gamut_srgb",
       "component": null,
       "constraints": [],
@@ -3988,7 +3892,6 @@
       "data_type": "number",
       "difficulty": "medium",
       "display_name": "sRGB Coverage",
-      "effort": 4,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -4032,12 +3935,11 @@
         "unit": "%"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -4146,10 +4048,9 @@
         }
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "search_hints": {
         "content_types": [
@@ -4264,7 +4165,7 @@
         "static contrast",
         "contrast"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "contrast_ratio",
       "component": null,
       "constraints": [],
@@ -4277,7 +4178,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Contrast Ratio",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -4319,12 +4219,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -4392,7 +4291,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Dynamic Contrast Ratio",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -4436,10 +4334,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -4505,7 +4402,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Crosshair Overlay",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -4549,10 +4445,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -4618,7 +4513,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Curve Radius",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -4662,10 +4556,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -4719,7 +4612,7 @@
       "aliases": [
         "curved display"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "curved",
       "component": null,
       "constraints": [],
@@ -4732,7 +4625,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Curved",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -4774,12 +4666,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -4846,7 +4737,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Daisy Chain (DP Out)",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -4890,10 +4780,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -4946,7 +4835,7 @@
       "aliases": [
         "thickness"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "depth",
       "component": null,
       "constraints": [],
@@ -4967,7 +4856,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Depth",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -5011,12 +4899,11 @@
         "unit": "mm"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -5082,7 +4969,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Discontinued",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -5126,10 +5012,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -5182,7 +5067,7 @@
         "DSC",
         "Display Stream Compression"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "display_stream_compression",
       "component": null,
       "constraints": [],
@@ -5195,7 +5080,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Display Stream Compression",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -5237,12 +5121,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -5298,7 +5181,7 @@
         "DP",
         "DisplayPort ports"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "displayport_ports",
       "component": null,
       "constraints": [],
@@ -5311,7 +5194,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "DisplayPort",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -5353,12 +5235,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -5415,7 +5296,7 @@
         "DP version",
         "DisplayPort revision"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "displayport_version",
       "component": null,
       "constraints": [],
@@ -5428,7 +5309,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "DisplayPort Version",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -5470,12 +5350,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -5565,8 +5444,7 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
       "search_hints": {
         "content_types": [
@@ -5606,7 +5484,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Energy Rating",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -5650,10 +5527,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -5721,7 +5597,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Ethernet / RJ45",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -5765,10 +5640,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -5823,7 +5697,7 @@
         "factory calibrated",
         "pre-calibrated"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "factory_calibrated",
       "component": null,
       "constraints": [],
@@ -5836,7 +5710,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Factory Calibrated",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -5878,12 +5751,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -5936,7 +5808,7 @@
         "flicker free",
         "flicker-free"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "flicker_free",
       "component": null,
       "constraints": [],
@@ -5949,7 +5821,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Flicker-Free",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -5991,12 +5862,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -6073,7 +5943,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Flicker Frequency",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -6119,10 +5988,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -6188,7 +6056,7 @@
         "dithering",
         "frame rate control"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "frc",
       "component": null,
       "constraints": [],
@@ -6201,7 +6069,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "FRC (Dithering)",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -6243,12 +6110,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -6314,7 +6180,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Gradient Handling",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -6358,10 +6223,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -6446,7 +6310,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Gray Uniformity (50%)",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -6492,10 +6355,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -6556,7 +6418,7 @@
     },
     "gtin": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "gtin",
       "component": null,
       "constraints": [],
@@ -6569,7 +6431,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "GTIN / UPC",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -6611,12 +6472,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "identity"
+        "required_level": "mandatory"
       },
-      "required_level": "identity",
+      "required_level": "mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -6668,7 +6528,7 @@
         "HDMI",
         "HDMI ports"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "hdmi_ports",
       "component": null,
       "constraints": [],
@@ -6681,7 +6541,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "HDMI Ports",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -6723,12 +6582,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -6785,7 +6643,7 @@
         "HDMI specification",
         "HDMI revision"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "hdmi_version",
       "component": null,
       "constraints": [],
@@ -6798,7 +6656,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "HDMI Version",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -6840,12 +6697,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -6902,7 +6758,7 @@
         "HDR support",
         "HDR certification"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "hdr_support",
       "component": null,
       "constraints": [],
@@ -6918,7 +6774,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "HDR Support",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -6970,12 +6825,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -7035,7 +6889,7 @@
         "audio out",
         "3.5mm"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "headphone_jack",
       "component": null,
       "constraints": [],
@@ -7048,7 +6902,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Headphone Jack",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -7090,12 +6943,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -7149,7 +7001,7 @@
         "display height",
         "monitor height"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "height",
       "component": null,
       "constraints": [],
@@ -7170,7 +7022,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Height",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -7214,12 +7065,11 @@
         "unit": "mm"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -7273,7 +7123,7 @@
         "height adjustment",
         "height adjustable"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "height_adjustment",
       "component": null,
       "constraints": [],
@@ -7286,7 +7136,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Height Adjustment",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -7328,12 +7177,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -7388,7 +7236,7 @@
       "aliases": [
         "height with stand"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "height_with_stand",
       "component": null,
       "constraints": [],
@@ -7409,7 +7257,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Height (With Stand)",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -7453,12 +7300,11 @@
         "unit": "mm"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -7533,7 +7379,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Horizontal Viewing Angle",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -7579,10 +7424,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -7667,7 +7511,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Input Lag",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -7713,10 +7556,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 6,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -7792,7 +7634,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Input Lag (120 Hz)",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -7838,10 +7679,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -7927,7 +7767,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Input Lag (60 Hz)",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -7973,10 +7812,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -8062,7 +7900,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Input Lag (Max Refresh)",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -8108,10 +7945,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -8189,7 +8025,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "KVM Switch",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -8233,10 +8068,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -8311,7 +8145,6 @@
       "data_type": "integer",
       "difficulty": "medium",
       "display_name": "Local Dimming Zones",
-      "effort": 4,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -8355,10 +8188,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -8413,7 +8245,7 @@
         "eye care",
         "blue light filter"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "low_blue_light",
       "component": null,
       "constraints": [],
@@ -8426,7 +8258,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Low Blue Light",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -8468,12 +8299,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -8540,7 +8370,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "macOS Compatibility",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -8584,10 +8413,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -8663,7 +8491,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Material",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -8707,10 +8534,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -8765,7 +8591,7 @@
         "max refresh rate displayport",
         "DP max refresh"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "max_refresh_rate_displayport",
       "component": null,
       "constraints": [],
@@ -8786,7 +8612,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Max Refresh Rate (DisplayPort)",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -8830,12 +8655,11 @@
         "unit": "Hz"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -8903,7 +8727,7 @@
         "max refresh rate hdmi",
         "HDMI max Hz"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "max_refresh_rate_hdmi",
       "component": null,
       "constraints": [],
@@ -8924,7 +8748,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Max Refresh Rate (HDMI)",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -8968,12 +8791,11 @@
         "unit": "Hz"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -9054,7 +8876,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Microphone",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -9098,10 +8919,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -9153,7 +8973,7 @@
     },
     "model": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "model",
       "component": null,
       "constraints": [],
@@ -9166,7 +8986,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Model",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -9208,12 +9027,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "identity"
+        "required_level": "mandatory"
       },
-      "required_level": "identity",
+      "required_level": "mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -9281,7 +9099,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Motion Blur Reduction",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -9325,10 +9142,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -9382,7 +9198,7 @@
     },
     "mpn": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "mpn",
       "component": null,
       "constraints": [],
@@ -9395,7 +9211,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "MPN",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -9437,12 +9252,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "identity"
+        "required_level": "mandatory"
       },
-      "required_level": "identity",
+      "required_level": "mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -9507,7 +9321,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Native Colors",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -9552,10 +9365,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "spec_sheet",
@@ -9621,7 +9433,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "OSD Control",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -9665,10 +9476,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -9721,7 +9531,7 @@
       "aliases": [
         "response time overdrive"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "overdrive",
       "component": null,
       "constraints": [],
@@ -9734,7 +9544,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Overdrive",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -9776,12 +9585,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -9857,7 +9665,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Overshoot (120 Hz)",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -9903,10 +9710,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -9991,7 +9797,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Overshoot (60 Hz)",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -10037,10 +9842,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -10125,7 +9929,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Overshoot (Max Refresh)",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -10171,10 +9974,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -10240,7 +10042,7 @@
         "color depth",
         "panel bit depth"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "panel_bit_depth",
       "component": null,
       "constraints": [],
@@ -10253,7 +10055,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Panel Bit Depth",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -10295,12 +10096,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -10356,7 +10156,7 @@
         "screen coating",
         "surface treatment"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "panel_coating",
       "component": null,
       "constraints": [],
@@ -10369,7 +10169,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Panel Coating",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -10411,12 +10210,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -10485,7 +10283,6 @@
       "data_type": "string",
       "difficulty": "hard",
       "display_name": "Panel Manufacturer",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -10529,10 +10326,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -10588,7 +10384,7 @@
         "panel technology",
         "display type"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "panel_type",
       "component": null,
       "constraints": [],
@@ -10601,7 +10397,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Panel Type",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -10643,12 +10438,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -10723,7 +10517,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "PiP / PbP",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -10767,10 +10560,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -10826,7 +10618,7 @@
         "portrait mode",
         "rotation"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "pivot_rotation",
       "component": null,
       "constraints": [],
@@ -10839,7 +10631,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Pivot / Portrait",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -10881,12 +10672,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -10941,7 +10731,7 @@
         "PPI",
         "pixels per inch"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "pixel_density",
       "component": null,
       "constraints": [],
@@ -10962,7 +10752,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Pixel Density",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -11006,12 +10795,11 @@
         "unit": "ppi"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -11087,7 +10875,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Power Consumption (Max)",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -11133,10 +10920,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -11190,7 +10976,7 @@
         "typical power",
         "power consumption"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "power_consumption_typical",
       "component": null,
       "constraints": [],
@@ -11211,7 +10997,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Power Consumption (Typical)",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -11255,12 +11040,11 @@
         "unit": "W"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -11317,7 +11101,7 @@
         "MSRP",
         "retail price"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "price_range",
       "component": null,
       "constraints": [],
@@ -11331,7 +11115,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Price (MSRP)",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -11375,12 +11158,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -11435,7 +11217,7 @@
         "PS5 compatibility",
         "PlayStation 5 support"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "ps5_compatibility",
       "component": null,
       "constraints": [],
@@ -11448,7 +11230,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "PS5 Compatibility",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -11490,12 +11271,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -11580,7 +11360,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Reflections",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -11626,10 +11405,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -11694,7 +11472,7 @@
         "refresh rate",
         "max refresh rate"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "refresh_rate",
       "component": null,
       "constraints": [],
@@ -11715,7 +11493,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Refresh Rate",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -11759,12 +11536,11 @@
         "unit": "Hz"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -11838,7 +11614,6 @@
       "data_type": "date",
       "difficulty": "medium",
       "display_name": "Release Date",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -11882,10 +11657,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -11939,7 +11713,7 @@
         "native resolution",
         "display resolution"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "resolution",
       "component": null,
       "constraints": [],
@@ -11952,7 +11726,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Resolution",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -11994,12 +11767,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -12079,7 +11851,6 @@
       "data_type": "number",
       "difficulty": "medium",
       "display_name": "Response Time (120 Hz)",
-      "effort": 5,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -12125,10 +11896,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -12215,7 +11985,6 @@
       "data_type": "number",
       "difficulty": "medium",
       "display_name": "Response Time (60 Hz)",
-      "effort": 5,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -12261,10 +12030,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -12331,7 +12099,7 @@
         "GtG",
         "gray to gray"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "response_time_gtg",
       "component": null,
       "constraints": [],
@@ -12352,7 +12120,6 @@
       "data_type": "number",
       "difficulty": "medium",
       "display_name": "Response Time (GtG)",
-      "effort": 5,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -12396,12 +12163,11 @@
         "unit": "ms"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 5,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -12479,7 +12245,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Response Time (MPRT)",
-      "effort": 5,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -12525,10 +12290,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 5,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -12584,7 +12348,7 @@
         "display size",
         "diagonal"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "screen_size",
       "component": null,
       "constraints": [],
@@ -12605,7 +12369,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Screen Size",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -12649,12 +12412,11 @@
         "unit": "in"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -12708,7 +12470,7 @@
     },
     "sku": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "sku",
       "component": null,
       "constraints": [],
@@ -12721,7 +12483,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "SKU / Part #",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -12763,12 +12524,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "identity"
+        "required_level": "mandatory"
       },
-      "required_level": "identity",
+      "required_level": "mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -12820,7 +12580,7 @@
       "aliases": [
         "built-in speakers"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "speakers",
       "component": null,
       "constraints": [],
@@ -12833,7 +12593,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Speakers",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -12875,12 +12634,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -12949,7 +12707,6 @@
       "data_type": "string",
       "difficulty": "medium",
       "display_name": "Subpixel Layout",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -12993,10 +12750,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -13049,7 +12805,7 @@
         "swivel",
         "swivel range"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "swivel_range",
       "component": null,
       "constraints": [],
@@ -13062,7 +12818,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Swivel Range",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -13104,12 +12859,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -13176,7 +12930,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Text Clarity",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -13220,10 +12973,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -13301,7 +13053,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Thunderbolt Ports",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -13345,10 +13096,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -13417,7 +13167,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Thunderbolt Version",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -13461,10 +13210,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -13519,7 +13267,7 @@
         "tilt range",
         "tilt adjustment"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "tilt_range",
       "component": null,
       "constraints": [],
@@ -13532,7 +13280,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Tilt Range",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -13574,12 +13321,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -13648,7 +13394,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "USB-C Ports",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -13692,10 +13437,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -13763,7 +13507,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "USB Hub",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -13807,10 +13550,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -13886,7 +13628,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "USB-C Power Delivery",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -13932,10 +13673,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -13992,7 +13732,7 @@
         "variable refresh rate",
         "VRR"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "variable_refresh_rate",
       "component": null,
       "constraints": [],
@@ -14005,7 +13745,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Variable Refresh Rate",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -14047,12 +13786,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -14103,7 +13841,7 @@
     },
     "variant": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "variant",
       "component": null,
       "constraints": [],
@@ -14116,7 +13854,6 @@
       "data_type": "string",
       "difficulty": "hard",
       "display_name": "Variant",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -14158,12 +13895,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "hard",
-        "effort": 3,
-        "required_level": "identity"
+        "required_level": "mandatory"
       },
-      "required_level": "identity",
+      "required_level": "mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -14238,7 +13974,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Vertical Viewing Angle",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -14284,10 +14019,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -14352,7 +14086,7 @@
         "VESA",
         "mount pattern"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "vesa_mount",
       "component": null,
       "constraints": [],
@@ -14365,7 +14099,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "VESA Mount",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -14407,12 +14140,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -14483,7 +14215,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "VRR Range",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -14527,10 +14258,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -14584,7 +14314,7 @@
         "wall mountable",
         "wall mount"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "wall_mountable",
       "component": null,
       "constraints": [],
@@ -14597,7 +14327,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Wall Mountable",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -14639,12 +14368,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -14711,7 +14439,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Warranty",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -14755,10 +14482,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -14825,7 +14551,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Webcam",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -14869,10 +14594,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -14928,7 +14652,7 @@
         "weight with stand",
         "total weight"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "weight_with_stand",
       "component": null,
       "constraints": [],
@@ -14949,7 +14673,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Weight (With Stand)",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -14993,12 +14716,11 @@
         "unit": "g"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -15053,7 +14775,7 @@
         "weight without stand",
         "panel weight"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "weight_without_stand",
       "component": null,
       "constraints": [],
@@ -15074,7 +14796,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Weight (Without Stand)",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -15118,12 +14839,11 @@
         "unit": "g"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -15179,7 +14899,7 @@
         "wide color gamut",
         "wide gamut"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "wide_color_gamut",
       "component": null,
       "constraints": [],
@@ -15192,7 +14912,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Wide Color Gamut",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -15234,12 +14953,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [
@@ -15294,7 +15012,7 @@
         "display width",
         "monitor width"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "width",
       "component": null,
       "constraints": [],
@@ -15315,7 +15033,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Width",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -15359,12 +15076,11 @@
         "unit": "mm"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -15419,7 +15135,7 @@
         "Xbox Series S compatibility",
         "Xbox compatibility"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "xbox_series_xs_compatibility",
       "component": null,
       "constraints": [],
@@ -15432,7 +15148,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Xbox Series X|S Compatibility",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -15474,12 +15189,11 @@
         "separators": []
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
         "content_types": [

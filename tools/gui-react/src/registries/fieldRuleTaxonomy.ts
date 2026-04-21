@@ -2,42 +2,24 @@
 // classifications. Every dropdown, badge, sort, and validation in the frontend
 // must derive from these registries. Adding a new enum value = add one entry here.
 
-const EFFORT_BOUNDS = { min: 1, max: 10 } as const;
-
-function toEffortBand(effort: number): '1-3' | '4-6' | '7-8' | '9-10' {
-  const parsed = Number.isFinite(effort) ? effort : EFFORT_BOUNDS.min;
-  const n = Math.max(EFFORT_BOUNDS.min, Math.min(EFFORT_BOUNDS.max, parsed));
-  if (n <= 3) return '1-3';
-  if (n <= 6) return '4-6';
-  if (n <= 8) return '7-8';
-  return '9-10';
-}
-
 // ── Registries ──────────────────────────────────────────────────────────
 
 const REQUIRED_LEVEL_REGISTRY = [
-  { value: 'identity',  rank: 7, chip: 'sf-chip-danger' },
-  { value: 'critical',  rank: 6, chip: 'sf-chip-danger' },
-  { value: 'required',  rank: 5, chip: 'sf-chip-danger' },
-  { value: 'expected',  rank: 4, chip: 'sf-chip-info' },
-  { value: 'optional',  rank: 3, chip: 'sf-chip-neutral' },
-  { value: 'editorial', rank: 2, chip: 'sf-chip-neutral' },
-  { value: 'commerce',  rank: 1, chip: 'sf-chip-neutral' },
+  { value: 'mandatory',     rank: 2, chip: 'sf-chip-danger' },
+  { value: 'non_mandatory', rank: 1, chip: 'sf-chip-neutral' },
 ] as const;
 
 const DIFFICULTY_REGISTRY = [
-  { value: 'instrumented', rank: 4, chip: 'sf-chip-warning' },
-  { value: 'hard',         rank: 3, chip: 'sf-chip-warning' },
-  { value: 'medium',       rank: 2, chip: 'sf-chip-info' },
-  { value: 'easy',         rank: 1, chip: 'sf-chip-success' },
+  { value: 'very_hard', rank: 4, chip: 'sf-chip-danger' },
+  { value: 'hard',      rank: 3, chip: 'sf-chip-warning' },
+  { value: 'medium',    rank: 2, chip: 'sf-chip-info' },
+  { value: 'easy',      rank: 1, chip: 'sf-chip-success' },
 ] as const;
 
 const AVAILABILITY_REGISTRY = [
-  { value: 'always',        rank: 5, chip: 'sf-chip-success' },
-  { value: 'expected',      rank: 4, chip: 'sf-chip-success' },
-  { value: 'sometimes',     rank: 3, chip: 'sf-chip-warning' },
-  { value: 'rare',          rank: 2, chip: 'sf-chip-neutral' },
-  { value: 'editorial_only', rank: 1, chip: 'sf-chip-neutral' },
+  { value: 'always',    rank: 3, chip: 'sf-chip-success' },
+  { value: 'sometimes', rank: 2, chip: 'sf-chip-warning' },
+  { value: 'rare',      rank: 1, chip: 'sf-chip-neutral' },
 ] as const;
 
 const AI_MODE_REGISTRY = [
@@ -92,14 +74,9 @@ const AVAILABILITY_CHIP: Record<string, string> = Object.fromEntries(
   AVAILABILITY_REGISTRY.map((e) => [e.value, e.chip]),
 );
 
-export function tagCls(kind: 'required' | 'difficulty' | 'availability' | 'effort', value: string): string {
+export function tagCls(kind: 'required' | 'difficulty' | 'availability', value: string): string {
   if (kind === 'required') return REQUIRED_LEVEL_CHIP[value] || 'sf-chip-neutral';
   if (kind === 'difficulty') return DIFFICULTY_CHIP[value] || 'sf-chip-neutral';
   if (kind === 'availability') return AVAILABILITY_CHIP[value] || 'sf-chip-neutral';
-  const parsedEffort = Number.parseInt(String(value || ''), 10);
-  const effortBand = toEffortBand(Number.isFinite(parsedEffort) ? parsedEffort : EFFORT_BOUNDS.min);
-  if (effortBand === '1-3') return 'sf-chip-success';
-  if (effortBand === '4-6') return 'sf-chip-info';
-  if (effortBand === '7-8') return 'sf-chip-warning';
-  return 'sf-chip-danger';
+  return 'sf-chip-neutral';
 }

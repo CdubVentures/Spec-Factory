@@ -11,6 +11,7 @@
 
 import { zodToLlmSchema } from '../../core/llm/zodToLlmSchema.js';
 import { resolvePromptTemplate } from '../../core/llm/resolvePromptTemplate.js';
+import { resolveGlobalPrompt } from '../../core/llm/prompts/globalPromptRegistry.js';
 import { buildPreviousDiscoveryBlock } from '../../core/finder/discoveryLog.js';
 import { buildEvidencePromptBlock } from '../../core/finder/evidencePromptFragment.js';
 import { buildEvidenceVerificationPromptBlock } from '../../core/finder/evidenceVerificationPromptFragment.js';
@@ -25,7 +26,7 @@ const FIELD_DOMAIN_NOUN = 'release dates';
 
 export const RDF_DEFAULT_TEMPLATE = `Find the first-availability release date for: {{BRAND}} {{MODEL}} — {{VARIANT_DESC}}
 
-IDENTITY: You are looking for the EXACT product "{{BRAND}} {{MODEL}}"{{VARIANT_SUFFIX}}. Not a different model in the same product family. If you encounter sibling models, skip them.
+{{IDENTITY_INTRO}}
 {{IDENTITY_WARNING}}
 
 GOAL: The date this specific {{VARIANT_TYPE_WORD}} variant first became available for purchase and shipping to customers. Distinguish from:
@@ -74,18 +75,14 @@ Source guidance — use the strongest signal available, fall back as needed:
       calendar year are acceptable standalone evidence (e.g. a forum thread from
       2018 discussing the product as current places it in 2018).
 
-You decide which sources to query and in what order — the above describes
-what kind of evidence counts and how to tag it, not a script to execute.
+{{SCALAR_SOURCE_GUIDANCE_CLOSER}}
 
 {{VALUE_CONFIDENCE_GUIDANCE}}
 RDF-specific: below 50, prefer returning the broadest precision level (YYYY) you can defend over returning "unk". Only return "unk" when you cannot defensibly place the product in any calendar year.
 
 {{PREVIOUS_DISCOVERY}}Return JSON:
 - "release_date": "YYYY-MM-DD" | "YYYY-MM" | "YYYY" | "MMM YYYY" | "Month YYYY" | "unk"
-- "confidence": 0-100 (your overall confidence in the returned date — see rubric above)
-- "unknown_reason": "..." (required if release_date is "unk"; empty string otherwise)
-- "evidence_refs": [{ "url": "...", "tier": "tier1|tier2|tier3|tier4|tier5|other", "confidence": 0-100 }, ...]
-- "discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }`;
+{{SCALAR_RETURN_JSON_TAIL}}`;
 
 /**
  * Build the system prompt for a single-variant release date search.
@@ -139,16 +136,27 @@ export function buildReleaseDateFinderPrompt({
 
   const template = templateOverride || promptOverride || RDF_DEFAULT_TEMPLATE;
 
+  const variantSuffix = variant ? ` (variant: ${variant})` : '';
+
   return resolvePromptTemplate(template, {
     BRAND: brand,
     MODEL: model,
     VARIANT_DESC: variantDesc,
-    VARIANT_SUFFIX: variant ? ` (variant: ${variant})` : '',
+    VARIANT_SUFFIX: variantSuffix,
+    IDENTITY_INTRO: resolvePromptTemplate(resolveGlobalPrompt('identityIntro'), {
+      BRAND: brand, MODEL: model, VARIANT_SUFFIX: variantSuffix,
+    }),
     IDENTITY_WARNING: identityWarning,
     VARIANT_TYPE_WORD: variantType === 'edition' ? 'edition' : 'color',
     PREVIOUS_DISCOVERY: discoverySection,
     EVIDENCE_REQUIREMENTS: `${buildEvidencePromptBlock({ minEvidenceRefs, includeEvidenceKind: true })}\n\n${buildEvidenceVerificationPromptBlock()}`,
     VALUE_CONFIDENCE_GUIDANCE: buildValueConfidencePromptBlock(),
+    SCALAR_SOURCE_GUIDANCE_CLOSER: resolveGlobalPrompt('scalarSourceGuidanceCloser'),
+    SCALAR_RETURN_JSON_TAIL: resolvePromptTemplate(resolveGlobalPrompt('scalarReturnJsonTail'), {
+      VALUE_NOUN: 'date',
+      VALUE_KEY: 'release_date',
+      UNKNOWN_REASON_EXAMPLES: '',
+    }),
   });
 }
 

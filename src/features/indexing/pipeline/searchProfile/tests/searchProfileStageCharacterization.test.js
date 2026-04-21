@@ -27,9 +27,9 @@ function makeCategoryConfig() {
     category: 'mouse',
     fieldOrder: ['sensor_model', 'weight', 'dpi', 'polling_rate'],
     fieldRules: {
-      sensor_model: { required_level: 'critical' },
-      weight: { required_level: 'required' },
-      dpi: { required_level: 'expected' },
+      sensor_model: { required_level: 'mandatory' },
+      weight: { required_level: 'mandatory' },
+      dpi: { required_level: 'non_mandatory' },
     },
   };
 }

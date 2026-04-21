@@ -320,8 +320,8 @@
           <td><strong>4</strong></td>
           <td>Phase Schema Overlays</td>
           <td><code>src/features/indexing/pipeline/shared/phaseSchemaRegistry.js</code></td>
-          <td>Editable prompt editor in LLM Config (variable manifest, per-category tabs, save round-trip). Without this, the GUI shows a read-only preview only.</td>
-          <td><strong>Always for finders with editable prompts</strong> &mdash; covered by integration test that fails loudly if missing</td>
+          <td>Editable prompt editor in LLM Config (variable manifest, per-category tabs, save round-trip). For <strong>scalar finders</strong> (<code>variantFieldProducer</code>) the overlay is auto-derived &mdash; NO edit required. For <strong>bespoke finders</strong> (CEF identity-check, PIF view+hero, carousel) a hand-written block is still needed.</td>
+          <td><strong>Scalar finders: never.</strong> Add <code>defaultTemplateExport</code> to your <code>FINDER_MODULES</code> entry and the overlay materializes via <code>SCALAR_FINDER_OVERLAYS</code>.</td>
         </tr>
         <tr>
           <td><strong>5</strong></td>
@@ -335,7 +335,12 @@
 
     <div class="callout callout-ok">
       <strong>For a simple scalar field finder (like Release Date or SKU)</strong>
-      You touch #1, #2, and #4. The overlay in #4 is a near-byte-for-byte copy of <code>RELEASE_DATE_FINDER_TEMPLATES</code> &mdash; swap <code>moduleId</code>, <code>defaultTemplate</code>, and the import. No EG preset, no server-boot edit (auto-wired via <code>wireFinderRoutes()</code>). Three registry files modified total (plus your new feature code).
+      You touch #1 and #2 only. Add <code>defaultTemplateExport: 'XXX_DEFAULT_TEMPLATE'</code> (pointing at your adapter's exported template constant) to your <code>FINDER_MODULES</code> entry and run <code>node tools/gui-react/scripts/generateLlmPhaseRegistry.js</code>. The codegen emits <code>FINDER_SCALAR_DEFAULT_TEMPLATES</code>, and <code>phaseSchemaRegistry.js</code> derives the overlay via <code>buildScalarFinderPromptTemplates</code> (from <code>src/core/finder/scalarFinderPromptContract.js</code>). Variables + user-message fields are inherited from the shared <code>SCALAR_FINDER_VARIABLES</code> + <code>SCALAR_FINDER_USER_MESSAGE_INFO</code> bundle. No EG preset, no overlay edit, no server-boot edit. Two registry files modified total (plus your new feature code).
+    </div>
+
+    <div class="callout callout-warn" style="margin-top:8px;">
+      <strong>For bespoke finders (multi-prompt or non-scalar)</strong>
+      CEF (variantGenerator with identity-check second prompt), PIF (variantArtifactProducer with view + hero), and the carousel image-evaluator all have bespoke overlay blocks in <code>phaseSchemaRegistry.js</code>. These declare custom <code>prompt_templates</code> arrays with their own variable sets. Use <code>COLOR_FINDER_IDENTITY_CHECK</code>, <code>IMAGE_FINDER_TEMPLATES</code>, or <code>CAROUSEL_BUILDER_PHASE</code> as patterns.
     </div>
   </div>
 </div>
@@ -960,19 +965,19 @@ import { myFinderHowItWorksSections }
       </tbody>
     </table>
 
-    <div class="callout callout-warn">
-      <strong>Read-only preview vs editable surface &mdash; pick the right one</strong>
-      The default codegen output (<code>{ system_prompt, response_schema }</code>) renders a <strong>read-only preview</strong> in LLM Config: the prompt builder is invoked at codegen time with placeholder product <code>{ brand: '{brand}', model: '{model}' }</code>, and the resulting string is displayed verbatim. This means users see <code>{brand}</code> literals, no variable manifest, no per-category tabs, and no way to override the template &mdash; even though the runtime <em>is</em> wired to honor a per-category override.
+    <div class="callout callout-ok">
+      <strong>Scalar finders (<code>variantFieldProducer</code>) get the editable editor FOR FREE</strong>
+      Declare <code>defaultTemplateExport: 'XXX_DEFAULT_TEMPLATE'</code> in your <code>FINDER_MODULES</code> entry, run codegen, and the GUI editor appears automatically with: variable manifest (12 canonical variables), per-category tabs, save round-trip. The overlay is derived from <code>FINDER_SCALAR_DEFAULT_TEMPLATES</code> (codegen output) + <code>buildScalarFinderPromptTemplates()</code> (shared contract in <code>src/core/finder/scalarFinderPromptContract.js</code>). Zero edits to <code>phaseSchemaRegistry.js</code>.
     </div>
 
     <div class="callout callout-warn" style="margin-top:8px;">
-      <strong>To get the editable editor (variable manifest + per-category tabs + save round-trip), you MUST add a <code>prompt_templates</code> overlay</strong>
-      Add a block to <code>src/features/indexing/pipeline/shared/phaseSchemaRegistry.js</code> that spreads <code>FINDER_PHASE_SCHEMAS[&lt;your-phase-id&gt;]</code> and attaches a <code>prompt_templates: [...]</code> array. Each entry declares <code>{ promptKey, label, storageScope, moduleId, settingKey, defaultTemplate, variables, userMessageInfo }</code>. See <code>RELEASE_DATE_FINDER_TEMPLATES</code> (single discovery prompt), <code>SKU_FINDER_TEMPLATES</code> (mirror of RDF for scalar finders), <code>COLOR_FINDER_IDENTITY_CHECK</code> (multi-prompt with identity check), or <code>CAROUSEL_BUILDER_PHASE</code> (per-view tabs) as patterns. The structural test <code>src/core/finder/tests/promptCompilation.integration.test.js</code> enforces that every finder phase has a <code>prompt_templates</code> overlay &mdash; it will fail loudly if you forget.
+      <strong>Bespoke finders (multi-prompt, non-scalar) still need a hand-written overlay</strong>
+      CEF (variantGenerator with Run-2+ identity check), PIF (variantArtifactProducer with view + hero prompts), and the carousel image-evaluator (per-view tabs) have bespoke structures that don't fit the scalar contract. Add an overlay block to <code>phaseSchemaRegistry.js</code> that spreads <code>FINDER_PHASE_SCHEMAS[&lt;phase-id&gt;]</code> and attaches a custom <code>prompt_templates: [...]</code> array. See <code>COLOR_FINDER_IDENTITY_CHECK</code>, <code>IMAGE_FINDER_TEMPLATES</code>, or <code>CAROUSEL_BUILDER_PHASE</code> as patterns. The structural test <code>src/core/finder/tests/promptCompilation.integration.test.js</code> enforces that every finder phase has a <code>prompt_templates</code> overlay &mdash; it will fail loudly if you forget.
     </div>
 
-    <div class="callout callout-ok" style="margin-top:8px;">
-      <strong>Adding a scalar finder (mirrors RDF / SKU)</strong>
-      The minimum overlay is a copy of <code>RELEASE_DATE_FINDER_TEMPLATES</code> with three swaps: <code>moduleId</code>, <code>defaultTemplate</code> (your <code>XXX_DEFAULT_TEMPLATE</code> export), and the import. The variable list is identical across scalar finders (BRAND, MODEL, VARIANT_DESC, VARIANT_SUFFIX, VARIANT_TYPE_WORD, IDENTITY_WARNING, EVIDENCE_REQUIREMENTS, VALUE_CONFIDENCE_GUIDANCE, PREVIOUS_DISCOVERY) because they share the <code>variantScalarFieldProducer</code> contract.
+    <div class="callout callout-warn" style="margin-top:8px;">
+      <strong>If you skip the overlay entirely</strong>
+      The default codegen output (<code>{ system_prompt, response_schema }</code>) renders a <strong>read-only preview</strong> in LLM Config: the prompt builder is invoked at codegen time with placeholder product <code>{ brand: '{brand}', model: '{model}' }</code>, and the resulting string is displayed verbatim. Users see <code>{brand}</code> literals, no variable manifest, no per-category tabs, and no way to override the template. This is the failure mode SKU originally shipped with &mdash; the structural test now catches it on CI.
     </div>
   </div>
 </div>

@@ -24,6 +24,10 @@ describe('GLOBAL_PROMPTS registry', () => {
     'identityWarningHard',
     'siblingsExclusion',
     'discoveryHistoryBlock',
+    'identityIntro',
+    'discoveryLogShape',
+    'scalarSourceGuidanceCloser',
+    'scalarReturnJsonTail',
   ];
 
   it('exports all expected keys', () => {

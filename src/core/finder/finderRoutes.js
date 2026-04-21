@@ -233,6 +233,13 @@ function republishAfterDelete(specDb, productId, fieldKeys, sourceType, runSet, 
  * @param {string[]} [finderConfig.loop.stages] — override loop stages; defaults to
  *   `['Discovery','Validate','Publish']` (or Research/Writer/Validate/Publish when
  *   jsonStrict is off).
+ * @param {object} [finderConfig.preview] — opt-in prompt preview at POST
+ *   `/preview-prompt`. When set, the handler resolves the product and invokes
+ *   `compilePrompt(ctx)` to produce a compiled-prompt envelope. No LLM
+ *   dispatch, no operations, no persistence.
+ * @param {Function} finderConfig.preview.compilePrompt — async fn that takes
+ *   `{ product, appDb, specDb, config, productRoot, productId, category, logger, body }`
+ *   and returns the preview response envelope (see Phase 1 roadmap).
  * @returns {Function} (ctx) => async route handler
  */
 export function createFinderRouteHandler(finderConfig) {
@@ -287,6 +294,45 @@ export function createFinderRouteHandler(finderConfig) {
           selected,
           runs: runRows,
         });
+      }
+
+      // ── POST /:prefix/:category/:productId/preview-prompt — compile only ──
+      // WHY: Preview compiles the exact prompt the next run would dispatch,
+      // without invoking the LLM, registering an operation, or persisting
+      // anything. Opt-in via `preview: { compilePrompt }`. Keeping this above
+      // the run/loop branch avoids accidentally falling through into the
+      // operation-registering path.
+      if (method === 'POST' && category && productId && parts[3] === 'preview-prompt' && finderConfig.preview?.compilePrompt) {
+        try {
+          const specDb = getSpecDb(category);
+          if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+
+          const productRow = specDb.getProduct(productId);
+          if (!productRow) return jsonRes(res, 404, { error: 'product not found', product_id: productId, category });
+
+          if (finderConfig.requiredFields?.length > 0) {
+            const compiled = specDb.getCompiledRules?.();
+            const fields = compiled?.fields || {};
+            for (const key of finderConfig.requiredFields) {
+              if (!fields[key]) {
+                return jsonRes(res, 403, { error: `${routePrefix} disabled: field '${key}' not enabled in field studio` });
+              }
+            }
+          }
+
+          const body = await readJsonBody(req).catch(() => ({}));
+          const product = buildOrchestratorProduct({ productId, category, productRow });
+          const envelope = await finderConfig.preview.compilePrompt({
+            product, appDb, specDb, config,
+            productRoot: defaultProductRoot(),
+            productId, category, logger: logger || null, body: body || {},
+          });
+          return jsonRes(res, 200, envelope);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          console.error(`[${routePrefix}] POST /preview-prompt failed:`, message);
+          return jsonRes(res, 500, { error: 'preview failed', message });
+        }
       }
 
       // ── POST /:prefix/:category/:productId[/loop] — trigger run or loop ───

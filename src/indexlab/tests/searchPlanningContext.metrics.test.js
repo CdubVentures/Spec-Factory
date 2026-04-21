@@ -42,12 +42,12 @@ describe('buildSearchPlanningContext', () => {
     it('counts unresolved by required_level correctly', () => {
       const ns = makeNeedSetOutput({
         fields: [
-          makeField({ field_key: 'f1', group_key: 'grp', state: 'unknown', required_level: 'identity' }),
-          makeField({ field_key: 'f2', group_key: 'grp', state: 'unknown', required_level: 'critical' }),
-          makeField({ field_key: 'f3', group_key: 'grp', state: 'unknown', required_level: 'required' }),
-          makeField({ field_key: 'f4', group_key: 'grp', state: 'unknown', required_level: 'expected' }),
-          makeField({ field_key: 'f5', group_key: 'grp', state: 'unknown', required_level: 'optional' }),
-          makeField({ field_key: 'f6', group_key: 'grp', state: 'accepted', required_level: 'identity', need_score: 0, reasons: [] })
+          makeField({ field_key: 'f1', group_key: 'grp', state: 'unknown', required_level: 'mandatory' }),
+          makeField({ field_key: 'f2', group_key: 'grp', state: 'unknown', required_level: 'mandatory' }),
+          makeField({ field_key: 'f3', group_key: 'grp', state: 'unknown', required_level: 'mandatory' }),
+          makeField({ field_key: 'f4', group_key: 'grp', state: 'unknown', required_level: 'non_mandatory' }),
+          makeField({ field_key: 'f5', group_key: 'grp', state: 'unknown', required_level: 'non_mandatory' }),
+          makeField({ field_key: 'f6', group_key: 'grp', state: 'accepted', required_level: 'mandatory', need_score: 0, reasons: [] })
         ]
       });
       const result = buildSearchPlanningContext({
@@ -55,9 +55,8 @@ describe('buildSearchPlanningContext', () => {
         runContext: makeRunContext()
       });
       const grp = result.focus_groups.find(g => g.key === 'grp');
-      assert.equal(grp.core_unresolved_count, 3);     // identity + critical + required
-      assert.equal(grp.secondary_unresolved_count, 1); // expected
-      assert.equal(grp.optional_unresolved_count, 1);  // optional
+      assert.equal(grp.core_unresolved_count, 3);     // 3 mandatory unresolved
+      assert.equal(grp.optional_unresolved_count, 2);  // 2 non_mandatory unresolved
     });
   });
 
@@ -93,11 +92,11 @@ describe('buildSearchPlanningContext', () => {
       const ns = makeNeedSetOutput({
         fields: [
           makeField({
-            field_key: 'f1', group_key: 'grp', state: 'unknown', required_level: 'required',
+            field_key: 'f1', group_key: 'grp', state: 'unknown', required_level: 'mandatory',
             history: { ...makeField().history, no_value_attempts: 5, evidence_classes_tried: ['html', 'pdf', 'json'] }
           }),
           makeField({
-            field_key: 'f2', group_key: 'grp', state: 'unknown', required_level: 'required',
+            field_key: 'f2', group_key: 'grp', state: 'unknown', required_level: 'mandatory',
             history: { ...makeField().history, no_value_attempts: 1, evidence_classes_tried: ['html'] }
           })
         ]
@@ -115,11 +114,11 @@ describe('buildSearchPlanningContext', () => {
       const ns = makeNeedSetOutput({
         fields: [
           makeField({
-            field_key: 'f1', group_key: 'grp', state: 'unknown', required_level: 'required',
+            field_key: 'f1', group_key: 'grp', state: 'unknown', required_level: 'mandatory',
             history: { ...makeField().history, no_value_attempts: 4, evidence_classes_tried: ['html', 'pdf', 'json'] }
           }),
           makeField({
-            field_key: 'f2', group_key: 'grp', state: 'unknown', required_level: 'required',
+            field_key: 'f2', group_key: 'grp', state: 'unknown', required_level: 'mandatory',
             history: { ...makeField().history, no_value_attempts: 3, evidence_classes_tried: ['html', 'pdf', 'review'] }
           })
         ]
@@ -137,11 +136,11 @@ describe('buildSearchPlanningContext', () => {
       const ns = makeNeedSetOutput({
         fields: [
           makeField({
-            field_key: 'f1', group_key: 'grp', state: 'unknown', required_level: 'required',
+            field_key: 'f1', group_key: 'grp', state: 'unknown', required_level: 'mandatory',
             history: { ...makeField().history, no_value_attempts: 5, evidence_classes_tried: ['html', 'pdf', 'json'] }
           }),
           makeField({
-            field_key: 'f2', group_key: 'grp', state: 'unknown', required_level: 'required',
+            field_key: 'f2', group_key: 'grp', state: 'unknown', required_level: 'mandatory',
             history: { ...makeField().history, no_value_attempts: 0, evidence_classes_tried: [] }
           })
         ]
@@ -207,20 +206,20 @@ describe('buildSearchPlanningContext', () => {
   describe('field_priority_map', () => {
     it('fields with varied required_levels â†’ correct map entries', () => {
       const fields = [
-        makeField({ field_key: 'sensor', group_key: 'sensor_performance', required_level: 'critical' }),
-        makeField({ field_key: 'dpi', group_key: 'sensor_performance', required_level: 'required' }),
-        makeField({ field_key: 'weight', group_key: 'dimensions', required_level: 'expected' }),
-        makeField({ field_key: 'color', group_key: 'construction', required_level: 'optional' }),
+        makeField({ field_key: 'sensor', group_key: 'sensor_performance', required_level: 'mandatory' }),
+        makeField({ field_key: 'dpi', group_key: 'sensor_performance', required_level: 'mandatory' }),
+        makeField({ field_key: 'weight', group_key: 'dimensions', required_level: 'non_mandatory' }),
+        makeField({ field_key: 'color', group_key: 'construction', required_level: 'non_mandatory' }),
       ];
       const result = buildSearchPlanningContext({
         needSetOutput: makeNeedSetOutput({ fields }),
         runContext: makeRunContext(),
       });
       assert.deepStrictEqual(result.field_priority_map, {
-        sensor: 'critical',
-        dpi: 'required',
-        weight: 'expected',
-        color: 'optional',
+        sensor: 'mandatory',
+        dpi: 'mandatory',
+        weight: 'non_mandatory',
+        color: 'non_mandatory',
       });
     });
 
@@ -234,9 +233,9 @@ describe('buildSearchPlanningContext', () => {
 
     it('every field_key from needSetOutput.fields appears in the map', () => {
       const fields = [
-        makeField({ field_key: 'sensor', group_key: 'sp', required_level: 'critical' }),
-        makeField({ field_key: 'dpi', group_key: 'sp', required_level: 'required' }),
-        makeField({ field_key: 'hz', group_key: 'sp' }), // no required_level â†’ defaults to 'optional'
+        makeField({ field_key: 'sensor', group_key: 'sp', required_level: 'mandatory' }),
+        makeField({ field_key: 'dpi', group_key: 'sp', required_level: 'mandatory' }),
+        makeField({ field_key: 'hz', group_key: 'sp' }), // no required_level → defaults to 'non_mandatory'
       ];
       const result = buildSearchPlanningContext({
         needSetOutput: makeNeedSetOutput({ fields }),
@@ -245,7 +244,7 @@ describe('buildSearchPlanningContext', () => {
       const mapKeys = Object.keys(result.field_priority_map).sort();
       const fieldKeys = fields.map(f => f.field_key).sort();
       assert.deepStrictEqual(mapKeys, fieldKeys);
-      assert.equal(result.field_priority_map.hz, 'optional');
+      assert.equal(result.field_priority_map.hz, 'non_mandatory');
     });
   });
 

@@ -15,12 +15,9 @@ const CATEGORY_ROOT = resolve(__dirname, '..', '..', '..', '..', '..', 'category
 // ── Section A: Unit test matrix (table-driven) ─────────────────────────
 
 const CASES = [
-  { level: 'identity',  expected: true },
-  { level: 'required',  expected: true },
-  { level: 'critical',  expected: false },
-  { level: 'expected',  expected: false },
-  { level: 'optional',  expected: false },
-  { level: 'rare',      expected: false },
+  { level: 'mandatory',     expected: true },
+  { level: 'non_mandatory', expected: false },
+  { level: '',              expected: false },
 ];
 
 describe('shouldBlockUnkPublish — unit matrix', () => {

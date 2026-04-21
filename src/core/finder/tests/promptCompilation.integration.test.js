@@ -36,8 +36,13 @@ import {
 import { resolveAmbiguityContext, buildOrchestratorProduct } from '../finderOrchestrationHelpers.js';
 import { resolveIdentityAmbiguitySnapshot } from '../../../features/indexing/orchestration/shared/identityHelpers.js';
 import { PHASE_SCHEMA_REGISTRY } from '../../../features/indexing/pipeline/shared/phaseSchemaRegistry.js';
-import { FINDER_PHASE_SCHEMAS } from '../../../features/indexing/pipeline/shared/phaseSchemaRegistry.generated.js';
+import { FINDER_PHASE_SCHEMAS, FINDER_SCALAR_DEFAULT_TEMPLATES } from '../../../features/indexing/pipeline/shared/phaseSchemaRegistry.generated.js';
 import { FINDER_MODULES } from '../finderModuleRegistry.js';
+import {
+  SCALAR_FINDER_VARIABLES,
+  SCALAR_FINDER_USER_MESSAGE_INFO,
+  buildScalarFinderPromptTemplates,
+} from '../scalarFinderPromptContract.js';
 
 // WHY: GUI phase IDs are camelToKebab(mod.phase), not mod.routePrefix —
 // the two differ for CEF (routePrefix=color-edition-finder, phase=colorFinder
@@ -484,6 +489,172 @@ describe('resolveAmbiguityContext end-to-end with real resolver + specDb', () =>
     assert.equal(ctx.familyModelCount, 3);
     assert.equal(ctx.ambiguityLevel, 'medium');
     assert.deepEqual(ctx.siblingModels.sort(), ['M75', 'M75 Wireless'].sort());
+  });
+});
+
+// ── Section 5a: O(1) scalar finder prompt contract ──
+// WHY: Stage B converted the hand-written RELEASE_DATE_FINDER_TEMPLATES and
+// SKU_FINDER_TEMPLATES overlay blocks into a derived SCALAR_FINDER_OVERLAYS
+// loop driven by FINDER_SCALAR_DEFAULT_TEMPLATES (codegen output) +
+// buildScalarFinderPromptTemplates (shared contract). These tests lock the
+// contract so future scalar finders (price, msrp, discontinued, upc) inherit
+// the full GUI surface with one registry edit.
+describe('scalar finder prompt contract (O(1) overlay)', () => {
+  test('SCALAR_FINDER_VARIABLES has the 12 canonical entries in the expected order', () => {
+    const names = SCALAR_FINDER_VARIABLES.map((v) => v.name);
+    assert.deepEqual(names, [
+      'BRAND', 'MODEL', 'VARIANT_DESC', 'VARIANT_SUFFIX', 'VARIANT_TYPE_WORD',
+      'IDENTITY_INTRO', 'IDENTITY_WARNING', 'EVIDENCE_REQUIREMENTS',
+      'VALUE_CONFIDENCE_GUIDANCE', 'SCALAR_SOURCE_GUIDANCE_CLOSER',
+      'PREVIOUS_DISCOVERY', 'SCALAR_RETURN_JSON_TAIL',
+    ]);
+  });
+
+  test('SCALAR_FINDER_USER_MESSAGE_INFO has the 5 canonical fields', () => {
+    const fields = SCALAR_FINDER_USER_MESSAGE_INFO.map((e) => e.field);
+    assert.deepEqual(fields, ['brand', 'model', 'base_model', 'variant_label', 'variant_type']);
+  });
+
+  test('FINDER_SCALAR_DEFAULT_TEMPLATES contains every variantFieldProducer with defaultTemplateExport', () => {
+    const scalarMods = FINDER_MODULES.filter(
+      (m) => m.moduleClass === 'variantFieldProducer' && m.defaultTemplateExport,
+    );
+    for (const mod of scalarMods) {
+      const phaseId = mod.phase.replace(/([A-Z])/g, '-$1').toLowerCase();
+      const entry = FINDER_SCALAR_DEFAULT_TEMPLATES[phaseId];
+      assert.ok(entry, `${phaseId} missing from FINDER_SCALAR_DEFAULT_TEMPLATES — run codegen`);
+      assert.equal(entry.moduleId, mod.id);
+      assert.ok(typeof entry.defaultTemplate === 'string' && entry.defaultTemplate.length > 0,
+        `${phaseId} defaultTemplate must be a non-empty string`);
+    }
+  });
+
+  test('buildScalarFinderPromptTemplates returns the canonical overlay shape for a hypothetical new finder', () => {
+    // Proof: adding a new scalar finder (e.g. priceFinder) with
+    // defaultTemplateExport only requires a FINDER_MODULES entry. No
+    // phaseSchemaRegistry.js edit. This mock demonstrates the contract.
+    const FAKE_TEMPLATE = 'Find the price for: {{BRAND}} {{MODEL}} — {{VARIANT_DESC}}\n{{IDENTITY_INTRO}}\n{{IDENTITY_WARNING}}\n{{EVIDENCE_REQUIREMENTS}}\n{{VALUE_CONFIDENCE_GUIDANCE}}\n{{SCALAR_SOURCE_GUIDANCE_CLOSER}}\n{{PREVIOUS_DISCOVERY}}Return JSON:\n- "price": "..." | "unk"\n{{SCALAR_RETURN_JSON_TAIL}}';
+    const tmpls = buildScalarFinderPromptTemplates({
+      moduleId: 'priceFinder',
+      defaultTemplate: FAKE_TEMPLATE,
+    });
+    assert.equal(tmpls.length, 1);
+    const t = tmpls[0];
+    assert.equal(t.promptKey, 'discovery');
+    assert.equal(t.label, 'Discovery Prompt');
+    assert.equal(t.storageScope, 'module');
+    assert.equal(t.moduleId, 'priceFinder');
+    assert.equal(t.settingKey, 'discoveryPromptTemplate');
+    assert.equal(t.defaultTemplate, FAKE_TEMPLATE);
+    assert.equal(t.variables, SCALAR_FINDER_VARIABLES);
+    assert.equal(t.userMessageInfo, SCALAR_FINDER_USER_MESSAGE_INFO);
+  });
+
+  test('RDF and SKU phase-registry overlays have identical shape (proving convergence)', () => {
+    const rdf = PHASE_SCHEMA_REGISTRY['release-date-finder'].prompt_templates;
+    const sku = PHASE_SCHEMA_REGISTRY['sku-finder'].prompt_templates;
+    assert.equal(rdf.length, 1);
+    assert.equal(sku.length, 1);
+    // Same shape except moduleId + defaultTemplate
+    const [r, s] = [rdf[0], sku[0]];
+    assert.equal(r.promptKey, s.promptKey);
+    assert.equal(r.label, s.label);
+    assert.equal(r.storageScope, s.storageScope);
+    assert.equal(r.settingKey, s.settingKey);
+    assert.equal(r.variables, s.variables); // same reference — shared bundle
+    assert.equal(r.userMessageInfo, s.userMessageInfo); // same reference — shared bundle
+    assert.notEqual(r.moduleId, s.moduleId);
+    assert.notEqual(r.defaultTemplate, s.defaultTemplate);
+  });
+});
+
+// ── Section 5b: globalized prompt fragments — convergence across CEF/PIF/RDF/SKU ──
+// WHY: The prior-prior turn's audit found that RDF + SKU duplicated large blocks of
+// boilerplate (IDENTITY line, source-guidance closer, return-JSON tail) and that PIF
+// hero was missing the sibling-skip sentence every other template had. Per user
+// guidance, we extracted shared fragments into globalPromptRegistry and converged
+// the 4 non-CEF templates. These tests lock the convergence and catch future drift.
+describe('globalized fragments: identityIntro / discoveryLogShape / scalarTail', () => {
+  const IDENTITY_INTRO_MARKER = 'IDENTITY: You are looking for the EXACT product';
+  const SIBLING_SKIP_SENTENCE = 'If you encounter sibling models, skip them.';
+  const SCALAR_CLOSER = 'You decide which sources to query and in what order — the above describes what kind of evidence counts and how to tag it, not a script to execute.';
+  const DISCOVERY_LOG_BASIC = '"discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }';
+
+  test('PIF hero contains the sibling-skip sentence (previously missing)', () => {
+    const out = buildHeroImageFinderPrompt({
+      product: PRODUCT_AIR,
+      variantLabel: 'black',
+      variantType: 'color',
+      previousDiscovery: EMPTY_DISCOVERY,
+    });
+    assert.ok(out.includes(IDENTITY_INTRO_MARKER), 'PIF hero must contain IDENTITY intro');
+    assert.ok(out.includes(SIBLING_SKIP_SENTENCE), 'PIF hero must now contain sibling-skip sentence');
+  });
+
+  test('RDF evidence_refs prose lists all 5 fields (fixes drift with schema)', () => {
+    const out = buildReleaseDateFinderPrompt({
+      product: PRODUCT_AIR,
+      variantLabel: 'black',
+      variantType: 'color',
+      previousDiscovery: EMPTY_DISCOVERY,
+    });
+    const evidenceLine = out.match(/- "evidence_refs":[^\n]+/)?.[0] || '';
+    assert.ok(evidenceLine.includes('"supporting_evidence"'),
+      `RDF evidence_refs prose must mention supporting_evidence (got: ${evidenceLine})`);
+    assert.ok(evidenceLine.includes('"evidence_kind"'),
+      `RDF evidence_refs prose must mention evidence_kind (got: ${evidenceLine})`);
+  });
+
+  test('SKU evidence_refs prose lists all 5 fields (unchanged — preserved)', () => {
+    const out = buildSkuFinderPrompt({
+      product: PRODUCT_AIR,
+      variantLabel: 'black',
+      variantType: 'color',
+      previousDiscovery: EMPTY_DISCOVERY,
+    });
+    const evidenceLine = out.match(/- "evidence_refs":[^\n]+/)?.[0] || '';
+    assert.ok(evidenceLine.includes('"supporting_evidence"'));
+    assert.ok(evidenceLine.includes('"evidence_kind"'));
+  });
+
+  test('RDF + SKU use the canonical source-guidance closer line', () => {
+    for (const [name, out] of [
+      ['RDF', buildReleaseDateFinderPrompt({ product: PRODUCT_AIR, variantLabel: 'black', variantType: 'color', previousDiscovery: EMPTY_DISCOVERY })],
+      ['SKU', buildSkuFinderPrompt({ product: PRODUCT_AIR, variantLabel: 'black', variantType: 'color', previousDiscovery: EMPTY_DISCOVERY })],
+    ]) {
+      assert.ok(out.includes(SCALAR_CLOSER),
+        `${name} must contain the canonical scalar source-guidance closer`);
+    }
+  });
+
+  test('PIF view / PIF hero / RDF / SKU all use the basic discovery_log shape', () => {
+    const compiled = {
+      'PIF view': buildProductImageFinderPrompt({
+        product: PRODUCT_AIR, variantLabel: 'black', variantType: 'color',
+        priorityViews: [{ key: 'hero', description: 'hero shot', priority: true }],
+        additionalViews: [], previousDiscovery: EMPTY_DISCOVERY,
+      }),
+      'PIF hero': buildHeroImageFinderPrompt({ product: PRODUCT_AIR, variantLabel: 'black', variantType: 'color', previousDiscovery: EMPTY_DISCOVERY }),
+      'RDF': buildReleaseDateFinderPrompt({ product: PRODUCT_AIR, variantLabel: 'black', variantType: 'color', previousDiscovery: EMPTY_DISCOVERY }),
+      'SKU': buildSkuFinderPrompt({ product: PRODUCT_AIR, variantLabel: 'black', variantType: 'color', previousDiscovery: EMPTY_DISCOVERY }),
+    };
+    for (const [name, out] of Object.entries(compiled)) {
+      assert.ok(out.includes(DISCOVERY_LOG_BASIC),
+        `${name} must emit the basic discovery_log shape`);
+    }
+  });
+
+  test('CEF retains its unique discovery_log shape (extras preserved)', () => {
+    const out = buildColorEditionFinderPrompt({
+      colorNames: ['black', 'white'],
+      colors: [{ name: 'black', hex: '#000000' }, { name: 'white', hex: '#ffffff' }],
+      product: PRODUCT_AIR,
+      previousRuns: [],
+      previousDiscovery: EMPTY_DISCOVERY,
+    });
+    assert.ok(out.includes('"confirmed_from_known"'), 'CEF discovery_log must keep confirmed_from_known');
+    assert.ok(out.includes('"added_new"'), 'CEF discovery_log must keep added_new');
+    assert.ok(out.includes('"rejected_from_known"'), 'CEF discovery_log must keep rejected_from_known');
   });
 });
 

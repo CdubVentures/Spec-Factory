@@ -325,26 +325,23 @@ describe('buildSearchPlan', () => {
       assert.equal(byKey.lod.state, 'conflict');
     });
 
-    it('bucket mapping: identity/critical/required→core, expected→secondary, optional→optional', async () => {
+    it('bucket mapping: mandatory→core, non_mandatory→optional', async () => {
       fetchMock = installFetchMock(makeLlmResponse());
       const ctx = makeSearchPlanningContext({
         focus_groups: [
           makeFocusGroup({
             key: 'sensor_performance',
-            field_keys: ['a', 'b', 'c', 'd', 'e'],
-            unresolved_field_keys: ['a', 'b', 'c', 'd', 'e'],
+            field_keys: ['a', 'b'],
+            unresolved_field_keys: ['a', 'b'],
           }),
         ],
-        field_priority_map: { a: 'identity', b: 'critical', c: 'required', d: 'expected', e: 'optional' },
+        field_priority_map: { a: 'mandatory', b: 'non_mandatory' },
       });
       const result = await buildSearchPlan({ searchPlanningContext: ctx, config: makeConfig() });
       const bundle = result.panel.bundles.find(b => b.key === 'sensor_performance');
       const byKey = Object.fromEntries(bundle.fields.map(f => [f.key, f]));
       assert.equal(byKey.a.bucket, 'core');
-      assert.equal(byKey.b.bucket, 'core');
-      assert.equal(byKey.c.bucket, 'core');
-      assert.equal(byKey.d.bucket, 'secondary');
-      assert.equal(byKey.e.bucket, 'optional');
+      assert.equal(byKey.b.bucket, 'optional');
     });
 
     it('unknown field_key defaults to optional bucket', async () => {

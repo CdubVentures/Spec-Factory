@@ -484,7 +484,7 @@
         "g",
         "max acceleration"
       ],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -503,7 +503,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Max Acceleration",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -548,12 +547,11 @@
         ]
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "spec_sheet",
@@ -616,7 +614,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Adjustable Scroll Wheel",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -655,10 +652,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review"
@@ -716,7 +712,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Adjustable Weight",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -756,10 +751,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -830,7 +824,6 @@
       "data_type": "number",
       "difficulty": "medium",
       "display_name": "Battery Life (Hours)",
-      "effort": 5,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -870,10 +863,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 5,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "product_page",
@@ -936,7 +928,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Bluetooth",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -975,10 +966,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "product_page",
@@ -1030,7 +1020,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -1040,7 +1030,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Cable Type",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -1077,12 +1066,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -1150,7 +1138,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Click Force",
-      "effort": 7,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -1190,10 +1177,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 7,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -1260,7 +1246,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Click Latency",
-      "effort": 8,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -1300,10 +1285,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 8,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -1384,7 +1368,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Click Latency (Bluetooth)",
-      "effort": 8,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -1424,10 +1407,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 8,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -1498,7 +1480,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Click Latency (Wired)",
-      "effort": 8,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -1538,10 +1519,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 8,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -1612,7 +1592,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Click Latency (Wireless)",
-      "effort": 8,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -1652,10 +1631,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 8,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -1708,7 +1686,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -1722,7 +1700,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Coating",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -1777,12 +1754,11 @@
         ]
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review"
@@ -1834,7 +1810,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -1849,7 +1825,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Colors",
-      "effort": 3,
       "enum": {
         "match": {},
         "policy": "closed",
@@ -1910,12 +1885,11 @@
         }
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "product_page"
@@ -1961,7 +1935,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -1971,7 +1945,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Computer-side Connector",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -2008,12 +1981,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -2064,7 +2036,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -2074,7 +2046,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Connection",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -2123,12 +2094,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "search_hints": {
         "content_types": [
           "product_page",
@@ -2184,7 +2154,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -2198,7 +2168,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Connectivity",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -2253,12 +2222,11 @@
         ]
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "search_hints": {
         "content_types": [
           "product_page",
@@ -2325,7 +2293,6 @@
       "data_type": "number",
       "difficulty": "medium",
       "display_name": "Debounce",
-      "effort": 7,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -2364,10 +2331,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 7,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -2418,7 +2384,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -2432,7 +2398,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Design",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -2477,12 +2442,11 @@
         ]
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review"
@@ -2540,7 +2504,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Discontinued",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -2574,10 +2537,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "product_page"
@@ -2629,7 +2591,7 @@
         "max dpi",
         "maximum dpi"
       ],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -2644,7 +2606,6 @@
       "data_type": "number",
       "difficulty": "medium",
       "display_name": "Max DPI",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -2682,12 +2643,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "search_hints": {
         "content_types": [
           "product_page",
@@ -2766,7 +2726,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Editions",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -2804,10 +2763,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [],
         "domain_hints": [],
@@ -2868,8 +2826,7 @@
           "property_weight": 0.6
         },
         "priority": {
-          "difficulty": "medium",
-          "effort": 5
+          "difficulty": "medium"
         },
         "require_identity_evidence": true,
         "source": "component_db.encoder",
@@ -2883,7 +2840,6 @@
       "data_type": "string",
       "difficulty": "medium",
       "display_name": "Encoder",
-      "effort": 5,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -2921,10 +2877,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 5,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "spec_sheet",
@@ -2985,7 +2940,6 @@
       "data_type": "string",
       "difficulty": "medium",
       "display_name": "Encoder Brand",
-      "effort": 5,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -3022,10 +2976,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 5,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "spec_sheet",
@@ -3085,7 +3038,6 @@
       "data_type": "url",
       "difficulty": "medium",
       "display_name": "Encoder Link",
-      "effort": 5,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -3120,10 +3072,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 5,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "spec_sheet"
@@ -3168,7 +3119,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -3178,7 +3129,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Feet Material",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -3226,12 +3176,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -3294,7 +3243,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Flawless Sensor",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -3333,10 +3281,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "spec_sheet",
@@ -3389,7 +3336,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -3399,7 +3346,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Form Factor",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -3448,12 +3394,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "product_page",
@@ -3508,7 +3453,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -3518,7 +3463,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Front Flare",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -3566,12 +3510,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review"
@@ -3620,7 +3563,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -3634,7 +3577,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Grip",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -3678,12 +3620,11 @@
         ]
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review"
@@ -3735,7 +3676,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -3749,7 +3690,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Hand Size",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -3793,12 +3733,11 @@
         ]
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review"
@@ -3857,7 +3796,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Hardware Acceleration",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -3896,10 +3834,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -3952,7 +3889,7 @@
         "height_mm",
         "overall height"
       ],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -3967,7 +3904,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Height",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -4005,12 +3941,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "search_hints": {
         "content_types": [
           "spec_sheet",
@@ -4072,7 +4007,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Honeycomb Frame",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -4111,10 +4045,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -4175,7 +4108,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Hot Swappable",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -4214,10 +4146,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -4268,7 +4199,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -4278,7 +4209,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Hump",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -4326,12 +4256,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review"
@@ -4386,7 +4315,7 @@
         "ips",
         "max ips"
       ],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -4401,7 +4330,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Max IPS",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -4438,12 +4366,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "spec_sheet",
@@ -4500,7 +4427,7 @@
         "lift-off distance",
         "lod"
       ],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -4515,7 +4442,6 @@
       "data_type": "mixed_number_range",
       "difficulty": "easy",
       "display_name": "Lift-off Distance (LOD)",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -4564,12 +4490,11 @@
         ]
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -4621,7 +4546,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -4635,7 +4560,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Lift Settings",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -4686,12 +4610,11 @@
         ]
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review"
@@ -4739,7 +4662,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -4752,7 +4675,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Lighting",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -4807,12 +4729,11 @@
         ]
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -4867,7 +4788,7 @@
         "lngth",
         "overall length"
       ],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -4882,7 +4803,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Length",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -4920,12 +4840,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "search_hints": {
         "content_types": [
           "spec_sheet",
@@ -4976,7 +4895,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": {
         "ai": {
           "context_level": "properties",
@@ -4994,8 +4913,7 @@
           "property_weight": 0.6
         },
         "priority": {
-          "difficulty": "medium",
-          "effort": 5
+          "difficulty": "medium"
         },
         "require_identity_evidence": true,
         "source": "component_db.material",
@@ -5009,7 +4927,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Material",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -5050,12 +4967,11 @@
         "component_type": "material"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -5117,7 +5033,6 @@
       "data_type": "string",
       "difficulty": "medium",
       "display_name": "MCU",
-      "effort": 5,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -5167,10 +5082,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 5,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review"
@@ -5231,7 +5145,6 @@
       "data_type": "url",
       "difficulty": "medium",
       "display_name": "MCU Link",
-      "effort": 5,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -5268,10 +5181,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 5,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review"
@@ -5315,7 +5227,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -5329,7 +5241,6 @@
       "data_type": "integer",
       "difficulty": "easy",
       "display_name": "Middle Buttons",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -5366,12 +5277,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -5430,7 +5340,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Motion Sync",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -5469,10 +5378,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -5522,7 +5430,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -5532,7 +5440,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Mouse-side Connector",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -5569,12 +5476,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -5633,7 +5539,6 @@
       "data_type": "boolean",
       "difficulty": "medium",
       "display_name": "NVIDIA Reflex",
-      "effort": 7,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -5672,10 +5577,9 @@
       "priority": {
         "availability": "rare",
         "difficulty": "medium",
-        "effort": 7,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -5735,7 +5639,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Onboard Memory",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -5774,10 +5677,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "product_page",
@@ -5828,7 +5730,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -5842,7 +5744,6 @@
       "data_type": "integer",
       "difficulty": "easy",
       "display_name": "Onboard Memory (Value)",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -5879,12 +5780,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "product_page",
@@ -5943,7 +5843,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Paracord",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -5982,10 +5881,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review"
@@ -6041,7 +5939,7 @@
         "polling_rate",
         "report rate"
       ],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -6056,7 +5954,6 @@
       "data_type": "number",
       "difficulty": "medium",
       "display_name": "Polling Rate",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -6112,12 +6009,11 @@
         ]
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 6,
-        "required_level": "critical"
+        "required_level": "mandatory"
       },
-      "required_level": "critical",
+      "required_level": "mandatory",
       "search_hints": {
         "content_types": [
           "product_page",
@@ -6183,7 +6079,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Price (MSRP)",
-      "effort": 4,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -6223,10 +6118,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "product_page"
@@ -6285,7 +6179,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Profile Switching",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -6324,10 +6217,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -6376,7 +6268,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -6390,7 +6282,6 @@
       "data_type": "integer",
       "difficulty": "easy",
       "display_name": "Programmable Buttons",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -6427,12 +6318,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -6499,7 +6389,6 @@
       "data_type": "date",
       "difficulty": "medium",
       "display_name": "Release Date",
-      "effort": 4,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -6547,10 +6436,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "product_page",
@@ -6613,7 +6501,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "RGB",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -6652,10 +6539,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "product_page",
@@ -6706,7 +6592,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": {
         "ai": {
           "context_level": "properties",
@@ -6731,8 +6617,7 @@
           "property_weight": 0.6
         },
         "priority": {
-          "difficulty": "medium",
-          "effort": 5
+          "difficulty": "medium"
         },
         "require_identity_evidence": true,
         "source": "component_db.sensor",
@@ -6746,7 +6631,6 @@
       "data_type": "string",
       "difficulty": "medium",
       "display_name": "Sensor",
-      "effort": 8,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -6792,12 +6676,11 @@
         "component_type": "sensor"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 8,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "search_hints": {
         "content_types": [
           "spec_sheet",
@@ -6851,7 +6734,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -6861,7 +6744,6 @@
       "data_type": "string",
       "difficulty": "medium",
       "display_name": "Sensor Brand",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -6901,12 +6783,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "search_hints": {
         "content_types": [
           "spec_sheet",
@@ -6974,7 +6855,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Sensor Date",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -7020,10 +6900,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "spec_sheet"
@@ -7086,7 +6965,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Sensor Latency",
-      "effort": 8,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -7126,10 +7004,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 8,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -7209,7 +7086,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Sensor Latency (Bluetooth)",
-      "effort": 8,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -7249,10 +7125,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 8,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -7322,7 +7197,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Sensor Latency (Wired)",
-      "effort": 8,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -7362,10 +7236,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 8,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -7435,7 +7308,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Sensor Latency (Wireless)",
-      "effort": 8,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -7475,10 +7347,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 8,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -7530,7 +7401,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -7540,7 +7411,6 @@
       "data_type": "url",
       "difficulty": "easy",
       "display_name": "Sensor Link",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -7578,12 +7448,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "spec_sheet"
@@ -7630,7 +7499,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -7640,7 +7509,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Sensor Type",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -7688,12 +7556,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "spec_sheet"
@@ -7743,7 +7610,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -7753,7 +7620,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Shape",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -7801,12 +7667,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -7874,7 +7739,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "DPI Shift Latency",
-      "effort": 8,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -7914,10 +7778,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 8,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -7965,7 +7828,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -7979,7 +7842,6 @@
       "data_type": "integer",
       "difficulty": "easy",
       "display_name": "Side Buttons",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -8016,12 +7878,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -8082,7 +7943,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Silent Clicks",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -8121,10 +7981,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -8175,7 +8034,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "consumers": {
@@ -8190,7 +8049,6 @@
       "data_type": "string",
       "difficulty": "hard",
       "display_name": "SKU",
-      "effort": 5,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -8227,12 +8085,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "hard",
-        "effort": 5,
-        "required_level": "identity"
+        "required_level": "mandatory"
       },
-      "required_level": "identity",
+      "required_level": "mandatory",
       "search_hints": {
         "content_types": [
           "product_page"
@@ -8294,7 +8151,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Smoothing",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -8333,10 +8189,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -8386,7 +8241,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": {
         "ai": {
           "context_level": "properties",
@@ -8409,8 +8264,7 @@
           "property_weight": 0.6
         },
         "priority": {
-          "difficulty": "medium",
-          "effort": 5
+          "difficulty": "medium"
         },
         "require_identity_evidence": true,
         "source": "component_db.switch",
@@ -8424,7 +8278,6 @@
       "data_type": "string",
       "difficulty": "medium",
       "display_name": "Switch",
-      "effort": 8,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -8470,12 +8323,11 @@
         "component_type": "switch"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 8,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "search_hints": {
         "content_types": [
           "spec_sheet",
@@ -8528,7 +8380,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -8538,7 +8390,6 @@
       "data_type": "string",
       "difficulty": "medium",
       "display_name": "Switch Brand",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -8578,12 +8429,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "search_hints": {
         "content_types": [
           "spec_sheet",
@@ -8636,7 +8486,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -8646,7 +8496,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Switch Type",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -8695,12 +8544,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "spec_sheet",
@@ -8764,7 +8612,6 @@
       "data_type": "url",
       "difficulty": "medium",
       "display_name": "Switches LInk",
-      "effort": 5,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -8804,10 +8651,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 5,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "spec_sheet"
@@ -8852,7 +8698,7 @@
         "reasoning_note": ""
       },
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -8862,7 +8708,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Thumb Rest",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -8899,12 +8744,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review"
@@ -8964,7 +8808,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Tilt Scroll Wheel",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -9003,10 +8846,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -9061,7 +8903,7 @@
         "weight",
         "weight_g"
       ],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -9076,7 +8918,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Weight",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -9114,12 +8955,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -9177,7 +9017,7 @@
         "width",
         "width_mm"
       ],
-      "availability": "expected",
+      "availability": "always",
       "component": null,
       "constraints": [],
       "contract": {
@@ -9192,7 +9032,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Width",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -9230,12 +9069,11 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "search_hints": {
         "content_types": [
           "spec_sheet",
@@ -9296,7 +9134,6 @@
       "data_type": "boolean",
       "difficulty": "medium",
       "display_name": "Wireless Charging",
-      "effort": 5,
       "enum": {
         "match": {},
         "new_value_policy": {
@@ -9335,10 +9172,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 5,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
           "review",
@@ -9386,7 +9222,7 @@
       "unknown_reason_default": "not_found_after_search"
     }
   },
-  "generated_at": "2026-04-20T07:40:09.955Z",
+  "generated_at": "2026-04-20T23:54:53.825Z",
   "key_range": "dataEntry!B9:B83",
   "notes": [
     "Generated by Field Rules Studio compiler.",

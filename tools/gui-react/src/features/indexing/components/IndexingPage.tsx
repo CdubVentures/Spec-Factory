@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { deriveLlmKeyGateErrors, deriveSerperKeyGateError } from '../../../hooks/llmKeyGateHelpers.js';
 import { useSerperCreditQuery } from '../../../hooks/useSerperCreditQuery.ts';
@@ -43,8 +43,12 @@ import {
 } from '../state/indexingRuntimeSettingsProjection.ts';
 import { PickerPanel } from '../panels/PickerPanel.tsx';
 import { ProductHistoryPanel } from '../panels/ProductHistoryPanel.tsx';
+import { FinderTabBar } from '../panels/FinderTabBar.tsx';
+import { FinderPanelSkeleton } from '../panels/FinderPanelSkeleton.tsx';
+import type { FinderPanelId } from '../panels/finderTabMeta.ts';
 import { FINDER_PANELS } from '../state/finderPanelRegistry.generated.ts';
 import { DiscoveryHistoryDrawer } from '../../../shared/ui/finder/index.ts';
+import { usePersistedTab } from '../../../stores/tabStore.ts';
 
 export function IndexingPage() {
   const category = useUiStore((s) => s.category);
@@ -262,6 +266,23 @@ export function IndexingPage() {
     collapseToggle(`indexing:panel:${panel}`, DEFAULT_PANEL_COLLAPSED[panel]);
   };
 
+  // WHY: Replaced the 4-stacked-finder-panels layout with a tab switcher.
+  // Only the active finder's panel renders. Active id is persisted per
+  // product + category so a returning user lands on the last finder they used.
+  const finderPanelIds = useMemo(
+    () => FINDER_PANELS.map((p) => p.id) as readonly FinderPanelId[],
+    [],
+  );
+  const [activeFinderId, setActiveFinderId] = usePersistedTab<FinderPanelId>(
+    `indexing:finder:active:${singleProductId}:${category}`,
+    FINDER_PANELS[0].id as FinderPanelId,
+    { validValues: finderPanelIds },
+  );
+  const ActiveFinderPanel = useMemo(() => {
+    const entry = FINDER_PANELS.find((p) => p.id === activeFinderId) ?? FINDER_PANELS[0];
+    return entry.component;
+  }, [activeFinderId]);
+
   const pickerPanelProps = {
     collapsed: panelCollapsed.picker,
     onToggle: () => togglePanel('picker'),
@@ -296,9 +317,29 @@ export function IndexingPage() {
     <div className="space-y-4 flex flex-col">
       <PickerPanel {...pickerPanelProps} />
       <ProductHistoryPanel productId={singleProductId} category={category} />
-      {FINDER_PANELS.map(({ id, component: Panel }) => (
-        <Panel key={id} productId={singleProductId} category={category} />
-      ))}
+      {singleProductId ? (
+        <>
+          <FinderTabBar
+            activeId={activeFinderId}
+            onSelect={setActiveFinderId}
+            productId={singleProductId}
+            category={category}
+          />
+          <div
+            role="tabpanel"
+            id={`finder-panel-${activeFinderId}`}
+            aria-labelledby={`finder-tab-${activeFinderId}`}
+          >
+            <Suspense fallback={<FinderPanelSkeleton />}>
+              <ActiveFinderPanel
+                key={activeFinderId}
+                productId={singleProductId}
+                category={category}
+              />
+            </Suspense>
+          </div>
+        </>
+      ) : null}
 
       {actionError && (
         <div className="sf-callout sf-callout-danger px-3 py-2 sf-text-caption" style={{ order: 100 }}>

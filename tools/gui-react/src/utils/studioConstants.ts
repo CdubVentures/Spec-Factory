@@ -77,11 +77,10 @@ export const STUDIO_TIPS: Record<string, string> = {
   rounding_mode: 'nearest: standard rounding, floor: always down, ceil: always up.',
 
   // Tab 2: Key Navigator - Priority
-  key_section_priority: 'Priority, availability, difficulty, and effort settings drive extraction urgency and scheduling of this field.',
-  required_level: 'Field importance. identity: product ID, required/critical: essential, expected: should exist, optional: nice-to-have, editorial: narrative, commerce: pricing.',
-  availability: 'How often this data exists. always: every product, expected: most, sometimes: ~half, rare: few, editorial_only: reviews only.',
-  difficulty: 'Extraction difficulty. easy: directly stated, medium: some inference, hard: buried/inconsistent, instrumented: needs physical measurement.',
-  effort: 'Relative extraction effort. 1 = trivial lookup, 10 = multi-source synthesis. Affects pipeline scheduling.',
+  key_section_priority: 'Priority, availability, and difficulty settings drive extraction urgency and scheduling of this field.',
+  required_level: 'Field importance. mandatory: essential for publish (identity + critical data). non_mandatory: nice-to-have.',
+  availability: 'How often this data exists. always: every product, sometimes: ~half, rare: editorial/niche only.',
+  difficulty: 'Extraction difficulty. easy: directly stated, medium: some inference, hard: buried/inconsistent, very_hard: needs multi-source synthesis or physical measurement.',
   // Tab 2: Key Navigator - Enum
   key_section_enum: 'Enum policy and enum source define accepted vocabulary, matching behavior, and suggestions for this field.',
   enum_policy: 'Enum Policy controls vocabulary matching after parsing. closed: requires a known list, rejects unknowns. open_prefer_known: prefers known values but accepts new evidence-backed values and queues them as suggestions. open: accepts any value (valid for all field types including number, url, date). For boolean fields, this is auto-locked to closed/yes_no.',

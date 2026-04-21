@@ -360,6 +360,10 @@ export const FINDER_MODULES = Object.freeze([
     // LLM phase schema (codegen: phaseSchemaRegistry.generated.js)
     promptBuilderExport: 'buildReleaseDateFinderPrompt',
     responseSchemaExport: 'releaseDateFinderResponseSchema',
+    // WHY: Scalar finders declare defaultTemplateExport so codegen can emit
+    // FINDER_SCALAR_DEFAULT_TEMPLATES — the phase-registry overlay is derived
+    // from this map via buildScalarFinderPromptTemplates (no hand-written block).
+    defaultTemplateExport: 'RDF_DEFAULT_TEMPLATE',
     // Editorial GET response schema — drives types.generated.ts + hooks codegen
     // (Phase 3). Opt-in per finder: CEF/PIF don't declare one → codegen skips them.
     getResponseSchemaExport: 'releaseDateFinderGetResponseSchema',
@@ -457,6 +461,8 @@ export const FINDER_MODULES = Object.freeze([
     // LLM phase schema (codegen: phaseSchemaRegistry.generated.js)
     promptBuilderExport: 'buildSkuFinderPrompt',
     responseSchemaExport: 'skuFinderResponseSchema',
+    // WHY: see releaseDateFinder for the defaultTemplateExport contract.
+    defaultTemplateExport: 'SKF_DEFAULT_TEMPLATE',
     getResponseSchemaExport: 'skuFinderGetResponseSchema',
 
     // Generic scalar finder panel display config.

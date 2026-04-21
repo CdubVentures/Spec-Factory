@@ -109,12 +109,9 @@ test('clampAutomationPriority uses the configured fallback for non-numeric input
 
 test('automationPriorityForRequiredLevel maps canonical levels case-insensitively', () => {
   const cases = [
-    ['identity', 10],
-    ['critical', 20],
-    ['required', 35],
-    ['expected', 60],
-    ['optional', 80],
-    ['CRITICAL', 20],
+    ['mandatory', 20],
+    ['non_mandatory', 70],
+    ['MANDATORY', 20],
   ];
 
   for (const [value, expected] of cases) {

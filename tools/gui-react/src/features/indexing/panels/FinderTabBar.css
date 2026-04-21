@@ -1,0 +1,100 @@
+/*
+ * FinderTabBar — finder-specific icon swatches, status-light colors, and the
+ * mini divider rendered between adjacent tabs. Extends .sf-tab-strip /
+ * .sf-tab-item (house primitives, in theme.css). All colors come from
+ * semantic tokens; no hardcoded hex.
+ */
+
+/* ── Mini divider between tabs ──────────────────────────────────── */
+/* Scoped to .finder-tab-bar so the global .sf-tab-strip usage (e.g.,
+   ProductHistoryPanel) is not affected. Pseudo sits in the flex gap,
+   centered vertically, shortened top/bottom for a subtle "pip". */
+.finder-tab-bar .sf-tab-item { position: relative; }
+
+.finder-tab-bar .sf-tab-item + .sf-tab-item::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 28%;
+  bottom: 28%;
+  width: 1px;
+  background: rgb(var(--sf-color-border-subtle-rgb) / 0.7);
+  pointer-events: none;
+}
+
+/* Suppress the divider immediately adjacent to the active tab so the
+   accent border isn't visually cut by a neutral line. */
+.finder-tab-bar .sf-tab-item.sf-tab-item-active::before,
+.finder-tab-bar .sf-tab-item.sf-tab-item-active + .sf-tab-item::before {
+  display: none;
+}
+
+/* ── Icon badges (one per finder) ────────────────────────────────── */
+
+.finder-tab-icon {
+  color: rgb(var(--sf-color-text-muted-rgb));
+  background: rgb(var(--sf-color-surface-elevated-rgb) / 0.65);
+  border: 1px solid rgb(var(--sf-color-border-subtle-rgb) / 0.4);
+  line-height: 1;
+}
+
+.finder-tab-icon-cef {
+  color: var(--sf-state-warning-fg);
+  background: var(--sf-state-warning-bg);
+  border-color: var(--sf-state-warning-border);
+}
+
+.finder-tab-icon-pif {
+  color: var(--sf-state-info-fg);
+  background: var(--sf-state-info-bg);
+  border-color: var(--sf-state-info-border);
+}
+
+.finder-tab-icon-rdf {
+  color: rgb(var(--sf-color-accent-strong-rgb));
+  background: rgb(var(--sf-color-accent-rgb) / 0.18);
+  border-color: rgb(var(--sf-color-accent-rgb) / 0.4);
+}
+
+.finder-tab-icon-sku {
+  color: var(--sf-state-success-fg);
+  background: var(--sf-state-success-bg);
+  border-color: var(--sf-state-success-border);
+}
+
+/* ── Status lights ──────────────────────────────────────────────── */
+
+.finder-tab-status {
+  box-shadow: 0 0 0 2px rgb(var(--sf-color-surface-rgb) / 0.6);
+}
+
+.finder-tab-status-complete {
+  background: var(--sf-state-success-fg);
+  box-shadow: 0 0 0 2.5px var(--sf-state-success-border);
+}
+
+.finder-tab-status-partial {
+  background: var(--sf-state-warning-fg);
+  box-shadow: 0 0 0 2.5px var(--sf-state-warning-border);
+}
+
+.finder-tab-status-running {
+  background: rgb(var(--sf-color-accent-strong-rgb));
+  box-shadow: 0 0 0 2.5px rgb(var(--sf-color-accent-rgb) / 0.4);
+  animation: finder-tab-status-breathe 1.6s ease-in-out infinite;
+}
+
+.finder-tab-status-idle {
+  background: rgb(var(--sf-color-text-subtle-rgb) / 0.7);
+  box-shadow: 0 0 0 2.5px rgb(var(--sf-color-text-subtle-rgb) / 0.2);
+}
+
+.finder-tab-status-empty {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px rgb(var(--sf-color-text-subtle-rgb) / 0.6);
+}
+
+@keyframes finder-tab-status-breathe {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}

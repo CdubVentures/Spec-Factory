@@ -11,10 +11,9 @@
       "header_row": 1,
       "mode": "sheet",
       "priority": {
-        "availability": "expected",
+        "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 8,
-        "required_level": "required"
+        "required_level": "non_mandatory"
       },
       "roles": {
         "aliases": [],
@@ -97,10 +96,9 @@
       "header_row": 1,
       "mode": "sheet",
       "priority": {
-        "availability": "expected",
+        "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 8,
-        "required_level": "required"
+        "required_level": "non_mandatory"
       },
       "roles": {
         "aliases": [],
@@ -167,8 +165,7 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 5,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "roles": {
         "aliases": [],
@@ -225,10 +222,9 @@
       "header_row": 1,
       "mode": "sheet",
       "priority": {
-        "availability": "expected",
+        "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "roles": {
         "aliases": [],
@@ -259,10 +255,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -284,10 +279,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -311,10 +305,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -336,10 +329,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -361,10 +353,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -398,8 +389,7 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 5,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -445,10 +435,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -471,10 +460,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -500,10 +488,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -521,10 +508,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -560,10 +546,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -589,10 +574,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -610,10 +594,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -636,10 +619,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -669,8 +651,7 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 5,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -766,10 +747,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "expected",
+        "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -823,7 +803,7 @@
         "max acceleration",
         "g"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "acceleration",
       "component": null,
       "constraints": [],
@@ -840,7 +820,6 @@
       "data_type": "mixed_number_range",
       "difficulty": "easy",
       "display_name": "Max Acceleration",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -896,12 +875,11 @@
         "unit": "g"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -967,7 +945,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Adjustable Scroll Wheel",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -1052,10 +1029,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -1115,7 +1091,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Adjustable Weight",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -1201,10 +1176,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -1276,7 +1250,6 @@
       "data_type": "number",
       "difficulty": "medium",
       "display_name": "Battery Life (Hours)",
-      "effort": 5,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -1324,10 +1297,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 5,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -1393,7 +1365,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Bluetooth",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -1478,10 +1449,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -1532,7 +1502,7 @@
     },
     "cable_type": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "cable_type",
       "component": null,
       "constraints": [],
@@ -1545,7 +1515,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Cable Type",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -1590,12 +1559,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -1664,7 +1632,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Click Force",
-      "effort": 7,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -1712,10 +1679,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 7,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -1784,7 +1750,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Click Latency",
-      "effort": 8,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -1832,10 +1797,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 8,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "round": "2dp",
       "search_hints": {
         "content_types": [
@@ -1917,7 +1881,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Click Latency (Bluetooth)",
-      "effort": 8,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -1965,10 +1928,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 8,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "round": "2dp",
       "search_hints": {
         "content_types": [
@@ -2040,7 +2002,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Click Latency (Wired)",
-      "effort": 8,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -2088,10 +2049,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 8,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "round": "2dp",
       "search_hints": {
         "content_types": [
@@ -2163,7 +2123,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Click Latency (Wireless)",
-      "effort": 8,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -2211,10 +2170,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 8,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "round": "2dp",
       "search_hints": {
         "content_types": [
@@ -2266,7 +2224,7 @@
     },
     "coating": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "coating",
       "component": null,
       "constraints": [],
@@ -2279,7 +2237,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Coating",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -2346,12 +2303,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -2456,10 +2412,9 @@
         }
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "search_hints": {
         "content_types": [
@@ -2570,7 +2525,7 @@
     },
     "computer_side_connector": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "computer_side_connector",
       "component": null,
       "constraints": [],
@@ -2583,7 +2538,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Computer-side Connector",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -2628,12 +2582,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -2683,7 +2636,7 @@
     },
     "connection": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "connection",
       "component": null,
       "constraints": [],
@@ -2696,7 +2649,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Connection",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -2756,12 +2708,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -2816,7 +2767,7 @@
     },
     "connectivity": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "connectivity",
       "component": null,
       "constraints": [],
@@ -2829,7 +2780,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Connectivity",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -2896,12 +2846,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -2969,7 +2918,6 @@
       "data_type": "number",
       "difficulty": "medium",
       "display_name": "Debounce",
-      "effort": 7,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -3016,10 +2964,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 7,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "round": "2dp",
       "search_hints": {
         "content_types": [
@@ -3070,7 +3017,7 @@
     },
     "design": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "design",
       "component": null,
       "constraints": [],
@@ -3083,7 +3030,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Design",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -3140,12 +3086,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -3205,7 +3150,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Discontinued",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -3284,10 +3228,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -3338,7 +3281,7 @@
         "maximum dpi",
         "cpi"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "dpi",
       "component": null,
       "constraints": [],
@@ -3355,7 +3298,6 @@
       "data_type": "number",
       "difficulty": "medium",
       "display_name": "Max DPI",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -3401,12 +3343,11 @@
         "unit": "dpi"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -3502,8 +3443,7 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
       "search_hints": {
         "content_types": [],
@@ -3537,7 +3477,6 @@
       "data_type": "string",
       "difficulty": "medium",
       "display_name": "Encoder",
-      "effort": 5,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -3582,10 +3521,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 5,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -3648,7 +3586,6 @@
       "data_type": "string",
       "difficulty": "medium",
       "display_name": "Encoder Brand",
-      "effort": 5,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -3692,10 +3629,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 5,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -3757,7 +3693,6 @@
       "data_type": "url",
       "difficulty": "medium",
       "display_name": "Encoder Link",
-      "effort": 5,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -3799,10 +3734,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 5,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -3846,7 +3780,7 @@
     },
     "feet_material": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "feet_material",
       "component": null,
       "constraints": [],
@@ -3859,7 +3793,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Feet Material",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -3919,12 +3852,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -3989,7 +3921,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Flawless Sensor",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -4074,10 +4005,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -4130,7 +4060,7 @@
     },
     "form_factor": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "form_factor",
       "component": null,
       "constraints": [],
@@ -4143,7 +4073,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Form Factor",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -4201,12 +4130,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -4260,7 +4188,7 @@
     },
     "front_flare": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "front_flare",
       "component": null,
       "constraints": [],
@@ -4273,7 +4201,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Front Flare",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -4333,12 +4260,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -4386,7 +4312,7 @@
     },
     "grip": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "grip",
       "component": null,
       "constraints": [],
@@ -4399,7 +4325,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Grip",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -4454,12 +4379,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -4510,7 +4434,7 @@
     },
     "hand_size": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "hand_size",
       "component": null,
       "constraints": [],
@@ -4523,7 +4447,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Hand Size",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -4578,12 +4501,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -4644,7 +4566,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Hardware Acceleration",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -4729,10 +4650,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -4784,7 +4704,7 @@
         "height_mm",
         "overall height"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "height",
       "component": null,
       "constraints": [],
@@ -4801,7 +4721,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Height",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -4847,12 +4766,11 @@
         "unit": "mm"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -4917,7 +4835,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Honeycomb Frame",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -5002,10 +4919,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -5068,7 +4984,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Hot Swappable",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -5153,10 +5068,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -5206,7 +5120,7 @@
     },
     "hump": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "hump",
       "component": null,
       "constraints": [],
@@ -5219,7 +5133,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Hump",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -5279,12 +5192,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -5338,7 +5250,7 @@
         "max ips",
         "inches per second"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "ips",
       "component": null,
       "constraints": [],
@@ -5355,7 +5267,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Max IPS",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -5400,12 +5311,11 @@
         "unit": "ips"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -5462,7 +5372,7 @@
         "lift off distance",
         "lift-off distance"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "lift",
       "component": null,
       "constraints": [],
@@ -5475,7 +5385,6 @@
       "data_type": "mixed_number_range",
       "difficulty": "easy",
       "display_name": "Lift-off Distance (LOD)",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -5538,12 +5447,11 @@
         "unit": "mm"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -5595,7 +5503,7 @@
     },
     "lift_settings": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "lift_settings",
       "component": null,
       "constraints": [],
@@ -5608,7 +5516,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Lift Settings",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -5671,12 +5578,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -5723,7 +5629,7 @@
     },
     "lighting": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "lighting",
       "component": null,
       "constraints": [],
@@ -5738,7 +5644,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Lighting",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -5805,12 +5710,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -5864,7 +5768,7 @@
         "lngth",
         "overall length"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "length",
       "component": null,
       "constraints": [],
@@ -5881,7 +5785,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Length",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -5927,12 +5830,11 @@
         "unit": "mm"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -5983,7 +5885,7 @@
     },
     "material": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "material",
       "component": null,
       "constraints": [],
@@ -5996,7 +5898,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Material",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -6045,12 +5946,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -6114,7 +6014,6 @@
       "data_type": "string",
       "difficulty": "medium",
       "display_name": "MCU",
-      "effort": 5,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -6172,10 +6071,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 5,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -6238,7 +6136,6 @@
       "data_type": "url",
       "difficulty": "medium",
       "display_name": "MCU Link",
-      "effort": 5,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -6283,10 +6180,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 5,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -6329,7 +6225,7 @@
     },
     "middle_buttons": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "middle_buttons",
       "component": null,
       "constraints": [],
@@ -6345,7 +6241,6 @@
       "data_type": "integer",
       "difficulty": "easy",
       "display_name": "Middle Buttons",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -6389,12 +6284,11 @@
         "unit": "none"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -6455,7 +6349,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Motion Sync",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -6540,10 +6433,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -6592,7 +6484,7 @@
     },
     "mouse_side_connector": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "mouse_side_connector",
       "component": null,
       "constraints": [],
@@ -6605,7 +6497,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Mouse-side Connector",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -6650,12 +6541,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -6716,7 +6606,6 @@
       "data_type": "boolean",
       "difficulty": "medium",
       "display_name": "NVIDIA Reflex",
-      "effort": 7,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -6801,10 +6690,9 @@
       "priority": {
         "availability": "rare",
         "difficulty": "medium",
-        "effort": 7,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -6866,7 +6754,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Onboard Memory",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -6951,10 +6838,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -7004,7 +6890,7 @@
     },
     "onboard_memory_value": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "onboard_memory_value",
       "component": null,
       "constraints": [],
@@ -7020,7 +6906,6 @@
       "data_type": "integer",
       "difficulty": "easy",
       "display_name": "Onboard Memory (Value)",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -7064,12 +6949,11 @@
         "unit": "none"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -7130,7 +7014,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Paracord",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -7215,10 +7098,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -7273,7 +7155,7 @@
         "hz",
         "report rate"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "polling_rate",
       "component": null,
       "constraints": [],
@@ -7286,7 +7168,6 @@
       "data_type": "number",
       "difficulty": "medium",
       "display_name": "Polling Rate",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -7355,12 +7236,11 @@
         "unit": "Hz"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -7429,7 +7309,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Price (MSRP)",
-      "effort": 4,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -7479,10 +7358,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -7543,7 +7421,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Profile Switching",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -7628,10 +7505,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -7679,7 +7555,7 @@
     },
     "programmable_buttons": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "programmable_buttons",
       "component": null,
       "constraints": [],
@@ -7695,7 +7571,6 @@
       "data_type": "integer",
       "difficulty": "easy",
       "display_name": "Programmable Buttons",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -7739,12 +7614,11 @@
         "unit": "none"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -7831,8 +7705,7 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 4,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
       "search_hints": {
         "content_types": [
@@ -7880,7 +7753,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "RGB",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -7962,10 +7834,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -8015,7 +7886,7 @@
     },
     "sensor": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "sensor",
       "component": null,
       "constraints": [],
@@ -8028,7 +7899,6 @@
       "data_type": "string",
       "difficulty": "medium",
       "display_name": "Sensor",
-      "effort": 8,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -8082,12 +7952,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 8,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -8140,7 +8009,7 @@
     },
     "sensor_brand": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "sensor_brand",
       "component": null,
       "constraints": [],
@@ -8153,7 +8022,6 @@
       "data_type": "string",
       "difficulty": "medium",
       "display_name": "Sensor Brand",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -8201,12 +8069,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -8275,7 +8142,6 @@
       "data_type": "date",
       "difficulty": "easy",
       "display_name": "Sensor Date",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -8334,10 +8200,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -8401,7 +8266,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Sensor Latency",
-      "effort": 8,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -8449,10 +8313,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 8,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "round": "2dp",
       "search_hints": {
         "content_types": [
@@ -8533,7 +8396,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Sensor Latency (Bluetooth)",
-      "effort": 8,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -8581,10 +8443,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 8,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "round": "2dp",
       "search_hints": {
         "content_types": [
@@ -8655,7 +8516,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Sensor Latency (Wired)",
-      "effort": 8,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -8703,10 +8563,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 8,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "round": "2dp",
       "search_hints": {
         "content_types": [
@@ -8777,7 +8636,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "Sensor Latency (Wireless)",
-      "effort": 8,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -8825,10 +8683,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 8,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "round": "2dp",
       "search_hints": {
         "content_types": [
@@ -8879,7 +8736,7 @@
     },
     "sensor_link": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "sensor_link",
       "component": null,
       "constraints": [],
@@ -8892,7 +8749,6 @@
       "data_type": "url",
       "difficulty": "easy",
       "display_name": "Sensor Link",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -8938,12 +8794,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -8989,7 +8844,7 @@
     },
     "sensor_type": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "sensor_type",
       "component": null,
       "constraints": [],
@@ -9002,7 +8857,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Sensor Type",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -9062,12 +8916,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -9116,7 +8969,7 @@
     },
     "shape": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "shape",
       "component": null,
       "constraints": [],
@@ -9129,7 +8982,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Shape",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -9189,12 +9041,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -9263,7 +9114,6 @@
       "data_type": "number",
       "difficulty": "hard",
       "display_name": "DPI Shift Latency",
-      "effort": 8,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -9311,10 +9161,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 8,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "round": "2dp",
       "search_hints": {
         "content_types": [
@@ -9362,7 +9211,7 @@
     },
     "side_buttons": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "side_buttons",
       "component": null,
       "constraints": [],
@@ -9378,7 +9227,6 @@
       "data_type": "integer",
       "difficulty": "easy",
       "display_name": "Side Buttons",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -9422,12 +9270,11 @@
         "unit": "none"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "round": "int",
       "search_hints": {
         "content_types": [
@@ -9490,7 +9337,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Silent Clicks",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -9575,10 +9421,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -9658,8 +9503,7 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "hard",
-        "effort": 5,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
       "search_hints": {
         "content_types": [
@@ -9706,7 +9550,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Smoothing",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -9791,10 +9634,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -9843,7 +9685,7 @@
     },
     "switch": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "switch",
       "component": null,
       "constraints": [],
@@ -9856,7 +9698,6 @@
       "data_type": "string",
       "difficulty": "medium",
       "display_name": "Switch",
-      "effort": 8,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -9910,12 +9751,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 8,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -9967,7 +9807,7 @@
     },
     "switch_brand": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "switch_brand",
       "component": null,
       "constraints": [],
@@ -9980,7 +9820,6 @@
       "data_type": "string",
       "difficulty": "medium",
       "display_name": "Switch Brand",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -10028,12 +9867,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "medium",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -10085,7 +9923,7 @@
     },
     "switch_type": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "switch_type",
       "component": null,
       "constraints": [],
@@ -10098,7 +9936,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Switch Type",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -10159,12 +9996,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -10230,7 +10066,6 @@
       "data_type": "url",
       "difficulty": "medium",
       "display_name": "Switches LInk",
-      "effort": 5,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -10277,10 +10112,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 5,
-        "required_level": "optional"
+        "required_level": "non_mandatory"
       },
-      "required_level": "optional",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -10324,7 +10158,7 @@
     },
     "thumb_rest": {
       "aliases": [],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "thumb_rest",
       "component": null,
       "constraints": [],
@@ -10337,7 +10171,6 @@
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Thumb Rest",
-      "effort": 3,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -10382,12 +10215,11 @@
         "unit": null
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 3,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -10449,7 +10281,6 @@
       "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Tilt Scroll Wheel",
-      "effort": 2,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -10534,10 +10365,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
-        "effort": 2,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
@@ -10591,7 +10421,7 @@
         "mass",
         "grams"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "weight",
       "component": null,
       "constraints": [],
@@ -10608,7 +10438,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Weight",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -10654,12 +10483,11 @@
         "unit": "g"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -10717,7 +10545,7 @@
         "width_mm",
         "overall width"
       ],
-      "availability": "expected",
+      "availability": "always",
       "canonical_key": "width",
       "component": null,
       "constraints": [],
@@ -10734,7 +10562,6 @@
       "data_type": "number",
       "difficulty": "easy",
       "display_name": "Width",
-      "effort": 6,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -10780,12 +10607,11 @@
         "unit": "mm"
       },
       "priority": {
-        "availability": "expected",
+        "availability": "always",
         "difficulty": "easy",
-        "effort": 6,
-        "required_level": "required"
+        "required_level": "mandatory"
       },
-      "required_level": "required",
+      "required_level": "mandatory",
       "round": "1dp",
       "search_hints": {
         "content_types": [
@@ -10849,7 +10675,6 @@
       "data_type": "boolean",
       "difficulty": "medium",
       "display_name": "Wireless Charging",
-      "effort": 5,
       "enum": {
         "match": {},
         "new_value_policy": {},
@@ -10934,10 +10759,9 @@
       "priority": {
         "availability": "sometimes",
         "difficulty": "medium",
-        "effort": 5,
-        "required_level": "expected"
+        "required_level": "non_mandatory"
       },
-      "required_level": "expected",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [

@@ -36,12 +36,11 @@ const SAMPLE_FIELD_RULES = {
       group: 'identity',
       data_type: 'string',
       output_shape: 'scalar',
-      required_level: 'required',
-      availability: 'expected',
+      required_level: 'mandatory',
+      availability: 'always',
       difficulty: 'easy',
-      effort: 2,
       unknown_reason_default: 'not_found_after_search',
-      priority: { required_level: 'required', availability: 'expected', difficulty: 'easy', effort: 2 },
+      priority: { required_level: 'mandatory', availability: 'always', difficulty: 'easy' },
       contract: { type: 'string', shape: 'scalar' },
       evidence: {}
     },
@@ -51,12 +50,11 @@ const SAMPLE_FIELD_RULES = {
       group: 'physical',
       data_type: 'number',
       output_shape: 'scalar',
-      required_level: 'expected',
-      availability: 'expected',
+      required_level: 'non_mandatory',
+      availability: 'always',
       difficulty: 'medium',
-      effort: 3,
       unknown_reason_default: 'not_found_after_search',
-      priority: { required_level: 'expected', availability: 'expected', difficulty: 'medium', effort: 3 },
+      priority: { required_level: 'non_mandatory', availability: 'always', difficulty: 'medium' },
       contract: { type: 'number', shape: 'scalar', unit: 'g' },
       evidence: {}
     },
@@ -66,12 +64,11 @@ const SAMPLE_FIELD_RULES = {
       group: 'performance',
       data_type: 'number',
       output_shape: 'scalar',
-      required_level: 'critical',
-      availability: 'expected',
+      required_level: 'mandatory',
+      availability: 'always',
       difficulty: 'easy',
-      effort: 2,
       unknown_reason_default: 'not_found_after_search',
-      priority: { required_level: 'critical', availability: 'expected', difficulty: 'easy', effort: 2 },
+      priority: { required_level: 'mandatory', availability: 'always', difficulty: 'easy' },
       contract: { type: 'number', shape: 'scalar' },
       evidence: {}
     }
@@ -118,7 +115,7 @@ describe('listFields', () => {
     const brand = result.fields.find((f) => f.key === 'brand');
     assert.equal(brand.display_name, 'Brand Name');
     assert.equal(brand.group, 'Identity');
-    assert.equal(brand.required_level, 'required');
+    assert.equal(brand.required_level, 'mandatory');
     assert.equal(brand.data_type, 'string');
     assert.equal(brand.output_shape, 'scalar');
   });
@@ -137,10 +134,10 @@ describe('listFields', () => {
     const result = await listFields({
       category: 'test_device',
       config: { categoryAuthorityRoot: tmpDir },
-      requiredLevel: 'critical'
+      requiredLevel: 'mandatory'
     });
-    assert.equal(result.count, 1);
-    assert.equal(result.fields[0].key, 'dpi');
+    assert.equal(result.count, 2);
+    assert.deepEqual(result.fields.map((f) => f.key).sort(), ['brand', 'dpi']);
   });
 
   it('returns empty for non-existent category', async () => {
@@ -227,10 +224,10 @@ describe('fieldReport', () => {
     const identityGroup = result.groups.find((g) => g.group === 'Identity');
     assert.ok(identityGroup);
     assert.equal(identityGroup.count, 1);
-    assert.equal(identityGroup.required, 1);
+    assert.equal(identityGroup.mandatory, 1);
     const perfGroup = result.groups.find((g) => g.group === 'Performance');
     assert.ok(perfGroup);
-    assert.equal(perfGroup.critical, 1);
+    assert.equal(perfGroup.mandatory, 1);
   });
 
   it('markdown format includes group summary table', async () => {

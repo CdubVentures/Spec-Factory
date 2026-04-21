@@ -17,13 +17,13 @@ describe('buildSearchPlanningContext', () => {
       const ns = makeNeedSetOutput({
         fields: [
           // optional group â†’ hold (when core exists)
-          makeField({ field_key: 'f_opt', group_key: 'zzz_optional', state: 'accepted', required_level: 'optional', need_score: 0, reasons: [] }),
-          // secondary group â†’ next (because core exists)
-          makeField({ field_key: 'f_sec', group_key: 'bbb_secondary', state: 'unknown', required_level: 'expected' }),
+          makeField({ field_key: 'f_opt', group_key: 'zzz_optional', state: 'accepted', required_level: 'non_mandatory', need_score: 0, reasons: [] }),
+          // non_mandatory unresolved group â†’ optional bucket, runs after core
+          makeField({ field_key: 'f_opt2', group_key: 'bbb_optional', state: 'unknown', required_level: 'non_mandatory' }),
           // core group â†’ now
-          makeField({ field_key: 'f_core', group_key: 'aaa_core', state: 'unknown', required_level: 'critical' }),
+          makeField({ field_key: 'f_core', group_key: 'aaa_core', state: 'unknown', required_level: 'mandatory' }),
           // another core group â†’ now
-          makeField({ field_key: 'f_core2', group_key: 'ccc_core', state: 'unknown', required_level: 'required' })
+          makeField({ field_key: 'f_core2', group_key: 'ccc_core', state: 'unknown', required_level: 'mandatory' })
         ]
       });
       const result = buildSearchPlanningContext({
@@ -32,8 +32,8 @@ describe('buildSearchPlanningContext', () => {
       });
 
       const keys = result.focus_groups.map(g => g.key);
-      // now/core: aaa_core, ccc_core | next/secondary: bbb_secondary | hold/optional: zzz_optional
-      assert.deepStrictEqual(keys, ['aaa_core', 'ccc_core', 'bbb_secondary', 'zzz_optional']);
+      // now/core first, then optional bucket groups sorted by key
+      assert.deepStrictEqual(keys, ['aaa_core', 'ccc_core', 'bbb_optional', 'zzz_optional']);
     });
   });
 

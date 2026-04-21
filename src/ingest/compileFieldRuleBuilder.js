@@ -20,7 +20,6 @@ import {
   inferUnitByField,
   inferGroup,
   inferDifficulty,
-  effortFromDifficulty,
   inferRequiredLevel,
   inferAvailability,
 } from './compileFieldInference.js';
@@ -222,9 +221,6 @@ export function flattenSampleStyleOverride(overrideRaw = {}, baseRule = {}) {
   }
   if (!normalizeText(out.difficulty) && normalizeText(priority.difficulty)) {
     out.difficulty = normalizeToken(priority.difficulty);
-  }
-  if (out.effort === undefined && priority.effort !== undefined) {
-    out.effort = asInt(priority.effort, asInt(baseRule.effort, 5));
   }
   const contractType = normalizeToken(contract.type);
   if (!normalizeText(out.type) && contractType) {
@@ -428,7 +424,6 @@ export function buildFieldRuleDraft({
     type: inferred.type,
     shape: inferred.shape
   });
-  const effort = isInstrumentedField ? 9 : effortFromDifficulty(difficulty);
   const enumPolicy = enumValues.length > 0 ? 'open_prefer_known' : 'open';
   const parseRules = defaultParseRules(inferred.type, inferred.shape, { unit, componentType });
   const valueForm = normalizeValueForm('', inferred.shape);
@@ -476,7 +471,6 @@ export function buildFieldRuleDraft({
     required_level: requiredLevel,
     availability,
     difficulty,
-    effort,
     enum_policy: enumPolicy,
     parse_rules: parseRules,
     array_handling: 'none',
@@ -490,7 +484,7 @@ export function buildFieldRuleDraft({
       known_values: enumValues
     },
     evidence: {
-      min_evidence_refs: requiredLevel === 'identity' || requiredLevel === 'required' ? 2 : 1,
+      min_evidence_refs: requiredLevel === 'mandatory' ? 2 : 1,
       tier_preference: isInstrumentedField ? ['tier2', 'tier1', 'tier3'] : ['tier1', 'tier2', 'tier3'],
     },
     ui,
@@ -519,13 +513,9 @@ export function buildStudioFieldRule({
   componentDb = {}
 } = {}) {
   const priorityBlock = isObject(rule.priority) ? rule.priority : {};
-  const requiredLevel = normalizeToken(rule.required_level || priorityBlock.required_level || 'optional');
+  const requiredLevel = normalizeToken(rule.required_level || priorityBlock.required_level || 'non_mandatory');
   const availability = normalizeToken(rule.availability || priorityBlock.availability || 'sometimes');
   const difficulty = normalizeToken(rule.difficulty || priorityBlock.difficulty || 'medium');
-  const effort = asInt(
-    rule.effort,
-    asInt(priorityBlock.effort, 5)
-  );
   const enumBlock = isObject(rule.enum) ? rule.enum : {};
   const source = parseEnumSource(rule.enum_source || enumBlock.source, key);
   const sourceRef = sourceRefToString(source);
@@ -692,11 +682,10 @@ export function buildStudioFieldRule({
     };
 
     const priorityInput = isObject(componentBlock.priority) ? componentBlock.priority : {};
-    const validDifficulties = ['easy', 'medium', 'hard'];
+    const validDifficulties = ['easy', 'medium', 'hard', 'very_hard'];
     nestedComponent.priority = {
       difficulty: validDifficulties.includes(normalizeToken(priorityInput.difficulty))
         ? normalizeToken(priorityInput.difficulty) : 'medium',
-      effort: Math.max(1, Math.min(10, asInt(priorityInput.effort, 5))),
     };
   }
 
@@ -895,7 +884,6 @@ export function buildStudioFieldRule({
     data_type: nestedContract.type || 'string',
     difficulty,
     display_name: normalizeText(uiOut.label || titleFromKey(key)),
-    effort,
     enum: nestedEnum,
     evidence: nestedEvidence,
     field_studio_hints: fieldStudioHints,
@@ -908,7 +896,6 @@ export function buildStudioFieldRule({
       required_level: requiredLevel,
       availability,
       difficulty,
-      effort,
     },
     required_level: requiredLevel,
     search_hints: searchHints,

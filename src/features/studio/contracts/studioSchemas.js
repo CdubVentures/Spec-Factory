@@ -9,10 +9,9 @@ import { z } from 'zod';
 // ---------------------------------------------------------------------------
 
 export const PriorityProfileSchema = z.object({
-  required_level: z.string().optional(),
-  availability: z.string().optional(),
-  difficulty: z.string().optional(),
-  effort: z.number().optional(),
+  required_level: z.enum(['mandatory', 'non_mandatory']).optional(),
+  availability: z.enum(['always', 'sometimes', 'rare']).optional(),
+  difficulty: z.enum(['easy', 'medium', 'hard', 'very_hard']).optional(),
 });
 
 export const AiAssistConfigSchema = z.object({

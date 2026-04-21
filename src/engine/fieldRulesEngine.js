@@ -143,15 +143,9 @@ export class FieldRulesEngine {
       .sort((a, b) => a.localeCompare(b));
   }
 
-  getRequiredFields() {
+  getMandatoryFields() {
     return this.getAllFieldKeys()
-      .filter((field) => ['required', 'identity'].includes(requiredLevel(this.rules[field])))
-      .map((field) => ({ key: field, rule: this.rules[field] }));
-  }
-
-  getCriticalFields() {
-    return this.getAllFieldKeys()
-      .filter((field) => requiredLevel(this.rules[field]) === 'critical')
+      .filter((field) => requiredLevel(this.rules[field]) === 'mandatory')
       .map((field) => ({ key: field, rule: this.rules[field] }));
   }
 
@@ -185,24 +179,6 @@ export class FieldRulesEngine {
     return this.getAllFieldKeys()
       .filter((field) => availabilityLevel(this.rules[field]) === wanted)
       .map((field) => ({ key: field, rule: this.rules[field] }));
-  }
-
-  getFieldsForRound(roundNumber = 1) {
-    const round = Math.max(1, Number.parseInt(String(roundNumber || 1), 10) || 1);
-    const required = this.getAllFieldKeys().filter((field) => {
-      const level = requiredLevel(this.rules[field]);
-      if (round === 1) {
-        return level === 'required' || level === 'critical' || level === 'identity';
-      }
-      if (round === 2) {
-        return level === 'expected' && difficultyLevel(this.rules[field]) === 'easy';
-      }
-      return level === 'expected' || level === 'optional';
-    });
-    return {
-      targetFields: required,
-      maxEffort: round === 1 ? 4 : (round === 2 ? 7 : 10)
-    };
   }
 
   getParseTemplate(fieldKey) {

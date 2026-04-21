@@ -19,27 +19,24 @@ test('loadCategoryConfig derives schema and required fields from category_author
       },
       fields: {
         connection: {
-          required_level: 'required',
-          availability: 'expected',
+          required_level: 'mandatory',
+          availability: 'always',
           difficulty: 'easy',
-          effort: 3,
           type: 'string',
           shape: 'scalar',
         },
         weight: {
-          required_level: 'critical',
-          availability: 'expected',
+          required_level: 'mandatory',
+          availability: 'always',
           difficulty: 'easy',
-          effort: 3,
           type: 'number',
           shape: 'scalar',
           unit: 'g',
         },
         dpi: {
-          required_level: 'expected',
-          availability: 'expected',
+          required_level: 'non_mandatory',
+          availability: 'always',
           difficulty: 'easy',
-          effort: 3,
           type: 'number',
           shape: 'scalar',
           unit: 'dpi',
@@ -67,17 +64,17 @@ test('loadCategoryConfig derives schema and required fields from category_author
     assert.deepEqual(config.schema, {
       category,
       field_order: ['connection', 'weight', 'dpi'],
-      critical_fields: ['weight'],
-      expected_easy_fields: ['connection', 'weight', 'dpi'],
+      critical_fields: ['connection', 'weight'],
+      expected_easy_fields: [],
       expected_sometimes_fields: [],
-      deep_fields: [],
+      deep_fields: ['dpi'],
       editorial_fields: [],
       targets: {
         targetCompleteness: 0.9,
         targetConfidence: 0.8,
       },
     });
-    assert.deepEqual([...config.criticalFieldSet], ['weight']);
+    assert.deepEqual([...config.criticalFieldSet], ['connection', 'weight']);
     assert.equal(
       config.fieldRules?.__meta?.file_path,
       path.join(helperRoot, category, '_generated', 'field_rules.json'),
@@ -97,10 +94,9 @@ test('loadCategoryConfig prefers category_authority category config over legacy 
       version: 1,
       fields: {
         brightness: {
-          required_level: 'required',
-          availability: 'expected',
+          required_level: 'mandatory',
+          availability: 'always',
           difficulty: 'easy',
-          effort: 3,
           type: 'number',
           shape: 'scalar',
         },

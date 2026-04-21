@@ -71,7 +71,7 @@ export function makeIdentityConflict() {
 export function makeBaseRules() {
   return {
     weight: {
-      required_level: 'required',
+      required_level: 'mandatory',
       evidence: { min_evidence_refs: 2, tier_preference: [1, 2] },
       search_hints: {
         query_terms: ['weight', 'grams'],
@@ -80,7 +80,7 @@ export function makeBaseRules() {
       },
     },
     sensor: {
-      required_level: 'critical',
+      required_level: 'mandatory',
       evidence: { min_evidence_refs: 2, tier_preference: [1] },
       search_hints: {
         query_terms: ['sensor', 'optical sensor'],
@@ -89,7 +89,7 @@ export function makeBaseRules() {
       },
     },
     dpi_max: {
-      required_level: 'required',
+      required_level: 'mandatory',
       evidence: { min_evidence_refs: 1, tier_preference: [1, 2] },
       search_hints: {
         query_terms: ['dpi', 'max dpi', 'cpi'],
@@ -98,7 +98,7 @@ export function makeBaseRules() {
       },
     },
     rgb: {
-      required_level: 'optional',
+      required_level: 'non_mandatory',
       evidence: { min_evidence_refs: 1 },
       search_hints: {
         query_terms: ['rgb', 'lighting'],
@@ -107,7 +107,7 @@ export function makeBaseRules() {
       },
     },
     brand: {
-      required_level: 'identity',
+      required_level: 'mandatory',
       evidence: { min_evidence_refs: 1, tier_preference: [1] },
       search_hints: {
         query_terms: ['brand', 'manufacturer'],

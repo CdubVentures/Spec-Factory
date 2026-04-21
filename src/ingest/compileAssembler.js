@@ -136,42 +136,14 @@ export function assembleCompileOutput({
   }
 
   // ── Field tier classification ──
-  const identityKeys = stableSortStrings(
+  const mandatoryKeys = stableSortStrings(
     Object.entries(canonicalFields)
-      .filter(([, rule]) => normalizeToken(rule?.priority?.required_level) === 'identity')
+      .filter(([, rule]) => normalizeToken(rule?.priority?.required_level) === 'mandatory')
       .map(([field]) => field)
   );
-  const requiredKeys = stableSortStrings(
+  const nonMandatoryKeys = stableSortStrings(
     Object.entries(canonicalFields)
-      .filter(([, rule]) => normalizeToken(rule?.priority?.required_level) === 'required')
-      .map(([field]) => field)
-  );
-  const criticalKeys = stableSortStrings(
-    Object.entries(canonicalFields)
-      .filter(([, rule]) => normalizeToken(rule?.priority?.required_level) === 'critical')
-      .map(([field]) => field)
-  );
-  const expectedEasy = stableSortStrings(
-    Object.entries(canonicalFields)
-      .filter(([, rule]) => (
-        normalizeToken(rule?.priority?.required_level) === 'expected'
-        && normalizeToken(rule?.priority?.difficulty) === 'easy'
-      ))
-      .map(([field]) => field)
-  );
-  const expectedSometimes = stableSortStrings(
-    Object.entries(canonicalFields)
-      .filter(([, rule]) => (
-        normalizeToken(rule?.priority?.required_level) === 'expected'
-        && normalizeToken(rule?.priority?.difficulty) !== 'easy'
-      ))
-      .map(([field]) => field)
-  );
-  const deepFields = stableSortStrings(
-    Object.entries(canonicalFields)
-      .filter(([, rule]) => (
-        ['optional', 'rare'].includes(normalizeToken(rule?.priority?.required_level))
-      ))
+      .filter(([, rule]) => normalizeToken(rule?.priority?.required_level) === 'non_mandatory')
       .map(([field]) => field)
   );
 
@@ -289,12 +261,8 @@ export function assembleCompileOutput({
     field_studio_map_hash: mapHash,
     counts: {
       fields: Object.keys(fieldsRuntime).length,
-      identity: identityKeys.length,
-      required: requiredKeys.length,
-      critical: criticalKeys.length,
-      expected_easy: expectedEasy.length,
-      expected_sometimes: expectedSometimes.length,
-      deep: deepFields.length,
+      mandatory: mandatoryKeys.length,
+      non_mandatory: nonMandatoryKeys.length,
       enums: Object.keys(knownValues).length,
       component_types: Object.keys(componentDb).length
     },

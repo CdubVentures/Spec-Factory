@@ -96,7 +96,7 @@ describe('buildEgColorFieldRule', () => {
 
   it('has expected priority level', () => {
     const rule = buildEgColorFieldRule();
-    assert.equal(rule.priority.required_level, 'expected');
+    assert.equal(rule.priority.required_level, 'non_mandatory');
   });
 
   it('has UI metadata', () => {
@@ -156,7 +156,7 @@ describe('buildEgEditionFieldRule', () => {
 
   it('has optional required level', () => {
     const rule = buildEgEditionFieldRule();
-    assert.equal(rule.priority.required_level, 'optional');
+    assert.equal(rule.priority.required_level, 'non_mandatory');
   });
 
   it('has UI metadata', () => {
@@ -213,7 +213,7 @@ describe('buildEgReleaseDateFieldRule', () => {
 
   it('has expected required_level with sometimes availability', () => {
     const rule = buildEgReleaseDateFieldRule();
-    assert.equal(rule.priority.required_level, 'expected');
+    assert.equal(rule.priority.required_level, 'non_mandatory');
     assert.equal(rule.priority.availability, 'sometimes');
     assert.equal(rule.priority.difficulty, 'medium');
   });
@@ -291,9 +291,9 @@ describe('buildEgSkuFieldRule', () => {
     assert.equal(rule.enum.new_value_policy.mark_needs_curation, false);
   });
 
-  it('has required level and hard difficulty (identity-class, per-variant MPN is hard)', () => {
+  it('has mandatory required_level and hard difficulty (identity-class, per-variant MPN is hard)', () => {
     const rule = buildEgSkuFieldRule();
-    assert.equal(rule.priority.required_level, 'required');
+    assert.equal(rule.priority.required_level, 'mandatory');
     assert.equal(rule.priority.availability, 'sometimes');
     assert.equal(rule.priority.difficulty, 'hard');
   });

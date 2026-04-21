@@ -21,14 +21,14 @@ describe('Phase 01 â€” Schema 2 need_score in fields[]', () => {
     }
   });
 
-  it('identity fields score higher than optional fields', () => {
+  it('mandatory fields score higher than non_mandatory fields', () => {
     const result = computeNeedSet(makeBaseInput());
-    const identityField = result.fields.find((f) => f.required_level === 'identity');
-    const optionalField = result.fields.find((f) => f.required_level === 'optional');
-    assert.ok(identityField, 'should have an identity field');
-    assert.ok(optionalField, 'should have an optional field');
-    assert.ok(identityField.need_score > optionalField.need_score,
-      `identity score ${identityField.need_score} should > optional score ${optionalField.need_score}`);
+    const mandatoryField = result.fields.find((f) => f.required_level === 'mandatory');
+    const nonMandatoryField = result.fields.find((f) => f.required_level === 'non_mandatory');
+    assert.ok(mandatoryField, 'should have a mandatory field');
+    assert.ok(nonMandatoryField, 'should have a non_mandatory field');
+    assert.ok(mandatoryField.need_score > nonMandatoryField.need_score,
+      `mandatory score ${mandatoryField.need_score} should > non_mandatory score ${nonMandatoryField.need_score}`);
   });
 });
 
@@ -68,13 +68,14 @@ describe('Phase 01 â€” Schema 2 reasons[] derivation', () => {
 });
 
 describe('Phase 01 â€” Schema 2 planner_seed', () => {
-  it('missing_critical_fields includes identity/critical fields that are unresolved', () => {
+  it('missing_critical_fields includes all mandatory fields that are unresolved', () => {
     const result = computeNeedSet(makeBaseInput());
-    // brand is identity, sensor is critical â€” both missing
+    // All mandatory-tier fields in makeBaseRules (brand, sensor, weight, dpi_max) are missing
     assert.ok(result.planner_seed.missing_critical_fields.includes('brand'));
     assert.ok(result.planner_seed.missing_critical_fields.includes('sensor'));
-    // weight is required, not critical â€” should NOT be in missing_critical
-    assert.ok(!result.planner_seed.missing_critical_fields.includes('weight'));
+    assert.ok(result.planner_seed.missing_critical_fields.includes('weight'));
+    // rgb is non_mandatory — should NOT be in missing_critical
+    assert.ok(!result.planner_seed.missing_critical_fields.includes('rgb'));
   });
 
   it('unresolved_fields includes all non-accepted fields', () => {

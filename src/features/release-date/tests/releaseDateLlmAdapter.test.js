@@ -174,9 +174,18 @@ describe('buildReleaseDateFinderPrompt', () => {
   it('default template does NOT prescribe a search-step checklist (LLM picks the order)', () => {
     // The old prompt had bullets like "Query manufacturer's product page,
     // press page, and news archive" — replaced with autonomy + evidence bar.
+    // WHY compiled output: the autonomy line now lives in the global
+    // scalarSourceGuidanceCloser fragment (shared with SKU), injected via
+    // {{SCALAR_SOURCE_GUIDANCE_CLOSER}} at build time. Assert the compiled
+    // prompt honors the contract, not the raw template.
     assert.ok(!/Query manufacturer's product page/i.test(RDF_DEFAULT_TEMPLATE),
       'old prescriptive search-step bullet must be gone');
-    assert.ok(/you decide|your judgment|in what order/i.test(RDF_DEFAULT_TEMPLATE),
+    const compiled = buildReleaseDateFinderPrompt({
+      product: { brand: 'Corsair', model: 'M75 Air Wireless' },
+      variantLabel: 'black', variantType: 'color',
+      previousDiscovery: { urlsChecked: [], queriesRun: [] },
+    });
+    assert.ok(/you decide|your judgment|in what order/i.test(compiled),
       'must explicitly hand source-ordering to the LLM');
   });
 

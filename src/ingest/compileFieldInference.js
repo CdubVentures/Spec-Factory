@@ -192,31 +192,21 @@ export function inferDifficulty({ type, shape, key }) {
   return 'easy';
 }
 
-export function effortFromDifficulty(difficulty) {
-  if (difficulty === 'easy') return 3;
-  if (difficulty === 'medium') return 6;
-  return 9;
-}
-
 export function inferRequiredLevel(key, expectations) {
   const token = normalizeFieldKey(key);
-  if (expectations.required_fields.includes(token)) return 'required';
-  if (expectations.critical_fields.includes(token)) return 'critical';
-  if (expectations.expected_easy_fields.includes(token)) return 'expected';
-  if (expectations.expected_sometimes_fields.includes(token)) return 'expected';
-  if (expectations.deep_fields.includes(token)) return 'rare';
-  if (DEFAULT_IDENTITY_FIELDS.has(token)) return 'identity';
-  if (DEFAULT_REQUIRED_FIELDS.has(token)) return 'required';
-  if (INSTRUMENTED_HARD_FIELDS.has(token)) return 'optional';
-  return 'expected';
+  if (expectations.required_fields.includes(token)) return 'mandatory';
+  if (expectations.critical_fields.includes(token)) return 'mandatory';
+  if (DEFAULT_IDENTITY_FIELDS.has(token)) return 'mandatory';
+  if (DEFAULT_REQUIRED_FIELDS.has(token)) return 'mandatory';
+  return 'non_mandatory';
 }
 
 export function inferAvailability(key, expectations) {
   const token = normalizeFieldKey(key);
-  if (expectations.expected_easy_fields.includes(token)) return 'expected';
+  if (expectations.expected_easy_fields.includes(token)) return 'always';
   if (expectations.deep_fields.includes(token)) return 'rare';
-  if (DEFAULT_IDENTITY_FIELDS.has(token)) return 'expected';
-  if (DEFAULT_REQUIRED_FIELDS.has(token)) return 'expected';
+  if (DEFAULT_IDENTITY_FIELDS.has(token)) return 'always';
+  if (DEFAULT_REQUIRED_FIELDS.has(token)) return 'always';
   if (INSTRUMENTED_HARD_FIELDS.has(token)) return 'sometimes';
   return 'sometimes';
 }
@@ -226,13 +216,12 @@ export function enforceExpectationPriority({ key, rule, expectations }) {
     return rule;
   }
 
-  // Keep high-severity expectation buckets deterministic even when stale overrides exist.
   const fieldKey = normalizeFieldKey(key);
   const expectedLevel = inferRequiredLevel(fieldKey, expectations);
-  const forceLevel = expectedLevel === 'identity' || expectedLevel === 'required' || expectedLevel === 'critical';
+  const forceLevel = expectedLevel === 'mandatory';
   const priority = isObject(rule.priority) ? { ...rule.priority } : {};
   const currentLevel = normalizeToken(rule.required_level || priority.required_level || '');
-  const finalLevel = forceLevel ? expectedLevel : (currentLevel || expectedLevel || 'expected');
+  const finalLevel = forceLevel ? expectedLevel : (currentLevel || expectedLevel || 'non_mandatory');
 
   rule.required_level = finalLevel;
   priority.required_level = finalLevel;
@@ -241,14 +230,14 @@ export function enforceExpectationPriority({ key, rule, expectations }) {
   const currentAvailability = normalizeToken(rule.availability || priority.availability || '');
   const finalAvailability = (
     forceLevel
-      ? (expectedAvailability || currentAvailability || 'expected')
+      ? (expectedAvailability || currentAvailability || 'always')
       : (currentAvailability || expectedAvailability || 'sometimes')
   );
   rule.availability = finalAvailability;
   priority.availability = finalAvailability;
 
   const evidence = isObject(rule.evidence) ? { ...rule.evidence } : {};
-  const defaultMinEvidence = (finalLevel === 'identity' || finalLevel === 'required') ? 2 : 1;
+  const defaultMinEvidence = finalLevel === 'mandatory' ? 2 : 1;
   evidence.min_evidence_refs = asInt(evidence.min_evidence_refs, defaultMinEvidence);
   delete evidence.required;
   rule.evidence = evidence;

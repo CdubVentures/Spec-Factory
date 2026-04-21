@@ -1,11 +1,7 @@
 import type { KeySectionBaseProps } from "./keySectionContracts.ts";
 import { Section } from "../Section.tsx";
 import { Tip } from "../../../../shared/ui/feedback/Tip.tsx";
-import { NumberStepper } from "../../../../shared/ui/forms/NumberStepper.tsx";
-import { strN, numN, boolN } from "../../state/nestedValueHelpers.ts";
-import {
-  parseBoundedIntInput,
-} from "../../state/numericInputHelpers.ts";
+import { strN, numN } from "../../state/nestedValueHelpers.ts";
 import { STUDIO_NUMERIC_KNOB_BOUNDS } from "../../state/studioNumericKnobBounds.ts";
 import {
   selectCls,
@@ -31,12 +27,12 @@ export function KeyPrioritySection({
 }: KeyPrioritySectionProps) {
   return (
     <Section
-      title="Priority & Effort"
+      title="Priority"
       persistKey={`studio:keyNavigator:section:priority:${category}`}
       titleTooltip={STUDIO_TIPS.key_section_priority}
       disabled={disabled}
     >
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <div>
           <div className={`${labelCls} flex items-center`}>
             <span>
@@ -57,7 +53,7 @@ export function KeyPrioritySection({
             value={strN(
               currentRule,
               "priority.required_level",
-              strN(currentRule, "required_level", "expected"),
+              strN(currentRule, "required_level", "non_mandatory"),
             )}
             onChange={(e) =>
               updateField(
@@ -90,7 +86,7 @@ export function KeyPrioritySection({
             value={strN(
               currentRule,
               "priority.availability",
-              strN(currentRule, "availability", "expected"),
+              strN(currentRule, "availability", "sometimes"),
             )}
             onChange={(e) =>
               updateField(
@@ -136,45 +132,6 @@ export function KeyPrioritySection({
             {DIFFICULTY_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
           </select>
         </div>
-        <div>
-          <div className={`${labelCls} flex items-center`}>
-            <span>
-              Effort (1-10)
-              <Tip
-                style={{
-                  position: "relative",
-                  left: "-3px",
-                  top: "-4px",
-                }}
-                text={STUDIO_TIPS.effort}
-              />
-            </span>
-            <B p="priority.effort" />
-          </div>
-          <NumberStepper
-            className="w-full"
-            min={STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.min}
-            max={STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.max}
-            value={String(numN(
-              currentRule,
-              "priority.effort",
-              numN(currentRule, "effort", 3),
-            ))}
-            ariaLabel="effort"
-            onChange={(next) =>
-              updateField(
-                selectedKey,
-                "priority.effort",
-                parseBoundedIntInput(
-                  next,
-                  STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.min,
-                  STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.max,
-                  STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.fallback,
-                ),
-              )
-            }
-          />
-        </div>
       </div>
       {/* Extraction Guidance */}
       <ExtractionGuidanceSubsection
@@ -182,7 +139,7 @@ export function KeyPrioritySection({
         currentRule={currentRule}
         updateField={updateField}
         BadgeRenderer={B}
-        reqLvl={strN(currentRule, "priority.required_level", strN(currentRule, "required_level", "expected"))}
+        reqLvl={strN(currentRule, "priority.required_level", strN(currentRule, "required_level", "non_mandatory"))}
         diff={strN(currentRule, "priority.difficulty", strN(currentRule, "difficulty", "easy"))}
       />
     </Section>
@@ -257,13 +214,6 @@ function ExtractionGuidanceSubsection({
 
   const guidanceParts: string[] = [];
 
-  // Identity fields
-  if (reqLvl === "identity") {
-    guidanceParts.push(
-      "Identity field \u2014 must exactly match the product. Do not infer or guess. Cross-reference multiple sources to confirm.",
-    );
-  }
-
   // Component reference
   if (componentType) {
     const cType =
@@ -328,9 +278,9 @@ function ExtractionGuidanceSubsection({
     guidanceParts.push(
       "Often inconsistent across sources \u2014 check manufacturer spec sheets and PDFs first.",
     );
-  } else if (diff === "instrumented") {
+  } else if (diff === "very_hard") {
     guidanceParts.push(
-      "Lab-measured value \u2014 only accept from independent test labs.",
+      "Lab-measured or multi-source synthesis \u2014 only accept from independent test labs or triangulated evidence.",
     );
   }
 
@@ -341,13 +291,10 @@ function ExtractionGuidanceSubsection({
     );
   }
 
-  // Required/critical
-  if (
-    (reqLvl === "required" || reqLvl === "critical") &&
-    !guidanceParts.some((p) => p.includes("Identity"))
-  ) {
+  // Mandatory
+  if (reqLvl === "mandatory") {
     guidanceParts.push(
-      "High-priority \u2014 publication blocked if unknown.",
+      "High-priority \u2014 publication blocked if unknown. Cross-reference multiple sources to confirm.",
     );
   }
 

@@ -18,19 +18,6 @@ export function ruleDifficulty(rule = {}) {
   return normalizeToken(priority.difficulty || rule.difficulty || 'medium') || 'medium';
 }
 
-export function ruleEffort(rule = {}) {
-  const priority = isObject(rule.priority) ? rule.priority : {};
-  const raw = Number.parseFloat(String(priority.effort || rule.effort || ''));
-  if (Number.isFinite(raw) && raw > 0) {
-    return raw;
-  }
-  const difficulty = ruleDifficulty(rule);
-  if (difficulty === 'hard') return 8;
-  if (difficulty === 'medium') return 5;
-  if (difficulty === 'easy') return 2;
-  return 3;
-}
-
 // --- Contract accessors ---
 
 export function ruleType(rule = {}) {

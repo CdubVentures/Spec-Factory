@@ -227,14 +227,13 @@ describe('buildSearchPlan', () => {
       fetchMock = installFetchMock(makeLlmResponse());
       const ctx = makeSearchPlanningContext({
         focus_groups: [
-          makeFocusGroup({ core_unresolved_count: 5, secondary_unresolved_count: 3 }),
+          makeFocusGroup({ core_unresolved_count: 5, optional_unresolved_count: 3 }),
         ],
       });
       await buildSearchPlan({ searchPlanningContext: ctx, config: makeConfig() });
 
       const payload = extractLlmPayload(fetchMock.calls);
       assert.equal(payload.focus_groups[0].core_unresolved_count, 5);
-      assert.equal(payload.focus_groups[0].secondary_unresolved_count, 3);
     });
   });
 

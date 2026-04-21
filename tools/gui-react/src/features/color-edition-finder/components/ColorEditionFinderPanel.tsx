@@ -12,12 +12,14 @@ import {
   FinderSectionCard,
   FinderHowItWorks,
   DiscoveryHistoryButton,
+  PromptPreviewModal,
   useResolvedFinderModel,
   ColorSwatch,
   usePagination,
   PagerSizeSelector,
   PagerNavFooter,
 } from '../../../shared/ui/finder/index.ts';
+import { usePromptPreviewQuery } from '../../indexing/api/promptPreviewQueries.ts';
 import type { DeleteTarget } from '../../../shared/ui/finder/types.ts';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
@@ -43,6 +45,20 @@ import { useFireAndForget } from '../../operations/hooks/useFireAndForget.ts';
 import { useIsModuleRunning } from '../../operations/hooks/useFinderOperations.ts';
 
 /* ── CEF-specific sub-components ──────────────────────────────────── */
+
+function PromptPreviewTriggerButton({ onClick, disabled }: { readonly onClick: () => void; readonly disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      disabled={disabled}
+      className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed"
+      title="Preview the compiled prompt that Run Now would send"
+    >
+      Prompt
+    </button>
+  );
+}
 
 function ColorPillInline({ pill }: { readonly pill: ColorPill }) {
   return (
@@ -220,6 +236,8 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
   });
 
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [promptModalOpen, setPromptModalOpen] = useState(false);
+  const promptPreviewQuery = usePromptPreviewQuery('cef', category, productId, {}, promptModalOpen);
   const [cefRunExpand, toggleCefRunExpand] = usePersistedExpandMap(`indexing:cef:runExpand:${productId}`);
 
   const isAnyDeletePending = deleteRunMut.isPending || deleteAllMut.isPending || deleteVariantMut.isPending || deleteAllVariantsMut.isPending;
@@ -270,7 +288,10 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
         tip="Discovers color variants and edition slugs for this product via LLM analysis."
         isRunning={isRunningCef}
         onRun={() => fire(cefRunUrl, {})}
-        historyActionSlot={<DiscoveryHistoryButton finderId="colorEditionFinder" productId={productId} category={category} />}
+        historyActionSlot={<>
+          <DiscoveryHistoryButton finderId="colorEditionFinder" productId={productId} category={category} />
+          <PromptPreviewTriggerButton onClick={() => setPromptModalOpen(true)} disabled={!productId} />
+        </>}
       >
         <FinderRunModelBadge
           labelPrefix="CEF"
@@ -380,6 +401,15 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
           }}
         />
       )}
+
+      <PromptPreviewModal
+        open={promptModalOpen}
+        onClose={() => setPromptModalOpen(false)}
+        query={promptPreviewQuery}
+        title="Color & Edition Finder — Compiled Prompt"
+        subtitle={productId ? `product: ${productId}` : undefined}
+        storageKeyPrefix={`indexing:cef:preview:${productId}`}
+      />
     </div>
   );
 }

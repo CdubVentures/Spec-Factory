@@ -137,15 +137,15 @@ test('compileRules enforces critical and identity buckets from expectations and 
       fieldStudioSourcePath: workbookPath,
       fieldOverrides: {
         polling_rate: {
-          required_level: 'expected',
+          required_level: 'non_mandatory',
           priority: {
-            required_level: 'expected'
+            required_level: 'non_mandatory'
           }
         },
         sku: {
-          required_level: 'expected',
+          required_level: 'non_mandatory',
           priority: {
-            required_level: 'expected'
+            required_level: 'non_mandatory'
           }
         }
       },
@@ -168,12 +168,11 @@ test('compileRules enforces critical and identity buckets from expectations and 
     const fieldRules = JSON.parse(await fs.readFile(path.join(generatedRoot, 'field_rules.json'), 'utf8'));
     const compileReport = JSON.parse(await fs.readFile(path.join(generatedRoot, '_compile_report.json'), 'utf8'));
 
-    assert.equal(fieldRules.fields.polling_rate.required_level, 'critical');
-    assert.equal(fieldRules.fields.polling_rate.priority.required_level, 'critical');
-    assert.equal(fieldRules.fields.sku.required_level, 'identity');
-    assert.equal(fieldRules.fields.sku.priority.required_level, 'identity');
-    assert.equal(Number(compileReport.counts.critical) >= 1, true);
-    assert.equal(Number(compileReport.counts.identity) >= 1, true);
+    assert.equal(fieldRules.fields.polling_rate.required_level, 'mandatory');
+    assert.equal(fieldRules.fields.polling_rate.priority.required_level, 'mandatory');
+    assert.equal(fieldRules.fields.sku.required_level, 'mandatory');
+    assert.equal(fieldRules.fields.sku.priority.required_level, 'mandatory');
+    assert.equal(Number(compileReport.counts.mandatory) >= 2, true);
   } finally {
     await removeRoot(root);
   }
@@ -297,10 +296,9 @@ test('normalizeFieldRulesForPhase1 backfills required schema blocks for sparse f
       switches_link: {
         data_type: 'string',
         output_shape: 'scalar',
-        required_level: 'optional',
+        required_level: 'non_mandatory',
         availability: 'sometimes',
         difficulty: 'medium',
-        effort: 5
       }
     }
   });
@@ -310,7 +308,7 @@ test('normalizeFieldRulesForPhase1 backfills required schema blocks for sparse f
   assert.equal(row.contract.type, 'string');
   assert.equal(row.contract.shape, 'scalar');
   assert.equal(typeof row.priority, 'object');
-  assert.equal(row.priority.required_level, 'optional');
+  assert.equal(row.priority.required_level, 'non_mandatory');
   assert.equal(typeof row.parse, 'object');
   assert.equal(typeof row.evidence, 'object');
 });

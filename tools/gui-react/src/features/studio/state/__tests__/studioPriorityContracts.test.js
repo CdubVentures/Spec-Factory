@@ -12,7 +12,7 @@ async function loadStudioPriority() {
   );
 }
 
-test('studio priority normalizes profiles with enum fallback and bounded effort', async () => {
+test('studio priority normalizes profiles with enum fallback', async () => {
   const { normalizePriorityProfile, DEFAULT_PRIORITY_PROFILE } =
     await loadStudioPriority();
 
@@ -20,16 +20,14 @@ test('studio priority normalizes profiles with enum fallback and bounded effort'
 
   assert.deepEqual(
     normalizePriorityProfile({
-      required_level: 'critical',
+      required_level: 'mandatory',
       availability: 'sometimes',
       difficulty: 'hard',
-      effort: '99',
     }),
     {
-      required_level: 'critical',
+      required_level: 'mandatory',
       availability: 'sometimes',
       difficulty: 'hard',
-      effort: 10,
     },
   );
 
@@ -38,12 +36,8 @@ test('studio priority normalizes profiles with enum fallback and bounded effort'
       required_level: 'invalid',
       availability: 'nope',
       difficulty: 'bad',
-      effort: 0,
     }),
-    {
-      ...DEFAULT_PRIORITY_PROFILE,
-      effort: 1,
-    },
+    DEFAULT_PRIORITY_PROFILE,
   );
 });
 
@@ -52,24 +46,22 @@ test('studio priority detects explicit priority fields and merges nested rule pr
 
   assert.equal(hasExplicitPriority(undefined), false);
   assert.equal(hasExplicitPriority({}), false);
-  assert.equal(hasExplicitPriority({ effort: 0 }), true);
+  assert.equal(hasExplicitPriority({ difficulty: 'medium' }), true);
   assert.equal(hasExplicitPriority({ availability: 'rare' }), true);
 
   assert.deepEqual(
     resolveRulePriority({
-      required_level: 'required',
-      availability: 'expected',
+      required_level: 'mandatory',
+      availability: 'always',
       difficulty: 'medium',
-      effort: 7,
       priority: {
         availability: 'rare',
       },
     }),
     {
-      required_level: 'required',
+      required_level: 'mandatory',
       availability: 'rare',
       difficulty: 'medium',
-      effort: 7,
     },
   );
 });
@@ -83,33 +75,29 @@ test('studio priority derives component-source and list priority from ranked mat
 
   const rules = {
     sensor: {
-      required_level: 'optional',
+      required_level: 'non_mandatory',
       availability: 'sometimes',
       difficulty: 'medium',
-      effort: 2,
     },
     dpi: {
       priority: {
-        required_level: 'critical',
+        required_level: 'mandatory',
         availability: 'always',
         difficulty: 'hard',
-        effort: 8,
       },
     },
     latency: {
       priority: {
-        required_level: 'required',
+        required_level: 'mandatory',
         availability: 'rare',
-        difficulty: 'instrumented',
-        effort: 6,
+        difficulty: 'very_hard',
       },
     },
     polling_rate: {
       priority: {
-        required_level: 'required',
-        availability: 'expected',
+        required_level: 'mandatory',
+        availability: 'always',
         difficulty: 'medium',
-        effort: 4,
       },
     },
   };
@@ -125,18 +113,16 @@ test('studio priority derives component-source and list priority from ranked mat
       rules,
     ),
     {
-      required_level: 'critical',
+      required_level: 'mandatory',
       availability: 'always',
-      difficulty: 'instrumented',
-      effort: 8,
+      difficulty: 'very_hard',
     },
   );
 
   assert.deepEqual(deriveListPriority('polling', rules), {
-    required_level: 'required',
-    availability: 'expected',
+    required_level: 'mandatory',
+    availability: 'always',
     difficulty: 'medium',
-    effort: 4,
   });
 
   assert.deepEqual(

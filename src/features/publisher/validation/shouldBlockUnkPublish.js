@@ -8,5 +8,5 @@
  */
 export function shouldBlockUnkPublish(fieldRule) {
   const level = fieldRule?.priority?.required_level || '';
-  return level === 'identity' || level === 'required';
+  return level === 'mandatory';
 }

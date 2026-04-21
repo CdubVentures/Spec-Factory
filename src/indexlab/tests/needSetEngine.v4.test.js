@@ -133,33 +133,29 @@ describe('V4 - shardAliases', () => {
 describe('V4 - ranking helpers', () => {
   it('availabilityRank orders values correctly', () => {
     assert.equal(availabilityRank('always'), 0);
-    assert.equal(availabilityRank('expected'), 1);
-    assert.equal(availabilityRank('sometimes'), 2);
-    assert.equal(availabilityRank('rare'), 3);
-    assert.equal(availabilityRank('editorial_only'), 4);
+    assert.equal(availabilityRank('sometimes'), 1);
+    assert.equal(availabilityRank('rare'), 2);
   });
 
   it('availabilityRank sends unknown to highest rank', () => {
-    assert.equal(availabilityRank('bogus'), 4);
-    assert.equal(availabilityRank(''), 4);
+    assert.equal(availabilityRank('bogus'), 2);
+    assert.equal(availabilityRank(''), 2);
   });
 
   it('difficultyRank orders values correctly', () => {
     assert.equal(difficultyRank('easy'), 0);
     assert.equal(difficultyRank('medium'), 1);
     assert.equal(difficultyRank('hard'), 2);
+    assert.equal(difficultyRank('very_hard'), 3);
   });
 
   it('difficultyRank sends unknown to highest rank', () => {
-    assert.equal(difficultyRank('impossible'), 2);
+    assert.equal(difficultyRank('impossible'), 3);
   });
 
   it('requiredLevelRank orders values correctly', () => {
-    assert.equal(requiredLevelRank('identity'), 0);
-    assert.equal(requiredLevelRank('critical'), 1);
-    assert.equal(requiredLevelRank('required'), 2);
-    assert.equal(requiredLevelRank('expected'), 3);
-    assert.equal(requiredLevelRank('optional'), 4);
+    assert.equal(requiredLevelRank('mandatory'), 0);
+    assert.equal(requiredLevelRank('non_mandatory'), 1);
   });
 });
 

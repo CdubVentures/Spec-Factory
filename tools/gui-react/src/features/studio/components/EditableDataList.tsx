@@ -238,7 +238,7 @@ export function EditableDataList({
         </div>
       </div>
 
-      {/* List review priority / effort */}
+      {/* List review priority */}
       <button
         type="button"
         onClick={() => toggleAiSections()}
@@ -253,7 +253,7 @@ export function EditableDataList({
       </button>
       {showAiSections ? (
         <div className="border sf-border-default dark:sf-border-soft rounded p-2.5 bg-white sf-dk-surface-800a40">
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <div>
               <label className={labelCls}>
                 Required Level{" "}
@@ -266,16 +266,11 @@ export function EditableDataList({
                 className={selectCls + " w-full"}
                 value={listPriority.required_level}
                 onChange={(e) =>
-                  updatePriority({ required_level: e.target.value })
+                  updatePriority({ required_level: e.target.value as PriorityProfile['required_level'] })
                 }
               >
-                <option value="identity">identity</option>
-                <option value="required">required</option>
-                <option value="critical">critical</option>
-                <option value="expected">expected</option>
-                <option value="optional">optional</option>
-                <option value="editorial">editorial</option>
-                <option value="commerce">commerce</option>
+                <option value="mandatory">mandatory</option>
+                <option value="non_mandatory">non_mandatory</option>
               </select>
             </div>
             <div>
@@ -290,14 +285,12 @@ export function EditableDataList({
                 className={selectCls + " w-full"}
                 value={listPriority.availability}
                 onChange={(e) =>
-                  updatePriority({ availability: e.target.value })
+                  updatePriority({ availability: e.target.value as PriorityProfile['availability'] })
                 }
               >
                 <option value="always">always</option>
-                <option value="expected">expected</option>
                 <option value="sometimes">sometimes</option>
                 <option value="rare">rare</option>
-                <option value="editorial_only">editorial_only</option>
               </select>
             </div>
             <div>
@@ -311,39 +304,13 @@ export function EditableDataList({
               <select
                 className={selectCls + " w-full"}
                 value={listPriority.difficulty}
-                onChange={(e) => updatePriority({ difficulty: e.target.value })}
+                onChange={(e) => updatePriority({ difficulty: e.target.value as PriorityProfile['difficulty'] })}
               >
                 <option value="easy">easy</option>
                 <option value="medium">medium</option>
                 <option value="hard">hard</option>
-                <option value="instrumented">instrumented</option>
+                <option value="very_hard">very_hard</option>
               </select>
-            </div>
-            <div>
-              <label className={labelCls}>
-                Effort (1-10){" "}
-                <Tip
-                  style={{ position: "relative", left: "-3px", top: "-4px" }}
-                  text={STUDIO_TIPS.effort}
-                />
-              </label>
-              <input
-                type="number"
-                min={STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.min}
-                max={STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.max}
-                className={inputCls + " w-full"}
-                value={listPriority.effort}
-                onChange={(e) =>
-                  updatePriority({
-                    effort: parseBoundedIntInput(
-                      e.target.value,
-                      STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.min,
-                      STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.max,
-                      STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.fallback,
-                    ),
-                  })
-                }
-              />
             </div>
           </div>
         </div>
@@ -354,7 +321,7 @@ export function EditableDataList({
         const explicitNote = listAiAssist.reasoning_note || "";
         const autoNote = [
           `List review for "${entry.field || "list"}".`,
-          `Required level ${listPriority.required_level}, difficulty ${listPriority.difficulty}, effort ${listPriority.effort}.`,
+          `Required level ${listPriority.required_level}, difficulty ${listPriority.difficulty}.`,
           "Return normalized values that match the list policy and preserve supporting evidence refs.",
         ].join(" ");
         const hasExplicit = explicitNote.length > 0;

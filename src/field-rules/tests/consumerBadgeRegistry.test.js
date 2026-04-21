@@ -152,8 +152,8 @@ describe('buildExtractor', () => {
   it('string type detects nested path', () => {
     const entry = { path: 'priority.required_level', type: 'string', flatAliases: ['required_level'] };
     const extractor = buildExtractor(entry);
-    assert.equal(extractor({ priority: { required_level: 'required' } }), true);
-    assert.equal(extractor({ required_level: 'required' }), true);
+    assert.equal(extractor({ priority: { required_level: 'mandatory' } }), true);
+    assert.equal(extractor({ required_level: 'mandatory' }), true);
     assert.equal(extractor({}), false);
     assert.equal(extractor({ priority: { required_level: '' } }), false);
   });

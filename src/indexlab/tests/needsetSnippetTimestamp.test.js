@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { computeNeedSet } from '../../features/indexing/pipeline/needSet/needsetEngine.js';
 
 // Minimal helper to build field rules and provenance for testing
-function buildTestInput({ fieldKey, value, confidence, evidenceRows, requiredLevel = 'required' }) {
+function buildTestInput({ fieldKey, value, confidence, evidenceRows, requiredLevel = 'mandatory' }) {
   return {
     runId: 'test-run',
     category: 'mouse',
@@ -55,7 +55,7 @@ test('rows contain required_level and priority_bucket', () => {
   const result = computeNeedSet(input);
   const row = result.rows.find((r) => r.field_key === 'sensor');
   assert.ok(row);
-  assert.equal(row.required_level, 'required');
+  assert.equal(row.required_level, 'mandatory');
   assert.equal(row.priority_bucket, 'core');
 });
 
@@ -90,12 +90,12 @@ test('covered field does NOT appear in rows', () => {
   assert.equal(row, undefined, 'covered field should not appear in rows');
 });
 
-test('optional field gets priority_bucket=optional', () => {
+test('non_mandatory field gets priority_bucket=optional', () => {
   const input = buildTestInput({
     fieldKey: 'cable',
     value: null,
     confidence: null,
-    requiredLevel: 'optional',
+    requiredLevel: 'non_mandatory',
     evidenceRows: []
   });
 

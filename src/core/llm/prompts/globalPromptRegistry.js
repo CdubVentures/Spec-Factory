@@ -154,6 +154,49 @@ Do not inflate confidence beyond what the cited evidence supports.`,
     variables: DISCOVERY_VARS,
     defaultTemplate: 'Previous searches for {{SCOPE_LABEL}} (do not repeat — find NEW sources or confirm these):',
   },
+
+  identityIntro: {
+    label: 'Identity intro line',
+    description: 'Opens a discovery prompt with the exact-product lookup + sibling-skip sentence. Shared by PIF-view, PIF-hero, RDF, SKU. CEF has its own opening framing (Find every official color and every official edition) and does NOT consume this fragment.',
+    appliesTo: ['pif', 'rdf', 'scalar'],
+    variables: [
+      { name: 'BRAND', required: false },
+      { name: 'MODEL', required: false },
+      { name: 'VARIANT_SUFFIX', required: false },
+    ],
+    defaultTemplate: 'IDENTITY: You are looking for the EXACT product "{{BRAND}} {{MODEL}}"{{VARIANT_SUFFIX}}. Not a different model in the same product family. If you encounter sibling models, skip them.',
+  },
+
+  discoveryLogShape: {
+    label: 'Discovery log return-JSON shape',
+    description: 'Basic discovery_log JSON shape returned by PIF-view, PIF-hero, RDF, SKU. CEF uses an extended shape with identity-gate extras (confirmed_from_known, added_new, rejected_from_known) and does NOT consume this fragment.',
+    appliesTo: ['pif', 'rdf', 'scalar'],
+    variables: [],
+    defaultTemplate: '- "discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }',
+  },
+
+  scalarSourceGuidanceCloser: {
+    label: 'Scalar finder — source guidance closer',
+    description: 'Closer line after the tier1/tier2/tier3/tier4 source-guidance block in scalar finders (RDF, SKU). Tells the LLM the above describes kind-of-evidence and tagging, not a script.',
+    appliesTo: ['rdf', 'scalar'],
+    variables: [],
+    defaultTemplate: 'You decide which sources to query and in what order — the above describes what kind of evidence counts and how to tag it, not a script to execute.',
+  },
+
+  scalarReturnJsonTail: {
+    label: 'Scalar finder — return-JSON tail',
+    description: 'Bundles confidence + unknown_reason + extended evidence_refs (5-field) + discovery_log for scalar finders (RDF, SKU, future price/msrp/discontinued). VALUE_NOUN fills phrases like "returned date" or "returned MPN". VALUE_KEY fills the "unk" check. UNKNOWN_REASON_EXAMPLES is an optional suffix — pass empty string when no examples are desired.',
+    appliesTo: ['rdf', 'scalar'],
+    variables: [
+      { name: 'VALUE_NOUN', required: true },
+      { name: 'VALUE_KEY', required: true },
+      { name: 'UNKNOWN_REASON_EXAMPLES', required: false },
+    ],
+    defaultTemplate: `- "confidence": 0-100 (your overall confidence in the returned {{VALUE_NOUN}} — see rubric above)
+- "unknown_reason": "..." (required if {{VALUE_KEY}} is "unk"; empty string otherwise{{UNKNOWN_REASON_EXAMPLES}})
+- "evidence_refs": [{ "url": "...", "tier": "tier1|tier2|tier3|tier4|tier5|other", "confidence": 0-100, "supporting_evidence": "...", "evidence_kind": "..." }, ...]
+- "discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }`,
+  },
 };
 
 export const GLOBAL_PROMPT_KEYS = Object.freeze(Object.keys(GLOBAL_PROMPTS));

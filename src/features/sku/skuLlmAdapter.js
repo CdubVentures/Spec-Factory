@@ -14,6 +14,7 @@
 
 import { zodToLlmSchema } from '../../core/llm/zodToLlmSchema.js';
 import { resolvePromptTemplate } from '../../core/llm/resolvePromptTemplate.js';
+import { resolveGlobalPrompt } from '../../core/llm/prompts/globalPromptRegistry.js';
 import { buildPreviousDiscoveryBlock } from '../../core/finder/discoveryLog.js';
 import { buildEvidencePromptBlock } from '../../core/finder/evidencePromptFragment.js';
 import { buildEvidenceVerificationPromptBlock } from '../../core/finder/evidenceVerificationPromptFragment.js';
@@ -28,7 +29,7 @@ const FIELD_DOMAIN_NOUN = 'manufacturer part numbers';
 
 export const SKF_DEFAULT_TEMPLATE = `Find the manufacturer part number (MPN) for: {{BRAND}} {{MODEL}} — {{VARIANT_DESC}}
 
-IDENTITY: You are looking for the EXACT product "{{BRAND}} {{MODEL}}"{{VARIANT_SUFFIX}}. Not a different model in the same product family. If you encounter sibling models, skip them.
+{{IDENTITY_INTRO}}
 {{IDENTITY_WARNING}}
 
 GOAL: The manufacturer-assigned part number that uniquely identifies this specific {{VARIANT_TYPE_WORD}} variant. The MPN is distinct from:
@@ -68,8 +69,7 @@ Source guidance — use the strongest signal available:
     TechSpecs.com, spec databases, forums. Cross-reference only for MPN —
     community posts frequently propagate typos or cite retailer SKUs as MPNs.
 
-You decide which sources to query and in what order — the above describes what
-kind of evidence counts and how to tag it, not a script to execute.
+{{SCALAR_SOURCE_GUIDANCE_CLOSER}}
 
 VARIANT DISAMBIGUATION — critical for multi-color / edition products:
 
@@ -94,12 +94,7 @@ part number for this specific variant, return "unk" with a clear unknown_reason.
 
 {{PREVIOUS_DISCOVERY}}Return JSON:
 - "sku": "<exact MPN string>" | "unk"
-- "confidence": 0-100 (your overall confidence in the returned MPN — see rubric above)
-- "unknown_reason": "..." (required if sku is "unk"; empty string otherwise.
-  Examples: "manufacturer does not publish variant-specific MPNs",
-  "product page does not list this color variant", "only found ASIN, not MPN")
-- "evidence_refs": [{ "url": "...", "tier": "tier1|tier2|tier3|tier4|tier5|other", "confidence": 0-100, "supporting_evidence": "...", "evidence_kind": "..." }, ...]
-- "discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }`;
+{{SCALAR_RETURN_JSON_TAIL}}`;
 
 /**
  * Build the system prompt for a single-variant MPN search.
@@ -153,16 +148,27 @@ export function buildSkuFinderPrompt({
 
   const template = templateOverride || promptOverride || SKF_DEFAULT_TEMPLATE;
 
+  const variantSuffix = variant ? ` (variant: ${variant})` : '';
+
   return resolvePromptTemplate(template, {
     BRAND: brand,
     MODEL: model,
     VARIANT_DESC: variantDesc,
-    VARIANT_SUFFIX: variant ? ` (variant: ${variant})` : '',
+    VARIANT_SUFFIX: variantSuffix,
+    IDENTITY_INTRO: resolvePromptTemplate(resolveGlobalPrompt('identityIntro'), {
+      BRAND: brand, MODEL: model, VARIANT_SUFFIX: variantSuffix,
+    }),
     IDENTITY_WARNING: identityWarning,
     VARIANT_TYPE_WORD: variantType === 'edition' ? 'edition' : 'color',
     PREVIOUS_DISCOVERY: discoverySection,
     EVIDENCE_REQUIREMENTS: `${buildEvidencePromptBlock({ minEvidenceRefs, includeEvidenceKind: true })}\n\n${buildEvidenceVerificationPromptBlock()}`,
     VALUE_CONFIDENCE_GUIDANCE: buildValueConfidencePromptBlock(),
+    SCALAR_SOURCE_GUIDANCE_CLOSER: resolveGlobalPrompt('scalarSourceGuidanceCloser'),
+    SCALAR_RETURN_JSON_TAIL: resolvePromptTemplate(resolveGlobalPrompt('scalarReturnJsonTail'), {
+      VALUE_NOUN: 'MPN',
+      VALUE_KEY: 'sku',
+      UNKNOWN_REASON_EXAMPLES: '. Examples: "manufacturer does not publish variant-specific MPNs", "product page does not list this color variant", "only found ASIN, not MPN"',
+    }),
   });
 }
 

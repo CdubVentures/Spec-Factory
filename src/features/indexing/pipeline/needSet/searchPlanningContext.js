@@ -37,7 +37,7 @@ const GENERIC_FALLBACK = { desc: '', source_target: 'product_page', content_targ
 const PHASE_ORDER = { now: 0, next: 1, hold: 2 };
 
 function isCoreBucket(requiredLevel) {
-  return requiredLevel === 'identity' || requiredLevel === 'critical' || requiredLevel === 'required';
+  return requiredLevel === 'mandatory';
 }
 
 function unionSorted(arrays) {
@@ -396,7 +396,6 @@ function buildFocusGroup(groupKey, fields, catalogEntry, queryExecutionHistory, 
   const searchExhaustedFieldKeys = [];
 
   let coreUnresolvedCount = 0;
-  let secondaryUnresolvedCount = 0;
   let optionalUnresolvedCount = 0;
   let noValueAttempts = 0;
   let duplicateAttemptsSuppressed = 0;
@@ -423,7 +422,6 @@ function buildFocusGroup(groupKey, fields, catalogEntry, queryExecutionHistory, 
     // Count unresolved by required_level
     if (field.state !== 'accepted') {
       if (isCoreBucket(field.required_level)) coreUnresolvedCount++;
-      else if (field.required_level === 'expected') secondaryUnresolvedCount++;
       else optionalUnresolvedCount++;
     }
 
@@ -457,10 +455,7 @@ function buildFocusGroup(groupKey, fields, catalogEntry, queryExecutionHistory, 
   const hasUnresolved = unresolvedFieldKeys.length > 0 || weakFieldKeys.length > 0 || conflictFieldKeys.length > 0;
 
   // Priority
-  let priority;
-  if (coreUnresolvedCount > 0) priority = 'core';
-  else if (secondaryUnresolvedCount > 0) priority = 'secondary';
-  else priority = 'optional';
+  const priority = coreUnresolvedCount > 0 ? 'core' : 'optional';
 
   // GAP-4: count non-accepted fields for exhaustion check
   const nonAcceptedCount = unresolvedFieldKeys.length + weakFieldKeys.length + conflictFieldKeys.length;
@@ -503,7 +498,6 @@ function buildFocusGroup(groupKey, fields, catalogEntry, queryExecutionHistory, 
     search_exhausted_field_keys: searchExhaustedFieldKeys.sort(), // GAP-4
     search_exhausted_count: searchExhaustedFieldKeys.length, // GAP-4
     core_unresolved_count: coreUnresolvedCount,
-    secondary_unresolved_count: secondaryUnresolvedCount,
     optional_unresolved_count: optionalUnresolvedCount,
     no_value_attempts: noValueAttempts,
     duplicate_attempts_suppressed: duplicateAttemptsSuppressed,
@@ -629,7 +623,7 @@ export function buildSearchPlanningContext({
   // Build field_priority_map: field_key → required_level
   const fieldPriorityMap = {};
   for (const f of fields) {
-    if (f.field_key) fieldPriorityMap[f.field_key] = f.required_level || 'optional';
+    if (f.field_key) fieldPriorityMap[f.field_key] = f.required_level || 'non_mandatory';
   }
 
   // Pass 3: Sort — phase (now < next < hold), then priority (core < secondary < optional), then key

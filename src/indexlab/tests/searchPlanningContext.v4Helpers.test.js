@@ -133,12 +133,12 @@ describe('V4 - isGroupSearchWorthy', () => {
 describe('V4 - buildNormalizedKeyQueue', () => {
   it('sorts by availability -> difficulty -> repeat -> need_score -> required_level', () => {
     const fields = [
-      { normalized_key: 'rare hard', availability: 'rare', difficulty: 'hard', repeat_count: 0, need_score: 80, required_level: 'critical' },
-      { normalized_key: 'expected easy', availability: 'expected', difficulty: 'easy', repeat_count: 0, need_score: 30, required_level: 'expected' },
-      { normalized_key: 'expected hard', availability: 'expected', difficulty: 'hard', repeat_count: 0, need_score: 60, required_level: 'required' },
+      { normalized_key: 'rare hard', availability: 'rare', difficulty: 'hard', repeat_count: 0, need_score: 80, required_level: 'mandatory' },
+      { normalized_key: 'always easy', availability: 'always', difficulty: 'easy', repeat_count: 0, need_score: 30, required_level: 'non_mandatory' },
+      { normalized_key: 'always hard', availability: 'always', difficulty: 'hard', repeat_count: 0, need_score: 60, required_level: 'mandatory' },
     ];
     const queue = buildNormalizedKeyQueue(fields);
-    assert.deepStrictEqual(queue.map((entry) => typeof entry === 'string' ? entry : entry.normalized_key), ['expected easy', 'expected hard', 'rare hard']);
+    assert.deepStrictEqual(queue.map((entry) => typeof entry === 'string' ? entry : entry.normalized_key), ['always easy', 'always hard', 'rare hard']);
   });
 
   it('returns enriched objects with per-key search metadata', () => {
@@ -146,11 +146,11 @@ describe('V4 - buildNormalizedKeyQueue', () => {
       {
         normalized_key: 'battery hours',
         field_key: 'battery_hours',
-        availability: 'expected',
+        availability: 'always',
         difficulty: 'medium',
         repeat_count: 2,
         need_score: 40,
-        required_level: 'required',
+        required_level: 'mandatory',
         all_aliases: ['battery life', 'battery runtime'],
         alias_shards: [['battery life', 'battery runtime']],
         domains_tried_for_key: ['rtings.com'],

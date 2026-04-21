@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory — Prompt Preview Roadmap</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --surface-alt: #f1f3f5;
+    --border: #dee2e6;
+    --border-light: #e9ecef;
+    --text: #212529;
+    --text-muted: #6c757d;
+    --accent: #4263eb;
+    --accent-light: #edf2ff;
+    --green: #2b8a3e;
+    --green-bg: #ebfbee;
+    --red: #c92a2a;
+    --red-bg: #fff5f5;
+    --orange: #e67700;
+    --orange-bg: #fff9db;
+    --purple: #7048e8;
+    --purple-bg: #f3f0ff;
+    --teal: #0c8599;
+    --teal-bg: #e6fcf5;
+    --pink: #c2255c;
+    --pink-bg: #fff0f6;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #4263eb 0%, #7048e8 100%); color: white; padding: 40px 0; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  .header h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+  .header p { font-size: 15px; opacity: 0.92; margin-top: 4px; }
+  .header .pill { display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; letter-spacing: 0.3px; margin-top: 14px; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  .toc { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 32px; box-shadow: var(--shadow); }
+  .toc h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); margin-bottom: 12px; }
+  .toc ol { list-style: none; counter-reset: toc; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; }
+  .toc li { counter-increment: toc; font-size: 14px; }
+  .toc li::before { content: counter(toc) ". "; color: var(--text-muted); font-weight: 600; margin-right: 4px; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .section-title { font-size: 22px; font-weight: 700; margin: 48px 0 18px; padding-bottom: 10px; border-bottom: 2px solid var(--accent); display: flex; align-items: center; gap: 12px; }
+  .section-title .num { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: white; font-size: 15px; font-weight: 700; flex-shrink: 0; }
+  .subsection-title { font-size: 16px; font-weight: 700; margin: 24px 0 10px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+  .card-header { padding: 14px 20px; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-light); background: var(--surface-alt); }
+  .card-body { padding: 18px 22px; font-size: 14px; }
+  .card-body p { margin-bottom: 10px; }
+  .card-body p:last-child { margin-bottom: 0; }
+  .card-body ul, .card-body ol { margin-left: 22px; margin-bottom: 10px; }
+  .card-body li { margin-bottom: 4px; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .tag-green { background: var(--green-bg); color: var(--green); }
+  .tag-orange { background: var(--orange-bg); color: var(--orange); }
+  .tag-accent { background: var(--accent-light); color: var(--accent); }
+  .tag-purple { background: var(--purple-bg); color: var(--purple); }
+  .tag-teal { background: var(--teal-bg); color: var(--teal); }
+  .tag-red { background: var(--red-bg); color: var(--red); }
+  .tag-pink { background: var(--pink-bg); color: var(--pink); }
+  .tag-muted { background: var(--surface-alt); color: var(--text-muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 10px; background: var(--surface); border-radius: 6px; overflow: hidden; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: top; }
+  th { background: var(--surface-alt); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
+  tr:last-child td { border-bottom: none; }
+  td code { font-family: var(--mono); font-size: 12px; background: var(--surface-alt); padding: 2px 6px; border-radius: 3px; color: var(--accent); }
+  code.inline { font-family: var(--mono); font-size: 12.5px; background: var(--surface-alt); padding: 2px 6px; border-radius: 3px; color: var(--accent); }
+  pre { background: #0f172a; color: #e2e8f0; border-radius: var(--radius); padding: 16px 20px; overflow-x: auto; font-family: var(--mono); font-size: 12.5px; line-height: 1.55; margin: 12px 0; }
+  pre .k { color: #93c5fd; }
+  pre .s { color: #86efac; }
+  pre .c { color: #64748b; font-style: italic; }
+  pre .n { color: #fcd34d; }
+  .callout { border-left: 4px solid var(--accent); background: var(--accent-light); padding: 12px 16px; border-radius: 0 var(--radius) var(--radius) 0; margin: 14px 0; font-size: 13.5px; }
+  .callout strong { display: block; margin-bottom: 4px; }
+  .callout-warn { border-left-color: var(--orange); background: var(--orange-bg); }
+  .callout-warn strong { color: var(--orange); }
+  .callout-danger { border-left-color: var(--red); background: var(--red-bg); }
+  .callout-danger strong { color: var(--red); }
+  .callout-ok { border-left-color: var(--green); background: var(--green-bg); }
+  .callout-ok strong { color: var(--green); }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .path { font-family: var(--mono); font-size: 12.5px; color: var(--purple); word-break: break-all; }
+  .phase-banner { display: flex; align-items: center; gap: 14px; padding: 16px 20px; background: linear-gradient(90deg, var(--accent-light) 0%, transparent 80%); border-left: 6px solid var(--accent); border-radius: 0 var(--radius) var(--radius) 0; margin-bottom: 18px; }
+  .phase-banner .phase-num { font-size: 26px; font-weight: 800; color: var(--accent); }
+  .phase-banner .phase-title { font-size: 18px; font-weight: 700; }
+  .phase-banner .phase-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+  .checklist { list-style: none; margin-left: 0 !important; }
+  .checklist li { padding-left: 22px; position: relative; margin-bottom: 6px; }
+  .checklist li::before { content: "☐"; position: absolute; left: 0; color: var(--text-muted); font-size: 14px; }
+  .file-box { background: var(--surface-alt); border: 1px solid var(--border-light); border-radius: 6px; padding: 10px 14px; margin: 8px 0; font-size: 13px; }
+  .file-box .label { display: inline-block; min-width: 90px; font-weight: 600; color: var(--text-muted); font-size: 11px; text-transform: uppercase; }
+  .btn-mock { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 11.5px; font-weight: 600; font-family: var(--mono); background: var(--accent); color: white; margin: 0 2px; letter-spacing: 0.3px; }
+  .btn-mock.ghost { background: var(--surface-alt); color: var(--text); border: 1px solid var(--border); }
+  .btn-mock.prompt { background: var(--teal); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Prompt Preview — Implementation Roadmap</h1>
+  <p>Read exactly what is sent to the LLM <em>before</em> you hit Run, across all four IndexLab finders.</p>
+  <span class="pill">3 Phases · CEF → PIF → RDF + SKU</span>
+</div>
+
+<div class="container">
+
+<div class="toc">
+  <h3>Table of Contents</h3>
+  <ol>
+    <li><a href="#overview">Overview &amp; Goals</a></li>
+    <li><a href="#contract">Shared Backend Contract</a></li>
+    <li><a href="#preview-ui">Shared UI Primitives</a></li>
+    <li><a href="#phase-1">Phase 1 — CEF Prompt Modal</a></li>
+    <li><a href="#phase-2">Phase 2 — PIF Prompt Panel (4 Tabs)</a></li>
+    <li><a href="#phase-3">Phase 3 — RDF + SKU Prompt Expand</a></li>
+    <li><a href="#testing">Testing Strategy per Phase</a></li>
+    <li><a href="#risks">Risks &amp; Open Questions</a></li>
+  </ol>
+</div>
+
+<!-- ========================= OVERVIEW ========================= -->
+<h2 class="section-title" id="overview"><span class="num">1</span>Overview &amp; Goals</h2>
+
+<div class="card">
+  <div class="card-header">Problem</div>
+  <div class="card-body">
+    <p>Today, clicking <span class="btn-mock">RUN NOW</span>, <span class="btn-mock">LOOP</span>, <span class="btn-mock">VIEW</span>, <span class="btn-mock">HERO</span>, or <span class="btn-mock">EVAL</span> in IndexLab fires the LLM call immediately. The exact system prompt, user message, schema, model, effort, and image attachments are only visible <em>after the fact</em> inside Run History. There is no way to read or diff the compiled prompt before it is sent.</p>
+    <p>This roadmap adds a <strong>Prompt Preview</strong> affordance next to every run trigger — letting the user inspect exactly what would be dispatched, without dispatching it.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Scope (per feature)</div>
+  <div class="card-body">
+    <table>
+      <thead>
+        <tr><th>Finder</th><th>Prompt Trigger Points</th><th>UI Affordance</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>CEF</strong><br><span class="tag tag-accent">Phase 1</span></td>
+          <td>One prompt (product-level discovery)</td>
+          <td>Single <span class="btn-mock prompt">Prompt</span> button left of <span class="btn-mock">RUN NOW</span> in section header → modal popup</td>
+        </tr>
+        <tr>
+          <td><strong>PIF</strong><br><span class="tag tag-purple">Phase 2</span></td>
+          <td>4 distinct prompts per variant: <code class="inline">View</code>, <code class="inline">Hero</code>, <code class="inline">Loop</code> (multi-sub-prompt), <code class="inline">Eval</code> (view-eval + hero-eval)</td>
+          <td>Chevron <span class="btn-mock ghost">›</span> on each variant row inside <em>ALL IMAGES</em> → expands horizontally to the left revealing 4 inline buttons <span class="btn-mock prompt">VIEW</span> <span class="btn-mock prompt">HERO</span> <span class="btn-mock prompt">LOOP</span> <span class="btn-mock prompt">EVAL</span>. Clicking any opens the same <code class="inline">PromptPreviewModal</code> from Phase 1. Loop modal has sub-tabs for each view + hero sub-prompt.</td>
+        </tr>
+        <tr>
+          <td><strong>RDF</strong><br><span class="tag tag-teal">Phase 3</span></td>
+          <td>One prompt template; Run and Loop use identical template (Loop iterates)</td>
+          <td>Chevron on each variant row → expands left revealing 2 inline buttons <span class="btn-mock prompt">RUN</span> <span class="btn-mock prompt">LOOP</span>. Clicking either opens <code class="inline">PromptPreviewModal</code>.</td>
+        </tr>
+        <tr>
+          <td><strong>SKU</strong><br><span class="tag tag-teal">Phase 3</span></td>
+          <td>Same as RDF (single template, Loop re-runs it)</td>
+          <td>Identical chevron + 2-button reveal; same modal.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Non-Goals (explicitly out of scope)</div>
+  <div class="card-body">
+    <ul>
+      <li>No editing prompts in the preview — strictly read-only view of what would be sent.</li>
+      <li>No saving / snapshotting preview output — the preview is computed on demand.</li>
+      <li>No side-by-side diffing against last-run prompt (may be a later phase).</li>
+      <li>No per-prompt-fragment editing — prompt override UX lives elsewhere (global prompt registry).</li>
+      <li>No new LLM calls from the preview endpoint — <strong>zero network egress to the model provider</strong>.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ========================= CONTRACT ========================= -->
+<h2 class="section-title" id="contract"><span class="num">2</span>Shared Backend Contract</h2>
+
+<p>Each of the three phases stands on the same backend primitive: a <strong>compile-only preview endpoint</strong> that reuses existing prompt builders but stops short of invoking the LLM.</p>
+
+<h3 class="subsection-title">2.1 Existing infrastructure we reuse</h3>
+<div class="card">
+  <div class="card-body">
+    <table>
+      <thead>
+        <tr><th>Builder</th><th>File</th><th>Inputs already accepted</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code class="inline">buildColorEditionFinderPrompt</code></td>
+          <td class="path">src/features/color-edition/colorEditionLlmAdapter.js:190</td>
+          <td>product, previousRuns, palette, siblings, ambiguityLevel</td>
+        </tr>
+        <tr>
+          <td><code class="inline">buildProductImageFinderPrompt</code> <span class="tag tag-muted">view</span></td>
+          <td class="path">src/features/product-image/productImageLlmAdapter.js:611</td>
+          <td>product, variantLabel, variantType, priorityViews, additionalViews</td>
+        </tr>
+        <tr>
+          <td><code class="inline">buildHeroImageFinderPrompt</code> <span class="tag tag-muted">hero</span></td>
+          <td class="path">src/features/product-image/productImageLlmAdapter.js:775</td>
+          <td>product, variantLabel, variantType, siblings, previousDiscovery</td>
+        </tr>
+        <tr>
+          <td><code class="inline">buildViewEvalPrompt</code> <span class="tag tag-muted">view-eval</span></td>
+          <td class="path">src/features/product-image/imageEvaluator.js:76</td>
+          <td>variant, view, candidates (thumbnails base64)</td>
+        </tr>
+        <tr>
+          <td><code class="inline">buildHeroSelectionPrompt</code> <span class="tag tag-muted">hero-eval</span></td>
+          <td class="path">src/features/product-image/imageEvaluator.js:162</td>
+          <td>variant, candidates (thumbnails base64)</td>
+        </tr>
+        <tr>
+          <td><code class="inline">buildReleaseDateFinderPrompt</code></td>
+          <td class="path">src/features/release-date/releaseDateLlmAdapter.js:102</td>
+          <td>product, variantLabel, variantType, siblings, previousDiscovery</td>
+        </tr>
+        <tr>
+          <td><code class="inline">buildSkuFinderPrompt</code></td>
+          <td class="path">src/features/sku/skuLlmAdapter.js:114</td>
+          <td>product, variantLabel, variantType, siblings, previousDiscovery</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout callout-ok">
+      <strong>Good news</strong>
+      Every builder is a pure function today — no LLM side effect inside. Preview is just calling them with the same arg-resolution path as a real run, and returning the string instead of dispatching it.
+    </div>
+  </div>
+</div>
+
+<h3 class="subsection-title">2.2 New endpoint: <code class="inline">POST /:prefix/:category/:productId/preview-prompt</code></h3>
+<div class="card">
+  <div class="card-body">
+    <p>Registered generically inside <span class="path">src/core/finder/finderRoutes.js</span> next to the existing <code class="inline">/loop</code> handler (lines 292–414). Each finder's <code class="inline">register*FinderRoutes.js</code> opts in via a new <code class="inline">preview</code> config key on the <code class="inline">registerScalarFinder</code> / finder-module registration shape.</p>
+
+    <p><strong>Request body</strong> (discriminated by finder):</p>
+<pre><span class="c">// RDF / SKU / CEF (scalar)</span>
+{ <span class="k">variant_key</span>?: <span class="s">"Black"</span>, <span class="k">mode</span>?: <span class="s">"run"</span> | <span class="s">"loop"</span> }
+
+<span class="c">// PIF (vision, multi-prompt)</span>
+{ <span class="k">variant_key</span>: <span class="s">"Black"</span>,
+  <span class="k">variant_id</span>?: <span class="s">"uuid"</span>,
+  <span class="k">mode</span>: <span class="s">"view"</span> | <span class="s">"hero"</span> | <span class="s">"view-eval"</span> | <span class="s">"hero-eval"</span> | <span class="s">"loop"</span>,
+  <span class="k">view</span>?: <span class="s">"top" | "angle" | "side" | "sangle" | ...</span>
+}</pre>
+
+    <p><strong>Response body</strong>:</p>
+<pre>{
+  <span class="k">finder</span>: <span class="s">"cef"</span> | <span class="s">"pif"</span> | <span class="s">"rdf"</span> | <span class="s">"sku"</span>,
+  <span class="k">mode</span>: <span class="s">"run"</span> | <span class="s">"loop"</span> | <span class="s">"view"</span> | ...,
+  <span class="k">compiled_at</span>: <span class="n">1713623400000</span>,
+  <span class="k">prompts</span>: [
+    {
+      <span class="k">label</span>: <span class="s">"view:top"</span>,            <span class="c">// for display (e.g. "Run 1 — top view")</span>
+      <span class="k">system</span>: <span class="s">"You are ..."</span>,         <span class="c">// full compiled system prompt</span>
+      <span class="k">user</span>: <span class="s">"{ \"brand\": ... }"</span>,      <span class="c">// JSON.stringified user message</span>
+      <span class="k">schema</span>: { ... },                 <span class="c">// llm json schema (zodToLlmSchema output)</span>
+      <span class="k">model</span>: {
+        <span class="k">id</span>: <span class="s">"gpt-5.4"</span>,
+        <span class="k">thinking_effort</span>: <span class="s">"high"</span>,
+        <span class="k">web_search</span>: <span class="n">true</span>,
+        <span class="k">json_strict</span>: <span class="n">true</span>
+      },
+      <span class="k">images</span>?: [                        <span class="c">// only for view-eval / hero-eval</span>
+        { <span class="k">url</span>: <span class="s">"..."</span>, <span class="k">thumb_base64_size</span>: <span class="n">8123</span> }
+      ],
+      <span class="k">notes</span>: [                         <span class="c">// human-readable context</span>
+        <span class="s">"previousDiscovery injected: 12 urls, 4 queries"</span>,
+        <span class="s">"ambiguity tier: medium (3 sibling models)"</span>
+      ]
+    }
+  ],
+  <span class="k">inputs_resolved</span>: {                   <span class="c">// summary of where each arg came from</span>
+    <span class="k">product_id</span>: <span class="s">"mouse-1d9..."</span>,
+    <span class="k">variant_key</span>: <span class="s">"Black"</span>,
+    <span class="k">variant_id</span>: <span class="s">"..."</span>,
+    <span class="k">family_model_count</span>: <span class="n">3</span>,
+    <span class="k">ambiguity_level</span>: <span class="s">"medium"</span>,
+    <span class="k">sibling_models</span>: [<span class="s">"M65"</span>, <span class="s">"Scimitar"</span>]
+  }
+}</pre>
+
+    <p><strong>Key invariants</strong>:</p>
+    <ul>
+      <li><strong>No LLM dispatch.</strong> Preview endpoint never calls <code class="inline">callRoutedLlmFn</code>. No operations are registered, no WS events fire, no run is persisted.</li>
+      <li><strong>No mutations.</strong> Zero writes to product.json, SQL, snapshots, or logs.</li>
+      <li><strong>Same arg-resolution as real run.</strong> Uses the same <code class="inline">resolvePhaseModel</code>, <code class="inline">buildKnownInputs</code>, <code class="inline">buildFamilyContext</code>, evidence fragments, previous-discovery accumulation. Preview output must be <strong>byte-identical</strong> to what a real run would dispatch right now.</li>
+      <li><strong>Byte-identical guarantee is testable.</strong> New integration test asserts preview response matches the <code class="inline">prompt_snapshot</code> captured from a real run fired moments later.</li>
+    </ul>
+  </div>
+</div>
+
+<h3 class="subsection-title">2.3 Loop semantics per finder</h3>
+<div class="card">
+  <div class="card-body">
+    <table>
+      <thead>
+        <tr><th>Finder</th><th>Loop = N prompts?</th><th>Preview response shape</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>CEF</td>
+          <td>Single prompt (no Loop mode in UI)</td>
+          <td><code class="inline">prompts[]</code> has length 1</td>
+        </tr>
+        <tr>
+          <td>RDF</td>
+          <td>Loop re-fires the <em>same</em> template, accumulating <code class="inline">previousDiscovery</code></td>
+          <td>Loop preview = <code class="inline">prompts[]</code> length 1, labeled <code class="inline">"run-loop-iter-1"</code>. Preview shows iteration #1 only; subsequent iterations depend on runtime response and cannot be pre-compiled.</td>
+        </tr>
+        <tr>
+          <td>SKU</td>
+          <td>Same as RDF</td>
+          <td>Same as RDF</td>
+        </tr>
+        <tr>
+          <td>PIF view</td>
+          <td>Single view-targeted prompt</td>
+          <td><code class="inline">prompts[]</code> length 1</td>
+        </tr>
+        <tr>
+          <td>PIF hero</td>
+          <td>Single hero prompt</td>
+          <td><code class="inline">prompts[]</code> length 1</td>
+        </tr>
+        <tr>
+          <td>PIF Loop</td>
+          <td>N prompts: one per unfilled view + hero (if enabled), per <code class="inline">runCarouselLoop</code></td>
+          <td><code class="inline">prompts[]</code> contains the first attempt for every view in the view budget + hero, labeled <code class="inline">"view:top"</code>, <code class="inline">"view:angle"</code>, ..., <code class="inline">"hero"</code>. Retries are not previewed (they depend on response).</td>
+        </tr>
+        <tr>
+          <td>PIF view-eval / hero-eval</td>
+          <td>Vision call against current carousel candidates</td>
+          <td><code class="inline">prompts[]</code> length 1, includes <code class="inline">images[]</code> metadata (URL + thumbnail byte count, NOT raw base64, to keep response small)</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <strong>Design note — Loop determinism</strong>
+      Loop preview shows only the <em>first</em> iteration's prompt for scalar finders, and only the <em>initial attempt set</em> for PIF Loop. Later iterations are response-dependent. The preview UI will label this clearly: "Iteration 1 of N — subsequent prompts depend on LLM responses." This is acceptable because the user is validating the <em>starting</em> prompt state, not the full search trajectory.
+    </div>
+  </div>
+</div>
+
+<h3 class="subsection-title">2.4 CEF gap — full prompt is not captured today</h3>
+<div class="callout callout-warn">
+  <strong>One prerequisite fix</strong>
+  CEF's run record stores <code class="inline">prompt: {}</code> (empty) today (<span class="path">colorEditionFinder.js:168</span>), while RDF/SKU capture <code class="inline">{ system, user }</code>. Phase 1 includes a one-line fix to make CEF capture the same shape. Two benefits: (a) the preview/replay parity test has something to compare against, (b) existing Run History prompt detail panel becomes useful for CEF.
+</div>
+
+<h3 class="subsection-title">2.5 Registry-driven wiring (O(1) feature scaling)</h3>
+<div class="card">
+  <div class="card-body">
+    <p>Per the O(1) mandate in <code class="inline">CLAUDE.md</code>, the preview endpoint must not require per-finder boilerplate. Each finder's existing registration in <span class="path">src/core/finder/finderModuleRegistry.js</span> already exports <code class="inline">buildPrompt</code> and <code class="inline">createCallLlm</code>. We add two new optional exports to that shape:</p>
+<pre>{
+  id: <span class="s">'releaseDateFinder'</span>,
+  phase: <span class="s">'releaseDateFinder'</span>,
+  buildPrompt,
+  createCallLlm,
+  <span class="n">previewModes</span>: [<span class="s">'run'</span>, <span class="s">'loop'</span>],          <span class="c">// NEW</span>
+  <span class="n">compilePreview</span>: <span class="k">async</span>(ctx) => Prompt[],   <span class="c">// NEW (default: uses buildPrompt)</span>
+  store
+}</pre>
+    <p>A generic <code class="inline">registerPreviewRoute(router, moduleId)</code> helper in <span class="path">src/core/finder/previewRoutes.js</span> reads the registry, resolves inputs via the same helpers used by the real run, calls <code class="inline">compilePreview</code>, and returns the response envelope. Adding a new finder means populating <code class="inline">previewModes</code> and (optionally) overriding <code class="inline">compilePreview</code> — no new route files.</p>
+  </div>
+</div>
+
+<!-- ========================= PREVIEW UI ========================= -->
+<h2 class="section-title" id="preview-ui"><span class="num">3</span>Shared UI Primitives</h2>
+
+<div class="card">
+  <div class="card-header">New shared components</div>
+  <div class="card-body">
+    <table>
+      <thead>
+        <tr><th>Component</th><th>Location</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code class="inline">PromptPreviewView</code> <span class="tag tag-accent">Phase 1</span></td>
+          <td class="path">tools/gui-react/src/shared/ui/finder/PromptPreviewView.tsx</td>
+          <td>Renders a single <code class="inline">Prompt</code> object (system, user, schema, model, notes, images) using the existing <code class="inline">ToggleSection</code> pattern from <code class="inline">FinderRunPromptDetails</code>. Read-only. Copy-to-clipboard on each block.</td>
+        </tr>
+        <tr>
+          <td><code class="inline">PromptPreviewList</code> <span class="tag tag-accent">Phase 1</span></td>
+          <td class="path">tools/gui-react/src/shared/ui/finder/PromptPreviewList.tsx</td>
+          <td>Renders a list of <code class="inline">Prompt[]</code> with a sub-tab switcher across labels. Wraps <code class="inline">PromptPreviewView</code>. Built in Phase 1 for future use even though CEF only needs single-prompt rendering — Phase 2's Loop and Eval modals depend on it.</td>
+        </tr>
+        <tr>
+          <td><code class="inline">usePromptPreviewQuery</code> <span class="tag tag-accent">Phase 1</span></td>
+          <td class="path">tools/gui-react/src/features/indexing/hooks/usePromptPreviewQuery.ts</td>
+          <td>React Query hook that POSTs to <code class="inline">/:prefix/:category/:productId/preview-prompt</code> with given body. <code class="inline">enabled: false</code> by default — fetched lazily when user opens the preview UI. 60s cache. Errors surface as inline alert inside the preview panel.</td>
+        </tr>
+        <tr>
+          <td><code class="inline">PromptPreviewModal</code> <span class="tag tag-accent">Phase 1</span></td>
+          <td class="path">tools/gui-react/src/shared/ui/finder/PromptPreviewModal.tsx</td>
+          <td>Modal shell used by <strong>all three phases</strong>. Copies the overlay pattern from <code class="inline">FinderDeleteConfirmModal</code>. Header + scrollable body containing a <code class="inline">PromptPreviewView</code> (single prompt) or <code class="inline">PromptPreviewList</code> (Loop/multi-prompt with sub-tabs). Close on escape / backdrop click.</td>
+        </tr>
+        <tr>
+          <td><code class="inline">PromptDrawerChevron</code> <span class="tag tag-purple">Phase 2</span></td>
+          <td class="path">tools/gui-react/src/shared/ui/finder/PromptDrawerChevron.tsx</td>
+          <td>Variant-row chevron drawer used by PIF / RDF / SKU. Mirrors the <code class="inline">sf-shell-header-drawer</code> pattern at <span class="path">AppShell.tsx:254–291</span>: a fixed-height container anchored <code class="inline">absolute right-0 top-0</code>, width animates from collapsed (chevron only) to expanded (chevron + inline action buttons). Content slides in as width grows; chevron rotates 180° via <code class="inline">rotate-180</code>. Accepts <code class="inline">actions: Array&lt;{ label, onClick }&gt;</code> so PIF passes 4 actions and RDF/SKU pass 2.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="callout">
+      <strong>Zero-drift</strong>
+      All styling uses <code class="inline">sf-*</code> tokens. No hex literals, no inline <code class="inline">style={{}}</code>, no one-off CSS. If a token is missing, we add it to the design system first.
+    </p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">API client addition</div>
+  <div class="card-body">
+    <p>Single helper in <span class="path">tools/gui-react/src/api/client.ts</span>:</p>
+<pre><span class="k">export async function</span> postPromptPreview(
+  finder: <span class="s">'cef'</span> | <span class="s">'pif'</span> | <span class="s">'rdf'</span> | <span class="s">'sku'</span>,
+  category: string,
+  productId: string,
+  body: PreviewRequest
+): Promise&lt;PreviewResponse&gt; { ... }</pre>
+    <p>Response type <code class="inline">PreviewResponse</code> is declared once in <span class="path">tools/gui-react/src/features/indexing/types/previewPrompt.ts</span> and inferred from the backend Zod schema (single source of truth per the CLAUDE.md O(1) rule).</p>
+  </div>
+</div>
+
+<!-- ========================= PHASE 1 ========================= -->
+<h2 class="section-title" id="phase-1"><span class="num">4</span>Phase 1 — CEF Prompt Modal</h2>
+
+<div class="phase-banner">
+  <span class="phase-num">1</span>
+  <div>
+    <div class="phase-title">Color &amp; Edition Finder — Single Prompt Button + Modal</div>
+    <div class="phase-sub">Smallest surface area. Proves the backend contract. Delivers immediate value for the finder that runs most often.</div>
+  </div>
+</div>
+
+<h3 class="subsection-title">4.1 UX</h3>
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">Before</div>
+    <div class="card-body">
+      <p>Section header, right-aligned:</p>
+      <p><span class="btn-mock ghost">HISTORY (19) (21)</span> <span class="btn-mock">RUN NOW</span></p>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">After</div>
+    <div class="card-body">
+      <p>Section header, right-aligned:</p>
+      <p><span class="btn-mock ghost">HISTORY (19) (21)</span> <span class="btn-mock prompt">PROMPT</span> <span class="btn-mock">RUN NOW</span></p>
+      <p style="margin-top:8px"><em>Clicking Prompt opens a modal overlay centered on viewport.</em></p>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Modal contents</div>
+  <div class="card-body">
+    <ul>
+      <li><strong>Header</strong>: "Color &amp; Edition Finder — Compiled Prompt" + brand / model / variant summary pill + close (×).</li>
+      <li><strong>Model block</strong> (always expanded): model id, thinking_effort, json_strict, web_search, phase, reason.</li>
+      <li><strong>System prompt</strong> (default expanded): monospace block, copy button.</li>
+      <li><strong>User message</strong> (default expanded): JSON-formatted, copy button.</li>
+      <li><strong>Schema</strong> (collapsed by default): JSON preview of <code class="inline">zodToLlmSchema(colorEditionFinderResponseSchema)</code>.</li>
+      <li><strong>Notes</strong>: "Identity tier: medium · 3 sibling models · palette contains 42 color atoms · previous discovery: 12 urls / 4 queries".</li>
+      <li><strong>Footer</strong>: "This is exactly what the next Run Now would send." + secondary button "Run Now" (fires the real run and closes modal).</li>
+    </ul>
+  </div>
+</div>
+
+<h3 class="subsection-title">4.2 Files touched</h3>
+<div class="card">
+  <div class="card-body">
+    <div class="file-box"><span class="label">NEW</span> <span class="path">tools/gui-react/src/shared/ui/finder/PromptPreviewView.tsx</span></div>
+    <div class="file-box"><span class="label">NEW</span> <span class="path">tools/gui-react/src/shared/ui/finder/PromptPreviewModal.tsx</span></div>
+    <div class="file-box"><span class="label">NEW</span> <span class="path">tools/gui-react/src/features/indexing/hooks/usePromptPreviewQuery.ts</span></div>
+    <div class="file-box"><span class="label">NEW</span> <span class="path">tools/gui-react/src/features/indexing/types/previewPrompt.ts</span></div>
+    <div class="file-box"><span class="label">EDIT</span> <span class="path">tools/gui-react/src/api/client.ts</span> — add <code class="inline">postPromptPreview</code></div>
+    <div class="file-box"><span class="label">EDIT</span> <span class="path">tools/gui-react/src/features/color-edition-finder/components/ColorEditionFinderPanel.tsx</span> — add Prompt button to header <code class="inline">actionSlot</code>, wire modal open state</div>
+    <div class="file-box"><span class="label">EDIT</span> <span class="path">tools/gui-react/src/shared/ui/finder/FinderPanelHeader.tsx</span> — only if action-slot layout needs a new left-of-run anchor point</div>
+    <div class="file-box"><span class="label">NEW</span> <span class="path">src/core/finder/previewRoutes.js</span> — generic preview route registrar</div>
+    <div class="file-box"><span class="label">EDIT</span> <span class="path">src/core/finder/finderModuleRegistry.js</span> — declare <code class="inline">previewModes</code> + <code class="inline">compilePreview</code> fields (optional on registration)</div>
+    <div class="file-box"><span class="label">EDIT</span> <span class="path">src/features/color-edition/api/colorEditionFinderRoutes.js</span> — opt into preview route</div>
+    <div class="file-box"><span class="label">EDIT</span> <span class="path">src/features/color-edition/colorEditionFinder.js</span> — capture <code class="inline">{ system, user }</code> in run record (parity fix, one line)</div>
+    <div class="file-box"><span class="label">NEW</span> <span class="path">src/features/color-edition/tests/colorEditionPreviewPrompt.test.js</span> — integration: preview response matches real-run captured prompt byte-for-byte</div>
+  </div>
+</div>
+
+<h3 class="subsection-title">4.3 Acceptance criteria</h3>
+<ul class="checklist">
+  <li>Prompt button renders immediately left of Run Now in the CEF section header.</li>
+  <li>Clicking Prompt opens the modal in &lt; 200 ms (cached) or &lt; 800 ms (cold).</li>
+  <li>Modal shows compiled system + user + schema + model for the currently selected product.</li>
+  <li>Copy-to-clipboard works on each block.</li>
+  <li>Firing Run Now from the modal footer closes the modal and starts the real run.</li>
+  <li>Preview response is byte-identical to the system/user prompt persisted by the subsequent real run for the same product state (integration test).</li>
+  <li>No new LLM call counted in <code class="inline">llmCallLog</code> when Prompt is clicked.</li>
+  <li>No writes to product.json, SQL, snapshots, or ops log when Prompt is clicked.</li>
+  <li>GUI smoke: Prompt button visible with product selected and disabled with no product picked.</li>
+</ul>
+
+<!-- ========================= PHASE 2 ========================= -->
+<h2 class="section-title" id="phase-2"><span class="num">5</span>Phase 2 — PIF Prompt Panel (4 Tabs + Loop Sub-Tabs)</h2>
+
+<div class="phase-banner">
+  <span class="phase-num">2</span>
+  <div>
+    <div class="phase-title">Product Image Finder — Per-Variant Prompts Panel</div>
+    <div class="phase-sub">Four distinct prompt flavors per variant, with Loop showing the multi-sub-prompt trajectory. Highest complexity — but reuses every primitive built in Phase 1.</div>
+  </div>
+</div>
+
+<h3 class="subsection-title">5.1 UX — chevron drawer matching AppShell field-audit pattern</h3>
+<div class="callout callout-ok">
+  <strong>Pattern anchor</strong>
+  The interaction mirrors the Field Audit drawer in the header (<span class="path">AppShell.tsx:254–291</span>): a fixed-height container anchored <code class="inline">absolute right-0 top-0</code>, CSS-transitioned width grows from collapsed (chevron only) to expanded (chevron + inline action buttons). The chevron stays pinned on the right; content appears to "grow left." Chevron rotates 180° when open. Uses the same <code class="inline">sf-shell-header-drawer</code>-family token class set.
+</div>
+
+<div class="card">
+  <div class="card-header">Variant row (in ALL IMAGES)</div>
+  <div class="card-body">
+    <p><strong>Before</strong> (row trailing buttons, reading right-to-left):</p>
+    <p><span class="btn-mock">EVAL</span> <span class="btn-mock">LOOP</span> <span class="btn-mock">HERO</span> <span class="btn-mock">VIEW</span> <span class="btn-mock ghost">3 IMG</span> <span class="btn-mock ghost">CLR</span></p>
+    <p><strong>After — drawer closed</strong> (just a chevron):</p>
+    <p><span class="btn-mock">EVAL</span> <span class="btn-mock">LOOP</span> <span class="btn-mock">HERO</span> <span class="btn-mock">VIEW</span> <span class="btn-mock ghost">3 IMG</span> <span class="btn-mock ghost">CLR</span> &nbsp;|&nbsp; <span class="btn-mock ghost">‹</span></p>
+    <p><strong>After — drawer open</strong> (expanded left, chevron rotated, 4 prompt buttons revealed):</p>
+    <p><span class="btn-mock">EVAL</span> <span class="btn-mock">LOOP</span> <span class="btn-mock">HERO</span> <span class="btn-mock">VIEW</span> <span class="btn-mock ghost">3 IMG</span> <span class="btn-mock ghost">CLR</span> &nbsp;|&nbsp; <span class="btn-mock prompt">VIEW</span> <span class="btn-mock prompt">HERO</span> <span class="btn-mock prompt">LOOP</span> <span class="btn-mock prompt">EVAL</span> <span class="btn-mock ghost">›</span></p>
+    <p style="margin-top:10px"><em>Clicking any of the 4 revealed prompt buttons opens <code class="inline">PromptPreviewModal</code>. The row itself does not vertically accordion — all prompt content lives in the modal.</em></p>
+  </div>
+</div>
+
+<h3 class="subsection-title">5.2 What each of the 4 buttons opens</h3>
+<div class="card">
+  <div class="card-body">
+    <table>
+      <thead>
+        <tr><th>Button</th><th>Modal contents</th><th>Endpoint body</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="btn-mock prompt">VIEW</span></td>
+          <td>Single compiled prompt for <code class="inline">buildProductImageFinderPrompt</code>. Variant identity, priority views, secondary views.</td>
+          <td><code class="inline">{ variant_key, variant_id, mode: "view" }</code></td>
+        </tr>
+        <tr>
+          <td><span class="btn-mock prompt">HERO</span></td>
+          <td>Single compiled prompt for <code class="inline">buildHeroImageFinderPrompt</code>.</td>
+          <td><code class="inline">{ variant_key, variant_id, mode: "hero" }</code></td>
+        </tr>
+        <tr>
+          <td><span class="btn-mock prompt">LOOP</span></td>
+          <td>Modal opens with a sub-tab switcher: one tab per view in current view budget + one for "hero" (if hero enabled). Each sub-tab renders that iteration's compiled prompt. Header note: "Loop preview shows the <em>first</em> attempt for each view. Retries depend on LLM responses at runtime."</td>
+          <td><code class="inline">{ variant_key, variant_id, mode: "loop" }</code> → backend returns <code class="inline">Prompt[]</code> of length N</td>
+        </tr>
+        <tr>
+          <td><span class="btn-mock prompt">EVAL</span></td>
+          <td>Modal sub-tabs: "View Eval" (one tab per view with candidates) + "Hero Eval". Each tab includes candidate image summary (URLs + thumbnail byte counts — no raw base64).</td>
+          <td><code class="inline">{ variant_key, variant_id, mode: "view-eval", view }</code> and <code class="inline">mode: "hero-eval"</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><em>Drawer open/closed state persists per variant via <code class="inline">usePersistedExpandMap</code> key <code class="inline">indexing:pif:prompt-drawer</code>. Modal active sub-tab persists via <code class="inline">usePersistedTab</code> key <code class="inline">indexing:pif:prompt-modal-subtab:{variantKey}:{mode}</code>.</em></p>
+  </div>
+</div>
+
+<h3 class="subsection-title">5.3 Loop sub-tab generation</h3>
+<div class="card">
+  <div class="card-body">
+    <p>Backend: <code class="inline">compilePreview</code> for PIF Loop walks the same logic as <code class="inline">runCarouselLoop</code> (<span class="path">src/features/product-image/productImageFinder.js:909</span>) but stops after building prompts:</p>
+    <ol>
+      <li>Resolve variant's unfilled views from current image store state.</li>
+      <li>For each unfilled view in <code class="inline">viewBudget</code>: call <code class="inline">buildProductImageFinderPrompt</code> with that view focused + <code class="inline">ADDITIONAL_VIEWS</code> hints. Push to <code class="inline">prompts[]</code>.</li>
+      <li>If <code class="inline">heroEnabled</code>: call <code class="inline">buildHeroImageFinderPrompt</code>. Push to <code class="inline">prompts[]</code>.</li>
+      <li>Return array. Do not call LLM. Do not update image store.</li>
+    </ol>
+    <p>Each prompt is labeled (<code class="inline">view:top</code>, <code class="inline">view:angle</code>, ..., <code class="inline">hero</code>) and rendered as a sub-tab inside the Loop tab.</p>
+  </div>
+</div>
+
+<h3 class="subsection-title">5.4 Eval preview — candidate image handling</h3>
+<div class="callout callout-warn">
+  <strong>Carousel state dependency</strong>
+  Eval prompts inject candidate images (<code class="inline">createThumbnailBase64</code>). Preview must NOT re-download or re-thumbnail — that would be a real side effect. Instead, <code class="inline">compilePreview</code> reads the current carousel candidate list from <code class="inline">productImageStore</code>, builds the prompt with placeholder text for image positions (<em>"[image 1: &lt;1024x1024, 8.1KB&gt; &lt;url&gt;]"</em>), and returns <code class="inline">images[]</code> metadata separately. The UI renders an image-list summary card next to the prompt block, not the raw base64. If the carousel has 0 candidates, preview returns the prompt with an empty image list and a note: "Eval cannot run — no candidates in carousel."
+</div>
+
+<h3 class="subsection-title">5.5 Files touched</h3>
+<div class="card">
+  <div class="card-body">
+    <div class="file-box"><span class="label">NEW</span> <span class="path">tools/gui-react/src/shared/ui/finder/PromptDrawerChevron.tsx</span> — new shared primitive mirroring <code class="inline">sf-shell-header-drawer</code>: anchored right, width-animates open to reveal inline action buttons, chevron rotates 180°. Accepts <code class="inline">actions: Array&lt;{ label, onClick }&gt;</code> and a persisted-open key</div>
+    <div class="file-box"><span class="label">EDIT</span> <span class="path">tools/gui-react/src/features/product-image-finder/components/VariantImageGroup.tsx</span> — mount <code class="inline">PromptDrawerChevron</code> in trailing slot; supply 4 actions (view / hero / loop / eval) each calling <code class="inline">setActivePromptModal({ variantKey, variantId, mode })</code></div>
+    <div class="file-box"><span class="label">EDIT</span> <span class="path">tools/gui-react/src/features/product-image-finder/components/ProductImageFinderPanel.tsx</span> — own the <code class="inline">activePromptModal</code> state; render <code class="inline">PromptPreviewModal</code> once at panel level regardless of which variant's drawer opened it</div>
+    <div class="file-box"><span class="label">EDIT</span> <span class="path">src/features/product-image/api/productImageFinderRoutes.js</span> — opt into preview route, register PIF-specific modes (<code class="inline">view</code>, <code class="inline">hero</code>, <code class="inline">loop</code>, <code class="inline">view-eval</code>, <code class="inline">hero-eval</code>)</div>
+    <div class="file-box"><span class="label">NEW</span> <span class="path">src/features/product-image/productImagePromptPreview.js</span> — <code class="inline">compilePreview</code> implementation routing by mode; Loop mode returns <code class="inline">Prompt[]</code> by walking the same view-budget logic as <code class="inline">runCarouselLoop</code> without dispatching</div>
+    <div class="file-box"><span class="label">NEW</span> <span class="path">src/features/product-image/tests/productImagePreviewPrompt.test.js</span> — integration: preview for each mode vs. captured real-run prompt, byte-identical</div>
+  </div>
+  <div class="card-body" style="border-top: 1px solid var(--border-light);">
+    <strong>Reused from Phase 1 (no new files needed):</strong>
+    <ul>
+      <li><code class="inline">PromptPreviewModal</code> (single modal shell — accepts <code class="inline">Prompt</code> or <code class="inline">Prompt[]</code>; switches to sub-tabs when list)</li>
+      <li><code class="inline">PromptPreviewView</code>, <code class="inline">PromptPreviewList</code>, <code class="inline">usePromptPreviewQuery</code>, <code class="inline">postPromptPreview</code>, preview types</li>
+      <li>Backend <code class="inline">previewRoutes.js</code> scaffolding and registry wiring</li>
+    </ul>
+  </div>
+</div>
+
+<h3 class="subsection-title">5.6 Acceptance criteria</h3>
+<ul class="checklist">
+  <li>Chevron renders on every variant row in ALL IMAGES, right of existing action buttons.</li>
+  <li>Clicking the chevron animates the drawer open horizontally to the left; 4 buttons (VIEW / HERO / LOOP / EVAL) appear inline. Chevron rotates 180°.</li>
+  <li>Clicking a second time closes the drawer; animation mirrors the AppShell field-audit drawer speed and easing.</li>
+  <li>Clicking any of the 4 revealed buttons opens <code class="inline">PromptPreviewModal</code> scoped to that (variant, mode) pair.</li>
+  <li>VIEW and HERO modals each show a single prompt with system / user / schema / model blocks.</li>
+  <li>LOOP modal shows sub-tabs — one per active view in the view budget + one for hero (if enabled). Each sub-tab shows the prompt the first iteration would issue.</li>
+  <li>EVAL modal shows sub-tabs: per-view eval prompts + hero eval — each with prompt + candidate image summary (URL list, byte counts only, never raw base64).</li>
+  <li>Drawer open state persists per variant. Modal active sub-tab persists per (variant, mode).</li>
+  <li>Preview prompts are byte-identical to real-run prompts for the same variant state (integration test for each mode).</li>
+  <li>Empty-carousel case: EVAL modal renders a clear empty state with explanatory note.</li>
+  <li>No operations, no WS traffic, no persistence on any chevron expansion or modal open.</li>
+  <li>Only one modal instance mounts at panel level, regardless of which variant's chevron triggered it.</li>
+</ul>
+
+<!-- ========================= PHASE 3 ========================= -->
+<h2 class="section-title" id="phase-3"><span class="num">6</span>Phase 3 — RDF + SKU Prompt Expand</h2>
+
+<div class="phase-banner">
+  <span class="phase-num">3</span>
+  <div>
+    <div class="phase-title">Release Date + SKU — Per-Variant Prompt Expand with Run/Loop Tabs</div>
+    <div class="phase-sub">Both finders share the scalar-finder chrome (<code>GenericScalarFinderPanel</code>). One reusable component covers both.</div>
+  </div>
+</div>
+
+<h3 class="subsection-title">6.1 UX — same chevron drawer pattern as Phase 2</h3>
+<div class="card">
+  <div class="card-header">Variant row (SKU example; RDF identical)</div>
+  <div class="card-body">
+    <p><strong>Before</strong> (row trailing buttons):</p>
+    <p><span class="btn-mock ghost">CLR</span> <span class="btn-mock ghost">CH-9310100-NA</span> <span class="btn-mock ghost">vs</span> <span class="btn-mock">RUN</span> <span class="btn-mock">LOOP</span></p>
+    <p><strong>After — drawer closed</strong>:</p>
+    <p><span class="btn-mock ghost">CLR</span> <span class="btn-mock ghost">CH-9310100-NA</span> <span class="btn-mock ghost">vs</span> <span class="btn-mock">RUN</span> <span class="btn-mock">LOOP</span> &nbsp;|&nbsp; <span class="btn-mock ghost">‹</span></p>
+    <p><strong>After — drawer open</strong> (expanded left, chevron rotated, 2 prompt buttons revealed):</p>
+    <p><span class="btn-mock ghost">CLR</span> <span class="btn-mock ghost">CH-9310100-NA</span> <span class="btn-mock ghost">vs</span> <span class="btn-mock">RUN</span> <span class="btn-mock">LOOP</span> &nbsp;|&nbsp; <span class="btn-mock prompt">RUN</span> <span class="btn-mock prompt">LOOP</span> <span class="btn-mock ghost">›</span></p>
+    <p style="margin-top:10px"><em>Clicking the revealed <span class="btn-mock prompt">RUN</span> or <span class="btn-mock prompt">LOOP</span> opens the same <code class="inline">PromptPreviewModal</code> used by CEF and PIF. No inline body expansion.</em></p>
+  </div>
+</div>
+
+<h3 class="subsection-title">6.2 Modal contents per button</h3>
+<div class="card">
+  <div class="card-body">
+    <ul>
+      <li><span class="btn-mock prompt">RUN</span> → single prompt from <code class="inline">buildReleaseDateFinderPrompt</code> or <code class="inline">buildSkuFinderPrompt</code> with current cumulative <code class="inline">previousDiscovery</code>.</li>
+      <li><span class="btn-mock prompt">LOOP</span> → first-iteration prompt only (identical template, same <code class="inline">previousDiscovery</code> state). Modal header note: "Loop fires this same prompt repeatedly until an answer is published or the budget exhausts. Subsequent iterations accumulate <code class="inline">urls_checked</code> and <code class="inline">queries_run</code> into <code class="inline">previousDiscovery</code>; those iterations cannot be pre-compiled."</li>
+    </ul>
+  </div>
+</div>
+
+<h3 class="subsection-title">6.3 Shared component strategy — one edit covers both finders</h3>
+<div class="card">
+  <div class="card-body">
+    <p>Both RDF and SKU use <code class="inline">GenericScalarFinderPanel</code> (<span class="path">tools/gui-react/src/shared/ui/finder/GenericScalarFinderPanel.tsx</span>). We mount the <code class="inline">PromptDrawerChevron</code> inside the variant-row <code class="inline">trailing</code> slot — parameterized by the finder id passed via props. One change, two finders covered.</p>
+    <p>The finder id flows in through the existing <code class="inline">TResult extends GenericScalarResult</code> config. We extend that config with <code class="inline">previewEnabled: boolean</code> and <code class="inline">previewFinderId: 'rdf' | 'sku'</code>. Panel owns a single <code class="inline">activePromptModal</code> state (variantKey + mode) so only one modal mounts regardless of which row's chevron triggered it.</p>
+  </div>
+</div>
+
+<h3 class="subsection-title">6.4 Files touched</h3>
+<div class="card">
+  <div class="card-body">
+    <div class="file-box"><span class="label">EDIT</span> <span class="path">tools/gui-react/src/shared/ui/finder/GenericScalarFinderPanel.tsx</span> — mount <code class="inline">PromptDrawerChevron</code> with 2 actions (run / loop); own <code class="inline">activePromptModal</code> state; render <code class="inline">PromptPreviewModal</code> once at panel level</div>
+    <div class="file-box"><span class="label">EDIT</span> <span class="path">tools/gui-react/src/features/release-date-finder/components/ReleaseDateFinderPanel.tsx</span> — pass <code class="inline">previewEnabled=true, previewFinderId='rdf'</code> to GenericScalarFinderPanel</div>
+    <div class="file-box"><span class="label">EDIT</span> <span class="path">tools/gui-react/src/features/sku-finder/components/SkuFinderPanel.tsx</span> — same as RDF with <code class="inline">previewFinderId='sku'</code></div>
+    <div class="file-box"><span class="label">EDIT</span> <span class="path">src/features/release-date/api/releaseDateFinderRoutes.js</span> — opt into preview (<code class="inline">previewModes: ['run','loop']</code>)</div>
+    <div class="file-box"><span class="label">EDIT</span> <span class="path">src/features/sku/api/skuFinderRoutes.js</span> — opt into preview (<code class="inline">previewModes: ['run','loop']</code>)</div>
+    <div class="file-box"><span class="label">NEW</span> <span class="path">src/features/release-date/tests/releaseDatePreviewPrompt.test.js</span> — integration, byte-identical</div>
+    <div class="file-box"><span class="label">NEW</span> <span class="path">src/features/sku/tests/skuPreviewPrompt.test.js</span> — integration, byte-identical</div>
+  </div>
+  <div class="card-body" style="border-top: 1px solid var(--border-light);">
+    <strong>Reused from Phases 1 &amp; 2:</strong> <code class="inline">PromptDrawerChevron</code>, <code class="inline">PromptPreviewModal</code>, <code class="inline">PromptPreviewView</code>, <code class="inline">usePromptPreviewQuery</code>, <code class="inline">postPromptPreview</code>, <code class="inline">previewRoutes.js</code> backend scaffolding.
+  </div>
+</div>
+
+<h3 class="subsection-title">6.5 Acceptance criteria</h3>
+<ul class="checklist">
+  <li>Chevron renders on every variant row in RDF and SKU, right of existing RUN / LOOP buttons.</li>
+  <li>Clicking the chevron animates the drawer open horizontally to the left, revealing 2 inline buttons (RUN / LOOP). Chevron rotates 180°.</li>
+  <li>Clicking the revealed RUN opens <code class="inline">PromptPreviewModal</code> with the run-mode compiled prompt.</li>
+  <li>Clicking the revealed LOOP opens the same modal with the loop-mode first-iteration prompt and the iteration-semantics note.</li>
+  <li>Drawer open state persists per variant. Modal close restores the drawer to its prior state (drawer does not auto-close when modal opens).</li>
+  <li>Preview prompts are byte-identical to real-run prompts for the same variant state (integration tests for both RDF and SKU).</li>
+  <li>Adding a new scalar finder to the registry in the future picks up preview automatically — no per-finder UI wiring (O(1) verified).</li>
+  <li>No operations, no WS traffic, no persistence on chevron or modal interaction.</li>
+</ul>
+
+<!-- ========================= TESTING ========================= -->
+<h2 class="section-title" id="testing"><span class="num">7</span>Testing Strategy per Phase</h2>
+
+<h3 class="subsection-title">7.1 State / Class declarations expected per commit</h3>
+<div class="card">
+  <div class="card-body">
+    <table>
+      <thead>
+        <tr><th>Change</th><th>STATE</th><th>CLASS</th><th>Test budget</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Generic <code class="inline">previewRoutes.js</code> scaffolding (boundary contract)</td>
+          <td>MACRO-RED → MACRO-GREEN</td>
+          <td>BEHAVIORAL</td>
+          <td>Full matrix: happy path × each finder × each mode × empty body × invalid mode × unknown finder</td>
+        </tr>
+        <tr>
+          <td>Per-finder <code class="inline">compilePreview</code> implementations</td>
+          <td>MACRO-GREEN</td>
+          <td>BEHAVIORAL</td>
+          <td>One integration test per finder comparing preview vs. real-run captured prompt (byte-identical)</td>
+        </tr>
+        <tr>
+          <td>CEF run-record capture fix (<code class="inline">prompt: { system, user }</code>)</td>
+          <td>CHARACTERIZATION → MACRO-GREEN</td>
+          <td>BEHAVIORAL</td>
+          <td>Golden-master snapshot for existing CEF run record, then unlock the shape to include system/user</td>
+        </tr>
+        <tr>
+          <td>GUI components (modal, panel, tabs)</td>
+          <td>MACRO-GREEN</td>
+          <td>BEHAVIORAL</td>
+          <td>One happy-path test per component. Smoke: button visible, click opens, keyboard esc closes, copy-to-clipboard works. Visual review in light theme. No new test for purely cosmetic styling.</td>
+        </tr>
+        <tr>
+          <td>Wiring finders into preview registry</td>
+          <td>MACRO-GREEN</td>
+          <td>CONFIG</td>
+          <td>No new test — covered by the generic route test + per-finder integration test</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<h3 class="subsection-title">7.2 Byte-identical preview-vs-run parity test (the critical one)</h3>
+<div class="card">
+  <div class="card-body">
+    <p>Per finder, per mode, the integration test:</p>
+    <ol>
+      <li>Fixes product state to a deterministic fixture (brand, model, previous runs, palette, carousel candidates, etc.).</li>
+      <li>Calls the preview endpoint and stores the response's <code class="inline">prompts[0]</code>.</li>
+      <li>Calls the real finder orchestrator with an LLM mock that captures the dispatched <code class="inline">system</code>, <code class="inline">user</code>, <code class="inline">schema</code>, <code class="inline">model</code>.</li>
+      <li>Asserts <code class="inline">deepEqual</code> on all 4 fields. Any drift fails the test.</li>
+    </ol>
+    <p>This is the single most important regression safety net. It ensures preview never misleads the user.</p>
+  </div>
+</div>
+
+<h3 class="subsection-title">7.3 GUI proof required for phase completion</h3>
+<div class="callout">
+  <strong>Per CLAUDE.md</strong>
+  Each phase ends with a light-theme GUI smoke run against a real product. Screenshot placed in <span class="path">.workspace/runs/</span> referenced in the PR. Phase 1 smoke covers CEF modal. Phase 2 covers PIF across all 4 tabs on at least one variant with hero + 2+ views. Phase 3 covers RDF and SKU per variant.
+</div>
+
+<!-- ========================= RISKS ========================= -->
+<h2 class="section-title" id="risks"><span class="num">8</span>Risks &amp; Open Questions</h2>
+
+<div class="card">
+  <div class="card-header">Known risks</div>
+  <div class="card-body">
+    <table>
+      <thead>
+        <tr><th>Risk</th><th>Mitigation</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Preview drift</strong> — builder functions change but preview path diverges from real-run path over time.</td>
+          <td>Byte-identical parity test per finder runs in CI. Test failure is the only allowed signal; no "tolerable" differences.</td>
+        </tr>
+        <tr>
+          <td><strong>CEF empty prompt capture</strong> — today <code class="inline">colorEditionFinder.js</code> stores <code class="inline">prompt: {}</code>. Fixing this changes run record shape for existing downstream consumers.</td>
+          <td>Characterization test for current CEF run record shape before the fix. Audit: grep for <code class="inline">run.prompt</code> access in the GUI and run-history viewers. If a consumer assumed empty, migrate it.</td>
+        </tr>
+        <tr>
+          <td><strong>PIF Loop preview response size</strong> — a variant with 8 views + hero is 9 prompts × ~2KB system = ~18KB JSON.</td>
+          <td>Acceptable. React Query caches; no streaming needed. Response capped at 200KB via response middleware (error if exceeded, signals budget inflation).</td>
+        </tr>
+        <tr>
+          <td><strong>Eval preview thumbnail handling</strong> — base64 inflation risk.</td>
+          <td>Never return raw base64. Return <code class="inline">{ url, thumb_base64_size }</code> metadata only. Prompt body has placeholders where images would insert.</td>
+        </tr>
+        <tr>
+          <td><strong>Identity / family resolution cost</strong> — preview duplicates the <code class="inline">buildFamilyContext</code> work.</td>
+          <td>Family context is already cached per-run within the request scope. Preview reuses the same cache key (productId + version). Cost is one DB round-trip per preview click.</td>
+        </tr>
+        <tr>
+          <td><strong>Secret leakage in preview</strong> — system prompts never contain secrets today, but let's not regress.</td>
+          <td>Existing global prompt registry rules: no API keys, no model-credentials. Preview response passes through the same redact path used by Run History prompt display (if any exists). Add a test asserting no known secret pattern in any preview response body.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Open questions (resolve before Phase 1 MACRO-RED)</div>
+  <div class="card-body">
+    <ol>
+      <li><strong>Placement of the CEF Prompt button</strong> — user spec says "to the left of Run Now." Does <code class="inline">FinderPanelHeader</code>'s current <code class="inline">actionSlot</code> already allow that, or do we need a new <code class="inline">leadingActionSlot</code>? Confirm in Phase 1 kickoff.</li>
+      <li><strong>Drawer width when expanded</strong> — PIF reveals 4 buttons, RDF/SKU reveal 2. Estimate <code class="inline">w-72</code> and <code class="inline">w-44</code> respectively (matching <code class="inline">sf-shell-header-drawer</code>'s <code class="inline">w-36</code> as reference scale). Confirm during Phase 2 visual review.</li>
+      <li><strong>Drawer close behavior</strong> — does opening a modal from a revealed action button auto-close the drawer, or leave it open so the user can click another mode after dismissing the modal? (Plan assumes: leave open, mirroring normal action-button behavior.)</li>
+      <li><strong>Loop-preview label text</strong> — "Iteration 1 of N" language is a UX call. Confirm wording.</li>
+      <li><strong>Eval preview when carousel is empty</strong> — should the EVAL button still render, or be disabled with a tooltip? (Plan assumes: enabled, modal opens with empty-state note.)</li>
+      <li><strong>Modal "Run Now" footer button</strong> — Phase 1 convenience: clicking Run Now inside the modal fires the real run. Is this desired, or should preview be strictly read-only with no action affordance? (Plan assumes: convenience run button is present.)</li>
+    </ol>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Dependencies between phases</div>
+  <div class="card-body">
+    <p>Phase 1 is strictly prerequisite for Phases 2 &amp; 3. It establishes:</p>
+    <ul>
+      <li>Generic <code class="inline">previewRoutes.js</code> infrastructure.</li>
+      <li>Registry wiring shape (<code class="inline">previewModes</code>, <code class="inline">compilePreview</code>).</li>
+      <li>Shared UI primitives (<code class="inline">PromptPreviewView</code>, <code class="inline">PromptPreviewList</code>, <code class="inline">PromptPreviewModal</code>, <code class="inline">postPromptPreview</code>, types).</li>
+      <li>Byte-identical parity test pattern.</li>
+    </ul>
+    <p>Phase 2 owns the <code class="inline">PromptDrawerChevron</code> primitive (since CEF doesn't need a drawer). Once built there, Phase 3 reuses it verbatim.</p>
+    <p>Phases 2 and 3 can proceed in parallel after Phase 1 lands, <em>but</em> if they run concurrently, Phase 2 must land <code class="inline">PromptDrawerChevron</code> first. If that coordination is awkward, run Phase 2 → Phase 3 sequentially. Phase 3 is otherwise lighter (one shared component covers two finders).</p>
+  </div>
+</div>
+
+</div>
+
+</body>
+</html>

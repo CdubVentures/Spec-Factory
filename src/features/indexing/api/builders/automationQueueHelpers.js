@@ -8,11 +8,8 @@ export function clampAutomationPriority(value, fallback = 50) {
 
 export function automationPriorityForRequiredLevel(requiredLevel = '') {
   const level = String(requiredLevel || '').trim().toLowerCase();
-  if (level === 'identity') return 10;
-  if (level === 'critical') return 20;
-  if (level === 'required') return 35;
-  if (level === 'expected') return 60;
-  if (level === 'optional') return 80;
+  if (level === 'mandatory') return 20;
+  if (level === 'non_mandatory') return 70;
   return 50;
 }
 

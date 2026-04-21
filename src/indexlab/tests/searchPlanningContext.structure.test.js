@@ -171,26 +171,10 @@ describe('buildSearchPlanningContext', () => {
   // ===== Priority =====
 
   describe('priority', () => {
-    it('group with identity/critical/required unresolved â†’ core', () => {
-      for (const level of ['identity', 'critical', 'required']) {
-        const ns = makeNeedSetOutput({
-          fields: [
-            makeField({ field_key: `f_${level}`, group_key: 'grp', state: 'unknown', required_level: level })
-          ]
-        });
-        const result = buildSearchPlanningContext({
-          needSetOutput: ns,
-          runContext: makeRunContext()
-        });
-        const grp = result.focus_groups.find(g => g.key === 'grp');
-        assert.equal(grp.priority, 'core', `expected core for required_level=${level}`);
-      }
-    });
-
-    it('group with only expected unresolved â†’ secondary', () => {
+    it('group with mandatory unresolved → core', () => {
       const ns = makeNeedSetOutput({
         fields: [
-          makeField({ field_key: 'f1', group_key: 'grp', state: 'unknown', required_level: 'expected' })
+          makeField({ field_key: 'f_mand', group_key: 'grp', state: 'unknown', required_level: 'mandatory' })
         ]
       });
       const result = buildSearchPlanningContext({
@@ -198,13 +182,13 @@ describe('buildSearchPlanningContext', () => {
         runContext: makeRunContext()
       });
       const grp = result.focus_groups.find(g => g.key === 'grp');
-      assert.equal(grp.priority, 'secondary');
+      assert.equal(grp.priority, 'core');
     });
 
-    it('group with only optional unresolved â†’ optional', () => {
+    it('group with only non_mandatory unresolved → optional', () => {
       const ns = makeNeedSetOutput({
         fields: [
-          makeField({ field_key: 'f1', group_key: 'grp', state: 'unknown', required_level: 'optional' })
+          makeField({ field_key: 'f1', group_key: 'grp', state: 'unknown', required_level: 'non_mandatory' })
         ]
       });
       const result = buildSearchPlanningContext({
@@ -222,7 +206,7 @@ describe('buildSearchPlanningContext', () => {
     it('round 0 (seeds first) â†’ all unresolved groups are next', () => {
       const ns = makeNeedSetOutput({
         fields: [
-          makeField({ field_key: 'f1', group_key: 'grp', state: 'unknown', required_level: 'critical' })
+          makeField({ field_key: 'f1', group_key: 'grp', state: 'unknown', required_level: 'mandatory' })
         ]
       });
       const result = buildSearchPlanningContext({
@@ -236,9 +220,9 @@ describe('buildSearchPlanningContext', () => {
     it('round 1+ â†’ search-worthy groups become now', () => {
       const ns = makeNeedSetOutput({
         fields: [
-          makeField({ field_key: 'f1', group_key: 'grp', state: 'unknown', required_level: 'critical' }),
-          makeField({ field_key: 'f2', group_key: 'grp', state: 'unknown', required_level: 'expected' }),
-          makeField({ field_key: 'f3', group_key: 'grp', state: 'unknown', required_level: 'expected' }),
+          makeField({ field_key: 'f1', group_key: 'grp', state: 'unknown', required_level: 'mandatory' }),
+          makeField({ field_key: 'f2', group_key: 'grp', state: 'unknown', required_level: 'non_mandatory' }),
+          makeField({ field_key: 'f3', group_key: 'grp', state: 'unknown', required_level: 'non_mandatory' }),
         ]
       });
       const result = buildSearchPlanningContext({
@@ -255,12 +239,12 @@ describe('buildSearchPlanningContext', () => {
       const ns = makeNeedSetOutput({
         fields: [
           // easy group: 4 fields, all expected+easy+always
-          makeField({ field_key: 'e1', group_key: 'easy_grp', state: 'unknown', required_level: 'expected', availability: 'always', difficulty: 'easy', need_score: 30 }),
-          makeField({ field_key: 'e2', group_key: 'easy_grp', state: 'unknown', required_level: 'expected', availability: 'always', difficulty: 'easy', need_score: 30 }),
-          makeField({ field_key: 'e3', group_key: 'easy_grp', state: 'unknown', required_level: 'expected', availability: 'always', difficulty: 'easy', need_score: 30 }),
-          makeField({ field_key: 'e4', group_key: 'easy_grp', state: 'unknown', required_level: 'expected', availability: 'always', difficulty: 'easy', need_score: 30 }),
+          makeField({ field_key: 'e1', group_key: 'easy_grp', state: 'unknown', required_level: 'non_mandatory', availability: 'always', difficulty: 'easy', need_score: 30 }),
+          makeField({ field_key: 'e2', group_key: 'easy_grp', state: 'unknown', required_level: 'non_mandatory', availability: 'always', difficulty: 'easy', need_score: 30 }),
+          makeField({ field_key: 'e3', group_key: 'easy_grp', state: 'unknown', required_level: 'non_mandatory', availability: 'always', difficulty: 'easy', need_score: 30 }),
+          makeField({ field_key: 'e4', group_key: 'easy_grp', state: 'unknown', required_level: 'non_mandatory', availability: 'always', difficulty: 'easy', need_score: 30 }),
           // hard group: 1 field, critical but rare+hard
-          makeField({ field_key: 'h1', group_key: 'hard_grp', state: 'unknown', required_level: 'critical', availability: 'rare', difficulty: 'hard', need_score: 80 }),
+          makeField({ field_key: 'h1', group_key: 'hard_grp', state: 'unknown', required_level: 'mandatory', availability: 'rare', difficulty: 'hard', need_score: 80 }),
         ]
       });
       const result = buildSearchPlanningContext({

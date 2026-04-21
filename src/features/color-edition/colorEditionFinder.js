@@ -7,18 +7,16 @@
 
 import { buildLlmCallDeps } from '../../core/llm/buildLlmCallDeps.js';
 import { buildBillingOnUsage } from '../../billing/costLedger.js';
-import { resolveIdentityAmbiguitySnapshot } from '../indexing/orchestration/shared/identityHelpers.js';
 import {
   computeRanAt,
   resolveModelTracking,
-  resolveAmbiguityContext,
   buildFinderLlmCaller,
 } from '../../core/finder/finderOrchestrationHelpers.js';
-import { accumulateDiscoveryLog } from '../../core/finder/discoveryLog.js';
 import {
   buildColorEditionFinderPrompt,
   createColorEditionFinderCallLlm,
 } from './colorEditionLlmAdapter.js';
+import { resolveColorEditionDiscoveryInputs } from './colorEditionPreviewPrompt.js';
 import { readColorEdition, writeColorEdition, mergeColorEditionDiscovery } from './colorEditionStore.js';
 import { buildVariantRegistry, applyIdentityMappings, validateColorsAgainstPalette, validateIdentityMappings, validateOrphanRemaps } from './variantRegistry.js';
 import { createVariantIdentityCheckCallLlm, buildVariantIdentityCheckPrompt } from './colorEditionLlmAdapter.js';
@@ -230,45 +228,23 @@ export async function runColorEditionFinder({
 }) {
   productRoot = productRoot || defaultProductRoot();
   const finderStore = specDb.getFinderStore('colorEditionFinder');
-  const discoveryPromptTemplate = finderStore.getSetting('discoveryPromptTemplate') || '';
   const identityCheckPromptTemplate = finderStore.getSetting('identityCheckPromptTemplate') || '';
-  const urlHistoryEnabled = finderStore.getSetting('urlHistoryEnabled') === 'true';
-  const queryHistoryEnabled = finderStore.getSetting('queryHistoryEnabled') === 'true';
   const modelTracking = resolveModelTracking({ config, phaseKey: 'colorFinder', onModelResolved });
   const { wrappedOnModelResolved } = modelTracking;
 
-  const { familyModelCount, ambiguityLevel, siblingModels } = await resolveAmbiguityContext({
-    config, category: product.category, brand: product.brand,
-    baseModel: product.base_model, currentModel: product.model,
-    specDb, resolveFn: resolveIdentityAmbiguitySnapshot, logger,
-  });
-
-  const allColors = appDb.listColors();
-  const colorNames = allColors.map(c => c.name);
-
-  // Read existing runs for historical context
   const existing = readColorEdition({ productId: product.product_id, productRoot });
-  const previousRuns = Array.isArray(existing?.runs) ? existing.runs : [];
-
-  // Universal discovery-log history — product-scoped (no runMatcher) for CEF.
-  // WHY: CEF is two-gate (discovery + identity_check) so its response nests
-  // discovery_log under .response.discovery.discovery_log. Lift it to the
-  // canonical flat path before the helper reads it.
-  const normalizedRuns = previousRuns.map((r) => ({
-    ...r,
-    response: { ...(r.response || {}), discovery_log: r.response?.discovery?.discovery_log },
-  }));
-  // CEF is product-scoped → suppressions match variant_id='' && mode=''.
-  const cefSuppRows = (finderStore.listSuppressions?.(product.product_id) || [])
-    .filter((s) => s.variant_id === '' && s.mode === '');
-  const previousDiscovery = accumulateDiscoveryLog(normalizedRuns, {
-    includeUrls: urlHistoryEnabled,
-    includeQueries: queryHistoryEnabled,
-    suppressions: {
-      urlsChecked: new Set(cefSuppRows.filter((s) => s.kind === 'url').map((s) => s.item)),
-      queriesRun: new Set(cefSuppRows.filter((s) => s.kind === 'query').map((s) => s.item)),
-    },
+  const { promptInputs, userMessage } = await resolveColorEditionDiscoveryInputs({
+    product, appDb, specDb, config, productRoot, logger, existing,
   });
+  const {
+    colorNames,
+    colors: allColors,
+    previousRuns,
+    previousDiscovery,
+    familyModelCount,
+    ambiguityLevel,
+    siblingModels,
+  } = promptInputs;
 
   // Build or use overridden LLM caller
   const callLlm = buildFinderLlmCaller({
@@ -289,28 +265,10 @@ export async function runColorEditionFinder({
     }),
   });
 
-  // Capture prompt snapshot BEFORE call so the operations modal shows it immediately.
-  // WHY: Must include the same identity-context args the LLM call uses (below),
-  // otherwise the stored snapshot and the operations modal both show easy-tier
-  // "no known siblings" even when the product has a real sibling family.
-  // Keep this arg set in sync with the callLlm() call further down.
-  const systemPrompt = buildColorEditionFinderPrompt({
-    colorNames,
-    colors: allColors,
-    product,
-    previousRuns,
-    previousDiscovery,
-    familyModelCount,
-    ambiguityLevel,
-    siblingModels,
-    templateOverride: discoveryPromptTemplate,
-  });
-  const userMessage = JSON.stringify({
-    brand: product.brand || '',
-    base_model: product.base_model || '',
-    model: product.model || '',
-    variant: product.variant || '',
-  });
+  // Capture prompt snapshot BEFORE call so the operations modal shows it
+  // immediately. Uses the shared resolver above so the snapshot, the run
+  // record, and the /preview-prompt endpoint all emit byte-identical prompts.
+  const systemPrompt = buildColorEditionFinderPrompt(promptInputs);
   const cefStartedAt = new Date().toISOString();
   const cefStartMs = Date.now();
 

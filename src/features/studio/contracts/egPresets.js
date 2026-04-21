@@ -81,10 +81,9 @@ export function buildEgColorFieldRule(ctx) {
       known_values: colorNames,
     },
     priority: {
-      required_level: 'expected',
-      availability: 'expected',
+      required_level: 'non_mandatory',
+      availability: 'always',
       difficulty: 'easy',
-      effort: 3,
     },
     evidence: {
       min_evidence_refs: 1,
@@ -130,10 +129,9 @@ export function buildEgEditionFieldRule(ctx) {
       'enum.match.format_hint': { review: false },
     },
     priority: {
-      required_level: 'optional',
+      required_level: 'non_mandatory',
       availability: 'sometimes',
       difficulty: 'easy',
-      effort: 3,
     },
     evidence: {
       min_evidence_refs: 1,
@@ -179,10 +177,9 @@ export function buildEgReleaseDateFieldRule(ctx) {
       new_value_policy: { accept_if_evidence: true, mark_needs_curation: false },
     },
     priority: {
-      required_level: 'expected',
+      required_level: 'non_mandatory',
       availability: 'sometimes',
       difficulty: 'medium',
-      effort: 4,
     },
     evidence: {
       min_evidence_refs: 1,
@@ -236,10 +233,9 @@ export function buildEgSkuFieldRule(ctx) {
       new_value_policy: { accept_if_evidence: true, mark_needs_curation: false },
     },
     priority: {
-      required_level: 'required',
+      required_level: 'mandatory',
       availability: 'sometimes',
       difficulty: 'hard',
-      effort: 5,
     },
     evidence: {
       min_evidence_refs: 1,

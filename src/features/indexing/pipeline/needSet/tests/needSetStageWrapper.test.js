@@ -200,9 +200,9 @@ describe('runNeedSet public contract', { concurrency: false }, () => {
         category: 'mouse',
         fieldOrder: ['weight', 'sensor_model', 'dpi_max'],
         fieldRules: {
-          weight: { required_level: 'required', min_evidence_refs: 1 },
-          sensor_model: { required_level: 'critical', min_evidence_refs: 2 },
-          dpi_max: { required_level: 'required', min_evidence_refs: 1 },
+          weight: { required_level: 'mandatory', min_evidence_refs: 1 },
+          sensor_model: { required_level: 'mandatory', min_evidence_refs: 2 },
+          dpi_max: { required_level: 'mandatory', min_evidence_refs: 1 },
         },
         fieldGroups: {},
         sourceHosts: [],

@@ -3,7 +3,7 @@ Field validation, normalization, and rule enforcement engine. Validates individu
 
 ## Public API (The Contract)
 - `fieldRulesEngine.js`: `createFieldRulesEngine(fieldRules, options)` — factory returning engine instance with `.normalizeFullRecord()`, `.normalizeCandidate()`, `.validateField()`.
-- `ruleAccessors.js`: pure accessors — `ruleRequiredLevel()`, `ruleAvailability()`, `ruleDifficulty()`, `ruleEffort()`, `ruleType()`, `ruleShape()`, `ruleUnit()`.
+- `ruleAccessors.js`: pure accessors — `ruleRequiredLevel()`, `ruleAvailability()`, `ruleDifficulty()`, `ruleType()`, `ruleShape()`, `ruleUnit()`.
 - `runtimeGate.js`: `applyRuntimeFieldRules()` — runtime validation gate for publish decisions.
 - `normalizationFunctions.js`: `parseBoolean()`, `parseDate()`, `parseList()`, `parseNumberAndUnit()`, `convertUnit()`, `canonicalUnitToken()`.
 - `engineTextHelpers.js`: `normalizeToken()`, `normalizeFieldKey()`, `isUnknownToken()`, `safeJsonParse()`, `canonicalizeWhitespace()`.

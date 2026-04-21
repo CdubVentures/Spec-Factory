@@ -251,11 +251,11 @@ describe('PHASE_REGISTRY — isApplicable predicates', () => {
     const phase = () => phaseById('publish_gate');
 
     it('applicable when required_level is identity', () => {
-      assert.equal(phase().isApplicable({ priority: { required_level: 'identity' } }), true);
+      assert.equal(phase().isApplicable({ priority: { required_level: 'mandatory' } }), true);
     });
 
     it('not applicable when required_level is optional', () => {
-      assert.equal(phase().isApplicable({ priority: { required_level: 'optional' } }), false);
+      assert.equal(phase().isApplicable({ priority: { required_level: 'non_mandatory' } }), false);
     });
 
     it('not applicable for null rule', () => {

@@ -57,8 +57,7 @@
           "required": [
             "required_level",
             "availability",
-            "difficulty",
-            "effort"
+            "difficulty"
           ],
           "properties": {
             "required_level": {
@@ -72,10 +71,6 @@
             "difficulty": {
               "type": "string",
               "minLength": 1
-            },
-            "effort": {
-              "type": "number",
-              "minimum": 1
             }
           },
           "additionalProperties": true

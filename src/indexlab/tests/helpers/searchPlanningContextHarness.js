@@ -27,7 +27,7 @@ export function makeField(overrides = {}) {
     field_key: 'test_field',
     label: 'Test Field',
     group_key: null,
-    required_level: 'optional',
+    required_level: 'non_mandatory',
     idx: {
       query_terms: [],
       domain_hints: [],

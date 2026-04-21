@@ -39,9 +39,9 @@ describe('validateField — absence tokens normalize to null', () => {
 
 describe('validateField — publish gate blocks null', () => {
   const cases = [
-    { label: 'null blocked for identity', value: null, level: 'identity' },
-    { label: 'unk string blocked for required', value: 'unk', level: 'required' },
-    { label: 'n/a blocked for required', value: 'n/a', level: 'required' },
+    { label: 'null blocked for mandatory', value: null, level: 'mandatory' },
+    { label: 'unk string blocked for mandatory', value: 'unk', level: 'mandatory' },
+    { label: 'n/a blocked for mandatory', value: 'n/a', level: 'mandatory' },
   ];
 
   for (const { label, value, level } of cases) {
@@ -56,7 +56,7 @@ describe('validateField — publish gate blocks null', () => {
 // ── No spurious unk_blocks_publish when gate is off ─────────────────────
 
 describe('validateField — no spurious unk rejections when publish gate is off', () => {
-  const levels = ['optional', 'supplemental', 'nice_to_have', ''];
+  const levels = ['non_mandatory', 'supplemental', 'nice_to_have', ''];
 
   for (const level of levels) {
     it(`required_level='${level}': null does not trigger unk_blocks_publish`, () => {

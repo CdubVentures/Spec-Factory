@@ -14,6 +14,7 @@ import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
 import { deriveColorNamesFromVariants, derivePublishedFromVariants, deleteAllVariants, deleteVariant } from '../variantLifecycle.js';
 import { runColorEditionFinder } from '../colorEditionFinder.js';
+import { compileColorEditionPreviewPrompt } from '../colorEditionPreviewPrompt.js';
 import { deleteColorEditionFinderRun, deleteColorEditionFinderAll } from '../colorEditionStore.js';
 
 export function registerColorEditionFinderRoutes(ctx) {
@@ -42,6 +43,7 @@ export function registerColorEditionFinderRoutes(ctx) {
     customStages: ['Discovery', 'Validate', 'Identity', 'Confirm'],
     skipSelectedOnDelete: true,
     candidateSourceType: 'cef',
+    preview: { compilePrompt: compileColorEditionPreviewPrompt },
 
     // WHY: After run deletion strips candidates and republishField runs,
     // re-derive published colors/editions from the variants table (SSOT).

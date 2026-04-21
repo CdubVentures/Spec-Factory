@@ -7,14 +7,14 @@ import {
 
 function makeFields() {
   return {
-    brand: { priority: { required_level: 'identity' } },
-    model: { priority: { required_level: 'identity' } },
-    sensor: { priority: { required_level: 'required' }, evidence: { tier_preference: ['tier1', 'tier2'] } },
-    weight: { priority: { required_level: 'critical' }, evidence: { tier_preference: ['tier1', 'tier2'] } },
-    dpi: { priority: { required_level: 'required' } },
-    polling_rate: { priority: { required_level: 'expected' } },
-    rgb_zones: { priority: { required_level: 'optional' } },
-    click_latency: { priority: { required_level: 'expected' }, evidence: { tier_preference: ['tier1'] } },
+    brand: { priority: { required_level: 'mandatory' } },
+    model: { priority: { required_level: 'mandatory' } },
+    sensor: { priority: { required_level: 'mandatory' }, evidence: { tier_preference: ['tier1', 'tier2'] } },
+    weight: { priority: { required_level: 'mandatory' }, evidence: { tier_preference: ['tier1', 'tier2'] } },
+    dpi: { priority: { required_level: 'mandatory' } },
+    polling_rate: { priority: { required_level: 'non_mandatory' } },
+    rgb_zones: { priority: { required_level: 'non_mandatory' } },
+    click_latency: { priority: { required_level: 'non_mandatory' }, evidence: { tier_preference: ['tier1'] } },
   };
 }
 
@@ -37,31 +37,21 @@ describe('WP1 — deriveCoreFields', () => {
     assert.equal(coreFields.length, unique.size, 'no duplicates in core_fields');
   });
 
-  it('FC-03: required_level=identity fields land in core_fields', () => {
+  it('FC-03: required_level=mandatory fields land in core_fields', () => {
     const fields = makeFields();
     const coreFields = deriveCoreFields(fields);
-    assert.ok(coreFields.includes('brand'), 'identity field brand is core');
-    assert.ok(coreFields.includes('model'), 'identity field model is core');
+    assert.ok(coreFields.includes('brand'), 'mandatory field brand is core');
+    assert.ok(coreFields.includes('model'), 'mandatory field model is core');
+    assert.ok(coreFields.includes('sensor'), 'mandatory field sensor is core');
+    assert.ok(coreFields.includes('dpi'), 'mandatory field dpi is core');
+    assert.ok(coreFields.includes('weight'), 'mandatory field weight is core');
   });
 
-  it('FC-04: required_level=required fields land in core_fields', () => {
+  it('FC-06: required_level=non_mandatory fields NOT in core_fields', () => {
     const fields = makeFields();
     const coreFields = deriveCoreFields(fields);
-    assert.ok(coreFields.includes('sensor'), 'required field sensor is core');
-    assert.ok(coreFields.includes('dpi'), 'required field dpi is core');
-  });
-
-  it('FC-05: required_level=critical fields land in core_fields', () => {
-    const fields = makeFields();
-    const coreFields = deriveCoreFields(fields);
-    assert.ok(coreFields.includes('weight'), 'critical field weight is core');
-  });
-
-  it('FC-06: required_level=expected/optional fields NOT in core_fields', () => {
-    const fields = makeFields();
-    const coreFields = deriveCoreFields(fields);
-    assert.ok(!coreFields.includes('polling_rate'), 'expected field NOT core');
-    assert.ok(!coreFields.includes('rgb_zones'), 'optional field NOT core');
+    assert.ok(!coreFields.includes('polling_rate'), 'non_mandatory field NOT core');
+    assert.ok(!coreFields.includes('rgb_zones'), 'non_mandatory field NOT core');
   });
 });
 

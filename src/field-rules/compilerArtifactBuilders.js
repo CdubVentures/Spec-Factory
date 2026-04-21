@@ -274,7 +274,6 @@ export function auditFieldMetadata(fieldRules = {}) {
     const requiredLevel = String(rule.required_level || rule.priority?.required_level || '').trim();
     const availability = String(rule.availability || rule.priority?.availability || '').trim();
     const difficulty = String(rule.difficulty || rule.priority?.difficulty || '').trim();
-    const effortValue = Number.parseInt(String(rule.effort ?? rule.priority?.effort ?? ''), 10);
     const dataType = String(rule.data_type || rule.contract?.type || rule.type || '').trim();
     const outputShape = String(rule.output_shape || rule.contract?.shape || rule.shape || '').trim();
     const unknownReasonDefault = String(rule.unknown_reason_default || '').trim();
@@ -282,18 +281,12 @@ export function auditFieldMetadata(fieldRules = {}) {
     if (!requiredLevel) missing.push('required_level');
     if (!availability) missing.push('availability');
     if (!difficulty) missing.push('difficulty');
-    if (!Number.isFinite(effortValue)) missing.push('effort');
     if (!dataType) missing.push('data_type');
     if (!outputShape) missing.push('output_shape');
     if (!unknownReasonDefault) missing.push('unknown_reason_default');
 
     if (missing.length > 0) {
       results.errors.push(`field '${fieldKey}' missing metadata: ${missing.join(', ')}`);
-      results.incomplete_count += 1;
-      continue;
-    }
-    if (effortValue < 1 || effortValue > 10) {
-      results.errors.push(`field '${fieldKey}' has invalid effort ${effortValue}; expected 1..10`);
       results.incomplete_count += 1;
       continue;
     }

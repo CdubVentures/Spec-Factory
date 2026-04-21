@@ -8,8 +8,7 @@ import {
   ruleShape as ruleShapeAccessor,
   ruleRequiredLevel as ruleRequiredLevelAccessor,
   ruleAvailability as ruleAvailabilityAccessor,
-  ruleDifficulty as ruleDifficultyAccessor,
-  ruleEffort as ruleEffortAccessor
+  ruleDifficulty as ruleDifficultyAccessor
 } from '../engine/ruleAccessors.js';
 import {
   isObject, toArray, normalizeToken, normalizeFieldKey, titleCase,
@@ -48,12 +47,11 @@ const REQUIRED_ARTIFACTS = [
  * identity/required/critical → core. expected/optional → deep.
  */
 export function deriveCoreFields(fields = {}) {
-  const CORE_LEVELS = new Set(['identity', 'required', 'critical']);
   const coreFields = [];
   for (const [fieldKey, rule] of Object.entries(fields)) {
     if (!isObject(rule)) continue;
     const level = ruleRequiredLevelAccessor(rule);
-    if (CORE_LEVELS.has(level)) {
+    if (level === 'mandatory') {
       coreFields.push(fieldKey);
     }
   }
@@ -102,7 +100,6 @@ export function normalizeFieldRulesForPhase1(fieldRules = {}) {
     const requiredLevel = ruleRequiredLevelAccessor(rule);
     const availability = ruleAvailabilityAccessor(rule);
     const difficulty = ruleDifficultyAccessor(rule);
-    const normalizedEffort = ruleEffortAccessor(rule);
 
     rule.field_key = String(rule.field_key || fieldKey);
     rule.display_name = String(rule.display_name || ui.label || titleCase(fieldKey));
@@ -112,14 +109,14 @@ export function normalizeFieldRulesForPhase1(fieldRules = {}) {
     rule.required_level = requiredLevel;
     rule.availability = availability;
     rule.difficulty = difficulty;
-    rule.effort = normalizedEffort;
+    delete rule.effort;
     rule.priority = {
       ...priority,
       required_level: requiredLevel,
       availability,
-      difficulty,
-      effort: normalizedEffort
+      difficulty
     };
+    delete rule.priority.effort;
     rule.contract = {
       ...contract,
       type: String(contract.type || dataType || 'string'),
@@ -647,17 +644,13 @@ export async function fieldReport({
       byGroup.set(key, {
         group: row.group || 'general',
         count: 0,
-        required: 0,
-        critical: 0
+        mandatory: 0
       });
     }
     const bucket = byGroup.get(key);
     bucket.count += 1;
-    if (row.required_level === 'required') {
-      bucket.required += 1;
-    }
-    if (row.required_level === 'critical') {
-      bucket.critical += 1;
+    if (row.required_level === 'mandatory') {
+      bucket.mandatory += 1;
     }
   }
 

@@ -106,14 +106,13 @@ export function findComponentSourceRowByType(rows = [], componentType = '') {
   return matchingRows.find((row) => isSheetBackedMode(row)) || matchingRows[0];
 }
 
-export const REVIEW_REQUIRED_LEVELS = new Set(['identity', 'required', 'critical', 'expected', 'optional', 'editorial', 'commerce']);
-export const REVIEW_AVAILABILITY_LEVELS = new Set(['always', 'expected', 'sometimes', 'rare', 'editorial_only']);
-export const REVIEW_DIFFICULTY_LEVELS = new Set(['easy', 'medium', 'hard', 'instrumented']);
+export const REVIEW_REQUIRED_LEVELS = new Set(['mandatory', 'non_mandatory']);
+export const REVIEW_AVAILABILITY_LEVELS = new Set(['always', 'sometimes', 'rare']);
+export const REVIEW_DIFFICULTY_LEVELS = new Set(['easy', 'medium', 'hard', 'very_hard']);
 export const DEFAULT_REVIEW_PRIORITY = Object.freeze({
-  required_level: 'expected',
-  availability: 'expected',
-  difficulty: 'medium',
-  effort: 3
+  required_level: 'non_mandatory',
+  availability: 'sometimes',
+  difficulty: 'medium'
 });
 
 export function normalizeReviewPriority(value = {}) {
@@ -121,12 +120,10 @@ export function normalizeReviewPriority(value = {}) {
   const requiredLevel = normalizeToken(priority.required_level || DEFAULT_REVIEW_PRIORITY.required_level);
   const availability = normalizeToken(priority.availability || DEFAULT_REVIEW_PRIORITY.availability);
   const difficulty = normalizeToken(priority.difficulty || DEFAULT_REVIEW_PRIORITY.difficulty);
-  const effort = Math.max(1, Math.min(10, asInt(priority.effort, DEFAULT_REVIEW_PRIORITY.effort)));
   return {
     required_level: REVIEW_REQUIRED_LEVELS.has(requiredLevel) ? requiredLevel : DEFAULT_REVIEW_PRIORITY.required_level,
     availability: REVIEW_AVAILABILITY_LEVELS.has(availability) ? availability : DEFAULT_REVIEW_PRIORITY.availability,
-    difficulty: REVIEW_DIFFICULTY_LEVELS.has(difficulty) ? difficulty : DEFAULT_REVIEW_PRIORITY.difficulty,
-    effort
+    difficulty: REVIEW_DIFFICULTY_LEVELS.has(difficulty) ? difficulty : DEFAULT_REVIEW_PRIORITY.difficulty
   };
 }
 

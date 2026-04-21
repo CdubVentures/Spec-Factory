@@ -5,10 +5,6 @@ import { ComboSelect } from "../../../shared/ui/forms/ComboSelect.tsx";
 import { TagPicker } from "../../../shared/ui/forms/TagPicker.tsx";
 import { StaticBadges } from "./StaticBadges.tsx";
 import {
-  parseBoundedIntInput,
-} from "../state/numericInputHelpers.ts";
-import { STUDIO_NUMERIC_KNOB_BOUNDS } from "../state/studioNumericKnobBounds.ts";
-import {
   normalizeAiAssistConfig,
   normalizePriorityProfile,
 } from "../state/studioPriority.ts";
@@ -365,7 +361,7 @@ export function EditableComponentSource({
         />
       </div>
 
-      {/* Component-level full review priority/effort */}
+      {/* Component-level full review priority */}
       <button
         type="button"
         onClick={() => toggleCsAiSections()}
@@ -383,7 +379,7 @@ export function EditableComponentSource({
           <div className="text-xs font-semibold sf-text-muted mb-2">
             AI Review Priority
           </div>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <div className={labelCls}>
                 Required Level
@@ -396,16 +392,11 @@ export function EditableComponentSource({
                 className={`${selectCls} w-full`}
                 value={sourcePriority.required_level}
                 onChange={(e) =>
-                  updatePriority({ required_level: e.target.value })
+                  updatePriority({ required_level: e.target.value as PriorityProfile['required_level'] })
                 }
               >
-                <option value="identity">identity</option>
-                <option value="required">required</option>
-                <option value="critical">critical</option>
-                <option value="expected">expected</option>
-                <option value="optional">optional</option>
-                <option value="editorial">editorial</option>
-                <option value="commerce">commerce</option>
+                <option value="mandatory">mandatory</option>
+                <option value="non_mandatory">non_mandatory</option>
               </select>
             </div>
             <div>
@@ -420,14 +411,12 @@ export function EditableComponentSource({
                 className={`${selectCls} w-full`}
                 value={sourcePriority.availability}
                 onChange={(e) =>
-                  updatePriority({ availability: e.target.value })
+                  updatePriority({ availability: e.target.value as PriorityProfile['availability'] })
                 }
               >
                 <option value="always">always</option>
-                <option value="expected">expected</option>
                 <option value="sometimes">sometimes</option>
                 <option value="rare">rare</option>
-                <option value="editorial_only">editorial_only</option>
               </select>
             </div>
             <div>
@@ -441,39 +430,13 @@ export function EditableComponentSource({
               <select
                 className={`${selectCls} w-full`}
                 value={sourcePriority.difficulty}
-                onChange={(e) => updatePriority({ difficulty: e.target.value })}
+                onChange={(e) => updatePriority({ difficulty: e.target.value as PriorityProfile['difficulty'] })}
               >
                 <option value="easy">easy</option>
                 <option value="medium">medium</option>
                 <option value="hard">hard</option>
-                <option value="instrumented">instrumented</option>
+                <option value="very_hard">very_hard</option>
               </select>
-            </div>
-            <div>
-              <div className={labelCls}>
-                Effort (1-10)
-                <Tip
-                  style={{ position: "relative", left: "-3px", top: "-4px" }}
-                  text={STUDIO_TIPS.effort}
-                />
-              </div>
-              <input
-                className={`${inputCls} w-full`}
-                type="number"
-                min={STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.min}
-                max={STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.max}
-                value={sourcePriority.effort}
-                onChange={(e) =>
-                  updatePriority({
-                    effort: parseBoundedIntInput(
-                      e.target.value,
-                      STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.min,
-                      STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.max,
-                      STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.fallback,
-                    ),
-                  })
-                }
-              />
             </div>
           </div>
         </div>
@@ -484,7 +447,7 @@ export function EditableComponentSource({
             const explicitNote = sourceAiAssist.reasoning_note || "";
             const autoNote = [
               `Full component table review for "${compType || "component"}".`,
-              `Required level ${sourcePriority.required_level}, difficulty ${sourcePriority.difficulty}, effort ${sourcePriority.effort}.`,
+              `Required level ${sourcePriority.required_level}, difficulty ${sourcePriority.difficulty}.`,
               "Resolve conflicts across sources and keep output normalized for component identity + properties.",
             ].join(" ");
             const hasExplicit = explicitNote.length > 0;

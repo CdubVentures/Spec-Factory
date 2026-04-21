@@ -92,10 +92,9 @@ test('studio component sources create empty component rows with stable default p
       properties: [],
     },
     priority: {
-      required_level: 'expected',
-      availability: 'expected',
+      required_level: 'non_mandatory',
+      availability: 'sometimes',
       difficulty: 'medium',
-      effort: 3,
     },
     ai_assist: {
       reasoning_note: '',

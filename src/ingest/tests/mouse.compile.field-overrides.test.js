@@ -106,23 +106,23 @@ test('compileCategoryFieldStudio applies field_studio_map field_overrides for la
   const { helperRoot, fieldStudioSourcePath, fieldStudioMap, generatedRoot, cleanup } = workspace;
   const inlineOverrides = {
     click_latency: {
-      priority: { required_level: 'expected', availability: 'sometimes', difficulty: 'hard', effort: 8 },
+      priority: { required_level: 'non_mandatory', availability: 'sometimes', difficulty: 'hard' },
       contract: { type: 'number', shape: 'scalar', unit: 'ms', rounding: { decimals: 2, mode: 'nearest' }, value_form: 'single' },
       parse: {},
       evidence: { min_evidence_refs: 1, tier_preference: ['tier2', 'tier1', 'tier3'] },
     },
     click_latency_wired: {
-      priority: { required_level: 'optional', availability: 'sometimes', difficulty: 'hard', effort: 8 },
+      priority: { required_level: 'non_mandatory', availability: 'sometimes', difficulty: 'hard' },
       contract: { type: 'number', shape: 'scalar', unit: 'ms', rounding: { decimals: 2, mode: 'nearest' }, value_form: 'single' },
       parse: {},
     },
     sensor_latency_wired: {
-      priority: { required_level: 'optional', availability: 'sometimes', difficulty: 'hard', effort: 8 },
+      priority: { required_level: 'non_mandatory', availability: 'sometimes', difficulty: 'hard' },
       contract: { type: 'number', shape: 'scalar', unit: 'ms', rounding: { decimals: 2, mode: 'nearest' }, value_form: 'single' },
       parse: {},
     },
     click_force: {
-      priority: { required_level: 'optional', availability: 'rare', difficulty: 'hard', effort: 6 },
+      priority: { required_level: 'non_mandatory', availability: 'rare', difficulty: 'hard' },
       contract: { type: 'number', shape: 'scalar', unit: 'gf', rounding: { decimals: 0, mode: 'nearest' }, value_form: 'single' },
       parse: {},
     },

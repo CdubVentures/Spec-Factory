@@ -413,6 +413,18 @@ function generateFinderPhaseSchemaRegistry() {
     lines.push(`import { ${m.responseSchemaExport} } from '../../../${featurePath}/${schemaModule}.js';`);
   }
 
+  // WHY: Scalar finders (variantFieldProducer + defaultTemplateExport) get a
+  // derived prompt_templates overlay in phaseSchemaRegistry.js via
+  // buildScalarFinderPromptTemplates. Import their default templates here so
+  // the overlay loop can reference them by phaseUiId.
+  const scalarFinders = FINDER_MODULES.filter(
+    (m) => m.moduleClass === 'variantFieldProducer' && m.defaultTemplateExport,
+  );
+  for (const m of scalarFinders) {
+    const { featurePath, adapterModule } = deriveFinderPaths(m.id);
+    lines.push(`import { ${m.defaultTemplateExport} } from '../../../${featurePath}/${adapterModule}.js';`);
+  }
+
   lines.push('\nexport const FINDER_PHASE_SCHEMAS = Object.freeze({');
   for (const m of FINDER_MODULES) {
     if (!m.promptBuilderExport || !m.responseSchemaExport) continue;
@@ -421,6 +433,16 @@ function generateFinderPhaseSchemaRegistry() {
     lines.push(`    system_prompt: ${m.promptBuilderExport}({ product: { brand: '{brand}', model: '{model}' } }),`);
     lines.push(`    response_schema: zodToLlmSchema(${m.responseSchemaExport}),`);
     lines.push(`  },`);
+  }
+  lines.push('});\n');
+
+  lines.push('// WHY: O(1) scalar-finder overlay — adding a new variantFieldProducer with');
+  lines.push('// defaultTemplateExport yields a full prompt_templates overlay in');
+  lines.push('// phaseSchemaRegistry.js automatically. No hand-written block required.');
+  lines.push('export const FINDER_SCALAR_DEFAULT_TEMPLATES = Object.freeze({');
+  for (const m of scalarFinders) {
+    const uiId = phaseUiId(m.phase);
+    lines.push(`  ${quote(uiId)}: { moduleId: ${quote(m.id)}, defaultTemplate: ${m.defaultTemplateExport} },`);
   }
   lines.push('});\n');
 

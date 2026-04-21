@@ -15,6 +15,7 @@
 
 import { zodToLlmSchema } from '../../core/llm/zodToLlmSchema.js';
 import { resolvePromptTemplate } from '../../core/llm/resolvePromptTemplate.js';
+import { resolveGlobalPrompt } from '../../core/llm/prompts/globalPromptRegistry.js';
 import { buildPreviousDiscoveryBlock } from '../../core/finder/discoveryLog.js';
 import { buildIdentityWarning } from '../../core/llm/prompts/identityContext.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
@@ -582,7 +583,7 @@ export function resolveViewConfig(viewConfigSetting, category) {
 // WHY: Default template for PIF view search. {{VARIABLE}} placeholders mark dynamic injection points.
 export const PIF_VIEW_DEFAULT_TEMPLATE = `Find high-resolution product images for: {{BRAND}} {{MODEL}} — {{VARIANT_DESC}}
 
-IDENTITY: You are looking for the EXACT product "{{BRAND}} {{MODEL}}"{{VARIANT_SUFFIX}}. Not a different model in the same product family. If you encounter sibling models, skip them.
+{{IDENTITY_INTRO}}
 {{IDENTITY_WARNING}}
 
 VIEW DEFINITIONS — classify every image with one of these exact view names:
@@ -605,7 +606,7 @@ If a specific view is genuinely unavailable for this variant, omit it rather tha
 
 Return JSON:
 - "images": [{ "view": "view-name", "url": "direct-image-url", "source_page": "page-where-found", "alt_text": "image alt text if available" }, ...]
-- "discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }`;
+{{DISCOVERY_LOG_SHAPE}}`;
 
 export function buildProductImageFinderPrompt({
   product = {},
@@ -679,11 +680,16 @@ export function buildProductImageFinderPrompt({
 
   const template = templateOverride || PIF_VIEW_DEFAULT_TEMPLATE;
 
+  const variantSuffix = variant ? ` (variant: ${variant})` : '';
+
   return resolvePromptTemplate(template, {
     BRAND: brand,
     MODEL: model,
     VARIANT_DESC: variantDesc,
-    VARIANT_SUFFIX: variant ? ` (variant: ${variant})` : '',
+    VARIANT_SUFFIX: variantSuffix,
+    IDENTITY_INTRO: resolvePromptTemplate(resolveGlobalPrompt('identityIntro'), {
+      BRAND: brand, MODEL: model, VARIANT_SUFFIX: variantSuffix,
+    }),
     IDENTITY_WARNING: identityWarning,
     PRIORITY_VIEWS: prioritySection,
     ADDITIONAL_VIEWS: additionalSection,
@@ -694,6 +700,7 @@ export function buildProductImageFinderPrompt({
     IMAGE_REQUIREMENTS: imageRequirements,
     PREVIOUS_DISCOVERY: previousDiscoverySection,
     VARIANT_TYPE_WORD: variantType === 'edition' ? 'edition' : 'color',
+    DISCOVERY_LOG_SHAPE: resolveGlobalPrompt('discoveryLogShape'),
   });
 }
 
@@ -756,14 +763,14 @@ export function createProductImageFinderCallLlm(deps) {
 // WHY: Default template for PIF hero search. {{VARIABLE}} placeholders mark dynamic injection points.
 export const PIF_HERO_DEFAULT_TEMPLATE = `{{HERO_INSTRUCTIONS}}
 
-IDENTITY: You are looking for the EXACT product "{{BRAND}} {{MODEL}}"{{VARIANT_SUFFIX}}.
+{{IDENTITY_INTRO}}
 {{IDENTITY_WARNING}}
 
 Every image you return MUST use the view name "hero".
 
 {{PREVIOUS_DISCOVERY}}Return JSON:
 - "images": [{ "view": "hero", "url": "direct-image-url", "source_page": "page-where-found", "alt_text": "image alt text if available" }, ...]
-- "discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }`;
+{{DISCOVERY_LOG_SHAPE}}`;
 
 export function buildHeroImageFinderPrompt({
   product = {},
@@ -839,13 +846,19 @@ Do NOT use images from editorial review sites — even if the photo looks contex
 
   const template = templateOverride || PIF_HERO_DEFAULT_TEMPLATE;
 
+  const variantSuffix = variant ? ` (variant: ${variant})` : '';
+
   return resolvePromptTemplate(template, {
     BRAND: brand,
     MODEL: model,
-    VARIANT_SUFFIX: variant ? ` (variant: ${variant})` : '',
+    VARIANT_SUFFIX: variantSuffix,
+    IDENTITY_INTRO: resolvePromptTemplate(resolveGlobalPrompt('identityIntro'), {
+      BRAND: brand, MODEL: model, VARIANT_SUFFIX: variantSuffix,
+    }),
     IDENTITY_WARNING: identityWarning,
     PREVIOUS_DISCOVERY: discoverySection,
     HERO_INSTRUCTIONS: heroInstructions,
+    DISCOVERY_LOG_SHAPE: resolveGlobalPrompt('discoveryLogShape'),
   });
 }
 

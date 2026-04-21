@@ -270,7 +270,7 @@ describe('validateField — publish gate (derived from required_level)', () => {
       fieldRule: {
         contract: { shape: 'scalar', type: 'number' },
         parse: {},
-        priority: { required_level: 'identity' },
+        priority: { required_level: 'mandatory' },
       },
     });
     assert.equal(r.valid, false);
@@ -284,7 +284,7 @@ describe('validateField — publish gate (derived from required_level)', () => {
       fieldRule: {
         contract: { shape: 'scalar', type: 'number' },
         parse: {},
-        priority: { required_level: 'optional' },
+        priority: { required_level: 'non_mandatory' },
       },
     });
     assert.equal(r.valid, true);
@@ -298,7 +298,7 @@ describe('validateField — publish gate (derived from required_level)', () => {
       fieldRule: {
         contract: { shape: 'scalar', type: 'number' },
         parse: {},
-        priority: { required_level: 'identity' },
+        priority: { required_level: 'mandatory' },
       },
     });
     assert.equal(r.valid, true);
@@ -312,7 +312,7 @@ describe('validateField — publish gate (derived from required_level)', () => {
       fieldRule: {
         contract: { shape: 'scalar', type: 'string' },
         parse: {},
-        priority: { required_level: 'required' },
+        priority: { required_level: 'mandatory' },
       },
     });
     assert.equal(r.valid, false);

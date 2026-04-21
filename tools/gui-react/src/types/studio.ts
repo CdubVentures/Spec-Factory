@@ -29,10 +29,9 @@ export interface FieldRule {
 }
 
 export interface PriorityProfile {
-  required_level?: string;
-  availability?: string;
-  difficulty?: string;
-  effort?: number;
+  required_level?: 'mandatory' | 'non_mandatory';
+  availability?: 'always' | 'sometimes' | 'rare';
+  difficulty?: 'easy' | 'medium' | 'hard' | 'very_hard';
 }
 
 export interface AiAssistConfig {

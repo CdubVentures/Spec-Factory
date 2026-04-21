@@ -261,7 +261,6 @@ export async function buildSearchPlan({
       weak_field_keys: g.weak_field_keys || [],
       conflict_field_keys: g.conflict_field_keys || [],
       core_unresolved_count: g.core_unresolved_count || 0,
-      secondary_unresolved_count: g.secondary_unresolved_count || 0,
       query_terms_union: (g.query_terms_union || []).slice(0, groupCap),
       domain_hints_union: (g.domain_hints_union || []).slice(0, groupCap),
       existing_queries_union: (g.existing_queries_union || []).slice(0, groupCap),

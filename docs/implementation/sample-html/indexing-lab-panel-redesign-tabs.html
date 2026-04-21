@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en" data-sf-theme-mode="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Indexing Lab Panel — Redesign Preview (Tabs)</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --sf-font-ui: "Segoe UI", "Inter", "Helvetica Neue", sans-serif;
+  --sf-font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  --sf-surface-canvas: #060b1a;
+  --sf-surface-base: #0a1330;
+  --sf-surface-elevated: #111f41;
+  --sf-surface-panel: #0d1834;
+  --sf-surface-card: #111f41;
+  --sf-surface-raised: #152548;
+  --sf-text-primary: #ecf1ff;
+  --sf-text-muted: #adc2eb;
+  --sf-text-subtle: #94a3b8;
+  --sf-text-dim: #6b7fa0;
+  --sf-border-soft: #243a65;
+  --sf-border-soft-alpha: rgba(36, 58, 101, 0.6);
+  --sf-border-strong: #334b7a;
+  --sf-accent: #6366f1;
+  --sf-accent-strong: #818cf8;
+  --sf-accent-glow: rgba(99, 102, 241, 0.12);
+  --sf-accent-glow-strong: rgba(99, 102, 241, 0.28);
+  --sf-success-fg: #86efac;
+  --sf-success-bg: rgba(34, 197, 94, 0.2);
+  --sf-success-ring: rgba(34, 197, 94, 0.45);
+  --sf-warning-fg: #fcd34d;
+  --sf-warning-bg: rgba(234, 179, 8, 0.2);
+  --sf-danger-fg: #f87171;
+  --sf-danger-bg: rgba(248, 113, 113, 0.2);
+  --sf-info-fg: #93c5fd;
+  --sf-info-bg: rgba(14, 165, 233, 0.2);
+  --sf-purple-fg: #d8b4fe;
+  --sf-purple-bg: rgba(88, 28, 135, 0.4);
+  --sf-neutral-fg: #94a3b8;
+  --sf-neutral-bg: rgba(148, 163, 184, 0.24);
+  --sf-teal-fg: #5eead4;
+  --sf-teal-bg: rgba(19, 78, 74, 0.4);
+  --sf-shadow-card: 0 1px 3px rgba(0,0,0,0.35), 0 4px 20px rgba(0,0,0,0.18);
+}
+
+body {
+  font-family: var(--sf-font-ui);
+  background: linear-gradient(180deg, var(--sf-surface-canvas), var(--sf-surface-base));
+  color: var(--sf-text-primary);
+  min-height: 100vh;
+  padding: 24px 16px 80px;
+  line-height: 1.45;
+  font-size: 13px;
+}
+
+.mono { font-family: var(--sf-font-mono); letter-spacing: -0.01em; }
+
+.preview-root {
+  max-width: 1360px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ── Preview scaffolding ── */
+
+.design-intro {
+  padding: 20px 24px;
+  border: 1px solid var(--sf-accent-strong);
+  background: linear-gradient(180deg, rgba(99,102,241,0.10), rgba(99,102,241,0.02));
+  border-radius: 12px;
+}
+.design-intro h1 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+.design-intro p { font-size: 12.5px; color: var(--sf-text-muted); max-width: 960px; }
+.design-intro p + p { margin-top: 6px; }
+.design-intro strong { color: var(--sf-accent-strong); }
+
+.design-label {
+  text-align: center;
+  font-size: 11px;
+  color: var(--sf-text-dim);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 6px 16px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px dashed var(--sf-border-soft-alpha);
+  border-radius: 6px;
+  align-self: center;
+}
+.design-label .num {
+  display: inline-block;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--sf-accent);
+  color: #fff;
+  font-weight: 800;
+  margin-right: 8px;
+  line-height: 20px;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0;
+}
+.design-note {
+  padding: 10px 16px;
+  background: rgba(99,102,241,0.06);
+  border-left: 3px solid var(--sf-accent-strong);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--sf-text-muted);
+  max-width: 1080px;
+  margin: 0 auto;
+}
+.design-note strong { color: var(--sf-text-primary); }
+
+/* ── App tab strip ── */
+
+.tab-strip {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  background: var(--sf-surface-panel);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 10px 10px 0 0;
+  padding: 0 8px;
+  height: 44px;
+  overflow: hidden;
+}
+.tab-strip .tab {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sf-text-dim);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+.tab-strip .tab:hover { color: var(--sf-text-muted); }
+.tab-strip .tab.active {
+  color: var(--sf-text-primary);
+  border-bottom-color: var(--sf-accent-strong);
+  font-weight: 700;
+}
+.tab-strip .env-chip {
+  align-self: center;
+  margin-left: auto;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  background: var(--sf-success-bg);
+  color: var(--sf-success-fg);
+}
+
+/* ── Page header ── */
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  background: var(--sf-surface-panel);
+  border: 1px solid var(--sf-border-soft);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+}
+.page-title-block { flex: 1; min-width: 0; }
+.page-crumb { font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--sf-text-dim); font-weight: 700; margin-bottom: 2px; }
+.page-crumb .sep { margin: 0 6px; opacity: 0.5; }
+.page-title { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
+.page-subtitle { font-size: 12px; color: var(--sf-text-muted); margin-top: 2px; }
+
+.run-status {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  background: var(--sf-surface-elevated);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 10px;
+  min-width: 280px;
+}
+.run-status .status-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--sf-success-fg);
+  box-shadow: 0 0 0 3px var(--sf-success-ring);
+  flex-shrink: 0;
+}
+.run-status.running .status-dot {
+  background: var(--sf-accent-strong);
+  box-shadow: 0 0 0 3px var(--sf-accent-glow-strong);
+  animation: breathe 1.6s infinite;
+}
+.run-status.idle .status-dot { background: var(--sf-text-dim); box-shadow: 0 0 0 3px rgba(148,163,184,0.18); }
+.run-status .status-txt { font-size: 12px; font-weight: 700; letter-spacing: 0.02em; }
+.run-status .status-sub { font-size: 11px; color: var(--sf-text-subtle); margin-left: auto; text-align: right; }
+
+@keyframes breathe { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+/* ── Mission Bar ── */
+
+.mission-bar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  padding: 18px 22px;
+  background: linear-gradient(180deg, var(--sf-surface-panel), var(--sf-surface-base));
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 12px;
+  box-shadow: var(--sf-shadow-card);
+}
+.mb-product { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; min-width: 0; }
+.mb-product-id { font-family: var(--sf-font-mono); font-size: 10px; color: var(--sf-text-dim); background: var(--sf-surface-canvas); padding: 2px 6px; border-radius: 4px; }
+.mb-product-name { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mb-brand { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--sf-text-dim); }
+.mb-model { font-size: 17px; font-weight: 700; }
+.mb-meta { display: flex; align-items: center; gap: 8px; }
+.mb-actions { display: flex; gap: 10px; align-items: center; }
+
+/* ── Buttons ── */
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 14px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  border-radius: 8px; cursor: pointer; background: transparent;
+  color: var(--sf-text-primary); font-family: inherit;
+  transition: background 0.12s, border-color 0.12s, color 0.12s, transform 0.08s;
+  white-space: nowrap;
+}
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--sf-accent); color: #fff; border-color: var(--sf-accent); }
+.btn-primary:hover { background: var(--sf-accent-strong); border-color: var(--sf-accent-strong); }
+.btn-primary-lg { padding: 12px 22px; font-size: 13.5px; border-radius: 10px; }
+.btn-primary-lg .kbd { font-family: var(--sf-font-mono); opacity: 0.75; font-size: 11px; margin-left: 4px; }
+.btn-ghost { background: transparent; color: var(--sf-text-muted); border-color: var(--sf-border-soft); }
+.btn-ghost:hover { color: var(--sf-text-primary); border-color: var(--sf-border-strong); background: var(--sf-accent-glow); }
+.btn-danger-ghost { background: transparent; color: var(--sf-danger-fg); border-color: var(--sf-danger-fg); opacity: 0.85; }
+.btn-danger-ghost:hover { background: var(--sf-danger-bg); opacity: 1; }
+.btn-sm { padding: 5px 10px; font-size: 11px; border-radius: 6px; }
+.btn-xs { padding: 3px 8px; font-size: 10px; border-radius: 5px; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 700; }
+.btn-icon {
+  width: 28px; height: 28px; padding: 0;
+  border-radius: 6px;
+  color: var(--sf-text-subtle);
+  border: 1px solid var(--sf-border-soft);
+}
+.btn-icon:hover { color: var(--sf-text-primary); background: var(--sf-accent-glow); }
+
+/* ── Chips ── */
+
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 4px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.04em;
+  white-space: nowrap; text-transform: uppercase;
+}
+.chip-success { background: var(--sf-success-bg); color: var(--sf-success-fg); }
+.chip-warning { background: var(--sf-warning-bg); color: var(--sf-warning-fg); }
+.chip-danger  { background: var(--sf-danger-bg);  color: var(--sf-danger-fg);  }
+.chip-purple  { background: var(--sf-purple-bg);  color: var(--sf-purple-fg);  }
+.chip-accent  { background: var(--sf-accent-glow); color: var(--sf-accent-strong); border: 1.5px solid var(--sf-accent-strong); }
+.chip-neutral { background: var(--sf-neutral-bg); color: var(--sf-neutral-fg); }
+.chip-info    { background: var(--sf-info-bg);    color: var(--sf-info-fg);    }
+.chip-teal    { background: var(--sf-teal-bg);    color: var(--sf-teal-fg);    }
+
+.model-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 8px; border-radius: 4px;
+  font-size: 10px; font-family: var(--sf-font-mono); font-weight: 700; letter-spacing: 0.04em;
+  color: var(--sf-purple-fg); border: 1.5px solid var(--sf-purple-fg);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FINDER TABS — primary navigation for the four finders
+   ═══════════════════════════════════════════════════════════ */
+
+.finder-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 8px;
+  background: var(--sf-surface-panel);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 12px;
+  box-shadow: var(--sf-shadow-card);
+}
+@media (max-width: 920px) { .finder-tabs { grid-template-columns: repeat(2, 1fr); } }
+
+.finder-tab {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--sf-text-muted);
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s, border-color 0.12s, color 0.12s, transform 0.08s;
+  position: relative;
+}
+.finder-tab:hover {
+  background: var(--sf-surface-elevated);
+  color: var(--sf-text-primary);
+}
+.finder-tab:active { transform: translateY(1px); }
+
+/* Active tab — accent border + raised surface + underline band */
+.finder-tab.active {
+  background: linear-gradient(180deg, var(--sf-surface-elevated), var(--sf-surface-raised));
+  border-color: var(--sf-accent-strong);
+  color: var(--sf-text-primary);
+  box-shadow: inset 0 0 0 1px var(--sf-accent-strong), 0 0 20px rgba(99,102,241,0.12);
+}
+.finder-tab.active::after {
+  content: "";
+  position: absolute;
+  left: 12px; right: 12px; bottom: -9px;
+  height: 2px;
+  background: var(--sf-accent-strong);
+  border-radius: 2px 2px 0 0;
+  z-index: 2;
+}
+
+.ft-icon {
+  width: 36px; height: 36px;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 700;
+  flex-shrink: 0;
+}
+.ft-icon.cef  { background: rgba(217, 119, 6, 0.18); color: #fbbf24; }
+.ft-icon.pif  { background: rgba(59, 130, 246, 0.22); color: var(--sf-info-fg); }
+.ft-icon.rdf  { background: rgba(124, 58, 237, 0.28); color: var(--sf-purple-fg); }
+.ft-icon.sku  { background: rgba(16, 185, 129, 0.20); color: var(--sf-success-fg); }
+
+.ft-body { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ft-name {
+  font-size: 13px; font-weight: 700; color: inherit;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ft-kpi {
+  font-size: 11px; color: var(--sf-text-subtle);
+  font-family: var(--sf-font-mono); letter-spacing: -0.01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ft-kpi .ok { color: var(--sf-success-fg); }
+.ft-kpi .warn { color: var(--sf-warning-fg); }
+.ft-kpi .bad { color: var(--sf-danger-fg); }
+
+.ft-status {
+  position: relative;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ft-status[data-status="complete"] { background: var(--sf-success-fg); box-shadow: 0 0 0 3px var(--sf-success-ring); }
+.ft-status[data-status="partial"]  { background: var(--sf-warning-fg); box-shadow: 0 0 0 3px rgba(234,179,8,0.35); }
+.ft-status[data-status="running"]  { background: var(--sf-accent-strong); box-shadow: 0 0 0 3px var(--sf-accent-glow-strong); animation: breathe 1.4s infinite; }
+.ft-status[data-status="idle"]     { background: var(--sf-text-dim); box-shadow: 0 0 0 3px rgba(148,163,184,0.2); }
+.ft-status[data-status="empty"]    { background: transparent; box-shadow: 0 0 0 1.5px var(--sf-text-dim) inset; }
+
+/* ═══════════════════════════════════════════════════════════
+   ACTIVE FINDER PANEL — detail for the selected tab
+   ═══════════════════════════════════════════════════════════ */
+
+.finder-panel {
+  background: var(--sf-surface-panel);
+  border: 1px solid var(--sf-accent-strong);
+  border-radius: 12px;
+  box-shadow: var(--sf-shadow-card), 0 0 40px rgba(99,102,241,0.04);
+  overflow: hidden;
+}
+
+.fp-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 22px;
+  background: linear-gradient(180deg, rgba(99,102,241,0.08), transparent);
+  border-bottom: 1px solid var(--sf-border-soft);
+}
+.fp-head .ft-icon { width: 40px; height: 40px; font-size: 19px; }
+.fp-title { font-size: 17px; font-weight: 800; color: var(--sf-text-primary); letter-spacing: -0.01em; }
+.fp-blurb { font-size: 12px; color: var(--sf-text-muted); margin-top: 2px; }
+.fp-head .spacer { flex: 1; }
+.fp-head .actions { display: flex; gap: 8px; align-items: center; }
+
+.inner-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--sf-border-soft);
+  background: var(--sf-surface-base);
+}
+.inner-tab {
+  padding: 11px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sf-text-dim);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.12s, border-color 0.12s;
+}
+.inner-tab:hover { color: var(--sf-text-muted); }
+.inner-tab.active { color: var(--sf-text-primary); border-bottom-color: var(--sf-accent-strong); }
+.inner-tab .count {
+  display: inline-block; margin-left: 6px; padding: 0 6px;
+  font-size: 10px; border-radius: 9999px;
+  background: var(--sf-surface-elevated); color: var(--sf-text-subtle);
+  border: 1px solid var(--sf-border-soft);
+}
+.inner-tab.active .count {
+  background: var(--sf-accent-glow); color: var(--sf-accent-strong); border-color: var(--sf-accent-strong);
+}
+
+.fp-body { padding: 22px; display: flex; flex-direction: column; gap: 22px; }
+
+/* Stat tiles */
+.stat-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+}
+@media (max-width: 820px) { .stat-row { grid-template-columns: repeat(2, 1fr); } }
+.stat-tile {
+  padding: 14px 16px;
+  background: var(--sf-surface-elevated);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 10px;
+}
+.stat-tile .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--sf-text-dim); font-weight: 700; margin-bottom: 6px; }
+.stat-tile .stat-value { font-size: 24px; font-weight: 800; font-family: var(--sf-font-mono); letter-spacing: -0.02em; line-height: 1; }
+.stat-tile .stat-value.success { color: var(--sf-success-fg); }
+.stat-tile .stat-value.warning { color: var(--sf-warning-fg); }
+.stat-tile .stat-value.muted   { color: var(--sf-text-subtle); }
+.stat-tile .stat-sub { font-size: 10.5px; color: var(--sf-text-muted); margin-top: 4px; }
+
+/* Section heading */
+.section-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.section-heading .title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 800; color: var(--sf-text-muted); }
+.section-heading .count { font-size: 11px; color: var(--sf-text-dim); font-weight: 500; }
+.section-heading .spacer { flex: 1; }
+.section-heading .bulk-actions { display: flex; gap: 8px; }
+
+/* Variant list */
+.variant-list { display: flex; flex-direction: column; gap: 8px; }
+.variant-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--sf-surface-elevated);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 10px;
+  transition: border-color 0.12s, background 0.12s;
+}
+.variant-row:hover { border-color: var(--sf-border-strong); background: var(--sf-surface-raised); }
+.variant-left { display: flex; align-items: center; gap: 10px; }
+.variant-swatch {
+  width: 22px; height: 22px; border-radius: 6px;
+  border: 1px solid var(--sf-border-strong);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.04);
+  flex-shrink: 0;
+}
+.variant-name { font-size: 13px; font-weight: 600; }
+.variant-progress { font-size: 11px; color: var(--sf-text-subtle); font-family: var(--sf-font-mono); }
+.variant-progress .ok { color: var(--sf-success-fg); }
+.variant-progress .warn { color: var(--sf-warning-fg); }
+.variant-actions { display: flex; gap: 6px; }
+
+/* Run history */
+.run-history { display: flex; flex-direction: column; gap: 6px; }
+.run-row {
+  display: grid;
+  grid-template-columns: 26px 42px 88px 70px auto auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--sf-surface-base);
+  border: 1px solid var(--sf-border-soft-alpha);
+  border-radius: 8px;
+  font-size: 11.5px;
+}
+.run-row .run-caret { color: var(--sf-text-dim); cursor: pointer; font-size: 10px; }
+.run-row .run-num { font-family: var(--sf-font-mono); font-weight: 700; color: var(--sf-text-subtle); }
+.run-row .run-date { font-family: var(--sf-font-mono); color: var(--sf-text-muted); }
+.run-row .run-dur { font-family: var(--sf-font-mono); color: var(--sf-text-dim); }
+.run-row .run-label { font-size: 11px; display: flex; align-items: center; gap: 6px; }
+.run-row .run-meta { display: flex; gap: 6px; align-items: center; }
+.run-row .run-del { color: var(--sf-text-dim); font-size: 10px; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+.run-row .run-del:hover { color: var(--sf-danger-fg); background: var(--sf-danger-bg); }
+
+/* How-it-works */
+.how-card {
+  padding: 16px 18px;
+  background: var(--sf-surface-base);
+  border: 1px solid var(--sf-border-soft-alpha);
+  border-radius: 10px;
+}
+.how-card h4 { font-size: 12px; color: var(--sf-text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.08em; }
+.how-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+@media (max-width: 820px) { .how-steps { grid-template-columns: repeat(2, 1fr); } }
+.how-step { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; background: var(--sf-surface-panel); border: 1px solid var(--sf-border-soft-alpha); border-radius: 8px; }
+.how-step .num { font-size: 10px; color: var(--sf-accent-strong); font-weight: 800; letter-spacing: 0.1em; }
+.how-step .label { font-size: 12px; font-weight: 600; }
+.how-step .detail { font-size: 11px; color: var(--sf-text-subtle); line-height: 1.4; }
+
+/* Only-visible-when-active panel body */
+.panel-body { display: none; }
+.panel-body.active { display: flex; flex-direction: column; gap: 22px; }
+
+/* ── Legend ── */
+.legend-card {
+  padding: 18px 22px;
+  background: var(--sf-surface-panel);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px 22px;
+  font-size: 11.5px;
+}
+@media (max-width: 820px) { .legend-card { grid-template-columns: repeat(2, 1fr); } }
+.legend-item { display: flex; align-items: flex-start; gap: 10px; }
+.legend-item .legend-vis { flex-shrink: 0; display: flex; align-items: center; justify-content: center; min-width: 42px; }
+.legend-item .legend-txt { color: var(--sf-text-muted); }
+.legend-item .legend-txt strong { display: block; margin-bottom: 2px; font-size: 11.5px; color: var(--sf-text-primary); }
+
+.tiny-note { font-size: 11px; color: var(--sf-text-dim); font-style: italic; }
+
+</style>
+</head>
+<body>
+
+<div class="preview-root">
+
+  <!-- INTRO -->
+  <div class="design-intro">
+    <h1>Indexing Lab — Panel Redesign Preview (Tabs variant)</h1>
+    <p><strong>What changed from v1:</strong> The 2×2 finder grid is replaced by a single <strong>tab bar of the four finders</strong> (CEF / Product Image / Release Date / SKU). Only one finder's detail is visible at a time, which removes visual noise and keeps focus on the active task. Each tab still shows its status light and primary KPI so you can see the whole pipeline state at a glance before committing a click.</p>
+    <p><strong>Kept from v1:</strong> page header, mission bar, run-status pill, labeled per-variant action buttons, inner tabs inside the active panel (Overview / Variants / Runs / How It Works), chip legend.</p>
+  </div>
+
+  <!-- LAYER 1 — App tab strip + page header -->
+  <div class="design-label"><span class="num">1</span>App-level Orientation</div>
+  <div>
+    <div class="tab-strip">
+      <div class="tab">Colors</div>
+      <div class="tab">Units</div>
+      <div class="tab">Billing</div>
+      <div class="tab">Overview</div>
+      <div class="tab">Catalog</div>
+      <div class="tab">Field Rules Studio</div>
+      <div class="tab active">Indexing Lab</div>
+      <div class="tab">Runtime Ops</div>
+      <div class="tab">Publisher</div>
+      <div class="tab">Review Grid</div>
+      <div class="tab">Review Components</div>
+      <div class="tab">Storage</div>
+      <div class="tab">LLM</div>
+      <div class="tab">Pipeline</div>
+      <div class="env-chip">REAPER 60S</div>
+    </div>
+    <div class="page-header">
+      <div class="page-title-block">
+        <div class="page-crumb">Spec Factory <span class="sep">/</span> Indexing Lab</div>
+        <div class="page-title">Indexing Lab</div>
+        <div class="page-subtitle">Run and monitor per-variant discovery finders for a single product</div>
+      </div>
+      <div class="run-status idle">
+        <span class="status-dot"></span>
+        <span class="status-txt">Idle</span>
+        <span class="status-sub">last run 12 min ago · #112</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAYER 2 — Mission Bar -->
+  <div class="design-label"><span class="num">2</span>Mission Bar</div>
+  <div class="mission-bar">
+    <div class="mb-product">
+      <div class="mb-product-name">
+        <div class="mb-brand">Corsair</div>
+        <div class="mb-model">M75 Air Wireless</div>
+      </div>
+      <div class="mb-product-id">mouse-1d9.0a05a</div>
+      <div class="mb-meta">
+        <span class="chip chip-warning">AMBIG · MEDIUM</span>
+        <span class="chip chip-neutral">4 VARIANTS</span>
+        <span class="chip chip-neutral">FAMILY 3</span>
+      </div>
+    </div>
+    <div class="mb-actions">
+      <button class="btn btn-ghost btn-sm">Change product</button>
+      <button class="btn btn-ghost btn-sm">Replay last run</button>
+      <button class="btn btn-primary btn-primary-lg">▶ Run IndexLab <span class="kbd">⌘↵</span></button>
+    </div>
+  </div>
+
+  <!-- LAYER 3 — Finder Tabs -->
+  <div class="design-label"><span class="num">3</span>Finder Tabs — pick one finder at a time</div>
+  <div class="design-note"><strong>Layout:</strong> The four finders are now top-level tabs. Each tab shows the finder's icon, name, a primary KPI, and a status light (complete / partial / running / idle / empty). The active tab has an accent border and a small underline band connecting it to the panel below. Click to switch.</div>
+
+  <div class="finder-tabs" role="tablist">
+    <button class="finder-tab" role="tab" data-target="cef" title="Color & Edition Finder · defines the variant axes">
+      <div class="ft-icon cef">◈</div>
+      <div class="ft-body">
+        <div class="ft-name">Color &amp; Edition</div>
+        <div class="ft-kpi"><span class="ok">4 colors · 1 edition</span></div>
+      </div>
+      <div class="ft-status" data-status="complete" title="Resolved"></div>
+    </button>
+
+    <button class="finder-tab active" role="tab" aria-selected="true" data-target="pif" title="Product Image Finder · hero + angle images per variant">
+      <div class="ft-icon pif">▣</div>
+      <div class="ft-body">
+        <div class="ft-name">Product Image</div>
+        <div class="ft-kpi"><span class="warn">0 / 44 carousel</span></div>
+      </div>
+      <div class="ft-status" data-status="empty" title="Needs work"></div>
+    </button>
+
+    <button class="finder-tab" role="tab" data-target="rdf" title="Release Date Finder · release date per variant">
+      <div class="ft-icon rdf">◷</div>
+      <div class="ft-body">
+        <div class="ft-name">Release Date</div>
+        <div class="ft-kpi"><span class="warn">3 / 4 resolved</span></div>
+      </div>
+      <div class="ft-status" data-status="partial" title="1 unknown"></div>
+    </button>
+
+    <button class="finder-tab" role="tab" data-target="sku" title="SKU Finder · SKU code per variant">
+      <div class="ft-icon sku">⌗</div>
+      <div class="ft-body">
+        <div class="ft-name">SKU</div>
+        <div class="ft-kpi"><span class="ok">4 / 4 published</span></div>
+      </div>
+      <div class="ft-status" data-status="complete" title="Complete"></div>
+    </button>
+  </div>
+
+  <!-- LAYER 4 — Active Finder Panel -->
+  <div class="finder-panel">
+
+    <!-- ─────────── CEF BODY ─────────── -->
+    <div class="panel-body" data-panel="cef">
+      <div class="fp-head">
+        <div class="ft-icon cef">◈</div>
+        <div>
+          <div class="fp-title">Color &amp; Edition</div>
+          <div class="fp-blurb">Defines the variant axes — every other finder iterates over these.</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="actions">
+          <span class="model-badge">gpt-5.4 · high</span>
+          <button class="btn btn-ghost btn-sm">History (19)</button>
+          <button class="btn btn-primary">▶ Re-run Discovery</button>
+        </div>
+      </div>
+      <div class="inner-tabs">
+        <button class="inner-tab active">Overview</button>
+        <button class="inner-tab">Variants <span class="count">5</span></button>
+        <button class="inner-tab">Run History <span class="count">19</span></button>
+        <button class="inner-tab">How It Works</button>
+      </div>
+      <div class="fp-body">
+        <div class="stat-row">
+          <div class="stat-tile"><div class="stat-label">Colors</div><div class="stat-value success">4</div><div class="stat-sub">Black · White · Light Gray + 1</div></div>
+          <div class="stat-tile"><div class="stat-label">Editions</div><div class="stat-value success">1</div><div class="stat-sub">Launch Edition</div></div>
+          <div class="stat-tile"><div class="stat-label">Default</div><div class="stat-value muted">Black</div><div class="stat-sub">set by LLM</div></div>
+          <div class="stat-tile"><div class="stat-label">Runs</div><div class="stat-value">19</div><div class="stat-sub">last 21h ago</div></div>
+        </div>
+
+        <div>
+          <div class="section-heading">
+            <span class="title">Variant Axes</span>
+            <span class="count">5 entries</span>
+            <span class="spacer"></span>
+            <div class="bulk-actions"><button class="btn btn-danger-ghost btn-xs">Delete all</button></div>
+          </div>
+          <div class="variant-list">
+            <div class="variant-row">
+              <div class="variant-left">
+                <div class="variant-swatch" style="background:#1a1a1a;"></div>
+                <div class="variant-name">Black</div>
+                <span class="chip chip-success">DEFAULT</span>
+                <span class="chip chip-neutral">CLR</span>
+              </div>
+              <div class="variant-progress">confidence · <span class="ok">0.98</span></div>
+              <div class="chip chip-success">PUBLISHED</div>
+              <div class="variant-actions">
+                <button class="btn btn-icon" title="Delete">✕</button>
+              </div>
+            </div>
+            <div class="variant-row">
+              <div class="variant-left">
+                <div class="variant-swatch" style="background:#f8fafc;"></div>
+                <div class="variant-name">White</div>
+                <span class="chip chip-neutral">CLR</span>
+              </div>
+              <div class="variant-progress">confidence · <span class="ok">0.96</span></div>
+              <div class="chip chip-success">PUBLISHED</div>
+              <div class="variant-actions"><button class="btn btn-icon" title="Delete">✕</button></div>
+            </div>
+            <div class="variant-row">
+              <div class="variant-left">
+                <div class="variant-swatch" style="background:#d1d5db;"></div>
+                <div class="variant-name">Light Gray</div>
+                <span class="chip chip-neutral">CLR</span>
+              </div>
+              <div class="variant-progress">confidence · <span class="ok">0.93</span></div>
+              <div class="chip chip-success">PUBLISHED</div>
+              <div class="variant-actions"><button class="btn btn-icon" title="Delete">✕</button></div>
+            </div>
+            <div class="variant-row">
+              <div class="variant-left">
+                <div class="variant-swatch" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);"></div>
+                <div class="variant-name">Launch Edition</div>
+                <span class="chip chip-warning">ED</span>
+              </div>
+              <div class="variant-progress">confidence · <span class="ok">0.91</span></div>
+              <div class="chip chip-success">PUBLISHED</div>
+              <div class="variant-actions"><button class="btn btn-icon" title="Delete">✕</button></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="how-card">
+          <h4>How It Works — color and edition discovery</h4>
+          <div class="how-steps">
+            <div class="how-step"><span class="num">01</span><span class="label">Discover axes</span><span class="detail">LLM scans retail pages and manufacturer listings for distinct color and edition variants.</span></div>
+            <div class="how-step"><span class="num">02</span><span class="label">Confirm</span><span class="detail">Vision cross-check against hero images; low-confidence candidates rejected.</span></div>
+            <div class="how-step"><span class="num">03</span><span class="label">Publish</span><span class="detail">Accepted variants become the product's variant_id registry — input to PIF / RDF / SKU.</span></div>
+            <div class="how-step"><span class="num">04</span><span class="label">Maintain</span><span class="detail">Deleting here cascades: dependent finder runs scoped to that variant are invalidated.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─────────── PIF BODY (active by default) ─────────── -->
+    <div class="panel-body active" data-panel="pif">
+      <div class="fp-head">
+        <div class="ft-icon pif">▣</div>
+        <div>
+          <div class="fp-title">Product Image</div>
+          <div class="fp-blurb">Hero + angle images per variant · carousel slot assignment</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="actions">
+          <span class="model-badge">gpt-5.4 · high</span>
+          <button class="btn btn-ghost btn-sm">Eval All</button>
+          <button class="btn btn-primary">▶ Run all variants</button>
+        </div>
+      </div>
+      <div class="inner-tabs">
+        <button class="inner-tab active">Overview</button>
+        <button class="inner-tab">Variants <span class="count">4</span></button>
+        <button class="inner-tab">Run History <span class="count">2</span></button>
+        <button class="inner-tab">How It Works</button>
+      </div>
+      <div class="fp-body">
+        <div class="stat-row">
+          <div class="stat-tile"><div class="stat-label">Images</div><div class="stat-value">5</div><div class="stat-sub">across 4 variants</div></div>
+          <div class="stat-tile"><div class="stat-label">Variants</div><div class="stat-value">4</div><div class="stat-sub">from CEF</div></div>
+          <div class="stat-tile"><div class="stat-label">Runs</div><div class="stat-value">2</div><div class="stat-sub">last 12m ago</div></div>
+          <div class="stat-tile"><div class="stat-label">Carousel filled</div><div class="stat-value warning">0 / 44</div><div class="stat-sub">3 % · needs discovery</div></div>
+        </div>
+
+        <div>
+          <div class="section-heading">
+            <span class="title">Variants</span>
+            <span class="count">4 across this product · 5 images total</span>
+            <span class="spacer"></span>
+            <div class="bulk-actions">
+              <button class="btn btn-ghost btn-xs">Clear all</button>
+              <button class="btn btn-danger-ghost btn-xs">Delete all images</button>
+            </div>
+          </div>
+          <div class="variant-list">
+            <div class="variant-row">
+              <div class="variant-left">
+                <div class="variant-swatch" style="background:#1a1a1a;"></div>
+                <div class="variant-name">Black</div>
+                <span class="chip chip-neutral">CLR</span>
+              </div>
+              <div class="variant-progress"><span class="warn">0 / 8 views</span> · <span class="warn">0 / 1 heroes</span></div>
+              <div class="chip chip-neutral">no images</div>
+              <div class="variant-actions">
+                <button class="btn btn-ghost btn-xs" title="Discover angle views">Views</button>
+                <button class="btn btn-ghost btn-xs" title="Discover hero shot">Hero</button>
+                <button class="btn btn-ghost btn-xs" title="Loop until target hit">Loop</button>
+                <button class="btn btn-icon" title="Evaluate">✓</button>
+                <button class="btn btn-icon" title="Clear">✕</button>
+              </div>
+            </div>
+            <div class="variant-row">
+              <div class="variant-left">
+                <div class="variant-swatch" style="background:#d1d5db;"></div>
+                <div class="variant-name">Light Gray</div>
+                <span class="chip chip-neutral">CLR</span>
+              </div>
+              <div class="variant-progress"><span class="ok">3 / 8 views</span> · <span class="warn">0 / 1 heroes</span></div>
+              <div class="chip chip-info">3 IMG</div>
+              <div class="variant-actions">
+                <button class="btn btn-ghost btn-xs">Views</button>
+                <button class="btn btn-ghost btn-xs">Hero</button>
+                <button class="btn btn-ghost btn-xs">Loop</button>
+                <button class="btn btn-icon" title="Evaluate">✓</button>
+                <button class="btn btn-icon" title="Clear">✕</button>
+              </div>
+            </div>
+            <div class="variant-row">
+              <div class="variant-left">
+                <div class="variant-swatch" style="background:#f8fafc;"></div>
+                <div class="variant-name">White</div>
+                <span class="chip chip-neutral">CLR</span>
+              </div>
+              <div class="variant-progress"><span class="warn">0 / 8 views</span> · <span class="warn">0 / 1 heroes</span></div>
+              <div class="chip chip-neutral">no images</div>
+              <div class="variant-actions">
+                <button class="btn btn-ghost btn-xs">Views</button>
+                <button class="btn btn-ghost btn-xs">Hero</button>
+                <button class="btn btn-ghost btn-xs">Loop</button>
+                <button class="btn btn-icon" title="Evaluate">✓</button>
+                <button class="btn btn-icon" title="Clear">✕</button>
+              </div>
+            </div>
+            <div class="variant-row">
+              <div class="variant-left">
+                <div class="variant-swatch" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);"></div>
+                <div class="variant-name">Launch Edition</div>
+                <span class="chip chip-warning">ED</span>
+              </div>
+              <div class="variant-progress"><span class="ok">2 / 8 views</span> · <span class="warn">0 / 1 heroes</span></div>
+              <div class="chip chip-info">2 IMG</div>
+              <div class="variant-actions">
+                <button class="btn btn-ghost btn-xs">Views</button>
+                <button class="btn btn-ghost btn-xs">Hero</button>
+                <button class="btn btn-ghost btn-xs">Loop</button>
+                <button class="btn btn-icon" title="Evaluate">✓</button>
+                <button class="btn btn-icon" title="Clear">✕</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-heading">
+            <span class="title">Recent Runs</span>
+            <span class="count">2 runs</span>
+            <span class="spacer"></span>
+            <div class="bulk-actions">
+              <button class="btn btn-ghost btn-xs">Show 10</button>
+              <button class="btn btn-ghost btn-xs">Show 50</button>
+              <button class="btn btn-danger-ghost btn-xs">Delete all</button>
+            </div>
+          </div>
+          <div class="run-history">
+            <div class="run-row">
+              <span class="run-caret">▶</span>
+              <span class="run-num">#112</span>
+              <span class="run-date">04-20 12:48</span>
+              <span class="run-dur">11m 28s</span>
+              <span class="run-label">
+                <span class="chip chip-warning">ED</span>
+                Launch Edition
+                <span class="chip chip-info">VIEW</span>
+              </span>
+              <span class="run-meta">
+                <span class="model-badge">gpt-5.4 · high</span>
+                <span class="chip chip-success">2 IMG</span>
+                <span class="chip chip-danger">1 ERR</span>
+              </span>
+              <span class="run-del">Del</span>
+            </div>
+            <div class="run-row">
+              <span class="run-caret">▶</span>
+              <span class="run-num">#111</span>
+              <span class="run-date">04-20 12:48</span>
+              <span class="run-dur">8m 17s</span>
+              <span class="run-label">
+                <span class="chip chip-neutral">CLR</span>
+                Light Gray
+                <span class="chip chip-info">HERO</span>
+              </span>
+              <span class="run-meta">
+                <span class="model-badge">gpt-5.4 · high</span>
+                <span class="chip chip-success">3 IMG</span>
+              </span>
+              <span class="run-del">Del</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="how-card">
+          <h4>How It Works — image discovery, learning &amp; evaluation</h4>
+          <div class="how-steps">
+            <div class="how-step"><span class="num">01</span><span class="label">Per-variant plan</span><span class="detail">For every color and edition from CEF, target 8 angle views + 1 hero shot.</span></div>
+            <div class="how-step"><span class="num">02</span><span class="label">Discover</span><span class="detail">LLM + web search fetches candidate URLs tagged <em>view</em> or <em>hero</em>.</span></div>
+            <div class="how-step"><span class="num">03</span><span class="label">Evaluate</span><span class="detail">Vision model ranks candidates; best are assigned to carousel slots.</span></div>
+            <div class="how-step"><span class="num">04</span><span class="label">Publish</span><span class="detail">Resolved images are written to the SQLite projection for Review Grid.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─────────── RDF BODY ─────────── -->
+    <div class="panel-body" data-panel="rdf">
+      <div class="fp-head">
+        <div class="ft-icon rdf">◷</div>
+        <div>
+          <div class="fp-title">Release Date</div>
+          <div class="fp-blurb">Scalar per-variant — one release date per color and edition.</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="actions">
+          <span class="model-badge">gpt-5.4 · high</span>
+          <button class="btn btn-ghost btn-sm">Loop</button>
+          <button class="btn btn-primary">▶ Run missing</button>
+        </div>
+      </div>
+      <div class="inner-tabs">
+        <button class="inner-tab active">Overview</button>
+        <button class="inner-tab">Variants <span class="count">4</span></button>
+        <button class="inner-tab">Run History <span class="count">64</span></button>
+        <button class="inner-tab">How It Works</button>
+      </div>
+      <div class="fp-body">
+        <div class="stat-row">
+          <div class="stat-tile"><div class="stat-label">Release dates</div><div class="stat-value warning">3 / 4</div><div class="stat-sub">1 unknown</div></div>
+          <div class="stat-tile"><div class="stat-label">Variants</div><div class="stat-value">4</div><div class="stat-sub">from CEF</div></div>
+          <div class="stat-tile"><div class="stat-label">Runs</div><div class="stat-value">64</div><div class="stat-sub">last 3h ago</div></div>
+          <div class="stat-tile"><div class="stat-label">Published</div><div class="stat-value success">3 / 4</div><div class="stat-sub">75 %</div></div>
+        </div>
+
+        <div>
+          <div class="section-heading">
+            <span class="title">Variants</span>
+            <span class="count">4 · 3 resolved</span>
+            <span class="spacer"></span>
+            <div class="bulk-actions">
+              <button class="btn btn-ghost btn-xs">Loop all</button>
+              <button class="btn btn-danger-ghost btn-xs">Clear all</button>
+            </div>
+          </div>
+          <div class="variant-list">
+            <div class="variant-row">
+              <div class="variant-left">
+                <div class="variant-swatch" style="background:#1a1a1a;"></div>
+                <div class="variant-name">Black</div>
+                <span class="chip chip-neutral">CLR</span>
+              </div>
+              <div class="variant-progress">confidence · <span class="ok">0.94</span></div>
+              <div class="chip chip-success">2024-03-14</div>
+              <div class="variant-actions">
+                <button class="btn btn-ghost btn-xs">Run</button>
+                <button class="btn btn-ghost btn-xs">Loop</button>
+                <button class="btn btn-icon" title="Clear">✕</button>
+              </div>
+            </div>
+            <div class="variant-row">
+              <div class="variant-left">
+                <div class="variant-swatch" style="background:#f8fafc;"></div>
+                <div class="variant-name">White</div>
+                <span class="chip chip-neutral">CLR</span>
+              </div>
+              <div class="variant-progress">confidence · <span class="ok">0.91</span></div>
+              <div class="chip chip-success">2024-03-14</div>
+              <div class="variant-actions">
+                <button class="btn btn-ghost btn-xs">Run</button>
+                <button class="btn btn-ghost btn-xs">Loop</button>
+                <button class="btn btn-icon" title="Clear">✕</button>
+              </div>
+            </div>
+            <div class="variant-row">
+              <div class="variant-left">
+                <div class="variant-swatch" style="background:#d1d5db;"></div>
+                <div class="variant-name">Light Gray</div>
+                <span class="chip chip-neutral">CLR</span>
+              </div>
+              <div class="variant-progress">confidence · <span class="ok">0.88</span></div>
+              <div class="chip chip-success">2024-06-03</div>
+              <div class="variant-actions">
+                <button class="btn btn-ghost btn-xs">Run</button>
+                <button class="btn btn-ghost btn-xs">Loop</button>
+                <button class="btn btn-icon" title="Clear">✕</button>
+              </div>
+            </div>
+            <div class="variant-row">
+              <div class="variant-left">
+                <div class="variant-swatch" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);"></div>
+                <div class="variant-name">Launch Edition</div>
+                <span class="chip chip-warning">ED</span>
+              </div>
+              <div class="variant-progress">attempts · <span class="warn">12</span></div>
+              <div class="chip chip-warning">UNK · rare release</div>
+              <div class="variant-actions">
+                <button class="btn btn-ghost btn-xs">Run</button>
+                <button class="btn btn-ghost btn-xs">Loop</button>
+                <button class="btn btn-icon" title="Clear">✕</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="how-card">
+          <h4>How It Works — release date discovery</h4>
+          <div class="how-steps">
+            <div class="how-step"><span class="num">01</span><span class="label">Per-variant query</span><span class="detail">LLM searches retail pages + press coverage for the release date of each variant.</span></div>
+            <div class="how-step"><span class="num">02</span><span class="label">Gracefully imprecise</span><span class="detail">Month-only or year-only answers are accepted; precision is kept alongside the date.</span></div>
+            <div class="how-step"><span class="num">03</span><span class="label">Loop if unknown</span><span class="detail">A Loop run keeps attempting until budget is spent or a value is found.</span></div>
+            <div class="how-step"><span class="num">04</span><span class="label">Publish</span><span class="detail">Resolved value projected into SQLite with precision flag.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─────────── SKU BODY ─────────── -->
+    <div class="panel-body" data-panel="sku">
+      <div class="fp-head">
+        <div class="ft-icon sku">⌗</div>
+        <div>
+          <div class="fp-title">SKU</div>
+          <div class="fp-blurb">Scalar per-variant — manufacturer SKU code per color and edition.</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="actions">
+          <span class="model-badge">gpt-5.4-mini · high</span>
+          <button class="btn btn-ghost btn-sm">Loop</button>
+          <button class="btn btn-ghost">Re-run All</button>
+        </div>
+      </div>
+      <div class="inner-tabs">
+        <button class="inner-tab active">Overview</button>
+        <button class="inner-tab">Variants <span class="count">4</span></button>
+        <button class="inner-tab">Run History <span class="count">30</span></button>
+        <button class="inner-tab">How It Works</button>
+      </div>
+      <div class="fp-body">
+        <div class="stat-row">
+          <div class="stat-tile"><div class="stat-label">SKUs</div><div class="stat-value success">4 / 4</div><div class="stat-sub">all variants</div></div>
+          <div class="stat-tile"><div class="stat-label">Variants</div><div class="stat-value">4</div><div class="stat-sub">from CEF</div></div>
+          <div class="stat-tile"><div class="stat-label">Runs</div><div class="stat-value">30</div><div class="stat-sub">last 12m ago</div></div>
+          <div class="stat-tile"><div class="stat-label">Published</div><div class="stat-value success">4 / 4</div><div class="stat-sub">100 %</div></div>
+        </div>
+
+        <div>
+          <div class="section-heading">
+            <span class="title">Variants</span>
+            <span class="count">4 · all published</span>
+            <span class="spacer"></span>
+            <div class="bulk-actions">
+              <button class="btn btn-ghost btn-xs">Loop all</button>
+              <button class="btn btn-danger-ghost btn-xs">Clear all</button>
+            </div>
+          </div>
+          <div class="variant-list">
+            <div class="variant-row">
+              <div class="variant-left">
+                <div class="variant-swatch" style="background:#1a1a1a;"></div>
+                <div class="variant-name">Black</div>
+                <span class="chip chip-neutral">CLR</span>
+              </div>
+              <div class="variant-progress">confidence · <span class="ok">0.97</span></div>
+              <div class="chip chip-success mono">CH-9310100-NA</div>
+              <div class="variant-actions">
+                <button class="btn btn-ghost btn-xs">Run</button>
+                <button class="btn btn-ghost btn-xs">Loop</button>
+                <button class="btn btn-icon" title="Clear">✕</button>
+              </div>
+            </div>
+            <div class="variant-row">
+              <div class="variant-left">
+                <div class="variant-swatch" style="background:#f8fafc;"></div>
+                <div class="variant-name">White</div>
+                <span class="chip chip-neutral">CLR</span>
+              </div>
+              <div class="variant-progress">confidence · <span class="ok">0.95</span></div>
+              <div class="chip chip-success mono">CH-9310101-NA</div>
+              <div class="variant-actions">
+                <button class="btn btn-ghost btn-xs">Run</button>
+                <button class="btn btn-ghost btn-xs">Loop</button>
+                <button class="btn btn-icon" title="Clear">✕</button>
+              </div>
+            </div>
+            <div class="variant-row">
+              <div class="variant-left">
+                <div class="variant-swatch" style="background:#d1d5db;"></div>
+                <div class="variant-name">Light Gray</div>
+                <span class="chip chip-neutral">CLR</span>
+              </div>
+              <div class="variant-progress">confidence · <span class="ok">0.94</span></div>
+              <div class="chip chip-success mono">CH-9310102-NA</div>
+              <div class="variant-actions">
+                <button class="btn btn-ghost btn-xs">Run</button>
+                <button class="btn btn-ghost btn-xs">Loop</button>
+                <button class="btn btn-icon" title="Clear">✕</button>
+              </div>
+            </div>
+            <div class="variant-row">
+              <div class="variant-left">
+                <div class="variant-swatch" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);"></div>
+                <div class="variant-name">Launch Edition</div>
+                <span class="chip chip-warning">ED</span>
+              </div>
+              <div class="variant-progress">confidence · <span class="ok">0.89</span></div>
+              <div class="chip chip-success mono">CH-9310103-NA</div>
+              <div class="variant-actions">
+                <button class="btn btn-ghost btn-xs">Run</button>
+                <button class="btn btn-ghost btn-xs">Loop</button>
+                <button class="btn btn-icon" title="Clear">✕</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="how-card">
+          <h4>How It Works — SKU discovery</h4>
+          <div class="how-steps">
+            <div class="how-step"><span class="num">01</span><span class="label">Per-variant query</span><span class="detail">Mini model (gpt-5.4-mini) searches retail and manufacturer sources for the SKU.</span></div>
+            <div class="how-step"><span class="num">02</span><span class="label">Normalize</span><span class="detail">Strips regional suffixes if needed; preserves the canonical SKU.</span></div>
+            <div class="how-step"><span class="num">03</span><span class="label">Loop if missing</span><span class="detail">Loop keeps retrying rare/unlaunched variants.</span></div>
+            <div class="how-step"><span class="num">04</span><span class="label">Publish</span><span class="detail">Stored on the variant projection; consumed by Publisher.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Chip Legend -->
+  <div class="design-label"><span class="num">4</span>Chip Legend</div>
+  <div class="legend-card">
+    <div class="legend-item"><span class="legend-vis"><span class="chip chip-neutral">CLR</span></span><div class="legend-txt"><strong>Color variant</strong>a color axis entry from CEF.</div></div>
+    <div class="legend-item"><span class="legend-vis"><span class="chip chip-warning">ED</span></span><div class="legend-txt"><strong>Edition variant</strong>a special edition from CEF.</div></div>
+    <div class="legend-item"><span class="legend-vis"><span class="chip chip-info">VIEW</span></span><div class="legend-txt"><strong>Angle view run</strong>PIF search for a carousel angle image.</div></div>
+    <div class="legend-item"><span class="legend-vis"><span class="chip chip-info">HERO</span></span><div class="legend-txt"><strong>Hero shot run</strong>PIF search for a studio product shot.</div></div>
+    <div class="legend-item"><span class="legend-vis"><span class="chip chip-accent">EVAL</span></span><div class="legend-txt"><strong>Evaluation</strong>vision model ranks candidates and assigns slots.</div></div>
+    <div class="legend-item"><span class="legend-vis"><span class="chip chip-purple">LOOP</span></span><div class="legend-txt"><strong>Loop mode</strong>repeats Run until target hit or budget spent.</div></div>
+    <div class="legend-item"><span class="legend-vis"><span class="model-badge">gpt-5.4</span></span><div class="legend-txt"><strong>Model + effort</strong>LLM selected by Field Studio axes.</div></div>
+    <div class="legend-item"><span class="legend-vis"><span class="chip chip-danger">FB</span></span><div class="legend-txt"><strong>Fallback</strong>primary model failed; fallback was used.</div></div>
+  </div>
+
+</div>
+
+<script>
+// Switch finder tabs — updates which panel-body is active
+document.querySelectorAll('.finder-tab').forEach((tab) => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.finder-tab').forEach((t) => {
+      t.classList.toggle('active', t === tab);
+      if (t === tab) t.setAttribute('aria-selected', 'true');
+      else t.removeAttribute('aria-selected');
+    });
+    document.querySelectorAll('.panel-body').forEach((b) => {
+      b.classList.toggle('active', b.dataset.panel === target);
+    });
+  });
+});
+
+// Inner tabs are decorative — just swap the active class
+document.querySelectorAll('.inner-tabs').forEach((bar) => {
+  bar.querySelectorAll('.inner-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      bar.querySelectorAll('.inner-tab').forEach((t) => t.classList.remove('active'));
+      tab.classList.add('active');
+    });
+  });
+});
+</script>
+
+</body>
+</html>

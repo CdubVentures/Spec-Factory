@@ -67,20 +67,20 @@ function starterFieldDefinition({ group, fieldKey }) {
   const isScore = key === 'overall_score';
   const dataType = isScore ? 'number' : (isUrl ? 'url' : 'string');
   const outputShape = isList ? 'list' : 'scalar';
-  let requiredLevel = 'expected';
-  let availability = 'expected';
+  let requiredLevel = 'non_mandatory';
+  let availability = 'always';
   if (normalizedGroup === 'editorial') {
-    requiredLevel = 'editorial';
-    availability = 'editorial_only';
+    requiredLevel = 'non_mandatory';
+    availability = 'rare';
   } else if (normalizedGroup === 'commerce') {
-    requiredLevel = 'commerce';
+    requiredLevel = 'non_mandatory';
     availability = 'sometimes';
   } else if (normalizedGroup === 'media') {
-    requiredLevel = 'optional';
+    requiredLevel = 'non_mandatory';
     availability = 'sometimes';
   } else if (normalizedGroup === 'identity') {
-    requiredLevel = ['brand', 'model', 'category'].includes(key) ? 'required' : 'expected';
-    availability = 'expected';
+    requiredLevel = ['brand', 'model', 'category'].includes(key) ? 'mandatory' : 'non_mandatory';
+    availability = 'always';
   }
   return {
     group: normalizedGroup,
@@ -91,7 +91,6 @@ function starterFieldDefinition({ group, fieldKey }) {
     required_level: requiredLevel,
     availability,
     difficulty: 'easy',
-    effort: isScore ? 4 : 3,
     unknown_reason_default: normalizedGroup === 'editorial'
       ? 'editorial_not_generated'
       : 'not_found_after_search',
@@ -126,7 +125,6 @@ function starterFieldRows({ category, templateName }) {
     required_level: '',
     availability: '',
     difficulty: '',
-    effort: '',
     unknown_reason_default: '',
     description: `Add category-specific performance fields for '${category}'`
   });
@@ -139,7 +137,6 @@ function starterFieldRows({ category, templateName }) {
     required_level: '',
     availability: '',
     difficulty: '',
-    effort: '',
     unknown_reason_default: '',
     description: `Add category-specific feature fields for '${category}'`
   });

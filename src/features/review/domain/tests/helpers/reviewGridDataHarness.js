@@ -41,8 +41,8 @@ export async function seedCategoryArtifacts(helperRoot, category) {
     category,
     fields: {
       weight: {
-        required_level: 'required',
-        availability: 'expected',
+        required_level: 'mandatory',
+        availability: 'always',
         difficulty: 'easy',
         effort: 2,
         contract: { type: 'number', shape: 'scalar', unit: 'g' },
@@ -52,8 +52,8 @@ export async function seedCategoryArtifacts(helperRoot, category) {
         ui: { label: 'Weight', group: 'General', order: 9 }
       },
       dpi: {
-        required_level: 'required',
-        availability: 'expected',
+        required_level: 'mandatory',
+        availability: 'always',
         difficulty: 'medium',
         effort: 5,
         contract: { type: 'number', shape: 'scalar', unit: null },
@@ -63,7 +63,7 @@ export async function seedCategoryArtifacts(helperRoot, category) {
         ui: { label: 'DPI', group: '', order: 10 }
       },
       connection: {
-        required_level: 'expected',
+        required_level: 'non_mandatory',
         availability: 'sometimes',
         difficulty: 'easy',
         effort: 3,

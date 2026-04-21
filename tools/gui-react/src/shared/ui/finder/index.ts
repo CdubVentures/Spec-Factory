@@ -63,6 +63,8 @@ export { FinderDeleteConfirmModal } from './FinderDeleteConfirmModal.tsx';
 export { DiscoverySummaryBar } from './DiscoverySummaryBar.tsx';
 export { FinderRunModelBadge } from './FinderRunModelBadge.tsx';
 export { FinderRunPromptDetails } from './FinderRunPromptDetails.tsx';
+export { PromptPreviewView } from './PromptPreviewView.tsx';
+export { PromptPreviewModal } from './PromptPreviewModal.tsx';
 export { FinderRunTimestamp } from './FinderRunTimestamp.tsx';
 export { FinderSectionCard } from './FinderSectionCard.tsx';
 export { toneToValueClass } from './toneMappings.ts';

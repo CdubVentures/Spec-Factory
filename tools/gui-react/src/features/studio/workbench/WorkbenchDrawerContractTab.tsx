@@ -269,40 +269,21 @@ export function ContractTab({
           </select>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3">
         <div>
           <div className={`${labelCls} flex items-center`}><span>Difficulty<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.difficulty} /></span><B p="priority.difficulty" /></div>
           <select className={`${selectCls} w-full`} value={strN(rule, 'priority.difficulty', strN(rule, 'difficulty', 'easy'))} onChange={(e) => onUpdate('priority.difficulty', e.target.value)} disabled={disabled}>
             <option value="easy">easy</option>
             <option value="medium">medium</option>
             <option value="hard">hard</option>
-            <option value="instrumented">instrumented</option>
+            <option value="very_hard">very_hard</option>
           </select>
-        </div>
-        <div>
-          <div className={`${labelCls} flex items-center`}><span>Effort (1-10)<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.effort} /></span><B p="priority.effort" /></div>
-          <NumberStepper
-            className="w-full"
-            min={STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.min}
-            max={STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.max}
-            value={String(numN(rule, 'priority.effort', numN(rule, 'effort', 3)))}
-            ariaLabel="effort"
-            onChange={(next) => onUpdate(
-              'priority.effort',
-              parseBoundedIntInput(
-                next,
-                STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.min,
-                STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.max,
-                STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.fallback,
-              ),
-            )}
-          />
         </div>
       </div>
 
       <h4 className={SECTION_HEADING_CLASS}>Extraction Guidance</h4>
       {(() => {
-        const rl = strN(rule, 'priority.required_level', strN(rule, 'required_level', 'expected'));
+        const rl = strN(rule, 'priority.required_level', strN(rule, 'required_level', 'non_mandatory'));
         const diff = strN(rule, 'priority.difficulty', strN(rule, 'difficulty', 'easy'));
         const explicitNote = strN(rule, 'ai_assist.reasoning_note');
         const type = strN(rule, 'contract.data_type', strN(rule, 'data_type', 'string'));
@@ -318,7 +299,6 @@ export function ContractTab({
         const componentType = strN(rule, 'component.type', strN(rule, 'component_type'));
 
         const guidanceParts: string[] = [];
-        if (rl === 'identity') guidanceParts.push('Identity field - must exactly match the product.');
         if (componentType) {
           const ct = componentType || enumSource.replace('component_db.', '');
           guidanceParts.push(`Component ref (${ct}). Match to known names/aliases.`);
@@ -337,9 +317,9 @@ export function ContractTab({
         if (shape === 'list') guidanceParts.push('Multiple values - extract all distinct.');
         if (enumPolicy === 'closed' && enumSource) guidanceParts.push(`Closed enum - must match ${enumSource}.`);
         if (diff === 'hard') guidanceParts.push('Often inconsistent - prefer manufacturer spec sheets.');
-        else if (diff === 'instrumented') guidanceParts.push('Lab-measured - only from independent tests.');
+        else if (diff === 'very_hard') guidanceParts.push('Lab-measured or multi-source synthesis - prefer independent tests.');
         if (minRefs >= 2) guidanceParts.push(`Requires ${minRefs}+ independent refs.`);
-        if (rl === 'required' || rl === 'critical') guidanceParts.push('High-priority - blocked if unknown.');
+        if (rl === 'mandatory') guidanceParts.push('High-priority - blocked if unknown.');
         if (guidanceParts.length === 0) guidanceParts.push('Extract from most authoritative source.');
         const autoNote = guidanceParts.join(' ');
         const hasExplicit = explicitNote.length > 0;

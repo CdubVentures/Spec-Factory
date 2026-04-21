@@ -1,9 +1,3 @@
-import {
-  clampNumber,
-  parseBoundedIntInput,
-  parseOptionalPositiveIntInput,
-} from "./numericInputHelpers.ts";
-import { STUDIO_NUMERIC_KNOB_BOUNDS } from "./studioNumericKnobBounds.ts";
 import type {
   AiAssistConfig,
   ComponentSource,
@@ -20,10 +14,9 @@ import {
 } from "../../../registries/fieldRuleTaxonomy.ts";
 
 export const DEFAULT_PRIORITY_PROFILE: Required<PriorityProfile> = {
-  required_level: "expected",
-  availability: "expected",
+  required_level: "non_mandatory",
+  availability: "sometimes",
   difficulty: "medium",
-  effort: 3,
 };
 
 const LIST_FIELD_ALIASES: Record<string, string[]> = {
@@ -47,12 +40,6 @@ export function normalizePriorityProfile(
   const difficulty = String(
     input.difficulty || DEFAULT_PRIORITY_PROFILE.difficulty,
   );
-  const effort = parseBoundedIntInput(
-    input.effort,
-    STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.min,
-    STUDIO_NUMERIC_KNOB_BOUNDS.priorityEffort.max,
-    DEFAULT_PRIORITY_PROFILE.effort,
-  );
   return {
     required_level: (REQUIRED_LEVEL_OPTIONS as readonly string[]).includes(required_level)
       ? (required_level as Required<PriorityProfile>['required_level'])
@@ -63,7 +50,6 @@ export function normalizePriorityProfile(
     difficulty: (DIFFICULTY_OPTIONS as readonly string[]).includes(difficulty)
       ? (difficulty as Required<PriorityProfile>['difficulty'])
       : DEFAULT_PRIORITY_PROFILE.difficulty,
-    effort,
   };
 }
 
@@ -73,8 +59,7 @@ export function hasExplicitPriority(value: unknown): boolean {
   return (
     priority.required_level !== undefined ||
     priority.availability !== undefined ||
-    priority.difficulty !== undefined ||
-    priority.effort !== undefined
+    priority.difficulty !== undefined
   );
 }
 
@@ -106,7 +91,6 @@ export function resolveRulePriority(
     required_level: priority.required_level ?? rule?.required_level,
     availability: priority.availability ?? rule?.availability,
     difficulty: priority.difficulty ?? rule?.difficulty,
-    effort: priority.effort ?? rule?.effort,
   });
 }
 
@@ -126,11 +110,6 @@ function derivePriorityFromRuleKeys(
   const requiredLevels = priorities.map((priority) => priority.required_level);
   const availabilities = priorities.map((priority) => priority.availability);
   const difficulties = priorities.map((priority) => priority.difficulty);
-  const effort = Math.max(
-    ...priorities.map((priority) =>
-      Number(priority.effort || DEFAULT_PRIORITY_PROFILE.effort),
-    ),
-  );
 
   return normalizePriorityProfile({
     required_level: pickRankedToken(
@@ -148,7 +127,6 @@ function derivePriorityFromRuleKeys(
       DIFFICULTY_RANK,
       DEFAULT_PRIORITY_PROFILE.difficulty,
     ),
-    effort,
   });
 }
 

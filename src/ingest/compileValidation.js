@@ -114,7 +114,6 @@ export function buildCompileValidation({ fields, knownValues, enumLists, compone
     const resolvedRequiredLevel = normalizeToken(rule.required_level || priority.required_level || '');
     const resolvedAvailability = normalizeToken(rule.availability || priority.availability || '');
     const resolvedDifficulty = normalizeToken(rule.difficulty || priority.difficulty || '');
-    const resolvedEffort = asInt(rule.effort, asInt(priority.effort, 0));
     const resolvedEnumPolicy = normalizeToken(rule.enum_policy || enumObj.policy || 'open_prefer_known');
     // WHY: parse_template eliminated. Type+shape is the contract.
     const resolvedUnit = normalizeText(rule.unit || contract.unit || '');
@@ -180,18 +179,14 @@ export function buildCompileValidation({ fields, knownValues, enumLists, compone
     if (valueForm === 'list_of_objects' && resolvedShape !== 'list') {
       errors.push(`field ${fieldKey}: value_form=list_of_objects requires shape=list`);
     }
-    if (!['identity', 'required', 'critical', 'expected', 'optional', 'rare'].includes(resolvedRequiredLevel)) {
+    if (!['mandatory', 'non_mandatory'].includes(resolvedRequiredLevel)) {
       errors.push(`field ${fieldKey}: invalid required_level '${resolvedRequiredLevel || rule.required_level}'`);
     }
-    if (!['expected', 'sometimes', 'rare'].includes(resolvedAvailability)) {
+    if (!['always', 'sometimes', 'rare'].includes(resolvedAvailability)) {
       errors.push(`field ${fieldKey}: invalid availability '${resolvedAvailability || rule.availability}'`);
     }
-    if (!['easy', 'medium', 'hard'].includes(resolvedDifficulty)) {
+    if (!['easy', 'medium', 'hard', 'very_hard'].includes(resolvedDifficulty)) {
       errors.push(`field ${fieldKey}: invalid difficulty '${resolvedDifficulty || rule.difficulty}'`);
-    }
-    const effort = resolvedEffort;
-    if (effort < 1 || effort > 10) {
-      errors.push(`field ${fieldKey}: effort must be 1..10`);
     }
     if (!['open', 'open_prefer_known', 'closed', 'closed_with_curation'].includes(resolvedEnumPolicy)) {
       errors.push(`field ${fieldKey}: enum_policy must be open|open_prefer_known|closed|closed_with_curation`);
