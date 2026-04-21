@@ -418,7 +418,9 @@ function generateFinderPhaseSchemaRegistry() {
   // buildScalarFinderPromptTemplates. Import their default templates here so
   // the overlay loop can reference them by phaseUiId.
   const scalarFinders = FINDER_MODULES.filter(
-    (m) => m.moduleClass === 'variantFieldProducer' && m.defaultTemplateExport,
+    (m) =>
+      (m.moduleClass === 'variantFieldProducer' || m.moduleClass === 'productFieldProducer')
+      && m.defaultTemplateExport,
   );
   for (const m of scalarFinders) {
     const { featurePath, adapterModule } = deriveFinderPaths(m.id);
@@ -487,6 +489,7 @@ function deriveScopeLevel(moduleClass) {
   if (moduleClass === 'variantGenerator') return 'product';
   if (moduleClass === 'variantFieldProducer') return 'variant';
   if (moduleClass === 'variantArtifactProducer') return 'variant+mode';
+  if (moduleClass === 'productFieldProducer') return 'product';
   return '';
 }
 
@@ -538,6 +541,15 @@ function serializeSettingEntry(entry) {
   if (entry.allowed !== undefined) {
     parts.push(`allowed: [${entry.allowed.map(quote).join(', ')}] as const`);
   }
+  if (entry.optionLabels !== undefined) {
+    parts.push(`optionLabels: ${JSON.stringify(entry.optionLabels)}`);
+  }
+  if (entry.keys !== undefined) {
+    parts.push(`keys: [${entry.keys.map(quote).join(', ')}] as const`);
+  }
+  if (entry.keyLabels !== undefined) {
+    parts.push(`keyLabels: ${JSON.stringify(entry.keyLabels)}`);
+  }
   if (entry.uiLabel !== undefined) parts.push(`uiLabel: ${quote(entry.uiLabel)}`);
   if (entry.uiTip !== undefined) parts.push(`uiTip: ${quote(entry.uiTip)}`);
   if (entry.uiGroup !== undefined) parts.push(`uiGroup: ${quote(entry.uiGroup)}`);
@@ -559,15 +571,18 @@ function generateFinderSettingsRegistry() {
   lines.push('// Drives <FinderSettingsRenderer />. Each entry is a typed primitive (bool/int/float/string/enum),');
   lines.push('// optionally rendered via a named widget registered in the GUI widget registry.\n');
 
-  lines.push(`export type FinderSettingType = 'bool' | 'int' | 'float' | 'string' | 'enum';\n`);
+  lines.push(`export type FinderSettingType = 'bool' | 'int' | 'float' | 'string' | 'enum' | 'intMap';\n`);
 
   lines.push('export interface FinderSettingsEntry {');
   lines.push('  key: string;');
   lines.push('  type: FinderSettingType;');
-  lines.push('  default: boolean | number | string;');
+  lines.push('  default: boolean | number | string | Record<string, number>;');
   lines.push('  min?: number;');
   lines.push('  max?: number;');
   lines.push('  allowed?: readonly string[];');
+  lines.push('  optionLabels?: Record<string, string>;');
+  lines.push('  keys?: readonly string[];');
+  lines.push('  keyLabels?: Record<string, string>;');
   lines.push('  uiLabel?: string;');
   lines.push('  uiTip?: string;');
   lines.push('  uiGroup?: string;');

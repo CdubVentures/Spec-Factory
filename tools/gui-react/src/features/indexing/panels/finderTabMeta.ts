@@ -15,6 +15,7 @@ import { useCefTabSummary } from '../../color-edition-finder/tabSummary.ts';
 import { usePifTabSummary } from '../../product-image-finder/tabSummary.ts';
 import { useRdfTabSummary } from '../../release-date-finder/tabSummary.ts';
 import { useSkuTabSummary } from '../../sku-finder/tabSummary.ts';
+import { useKeyFinderTabSummary } from '../../key-finder/tabSummary.ts';
 import type { FinderTabSummary } from '../../../shared/ui/finder/tabSummary.ts';
 
 export type FinderPanelId = typeof FINDER_PANELS[number]['id'];
@@ -54,5 +55,11 @@ export const FINDER_TAB_META: Record<FinderPanelId, FinderTabMeta> = {
     iconClass: 'sku',
     shortName: 'SKU',
     useTabSummary: useSkuTabSummary,
+  },
+  keyFinder: {
+    icon: '⚙',
+    iconClass: 'key',
+    shortName: 'Key',
+    useTabSummary: useKeyFinderTabSummary,
   },
 };

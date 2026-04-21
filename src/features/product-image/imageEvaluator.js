@@ -7,6 +7,7 @@ import { resolvePromptTemplate } from '../../core/llm/resolvePromptTemplate.js';
 import { viewEvalResponseSchema, heroEvalResponseSchema } from './imageEvaluatorSchema.js';
 import { readProductImages, writeProductImages } from './productImageStore.js';
 import { matchVariant } from './variantMatch.js';
+import { resolveViewEvalPromptInputs } from './productImagePreviewPrompt.js';
 
 /* ── Thumbnail pipeline (Phase 1) ───────────────────────────────── */
 
@@ -328,12 +329,18 @@ export async function evaluateViewCandidates({
   const userText = lines.join('\n');
   const knownFilenames = new Set(filenames);
 
-  // WHY: Build system prompt text for eval history audit trail
-  const systemPrompt = buildViewEvalPrompt({
-    product, variantLabel, variantType, view,
-    viewDescription: '', candidateCount: imagePaths.length,
-    promptOverride, evalCriteria,
-  });
+  // WHY: Build system prompt text for eval history audit trail. Routed through
+  // resolveViewEvalPromptInputs so any new field in buildViewEvalPrompt flows
+  // through a single SSOT shared with the preview compiler.
+  const systemPrompt = buildViewEvalPrompt(resolveViewEvalPromptInputs({
+    product,
+    variant: { key: variantLabel, label: variantLabel, type: variantType },
+    view,
+    viewDescription: '',
+    candidates: filenames.map((filename) => ({ filename })),
+    evalPromptOverride: promptOverride,
+    evalCriteria,
+  }));
 
   const { result: response, usage } = await callLlm({
     product,

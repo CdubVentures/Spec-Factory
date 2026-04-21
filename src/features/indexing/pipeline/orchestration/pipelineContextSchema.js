@@ -152,6 +152,7 @@ export const pipelineContextAfterBootstrap = pipelineContextSeed.extend({
   enrichedLexicon: z.object({}).passthrough(),
   planningHints: z.object({}).passthrough(),
   queryExecutionHistory: z.object({}).passthrough(),
+  urlExecutionHistory: z.object({}).passthrough().optional().default({ urls: [] }),
 });
 
 // ---------------------------------------------------------------------------

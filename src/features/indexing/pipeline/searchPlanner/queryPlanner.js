@@ -50,6 +50,7 @@ function buildDeterministicFallback(queryRows) {
 export async function enhanceQueryRows({
   queryRows = [],
   queryHistory = [],
+  urlHistory = [],
   missingFields = [],
   identityLock = {},
   config = {},
@@ -77,6 +78,7 @@ export async function enhanceQueryRows({
       variant: String(identityLock.variant || ''),
     },
     query_history: toArray(queryHistory),
+    url_history: toArray(urlHistory),
     missing_fields: toArray(missingFields),
     rows: rows.map((row, i) => {
       const base = {

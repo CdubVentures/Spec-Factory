@@ -19,11 +19,13 @@ import {
   FinderSectionCard,
   FinderHowItWorks,
   DiscoveryHistoryButton,
+  PromptPreviewModal,
   useResolvedFinderModel,
   usePagination,
   PagerSizeSelector,
   PagerNavFooter,
 } from '../../../shared/ui/finder/index.ts';
+import { usePromptPreviewQuery } from '../../indexing/api/promptPreviewQueries.ts';
 import type { KpiCard, DeleteTarget } from '../../../shared/ui/finder/types.ts';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { usePersistedExpandMap } from '../../../stores/tabStore.ts';
@@ -69,9 +71,16 @@ interface ProductImageFinderPanelProps {
   category: string;
 }
 
+type PifPromptModalState = {
+  readonly variantKey: string;
+  readonly mode: 'view' | 'hero' | 'loop' | 'view-eval' | 'hero-eval';
+  readonly view?: string;
+};
+
 export function ProductImageFinderPanel({ productId, category }: ProductImageFinderPanelProps) {
   const [collapsed, toggleCollapsed] = usePersistedToggle(`indexing:pif:collapsed:${productId}`, true);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [activePromptModal, setActivePromptModal] = useState<PifPromptModalState | null>(null);
   const [lightboxImg, setLightboxImg] = useState<GalleryImage | null>(null);
   const [pifImageGroupExpand, togglePifImageGroupExpand, replacePifImageGroupExpand] = usePersistedExpandMap(`indexing:pif:imageGroups:${productId}`);
   const [pifRunExpand, togglePifRunExpand] = usePersistedExpandMap(`indexing:pif:runExpand:${productId}`);
@@ -101,6 +110,23 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
 
   // PIF data
   const { data: pifData, isLoading, isError } = useProductImageFinderQuery(category, productId);
+
+  const promptPreviewBody = useMemo(() => (
+    activePromptModal
+      ? {
+          variant_key: activePromptModal.variantKey,
+          mode: activePromptModal.mode,
+          ...(activePromptModal.view ? { view: activePromptModal.view } : {}),
+        }
+      : {}
+  ), [activePromptModal]);
+  const promptPreviewQuery = usePromptPreviewQuery(
+    'pif',
+    category,
+    productId,
+    promptPreviewBody,
+    Boolean(activePromptModal),
+  );
 
   const deleteRunMut = useDeleteProductImageFinderRunMutation(category, productId);
   const deleteRunsBatchMut = useDeleteProductImageFinderRunsBatchMutation(category, productId);
@@ -510,6 +536,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                     onRunHero={handleRunVariantHero}
                     onLoopVariant={handleLoopVariant}
                     onEvalVariant={handleEvalVariant}
+                    onOpenPromptModal={(variantKey, mode) => setActivePromptModal({ variantKey, mode })}
                     onOpenLightbox={handleOpenLightbox}
                     onDeleteImage={handleDeleteImage}
                     onDeleteVariantImages={handleDeleteVariantImages}
@@ -658,6 +685,15 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
           moduleLabel="PIF"
         />
       )}
+
+      <PromptPreviewModal
+        open={Boolean(activePromptModal)}
+        onClose={() => setActivePromptModal(null)}
+        query={promptPreviewQuery}
+        title={`PIF — ${activePromptModal?.mode ?? ''}`}
+        subtitle={activePromptModal ? `variant: ${activePromptModal.variantKey}` : undefined}
+        storageKeyPrefix={`indexing:pif:preview:${productId}:${activePromptModal?.variantKey ?? ''}:${activePromptModal?.mode ?? ''}`}
+      />
 
       {/* Lightbox overlay */}
       {lightboxImg && (

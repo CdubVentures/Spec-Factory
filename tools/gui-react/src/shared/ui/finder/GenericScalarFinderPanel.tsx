@@ -27,11 +27,14 @@ import { FinderSectionCard } from './FinderSectionCard.tsx';
 import { FinderHowItWorks, type HiwSection } from './FinderHowItWorks.tsx';
 import { FinderVariantRow } from './FinderVariantRow.tsx';
 import { FinderRunHistoryRow } from './FinderRunHistoryRow.tsx';
+import { ConfidenceRing } from './ConfidenceRing.tsx';
 import { FinderDiscoveryDetails, type DiscoverySection } from './FinderDiscoveryDetails.tsx';
 import { FinderRunPromptDetails } from './FinderRunPromptDetails.tsx';
 import { ColorSwatch } from './ColorSwatch.tsx';
 import { DiscoveryHistoryButton } from './DiscoveryHistoryButton.tsx';
 import { FinderEvidenceRow, type FinderEvidenceRowSource } from './FinderEvidenceRow.tsx';
+import { PromptDrawerChevron } from './PromptDrawerChevron.tsx';
+import { PromptPreviewModal } from './PromptPreviewModal.tsx';
 import { useResolvedFinderModel } from './useResolvedFinderModel.ts';
 import { useFinderColorHexMap } from './useFinderColorHexMap.ts';
 import { resolveVariantColorAtoms } from './finderSelectors.ts';
@@ -46,6 +49,8 @@ import { usePersistedExpandMap } from '../../../stores/tabStore.ts';
 import { useFireAndForget } from '../../../features/operations/hooks/useFireAndForget.ts';
 import { useIsModuleRunning, useRunningVariantKeys } from '../../../features/operations/hooks/useFinderOperations.ts';
 import { useColorEditionFinderQuery } from '../../../features/color-edition-finder/index.ts';
+import { usePromptPreviewQuery } from '../../../features/indexing/api/promptPreviewQueries.ts';
+import type { PromptPreviewFinder, PromptPreviewRequestBody } from '../../../features/indexing/api/promptPreviewTypes.ts';
 
 // ── Generic shapes (subset of every scalar finder's editorial schema) ──
 
@@ -134,7 +139,16 @@ export interface GenericScalarFinderPanelProps<
   readonly howItWorksSections: HiwSection[];
   readonly formatValue?: (value: string) => string;
   readonly renderEvidenceRow?: (source: FinderEvidenceRowSource, index: number) => ReactNode;
+  /** When set, mounts a per-variant prompt-preview chevron drawer with Run/Loop
+   *  actions and renders a single panel-level PromptPreviewModal. */
+  readonly previewFinder?: PromptPreviewFinder;
 }
+
+type ScalarPromptModalState = {
+  readonly variantKey: string;
+  readonly variantLabel: string;
+  readonly mode: 'run' | 'loop';
+};
 
 // ── Component ──
 
@@ -148,6 +162,7 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
   howItWorksSections,
   formatValue,
   renderEvidenceRow,
+  previewFinder,
 }: GenericScalarFinderPanelProps<TResult>) {
   const panelMeta = FINDER_PANELS.find((p) => p.id === finderId);
   if (!panelMeta) {
@@ -169,6 +184,20 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [variantExpand, toggleVariantExpand] = usePersistedExpandMap(`indexing:${moduleType}:variantExpand:${productId}`);
   const [runExpand, toggleRunExpand] = usePersistedExpandMap(`indexing:${moduleType}:runExpand:${productId}`);
+  const [activePromptModal, setActivePromptModal] = useState<ScalarPromptModalState | null>(null);
+
+  const promptPreviewBody: PromptPreviewRequestBody = useMemo(() => (
+    activePromptModal
+      ? { variant_key: activePromptModal.variantKey, mode: activePromptModal.mode }
+      : {}
+  ), [activePromptModal]);
+  const promptPreviewQuery = usePromptPreviewQuery(
+    previewFinder ?? 'rdf',
+    category,
+    productId,
+    promptPreviewBody,
+    Boolean(previewFinder) && Boolean(activePromptModal),
+  );
 
   const { data: cefData } = useColorEditionFinderQuery(category, productId);
   const { data: result = null, isLoading, isError } = useQuery(category, productId);
@@ -328,34 +357,49 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
                     expandable={Boolean(c)}
                     expanded={Boolean(variantExpand[row.variant_key])}
                     onToggle={() => toggleVariantExpand(row.variant_key)}
+                    secondary={
+                      hasValue ? (
+                        <span className="font-mono sf-text-primary">{valueDisplay}</span>
+                      ) : c?.unknown_reason ? (
+                        <span className="font-mono sf-status-text-warning italic">unknown</span>
+                      ) : (
+                        <span className="sf-text-muted italic">no value yet</span>
+                      )
+                    }
                     trailing={
                       <>
-                        {hasValue ? (
-                          <Chip label={valueDisplay} className="sf-chip-success font-mono" />
-                        ) : c?.unknown_reason ? (
-                          <Chip label="unk" className="sf-chip-warning font-mono" />
-                        ) : (
-                          <span className="text-[10px] sf-text-muted italic">no value</span>
-                        )}
-                        {c && c.confidence > 0 && (
-                          <span className="text-[9px] sf-text-muted font-mono whitespace-nowrap">
-                            {c.confidence}%
-                          </span>
-                        )}
+                        <ConfidenceRing
+                          confidence={c && c.confidence > 0 ? c.confidence / 100 : null}
+                        />
                         <div className="shrink-0 flex items-center gap-1">
                           <button
                             onClick={(e) => { e.stopPropagation(); handleRunVariant(row.variant_key); }}
-                            className="px-2 py-1 text-[9px] font-bold uppercase tracking-wide rounded sf-primary-button"
+                            className="inline-flex items-center justify-center h-7 px-2 text-[9px] font-bold uppercase tracking-wide rounded sf-primary-button"
                           >
                             Run
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleLoopVariant(row.variant_key); }}
                             disabled={isLooping}
-                            className="px-2 py-1 text-[9px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="inline-flex items-center justify-center h-7 px-2 text-[9px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             {isLooping ? <>Loop <AnimatedDots /></> : 'Loop'}
                           </button>
+                          {previewFinder && (
+                            <>
+                              <span className="inline-block h-5 w-px mx-0.5 bg-current opacity-20" aria-hidden />
+                              <PromptDrawerChevron
+                                storageKey={`indexing:${moduleType}:prompt-drawer:${productId}:${row.variant_key}`}
+                                openWidthClass="w-56"
+                                ariaLabel={`Prompt previews for ${row.variant_label}`}
+                                openTitle="Prompts:"
+                                actions={[
+                                  { label: 'Run',  onClick: () => setActivePromptModal({ variantKey: row.variant_key, variantLabel: row.variant_label, mode: 'run' }) },
+                                  { label: 'Loop', onClick: () => setActivePromptModal({ variantKey: row.variant_key, variantLabel: row.variant_label, mode: 'loop' }) },
+                                ]}
+                              />
+                            </>
+                          )}
                         </div>
                       </>
                     }
@@ -531,6 +575,17 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
             run: `This will delete run #${deleteTarget.runNumber ?? ''}. Per-variant candidate rows are removed from field_candidates and the field re-publishes from remaining sources.`,
             all: `This will delete all ${deleteTarget.count ?? 0} run(s) and every candidate from this ${moduleLabel} module. Touches the ${moduleLabel} tables, JSON, and field_candidates.`,
           }}
+        />
+      )}
+
+      {previewFinder && (
+        <PromptPreviewModal
+          open={Boolean(activePromptModal)}
+          onClose={() => setActivePromptModal(null)}
+          query={promptPreviewQuery}
+          title={`${moduleLabel} — ${activePromptModal?.mode === 'loop' ? 'Loop (iter 1)' : 'Run'}`}
+          subtitle={activePromptModal ? `variant: ${activePromptModal.variantLabel}` : undefined}
+          storageKeyPrefix={`indexing:${moduleType}:preview:${productId}:${activePromptModal?.variantKey ?? ''}:${activePromptModal?.mode ?? ''}`}
         />
       )}
     </div>

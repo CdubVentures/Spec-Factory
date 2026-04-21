@@ -22,6 +22,9 @@ export function flattenLlmPolicy(policy: LlmPolicy): Record<string, unknown> {
   // WHY: JSON-serialized fields for backward compat with children that read these.
   flat.llmPhaseOverridesJson = JSON.stringify(policy.phaseOverrides ?? {});
   flat.llmProviderRegistryJson = JSON.stringify(policy.providerRegistry ?? []);
+  flat.keyFinderTierSettingsJson = JSON.stringify(
+    (policy as unknown as { keyFinderTiers?: unknown }).keyFinderTiers ?? {},
+  );
   return flat;
 }
 
@@ -67,6 +70,15 @@ export function routeFlatKeyUpdate(
   const topLevelKey = FLAT_TOP_LEVEL[flatKey];
   if (topLevelKey) {
     return { topLevel: { [topLevelKey]: value } as Partial<LlmPolicy> };
+  }
+  // WHY: JSON-blob flat keys parse back into structured top-level policy fields.
+  if (flatKey === 'keyFinderTierSettingsJson') {
+    try {
+      const parsed = JSON.parse(String(value));
+      return { topLevel: { keyFinderTiers: parsed } as unknown as Partial<LlmPolicy> };
+    } catch {
+      return null;
+    }
   }
   return null;
 }

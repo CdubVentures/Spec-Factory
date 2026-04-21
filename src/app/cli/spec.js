@@ -76,6 +76,15 @@ function applyEnvOverrides(env) {
   };
 }
 
+// WHY: The GUI spawns this CLI with either RUNTIME_SETTINGS_SNAPSHOT set (snapshot
+// transport) or with an IPC channel (process.send available). Both are reliable
+// signals that we were launched by the GUI rather than invoked directly.
+function isGuiSpawnedChild(proc) {
+  if (proc?.env?.RUNTIME_SETTINGS_SNAPSHOT) return true;
+  if (typeof proc?.send === 'function') return true;
+  return false;
+}
+
 function buildConfig(args) {
   const overrides = {
     localInputRoot: args['local-input-root'] || undefined,
@@ -254,6 +263,21 @@ export async function executeCli(argv, { env = {}, stdout = process.stdout, stde
     loadDotEnvFile(args.env || '.env', {
       overrideExistingKeys: CLI_DOTENV_OVERRIDE_KEYS
     });
+
+    // WHY: indexlab is the GUI's subprocess engine, NOT a standalone user command.
+    // Direct invocation silently drifts from GUI behavior (different settings source,
+    // missing editor defaults) and produces misleading test data. Fence it here so
+    // the only supported invocation path is the GUI's Run IndexLab button, which
+    // sets RUNTIME_SETTINGS_SNAPSHOT (snapshot path) and/or spawns with IPC.
+    if (command === 'indexlab' && !isGuiSpawnedChild(process)) {
+      stderr.write(
+        '[cli] The indexlab command is only callable via the GUI\'s Run IndexLab button.\n' +
+        '[cli] Direct invocation is not supported — it drifts from GUI settings and produces misleading results.\n' +
+        '[cli] Start the GUI (npm run gui:start or gui:api + gui:dev), then click Run IndexLab.\n'
+      );
+      return { exitCode: 1, output: undefined };
+    }
+
     const config = buildConfig(args);
     const validation = validateConfig(config);
     for (const warning of validation.warnings) {

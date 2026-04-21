@@ -125,6 +125,7 @@ export function makeBootstrap(overrides = {}) {
     enrichedLexicon: {},
     planningHints: { missingRequiredFields: ['dpi'], missingCriticalFields: [] },
     queryExecutionHistory: { queries: [] },
+    urlExecutionHistory: { urls: [] },
     ...overrides,
   };
 }

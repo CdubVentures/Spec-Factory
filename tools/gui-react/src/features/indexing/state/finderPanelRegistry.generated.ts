@@ -55,4 +55,17 @@ export const FINDER_PANELS = [
     valueLabelPlural: 'SKUs',
     component: lazy(() => import('../../sku-finder/components/SkuFinderPanel.tsx').then(m => ({ default: m.SkuFinderPanel }))),
   },
+  {
+    id: 'keyFinder',
+    label: 'KF',
+    moduleClass: 'productFieldProducer',
+    scopeLevel: 'product',
+    routePrefix: 'key-finder',
+    moduleType: 'kf',
+    phase: 'keyFinder',
+    panelTitle: 'Key Finder',
+    panelTip: 'Universal per-key extractor. Tier model routing + budget scoring + opt-in bundling driven by compiled field rules.',
+    valueLabelPlural: 'Keys',
+    component: lazy(() => import('../../key-finder/components/KeyFinderPanel.tsx').then(m => ({ default: m.KeyFinderPanel }))),
+  },
 ] as const;

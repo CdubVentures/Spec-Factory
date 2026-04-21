@@ -19,6 +19,7 @@ import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsVal
 import { useRuntimeSettingsAuthority, type RuntimeEditorSaveStatus } from '../state/runtimeSettingsAuthority.ts';
 import type { NumberBound } from '../../../shared/registryDerivedSettingsMaps.ts';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
+import { TypedConfirmModal } from '../../../shared/ui/feedback/TypedConfirmModal.tsx';
 import { parseBoundedNumber, toRuntimeDraft } from '../state/RuntimeFlowDraftNormalization.ts';
 import {
   RUNTIME_SETTING_DEFAULTS,
@@ -34,8 +35,21 @@ import { api } from '../../../api/client.ts';
 import type { IndexingLlmConfigResponse as RuntimeSettingsLlmConfigResponse } from '../../indexing/types.ts';
 import type { RuntimeSettings } from '../state/runtimeSettingsAuthority.ts';
 import type { SettingsCategoryId } from '../state/SettingsCategoryRegistry.ts';
-import { SETTINGS_CATEGORY_KEYS } from '../state/SettingsCategoryRegistry.ts';
+import { SETTINGS_CATEGORY_KEYS, findCategory } from '../state/SettingsCategoryRegistry.ts';
 import { CategoryPanel } from './CategoryPanel.tsx';
+import {
+  buildPipelineSectionResetPayload,
+  isPipelineSectionResettable,
+} from '../state/pipelineResetScope.ts';
+import {
+  buildModuleSettingsResetPayload,
+  findModuleIdForSection,
+} from '../state/moduleSettingsResetScope.ts';
+import { useModuleSettingsAuthority } from '../state/moduleSettingsAuthority.ts';
+import { MODULE_SETTINGS_SECTIONS } from '../state/moduleSettingsSections.generated.ts';
+
+const RESET_PANEL_PHRASE = 'RESET';
+const RESET_ALL_PHRASE = 'RESET ALL';
 
 const SourceStrategySection = lazy(async () => {
   const module = await import('../sections/PipelineSourceStrategySection.tsx');
@@ -51,8 +65,6 @@ const ModuleSettingsPanel = lazy(async () => {
   const module = await import('./ModuleSettingsPanel.tsx');
   return { default: module.ModuleSettingsPanel };
 });
-
-import { MODULE_SETTINGS_SECTIONS } from '../state/moduleSettingsSections.generated.ts';
 
 // WHY: Helper to test whether a section ID belongs to a runtime category panel.
 function isRuntimeCategorySection(id: PipelineSectionId): id is SettingsCategoryId {
@@ -117,13 +129,9 @@ export function PipelineSettingsPage() {
     runtimeManifestDefaults,
   }), [indexingLlmConfig, llmTokenContractPresetMax, llmTokenProfileLookup, runtimeManifestDefaults]);
 
-  function resetToDefaults() {
-    if (typeof window !== 'undefined') {
-      const confirmed = window.confirm(
-        'Reset all runtime settings to defaults? This overwrites current edits.',
-      );
-      if (!confirmed) return;
-    }
+  const [resetScope, setResetScope] = useState<'panel' | 'all' | null>(null);
+
+  const applyResetAll = useCallback(() => {
     const resetPayload = collectRuntimeFlowDraftPayload({
       nextRuntimeDraft: runtimeManifestDefaults,
       runtimeManifestDefaults,
@@ -131,7 +139,7 @@ export function PipelineSettingsPage() {
     });
     useRuntimeSettingsValueStore.getState().updateKeys(resetPayload as Partial<RuntimeSettings>);
     saveNow();
-  }
+  }, [runtimeManifestDefaults, resolveModelTokenDefaults, saveNow]);
 
   /* ── CategoryPanel change handlers — persist immediately on every change ── */
   const onBoolChange = useCallback((key: string, next: boolean) => {
@@ -166,6 +174,47 @@ export function PipelineSettingsPage() {
     'global',
     { validValues: PIPELINE_SECTION_IDS },
   );
+
+  const activeModuleId = useMemo(() => findModuleIdForSection(activeSection), [activeSection]);
+
+  const moduleSettingsAuthority = useModuleSettingsAuthority({
+    category: category ?? '',
+    moduleId: activeModuleId ?? '',
+  });
+
+  const activeSectionResettable = useMemo(() => {
+    if (isPipelineSectionResettable(activeSection)) return true;
+    return Boolean(activeModuleId) && Boolean(category);
+  }, [activeSection, activeModuleId, category]);
+
+  const activeSectionLabel = useMemo(() => {
+    if (isRuntimeCategorySection(activeSection)) {
+      return findCategory(activeSection)?.label ?? activeSection;
+    }
+    const moduleSection = MODULE_SETTINGS_SECTIONS.find((s) => s.id === activeSection);
+    if (moduleSection) return moduleSection.label;
+    return activeSection;
+  }, [activeSection]);
+
+  const applyResetActivePanel = useCallback(() => {
+    if (activeModuleId) {
+      const payload = buildModuleSettingsResetPayload(activeModuleId);
+      if (Object.keys(payload).length === 0) return;
+      moduleSettingsAuthority.saveSettings(payload);
+      return;
+    }
+    if (!isPipelineSectionResettable(activeSection)) return;
+    const payload = buildPipelineSectionResetPayload(activeSection, runtimeManifestDefaults);
+    if (Object.keys(payload).length === 0) return;
+    useRuntimeSettingsValueStore.getState().updateKeys(payload as Partial<RuntimeSettings>);
+    saveNow();
+  }, [activeSection, activeModuleId, moduleSettingsAuthority, runtimeManifestDefaults, saveNow]);
+
+  const onResetConfirm = useCallback(() => {
+    if (resetScope === 'panel') applyResetActivePanel();
+    else if (resetScope === 'all') applyResetAll();
+    setResetScope(null);
+  }, [resetScope, applyResetActivePanel, applyResetAll]);
 
   const {
     entries: sourceStrategyEntries,
@@ -250,45 +299,58 @@ export function PipelineSettingsPage() {
 
   const headerActions = (
     <>
-            {isRuntimeCategorySection(activeSection) ? (
-              <div className="flex flex-wrap items-center gap-2">
-                {runtimeSettingsSaving ? (
-                  <p className="sf-text-label font-semibold sf-status-text-info">
-                    Saving...
-                  </p>
-                ) : runtimeSaveStatus.kind === 'error' ? (
-                  <p className="sf-text-label font-semibold sf-status-text-danger">
-                    {runtimeSaveStatus.message}
-                  </p>
-                ) : null}
-                <button
-                  onClick={resetToDefaults}
-                  disabled={!runtimeSettingsReady || runtimeSettingsSaving}
-                  className="rounded sf-danger-button px-3 py-1.5 sf-text-label disabled:opacity-50"
-                  title="Reset all runtime settings to default values."
-                >
-                  Reset
-                </button>
-              </div>
-            ) : null}
-            {activeSection === 'source-strategy' ? (
-              <div className="flex items-center gap-2">
-                {sourceStrategyStatus ? (
-                  <span className={sourceStrategyStatus.className}>
-                    {sourceStrategyStatus.text}
-                  </span>
-                ) : null}
-                <button
-                    type="button"
-                    onClick={beginCreateSourceDraft}
-                    disabled={sourceStrategySaving}
-                    className="rounded sf-primary-button px-2.5 py-1 sf-text-label font-semibold transition-colors disabled:opacity-50"
-                  >
-                    Add Source
-                  </button>
-              </div>
-            ) : null}
+      {isRuntimeCategorySection(activeSection) && (runtimeSettingsSaving || runtimeSaveStatus.kind === 'error') ? (
+        <div className="flex items-center gap-2">
+          {runtimeSettingsSaving ? (
+            <p className="sf-text-label font-semibold sf-status-text-info">Saving...</p>
+          ) : (
+            <p className="sf-text-label font-semibold sf-status-text-danger">{runtimeSaveStatus.message}</p>
+          )}
+        </div>
+      ) : null}
+      {activeSectionResettable ? (
+        <button
+          onClick={() => setResetScope('panel')}
+          disabled={!runtimeSettingsReady || runtimeSettingsSaving || moduleSettingsAuthority.isSaving}
+          className="sf-danger-button px-3 py-1.5 sf-text-label disabled:opacity-50"
+          title={`Reset the ${activeSectionLabel} panel to defaults.`}
+        >
+          Reset panel
+        </button>
+      ) : null}
+      {activeSection === 'source-strategy' ? (
+        <div className="flex items-center gap-2">
+          {sourceStrategyStatus ? (
+            <span className={sourceStrategyStatus.className}>
+              {sourceStrategyStatus.text}
+            </span>
+          ) : null}
+          <button
+            type="button"
+            onClick={beginCreateSourceDraft}
+            disabled={sourceStrategySaving}
+            className="rounded sf-primary-button px-2.5 py-1 sf-text-label font-semibold transition-colors disabled:opacity-50"
+          >
+            Add Source
+          </button>
+        </div>
+      ) : null}
     </>
+  );
+
+  const sidebarFooter = (
+    <div className="flex justify-start">
+      <button
+        type="button"
+        onClick={() => setResetScope('all')}
+        disabled={!runtimeSettingsReady || runtimeSettingsSaving}
+        className="rounded border px-2.5 py-1 sf-text-caption disabled:opacity-40 hover:bg-black/5"
+        style={{ color: 'var(--sf-muted)', borderColor: 'var(--sf-surface-border)' }}
+        title="Reset every runtime setting on this page to defaults."
+      >
+        Reset all
+      </button>
+    </div>
   );
 
   const activePanel = (
@@ -355,12 +417,28 @@ export function PipelineSettingsPage() {
   );
 
   return (
-    <PipelineSettingsPageShell
-      activeSection={activeSection}
-      onSelectSection={setActiveSection}
-      headerActions={headerActions}
-      activePanel={activePanel}
-      category={category}
-    />
+    <>
+      <PipelineSettingsPageShell
+        activeSection={activeSection}
+        onSelectSection={setActiveSection}
+        headerActions={headerActions}
+        activePanel={activePanel}
+        category={category}
+        sidebarFooter={sidebarFooter}
+      />
+      <TypedConfirmModal
+        open={resetScope !== null}
+        title={resetScope === 'all' ? 'Reset all runtime settings?' : `Reset the ${activeSectionLabel} panel?`}
+        body={
+          resetScope === 'all'
+            ? 'This returns every runtime setting on this page to its default value.'
+            : `This returns the ${activeSectionLabel} panel to its default values. Other panels are untouched.`
+        }
+        confirmPhrase={resetScope === 'all' ? RESET_ALL_PHRASE : RESET_PANEL_PHRASE}
+        confirmLabel={resetScope === 'all' ? 'Reset all' : 'Reset panel'}
+        onConfirm={onResetConfirm}
+        onCancel={() => setResetScope(null)}
+      />
+    </>
   );
 }

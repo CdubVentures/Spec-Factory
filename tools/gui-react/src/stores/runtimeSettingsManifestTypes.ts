@@ -21,6 +21,8 @@ export interface RuntimeSettingDefaults {
   stealthEnabled: boolean;
   deepseekApiKey: string;
   searchProfileQueryCap: number;
+  discoveryUrlHistoryEnabled: boolean;
+  discoveryQueryHistoryEnabled: boolean;
   domainClassifierUrlCap: number;
   fetchDismissRounds: number;
   fetchLoadingDelayMs: number;
@@ -145,20 +147,7 @@ export interface RuntimeSettingDefaults {
   capturePageScreenshotStabilizeEnabled: boolean;
   capturePageScreenshotStabilizeTimeoutMs: number;
   capturePageScreenshotStitchEnabled: boolean;
-  keyFinderModelEasy: string;
-  keyFinderModelMedium: string;
-  keyFinderModelHard: string;
-  keyFinderModelVeryHard: string;
-  keyFinderModelFallback: string;
-  keyFinderBudgetRequiredPointsJson: string;
-  keyFinderBudgetAvailabilityPointsJson: string;
-  keyFinderBudgetDifficultyPointsJson: string;
-  keyFinderBudgetVariantPointsPerExtra: number;
-  keyFinderBudgetFloor: number;
-  keyFinderBundlingEnabled: boolean;
-  keyFinderBundlingPassengerCostJson: string;
-  keyFinderBundlingPoolPerPrimaryJson: string;
-  keyFinderPassengerDifficultyPolicy: string;
+  keyFinderTierSettingsJson: string;
 }
 
 export type RuntimeProfile = 'standard';

@@ -14,21 +14,35 @@ import {
   deriveLlmPolicyDefaults,
 } from '../../shared/settingsRegistryDerivations.js';
 
-// WHY: Zod enforces post-Phase-1 vocab at the trust boundary. Pre-Phase-1 tokens
-// (identity/critical/required/expected/optional for required_level;
-// expected/editorial_only for availability; instrumented for difficulty) are
-// rejected by .strict() — schemas demand the exact post-migration key sets.
-const POINT_INT = z.number().int().min(0);
-const KEY_FINDER_BUDGET_REQUIRED = z.object({ mandatory: POINT_INT, non_mandatory: POINT_INT }).strict();
-const KEY_FINDER_BUDGET_AVAILABILITY = z.object({ always: POINT_INT, sometimes: POINT_INT, rare: POINT_INT }).strict();
-const KEY_FINDER_BUDGET_DIFFICULTY = z.object({ easy: POINT_INT, medium: POINT_INT, hard: POINT_INT, very_hard: POINT_INT }).strict();
-const KEY_FINDER_TIER_TABLE = z.object({ easy: POINT_INT, medium: POINT_INT, hard: POINT_INT, very_hard: POINT_INT }).strict();
+// WHY: Per-key finder LLM tier bundle schema. 4 difficulty tiers + 1 fallback, each
+// the full 6-field BASE MODEL shape. Tiers with empty model inherit from fallback at
+// Phase 3 runtime. Budget/bundling/discovery-history knobs are NOT here — they live in
+// the finder module's settingsSchema (Pipeline Settings).
+const THINKING_EFFORT = z.enum(['', 'low', 'medium', 'high', 'xhigh']);
+const KEY_FINDER_TIER_BUNDLE = z.object({
+  model: z.string(),
+  useReasoning: z.boolean(),
+  reasoningModel: z.string(),
+  thinking: z.boolean(),
+  thinkingEffort: THINKING_EFFORT,
+  webSearch: z.boolean(),
+}).strict();
+const KEY_FINDER_TIERS = z.object({
+  easy: KEY_FINDER_TIER_BUNDLE,
+  medium: KEY_FINDER_TIER_BUNDLE,
+  hard: KEY_FINDER_TIER_BUNDLE,
+  very_hard: KEY_FINDER_TIER_BUNDLE,
+  fallback: KEY_FINDER_TIER_BUNDLE,
+}).strict();
 
-const KEY_FINDER_BUDGET_REQUIRED_DEFAULT = Object.freeze({ mandatory: 2, non_mandatory: 1 });
-const KEY_FINDER_BUDGET_AVAILABILITY_DEFAULT = Object.freeze({ always: 1, sometimes: 2, rare: 3 });
-const KEY_FINDER_BUDGET_DIFFICULTY_DEFAULT = Object.freeze({ easy: 1, medium: 2, hard: 3, very_hard: 4 });
-const KEY_FINDER_BUNDLING_PASSENGER_COST_DEFAULT = Object.freeze({ easy: 1, medium: 2, hard: 4, very_hard: 8 });
-const KEY_FINDER_BUNDLING_POOL_DEFAULT = Object.freeze({ easy: 6, medium: 4, hard: 2, very_hard: 1 });
+const EMPTY_TIER = Object.freeze({ model: '', useReasoning: false, reasoningModel: '', thinking: false, thinkingEffort: '', webSearch: false });
+const KEY_FINDER_TIERS_DEFAULT = Object.freeze({
+  easy: { ...EMPTY_TIER },
+  medium: { ...EMPTY_TIER },
+  hard: { ...EMPTY_TIER },
+  very_hard: { ...EMPTY_TIER },
+  fallback: { model: 'gpt-5.4', useReasoning: false, reasoningModel: '', thinking: true, thinkingEffort: 'xhigh', webSearch: true },
+});
 
 // WHY: Derived from policyGroup/policyField metadata in settingsRegistry.js.
 export const LLM_POLICY_GROUPS = deriveLlmPolicyGroupMap(RUNTIME_SETTINGS_REGISTRY);
@@ -70,36 +84,6 @@ function assembleGroup(source, groupMap, reader) {
   return result;
 }
 
-function assembleKeyFinder(source) {
-  const passengerPolicy = readString(source, 'keyFinderPassengerDifficultyPolicy');
-  return {
-    modelEasy: readString(source, 'keyFinderModelEasy'),
-    modelMedium: readString(source, 'keyFinderModelMedium'),
-    modelHard: readString(source, 'keyFinderModelHard'),
-    modelVeryHard: readString(source, 'keyFinderModelVeryHard'),
-    modelFallback: readString(source, 'keyFinderModelFallback'),
-    budgetFloor: readNumber(source, 'keyFinderBudgetFloor'),
-    variantPointsPerExtra: readNumber(source, 'keyFinderBudgetVariantPointsPerExtra'),
-    bundlingEnabled: readBool(source, 'keyFinderBundlingEnabled'),
-    passengerDifficultyPolicy: passengerPolicy || 'less_or_equal',
-    budgetRequired: KEY_FINDER_BUDGET_REQUIRED.parse(
-      safeJsonParse(source[JSON_KEYS.keyFinderBudgetRequired], { ...KEY_FINDER_BUDGET_REQUIRED_DEFAULT })
-    ),
-    budgetAvailability: KEY_FINDER_BUDGET_AVAILABILITY.parse(
-      safeJsonParse(source[JSON_KEYS.keyFinderBudgetAvailability], { ...KEY_FINDER_BUDGET_AVAILABILITY_DEFAULT })
-    ),
-    budgetDifficulty: KEY_FINDER_BUDGET_DIFFICULTY.parse(
-      safeJsonParse(source[JSON_KEYS.keyFinderBudgetDifficulty], { ...KEY_FINDER_BUDGET_DIFFICULTY_DEFAULT })
-    ),
-    bundlingPassengerCost: KEY_FINDER_TIER_TABLE.parse(
-      safeJsonParse(source[JSON_KEYS.keyFinderBundlingPassengerCost], { ...KEY_FINDER_BUNDLING_PASSENGER_COST_DEFAULT })
-    ),
-    bundlingPoolPerPrimary: KEY_FINDER_TIER_TABLE.parse(
-      safeJsonParse(source[JSON_KEYS.keyFinderBundlingPoolPerPrimary], { ...KEY_FINDER_BUNDLING_POOL_DEFAULT })
-    ),
-  };
-}
-
 /**
  * Convert flat config keys → structured LlmPolicy.
  * Safe for partial input — missing keys produce type-appropriate defaults.
@@ -116,9 +100,11 @@ export function assembleLlmPolicy(source = {}) {
     }),
     phaseOverrides: safeJsonParse(source[JSON_KEYS.phaseOverrides], {}),
     providerRegistry: safeJsonParse(source[JSON_KEYS.providerRegistry], []),
+    keyFinderTiers: KEY_FINDER_TIERS.parse(
+      safeJsonParse(source[JSON_KEYS.keyFinderTiers], { ...KEY_FINDER_TIERS_DEFAULT }),
+    ),
     budget: assembleGroup(source, LLM_POLICY_GROUPS.budget, readNumber),
     timeoutMs: readNumber(source, TOP_LEVEL_KEYS.timeoutMs),
-    keyFinder: assembleKeyFinder(source),
   };
 }
 
@@ -136,7 +122,6 @@ function disassembleGroup(policy, groupName, groupMap) {
  * Produces a plain object with exactly the keys in LLM_POLICY_FLAT_KEYS.
  */
 export function disassembleLlmPolicy(policy = {}) {
-  const kf = policy.keyFinder || {};
   return {
     ...disassembleGroup(policy, 'models', LLM_POLICY_GROUPS.models),
     ...disassembleGroup(policy, 'provider', LLM_POLICY_GROUPS.provider),
@@ -147,20 +132,7 @@ export function disassembleLlmPolicy(policy = {}) {
     [TOP_LEVEL_KEYS.timeoutMs]: policy.timeoutMs ?? 0,
     [JSON_KEYS.phaseOverrides]: JSON.stringify(policy.phaseOverrides ?? {}),
     [JSON_KEYS.providerRegistry]: JSON.stringify(policy.providerRegistry ?? []),
-    keyFinderModelEasy: kf.modelEasy ?? '',
-    keyFinderModelMedium: kf.modelMedium ?? '',
-    keyFinderModelHard: kf.modelHard ?? '',
-    keyFinderModelVeryHard: kf.modelVeryHard ?? '',
-    keyFinderModelFallback: kf.modelFallback ?? '',
-    keyFinderBudgetFloor: kf.budgetFloor ?? 3,
-    keyFinderBudgetVariantPointsPerExtra: kf.variantPointsPerExtra ?? 1,
-    keyFinderBundlingEnabled: kf.bundlingEnabled ?? false,
-    keyFinderPassengerDifficultyPolicy: kf.passengerDifficultyPolicy ?? 'less_or_equal',
-    [JSON_KEYS.keyFinderBudgetRequired]: JSON.stringify(kf.budgetRequired ?? { ...KEY_FINDER_BUDGET_REQUIRED_DEFAULT }),
-    [JSON_KEYS.keyFinderBudgetAvailability]: JSON.stringify(kf.budgetAvailability ?? { ...KEY_FINDER_BUDGET_AVAILABILITY_DEFAULT }),
-    [JSON_KEYS.keyFinderBudgetDifficulty]: JSON.stringify(kf.budgetDifficulty ?? { ...KEY_FINDER_BUDGET_DIFFICULTY_DEFAULT }),
-    [JSON_KEYS.keyFinderBundlingPassengerCost]: JSON.stringify(kf.bundlingPassengerCost ?? { ...KEY_FINDER_BUNDLING_PASSENGER_COST_DEFAULT }),
-    [JSON_KEYS.keyFinderBundlingPoolPerPrimary]: JSON.stringify(kf.bundlingPoolPerPrimary ?? { ...KEY_FINDER_BUNDLING_POOL_DEFAULT }),
+    [JSON_KEYS.keyFinderTiers]: JSON.stringify(policy.keyFinderTiers ?? { ...KEY_FINDER_TIERS_DEFAULT }),
   };
 }
 

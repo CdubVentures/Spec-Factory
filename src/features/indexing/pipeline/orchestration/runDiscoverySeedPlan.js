@@ -5,6 +5,7 @@
 import { normalizeFieldList } from '../../../../utils/fieldKeys.js';
 import { PIPELINE_PHASES } from './pipelinePhaseRegistry.js';
 import { validatePipelineCheckpoint } from './pipelineContextSchema.js';
+import { readIndexlabUrlHistory } from '../searchPlanner/indexlabUrlHistoryReader.js';
 
 function validateFunctionArg(name, value) {
   if (typeof value !== 'function') {
@@ -45,12 +46,20 @@ function buildInitialContext(params) {
   });
 
   const queryExecutionHistory = frontierDb?.buildQueryExecutionHistory?.(job?.productId) || { queries: [] };
+  // WHY: Product-scoped URL history for IndexLab — read from product.json::sources[].
+  // Parallel shape to queryExecutionHistory so runSearchPlanner can gate injection
+  // uniformly via discoveryUrlHistoryEnabled. Safe even when productRoot unset
+  // (the reader returns { urls: [] } on any I/O error).
+  const readUrlHistoryFn = params.readIndexlabUrlHistoryFn || readIndexlabUrlHistory;
+  const urlExecutionHistory = readUrlHistoryFn(job?.productId, {
+    productRoot: config.productRoot,
+  });
 
   return {
     config: discoveryConfig, storage, category, categoryConfig, job, runId, logger,
     roundContext, requiredFields, llmContext, frontierDb,
     planner, normalizeFieldListFn,
-    planningHints, queryExecutionHistory,
+    planningHints, queryExecutionHistory, urlExecutionHistory,
     // WHY: Auto-collects all function-valued params as DI overrides.
     // Phase descriptors read ctx._di?.keyName || defaultImport.
     // Adding a new injectable requires zero changes here.

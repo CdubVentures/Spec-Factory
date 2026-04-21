@@ -35,7 +35,6 @@ export declare const SETTINGS_OPTION_VALUES: {
     searchEnginesFallback: readonly string[];
     crawleeWaitUntil: readonly string[];
     overlayDismissalMode: readonly string[];
-    keyFinderPassengerDifficultyPolicy: readonly string[];
   }>;
   readonly storage: Readonly<Record<string, never>>;
 };

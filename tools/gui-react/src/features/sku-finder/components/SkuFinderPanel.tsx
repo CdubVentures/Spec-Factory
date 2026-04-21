@@ -21,6 +21,7 @@ export function SkuFinderPanel({ productId, category }: SkuFinderPanelProps) {
       useDeleteRunMutation={useDeleteSkuFinderRunMutation}
       useDeleteAllMutation={useDeleteSkuFinderAllMutation}
       howItWorksSections={skuHowItWorksSections}
+      previewFinder="sku"
     />
   );
 }

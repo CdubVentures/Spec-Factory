@@ -5,15 +5,18 @@
 // Drives <FinderSettingsRenderer />. Each entry is a typed primitive (bool/int/float/string/enum),
 // optionally rendered via a named widget registered in the GUI widget registry.
 
-export type FinderSettingType = 'bool' | 'int' | 'float' | 'string' | 'enum';
+export type FinderSettingType = 'bool' | 'int' | 'float' | 'string' | 'enum' | 'intMap';
 
 export interface FinderSettingsEntry {
   key: string;
   type: FinderSettingType;
-  default: boolean | number | string;
+  default: boolean | number | string | Record<string, number>;
   min?: number;
   max?: number;
   allowed?: readonly string[];
+  optionLabels?: Record<string, string>;
+  keys?: readonly string[];
+  keyLabels?: Record<string, string>;
   uiLabel?: string;
   uiTip?: string;
   uiGroup?: string;
@@ -26,7 +29,7 @@ export interface FinderSettingsEntry {
   widgetProps?: Record<string, unknown>;
 }
 
-export const FINDER_IDS_WITH_SETTINGS = ['colorEditionFinder', 'productImageFinder', 'releaseDateFinder', 'skuFinder'] as const;
+export const FINDER_IDS_WITH_SETTINGS = ['colorEditionFinder', 'productImageFinder', 'releaseDateFinder', 'skuFinder', 'keyFinder'] as const;
 export type FinderIdWithSettings = typeof FINDER_IDS_WITH_SETTINGS[number];
 
 export const FINDER_SETTINGS_REGISTRY: Record<FinderIdWithSettings, readonly FinderSettingsEntry[]> = {
@@ -109,5 +112,19 @@ export const FINDER_SETTINGS_REGISTRY: Record<FinderIdWithSettings, readonly Fin
     { key: 'reRunBudget', type: 'int', default: 1, min: 0, max: 5, uiLabel: 'Re-run Budget', uiTip: 'Extra LLM calls per variant when you click Loop again on an already-resolved variant. 0 = skip resolved variants entirely (no LLM call). 1+ = allow N more attempts to refine the MPN with new evidence. "Already-resolved" means the publisher has accepted a sku for that variant. Ignored on the first Loop.', uiGroup: 'Discovery' },
     { key: 'urlHistoryEnabled', type: 'bool', default: false, uiLabel: 'URL history', uiTip: 'When on, prior run URLs are injected into the prompt so the LLM can avoid re-crawling them. Variant-scoped for SKF. Off by default.', uiGroup: 'Discovery History' },
     { key: 'queryHistoryEnabled', type: 'bool', default: false, uiLabel: 'Query history', uiTip: 'When on, prior run search queries are injected into the prompt. Off by default — queries rot faster than URLs.', uiGroup: 'Discovery History' },
+  ],
+  'keyFinder': [
+    { key: 'discoveryPromptTemplate', type: 'string', default: "", allowEmpty: true, hidden: true },
+    { key: 'budgetRequiredPoints', type: 'intMap', default: {"mandatory":2,"non_mandatory":1}, min: 0, max: 20, keys: ['mandatory', 'non_mandatory'] as const, keyLabels: {"mandatory":"Mandatory","non_mandatory":"Non-mandatory"}, uiLabel: 'Required level points', uiTip: 'Points contributed by each required-level tier when computing a key’s attempt budget.', uiGroup: 'Budget Scoring' },
+    { key: 'budgetAvailabilityPoints', type: 'intMap', default: {"always":1,"sometimes":2,"rare":3}, min: 0, max: 20, keys: ['always', 'sometimes', 'rare'] as const, keyLabels: {"always":"Always","sometimes":"Sometimes","rare":"Rare"}, uiLabel: 'Availability points', uiTip: 'Points contributed by how often sources carry this field (rarer fields earn more retries).', uiGroup: 'Budget Scoring' },
+    { key: 'budgetDifficultyPoints', type: 'intMap', default: {"easy":1,"medium":2,"hard":3,"very_hard":4}, min: 0, max: 20, keys: ['easy', 'medium', 'hard', 'very_hard'] as const, keyLabels: {"easy":"Easy","medium":"Medium","hard":"Hard","very_hard":"Very hard"}, uiLabel: 'Difficulty points', uiTip: 'Points contributed by extraction difficulty (harder reasoning earns more attempts).', uiGroup: 'Budget Scoring' },
+    { key: 'budgetVariantPointsPerExtra', type: 'int', default: 1, min: 0, max: 10, uiLabel: 'Variant points per extra', uiTip: 'Points added for each variant beyond the first. Also scales bundling passenger cost.', uiGroup: 'Budget Scoring' },
+    { key: 'budgetFloor', type: 'int', default: 3, min: 1, max: 20, uiLabel: 'Budget floor', uiTip: 'Minimum per-key attempts, regardless of axis sum.', uiGroup: 'Budget Scoring' },
+    { key: 'bundlingEnabled', type: 'bool', default: false, uiLabel: 'Bundling', uiTip: 'Pack same-group passenger keys onto the primary call during Smart Loop. Off = single-key calls only.', uiGroup: 'Bundling' },
+    { key: 'bundlingPassengerCost', type: 'intMap', default: {"easy":1,"medium":2,"hard":4,"very_hard":8}, min: 0, max: 64, keys: ['easy', 'medium', 'hard', 'very_hard'] as const, keyLabels: {"easy":"Easy","medium":"Medium","hard":"Hard","very_hard":"Very hard"}, uiLabel: 'Passenger cost', uiTip: 'Point cost to carry a passenger of each difficulty (scaled by variant count).', uiGroup: 'Bundling' },
+    { key: 'bundlingPoolPerPrimary', type: 'intMap', default: {"easy":6,"medium":4,"hard":2,"very_hard":1}, min: 0, max: 32, keys: ['easy', 'medium', 'hard', 'very_hard'] as const, keyLabels: {"easy":"Easy primary","medium":"Medium primary","hard":"Hard primary","very_hard":"Very hard primary"}, uiLabel: 'Primary pool', uiTip: 'Passenger-point budget each primary can carry. Higher = more passengers allowed; 0 = solo only.', uiGroup: 'Bundling' },
+    { key: 'passengerDifficultyPolicy', type: 'enum', default: "less_or_equal", allowed: ['less_or_equal', 'same_only', 'any_but_very_hard', 'any_but_hard_very_hard'] as const, optionLabels: {"less_or_equal":"Same or easier than primary","same_only":"Same difficulty as primary","any_but_very_hard":"Any except very hard","any_but_hard_very_hard":"Any except hard and very hard"}, uiLabel: 'Passenger difficulty', uiTip: 'Which passenger difficulties are eligible to ride along with the primary key.', uiGroup: 'Bundling' },
+    { key: 'urlHistoryEnabled', type: 'bool', default: true, uiLabel: 'URL history', uiTip: 'Inject prior-run URLs per key so the LLM avoids re-crawling them. Per-key scope for keyFinder (different from RDF/SKU variant scope).', uiGroup: 'Discovery History' },
+    { key: 'queryHistoryEnabled', type: 'bool', default: true, uiLabel: 'Query history', uiTip: 'Inject prior-run search queries per key.', uiGroup: 'Discovery History' },
   ],
 };

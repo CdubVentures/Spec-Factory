@@ -52,7 +52,7 @@ function PromptPreviewTriggerButton({ onClick, disabled }: { readonly onClick: (
       type="button"
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       disabled={disabled}
-      className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed"
+      className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-prompt-preview-button"
       title="Preview the compiled prompt that Run Now would send"
     >
       Prompt

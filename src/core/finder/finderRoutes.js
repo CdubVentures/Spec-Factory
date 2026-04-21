@@ -330,8 +330,9 @@ export function createFinderRouteHandler(finderConfig) {
           return jsonRes(res, 200, envelope);
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
-          console.error(`[${routePrefix}] POST /preview-prompt failed:`, message);
-          return jsonRes(res, 500, { error: 'preview failed', message });
+          const statusCode = (err && typeof err === 'object' && Number.isInteger(err.statusCode)) ? err.statusCode : 500;
+          if (statusCode >= 500) console.error(`[${routePrefix}] POST /preview-prompt failed:`, message);
+          return jsonRes(res, statusCode, { error: 'preview failed', message });
         }
       }
 

@@ -26,6 +26,7 @@ export async function runQueryJourney({
   logger,
   storage,
   brandResolution,
+  queryExecutionHistory = null,
 }) {
   const profileQueryRowsByQuery = new Map(
     toArray(searchProfileBase?.query_rows).map((row) => {
@@ -69,7 +70,7 @@ export async function runQueryJourney({
     variables,
     variantGuardTerms: toArray(searchProfileBase?.variant_guard_terms),
   });
-  const selectedQueryRows = guardedQueries.rows.map((row) => ({
+  let selectedQueryRows = guardedQueries.rows.map((row) => ({
     ...row,
     hint_source: String(row?.hint_source || '').trim(),
   }));
@@ -90,11 +91,59 @@ export async function runQueryJourney({
     }
   }
 
+  // WHY: Cooldown read-gate (bug B10 fix). queryCooldownDays > 0 means the user
+  // wants same-query re-execution blocked within the window. We filter queries
+  // whose cooldown_until is still in the future. Starvation protection: if the
+  // filter would empty the queue entirely, keep all queries and log the event
+  // so the run doesn't break — otherwise the very first cooldown session would
+  // block every seed query and the pipeline would starve.
+  const cooldownDays = configInt(config, 'queryCooldownDays');
+  const cooldownRejects = [];
+  let cooldownGateStarved = false;
+  if (cooldownDays > 0 && queries.length > 0) {
+    const nowMs = Date.now();
+    const cooledSet = new Set();
+    for (const qc of toArray(queryExecutionHistory?.queries)) {
+      const untilMs = new Date(String(qc?.cooldown_until || '')).getTime();
+      if (Number.isFinite(untilMs) && untilMs > nowMs) {
+        cooledSet.add(String(qc?.query_text || '').trim().toLowerCase());
+      }
+    }
+    if (cooledSet.size > 0) {
+      const keptRows = [];
+      for (const row of selectedQueryRows) {
+        const q = String(row?.query || '').trim();
+        if (cooledSet.has(q.toLowerCase())) {
+          cooldownRejects.push({
+            query: q,
+            source: toArray(row?.sources),
+            reason: 'cooldown_active',
+            stage: 'pre_execution_cooldown',
+            detail: `cooldownDays:${cooldownDays}`,
+          });
+        } else {
+          keptRows.push(row);
+        }
+      }
+      if (keptRows.length === 0) {
+        // Starvation: don't break the run. Keep all queries, discard rejects, flag event.
+        // WHY: The event itself is dropped by the bridge whitelist — the observable
+        // signal is cooldown_gate_starved carried on query_journey_completed below.
+        cooldownGateStarved = true;
+        cooldownRejects.length = 0;
+      } else {
+        selectedQueryRows = keptRows;
+        queries = selectedQueryRows.map((row) => String(row?.query || '').trim()).filter(Boolean);
+      }
+    }
+  }
+
   const queryRejectLogCombined = [
     ...toArray(searchProfileBase?.query_reject_log),
     ...toArray(mergedQueries.rejectLog),
     ...toArray(capRejectLog),
     ...toArray(guardedQueries.rejectLog),
+    ...cooldownRejects,
   ];
 
   const executionQueryLimit = Math.min(queryLimit, queries.length);
@@ -148,6 +197,12 @@ export async function runQueryJourney({
     llm_enhanced_count: llmQueries.length,
     search_plan_query_count: llmQueries.length,
     rejected_count: queryRejectLogCombined.length,
+    // WHY: Cooldown gate (B10) visibility. cooldown_rejected_count is the number
+    // of queries that were skipped because their cooldown_until was still in the
+    // future. cooldown_gate_starved=true means ALL queries matched cooldowns and
+    // we kept them anyway (starvation protection — otherwise the run would break).
+    cooldown_rejected_count: cooldownRejects.length,
+    cooldown_gate_starved: cooldownGateStarved,
   });
 
   return {

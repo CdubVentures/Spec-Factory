@@ -10,6 +10,7 @@ import { useEffect } from 'react';
 import type { UseQueryResult } from '@tanstack/react-query';
 import { Spinner } from '../feedback/Spinner.tsx';
 import { PromptPreviewView } from './PromptPreviewView.tsx';
+import { PromptPreviewList } from './PromptPreviewList.tsx';
 import type { PromptPreviewResponse } from '../../../features/indexing/api/promptPreviewTypes.ts';
 
 interface PromptPreviewModalProps {
@@ -97,7 +98,7 @@ function PromptPreviewModalBody({
   }
 
   const data = query.data;
-  if (!data || data.prompts.length === 0) {
+  if (!data) {
     return (
       <div className="sf-text-caption sf-text-muted p-4 text-center">
         No prompt was compiled.
@@ -105,7 +106,26 @@ function PromptPreviewModalBody({
     );
   }
 
-  // Phase 1 — CEF has exactly one prompt. Phase 2's Loop/Eval will pass
-  // prompts.length > 1 and render sub-tabs here; PR-time we render the first.
-  return <PromptPreviewView prompt={data.prompts[0]} storageKeyPrefix={storageKeyPrefix} />;
+  if (data.prompts.length === 0) {
+    const notes = data.notes ?? [];
+    return (
+      <div className="sf-text-caption sf-text-muted p-4 text-center space-y-1">
+        {notes.length > 0
+          ? notes.map((n, i) => <p key={i}>{n}</p>)
+          : <p>No prompt was compiled.</p>}
+      </div>
+    );
+  }
+
+  if (data.prompts.length === 1) {
+    return <PromptPreviewView prompt={data.prompts[0]} storageKeyPrefix={storageKeyPrefix} />;
+  }
+
+  return (
+    <PromptPreviewList
+      prompts={data.prompts}
+      storageKeyPrefix={storageKeyPrefix}
+      tabPersistKey={`${storageKeyPrefix}:tab`}
+    />
+  );
 }

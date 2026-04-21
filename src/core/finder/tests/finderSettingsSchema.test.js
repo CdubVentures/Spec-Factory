@@ -110,6 +110,161 @@ describe('validateFinderSettingsSchema', () => {
       validateFinderSettingsSchema([{ key: 'x', type: 'string', default: '', widget: '' }]),
     );
   });
+
+  it('accepts enum entries with optionLabels mapping tokens to display strings', () => {
+    const parsed = validateFinderSettingsSchema([
+      {
+        key: 'policy',
+        type: 'enum',
+        default: 'less_or_equal',
+        allowed: ['less_or_equal', 'same_only'],
+        optionLabels: { less_or_equal: 'Same or easier', same_only: 'Same difficulty only' },
+      },
+    ]);
+    assert.deepEqual(parsed[0].optionLabels, {
+      less_or_equal: 'Same or easier',
+      same_only: 'Same difficulty only',
+    });
+  });
+
+  it('rejects enum optionLabels that reference tokens outside allowed', () => {
+    assert.throws(() =>
+      validateFinderSettingsSchema([
+        {
+          key: 'policy',
+          type: 'enum',
+          default: 'a',
+          allowed: ['a', 'b'],
+          optionLabels: { a: 'Ay', b: 'Bee', c: 'Cee' },
+        },
+      ]),
+    );
+  });
+
+  it('accepts a valid intMap entry with keys, keyLabels, and integer defaults', () => {
+    const parsed = validateFinderSettingsSchema([
+      {
+        key: 'difficultyPoints',
+        type: 'intMap',
+        keys: ['easy', 'medium', 'hard', 'very_hard'],
+        keyLabels: { easy: 'Easy', medium: 'Medium', hard: 'Hard', very_hard: 'Very hard' },
+        default: { easy: 1, medium: 2, hard: 3, very_hard: 4 },
+        min: 0,
+        max: 20,
+      },
+    ]);
+    assert.equal(parsed[0].type, 'intMap');
+    assert.deepEqual(parsed[0].keys, ['easy', 'medium', 'hard', 'very_hard']);
+    assert.deepEqual(parsed[0].default, { easy: 1, medium: 2, hard: 3, very_hard: 4 });
+  });
+
+  it('accepts intMap entries without min/max (unbounded)', () => {
+    const parsed = validateFinderSettingsSchema([
+      {
+        key: 'pool',
+        type: 'intMap',
+        keys: ['a', 'b'],
+        keyLabels: { a: 'A', b: 'B' },
+        default: { a: 10, b: 20 },
+      },
+    ]);
+    assert.equal(parsed[0].type, 'intMap');
+    assert.equal(parsed[0].min, undefined);
+  });
+
+  it('rejects intMap entries with an empty keys array', () => {
+    assert.throws(() =>
+      validateFinderSettingsSchema([
+        { key: 'x', type: 'intMap', keys: [], keyLabels: {}, default: {} },
+      ]),
+    );
+  });
+
+  it('rejects intMap entries where default is missing a declared key', () => {
+    assert.throws(() =>
+      validateFinderSettingsSchema([
+        {
+          key: 'x',
+          type: 'intMap',
+          keys: ['a', 'b'],
+          keyLabels: { a: 'A', b: 'B' },
+          default: { a: 1 },
+        },
+      ]),
+    );
+  });
+
+  it('rejects intMap entries where default has keys not declared in keys', () => {
+    assert.throws(() =>
+      validateFinderSettingsSchema([
+        {
+          key: 'x',
+          type: 'intMap',
+          keys: ['a'],
+          keyLabels: { a: 'A' },
+          default: { a: 1, b: 2 },
+        },
+      ]),
+    );
+  });
+
+  it('rejects intMap entries where keyLabels set differs from keys set', () => {
+    assert.throws(() =>
+      validateFinderSettingsSchema([
+        {
+          key: 'x',
+          type: 'intMap',
+          keys: ['a', 'b'],
+          keyLabels: { a: 'A' },
+          default: { a: 1, b: 2 },
+        },
+      ]),
+    );
+  });
+
+  it('rejects intMap entries with non-integer defaults', () => {
+    assert.throws(() =>
+      validateFinderSettingsSchema([
+        {
+          key: 'x',
+          type: 'intMap',
+          keys: ['a'],
+          keyLabels: { a: 'A' },
+          default: { a: 1.5 },
+        },
+      ]),
+    );
+  });
+
+  it('rejects intMap entries where a default value is below min', () => {
+    assert.throws(() =>
+      validateFinderSettingsSchema([
+        {
+          key: 'x',
+          type: 'intMap',
+          keys: ['a'],
+          keyLabels: { a: 'A' },
+          default: { a: -1 },
+          min: 0,
+        },
+      ]),
+    );
+  });
+
+  it('rejects intMap entries where a default value is above max', () => {
+    assert.throws(() =>
+      validateFinderSettingsSchema([
+        {
+          key: 'x',
+          type: 'intMap',
+          keys: ['a'],
+          keyLabels: { a: 'A' },
+          default: { a: 99 },
+          max: 10,
+        },
+      ]),
+    );
+  });
 });
 
 describe('deriveFinderSettingsDefaults', () => {
@@ -166,5 +321,34 @@ describe('deriveFinderSettingsDefaults', () => {
 
   it('throws on invalid schema (same validation as validateFinderSettingsSchema)', () => {
     assert.throws(() => deriveFinderSettingsDefaults([{ key: 'x' }]));
+  });
+
+  it('serializes intMap defaults to a JSON string keyed in declared order', () => {
+    const defaults = deriveFinderSettingsDefaults([
+      {
+        key: 'difficultyPoints',
+        type: 'intMap',
+        keys: ['easy', 'medium', 'hard', 'very_hard'],
+        keyLabels: { easy: 'Easy', medium: 'Medium', hard: 'Hard', very_hard: 'Very hard' },
+        default: { easy: 1, medium: 2, hard: 3, very_hard: 4 },
+      },
+    ]);
+    assert.equal(
+      defaults.difficultyPoints,
+      '{"easy":1,"medium":2,"hard":3,"very_hard":4}',
+    );
+  });
+
+  it('serializes intMap defaults in the order declared by keys, not the default object key order', () => {
+    const defaults = deriveFinderSettingsDefaults([
+      {
+        key: 'pool',
+        type: 'intMap',
+        keys: ['easy', 'hard', 'medium'],
+        keyLabels: { easy: 'E', hard: 'H', medium: 'M' },
+        default: { medium: 2, hard: 3, easy: 1 },
+      },
+    ]);
+    assert.equal(defaults.pool, '{"easy":1,"hard":3,"medium":2}');
   });
 });

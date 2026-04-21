@@ -10,6 +10,7 @@ interface LlmConfigPageShellProps {
   headerActions: ReactNode;
   activePanel: ReactNode;
   settingsScope?: 'default' | 'user';
+  sidebarFooter?: ReactNode;
 }
 
 const PHASE_ICON_PATHS: Record<string, ReactNode> = {
@@ -110,6 +111,7 @@ export function LlmConfigPageShell({
   headerActions,
   activePanel,
   settingsScope,
+  sidebarFooter,
 }: LlmConfigPageShellProps) {
   const scopeBadge = settingsScope ? (
     <span
@@ -139,6 +141,7 @@ export function LlmConfigPageShell({
       headerActions={headerActions}
       subtitleExtra={scopeBadge}
       groupLabels={LLM_PHASE_GROUP_LABELS}
+      sidebarFooter={sidebarFooter}
     >
       {activePanel}
     </SidebarShell>

@@ -12,7 +12,7 @@ import {
   type FinderSettingsEntry,
 } from '../finderSettingsRegistry.generated.ts';
 
-const ALLOWED_TYPES: ReadonlySet<string> = new Set(['bool', 'int', 'float', 'string', 'enum']);
+const ALLOWED_TYPES: ReadonlySet<string> = new Set(['bool', 'int', 'float', 'string', 'enum', 'intMap']);
 
 describe('finder settings registry contract', () => {
   it('every sidebar section has a corresponding entry in FINDER_SETTINGS_REGISTRY', () => {
@@ -48,6 +48,27 @@ describe('finder settings registry contract', () => {
             entry.allowed!.includes(entry.default as string),
             `enum default "${entry.default}" must be one of allowed (${moduleId}.${entry.key})`,
           );
+        }
+        if (entry.type === 'intMap') {
+          ok(
+            Array.isArray(entry.keys) && entry.keys.length > 0,
+            `intMap entry must declare keys (${moduleId}.${entry.key})`,
+          );
+          ok(
+            entry.keyLabels && typeof entry.keyLabels === 'object',
+            `intMap entry must declare keyLabels (${moduleId}.${entry.key})`,
+          );
+          ok(
+            entry.default && typeof entry.default === 'object',
+            `intMap default must be an object (${moduleId}.${entry.key})`,
+          );
+          const defaultKeys = new Set(Object.keys(entry.default as Record<string, number>));
+          for (const k of entry.keys!) {
+            ok(
+              defaultKeys.has(k),
+              `intMap default missing key "${k}" (${moduleId}.${entry.key})`,
+            );
+          }
         }
       }
     }

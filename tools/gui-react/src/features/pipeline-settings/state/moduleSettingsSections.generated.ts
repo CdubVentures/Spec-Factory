@@ -42,9 +42,18 @@ export const MODULE_SETTINGS_SECTIONS = [
     iconName: 'hash' as const,
     group: 'modules',
   },
+  {
+    id: 'module-kf' as const,
+    moduleId: 'keyFinder',
+    label: 'Key Finder',
+    subtitle: 'KF module settings',
+    tip: 'Per-category budget scoring, bundling, and discovery-history toggles for the universal Key Finder.',
+    iconName: 'key' as const,
+    group: 'modules',
+  },
 ] as const;
 
-export const MODULE_IDS = ['colorEditionFinder', 'productImageFinder', 'releaseDateFinder', 'skuFinder'] as const;
+export const MODULE_IDS = ['colorEditionFinder', 'productImageFinder', 'releaseDateFinder', 'skuFinder', 'keyFinder'] as const;
 export type ModuleSettingsModuleId = typeof MODULE_IDS[number];
 
 export type ModuleSettingsSectionId = typeof MODULE_SETTINGS_SECTIONS[number]['id'];

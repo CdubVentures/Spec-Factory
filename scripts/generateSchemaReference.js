@@ -31,13 +31,21 @@ const appSchema = fs.readFileSync(path.join(root, 'src/db/appDbSchema.js'), 'utf
 const migrationsSrc = fs.readFileSync(path.join(root, 'src/db/specDbMigrations.js'), 'utf8');
 
 // ── Parse CREATE TABLE blocks ──
-function parseTables(ddl) {
+// WHY: strip SQL line-comments before matching CREATE TABLE bodies. The body
+// regex below excludes ';' so a ';' inside a `-- comment` would truncate the
+// match and silently drop the whole table (real case: field_candidate_evidence).
+function stripSqlLineComments(ddl) {
+  return ddl.split(/\r?\n/).map((line) => line.replace(/--.*$/, '')).join('\n');
+}
+
+export function parseTables(ddl) {
   const tables = [];
+  const cleaned = stripSqlLineComments(ddl);
   // Match CREATE TABLE ending with ); or ) at end of template literal / string
   // Greedy body match ensures we capture through nested parens (datetime('now'))
   const re = /CREATE\s+(VIRTUAL\s+)?TABLE\s+IF\s+NOT\s+EXISTS\s+(\w+)\s*(?:USING\s+(\w+)\s*)?\(([^;`]+)\)\s*[;`]/gis;
   let m;
-  while ((m = re.exec(ddl)) !== null) {
+  while ((m = re.exec(cleaned)) !== null) {
     const isVirtual = !!m[1];
     const name = m[2];
     const engine = m[3] || null;
@@ -1109,6 +1117,7 @@ function buildTableUsageMap(tables) {
   );
 }
 
+function buildSchemaReferenceHtml() {
 const tableUsageMap = buildTableUsageMap(allTables);
 
 // ── HTML generators ──
@@ -1613,7 +1622,11 @@ filter?.addEventListener('input', () => {
 </body>
 </html>`;
 
+  return html;
+}
+
 export function writeSchemaReferenceFile() {
+  const html = buildSchemaReferenceHtml();
   const outPath = path.join(root, 'docs/data-structure-html/schema-reference.html');
   fs.writeFileSync(outPath, html, 'utf8');
   return {

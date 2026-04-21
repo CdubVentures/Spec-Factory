@@ -514,6 +514,13 @@ async function handleSearchPlanGenerated(state, deps, { ts, row }) {
     mode: String(row.mode || '').trim(),
     source: String(row.source || '').trim(),
     enhancement_rows: Array.isArray(row.enhancement_rows) ? row.enhancement_rows : [],
+    total_rows: asInt(row.total_rows, 0),
+    llm_enhanced_count: asInt(row.llm_enhanced_count, 0),
+    // WHY: novelty_rate / rotations_applied are the "is the LLM doing its job"
+    // signal produced by enforceNovelty. Pass through as-is so the GUI can show
+    // run-over-run novelty. Default novelty_rate=1 means no history was injected.
+    novelty_rate: typeof row.novelty_rate === 'number' ? row.novelty_rate : 1,
+    rotations_applied: asInt(row.rotations_applied, 0),
   }, ts);
   if (advanced) await writeRunMeta(state);
 }
@@ -536,6 +543,8 @@ async function handleQueryJourneyCompleted(state, deps, { ts, row }) {
     selected_queries: Array.isArray(row.selected_queries) ? row.selected_queries : [],
     search_plan_query_count: asInt(row.search_plan_query_count, 0),
     deterministic_query_count: asInt(row.deterministic_query_count, 0),
+    cooldown_rejected_count: asInt(row.cooldown_rejected_count, 0),
+    cooldown_gate_starved: Boolean(row.cooldown_gate_starved),
   }, ts);
   if (advanced) await writeRunMeta(state);
 }

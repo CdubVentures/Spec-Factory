@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Per-Key Finder — Next-Dev Onboarding</title>
+<style>
+  :root {
+    --bg: #f8f9fa; --surface: #fff; --surface-alt: #f1f3f5;
+    --border: #dee2e6; --border-light: #e9ecef;
+    --text: #212529; --text-muted: #6c757d;
+    --accent: #4263eb; --accent-light: #edf2ff;
+    --green: #2b8a3e; --green-bg: #ebfbee;
+    --red: #c92a2a; --red-bg: #fff5f5;
+    --orange: #e67700; --orange-bg: #fff9db;
+    --teal: #0c8599; --teal-bg: #e6fcf5;
+    --mono: 'SF Mono','Cascadia Code','Fira Code',Consolas,monospace;
+    --font: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:var(--font); color:var(--text); background:var(--bg); line-height:1.6; }
+  .header { background:linear-gradient(135deg,#4263eb,#7048e8); color:#fff; padding:36px 0; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,.08); }
+  .header h1 { font-size:28px; font-weight:700; letter-spacing:-.5px; }
+  .header p { font-size:14px; opacity:.92; margin-top:6px; }
+  .header .pill { display:inline-block; background:rgba(255,255,255,.2); padding:4px 12px; border-radius:99px; font-size:12px; font-weight:600; letter-spacing:.3px; margin-top:12px; }
+  .container { max-width:1200px; margin:0 auto; padding:28px 24px 72px; }
+  .toc { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px 22px; margin-bottom:28px; box-shadow:var(--shadow); }
+  .toc h3 { font-size:12px; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted); margin-bottom:10px; }
+  .toc ol { list-style:none; counter-reset:toc; display:grid; grid-template-columns:1fr 1fr; gap:4px 24px; }
+  .toc li { counter-increment:toc; font-size:14px; }
+  .toc li::before { content:counter(toc) ". "; color:var(--text-muted); font-weight:600; margin-right:4px; }
+  .toc a { color:var(--accent); text-decoration:none; }
+  .toc a:hover { text-decoration:underline; }
+  h2 { font-size:20px; font-weight:700; margin:40px 0 14px; padding-bottom:8px; border-bottom:2px solid var(--accent); display:flex; align-items:center; gap:10px; }
+  h2 .num { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:50%; background:var(--accent); color:#fff; font-size:14px; font-weight:700; }
+  h3 { font-size:15px; font-weight:700; margin:20px 0 8px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:14px; overflow:hidden; }
+  .card-header { padding:12px 18px; font-weight:600; font-size:14px; background:var(--surface-alt); border-bottom:1px solid var(--border-light); display:flex; align-items:center; gap:10px; }
+  .card-body { padding:16px 20px; font-size:14px; }
+  .card-body p { margin-bottom:8px; }
+  .card-body p:last-child { margin-bottom:0; }
+  .card-body ul, .card-body ol { margin-left:22px; margin-bottom:8px; }
+  .card-body li { margin-bottom:3px; }
+  .tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.3px; }
+  .tag-green { background:var(--green-bg); color:var(--green); }
+  .tag-orange { background:var(--orange-bg); color:var(--orange); }
+  .tag-red { background:var(--red-bg); color:var(--red); }
+  .tag-accent { background:var(--accent-light); color:var(--accent); }
+  .tag-teal { background:var(--teal-bg); color:var(--teal); }
+  .tag-muted { background:var(--surface-alt); color:var(--text-muted); }
+  table { width:100%; border-collapse:collapse; font-size:13px; margin-top:8px; }
+  th, td { padding:9px 12px; text-align:left; border-bottom:1px solid var(--border-light); vertical-align:top; }
+  th { background:var(--surface-alt); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); }
+  tr:last-child td { border-bottom:none; }
+  code { font-family:var(--mono); font-size:12px; background:var(--surface-alt); padding:1px 6px; border-radius:3px; color:var(--accent); }
+  pre { background:#1e1e2e; color:#cdd6f4; border-radius:6px; padding:14px 18px; font-family:var(--mono); font-size:12.5px; line-height:1.55; overflow-x:auto; margin:6px 0; }
+  pre .c { color:#6c7086; font-style:italic; }
+  pre .k { color:#cba6f7; }
+  pre .s { color:#a6e3a1; }
+  .callout { border-left:4px solid; padding:12px 16px; border-radius:0 var(--radius) var(--radius) 0; margin:10px 0; font-size:13.5px; }
+  .callout-warn { border-color:var(--orange); background:var(--orange-bg); }
+  .callout-red { border-color:var(--red); background:var(--red-bg); }
+  .callout-ok { border-color:var(--green); background:var(--green-bg); }
+  .callout-info { border-color:var(--accent); background:var(--accent-light); }
+  .callout strong { display:block; margin-bottom:4px; }
+  .kbd { font-family:var(--mono); font-size:11.5px; background:#272935; color:#cdd6f4; padding:2px 6px; border-radius:3px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Per-Key Finder — Next-Dev Onboarding</h1>
+  <p>Everything you should audit before you touch the orchestrator. ~30 min read.</p>
+  <span class="pill">Status as of 2026-04-20 · Phase 3a Part 1 shipped</span>
+</div>
+
+<div class="container">
+
+<div class="toc">
+  <h3>Contents</h3>
+  <ol>
+    <li><a href="#start">Start here (15-min boot)</a></li>
+    <li><a href="#locked">Locked design decisions — do not re-debate</a></li>
+    <li><a href="#shipped">What's already shipped</a></li>
+    <li><a href="#next">What Phase 3a Part 2 must build</a></li>
+    <li><a href="#audit">Audit list — files to read, grep, and test</a></li>
+    <li><a href="#pitfalls">Pitfalls that already broke the build</a></li>
+    <li><a href="#memory">Memory + reference docs</a></li>
+    <li><a href="#glossary">Quick file index</a></li>
+  </ol>
+</div>
+
+<!-- ───────────────────────── 1. START HERE ───────────────────────── -->
+<h2 id="start"><span class="num">1</span> Start here (15-min boot)</h2>
+
+<div class="card">
+  <div class="card-body">
+    <p><strong>Do these in order. Do not skip.</strong></p>
+    <ol>
+      <li>Read <code>CLAUDE.md</code> at the repo root. The STATE + CLASS declaration and Rebuild Contract are non-negotiable.</li>
+      <li>Read the full roadmap at <code>docs/implementation/key feature implemenation/per-key-finder-roadmap.html</code>. The §1 status table tells you what's shipped vs pending.</li>
+      <li>Skim every memory file listed in §7 below. They encode corrections from past sessions — you will repeat the same mistakes if you don't.</li>
+      <li>Run the baseline test suite:
+        <pre><span class="c">// from repo root</span>
+node --test src/core/llm/client/tests/resolvePhaseModelByTier.test.js
+node --test src/features/key/tests/
+<span class="c">// expect 28/28 pass</span></pre>
+      </li>
+      <li>Boot the server + GUI, open <strong>LLM Config → Key Finder</strong> (4 tier cards + fallback + Limits + LLM Call Contract), <strong>Pipeline Settings → Key Finder</strong> (budget + bundling + discovery-history knobs), <strong>Billing</strong> (4 cyan entries under "Key Finder" group — all zero until Phase 3a Part 2 ships).</li>
+      <li>Restart the API server before you touch anything — there was a stub-route signature bug that intercepted every API call. See §6.</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ───────────────────────── 2. LOCKED ───────────────────────── -->
+<h2 id="locked"><span class="num">2</span> Locked design decisions — do not re-debate</h2>
+
+<table>
+  <thead><tr><th style="width:30%">Decision</th><th>What it means</th></tr></thead>
+  <tbody>
+    <tr><td><strong>4 tiers + 1 fallback</strong></td><td>easy / medium / hard / very_hard + fallback. Empty tier inherits the <em>whole fallback bundle</em> (not per-field merge). Fallback default is <code>gpt-5.4</code> + xhigh + webSearch on.</td></tr>
+    <tr><td><strong>Run is per-key</strong></td><td>One button click = one <code>fieldKey</code> = one LLM call. The "run all keys by group" dashboard is Phase 4 — do not build it now.</td></tr>
+    <tr><td><strong>Loop is per-key</strong></td><td>Retries a single key up to <code>calcKeyBudget(...).attempts</code>. Smart Loop (group/header) is Phase 5+.</td></tr>
+    <tr><td><strong>Budget in Pipeline Settings, NOT LLM Config</strong></td><td>The 12 settingsSchema knobs (3 axis JSON tables + floor + variant weight + bundling toggle + 2 bundling tables + policy enum + 2 history toggles + hidden prompt template) live on the <code>keyFinder</code> finder module. LLM Config only carries the 5 tier bundles.</td></tr>
+    <tr><td><strong>Discovery history is per-key</strong></td><td>Scoped by <code>(product_id, field_key)</code>. If the URL+query history toggles are on and you click Run 11 times, the 11th call sees all 10 prior URL+query lists. No table change — every run record tags itself with <code>response.field_key</code>; the orchestrator passes a <code>runMatcher</code> to <code>accumulateDiscoveryLog</code>.</td></tr>
+    <tr><td><strong>CEF/PIF/RDF/SKU-owned keys are EXCLUDED</strong></td><td>color/edition, hero_image/product_image, release_date, sku — each has its own finder. Field-rule <code>eg_defaults</code> keys are also excluded. Keyfinder runs only on <em>everything else</em>.</td></tr>
+    <tr><td><strong>productFieldProducer, not variantFieldProducer</strong></td><td>keyFinder runs once per (product, field_key) — NOT per (product, variant_id, field_key). Per-variant divergence for connectivity-type fields is handled later via the manual override drawer (see memory <code>feedback_variant_dependent_override_shape</code>).</td></tr>
+    <tr><td><strong>Backend lives at <code>src/features/key/</code></strong></td><td>NOT <code>per-key-finder/</code>. <code>deriveFinderPaths</code> strips the <code>Finder</code> suffix from <code>id: 'keyFinder'</code>. Frontend panel is at <code>tools/gui-react/src/features/key-finder/</code> (panel path uses the full id).</td></tr>
+    <tr><td><strong>Billing is per-tier</strong></td><td>4 reasons under "Key Finder" group: <code>key_finding_easy / _medium / _hard / _very_hard</code>. Cyan palette lightest→darkest. Phase 3a Part 2 orchestrator tags each call with the right tier reason.</td></tr>
+    <tr><td><strong>Field-rule difficulty is 3-level today, 4-level target</strong></td><td>Studio still emits <code>easy|medium|hard</code>; <code>very_hard</code> is the Phase 1 target. Orchestrator must cascade unknown difficulty → fallback tier. Do NOT wait on Phase 1 — the cascade handles it.</td></tr>
+  </tbody>
+</table>
+
+<!-- ───────────────────────── 3. SHIPPED ───────────────────────── -->
+<h2 id="shipped"><span class="num">3</span> What's already shipped</h2>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-green">Phase 2</span> Config plumbing (2A + 2B) — shipped 2026-04-20</div>
+  <div class="card-body">
+    <p><strong>Phase 2A — LLM Config tier bundles:</strong></p>
+    <ul>
+      <li><code>src/core/config/llmPhaseDefs.js</code> — <code>keyFinder</code> phase entry with billing block (4 per-tier reasons now).</li>
+      <li><code>src/shared/settingsRegistry.js</code> — one JSON blob entry <code>keyFinderTierSettingsJson</code> (policyGroup <code>_json</code>).</li>
+      <li><code>src/core/llm/llmPolicySchema.js</code> — strict Zod schema <code>KEY_FINDER_TIERS</code> (5 bundles, each the 6-field BASE MODEL shape).</li>
+      <li><code>tools/gui-react/src/features/llm-config/state/llmPolicyAdapter.ts</code> — <strong>hand-wired</strong> flatten + route for the JSON blob. See Pitfall #2.</li>
+      <li><code>tools/gui-react/src/features/llm-config/sections/LlmKeyFinderSection.tsx</code> — custom panel (Limits + 4 tier cards + Fallback + LLM Call Contract).</li>
+    </ul>
+    <p><strong>Phase 2B — Pipeline Settings + module registration:</strong></p>
+    <ul>
+      <li>New <code>moduleClass: 'productFieldProducer'</code> on the <code>keyFinder</code> entry in <code>src/core/finder/finderModuleRegistry.js</code>; 12 settingsSchema knobs.</li>
+      <li>Feature stubs at <code>src/features/key/</code>: <code>keySchema.js</code>, <code>keyLlmAdapter.js</code>, <code>keyStore.js</code>, <code>api/keyFinderRoutes.js</code>, <code>index.js</code>.</li>
+      <li>Codegen-emitted frontend panels + sections: <code>billingCallTypeRegistry.generated.ts</code>, <code>finderPanelRegistry.generated.ts</code>, <code>moduleSettingsSections.generated.ts</code>, <code>phaseSchemaRegistry.generated.js</code>.</li>
+      <li>Frontend stubs: <code>tools/gui-react/src/features/key-finder/components/KeyFinderPanel.tsx</code>, <code>tabSummary.ts</code>.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-green">Phase 3a Part 1</span> Pure helpers + prompt composer — shipped 2026-04-20</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>File</th><th>Public API</th><th>Tests</th></tr></thead>
+      <tbody>
+        <tr><td><code>src/core/llm/client/routing.js</code></td><td><code>resolvePhaseModelByTier(policy, difficulty)</code></td><td><code>src/core/llm/client/tests/resolvePhaseModelByTier.test.js</code> (7)</td></tr>
+        <tr><td><code>src/features/key/keyBudgetCalc.js</code></td><td><code>calcKeyBudget({ fieldRule, variantCount, settings })</code></td><td><code>src/features/key/tests/keyBudgetCalc.test.js</code> (9)</td></tr>
+        <tr><td><code>src/features/key/keyLlmAdapter.js</code></td><td><code>KEY_FINDER_DEFAULT_TEMPLATE</code>, <code>buildKeyFinderPrompt</code>, <code>buildKeyFinderSpec</code>, <code>KEY_FINDER_SPEC</code>, <code>createKeyFinderCallLlm</code></td><td><code>src/features/key/tests/keyLlmAdapter.test.js</code> (12)</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:10px;"><strong>28/28 tests passing.</strong> All three helpers are inert until the orchestrator wires them.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-green">This session</span> Billing fixes</div>
+  <div class="card-body">
+    <ul>
+      <li>Billing tier split from 1 reason → 4 per-tier reasons under "Key Finder" group.</li>
+      <li>Palette changed to single-hue cyan ramp (easy → very_hard = <code>#66d9e8 → #22b8cf → #0c8599 → #0b7285</code>), matching convention of other groups (Pipeline indigo, Validation teal, Color Edition grape, Product Image orange).</li>
+      <li>Stub-route signature bug that took down the entire billing tab — see Pitfall #1.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ───────────────────────── 4. NEXT ───────────────────────── -->
+<h2 id="next"><span class="num">4</span> What Phase 3a Part 2 must build</h2>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-orange">NEXT</span> Orchestrator + routes + rebuild</div>
+  <div class="card-body">
+    <p>Pattern to follow: <strong>mirror RDF's shape, not its factory</strong>. RDF uses <code>registerScalarFinder</code> → <code>createVariantScalarFieldProducer</code>, which is variant-scoped. keyFinder is product-scoped, so you need a custom orchestrator. Structural template to study: <code>src/features/release-date/releaseDateFinder.js</code> (how it composes) + <code>src/core/finder/variantScalarFieldProducer.js</code> (what the factory does under the hood — lift the relevant pieces, drop the variant iteration).</p>
+
+    <h3>4.1 &nbsp; Files to create</h3>
+    <table>
+      <thead><tr><th>File</th><th>Responsibility</th></tr></thead>
+      <tbody>
+        <tr><td><code>src/features/key/keyFinder.js</code></td><td><code>runKeyFinder({ product, fieldKey, specDb, config, appDb, broadcastWs, signal, logger, category })</code>. See §4.3 for the step list.</td></tr>
+        <tr><td><code>src/features/key/tests/keyFinder.test.js</code></td><td>Characterization (mock LLM) covering: tier dispatch, prompt shape, discovery-log plumbing, candidate submission, run record shape.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>4.2 &nbsp; Files to replace</h3>
+    <table>
+      <thead><tr><th>File</th><th>What the Phase 2 stub does today</th><th>What Phase 3a Part 2 wires</th></tr></thead>
+      <tbody>
+        <tr><td><code>src/features/key/api/keyFinderRoutes.js</code></td><td>501 placeholder (correctly signed, thanks to this session's fix).</td><td>Custom handler — signature <code>(parts, params, method, req, res)</code>, returns <code>false</code> for non-<code>key-finder</code> prefixes. Accepts POST body <code>{ field_key, mode? }</code> where <code>mode ∈ {'run','loop'}</code>. Calls <code>runKeyFinder</code>.</td></tr>
+        <tr><td><code>src/features/key/keyStore.js</code></td><td>No-op <code>rebuildKeyFinderFromJson</code>.</td><td>Real rebuild — walk <code>.workspace/products/*/key_finder.json</code>, upsert <code>key_finder</code> summary + <code>key_finder_runs</code> rows. Rebuild Contract: SQL must be reconstructible from JSON alone.</td></tr>
+        <tr><td><code>src/features/key/keySchema.js</code></td><td>Baseline shape (field_key, value, confidence, evidence, discovery_log).</td><td>Extend: <code>unknown_reason</code> (required when value is "unk"), richer evidence entry ({url, supporting_evidence, evidence_kind, tier, confidence}). Match RDF's evidence_ref shape.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>4.3 &nbsp; runKeyFinder step list</h3>
+    <div class="callout callout-info">
+      <strong>Canonical order</strong>
+      <ol>
+        <li><code>FieldRulesEngine.create(category, { specDb })</code> → <code>engine.rules[fieldKey]</code>. Throw if missing.</li>
+        <li>Resolve policy via existing assembler, then <code>resolvePhaseModelByTier(policy, fieldRule.difficulty)</code> → tier bundle.</li>
+        <li><code>calcKeyBudget({ fieldRule, variantCount, settings })</code> — Run mode ignores <code>attempts</code> but the breakdown goes in run metadata for display + Phase 3b consumption.</li>
+        <li>Read previous runs via <code>keyStore.read(productId)</code>. Build discovery log via <code>accumulateDiscoveryLog(runs, { runMatcher: (r) =&gt; r.response?.field_key === fieldKey, includeUrls: keyFinderUrlHistoryEnabled, includeQueries: keyFinderQueryHistoryEnabled })</code>.</li>
+        <li><code>buildKeyFinderPrompt({ product, fieldKey, fieldRule, previousDiscovery, ambiguityLevel, familyModelCount, siblingsExcluded, templateOverride?: settings.discoveryPromptTemplate })</code>.</li>
+        <li><code>createKeyFinderCallLlm(deps, tier)({ product, fieldKey, variantCount })</code>. The SPEC emits <code>reason: key_finding_${tier}</code>, so billing rolls up automatically.</li>
+        <li><code>keyFinderResponseSchema.parse(result)</code> — reject malformed responses.</li>
+        <li>If value is defensible (not "unk"), call <code>submitCandidate</code> with the publisher metadata (mirror RDF at <code>releaseDateFinder.js</code>).</li>
+        <li>Append run record to JSON store + SQL via <code>keyStore.write</code>/<code>merge</code>. Tag: <code>{ field_key, tier, run_number, ran_at, response: { field_key, ..., discovery_log }, model, duration_ms }</code>.</li>
+        <li>Emit WS broadcast for live UI refresh.</li>
+      </ol>
+    </div>
+
+    <h3>4.4 &nbsp; Route contract</h3>
+    <pre><span class="c">// POST /api/v1/key-finder/:category/:productId</span>
+{ <span class="k">field_key</span>: <span class="s">"polling_rate"</span>, <span class="k">mode</span>: <span class="s">"run"</span> }    <span class="c">// mode defaults to "run"</span>
+
+<span class="c">// GET /api/v1/key-finder/:category/:productId?field_key=polling_rate</span>
+<span class="c">// Returns: { summary, runs[], candidates[], published? } — scoped by field_key</span>
+
+<span class="c">// DELETE /api/v1/key-finder/:category/:productId/runs/:runNumber?field_key=polling_rate</span></pre>
+
+    <div class="callout callout-warn">
+      <strong>Why a custom handler instead of <code>createFinderRouteHandler</code></strong>
+      The generic handler expects static <code>fieldKeys: ['release_date']</code>. keyFinder's <code>fieldKeys</code> are dynamic per request (from POST body). Either extend the generic handler to accept a dynamic field-key resolver (risky — touches RDF + SKU) or build a custom wrapper for keyFinder and refactor later. Do the custom wrapper.
+    </div>
+  </div>
+</div>
+
+<!-- ───────────────────────── 5. AUDIT ───────────────────────── -->
+<h2 id="audit"><span class="num">5</span> Audit list — files to read, grep, and test</h2>
+
+<div class="card">
+  <div class="card-header">Read these before writing a line of orchestrator code</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>File</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><code>src/features/release-date/releaseDateFinder.js</code></td><td>Structural template for the orchestrator.</td></tr>
+        <tr><td><code>src/features/release-date/releaseDateLlmAdapter.js</code></td><td>Shows how SPEC + createPhaseCallLlm compose. Mirror the mapArgs pattern.</td></tr>
+        <tr><td><code>src/features/release-date/api/releaseDateFinderRoutes.js</code></td><td>Route shape — but generic, not custom. Use for the GET/DELETE body shapes.</td></tr>
+        <tr><td><code>src/core/finder/finderRoutes.js</code></td><td><code>createFinderRouteHandler</code> — study what it owns (operations lifecycle, streaming, broadcast, cleanup). Your custom handler needs these too.</td></tr>
+        <tr><td><code>src/core/finder/discoveryLog.js</code></td><td><code>accumulateDiscoveryLog</code> + <code>buildPreviousDiscoveryBlock</code>. Note the <code>runMatcher</code> callback — your per-key filter goes here.</td></tr>
+        <tr><td><code>src/core/finder/finderModuleRegistry.js:491</code></td><td>keyFinder FINDER_MODULES entry. Read every settingsSchema knob — those are your runtime inputs.</td></tr>
+        <tr><td><code>src/core/config/llmPhaseDefs.js:86</code></td><td>keyFinder phase entry + 4 billing reasons.</td></tr>
+        <tr><td><code>src/features/key/*.js</code></td><td>Every file in the stub + helper set. Fully 600 LOC total. Read it.</td></tr>
+        <tr><td><code>src/engine/fieldRulesEngine.js</code></td><td>How <code>specDb.getCompiledRules()</code> → <code>engine.rules[fieldKey]</code> works.</td></tr>
+        <tr><td><code>src/core/finder/submitCandidate.js</code> (grep)</td><td>Publisher-gate entry point. Every accepted LLM response flows through this.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Grep patterns to run</div>
+  <div class="card-body">
+    <pre><span class="c">// Every keyFinder touchpoint across the repo</span>
+grep -rn <span class="s">"keyFinder\|key_finder\|key-finder"</span> src/ tools/gui-react/src/
+
+<span class="c">// Confirm billing reasons are wired through everywhere they need to be</span>
+grep -rn <span class="s">"key_finding_"</span> src/ tools/gui-react/src/
+
+<span class="c">// Find submitCandidate call sites — mirror in runKeyFinder</span>
+grep -rn <span class="s">"submitCandidate("</span> src/features/
+
+<span class="c">// How existing finders write to field_candidates</span>
+grep -rn <span class="s">"field_candidates\|fieldCandidates"</span> src/features/release-date/ src/features/sku/</pre>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Baseline tests — all must stay green</div>
+  <div class="card-body">
+    <pre><span class="c">// keyFinder-specific (28 tests)</span>
+node --test src/core/llm/client/tests/resolvePhaseModelByTier.test.js
+node --test src/features/key/tests/
+
+<span class="c">// Policy round-trip (keyFinderTierSettingsJson)</span>
+node --test src/core/llm/tests/llmPolicySchema.test.js
+
+<span class="c">// Billing registry drift guard</span>
+node --test tools/gui-react/src/features/billing/__tests__/billingCallTypeRegistry.test.ts
+
+<span class="c">// Finder-panel sync ward</span>
+node --test tools/gui-react/src/features/indexing/panels/__tests__/finderTabMeta.test.ts
+
+<span class="c">// Full suite — expect ≤ 4 pre-existing unrelated failures</span>
+node --test</pre>
+  </div>
+</div>
+
+<!-- ───────────────────────── 6. PITFALLS ───────────────────────── -->
+<h2 id="pitfalls"><span class="num">6</span> Pitfalls that already broke the build</h2>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-red">PITFALL #1</span> Stub route handler signature</div>
+  <div class="card-body">
+    <p><strong>Symptom:</strong> Billing tab shows nothing. Server log spams <code>[gui-server] API error: res.setHeader is not a function</code> on every request.</p>
+    <p><strong>Root cause:</strong> the Phase 2 stub <code>registerKeyFinderRoutes</code> had signature <code>(req, res)</code> and never returned <code>false</code>. The API dispatcher calls handlers with <code>(parts, params, method, req, res)</code> — so the stub received <code>parts</code> as <code>_req</code> and <code>params</code> (URLSearchParams) as <code>res</code>. It then tried to call <code>setHeader</code> on URLSearchParams and threw on every request, taking down billing, products, everything.</p>
+    <p><strong>Fix:</strong> finder route handlers MUST be:</p>
+    <pre><span class="k">export function</span> registerFooRoutes(ctx) {
+  <span class="k">const</span> { jsonRes } = ctx;
+  <span class="k">return async function</span> handleFooRoutes(parts, _params, _method, _req, res) {
+    <span class="k">if</span> (parts[0] !== <span class="s">'foo'</span>) <span class="k">return false</span>;  <span class="c">// critical — let other handlers run</span>
+    jsonRes(res, 200, { ... });
+  };
+}</pre>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-red">PITFALL #2</span> <code>llmPolicyAdapter.ts</code> is partially hand-wired</div>
+  <div class="card-body">
+    <p>Codegen at <code>tools/gui-react/scripts/generateLlmPolicyAdapter.js</code> auto-emits fields for <code>policyGroup: '_json'</code> entries. But the hand-written <code>llmPolicyAdapter.ts</code> has explicit hardcoded cases in <code>flattenLlmPolicy</code> and <code>routeFlatKeyUpdate</code> for each JSON blob (<code>llmPhaseOverridesJson</code>, <code>llmProviderRegistryJson</code>, <code>keyFinderTierSettingsJson</code>).</p>
+    <p><strong>If you add a new JSON-blob policyGroup entry</strong>, you must:</p>
+    <ol>
+      <li>Add the explicit flatten case: <code>flat.newKeyJson = JSON.stringify(policy.newKey ?? {});</code></li>
+      <li>Add the explicit route case: parses JSON back into <code>topLevel: { newKey: parsed }</code>.</li>
+      <li>Run all 3 codegen scripts.</li>
+    </ol>
+    <p>Tech debt — refactor to be fully codegen-driven when a 4th JSON blob lands.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-red">PITFALL #3</span> Difficulty vocab mismatch</div>
+  <div class="card-body">
+    <p>Studio emits <code>difficulty ∈ {easy, medium, hard}</code>. The tier bundles + billing + Zod schema support <code>{easy, medium, hard, very_hard}</code>. When Phase 1 hasn't migrated data to 4 levels, <code>field_rule.difficulty = 'very_hard'</code> will never appear — but the orchestrator must still handle unknown tokens gracefully.</p>
+    <p><strong>Fix:</strong> <code>resolvePhaseModelByTier</code> already cascades unknown → fallback. Don't add branching; trust the cascade.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-red">PITFALL #4</span> Register the field_key matcher on every run record</div>
+  <div class="card-body">
+    <p>Per-key discovery history depends on <code>run.response.field_key</code> being present on every recorded run. If the orchestrator forgets to stamp <code>field_key</code> into the response payload, the <code>runMatcher</code> silently matches zero runs and discovery history is a no-op — with no error.</p>
+    <p><strong>Fix:</strong> Schema already requires <code>field_key: z.string()</code>. Orchestrator must echo it into the saved run record, not just the LLM response.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-red">PITFALL #5</span> Do NOT revive the old 14-entry registry design</div>
+  <div class="card-body">
+    <p>Phase 2 went through one false start where 14 scalar registry entries were proposed (5 tier model scalars + 3 budget axes + floor + variant weight + bundling enable + 2 bundling tables + policy). User correction: tier bundles are ONE JSON blob, budget/bundling live in the FINDER_MODULES settingsSchema (Pipeline Settings), and LLM Config has exactly one "Key Finder" tab.</p>
+    <p>If a future refactor proposal has 14 registry entries for keyFinder, it's wrong. See memory <code>project_keyfinder_phase2_shipped</code> + roadmap §1.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-red">PITFALL #6</span> CEF / PIF / RDF / SKU-owned keys must be excluded</div>
+  <div class="card-body">
+    <p>Don't let the orchestrator attempt <code>release_date</code> (RDF owns), <code>sku</code> (SKF owns), colors/editions (CEF owns), or hero/product images (PIF owns). Keys with <code>eg_defaults</code> in field_rules are also excluded — they come from a different path.</p>
+    <p><strong>Fix:</strong> Denylist, not allowlist. Pull the list of reserved keys from the registered finders' <code>FINDER_MODULES[*].fieldKeys</code> arrays + a static eg_defaults filter.</p>
+  </div>
+</div>
+
+<!-- ───────────────────────── 7. MEMORY ───────────────────────── -->
+<h2 id="memory"><span class="num">7</span> Memory + reference docs</h2>
+
+<div class="card">
+  <div class="card-header">Must-read memory files (repo-private, persistent across sessions)</div>
+  <div class="card-body">
+    <p>Path: <code>C:\Users\Chris\.claude\projects\C--Users-Chris-Desktop-Spec-Factory\memory\</code></p>
+    <table>
+      <thead><tr><th>File</th><th>Why it matters for Phase 3</th></tr></thead>
+      <tbody>
+        <tr><td><code>project_keyfinder_phase2_shipped.md</code></td><td>Full map of what Phase 2 shipped. Read first.</td></tr>
+        <tr><td><code>project_keyfinder_run_modes.md</code></td><td>Run + Loop + (future) Group / Header Smart Loop. Cross-key satisfaction-skip deferred.</td></tr>
+        <tr><td><code>feedback_per_key_finder_axes.md</code></td><td>4-axis scoring, less_or_equal passenger policy — design spec.</td></tr>
+        <tr><td><code>feedback_field_axis_simplification.md</code></td><td>required_level=2, availability=3, difficulty=4 (effort removed).</td></tr>
+        <tr><td><code>feedback_keyfinder_per_key_discovery.md</code></td><td>Per-key scope is deliberate. Don't propose a global-per-product simplification.</td></tr>
+        <tr><td><code>feedback_scalar_finder_contract.md</code></td><td>Never hand-write <code>phaseSchemaRegistry.js</code> blocks — derive via <code>defaultTemplateExport</code>.</td></tr>
+        <tr><td><code>feedback_variant_dependent_override_shape.md</code></td><td>Per-variant divergence for keys is handled by manual override, NOT by the orchestrator.</td></tr>
+        <tr><td><code>feedback_override_bypasses_candidates.md</code></td><td>Manual overrides never touch field_candidates; orchestrator owns that path.</td></tr>
+        <tr><td><code>feedback_data_over_guards.md</code></td><td>Prefer imprecise data over no data (day → month → year graceful precision).</td></tr>
+        <tr><td><code>feedback_duplicate_urls_ok.md</code></td><td>Same URL across runs is fine if real. Don't over-dedupe.</td></tr>
+        <tr><td><code>feedback_test_indexlab_via_gui.md</code></td><td>Never call <code>indexlab</code> directly from CLI — it's fenced. Use the GUI's Run button.</td></tr>
+        <tr><td><code>reference_per_key_finder_roadmap.md</code></td><td>Pointer to the roadmap HTML next to this doc.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ───────────────────────── 8. GLOSSARY ───────────────────────── -->
+<h2 id="glossary"><span class="num">8</span> Quick file index</h2>
+
+<div class="card">
+  <div class="card-header">Backend — <code>src/</code></div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Path</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td><code>features/key/keyLlmAdapter.js</code></td><td>Prompt + SPEC + bound caller factory. <strong>Shipped.</strong></td></tr>
+        <tr><td><code>features/key/keyBudgetCalc.js</code></td><td>Pure budget calc. <strong>Shipped.</strong></td></tr>
+        <tr><td><code>features/key/keySchema.js</code></td><td>Zod response schema. Extend in 3a Part 2.</td></tr>
+        <tr><td><code>features/key/keyStore.js</code></td><td>JSON store wrapper + stub rebuild. Replace rebuild in 3a Part 2.</td></tr>
+        <tr><td><code>features/key/api/keyFinderRoutes.js</code></td><td>501 stub with correct signature. Replace in 3a Part 2.</td></tr>
+        <tr><td><code>features/key/keyFinder.js</code></td><td><strong>Does not exist yet.</strong> 3a Part 2 creates it.</td></tr>
+        <tr><td><code>core/llm/client/routing.js</code></td><td><code>resolvePhaseModelByTier</code>. <strong>Shipped.</strong></td></tr>
+        <tr><td><code>core/llm/llmPolicySchema.js</code></td><td>Zod <code>KEY_FINDER_TIERS</code> at trust boundary.</td></tr>
+        <tr><td><code>core/config/llmPhaseDefs.js</code></td><td>keyFinder phase + 4 billing reasons.</td></tr>
+        <tr><td><code>core/finder/finderModuleRegistry.js</code></td><td>keyFinder FINDER_MODULES entry (12 settingsSchema knobs).</td></tr>
+        <tr><td><code>core/finder/discoveryLog.js</code></td><td>Per-key URL+query accumulation via <code>runMatcher</code>.</td></tr>
+        <tr><td><code>shared/settingsRegistry.js</code></td><td><code>keyFinderTierSettingsJson</code> (one blob).</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Frontend — <code>tools/gui-react/src/</code></div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Path</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td><code>features/llm-config/sections/LlmKeyFinderSection.tsx</code></td><td>4 tier cards + Fallback + Limits + LLM Call Contract panel.</td></tr>
+        <tr><td><code>features/llm-config/state/llmPolicyAdapter.ts</code></td><td>Hand-wired flatten + route for keyFinderTierSettingsJson. See Pitfall #2.</td></tr>
+        <tr><td><code>features/key-finder/components/KeyFinderPanel.tsx</code></td><td>Placeholder — Phase 4 builds the real dashboard.</td></tr>
+        <tr><td><code>features/key-finder/tabSummary.ts</code></td><td>Idle stub — Phase 4 wires real KPIs.</td></tr>
+        <tr><td><code>features/indexing/panels/finderTabMeta.ts</code></td><td>keyFinder tab entry (glyph <code>⚙</code>, iconClass <code>key</code>).</td></tr>
+        <tr><td><code>features/billing/billingCallTypeRegistry.generated.ts</code></td><td>4 <code>key_finding_*</code> reasons under "Key Finder" group.</td></tr>
+        <tr><td><code>features/pipeline-settings/components/PipelineSettingsPageShell.tsx</code></td><td>Sidebar icon (SVG key lock + shaft) for the Key Finder section.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Codegen scripts (run in order after any phase-def / registry change)</div>
+  <div class="card-body">
+    <pre>node tools/gui-react/scripts/generateLlmPhaseRegistry.js
+node tools/gui-react/scripts/generateManifestTypes.js
+node tools/gui-react/scripts/generateLlmPolicyAdapter.js
+<span class="c">// Optional, but usually needed after finder-module changes:</span>
+node tools/gui-react/scripts/generateFinderTypes.js
+node tools/gui-react/scripts/generateFinderHooks.js</pre>
+  </div>
+</div>
+
+<div style="margin-top:40px; padding:20px; background:var(--accent-light); border-radius:var(--radius); border-left:4px solid var(--accent); font-size:14px;">
+  <strong style="display:block; margin-bottom:6px; color:var(--accent);">Final sanity check before you start coding Phase 3a Part 2</strong>
+  <ol style="margin-left:20px; margin-top:6px;">
+    <li>Server boots, API tab returns data, billing tab renders empty-but-working.</li>
+    <li><code>node --test src/features/key/tests/</code> → 21 pass.</li>
+    <li><code>node --test src/core/llm/client/tests/resolvePhaseModelByTier.test.js</code> → 7 pass.</li>
+    <li>GUI LLM Config → Key Finder panel loads and edits persist across reload.</li>
+    <li>GUI Pipeline Settings → Key Finder loads and edits persist.</li>
+    <li>You've read every file in §5 (the audit list) and can articulate how RDF's orchestrator flow maps to per-key.</li>
+    <li>You've read every memory file in §7.</li>
+  </ol>
+  If any of these fail, fix the underlying issue before proceeding — do not layer new work on broken plumbing.
+</div>
+
+</div> <!-- container -->
+</body>
+</html>

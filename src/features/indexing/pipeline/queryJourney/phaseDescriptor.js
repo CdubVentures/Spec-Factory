@@ -25,6 +25,7 @@ export const queryJourneyPhase = {
       logger: ctx.logger,
       storage: ctx.storage,
       brandResolution: ctx.brandResolution,
+      queryExecutionHistory: ctx.queryExecutionHistory,
     });
 
     // WHY: Emit search_queued events BEFORE Search Execution starts so the GUI

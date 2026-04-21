@@ -8,6 +8,7 @@
 import { createFinderRouteHandler } from '../../../core/finder/finderRoutes.js';
 import { FINDER_MODULE_MAP } from '../../../core/finder/finderModuleRegistry.js';
 import { runReleaseDateFinder, runReleaseDateFinderLoop } from '../releaseDateFinder.js';
+import { compileReleaseDateFinderPreviewPrompt } from '../releaseDateFinderPreviewPrompt.js';
 import {
   deleteReleaseDateFinderRun,
   deleteReleaseDateFinderRuns,
@@ -63,6 +64,7 @@ export function registerReleaseDateFinderRoutes(ctx) {
     candidateSourceType: FINDER_MODULE_MAP.releaseDateFinder.candidateSourceType,
     parseVariantKey: true,
     loop: { orchestrator: runReleaseDateFinderLoop },
+    preview: { compilePrompt: compileReleaseDateFinderPreviewPrompt },
     runFinder: runReleaseDateFinder,
     deleteRun: deleteReleaseDateFinderRun,
     deleteRuns: deleteReleaseDateFinderRuns,

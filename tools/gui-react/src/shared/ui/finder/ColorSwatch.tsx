@@ -4,7 +4,7 @@ import React from 'react';
 
 interface ColorSwatchProps {
   readonly hexParts: readonly string[];
-  readonly size?: 'sm' | 'md';
+  readonly size?: 'sm' | 'md' | 'tall';
 }
 
 export function colorCircleStyle(hexParts: readonly string[]): React.CSSProperties {
@@ -21,7 +21,7 @@ export function colorCircleStyle(hexParts: readonly string[]): React.CSSProperti
 }
 
 export function ColorSwatch({ hexParts, size = 'sm' }: ColorSwatchProps) {
-  const sizeClass = size === 'sm' ? 'w-3 h-3' : 'w-4 h-4';
+  const sizeClass = size === 'sm' ? 'w-3 h-3' : size === 'md' ? 'w-4 h-4' : 'w-8 h-8';
   return (
     <span
       className={`inline-block ${sizeClass} rounded-sm border sf-border-soft shadow-[0_0_0_0.5px_rgba(0,0,0,0.15)] shrink-0`}

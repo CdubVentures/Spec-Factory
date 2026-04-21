@@ -150,6 +150,13 @@ const FINDER_ICONS: Record<FinderIconName, ReactNode> = {
       <line x1="16" y1="3" x2="14" y2="21" />
     </>
   ),
+  key: (
+    <>
+      <circle cx="8" cy="15" r="4" />
+      <line x1="10.85" y1="12.15" x2="21" y2="2" />
+      <line x1="15.5" y1="6.5" x2="18.5" y2="9.5" />
+    </>
+  ),
 };
 
 export function SectionNavIcon({ id, active }: { id: PipelineSectionId; active: boolean }) {
@@ -274,6 +281,7 @@ interface PipelineSettingsPageShellProps {
   headerActions: ReactNode;
   activePanel: ReactNode;
   category?: string;
+  sidebarFooter?: ReactNode;
 }
 
 export function PipelineSettingsPageShell({
@@ -282,6 +290,7 @@ export function PipelineSettingsPageShell({
   headerActions,
   activePanel,
   category,
+  sidebarFooter,
 }: PipelineSettingsPageShellProps) {
   const items = useMemo(() =>
     PIPELINE_SECTIONS.map((s) =>
@@ -300,6 +309,7 @@ export function PipelineSettingsPageShell({
       renderIcon={(id, active) => <SectionNavIcon id={id} active={active} />}
       headerActions={headerActions}
       groupLabels={GROUP_LABELS}
+      sidebarFooter={sidebarFooter}
     >
       {activePanel}
     </SidebarShell>

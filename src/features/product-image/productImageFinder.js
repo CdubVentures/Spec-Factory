@@ -34,6 +34,7 @@ import {
   resolveViewBudget,
   CANONICAL_VIEW_KEYS,
 } from './productImageLlmAdapter.js';
+import { resolveViewPromptInputs, resolveHeroPromptInputs } from './productImagePreviewPrompt.js';
 import { accumulateDiscoveryLog } from '../../core/finder/discoveryLog.js';
 import { runPerVariant } from '../../core/finder/runPerVariant.js';
 import { evaluateCarousel } from './carouselStrategy.js';
@@ -752,10 +753,9 @@ export async function runProductImageFinder({
       }));
 
     const promptBuilder = mode === 'hero' ? buildHeroImageFinderPrompt : buildProductImageFinderPrompt;
-    const heroQuality = viewQualityMap.hero || {};
     const promptArgs = mode === 'hero'
-      ? { product, variantLabel: variant.label, variantType: variant.type, minWidth: heroQuality.minWidth || 600, minHeight: heroQuality.minHeight || 400, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: heroPromptOverride }
-      : { product, variantLabel: variant.label, variantType: variant.type, variantKey: variant.key, allVariants, priorityViews, additionalViews, minWidth, minHeight, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: viewPromptOverride };
+      ? resolveHeroPromptInputs({ product, variant, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, heroPromptOverride })
+      : resolveViewPromptInputs({ product, variant, allVariants, priorityViews, additionalViews, viewQualityMap, minWidth, minHeight, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, viewPromptOverride });
     const systemPrompt = promptBuilder(promptArgs);
     const userMsg = JSON.stringify({ brand: product.brand, model: product.model, base_model: product.base_model, variant: variant.key });
 
@@ -1109,10 +1109,9 @@ export async function runCarouselLoop({
 
     // Build prompt BEFORE call so operations modal shows it immediately
     const promptBuilder = callMode === 'hero' ? buildHeroImageFinderPrompt : buildProductImageFinderPrompt;
-    const heroQuality = viewQualityMap.hero || {};
     const promptArgs = callMode === 'hero'
-      ? { product, variantLabel: variant.label, variantType: variant.type, minWidth: heroQuality.minWidth || 600, minHeight: heroQuality.minHeight || 400, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: heroPromptOverride }
-      : { product, variantLabel: variant.label, variantType: variant.type, variantKey: variant.key, allVariants, priorityViews, additionalViews, minWidth, minHeight, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: viewPromptOverride };
+      ? resolveHeroPromptInputs({ product, variant, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, heroPromptOverride })
+      : resolveViewPromptInputs({ product, variant, allVariants, priorityViews, additionalViews, viewQualityMap, minWidth, minHeight, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, viewPromptOverride });
     const systemPrompt = promptBuilder(promptArgs);
     const userMsg = JSON.stringify({ brand: product.brand, model: product.model, base_model: product.base_model, variant: variant.key });
 

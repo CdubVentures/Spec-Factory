@@ -1483,6 +1483,45 @@ html[data-sf-theme-mode='dark'] .sf-custom-select-panel {
   background: var(--sf-state-success-fg);
 }
 
+/* WHY: Prompt-preview buttons (inside PromptDrawerChevron) carry the "Feature"
+   group color from the LLM config panel (discovery group = purple). The
+   distinct color differentiates pre-dispatch preview actions from regular
+   Run/Loop dispatch buttons. Applies to PIF, RDF, and SKU prompt drawers. */
+.sf-prompt-preview-button {
+  border: 1px solid rgb(168 85 247 / 0.55);
+  border-radius: var(--sf-radius-sm);
+  color: rgb(168 85 247);
+  background: transparent;
+}
+
+.sf-prompt-preview-button:hover {
+  background: rgb(168 85 247 / 0.12);
+}
+
+html[data-sf-theme-mode='dark'] .sf-prompt-preview-button {
+  color: rgb(216 180 254);
+  border-color: rgb(216 180 254 / 0.55);
+}
+
+html[data-sf-theme-mode='dark'] .sf-prompt-preview-button:hover {
+  background: rgb(168 85 247 / 0.18);
+}
+
+.sf-prompt-preview-button:disabled,
+.sf-prompt-preview-button:disabled:hover {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: transparent;
+}
+
+.sf-prompt-preview-label {
+  color: rgb(168 85 247);
+}
+
+html[data-sf-theme-mode='dark'] .sf-prompt-preview-label {
+  color: rgb(216 180 254);
+}
+
 .sf-success-button-solid:hover {
   filter: brightness(0.94);
 }

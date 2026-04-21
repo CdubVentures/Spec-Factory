@@ -25,6 +25,10 @@ import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 import { buildLlmCallDeps } from '../../core/llm/buildLlmCallDeps.js';
 import { buildBillingOnUsage } from '../../billing/costLedger.js';
 import { matchVariant } from './variantMatch.js';
+import {
+  resolveViewEvalPromptInputs,
+  resolveHeroEvalPromptInputs,
+} from './productImagePreviewPrompt.js';
 
 /**
  * Evaluate candidates for ONE view of ONE variant.
@@ -108,12 +112,21 @@ export async function runEvalView({
 
   const evalFn = _evalViewFn || evaluateViewCandidates;
   const viewLabel = `Evaluate ${view.charAt(0).toUpperCase() + view.slice(1)}`;
-  const preEvalPrompt = buildViewEvalPrompt({
-    product, variantLabel: viewImages[0]?.variant_label || variantKey,
-    variantType: viewImages[0]?.variant_type || 'color', view,
-    viewDescription, candidateCount: viewImages.length,
-    promptOverride: evalPromptOverride, evalCriteria,
-  });
+  const evalVariant = {
+    key: variantKey,
+    variant_id: variantId || null,
+    label: viewImages[0]?.variant_label || variantKey,
+    type: viewImages[0]?.variant_type || 'color',
+  };
+  const preEvalPrompt = buildViewEvalPrompt(resolveViewEvalPromptInputs({
+    product,
+    variant: evalVariant,
+    view,
+    viewDescription,
+    candidates: viewImages,
+    evalPromptOverride,
+    evalCriteria,
+  }));
   onLlmCallComplete?.({ prompt: { system: preEvalPrompt, user: `${view} view — ${viewImages.length} candidates` }, response: null, model: resolvedModelName, variant: variantKey, mode: 'view-eval', label: viewLabel });
   const result = await evalFn({
     imagePaths,
@@ -299,10 +312,20 @@ export async function runEvalHero({
   }
   const userText = lines.join('\n');
 
-  const heroSystemPrompt = buildHeroSelectionPrompt({
-    product, variantLabel, variantType, candidates,
-    promptOverride: heroPromptOverride, heroCriteria, heroCount,
-  });
+  const heroEvalVariant = {
+    key: variantKey,
+    variant_id: variantId || null,
+    label: variantLabel,
+    type: variantType,
+  };
+  const heroSystemPrompt = buildHeroSelectionPrompt(resolveHeroEvalPromptInputs({
+    product,
+    variant: heroEvalVariant,
+    candidates,
+    heroPromptOverride,
+    heroCriteria,
+    heroCount,
+  }));
   onLlmCallComplete?.({ prompt: { system: heroSystemPrompt, user: userText }, response: null, model: resolvedModelName, variant: variantKey, mode: 'hero-eval', label: 'Evaluate Hero' });
   const { result: heroResults, usage: heroUsage } = await heroCall({
     product,

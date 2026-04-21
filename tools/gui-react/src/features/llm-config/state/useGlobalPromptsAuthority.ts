@@ -21,6 +21,7 @@ interface UseGlobalPromptsAuthorityResult {
   readonly isSaving: boolean;
   readonly setOverride: (key: string, value: string) => void;
   readonly clearOverride: (key: string) => void;
+  readonly clearAll: () => void;
 }
 
 const EMPTY_SNAPSHOT: GlobalPromptsSnapshot = {
@@ -57,11 +58,20 @@ export function useGlobalPromptsAuthority(): UseGlobalPromptsAuthorityResult {
     mutation.mutate({ [key]: null });
   }, [mutation]);
 
+  const clearAll = useCallback(() => {
+    const keys = data?.keys ?? [];
+    if (keys.length === 0) return;
+    const patch: Record<string, null> = {};
+    for (const key of keys) patch[key] = null;
+    mutation.mutate(patch);
+  }, [mutation, data]);
+
   return {
     snapshot: data ?? EMPTY_SNAPSHOT,
     isLoading,
     isSaving: mutation.isPending,
     setOverride,
     clearOverride,
+    clearAll,
   };
 }

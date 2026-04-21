@@ -9,6 +9,7 @@ export type OperationType =
   | 'pif'
   | 'rdf'
   | 'skf'
+  | 'kf'
   | 'pipeline'
   | 'publisher-reconcile'
   | 'compile'
@@ -19,6 +20,7 @@ export const MODULE_STYLES: Readonly<Record<string, string>> = {
   'pif': 'sf-chip-info',
   'rdf': 'sf-chip-warning',
   'skf': 'sf-chip-success',
+  'kf': 'sf-chip-accent',
   'pipeline': 'sf-chip-info',
   'publisher-reconcile': 'sf-chip-success',
   'compile': 'sf-chip-success',
@@ -30,6 +32,7 @@ export const MODULE_LABELS: Readonly<Record<string, string>> = {
   'pif': 'PIF',
   'rdf': 'RDF',
   'skf': 'SKF',
+  'kf': 'KF',
   'pipeline': 'PL',
   'publisher-reconcile': 'PUB',
   'compile': 'CMP',

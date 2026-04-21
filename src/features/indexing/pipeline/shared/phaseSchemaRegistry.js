@@ -241,9 +241,9 @@ const IMAGE_FINDER_TEMPLATES = Object.freeze({
         { field: 'variant_type', description: '"color" or "edition"' },
       ] },
       { promptKey: 'hero', label: 'Hero Search Prompt', storageScope: 'module', moduleId: 'productImageFinder', settingKey: 'heroPromptOverride', defaultTemplate: PIF_HERO_DEFAULT_TEMPLATE, variables: [
-        { name: 'BRAND', description: 'e.g. "Logitech"', required: true, category: 'deterministic' },
-        { name: 'MODEL', description: 'e.g. "G502 X Plus"', required: true, category: 'deterministic' },
-        { name: 'VARIANT_SUFFIX', description: 'e.g. " (variant: black)" — empty when no variant', required: false, category: 'deterministic' },
+        { name: 'BRAND', description: 'e.g. "Logitech" — available for use in custom overrides. The default template does not reference it directly; it is consumed inside {{IDENTITY_INTRO}}.', required: false, category: 'deterministic' },
+        { name: 'MODEL', description: 'e.g. "G502 X Plus" — available for use in custom overrides. The default template does not reference it directly; it is consumed inside {{IDENTITY_INTRO}}.', required: false, category: 'deterministic' },
+        { name: 'VARIANT_SUFFIX', description: 'e.g. " (variant: black)" — empty when no variant. Consumed inside {{IDENTITY_INTRO}}.', required: false, category: 'deterministic' },
         { name: 'HERO_INSTRUCTIONS', description: 'Hero search rules block — uses promptOverride setting if set, otherwise the built-in lifestyle/contextual instructions', required: true, category: 'deterministic' },
         { name: 'IDENTITY_INTRO', description: 'Opening "IDENTITY: You are looking for the EXACT product..." line with sibling-skip sentence. Shared by PIF-view, PIF-hero, RDF, SKU. Edit text via Global Prompts (identityIntro).', required: false, category: 'global-fragment' },
         { name: 'IDENTITY_WARNING', description: 'Unified block from buildIdentityWarning (src/core/llm/prompts/). Same wording as view-search prompt. Edit text via Global Prompts in LLM Config.', required: false, category: 'global-fragment' },

@@ -13,6 +13,7 @@ export const searchPlannerPhase = {
     const result = await fn({
       searchProfileBase: ctx.searchProfileBase,
       queryExecutionHistory: ctx.queryExecutionHistory,
+      urlExecutionHistory: ctx.urlExecutionHistory,
       config: ctx.config,
       logger: ctx.logger,
       identityLock: ctx.identityLock,

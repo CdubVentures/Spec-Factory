@@ -265,6 +265,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
             allowNone
             noneLabel={`↩ ${parseModelKey(resolved.baseModel).modelId}`}
             noneModelId={resolved.baseModel}
+            globalDefaultModelId={globalDraft.llmModelPlan}
           />
         </div>
       </SettingRow>
@@ -286,6 +287,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
               allowNone
               noneLabel={`↩ ${parseModelKey(globalDraft.llmModelReasoning).modelId}`}
               noneModelId={globalDraft.llmModelReasoning}
+              globalDefaultModelId={globalDraft.llmModelReasoning}
             />
           </div>
         </SettingRow>
@@ -346,6 +348,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
             allowNone
             noneLabel={`↩ ${parseModelKey(resolved.fallbackModel).modelId || '(none)'}`}
             noneModelId={resolved.fallbackModel}
+            globalDefaultModelId={globalDraft.llmPlanFallbackModel}
           />
         </div>
       </SettingRow>
@@ -367,6 +370,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
               allowNone
               noneLabel={`↩ ${parseModelKey(globalDraft.llmReasoningFallbackModel).modelId || '(none)'}`}
               noneModelId={globalDraft.llmReasoningFallbackModel}
+              globalDefaultModelId={globalDraft.llmReasoningFallbackModel}
             />
           </div>
         </SettingRow>

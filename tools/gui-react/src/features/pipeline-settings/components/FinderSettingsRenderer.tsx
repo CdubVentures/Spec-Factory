@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useModuleSettingsAuthority } from '../state/moduleSettingsAuthority.ts';
 import { NumberStepper } from '../../../shared/ui/forms/NumberStepper.tsx';
 import {
@@ -113,7 +113,7 @@ interface EntryRowProps {
 }
 
 function SettingsEntryRow({ entry, settings, category, isSaving, onSave }: EntryRowProps) {
-  const rawValue = settings[entry.key] ?? stringifyDefault(entry.default);
+  const rawValue = settings[entry.key] ?? stringifyDefault(entry);
   const disabled = isSaving || Boolean(entry.disabledBy && settings[entry.disabledBy] === 'false');
 
   if (entry.widget) {
@@ -133,7 +133,7 @@ function SettingsEntryRow({ entry, settings, category, isSaving, onSave }: Entry
     return (
       <LabelledRow entry={entry}>
         <p className="sf-text-caption sf-text-muted">
-          Widget &ldquo;{entry.widget}&rdquo; is not registered. Falling back to raw JSON editor.
+          Widget &ldquo;{entry.widget}&rdquo; is not registered.
         </p>
         <StringControl
           value={rawValue}
@@ -174,18 +174,12 @@ function TypedControl({ entry, value, disabled, onSave }: TypedControlProps) {
   switch (entry.type) {
     case 'bool':
       return (
-        <label className="inline-flex items-center gap-2">
-          <input
-            type="checkbox"
-            className="sf-checkbox"
-            checked={value === 'true'}
-            disabled={disabled}
-            onChange={(e) => onSave(entry.key, e.target.checked ? 'true' : 'false')}
-          />
-          <span className="sf-text-caption sf-text-muted">
-            {value === 'true' ? 'Enabled' : 'Disabled'}
-          </span>
-        </label>
+        <ToggleSwitch
+          value={value}
+          disabled={disabled}
+          ariaLabel={entry.uiLabel ?? entry.key}
+          onChange={(next) => onSave(entry.key, next)}
+        />
       );
     case 'int':
     case 'float':
@@ -201,7 +195,9 @@ function TypedControl({ entry, value, disabled, onSave }: TypedControlProps) {
           onCommit={(next) => onSave(entry.key, next)}
         />
       );
-    case 'enum':
+    case 'enum': {
+      const allowed = entry.allowed ?? [];
+      const optionLabels = entry.optionLabels ?? {};
       return (
         <select
           className="sf-input w-full"
@@ -209,10 +205,22 @@ function TypedControl({ entry, value, disabled, onSave }: TypedControlProps) {
           disabled={disabled}
           onChange={(e) => onSave(entry.key, e.target.value)}
         >
-          {(entry.allowed ?? []).map((opt) => (
-            <option key={opt} value={opt}>{opt}</option>
+          {allowed.map((opt) => (
+            <option key={opt} value={opt}>
+              {optionLabels[opt] ?? opt}
+            </option>
           ))}
         </select>
+      );
+    }
+    case 'intMap':
+      return (
+        <IntMapControl
+          entry={entry}
+          value={value}
+          disabled={disabled}
+          onSave={onSave}
+        />
       );
     case 'string':
     default:
@@ -238,7 +246,6 @@ function StringControl({
   secret?: boolean;
   onCommit: (next: string) => void;
 }) {
-  // Textareas for long values; single-line input for secrets.
   const isLong = value.length > 80 || value.includes('\n');
   if (secret || !isLong) {
     return (
@@ -265,7 +272,191 @@ function StringControl({
   );
 }
 
-function stringifyDefault(def: boolean | number | string): string {
-  if (typeof def === 'boolean') return def ? 'true' : 'false';
-  return String(def);
+function ToggleSwitch({
+  value,
+  disabled,
+  ariaLabel,
+  onChange,
+}: {
+  value: string;
+  disabled: boolean;
+  ariaLabel: string;
+  onChange: (next: string) => void;
+}) {
+  const isOn = value === 'true';
+  const activeStyle: React.CSSProperties = {
+    background: 'rgb(var(--sf-color-text-primary-rgb) / 0.12)',
+    color: 'rgb(var(--sf-color-text-primary-rgb))',
+  };
+  const idleStyle: React.CSSProperties = {
+    color: 'rgb(var(--sf-color-text-muted-rgb))',
+  };
+  return (
+    <div
+      className="sf-stepper sf-stepper-compact inline-flex items-stretch"
+      role="radiogroup"
+      aria-label={ariaLabel}
+      style={{ height: '1.75rem' }}
+    >
+      <button
+        type="button"
+        role="radio"
+        aria-checked={isOn}
+        disabled={disabled}
+        onClick={() => { if (!isOn) onChange('true'); }}
+        className="sf-stepper-btn sf-stepper-btn-compact"
+        style={isOn ? activeStyle : idleStyle}
+      >
+        On
+      </button>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={!isOn}
+        disabled={disabled}
+        onClick={() => { if (isOn) onChange('false'); }}
+        className="sf-stepper-btn sf-stepper-btn-compact"
+        style={!isOn ? activeStyle : idleStyle}
+      >
+        Off
+      </button>
+    </div>
+  );
+}
+
+function IntMapControl({
+  entry,
+  value,
+  disabled,
+  onSave,
+}: {
+  entry: FinderSettingsEntry;
+  value: string;
+  disabled: boolean;
+  onSave: (key: string, value: string) => void;
+}) {
+  const keys = entry.keys ?? [];
+  const keyLabels = entry.keyLabels ?? {};
+
+  const parsedFromValue = useMemo<Record<string, number>>(() => {
+    const fallback: Record<string, number> = {};
+    for (const k of keys) fallback[k] = 0;
+    if (!value) return fallback;
+    try {
+      const parsed = JSON.parse(value);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        const out: Record<string, number> = { ...fallback };
+        for (const k of keys) {
+          const v = (parsed as Record<string, unknown>)[k];
+          const n = typeof v === 'number' ? v : Number(v);
+          if (Number.isFinite(n)) out[k] = Math.round(n);
+        }
+        return out;
+      }
+    } catch {
+      // fall through to fallback
+    }
+    return fallback;
+  }, [value, keys]);
+
+  const [localMap, setLocalMap] = useState<Record<string, number>>(parsedFromValue);
+
+  // WHY: sync local state when the authoritative value changes (e.g. another
+  // stepper commit landed, or the settings query refetched for this category).
+  useEffect(() => {
+    setLocalMap(parsedFromValue);
+  }, [parsedFromValue]);
+
+  const commitKey = (k: string, nextRaw: string) => {
+    const n = Number(nextRaw);
+    const coerced = Number.isFinite(n) ? Math.round(n) : 0;
+    const clamped =
+      entry.min !== undefined && coerced < entry.min
+        ? entry.min
+        : entry.max !== undefined && coerced > entry.max
+          ? entry.max
+          : coerced;
+    const next: Record<string, number> = { ...localMap, [k]: clamped };
+    setLocalMap(next);
+    const ordered: Record<string, number> = {};
+    for (const declared of keys) {
+      const v = next[declared];
+      ordered[declared] = typeof v === 'number' && Number.isFinite(v) ? v : 0;
+    }
+    onSave(entry.key, JSON.stringify(ordered));
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+      {keys.map((k) => {
+        const current = localMap[k] ?? 0;
+        const atMin = entry.min !== undefined && current <= entry.min;
+        const atMax = entry.max !== undefined && current >= entry.max;
+        return (
+          <div
+            key={k}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}
+          >
+            <span
+              className="sf-text-caption sf-text-primary"
+              style={{ flex: '0 0 12rem', width: '12rem' }}
+            >
+              {keyLabels[k] ?? k}
+            </span>
+            <div
+              className="sf-stepper sf-stepper-compact"
+              style={{ display: 'inline-flex', alignItems: 'stretch', width: '8rem', height: '1.75rem' }}
+            >
+              <button
+                type="button"
+                className="sf-stepper-btn sf-stepper-btn-compact"
+                disabled={disabled || atMin}
+                aria-label={`Decrease ${entry.key}-${k}`}
+                onClick={() => commitKey(k, String(current - 1))}
+              >
+                −
+              </button>
+              <input
+                type="number"
+                className="sf-stepper-input text-center font-mono"
+                value={String(current)}
+                min={entry.min}
+                max={entry.max}
+                step={1}
+                disabled={disabled}
+                aria-label={`${entry.key}-${k}`}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  if (Number.isFinite(n)) {
+                    setLocalMap((prev) => ({ ...prev, [k]: Math.round(n) }));
+                  }
+                }}
+                onBlur={(e) => commitKey(k, e.target.value)}
+              />
+              <button
+                type="button"
+                className="sf-stepper-btn sf-stepper-btn-compact"
+                disabled={disabled || atMax}
+                aria-label={`Increase ${entry.key}-${k}`}
+                onClick={() => commitKey(k, String(current + 1))}
+              >
+                +
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function stringifyDefault(entry: FinderSettingsEntry): string {
+  if (entry.type === 'bool') return entry.default ? 'true' : 'false';
+  if (entry.type === 'intMap' && entry.keys && entry.default && typeof entry.default === 'object') {
+    const ordered: Record<string, number> = {};
+    const def = entry.default as Record<string, number>;
+    for (const k of entry.keys) ordered[k] = def[k] ?? 0;
+    return JSON.stringify(ordered);
+  }
+  return String(entry.default);
 }

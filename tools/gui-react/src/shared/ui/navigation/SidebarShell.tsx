@@ -23,6 +23,8 @@ interface SidebarShellProps<T extends string> {
   children: ReactNode;
   /** Map from group key to display label for section dividers */
   groupLabels?: Record<string, string>;
+  /** Content pinned to the bottom of the sidebar column (below nav items). */
+  sidebarFooter?: ReactNode;
 }
 
 /* ── Component ───────────────────────────────────────────────────── */
@@ -37,6 +39,7 @@ export function SidebarShell<T extends string>({
   subtitleExtra,
   children,
   groupLabels,
+  sidebarFooter,
 }: SidebarShellProps<T>) {
   const activeData = items.find((i) => i.id === activeItem) ?? items[0];
 
@@ -97,6 +100,9 @@ export function SidebarShell<T extends string>({
             </div>
           );
         })}
+        {sidebarFooter && (
+          <div className="mt-auto pt-3">{sidebarFooter}</div>
+        )}
       </aside>
 
       <div className="sf-shell-main flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden p-4 md:p-5 space-y-4">

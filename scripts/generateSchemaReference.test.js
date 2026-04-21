@@ -1,7 +1,51 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { detectTableUsage } from './generateSchemaReference.js';
+import { detectTableUsage, parseTables } from './generateSchemaReference.js';
+
+test('parseTables finds a simple CREATE TABLE', () => {
+  const ddl = `
+    CREATE TABLE IF NOT EXISTS widgets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL
+    );
+  `;
+  const tables = parseTables(ddl);
+  assert.equal(tables.length, 1);
+  assert.equal(tables[0].name, 'widgets');
+});
+
+test('parseTables handles CREATE TABLE bodies whose SQL line-comments contain semicolons', () => {
+  // Regression: the body-matching regex excludes ';' so any table whose
+  // -- comment contains a ';' was silently dropped. Real-world trigger:
+  // field_candidate_evidence's comment "pre-upgrade legacy row; publisher gate".
+  const ddl = `
+    CREATE TABLE IF NOT EXISTS gadgets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      -- WHY: first clause; second clause after a semicolon inside a comment.
+      label TEXT NOT NULL
+    );
+  `;
+  const tables = parseTables(ddl);
+  assert.equal(tables.length, 1);
+  assert.equal(tables[0].name, 'gadgets');
+});
+
+test('parseTables finds multiple tables even when earlier bodies contain commented semicolons', () => {
+  const ddl = `
+    CREATE TABLE IF NOT EXISTS alpha (
+      id INTEGER PRIMARY KEY,
+      -- first; second; third
+      v TEXT
+    );
+    CREATE TABLE IF NOT EXISTS beta (
+      id INTEGER PRIMARY KEY,
+      v TEXT
+    );
+  `;
+  const names = parseTables(ddl).map((t) => t.name);
+  assert.deepEqual(names, ['alpha', 'beta']);
+});
 
 test('detectTableUsage treats field_studio_map accessors as table usage', () => {
   const usageText = `

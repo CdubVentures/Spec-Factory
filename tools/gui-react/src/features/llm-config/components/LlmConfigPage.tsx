@@ -1,4 +1,4 @@
-import { Suspense, lazy, useMemo, useCallback, useEffect, useRef } from 'react';
+import { Suspense, lazy, useMemo, useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
 import {
@@ -15,7 +15,8 @@ import { useSettingsAuthorityStore } from '../../../stores/settingsAuthorityStor
 import { usePersistedTab } from '../../../stores/tabStore.ts';
 import { LlmConfigPageShell } from './LlmConfigPageShell.tsx';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
-import { LLM_PHASE_IDS } from '../state/llmPhaseRegistry.generated.ts';
+import { TypedConfirmModal } from '../../../shared/ui/feedback/TypedConfirmModal.tsx';
+import { LLM_PHASE_IDS, LLM_PHASES } from '../state/llmPhaseRegistry.generated.ts';
 import type { LlmPhaseId } from '../types/llmPhaseTypes.generated.ts';
 import { uiPhaseIdToOverrideKey } from '../state/llmPhaseOverridesBridge.generated.ts';
 import { parseProviderRegistry, syncCostsFromRegistry } from '../state/llmProviderRegistryBridge.ts';
@@ -31,6 +32,15 @@ import type { LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes.generated
 import { useLlmPolicyAuthority } from '../state/useLlmPolicyAuthority.ts';
 import { DEFAULT_LLM_POLICY } from '../state/llmPolicyDefaults.ts';
 import { flattenLlmPolicy, routeFlatKeyUpdate } from '../state/llmPolicyAdapter.ts';
+import {
+  buildLlmGlobalDefaultsResetPatch,
+  buildLlmPhaseOverrideResetPatch,
+  buildLlmResetAllPatch,
+} from '../state/llmPolicyResetScope.ts';
+import { useGlobalPromptsAuthority } from '../state/useGlobalPromptsAuthority.ts';
+
+const RESET_PANEL_PHRASE = 'RESET';
+const RESET_ALL_PHRASE = 'RESET ALL';
 
 const LlmGlobalSection = lazy(async () => {
   const module = await import('../sections/LlmGlobalSection.tsx');
@@ -253,53 +263,69 @@ export function LlmConfigPage() {
 
   const inputCls = 'sf-input w-full py-2 sf-text-label leading-5 focus:outline-none focus:ring-2 focus:ring-accent/25 disabled:opacity-60';
 
-  function resetToDefaults() {
-    if (typeof window !== 'undefined') {
-      const confirmed = window.confirm(
-        'Reset all LLM settings to defaults? This overwrites current unsaved edits.',
-      );
-      if (!confirmed) return;
-    }
-    // WHY: Preserve API keys and enabled state from current registry when resetting.
-    const currentRegistry = policy.providerRegistry as LlmProviderEntry[];
-    const resolvedKeys: Record<string, string> = {};
-    for (const provider of currentRegistry) {
-      let key = provider.apiKey?.trim() || '';
-      if (!key) {
-        const field = PROVIDER_API_KEY_MAP[provider.id] as keyof typeof policy.apiKeys | undefined;
-        if (field) key = String(policy.apiKeys[field] || '').trim();
-      }
-      if (key) resolvedKeys[provider.id] = key;
-    }
+  const globalPrompts = useGlobalPromptsAuthority();
+  const [resetScope, setResetScope] = useState<'panel' | 'all' | null>(null);
 
-    const resetRegistry = parseProviderRegistry(RUNTIME_SETTING_DEFAULTS.llmProviderRegistryJson);
-    const preservedRegistry = resetRegistry.map((provider) => ({
-      ...provider,
-      apiKey: resolvedKeys[provider.id] || provider.apiKey,
+  const activePhaseLabel = useMemo(
+    () => LLM_PHASES.find((p) => p.id === activePhase)?.label ?? activePhase,
+    [activePhase],
+  );
+
+  const applyResetActivePanel = useCallback(() => {
+    if (activePhase === 'global') {
+      llmAuthority.updatePolicy(buildLlmGlobalDefaultsResetPatch(DEFAULT_LLM_POLICY, policy));
+      return;
+    }
+    if (activePhase === 'global-prompts') {
+      globalPrompts.clearAll();
+      return;
+    }
+    const overrideKey = uiPhaseIdToOverrideKey(activePhase);
+    if (!overrideKey) return;
+    llmAuthority.updatePolicy(buildLlmPhaseOverrideResetPatch(overrideKey, policy));
+  }, [activePhase, llmAuthority, policy, globalPrompts]);
+
+  const applyResetAll = useCallback(() => {
+    const freshRegistry = parseProviderRegistry(RUNTIME_SETTING_DEFAULTS.llmProviderRegistryJson);
+    llmAuthority.updatePolicy(buildLlmResetAllPatch({
+      defaults: DEFAULT_LLM_POLICY,
+      current: policy,
+      freshRegistry,
+      providerApiKeyMap: PROVIDER_API_KEY_MAP,
     }));
+    globalPrompts.clearAll();
+  }, [llmAuthority, policy, globalPrompts]);
 
-    // WHY: updatePolicy persists immediately — no separate saveNow needed.
-    llmAuthority.updatePolicy({
-      ...DEFAULT_LLM_POLICY,
-      providerRegistry: preservedRegistry,
-      apiKeys: {
-        gemini: policy.apiKeys.gemini || resolvedKeys['default-gemini'] || '',
-        deepseek: policy.apiKeys.deepseek || resolvedKeys['default-deepseek'] || '',
-        anthropic: policy.apiKeys.anthropic || resolvedKeys['default-anthropic'] || '',
-        openai: policy.apiKeys.openai || resolvedKeys['default-openai'] || '',
-      },
-    });
-  }
+  const onResetConfirm = useCallback(() => {
+    if (resetScope === 'panel') applyResetActivePanel();
+    else if (resetScope === 'all') applyResetAll();
+    setResetScope(null);
+  }, [resetScope, applyResetActivePanel, applyResetAll]);
 
   const headerActions = (
     <button
-      onClick={resetToDefaults}
+      onClick={() => setResetScope('panel')}
       disabled={!runtimeSettingsReady}
-      className="rounded sf-danger-button px-3 py-1.5 sf-text-label disabled:opacity-50"
-      title="Reset all LLM settings to default values."
+      className="sf-danger-button px-3 py-1.5 sf-text-label disabled:opacity-50"
+      title={`Reset the ${activePhaseLabel} panel to defaults.`}
     >
-      Reset
+      Reset panel
     </button>
+  );
+
+  const sidebarFooter = (
+    <div className="flex justify-start">
+      <button
+        type="button"
+        onClick={() => setResetScope('all')}
+        disabled={!runtimeSettingsReady}
+        className="rounded border px-2.5 py-1 sf-text-caption disabled:opacity-40 hover:bg-black/5"
+        style={{ color: 'var(--sf-muted)', borderColor: 'var(--sf-surface-border)' }}
+        title="Reset every LLM setting on this page to defaults. API keys are preserved."
+      >
+        Reset all
+      </button>
+    </div>
   );
 
   let activePanel = null;
@@ -338,6 +364,7 @@ export function LlmConfigPage() {
           apiKeyFilter={apiKeyFilter}
           runtimeDraft={runtimeDraft}
           updateDraft={updateDraft}
+          phaseSchema={indexingLlmConfig?.phase_schemas?.[activePhase] ?? null}
         />
       </Suspense>
     );
@@ -362,12 +389,28 @@ export function LlmConfigPage() {
   const settingsScope = activePhase === 'global' ? 'default' as const : 'user' as const;
 
   return (
-    <LlmConfigPageShell
-      activePhase={activePhase}
-      onSelectPhase={setActivePhase}
-      headerActions={headerActions}
-      activePanel={activePanel}
-      settingsScope={settingsScope}
-    />
+    <>
+      <LlmConfigPageShell
+        activePhase={activePhase}
+        onSelectPhase={setActivePhase}
+        headerActions={headerActions}
+        activePanel={activePanel}
+        settingsScope={settingsScope}
+        sidebarFooter={sidebarFooter}
+      />
+      <TypedConfirmModal
+        open={resetScope !== null}
+        title={resetScope === 'all' ? 'Reset all LLM settings?' : `Reset the ${activePhaseLabel} panel?`}
+        body={
+          resetScope === 'all'
+            ? 'This returns every LLM setting on this page to its default value. API keys are preserved.'
+            : `This returns the ${activePhaseLabel} panel to its default values. Other panels are untouched.`
+        }
+        confirmPhrase={resetScope === 'all' ? RESET_ALL_PHRASE : RESET_PANEL_PHRASE}
+        confirmLabel={resetScope === 'all' ? 'Reset all' : 'Reset panel'}
+        onConfirm={onResetConfirm}
+        onCancel={() => setResetScope(null)}
+      />
+    </>
   );
 }

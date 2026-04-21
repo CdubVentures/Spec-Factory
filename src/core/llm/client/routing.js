@@ -125,6 +125,29 @@ function baseRouteForRole(config = {}, role = 'plan') {
   };
 }
 
+// WHY: Per-key finder tier router. Resolves a difficulty tier → full 6-field model
+// bundle from policy.keyFinderTiers. Cascade:
+//   1) tier[difficulty] if tier.model is non-empty  → use that tier's bundle
+//   2) tiers.fallback                               → bundle-level inheritance
+//   3) policy.models.plan                           → last-resort for the model id only
+// Whole-bundle inheritance (not per-field) — per Phase 2 spec: tiers with empty
+// model inherit the full fallback bundle, so reasoning/thinking/web flags don't
+// drift from the fallback configuration.
+export function resolvePhaseModelByTier(policy = {}, difficulty = '') {
+  const tiers = policy.keyFinderTiers || {};
+  const tier = tiers[String(difficulty || '').trim()];
+  const fallback = tiers.fallback || {};
+  const effective = (tier && tier.model) ? tier : fallback;
+  return {
+    model: String(effective.model || policy.models?.plan || '').trim(),
+    useReasoning: Boolean(effective.useReasoning),
+    reasoningModel: String(effective.reasoningModel || '').trim(),
+    thinking: Boolean(effective.thinking),
+    thinkingEffort: String(effective.thinkingEffort || ''),
+    webSearch: Boolean(effective.webSearch),
+  };
+}
+
 // WHY: Phase-aware fallback resolution. The fallback panel mirrors the base model
 // panel — it has its own model, reasoning toggle, reasoning model, thinking, and
 // web search. This function resolves the effective fallback model using the

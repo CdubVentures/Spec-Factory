@@ -30,18 +30,11 @@ import { runVariantFieldLoop } from './variantFieldLoop.js';
 import { resolveIdentityAmbiguitySnapshot } from '../../features/indexing/orchestration/shared/identityHelpers.js';
 import { submitCandidate } from '../../features/publisher/index.js';
 import { defaultProductRoot } from '../config/runtimeArtifactRoots.js';
-import { accumulateDiscoveryLog } from './discoveryLog.js';
-
-function defaultBuildUserMessage(product, variant) {
-  return JSON.stringify({
-    brand: product.brand,
-    model: product.model,
-    base_model: product.base_model,
-    variant: variant.key,
-    variant_label: variant.label,
-    variant_type: variant.type,
-  });
-}
+import {
+  resolveScalarFinderPromptInputs,
+  resolveScalarPreviousDiscovery,
+  defaultBuildScalarUserMessage,
+} from './resolveScalarFinderPromptInputs.js';
 
 function defaultSuppressionScope(variant) {
   return { variant_id: variant.variant_id || '', mode: '' };
@@ -73,7 +66,7 @@ export function createVariantScalarFieldProducer(cfg) {
     createCallLlm, buildPrompt, extractCandidate,
     mergeDiscovery, readRuns, satisfactionPredicate,
     buildPublisherMetadata,
-    buildUserMessage = defaultBuildUserMessage,
+    buildUserMessage = defaultBuildScalarUserMessage,
     suppressionScope = defaultSuppressionScope,
     defaultStaggerMs = 1000,
   } = cfg;
@@ -198,35 +191,18 @@ export function createVariantScalarFieldProducer(cfg) {
       const featureStore = specDb.getFinderStore(finderName);
       const suppRows = (featureStore?.listSuppressions?.(product.product_id) || [])
         .filter((s) => s.variant_id === scope.variant_id && s.mode === scope.mode);
-      const previousDiscovery = accumulateDiscoveryLog(previousRuns, {
-        runMatcher: (r) => {
-          const rId = r.response?.variant_id;
-          const rKey = r.response?.variant_key;
-          return (variant.variant_id && rId) ? rId === variant.variant_id : rKey === variant.key;
-        },
-        includeUrls: urlHistoryEnabled,
-        includeQueries: queryHistoryEnabled,
-        suppressions: {
-          urlsChecked: new Set(suppRows.filter((s) => s.kind === 'url').map((s) => s.item)),
-          queriesRun: new Set(suppRows.filter((s) => s.kind === 'query').map((s) => s.item)),
-        },
+      const previousDiscovery = resolveScalarPreviousDiscovery({
+        previousRuns, variant, urlHistoryEnabled, queryHistoryEnabled, suppRows,
       });
 
-      const domainArgs = {
-        product,
-        variantLabel: variant.label,
-        variantType: variant.type,
-        variantKey: variant.key,
-        allVariants,
-        siblingsExcluded,
-        familyModelCount,
-        ambiguityLevel,
-        previousDiscovery,
-        promptOverride,
-      };
+      const { domainArgs, userMessage: userMsg } = resolveScalarFinderPromptInputs({
+        product, variant, allVariants,
+        siblingsExcluded, familyModelCount, ambiguityLevel,
+        previousDiscovery, promptOverride,
+        buildUserMessage,
+      });
 
       const systemPrompt = buildPrompt(domainArgs);
-      const userMsg = buildUserMessage(product, variant);
 
       const callStartedAt = new Date().toISOString();
       const callStartMs = Date.now();

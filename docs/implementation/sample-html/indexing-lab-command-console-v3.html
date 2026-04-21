@@ -1,0 +1,887 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Indexing Lab — Command Console v3 (Light)</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --font-ui:   "Inter","Segoe UI","Helvetica Neue",sans-serif;
+  --font-mono: "SFMono-Regular","JetBrains Mono","Consolas","Liberation Mono",monospace;
+
+  /* Matches the live GUI's light theme */
+  --canvas:        #f6f7fa;
+  --surface:       #ffffff;
+  --surface-2:     #fafbfd;
+  --surface-3:     #f3f5f8;
+  --surface-sunk:  #f1f3f7;
+
+  --text:          #1a2332;
+  --text-2:        #3d4b63;
+  --text-muted:    #6b7785;
+  --text-subtle:   #9aa3af;
+  --text-dim:      #c4cad3;
+
+  --border:        #e3e8ee;
+  --border-soft:   #edf0f4;
+  --border-strong: #cbd5e1;
+
+  --accent:        #2e6dfe;
+  --accent-hover:  #1d5bea;
+  --accent-soft:   #e7efff;
+  --accent-softer: #f2f6ff;
+  --accent-glow:   rgba(46,109,254,0.18);
+  --accent-ring:   rgba(46,109,254,0.28);
+
+  --success:       #22c55e;
+  --success-soft:  #e7f7ee;
+  --success-ring:  rgba(34,197,94,0.28);
+
+  --warning:       #f59e0b;
+  --warning-soft:  #fff4e0;
+  --warning-ring:  rgba(245,158,11,0.28);
+
+  --danger:        #ef4444;
+  --danger-soft:   #fef2f2;
+
+  --purple:        #8b5cf6;
+  --purple-soft:   #f1ecfe;
+  --orange:        #f97316;
+  --orange-soft:   #fff0e5;
+  --teal:          #14b8a6;
+  --teal-soft:     #e3faf6;
+
+  --shadow-1: 0 1px 2px rgba(15,20,28,.04);
+  --shadow-2: 0 1px 2px rgba(15,20,28,.05), 0 4px 12px rgba(15,20,28,.05);
+  --shadow-lift: 0 1px 2px rgba(15,20,28,.06), 0 8px 24px rgba(15,20,28,.06);
+  --shadow-focus: 0 0 0 3px var(--accent-ring);
+}
+
+body {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--canvas);
+  padding: 28px 20px 80px;
+}
+.mono { font-family: var(--font-mono); letter-spacing: -0.01em; }
+
+.root { max-width: 1440px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+
+/* ── Intro ────────────────────────────────────────────────── */
+.intro {
+  padding: 20px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 12px;
+  box-shadow: var(--shadow-1);
+}
+.intro h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+.intro p  { font-size: 12.5px; color: var(--text-muted); margin-top: 6px; max-width: 960px; }
+.intro strong { color: var(--text); font-weight: 700; }
+.intro code {
+  font-family: var(--font-mono); font-size: 11.5px;
+  padding: 1px 6px; border-radius: 4px;
+  background: var(--surface-sunk); color: var(--accent);
+}
+.intro ul { margin: 8px 0 0 22px; }
+.intro li { font-size: 12px; color: var(--text-muted); margin: 3px 0; }
+
+.label-line {
+  align-self: flex-start;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 5px 12px;
+  font-size: 10px; font-weight: 800;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-subtle);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.label-line .n {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  font-weight: 800; letter-spacing: 0; font-size: 10px;
+}
+.note {
+  padding: 10px 14px;
+  font-size: 12px; color: var(--text-muted);
+  background: var(--accent-softer);
+  border: 1px solid var(--accent-soft);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+}
+.note strong { color: var(--text); }
+
+/* ── Command Strip ───────────────────────────────────────── */
+.cmd-strip {
+  display: grid; grid-template-columns: auto 1fr auto;
+  align-items: center; gap: 16px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-1);
+}
+
+.prod {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 10px 6px 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.prod:hover { background: var(--surface-3); border-color: var(--border-strong); }
+.prod-chip {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), #5b8bff);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-weight: 800; font-size: 14px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25);
+}
+.prod-k { font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-subtle); }
+.prod-v { font-size: 13px; font-weight: 700; letter-spacing: -0.005em; }
+.prod-caret { color: var(--text-subtle); font-size: 10px; margin-left: 2px; }
+
+/* Telemetry readout slots */
+.readout { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.rslot {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 9px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.rslot .k {
+  font-family: var(--font-ui); font-size: 9px; font-weight: 800;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-subtle);
+}
+.rslot .v { font-family: var(--font-mono); font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+.rslot.hi     { background: var(--accent-softer); border-color: var(--accent-soft); }
+.rslot.hi .v  { color: var(--accent); }
+.rslot.warn   { background: var(--warning-soft); border-color: #fde6b8; }
+.rslot.warn .v { color: var(--warning); }
+
+/* Status + run actions */
+.cs-actions { display: flex; align-items: center; gap: 8px; }
+.run-led {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 4px 10px 4px 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px;
+}
+.run-led .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 3px var(--success-ring); }
+.run-led .txt { font-weight: 700; color: var(--text); font-size: 11px; }
+.run-led .sub { font-family: var(--font-mono); color: var(--text-muted); font-size: 10.5px; letter-spacing: -0.01em; }
+.run-led.running { background: var(--accent-softer); border-color: var(--accent-soft); }
+.run-led.running .dot { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); animation: beat 1.3s infinite; }
+.run-led.running .txt { color: var(--accent); }
+@keyframes beat { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 7px 13px;
+  font-size: 12px; font-weight: 700;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px;
+  cursor: pointer; white-space: nowrap;
+  transition: background .12s, border-color .12s, color .12s, transform .08s, box-shadow .12s;
+}
+.btn:hover { background: var(--surface-2); border-color: var(--border-strong); }
+.btn:active { transform: translateY(1px); }
+.btn-sm { padding: 5px 10px; font-size: 11px; }
+.btn-xs { padding: 3px 8px; font-size: 10px; border-radius: 6px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+
+.btn-primary {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+  box-shadow: 0 1px 2px rgba(46,109,254,.3);
+}
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: #fff; }
+.btn-run { padding: 8px 16px; font-size: 12.5px; }
+.btn-primary .kbd {
+  display: inline-block; padding: 1px 5px; margin-left: 4px;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  background: rgba(255,255,255,0.22);
+  border-radius: 3px; color: rgba(255,255,255,.9);
+}
+.btn-ghost { color: var(--text-muted); }
+.btn-ico {
+  width: 30px; height: 30px; padding: 0;
+  color: var(--text-muted);
+}
+
+/* ── Console Deck (tabs) ─────────────────────────────────── */
+.deck {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  padding: 8px 8px 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  box-shadow: var(--shadow-1);
+}
+
+.tab {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: 10px; row-gap: 3px;
+  padding: 10px 12px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px 10px 0 0;
+  color: var(--text-2);
+  font-family: inherit; text-align: left;
+  cursor: pointer;
+  transition: background .14s, color .14s, border-color .14s, transform .1s, box-shadow .14s;
+}
+.tab:hover:not(.active) {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+  transform: translateY(-1px);
+  box-shadow: 0 1px 3px rgba(15,20,28,.04);
+}
+
+.tab-icon {
+  grid-row: 1 / span 2;
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 8px;
+  font-size: 15px; font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(15,20,28,.04);
+}
+.tab-icon.cef { background: var(--orange-soft);  color: var(--orange); }
+.tab-icon.pif { background: var(--accent-soft);  color: var(--accent); }
+.tab-icon.rdf { background: var(--purple-soft);  color: var(--purple); }
+.tab-icon.sku { background: var(--success-soft); color: var(--success); }
+.tab-icon.key { background: var(--surface-sunk); color: var(--text-subtle); }
+
+.tab-name {
+  font-size: 12.5px; font-weight: 700;
+  letter-spacing: -0.005em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tab-meta {
+  display: flex; align-items: center; gap: 7px;
+  font-family: var(--font-mono); font-size: 10.5px;
+  color: var(--text-muted); letter-spacing: -0.01em;
+}
+.tab-meta .bar {
+  position: relative; flex: 1; min-width: 24px; max-width: 110px;
+  height: 3px; background: var(--surface-sunk); border-radius: 2px;
+  overflow: hidden;
+}
+.tab-meta .bar > span { display: block; height: 100%; background: var(--success); border-radius: 2px; }
+.tab-meta .bar > span.warn  { background: var(--warning); }
+.tab-meta .bar > span.empty { background: var(--text-dim); }
+.tab-meta .v { font-weight: 700; color: var(--text-2); }
+
+.tab-right {
+  grid-row: 1 / span 2;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 5px;
+}
+.tab-led {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--success); box-shadow: 0 0 0 2.5px var(--success-ring);
+}
+.tab-led.warn  { background: var(--warning); box-shadow: 0 0 0 2.5px var(--warning-ring); }
+.tab-led.run   { background: var(--accent);  box-shadow: 0 0 0 2.5px var(--accent-ring); animation: beat 1.3s infinite; }
+.tab-led.idle  { background: var(--text-dim); box-shadow: 0 0 0 2.5px var(--surface-sunk); }
+.tab-led.empty { background: transparent; box-shadow: inset 0 0 0 1.5px var(--text-dim); }
+.tab-kbd {
+  font-family: var(--font-mono); font-size: 9.5px; font-weight: 700;
+  padding: 1px 5px; border-radius: 4px;
+  color: var(--text-subtle);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.tab.active {
+  background: var(--surface);
+  border-color: var(--accent);
+  color: var(--text);
+  box-shadow:
+    inset 0 0 0 1px var(--accent-ring),
+    0 -2px 16px var(--accent-glow);
+  transform: translateY(0);
+  z-index: 2;
+}
+.tab.active .tab-name { color: var(--accent); }
+.tab.active .tab-kbd  { color: var(--accent); background: var(--accent-soft); border-color: var(--accent-soft); }
+.tab.active::before {
+  /* thin accent band at the top */
+  content: "";
+  position: absolute; left: 12px; right: 12px; top: 0;
+  height: 2px; background: var(--accent); border-radius: 2px 2px 0 0;
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+.tab.active::after {
+  /* cover the bottom border to "join" into the panel */
+  content: "";
+  position: absolute; left: -1px; right: -1px; bottom: -1px;
+  height: 2px; background: var(--surface);
+  z-index: 3;
+}
+
+/* ── Panel ───────────────────────────────────────────────── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-top: 1px solid var(--accent);
+  border-radius: 0 0 12px 12px;
+  box-shadow: var(--shadow-lift);
+  overflow: hidden;
+}
+
+.panel-top {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 20px;
+  background: linear-gradient(180deg, var(--accent-softer), transparent 75%);
+  border-bottom: 1px solid var(--border-soft);
+  flex-wrap: wrap;
+}
+.phase {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 4px 10px;
+  font-size: 10px; font-weight: 800;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-soft);
+  border-radius: 999px;
+}
+.phase::before {
+  content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
+}
+.pt-t { display: flex; flex-direction: column; gap: 2px; }
+.pt-title { font-size: 15px; font-weight: 800; letter-spacing: -0.01em; }
+.pt-sub { font-size: 11.5px; color: var(--text-muted); }
+.pt-sub .sep { color: var(--text-dim); margin: 0 7px; }
+.pt-sp { flex: 1; }
+.model-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 8px; border-radius: 4px;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.04em;
+  color: var(--purple); background: var(--purple-soft); border: 1.5px solid var(--purple);
+}
+.pt-actions { display: flex; gap: 8px; }
+
+/* Hero KPI + stats */
+.panel-hero {
+  display: grid; grid-template-columns: 2fr 3fr; gap: 14px;
+  padding: 18px 20px 14px;
+}
+@media (max-width: 900px) { .panel-hero { grid-template-columns: 1fr; } }
+
+.kpi-hero {
+  padding: 18px 22px;
+  background: linear-gradient(135deg, var(--warning-soft), #fffaf0);
+  border: 1px solid #fbe4b5;
+  border-radius: 12px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.kpi-hero.done {
+  background: linear-gradient(135deg, var(--success-soft), #f6fef9);
+  border-color: #b9ecc9;
+}
+.kpi-lbl {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--warning);
+  display: flex; align-items: center; gap: 6px;
+}
+.kpi-hero.done .kpi-lbl { color: var(--success); }
+.kpi-lbl::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor;
+}
+.kpi-val {
+  font-family: var(--font-mono); font-size: 46px; font-weight: 800;
+  letter-spacing: -0.03em; line-height: 1;
+  color: var(--warning);
+}
+.kpi-hero.done .kpi-val { color: var(--success); }
+.kpi-val .pct { font-size: 18px; margin-left: 8px; color: var(--text-muted); font-weight: 600; }
+.kpi-bar {
+  height: 6px; border-radius: 3px;
+  background: rgba(15,20,28,.06);
+  overflow: hidden;
+}
+.kpi-bar > span { display: block; height: 100%; background: var(--warning); border-radius: 3px; transition: width .4s; }
+.kpi-hero.done .kpi-bar > span { background: var(--success); }
+.kpi-cap { font-size: 11.5px; color: var(--text-muted); }
+
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.stat {
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+}
+.stat .k { font-size: 9.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-subtle); margin-bottom: 4px; }
+.stat .v { font-family: var(--font-mono); font-size: 24px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; color: var(--text); }
+.stat .v.accent  { color: var(--accent); }
+.stat .v.purple  { color: var(--purple); }
+.stat .v.success { color: var(--success); }
+.stat .s { font-size: 10.5px; color: var(--text-muted); margin-top: 4px; }
+
+/* Section */
+.section { padding: 14px 20px; border-top: 1px solid var(--border-soft); }
+.sec-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.sec-title { font-size: 10.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-2); }
+.sec-count { font-size: 11px; color: var(--text-subtle); font-family: var(--font-mono); letter-spacing: -0.01em; }
+.sec-sp { flex: 1; }
+.sec-right { display: flex; gap: 6px; }
+.sec-right .danger { color: var(--danger); border-color: #fcc6c6; }
+.sec-right .danger:hover { background: var(--danger-soft); border-color: var(--danger); }
+
+/* Variant cards */
+.vlist { display: flex; flex-direction: column; gap: 8px; }
+.vcard {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  column-gap: 14px; align-items: center;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: border-color .12s, background .12s, box-shadow .12s;
+}
+.vcard:hover { border-color: var(--border-strong); background: var(--surface-2); box-shadow: var(--shadow-1); }
+.vcard.done    { border-left: 3px solid var(--success); padding-left: 14px; }
+.vcard.partial { border-left: 3px solid var(--warning); padding-left: 14px; }
+.vcard.empty   { border-left: 3px solid var(--danger);  padding-left: 14px; }
+.vcard.active  { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+.vc-id { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.vc-sw {
+  width: 34px; height: 34px; border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.4);
+  flex-shrink: 0;
+}
+.vc-n { font-size: 13px; font-weight: 700; letter-spacing: -0.005em; }
+.vc-s {
+  font-size: 10.5px; color: var(--text-muted);
+  display: flex; align-items: center; gap: 6px; margin-top: 2px;
+}
+
+.vc-prog { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.vc-row { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+.vc-row .k { font-family: var(--font-ui); font-size: 9.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-subtle); min-width: 44px; }
+.vc-row .bar { flex: 1; height: 4px; border-radius: 2px; background: var(--surface-sunk); overflow: hidden; min-width: 80px; }
+.vc-row .bar > span { display: block; height: 100%; background: var(--success); border-radius: 2px; }
+.vc-row .bar > span.warn  { background: var(--warning); }
+.vc-row .bar > span.empty { background: var(--text-dim); }
+.vc-row .n { font-family: var(--font-mono); font-size: 11px; color: var(--text); min-width: 40px; text-align: right; font-weight: 700; }
+
+.vc-acts { display: flex; gap: 6px; align-items: center; }
+.vc-act {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-family: inherit; font-size: 11px; font-weight: 700;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background .12s, border-color .12s, color .12s;
+}
+.vc-act:hover { background: var(--surface); border-color: var(--border-strong); color: var(--text); }
+.vc-act.primary { background: var(--accent-soft); border-color: var(--accent-soft); color: var(--accent); }
+.vc-act.primary:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.vc-act-more { padding: 6px 8px; }
+
+/* Chips */
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 1px 7px; border-radius: 4px;
+  font-size: 9.5px; font-weight: 800; letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.chip-neutral { background: var(--surface-sunk); color: var(--text-muted); }
+.chip-warning { background: var(--warning-soft); color: var(--warning); }
+.chip-accent  { background: var(--accent-soft); color: var(--accent); }
+.chip-success { background: var(--success-soft); color: var(--success); }
+
+/* Collapse */
+.collapse { border-top: 1px solid var(--border-soft); }
+.collapse-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 20px;
+  cursor: pointer; user-select: none;
+  transition: background .12s;
+}
+.collapse-head:hover { background: var(--surface-2); }
+.collapse-caret { font-size: 9px; color: var(--text-muted); width: 10px; transition: transform .15s; }
+.collapse.open .collapse-caret { transform: rotate(90deg); }
+.collapse-title { font-size: 10.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-2); }
+.collapse-meta  { font-size: 11px; color: var(--text-subtle); }
+.collapse-body { padding: 0 20px 16px; display: none; }
+.collapse.open .collapse-body { display: block; }
+
+.how { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding-top: 6px; }
+@media (max-width: 900px) { .how { grid-template-columns: repeat(2, 1fr); } }
+.how-step {
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+}
+.how-step .n { font-size: 9.5px; font-weight: 800; letter-spacing: 0.1em; color: var(--accent); }
+.how-step .l { font-size: 12px; font-weight: 700; margin-top: 2px; }
+.how-step .d { font-size: 11px; color: var(--text-muted); line-height: 1.4; margin-top: 3px; }
+
+/* Status bar — matches current footer pattern, lightly styled */
+.status-bar {
+  display: flex; align-items: center; gap: 14px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--accent);
+  border-radius: 0 0 10px 10px;
+  font-size: 11px; color: var(--text-muted);
+  margin-top: -1px;
+}
+.status-bar .k { font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-subtle); }
+.status-bar .v { font-family: var(--font-mono); font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+.status-bar .sep { color: var(--text-dim); }
+.status-bar .ok { color: var(--success); }
+
+</style>
+</head>
+<body>
+
+<div class="root">
+
+  <!-- ═══ Intro ═══════════════════════════════════════════════ -->
+  <div class="intro">
+    <h1>Indexing Lab — Command Console v3 (light theme, matches current GUI)</h1>
+    <p>Same console density as v1/v2 but in the app's real visual language:
+      <strong>white surfaces</strong>, <strong>soft borders</strong>, <strong>rounded corners</strong>, <strong>blue accent</strong>, <strong>professional shadows</strong>.
+      Monospace is reserved for <em>numbers</em> (counts, progress, SKUs) — the rest stays in the UI sans-serif.
+      No scanlines, no angular bevels, no corner brackets. "Command center" comes from <strong>per-tab live readouts</strong>, a
+      <strong>telemetry strip</strong>, a <strong>phase chip</strong> inside the panel, and a <strong>bottom status bar</strong> — not from HUD chrome.</p>
+    <ul>
+      <li><strong>Command Strip</strong> — product chip, telemetry slots (<code>Stage 2/5 · Variant · Phase · T+ · Ambig</code>), status LED, primary Run button.</li>
+      <li><strong>Console Deck</strong> — each tab: colored icon chip matching the finder's domain + name + inline <em>mini progress bar</em> with count + status LED + <code>[1–5]</code> kbd badge.</li>
+      <li><strong>Active tab connects into the panel</strong> via a 2 px blue accent band on top and a shared border seam at the bottom. The panel has a blue top border and subtle lift shadow.</li>
+      <li><strong>Phase chip</strong> in the panel top-bar — <code>Stage 2 · Product Image</code>.</li>
+      <li><strong>Hero KPI</strong> (amber while incomplete, green when done) + three secondary stats.</li>
+      <li><strong>Variant cards</strong> with status-coloured left edge (green/amber/red) + labeled progress bars + icon-first action buttons.</li>
+      <li><strong>Status bar</strong> at the bottom — one-line summary with a 2 px blue top rule tying it to the panel.</li>
+    </ul>
+  </div>
+
+  <!-- ═══ Command Strip ══════════════════════════════════════ -->
+  <div class="label-line"><span class="n">1</span>Command Strip — product · telemetry · run</div>
+
+  <div class="cmd-strip">
+    <div class="prod">
+      <div class="prod-chip">C</div>
+      <div>
+        <div class="prod-k">Corsair</div>
+        <div class="prod-v">M75 Air Wireless</div>
+      </div>
+      <span class="prod-caret">▾</span>
+    </div>
+
+    <div class="readout">
+      <span class="rslot hi"><span class="k">Stage</span><span class="v">2 / 5</span></span>
+      <span class="rslot"><span class="k">Variant</span><span class="v">Light&nbsp;Gray</span></span>
+      <span class="rslot"><span class="k">Phase</span><span class="v">Discover</span></span>
+      <span class="rslot warn"><span class="k">Ambig</span><span class="v">Med</span></span>
+      <span class="rslot"><span class="k">T+</span><span class="v">00:42</span></span>
+    </div>
+
+    <div class="cs-actions">
+      <span class="run-led running">
+        <span class="dot"></span>
+        <span class="txt">Running</span>
+        <span class="sub">#117</span>
+      </span>
+      <button class="btn btn-sm btn-ghost">Replay</button>
+      <button class="btn btn-primary btn-run">▶ Run IndexLab <span class="kbd">⌘↵</span></button>
+      <button class="btn btn-ico" title="More">⋯</button>
+    </div>
+  </div>
+
+  <!-- ═══ Console Deck + Panel ═══════════════════════════════ -->
+  <div class="label-line"><span class="n">2</span>Console Deck + active panel</div>
+  <div class="note">
+    Each tab is a compact status module — colored icon, name, <strong>inline mini progress bar</strong>, status LED, <code>[1–5]</code> shortcut.
+    Active tab grows slightly, picks up the blue border + 2 px top accent band, and "joins" into the panel below via a shared seam (white strip over the bottom border).
+    Panel is blue-bordered, lightly lifted. This is the move — it reads as a single living module, not a separated tab + box.
+  </div>
+
+  <div>
+    <!-- Tabs -->
+    <div class="deck" role="tablist">
+      <button class="tab" role="tab">
+        <div class="tab-icon cef">◈</div>
+        <div class="tab-name">Color &amp; Edition</div>
+        <div class="tab-meta">
+          <div class="bar"><span style="width:100%"></span></div>
+          <span class="v">4c · 3ed</span>
+        </div>
+        <div class="tab-right">
+          <span class="tab-led"></span>
+          <span class="tab-kbd">1</span>
+        </div>
+      </button>
+
+      <button class="tab active" role="tab" aria-selected="true">
+        <div class="tab-icon pif">▣</div>
+        <div class="tab-name">Product Image</div>
+        <div class="tab-meta">
+          <div class="bar"><span class="warn" style="width:11%"></span></div>
+          <span class="v">5 / 44</span>
+        </div>
+        <div class="tab-right">
+          <span class="tab-led run"></span>
+          <span class="tab-kbd">2</span>
+        </div>
+      </button>
+
+      <button class="tab" role="tab">
+        <div class="tab-icon rdf">◷</div>
+        <div class="tab-name">Release Date</div>
+        <div class="tab-meta">
+          <div class="bar"><span style="width:100%"></span></div>
+          <span class="v">4 / 4</span>
+        </div>
+        <div class="tab-right">
+          <span class="tab-led"></span>
+          <span class="tab-kbd">3</span>
+        </div>
+      </button>
+
+      <button class="tab" role="tab">
+        <div class="tab-icon sku">⌗</div>
+        <div class="tab-name">SKU</div>
+        <div class="tab-meta">
+          <div class="bar"><span style="width:100%"></span></div>
+          <span class="v">4 / 4</span>
+        </div>
+        <div class="tab-right">
+          <span class="tab-led"></span>
+          <span class="tab-kbd">4</span>
+        </div>
+      </button>
+
+      <button class="tab" role="tab">
+        <div class="tab-icon key">⚙</div>
+        <div class="tab-name">Key</div>
+        <div class="tab-meta">
+          <div class="bar"><span class="empty" style="width:0%"></span></div>
+          <span class="v">phase 3</span>
+        </div>
+        <div class="tab-right">
+          <span class="tab-led idle"></span>
+          <span class="tab-kbd">5</span>
+        </div>
+      </button>
+    </div>
+
+    <!-- Panel -->
+    <div class="panel">
+      <div class="panel-top">
+        <span class="phase">Stage 2 · Product Image</span>
+        <div class="pt-t">
+          <div class="pt-title">Product Image Finder</div>
+          <div class="pt-sub">hero + angle images per variant<span class="sep">·</span>carousel slot assignment</div>
+        </div>
+        <span class="model-badge">gpt-5.4 · hi</span>
+        <span class="pt-sp"></span>
+        <div class="pt-actions">
+          <button class="btn btn-sm">History (12)</button>
+          <button class="btn btn-sm">Eval All</button>
+          <button class="btn btn-primary btn-sm">▶ Run all</button>
+        </div>
+      </div>
+
+      <!-- Hero + stats -->
+      <div class="panel-hero">
+        <div class="kpi-hero">
+          <div class="kpi-lbl">Carousel Filled</div>
+          <div class="kpi-val">5 / 44<span class="pct">11%</span></div>
+          <div class="kpi-bar"><span style="width:11%"></span></div>
+          <div class="kpi-cap">0 of 4 variants have a hero shot — discover next.</div>
+        </div>
+        <div class="stats">
+          <div class="stat"><div class="k">Images</div><div class="v accent">5</div><div class="s">across 4 variants</div></div>
+          <div class="stat"><div class="k">Variants</div><div class="v purple">4</div><div class="s">from CEF</div></div>
+          <div class="stat"><div class="k">Runs</div><div class="v success">7</div><div class="s">last 12 m ago</div></div>
+        </div>
+      </div>
+
+      <!-- Variants -->
+      <div class="section">
+        <div class="sec-bar">
+          <span class="sec-title">All Variants</span>
+          <span class="sec-count">4 · 5 images · 0 heroes</span>
+          <span class="sec-sp"></span>
+          <div class="sec-right">
+            <button class="btn btn-xs">Collapse all</button>
+            <button class="btn btn-xs danger">Delete all</button>
+          </div>
+        </div>
+
+        <div class="vlist">
+          <!-- Black -->
+          <div class="vcard empty">
+            <div class="vc-id">
+              <div class="vc-sw" style="background:#141414;"></div>
+              <div>
+                <div class="vc-n">Black</div>
+                <div class="vc-s"><span class="chip chip-neutral">CLR</span>default · no images</div>
+              </div>
+            </div>
+            <div class="vc-prog">
+              <div class="vc-row"><span class="k">Views</span><div class="bar"><span class="empty" style="width:0%"></span></div><span class="n">0 / 8</span></div>
+              <div class="vc-row"><span class="k">Hero</span><div class="bar"><span class="empty" style="width:0%"></span></div><span class="n">0 / 3</span></div>
+            </div>
+            <div class="vc-acts">
+              <button class="vc-act primary">▶ Discover</button>
+              <button class="vc-act">↻ Loop</button>
+              <button class="vc-act vc-act-more">⋯</button>
+            </div>
+          </div>
+
+          <!-- Light Gray (active) -->
+          <div class="vcard partial active">
+            <div class="vc-id">
+              <div class="vc-sw" style="background:#d1d5db;"></div>
+              <div>
+                <div class="vc-n">Light Gray</div>
+                <div class="vc-s"><span class="chip chip-neutral">CLR</span>3 images · hero 3/3 <span class="chip chip-accent">Running</span></div>
+              </div>
+            </div>
+            <div class="vc-prog">
+              <div class="vc-row"><span class="k">Views</span><div class="bar"><span class="warn" style="width:37%"></span></div><span class="n">3 / 8</span></div>
+              <div class="vc-row"><span class="k">Hero</span><div class="bar"><span style="width:100%"></span></div><span class="n">3 / 3</span></div>
+            </div>
+            <div class="vc-acts">
+              <button class="vc-act primary">▶ Hero</button>
+              <button class="vc-act">✓ Eval</button>
+              <button class="vc-act vc-act-more">⋯</button>
+            </div>
+          </div>
+
+          <!-- White -->
+          <div class="vcard empty">
+            <div class="vc-id">
+              <div class="vc-sw" style="background:#f8fafc;"></div>
+              <div>
+                <div class="vc-n">White</div>
+                <div class="vc-s"><span class="chip chip-neutral">CLR</span>no images yet</div>
+              </div>
+            </div>
+            <div class="vc-prog">
+              <div class="vc-row"><span class="k">Views</span><div class="bar"><span class="empty" style="width:0%"></span></div><span class="n">0 / 8</span></div>
+              <div class="vc-row"><span class="k">Hero</span><div class="bar"><span class="empty" style="width:0%"></span></div><span class="n">0 / 3</span></div>
+            </div>
+            <div class="vc-acts">
+              <button class="vc-act primary">▶ Discover</button>
+              <button class="vc-act">↻ Loop</button>
+              <button class="vc-act vc-act-more">⋯</button>
+            </div>
+          </div>
+
+          <!-- Launch Edition -->
+          <div class="vcard partial">
+            <div class="vc-id">
+              <div class="vc-sw" style="background:linear-gradient(135deg,#fbbf24 50%, #1f2937 50%);"></div>
+              <div>
+                <div class="vc-n">Launch Edition</div>
+                <div class="vc-s"><span class="chip chip-warning">ED</span>2 images · needs hero</div>
+              </div>
+            </div>
+            <div class="vc-prog">
+              <div class="vc-row"><span class="k">Views</span><div class="bar"><span class="warn" style="width:25%"></span></div><span class="n">2 / 8</span></div>
+              <div class="vc-row"><span class="k">Hero</span><div class="bar"><span class="empty" style="width:0%"></span></div><span class="n">0 / 3</span></div>
+            </div>
+            <div class="vc-acts">
+              <button class="vc-act primary">▶ Hero</button>
+              <button class="vc-act">✓ Eval</button>
+              <button class="vc-act vc-act-more">⋯</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Collapsed sections -->
+      <div class="collapse">
+        <div class="collapse-head">
+          <span class="collapse-caret">▶</span>
+          <span class="collapse-title">How It Works</span>
+          <span class="collapse-meta">discovery · learning · eval</span>
+        </div>
+        <div class="collapse-body">
+          <div class="how">
+            <div class="how-step"><div class="n">01</div><div class="l">Plan</div><div class="d">8 angle views + 3 hero per CEF variant.</div></div>
+            <div class="how-step"><div class="n">02</div><div class="l">Discover</div><div class="d">LLM + web search for candidate URLs.</div></div>
+            <div class="how-step"><div class="n">03</div><div class="l">Eval</div><div class="d">Vision model ranks → best to slots.</div></div>
+            <div class="how-step"><div class="n">04</div><div class="l">Publish</div><div class="d">Projected to SQLite for Review.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="collapse">
+        <div class="collapse-head">
+          <span class="collapse-caret">▶</span>
+          <span class="collapse-title">Run History</span>
+          <span class="collapse-meta">7 runs</span>
+        </div>
+        <div class="collapse-body" style="padding-top:6px; color: var(--text-muted); font-size: 11.5px;">
+          Collapsed — expand for per-run telemetry.
+        </div>
+      </div>
+    </div>
+
+    <!-- Status bar -->
+    <div class="status-bar">
+      <span class="k">Last</span><span class="v">04-20 20:19</span>
+      <span class="sep">·</span>
+      <span class="k">Model</span><span class="v">gpt-5.4-mini · medium</span>
+      <span class="sep">·</span>
+      <span class="k">Runs</span><span class="v">7</span>
+      <span class="sep">·</span>
+      <span class="k">Pipeline</span><span class="v ok">healthy</span>
+      <span class="sep">·</span>
+      <span class="k">T+</span><span class="v">00:42</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  document.addEventListener('click', e => {
+    const head = e.target.closest('.collapse-head');
+    if (head) head.parentElement.classList.toggle('open');
+  });
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>

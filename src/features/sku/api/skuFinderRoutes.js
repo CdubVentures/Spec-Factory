@@ -8,6 +8,7 @@
 import { createFinderRouteHandler } from '../../../core/finder/finderRoutes.js';
 import { FINDER_MODULE_MAP } from '../../../core/finder/finderModuleRegistry.js';
 import { runSkuFinder, runSkuFinderLoop } from '../skuFinder.js';
+import { compileSkuFinderPreviewPrompt } from '../skuFinderPreviewPrompt.js';
 import {
   deleteSkuFinderRun,
   deleteSkuFinderRuns,
@@ -63,6 +64,7 @@ export function registerSkuFinderRoutes(ctx) {
     candidateSourceType: FINDER_MODULE_MAP.skuFinder.candidateSourceType,
     parseVariantKey: true,
     loop: { orchestrator: runSkuFinderLoop },
+    preview: { compilePrompt: compileSkuFinderPreviewPrompt },
     runFinder: runSkuFinder,
     deleteRun: deleteSkuFinderRun,
     deleteRuns: deleteSkuFinderRuns,

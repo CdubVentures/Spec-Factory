@@ -1,8 +1,8 @@
 import { memo, useMemo, useState, useRef, useEffect, useCallback } from 'react';
-import { ensureValueInOptions, resolveOptionByValue } from '../state/llmModelDropdownOptions.ts';
+import { ensureValueInOptions } from '../state/llmModelDropdownOptions.ts';
 import type { DropdownModelOption } from '../state/llmModelDropdownOptions.ts';
+import { buildDropdownItems } from '../state/llmModelDropdownItems.ts';
 import { ModelBadgeGroup } from './ModelAccessBadges.tsx';
-import type { LlmModelRole, LlmAccessMode } from '../types/llmProviderRegistryTypes.ts';
 
 /** Small "inherit from global" indicator rendered next to a dropdown when using the global default. */
 export function GlobalDefaultIcon() {
@@ -33,8 +33,10 @@ interface ModelSelectDropdownProps {
   style?: React.CSSProperties;
   allowNone?: boolean;
   noneLabel?: string;
-  /** Model ID of the inherited default — used to derive the role badge for the none/default item. */
+  /** Model ID the "(none)" row inherits — drives the role badge on that row only. */
   noneModelId?: string;
+  /** Model ID of the GLOBAL default — drives the DEFAULT badge in the option list. */
+  globalDefaultModelId?: string;
   disabled?: boolean;
 }
 
@@ -48,6 +50,7 @@ export const ModelSelectDropdown = memo(function ModelSelectDropdown({
   allowNone = false,
   noneLabel = '(none)',
   noneModelId,
+  globalDefaultModelId,
   disabled,
 }: ModelSelectDropdownProps) {
   const [open, setOpen] = useState(false);
@@ -57,35 +60,10 @@ export const ModelSelectDropdown = memo(function ModelSelectDropdown({
 
   const missingOption = useMemo(() => ensureValueInOptions(options, value), [options, value]);
 
-  // Build the full item list (none + missing + options), with provider group labels
-  const items = useMemo(() => {
-    const list: Array<{ key: string; value: string; label: string; role?: LlmModelRole; muted?: boolean; accessMode?: LlmAccessMode; thinking?: boolean; webSearch?: boolean; isDefault?: boolean; groupLabel?: string }> = [];
-    const derivedNoneOption = noneModelId
-      ? (options.find((o) => o.value === noneModelId) ?? options.find((o) => o.value.endsWith(`:${noneModelId}`)))
-      : undefined;
-    // WHY: Resolve the composite key that matches the default so we can badge it in the list.
-    const defaultCompositeKey = derivedNoneOption?.value ?? noneModelId ?? '';
-    if (allowNone) list.push({ key: '__none__', value: '', label: noneLabel, role: derivedNoneOption?.role, accessMode: derivedNoneOption?.accessMode, thinking: derivedNoneOption?.thinking, webSearch: derivedNoneOption?.webSearch });
-    if (missingOption) list.push({ key: `missing-${missingOption.value}`, value: missingOption.value, label: missingOption.label, muted: true });
-    // WHY: Detect provider boundaries to render group headers in the dropdown.
-    let lastProviderId: string | null = null;
-    for (const o of options) {
-      const isNewGroup = o.providerId != null && o.providerId !== lastProviderId;
-      if (isNewGroup) lastProviderId = o.providerId;
-      list.push({
-        key: o.providerId ? `reg-${o.providerId}-${o.value}` : o.value,
-        value: o.value,
-        label: o.label,
-        role: o.role,
-        accessMode: o.accessMode,
-        thinking: o.thinking,
-        webSearch: o.webSearch,
-        isDefault: defaultCompositeKey !== '' && o.value === defaultCompositeKey,
-        ...(isNewGroup ? { groupLabel: o.providerName ?? o.providerId ?? undefined } : {}),
-      });
-    }
-    return list;
-  }, [options, allowNone, noneLabel, missingOption]);
+  const items = useMemo(
+    () => buildDropdownItems({ options, allowNone, noneLabel, noneModelId, globalDefaultModelId, missingOption }),
+    [options, allowNone, noneLabel, noneModelId, globalDefaultModelId, missingOption],
+  );
 
   // Find display label for current value (supports bare model IDs matching composite keys)
   const selectedItem = useMemo(() => {

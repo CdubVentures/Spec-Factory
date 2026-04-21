@@ -20,6 +20,10 @@
  *   - 'variantArtifactProducer' Iterates an upstream generator's variants, produces
  *                               non-field artifacts (e.g. PIF → images). Requires
  *                               `variantSource`. Has no `field_candidates` output.
+ *   - 'productFieldProducer'    Runs once per product across many fields dynamically
+ *                               (compiled `field_rules`). Not per-variant. Writes
+ *                               `field_candidates` for any key it resolves. Example:
+ *                               the universal per-key finder.
  */
 
 export const FINDER_MODULES = Object.freeze([
@@ -483,6 +487,142 @@ export const FINDER_MODULES = Object.freeze([
     settingsSubtitle: 'SKF module settings',
     settingsTip: 'Per-category settings for the SKU Finder: per-variant discovery of manufacturer part numbers (MPNs).',
     iconName: 'hash',
+  },
+  {
+    // Identity
+    id: 'keyFinder',
+    routePrefix: 'key-finder',
+    moduleClass: 'productFieldProducer',
+    // No variantSource — keyFinder runs once per product across many fields.
+    moduleType: 'kf',
+    moduleLabel: 'KF',
+    chipStyle: 'sf-chip-accent',
+
+    // Candidate source metadata. valueKey is dynamic (set per candidate at runtime).
+    candidateSourceType: 'key_finder',
+    logPrefix: 'kf',
+
+    // DB schema (summary is minimal — runs table carries the per-key detail)
+    tableName: 'key_finder',
+    runsTableName: 'key_finder_runs',
+    summaryColumns: [
+      { name: 'last_run_id', type: 'INTEGER', default: '0' },
+      { name: 'cooldown_until', type: 'TEXT', default: "''" },
+    ],
+    summaryIndexes: [
+      { name: 'idx_key_cooldown', columns: ['cooldown_until'] },
+    ],
+
+    // Fields this finder populates — DYNAMIC per category (resolved from compiled
+    // field_rules at runtime). Empty at registration time; Phase 3 orchestrator
+    // discovers the active keys per category.
+    fieldKeys: [],
+
+    // LLM phase (reference to llmPhaseDefs entry)
+    phase: 'keyFinder',
+
+    // JSON store config
+    filePrefix: 'key_finder',
+
+    // Reseed
+    reseedKey: 'key_finder',
+    rebuildFnKey: 'rebuildKeyFinderFromJson',
+
+    // Per-category settings — budget scoring + bundling + discovery history.
+    settingsSchema: [
+      // Prompt template — hidden; edited in LLM Config Key Finder tab
+      { key: 'discoveryPromptTemplate', type: 'string', default: '', allowEmpty: true, hidden: true },
+
+      // Budget scoring formula (axis sum + variant scaling, clamped by floor)
+      { key: 'budgetRequiredPoints', type: 'intMap',
+        keys: ['mandatory', 'non_mandatory'],
+        keyLabels: { mandatory: 'Mandatory', non_mandatory: 'Non-mandatory' },
+        default: { mandatory: 2, non_mandatory: 1 },
+        min: 0, max: 20,
+        uiLabel: 'Required level points', uiGroup: 'Budget Scoring',
+        uiTip: 'Points contributed by each required-level tier when computing a key\u2019s attempt budget.' },
+      { key: 'budgetAvailabilityPoints', type: 'intMap',
+        keys: ['always', 'sometimes', 'rare'],
+        keyLabels: { always: 'Always', sometimes: 'Sometimes', rare: 'Rare' },
+        default: { always: 1, sometimes: 2, rare: 3 },
+        min: 0, max: 20,
+        uiLabel: 'Availability points', uiGroup: 'Budget Scoring',
+        uiTip: 'Points contributed by how often sources carry this field (rarer fields earn more retries).' },
+      { key: 'budgetDifficultyPoints', type: 'intMap',
+        keys: ['easy', 'medium', 'hard', 'very_hard'],
+        keyLabels: { easy: 'Easy', medium: 'Medium', hard: 'Hard', very_hard: 'Very hard' },
+        default: { easy: 1, medium: 2, hard: 3, very_hard: 4 },
+        min: 0, max: 20,
+        uiLabel: 'Difficulty points', uiGroup: 'Budget Scoring',
+        uiTip: 'Points contributed by extraction difficulty (harder reasoning earns more attempts).' },
+      { key: 'budgetVariantPointsPerExtra', type: 'int', default: 1, min: 0, max: 10,
+        uiLabel: 'Variant points per extra', uiGroup: 'Budget Scoring',
+        uiTip: 'Points added for each variant beyond the first. Also scales bundling passenger cost.' },
+      { key: 'budgetFloor', type: 'int', default: 3, min: 1, max: 20,
+        uiLabel: 'Budget floor', uiGroup: 'Budget Scoring',
+        uiTip: 'Minimum per-key attempts, regardless of axis sum.' },
+
+      // Bundling (Smart Loop only; per-key Run and Loop always solo)
+      { key: 'bundlingEnabled', type: 'bool', default: false,
+        uiLabel: 'Bundling', uiGroup: 'Bundling',
+        uiTip: 'Pack same-group passenger keys onto the primary call during Smart Loop. Off = single-key calls only.' },
+      { key: 'bundlingPassengerCost', type: 'intMap',
+        keys: ['easy', 'medium', 'hard', 'very_hard'],
+        keyLabels: { easy: 'Easy', medium: 'Medium', hard: 'Hard', very_hard: 'Very hard' },
+        default: { easy: 1, medium: 2, hard: 4, very_hard: 8 },
+        min: 0, max: 64,
+        uiLabel: 'Passenger cost', uiGroup: 'Bundling',
+        uiTip: 'Point cost to carry a passenger of each difficulty (scaled by variant count).' },
+      { key: 'bundlingPoolPerPrimary', type: 'intMap',
+        keys: ['easy', 'medium', 'hard', 'very_hard'],
+        keyLabels: { easy: 'Easy primary', medium: 'Medium primary', hard: 'Hard primary', very_hard: 'Very hard primary' },
+        default: { easy: 6, medium: 4, hard: 2, very_hard: 1 },
+        min: 0, max: 32,
+        uiLabel: 'Primary pool', uiGroup: 'Bundling',
+        uiTip: 'Passenger-point budget each primary can carry. Higher = more passengers allowed; 0 = solo only.' },
+      { key: 'passengerDifficultyPolicy', type: 'enum', default: 'less_or_equal',
+        allowed: ['less_or_equal', 'same_only', 'any_but_very_hard', 'any_but_hard_very_hard'],
+        optionLabels: {
+          less_or_equal: 'Same or easier than primary',
+          same_only: 'Same difficulty as primary',
+          any_but_very_hard: 'Any except very hard',
+          any_but_hard_very_hard: 'Any except hard and very hard',
+        },
+        uiLabel: 'Passenger difficulty', uiGroup: 'Bundling',
+        uiTip: 'Which passenger difficulties are eligible to ride along with the primary key.' },
+
+      // Discovery history — per-key scope (locked by design; not global per product)
+      { key: 'urlHistoryEnabled', type: 'bool', default: true,
+        uiLabel: 'URL history', uiGroup: 'Discovery History',
+        uiTip: 'Inject prior-run URLs per key so the LLM avoids re-crawling them. Per-key scope for keyFinder (different from RDF/SKU variant scope).' },
+      { key: 'queryHistoryEnabled', type: 'bool', default: true,
+        uiLabel: 'Query history', uiGroup: 'Discovery History',
+        uiTip: 'Inject prior-run search queries per key.' },
+    ],
+
+    // LLM phase schema (codegen: phaseSchemaRegistry.generated.js)
+    promptBuilderExport: 'buildKeyFinderPrompt',
+    responseSchemaExport: 'keyFinderResponseSchema',
+    // WHY: Registers in FINDER_SCALAR_DEFAULT_TEMPLATES so the prompt template is
+    // editable in LLM Config via the generic scalar-finder overlay.
+    defaultTemplateExport: 'KEY_FINDER_DEFAULT_TEMPLATE',
+
+    // Panel display strings (Indexing Lab)
+    panelTitle: 'Key Finder',
+    panelTip: 'Universal per-key extractor. Tier model routing + budget scoring + opt-in bundling driven by compiled field rules.',
+    valueLabelPlural: 'Keys',
+
+    dataChangeEvents: {
+      'run': ['review', 'product', 'publisher'],
+      'run-deleted': ['review', 'product', 'publisher'],
+      'deleted': ['review', 'product', 'publisher'],
+    },
+
+    // Module Settings (codegen: moduleSettingsSections.generated.ts)
+    settingsLabel: 'Key Finder',
+    settingsSubtitle: 'KF module settings',
+    settingsTip: 'Per-category budget scoring, bundling, and discovery-history toggles for the universal Key Finder.',
+    iconName: 'key',
   },
 ]);
 

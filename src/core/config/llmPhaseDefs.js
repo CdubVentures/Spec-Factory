@@ -84,7 +84,12 @@ export const LLM_PHASE_DEFS = Object.freeze([
   // WHY: Universal per-key extractor. Phase-level BASE MODEL inherits from plan like other finders;
   // 5 per-tier model overrides layer on top at runtime (Phase 3 routing). Budget/bundling knobs in settingsRegistry.
   { id: 'keyFinder', uiId: 'key-finder', label: 'Key Finder', subtitle: 'Universal per-key extractor', tip: 'Runs one universal per-key extractor across every field_rule. Difficulty routes to a tier model override; required×availability×difficulty×variantCount scores the per-key attempt budget; same-group point-pool bundling is opt-in for Smart Loop modes only.', roles: ['triage'], group: 'discovery', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalReasoningBudget: 'llmReasoningBudget', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel',
-    billing: { group: 'Key Finder', reasons: [{ reason: 'key_finding', label: 'Key Finder', color: 'var(--sf-billing-keyfinder-1, #22b8cf)' }] } },
+    billing: { group: 'Key Finder', reasons: [
+      { reason: 'key_finding_easy',      label: 'Easy',      color: 'var(--sf-billing-keyfinder-1, #66d9e8)' },
+      { reason: 'key_finding_medium',    label: 'Medium',    color: 'var(--sf-billing-keyfinder-2, #22b8cf)' },
+      { reason: 'key_finding_hard',      label: 'Hard',      color: 'var(--sf-billing-keyfinder-3, #0c8599)' },
+      { reason: 'key_finding_very_hard', label: 'Very Hard', color: 'var(--sf-billing-keyfinder-4, #0b7285)' },
+    ] } },
 ]);
 
 export const LLM_PHASE_IDS = LLM_PHASE_DEFS.map((d) => d.id);

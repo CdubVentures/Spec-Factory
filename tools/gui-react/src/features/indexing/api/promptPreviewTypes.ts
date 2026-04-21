@@ -29,6 +29,9 @@ export interface PromptPreviewResponse {
   readonly compiled_at: number;
   readonly prompts: readonly PromptPreviewPrompt[];
   readonly inputs_resolved: Readonly<Record<string, unknown>>;
+  /** Top-level explanatory notes — populated when the preview cannot produce a prompt
+   *  (e.g., eval mode with no candidates). UI renders these as an empty-state message. */
+  readonly notes?: readonly string[];
 }
 
 export interface PromptPreviewRequestBody {

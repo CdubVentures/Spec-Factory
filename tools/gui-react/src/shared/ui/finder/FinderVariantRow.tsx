@@ -1,25 +1,33 @@
 import type { ReactNode } from 'react';
-import { Chip } from '../feedback/Chip.tsx';
 import { ColorSwatch } from './ColorSwatch.tsx';
 import type { FinderVariantRowData } from './variantRowHelpers.ts';
+import './FinderVariantRow.css';
 
 interface FinderVariantRowProps {
   readonly variant: FinderVariantRowData;
   readonly hexParts: readonly string[];
   readonly expanded: boolean;
   readonly onToggle: () => void;
-  /** When false, clicking the header does nothing and the arrow renders muted. */
+  /** When false, clicking the header does nothing and the row becomes purely presentational. */
   readonly expandable?: boolean;
-  /** Chips / buttons rendered flush-right in the header row. */
+  /** Secondary content rendered below the name (e.g. the mono value, a status word). */
+  readonly secondary?: ReactNode;
+  /** Right-side content — typically a ring/badge + action buttons. */
   readonly trailing: ReactNode;
+  /** Content rendered between the header and the expandable body. Shows regardless of expand state (use for data-integrity banners, etc.). */
+  readonly afterHeader?: ReactNode;
   /** Expanded body. Rendered when expanded=true. */
   readonly children?: ReactNode;
 }
 
 /**
  * Shared variant row chrome for variant-dependent finder panels (PIF, RDF,
- * discontinued, …). Owns the outer panel, arrow, ColorSwatch, label, and
- * ED/CLR chip. Modules plug in their own trailing content and expanded body.
+ * SKU, …). Layout:
+ *
+ *   [swatch] [main-col: name / secondary] [trailing (ring + actions)]
+ *
+ * Whole header is the click target when `expandable` is true. No arrow
+ * caret — the expanded body below is the feedback.
  */
 export function FinderVariantRow({
   variant,
@@ -27,32 +35,39 @@ export function FinderVariantRow({
   expanded,
   onToggle,
   expandable = true,
+  secondary,
   trailing,
+  afterHeader,
   children,
 }: FinderVariantRowProps) {
   return (
-    <div className="mb-3 sf-surface-panel rounded-lg overflow-hidden">
+    <div className="sf-variant-row mb-3 sf-surface-panel rounded-lg overflow-hidden">
       <div
         onClick={expandable ? onToggle : undefined}
-        className={`flex items-center gap-2 px-3 py-2.5 select-none ${expandable ? 'cursor-pointer hover:opacity-80' : ''}`}
+        className={`sf-variant-row-header ${expandable ? 'sf-variant-row-header-clickable' : ''}`}
       >
-        <span
-          className={`text-[10px] shrink-0 transition-transform duration-150 ${expanded ? 'rotate-90' : ''} ${expandable ? 'sf-text-muted' : 'sf-text-subtle opacity-40'}`}
+        <svg
+          className={`sf-variant-row-caret ${expanded ? 'sf-variant-row-caret-open' : ''} ${expandable ? '' : 'sf-variant-row-caret-disabled'}`}
+          viewBox="0 0 20 20"
+          fill="none"
+          aria-hidden="true"
         >
-          {'\u25B6'}
-        </span>
-        <ColorSwatch hexParts={hexParts} />
-        <span className="text-[12px] font-semibold sf-text-primary truncate min-w-0 flex-1">
-          {variant.variant_label}
-        </span>
-        <Chip
-          label={variant.variant_type === 'edition' ? 'ED' : 'CLR'}
-          className={variant.variant_type === 'edition' ? 'sf-chip-accent' : 'sf-chip-info'}
-        />
-        {trailing}
+          <path d="M7 4l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <ColorSwatch hexParts={hexParts} size="tall" />
+        <div className="sf-variant-row-main">
+          <span className="sf-variant-row-name">{variant.variant_label}</span>
+          {secondary && (
+            <span className="sf-variant-row-secondary">{secondary}</span>
+          )}
+        </div>
+        <div className="sf-variant-row-trailing" onClick={(e) => e.stopPropagation()}>
+          {trailing}
+        </div>
       </div>
+      {afterHeader}
       {expanded && children && (
-        <div className="border-t sf-border-soft px-3 py-2">
+        <div className="sf-variant-row-body border-t sf-border-soft px-3 py-2">
           {children}
         </div>
       )}

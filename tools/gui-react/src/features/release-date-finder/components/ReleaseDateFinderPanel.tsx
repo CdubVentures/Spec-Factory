@@ -23,6 +23,7 @@ export function ReleaseDateFinderPanel({ productId, category }: ReleaseDateFinde
       useDeleteAllMutation={useDeleteReleaseDateFinderAllMutation}
       howItWorksSections={rdfHowItWorksSections}
       formatValue={maybeFormatDateValue}
+      previewFinder="rdf"
     />
   );
 }

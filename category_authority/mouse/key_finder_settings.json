@@ -1,0 +1,14 @@
+{
+  "discoveryPromptTemplate": "",
+  "budgetRequiredPoints": "{\"mandatory\":2,\"non_mandatory\":1}",
+  "budgetAvailabilityPoints": "{\"always\":1,\"sometimes\":2,\"rare\":3}",
+  "budgetDifficultyPoints": "{\"easy\":1,\"medium\":2,\"hard\":3,\"very_hard\":4}",
+  "budgetVariantPointsPerExtra": "1",
+  "budgetFloor": "3",
+  "bundlingEnabled": "false",
+  "bundlingPassengerCost": "{\"easy\":1,\"medium\":2,\"hard\":4,\"very_hard\":8}",
+  "bundlingPoolPerPrimary": "{\"easy\":6,\"medium\":4,\"hard\":2,\"very_hard\":1}",
+  "passengerDifficultyPolicy": "less_or_equal",
+  "urlHistoryEnabled": "true",
+  "queryHistoryEnabled": "true"
+}

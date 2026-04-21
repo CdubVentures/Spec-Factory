@@ -25,6 +25,7 @@ import {
 } from '../productImageStore.js';
 import { runEvalView, runEvalHero } from '../carouselBuild.js';
 import { writeCarouselSlot, resolveCarouselSlots, deleteEvalRecord, extractEvalState } from '../imageEvaluator.js';
+import { compilePifPreviewPrompt } from '../productImagePreviewPrompt.js';
 
 export function registerProductImageFinderRoutes(ctx) {
   const store = (specDb) => specDb.getFinderStore('productImageFinder');
@@ -49,6 +50,8 @@ export function registerProductImageFinderRoutes(ctx) {
     deleteOneSql: (specDb, pid) => store(specDb).remove(pid),
     deleteRunSql: (specDb, pid, rn) => store(specDb).removeRun(pid, rn),
     deleteAllRunsSql: (specDb, pid) => store(specDb).removeAllRuns(pid),
+
+    preview: { compilePrompt: compilePifPreviewPrompt },
 
     buildGetResponse: (row, selected, runs) => {
       // Backfill dimensions for images that predate dimension capture
