@@ -5,6 +5,7 @@ import { loadBundledModule } from '../../../../../../../src/shared/tests/helpers
 let findModuleIdForSection: (sectionId: string) => string | null;
 let stringifyFinderSettingDefault: (entry: any) => string;
 let buildModuleSettingsResetPayload: (finderId: string) => Record<string, string>;
+let buildAllModuleSettingsResetPayloads: () => Array<{ moduleId: string; settings: Record<string, string> }>;
 
 before(async () => {
   const mod = await loadBundledModule(
@@ -15,6 +16,7 @@ before(async () => {
     findModuleIdForSection,
     stringifyFinderSettingDefault,
     buildModuleSettingsResetPayload,
+    buildAllModuleSettingsResetPayloads,
   } = mod);
 });
 
@@ -111,6 +113,46 @@ describe('buildModuleSettingsResetPayload', () => {
     const payload = buildModuleSettingsResetPayload('colorEditionFinder');
     for (const value of Object.values(payload)) {
       assert.equal(typeof value, 'string');
+    }
+  });
+});
+
+describe('buildAllModuleSettingsResetPayloads', () => {
+  it('returns one entry per finder in FINDER_IDS_WITH_SETTINGS', () => {
+    const batches = buildAllModuleSettingsResetPayloads();
+    const moduleIds = batches.map((b) => b.moduleId).sort();
+    assert.deepEqual(moduleIds, [
+      'colorEditionFinder',
+      'keyFinder',
+      'productImageFinder',
+      'releaseDateFinder',
+      'skuFinder',
+    ]);
+  });
+
+  it('each entry has a non-empty settings payload', () => {
+    const batches = buildAllModuleSettingsResetPayloads();
+    for (const { moduleId, settings } of batches) {
+      assert.ok(
+        Object.keys(settings).length > 0,
+        `${moduleId} must produce a non-empty reset payload`,
+      );
+    }
+  });
+
+  it('each payload matches buildModuleSettingsResetPayload for the same finder', () => {
+    const batches = buildAllModuleSettingsResetPayloads();
+    for (const { moduleId, settings } of batches) {
+      assert.deepEqual(settings, buildModuleSettingsResetPayload(moduleId));
+    }
+  });
+
+  it('each payload is a Record<string,string>', () => {
+    const batches = buildAllModuleSettingsResetPayloads();
+    for (const { settings } of batches) {
+      for (const value of Object.values(settings)) {
+        assert.equal(typeof value, 'string');
+      }
     }
   });
 });

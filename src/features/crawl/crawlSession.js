@@ -12,6 +12,7 @@ import { createPluginRunner } from './core/pluginRunner.js';
 import { runFetchSuiteLoop } from './core/suiteOrchestrator.js';
 import { trimVideo } from './videoTrim.js';
 import { classifyBlockStatus } from './bypassStrategies.js';
+import { unlockViaApi as _defaultUnlockViaApi } from './brightDataUnlocker.js';
 
 // WHY: Prevent Crawlee from writing internal state to ./storage/ at project root.
 // Crawlee's key_value_stores and request_queues are internal bookkeeping.
@@ -34,7 +35,7 @@ export function parseProxyUrls(jsonStr) {
   } catch { return []; }
 }
 
-export function createCrawlSession({ settings = {}, plugins = [], extractionRunner, logger, onScreencastFrame, onScreenshotsPersist, onVideoPersist, onHtmlPersist, _crawlerFactory } = {}) {
+export function createCrawlSession({ settings = {}, plugins = [], extractionRunner, logger, onScreencastFrame, onScreenshotsPersist, onVideoPersist, onHtmlPersist, _crawlerFactory, _brightDataUnlocker = _defaultUnlockViaApi } = {}) {
   const runner = createPluginRunner({ plugins, logger });
   const pending = new Map();
   const workerIds = new Map();
@@ -1039,6 +1040,65 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           const idx = batchResults.findIndex((r) => r.url === retryResult.url && r.blocked);
           if (idx >= 0) batchResults[idx] = retryResult;
           else batchResults.push(retryResult);
+        }
+      }
+
+      // WHY: Third-pass Bright Data API unlock. Fires on URLs still blocked after
+      // native retry + proxy retry (except robots_blocked — respect robots.txt).
+      // API mode returns HTML only — no screenshot possible. Only $1.50/1k successes
+      // on PAYG, success-only billing, so enabling this is near-free at low volume.
+      const brightDataEnabled = settings.brightDataUnlockerEnabled === true || settings.brightDataUnlockerEnabled === 'true';
+      const brightDataKey = String(settings.brightDataApiKey || '').trim();
+      const brightDataZone = String(settings.brightDataZone || '').trim();
+      if (brightDataEnabled && brightDataKey && brightDataZone && typeof _brightDataUnlocker === 'function') {
+        const stillBlocked = batchResults.filter((r) => r.blocked && r.blockReason !== 'robots_blocked');
+        for (const blockedResult of stillBlocked) {
+          const unlockResult = await _brightDataUnlocker({
+            url: blockedResult.url,
+            apiKey: brightDataKey,
+            zone: brightDataZone,
+            timeoutMs: Number(settings.brightDataTimeoutMs) || 30000,
+            maxRetries: Number(settings.brightDataMaxRetries) || 2,
+          });
+
+          const { blocked, blockReason } = classifyBlockStatus({
+            status: unlockResult.status, html: unlockResult.html,
+          });
+          if (blocked) {
+            logger?.info?.('url_unlocked_via_brightdata', {
+              url: blockedResult.url,
+              succeeded: false,
+              attempts: unlockResult.attemptsUsed,
+              error: unlockResult.error || blockReason,
+            });
+            continue;
+          }
+
+          const merged = {
+            ...blockedResult,
+            url: blockedResult.url,
+            finalUrl: unlockResult.finalUrl || blockedResult.url,
+            status: unlockResult.status,
+            title: unlockResult.title,
+            html: unlockResult.html,
+            screenshots: [],
+            extractions: {},
+            videoPath: '',
+            blocked: false,
+            blockReason: null,
+            success: true,
+            brightDataUnlocked: true,
+            fetchError: null,
+          };
+          const idx = batchResults.findIndex((r) => r.url === blockedResult.url && r.blocked);
+          if (idx >= 0) batchResults[idx] = merged;
+
+          logger?.info?.('url_unlocked_via_brightdata', {
+            url: blockedResult.url,
+            succeeded: true,
+            attempts: unlockResult.attemptsUsed,
+            status: unlockResult.status,
+          });
         }
       }
 

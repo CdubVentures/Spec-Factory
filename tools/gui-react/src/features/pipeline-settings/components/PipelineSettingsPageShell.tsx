@@ -264,10 +264,13 @@ export function SectionNavIcon({ id, active }: { id: PipelineSectionId; active: 
 }
 
 // WHY: Module settings sections with per-category knobs get a category badge.
-// Derived from generated sections — any module with settingsDefaults gets scoped.
+// Global-scope modules (settingsScope='global') are shared across all categories,
+// so they're excluded — no category chip.
 const CATEGORY_SCOPED: ReadonlySet<PipelineSectionId> = new Set([
   'source-strategy', 'deterministic-strategy',
-  ...MODULE_SETTINGS_SECTIONS.map(s => s.id),
+  ...MODULE_SETTINGS_SECTIONS
+    .filter((s) => s.settingsScope === 'category')
+    .map((s) => s.id),
 ]);
 
 // WHY: Derived from SETTINGS_GROUP_REGISTRY so adding a group is O(1).

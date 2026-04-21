@@ -16,6 +16,7 @@ describe('APP_DB_SCHEMA', () => {
     'settings',
     'studio_maps',
     'color_registry',
+    'finder_global_settings',
   ];
 
   for (const table of expectedTables) {

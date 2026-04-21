@@ -21,6 +21,7 @@ export interface FinderSettingsEntry {
   uiTip?: string;
   uiGroup?: string;
   uiHero?: boolean;
+  uiRightPanel?: boolean;
   secret?: boolean;
   disabledBy?: string;
   allowEmpty?: boolean;
@@ -120,10 +121,15 @@ export const FINDER_SETTINGS_REGISTRY: Record<FinderIdWithSettings, readonly Fin
     { key: 'budgetDifficultyPoints', type: 'intMap', default: {"easy":1,"medium":2,"hard":3,"very_hard":4}, min: 0, max: 20, keys: ['easy', 'medium', 'hard', 'very_hard'] as const, keyLabels: {"easy":"Easy","medium":"Medium","hard":"Hard","very_hard":"Very hard"}, uiLabel: 'Difficulty points', uiTip: 'Points contributed by extraction difficulty (harder reasoning earns more attempts).', uiGroup: 'Budget Scoring' },
     { key: 'budgetVariantPointsPerExtra', type: 'int', default: 1, min: 0, max: 10, uiLabel: 'Variant points per extra', uiTip: 'Points added for each variant beyond the first. Also scales bundling passenger cost.', uiGroup: 'Budget Scoring' },
     { key: 'budgetFloor', type: 'int', default: 3, min: 1, max: 20, uiLabel: 'Budget floor', uiTip: 'Minimum per-key attempts, regardless of axis sum.', uiGroup: 'Budget Scoring' },
+    { key: 'budgetPreviewDisplay', type: 'string', default: "", uiLabel: 'Live preview', uiTip: 'Computed attempt budgets for every difficulty × availability combination, split by required-level tier.', uiGroup: 'Budget Scoring', uiRightPanel: true, allowEmpty: true, widget: 'keyFinderBudgetPreview' },
     { key: 'bundlingEnabled', type: 'bool', default: false, uiLabel: 'Bundling', uiTip: 'Pack same-group passenger keys onto the primary call during Smart Loop. Off = single-key calls only.', uiGroup: 'Bundling' },
+    { key: 'groupBundlingOnly', type: 'bool', default: true, uiLabel: 'Group bundling only', uiTip: 'When ON, passengers must share the primary’s group. When OFF, bundling may reach across groups.', uiGroup: 'Bundling' },
     { key: 'bundlingPassengerCost', type: 'intMap', default: {"easy":1,"medium":2,"hard":4,"very_hard":8}, min: 0, max: 64, keys: ['easy', 'medium', 'hard', 'very_hard'] as const, keyLabels: {"easy":"Easy","medium":"Medium","hard":"Hard","very_hard":"Very hard"}, uiLabel: 'Passenger cost', uiTip: 'Point cost to carry a passenger of each difficulty (scaled by variant count).', uiGroup: 'Bundling' },
     { key: 'bundlingPoolPerPrimary', type: 'intMap', default: {"easy":6,"medium":4,"hard":2,"very_hard":1}, min: 0, max: 32, keys: ['easy', 'medium', 'hard', 'very_hard'] as const, keyLabels: {"easy":"Easy primary","medium":"Medium primary","hard":"Hard primary","very_hard":"Very hard primary"}, uiLabel: 'Primary pool', uiTip: 'Passenger-point budget each primary can carry. Higher = more passengers allowed; 0 = solo only.', uiGroup: 'Bundling' },
     { key: 'passengerDifficultyPolicy', type: 'enum', default: "less_or_equal", allowed: ['less_or_equal', 'same_only', 'any_but_very_hard', 'any_but_hard_very_hard'] as const, optionLabels: {"less_or_equal":"Same or easier than primary","same_only":"Same difficulty as primary","any_but_very_hard":"Any except very hard","any_but_hard_very_hard":"Any except hard and very hard"}, uiLabel: 'Passenger difficulty', uiTip: 'Which passenger difficulties are eligible to ride along with the primary key.', uiGroup: 'Bundling' },
+    { key: 'componentInjectionEnabled', type: 'bool', default: true, uiLabel: 'Component values', uiTip: 'Inject already-resolved component identities (sensor, switch, encoder, material) into primary + additional key contexts.', uiGroup: 'Context Injection' },
+    { key: 'knownFieldsInjectionEnabled', type: 'bool', default: true, uiLabel: 'Known fields', uiTip: 'Inject already-published non-component field values on this product as a shared context block.', uiGroup: 'Context Injection' },
+    { key: 'searchHintsInjectionEnabled', type: 'bool', default: true, uiLabel: 'Search hints', uiTip: 'Inject domain_hints + query_terms + query_templates for the PRIMARY key only (passengers inherit the primary session).', uiGroup: 'Context Injection' },
     { key: 'urlHistoryEnabled', type: 'bool', default: true, uiLabel: 'URL history', uiTip: 'Inject prior-run URLs per key so the LLM avoids re-crawling them. Per-key scope for keyFinder (different from RDF/SKU variant scope).', uiGroup: 'Discovery History' },
     { key: 'queryHistoryEnabled', type: 'bool', default: true, uiLabel: 'Query history', uiTip: 'Inject prior-run search queries per key.', uiGroup: 'Discovery History' },
   ],

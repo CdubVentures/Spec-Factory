@@ -1,12 +1,24 @@
 import type { FinderTabSummary } from '../../shared/ui/finder/tabSummary.ts';
+import { useIsModuleRunning } from '../operations/hooks/useFinderOperations.ts';
+import { useKeyFinderSummaryQuery } from './api/keyFinderQueries.ts';
 
 /**
- * Key Finder — tab summary hook (Phase 2 stub).
+ * Key Finder — tab summary hook.
  *
- * Phase 4 replaces this with real per-key progress derived from
- * the keyFinder queries. For now it returns an idle summary so
- * FinderTabBar renders without errors.
+ * Shows "resolved / eligible" in the Indexing Lab tab bar, plus a running
+ * indicator when any per-key run is in flight on this product.
  */
-export function useKeyFinderTabSummary(/* productId: string, category: string */): FinderTabSummary {
-  return { kpi: 'Phase 3', status: 'idle' };
+export function useKeyFinderTabSummary(productId: string, category: string): FinderTabSummary {
+  const { data: summary } = useKeyFinderSummaryQuery(category, productId);
+  const isRunning = useIsModuleRunning('kf', productId);
+
+  if (isRunning) {
+    return { kpi: 'Running', status: 'running' };
+  }
+  if (!summary || summary.length === 0) {
+    return { kpi: '0 / 0', status: 'idle' };
+  }
+  const resolved = summary.filter((r) => r.published || r.last_status === 'resolved').length;
+  const total = summary.filter((r) => !r.variant_dependent).length;
+  return { kpi: `${resolved} / ${total}`, status: 'idle' };
 }

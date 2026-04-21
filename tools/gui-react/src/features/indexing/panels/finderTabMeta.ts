@@ -16,9 +16,13 @@ import { usePifTabSummary } from '../../product-image-finder/tabSummary.ts';
 import { useRdfTabSummary } from '../../release-date-finder/tabSummary.ts';
 import { useSkuTabSummary } from '../../sku-finder/tabSummary.ts';
 import { useKeyFinderTabSummary } from '../../key-finder/tabSummary.ts';
+import { usePipelineTabSummary } from './pipelineTabSummary.ts';
 import type { FinderTabSummary } from '../../../shared/ui/finder/tabSummary.ts';
 
 export type FinderPanelId = typeof FINDER_PANELS[number]['id'];
+
+export const PIPELINE_TAB_ID = 'pipeline' as const;
+export type IndexingTabId = typeof PIPELINE_TAB_ID | FinderPanelId;
 
 export interface FinderTabMeta {
   /** Short icon glyph rendered in the tab button's icon slot. */
@@ -63,3 +67,19 @@ export const FINDER_TAB_META: Record<FinderPanelId, FinderTabMeta> = {
     useTabSummary: useKeyFinderTabSummary,
   },
 };
+
+export const PIPELINE_TAB_META: FinderTabMeta = {
+  icon: '▶',
+  iconClass: 'pipeline',
+  shortName: 'Pipeline',
+  useTabSummary: usePipelineTabSummary,
+};
+
+export const INDEXING_TAB_META: Record<IndexingTabId, FinderTabMeta> = {
+  [PIPELINE_TAB_ID]: PIPELINE_TAB_META,
+  ...FINDER_TAB_META,
+};
+
+export function getIndexingTabIds(): readonly IndexingTabId[] {
+  return [PIPELINE_TAB_ID, ...FINDER_PANELS.map((p) => p.id as FinderPanelId)];
+}

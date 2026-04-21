@@ -3,6 +3,7 @@ import { rebuildColorEditionFinderFromJson } from '../../features/color-edition/
 import { rebuildProductImageFinderFromJson } from '../../features/product-image/index.js';
 import { rebuildReleaseDateFinderFromJson } from '../../features/release-date/releaseDateStore.js';
 import { rebuildSkuFinderFromJson } from '../../features/sku/skuStore.js';
+import { rebuildKeyFinderFromJson } from '../../features/key/keyStore.js';
 import { rebuildFieldCandidatesFromJson, rebuildPublishedFieldsFromJson } from '../../features/publisher/index.js';
 import { reseedFieldKeyOrderFromJson } from '../../features/studio/fieldKeyOrderReseed.js';
 import { reseedFieldStudioMapFromJson } from '../../features/studio/fieldStudioMapReseed.js';
@@ -31,6 +32,7 @@ export function createSpecDbRuntime({
   indexLabRoot = '',
   productRoot = '',
   buildFieldRulesSignature = null,
+  appDb = null,
 } = {}) {
   assertFunction('resolveCategoryAlias', resolveCategoryAlias);
   assertFunction('specDbClass', specDbClass);
@@ -57,6 +59,7 @@ export function createSpecDbRuntime({
     rebuildProductImageFinderFromJson,
     rebuildReleaseDateFinderFromJson,
     rebuildSkuFinderFromJson,
+    rebuildKeyFinderFromJson,
     reseedFieldKeyOrderFromJson,
     reseedFieldStudioMapFromJson,
     rebuildFieldCandidatesFromJson,
@@ -163,7 +166,7 @@ export function createSpecDbRuntime({
 
     try {
       fsSync.accessSync(primaryPath);
-      const db = new specDbClass({ dbPath: primaryPath, category: resolvedCategory });
+      const db = new specDbClass({ dbPath: primaryPath, category: resolvedCategory, globalDb: appDb?.db });
       if (db.isSeeded()) {
         specDbCache.set(resolvedCategory, db);
         triggerHashGatedReconcile(resolvedCategory, db);
@@ -179,7 +182,7 @@ export function createSpecDbRuntime({
 
     try {
       fsSync.mkdirSync(path.dirname(primaryPath), { recursive: true });
-      const db = new specDbClass({ dbPath: primaryPath, category: resolvedCategory });
+      const db = new specDbClass({ dbPath: primaryPath, category: resolvedCategory, globalDb: appDb?.db });
       specDbCache.set(resolvedCategory, db);
       triggerAutoSeed(resolvedCategory, db);
       return db;

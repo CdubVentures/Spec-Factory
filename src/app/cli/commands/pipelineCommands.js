@@ -12,6 +12,8 @@ import { serializeRunSummary } from '../../../indexlab/runSummarySerializer.js';
 import { buildRuntimeOpsPanels } from '../../../features/indexing/api/index.js';
 import { setStageCursor } from '../../../indexlab/runtimeBridgeStageLifecycle.js';
 import { writeRunMeta } from '../../../indexlab/runtimeBridgeArtifacts.js';
+import { loadPriorFieldHistories } from '../../../indexlab/loadPriorFieldHistories.js';
+import { finalizeFieldHistories } from '../../../indexlab/finalizeFieldHistories.js';
 import { deriveFullModel } from '../../../features/catalog/index.js';
 
 export function createPipelineCommands({
@@ -125,18 +127,19 @@ export function createPipelineCommands({
 
     // Open per-category SpecDb for event logging (WAL-safe, best-effort)
     let specDb = null;
-    try {
-      specDb = await openSpecDbForCategory(config, category);
-    } catch { /* best-effort: pipeline still works without SQL event logging */ }
-
-    // WHY: Pipeline subprocess needs AppDb for billing entries to reach SQLite.
-    // Without this, pipeline billing goes to JSONL only and never shows in the GUI.
+    // WHY: AppDb opened first so its handle can be threaded into specDb as the
+    // shared globalDb for finder_global_settings. Pipeline subprocess also uses
+    // AppDb for billing entries.
     let appDb = null;
     try {
       const { AppDb } = await import('../../../db/appDb.js');
       const appDbDir = pathNode.resolve(config.specDbDir || '.workspace/db');
       appDb = new AppDb({ dbPath: pathNode.join(appDbDir, 'app.sqlite') });
     } catch { /* best-effort: pipeline still works without billing SQL */ }
+
+    try {
+      specDb = await openSpecDbForCategory(config, category, { appDb });
+    } catch { /* best-effort: pipeline still works without SQL event logging */ }
 
     try {
     // WHY: DB-first job resolution. The products table in spec.sqlite is the SSOT
@@ -248,11 +251,24 @@ export function createPipelineCommands({
       runConfig.discoveryEnabled = true;
     }
 
+      // WHY: Load prior field_histories BEFORE the run so NeedSet's roundContext
+      // carries previous query_count per field. Without this, tier-3 queries
+      // stay at repeat_count=0 forever (no 3a→3b→3c→3d progression). round=1
+      // when prior histories exist so deriveFieldHistory in needsetEngine takes
+      // the carry-forward branch (round=0 discards prev).
+      const priorFieldHistories = loadPriorFieldHistories(specDb, productIdArg);
+      const hasPriorHistories = priorFieldHistories && Object.keys(priorFieldHistories).length > 0;
+      const roundContext = {
+        previousFieldHistories: priorFieldHistories,
+        round: hasPriorHistories ? 1 : 0,
+      };
+
       const result = await runProduct({
         storage,
         config: runConfig,
         s3Key,
         jobOverride,
+        roundContext,
         runIdOverride: requestedRunId || undefined,
       });
 
@@ -306,9 +322,24 @@ export function createPipelineCommands({
           identityLock: result.job?.identityLock || null,
           runtimeOpsPanels,
         });
+        // WHY: Compute + persist field_histories as a run_artifact BEFORE
+        // writing product.json. This drives tier-3 enrichment progression
+        // (next-run roundContext.previousFieldHistories).
+        const fieldHistories = finalizeFieldHistories({
+          specDb,
+          runId: result.runId,
+          productId: result.productId,
+          category,
+          fieldProvenance: bridge.fieldProvenance || {},
+          priorFieldHistories,
+          runSummary,
+          duplicatesSuppressed: bridge.counters?.duplicates_suppressed || 0,
+        });
+
         // WHY: Checkpoint writes are independent — run in parallel.
-        // WHY: Snapshot query cooldowns into product.json so tier progression
-        // survives DB rebuilds. Product.json is the durable SSOT (never pruned).
+        // WHY: Snapshot query cooldowns + field_histories into product.json so
+        // tier progression survives DB rebuilds. Product.json is the durable
+        // SSOT (never pruned).
         const queryCooldowns = specDb?.getQueryCooldownsByProduct?.(result.productId) || [];
         const productCp = buildProductCheckpoint({
           identity: result.job?.identityLock || {},
@@ -317,6 +348,7 @@ export function createPipelineCommands({
           runId: result.runId,
           sources: checkpoint.sources,
           queryCooldowns,
+          fieldHistories,
         });
         writeCrawlCheckpoint({
           checkpoint,

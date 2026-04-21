@@ -43,6 +43,26 @@ export function selectRunningVariantKeys(
   return [...keys].sort().join('|');
 }
 
+/** Per-key scope (keyFinder): which field_keys are currently running for this product. */
+export function selectRunningFieldKeys(
+  ops: ReadonlyMap<string, Operation>,
+  type: string,
+  productId: string,
+): string {
+  const keys = new Set<string>();
+  for (const op of ops.values()) {
+    if (
+      op.type === type &&
+      op.productId === productId &&
+      op.status === 'running' &&
+      op.fieldKey
+    ) {
+      keys.add(op.fieldKey);
+    }
+  }
+  return [...keys].sort().join('|');
+}
+
 /* ── React hooks (thin wrappers) ───────────────────────────────────── */
 
 export function useIsModuleRunning(type: string, productId: string): boolean {
@@ -61,6 +81,21 @@ export function useRunningVariantKeys(type: string, productId: string, subType: 
       (s: { operations: ReadonlyMap<string, Operation> }) =>
         selectRunningVariantKeys(s.operations, type, productId, subType),
       [type, productId, subType],
+    ),
+  );
+  return useMemo(
+    () => new Set(serialized ? serialized.split('|') : []),
+    [serialized],
+  );
+}
+
+/** Per-key scope (keyFinder). Returns the set of field_keys currently running. */
+export function useRunningFieldKeys(type: string, productId: string): ReadonlySet<string> {
+  const serialized = useOperationsStore(
+    useCallback(
+      (s: { operations: ReadonlyMap<string, Operation> }) =>
+        selectRunningFieldKeys(s.operations, type, productId),
+      [type, productId],
     ),
   );
   return useMemo(

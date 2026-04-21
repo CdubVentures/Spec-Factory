@@ -1,0 +1,109 @@
+/*
+ * IndexingPanelHeader — unified chrome for all six indexing-lab panels
+ * (pipeline, cef, pif, rdf, sku, key). Drift-free by construction:
+ * panel identity is passed via data-panel, all color routes through
+ * semantic tokens.
+ *
+ * Slot order (left → right):
+ *   chevron → icon chip → title → tip → running pill → model strip
+ *     → [history][divider][prompt][action/run]
+ */
+
+.sf-indexing-panel {
+  position: relative;
+}
+
+/* 3px colored rail flush to the panel's left edge. Mirrors the tab-bar
+   icon color per panel so each header stays visually tied to its tab. */
+.sf-indexing-panel-rail {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-top-left-radius: inherit;
+  border-bottom-left-radius: inherit;
+  pointer-events: none;
+}
+
+/* Colored icon chip — 26px square. Same glyph + color as the tab's icon. */
+.sf-indexing-panel-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--sf-radius-md);
+  border: 1px solid;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 600;
+  flex: none;
+}
+
+/* Vertical divider that sits between the History button and the rest of
+   the right-side cluster. Subtle 1px line, shortened top/bottom. */
+.sf-indexing-panel-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px 2px;
+  background: rgb(var(--sf-color-border-subtle-rgb) / 0.35);
+  pointer-events: none;
+  flex: none;
+}
+
+/* ── Panel theming — driven entirely by [data-panel] on the root ──── */
+
+.sf-indexing-panel[data-panel="pipeline"] .sf-indexing-panel-rail {
+  background: var(--sf-state-run-ai-fg);
+}
+.sf-indexing-panel[data-panel="pipeline"] .sf-indexing-panel-icon {
+  color: var(--sf-state-run-ai-fg);
+  background: rgb(var(--sf-color-run-ai-rgb) / 0.18);
+  border-color: rgb(var(--sf-color-run-ai-rgb) / 0.4);
+}
+
+.sf-indexing-panel[data-panel="cef"] .sf-indexing-panel-rail {
+  background: var(--sf-state-warning-fg);
+}
+.sf-indexing-panel[data-panel="cef"] .sf-indexing-panel-icon {
+  color: var(--sf-state-warning-fg);
+  background: var(--sf-state-warning-bg);
+  border-color: var(--sf-state-warning-border);
+}
+
+.sf-indexing-panel[data-panel="pif"] .sf-indexing-panel-rail {
+  background: var(--sf-state-info-fg);
+}
+.sf-indexing-panel[data-panel="pif"] .sf-indexing-panel-icon {
+  color: var(--sf-state-info-fg);
+  background: var(--sf-state-info-bg);
+  border-color: var(--sf-state-info-border);
+}
+
+.sf-indexing-panel[data-panel="rdf"] .sf-indexing-panel-rail {
+  background: rgb(var(--sf-color-accent-strong-rgb));
+}
+.sf-indexing-panel[data-panel="rdf"] .sf-indexing-panel-icon {
+  color: rgb(var(--sf-color-accent-strong-rgb));
+  background: rgb(var(--sf-color-accent-rgb) / 0.18);
+  border-color: rgb(var(--sf-color-accent-rgb) / 0.4);
+}
+
+.sf-indexing-panel[data-panel="sku"] .sf-indexing-panel-rail {
+  background: var(--sf-state-success-fg);
+}
+.sf-indexing-panel[data-panel="sku"] .sf-indexing-panel-icon {
+  color: var(--sf-state-success-fg);
+  background: var(--sf-state-success-bg);
+  border-color: var(--sf-state-success-border);
+}
+
+.sf-indexing-panel[data-panel="key"] .sf-indexing-panel-rail {
+  background: var(--sf-state-key-fg);
+}
+.sf-indexing-panel[data-panel="key"] .sf-indexing-panel-icon {
+  color: var(--sf-state-key-fg);
+  background: var(--sf-state-key-bg);
+  border-color: var(--sf-state-key-border);
+}

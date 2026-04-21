@@ -42,10 +42,14 @@ import {
   buildIndexingRuntimeSettingsProjection,
 } from '../state/indexingRuntimeSettingsProjection.ts';
 import { PickerPanel } from '../panels/PickerPanel.tsx';
-import { ProductHistoryPanel } from '../panels/ProductHistoryPanel.tsx';
-import { FinderTabBar } from '../panels/FinderTabBar.tsx';
+import { PipelinePanel } from '../panels/PipelinePanel.tsx';
+import { IndexingTabBar } from '../panels/IndexingTabBar.tsx';
 import { FinderPanelSkeleton } from '../panels/FinderPanelSkeleton.tsx';
-import type { FinderPanelId } from '../panels/finderTabMeta.ts';
+import {
+  PIPELINE_TAB_ID,
+  getIndexingTabIds,
+  type IndexingTabId,
+} from '../panels/finderTabMeta.ts';
 import { FINDER_PANELS } from '../state/finderPanelRegistry.generated.ts';
 import { DiscoveryHistoryDrawer } from '../../../shared/ui/finder/index.ts';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
@@ -266,28 +270,25 @@ export function IndexingPage() {
     collapseToggle(`indexing:panel:${panel}`, DEFAULT_PANEL_COLLAPSED[panel]);
   };
 
-  // WHY: Replaced the 4-stacked-finder-panels layout with a tab switcher.
-  // Only the active finder's panel renders. Active id is persisted per
-  // product + category so a returning user lands on the last finder they used.
-  const finderPanelIds = useMemo(
-    () => FINDER_PANELS.map((p) => p.id) as readonly FinderPanelId[],
-    [],
-  );
-  const [activeFinderId, setActiveFinderId] = usePersistedTab<FinderPanelId>(
-    `indexing:finder:active:${singleProductId}:${category}`,
-    FINDER_PANELS[0].id as FinderPanelId,
-    { validValues: finderPanelIds },
+  // WHY: Tab bar hosts Pipeline (fixed first tab) + the finder registry.
+  // Active id is persisted per product + category so a returning user
+  // lands on the last tab they used; new products default to Pipeline.
+  const indexingTabIds = useMemo(() => getIndexingTabIds(), []);
+  const [activeTabId, setActiveTabId] = usePersistedTab<IndexingTabId>(
+    `indexing:tab:active:${singleProductId}:${category}`,
+    PIPELINE_TAB_ID,
+    { validValues: indexingTabIds },
   );
   const ActiveFinderPanel = useMemo(() => {
-    const entry = FINDER_PANELS.find((p) => p.id === activeFinderId) ?? FINDER_PANELS[0];
+    if (activeTabId === PIPELINE_TAB_ID) return null;
+    const entry = FINDER_PANELS.find((p) => p.id === activeTabId) ?? FINDER_PANELS[0];
     return entry.component;
-  }, [activeFinderId]);
+  }, [activeTabId]);
 
   const pickerPanelProps = {
     collapsed: panelCollapsed.picker,
     onToggle: () => togglePanel('picker'),
     busy,
-    processRunning,
     singleBrand,
     onBrandChange: setSingleBrand,
     singleModel,
@@ -300,9 +301,17 @@ export function IndexingPage() {
     selectedCatalogProduct,
     displayVariant,
     selectedAmbiguityMeter,
+  };
+
+  const pipelinePanelProps = {
+    collapsed: panelCollapsed.pipeline,
+    onToggle: () => togglePanel('pipeline'),
+    busy,
+    processRunning,
     runtimeSettingsReady,
     canRunSingle,
     onRunIndexLab: handleRunIndexLab,
+    llmKeyGateErrors,
     stopForceKill,
     onStopForceKillChange: setStopForceKill,
     onStopProcess: (opts: { force: boolean }) => stopMut.mutate(opts),
@@ -310,33 +319,37 @@ export function IndexingPage() {
     selectedIndexLabRunId,
     onClearSelectedRunView: clearSelectedRunView,
     onReplaySelectedRunView: replaySelectedRunView,
-    llmKeyGateErrors,
+    productId: singleProductId,
+    category,
   };
 
   return (
     <div className="space-y-4 flex flex-col">
       <PickerPanel {...pickerPanelProps} />
-      <ProductHistoryPanel productId={singleProductId} category={category} />
       {singleProductId ? (
         <>
-          <FinderTabBar
-            activeId={activeFinderId}
-            onSelect={setActiveFinderId}
+          <IndexingTabBar
+            activeId={activeTabId}
+            onSelect={setActiveTabId}
             productId={singleProductId}
             category={category}
           />
           <div
             role="tabpanel"
-            id={`finder-panel-${activeFinderId}`}
-            aria-labelledby={`finder-tab-${activeFinderId}`}
+            id={`finder-panel-${activeTabId}`}
+            aria-labelledby={`finder-tab-${activeTabId}`}
           >
-            <Suspense fallback={<FinderPanelSkeleton />}>
-              <ActiveFinderPanel
-                key={activeFinderId}
-                productId={singleProductId}
-                category={category}
-              />
-            </Suspense>
+            {activeTabId === PIPELINE_TAB_ID ? (
+              <PipelinePanel {...pipelinePanelProps} />
+            ) : ActiveFinderPanel ? (
+              <Suspense fallback={<FinderPanelSkeleton />}>
+                <ActiveFinderPanel
+                  key={activeTabId}
+                  productId={singleProductId}
+                  category={category}
+                />
+              </Suspense>
+            ) : null}
           </div>
         </>
       ) : null}

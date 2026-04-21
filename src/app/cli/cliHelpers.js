@@ -69,7 +69,7 @@ export function createWithSpecDb(openFn) {
   };
 }
 
-export async function openSpecDbForCategory(config, category) {
+export async function openSpecDbForCategory(config, category, { appDb = null } = {}) {
   const normalizedCategory = String(category || '').trim();
   if (!normalizedCategory) return null;
   try {
@@ -81,7 +81,7 @@ export async function openSpecDbForCategory(config, category) {
     const dbDir = pathNode.join(specDbRoot, normalizedCategory);
     await fsNode.mkdir(dbDir, { recursive: true });
     const dbPath = pathNode.join(dbDir, 'spec.sqlite');
-    return new SpecDb({ dbPath, category: normalizedCategory });
+    return new SpecDb({ dbPath, category: normalizedCategory, globalDb: appDb?.db });
   } catch {
     return null;
   }

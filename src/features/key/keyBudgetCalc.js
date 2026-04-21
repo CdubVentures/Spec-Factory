@@ -14,7 +14,7 @@ export function calcKeyBudget({ fieldRule = {}, variantCount = 1, settings = {} 
   const required = axisPoints(settings.budgetRequiredPoints, fieldRule.required_level);
   const availability = axisPoints(settings.budgetAvailabilityPoints, fieldRule.availability);
   const difficulty = axisPoints(settings.budgetDifficultyPoints, fieldRule.difficulty);
-  const perExtra = axisPoints({ v: settings.variantPointsPerExtra }, 'v');
+  const perExtra = axisPoints({ v: settings.budgetVariantPointsPerExtra }, 'v');
   const extras = Math.max(0, Number(variantCount) - 1);
   const variant = extras * perExtra;
   const floor = Math.max(1, axisPoints({ v: settings.budgetFloor }, 'v') || 1);

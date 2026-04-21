@@ -1,5 +1,5 @@
 /*
- * FinderTabBar — finder-specific icon swatches, status-light colors, and the
+ * IndexingTabBar — tab icon swatches, status-light colors, and the
  * mini divider rendered between adjacent tabs. Extends .sf-tab-strip /
  * .sf-tab-item (house primitives, in theme.css). All colors come from
  * semantic tokens; no hardcoded hex.
@@ -60,6 +60,18 @@
   color: var(--sf-state-success-fg);
   background: var(--sf-state-success-bg);
   border-color: var(--sf-state-success-border);
+}
+
+.finder-tab-icon-pipeline {
+  color: var(--sf-state-run-ai-fg);
+  background: rgb(var(--sf-color-run-ai-rgb) / 0.18);
+  border-color: rgb(var(--sf-color-run-ai-rgb) / 0.4);
+}
+
+.finder-tab-icon-key {
+  color: var(--sf-state-key-fg);
+  background: var(--sf-state-key-bg);
+  border-color: var(--sf-state-key-border);
 }
 
 /* ── Status lights ──────────────────────────────────────────────── */

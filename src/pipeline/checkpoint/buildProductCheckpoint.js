@@ -31,10 +31,10 @@ function mapProductSource(src, runId) {
 }
 
 /**
- * @param {{ identity: object, category: string, productId: string, runId: string, sources: Array }} opts
+ * @param {{ identity: object, category: string, productId: string, runId: string, sources: Array, queryCooldowns?: Array, fieldHistories?: object }} opts
  * @returns {object} Product checkpoint
  */
-export function buildProductCheckpoint({ identity, category, productId, runId, sources, queryCooldowns } = {}) {
+export function buildProductCheckpoint({ identity, category, productId, runId, sources, queryCooldowns, fieldHistories } = {}) {
   const id = identity || {};
   const runSources = Array.isArray(sources) ? sources : [];
 
@@ -58,6 +58,10 @@ export function buildProductCheckpoint({ identity, category, productId, runId, s
     runs_completed: 1,
     sources: runSources.map((src) => mapProductSource(src, runId)),
     query_cooldowns: Array.isArray(queryCooldowns) ? queryCooldowns : [],
+    // WHY: Per-field cumulative histories snapshot so tier-3 enrichment
+    // progression (3a → 3b → 3c → 3d) survives SQL DB deletion. On rebuild,
+    // seedProductCheckpoint rehydrates this as a run_artifact.
+    field_histories: fieldHistories && typeof fieldHistories === 'object' ? fieldHistories : {},
     updated_at: new Date().toISOString(),
   };
 }

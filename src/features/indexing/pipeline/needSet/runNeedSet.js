@@ -152,5 +152,17 @@ export async function runNeedSet({
   const focusGroups = planningContext?.focus_groups || [];
   const seedStatus = planningContext?.seed_status || null;
 
+  // WHY: Observability for tier 2/3 emission. focusGroups previously lived
+  // only in-memory. Persisting as its own artifact lets us diagnose which
+  // groups were/weren't worthy per run (B4).
+  logger?.info?.('focus_groups_computed', {
+    run_id: runId,
+    category: categoryConfig?.category || category || '',
+    product_id: job.productId,
+    generated_at: new Date().toISOString(),
+    focus_groups: focusGroups,
+    seed_status: seedStatus || {},
+  });
+
   return { focusGroups, seedStatus, seedSearchPlan };
 }

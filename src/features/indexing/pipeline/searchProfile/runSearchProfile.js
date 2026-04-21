@@ -49,6 +49,9 @@ export function runSearchProfile({
     focusGroups,
     tierHierarchyOrder,
     keySearchEnrichmentOrder,
+    tier1SeedCap: configInt(config, 'tier1SeedCap'),
+    tier2GroupCap: configInt(config, 'tier2GroupCap'),
+    tier3KeyCap: configInt(config, 'tier3KeyCap'),
   });
 
   // WHY: Emit search_profile_generated HERE (Search Profile phase) so the runtime bridge

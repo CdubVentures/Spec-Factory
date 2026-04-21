@@ -20,7 +20,7 @@ import type { TemplateVariableDef, UserMessageInjection } from '../../../shared/
 import { NumberStepper } from '../../../shared/ui/forms/NumberStepper.tsx';
 
 /** Shape of a prompt template definition from the backend registry. */
-interface PromptTemplateDef {
+export interface PromptTemplateDef {
   readonly promptKey: string;
   readonly label: string;
   readonly storageScope: 'global' | 'module';
@@ -785,7 +785,7 @@ function EvalCriteriaEditor({ label, settingKey, defaultValue, settings, saveSet
 
 /* ── Prompt Templates Section (generic, driven by prompt_templates array) ── */
 
-function PromptTemplatesSection({ phaseId, promptTemplates, phaseOverrides, onPhaseOverrideChange, responseSchemas, renderExtraForTemplate }: {
+export function PromptTemplatesSection({ phaseId, promptTemplates, phaseOverrides, onPhaseOverrideChange, responseSchemas, renderExtraForTemplate }: {
   readonly phaseId: LlmPhaseId;
   readonly promptTemplates: readonly PromptTemplateDef[];
   readonly phaseOverrides: LlmPhaseOverrides;

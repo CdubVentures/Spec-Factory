@@ -6,6 +6,7 @@ const commonFields = {
   uiTip: z.string().optional(),
   uiGroup: z.string().optional(),
   uiHero: z.boolean().optional(),
+  uiRightPanel: z.boolean().optional(),
   secret: z.boolean().optional(),
   disabledBy: z.string().optional(),
   allowEmpty: z.boolean().optional(),

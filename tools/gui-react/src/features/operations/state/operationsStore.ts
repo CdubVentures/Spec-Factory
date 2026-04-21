@@ -24,6 +24,8 @@ export interface Operation {
   readonly subType?: string;
   readonly variantKey?: string;
   readonly variantId?: string;
+  /** Per-key scope — keyFinder uses this instead of variantKey. */
+  readonly fieldKey?: string;
   readonly progressText?: string;
   // WHY: Two shapes flow into this slot from different finders.
   //   PIF (carousel) — rich per-view + hero fields (views, hero, mode, focusView, ...).

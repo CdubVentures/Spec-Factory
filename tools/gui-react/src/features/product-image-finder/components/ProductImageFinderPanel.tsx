@@ -517,7 +517,9 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
               }
             >
               <div className="pif-gallery-columns">
-                {imageGroups.map(group => (
+                {[0, 1].map((colIdx) => (
+                <div key={colIdx} className="flex flex-col gap-3">
+                {imageGroups.filter((_, i) => i % 2 === colIdx).map(group => (
                   <VariantImageGroup
                     key={group.key}
                     group={group}
@@ -545,6 +547,8 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                     category={category}
                     productId={productId}
                   />
+                ))}
+                </div>
                 ))}
               </div>
             </FinderSectionCard>

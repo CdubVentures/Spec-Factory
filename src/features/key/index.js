@@ -1,22 +1,28 @@
 /**
- * Key Finder — public API (Phase 2 stub).
+ * Key Finder — public API.
  *
- * Phase 3 will expand with runKeyFinder / runKeyGroup / runAllKeys and
- * the route registrar. For now, this barrel just re-exports the pieces
- * the framework needs for registration + codegen.
+ * Universal per-key extractor: one LLM call per (product, fieldKey), tier
+ * model routing via resolvePhaseModelByTier, multi-key envelope response,
+ * per-key discovery-log scope. Long-term replacement for per-field finders.
  */
 
-export { keyFinderResponseSchema } from './keySchema.js';
+export { keyFinderResponseSchema, perKeyShape } from './keySchema.js';
 export {
   KEY_FINDER_DEFAULT_TEMPLATE,
   KEY_FINDER_SPEC,
   buildKeyFinderPrompt,
+  buildKeyFinderSpec,
+  createKeyFinderCallLlm,
 } from './keyLlmAdapter.js';
 export {
+  keyFinderStore,
   readKeyFinder,
   writeKeyFinder,
   mergeKeyFinderDiscovery,
   deleteKeyFinderRun,
+  deleteKeyFinderRuns,
   deleteKeyFinderAll,
   rebuildKeyFinderFromJson,
 } from './keyStore.js';
+export { runKeyFinder } from './keyFinder.js';
+export { registerKeyFinderRoutes } from './api/keyFinderRoutes.js';

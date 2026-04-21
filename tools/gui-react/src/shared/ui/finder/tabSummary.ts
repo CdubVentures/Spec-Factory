@@ -1,6 +1,6 @@
 /**
  * Finder tab summary — shared types + pure derivations consumed by
- * FinderTabBar in the indexing feature. Each finder exports its own
+ * IndexingTabBar in the indexing feature. Each finder exports its own
  * `useXxxTabSummary` hook that returns a FinderTabSummary. Pure derivations
  * live here so they're unit-testable under `node --test` (no React/DOM).
  */

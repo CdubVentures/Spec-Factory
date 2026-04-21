@@ -30,7 +30,7 @@ import {
   createRuntimeModelTokenDefaultsResolver,
   deriveRuntimeLlmTokenContractPresetMax,
 } from '../state/RuntimeFlowModelTokenDefaults.ts';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
 import type { IndexingLlmConfigResponse as RuntimeSettingsLlmConfigResponse } from '../../indexing/types.ts';
 import type { RuntimeSettings } from '../state/runtimeSettingsAuthority.ts';
@@ -42,10 +42,11 @@ import {
   isPipelineSectionResettable,
 } from '../state/pipelineResetScope.ts';
 import {
+  buildAllModuleSettingsResetPayloads,
   buildModuleSettingsResetPayload,
   findModuleIdForSection,
 } from '../state/moduleSettingsResetScope.ts';
-import { useModuleSettingsAuthority } from '../state/moduleSettingsAuthority.ts';
+import { putModuleSettings, useModuleSettingsAuthority } from '../state/moduleSettingsAuthority.ts';
 import { MODULE_SETTINGS_SECTIONS } from '../state/moduleSettingsSections.generated.ts';
 
 const RESET_PANEL_PHRASE = 'RESET';
@@ -131,7 +132,13 @@ export function PipelineSettingsPage() {
 
   const [resetScope, setResetScope] = useState<'panel' | 'all' | null>(null);
 
-  const applyResetAll = useCallback(() => {
+  const queryClient = useQueryClient();
+
+  const applyResetAll = useCallback(async () => {
+    // WHY: "Reset all" covers every setting surface on the page — flat runtime
+    // settings AND all per-finder module panels for the current category.
+    // Source-strategy hosts and spec-seed templates are user data, not
+    // defaults, so they are intentionally preserved (see modal copy).
     const resetPayload = collectRuntimeFlowDraftPayload({
       nextRuntimeDraft: runtimeManifestDefaults,
       runtimeManifestDefaults,
@@ -139,7 +146,22 @@ export function PipelineSettingsPage() {
     });
     useRuntimeSettingsValueStore.getState().updateKeys(resetPayload as Partial<RuntimeSettings>);
     saveNow();
-  }, [runtimeManifestDefaults, resolveModelTokenDefaults, saveNow]);
+
+    if (!category) return;
+    const batches = buildAllModuleSettingsResetPayloads();
+    const results = await Promise.allSettled(
+      batches.map(({ moduleId, settings }) =>
+        putModuleSettings({ category, moduleId, settings, queryClient }),
+      ),
+    );
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    if (failed > 0) {
+      setRuntimeSaveStatus({
+        kind: 'error',
+        message: `Runtime settings reset; ${failed}/${batches.length} module panels failed — re-click Reset all to retry.`,
+      });
+    }
+  }, [runtimeManifestDefaults, resolveModelTokenDefaults, saveNow, category, queryClient]);
 
   /* ── CategoryPanel change handlers — persist immediately on every change ── */
   const onBoolChange = useCallback((key: string, next: boolean) => {
@@ -346,7 +368,7 @@ export function PipelineSettingsPage() {
         disabled={!runtimeSettingsReady || runtimeSettingsSaving}
         className="rounded border px-2.5 py-1 sf-text-caption disabled:opacity-40 hover:bg-black/5"
         style={{ color: 'var(--sf-muted)', borderColor: 'var(--sf-surface-border)' }}
-        title="Reset every runtime setting on this page to defaults."
+        title="Reset every runtime setting and every finder module panel (for the current category) to defaults. Custom source-strategy rules and spec-seed templates are preserved."
       >
         Reset all
       </button>
@@ -428,10 +450,10 @@ export function PipelineSettingsPage() {
       />
       <TypedConfirmModal
         open={resetScope !== null}
-        title={resetScope === 'all' ? 'Reset all runtime settings?' : `Reset the ${activeSectionLabel} panel?`}
+        title={resetScope === 'all' ? 'Reset all Pipeline settings?' : `Reset the ${activeSectionLabel} panel?`}
         body={
           resetScope === 'all'
-            ? 'This returns every runtime setting on this page to its default value.'
+            ? 'This resets every runtime setting and every finder module panel (for the current category) to defaults. Custom source-strategy rules and spec-seed templates are preserved.'
             : `This returns the ${activeSectionLabel} panel to its default values. Other panels are untouched.`
         }
         confirmPhrase={resetScope === 'all' ? RESET_ALL_PHRASE : RESET_PANEL_PHRASE}

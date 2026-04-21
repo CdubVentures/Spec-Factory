@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Per-Key Finder — Dashboard Design Mockup</title>
+<style>
+  :root {
+    --bg: #f8f9fa; --surface: #fff; --surface-alt: #f1f3f5; --surface-soft: #fafbfc;
+    --border: #dee2e6; --border-light: #e9ecef;
+    --text: #212529; --text-muted: #6c757d; --text-dim: #868e96;
+    --accent: #4263eb; --accent-light: #edf2ff; --accent-border: #bac8ff;
+    --green: #2b8a3e; --green-bg: #ebfbee; --green-border: #b2f2bb;
+    --red: #c92a2a; --red-bg: #fff5f5; --red-border: #ffc9c9;
+    --orange: #e67700; --orange-bg: #fff9db; --orange-border: #ffd8a8;
+    --teal: #0c8599; --teal-bg: #e6fcf5; --teal-border: #96f2d7;
+    --purple: #7048e8; --purple-bg: #f3f0ff; --purple-border: #d0bfff;
+    --pink: #c2255c; --pink-bg: #fff0f6;
+    --kf1: #66d9e8; --kf2: #22b8cf; --kf3: #0c8599; --kf4: #0b7285;
+    --mono: 'SF Mono','Cascadia Code','Fira Code',Consolas,monospace;
+    --font: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    --radius: 8px;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.05), 0 1px 3px rgba(0,0,0,.08);
+    --shadow-md: 0 2px 4px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.08);
+    --shadow-lg: 0 4px 6px rgba(0,0,0,.06), 0 10px 24px rgba(0,0,0,.10);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:var(--font); color:var(--text); background:var(--bg); line-height:1.55; }
+  .header { background:linear-gradient(135deg,#4263eb,#7048e8); color:#fff; padding:38px 0 34px; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,.08); }
+  .header h1 { font-size:28px; font-weight:700; letter-spacing:-.5px; }
+  .header p { font-size:14px; opacity:.92; margin-top:6px; max-width:720px; margin-left:auto; margin-right:auto; }
+  .header .pill { display:inline-block; background:rgba(255,255,255,.2); padding:4px 12px; border-radius:99px; font-size:12px; font-weight:600; letter-spacing:.3px; margin-top:14px; }
+  .container { max-width:1320px; margin:0 auto; padding:28px 24px 80px; }
+  h2 { font-size:20px; font-weight:700; margin:44px 0 14px; padding-bottom:8px; border-bottom:2px solid var(--accent); display:flex; align-items:center; gap:10px; }
+  h2 .num { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:50%; background:var(--accent); color:#fff; font-size:14px; font-weight:700; }
+  h3 { font-size:15px; font-weight:700; margin:22px 0 8px; color:var(--text); }
+  p { margin-bottom:10px; font-size:14px; }
+  code { font-family:var(--mono); font-size:12.5px; background:var(--surface-alt); padding:2px 6px; border-radius:3px; color:var(--accent); }
+  .callout { border-left:4px solid; padding:12px 16px; border-radius:0 var(--radius) var(--radius) 0; margin:12px 0; font-size:13.5px; }
+  .callout-info { border-color:var(--accent); background:var(--accent-light); }
+  .callout-ok { border-color:var(--green); background:var(--green-bg); }
+  .callout-warn { border-color:var(--orange); background:var(--orange-bg); }
+  .callout-red { border-color:var(--red); background:var(--red-bg); }
+  .callout strong { display:block; margin-bottom:4px; }
+
+  /* ── Mockup chrome ─────────────────────────────────────────────── */
+  .mockup { background:#eef2f7; border:1px solid var(--border); border-radius:10px; padding:18px; margin:14px 0 24px; box-shadow:inset 0 2px 6px rgba(0,0,0,.04); }
+  .mockup-caption { font-size:11.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); margin-bottom:10px; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .mockup-caption .badge { background:var(--accent); color:#fff; padding:2px 8px; border-radius:4px; font-size:10px; letter-spacing:.4px; }
+  .win { background:var(--surface); border:1px solid var(--border); border-radius:8px; overflow:hidden; box-shadow:var(--shadow-md); }
+  .toolbar { display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid var(--border-light); background:var(--surface-soft); flex-wrap:wrap; }
+  .toolbar.primary { background:linear-gradient(180deg,#4263eb,#3b56d6); color:#fff; padding:14px 18px; border-bottom:none; }
+  .toolbar.primary strong { font-size:14px; }
+  .toolbar.primary .sub { font-size:12px; opacity:.85; }
+  .toolbar.filters { background:var(--surface-alt); padding:10px 16px; gap:8px; }
+
+  .btn { padding:6px 12px; border-radius:6px; font-size:12.5px; font-weight:600; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; transition:.12s; font-family:var(--font); }
+  .btn:hover { background:var(--surface-alt); }
+  .btn.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn.primary:hover { background:#3b56d6; }
+  .btn.ghost { background:transparent; border-color:transparent; color:var(--text-muted); }
+  .btn.ghost:hover { background:var(--surface-alt); color:var(--text); }
+  .btn.danger { background:var(--red); color:#fff; border-color:var(--red); }
+  .btn.sm { padding:4px 9px; font-size:11.5px; border-radius:5px; }
+  .btn.xs { padding:3px 7px; font-size:11px; border-radius:4px; }
+  .btn.ico { padding:4px 8px; min-width:auto; }
+  .btn.disabled, .btn[disabled] { opacity:.45; cursor:not-allowed; background:var(--surface-alt); }
+  .btn.on-primary { background:rgba(255,255,255,.18); color:#fff; border-color:rgba(255,255,255,.35); }
+  .btn.on-primary:hover { background:rgba(255,255,255,.26); }
+
+  .input, .select { padding:6px 10px; border-radius:5px; border:1px solid var(--border); font-size:12.5px; background:var(--surface); color:var(--text); font-family:var(--font); }
+  .search { flex:1; min-width:180px; }
+  .select { padding-right:24px; cursor:pointer; }
+
+  /* Tags / badges */
+  .tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.3px; border:1px solid transparent; }
+  .tag-green { background:var(--green-bg); color:var(--green); }
+  .tag-orange { background:var(--orange-bg); color:var(--orange); }
+  .tag-red { background:var(--red-bg); color:var(--red); }
+  .tag-accent { background:var(--accent-light); color:var(--accent); }
+  .tag-purple { background:var(--purple-bg); color:var(--purple); }
+  .tag-teal { background:var(--teal-bg); color:var(--teal); }
+  .tag-muted { background:var(--surface-alt); color:var(--text-muted); }
+  .tag-pink { background:var(--pink-bg); color:var(--pink); }
+
+  .status { display:inline-flex; align-items:center; gap:6px; padding:2px 10px; border-radius:99px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; }
+  .status-resolved { background:var(--green-bg); color:var(--green); }
+  .status-unresolved { background:var(--orange-bg); color:var(--orange); }
+  .status-running { background:var(--accent-light); color:var(--accent); }
+  .status-unknown { background:var(--surface-alt); color:var(--text-muted); }
+  .status-excluded { background:var(--surface-alt); color:var(--text-dim); }
+  .status .dot { width:7px; height:7px; border-radius:50%; background:currentColor; }
+  .status-running .dot { animation:pulse 1.4s infinite; }
+  @keyframes pulse { 0%,100%{opacity:.5} 50%{opacity:1} }
+
+  /* KPI strip */
+  .kpi-strip { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; padding:14px 18px; background:var(--surface-soft); border-bottom:1px solid var(--border-light); }
+  .kpi { background:var(--surface); border:1px solid var(--border-light); border-radius:6px; padding:10px 14px; }
+  .kpi .label { font-size:10.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); font-weight:700; margin-bottom:4px; }
+  .kpi .value { font-size:20px; font-weight:700; color:var(--text); line-height:1.1; }
+  .kpi .sub { font-size:11px; color:var(--text-muted); margin-top:2px; }
+
+  /* Group section */
+  .grp { border-bottom:1px solid var(--border-light); }
+  .grp:last-child { border-bottom:none; }
+  .grp-head { display:flex; align-items:center; gap:10px; padding:10px 18px; background:#f7f9fc; cursor:pointer; border-bottom:1px solid var(--border-light); }
+  .grp-head .chev { width:14px; color:var(--text-muted); font-size:12px; }
+  .grp-head .gname { font-size:13.5px; font-weight:700; color:var(--text); }
+  .grp-head .gcount { font-size:11.5px; color:var(--text-muted); font-weight:500; }
+  .grp-head .gbadge { padding:2px 8px; border-radius:4px; font-size:10.5px; font-weight:700; letter-spacing:.3px; }
+  .grp-head .gactions { margin-left:auto; display:flex; gap:6px; align-items:center; }
+
+  table.keys { width:100%; border-collapse:collapse; font-size:13px; }
+  table.keys th, table.keys td { padding:9px 14px; text-align:left; border-bottom:1px solid var(--border-light); vertical-align:middle; }
+  table.keys th { background:var(--surface-soft); font-weight:600; font-size:10.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); padding:6px 14px; }
+  table.keys tbody tr:hover { background:var(--accent-light); }
+  table.keys tbody tr.active { background:#fff9db; }
+  table.keys tbody tr:last-child td { border-bottom:none; }
+  table.keys td.kname code { background:transparent; padding:0; color:var(--text); font-size:12.5px; font-weight:500; }
+  table.keys td.axes { white-space:nowrap; }
+  table.keys td.axes .tag { margin-right:4px; }
+  table.keys td.actions { text-align:right; white-space:nowrap; }
+  table.keys td.actions .btn { margin-left:3px; }
+  table.keys .conf-ring { display:inline-block; width:22px; height:22px; border-radius:50%; background:conic-gradient(var(--green) 0deg 331deg, var(--border-light) 331deg 360deg); position:relative; vertical-align:middle; }
+  table.keys .conf-ring.mid { background:conic-gradient(var(--orange) 0deg 220deg, var(--border-light) 220deg 360deg); }
+  table.keys .conf-ring.low { background:conic-gradient(var(--red) 0deg 72deg, var(--border-light) 72deg 360deg); }
+  table.keys .conf-ring::after { content:attr(data-val); position:absolute; inset:3px; background:var(--surface); border-radius:50%; font-size:9.5px; font-weight:700; color:var(--text); display:flex; align-items:center; justify-content:center; }
+
+  /* Right-side detail drawer */
+  .drawer-shell { display:grid; grid-template-columns:1fr 460px; }
+  .drawer { background:var(--surface); border-left:1px solid var(--border); display:flex; flex-direction:column; }
+  .drawer-head { padding:14px 18px; border-bottom:1px solid var(--border-light); background:var(--surface-soft); }
+  .drawer-head h4 { font-size:14px; font-weight:700; margin-bottom:6px; font-family:var(--mono); color:var(--text); }
+  .drawer-head .scope-pill { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; background:var(--accent); color:#fff; margin-right:8px; }
+  .drawer-head .meta { display:flex; flex-wrap:wrap; gap:4px 6px; }
+  .drawer-body { padding:14px 18px; overflow-y:auto; flex:1; }
+  .drawer-section { margin-bottom:18px; }
+  .drawer-section h5 { font-size:10.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); margin-bottom:8px; font-weight:700; }
+  .runs-list { background:var(--surface-soft); border:1px solid var(--border-light); border-radius:6px; overflow:hidden; }
+  .run-row { padding:8px 12px; font-size:12px; display:grid; grid-template-columns:auto auto 1fr auto; gap:10px; border-bottom:1px solid var(--border-light); align-items:center; }
+  .run-row:last-child { border-bottom:none; }
+  .run-row .rn { font-weight:700; color:var(--text-muted); font-size:11px; }
+  .run-row .model { font-family:var(--mono); font-size:11px; color:var(--text-muted); }
+  .run-row .val { font-family:var(--mono); font-size:12px; font-weight:600; color:var(--text); }
+  .run-row .fk { font-family:var(--mono); font-size:11px; color:var(--accent); }
+  .historybox { background:var(--surface-soft); border:1px solid var(--border-light); border-radius:6px; padding:10px 12px; font-size:12px; }
+  .historybox ul { list-style:none; margin-top:6px; padding:0; }
+  .historybox li { font-family:var(--mono); font-size:11px; color:var(--text-muted); padding:2px 0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .drawer-actions { padding:12px 18px; border-top:1px solid var(--border-light); display:flex; gap:6px; justify-content:flex-end; background:var(--surface-soft); flex-wrap:wrap; }
+
+  /* Prompt slide-over (wider, horizontal) */
+  .prompt-shell { position:relative; background:var(--surface); border-radius:8px; overflow:hidden; }
+  .prompt-shell .win { border-radius:0; box-shadow:none; border:none; }
+  .prompt-overlay { position:absolute; inset:0; background:rgba(20,24,40,.42); display:flex; justify-content:flex-end; }
+  .prompt-drawer { width:72%; background:var(--surface); box-shadow:-8px 0 24px rgba(0,0,0,.14); display:flex; flex-direction:column; animation:slideIn .3s ease; }
+  @keyframes slideIn { from { transform:translateX(8%); opacity:.85; } to { transform:none; opacity:1; } }
+  .prompt-drawer-head { padding:14px 20px; border-bottom:1px solid var(--border-light); background:var(--surface-soft); display:flex; align-items:center; gap:10px; }
+  .prompt-drawer-head h4 { font-family:var(--mono); font-size:14px; font-weight:700; }
+  .prompt-drawer-body { flex:1; overflow-y:auto; display:grid; grid-template-columns:1fr 1fr; gap:0; }
+  .prompt-col { padding:16px 20px; border-right:1px solid var(--border-light); overflow-y:auto; }
+  .prompt-col:last-child { border-right:none; }
+  .prompt-col h5 { font-size:10.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); margin-bottom:8px; font-weight:700; }
+  .prompt-block { background:#1e1e2e; color:#cdd6f4; font-family:var(--mono); font-size:11.5px; line-height:1.55; border-radius:6px; padding:14px 16px; white-space:pre-wrap; word-break:break-word; max-height:380px; overflow-y:auto; }
+  .prompt-block .c { color:#6c7086; font-style:italic; }
+  .prompt-block .k { color:#cba6f7; }
+  .prompt-block .s { color:#a6e3a1; }
+  .prompt-block .n { color:#f9e2af; }
+  .prompt-block .t { color:#89b4fa; }
+  .prompt-drawer-footer { padding:12px 20px; border-top:1px solid var(--border-light); display:flex; gap:6px; justify-content:flex-end; background:var(--surface-soft); }
+
+  /* Helpers */
+  .row { display:flex; align-items:center; gap:8px; }
+  .gap-sm { gap:6px; }
+  .mt-0 { margin-top:0; }
+  .mb-0 { margin-bottom:0; }
+  .muted { color:var(--text-muted); }
+  .divider { width:1px; height:20px; background:var(--border); margin:0 4px; }
+  .divider-on-primary { width:1px; height:20px; background:rgba(255,255,255,.3); margin:0 4px; }
+  .divider-h { height:1px; background:var(--border-light); margin:12px 0; }
+  .chip { display:inline-flex; padding:3px 9px; border-radius:99px; font-size:11px; font-weight:600; background:var(--surface-alt); color:var(--text-muted); border:1px solid var(--border); cursor:pointer; }
+  .chip.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+
+  .legend { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin:8px 0; }
+  .legend-item { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:10px 12px; font-size:13px; }
+  .legend-item strong { display:block; margin-bottom:3px; font-size:12.5px; }
+
+  /* Tooltip */
+  .tip-wrap { position:relative; display:inline-block; }
+  .tip-wrap .tip { position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%); background:#1e1e2e; color:#cdd6f4; font-size:11px; padding:5px 9px; border-radius:4px; white-space:nowrap; opacity:0; pointer-events:none; transition:.15s; font-weight:500; letter-spacing:0; z-index:20; }
+  .tip-wrap .tip::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:4px solid transparent; border-top-color:#1e1e2e; }
+  .tip-wrap:hover .tip, .tip-wrap.show .tip { opacity:1; }
+
+  /* Flow diagram */
+  .flow { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:14px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); margin:12px 0; }
+  .flow .b { padding:8px 12px; border-radius:6px; font-size:12px; font-weight:600; text-align:center; border:1.5px solid; flex:0 0 auto; }
+  .flow .b-neutral { background:var(--surface-alt); border-color:var(--border); color:var(--text); }
+  .flow .b-accent { background:var(--accent-light); border-color:var(--accent); color:var(--accent); }
+  .flow .b-teal { background:var(--teal-bg); border-color:var(--teal); color:var(--teal); }
+  .flow .b-green { background:var(--green-bg); border-color:var(--green); color:var(--green); }
+  .flow .arr { color:var(--text-muted); font-size:16px; }
+
+  table.spec { width:100%; border-collapse:collapse; font-size:13px; margin:8px 0 16px; }
+  table.spec th, table.spec td { padding:8px 12px; text-align:left; border-bottom:1px solid var(--border-light); vertical-align:top; }
+  table.spec th { background:var(--surface-alt); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); }
+  table.spec tr:last-child td { border-bottom:none; }
+  table.spec td code { font-size:11.5px; }
+
+  /* TOC */
+  .toc { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 20px; margin-bottom:28px; box-shadow:var(--shadow-sm); }
+  .toc h3 { font-size:11.5px; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted); margin-bottom:10px; }
+  .toc ol { list-style:none; counter-reset:toc; display:grid; grid-template-columns:1fr 1fr; gap:4px 22px; }
+  .toc li { counter-increment:toc; font-size:13.5px; }
+  .toc li::before { content:counter(toc) ". "; color:var(--text-muted); font-weight:600; margin-right:4px; }
+  .toc a { color:var(--accent); text-decoration:none; }
+  .toc a:hover { text-decoration:underline; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Per-Key Finder — Dashboard Design Mockup</h1>
+  <p>Hierarchical group explorer · four actions at every scope · live Field Studio updates · reuses SKU+RDF finder primitives.</p>
+  <span class="pill">Phase 4 design · draft 2 · 2026-04-21</span>
+</div>
+
+<div class="container">
+
+<div class="toc">
+  <h3>Contents</h3>
+  <ol>
+    <li><a href="#context">Context &amp; design choices</a></li>
+    <li><a href="#actions">Action model — 4 verbs × 3 scopes</a></li>
+    <li><a href="#panel">Full panel — hierarchical layout</a></li>
+    <li><a href="#group-head">Group header — anatomy &amp; states</a></li>
+    <li><a href="#history">History drawer — 3 scopes, 1 component</a></li>
+    <li><a href="#prompt">Prompt slide-over — horizontal drawer</a></li>
+    <li><a href="#buttons">Button state gallery</a></li>
+    <li><a href="#exclusions">What's filtered out (and why)</a></li>
+    <li><a href="#filters">Filters &amp; search states</a></li>
+    <li><a href="#data">Data flow &amp; live updates</a></li>
+    <li><a href="#reuse">Reused primitives / new components</a></li>
+    <li><a href="#scope">Scope staging — decision needed</a></li>
+  </ol>
+</div>
+
+<!-- ═════════════════ 1. CONTEXT ═════════════════ -->
+<h2 id="context"><span class="num">1</span> Context &amp; design choices</h2>
+
+<p><strong>Constraint:</strong> 47–73+ eligible keys per product. Flat table gets unwieldy; keys need to be navigable by group. Field Studio already organizes keys into a user-curated drag-order; the panel mirrors that shape exactly and picks up drag reorders live via the same WS chain Review Grid uses.</p>
+
+<div class="callout callout-info">
+  <strong>Three rules</strong>
+  <ul style="margin:4px 0 0 18px;">
+    <li>Groups are the primary navigation. Always visible, collapsible, resolved-count in the header.</li>
+    <li>Action affordances at <em>three scopes</em>: product (top bar) · group (group header) · key (row). Each scope carries the same 4 verbs.</li>
+    <li>Zero drift from Field Studio: group order + key order + variant_dependent flag come from the same <code>reviewLayout</code> query Review Grid already uses — a drag in Studio shows up on the next WS tick.</li>
+  </ul>
+</div>
+
+<!-- ═════════════════ 2. ACTIONS ═════════════════ -->
+<h2 id="actions"><span class="num">2</span> Action model — 4 verbs × 3 scopes</h2>
+
+<p>Every scope (product / group / key) surfaces the same four actions. Scope changes what they <em>target</em>, not what they mean. Phases gate which ones are live.</p>
+
+<table class="spec">
+  <thead>
+    <tr><th style="width:16%;">Verb</th><th style="width:26%;">Per-key</th><th style="width:26%;">Per-group</th><th style="width:26%;">Per-product (all groups)</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>▶ Run</strong></td>
+      <td>1 LLM call for that key. <span class="tag tag-green" style="font-size:9.5px;">LIVE 3a</span></td>
+      <td>Walk the group's keys easy→very_hard, 1 call each. <span class="tag tag-orange" style="font-size:9.5px;">PHASE 5</span></td>
+      <td>Walk <em>all groups</em> in order, each group walked easy→very_hard, 1 call per key. <span class="tag tag-orange" style="font-size:9.5px;">PHASE 5</span></td>
+    </tr>
+    <tr>
+      <td><strong>∞ Loop</strong></td>
+      <td>Retry this key until resolved OR per-key budget exhausted. <span class="tag tag-orange" style="font-size:9.5px;">PHASE 3b</span></td>
+      <td>Group walk but each key loops until resolved / budget. <span class="tag tag-orange" style="font-size:9.5px;">PHASE 5</span></td>
+      <td>All groups, each key loops until resolved / budget. <span class="tag tag-orange" style="font-size:9.5px;">PHASE 5</span></td>
+    </tr>
+    <tr>
+      <td><strong>History</strong></td>
+      <td>Opens right-side drawer scoped to this key's runs + URL/query history. <span class="tag tag-green" style="font-size:9.5px;">LIVE NOW</span></td>
+      <td>Drawer scoped to this group — aggregates all runs across its keys. <span class="tag tag-green" style="font-size:9.5px;">LIVE NOW</span></td>
+      <td>Drawer scoped to the whole product — all runs, all keys, newest first. <span class="tag tag-green" style="font-size:9.5px;">LIVE NOW</span></td>
+    </tr>
+    <tr>
+      <td><strong>Prompt</strong></td>
+      <td>Horizontal slide-over showing system prompt + user message + latest response. <span class="tag tag-green" style="font-size:9.5px;">LIVE NOW</span></td>
+      <td class="muted" style="font-size:11.5px;">N/A — per-group call doesn't exist in 3a (bundle-planner is Phase 5)</td>
+      <td class="muted" style="font-size:11.5px;">N/A — no product-scope prompt</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout callout-ok">
+  <strong>What you can do today (with just 3a shipped)</strong>
+  Per-key ▶ Run · Per-key History · Per-key Prompt · Group History · Product History. That's enough to prove the whole 3a pipeline — fire a run, inspect the prompt, watch it publish, scroll the history.
+</div>
+
+<!-- ═════════════════ 3. FULL PANEL ═════════════════ -->
+<h2 id="panel"><span class="num">3</span> Full panel — hierarchical layout</h2>
+
+<p>Two groups expanded, three collapsed. <code>sensor_model</code> is mid-run. Every row has 4 actions; every group header has 3; the product bar has 3.</p>
+
+<div class="mockup">
+  <div class="mockup-caption"><span class="badge">mockup</span> Key Finder · Indexing Lab tab</div>
+  <div class="win">
+    <!-- product header -->
+    <div class="toolbar primary">
+      <div>
+        <strong>Per-Key Finder</strong>
+        <div class="sub">Logitech MX Master 3S · mouse · <strong>47 eligible keys</strong> · 14 resolved · 33 unresolved</div>
+      </div>
+      <div style="margin-left:auto; display:flex; gap:6px; align-items:center;">
+        <button class="btn on-primary">History</button>
+        <span class="divider-on-primary"></span>
+        <div class="tip-wrap">
+          <button class="btn on-primary disabled">∞ Loop all groups</button>
+          <span class="tip">Header Smart Loop — Phase 5</span>
+        </div>
+        <div class="tip-wrap">
+          <button class="btn on-primary disabled">▶ Run all groups</button>
+          <span class="tip">Walks every group easy→very_hard — Phase 5</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- kpi strip -->
+    <div class="kpi-strip">
+      <div class="kpi"><div class="label">Keys in view</div><div class="value">47</div><div class="sub">of 73 total · 26 filtered out</div></div>
+      <div class="kpi"><div class="label">Resolved</div><div class="value" style="color:var(--green)">14</div><div class="sub">30% complete</div></div>
+      <div class="kpi"><div class="label">Unresolved</div><div class="value" style="color:var(--orange)">33</div><div class="sub">22 mandatory</div></div>
+      <div class="kpi"><div class="label">Running now</div><div class="value" style="color:var(--accent)">1</div><div class="sub">sensor_model · medium tier</div></div>
+      <div class="kpi"><div class="label">Est. spend</div><div class="value">$0.42</div><div class="sub">33 solo calls remaining</div></div>
+    </div>
+
+    <!-- filters -->
+    <div class="toolbar filters">
+      <input class="input search" placeholder="Search keys or groups…" value="" />
+      <select class="select"><option>Difficulty · all</option><option>easy (14)</option><option>medium (18)</option><option>hard (11)</option><option>very_hard (4)</option></select>
+      <select class="select"><option>Availability · all</option></select>
+      <select class="select"><option>Required · all</option></select>
+      <select class="select"><option>Status · all</option></select>
+      <span class="divider"></span>
+      <span class="chip on">solo</span>
+      <span class="chip">bundled</span>
+    </div>
+
+    <!-- GROUP: sensor_performance (expanded, has running key) -->
+    <div class="grp">
+      <div class="grp-head">
+        <span class="chev">▼</span>
+        <span class="gname">sensor_performance</span>
+        <span class="gcount">· 8 keys · 3 resolved · 4 unresolved · 1 running</span>
+        <span class="gbadge" style="background:var(--accent-light); color:var(--accent);">ACTIVE</span>
+        <div class="gactions">
+          <button class="btn sm ghost">History</button>
+          <span class="divider"></span>
+          <div class="tip-wrap">
+            <button class="btn sm disabled">∞ Loop group</button>
+            <span class="tip">Group Smart Loop — Phase 5</span>
+          </div>
+          <div class="tip-wrap">
+            <button class="btn sm disabled">▶ Run group</button>
+            <span class="tip">Walks group easy→very_hard — Phase 5</span>
+          </div>
+        </div>
+      </div>
+      <table class="keys">
+        <thead>
+          <tr>
+            <th style="width:24%;">Key</th>
+            <th>Axes</th>
+            <th style="width:110px;">Tier</th>
+            <th style="width:52px;">Budget</th>
+            <th style="width:48px;">Conf</th>
+            <th style="width:120px;">Status</th>
+            <th style="width:220px; text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="kname"><code>sensor_model</code></td>
+            <td class="axes"><span class="tag tag-red">very_hard</span><span class="tag tag-accent">always</span><span class="tag tag-purple">mand</span></td>
+            <td class="axes"><code>gpt-5.4 · xhigh</code></td>
+            <td>6</td>
+            <td><span class="conf-ring" data-val="—" style="background:conic-gradient(var(--accent) 0deg 360deg)"></span></td>
+            <td><span class="status status-running"><span class="dot"></span>running</span></td>
+            <td class="actions">
+              <button class="btn xs disabled">▶ Run</button>
+              <button class="btn xs disabled">∞ Loop</button>
+              <button class="btn xs ghost">History</button>
+              <button class="btn xs ghost">Prompt</button>
+            </td>
+          </tr>
+          <tr class="active">
+            <td class="kname"><code>polling_rate_native_hz</code></td>
+            <td class="axes"><span class="tag tag-red">very_hard</span><span class="tag tag-teal">sometimes</span><span class="tag tag-purple">mand</span></td>
+            <td class="axes"><code>gpt-5.4 · xhigh</code></td>
+            <td>7</td>
+            <td><span class="conf-ring" data-val="92"></span></td>
+            <td><span class="status status-resolved"><span class="dot"></span>resolved</span></td>
+            <td class="actions">
+              <button class="btn xs">▶ Run</button>
+              <div class="tip-wrap"><button class="btn xs disabled">∞ Loop</button><span class="tip">Phase 3b</span></div>
+              <button class="btn xs ghost">History</button>
+              <button class="btn xs ghost">Prompt</button>
+            </td>
+          </tr>
+          <tr>
+            <td class="kname"><code>dpi_max</code></td>
+            <td class="axes"><span class="tag tag-accent">medium</span><span class="tag tag-accent">always</span><span class="tag tag-purple">mand</span></td>
+            <td class="axes"><code>mini · xhigh</code></td>
+            <td>5</td>
+            <td><span class="conf-ring" data-val="88"></span></td>
+            <td><span class="status status-resolved"><span class="dot"></span>resolved</span></td>
+            <td class="actions">
+              <button class="btn xs">▶ Run</button>
+              <div class="tip-wrap"><button class="btn xs disabled">∞ Loop</button><span class="tip">Phase 3b</span></div>
+              <button class="btn xs ghost">History</button>
+              <button class="btn xs ghost">Prompt</button>
+            </td>
+          </tr>
+          <tr>
+            <td class="kname"><code>acceleration</code></td>
+            <td class="axes"><span class="tag tag-green">easy</span><span class="tag tag-accent">always</span><span class="tag tag-muted">non_mand</span></td>
+            <td class="axes"><code>mini · high</code></td>
+            <td>3</td>
+            <td><span class="conf-ring low" data-val="—" style="background:var(--surface-alt)"></span></td>
+            <td><span class="status status-unresolved"><span class="dot"></span>unresolved</span></td>
+            <td class="actions">
+              <button class="btn xs">▶ Run</button>
+              <div class="tip-wrap"><button class="btn xs disabled">∞ Loop</button><span class="tip">Phase 3b</span></div>
+              <button class="btn xs ghost">History</button>
+              <button class="btn xs ghost">Prompt</button>
+            </td>
+          </tr>
+          <tr>
+            <td class="kname"><code>max_acceleration_g</code></td>
+            <td class="axes"><span class="tag tag-orange">hard</span><span class="tag tag-teal">sometimes</span><span class="tag tag-muted">non_mand</span></td>
+            <td class="axes"><code>gpt-5.4 · high</code></td>
+            <td>5</td>
+            <td><span class="conf-ring low" data-val="—" style="background:var(--surface-alt)"></span></td>
+            <td><span class="status status-unknown"><span class="dot"></span>unk</span></td>
+            <td class="actions">
+              <button class="btn xs">▶ Run</button>
+              <div class="tip-wrap"><button class="btn xs disabled">∞ Loop</button><span class="tip">Phase 3b</span></div>
+              <button class="btn xs ghost">History</button>
+              <button class="btn xs ghost">Prompt</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- GROUP: connectivity (expanded) -->
+    <div class="grp">
+      <div class="grp-head">
+        <span class="chev">▼</span>
+        <span class="gname">connectivity</span>
+        <span class="gcount">· 6 keys · 4 resolved · 2 unresolved</span>
+        <div class="gactions">
+          <button class="btn sm ghost">History</button>
+          <span class="divider"></span>
+          <div class="tip-wrap"><button class="btn sm disabled">∞ Loop group</button><span class="tip">Phase 5</span></div>
+          <div class="tip-wrap"><button class="btn sm disabled">▶ Run group</button><span class="tip">Phase 5</span></div>
+        </div>
+      </div>
+      <table class="keys">
+        <tbody>
+          <tr>
+            <td class="kname" style="width:24%;"><code>wireless_technology</code></td>
+            <td class="axes"><span class="tag tag-green">easy</span><span class="tag tag-accent">always</span><span class="tag tag-purple">mand</span></td>
+            <td class="axes" style="width:110px;"><code>mini · high</code></td>
+            <td style="width:52px;">3</td>
+            <td style="width:48px;"><span class="conf-ring" data-val="97"></span></td>
+            <td style="width:120px;"><span class="status status-resolved"><span class="dot"></span>resolved</span></td>
+            <td class="actions" style="width:220px;">
+              <button class="btn xs">▶ Run</button>
+              <div class="tip-wrap"><button class="btn xs disabled">∞ Loop</button><span class="tip">Phase 3b</span></div>
+              <button class="btn xs ghost">History</button>
+              <button class="btn xs ghost">Prompt</button>
+            </td>
+          </tr>
+          <tr>
+            <td class="kname"><code>wired_interface</code></td>
+            <td class="axes"><span class="tag tag-green">easy</span><span class="tag tag-accent">always</span><span class="tag tag-purple">mand</span></td>
+            <td class="axes"><code>mini · high</code></td>
+            <td>3</td>
+            <td><span class="conf-ring" data-val="94"></span></td>
+            <td><span class="status status-resolved"><span class="dot"></span>resolved</span></td>
+            <td class="actions">
+              <button class="btn xs">▶ Run</button>
+              <div class="tip-wrap"><button class="btn xs disabled">∞ Loop</button><span class="tip">Phase 3b</span></div>
+              <button class="btn xs ghost">History</button>
+              <button class="btn xs ghost">Prompt</button>
+            </td>
+          </tr>
+          <tr>
+            <td class="kname"><code>multi_device_support</code></td>
+            <td class="axes"><span class="tag tag-accent">medium</span><span class="tag tag-teal">sometimes</span><span class="tag tag-muted">non_mand</span></td>
+            <td class="axes"><code>mini · xhigh</code></td>
+            <td>4</td>
+            <td><span class="conf-ring mid" data-val="72"></span></td>
+            <td><span class="status status-unresolved"><span class="dot"></span>below_threshold</span></td>
+            <td class="actions">
+              <button class="btn xs">▶ Run</button>
+              <div class="tip-wrap"><button class="btn xs disabled">∞ Loop</button><span class="tip">Phase 3b</span></div>
+              <button class="btn xs ghost">History</button>
+              <button class="btn xs ghost">Prompt</button>
+            </td>
+          </tr>
+          <tr>
+            <td class="kname"><code>battery_hours</code></td>
+            <td class="axes"><span class="tag tag-accent">medium</span><span class="tag tag-accent">always</span><span class="tag tag-muted">non_mand</span></td>
+            <td class="axes"><code>mini · xhigh</code></td>
+            <td>4</td>
+            <td><span class="conf-ring" data-val="89"></span></td>
+            <td><span class="status status-resolved"><span class="dot"></span>resolved</span></td>
+            <td class="actions">
+              <button class="btn xs">▶ Run</button>
+              <div class="tip-wrap"><button class="btn xs disabled">∞ Loop</button><span class="tip">Phase 3b</span></div>
+              <button class="btn xs ghost">History</button>
+              <button class="btn xs ghost">Prompt</button>
+            </td>
+          </tr>
+          <tr>
+            <td class="kname"><code>charge_time_hours</code></td>
+            <td class="axes"><span class="tag tag-orange">hard</span><span class="tag tag-teal">sometimes</span><span class="tag tag-muted">non_mand</span></td>
+            <td class="axes"><code>gpt-5.4 · high</code></td>
+            <td>5</td>
+            <td><span class="conf-ring low" data-val="—" style="background:var(--surface-alt)"></span></td>
+            <td><span class="status status-unresolved"><span class="dot"></span>unresolved</span></td>
+            <td class="actions">
+              <button class="btn xs">▶ Run</button>
+              <div class="tip-wrap"><button class="btn xs disabled">∞ Loop</button><span class="tip">Phase 3b</span></div>
+              <button class="btn xs ghost">History</button>
+              <button class="btn xs ghost">Prompt</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Collapsed groups -->
+    <div class="grp">
+      <div class="grp-head">
+        <span class="chev">▶</span>
+        <span class="gname">physical</span>
+        <span class="gcount">· 12 keys · 8 resolved · 4 unresolved</span>
+        <div class="gactions">
+          <button class="btn sm ghost">History</button>
+          <span class="divider"></span>
+          <div class="tip-wrap"><button class="btn sm disabled">∞ Loop group</button><span class="tip">Phase 5</span></div>
+          <div class="tip-wrap"><button class="btn sm disabled">▶ Run group</button><span class="tip">Phase 5</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grp">
+      <div class="grp-head">
+        <span class="chev">▶</span>
+        <span class="gname">switches</span>
+        <span class="gcount">· 4 keys · 0 resolved · 4 unresolved</span>
+        <span class="gbadge" style="background:var(--orange-bg); color:var(--orange);">TODO</span>
+        <div class="gactions">
+          <button class="btn sm ghost">History</button>
+          <span class="divider"></span>
+          <div class="tip-wrap"><button class="btn sm disabled">∞ Loop group</button><span class="tip">Phase 5</span></div>
+          <div class="tip-wrap"><button class="btn sm disabled">▶ Run group</button><span class="tip">Phase 5</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grp">
+      <div class="grp-head">
+        <span class="chev">▶</span>
+        <span class="gname">pricing</span>
+        <span class="gcount">· 3 keys · 3 resolved · 0 unresolved</span>
+        <span class="gbadge" style="background:var(--green-bg); color:var(--green);">DONE</span>
+        <div class="gactions">
+          <button class="btn sm ghost">History</button>
+          <span class="divider"></span>
+          <div class="tip-wrap"><button class="btn sm disabled">∞ Loop group</button><span class="tip">Phase 5</span></div>
+          <div class="tip-wrap"><button class="btn sm disabled">▶ Run group</button><span class="tip">Phase 5</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═════════════════ 4. GROUP HEADER ANATOMY ═════════════════ -->
+<h2 id="group-head"><span class="num">4</span> Group header — anatomy &amp; states</h2>
+
+<p>Group headers carry 3 actions: <strong>History</strong> (live today) · <strong>∞ Loop group</strong> (Phase 5) · <strong>▶ Run group</strong> (Phase 5). Optional <code>ACTIVE</code> / <code>TODO</code> / <code>DONE</code> status badge based on resolved/running state.</p>
+
+<div class="mockup">
+  <div class="mockup-caption"><span class="badge">zoom</span> 4 group states</div>
+  <div class="win">
+    <div class="grp">
+      <div class="grp-head">
+        <span class="chev">▼</span>
+        <span class="gname">sensor_performance</span>
+        <span class="gcount">· 8 keys · 3 resolved · 4 unresolved · 1 running</span>
+        <span class="gbadge" style="background:var(--accent-light); color:var(--accent);">ACTIVE</span>
+        <div class="gactions">
+          <button class="btn sm ghost">History</button>
+          <span class="divider"></span>
+          <button class="btn sm disabled">∞ Loop group</button>
+          <button class="btn sm disabled">▶ Run group</button>
+        </div>
+      </div>
+    </div>
+    <div class="grp">
+      <div class="grp-head">
+        <span class="chev">▶</span>
+        <span class="gname">switches</span>
+        <span class="gcount">· 4 keys · 0 resolved · 4 unresolved</span>
+        <span class="gbadge" style="background:var(--orange-bg); color:var(--orange);">TODO</span>
+        <div class="gactions">
+          <button class="btn sm ghost">History</button>
+          <span class="divider"></span>
+          <button class="btn sm disabled">∞ Loop group</button>
+          <button class="btn sm disabled">▶ Run group</button>
+        </div>
+      </div>
+    </div>
+    <div class="grp">
+      <div class="grp-head">
+        <span class="chev">▶</span>
+        <span class="gname">pricing</span>
+        <span class="gcount">· 3 keys · 3 resolved · 0 unresolved</span>
+        <span class="gbadge" style="background:var(--green-bg); color:var(--green);">DONE</span>
+        <div class="gactions">
+          <button class="btn sm ghost">History</button>
+          <span class="divider"></span>
+          <button class="btn sm disabled">∞ Loop group</button>
+          <button class="btn sm disabled">▶ Run group</button>
+        </div>
+      </div>
+    </div>
+    <div class="grp">
+      <div class="grp-head">
+        <span class="chev">▶</span>
+        <span class="gname">display</span>
+        <span class="gcount">· 6 keys · 5 resolved · 1 unresolved</span>
+        <div class="gactions">
+          <button class="btn sm ghost">History</button>
+          <span class="divider"></span>
+          <button class="btn sm disabled">∞ Loop group</button>
+          <button class="btn sm disabled">▶ Run group</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════ 5. HISTORY DRAWER ═════════════════ -->
+<h2 id="history"><span class="num">5</span> History drawer — 3 scopes, 1 component</h2>
+
+<p>Same right-side slide-in component used at all 3 scopes. A scope pill in the header says what's loaded. The drawer aggregates run rows, URL/query history boxes, and (for per-key scope only) evidence refs. <strong>One component, parameterized by scope and id.</strong></p>
+
+<div class="mockup">
+  <div class="mockup-caption"><span class="badge">mockup</span> Per-key history drawer open on <code style="background:transparent; color:inherit; padding:0;">sensor_model</code></div>
+  <div class="win">
+    <div class="drawer-shell">
+      <div>
+        <div class="toolbar">
+          <strong style="font-size:13px;">sensor_performance</strong>
+          <span class="muted" style="font-size:12px;">· 8 keys</span>
+          <button class="btn sm ghost" style="margin-left:auto;">← Back to all groups</button>
+        </div>
+        <table class="keys">
+          <tbody>
+            <tr class="active">
+              <td class="kname" style="width:50%;"><code>sensor_model</code></td>
+              <td><span class="tag tag-red">very_hard</span></td>
+              <td><span class="status status-unresolved"><span class="dot"></span>unresolved</span></td>
+            </tr>
+            <tr>
+              <td class="kname"><code>polling_rate_native_hz</code></td>
+              <td><span class="tag tag-red">very_hard</span></td>
+              <td><span class="status status-resolved"><span class="dot"></span>resolved</span></td>
+            </tr>
+            <tr>
+              <td class="kname"><code>dpi_max</code></td>
+              <td><span class="tag tag-accent">medium</span></td>
+              <td><span class="status status-resolved"><span class="dot"></span>resolved</span></td>
+            </tr>
+            <tr>
+              <td class="kname"><code>acceleration</code></td>
+              <td><span class="tag tag-green">easy</span></td>
+              <td><span class="status status-unresolved"><span class="dot"></span>unresolved</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="drawer">
+        <div class="drawer-head">
+          <div><span class="scope-pill">key</span><strong style="font-family:var(--mono); font-size:14px;">sensor_model</strong></div>
+          <div class="meta" style="margin-top:8px;">
+            <span class="tag tag-red">very_hard</span>
+            <span class="tag tag-accent">always</span>
+            <span class="tag tag-purple">mandatory</span>
+            <span class="tag tag-muted">sensor_performance</span>
+          </div>
+          <div class="muted" style="margin-top:6px; font-size:11.5px;">3 runs · last 2026-04-19 13:47 · <code>gpt-5.4 · xhigh</code></div>
+        </div>
+        <div class="drawer-body">
+          <div class="drawer-section">
+            <h5>Run history</h5>
+            <div class="runs-list">
+              <div class="run-row">
+                <span class="rn">#3</span>
+                <span class="model">gpt-5.4 xhigh</span>
+                <span class="val">PixArt PAW3950</span>
+                <span class="status status-resolved"><span class="dot"></span>published</span>
+              </div>
+              <div class="run-row">
+                <span class="rn">#2</span>
+                <span class="model">gpt-5.4 xhigh</span>
+                <span class="val">PAW3395-like</span>
+                <span class="status status-unresolved"><span class="dot"></span>below_threshold</span>
+              </div>
+              <div class="run-row">
+                <span class="rn">#1</span>
+                <span class="model">gpt-5.4 high</span>
+                <span class="val">unk</span>
+                <span class="status status-unknown"><span class="dot"></span>unk</span>
+              </div>
+            </div>
+          </div>
+          <div class="drawer-section">
+            <h5>URL history (8)</h5>
+            <div class="historybox">
+              <ul>
+                <li>logitech.com/en-us/shop/p/mx-master-3s…</li>
+                <li>ifixit.com/Device/Logitech_MX_Master_3S</li>
+                <li>pcmag.com/reviews/logitech-mx-master-3s</li>
+                <li class="muted">+ 5 more</li>
+              </ul>
+            </div>
+          </div>
+          <div class="drawer-section">
+            <h5>Query history (5)</h5>
+            <div class="historybox">
+              <ul>
+                <li>"Logitech MX Master 3S sensor specifications"</li>
+                <li>"MX Master 3S teardown sensor model"</li>
+                <li class="muted">+ 3 more</li>
+              </ul>
+            </div>
+          </div>
+          <div class="drawer-section">
+            <h5>Evidence refs (latest run)</h5>
+            <div class="runs-list">
+              <div class="run-row" style="grid-template-columns:auto 1fr auto;">
+                <span class="tag tag-green">TIER-1</span>
+                <span class="model">logitech.com/…/sensor-specs</span>
+                <span class="val" style="font-size:10.5px;">92</span>
+              </div>
+              <div class="run-row" style="grid-template-columns:auto 1fr auto;">
+                <span class="tag tag-accent">TIER-2</span>
+                <span class="model">rtings.com/…/review</span>
+                <span class="val" style="font-size:10.5px;">84</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="drawer-actions">
+          <button class="btn sm ghost">Clear history</button>
+          <button class="btn sm ghost">Prompt</button>
+          <div class="tip-wrap"><button class="btn sm disabled">∞ Loop</button><span class="tip">Phase 3b</span></div>
+          <button class="btn sm primary">▶ Re-run</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="callout callout-info">
+  <strong>Drawer head changes with scope</strong>
+  <ul style="margin:4px 0 0 18px;">
+    <li><strong>key</strong> scope: field_key + axes tags + tier + run count. Shows runs, URL/query history, evidence refs, footer = Re-run / Loop / Prompt.</li>
+    <li><strong>group</strong> scope: group name + key-count + resolved-count. Shows <em>all runs in group</em> (newest first, each row tagged with its field_key), no URL/query aggregation (confusing at group scope), no evidence. Footer = Run group / Loop group.</li>
+    <li><strong>product</strong> scope: product name + total keys. Shows all runs across all groups, each row tagged with group + field_key. Footer = Run all groups / Loop all groups.</li>
+  </ul>
+  Same component, different data-fetch hook, different footer action set. Composes <code>FinderRunHistoryRow</code> and <code>FinderDiscoveryDetails</code> primitives.
+</div>
+
+<div class="mockup">
+  <div class="mockup-caption"><span class="badge">mockup</span> Group-scope history drawer (showing the run-row field_key column)</div>
+  <div class="win" style="max-width:720px; margin:0 auto;">
+    <div class="drawer-head">
+      <div><span class="scope-pill" style="background:var(--teal);">group</span><strong>sensor_performance</strong></div>
+      <div class="muted" style="margin-top:6px; font-size:11.5px;">8 keys · 3 resolved · 17 runs total · newest first</div>
+    </div>
+    <div class="drawer-body" style="padding:14px 18px;">
+      <div class="runs-list">
+        <div class="run-row" style="grid-template-columns:auto auto 1fr auto auto;">
+          <span class="rn">#17</span>
+          <span class="fk">polling_rate_native_hz</span>
+          <span class="val">1000 Hz</span>
+          <span class="model">gpt-5.4 xhigh</span>
+          <span class="status status-resolved"><span class="dot"></span>published</span>
+        </div>
+        <div class="run-row" style="grid-template-columns:auto auto 1fr auto auto;">
+          <span class="rn">#16</span>
+          <span class="fk">sensor_model</span>
+          <span class="val">PixArt PAW3950</span>
+          <span class="model">gpt-5.4 xhigh</span>
+          <span class="status status-resolved"><span class="dot"></span>published</span>
+        </div>
+        <div class="run-row" style="grid-template-columns:auto auto 1fr auto auto;">
+          <span class="rn">#15</span>
+          <span class="fk">dpi_max</span>
+          <span class="val">8000</span>
+          <span class="model">mini xhigh</span>
+          <span class="status status-resolved"><span class="dot"></span>published</span>
+        </div>
+        <div class="run-row" style="grid-template-columns:auto auto 1fr auto auto;">
+          <span class="rn">#14</span>
+          <span class="fk">acceleration</span>
+          <span class="val">unk</span>
+          <span class="model">mini high</span>
+          <span class="status status-unknown"><span class="dot"></span>unk</span>
+        </div>
+        <div class="run-row" style="grid-template-columns:auto auto 1fr auto auto;">
+          <span class="rn">#13</span>
+          <span class="fk">lift_off_distance</span>
+          <span class="val">1mm</span>
+          <span class="model">mini high</span>
+          <span class="status status-resolved"><span class="dot"></span>published</span>
+        </div>
+      </div>
+    </div>
+    <div class="drawer-actions">
+      <button class="btn sm ghost">Filter by field</button>
+      <div class="tip-wrap"><button class="btn sm disabled">∞ Loop group</button><span class="tip">Phase 5</span></div>
+      <div class="tip-wrap"><button class="btn sm primary disabled">▶ Run group</button><span class="tip">Phase 5</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════ 6. PROMPT SLIDE-OVER ═════════════════ -->
+<h2 id="prompt"><span class="num">6</span> Prompt slide-over — horizontal drawer</h2>
+
+<p>Clicking <strong>Prompt</strong> on any key row opens a horizontal slide-over covering most of the panel. Reuses the existing <code>PromptPreviewModal</code> / <code>PromptPreviewView</code> primitive pattern from SKU/RDF. Two columns: system prompt (left, composed from 24 placeholders) · user message + LLM response (right).</p>
+
+<div class="mockup">
+  <div class="mockup-caption"><span class="badge">mockup</span> Prompt slide-over over the panel, showing <code style="background:transparent; color:inherit; padding:0;">sensor_model</code>'s latest run</div>
+  <div class="prompt-shell">
+    <div class="win">
+      <!-- a faded glimpse of the panel behind -->
+      <div class="toolbar primary" style="background:linear-gradient(180deg,#4263eb,#3b56d6); opacity:.35;">
+        <div><strong>Per-Key Finder</strong><div class="sub">Logitech MX Master 3S</div></div>
+      </div>
+      <div style="padding:60px; background:var(--surface); opacity:.4; text-align:center; color:var(--text-muted);">
+        …panel content behind…
+      </div>
+    </div>
+    <div class="prompt-overlay">
+      <div class="prompt-drawer">
+        <div class="prompt-drawer-head">
+          <strong style="font-family:var(--mono); font-size:14px;">sensor_model</strong>
+          <span class="muted" style="font-size:12px;">· run #3 · 2026-04-19 13:47</span>
+          <div style="margin-left:auto; display:flex; gap:6px;">
+            <select class="select sm" style="font-size:11.5px;">
+              <option>Latest run (#3)</option>
+              <option>Run #2</option>
+              <option>Run #1</option>
+            </select>
+            <button class="btn sm ghost">Copy JSON</button>
+            <button class="btn sm ghost">Close ✕</button>
+          </div>
+        </div>
+        <div class="prompt-drawer-body">
+          <div class="prompt-col">
+            <h5>System prompt (composed)</h5>
+            <pre class="prompt-block"><span class="c">// 24-placeholder scaffold — rendered at call time</span>
+You are looking for the EXACT product:
+<span class="k">BRAND:</span> <span class="s">"Logitech"</span>
+<span class="k">MODEL:</span> <span class="s">"MX Master 3S"</span>
+
+<span class="c">// PRIMARY KEY ─────────────────────────────</span>
+<span class="k">PRIMARY_FIELD_KEY:</span> <span class="s">sensor_model</span>
+<span class="k">PRIMARY_FIELD_GUIDANCE:</span>
+  The optical sensor IC. Prefer the exact
+  PixArt / Avago part number (e.g. PAW3950).
+
+<span class="k">PRIMARY_FIELD_CONTRACT:</span>
+  type: string
+  aliases: ["sensor", "optical sensor"]
+
+<span class="c">// SHARED ──────────────────────────────────</span>
+<span class="k">EVIDENCE_CONTRACT:</span>
+  min 2 evidence refs, tier ≥ 2
+  verify: HEAD fetch required
+
+<span class="k">PREVIOUS_DISCOVERY:</span>
+  8 URLs checked, 5 queries run
+  (listed above)
+
+<span class="k">RETURN_JSON_SHAPE:</span>
+  {
+    primary_field_key: <span class="s">"sensor_model"</span>,
+    results: {
+      sensor_model: { value: <span class="t">&lt;string&gt;</span>, … }
+    },
+    discovery_log: { … }
+  }</pre>
+          </div>
+          <div class="prompt-col">
+            <h5>User message</h5>
+            <pre class="prompt-block"><span class="k">{</span>
+  <span class="k">"brand":</span> <span class="s">"Logitech"</span>,
+  <span class="k">"model":</span> <span class="s">"MX Master 3S"</span>,
+  <span class="k">"primary_field_key":</span> <span class="s">"sensor_model"</span>,
+  <span class="k">"passenger_count":</span> <span class="n">0</span>,
+  <span class="k">"variant_count":</span> <span class="n">2</span>
+<span class="k">}</span></pre>
+            <h5 style="margin-top:16px;">LLM response</h5>
+            <pre class="prompt-block"><span class="k">{</span>
+  <span class="k">"primary_field_key":</span> <span class="s">"sensor_model"</span>,
+  <span class="k">"results":</span> <span class="k">{</span>
+    <span class="k">"sensor_model":</span> <span class="k">{</span>
+      <span class="k">"value":</span> <span class="s">"PixArt PAW3950"</span>,
+      <span class="k">"confidence":</span> <span class="n">92</span>,
+      <span class="k">"evidence_refs":</span> <span class="k">[</span>
+        <span class="k">{</span> <span class="k">"url":</span> <span class="s">"logitech.com/…"</span>,
+          <span class="k">"tier":</span> <span class="n">1</span>, <span class="k">"confidence":</span> <span class="n">92</span> <span class="k">}</span>,
+        <span class="k">{</span> <span class="k">"url":</span> <span class="s">"rtings.com/…"</span>,
+          <span class="k">"tier":</span> <span class="n">2</span>, <span class="k">"confidence":</span> <span class="n">84</span> <span class="k">}</span>
+      <span class="k">]</span>,
+      <span class="k">"unknown_reason":</span> <span class="s">""</span>
+    <span class="k">}</span>
+  <span class="k">}</span>,
+  <span class="k">"discovery_log":</span> <span class="k">{</span>
+    <span class="k">"urls_checked":</span> <span class="k">[</span>…<span class="k">]</span>,
+    <span class="k">"queries_run":</span> <span class="k">[</span>…<span class="k">]</span>,
+    <span class="k">"notes":</span> <span class="k">[]</span>
+  <span class="k">}</span>
+<span class="k">}</span></pre>
+          </div>
+        </div>
+        <div class="prompt-drawer-footer">
+          <button class="btn sm ghost">Export .json</button>
+          <button class="btn sm ghost">View in new tab</button>
+          <button class="btn sm primary">▶ Re-run with same prompt</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="callout callout-ok">
+  <strong>Reused primitive</strong>
+  This slide-over composes <code>PromptPreviewModal</code> as the overlay shell + <code>PromptPreviewView</code> as the 2-column body. Both live in <code>tools/gui-react/src/shared/ui/finder/</code> and are used by SKU + RDF panels today. We pass <code>runId</code> + <code>fieldKey</code> instead of <code>variantId</code> — no new shell needed.
+</div>
+
+<!-- ═════════════════ 7. BUTTON GALLERY ═════════════════ -->
+<h2 id="buttons"><span class="num">7</span> Button state gallery</h2>
+
+<div class="mockup">
+  <div class="mockup-caption"><span class="badge">states</span> Four verbs × three scopes</div>
+  <div class="win" style="padding:18px;">
+    <table class="spec">
+      <thead>
+        <tr><th>Scope</th><th>Run</th><th>Loop</th><th>History</th><th>Prompt</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Per-key</strong><br><span class="muted" style="font-size:11.5px;">row actions</span></td>
+          <td><button class="btn xs primary">▶ Run</button></td>
+          <td><div class="tip-wrap show"><button class="btn xs disabled">∞ Loop</button><span class="tip">Phase 3b</span></div></td>
+          <td><button class="btn xs ghost">History</button></td>
+          <td><button class="btn xs ghost">Prompt</button></td>
+        </tr>
+        <tr>
+          <td><strong>Group</strong><br><span class="muted" style="font-size:11.5px;">group header</span></td>
+          <td><div class="tip-wrap show"><button class="btn sm disabled">▶ Run group</button><span class="tip">Phase 5</span></div></td>
+          <td><div class="tip-wrap show"><button class="btn sm disabled">∞ Loop group</button><span class="tip">Phase 5</span></div></td>
+          <td><button class="btn sm ghost">History</button></td>
+          <td class="muted" style="font-size:11.5px; text-align:center;">—</td>
+        </tr>
+        <tr>
+          <td><strong>Product</strong><br><span class="muted" style="font-size:11.5px;">top header</span></td>
+          <td><div class="tip-wrap show"><button class="btn disabled">▶ Run all groups</button><span class="tip">Phase 5</span></div></td>
+          <td><div class="tip-wrap show"><button class="btn disabled">∞ Loop all groups</button><span class="tip">Phase 5</span></div></td>
+          <td><button class="btn">History</button></td>
+          <td class="muted" style="font-size:11.5px; text-align:center;">—</td>
+        </tr>
+        <tr>
+          <td><strong>Running</strong></td>
+          <td colspan="4"><span class="status status-running"><span class="dot"></span>running</span><span class="muted" style="font-size:11.5px; margin-left:10px;">— replaces Run/Loop buttons in the cell; History + Prompt stay active; cancel action added as icon button</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═════════════════ 8. EXCLUSIONS ═════════════════ -->
+<h2 id="exclusions"><span class="num">8</span> What's filtered out (and why)</h2>
+
+<p>Out of 73 authored keys on the mouse category, ~26 are <strong>not valid keyFinder targets</strong>. They're filtered out of the list before you see it. The panel doesn't include them because they're handled by a different path — but you might wonder "hey, why isn't <code>colors</code> here?" Two filters:</p>
+
+<div class="legend">
+  <div class="legend-item">
+    <strong>1. Variant-dependent keys</strong>
+    Anything with <code>field_rule.variant_dependent === true</code>. These vary per color/edition (e.g. the blue variant is wireless, the black is wired). They're handled by the <em>manual override drawer</em> on variant-scoped fields, not by keyFinder. The flag comes free on every ReviewLayout row.
+  </div>
+  <div class="legend-item">
+    <strong>2. Reserved keys</strong>
+    Owned by another finder — <code>colors</code> / <code>editions</code> (CEF), <code>release_date</code> (RDF), <code>sku</code> (SKF). Denylist lives in <code>src/core/finder/finderExclusions.js</code> and is already enforced at the backend. We fetch it via a tiny <code>GET /key-finder/:cat/reserved-keys</code> endpoint so the UI can filter them out client-side too.
+  </div>
+</div>
+
+<div class="callout callout-info">
+  <strong>Decision — do you want a way to see what was filtered?</strong>
+  <p style="margin-top:6px;">Default: hide filtered keys entirely. You just see the 47 eligible ones. Clean.</p>
+  <p>Optional: a tiny <em>"26 keys filtered out · show"</em> link at the bottom of the list. Clicking it expands a small section listing the filtered keys with a reason (<code>variant_dependent</code> / <code>reserved by RDF</code> / etc.). Purely a debug aid.</p>
+  <p>My recommendation: <strong>skip it for now</strong> — if you're curious why <code>colors</code> isn't there, the answer is obvious (it's CEF-owned). Add it later only if users actually ask.</p>
+</div>
+
+<!-- ═════════════════ 9. FILTERS ═════════════════ -->
+<h2 id="filters"><span class="num">9</span> Filters &amp; search states</h2>
+
+<p>Client-side over the loaded layout + summary. No extra round-trips. Groups hide when all their keys are filtered out.</p>
+
+<div class="mockup">
+  <div class="mockup-caption"><span class="badge">state</span> Filter: status=unresolved · required=mandatory · search="sensor"</div>
+  <div class="win">
+    <div class="toolbar filters">
+      <input class="input search" value="sensor" />
+      <select class="select"><option>Difficulty · all</option></select>
+      <select class="select"><option>Availability · all</option></select>
+      <select class="select"><option selected>Required · mandatory</option></select>
+      <select class="select"><option selected>Status · unresolved</option></select>
+      <span class="divider"></span>
+      <span class="muted" style="font-size:11.5px;">3 keys match · 1 group</span>
+      <button class="btn xs ghost" style="margin-left:auto;">Clear filters</button>
+    </div>
+    <div class="grp">
+      <div class="grp-head">
+        <span class="chev">▼</span>
+        <span class="gname">sensor_performance</span>
+        <span class="gcount">· 3 matching · 8 total</span>
+        <div class="gactions">
+          <button class="btn sm ghost">History</button>
+          <span class="divider"></span>
+          <div class="tip-wrap"><button class="btn sm disabled">∞ Loop group</button><span class="tip">Phase 5</span></div>
+          <div class="tip-wrap"><button class="btn sm disabled">▶ Run group</button><span class="tip">Phase 5</span></div>
+        </div>
+      </div>
+      <table class="keys">
+        <tbody>
+          <tr>
+            <td class="kname" style="width:24%;"><code>sensor_model</code></td>
+            <td class="axes"><span class="tag tag-red">very_hard</span><span class="tag tag-purple">mand</span></td>
+            <td style="width:120px;"><span class="status status-running"><span class="dot"></span>running</span></td>
+            <td class="actions" style="width:220px;">
+              <button class="btn xs disabled">▶ Run</button>
+              <button class="btn xs disabled">∞ Loop</button>
+              <button class="btn xs ghost">History</button>
+              <button class="btn xs ghost">Prompt</button>
+            </td>
+          </tr>
+          <tr>
+            <td class="kname"><code>tracking_speed_ips</code></td>
+            <td class="axes"><span class="tag tag-accent">medium</span><span class="tag tag-purple">mand</span></td>
+            <td><span class="status status-unresolved"><span class="dot"></span>unresolved</span></td>
+            <td class="actions">
+              <button class="btn xs">▶ Run</button>
+              <div class="tip-wrap"><button class="btn xs disabled">∞ Loop</button><span class="tip">Phase 3b</span></div>
+              <button class="btn xs ghost">History</button>
+              <button class="btn xs ghost">Prompt</button>
+            </td>
+          </tr>
+          <tr>
+            <td class="kname"><code>max_acceleration_g</code></td>
+            <td class="axes"><span class="tag tag-orange">hard</span><span class="tag tag-purple">mand</span></td>
+            <td><span class="status status-unknown"><span class="dot"></span>unk</span></td>
+            <td class="actions">
+              <button class="btn xs">▶ Run</button>
+              <div class="tip-wrap"><button class="btn xs disabled">∞ Loop</button><span class="tip">Phase 3b</span></div>
+              <button class="btn xs ghost">History</button>
+              <button class="btn xs ghost">Prompt</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════ 10. DATA FLOW ═════════════════ -->
+<h2 id="data"><span class="num">10</span> Data flow &amp; live updates</h2>
+
+<p>Reuses the <strong>same live-update chain Review Grid uses</strong>. Field Studio drag-reorder → persist → WS emit → invalidationResolver → React Query refetch → re-group.</p>
+
+<div class="flow">
+  <div class="b b-neutral">Field Studio<br>drag reorder</div>
+  <div class="arr">→</div>
+  <div class="b b-teal">saveFieldStudioMap()<br>backend</div>
+  <div class="arr">→</div>
+  <div class="b b-accent">WS emit<br><code style="background:rgba(255,255,255,.4); font-size:10px;">'field-studio-map-saved'</code></div>
+  <div class="arr">→</div>
+  <div class="b b-accent">invalidationResolver<br>domains: studio/mapping/review-layout</div>
+  <div class="arr">→</div>
+  <div class="b b-green">React Query<br>invalidates <code style="background:rgba(255,255,255,.4); font-size:10px;">['reviewLayout', cat]</code></div>
+  <div class="arr">→</div>
+  <div class="b b-green">KeyFinderPanel<br>re-groups, re-renders</div>
+</div>
+
+<p style="margin-top:14px;"><strong>Five queries power the panel:</strong></p>
+<table class="spec">
+  <thead><tr><th>Query key</th><th>Endpoint</th><th>Purpose</th><th>Invalidated by</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>['reviewLayout', cat]</code></td>
+      <td><code>GET /review/:cat/layout</code> <span class="tag tag-green" style="font-size:9px;">EXISTS</span></td>
+      <td>Group + key order + variant_dependent flag</td>
+      <td><code>field-studio-map-saved</code></td>
+    </tr>
+    <tr>
+      <td><code>['kf:summary', cat, pid]</code></td>
+      <td><code>GET /key-finder/:cat/:pid/summary</code> <span class="tag tag-orange" style="font-size:9px;">NEW</span></td>
+      <td>Per-key rollup (last_run, status, published, candidate_count)</td>
+      <td><code>key-finder-run</code>, <code>key-finder-run-deleted</code>, <code>key-finder-deleted</code></td>
+    </tr>
+    <tr>
+      <td><code>['kf:history', cat, pid, scope, id?]</code></td>
+      <td><code>GET /key-finder/:cat/:pid/history?scope=key|group|product&amp;id=…</code> <span class="tag tag-orange" style="font-size:9px;">NEW</span></td>
+      <td>Drawer contents — runs scoped to key / group / product</td>
+      <td>same as summary</td>
+    </tr>
+    <tr>
+      <td><code>['kf:prompt', cat, pid, fk, runId]</code></td>
+      <td><code>GET /key-finder/:cat/:pid?field_key=X</code> <span class="tag tag-green" style="font-size:9px;">EXISTS</span></td>
+      <td>Prompt slide-over — system prompt + user + response for one run</td>
+      <td>same as summary</td>
+    </tr>
+    <tr>
+      <td><code>['kf:reserved', cat]</code></td>
+      <td><code>GET /key-finder/:cat/reserved-keys</code> <span class="tag tag-orange" style="font-size:9px;">NEW · ~10 LoC</span></td>
+      <td>Client-side denylist filter</td>
+      <td>long-cached</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>New backend work:</strong> 3 small endpoints (<code>/summary</code>, <code>/history?scope=…</code>, <code>/reserved-keys</code>). Everything else is wiring.</p>
+
+<!-- ═════════════════ 11. REUSE ═════════════════ -->
+<h2 id="reuse"><span class="num">11</span> Reused primitives / new components</h2>
+
+<div class="legend" style="grid-template-columns:1fr 1fr;">
+  <div class="legend-item">
+    <strong style="color:var(--green);">✓ Reused as-is</strong>
+    <ul style="margin-top:6px; margin-left:18px; font-size:12.5px;">
+      <li><code>FinderPanelHeader</code></li>
+      <li><code>FinderKpiCard</code></li>
+      <li><code>FinderSectionCard</code> (group container)</li>
+      <li><code>FinderRunHistoryRow</code> (drawer runs)</li>
+      <li><code>FinderRunPromptDetails</code></li>
+      <li><code>FinderEvidenceRow</code></li>
+      <li><code>FinderDiscoveryDetails</code> (URL/query boxes)</li>
+      <li><code>PromptPreviewModal</code> (prompt slide-over shell)</li>
+      <li><code>PromptPreviewView</code> (prompt 2-column body)</li>
+      <li><code>PromptDrawerChevron</code> (optional row affordance)</li>
+      <li><code>ConfidenceRing</code></li>
+      <li><code>FinderDeleteConfirmModal</code></li>
+      <li><code>useFireAndForget</code> (POST dispatch)</li>
+      <li><code>useIsModuleRunning</code></li>
+      <li><code>usePersistedExpandMap</code> (group collapse)</li>
+      <li><code>useResolvedFinderModel</code></li>
+      <li><code>useDataChangeSubscription</code> (WS listener)</li>
+    </ul>
+  </div>
+  <div class="legend-item">
+    <strong style="color:var(--accent);">+ New (keyFinder-specific)</strong>
+    <ul style="margin-top:6px; margin-left:18px; font-size:12.5px;">
+      <li><code>KeyFinderPanel.tsx</code> — orchestrator (~220 LoC)</li>
+      <li><code>KeyGroupSection.tsx</code> — group header + key table (~150 LoC)</li>
+      <li><code>KeyRow.tsx</code> — per-key row with 4 action buttons</li>
+      <li><code>KeyHistoryDrawer.tsx</code> — right slide-over, scope-parameterized (~140 LoC)</li>
+      <li><code>KeyPromptSlideover.tsx</code> — horizontal slide-over wrapping PromptPreviewModal (~80 LoC)</li>
+      <li><code>KeyFinderToolbar.tsx</code> — filters + search + product actions</li>
+      <li><code>api/keyFinderQueries.generated.ts</code> — 5 React Query hooks</li>
+      <li><code>state/keyFinderFilters.ts</code> — filter state hook</li>
+      <li><code>state/keyFinderGroupedRows.ts</code> — grouping + exclusion selector</li>
+    </ul>
+  </div>
+</div>
+
+<div class="callout callout-ok">
+  <strong>~700 LoC new, 0 LoC rewritten</strong>
+  <code>GenericScalarFinderPanel</code> stays untouched — it's variant-scoped and reused by SKU+RDF. The per-key panel is a parallel tree that composes the same small primitives the variant panel composes.
+</div>
+
+<!-- ═════════════════ 12. SCOPE ═════════════════ -->
+<h2 id="scope"><span class="num">12</span> Scope staging — decision needed</h2>
+
+<p>Per <code>feedback_stage_scope</code>, I don't bundle downstream phases without explicit approval. Three staging options for Phase 4:</p>
+
+<table class="spec">
+  <thead>
+    <tr><th style="width:18%;">Option</th><th>What ships now</th><th>Buttons live</th><th>Effort</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>A. Minimal</strong></td>
+      <td>Per-key Run + History + Prompt. Full panel structure, groups, filters, drawer, slide-over. No Loop / Group / Product action buttons rendered.</td>
+      <td>Per-key Run · History (all 3 scopes) · Prompt</td>
+      <td>~2 days</td>
+    </tr>
+    <tr style="background:var(--accent-light);">
+      <td><strong>B. UI-forward</strong> <span class="tag tag-accent" style="font-size:9px;">recommended</span></td>
+      <td>Everything in A, plus: Loop / Run-group / Loop-group / Run-all-groups / Loop-all-groups buttons <strong>rendered disabled</strong> with phase-naming tooltips. Zero layout change when phases flip live.</td>
+      <td>Per-key Run · all 3 Historys · Prompt</td>
+      <td>~2.5 days</td>
+    </tr>
+    <tr>
+      <td><strong>C. Full</strong></td>
+      <td>All 4 verbs live at all scopes. Requires Phase 3b Loop + Phase 5 Smart Loop orchestrators <em>first</em>.</td>
+      <td>Everything</td>
+      <td>~2 days panel + 3b (~2 days) + Phase 5 (~3–5 days) upstream</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout callout-info">
+  <strong>Why I recommend B</strong>
+  <ol style="margin:4px 0 0 18px;">
+    <li>You get a <em>usable</em> 3a verification dashboard immediately — Run / History / Prompt are the three things you need to prove the pipeline.</li>
+    <li>UX shape is established now. When 3b + 5 land, disabled buttons become live — no redesign.</li>
+    <li>Phase 3a Part 2 already 400s unsupported modes — error path is tested.</li>
+    <li>Low extra cost: ~20 lines of tooltip wiring vs option A.</li>
+  </ol>
+</div>
+
+<div style="margin-top:32px; padding:20px; background:var(--accent-light); border-radius:var(--radius); border-left:4px solid var(--accent); font-size:14px;">
+  <strong style="display:block; margin-bottom:8px; color:var(--accent);">Ready to plan Phase 4 implementation when you approve:</strong>
+  <ol style="margin-left:20px; margin-top:6px;">
+    <li>Pick staging option (A / B / C).</li>
+    <li>Keep or drop the "show filtered-out keys" debug link? (Recommend drop for now.)</li>
+    <li>Confirm 3 new backend endpoints (<code>/summary</code>, <code>/history?scope=…</code>, <code>/reserved-keys</code>) are acceptable Phase 4 scope.</li>
+    <li>Confirm hierarchical layout (this doc) over the roadmap's flat mockup A.</li>
+  </ol>
+</div>
+
+</div> <!-- container -->
+</body>
+</html>

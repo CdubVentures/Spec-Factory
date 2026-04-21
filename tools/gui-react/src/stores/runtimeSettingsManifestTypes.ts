@@ -21,6 +21,9 @@ export interface RuntimeSettingDefaults {
   stealthEnabled: boolean;
   deepseekApiKey: string;
   searchProfileQueryCap: number;
+  tier1SeedCap: number;
+  tier2GroupCap: number;
+  tier3KeyCap: number;
   discoveryUrlHistoryEnabled: boolean;
   discoveryQueryHistoryEnabled: boolean;
   domainClassifierUrlCap: number;

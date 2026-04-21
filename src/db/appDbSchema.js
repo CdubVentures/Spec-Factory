@@ -2,6 +2,20 @@
 // Holds cross-category state: brands, settings, studio maps.
 // Mirrors specDbSchema.js pattern — all CREATE TABLE IF NOT EXISTS.
 
+// WHY: Finder modules with settingsScope='global' store their settings here
+// (one shared config across all categories). Standalone DDL so SpecDb can
+// apply the same CREATE statement to an ephemeral in-memory globalDb when a
+// unit test constructs specDb without an AppDb.
+export const FINDER_GLOBAL_SETTINGS_DDL = `
+CREATE TABLE IF NOT EXISTS finder_global_settings (
+  module_id  TEXT NOT NULL,
+  key        TEXT NOT NULL,
+  value      TEXT NOT NULL DEFAULT '',
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (module_id, key)
+);
+`;
+
 export const APP_DB_SCHEMA = `
 CREATE TABLE IF NOT EXISTS brands (
   identifier     TEXT PRIMARY KEY,
@@ -65,6 +79,14 @@ CREATE TABLE IF NOT EXISTS unit_registry (
   synonyms_json    TEXT NOT NULL DEFAULT '[]',
   conversions_json TEXT NOT NULL DEFAULT '[]',
   updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS finder_global_settings (
+  module_id  TEXT NOT NULL,
+  key        TEXT NOT NULL,
+  value      TEXT NOT NULL DEFAULT '',
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (module_id, key)
 );
 
 CREATE TABLE IF NOT EXISTS billing_entries (

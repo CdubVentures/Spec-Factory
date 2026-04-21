@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Indexing Panel Header — Samples Gallery</title>
+<style>
+  :root {
+    --bg: #f8f9fa; --surface: #fff; --surface-alt: #f1f3f5; --surface-soft: #fafbfc;
+    --border: #dee2e6; --border-light: #e9ecef; --border-strong: #ced4da;
+    --text: #212529; --text-muted: #6c757d; --text-dim: #868e96;
+    --accent: #4263eb; --accent-light: #edf2ff; --accent-border: #bac8ff;
+
+    --pipe-fg: #1864ab; --pipe-bg: #e7f5ff; --pipe-border: #a5d8ff;
+    --cef-fg:  #d97706; --cef-bg:  #fff4e6; --cef-border:  #ffd8a8;
+    --pif-fg:  #0c8599; --pif-bg:  #e3fafc; --pif-border:  #99e9f2;
+    --rdf-fg:  #7048e8; --rdf-bg:  #f3f0ff; --rdf-border:  #d0bfff;
+    --sku-fg:  #2b8a3e; --sku-bg:  #ebfbee; --sku-border:  #b2f2bb;
+    --key-fg:  #3b4cca; --key-bg:  #edf2ff; --key-border:  #bac8ff;
+
+    --tier-easy-fg:   #2b8a3e; --tier-easy-bg:   #ebfbee; --tier-easy-border:   #b2f2bb;
+    --tier-medium-fg: #0c8599; --tier-medium-bg: #e3fafc; --tier-medium-border: #99e9f2;
+    --tier-hard-fg:   #e67700; --tier-hard-bg:   #fff4e6; --tier-hard-border:   #ffd8a8;
+    --tier-vhard-fg:  #c92a2a; --tier-vhard-bg:  #fff5f5; --tier-vhard-border:  #ffc9c9;
+
+    --red: #c92a2a; --green: #2b8a3e; --orange: #e67700;
+
+    --mono: 'SF Mono','Cascadia Code','Fira Code',Consolas,monospace;
+    --font: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    --radius: 8px;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.05), 0 1px 3px rgba(0,0,0,.08);
+    --shadow-md: 0 2px 4px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.08);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:var(--font); color:var(--text); background:var(--bg); line-height:1.55; }
+
+  .page-header { background:linear-gradient(135deg,#1864ab,#4263eb); color:#fff; padding:30px 0 26px; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,.08); }
+  .page-header h1 { font-size:24px; font-weight:700; letter-spacing:-.2px; }
+  .page-header p { font-size:13.5px; opacity:.92; margin-top:6px; max-width:760px; margin-left:auto; margin-right:auto; }
+  .page-header .pill { display:inline-block; background:rgba(255,255,255,.2); padding:4px 12px; border-radius:99px; font-size:12px; font-weight:600; letter-spacing:.3px; margin-top:12px; }
+
+  .container { max-width:1320px; margin:0 auto; padding:24px 24px 72px; }
+
+  h2 { font-size:17px; font-weight:700; margin:34px 0 10px; padding:10px 14px; border-left:4px solid; border-radius:0 6px 6px 0; background:var(--surface); box-shadow:var(--shadow-sm); display:flex; align-items:center; gap:10px; }
+  h2 .ico { width:24px; height:24px; border-radius:6px; border:1px solid; display:inline-flex; align-items:center; justify-content:center; font-size:13px; }
+  h2 .sub { font-size:12px; font-weight:500; color:var(--text-muted); margin-left:auto; font-family:var(--mono); letter-spacing:.2px; }
+  h2.panel-pipeline { border-left-color:var(--pipe-fg); } h2.panel-pipeline .ico { color:var(--pipe-fg); background:var(--pipe-bg); border-color:var(--pipe-border); }
+  h2.panel-cef      { border-left-color:var(--cef-fg);  } h2.panel-cef .ico      { color:var(--cef-fg);  background:var(--cef-bg);  border-color:var(--cef-border); }
+  h2.panel-pif      { border-left-color:var(--pif-fg);  } h2.panel-pif .ico      { color:var(--pif-fg);  background:var(--pif-bg);  border-color:var(--pif-border); }
+  h2.panel-rdf      { border-left-color:var(--rdf-fg);  } h2.panel-rdf .ico      { color:var(--rdf-fg);  background:var(--rdf-bg);  border-color:var(--rdf-border); }
+  h2.panel-sku      { border-left-color:var(--sku-fg);  } h2.panel-sku .ico      { color:var(--sku-fg);  background:var(--sku-bg);  border-color:var(--sku-border); }
+  h2.panel-key      { border-left-color:var(--key-fg);  } h2.panel-key .ico      { color:var(--key-fg);  background:var(--key-bg);  border-color:var(--key-border); }
+
+  .caption { font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); margin:14px 0 4px; font-weight:700; }
+
+  /* ── Unified header component ─────────────────────────────────── */
+  .sf-panel {
+    background:var(--surface); border:1px solid var(--border-light); border-radius:10px;
+    box-shadow:var(--shadow-sm); position:relative; overflow:hidden;
+  }
+  .sf-panel + .sf-panel { margin-top:10px; }
+  .sf-panel-rail {
+    position:absolute; left:0; top:0; bottom:0; width:3px;
+  }
+  .sf-panel-header {
+    display:flex; align-items:center; gap:10px; padding:10px 16px 10px 18px;
+  }
+  .sf-chev {
+    width:22px; height:22px; border-radius:4px; background:transparent; border:1px solid var(--border);
+    color:var(--text-muted); font-size:12px; cursor:pointer; font-family:var(--font);
+    display:inline-flex; align-items:center; justify-content:center; flex:none;
+  }
+  .sf-chev:hover { background:var(--surface-alt); color:var(--text); }
+  .sf-panel-icon {
+    width:26px; height:26px; border-radius:6px; border:1px solid;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:14px; line-height:1; font-weight:600; flex:none;
+  }
+  .sf-panel-title { font-size:14px; font-weight:700; color:var(--text); letter-spacing:-.1px; white-space:nowrap; }
+  .sf-tip {
+    width:16px; height:16px; border-radius:50%; background:var(--surface-alt);
+    color:var(--text-muted); font-size:11px; font-style:italic; flex:none;
+    display:inline-flex; align-items:center; justify-content:center; cursor:help;
+  }
+  .sf-running {
+    display:inline-flex; align-items:center; gap:6px; flex:none;
+    padding:2px 8px; border-radius:99px;
+    background:var(--accent-light); color:var(--accent);
+    font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px;
+  }
+  .sf-running .dot { width:6px; height:6px; border-radius:50%; background:currentColor; animation:pulse 1.4s infinite; }
+  @keyframes pulse { 0%,100%{opacity:.45} 50%{opacity:1} }
+
+  .sf-model-strip { display:inline-flex; gap:4px; align-items:center; flex-wrap:wrap; min-width:0; }
+  .sf-model-chip {
+    display:inline-flex; align-items:center; gap:4px;
+    padding:2px 6px; border-radius:4px;
+    font-family:var(--mono); font-size:10px; font-weight:700;
+    background:var(--surface-alt); color:var(--text); border:1px solid var(--border-light);
+    white-space:nowrap;
+  }
+  .sf-model-chip .pfx { font-size:8.5px; letter-spacing:.5px; color:var(--accent); }
+  .sf-model-chip .eff { font-size:8.5px; letter-spacing:.5px; color:var(--accent); padding:0 3px; border-radius:2px; background:rgba(66,99,235,.1); }
+  .sf-model-chip .think { color:var(--accent); font-size:9px; }
+  .sf-model-chip .ws { color:var(--green); font-size:9px; }
+
+  .sf-model-chip.tier-easy   { background:var(--tier-easy-bg);   border-color:var(--tier-easy-border);   color:var(--tier-easy-fg); }
+  .sf-model-chip.tier-easy   .pfx { color:var(--tier-easy-fg); }
+  .sf-model-chip.tier-medium { background:var(--tier-medium-bg); border-color:var(--tier-medium-border); color:var(--tier-medium-fg); }
+  .sf-model-chip.tier-medium .pfx { color:var(--tier-medium-fg); }
+  .sf-model-chip.tier-hard   { background:var(--tier-hard-bg);   border-color:var(--tier-hard-border);   color:var(--tier-hard-fg); }
+  .sf-model-chip.tier-hard   .pfx { color:var(--tier-hard-fg); }
+  .sf-model-chip.tier-vhard  { background:var(--tier-vhard-bg);  border-color:var(--tier-vhard-border);  color:var(--tier-vhard-fg); }
+  .sf-model-chip.tier-vhard  .pfx { color:var(--tier-vhard-fg); }
+
+  .sf-actions { margin-left:auto; display:inline-flex; gap:6px; align-items:center; flex:none; }
+  .sf-btn-ghost {
+    padding:4px 10px; border-radius:5px; font-size:11.5px; font-weight:600;
+    background:transparent; border:1px solid var(--border); color:var(--text-muted);
+    cursor:pointer; font-family:var(--font); white-space:nowrap;
+  }
+  .sf-btn-ghost:hover { background:var(--surface-alt); color:var(--text); }
+  .sf-btn-loop {
+    padding:4px 10px; border-radius:5px; font-size:11px; font-weight:700;
+    background:transparent; border:1px solid var(--accent); color:var(--accent);
+    cursor:pointer; font-family:var(--font); text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;
+  }
+  .sf-btn-primary {
+    padding:4px 14px; border-radius:5px; font-size:11px; font-weight:700;
+    background:var(--accent); color:#fff; border:1px solid var(--accent);
+    cursor:pointer; font-family:var(--font); text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;
+  }
+  .sf-btn-primary:hover { filter:brightness(1.05); }
+  .sf-btn-primary[disabled] { opacity:.45; cursor:not-allowed; }
+
+  /* Panel theming via data-panel */
+  .sf-panel[data-panel="pipeline"] .sf-panel-rail { background:var(--pipe-fg); }
+  .sf-panel[data-panel="pipeline"] .sf-panel-icon { color:var(--pipe-fg); background:var(--pipe-bg); border-color:var(--pipe-border); }
+  .sf-panel[data-panel="cef"] .sf-panel-rail { background:var(--cef-fg); }
+  .sf-panel[data-panel="cef"] .sf-panel-icon { color:var(--cef-fg); background:var(--cef-bg); border-color:var(--cef-border); }
+  .sf-panel[data-panel="pif"] .sf-panel-rail { background:var(--pif-fg); }
+  .sf-panel[data-panel="pif"] .sf-panel-icon { color:var(--pif-fg); background:var(--pif-bg); border-color:var(--pif-border); }
+  .sf-panel[data-panel="rdf"] .sf-panel-rail { background:var(--rdf-fg); }
+  .sf-panel[data-panel="rdf"] .sf-panel-icon { color:var(--rdf-fg); background:var(--rdf-bg); border-color:var(--rdf-border); }
+  .sf-panel[data-panel="sku"] .sf-panel-rail { background:var(--sku-fg); }
+  .sf-panel[data-panel="sku"] .sf-panel-icon { color:var(--sku-fg); background:var(--sku-bg); border-color:var(--sku-border); }
+  .sf-panel[data-panel="key"] .sf-panel-rail { background:var(--key-fg); }
+  .sf-panel[data-panel="key"] .sf-panel-icon { color:var(--key-fg); background:var(--key-bg); border-color:var(--key-border); }
+
+  /* Running-state panel subtly tints its rail brighter */
+  .sf-panel.running[data-panel="cef"] .sf-running { background:var(--cef-bg); color:var(--cef-fg); }
+  .sf-panel.running[data-panel="pif"] .sf-running { background:var(--pif-bg); color:var(--pif-fg); }
+  .sf-panel.running[data-panel="rdf"] .sf-running { background:var(--rdf-bg); color:var(--rdf-fg); }
+  .sf-panel.running[data-panel="sku"] .sf-running { background:var(--sku-bg); color:var(--sku-fg); }
+  .sf-panel.running[data-panel="key"] .sf-running { background:var(--key-bg); color:var(--key-fg); }
+  .sf-panel.running[data-panel="pipeline"] .sf-running { background:var(--pipe-bg); color:var(--pipe-fg); }
+
+  /* Expanded body skeleton (sample-only; real panels populate their own) */
+  .sf-panel-body {
+    border-top:1px solid var(--border-light);
+    padding:14px 18px; background:var(--surface-soft);
+    font-size:12.5px; color:var(--text-muted);
+  }
+  .sf-panel-body .kpis { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:10px; }
+  .sf-panel-body .kpi { background:var(--surface); border:1px solid var(--border-light); border-radius:6px; padding:8px 10px; }
+  .sf-panel-body .kpi .lbl { font-size:10px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); font-weight:700; }
+  .sf-panel-body .kpi .val { font-size:17px; font-weight:700; color:var(--text); line-height:1.1; margin-top:2px; }
+  .sf-panel-body .filters { display:flex; gap:6px; flex-wrap:wrap; }
+  .sf-panel-body .filters input, .sf-panel-body .filters select {
+    padding:5px 9px; border:1px solid var(--border); border-radius:5px; font-size:11.5px; background:var(--surface); font-family:var(--font);
+  }
+  .sf-panel-body .phase-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .sf-panel-body .phase-step { display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:5px; font-size:11.5px; font-weight:600; border:1px solid var(--border-light); background:var(--surface); }
+  .sf-panel-body .phase-step.done { color:var(--green); border-color:#b2f2bb; background:#ebfbee; }
+  .sf-panel-body .phase-step.run  { color:var(--accent); border-color:var(--accent-border); background:var(--accent-light); }
+  .sf-panel-body .phase-step .dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+  .sf-panel-body .phase-step.run .dot { animation:pulse 1.2s infinite; }
+
+  /* Mockup framing */
+  .frame { background:#eef2f7; border:1px solid var(--border); border-radius:10px; padding:14px 14px 18px; box-shadow:inset 0 2px 6px rgba(0,0,0,.04); }
+  .frame + .frame { margin-top:18px; }
+
+  /* Annotation chip */
+  .anno {
+    display:inline-block; font-family:var(--mono); font-size:10.5px; font-weight:700;
+    background:var(--surface); border:1px solid var(--border); color:var(--text-muted);
+    padding:2px 7px; border-radius:4px; letter-spacing:.3px;
+  }
+  .anno.ok   { color:var(--green);  border-color:#b2f2bb; background:#ebfbee; }
+  .anno.warn { color:var(--orange); border-color:#ffd8a8; background:#fff4e6; }
+  .anno.neu  { color:var(--accent); border-color:var(--accent-border); background:var(--accent-light); }
+
+  /* All-panels-together view (final section) */
+  .stack { display:flex; flex-direction:column; gap:8px; }
+
+  hr { border:none; border-top:1px solid var(--border-light); margin:28px 0; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Indexing Panel Header — Samples Gallery</h1>
+  <p>All six panels rendered through the same unified header. Color, icon, model strip, and button set shift per panel — structure stays identical.</p>
+  <span class="pill">Companion to indexing-header-unified-spec.html</span>
+</div>
+
+<div class="container">
+
+  <!-- ════════════════ PIPELINE ════════════════ -->
+  <h2 class="panel-pipeline"><span class="ico">◉</span>Pipeline <span class="sub">data-panel="pipeline" · buttonSet="pipeline"</span></h2>
+  <div class="frame">
+    <div class="caption">Collapsed · idle <span class="anno neu">idle</span></div>
+    <div class="sf-panel" data-panel="pipeline">
+      <div class="sf-panel-rail"></div>
+      <div class="sf-panel-header">
+        <button class="sf-chev" title="Expand">▸</button>
+        <span class="sf-panel-icon">◉</span>
+        <span class="sf-panel-title">Pipeline</span>
+        <span class="sf-tip">i</span>
+        <span class="sf-model-strip">
+          <span class="sf-model-chip"><span class="pfx">CEF</span>gpt-5.4<span class="eff">H</span></span>
+          <span class="sf-model-chip"><span class="pfx">PIF</span>gpt-5.4<span class="eff">H</span></span>
+          <span class="sf-model-chip"><span class="pfx">RDF</span>haiku-4.5<span class="eff">L</span></span>
+          <span class="sf-model-chip"><span class="pfx">SKU</span>haiku-4.5<span class="eff">L</span></span>
+          <span class="sf-model-chip"><span class="pfx">KEY</span>mixed</span>
+        </span>
+        <span class="sf-actions">
+          <button class="sf-btn-primary">Run IndexLab</button>
+        </span>
+      </div>
+    </div>
+
+    <div class="caption" style="margin-top:14px;">Expanded · running <span class="anno warn">running</span></div>
+    <div class="sf-panel running" data-panel="pipeline">
+      <div class="sf-panel-rail"></div>
+      <div class="sf-panel-header">
+        <button class="sf-chev" title="Collapse">▾</button>
+        <span class="sf-panel-icon">◉</span>
+        <span class="sf-panel-title">Pipeline</span>
+        <span class="sf-tip">i</span>
+        <span class="sf-running"><span class="dot"></span>Running</span>
+        <span class="sf-model-strip">
+          <span class="sf-model-chip"><span class="pfx">CEF</span>gpt-5.4<span class="eff">H</span></span>
+          <span class="sf-model-chip"><span class="pfx">PIF</span>gpt-5.4<span class="eff">H</span></span>
+          <span class="sf-model-chip"><span class="pfx">RDF</span>haiku-4.5<span class="eff">L</span></span>
+          <span class="sf-model-chip"><span class="pfx">SKU</span>haiku-4.5<span class="eff">L</span></span>
+          <span class="sf-model-chip"><span class="pfx">KEY</span>mixed</span>
+        </span>
+        <span class="sf-actions">
+          <button class="sf-btn-primary" disabled>Running…</button>
+        </span>
+      </div>
+      <div class="sf-panel-body">
+        <div class="phase-row">
+          <span class="phase-step done"><span class="dot"></span>CEF</span>
+          <span class="phase-step done"><span class="dot"></span>PIF</span>
+          <span class="phase-step run"><span class="dot"></span>RDF</span>
+          <span class="phase-step"><span class="dot"></span>SKU</span>
+          <span class="phase-step"><span class="dot"></span>KEY</span>
+          <span style="margin-left:auto; font-size:11.5px;">Stop · Force-kill · Clear view · Replay run</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ CEF ════════════════ -->
+  <h2 class="panel-cef"><span class="ico">◈</span>Color &amp; Edition Finder <span class="sub">data-panel="cef" · buttonSet="finder-full"</span></h2>
+  <div class="frame">
+    <div class="caption">Collapsed · idle</div>
+    <div class="sf-panel" data-panel="cef">
+      <div class="sf-panel-rail"></div>
+      <div class="sf-panel-header">
+        <button class="sf-chev" title="Expand">▸</button>
+        <span class="sf-panel-icon">◈</span>
+        <span class="sf-panel-title">Color &amp; Edition Finder</span>
+        <span class="sf-tip">i</span>
+        <span class="sf-model-strip">
+          <span class="sf-model-chip"><span class="pfx">LAB</span><span class="think">◐</span><span class="ws">◎</span>gpt-5.4<span class="eff">HIGH</span></span>
+        </span>
+        <span class="sf-actions">
+          <button class="sf-btn-ghost">History</button>
+          <button class="sf-btn-ghost">Prompt</button>
+          <button class="sf-btn-primary">Run</button>
+        </span>
+      </div>
+    </div>
+
+    <div class="caption" style="margin-top:14px;">Expanded · running <span class="anno warn">running</span></div>
+    <div class="sf-panel running" data-panel="cef">
+      <div class="sf-panel-rail"></div>
+      <div class="sf-panel-header">
+        <button class="sf-chev" title="Collapse">▾</button>
+        <span class="sf-panel-icon">◈</span>
+        <span class="sf-panel-title">Color &amp; Edition Finder</span>
+        <span class="sf-tip">i</span>
+        <span class="sf-running"><span class="dot"></span>Running</span>
+        <span class="sf-model-strip">
+          <span class="sf-model-chip"><span class="pfx">LAB</span><span class="think">◐</span><span class="ws">◎</span>gpt-5.4<span class="eff">HIGH</span></span>
+        </span>
+        <span class="sf-actions">
+          <button class="sf-btn-ghost">History</button>
+          <button class="sf-btn-ghost">Prompt</button>
+          <button class="sf-btn-primary" disabled>Running…</button>
+        </span>
+      </div>
+      <div class="sf-panel-body">
+        <div class="kpis">
+          <div class="kpi"><div class="lbl">Variants</div><div class="val">12</div></div>
+          <div class="kpi"><div class="lbl">Resolved</div><div class="val" style="color:var(--green)">9</div></div>
+          <div class="kpi"><div class="lbl">Candidates</div><div class="val" style="color:var(--orange)">2</div></div>
+          <div class="kpi"><div class="lbl">Running</div><div class="val" style="color:var(--accent)">1</div></div>
+          <div class="kpi"><div class="lbl">Empty</div><div class="val">0</div></div>
+        </div>
+        <div style="font-size:12px; color:var(--text-muted);">Variant grid goes here · CEF-specific controls</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ PIF ════════════════ -->
+  <h2 class="panel-pif"><span class="ico">▣</span>Product Image Finder <span class="sub">data-panel="pif" · buttonSet="finder-full" · +loop</span></h2>
+  <div class="frame">
+    <div class="caption">Collapsed · idle</div>
+    <div class="sf-panel" data-panel="pif">
+      <div class="sf-panel-rail"></div>
+      <div class="sf-panel-header">
+        <button class="sf-chev" title="Expand">▸</button>
+        <span class="sf-panel-icon">▣</span>
+        <span class="sf-panel-title">Product Image Finder</span>
+        <span class="sf-tip">i</span>
+        <span class="sf-model-strip">
+          <span class="sf-model-chip"><span class="pfx">PIF</span>gpt-5.4<span class="eff">HIGH</span></span>
+          <span class="sf-model-chip"><span class="pfx">EVAL</span>haiku-4.5<span class="eff">LOW</span></span>
+        </span>
+        <span class="sf-actions">
+          <button class="sf-btn-ghost">History</button>
+          <button class="sf-btn-ghost">Prompt</button>
+          <button class="sf-btn-loop">Loop</button>
+          <button class="sf-btn-primary">Run</button>
+        </span>
+      </div>
+    </div>
+
+    <div class="caption" style="margin-top:14px;">Expanded · idle</div>
+    <div class="sf-panel" data-panel="pif">
+      <div class="sf-panel-rail"></div>
+      <div class="sf-panel-header">
+        <button class="sf-chev" title="Collapse">▾</button>
+        <span class="sf-panel-icon">▣</span>
+        <span class="sf-panel-title">Product Image Finder</span>
+        <span class="sf-tip">i</span>
+        <span class="sf-model-strip">
+          <span class="sf-model-chip"><span class="pfx">PIF</span>gpt-5.4<span class="eff">HIGH</span></span>
+          <span class="sf-model-chip"><span class="pfx">EVAL</span>haiku-4.5<span class="eff">LOW</span></span>
+        </span>
+        <span class="sf-actions">
+          <button class="sf-btn-ghost">History</button>
+          <button class="sf-btn-ghost">Prompt</button>
+          <button class="sf-btn-loop">Loop</button>
+          <button class="sf-btn-primary">Run</button>
+        </span>
+      </div>
+      <div class="sf-panel-body">
+        <div class="kpis">
+          <div class="kpi"><div class="lbl">Variants</div><div class="val">12</div></div>
+          <div class="kpi"><div class="lbl">Images found</div><div class="val" style="color:var(--green)">48</div></div>
+          <div class="kpi"><div class="lbl">Evaluated</div><div class="val" style="color:var(--accent)">36</div></div>
+          <div class="kpi"><div class="lbl">Approved</div><div class="val" style="color:var(--green)">27</div></div>
+          <div class="kpi"><div class="lbl">Pending</div><div class="val" style="color:var(--orange)">9</div></div>
+        </div>
+        <div style="font-size:12px; color:var(--text-muted);">Image grid · per-variant eval actions</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ RDF ════════════════ -->
+  <h2 class="panel-rdf"><span class="ico">◷</span>Release Date Finder <span class="sub">data-panel="rdf" · buttonSet="finder-full" · +loop</span></h2>
+  <div class="frame">
+    <div class="caption">Collapsed · idle</div>
+    <div class="sf-panel" data-panel="rdf">
+      <div class="sf-panel-rail"></div>
+      <div class="sf-panel-header">
+        <button class="sf-chev" title="Expand">▸</button>
+        <span class="sf-panel-icon">◷</span>
+        <span class="sf-panel-title">Release Date Finder</span>
+        <span class="sf-tip">i</span>
+        <span class="sf-model-strip">
+          <span class="sf-model-chip"><span class="pfx">API</span><span class="ws">◎</span>haiku-4.5<span class="eff">LOW</span></span>
+        </span>
+        <span class="sf-actions">
+          <button class="sf-btn-ghost">History</button>
+          <button class="sf-btn-ghost">Prompt</button>
+          <button class="sf-btn-loop">Loop</button>
+          <button class="sf-btn-primary">Run</button>
+        </span>
+      </div>
+    </div>
+
+    <div class="caption" style="margin-top:14px;">Expanded · resolved</div>
+    <div class="sf-panel" data-panel="rdf">
+      <div class="sf-panel-rail"></div>
+      <div class="sf-panel-header">
+        <button class="sf-chev" title="Collapse">▾</button>
+        <span class="sf-panel-icon">◷</span>
+        <span class="sf-panel-title">Release Date Finder</span>
+        <span class="sf-tip">i</span>
+        <span class="sf-model-strip">
+          <span class="sf-model-chip"><span class="pfx">API</span><span class="ws">◎</span>haiku-4.5<span class="eff">LOW</span></span>
+        </span>
+        <span class="sf-actions">
+          <button class="sf-btn-ghost">History</button>
+          <button class="sf-btn-ghost">Prompt</button>
+          <button class="sf-btn-loop">Loop</button>
+          <button class="sf-btn-primary">Run</button>
+        </span>
+      </div>
+      <div class="sf-panel-body">
+        <div style="font-size:12.5px;">Resolved: <strong style="color:var(--rdf-fg)">2024-09-17</strong> · confidence 0.93 · evidence 3 sources</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ SKU ════════════════ -->
+  <h2 class="panel-sku"><span class="ico">⌗</span>SKU Finder <span class="sub">data-panel="sku" · buttonSet="finder-full" · +loop</span></h2>
+  <div class="frame">
+    <div class="caption">Collapsed · idle</div>
+    <div class="sf-panel" data-panel="sku">
+      <div class="sf-panel-rail"></div>
+      <div class="sf-panel-header">
+        <button class="sf-chev" title="Expand">▸</button>
+        <span class="sf-panel-icon">⌗</span>
+        <span class="sf-panel-title">SKU Finder</span>
+        <span class="sf-tip">i</span>
+        <span class="sf-model-strip">
+          <span class="sf-model-chip"><span class="pfx">API</span><span class="ws">◎</span>haiku-4.5<span class="eff">LOW</span></span>
+        </span>
+        <span class="sf-actions">
+          <button class="sf-btn-ghost">History</button>
+          <button class="sf-btn-ghost">Prompt</button>
+          <button class="sf-btn-loop">Loop</button>
+          <button class="sf-btn-primary">Run</button>
+        </span>
+      </div>
+    </div>
+
+    <div class="caption" style="margin-top:14px;">Expanded · resolved (12/12)</div>
+    <div class="sf-panel" data-panel="sku">
+      <div class="sf-panel-rail"></div>
+      <div class="sf-panel-header">
+        <button class="sf-chev" title="Collapse">▾</button>
+        <span class="sf-panel-icon">⌗</span>
+        <span class="sf-panel-title">SKU Finder</span>
+        <span class="sf-tip">i</span>
+        <span class="sf-model-strip">
+          <span class="sf-model-chip"><span class="pfx">API</span><span class="ws">◎</span>haiku-4.5<span class="eff">LOW</span></span>
+        </span>
+        <span class="sf-actions">
+          <button class="sf-btn-ghost">History</button>
+          <button class="sf-btn-ghost">Prompt</button>
+          <button class="sf-btn-loop">Loop</button>
+          <button class="sf-btn-primary">Run</button>
+        </span>
+      </div>
+      <div class="sf-panel-body">
+        <div style="font-size:12.5px;">Resolved 12/12 variants · <span style="color:var(--sku-fg); font-weight:700">all have SKU</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ KEY ════════════════ -->
+  <h2 class="panel-key"><span class="ico">⚙</span>Per-Key Finder <span class="sub">data-panel="key" · buttonSet="key" · 4 tiers</span></h2>
+  <div class="frame">
+    <div class="caption">Collapsed · idle · <span class="anno neu">4-tier model strip</span></div>
+    <div class="sf-panel" data-panel="key">
+      <div class="sf-panel-rail"></div>
+      <div class="sf-panel-header">
+        <button class="sf-chev" title="Expand">▸</button>
+        <span class="sf-panel-icon">⚙</span>
+        <span class="sf-panel-title">Per-Key Finder</span>
+        <span class="sf-tip">i</span>
+        <span class="sf-model-strip">
+          <span class="sf-model-chip tier-easy"><span class="pfx">EASY</span>haiku-4.5</span>
+          <span class="sf-model-chip tier-medium"><span class="pfx">MED</span>haiku-4.5</span>
+          <span class="sf-model-chip tier-hard"><span class="pfx">HARD</span>sonnet-4.6</span>
+          <span class="sf-model-chip tier-vhard"><span class="pfx">V.HARD</span>opus-4.7</span>
+        </span>
+        <span class="sf-actions">
+          <button class="sf-btn-ghost">History</button>
+          <button class="sf-btn-loop">∞ Loop all</button>
+          <button class="sf-btn-primary">Run all</button>
+        </span>
+      </div>
+    </div>
+
+    <div class="caption" style="margin-top:14px;">Expanded · running (hard tier active)</div>
+    <div class="sf-panel running" data-panel="key">
+      <div class="sf-panel-rail"></div>
+      <div class="sf-panel-header">
+        <button class="sf-chev" title="Collapse">▾</button>
+        <span class="sf-panel-icon">⚙</span>
+        <span class="sf-panel-title">Per-Key Finder</span>
+        <span class="sf-tip">i</span>
+        <span class="sf-running"><span class="dot"></span>Running</span>
+        <span class="sf-model-strip">
+          <span class="sf-model-chip tier-easy"><span class="pfx">EASY</span>haiku-4.5</span>
+          <span class="sf-model-chip tier-medium"><span class="pfx">MED</span>haiku-4.5</span>
+          <span class="sf-model-chip tier-hard"><span class="pfx">HARD</span>sonnet-4.6</span>
+          <span class="sf-model-chip tier-vhard"><span class="pfx">V.HARD</span>opus-4.7</span>
+        </span>
+        <span class="sf-actions">
+          <button class="sf-btn-ghost">History</button>
+          <button class="sf-btn-loop" disabled>∞ Loop all</button>
+          <button class="sf-btn-primary" disabled>Running…</button>
+        </span>
+      </div>
+      <div class="sf-panel-body">
+        <div class="kpis">
+          <div class="kpi"><div class="lbl">Keys in view</div><div class="val">48</div></div>
+          <div class="kpi"><div class="lbl">Resolved</div><div class="val" style="color:var(--green)">36</div></div>
+          <div class="kpi"><div class="lbl">Unresolved</div><div class="val" style="color:var(--orange)">10</div></div>
+          <div class="kpi"><div class="lbl">Running</div><div class="val" style="color:var(--key-fg)">2</div></div>
+          <div class="kpi"><div class="lbl">Groups</div><div class="val">6</div></div>
+        </div>
+        <div class="filters">
+          <input placeholder="Search keys or groups…" style="flex:1; min-width:180px; max-width:300px;">
+          <select><option>Difficulty · all</option></select>
+          <select><option>Availability · all</option></select>
+          <select><option>Required · all</option></select>
+          <select><option>Status · all</option></select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ ALL STACKED ════════════════ -->
+  <hr>
+  <h2 style="border-left-color:var(--accent);"><span class="ico" style="color:var(--accent); background:var(--accent-light); border-color:var(--accent-border);">#</span>All six, stacked <span class="sub">drift check · collapsed · idle</span></h2>
+  <div class="frame">
+    <div class="stack">
+
+      <div class="sf-panel" data-panel="pipeline">
+        <div class="sf-panel-rail"></div>
+        <div class="sf-panel-header">
+          <button class="sf-chev">▸</button>
+          <span class="sf-panel-icon">◉</span>
+          <span class="sf-panel-title">Pipeline</span>
+          <span class="sf-tip">i</span>
+          <span class="sf-model-strip">
+            <span class="sf-model-chip"><span class="pfx">CEF</span>gpt-5.4<span class="eff">H</span></span>
+            <span class="sf-model-chip"><span class="pfx">PIF</span>gpt-5.4<span class="eff">H</span></span>
+            <span class="sf-model-chip"><span class="pfx">RDF</span>haiku-4.5<span class="eff">L</span></span>
+            <span class="sf-model-chip"><span class="pfx">SKU</span>haiku-4.5<span class="eff">L</span></span>
+            <span class="sf-model-chip"><span class="pfx">KEY</span>mixed</span>
+          </span>
+          <span class="sf-actions">
+            <button class="sf-btn-primary">Run IndexLab</button>
+          </span>
+        </div>
+      </div>
+
+      <div class="sf-panel" data-panel="cef">
+        <div class="sf-panel-rail"></div>
+        <div class="sf-panel-header">
+          <button class="sf-chev">▸</button>
+          <span class="sf-panel-icon">◈</span>
+          <span class="sf-panel-title">Color &amp; Edition Finder</span>
+          <span class="sf-tip">i</span>
+          <span class="sf-model-strip">
+            <span class="sf-model-chip"><span class="pfx">LAB</span>gpt-5.4<span class="eff">HIGH</span></span>
+          </span>
+          <span class="sf-actions">
+            <button class="sf-btn-ghost">History</button>
+            <button class="sf-btn-ghost">Prompt</button>
+            <button class="sf-btn-primary">Run</button>
+          </span>
+        </div>
+      </div>
+
+      <div class="sf-panel" data-panel="pif">
+        <div class="sf-panel-rail"></div>
+        <div class="sf-panel-header">
+          <button class="sf-chev">▸</button>
+          <span class="sf-panel-icon">▣</span>
+          <span class="sf-panel-title">Product Image Finder</span>
+          <span class="sf-tip">i</span>
+          <span class="sf-model-strip">
+            <span class="sf-model-chip"><span class="pfx">PIF</span>gpt-5.4<span class="eff">HIGH</span></span>
+            <span class="sf-model-chip"><span class="pfx">EVAL</span>haiku-4.5<span class="eff">LOW</span></span>
+          </span>
+          <span class="sf-actions">
+            <button class="sf-btn-ghost">History</button>
+            <button class="sf-btn-ghost">Prompt</button>
+            <button class="sf-btn-loop">Loop</button>
+            <button class="sf-btn-primary">Run</button>
+          </span>
+        </div>
+      </div>
+
+      <div class="sf-panel" data-panel="rdf">
+        <div class="sf-panel-rail"></div>
+        <div class="sf-panel-header">
+          <button class="sf-chev">▸</button>
+          <span class="sf-panel-icon">◷</span>
+          <span class="sf-panel-title">Release Date Finder</span>
+          <span class="sf-tip">i</span>
+          <span class="sf-model-strip">
+            <span class="sf-model-chip"><span class="pfx">API</span>haiku-4.5<span class="eff">LOW</span></span>
+          </span>
+          <span class="sf-actions">
+            <button class="sf-btn-ghost">History</button>
+            <button class="sf-btn-ghost">Prompt</button>
+            <button class="sf-btn-loop">Loop</button>
+            <button class="sf-btn-primary">Run</button>
+          </span>
+        </div>
+      </div>
+
+      <div class="sf-panel" data-panel="sku">
+        <div class="sf-panel-rail"></div>
+        <div class="sf-panel-header">
+          <button class="sf-chev">▸</button>
+          <span class="sf-panel-icon">⌗</span>
+          <span class="sf-panel-title">SKU Finder</span>
+          <span class="sf-tip">i</span>
+          <span class="sf-model-strip">
+            <span class="sf-model-chip"><span class="pfx">API</span>haiku-4.5<span class="eff">LOW</span></span>
+          </span>
+          <span class="sf-actions">
+            <button class="sf-btn-ghost">History</button>
+            <button class="sf-btn-ghost">Prompt</button>
+            <button class="sf-btn-loop">Loop</button>
+            <button class="sf-btn-primary">Run</button>
+          </span>
+        </div>
+      </div>
+
+      <div class="sf-panel" data-panel="key">
+        <div class="sf-panel-rail"></div>
+        <div class="sf-panel-header">
+          <button class="sf-chev">▸</button>
+          <span class="sf-panel-icon">⚙</span>
+          <span class="sf-panel-title">Per-Key Finder</span>
+          <span class="sf-tip">i</span>
+          <span class="sf-model-strip">
+            <span class="sf-model-chip tier-easy"><span class="pfx">EASY</span>haiku-4.5</span>
+            <span class="sf-model-chip tier-medium"><span class="pfx">MED</span>haiku-4.5</span>
+            <span class="sf-model-chip tier-hard"><span class="pfx">HARD</span>sonnet-4.6</span>
+            <span class="sf-model-chip tier-vhard"><span class="pfx">V.HARD</span>opus-4.7</span>
+          </span>
+          <span class="sf-actions">
+            <button class="sf-btn-ghost">History</button>
+            <button class="sf-btn-loop">∞ Loop all</button>
+            <button class="sf-btn-primary">Run all</button>
+          </span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <p style="font-size:12px; color:var(--text-muted); margin-top:14px;">
+    Vertical alignment test: chevron, icon chip, title baseline, and right-edge Run button line up across every panel. Only the model strip content and button set legitimately change.
+  </p>
+
+</div>
+</body>
+</html>

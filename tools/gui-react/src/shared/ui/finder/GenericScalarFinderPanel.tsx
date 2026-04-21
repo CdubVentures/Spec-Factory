@@ -341,8 +341,10 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
             storeKey={`${moduleType}:variants:${productId}`}
             defaultOpen
           >
-            <div className="grid grid-cols-2 gap-3">
-              {variantRows.map((row) => {
+            <div className="grid grid-cols-2 gap-3 items-start">
+              {[0, 1].map((colIdx) => (
+              <div key={colIdx} className="flex flex-col gap-3">
+              {variantRows.filter((_, i) => i % 2 === colIdx).map((row) => {
                 const atoms = resolveVariantColorAtoms(row.variant_key, editions);
                 const hexParts = atoms.map((a) => hexMap.get(a.trim()) || '');
                 const c = row.candidate;
@@ -456,6 +458,8 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
                   </FinderVariantRow>
                 );
               })}
+              </div>
+              ))}
             </div>
           </FinderSectionCard>
 

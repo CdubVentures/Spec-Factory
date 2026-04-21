@@ -9,7 +9,6 @@ import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
 import { TabStrip, type TabItem } from '../../../shared/ui/navigation/TabStrip.tsx';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
-import { Sparkline } from '../../runtime-ops/components/Sparkline.tsx';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { relativeTime } from '../../../utils/formatting.ts';
@@ -142,32 +141,6 @@ const C_BLOCKED = '#fcd34d';
 const C_TT_BG = '#111f41';
 
 /* ── Sub-components ───────────────────────────────────────────────── */
-
-function KpiCard({ value, label, delta, deltaType, sparkData, sparkColor }: {
-  value: string | number; label: string; delta?: string;
-  deltaType?: 'up' | 'down' | 'flat'; sparkData?: number[]; sparkColor?: string;
-}) {
-  return (
-    <div className="sf-surface-elevated rounded-lg p-5 flex flex-col gap-1">
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="text-[32px] font-bold leading-none tracking-tight">{value}</div>
-          <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] sf-text-muted">{label}</div>
-        </div>
-        {sparkData && sparkData.length >= 2 && (
-          <Sparkline values={sparkData} width={80} height={32} className={sparkColor ? `text-[${sparkColor}]` : ''} />
-        )}
-      </div>
-      {delta && (
-        <span className={`inline-flex items-center self-start gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full mt-1 ${
-          deltaType === 'up' ? 'sf-callout-success' : deltaType === 'down' ? 'sf-callout-danger' : 'sf-text-muted'
-        }`}>
-          {deltaType === 'up' ? '↑' : deltaType === 'down' ? '↓' : '—'} {delta}
-        </span>
-      )}
-    </div>
-  );
-}
 
 function FlowStep({ badge, badgeCls, value, valueCls, label, extra }: {
   badge: string; badgeCls: string; value: number; valueCls: string; label: string; extra?: React.ReactNode;
@@ -403,14 +376,6 @@ function ErrorsTab({ errors, run }: { errors: FetchErrorRow[]; run: ProductHisto
   );
 }
 
-/* ── Empty fallback ───────────────────────────────────────────────── */
-
-const EMPTY_AGG: ProductHistoryResponse['aggregate'] = {
-  total_runs: 0, completed_runs: 0, failed_runs: 0,
-  total_cost_usd: 0, avg_cost_per_run: 0, avg_duration_ms: 0,
-  total_queries: 0, total_urls: 0, urls_success: 0, urls_failed: 0, unique_hosts: 0,
-};
-
 /* ── Main Component ───────────────────────────────────────────────── */
 
 interface ProductHistoryPanelProps { productId: string; category: string }
@@ -436,20 +401,6 @@ export function ProductHistoryPanel({ productId, category }: ProductHistoryPanel
   const tabs = useMemo(() => buildTabs(selRun, data?.urls ?? [], data?.queries ?? []), [selRun, data?.urls, data?.queries]);
   const filtUrls = useMemo(() => selRun ? (data?.urls ?? []).filter((u) => u.run_id === selRun.run_id) : (data?.urls ?? []), [selRun, data?.urls]);
   const filtQueries = useMemo(() => selRun ? (data?.queries ?? []).filter((q) => q.run_id === selRun.run_id) : (data?.queries ?? []), [selRun, data?.queries]);
-
-  const agg = data?.aggregate ?? EMPTY_AGG;
-
-  // WHY: Build sparkline data arrays from per-run metrics for trend display.
-  const sparkRuns = useMemo(() => (data?.runs ?? []).map(() => 1), [data?.runs]);
-  const sparkCosts = useMemo(() => (data?.runs ?? []).map((r) => r.cost_usd), [data?.runs]);
-  const sparkSuccess = useMemo(() => (data?.runs ?? []).map((r) => {
-    const total = r.funnel.urls_ok + r.funnel.urls_blocked + r.funnel.urls_error;
-    return total > 0 ? r.funnel.urls_ok / total : 0;
-  }), [data?.runs]);
-  const sparkDuration = useMemo(() => (data?.runs ?? []).map((r) => {
-    if (!r.started_at || !r.ended_at) return 0;
-    return parseBackendMs(r.ended_at) - parseBackendMs(r.started_at);
-  }), [data?.runs]);
 
   const tierDonutData = useMemo(() => {
     if (!selRun) return [];
@@ -499,7 +450,7 @@ export function ProductHistoryPanel({ productId, category }: ProductHistoryPanel
   if (!productId) return null;
 
   return (
-    <div className="sf-surface-panel p-0 order-[-10] flex flex-col flex-1 min-h-0">
+    <div className="sf-surface-panel p-0 flex flex-col flex-1 min-h-0">
       {/* Header */}
       <div className={`flex items-center gap-2.5 px-6 pt-4 ${collapsed ? 'pb-3' : 'pb-0'}`}>
         <button onClick={toggleCollapsed} className="inline-flex items-center justify-center w-5 h-5 sf-text-caption sf-icon-button" title={collapsed ? 'Expand' : 'Collapse'}>
@@ -518,49 +469,6 @@ export function ProductHistoryPanel({ productId, category }: ProductHistoryPanel
         </div>
       ) : (
         <div className="px-6 pb-6 pt-4 space-y-5 flex-1 min-h-0 overflow-y-auto">
-
-          {/* ─── KPI Cards ──────────────────────────────────────── */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <KpiCard
-              value={agg.total_runs}
-              label="Total Runs"
-              delta={`${pct(agg.completed_runs, agg.total_runs)} success`}
-              deltaType={agg.completed_runs === agg.total_runs ? 'up' : agg.failed_runs > 0 ? 'down' : 'flat'}
-              sparkData={sparkRuns}
-            />
-            <KpiCard
-              value={fmtCost(agg.total_cost_usd)}
-              label="Total Cost"
-              delta={`avg ${fmtCost(agg.avg_cost_per_run)}/run`}
-              deltaType="flat"
-              sparkData={sparkCosts}
-            />
-            <KpiCard
-              value={pct(agg.urls_success, agg.total_urls)}
-              label="Crawl Success"
-              delta={`${agg.urls_success} of ${agg.total_urls} URLs`}
-              deltaType={agg.urls_success === agg.total_urls ? 'up' : 'down'}
-              sparkData={sparkSuccess}
-            />
-            <KpiCard
-              value={fmtDurMs(agg.avg_duration_ms)}
-              label="Avg Duration"
-              deltaType="flat"
-              sparkData={sparkDuration}
-            />
-            <KpiCard
-              value={selRun?.extraction.total_artifacts ?? 0}
-              label="Artifacts"
-              delta={selRun ? Object.keys(selRun.extraction.plugins).join(', ') : ''}
-              deltaType="flat"
-            />
-            <KpiCard
-              value={fmtBytes(selRun?.extraction.total_bytes ?? 0)}
-              label="Data Captured"
-              delta={`${selRun?.extraction.urls_parsed ?? 0} pages parsed`}
-              deltaType="flat"
-            />
-          </div>
 
           {/* ─── Run Selector ───────────────────────────────────── */}
           <div>

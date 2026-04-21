@@ -5,7 +5,10 @@
 
 import { describe, it } from 'node:test';
 import { strictEqual, ok } from 'node:assert';
-import { MODULE_SETTINGS_SECTIONS } from '../moduleSettingsSections.generated.ts';
+import {
+  MODULE_SETTINGS_SECTIONS,
+  MODULE_SETTINGS_SCOPE_BY_ID,
+} from '../moduleSettingsSections.generated.ts';
 import {
   FINDER_SETTINGS_REGISTRY,
   FINDER_IDS_WITH_SETTINGS,
@@ -108,5 +111,24 @@ describe('finder settings registry contract', () => {
       MODULE_SETTINGS_SECTIONS.length,
       'FINDER_IDS_WITH_SETTINGS count must equal MODULE_SETTINGS_SECTIONS count',
     );
+  });
+
+  it('every section declares a valid settingsScope', () => {
+    for (const section of MODULE_SETTINGS_SECTIONS) {
+      ok(
+        section.settingsScope === 'global' || section.settingsScope === 'category',
+        `section "${section.id}" has invalid settingsScope "${section.settingsScope}"`,
+      );
+    }
+  });
+
+  it('scope lookup covers every registered moduleId', () => {
+    for (const moduleId of FINDER_IDS_WITH_SETTINGS) {
+      const scope = MODULE_SETTINGS_SCOPE_BY_ID[moduleId];
+      ok(
+        scope === 'global' || scope === 'category',
+        `MODULE_SETTINGS_SCOPE_BY_ID missing entry for "${moduleId}"`,
+      );
+    }
   });
 });

@@ -111,3 +111,19 @@ describe('buildProductCheckpoint — query_cooldowns', () => {
     assert.equal(cp.query_cooldowns[1].provider, 'rtings.com');
   });
 });
+
+describe('buildProductCheckpoint — field_histories (tier-3 progression rebuild)', () => {
+  test('field_histories defaults to {} when omitted (backward compat)', () => {
+    const cp = buildProductCheckpoint({ identity: {}, category: 'mouse', productId: 'test', runId: 'run-001', sources: [] });
+    assert.deepEqual(cp.field_histories, {});
+  });
+
+  test('field_histories carries through when provided', () => {
+    const histories = {
+      weight: { query_count: 3, existing_queries: ['q1', 'q2', 'q3'], domains_tried: ['rtings.com'] },
+      dpi: { query_count: 1, existing_queries: ['q4'], domains_tried: [] },
+    };
+    const cp = buildProductCheckpoint({ identity: {}, category: 'mouse', productId: 'test', runId: 'run-001', sources: [], fieldHistories: histories });
+    assert.deepEqual(cp.field_histories, histories);
+  });
+});

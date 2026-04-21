@@ -360,6 +360,70 @@ describe('seedFromCheckpoint: query_cooldowns via product checkpoint', () => {
   });
 });
 
+// ── Field histories persistence tests (tier-3 enrichment progression rebuild) ──
+
+describe('seedFromCheckpoint: field_histories via product checkpoint', () => {
+  const SAMPLE_HISTORIES = {
+    weight: {
+      query_count: 3,
+      existing_queries: ['razer viper weight', 'razer viper mass', 'razer viper grams'],
+      domains_tried: ['rtings.com', 'techpowerup.com'],
+      host_classes_tried: ['review'],
+      evidence_classes_tried: ['review'],
+      urls_examined_count: 2,
+      no_value_attempts: 0,
+      duplicate_attempts_suppressed: 0,
+      query_modes_tried_for_key: ['key_search'],
+    },
+    dpi: {
+      query_count: 2,
+      existing_queries: ['razer viper dpi', 'razer viper sensitivity'],
+      domains_tried: [],
+      host_classes_tried: [],
+      evidence_classes_tried: [],
+      urls_examined_count: 0,
+      no_value_attempts: 0,
+      duplicate_attempts_suppressed: 0,
+      query_modes_tried_for_key: ['key_search'],
+    },
+  };
+
+  test('seeds field_histories artifact from product checkpoint', () => {
+    const db = createHarness();
+    const cp = makeProductCheckpoint({ field_histories: SAMPLE_HISTORIES });
+    seedFromCheckpoint({ specDb: db, checkpoint: cp });
+    const artifact = db.getRunArtifact('run-seed-001', 'field_histories');
+    assert.ok(artifact, 'field_histories artifact must be persisted');
+    assert.deepEqual(artifact.payload, SAMPLE_HISTORIES);
+  });
+
+  test('empty field_histories is a no-op (no artifact written)', () => {
+    const db = createHarness();
+    const cp = makeProductCheckpoint({ field_histories: {} });
+    seedFromCheckpoint({ specDb: db, checkpoint: cp });
+    const artifact = db.getRunArtifact('run-seed-001', 'field_histories');
+    assert.equal(artifact, null, 'no artifact for empty histories');
+  });
+
+  test('missing field_histories is fine (backward compat — old product.json without the field)', () => {
+    const db = createHarness();
+    // makeProductCheckpoint default does NOT include field_histories
+    seedFromCheckpoint({ specDb: db, checkpoint: makeProductCheckpoint() });
+    const artifact = db.getRunArtifact('run-seed-001', 'field_histories');
+    assert.equal(artifact, null);
+  });
+
+  test('re-seeding same product is idempotent (artifact upserts cleanly)', () => {
+    const db = createHarness();
+    const cp = makeProductCheckpoint({ field_histories: SAMPLE_HISTORIES });
+    seedFromCheckpoint({ specDb: db, checkpoint: cp });
+    seedFromCheckpoint({ specDb: db, checkpoint: cp });
+    const artifact = db.getRunArtifact('run-seed-001', 'field_histories');
+    assert.ok(artifact);
+    assert.deepEqual(artifact.payload, SAMPLE_HISTORIES);
+  });
+});
+
 // ── Product checkpoint source seeding tests ─────────────────────────────────
 
 describe('seedFromCheckpoint: product sources', () => {

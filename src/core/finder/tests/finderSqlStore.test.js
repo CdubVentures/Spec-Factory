@@ -224,3 +224,118 @@ describe('createFinderSqlStore — generic SQL store', () => {
     assert.equal(runs[0].access_mode, '');
   });
 });
+
+// WHY: Scope routing — the store exposes the same getSetting/setSetting/getAllSettings
+// API whether scope is 'global' or 'category'. These tests lock in that each scope
+// reads/writes from the correct backing table.
+describe('createFinderSqlStore — settings scope routing', () => {
+  const GLOBAL_DDL = `CREATE TABLE IF NOT EXISTS finder_global_settings (
+    module_id TEXT NOT NULL,
+    key TEXT NOT NULL,
+    value TEXT NOT NULL DEFAULT '',
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (module_id, key)
+  );`;
+
+  const GLOBAL_MODULE = {
+    id: 'globalFinder',
+    tableName: 'global_finder',
+    runsTableName: 'global_finder_runs',
+    summaryColumns: [{ name: 'items', type: 'TEXT', default: "'[]'" }],
+    summaryIndexes: [],
+    settingsScope: 'global',
+    settingsSchema: [
+      { key: 'history', type: 'bool', default: false },
+      { key: 'budget', type: 'int', default: 3, min: 1, max: 10 },
+    ],
+  };
+
+  const CATEGORY_MODULE = {
+    id: 'categoryFinder',
+    tableName: 'category_finder',
+    runsTableName: 'category_finder_runs',
+    summaryColumns: [{ name: 'items', type: 'TEXT', default: "'[]'" }],
+    summaryIndexes: [],
+    settingsScope: 'category',
+    settingsSchema: [
+      { key: 'history', type: 'bool', default: false },
+    ],
+  };
+
+  it('scope=global writes into finder_global_settings keyed by module_id', () => {
+    const db = new Database(':memory:');
+    for (const stmt of generateFinderDdl([GLOBAL_MODULE])) db.exec(stmt);
+    const globalDb = new Database(':memory:');
+    globalDb.exec(GLOBAL_DDL);
+
+    const store = createFinderSqlStore({ db, category: 'mouse', module: GLOBAL_MODULE, globalDb });
+    store.setSetting('history', 'true');
+    store.setSetting('budget', '5');
+
+    const row = globalDb.prepare(
+      'SELECT value FROM finder_global_settings WHERE module_id = ? AND key = ?'
+    ).get('globalFinder', 'history');
+    assert.equal(row.value, 'true');
+
+    // Same module_id returns both keys; schema defaults fill unset ones.
+    const all = store.getAllSettings();
+    assert.equal(all.history, 'true');
+    assert.equal(all.budget, '5');
+
+    db.close();
+    globalDb.close();
+  });
+
+  it('scope=global isolates settings by module_id across multiple finders', () => {
+    const db = new Database(':memory:');
+    for (const stmt of generateFinderDdl([GLOBAL_MODULE])) db.exec(stmt);
+    const otherModule = { ...GLOBAL_MODULE, id: 'otherGlobal', tableName: 'other_global', runsTableName: 'other_global_runs' };
+    for (const stmt of generateFinderDdl([otherModule])) db.exec(stmt);
+    const globalDb = new Database(':memory:');
+    globalDb.exec(GLOBAL_DDL);
+
+    const storeA = createFinderSqlStore({ db, category: 'mouse', module: GLOBAL_MODULE, globalDb });
+    const storeB = createFinderSqlStore({ db, category: 'mouse', module: otherModule, globalDb });
+    storeA.setSetting('history', 'true');
+    storeB.setSetting('history', 'false');
+
+    assert.equal(storeA.getSetting('history'), 'true');
+    assert.equal(storeB.getSetting('history'), 'false');
+
+    db.close();
+    globalDb.close();
+  });
+
+  it('scope=category writes into <tableName>_settings (no module_id)', () => {
+    const db = new Database(':memory:');
+    for (const stmt of generateFinderDdl([CATEGORY_MODULE])) db.exec(stmt);
+
+    const store = createFinderSqlStore({ db, category: 'mouse', module: CATEGORY_MODULE });
+    store.setSetting('history', 'true');
+
+    const row = db.prepare(
+      'SELECT value FROM category_finder_settings WHERE key = ?'
+    ).get('history');
+    assert.equal(row.value, 'true');
+
+    // Global table must NOT exist at all for category scope.
+    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map((r) => r.name);
+    assert.ok(!tables.includes('finder_global_settings'));
+
+    db.close();
+  });
+
+  it('scope=global returns schema defaults when no row exists', () => {
+    const db = new Database(':memory:');
+    for (const stmt of generateFinderDdl([GLOBAL_MODULE])) db.exec(stmt);
+    const globalDb = new Database(':memory:');
+    globalDb.exec(GLOBAL_DDL);
+
+    const store = createFinderSqlStore({ db, category: 'mouse', module: GLOBAL_MODULE, globalDb });
+    assert.equal(store.getSetting('history'), 'false');
+    assert.equal(store.getSetting('budget'), '3');
+
+    db.close();
+    globalDb.close();
+  });
+});

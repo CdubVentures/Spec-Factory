@@ -97,6 +97,20 @@ export async function writeSearchProfile(state, payload = {}) {
   }
 }
 
+export async function writeFocusGroups(state, payload = {}) {
+  if (!state.runId) return;
+  if (state.specDb) {
+    try {
+      state.specDb.upsertRunArtifact({
+        run_id: state.runId,
+        artifact_type: 'focus_groups',
+        category: state.context?.category || '',
+        payload,
+      });
+    } catch { /* best-effort */ }
+  }
+}
+
 export async function writeRunSummaryArtifact(state, payload) {
   if (!state.runId) return;
   // WHY: SQL is the sole source for run-summary (Wave 5.5+).

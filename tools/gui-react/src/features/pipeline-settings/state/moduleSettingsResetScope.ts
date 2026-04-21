@@ -53,3 +53,19 @@ export function buildModuleSettingsResetPayload(finderId: FinderIdWithSettings):
   }
   return payload;
 }
+
+/**
+ * Batch reset-payload builder: returns one entry per finder in
+ * FINDER_IDS_WITH_SETTINGS. Used by "Reset all" on Pipeline Settings to
+ * fan out per-finder PUTs for the current category. New finders added to
+ * the generated registry flow through automatically.
+ */
+export function buildAllModuleSettingsResetPayloads(): Array<{
+  readonly moduleId: FinderIdWithSettings;
+  readonly settings: Record<string, string>;
+}> {
+  return FINDER_IDS_WITH_SETTINGS.map((moduleId) => ({
+    moduleId,
+    settings: buildModuleSettingsResetPayload(moduleId),
+  }));
+}

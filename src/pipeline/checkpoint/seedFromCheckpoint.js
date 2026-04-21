@@ -167,6 +167,22 @@ function seedProductCheckpoint(specDb, cp) {
     }
   }
 
+  // WHY: Rehydrate field_histories artifact for the latest run so tier-3
+  // enrichment progression survives DB deletion. Mirrors the query_cooldowns
+  // rebuild path above — product.json is the durable SSOT.
+  const fieldHistories = cp.field_histories;
+  if (fieldHistories && typeof fieldHistories === 'object' && Object.keys(fieldHistories).length > 0) {
+    const latestRunId = String(cp.latest_run_id || '').trim();
+    if (latestRunId) {
+      specDb.upsertRunArtifact({
+        run_id: latestRunId,
+        artifact_type: 'field_histories',
+        category: cp.category || '',
+        payload: fieldHistories,
+      });
+    }
+  }
+
   // WHY: Rebuild crawl_sources from product.json.sources so URL index survives
   // DB deletion even when run.json files are missing. Does NOT seed url_crawl_ledger
   // because its additive counters would double-count when run.json is also present.

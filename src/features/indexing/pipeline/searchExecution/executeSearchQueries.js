@@ -205,21 +205,11 @@ export async function executeSearchQueries({
         // WHY: Zero results from provider → accept 0. Cooldown-based query
         // management replaces the old permanent frontier cache reuse path.
         // The NeedSet controls when expired queries get re-executed.
-        // Record discovery search query to SQL index
-        try {
-          const _dqSpecDb = config.specDb || null;
-          if (_dqSpecDb) {
-            _dqSpecDb.insertQueryIndexEntry({
-              query,
-              provider: configValue(config, 'searchEngines'),
-              result_count: providerResults.length,
-              run_id: runId,
-              category: job.category || categoryConfig.category || '',
-              product_id: job.productId || '',
-              ts: new Date().toISOString(),
-            });
-          }
-        } catch { /* index recording must not crash the pipeline */ }
+        // WHY: query_index writes are owned by bootstrapRunEventIndexing.js
+        // (single-writer), which subscribes to discovery_query_completed
+        // below — that path carries tier/hint_source. A direct insert here
+        // would double-write with tier=null (bug B8), so we do not call
+        // insertQueryIndexEntry from this closure.
         const externalSelectedRow = resolveSelectedQueryRow(query);
         // WHY: For seed queries, provider must be the source_host (e.g. 'rtings.com')
         // so deriveSeedStatus can match source seeds by source_name. For specs/brand

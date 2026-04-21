@@ -6,7 +6,7 @@ const DEFAULT_SETTINGS = {
   budgetRequiredPoints: { mandatory: 2, non_mandatory: 1 },
   budgetAvailabilityPoints: { always: 1, sometimes: 2, rare: 3 },
   budgetDifficultyPoints: { easy: 1, medium: 2, hard: 3, very_hard: 4 },
-  variantPointsPerExtra: 1,
+  budgetVariantPointsPerExtra: 1,
   budgetFloor: 3,
 };
 

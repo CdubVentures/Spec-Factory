@@ -56,7 +56,7 @@ function cleanProductJsonPublishedFields(productId, fieldKeys) {
  * Deleting a run = DELETE rows with deterministic source_id pattern.
  * Then re-publish from remaining candidates or clean stale product.json.
  */
-function stripRunSourceFromCandidates(specDb, productId, fieldKeys, sourceType, runNumbers, config, skipRepublish) {
+export function stripRunSourceFromCandidates(specDb, productId, fieldKeys, sourceType, runNumbers, config, skipRepublish) {
   if (!specDb.getFieldCandidatesByProductAndField) return;
   const runSet = new Set(Array.isArray(runNumbers) ? runNumbers : [runNumbers]);
 

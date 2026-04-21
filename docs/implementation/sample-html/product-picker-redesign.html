@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Indexing Lab — Product Picker Redesign</title>
+<style>
+  :root {
+    --bg: #f8f9fa; --surface: #fff; --surface-alt: #f1f3f5; --surface-soft: #fafbfc; --surface-sunken: #f4f6f9;
+    --border: #dee2e6; --border-light: #e9ecef; --border-strong: #ced4da;
+    --text: #212529; --text-muted: #6c757d; --text-dim: #868e96; --text-faint: #adb5bd;
+
+    --accent: #4263eb; --accent-dark: #3b56d6; --accent-light: #edf2ff; --accent-border: #bac8ff;
+
+    /* Picker panel accent — neutral-authoritative indigo-graphite */
+    --pick-fg: #364fc7; --pick-bg: #edf2ff; --pick-border: #bac8ff; --pick-rail: #4263eb;
+
+    /* Ambiguity tiers (5) */
+    --tier-easy-fg:   #2b8a3e; --tier-easy-bg:   #ebfbee; --tier-easy-border:   #b2f2bb;
+    --tier-med-fg:    #d97706; --tier-med-bg:    #fff4e6; --tier-med-border:    #ffd8a8;
+    --tier-hard-fg:   #c92a2a; --tier-hard-bg:   #fff5f5; --tier-hard-border:   #ffc9c9;
+    --tier-vhard-fg:  #a61e4d; --tier-vhard-bg:  #fff0f6; --tier-vhard-border:  #fcc2d7;
+    --tier-xhard-fg:  #5f3dc4; --tier-xhard-bg:  #f3f0ff; --tier-xhard-border:  #d0bfff;
+
+    --green: #2b8a3e; --green-bg: #ebfbee; --green-border: #b2f2bb;
+    --red: #c92a2a; --red-bg: #fff5f5; --red-border: #ffc9c9;
+    --orange: #e67700; --orange-bg: #fff4e6; --orange-border: #ffd8a8;
+    --teal: #0c8599; --teal-bg: #e3fafc; --teal-border: #99e9f2;
+
+    --mono: 'SF Mono','Cascadia Code','Fira Code',Consolas,monospace;
+    --font: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    --radius: 8px;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.05), 0 1px 3px rgba(0,0,0,.08);
+    --shadow-md: 0 2px 4px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.08);
+    --shadow-lg: 0 4px 6px rgba(0,0,0,.06), 0 10px 24px rgba(0,0,0,.10);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:var(--font); color:var(--text); background:var(--bg); line-height:1.55; -webkit-font-smoothing:antialiased; }
+
+  /* Page chrome */
+  .page-header {
+    background:linear-gradient(135deg,#3b4cca 0%,#4263eb 45%,#5f3dc4 100%);
+    color:#fff; padding:38px 0 34px; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,.08);
+  }
+  .page-header h1 { font-size:26px; font-weight:700; letter-spacing:-.3px; }
+  .page-header p { font-size:13.5px; opacity:.92; margin-top:6px; max-width:760px; margin-left:auto; margin-right:auto; }
+  .page-header .pill { display:inline-block; background:rgba(255,255,255,.2); padding:4px 12px; border-radius:99px; font-size:12px; font-weight:600; letter-spacing:.3px; margin-top:12px; }
+
+  .container { max-width:1320px; margin:0 auto; padding:24px 24px 80px; }
+
+  h2 { font-size:18px; font-weight:700; margin:38px 0 12px; padding:10px 14px; border-left:4px solid var(--pick-fg);
+       border-radius:0 6px 6px 0; background:var(--surface); box-shadow:var(--shadow-sm);
+       display:flex; align-items:center; gap:10px; }
+  h2 .num { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%;
+            background:var(--pick-fg); color:#fff; font-size:12px; font-weight:700; }
+  h2 .sub { font-size:12px; font-weight:500; color:var(--text-muted); margin-left:auto; font-family:var(--mono); letter-spacing:.2px; }
+  h3 { font-size:14px; font-weight:700; margin:18px 0 8px; color:var(--text); text-transform:uppercase; letter-spacing:.3px; }
+
+  p { margin-bottom:10px; font-size:13.5px; color:var(--text); }
+  p.lead { font-size:14px; color:var(--text-muted); }
+
+  code { font-family:var(--mono); font-size:12px; background:var(--surface-alt); padding:2px 6px; border-radius:3px; color:var(--accent); }
+
+  .caption { font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); font-weight:700; margin:14px 0 6px; }
+
+  .callout { border-left:4px solid; padding:12px 16px; border-radius:0 var(--radius) var(--radius) 0; margin:12px 0; font-size:13px; }
+  .callout-info { border-color:var(--accent); background:var(--accent-light); }
+  .callout-ok { border-color:var(--green); background:var(--green-bg); }
+  .callout-warn { border-color:var(--orange); background:var(--orange-bg); }
+  .callout-red { border-color:var(--red); background:var(--red-bg); }
+  .callout strong { display:block; margin-bottom:4px; color:var(--text); }
+
+  /* Mockup frame */
+  .frame { background:#eef2f7; border:1px solid var(--border); border-radius:10px; padding:16px 16px 20px;
+           box-shadow:inset 0 2px 6px rgba(0,0,0,.04); margin-bottom:20px; }
+  .frame-caption { font-size:11.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted);
+                   margin-bottom:10px; font-weight:700; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .frame-caption .badge { background:var(--pick-fg); color:#fff; padding:2px 8px; border-radius:4px; font-size:10px; letter-spacing:.4px; }
+  .frame-caption .muted { color:var(--text-faint); font-weight:500; text-transform:none; letter-spacing:0; }
+
+  /* ══════════ Unified panel (matches sibling indexing panels) ══════════ */
+  .sf-panel { background:var(--surface); border:1px solid var(--border-light); border-radius:10px;
+              box-shadow:var(--shadow-sm); position:relative; overflow:hidden; }
+  .sf-panel + .sf-panel { margin-top:10px; }
+  .sf-panel-rail { position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--pick-rail); }
+  .sf-panel-header { display:flex; align-items:center; gap:10px; padding:10px 16px 10px 18px; min-height:46px; }
+  .sf-panel-header.expanded { border-bottom:1px solid var(--border-light); background:var(--surface-soft); }
+
+  .sf-chev { width:22px; height:22px; border-radius:4px; background:transparent; border:1px solid var(--border);
+             color:var(--text-muted); font-size:12px; cursor:pointer; font-family:var(--font);
+             display:inline-flex; align-items:center; justify-content:center; flex:none; }
+  .sf-chev:hover { background:var(--surface-alt); color:var(--text); }
+
+  .sf-panel-icon { width:26px; height:26px; border-radius:6px; border:1px solid var(--pick-border);
+                   background:var(--pick-bg); color:var(--pick-fg);
+                   display:inline-flex; align-items:center; justify-content:center;
+                   font-size:14px; line-height:1; font-weight:700; flex:none; }
+  .sf-panel-title { font-size:14px; font-weight:700; color:var(--text); letter-spacing:-.1px; white-space:nowrap; }
+  .sf-tip { width:16px; height:16px; border-radius:50%; background:var(--surface-alt);
+            color:var(--text-muted); font-size:10.5px; font-style:italic; flex:none;
+            display:inline-flex; align-items:center; justify-content:center; cursor:help; font-weight:700; }
+
+  /* Header — inline selection breadcrumb (collapsed + expanded) */
+  .sel-crumbs { display:inline-flex; align-items:center; gap:6px; flex-wrap:nowrap; min-width:0; overflow:hidden; }
+  .sel-crumb { font-size:12.5px; font-weight:600; color:var(--text); padding:2px 8px; border-radius:4px;
+               background:var(--surface-alt); border:1px solid var(--border-light); white-space:nowrap; }
+  .sel-crumb.brand { color:var(--pick-fg); background:var(--pick-bg); border-color:var(--pick-border); }
+  .sel-crumb.id { font-family:var(--mono); font-size:11px; color:var(--text-muted); background:transparent; border:none; padding:0 2px; }
+  .sel-sep { color:var(--text-faint); font-size:12px; }
+  .sel-empty { font-size:12.5px; color:var(--text-muted); font-style:italic; }
+
+  .sf-actions { margin-left:auto; display:inline-flex; gap:6px; align-items:center; flex:none; }
+  .btn-ghost { padding:4px 10px; border-radius:5px; font-size:11.5px; font-weight:600;
+               background:transparent; border:1px solid var(--border); color:var(--text-muted);
+               cursor:pointer; font-family:var(--font); white-space:nowrap; }
+  .btn-ghost:hover { background:var(--surface-alt); color:var(--text); }
+  .btn-primary { padding:4px 14px; border-radius:5px; font-size:11px; font-weight:700;
+                 background:var(--pick-fg); color:#fff; border:1px solid var(--pick-fg);
+                 cursor:pointer; font-family:var(--font); text-transform:uppercase; letter-spacing:.4px; white-space:nowrap; }
+  .btn-primary:hover { background:var(--accent-dark); border-color:var(--accent-dark); }
+  .btn-primary[disabled] { opacity:.5; cursor:not-allowed; }
+  .btn-danger { padding:4px 10px; border-radius:5px; font-size:11.5px; font-weight:600;
+                background:transparent; border:1px solid var(--red-border); color:var(--red);
+                cursor:pointer; font-family:var(--font); }
+  .btn-danger:hover { background:var(--red-bg); }
+
+  /* Ambiguity chip (inline in header) */
+  .amb-chip { display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:4px;
+              font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.3px;
+              border:1px solid; white-space:nowrap; }
+  .amb-chip .dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+  .amb-easy   { color:var(--tier-easy-fg);  background:var(--tier-easy-bg);  border-color:var(--tier-easy-border); }
+  .amb-med    { color:var(--tier-med-fg);   background:var(--tier-med-bg);   border-color:var(--tier-med-border); }
+  .amb-hard   { color:var(--tier-hard-fg);  background:var(--tier-hard-bg);  border-color:var(--tier-hard-border); }
+  .amb-vhard  { color:var(--tier-vhard-fg); background:var(--tier-vhard-bg); border-color:var(--tier-vhard-border); }
+  .amb-xhard  { color:var(--tier-xhard-fg); background:var(--tier-xhard-bg); border-color:var(--tier-xhard-border); }
+
+  /* ══════════ Picker body ══════════ */
+  .picker-body { padding:14px 18px 16px; background:var(--surface); }
+
+  /* Search row */
+  .search-row { position:relative; margin-bottom:12px; }
+  .search-input { width:100%; padding:10px 14px 10px 40px; font-size:13.5px; border-radius:7px;
+                  border:1px solid var(--border-strong); background:var(--surface); color:var(--text);
+                  font-family:var(--font); transition:.12s; }
+  .search-input:focus { outline:none; border-color:var(--pick-fg); box-shadow:0 0 0 3px var(--pick-bg); }
+  .search-icon { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:14px; pointer-events:none; }
+  .search-kbd { position:absolute; right:12px; top:50%; transform:translateY(-50%); font-family:var(--mono);
+                font-size:10.5px; color:var(--text-muted); padding:2px 6px; border-radius:3px;
+                background:var(--surface-alt); border:1px solid var(--border-light); }
+  .search-hint { font-size:11.5px; color:var(--text-muted); margin-top:6px; display:flex; gap:14px; flex-wrap:wrap; }
+  .search-hint b { color:var(--text); font-weight:600; }
+
+  /* Drill-down three-column (brand → model → variant) */
+  .drill { display:grid; grid-template-columns:1.1fr 1.3fr 1fr; gap:8px;
+           background:var(--surface-sunken); border:1px solid var(--border-light); border-radius:8px;
+           overflow:hidden; }
+  .drill-col { background:var(--surface); border-right:1px solid var(--border-light); min-height:260px; display:flex; flex-direction:column; }
+  .drill-col:last-child { border-right:none; }
+  .drill-head { padding:8px 12px; border-bottom:1px solid var(--border-light); background:var(--surface-soft);
+                display:flex; align-items:center; gap:8px; }
+  .drill-head .step { width:18px; height:18px; border-radius:50%; font-size:10px; font-weight:700;
+                      display:inline-flex; align-items:center; justify-content:center;
+                      background:var(--surface-alt); color:var(--text-muted); border:1px solid var(--border); }
+  .drill-head .step.active { background:var(--pick-fg); color:#fff; border-color:var(--pick-fg); }
+  .drill-head .step.done { background:var(--green); color:#fff; border-color:var(--green); }
+  .drill-head .label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); }
+  .drill-head .count { margin-left:auto; font-size:10.5px; color:var(--text-muted); font-family:var(--mono); font-weight:600;
+                       padding:1px 6px; border-radius:3px; background:var(--surface-alt); border:1px solid var(--border-light); }
+
+  .drill-list { flex:1; overflow-y:auto; padding:4px 0; max-height:260px; }
+  .drill-item { display:flex; align-items:center; gap:8px; padding:6px 12px; cursor:pointer;
+                font-size:12.5px; border-left:2px solid transparent; }
+  .drill-item:hover { background:var(--surface-alt); }
+  .drill-item .name { flex:1; color:var(--text); font-weight:500; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .drill-item .name .match { background:#fff3bf; color:var(--text); padding:0 1px; border-radius:2px; font-weight:700; }
+  .drill-item .ct { font-size:10.5px; color:var(--text-muted); font-family:var(--mono); font-weight:600;
+                    padding:1px 5px; border-radius:3px; background:var(--surface-alt); }
+  .drill-item .indicator { font-size:10px; color:var(--text-faint); }
+  .drill-item.selected { background:var(--pick-bg); border-left-color:var(--pick-fg); }
+  .drill-item.selected .name { color:var(--pick-fg); font-weight:600; }
+  .drill-item.selected .ct { background:var(--pick-border); color:var(--pick-fg); }
+  .drill-item.disabled { opacity:.45; cursor:not-allowed; }
+
+  .drill-empty { padding:24px 12px; text-align:center; color:var(--text-muted); font-size:12px; font-style:italic; }
+  .drill-empty .icon { font-size:22px; display:block; margin-bottom:6px; opacity:.5; }
+
+  /* Product preview card */
+  .preview { margin-top:14px; background:var(--surface-soft); border:1px solid var(--border-light);
+             border-radius:8px; overflow:hidden; }
+  .preview-head { padding:12px 16px; display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap;
+                  border-bottom:1px solid var(--border-light); background:var(--surface); }
+  .preview-title { flex:1 1 auto; min-width:0; }
+  .preview-title h4 { font-size:16px; font-weight:700; color:var(--text); letter-spacing:-.2px; margin-bottom:2px; line-height:1.3; }
+  .preview-title .pid { font-family:var(--mono); font-size:11.5px; color:var(--text-muted); display:inline-flex; align-items:center; gap:6px; }
+  .preview-title .pid .copy { cursor:pointer; font-size:10px; color:var(--text-faint); padding:1px 4px; border-radius:3px; border:1px solid var(--border-light); background:var(--surface); }
+  .preview-title .pid .copy:hover { background:var(--surface-alt); color:var(--text-muted); }
+
+  .preview-flags { display:inline-flex; gap:4px; flex-wrap:wrap; align-items:center; }
+  .flag { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:4px;
+          font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; border:1px solid; }
+  .flag.ok    { color:var(--green); background:var(--green-bg); border-color:var(--green-border); }
+  .flag.warn  { color:var(--orange); background:var(--orange-bg); border-color:var(--orange-border); }
+  .flag.muted { color:var(--text-muted); background:var(--surface-alt); border-color:var(--border-light); }
+  .flag.info  { color:var(--teal); background:var(--teal-bg); border-color:var(--teal-border); }
+
+  .preview-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:1px;
+                  background:var(--border-light); border-bottom:1px solid var(--border-light); }
+  .kpi { background:var(--surface); padding:10px 14px; }
+  .kpi .lbl { font-size:10px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); font-weight:700; margin-bottom:2px; }
+  .kpi .val { font-size:18px; font-weight:700; color:var(--text); line-height:1.15; }
+  .kpi .val .unit { font-size:12px; color:var(--text-muted); font-weight:500; margin-left:2px; }
+  .kpi .sub { font-size:10.5px; color:var(--text-muted); margin-top:1px; }
+  .kpi .bar { margin-top:6px; height:4px; border-radius:2px; background:var(--surface-alt); overflow:hidden; }
+  .kpi .bar-fill { height:100%; border-radius:2px; background:var(--pick-fg); }
+  .kpi .bar-fill.good { background:var(--green); }
+  .kpi .bar-fill.warn { background:var(--orange); }
+  .kpi .bar-fill.weak { background:var(--red); }
+
+  /* Ambiguity meter (inline in preview) */
+  .amb-meter { padding:12px 16px; background:var(--surface); display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:14px; }
+  .amb-meter .head { display:inline-flex; align-items:center; gap:8px; }
+  .amb-meter .head .title { font-size:11.5px; font-weight:700; color:var(--text); text-transform:uppercase; letter-spacing:.4px; }
+  .amb-meter .scale { height:8px; border-radius:4px; overflow:hidden; position:relative;
+                      background:linear-gradient(90deg,
+                        var(--tier-easy-bg)   0%,   var(--tier-easy-bg)   18%,
+                        var(--tier-med-bg)    20%,  var(--tier-med-bg)    38%,
+                        var(--tier-hard-bg)   40%,  var(--tier-hard-bg)   58%,
+                        var(--tier-vhard-bg)  60%,  var(--tier-vhard-bg)  78%,
+                        var(--tier-xhard-bg)  80%,  var(--tier-xhard-bg) 100%);
+                      border:1px solid var(--border-light); }
+  .amb-meter .marker { position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--text); border-radius:1px; box-shadow:0 0 0 2px var(--surface); }
+  .amb-meter .ticks { display:flex; justify-content:space-between; font-size:9.5px; color:var(--text-faint); margin-top:4px; font-family:var(--mono); letter-spacing:.3px; }
+  .amb-meter .note { font-size:11.5px; color:var(--text-muted); text-align:right; }
+  .amb-meter .note b { color:var(--text); font-weight:700; }
+
+  /* Recent selections rail */
+  .recents { padding:10px 16px; background:var(--surface-soft); border-top:1px solid var(--border-light);
+             display:flex; align-items:center; gap:8px; overflow-x:auto; }
+  .recents .lbl { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); flex:none; }
+  .recent-chip { display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:99px;
+                 background:var(--surface); border:1px solid var(--border); font-size:11.5px; color:var(--text);
+                 cursor:pointer; white-space:nowrap; flex:none; }
+  .recent-chip:hover { background:var(--surface-alt); border-color:var(--border-strong); }
+  .recent-chip .brand { color:var(--pick-fg); font-weight:600; }
+
+  /* Anatomy callout lines */
+  .anatomy { position:relative; }
+  .anatomy-wrap { display:grid; grid-template-columns:1fr 300px; gap:22px; align-items:start; }
+  .anatomy-notes { display:flex; flex-direction:column; gap:10px; }
+  .anatomy-note { padding:10px 12px; border-radius:6px; background:var(--surface); border:1px solid var(--border-light);
+                  box-shadow:var(--shadow-sm); font-size:12px; line-height:1.5; position:relative; }
+  .anatomy-note .num { display:inline-flex; width:20px; height:20px; border-radius:50%;
+                       background:var(--pick-fg); color:#fff; font-size:10.5px; font-weight:700;
+                       align-items:center; justify-content:center; margin-right:6px; vertical-align:middle; }
+  .anatomy-note b { color:var(--text); font-weight:700; }
+  .anatomy-note .muted { color:var(--text-muted); }
+  .pin { display:inline-flex; width:18px; height:18px; border-radius:50%; background:var(--pick-fg); color:#fff;
+         font-size:10px; font-weight:700; align-items:center; justify-content:center; margin:0 4px; vertical-align:middle;
+         border:2px solid #fff; box-shadow:0 0 0 1px var(--pick-fg); }
+
+  /* Audit annotations */
+  .audit { display:grid; grid-template-columns:1fr 380px; gap:20px; align-items:start; }
+  .audit-list { display:flex; flex-direction:column; gap:8px; }
+  .issue { padding:10px 12px; border-radius:6px; background:var(--surface); border:1px solid var(--border-light);
+           box-shadow:var(--shadow-sm); font-size:12.5px; }
+  .issue .tag { display:inline-block; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px;
+                padding:1px 6px; border-radius:3px; margin-right:6px; }
+  .issue .tag.cosm { background:var(--orange-bg); color:var(--orange); border:1px solid var(--orange-border); }
+  .issue .tag.func { background:var(--red-bg); color:var(--red); border:1px solid var(--red-border); }
+  .issue .tag.info { background:var(--accent-light); color:var(--accent); border:1px solid var(--accent-border); }
+  .issue b { color:var(--text); }
+  .issue p { font-size:12px; color:var(--text-muted); margin:4px 0 0; }
+
+  /* ══════════ Legacy mockup (audit reference) ══════════ */
+  .legacy-picker { background:var(--surface); border:1px solid var(--border-light); border-radius:10px; overflow:hidden; box-shadow:var(--shadow-sm); }
+  .legacy-head { display:flex; align-items:center; gap:10px; padding:14px 24px 10px 24px; }
+  .legacy-head .plus { width:20px; height:20px; border:1px solid var(--border); border-radius:3px; display:inline-flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:13px; background:transparent; cursor:pointer; }
+  .legacy-head .ttl { font-size:15px; font-weight:700; color:var(--text); }
+  .legacy-head .tip { width:14px; height:14px; border-radius:50%; background:var(--surface-alt); color:var(--text-muted); font-size:10px; font-style:italic; display:inline-flex; align-items:center; justify-content:center; font-weight:700; }
+  .legacy-body { padding:10px 24px 16px; }
+  .legacy-selects { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px; }
+  .legacy-selects select { padding:8px 10px; font-size:13px; border:1px solid var(--border); border-radius:4px; background:var(--surface); font-family:var(--font); color:var(--text); width:100%; cursor:pointer; }
+  .legacy-caption { background:var(--surface-alt); padding:8px 10px; border-radius:4px; font-size:11px; color:var(--text-muted); margin-bottom:8px; }
+  .legacy-caption .mono { font-family:var(--mono); color:var(--text); }
+  .legacy-amb { background:var(--surface-alt); padding:10px; border-radius:4px; }
+  .legacy-amb-row { display:flex; align-items:center; gap:8px; font-size:11.5px; }
+  .legacy-amb-row .lbl { font-weight:700; color:var(--text); }
+  .legacy-amb-row .chip { padding:1px 8px; border-radius:4px; background:var(--orange-bg); color:var(--orange); border:1px solid var(--orange-border); font-weight:700; font-size:10.5px; }
+  .legacy-amb-row .ct { color:var(--text-muted); }
+  .legacy-amb-bar { margin-top:8px; height:6px; background:var(--surface); border-radius:3px; overflow:hidden; }
+  .legacy-amb-bar .fill { height:100%; width:67%; background:var(--orange); }
+
+  .pin-arrow {
+    position:absolute; display:inline-flex; width:18px; height:18px; border-radius:50%;
+    background:var(--red); color:#fff; font-size:10px; font-weight:700;
+    align-items:center; justify-content:center;
+    border:2px solid #fff; box-shadow:0 0 0 1px var(--red), 0 2px 4px rgba(0,0,0,.2);
+    z-index:2;
+  }
+
+  .legend-row { display:flex; gap:16px; font-size:11px; margin-top:8px; flex-wrap:wrap; }
+  .legend-row b { font-weight:700; color:var(--text); }
+
+  /* Goals grid */
+  .goals { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:8px; }
+  .goal { padding:12px 14px; background:var(--surface); border:1px solid var(--border-light); border-radius:7px;
+          box-shadow:var(--shadow-sm); font-size:12.5px; line-height:1.5; }
+  .goal h4 { font-size:12px; font-weight:700; color:var(--pick-fg); text-transform:uppercase; letter-spacing:.4px; margin-bottom:4px; }
+  .goal p { font-size:12px; color:var(--text-muted); margin:0; }
+
+  /* Tiers gallery */
+  .tier-gallery { display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; }
+  .tier-card { padding:12px; border-radius:7px; border:1px solid; text-align:center; }
+  .tier-card .level { font-size:13px; font-weight:700; margin-bottom:2px; text-transform:uppercase; letter-spacing:.4px; }
+  .tier-card .count { font-size:11px; margin-bottom:6px; opacity:.85; }
+  .tier-card .bar { height:6px; border-radius:3px; background:rgba(0,0,0,.06); overflow:hidden; }
+  .tier-card .bar-fill { height:100%; }
+  .tier-card.t-easy  { background:var(--tier-easy-bg);  color:var(--tier-easy-fg);  border-color:var(--tier-easy-border); }
+  .tier-card.t-easy  .bar-fill { background:var(--tier-easy-fg); width:20%; }
+  .tier-card.t-med   { background:var(--tier-med-bg);   color:var(--tier-med-fg);   border-color:var(--tier-med-border); }
+  .tier-card.t-med   .bar-fill { background:var(--tier-med-fg); width:40%; }
+  .tier-card.t-hard  { background:var(--tier-hard-bg);  color:var(--tier-hard-fg);  border-color:var(--tier-hard-border); }
+  .tier-card.t-hard  .bar-fill { background:var(--tier-hard-fg); width:60%; }
+  .tier-card.t-vhard { background:var(--tier-vhard-bg); color:var(--tier-vhard-fg); border-color:var(--tier-vhard-border); }
+  .tier-card.t-vhard .bar-fill { background:var(--tier-vhard-fg); width:80%; }
+  .tier-card.t-xhard { background:var(--tier-xhard-bg); color:var(--tier-xhard-fg); border-color:var(--tier-xhard-border); }
+  .tier-card.t-xhard .bar-fill { background:var(--tier-xhard-fg); width:100%; }
+
+  /* Interaction notes */
+  .notes { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:10px; }
+  .note-card { background:var(--surface); border:1px solid var(--border-light); border-radius:7px; padding:14px; box-shadow:var(--shadow-sm); }
+  .note-card h4 { font-size:12px; font-weight:700; color:var(--pick-fg); text-transform:uppercase; letter-spacing:.4px; margin-bottom:8px; }
+  .note-card ul { list-style:none; padding:0; margin:0; }
+  .note-card li { font-size:12.5px; padding:4px 0; border-bottom:1px dashed var(--border-light); display:flex; gap:8px; align-items:flex-start; }
+  .note-card li:last-child { border-bottom:none; }
+  .note-card li .kbd { font-family:var(--mono); font-size:10.5px; background:var(--surface-alt); padding:1px 6px; border-radius:3px; color:var(--text); font-weight:700; border:1px solid var(--border-light); white-space:nowrap; flex:none; }
+  .note-card li .b { color:var(--text); font-weight:600; flex:none; }
+  .note-card li .d { color:var(--text-muted); }
+
+  /* Sibling panel preview (harmony demo) */
+  .sibling-stack { display:flex; flex-direction:column; gap:8px; }
+  .sib-panel { display:flex; align-items:center; gap:10px; padding:10px 16px; background:var(--surface);
+               border:1px solid var(--border-light); border-radius:10px; box-shadow:var(--shadow-sm);
+               position:relative; overflow:hidden; padding-left:18px; }
+  .sib-panel .rail { position:absolute; left:0; top:0; bottom:0; width:3px; }
+  .sib-panel .sib-icon { width:24px; height:24px; border-radius:5px; border:1px solid;
+                         display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex:none; }
+  .sib-panel .sib-title { font-size:13px; font-weight:700; color:var(--text); }
+  .sib-panel .sib-sub { font-size:11px; color:var(--text-muted); margin-left:auto; }
+  .sib-panel.pick .rail  { background:var(--pick-rail); }
+  .sib-panel.pick .sib-icon { color:var(--pick-fg); background:var(--pick-bg); border-color:var(--pick-border); }
+  .sib-panel.pipe .rail  { background:#1864ab; }
+  .sib-panel.pipe .sib-icon { color:#1864ab; background:#e7f5ff; border-color:#a5d8ff; }
+  .sib-panel.cef  .rail  { background:#d97706; }
+  .sib-panel.cef  .sib-icon { color:#d97706; background:#fff4e6; border-color:#ffd8a8; }
+  .sib-panel.pif  .rail  { background:#0c8599; }
+  .sib-panel.pif  .sib-icon { color:#0c8599; background:#e3fafc; border-color:#99e9f2; }
+  .sib-panel.rdf  .rail  { background:#7048e8; }
+  .sib-panel.rdf  .sib-icon { color:#7048e8; background:#f3f0ff; border-color:#d0bfff; }
+  .sib-panel.sku  .rail  { background:#2b8a3e; }
+  .sib-panel.sku  .sib-icon { color:#2b8a3e; background:#ebfbee; border-color:#b2f2bb; }
+  .sib-panel.key  .rail  { background:#3b4cca; }
+  .sib-panel.key  .sib-icon { color:#3b4cca; background:#edf2ff; border-color:#bac8ff; }
+
+  /* Empty-state hero */
+  .empty-hero { padding:34px 16px; text-align:center; border:1px dashed var(--border); border-radius:8px; background:var(--surface-sunken); }
+  .empty-hero .icon { font-size:36px; color:var(--pick-fg); margin-bottom:10px; opacity:.8; }
+  .empty-hero h4 { font-size:15px; font-weight:700; color:var(--text); margin-bottom:4px; }
+  .empty-hero p { font-size:12.5px; color:var(--text-muted); max-width:440px; margin:0 auto; }
+  .empty-hero .quick { display:inline-flex; gap:6px; margin-top:14px; flex-wrap:wrap; justify-content:center; }
+
+  /* Misc */
+  hr { border:none; border-top:1px solid var(--border-light); margin:28px 0; }
+  .muted { color:var(--text-muted); }
+  .footer-note { margin-top:40px; padding:18px 20px; background:var(--surface); border:1px solid var(--border-light);
+                 border-radius:8px; font-size:12.5px; color:var(--text-muted); }
+  .footer-note b { color:var(--text); }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Indexing Lab — Product Picker Redesign</h1>
+  <p>Audit of the current panel, design goals, and a professional redesign of the hierarchical product selector that gates every indexing run. Matches the unified <code style="background:rgba(255,255,255,.15);color:#fff">.sf-panel</code> language used by sibling panels.</p>
+  <span class="pill">Replaces <code style="background:rgba(255,255,255,.15);color:#fff">PickerPanel.tsx</code></span>
+</div>
+
+<div class="container">
+
+  <!-- ──────── 1. AUDIT ──────── -->
+  <h2><span class="num">1</span>Audit — Current Product Picker <span class="sub">src/features/indexing/panels/PickerPanel.tsx</span></h2>
+
+  <p class="lead">The current picker is the gate for every indexing run, yet it reads as a rough placeholder rather than a primary surface. It uses native selects with numbered labels, hides all of the rich <code>CatalogRow</code> metadata the backend already exposes, and visually disconnects from the unified panel system used by Pipeline, CEF, PIF, RDF, SKU, and Key.</p>
+
+  <div class="audit">
+    <!-- Left: rendered clone of current design -->
+    <div class="frame" style="margin:0;position:relative;">
+      <div class="frame-caption">
+        <span class="badge">CURRENT</span>
+        <span class="muted">Rendered from PickerPanel.tsx · expanded state</span>
+      </div>
+      <div class="legacy-picker">
+        <div class="legacy-head">
+          <button class="plus" title="Collapse">–</button>
+          <span class="ttl">Product Picker</span>
+          <span class="tip">i</span>
+        </div>
+        <div class="legacy-body">
+          <div class="legacy-selects">
+            <select><option>1) select brand</option><option>Razer</option><option>Logitech</option></select>
+            <select><option>2) select model</option><option>Viper V2 Pro</option></select>
+            <select><option>3) select variant</option><option>White</option></select>
+          </div>
+          <div class="legacy-caption">selected product id: <span class="mono">razer-viper-v2-pro-white</span> | Razer Viper V2 Pro (white)</div>
+          <div class="legacy-amb">
+            <div class="legacy-amb-row">
+              <span class="lbl">ambiguity meter <span class="tip">i</span></span>
+              <span class="chip">MEDIUM</span>
+              <span class="ct">family count 3</span>
+            </div>
+            <div class="legacy-amb-bar"><div class="fill"></div></div>
+          </div>
+        </div>
+      </div>
+      <span class="pin-arrow" style="top:44px;left:38px;">1</span>
+      <span class="pin-arrow" style="top:108px;left:132px;">2</span>
+      <span class="pin-arrow" style="top:186px;left:44px;">3</span>
+      <span class="pin-arrow" style="top:240px;left:38px;">4</span>
+      <span class="pin-arrow" style="top:304px;left:38px;">5</span>
+    </div>
+
+    <!-- Right: issue list -->
+    <div class="audit-list">
+      <div class="issue"><span class="tag cosm">cosmetic</span><b><span style="background:var(--red);color:#fff;padding:0 6px;border-radius:3px;font-size:10px;margin-right:4px">1</span>Off-system header chrome.</b>
+        <p>A bare <code>+</code>/<code>−</code> button and a plain title. Every sibling panel (Pipeline, CEF, PIF, RDF, SKU, Key) uses <code>.sf-panel</code> with a rail, icon tile, tip, and action cluster. The picker is the only panel that doesn't.</p>
+      </div>
+      <div class="issue"><span class="tag func">functional</span><b><span style="background:var(--red);color:#fff;padding:0 6px;border-radius:3px;font-size:10px;margin-right:4px">2</span>Three native selects with "1) 2) 3)" labels.</b>
+        <p>No search, no type-ahead, no keyboard-friendly filtering. With even a few dozen products per brand the variant select becomes a scrolling nightmare. The numbered prefixes are a hack that leaks the UX wizard into the option labels.</p>
+      </div>
+      <div class="issue"><span class="tag func">functional</span><b><span style="background:var(--red);color:#fff;padding:0 6px;border-radius:3px;font-size:10px;margin-right:4px">3</span>Rich product metadata is thrown away.</b>
+        <p><code>CatalogRow</code> already carries <code>confidence</code>, <code>coverage</code>, <code>fieldsFilled</code>/<code>fieldsTotal</code>, <code>lastRun</code>, <code>validated</code>, <code>hasFinal</code>, <code>inActive</code>. None of it is shown. The operator has no way to know the state of the product they're about to run without navigating elsewhere first.</p>
+      </div>
+      <div class="issue"><span class="tag cosm">cosmetic</span><b><span style="background:var(--red);color:#fff;padding:0 6px;border-radius:3px;font-size:10px;margin-right:4px">4</span>Selection echo is a muted caption.</b>
+        <p>The selected <code>productId</code> is buried in a grey bar below the selects. Typography, spacing, and hierarchy suggest "debug output" rather than "the thing you're about to operate on."</p>
+      </div>
+      <div class="issue"><span class="tag info">info</span><b><span style="background:var(--red);color:#fff;padding:0 6px;border-radius:3px;font-size:10px;margin-right:4px">5</span>Ambiguity meter is visually orphaned.</b>
+        <p>The backend supports a 5-tier ambiguity ramp (easy → extra_hard) but the current UI reduces it to success/warning/danger chip classes. The bar is decorative; the tiers have no visible scale legend; very-hard and extra-hard collapse into the same red.</p>
+      </div>
+      <div class="issue"><span class="tag cosm">cosmetic</span><b>Collapsed state tells the operator nothing.</b>
+        <p>When collapsed, the header shows <i>Product Picker</i> and nothing else — you have to expand to confirm what's selected. This forces an extra interaction on every pipeline visit.</p>
+      </div>
+      <div class="issue"><span class="tag func">functional</span><b>No recent / pinned selections.</b>
+        <p>Operators work on the same few products repeatedly during a run session. The picker does not remember recent selections, so each visit starts from the full catalog.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ──────── 2. GOALS ──────── -->
+  <h2><span class="num">2</span>Design goals <span class="sub">principles that drive the redesign</span></h2>
+
+  <div class="goals">
+    <div class="goal"><h4>Native to the system</h4><p>Use <code>.sf-panel</code>, the 3px left rail, the chevron collapse, and the icon-title-tip-actions pattern. The picker is a sibling of Pipeline/CEF/PIF — it should look like one.</p></div>
+    <div class="goal"><h4>Search-first, browse-second</h4><p>A single fuzzy search covers <i>brand · model · variant · product_id</i>. The three-column drill-down is always visible for browsing but the keyboard path is <code>/</code> → type → <code>Enter</code>.</p></div>
+    <div class="goal"><h4>Selection is rich, not cryptic</h4><p>Surface every <code>CatalogRow</code> field that matters: confidence, coverage, fields filled/total, last run, validated / hasFinal / active flags. The operator should trust the picker without clicking away.</p></div>
+    <div class="goal"><h4>Ambiguity is visible, graduated</h4><p>Show the full 5-tier ambiguity ramp with a scale, a marker position, and tier-specific colors — no more collapsing vhard/xhard into the same red.</p></div>
+    <div class="goal"><h4>Collapsed still informs</h4><p>The collapsed header is a breadcrumb: <span class="sel-crumb brand" style="display:inline-block">Razer</span> <span class="sel-sep">›</span> Viper V2 Pro <span class="sel-sep">›</span> White. No expansion needed to verify selection.</p></div>
+    <div class="goal"><h4>Remembered, not retyped</h4><p>Recent selections pin as chips at the bottom. One click re-selects a product the operator was working on earlier this session.</p></div>
+  </div>
+
+  <!-- ──────── 3. ANATOMY ──────── -->
+  <h2><span class="num">3</span>Anatomy <span class="sub">labeled view of the expanded panel</span></h2>
+
+  <div class="anatomy-wrap">
+    <div class="frame" style="margin:0;">
+      <div class="frame-caption">
+        <span class="badge">NEW</span>
+        <span class="muted">State: expanded · selection made · status OK</span>
+      </div>
+
+      <div class="sf-panel">
+        <div class="sf-panel-rail"></div>
+        <div class="sf-panel-header expanded">
+          <button class="sf-chev" title="Collapse">▾</button>
+          <span class="sf-panel-icon">◎</span>
+          <span class="sf-panel-title">Product Picker</span>
+          <span class="sf-tip">i</span>
+          <span class="sel-crumbs">
+            <span class="sel-crumb brand">Razer</span>
+            <span class="sel-sep">›</span>
+            <span class="sel-crumb">Viper V2 Pro</span>
+            <span class="sel-sep">›</span>
+            <span class="sel-crumb">White</span>
+          </span>
+          <span class="amb-chip amb-med"><span class="dot"></span>Medium · 3 in family</span>
+          <span class="sf-actions">
+            <button class="btn-ghost">Change</button>
+            <button class="btn-ghost">Clear</button>
+          </span>
+        </div>
+
+        <div class="picker-body">
+          <div class="search-row">
+            <span class="search-icon">🔍</span>
+            <input class="search-input" value="viper" placeholder="Find a product — brand, model, variant, or product_id">
+            <span class="search-kbd">/</span>
+          </div>
+          <div class="search-hint">
+            <span><b>34</b> products match</span>
+            <span><b>↑↓</b> navigate</span>
+            <span><b>→</b> drill in</span>
+            <span><b>Enter</b> select</span>
+            <span><b>Esc</b> clear</span>
+          </div>
+
+          <div class="drill" style="margin-top:10px;">
+            <div class="drill-col">
+              <div class="drill-head">
+                <span class="step done">✓</span>
+                <span class="label">Brand</span>
+                <span class="count">24</span>
+              </div>
+              <div class="drill-list">
+                <div class="drill-item selected"><span class="name">Razer</span><span class="ct">18</span></div>
+                <div class="drill-item"><span class="name">Logitech</span><span class="ct">34</span></div>
+                <div class="drill-item"><span class="name">Pulsar</span><span class="ct">12</span></div>
+                <div class="drill-item"><span class="name">Glorious</span><span class="ct">9</span></div>
+                <div class="drill-item"><span class="name">Endgame Gear</span><span class="ct">7</span></div>
+                <div class="drill-item"><span class="name">Finalmouse</span><span class="ct">6</span></div>
+                <div class="drill-item"><span class="name">Zowie</span><span class="ct">11</span></div>
+                <div class="drill-item"><span class="name">SteelSeries</span><span class="ct">8</span></div>
+                <div class="drill-item"><span class="name">HyperX</span><span class="ct">5</span></div>
+                <div class="drill-item"><span class="name">Corsair</span><span class="ct">6</span></div>
+              </div>
+            </div>
+            <div class="drill-col">
+              <div class="drill-head">
+                <span class="step done">✓</span>
+                <span class="label">Model</span>
+                <span class="count">18</span>
+              </div>
+              <div class="drill-list">
+                <div class="drill-item selected"><span class="name"><span class="match">Viper</span> V2 Pro</span><span class="ct">3</span></div>
+                <div class="drill-item"><span class="name"><span class="match">Viper</span> Mini Signature Edition</span><span class="ct">2</span></div>
+                <div class="drill-item"><span class="name"><span class="match">Viper</span> 8KHz</span><span class="ct">1</span></div>
+                <div class="drill-item"><span class="name"><span class="match">Viper</span> Ultimate</span><span class="ct">2</span></div>
+                <div class="drill-item"><span class="name">Basilisk V3 Pro</span><span class="ct">1</span></div>
+                <div class="drill-item"><span class="name">DeathAdder V3 Pro</span><span class="ct">2</span></div>
+                <div class="drill-item"><span class="name">Orochi V2</span><span class="ct">3</span></div>
+                <div class="drill-item"><span class="name">Cobra Pro</span><span class="ct">1</span></div>
+                <div class="drill-item"><span class="name">Naga V2 Pro</span><span class="ct">1</span></div>
+              </div>
+            </div>
+            <div class="drill-col">
+              <div class="drill-head">
+                <span class="step active">3</span>
+                <span class="label">Variant</span>
+                <span class="count">3</span>
+              </div>
+              <div class="drill-list">
+                <div class="drill-item selected"><span class="name">White</span><span class="indicator">★</span></div>
+                <div class="drill-item"><span class="name">Black</span></div>
+                <div class="drill-item"><span class="name">Mercury</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PREVIEW CARD -->
+          <div class="preview">
+            <div class="preview-head">
+              <div class="preview-title">
+                <h4>Razer Viper V2 Pro · <span class="muted" style="font-weight:500">White</span></h4>
+                <span class="pid">
+                  <code style="background:transparent;padding:0;color:var(--text-muted);font-size:11.5px">razer-viper-v2-pro-white</code>
+                  <span class="copy">copy</span>
+                </span>
+              </div>
+              <div class="preview-flags">
+                <span class="flag ok">✓ validated</span>
+                <span class="flag ok">has final</span>
+                <span class="flag info">active</span>
+              </div>
+            </div>
+            <div class="preview-grid">
+              <div class="kpi">
+                <div class="lbl">confidence</div>
+                <div class="val">0.87</div>
+                <div class="bar"><div class="bar-fill good" style="width:87%"></div></div>
+                <div class="sub">pass · target 0.80</div>
+              </div>
+              <div class="kpi">
+                <div class="lbl">coverage</div>
+                <div class="val">73<span class="unit">%</span></div>
+                <div class="bar"><div class="bar-fill warn" style="width:73%"></div></div>
+                <div class="sub">needs tier-3 fields</div>
+              </div>
+              <div class="kpi">
+                <div class="lbl">fields filled</div>
+                <div class="val">38<span class="unit">/ 52</span></div>
+                <div class="bar"><div class="bar-fill" style="width:73%"></div></div>
+                <div class="sub">14 empty</div>
+              </div>
+              <div class="kpi">
+                <div class="lbl">last run</div>
+                <div class="val" style="font-size:14px; padding-top:3px">2026-04-21</div>
+                <div class="sub">run_01HR9K · 2h ago</div>
+              </div>
+            </div>
+            <div class="amb-meter">
+              <div class="head">
+                <span class="title">Family ambiguity</span>
+                <span class="amb-chip amb-med"><span class="dot"></span>Medium</span>
+              </div>
+              <div>
+                <div class="scale">
+                  <span class="marker" style="left:34%"></span>
+                </div>
+                <div class="ticks">
+                  <span>easy · 1</span>
+                  <span>medium · 2–3</span>
+                  <span>hard · 4–5</span>
+                  <span>v-hard · 6–8</span>
+                  <span>x-hard · 9+</span>
+                </div>
+              </div>
+              <div class="note">family count <b>3</b><br><span class="muted">expect sibling review</span></div>
+            </div>
+            <div class="recents">
+              <span class="lbl">Recent</span>
+              <span class="recent-chip"><span class="brand">Logitech</span> G Pro X Superlight · White</span>
+              <span class="recent-chip"><span class="brand">Pulsar</span> X2V2 · Black</span>
+              <span class="recent-chip"><span class="brand">Endgame</span> OP1 8K · White</span>
+              <span class="recent-chip"><span class="brand">Glorious</span> Model O Pro · Matte Black</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Anatomy notes -->
+    <div class="anatomy-notes">
+      <div class="anatomy-note"><span class="num">1</span><b>Unified header.</b> <span class="muted">Same rail + icon tile + title + tip + actions pattern as Pipeline/CEF/PIF. Chevron (<code>▾</code>) replaces <code>+/−</code>.</span></div>
+      <div class="anatomy-note"><span class="num">2</span><b>Selection breadcrumb.</b> <span class="muted">Lives in the header, visible in both expanded and collapsed states. Brand chip carries the panel accent.</span></div>
+      <div class="anatomy-note"><span class="num">3</span><b>Inline ambiguity chip.</b> <span class="muted">Tier + family count fit in the header. Full meter only in the expanded body — header stays scannable.</span></div>
+      <div class="anatomy-note"><span class="num">4</span><b>Fuzzy search.</b> <span class="muted">Matches across brand · model · variant · product_id. <code>/</code> focuses from anywhere in the page.</span></div>
+      <div class="anatomy-note"><span class="num">5</span><b>Three-column drill-down.</b> <span class="muted">Step pips show progress (done / active / pending). Counts per node. Selected row gets the panel accent.</span></div>
+      <div class="anatomy-note"><span class="num">6</span><b>Preview card.</b> <span class="muted">Every field on <code>CatalogRow</code> is visible. Confidence and coverage have micro-bars; last run has a relative timestamp.</span></div>
+      <div class="anatomy-note"><span class="num">7</span><b>Ambiguity as scale.</b> <span class="muted">Full 5-tier gradient with a marker. Replaces the binary green/amber/red bar.</span></div>
+      <div class="anatomy-note"><span class="num">8</span><b>Recents.</b> <span class="muted">Session-scoped chip rail at the bottom for one-click return to products already touched.</span></div>
+    </div>
+  </div>
+
+  <!-- ──────── 4. STATES ──────── -->
+  <h2><span class="num">4</span>State gallery <span class="sub">every state the panel needs to render</span></h2>
+
+  <!-- State A: Collapsed, no selection -->
+  <div class="frame">
+    <div class="frame-caption"><span class="badge">STATE A</span> Collapsed · no selection <span class="muted">(first visit)</span></div>
+    <div class="sf-panel">
+      <div class="sf-panel-rail"></div>
+      <div class="sf-panel-header">
+        <button class="sf-chev" title="Expand">▸</button>
+        <span class="sf-panel-icon">◎</span>
+        <span class="sf-panel-title">Product Picker</span>
+        <span class="sf-tip">i</span>
+        <span class="sel-empty">— choose a brand, model, and variant to run indexing</span>
+        <span class="sf-actions">
+          <button class="btn-primary">Pick a product</button>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- State B: Collapsed, selected -->
+  <div class="frame">
+    <div class="frame-caption"><span class="badge">STATE B</span> Collapsed · selection made <span class="muted">(returning operator, mid-session)</span></div>
+    <div class="sf-panel">
+      <div class="sf-panel-rail"></div>
+      <div class="sf-panel-header">
+        <button class="sf-chev" title="Expand">▸</button>
+        <span class="sf-panel-icon">◎</span>
+        <span class="sf-panel-title">Product Picker</span>
+        <span class="sf-tip">i</span>
+        <span class="sel-crumbs">
+          <span class="sel-crumb brand">Razer</span>
+          <span class="sel-sep">›</span>
+          <span class="sel-crumb">Viper V2 Pro</span>
+          <span class="sel-sep">›</span>
+          <span class="sel-crumb">White</span>
+        </span>
+        <span class="amb-chip amb-med"><span class="dot"></span>Medium</span>
+        <span class="flag ok" style="margin-left:4px">conf 0.87</span>
+        <span class="sf-actions">
+          <button class="btn-ghost">Change</button>
+          <button class="btn-ghost">Clear</button>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- State C: Expanded, empty hero -->
+  <div class="frame">
+    <div class="frame-caption"><span class="badge">STATE C</span> Expanded · empty <span class="muted">(no selection yet — guide the operator)</span></div>
+    <div class="sf-panel">
+      <div class="sf-panel-rail"></div>
+      <div class="sf-panel-header expanded">
+        <button class="sf-chev" title="Collapse">▾</button>
+        <span class="sf-panel-icon">◎</span>
+        <span class="sf-panel-title">Product Picker</span>
+        <span class="sf-tip">i</span>
+        <span class="sel-empty">— nothing selected</span>
+      </div>
+      <div class="picker-body">
+        <div class="search-row">
+          <span class="search-icon">🔍</span>
+          <input class="search-input" placeholder="Find a product — brand, model, variant, or product_id">
+          <span class="search-kbd">/</span>
+        </div>
+
+        <div class="empty-hero" style="margin-top:10px">
+          <div class="icon">◎</div>
+          <h4>Pick a product to run indexing</h4>
+          <p>Start typing above, or browse the full catalog by brand. Selections gate every finder below — CEF, PIF, RDF, SKU, and Key all run against the chosen product.</p>
+          <div class="quick">
+            <span class="recent-chip"><span class="brand">Recent:</span> Logitech G Pro X Superlight · White</span>
+            <span class="recent-chip"><span class="brand">Recent:</span> Pulsar X2V2 · Black</span>
+            <span class="recent-chip"><span class="brand">Recent:</span> Endgame OP1 8K · White</span>
+          </div>
+        </div>
+
+        <div class="drill" style="margin-top:10px;">
+          <div class="drill-col">
+            <div class="drill-head"><span class="step active">1</span><span class="label">Brand</span><span class="count">24</span></div>
+            <div class="drill-list">
+              <div class="drill-item"><span class="name">Razer</span><span class="ct">18</span></div>
+              <div class="drill-item"><span class="name">Logitech</span><span class="ct">34</span></div>
+              <div class="drill-item"><span class="name">Pulsar</span><span class="ct">12</span></div>
+              <div class="drill-item"><span class="name">Glorious</span><span class="ct">9</span></div>
+              <div class="drill-item"><span class="name">Endgame Gear</span><span class="ct">7</span></div>
+              <div class="drill-item"><span class="name">Finalmouse</span><span class="ct">6</span></div>
+              <div class="drill-item"><span class="name">Zowie</span><span class="ct">11</span></div>
+            </div>
+          </div>
+          <div class="drill-col">
+            <div class="drill-head"><span class="step">2</span><span class="label">Model</span><span class="count">—</span></div>
+            <div class="drill-list">
+              <div class="drill-empty"><span class="icon">→</span>pick a brand first</div>
+            </div>
+          </div>
+          <div class="drill-col">
+            <div class="drill-head"><span class="step">3</span><span class="label">Variant</span><span class="count">—</span></div>
+            <div class="drill-list">
+              <div class="drill-empty"><span class="icon">→</span>pick a model first</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- State D: Mid-flow, brand chosen -->
+  <div class="frame">
+    <div class="frame-caption"><span class="badge">STATE D</span> Expanded · mid-flow <span class="muted">(brand chosen, picking model; variant column disabled)</span></div>
+    <div class="sf-panel">
+      <div class="sf-panel-rail"></div>
+      <div class="sf-panel-header expanded">
+        <button class="sf-chev" title="Collapse">▾</button>
+        <span class="sf-panel-icon">◎</span>
+        <span class="sf-panel-title">Product Picker</span>
+        <span class="sf-tip">i</span>
+        <span class="sel-crumbs">
+          <span class="sel-crumb brand">Razer</span>
+          <span class="sel-sep">›</span>
+          <span class="sel-empty">choose a model…</span>
+        </span>
+      </div>
+      <div class="picker-body">
+        <div class="search-row">
+          <span class="search-icon">🔍</span>
+          <input class="search-input" placeholder="Find a product — brand, model, variant, or product_id">
+          <span class="search-kbd">/</span>
+        </div>
+
+        <div class="drill" style="margin-top:10px;">
+          <div class="drill-col">
+            <div class="drill-head"><span class="step done">✓</span><span class="label">Brand</span><span class="count">24</span></div>
+            <div class="drill-list">
+              <div class="drill-item selected"><span class="name">Razer</span><span class="ct">18</span></div>
+              <div class="drill-item"><span class="name">Logitech</span><span class="ct">34</span></div>
+              <div class="drill-item"><span class="name">Pulsar</span><span class="ct">12</span></div>
+              <div class="drill-item"><span class="name">Glorious</span><span class="ct">9</span></div>
+              <div class="drill-item"><span class="name">Endgame Gear</span><span class="ct">7</span></div>
+              <div class="drill-item"><span class="name">Finalmouse</span><span class="ct">6</span></div>
+              <div class="drill-item"><span class="name">Zowie</span><span class="ct">11</span></div>
+            </div>
+          </div>
+          <div class="drill-col">
+            <div class="drill-head"><span class="step active">2</span><span class="label">Model</span><span class="count">18</span></div>
+            <div class="drill-list">
+              <div class="drill-item"><span class="name">Viper V2 Pro</span><span class="ct">3</span></div>
+              <div class="drill-item"><span class="name">Viper Mini Signature Edition</span><span class="ct">2</span></div>
+              <div class="drill-item"><span class="name">Viper 8KHz</span><span class="ct">1</span></div>
+              <div class="drill-item"><span class="name">Viper Ultimate</span><span class="ct">2</span></div>
+              <div class="drill-item"><span class="name">Basilisk V3 Pro</span><span class="ct">1</span></div>
+              <div class="drill-item"><span class="name">DeathAdder V3 Pro</span><span class="ct">2</span></div>
+              <div class="drill-item"><span class="name">Orochi V2</span><span class="ct">3</span></div>
+              <div class="drill-item"><span class="name">Cobra Pro</span><span class="ct">1</span></div>
+            </div>
+          </div>
+          <div class="drill-col">
+            <div class="drill-head"><span class="step">3</span><span class="label">Variant</span><span class="count">—</span></div>
+            <div class="drill-list">
+              <div class="drill-empty"><span class="icon">→</span>pick a model to see variants</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- State E: Single-variant auto-select -->
+  <div class="frame">
+    <div class="frame-caption"><span class="badge">STATE E</span> Expanded · single variant <span class="muted">(only one variant for brand+model — auto-selected, dropdown locked)</span></div>
+    <div class="sf-panel">
+      <div class="sf-panel-rail"></div>
+      <div class="sf-panel-header expanded">
+        <button class="sf-chev" title="Collapse">▾</button>
+        <span class="sf-panel-icon">◎</span>
+        <span class="sf-panel-title">Product Picker</span>
+        <span class="sf-tip">i</span>
+        <span class="sel-crumbs">
+          <span class="sel-crumb brand">Razer</span>
+          <span class="sel-sep">›</span>
+          <span class="sel-crumb">Viper 8KHz</span>
+          <span class="sel-sep">›</span>
+          <span class="sel-crumb muted" style="color:var(--text-muted);font-style:italic">base · only variant</span>
+        </span>
+        <span class="amb-chip amb-easy"><span class="dot"></span>Easy</span>
+      </div>
+      <div class="picker-body">
+        <div class="search-row">
+          <span class="search-icon">🔍</span>
+          <input class="search-input" placeholder="Find a product — brand, model, variant, or product_id">
+          <span class="search-kbd">/</span>
+        </div>
+
+        <div class="drill" style="margin-top:10px;">
+          <div class="drill-col">
+            <div class="drill-head"><span class="step done">✓</span><span class="label">Brand</span><span class="count">24</span></div>
+            <div class="drill-list">
+              <div class="drill-item selected"><span class="name">Razer</span><span class="ct">18</span></div>
+              <div class="drill-item"><span class="name">Logitech</span><span class="ct">34</span></div>
+              <div class="drill-item"><span class="name">Pulsar</span><span class="ct">12</span></div>
+            </div>
+          </div>
+          <div class="drill-col">
+            <div class="drill-head"><span class="step done">✓</span><span class="label">Model</span><span class="count">18</span></div>
+            <div class="drill-list">
+              <div class="drill-item selected"><span class="name">Viper 8KHz</span><span class="ct">1</span></div>
+              <div class="drill-item"><span class="name">Viper V2 Pro</span><span class="ct">3</span></div>
+              <div class="drill-item"><span class="name">Viper Mini Signature Edition</span><span class="ct">2</span></div>
+            </div>
+          </div>
+          <div class="drill-col">
+            <div class="drill-head"><span class="step done">✓</span><span class="label">Variant</span><span class="count">1</span></div>
+            <div class="drill-list">
+              <div class="drill-item selected"><span class="name muted" style="font-style:italic">base (auto-selected)</span><span class="indicator">★</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-info" style="margin-top:10px"><strong>Only one variant</strong>When a model has a single variant, the third step auto-resolves. The variant column shows the base variant in italics so the operator still sees what was chosen.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- State F: Busy -->
+  <div class="frame">
+    <div class="frame-caption"><span class="badge">STATE F</span> Busy · indexing run in progress <span class="muted">(picker locks to prevent swapping mid-run)</span></div>
+    <div class="sf-panel">
+      <div class="sf-panel-rail"></div>
+      <div class="sf-panel-header">
+        <button class="sf-chev" title="Expand">▸</button>
+        <span class="sf-panel-icon">◎</span>
+        <span class="sf-panel-title">Product Picker</span>
+        <span class="sf-tip">i</span>
+        <span class="sel-crumbs">
+          <span class="sel-crumb brand">Razer</span>
+          <span class="sel-sep">›</span>
+          <span class="sel-crumb">Viper V2 Pro</span>
+          <span class="sel-sep">›</span>
+          <span class="sel-crumb">White</span>
+        </span>
+        <span class="amb-chip" style="background:var(--accent-light);color:var(--accent);border-color:var(--accent-border)"><span class="dot" style="animation:pulse 1.4s infinite"></span>Running</span>
+        <span class="sf-actions">
+          <button class="btn-ghost" disabled style="opacity:.5;cursor:not-allowed">Change</button>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- State G: Error / stale -->
+  <div class="frame">
+    <div class="frame-caption"><span class="badge">STATE G</span> Collapsed · stale <span class="muted">(selection survives catalog reload, but product was renamed/removed)</span></div>
+    <div class="sf-panel">
+      <div class="sf-panel-rail" style="background:var(--red)"></div>
+      <div class="sf-panel-header">
+        <button class="sf-chev" title="Expand">▸</button>
+        <span class="sf-panel-icon" style="color:var(--red);background:var(--red-bg);border-color:var(--red-border)">!</span>
+        <span class="sf-panel-title">Product Picker</span>
+        <span class="sf-tip">i</span>
+        <span class="sel-crumbs">
+          <span class="sel-crumb" style="color:var(--red);background:var(--red-bg);border-color:var(--red-border);text-decoration:line-through">razer-viper-v2-pro-white</span>
+        </span>
+        <span class="amb-chip" style="background:var(--red-bg);color:var(--red);border-color:var(--red-border)"><span class="dot"></span>Not in catalog</span>
+        <span class="sf-actions">
+          <button class="btn-danger">Clear stale selection</button>
+          <button class="btn-primary">Re-pick</button>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ──────── 5. AMBIGUITY GALLERY ──────── -->
+  <h2><span class="num">5</span>Ambiguity meter — 5 tiers <span class="sub">replaces the 3-color chip + bar</span></h2>
+
+  <p class="lead">Today the picker collapses <i>easy / medium / hard / very_hard / extra_hard</i> into three chip classes and a flat bar. The new meter shows the full ramp as a gradient, positions a marker for the current selection's count, and labels the tick ranges so the operator reads the scale at a glance.</p>
+
+  <div class="tier-gallery">
+    <div class="tier-card t-easy"><div class="level">Easy</div><div class="count">1 in family</div><div class="bar"><div class="bar-fill"></div></div></div>
+    <div class="tier-card t-med"><div class="level">Medium</div><div class="count">2–3 in family</div><div class="bar"><div class="bar-fill"></div></div></div>
+    <div class="tier-card t-hard"><div class="level">Hard</div><div class="count">4–5 in family</div><div class="bar"><div class="bar-fill"></div></div></div>
+    <div class="tier-card t-vhard"><div class="level">Very hard</div><div class="count">6–8 in family</div><div class="bar"><div class="bar-fill"></div></div></div>
+    <div class="tier-card t-xhard"><div class="level">Extra hard</div><div class="count">9+ in family</div><div class="bar"><div class="bar-fill"></div></div></div>
+  </div>
+
+  <div class="frame" style="margin-top:14px">
+    <div class="frame-caption"><span class="badge">INLINE</span> how the meter renders inside the preview card</div>
+    <div style="background:var(--surface); border:1px solid var(--border-light); border-radius:8px; overflow:hidden">
+      <div class="amb-meter">
+        <div class="head"><span class="title">Family ambiguity</span><span class="amb-chip amb-easy"><span class="dot"></span>Easy</span></div>
+        <div><div class="scale"><span class="marker" style="left:8%"></span></div>
+        <div class="ticks"><span>easy · 1</span><span>medium · 2–3</span><span>hard · 4–5</span><span>v-hard · 6–8</span><span>x-hard · 9+</span></div></div>
+        <div class="note">family count <b>1</b><br><span class="muted">unique in catalog</span></div>
+      </div>
+      <hr style="margin:0; border-top:1px solid var(--border-light)">
+      <div class="amb-meter">
+        <div class="head"><span class="title">Family ambiguity</span><span class="amb-chip amb-hard"><span class="dot"></span>Hard</span></div>
+        <div><div class="scale"><span class="marker" style="left:50%"></span></div>
+        <div class="ticks"><span>easy · 1</span><span>medium · 2–3</span><span>hard · 4–5</span><span>v-hard · 6–8</span><span>x-hard · 9+</span></div></div>
+        <div class="note">family count <b>5</b><br><span class="muted">sibling review likely</span></div>
+      </div>
+      <hr style="margin:0; border-top:1px solid var(--border-light)">
+      <div class="amb-meter">
+        <div class="head"><span class="title">Family ambiguity</span><span class="amb-chip amb-xhard"><span class="dot"></span>Extra hard</span></div>
+        <div><div class="scale"><span class="marker" style="left:96%"></span></div>
+        <div class="ticks"><span>easy · 1</span><span>medium · 2–3</span><span>hard · 4–5</span><span>v-hard · 6–8</span><span>x-hard · 9+</span></div></div>
+        <div class="note">family count <b>12</b><br><span class="muted">expect heavy review</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ──────── 6. INTERACTION ──────── -->
+  <h2><span class="num">6</span>Interaction &amp; keyboard <span class="sub">behavior contract</span></h2>
+
+  <div class="notes">
+    <div class="note-card">
+      <h4>Keyboard</h4>
+      <ul>
+        <li><span class="kbd">/</span><span><span class="b">Focus search</span> <span class="d">— from anywhere inside the picker.</span></span></li>
+        <li><span class="kbd">↑ ↓</span><span><span class="b">Navigate results</span> <span class="d">— moves within the active column.</span></span></li>
+        <li><span class="kbd">→</span><span><span class="b">Drill in</span> <span class="d">— selects highlighted row, advances to next column.</span></span></li>
+        <li><span class="kbd">←</span><span><span class="b">Step back</span> <span class="d">— unselects current column, focuses previous.</span></span></li>
+        <li><span class="kbd">Enter</span><span><span class="b">Select &amp; commit</span> <span class="d">— when a full brand/model/variant row is highlighted in search.</span></span></li>
+        <li><span class="kbd">Esc</span><span><span class="b">Clear search</span> <span class="d">— keeps selection, clears the query.</span></span></li>
+        <li><span class="kbd">⇧ Esc</span><span><span class="b">Clear selection</span> <span class="d">— full reset to State A.</span></span></li>
+      </ul>
+    </div>
+    <div class="note-card">
+      <h4>Search semantics</h4>
+      <ul>
+        <li><span class="b">Fields:</span><span class="d">matches brand · base_model · variant · product_id · identifier.</span></li>
+        <li><span class="b">Ranking:</span><span class="d">exact id &gt; prefix brand &gt; token overlap &gt; substring.</span></li>
+        <li><span class="b">Highlighting:</span><span class="d">matched tokens get a subtle yellow wrap inside the drill-down rows.</span></li>
+        <li><span class="b">Filtering:</span><span class="d">each column filters to only nodes that contain matches — counts update live.</span></li>
+        <li><span class="b">Empty query:</span><span class="d">drill shows the full catalog.</span></li>
+      </ul>
+    </div>
+    <div class="note-card">
+      <h4>Data handling</h4>
+      <ul>
+        <li><span class="b">Source:</span><span class="d">uses existing <code>brandOptions</code>, <code>modelOptions</code>, <code>variantOptions</code>, <code>selectedCatalogProduct</code> — no new props.</span></li>
+        <li><span class="b">Preview KPIs:</span><span class="d">read from <code>CatalogRow</code> fields already on <code>selectedCatalogProduct</code>.</span></li>
+        <li><span class="b">Last run relative time:</span><span class="d">formatted client-side from <code>lastRun</code> (ISO).</span></li>
+        <li><span class="b">Recents:</span><span class="d">session-scoped (in-memory store), no persistence to disk.</span></li>
+        <li><span class="b">Auto-select:</span><span class="d">when <code>variantOptions.length === 1</code> the panel advances automatically, preserving current behavior.</span></li>
+      </ul>
+    </div>
+    <div class="note-card">
+      <h4>Accessibility</h4>
+      <ul>
+        <li><span class="b">Roles:</span><span class="d">search gets <code>role="combobox"</code>; columns are <code>role="listbox"</code>; rows are <code>role="option"</code>.</span></li>
+        <li><span class="b">Live count:</span><span class="d">match count is announced via <code>aria-live="polite"</code>.</span></li>
+        <li><span class="b">Focus ring:</span><span class="d">visible 3px <code>--pick-bg</code> ring on search; row focus uses border-left accent.</span></li>
+        <li><span class="b">Color independence:</span><span class="d">ambiguity tier is always paired with a text label, never color alone.</span></li>
+        <li><span class="b">Busy state:</span><span class="d">when <code>busy</code>, controls are <code>disabled</code> + <code>aria-busy="true"</code>; no mid-run swaps.</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ──────── 7. HARMONY ──────── -->
+  <h2><span class="num">7</span>Harmony with sibling panels <span class="sub">how the picker looks as the root panel of the page</span></h2>
+
+  <p class="lead">The redesign keeps the picker visually authoritative — it's the top-most panel and the gate for everything below — while matching the rail, icon-tile, and action-cluster grammar of Pipeline, CEF, PIF, RDF, SKU, and Key. The panel accent (indigo) is close to the Key panel but distinct from every data panel.</p>
+
+  <div class="frame">
+    <div class="frame-caption"><span class="badge">STACK</span> picker above the full indexing panel stack</div>
+    <div class="sibling-stack">
+      <div class="sib-panel pick">
+        <div class="rail"></div>
+        <span class="sib-icon">◎</span>
+        <span class="sib-title">Product Picker</span>
+        <span class="sib-sub">Razer › Viper V2 Pro › White · conf 0.87 · medium</span>
+      </div>
+      <div class="sib-panel pipe">
+        <div class="rail"></div>
+        <span class="sib-icon">◉</span>
+        <span class="sib-title">Pipeline</span>
+        <span class="sib-sub">5 phases · idle</span>
+      </div>
+      <div class="sib-panel cef">
+        <div class="rail"></div>
+        <span class="sib-icon">◈</span>
+        <span class="sib-title">Color &amp; Edition Finder</span>
+        <span class="sib-sub">gpt-5.4 · high</span>
+      </div>
+      <div class="sib-panel pif">
+        <div class="rail"></div>
+        <span class="sib-icon">◆</span>
+        <span class="sib-title">Product Image Finder</span>
+        <span class="sib-sub">gpt-5.4 · high</span>
+      </div>
+      <div class="sib-panel rdf">
+        <div class="rail"></div>
+        <span class="sib-icon">◇</span>
+        <span class="sib-title">Release Date Finder</span>
+        <span class="sib-sub">haiku-4.5 · low</span>
+      </div>
+      <div class="sib-panel sku">
+        <div class="rail"></div>
+        <span class="sib-icon">◊</span>
+        <span class="sib-title">SKU Finder</span>
+        <span class="sib-sub">haiku-4.5 · low</span>
+      </div>
+      <div class="sib-panel key">
+        <div class="rail"></div>
+        <span class="sib-icon">◐</span>
+        <span class="sib-title">Per-Key Finder</span>
+        <span class="sib-sub">mixed tiers</span>
+      </div>
+    </div>
+    <div class="callout callout-info" style="margin-top:12px"><strong>Why indigo?</strong>The sibling panels own the finder colors: pipe=blue, cef=orange, pif=teal, rdf=purple, sku=green, key=indigo-bright. The picker uses a deeper, more neutral indigo (<code>#364fc7</code>, rail <code>#4263eb</code>) so it reads as the <i>root / selector</i> rather than a data producer. The shared accent family keeps the page feeling unified without stepping on any finder's identity.</div>
+  </div>
+
+  <!-- ──────── FOOTER ──────── -->
+  <div class="footer-note">
+    <b>Integration notes.</b> This mockup doesn't require new props on <code>PickerPanel</code> beyond what <code>IndexingPage.tsx</code> already passes — it re-uses <code>brandOptions</code>, <code>modelOptions</code>, <code>variantOptions</code>, <code>selectedCatalogProduct</code>, <code>selectedAmbiguityMeter</code>. New state is search query (local <code>useState</code>), keyboard focus index (local), and recent-selections (session-scoped store, derived from selection mutations). The ambiguity meter's 5-tier gradient is a CSS gradient — no new data required; the existing <code>selectedAmbiguityMeter.level</code> maps to the marker position.
+  </div>
+
+</div>
+
+</body>
+</html>

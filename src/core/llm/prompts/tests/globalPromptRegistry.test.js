@@ -27,6 +27,7 @@ describe('GLOBAL_PROMPTS registry', () => {
     'identityIntro',
     'discoveryLogShape',
     'scalarSourceGuidanceCloser',
+    'scalarSourceTierStrategy',
     'scalarReturnJsonTail',
     'siblingVariantsExclusion',
   ];

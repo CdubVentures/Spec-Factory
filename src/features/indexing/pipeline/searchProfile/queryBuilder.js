@@ -155,6 +155,12 @@ export function buildSearchProfile({
   focusGroups = null,
   tierHierarchyOrder = '',
   keySearchEnrichmentOrder = '',
+  // WHY: Per-tier budget floors. Without these, seeds fill maxQueries and
+  // tier 2/3 emit zero rows. Defaults mimic "no per-tier limit" so callers
+  // that omit these stay on the legacy shared-cap behavior (backward compat).
+  tier1SeedCap = Infinity,
+  tier2GroupCap = Infinity,
+  tier3KeyCap = Infinity,
 }) {
   const resolvedIdentity = resolveJobIdentity(job);
   const brand = resolvedIdentity.brand;
@@ -207,39 +213,38 @@ export function buildSearchProfile({
     (id) => id === 'brand_seeds' || id === 'spec_seeds' || id === 'source_seeds',
   );
 
+  // WHY: Per-tier emission + cap. Each tier is emitted to the full extent of
+  // its own cap, independent of the other tiers. The shared maxQueryCap is
+  // applied as a final overall ceiling AFTER emission (with floors that
+  // preserve ≥1 slot per tier that produced rows — so tier 2/3 can't be
+  // starved by seed volume when the overall cap is tight).
   const tierRows = [];
   for (const tierId of effectiveTierOrder) {
-    if (tierRows.length >= maxQueryCap) break;
-    const remaining = maxQueryCap - tierRows.length;
-
     if (tierId === 'brand_seeds' || tierId === 'spec_seeds' || tierId === 'source_seeds') {
-      // WHY: Seed tiers are emitted via buildTier1Queries only on first encounter.
-      // All seed sub-groups share the emittedSources dedup set, so they must be
-      // dispatched together. We trigger the full seed batch on the first seed tier
-      // in the hierarchy, then skip subsequent seed tiers (already emitted).
-      if (modes.runTier1Seeds && tierId === seedTierOrder[0]) {
+      // WHY: Seed tiers share an emittedSources dedup set, so they must be
+      // dispatched together on the first seed tier in the hierarchy.
+      if (modes.runTier1Seeds && tierId === seedTierOrder[0] && tier1SeedCap > 0) {
         const seedRows = buildTier1Queries(job, effectiveSeedStatus, brandResolution, {
           tierOrder: seedTierOrder,
           specSeeds: categoryConfig?.specSeeds || null,
         });
-        tierRows.push(...seedRows.slice(0, remaining));
+        tierRows.push(...seedRows.slice(0, tier1SeedCap));
       }
-      // Subsequent seed tiers: already emitted in the batch above — skip.
     } else if (tierId === 'group_searches') {
-      if (modes.runTier2Groups) {
+      if (modes.runTier2Groups && tier2GroupCap > 0) {
         const groupRows = buildTier2Queries(job, focusGroups);
-        tierRows.push(...groupRows.slice(0, remaining));
+        tierRows.push(...groupRows.slice(0, tier2GroupCap));
       }
     } else if (tierId === 'key_searches') {
-      if (modes.runTier3Keys) {
+      if (modes.runTier3Keys && tier3KeyCap > 0) {
         const keyRows = buildTier3Queries(job, focusGroups, categoryConfig, fieldYieldByDomain, {
           enrichmentOrder: parseEnrichmentOrder(keySearchEnrichmentOrder),
         });
-        tierRows.push(...keyRows.slice(0, remaining));
+        tierRows.push(...keyRows.slice(0, tier3KeyCap));
       }
     }
   }
-  const queryRows = tierRows;
+  const queryRows = applyOverallCapWithFloors(tierRows, maxQueryCap, effectiveTierOrder);
 
   const querySet = new Set();
   const selectedQueries = [];
@@ -350,6 +355,59 @@ export function determineQueryModes(seedStatus, focusGroups) {
 // budget priority. Default: seeds first (brand → spec → source), then groups, then keys.
 const KNOWN_TIER_IDS = ['brand_seeds', 'spec_seeds', 'source_seeds', 'group_searches', 'key_searches'];
 const DEFAULT_TIER_ORDER = ['brand_seeds', 'spec_seeds', 'source_seeds', 'group_searches', 'key_searches'];
+
+// WHY: When total tier emissions exceed the overall maxQueryCap, truncate but
+// guarantee ≥1 slot per tier that has eligible rows so tier 2 / tier 3 can't
+// be starved by a large tier 1. Tier order is preserved — slots beyond the
+// per-tier floor are allocated to the tiers that appear first in tierOrder.
+function applyOverallCapWithFloors(rows, overallCap, tierOrder) {
+  if (!Array.isArray(rows) || rows.length === 0) return [];
+  if (!Number.isFinite(overallCap) || overallCap <= 0) return rows;
+  if (rows.length <= overallCap) return rows;
+
+  // Group rows by their tier value, preserving original insertion order within each tier.
+  const rowsByTier = new Map();
+  for (const row of rows) {
+    const t = String(row?.tier || '').trim();
+    if (!rowsByTier.has(t)) rowsByTier.set(t, []);
+    rowsByTier.get(t).push(row);
+  }
+
+  // Rank tiers by the position of their first row in the input — matches tierOrder.
+  const tierSlots = [...rowsByTier.keys()].map((t) => ({ tier: t, count: rowsByTier.get(t).length }));
+  const alloc = new Map(tierSlots.map((t) => [t.tier, 0]));
+
+  // Phase 1: reserve 1 slot per tier with rows (floor).
+  let used = 0;
+  for (const t of tierSlots) {
+    if (used >= overallCap) break;
+    alloc.set(t.tier, 1);
+    used += 1;
+  }
+
+  // Phase 2: distribute remaining slots in tier-order priority, up to each tier's available count.
+  let remaining = Math.max(0, overallCap - used);
+  for (const t of tierSlots) {
+    if (remaining <= 0) break;
+    const available = t.count - alloc.get(t.tier);
+    if (available <= 0) continue;
+    const take = Math.min(available, remaining);
+    alloc.set(t.tier, alloc.get(t.tier) + take);
+    remaining -= take;
+  }
+
+  // Phase 3: select first N rows from each tier based on allocation, preserving tier interleave order.
+  const taken = new Map(tierSlots.map((t) => [t.tier, 0]));
+  const result = [];
+  for (const row of rows) {
+    const t = String(row?.tier || '').trim();
+    if (taken.get(t) < alloc.get(t)) {
+      result.push(row);
+      taken.set(t, taken.get(t) + 1);
+    }
+  }
+  return result;
+}
 
 /**
  * Parse a CSV tier order string into a validated array of tier IDs.

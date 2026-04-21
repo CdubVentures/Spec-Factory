@@ -66,7 +66,13 @@ export const FINDER_MODULES = Object.freeze([
     reseedKey: 'color_edition',
     rebuildFnKey: 'rebuildColorEditionFinderFromJson',
 
-    // Per-category settings (typed schema; drives DDL + UI renderer).
+    // Settings scope: 'global' = one shared config in app.sqlite + _global/ JSON.
+    // 'category' = per-category SQL table + per-category JSON. CEF settings are
+    // the same for every category today (audit confirmed); flattening to global
+    // removes per-category storage overhead.
+    settingsScope: 'global',
+
+    // Settings schema (typed; drives DDL + UI renderer).
     // WHY: Prompt templates are edited in LLM Config (not Pipeline Settings),
     // so they're `hidden: true` — the settings table still stores them.
     settingsSchema: [
@@ -99,7 +105,7 @@ export const FINDER_MODULES = Object.freeze([
     // Module Settings (codegen: moduleSettingsSections.generated.ts)
     settingsLabel: 'Color & Edition Finder',
     settingsSubtitle: 'CEF module settings',
-    settingsTip: 'Per-category settings for the Color & Edition Finder discovery module.',
+    settingsTip: 'Global settings for the Color & Edition Finder discovery module.',
     iconName: 'palette',
   },
   {
@@ -138,6 +144,10 @@ export const FINDER_MODULES = Object.freeze([
     // Reseed
     reseedKey: 'product_images',
     rebuildFnKey: 'rebuildProductImageFinderFromJson',
+
+    // Settings scope: 'category' — PIF genuinely varies by category (mouse vs
+    // keyboard view angles, descriptions, per-view budgets). Stays per-category.
+    settingsScope: 'category',
 
     // Per-category settings (typed schema; drives DDL + UI renderer).
     // Widget-backed entries reference named widgets registered in the GUI;
@@ -284,6 +294,7 @@ export const FINDER_MODULES = Object.freeze([
     settingsLabel: 'Product Image Finder',
     settingsSubtitle: 'PIF module settings',
     settingsTip: 'Per-category settings for the Product Image Finder: view angles and image quality.',
+    // ^ PIF stays per-category — mouse view angles differ from keyboard etc.
     iconName: 'image',
   },
   {
@@ -335,7 +346,11 @@ export const FINDER_MODULES = Object.freeze([
     reseedKey: 'release_date',
     rebuildFnKey: 'rebuildReleaseDateFinderFromJson',
 
-    // Per-category settings. variantFieldProducer requires perVariantAttemptBudget.
+    // Settings scope: 'global'. RDF settings are the same for every category
+    // (per-variant attempt budget, history toggles).
+    settingsScope: 'global',
+
+    // Settings schema. variantFieldProducer requires perVariantAttemptBudget.
     // WHY: Prompt templates are edited in LLM Config (not Pipeline Settings),
     // so they're `hidden: true` — the settings table still stores them.
     settingsSchema: [
@@ -394,7 +409,7 @@ export const FINDER_MODULES = Object.freeze([
     // Module Settings (codegen: moduleSettingsSections.generated.ts)
     settingsLabel: 'Release Date Finder',
     settingsSubtitle: 'RDF module settings',
-    settingsTip: 'Per-category settings for the Release Date Finder: per-variant discovery of first-availability dates.',
+    settingsTip: 'Global settings for the Release Date Finder: per-variant discovery of first-availability dates.',
     iconName: 'calendar',
   },
   {
@@ -443,7 +458,10 @@ export const FINDER_MODULES = Object.freeze([
     reseedKey: 'sku',
     rebuildFnKey: 'rebuildSkuFinderFromJson',
 
-    // Per-category settings. Mirrors RDF settings surface one-for-one.
+    // Settings scope: 'global'. SKU mirrors RDF — same knobs, same flatten.
+    settingsScope: 'global',
+
+    // Settings schema. Mirrors RDF settings surface one-for-one.
     settingsSchema: [
       { key: 'discoveryPromptTemplate', type: 'string', default: '', allowEmpty: true, hidden: true },
       { key: 'perVariantAttemptBudget', type: 'int', default: 3, min: 1, max: 5,
@@ -485,7 +503,7 @@ export const FINDER_MODULES = Object.freeze([
     // Module Settings (codegen: moduleSettingsSections.generated.ts)
     settingsLabel: 'SKU Finder',
     settingsSubtitle: 'SKF module settings',
-    settingsTip: 'Per-category settings for the SKU Finder: per-variant discovery of manufacturer part numbers (MPNs).',
+    settingsTip: 'Global settings for the SKU Finder: per-variant discovery of manufacturer part numbers (MPNs).',
     iconName: 'hash',
   },
   {
@@ -528,7 +546,11 @@ export const FINDER_MODULES = Object.freeze([
     reseedKey: 'key_finder',
     rebuildFnKey: 'rebuildKeyFinderFromJson',
 
-    // Per-category settings — budget scoring + bundling + discovery history.
+    // Settings scope: 'global'. keyFinder budget scoring + bundling + history
+    // are product-scoped knobs; no evidence of category-specific divergence.
+    settingsScope: 'global',
+
+    // Settings schema — budget scoring + bundling + discovery history.
     settingsSchema: [
       // Prompt template — hidden; edited in LLM Config Key Finder tab
       { key: 'discoveryPromptTemplate', type: 'string', default: '', allowEmpty: true, hidden: true },
@@ -561,11 +583,18 @@ export const FINDER_MODULES = Object.freeze([
       { key: 'budgetFloor', type: 'int', default: 3, min: 1, max: 20,
         uiLabel: 'Budget floor', uiGroup: 'Budget Scoring',
         uiTip: 'Minimum per-key attempts, regardless of axis sum.' },
+      { key: 'budgetPreviewDisplay', type: 'string', default: '', allowEmpty: true,
+        widget: 'keyFinderBudgetPreview',
+        uiLabel: 'Live preview', uiGroup: 'Budget Scoring', uiRightPanel: true,
+        uiTip: 'Computed attempt budgets for every difficulty × availability combination, split by required-level tier.' },
 
       // Bundling (Smart Loop only; per-key Run and Loop always solo)
       { key: 'bundlingEnabled', type: 'bool', default: false,
         uiLabel: 'Bundling', uiGroup: 'Bundling',
         uiTip: 'Pack same-group passenger keys onto the primary call during Smart Loop. Off = single-key calls only.' },
+      { key: 'groupBundlingOnly', type: 'bool', default: true,
+        uiLabel: 'Group bundling only', uiGroup: 'Bundling',
+        uiTip: 'When ON, passengers must share the primary\u2019s group. When OFF, bundling may reach across groups.' },
       { key: 'bundlingPassengerCost', type: 'intMap',
         keys: ['easy', 'medium', 'hard', 'very_hard'],
         keyLabels: { easy: 'Easy', medium: 'Medium', hard: 'Hard', very_hard: 'Very hard' },
@@ -590,6 +619,17 @@ export const FINDER_MODULES = Object.freeze([
         },
         uiLabel: 'Passenger difficulty', uiGroup: 'Bundling',
         uiTip: 'Which passenger difficulties are eligible to ride along with the primary key.' },
+
+      // Context Injection — each knob independently toggles a distinct prompt slot
+      { key: 'componentInjectionEnabled', type: 'bool', default: true,
+        uiLabel: 'Component values', uiGroup: 'Context Injection',
+        uiTip: 'Inject already-resolved component identities (sensor, switch, encoder, material) into primary + additional key contexts.' },
+      { key: 'knownFieldsInjectionEnabled', type: 'bool', default: true,
+        uiLabel: 'Known fields', uiGroup: 'Context Injection',
+        uiTip: 'Inject already-published non-component field values on this product as a shared context block.' },
+      { key: 'searchHintsInjectionEnabled', type: 'bool', default: true,
+        uiLabel: 'Search hints', uiGroup: 'Context Injection',
+        uiTip: 'Inject domain_hints + query_terms + query_templates for the PRIMARY key only (passengers inherit the primary session).' },
 
       // Discovery history — per-key scope (locked by design; not global per product)
       { key: 'urlHistoryEnabled', type: 'bool', default: true,
@@ -621,7 +661,7 @@ export const FINDER_MODULES = Object.freeze([
     // Module Settings (codegen: moduleSettingsSections.generated.ts)
     settingsLabel: 'Key Finder',
     settingsSubtitle: 'KF module settings',
-    settingsTip: 'Per-category budget scoring, bundling, and discovery-history toggles for the universal Key Finder.',
+    settingsTip: 'Global budget scoring, bundling, and discovery-history toggles for the universal Key Finder.',
     iconName: 'key',
   },
 ]);

@@ -11,8 +11,9 @@ export const MODULE_SETTINGS_SECTIONS = [
     moduleId: 'colorEditionFinder',
     label: 'Color & Edition Finder',
     subtitle: 'CEF module settings',
-    tip: 'Per-category settings for the Color & Edition Finder discovery module.',
+    tip: 'Global settings for the Color & Edition Finder discovery module.',
     iconName: 'palette' as const,
+    settingsScope: 'global' as const,
     group: 'modules',
   },
   {
@@ -22,6 +23,7 @@ export const MODULE_SETTINGS_SECTIONS = [
     subtitle: 'PIF module settings',
     tip: 'Per-category settings for the Product Image Finder: view angles and image quality.',
     iconName: 'image' as const,
+    settingsScope: 'category' as const,
     group: 'modules',
   },
   {
@@ -29,8 +31,9 @@ export const MODULE_SETTINGS_SECTIONS = [
     moduleId: 'releaseDateFinder',
     label: 'Release Date Finder',
     subtitle: 'RDF module settings',
-    tip: 'Per-category settings for the Release Date Finder: per-variant discovery of first-availability dates.',
+    tip: 'Global settings for the Release Date Finder: per-variant discovery of first-availability dates.',
     iconName: 'calendar' as const,
+    settingsScope: 'global' as const,
     group: 'modules',
   },
   {
@@ -38,8 +41,9 @@ export const MODULE_SETTINGS_SECTIONS = [
     moduleId: 'skuFinder',
     label: 'SKU Finder',
     subtitle: 'SKF module settings',
-    tip: 'Per-category settings for the SKU Finder: per-variant discovery of manufacturer part numbers (MPNs).',
+    tip: 'Global settings for the SKU Finder: per-variant discovery of manufacturer part numbers (MPNs).',
     iconName: 'hash' as const,
+    settingsScope: 'global' as const,
     group: 'modules',
   },
   {
@@ -47,8 +51,9 @@ export const MODULE_SETTINGS_SECTIONS = [
     moduleId: 'keyFinder',
     label: 'Key Finder',
     subtitle: 'KF module settings',
-    tip: 'Per-category budget scoring, bundling, and discovery-history toggles for the universal Key Finder.',
+    tip: 'Global budget scoring, bundling, and discovery-history toggles for the universal Key Finder.',
     iconName: 'key' as const,
+    settingsScope: 'global' as const,
     group: 'modules',
   },
 ] as const;
@@ -57,3 +62,12 @@ export const MODULE_IDS = ['colorEditionFinder', 'productImageFinder', 'releaseD
 export type ModuleSettingsModuleId = typeof MODULE_IDS[number];
 
 export type ModuleSettingsSectionId = typeof MODULE_SETTINGS_SECTIONS[number]['id'];
+
+export type ModuleSettingsScope = 'global' | 'category';
+export const MODULE_SETTINGS_SCOPE_BY_ID: Record<ModuleSettingsModuleId, ModuleSettingsScope> = {
+  'colorEditionFinder': 'global',
+  'productImageFinder': 'category',
+  'releaseDateFinder': 'global',
+  'skuFinder': 'global',
+  'keyFinder': 'global',
+};

@@ -32,12 +32,13 @@ import { createCrawlLedgerStore } from './stores/crawlLedgerStore.js';
 import { FINDER_MODULES } from '../core/finder/finderModuleRegistry.js';
 import { createFinderSqlStore } from '../core/finder/finderSqlStore.js';
 import { generateFinderDdl } from '../core/finder/finderSqlDdl.js';
+import { FINDER_GLOBAL_SETTINGS_DDL } from './appDbSchema.js';
 import { createFieldCandidateStore } from './stores/fieldCandidateStore.js';
 import { createFieldCandidateEvidenceStore } from './stores/fieldCandidateEvidenceStore.js';
 import { createVariantStore } from './stores/variantStore.js';
 
 export class SpecDb {
-  constructor({ dbPath, category }) {
+  constructor({ dbPath, category, globalDb }) {
     this.db = new Database(dbPath);
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('synchronous = NORMAL');
@@ -51,6 +52,19 @@ export class SpecDb {
       this.db.exec(ddl);
     }
     this.category = category;
+
+    // WHY: Finder modules with settingsScope='global' read/write against a
+    // shared `finder_global_settings` table. Production wiring passes the
+    // appDb handle. Unit tests that construct specDb standalone get an
+    // ephemeral in-memory globalDb so the store's settings path works.
+    if (globalDb) {
+      this._globalDb = globalDb;
+      this._ownsGlobalDb = false;
+    } else {
+      this._globalDb = new Database(':memory:');
+      this._globalDb.exec(FINDER_GLOBAL_SETTINGS_DDL);
+      this._ownsGlobalDb = true;
+    }
 
     applyMigrations(this.db);
     this.assertStrictIdentitySlotIntegrity();
@@ -137,10 +151,11 @@ export class SpecDb {
     });
     // WHY: Generic finder store map — auto-wires all registered finder modules.
     // Existing CEF delegating methods below use this map for backward compat.
+    // globalDb flows into stores whose module declares settingsScope='global'.
     this._finderStores = new Map();
     for (const mod of FINDER_MODULES) {
       this._finderStores.set(mod.id, createFinderSqlStore({
-        db: this.db, category: this.category, module: mod,
+        db: this.db, category: this.category, module: mod, globalDb: this._globalDb,
       }));
     }
     this._fieldCandidateStore = createFieldCandidateStore({
@@ -200,6 +215,9 @@ export class SpecDb {
 
   close() {
     this.db.close();
+    if (this._ownsGlobalDb && this._globalDb) {
+      try { this._globalDb.close(); } catch { /* best-effort */ }
+    }
   }
 
   getSpecDbSyncState(category = this.category) {

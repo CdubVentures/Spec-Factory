@@ -73,6 +73,19 @@ export async function runSearchPlanner({
   const finalRows = novelty.rows;
 
   const llmCount = finalRows.filter((r) => String(r.hint_source || '').endsWith('_llm')).length;
+
+  // WHY: tier_counts lets observability surfaces (GUI, bridge, analytics) see
+  // per-tier emission in O(1) without re-deriving from queries_generated.
+  // Zero-counts included explicitly so readers can distinguish "tier produced
+  // 0 rows" from "field missing from payload".
+  const tierCounts = { seed: 0, group_search: 0, key_search: 0 };
+  for (const r of finalRows) {
+    const t = String(r?.tier || '').trim();
+    if (t === 'seed' || t === 'group_search' || t === 'key_search') {
+      tierCounts[t] += 1;
+    }
+  }
+
   logger?.info?.('search_plan_generated', {
     pass_index: 0,
     pass_name: 'enhance',
@@ -81,6 +94,7 @@ export async function runSearchPlanner({
     llm_enhanced_count: llmCount,
     novelty_rate: novelty.noveltyRate,
     rotations_applied: novelty.rotated,
+    tier_counts: tierCounts,
     mode: 'tier_enhance',
     queries_generated: finalRows.map((r) => String(r.query || '').trim()).filter(Boolean),
     query_target_map: Object.fromEntries(

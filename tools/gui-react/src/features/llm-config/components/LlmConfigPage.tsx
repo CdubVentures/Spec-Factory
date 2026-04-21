@@ -271,6 +271,27 @@ export function LlmConfigPage() {
     [activePhase],
   );
 
+  // WHY: The Global panel's "Reset panel" only touches the 5 inherited
+  // defaults (tokens, timeout, reasoning budget, lab queue delay). Models,
+  // Provider Registry, All Models, and triage tokens are intentionally
+  // preserved. Make that explicit in the UI so users aren't surprised.
+  const resetPanelCopy = useMemo(() => {
+    if (activePhase === 'global') {
+      return {
+        tooltip:
+          'Reset the inherited defaults on the Global panel (Max Output Tokens, Max Context Tokens, Timeout, Reasoning Budget, Lab Queue Delay). Models, Provider Registry, and Triage tokens are preserved.',
+        modalTitle: "Reset the Global panel's inherited defaults?",
+        modalBody:
+          'Resets only the 5 inherited defaults on this panel: Max Output Tokens, Max Context Tokens, Timeout, Reasoning Budget, and Lab Queue Delay. Models, Provider Registry, All Models, and Triage tokens stay as-is.',
+      };
+    }
+    return {
+      tooltip: `Reset the ${activePhaseLabel} panel to defaults.`,
+      modalTitle: `Reset the ${activePhaseLabel} panel?`,
+      modalBody: `This returns the ${activePhaseLabel} panel to its default values. Other panels are untouched.`,
+    };
+  }, [activePhase, activePhaseLabel]);
+
   const applyResetActivePanel = useCallback(() => {
     if (activePhase === 'global') {
       llmAuthority.updatePolicy(buildLlmGlobalDefaultsResetPatch(DEFAULT_LLM_POLICY, policy));
@@ -307,7 +328,7 @@ export function LlmConfigPage() {
       onClick={() => setResetScope('panel')}
       disabled={!runtimeSettingsReady}
       className="sf-danger-button px-3 py-1.5 sf-text-label disabled:opacity-50"
-      title={`Reset the ${activePhaseLabel} panel to defaults.`}
+      title={resetPanelCopy.tooltip}
     >
       Reset panel
     </button>
@@ -400,11 +421,11 @@ export function LlmConfigPage() {
       />
       <TypedConfirmModal
         open={resetScope !== null}
-        title={resetScope === 'all' ? 'Reset all LLM settings?' : `Reset the ${activePhaseLabel} panel?`}
+        title={resetScope === 'all' ? 'Reset all LLM settings?' : resetPanelCopy.modalTitle}
         body={
           resetScope === 'all'
             ? 'This returns every LLM setting on this page to its default value. API keys are preserved.'
-            : `This returns the ${activePhaseLabel} panel to its default values. Other panels are untouched.`
+            : resetPanelCopy.modalBody
         }
         confirmPhrase={resetScope === 'all' ? RESET_ALL_PHRASE : RESET_PANEL_PHRASE}
         confirmLabel={resetScope === 'all' ? 'Reset all' : 'Reset panel'}

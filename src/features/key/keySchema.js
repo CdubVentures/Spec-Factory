@@ -1,32 +1,43 @@
 /**
- * Key Finder — Zod schemas (Phase 2 stub).
+ * Key Finder — Zod response schemas.
  *
- * Phase 2 ships the LLM config plumbing + finder module registration; the
- * actual orchestrator lands in Phase 3. These schemas are the minimum viable
- * shape for codegen to emit the phase schema preview. They will be refined
- * when runtime orchestration is wired.
+ * Multi-key envelope: one LLM call may return a primary key plus zero or more
+ * passenger keys (bundling). Each per-key shape is built from the shared
+ * `createScalarFinderSchema` factory so evidence_refs / confidence / unknown_reason
+ * stay byte-identical to RDF / SKU conventions.
  *
  * Exports:
- *   - keyFinderResponseSchema — LLM response shape (per-key, per-product)
+ *   - perKeyShape(valueKey)       — factory for a single field's response shape
+ *   - keyFinderResponseSchema     — the full LLM response envelope
  */
 
 import { z } from 'zod';
+import { createScalarFinderSchema } from '../../core/finder/createScalarFinderSchema.js';
 
-const EvidenceEntry = z.object({
-  url: z.string(),
-  snippet: z.string().optional(),
-});
+// WHY: value is `z.unknown()` so the LLM can emit the native JSON type declared
+// by each field's contract (number for int/number fields, array for list-shape
+// fields, string for enum/date, boolean for bool). Downstream parsing coerces
+// against fieldRule.contract per key. Sentinel "unk" is a string either way.
+export function perKeyShape(valueKey) {
+  const base = createScalarFinderSchema({
+    valueKey,
+    valueType: 'string',
+    includeEvidenceKind: true,
+  });
+  return base.extend({ [valueKey]: z.unknown() });
+}
 
-const DiscoveryLog = z.object({
-  urls_checked: z.array(z.string()).default([]),
-  queries_run: z.array(z.string()).default([]),
-  notes: z.string().default(''),
-});
+const PER_KEY_VALUE = perKeyShape('value');
 
 export const keyFinderResponseSchema = z.object({
-  field_key: z.string(),
-  value: z.unknown(),
-  confidence: z.number().min(0).max(1).default(0),
-  evidence: z.array(EvidenceEntry).default([]),
-  discovery_log: DiscoveryLog.default({ urls_checked: [], queries_run: [], notes: '' }),
-});
+  primary_field_key: z.string().min(1),
+  results: z.record(z.string(), PER_KEY_VALUE),
+  discovery_log: z.object({
+    urls_checked: z.array(z.string()).default([]),
+    queries_run: z.array(z.string()).default([]),
+    notes: z.array(z.string()).default([]),
+  }).default({ urls_checked: [], queries_run: [], notes: [] }),
+}).refine(
+  (data) => Object.prototype.hasOwnProperty.call(data.results, data.primary_field_key),
+  { message: 'primary_field_key must exist as a key in results' },
+);

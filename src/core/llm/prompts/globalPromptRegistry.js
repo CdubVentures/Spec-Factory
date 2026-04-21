@@ -183,6 +183,35 @@ Do not inflate confidence beyond what the cited evidence supports.`,
     defaultTemplate: 'You decide which sources to query and in what order — the above describes what kind of evidence counts and how to tag it, not a script to execute.',
   },
 
+  scalarSourceTierStrategy: {
+    label: 'Scalar finder — source-tier strategy',
+    description: 'Universal source-tier strategy block for scalar finders (keyFinder today; RDF/SKU keep their own hand-written variants with field-specific caveats).',
+    appliesTo: ['scalar'],
+    variables: [],
+    defaultTemplate: `Source strategy — use the strongest signal available, fall back as needed:
+
+  PRIMARY — manufacturer authority (tag as tier1)
+    Brand product page, spec sheet, datasheet, press release, official news/blog,
+    support article, official documentation. Treat as authoritative when present.
+
+  INDEPENDENT CORROBORATION (tag as tier2)
+    Professional reviews, hands-on coverage, independent testing labs, launch
+    posts that cite the claim. Use to corroborate tier1 or as primary evidence
+    when manufacturer sources are dead, redesigned, or undated.
+
+  RETAILER LISTINGS (tag as tier3)
+    Amazon, Best Buy, Newegg, B&H, regional equivalents. Check the spec table
+    or product details section. Retailers frequently conflate part numbers,
+    SKUs, and product codes — defer to manufacturer primary when in conflict.
+
+  COMMUNITY / AGGREGATORS (tag as tier4 or tier5)
+    Forum posts, spec databases (TechSpecs, TechPowerUp), review aggregators.
+    Cross-reference only for precise values — community posts frequently
+    propagate typos or misattribute values between products. For coarse-grain
+    claims (existence, year-level precision), multiple independent tier4/tier5
+    sources in agreement are acceptable standalone evidence.`,
+  },
+
   siblingVariantsExclusion: {
     label: 'Sibling variants exclusion',
     description: 'Lists OTHER variants of the same product. Injected into per-variant finder prompts (PIF-view, PIF-loop, RDF, SKU) so the LLM skips images/SKUs/dates for variants other than the target. Empty when the product has only one variant. NOT used by PIF-hero (separate call path) or CEF (generates variants rather than filtering them).',

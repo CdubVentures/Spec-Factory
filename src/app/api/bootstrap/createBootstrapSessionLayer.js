@@ -25,6 +25,22 @@ export function createBootstrapSessionLayer({
     existsSync: (targetPath) => fsSync.existsSync(targetPath),
   });
 
+  // ── Global AppDb ──
+  // WHY: Opened first so createSpecDbRuntime can thread appDb.db into each
+  // per-category specDb as the shared `globalDb` for finder_global_settings.
+  const appDbDir = path.resolve(config.specDbDir || '.workspace/db');
+  fsSync.mkdirSync(appDbDir, { recursive: true });
+  const appDb = new AppDb({ dbPath: path.join(appDbDir, 'app.sqlite') });
+  // WHY: Rebuild contract — seed finder_global_settings from _global/ JSON
+  // mirrors when app.sqlite is fresh.
+  appDb.reseedFinderGlobalSettingsFromJson({ helperRoot: HELPER_ROOT });
+  seedAppDb({
+    appDb,
+    brandRegistryPath: path.resolve(HELPER_ROOT, '_global', 'brand_registry.json'),
+    userSettingsPath: path.join(defaultUserSettingsRoot(), 'user-settings.json'),
+    unitRegistryPath: path.resolve(HELPER_ROOT, '_global', 'unit_registry.json'),
+  });
+
   // ── Lazy SpecDb Cache ──
   const {
     specDbCache,
@@ -42,21 +58,11 @@ export function createBootstrapSessionLayer({
     indexLabRoot: INDEXLAB_ROOT,
     productRoot: defaultProductRoot(),
     buildFieldRulesSignature,
+    appDb,
   });
 
   const sessionCache = createSessionCache({
     getSpecDb,
-  });
-
-  // ── Global AppDb ──
-  const appDbDir = path.resolve(config.specDbDir || '.workspace/db');
-  fsSync.mkdirSync(appDbDir, { recursive: true });
-  const appDb = new AppDb({ dbPath: path.join(appDbDir, 'app.sqlite') });
-  seedAppDb({
-    appDb,
-    brandRegistryPath: path.resolve(HELPER_ROOT, '_global', 'brand_registry.json'),
-    userSettingsPath: path.join(defaultUserSettingsRoot(), 'user-settings.json'),
-    unitRegistryPath: path.resolve(HELPER_ROOT, '_global', 'unit_registry.json'),
   });
   // WHY: createBootstrapEnvironment applied settings from user-settings.json before
   // appDb existed. Now that SQL is open, rehydrate config from the authoritative store

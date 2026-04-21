@@ -214,7 +214,7 @@ function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
         </button>
       )}
 
-      {/* Row 1: module chip + variant swatch (PIF/RDF only) + product label + elapsed */}
+      {/* Row 1: module chip + variant swatch (PIF/RDF) OR field_key chip (KF) + product label + elapsed */}
       <span className="flex items-center gap-1.5 min-w-0">
         <span className={`inline-flex items-center px-1 text-[8px] font-bold font-mono uppercase tracking-[0.04em] rounded-[2px] border border-current leading-[1.5] shrink-0 ${chipCls}`}>
           {label}
@@ -222,6 +222,14 @@ function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
         {variantHexParts.length > 0 && (
           <span title={op.variantKey} className="shrink-0 flex items-center">
             <ColorSwatch hexParts={variantHexParts} />
+          </span>
+        )}
+        {op.fieldKey && (
+          <span
+            title={`field_key: ${op.fieldKey}`}
+            className="shrink-0 inline-flex items-center px-1 text-[9px] font-mono rounded-[2px] border leading-[1.5] text-[rgb(var(--sf-color-accent-strong-rgb))] border-[rgb(var(--sf-color-accent-strong-rgb)/0.4)] bg-[rgb(var(--sf-color-accent-strong-rgb)/0.08)] max-w-[140px] truncate"
+          >
+            {op.fieldKey}
           </span>
         )}
         <span className="text-[11px] font-medium sf-text-primary truncate min-w-0 flex-1 text-left">

@@ -48,6 +48,11 @@ export class IndexLabRuntimeBridge {
     this.fetchByUrl = new Map();
     this.fetchClosedByUrl = new Set();
     this.workerByUrl = new Map();
+    // WHY: Per-field provenance accumulator. Populated from source_processed
+    // events (one evidence entry per source that contributed a candidate).
+    // Consumed at finalization by buildFieldHistories to derive next-run
+    // roundContext.previousFieldHistories — drives tier-3 3a→3b→3c→3d progression.
+    this.fieldProvenance = {};
     this.queue = Promise.resolve();
     this.counters = {
       pages_checked: 0,

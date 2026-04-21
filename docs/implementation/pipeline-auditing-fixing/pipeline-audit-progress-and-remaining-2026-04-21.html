@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<title>IndexLab Pipeline Audit — Progress + Remaining (2026-04-21)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#c9d1d9;padding:32px;max-width:1400px;margin:0 auto;line-height:1.7}
+h1{color:#58a6ff;font-size:26px;margin-bottom:4px}
+h2{color:#f0f6fc;font-size:20px;margin:40px 0 12px;padding-bottom:8px;border-bottom:1px solid #21262d}
+h3{color:#58a6ff;font-size:16px;margin:24px 0 8px}
+h4{color:#c9d1d9;font-size:14px;margin:16px 0 6px}
+.subtitle{color:#8b949e;font-size:13px;margin-bottom:32px}
+p{color:#c9d1d9;font-size:13px;margin:6px 0}
+ul,ol{padding-left:20px;margin:6px 0}
+li{font-size:13px;margin:3px 0}
+code{background:#21262d;padding:2px 6px;border-radius:3px;font-size:12px;color:#e6edf3;font-family:'Cascadia Code','Fira Code',monospace}
+pre{background:#161b22;border:1px solid #30363d;border-radius:6px;padding:16px;font-size:12px;overflow-x:auto;margin:12px 0;color:#e6edf3;font-family:'Cascadia Code','Fira Code',monospace;line-height:1.5}
+table{width:100%;border-collapse:collapse;font-size:12px;margin:12px 0}
+th{background:#161b22;color:#58a6ff;padding:8px 10px;text-align:left;border-bottom:2px solid #30363d;white-space:nowrap}
+td{padding:6px 10px;border-bottom:1px solid #21262d;vertical-align:top}
+.box{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;margin:16px 0}
+.ok-box{background:#0f1f12;border:1px solid #3fb950;border-radius:8px;padding:16px;margin:16px 0}
+.ok-box h3{color:#3fb950}
+.warn-box{background:#2d1f00;border:1px solid #f0883e;border-radius:8px;padding:16px;margin:16px 0}
+.warn-box h3{color:#f0883e}
+.crit-box{background:#2d1119;border:1px solid #f97583;border-radius:8px;padding:16px;margin:16px 0}
+.crit-box h3{color:#f97583}
+nav{position:sticky;top:0;background:#0d1117;padding:8px 0 12px;border-bottom:1px solid #21262d;z-index:10;margin-bottom:24px}
+nav a{color:#58a6ff;text-decoration:none;font-size:12px;margin-right:16px}
+nav a:hover{text-decoration:underline}
+.file-ref{color:#8b949e;font-size:11px;font-family:'Cascadia Code',monospace}
+.tag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700;margin-right:4px;letter-spacing:0.3px}
+.tag.shipped{background:#0f2a15;color:#3fb950}
+.tag.open{background:#3d1f28;color:#f97583}
+.tag.new{background:#1a2a3d;color:#79c0ff}
+.tag.defer{background:#2d1f00;color:#f0883e}
+.tag.arch{background:#21262d;color:#d2a8ff}
+.progress-card{background:#161b22;border-radius:8px;padding:12px 16px;margin:8px 0;border-left:4px solid}
+.progress-card.s1{border-color:#f97583}
+.progress-card.s2{border-color:#79c0ff}
+.progress-card.s3{border-color:#7ee787}
+.progress-card h4{margin:0 0 6px}
+.metric{display:inline-block;background:#21262d;padding:2px 8px;border-radius:3px;font-size:11px;color:#7ee787;margin-right:6px;font-family:'Cascadia Code',monospace}
+.metric.bad{color:#f97583}
+.priority-row td:first-child{font-weight:700;white-space:nowrap}
+.p1{color:#f97583}
+.p2{color:#f0883e}
+.p3{color:#d29922}
+.p4{color:#8b949e}
+.run-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:12px 0;font-family:'Cascadia Code',monospace;font-size:11px}
+.run-grid .hdr{color:#58a6ff;font-weight:700;padding:6px 8px;border-bottom:1px solid #30363d}
+.run-grid .cell{padding:4px 8px;background:#161b22;border-radius:4px}
+.check{color:#3fb950}
+.cross{color:#f97583}
+.pending{color:#f0883e}
+</style></head><body>
+
+<h1>IndexLab Pipeline Audit — Progress + Remaining</h1>
+<div class="subtitle">State snapshot on 2026-04-21 after two plan cycles (tier system fix + enrichment progression wire-up). What shipped, what's still broken, what to do next.</div>
+
+<nav>
+  <a href="#summary">Summary</a>
+  <a href="#shipped-s1">Session 1</a>
+  <a href="#shipped-s2">Session 2 Plan 1</a>
+  <a href="#shipped-s3">Session 2 Plan 2</a>
+  <a href="#e2e">E2E Results</a>
+  <a href="#bugs-open">Open Bugs</a>
+  <a href="#new-findings">New Findings</a>
+  <a href="#arch">Architecture</a>
+  <a href="#observability">Observability</a>
+  <a href="#next">Next Session Priority</a>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="summary">Summary</h2>
+
+<div class="box">
+<p>Two plan cycles over 2026-04-20 and 2026-04-21 addressed 5 of the original pipeline audit bugs and activated one orphaned subsystem (<code>buildFieldHistories</code>). The tier system now emits all three tiers, <code>query_index</code> carries tier on every row, and Tier 3 enrichment (<code>3a → 3b → 3c → 3d</code>) progresses across runs — verified live on <code>mouse-082c37bc</code> (Cooler Master MM731).</p>
+
+<p><strong>Tests:</strong> 2907/2907 passing in the touched domains (<code>src/features/indexing</code>, <code>src/indexlab</code>, <code>src/pipeline/checkpoint</code>, <code>src/shared</code>, <code>src/app/cli</code>). Three pre-existing failures in unrelated domains (<code>appDbSeed</code>, <code>keyboard.contract</code>, <code>monitor.contract</code>) are caused by dirty <code>category_authority/</code> JSON in the initial git state — not regressions.</p>
+
+<p><strong>Uncommitted:</strong> all Session 2 work is in the working tree. Not yet pushed.</p>
+</div>
+
+<h3>Bug status overview</h3>
+<table>
+<tr><th>ID</th><th>Description</th><th>Status</th><th>Shipped In</th></tr>
+<tr><td><code>B4</code></td><td>Tier 2 and Tier 3 queries never emit (seeds starve shared cap)</td><td><span class="tag shipped">SHIPPED</span></td><td>S2 Plan 1</td></tr>
+<tr><td><code>B5</code></td><td>Static <code>llm_query_planning</code> flag (always true/false regardless of LLM behavior)</td><td><span class="tag shipped">SHIPPED</span></td><td>S1</td></tr>
+<tr><td><code>B6</code></td><td><code>product.json::sources[]</code> has null <code>hint_source</code> / <code>tier</code> / <code>provider</code></td><td><span class="tag open">OPEN</span></td><td>—</td></tr>
+<tr><td><code>B8</code></td><td><code>query_index</code> double-writes (50/50 tier vs null rows)</td><td><span class="tag shipped">SHIPPED</span></td><td>S2 Plan 1</td></tr>
+<tr><td><code>B9</code></td><td><code>query_index.provider</code> CSV-joined (<code>'bing,google'</code>) instead of per-provider rows</td><td><span class="tag open">OPEN</span></td><td>—</td></tr>
+<tr><td><code>B10</code></td><td>Cooldown read-gate silently disabled (every run re-executes same seeds)</td><td><span class="tag shipped">SHIPPED</span></td><td>S1</td></tr>
+<tr><td><code>B12</code></td><td><code>runs.counters</code> empty at run end</td><td><span class="tag open">OPEN</span></td><td>—</td></tr>
+<tr><td><code>B13</code></td><td>Server crash <code>res.setHeader is not a function</code> during long runs</td><td><span class="tag open">OPEN</span></td><td>—</td></tr>
+<tr><td><code>B14</code></td><td>Orphan <code>runs.status='running'</code> never transitioning to terminal state</td><td><span class="tag open">OPEN</span></td><td>—</td></tr>
+<tr><td><code>PROG</code></td><td>Tier 3 enrichment never progresses past 3a (<code>buildFieldHistories</code> orphaned)</td><td><span class="tag shipped">SHIPPED</span></td><td>S2 Plan 2</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="shipped-s1">Session 1 — B10 Cooldown Gate + Discovery History + LLM Novelty</h2>
+
+<div class="progress-card s1">
+<h4>What shipped</h4>
+<ul>
+<li><strong>Cooldown read-gate</strong> — respects <code>queryCooldownDays &gt; 0</code> by filtering queries whose <code>cooldown_until &gt; now</code>. Starvation protection falls back to emitting all queries if the filter would empty the queue (flag: <code>cooldown_gate_starved</code> on <code>query_journey_completed</code>).</li>
+<li><strong>Two new runtime knobs</strong> mirroring the per-finder Discovery History pattern:
+<ul>
+<li><code>discoveryUrlHistoryEnabled</code> — bool, default <code>false</code></li>
+<li><code>discoveryQueryHistoryEnabled</code> — bool, default <code>false</code></li>
+</ul>
+Registered in <code>src/shared/settingsRegistry.js:45-46</code> under <code>uiCategory: "planner" / uiSection: "search-profile" / uiGroup: "Discovery History"</code>.</li>
+<li><strong>Gated query/URL history injection</strong> in <code>runSearchPlanner.js</code> — when knobs are off, prompt receives empty arrays; when on, prior run queries/URLs flow to the LLM.</li>
+<li><strong>LLM novelty enforcement</strong>:
+<ul>
+<li>Prompt rewrite in <code>queryPlannerLlmAdapter.js</code> — HISTORY AWARENESS block overrides the TIER 1 "Return unchanged" rule when a query matches <code>query_history</code></li>
+<li>Post-generation safety net: <code>src/features/indexing/pipeline/searchPlanner/enforceNovelty.js</code> — normalizes queries (lowercase + strip punct + sort tokens), rotates collisions through a phrasing-family cycle (<code>review</code>, <code>teardown</code>, <code>measured</code>, <code>benchmark</code>, <code>spec sheet</code>, <code>comparison</code>, <code>reference</code>)</li>
+</ul>
+</li>
+<li><strong>URL history adapter</strong> — new <code>src/features/indexing/pipeline/searchPlanner/indexlabUrlHistoryReader.js</code> reads <code>product.json::sources[]</code> into <code>urlsChecked[]</code>, product-scoped.</li>
+<li><strong>Novelty telemetry</strong> on <code>search_plan_generated</code>: <code>novelty_rate</code> (queries not in history / total), <code>rotations_applied</code>, <code>total_rows</code>, <code>llm_enhanced_count</code>. Replaces the static <code>llm_query_planning</code> boolean (B5 fix).</li>
+</ul>
+</div>
+
+<h3>Files touched</h3>
+<ul>
+<li><code>src/shared/settingsRegistry.js</code> — +2 knobs</li>
+<li><code>src/features/indexing/pipeline/queryJourney/runQueryJourney.js</code> — cooldown filter</li>
+<li><code>src/features/indexing/pipeline/searchPlanner/runSearchPlanner.js</code> — gated history injection + novelty wiring</li>
+<li><code>src/features/indexing/pipeline/searchPlanner/queryPlanner.js</code> — <code>urlHistory</code> param + <code>url_history</code> in payload</li>
+<li><code>src/features/indexing/pipeline/searchPlanner/queryPlannerLlmAdapter.js</code> — prompt rewrite</li>
+<li><code>src/features/indexing/pipeline/searchPlanner/enforceNovelty.js</code> (new)</li>
+<li><code>src/features/indexing/pipeline/searchPlanner/indexlabUrlHistoryReader.js</code> (new)</li>
+<li><code>src/features/indexing/pipeline/orchestration/runDiscoverySeedPlan.js</code> — URL history plumbing</li>
+<li><code>src/features/indexing/pipeline/orchestration/pipelineContextSchema.js</code> — <code>urlExecutionHistory</code> in ctx</li>
+<li><code>src/indexlab/runtimeBridgeEventHandlers.js</code> — event passthrough for novelty fields</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="shipped-s2">Session 2 Plan 1 — Tier System Fix (B4 + B8)</h2>
+
+<div class="progress-card s2">
+<h4>Root cause</h4>
+<p>Live <code>searchProfileQueryCap=10</code> + 10 seed domains on MM731 → seeds consumed 100% of the shared cap, so <code>buildTier2Queries</code> and <code>buildTier3Queries</code> emitted zero rows. Simultaneously, <code>query_index</code> had two writers per external query: <code>executeSearchQueries.js:212</code> (no tier) and the <code>bootstrapRunEventIndexing.js</code> event hook on <code>discovery_query_completed</code> (with tier). Result: 50% of <code>query_index</code> rows had <code>tier=NULL</code>.</p>
+</div>
+
+<h3>What shipped</h3>
+<ul>
+<li><strong>Per-tier budget floors</strong> — 3 new runtime knobs in <code>src/shared/settingsRegistry.js</code>:
+<ul>
+<li><code>tier1SeedCap</code> (default 10)</li>
+<li><code>tier2GroupCap</code> (default 10)</li>
+<li><code>tier3KeyCap</code> (default 20)</li>
+</ul>
+All under <code>uiCategory: "planner" / uiSection: "search-profile" / uiGroup: "Tier Budgets"</code>.</li>
+<li><strong>Budget allocation rewrite</strong> in <code>src/features/indexing/pipeline/searchProfile/queryBuilder.js</code>. Each tier slices to its own cap; <code>searchProfileQueryCap</code> stays as the overall ceiling. New helper <code>applyOverallCapWithFloors()</code> guarantees at least one slot per tier with eligible rows when the overall cap is tight — so tier 2/3 can never be starved.</li>
+<li><strong><code>query_index</code> single-writer</strong> — removed the direct <code>insertQueryIndexEntry</code> call at <code>executeSearchQueries.js:212-220</code>. The <code>bootstrapRunEventIndexing.js</code> hook on <code>discovery_query_completed</code> is now the sole writer, and it carries <code>tier</code>/<code>hint_source</code>/<code>group_key</code>/<code>normalized_key</code>. Fixes B8.</li>
+<li><strong><code>focus_groups</code> run_artifact</strong> — new artifact type persisted at <code>runNeedSet.js</code> via <code>focus_groups_computed</code> event + bridge handler <code>handleFocusGroupsComputed</code> in <code>src/indexlab/runtimeBridgeEventHandlers.js</code>. Captures the <code>focusGroups[]</code> array (with <code>group_search_worthy</code>, <code>productivity_score</code>, <code>normalized_key_queue</code>) that was previously in-memory-only.</li>
+<li><strong><code>tier_counts</code> telemetry</strong> on <code>search_plan_generated</code>: <code>{seed: N, group_search: N, key_search: N}</code>. Computed in <code>runSearchPlanner.js</code>, threaded through bridge passthrough.</li>
+</ul>
+
+<h3>Files touched</h3>
+<ul>
+<li><code>src/shared/settingsRegistry.js</code> — +3 knobs</li>
+<li><code>src/features/indexing/pipeline/searchProfile/queryBuilder.js</code> — per-tier emission + <code>applyOverallCapWithFloors</code></li>
+<li><code>src/features/indexing/pipeline/searchProfile/runSearchProfile.js</code> — config threading</li>
+<li><code>src/features/indexing/pipeline/searchExecution/executeSearchQueries.js</code> — deleted duplicate writer</li>
+<li><code>src/features/indexing/pipeline/needSet/runNeedSet.js</code> — emits <code>focus_groups_computed</code></li>
+<li><code>src/features/indexing/pipeline/searchPlanner/runSearchPlanner.js</code> — <code>tier_counts</code> computation</li>
+<li><code>src/indexlab/runtimeBridgeEventHandlers.js</code> — <code>handleFocusGroupsComputed</code> handler + <code>tier_counts</code> passthrough</li>
+<li><code>src/indexlab/runtimeBridgeArtifacts.js</code> — <code>writeFocusGroups</code> helper</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="shipped-s3">Session 2 Plan 2 — Enrichment Progression Wire-Up</h2>
+
+<div class="progress-card s3">
+<h4>Root cause</h4>
+<p><code>src/indexlab/buildFieldHistories.js</code> was orphaned (flagged as DEFER in <code>docs/implementation/archive/src-audit/src-audit.html:563</code>). No production code called it, so <code>roundContext.previousFieldHistories</code> arrived at NeedSet as <code>{}</code> every run. At <code>needsetEngine.js:339</code>, <code>deriveFieldHistory({round: 0})</code> discards whatever's in <code>previousFieldHistories</code> and resets to zeros — so <code>history.query_count</code> stayed 0, <code>buildNormalizedKeyQueue</code> emitted <code>repeat_count: 0</code>, and <code>buildTier3Queries</code> never applied any enricher. Every Tier 3 query stuck at 3a forever.</p>
+</div>
+
+<h3>What shipped</h3>
+<ul>
+<li><strong>Bridge <code>fieldProvenance</code> accumulator</strong> — new <code>this.fieldProvenance = {}</code> on the bridge (<code>src/indexlab/runtimeBridge.js</code> constructor). <code>handleSourceProcessed</code> in <code>runtimeBridgeEventHandlers.js</code> now derives <code>host_class</code> and <code>evidence_class</code> via <code>classifyHostClass</code>/<code>classifyEvidenceClass</code> (already exported from <code>buildFieldHistories.js</code> — no duplication) and appends one evidence entry per <code>(source, field)</code> pair.</li>
+<li><strong>Loader</strong> — new <code>src/indexlab/loadPriorFieldHistories.js</code> (35 LOC). Queries <code>runs</code> for the most-recent <em>completed</em> run for a given <code>product_id</code>, fetches <code>run_artifacts.artifact_type='field_histories'</code>, returns payload or <code>{}</code>.</li>
+<li><strong>Finalization helper</strong> — new <code>src/indexlab/finalizeFieldHistories.js</code> (70 LOC). Extracts <code>enhancement_rows</code> (preferred over <code>queries_generated</code>, which is strings-only) from the run summary, calls <code>buildFieldHistories({previousFieldHistories, provenance, searchPlanQueries, duplicatesSuppressed})</code>, and upserts the result as <code>run_artifacts.artifact_type='field_histories'</code>.</li>
+<li><strong><code>roundContext</code> injection</strong> in <code>src/app/cli/commands/pipelineCommands.js</code>. Before <code>runProduct()</code>: load prior histories via the loader, construct <code>roundContext = {previousFieldHistories, round: hasPrior ? 1 : 0}</code>, pass to <code>runProduct</code>. The <code>round=1</code> rule is required because <code>deriveFieldHistory</code> at <code>round=0</code> discards prev entirely.</li>
+<li><strong>Finalization call</strong> — after <code>serializeRunSummary()</code> and before <code>buildProductCheckpoint</code>, call <code>finalizeFieldHistories</code> and thread the result into <code>buildProductCheckpoint({..., fieldHistories})</code>.</li>
+<li><strong>Product checkpoint snapshot</strong> — <code>src/pipeline/checkpoint/buildProductCheckpoint.js</code> now accepts <code>fieldHistories</code> param and writes <code>field_histories</code> into <code>product.json</code> (sibling of <code>query_cooldowns</code>).</li>
+<li><strong>Rebuild Contract</strong> — <code>src/pipeline/checkpoint/seedFromCheckpoint.js::seedProductCheckpoint</code> rehydrates the <code>field_histories</code> artifact from <code>product.json</code> on DB deletion. Matches the existing <code>query_cooldowns</code> rebuild path. Deleting <code>spec.sqlite</code> and re-booting restores the artifact.</li>
+</ul>
+
+<h3>Files touched</h3>
+<ul>
+<li><code>src/indexlab/loadPriorFieldHistories.js</code> (new)</li>
+<li><code>src/indexlab/finalizeFieldHistories.js</code> (new)</li>
+<li><code>src/indexlab/runtimeBridge.js</code> — <code>fieldProvenance</code> init</li>
+<li><code>src/indexlab/runtimeBridgeEventHandlers.js</code> — <code>accumulateFieldProvenance</code> helper + <code>handleSourceProcessed</code> hook</li>
+<li><code>src/app/cli/commands/pipelineCommands.js</code> — loader + roundContext + finalize + checkpoint passthrough</li>
+<li><code>src/pipeline/checkpoint/buildProductCheckpoint.js</code> — <code>fieldHistories</code> param</li>
+<li><code>src/pipeline/checkpoint/seedFromCheckpoint.js</code> — rehydrate block</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="e2e">E2E Verification Results (MM731, 2026-04-21)</h2>
+
+<div class="ok-box">
+<h3>3a → 3d enrichment ladder confirmed</h3>
+<p>Seven sequential IndexLab runs on <code>mouse-082c37bc</code> via the GUI-authorized <code>.tmp/run-indexlab.mjs</code> POST endpoint, same runtime knobs throughout: <code>searchProfileQueryCap=40, tier1SeedCap=10, tier2GroupCap=10, tier3KeyCap=20</code>.</p>
+</div>
+
+<table>
+<tr><th>Run</th><th>Run ID</th><th><code>tier_counts</code></th><th>Max <code>query_count</code></th><th>Max <code>repeat_count</code> in next run</th><th>Enrichment level reached</th></tr>
+<tr><td>A (pre-P1)</td><td>20260421072221-c9ecf4</td><td>seed:10 / group:9 / key:2</td><td>—</td><td>—</td><td>Tier 1/2/3 all emit (B4/B8 verified)</td></tr>
+<tr><td>B (pre-P1)</td><td>20260421073442-37e2a9</td><td>seed:10 / group:9 / key:2</td><td>—</td><td>—</td><td>(server crashed after, B13)</td></tr>
+<tr><td>C (pre-P2)</td><td>20260421081159-b580b0</td><td>seed:6 / group:9 / key:2</td><td>0</td><td>0</td><td>Had bug: <code>queries_generated</code> strings broke extract; zero field_histories</td></tr>
+<tr><td>D</td><td>20260421081426-49c628</td><td>seed:? / group:? / key:2</td><td>1</td><td>0</td><td>3a (bare) — first round with fix</td></tr>
+<tr><td>E</td><td>20260421081614-c61fc6</td><td>seed:0 / group:2 / key:20</td><td>2</td><td>1</td><td><strong>3b</strong> (aliases) on 6+ groups</td></tr>
+<tr><td>F</td><td>20260421081802-6be92e</td><td>seed:0 / group:0 / key:20</td><td>3</td><td>2</td><td><strong>3c</strong> (+domain_hints) on weight, dimensions, colors</td></tr>
+<tr><td>G</td><td>20260421081938-f27b39</td><td>seed:0 / group:0 / key:20</td><td>4</td><td>3</td><td><strong>3d</strong> on connectivity, construction (full enrichment)</td></tr>
+</table>
+
+<h3>What the ladder proves</h3>
+<ul>
+<li><strong><code>run_artifacts.artifact_type='field_histories'</code></strong> persists after every finalization and grows monotonically (keys=0 → 62 → 76 → 76 → 76).</li>
+<li><strong><code>product.json.field_histories</code></strong> mirrors the artifact. Delete spec.sqlite → <code>scanAndSeedCheckpoints</code> rehydrates → next run picks up prior state.</li>
+<li><strong><code>deriveFieldHistory</code> at <code>round=1</code></strong> carries <code>prev.query_count</code> forward, which drives <code>repeat_count</code> in <code>normalized_key_queue</code>, which drives <code>buildTier3Queries</code> enrichment depth.</li>
+<li><strong>No regressions</strong> — <code>2907/2907</code> tests pass across <code>src/features/indexing</code>, <code>src/indexlab</code>, <code>src/pipeline/checkpoint</code>, <code>src/shared</code>, <code>src/app/cli</code>.</li>
+</ul>
+
+<h3>What the ladder does NOT prove</h3>
+<p>The ladder proves the <strong>mechanism fires</strong>. It does not prove that enrichment actually <strong>improves field coverage</strong>. The 3d queries may still return the same URLs, or the LLM may flatten them before execution. See New Findings below.</p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="bugs-open">Remaining Open Bugs (from original audit)</h2>
+
+<h3><code>B6</code> — <code>product.json::sources[]</code> null metadata <span class="tag open">OPEN</span></h3>
+<p>Entries in <code>sources[]</code> carry <code>null</code> for <code>hint_source</code>, <code>tier</code>, and <code>provider</code>. Schema pass-through bug somewhere between crawl output and <code>mapProductSource()</code> (<code>src/pipeline/checkpoint/buildProductCheckpoint.js:12-31</code>). Current mapper doesn't read/forward these fields even if upstream provides them.</p>
+<p><strong>Scope:</strong> small. Trace from <code>source_processed</code> event → crawlResults → <code>mapProductSource()</code>, identify where these fields drop. Likely a 2-3 line fix + a rebuild test.</p>
+
+<h3><code>B9</code> — <code>query_index.provider</code> CSV-joined <span class="tag open">OPEN</span></h3>
+<p>Rows show <code>provider: 'bing,google'</code> instead of one row per provider. Cause: <code>discovery_query_completed</code> event payload reports the <em>engine config string</em> rather than per-result provider identity. Audit-only concern (downstream analytics lose provider granularity).</p>
+<p><strong>Scope:</strong> medium. Either split one logical query into N rows (one per provider that returned results) or add a <code>providers_used[]</code> array column. Needs schema decision.</p>
+
+<h3><code>B12</code> — <code>runs.counters</code> empty <span class="tag open">OPEN</span></h3>
+<p><code>runs.counters</code> is JSON-text with run-end counts (<code>pages_checked</code>, <code>fetched_ok</code>, <code>indexed_docs</code>, etc.). Currently the field is written as <code>{}</code> on most runs. Bridge has <code>state.counters</code> populated during the run but the snapshot at finalization isn't landing in the row.</p>
+<p><strong>Scope:</strong> small. Trace <code>runs</code> row update during finalization. Likely missing a <code>counters: bridge.counters</code> on an <code>upsertRun</code> call in <code>writeRunMeta</code> or <code>bridge.finalize</code>.</p>
+
+<h3><code>B13</code> — Server crash <code>res.setHeader is not a function</code> <span class="tag open">OPEN</span></h3>
+<p>GUI server crashes mid-long-run with this exact error. Hit in Session 2 between Run A and Run B. Unrelated to pipeline code — lives in the GUI request handler. Needs a stack trace with the current Node version to identify the specific middleware.</p>
+<p><strong>Scope:</strong> medium. Repro, capture stack, likely a middleware that wraps <code>res</code> without preserving prototype methods. Possibly related to SSE endpoint lifecycle.</p>
+
+<h3><code>B14</code> — Orphan <code>runs.status='running'</code> <span class="tag open">OPEN</span></h3>
+<p>Rows in <code>runs</code> with <code>status='running'</code> never transition when the process dies uncleanly (crash, kill, timeout). GUI still shows them as in-progress. Needs a boot-time sweep that marks any stale <code>running</code> rows as <code>aborted</code> (or similar) if the run directory has no recent activity.</p>
+<p><strong>Scope:</strong> small. One SQL statement on boot.</p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="new-findings">Newly Surfaced Findings (from the E2E verification)</h2>
+
+<h3>1. <code>source_processed.candidates</code> empty in production <span class="tag new">NEW</span></h3>
+<div class="warn-box">
+<p>The bridge's <code>fieldProvenance</code> accumulator works correctly (7/7 unit tests pass with synthetic events), but on live MM731 runs the <code>candidates</code> array on <code>source_processed</code> events is <code>[]</code>. That means the accumulator populates nothing from real sources. The resulting <code>field_histories</code> artifact has <code>query_count</code> per field (because queries are targeting fields via <code>enhancement_rows.target_fields</code>), but <code>domains_tried</code>/<code>host_classes_tried</code>/<code>evidence_classes_tried</code> stay empty.</p>
+
+<p><strong>What this means:</strong> the enrichment works at the <em>query</em> level but not at the <em>evidence</em> level. Tier 3 queries carry alias/domain/content-type enrichment based on <code>repeat_count</code>, but the "don't try domains we've already hit" filter doesn't activate because <code>domains_tried</code> stays empty.</p>
+
+<p><strong>Where to look:</strong> the extraction layer that should populate <code>candidates</code> before emitting <code>source_processed</code>. Likely <code>src/features/indexing/pipeline/resultProcessing/</code> or the crawl result → event payload translator.</p>
+</div>
+
+<h3>2. LLM flattens progressive enrichment <span class="tag new">NEW</span></h3>
+<div class="warn-box">
+<p>Run F had <code>repeat_count=2</code> on <code>side buttons</code> (Tier 3c — should include aliases + domain_hints). The deterministic template at <code>queryBuilder.js::buildTier3Queries</code> produced the enriched string, but the LLM output after <code>enhanceQueryRows</code> was simply "side buttons count" — no alias/domain_hint visible. The LLM is deciding the enriched version is "less natural" and simplifying.</p>
+
+<p><strong>Concrete example from Run F:</strong></p>
+<ul>
+<li>Deterministic (input to LLM): <code>Cooler Master MM731 side buttons thumb-buttons forward-back rtings.com</code></li>
+<li>LLM output (executed): <code>Cooler Master MM731 side buttons count</code></li>
+</ul>
+
+<p><strong>Where to look:</strong> <code>queryPlannerLlmAdapter.js</code> prompt. Current HISTORY AWARENESS block overrides TIER 1 seed unchanged rule, but doesn't instruct the LLM to <em>preserve</em> progressive enrichment tokens on TIER 3 rows. Should add: "For TIER 3 rows with <code>repeat_count &gt; 0</code>, PRESERVE the alias/domain_hint/content_type tokens in the deterministic query; only rewrite the framing around them."</p>
+</div>
+
+<h3>3. <code>deterministic_query_rows</code> missing from <code>search_profile</code> artifact <span class="tag new">NEW</span></h3>
+<div class="warn-box">
+<p><code>runQueryJourney.js:163</code> assigns <code>deterministic_query_rows: toArray(searchProfileBase?.query_rows)</code> to <code>searchProfilePlanned</code>, but the written <code>search_profile</code> artifact for Run A (<code>20260421072221-c9ecf4</code>) does NOT contain this key. Some earlier write path in the bridge (<code>writeSearchProfile</code> in <code>runtimeBridgeArtifacts.js</code>) is writing the artifact before the journey phase completes, and the later journey output doesn't overwrite with the full payload.</p>
+
+<p><strong>Scope:</strong> diagnostic only. Not blocking, but makes debugging tier emission harder post-run. Either: (a) write a second <code>search_profile_v2</code> artifact at journey completion, or (b) fix the overwrite so the journey output lands.</p>
+</div>
+
+<h3>4. Lagging groups restart their own ladder <span class="tag new">NEW</span></h3>
+<p>In Run G, these groups still had <code>repeat_count=0</code> across their normalized_key_queue: <code>sensor_performance</code>, <code>switches</code>, <code>electronics</code>, <code>encoder</code>. They became non-worthy at different rounds than the leading groups, so their 3a → 3d ladder starts later.</p>
+<p><strong>Not a bug</strong> — that's how group worthiness works (<code>coverageRatio &gt;= 0.80</code> or <code>unresolvedCount &lt; 3</code> flips a group to non-worthy, triggering Tier 3 on its keys). But worth documenting so reviewers don't expect uniform progression.</p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="arch">Architectural / Roadmap Items</h2>
+
+<h3>Per-key finder integration <span class="tag arch">ARCH</span></h3>
+<p>Backend shipped 2026-04-20 at <code>src/features/key/</code> (Phase 2). Phase 3a Part 1.5 landed 2026-04-21 with contract rewrite + 3-section panel + 4 knobs. Not wired into IndexLab's main pipeline. Would eventually replace or augment Tier 3 with a dedicated per-key search driver.</p>
+<p><strong>Open architecture question:</strong> one unified key-search source, or two producers that interleave (searchProfile Tier 3 + key finder)? Defer until Phase 3a Part 2 (orchestrator + routes) lands.</p>
+
+<h3>Evidence upgrade <span class="tag arch">ARCH</span></h3>
+<p>Per <code>docs/implementation/evidence-upgrade/evidence-upgrade.html</code> (SSOT). 10-kind <code>evidence_kind</code> enum, RDF + scalar opt-in, CEF/PIF stay simple. Ties into the empty <code>candidates</code> issue above — once evidence_kind propagates through <code>source_processed</code>, the bridge accumulator can carry <code>evidence_class</code> more meaningfully.</p>
+
+<h3>crawl4ai migration + richer extraction <span class="tag arch">ARCH</span></h3>
+<p>JSON-LD + OG + PDF extraction. Listed as out-of-scope in Session 2 plans. Would significantly expand the <code>candidates[]</code> array that sources emit, filling the gap noted in Finding 1.</p>
+
+<h3>Field coverage metric <span class="tag new">NEW</span></h3>
+<p>We proved the Tier 3 ladder <em>fires</em>. We haven't proved it <em>fills more fields</em> than a 3a-only baseline. Need a measurement: run MM731 with <code>tier3KeyCap=0</code> (baseline) and with <code>tier3KeyCap=20</code> (post-fix), compare <code>accepted</code> field count across rounds. If the delta is small, the enrichment ladder isn't paying for itself and we should reconsider LLM prompt depth (see Finding 2).</p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="observability">Observability Gaps</h2>
+
+<ul>
+<li><strong>No per-field progression dashboard.</strong> <code>field_histories</code> artifact is machine-readable but has no GUI surface. Minimum: a table showing <code>field_key</code>, <code>query_count</code>, <code>domains_tried.length</code>, <code>last_seen_run_id</code>.</li>
+<li><strong>No field_histories reset.</strong> Useful for debugging (e.g., "re-start the ladder from 3a for this product"). Would be a CLI command or a GUI button that deletes the most-recent <code>field_histories</code> artifact.</li>
+<li><strong>No worthiness diagnostics in GUI.</strong> The <code>focus_groups</code> artifact has <code>skip_reason</code> per non-worthy group (<code>'group_mostly_resolved'</code>, <code>'too_few_missing_keys'</code>, etc.) but nothing surfaces this in the GUI. User sees the group is dormant without knowing why.</li>
+<li><strong>No history of <code>tier_counts</code> across runs.</strong> Each <code>search_plan_generated</code> event has <code>tier_counts</code>, but there's no trend view. Flat-line detection ("tier 3 hasn't emitted in 5 runs") is impossible without polling event payloads.</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="next">Suggested Priority for Next Session</h2>
+
+<table>
+<tr><th>Priority</th><th>Item</th><th>Why</th><th>Scope</th></tr>
+<tr class="priority-row"><td class="p1">P1</td><td>Investigate empty <code>source_processed.candidates</code></td><td>Blocks evidence chain in <code>field_histories</code>; undermines half of Tier 3's value</td><td>Trace extraction layer → event emit</td></tr>
+<tr class="priority-row"><td class="p1">P1</td><td>LLM prompt preserves progressive enrichment</td><td>Tier 3c/3d queries executed as simpler 3a-equivalents — waste of ladder</td><td>Prompt rewrite + novelty test</td></tr>
+<tr class="priority-row"><td class="p2">P2</td><td>Field coverage baseline measurement</td><td>Validates the ladder actually helps before building more on top of it</td><td>Two controlled runs + diff script</td></tr>
+<tr class="priority-row"><td class="p2">P2</td><td>B6 — sources[] metadata pass-through</td><td>Small bug, often-referenced field for evidence scoring</td><td>2-3 line fix + test</td></tr>
+<tr class="priority-row"><td class="p2">P2</td><td>B14 — orphan running runs</td><td>GUI shows incorrect state; user confusion</td><td>Boot-time sweep</td></tr>
+<tr class="priority-row"><td class="p3">P3</td><td>B12 — runs.counters empty</td><td>Telemetry completeness; blocks downstream analytics</td><td>Trace finalize writes</td></tr>
+<tr class="priority-row"><td class="p3">P3</td><td>B13 — server crash</td><td>Operational pain; may become more frequent with longer runs</td><td>Repro + stack + fix</td></tr>
+<tr class="priority-row"><td class="p3">P3</td><td>B9 — provider CSV logging</td><td>Audit only; not blocking</td><td>Schema decision + migration</td></tr>
+<tr class="priority-row"><td class="p4">P4</td><td>Per-field progression dashboard</td><td>Observability; nice-to-have</td><td>GUI panel</td></tr>
+<tr class="priority-row"><td class="p4">P4</td><td>Per-key finder integration</td><td>Defer until Phase 3a Part 2 ships</td><td>Architectural</td></tr>
+<tr class="priority-row"><td class="p4">P4</td><td>Evidence upgrade rollout</td><td>Large surface; start after extraction layer stabilizes</td><td>Architectural</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>Commit Status</h2>
+
+<div class="crit-box">
+<h3>Nothing from Session 2 is committed yet</h3>
+<p>All the changes from Plan 1 and Plan 2 are in the working tree. Recommended split into logical commits before pushing:</p>
+<ol>
+<li><strong>Tier budget knobs + queryBuilder rewrite</strong> — <code>src/shared/settingsRegistry.js</code>, <code>src/features/indexing/pipeline/searchProfile/queryBuilder.js</code>, <code>src/features/indexing/pipeline/searchProfile/runSearchProfile.js</code> + its tests</li>
+<li><strong>query_index single-writer</strong> — <code>src/features/indexing/pipeline/searchExecution/executeSearchQueries.js</code> + test</li>
+<li><strong>focus_groups artifact + tier_counts telemetry</strong> — <code>src/features/indexing/pipeline/needSet/runNeedSet.js</code>, <code>src/features/indexing/pipeline/searchPlanner/runSearchPlanner.js</code>, <code>src/indexlab/runtimeBridgeEventHandlers.js</code>, <code>src/indexlab/runtimeBridgeArtifacts.js</code> + tests</li>
+<li><strong>buildFieldHistories wire-up (enrichment progression)</strong> — <code>src/indexlab/loadPriorFieldHistories.js</code>, <code>src/indexlab/finalizeFieldHistories.js</code>, <code>src/indexlab/runtimeBridge.js</code>, <code>src/indexlab/runtimeBridgeEventHandlers.js</code>, <code>src/app/cli/commands/pipelineCommands.js</code>, <code>src/pipeline/checkpoint/buildProductCheckpoint.js</code>, <code>src/pipeline/checkpoint/seedFromCheckpoint.js</code> + tests</li>
+</ol>
+</div>
+
+<h2>Reference Artifacts</h2>
+<ul>
+<li>Plan file: <code>C:\Users\Chris\.claude\plans\expressive-sleeping-crab.md</code> (latest: enrichment progression plan)</li>
+<li>Memory entries added this session:
+<ul>
+<li><code>project_bridge_events_are_scratch.md</code> — bridge_events is scratch-during-run, completed events live in <code>run_artifacts.run_summary.telemetry.events[]</code></li>
+<li><code>project_field_histories_wired.md</code> — <code>buildFieldHistories</code> is now live, don't delete as orphaned</li>
+</ul>
+</li>
+<li>Test runner: <code>node --test &lt;path&gt;</code> (Node built-in; no Jest/Vitest)</li>
+<li>Live runs to inspect: <code>20260421081159-b580b0</code> (C) through <code>20260421081938-f27b39</code> (G) in <code>.workspace/db/mouse/spec.sqlite</code></li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="session3">Session 3 — Fetch / Render / Screenshot Audit (2026-04-21 PM)</h2>
+
+<div class="box">
+<p><strong>What ran:</strong> 10 live IndexLab runs at <code>searchProfileQueryCap=40</code> across mouse / keyboard / monitor. Mix of cold-start (Razer DeathAdder, Logitech G705, Corsair K100, Wooting 60HE, Alienware AW3423DWF, AW2725Q) and warm-history (MM731 = 220 prior sources, Corsair M75 = 45). Aggregate: <strong>90 URL attempts → 67 successful (74%), 20 blocked, 3 failed. 70 page-shots + 24 crop-shots. <span class="cross">0 fields filled. 0 indexed_docs.</span></strong></p>
+<p><strong>Run IDs:</strong> <code>20260421181018-20ebd7</code> (MM731) through <code>20260421182135-4e64e2</code> (AW2725Q).</p>
+</div>
+
+<h3>Core finding: pipeline has never extracted a field</h3>
+<div class="crit-box">
+<h3>Extraction is dark across 129 historical runs</h3>
+<p>Scanned all runs in <code>.workspace/runs/</code> — <strong>zero have ever produced <code>fields_filled &gt; 0</code> or <code>indexed_docs &gt; 0</code></strong>. MM731 has 220 sources captured and <code>field_candidates: {}</code> in <code>product.json</code>. The tier/ladder/history plumbing Session 2 shipped is working; the HTML→field LLM call that turns captured pages into candidate values is not wired in. Screenshots and HTML are saved to disk, then the pipeline stops. Every fetch/render/screenshot fix below is strictly upstream of this.</p>
+</div>
+
+<h3>Fetch + render failure catalog (from the 10 runs)</h3>
+<table>
+<tr><th>Kind</th><th>Count</th><th>Example</th><th>Root cause</th></tr>
+<tr><td><code>403 bot-block</code></td><td>10 URLs</td><td><code>corsair.com/eu/</code>, <code>/ww/</code>, <code>/de/</code>, <code>/at/</code></td><td>Geo/IP block. Main crawler runs direct (no proxy). Proxy retry is coded (<code>crawlSession.js:1020-1043</code>) but <code>crawleeProxyRetryEnabled=false</code> in <code>user-settings.json:127</code>. Webshare rotating-residential credentials are already in <code>crawleeProxyUrlsJson</code> — flipping the toggle alone probably recovers most of these.</td></tr>
+<tr><td><code>SPA nav race</code></td><td>9 URLs (Wooting 100%)</td><td><code>wooting.io/*</code></td><td><code>page.content()</code> called with <strong>no wait state</strong> at <code>crawlSession.js:184</code>. SPA nav in flight → Playwright throws "page is navigating and changing the content." Documented bug pattern (<a href="https://github.com/microsoft/playwright/issues/16108">playwright#16108</a>). Fix = <code>waitForLoadState('networkidle', {timeout:3000})</code> + retry wrapper with 500ms backoff.</td></tr>
+<tr><td><code>timeout 45s</code></td><td>3 URLs</td><td>Amazon <code>/dp/</code>, Dell <code>/en-us/shop/</code></td><td>Heavy pages. 45s handler timeout (<code>crawlSession.js:506</code>) ate by plugin suite before <code>page.content()</code>. No resource blocking — every image/font/tracker loads. Fix = route handler that blocks <code>image|font|media|third-party</code> (industry-reported 85% load speedup).</td></tr>
+<tr><td><code>download trap</code></td><td>1 URL</td><td><code>logitech.com/assets/…/qsg.pdf</code></td><td>Caught at <code>crawlSession.js:429</code> (marked <code>noRetry</code>), but a URL slot is still wasted. Fix = <code>Content-Type</code> precheck or <code>page.on('download', d =&gt; d.cancel())</code>.</td></tr>
+<tr><td><code>network error</code></td><td>1 URL</td><td>Corsair <code>revival-series</code></td><td>Transient. Not retried beyond native Crawlee retry.</td></tr>
+</table>
+
+<h3>URL-dedup bug — Razer 6×-same-page</h3>
+<div class="warn-box">
+<p>Run 5 (Razer DeathAdder) used 6 of its 9 URL slots on <code>razer.com/gaming-mice/razer-deathadder-v3-hyperspeed?srsltid=AfmBOo<em>{different token}</em></code> — the same page rendered 6 times with different Google Merchant Center tracking tokens.</p>
+<p><strong>Root cause:</strong> <code>crawlSession.js:765</code> builds <code>uniqueKey = \`${url}::${Date.now()}::${Math.random()}\`</code> — every URL is guaranteed non-identical. No <code>srsltid</code> / <code>utm_*</code> / locale stripping anywhere upstream or downstream.</p>
+<p><strong>Also shows up as:</strong> Dell runs fetched <code>/en-us/</code>, <code>/en-au/</code>, <code>/en-tc/</code>, <code>/en-sr/</code>, <code>/en-vg/</code>, <code>/en-ag/</code>, <code>/en-pw/</code> variants of the same monitor page. Corsair run fetched <code>corsair.com/us/</code>, <code>/ww/</code>, <code>/eu/</code> mirrors of the same SKU.</p>
+<p><strong>srsltid</strong> is specifically Google Merchant Center's "Search Result Source Listing ID" tag (<a href="https://searchengineland.com/google-srsltid-parameter-seo-attribution-448077">SEL</a>) — it's widely acknowledged to break <code>rel=canonical</code>. Always strip.</p>
+</div>
+
+<h3>CSS override + overlay dismissal — collateral damage</h3>
+<div class="warn-box">
+<p><strong>cssOverridePlugin.js:10-28 is overbroad.</strong></p>
+<ul>
+<li><code>HIDDEN_SELECTOR</code> targets <code>[aria-hidden="true"]</code> — that's the a11y convention for <em>decorative icons, collapsed accordions, off-screen tabs, inactive carousel slides</em>. Forcing all of it visible with <code>display:block !important</code> can render hidden carousel slides on top of active ones and expand every accordion at once.</li>
+<li><code>FIXED_STICKY_CSS</code> flips <code>position: fixed/sticky → absolute</code>. Un-pins nav bars and floating CTAs — they drop into DOM-order and shift content.</li>
+<li><code>.collapse:not(.show)</code> targets Bootstrap collapses — reveals hidden tabs/panes indiscriminately.</li>
+</ul>
+<p><strong>overlayDismissalPlugin miss modes:</strong></p>
+<ul>
+<li><code>overlayDismissalPlugin.js:14-38</code>: hand-maintained <code>[class*="..."]</code> fragment-match list. Custom modal classes not in the list → never touched.</li>
+<li>CSS rule sets <code>z-index: -9999 !important</code> but in a transform/filter stacking context this can still leave the element visible — Razer consent banner still appeared in the screenshot I sampled.</li>
+<li>MutationObserver (lines 66-98) checks <strong>inline <code>style=""</code> only</strong>. Overlays positioned via CSS classes never trigger it.</li>
+<li>Coverage threshold = 30% of viewport. Narrow sticky banners / floating newsletter CTAs don't qualify and slip through.</li>
+</ul>
+<p><strong>Cookie plugin:</strong> 200ms autoconsent fast-fail then fixed selector list (<code>cookieConsentPlugin.js:12-49</code>). Hit rate on listed CMPs is good; miss rate on custom banners is unbounded.</p>
+</div>
+
+<h3>Screenshot quality — crops broken, pages captured too early</h3>
+<div class="warn-box">
+<ul>
+<li><strong>Crops:</strong> <code>screenshotCapture.js:66</code> uses <code>page.$(selector)</code> which returns <em>first match only</em>. No scroll-to-element before crop, no multi-match, no stitching. Result: Corsair runs capture just the first table row ("Mouse Warranty / 2 Year") as an 8-18KB strip; 40% of my runs produced <em>zero</em> crop files.</li>
+<li><strong>Pages captured too early:</strong> <code>page.goto</code> uses <code>waitUntil: 'domcontentloaded'</code> (<code>crawlSession.js:691</code>). <code>pageStabilizer.js</code> waits for <code>document.fonts.ready</code> + image decode (1500ms cap) but does not wait for a content landmark. Dell support pages (<code>dell.com/support/product-details/…</code>) render in ~1s in a normal browser but we capture before the JS-driven body content paints — screenshot is mostly whitespace with only the top nav visible.</li>
+<li><strong>quality_score = 0</strong> on every <code>visual_asset_captured</code> event. Score isn't being computed.</li>
+<li><strong>Wrong-SKU capture:</strong> run 9 requested AW3423DW<strong>F</strong> (FreeSync), SERP returned and we captured AW3423DW (the older G-Sync variant). SERP-selector LLM doesn't reject obvious SKU mismatches.</li>
+</ul>
+</div>
+
+<h3>How it compares to modern scraping</h3>
+<div class="box">
+<p><code>playwright-extra</code> + stealth was <strong>deprecated Feb 2025</strong> and no longer beats current Cloudflare. FlareSolverr still works (~55-70% success) but degrades at scale. Commercial unlock APIs (ScraperAPI, ZenRows, Bright Data) hit 80-95% on mixed-difficulty lists, mobile-proxy tiers 99.95% (<a href="https://scrapfly.io/blog/posts/how-to-bypass-cloudflare-anti-scraping">Scrapfly 2026</a>, <a href="https://scrapeops.io/web-scraping-playbook/how-to-bypass-cloudflare/">ScrapeOps</a>).</p>
+<p>"AI companies scraped the whole web" is a misleading benchmark: Cloudflare's 2025 crawler report confirms <strong>GPTBot, ClaudeBot, PerplexityBot don't render JS</strong> — they're closer to <code>wget</code>. They achieve "near-perfect" rates on the open web partly because sites whitelist them.</p>
+<p><strong>74% on a mixed set including Cloudflare-protected sites is middle-of-the-road.</strong> Getting to 90%+ without per-request unlock APIs is hard. Webshare rotating-residential (already wired, pay-per-GB, ~$1-3/GB) solves geo-IP blocks but <strong>not</strong> JS challenges. That's the ceiling of what's cheap.</p>
+</div>
+
+<h3>Tier 1 fix menu (approved this session — Tier 2 next session)</h3>
+<table>
+<tr><th>Fix</th><th>File(s)</th><th>Expected effect</th></tr>
+<tr><td><strong>URL canonicalization at queue entry</strong></td><td>new <code>src/features/crawl/canonicalizeUrl.js</code>, consumed by planner + <code>crawlSession.js:765</code></td><td>Razer 6×→1× dedup. Dell 7-locale→1. Corsair 3-mirror→1. Reclaims ~15-20 URL slots per typical run.</td></tr>
+<tr><td><strong><code>page.content()</code> retry on nav-race</strong></td><td><code>crawlSession.js:184</code></td><td>Wooting 0/9→~9/9. Wrap in 3-retry loop with <code>waitForLoadState('networkidle',{timeout:3000})</code> + 500ms backoff between retries.</td></tr>
+<tr><td><strong>Resource-blocking route handler</strong></td><td><code>crawlSession.js</code> preNavigationHooks — block <code>image|font|media</code> + known tracker domains</td><td>3-5× faster page loads. Most of the 45s timeouts disappear. 85-95% bandwidth reduction (industry-reported).</td></tr>
+<tr><td><strong>Wait for DOM landmark before screenshot</strong></td><td><code>pageStabilizer.js</code> — add <code>Promise.race([waitForSelector('script[type*="ld+json"], [itemtype*="Product"], main, article'), 3000])</code></td><td>Dell whitespace → real content. Catches most "JS still rendering" cases.</td></tr>
+<tr><td><strong>Region/SKU filter in SERP-selector prompt</strong></td><td><code>serp selector</code> LLM prompt</td><td>Drops non-US mirrors and wrong-SKU variants before they enter the queue. Complements URL canonicalization.</td></tr>
+</table>
+
+<h3>Tier 2 preview (next session — not starting yet)</h3>
+<table>
+<tr><th>Fix</th><th>Why it's Tier 2, not 1</th></tr>
+<tr><td>Narrow <code>cssOverridePlugin</code> selectors — drop <code>[aria-hidden="true"]</code>, make <code>.collapse</code> opt-in per domain, stop flipping position of fixed/sticky globally</td><td>Needs careful per-site regression testing; the current plugin <em>does</em> help on some pages, we just need to stop the collateral damage.</td></tr>
+<tr><td>Overlay dismissal: widen selector list, drop the 30% coverage threshold for floating CTAs, catch class-based positioning in the observer</td><td>Same — requires sampled testing across many sites.</td></tr>
+<tr><td>Multi-element screenshot + scroll-to-element before crop</td><td>Design question: do we want all tables stitched into one PNG, or one file per table? User preference required.</td></tr>
+<tr><td><code>Content-Type</code> precheck to skip non-HTML entirely</td><td>Small but needs HEAD-request plumbing.</td></tr>
+<tr><td>Boot-time sweep: mark orphan <code>runs.status='running'</code> older than 1h as <code>aborted</code> (<strong>B14</strong>)</td><td>One SQL. Schedule with Tier 2.</td></tr>
+</table>
+
+<h3>Tier 3 preview (after Tier 1 + 2 land)</h3>
+<ol>
+<li><strong>Flip <code>crawleeProxyRetryEnabled=true</code></strong> — Webshare is fully wired (<code>user-settings.json:127-129</code>), just disabled. Probably recovers 8-10 of the 10 Corsair 403s. Zero-risk flip; costs only bandwidth. <strong>Consider pulling this into Tier 1 if you want.</strong></li>
+<li><strong>Wire the HTML→field extraction LLM call.</strong> This is the actual product. 129 runs × zero fields = everything else is polish without this.</li>
+</ol>
+
+<h3>Carried over from Session 2 open bugs — verified in Session 3</h3>
+<ul>
+<li><code>B13</code> (server <code>res.setHeader</code> crash) — <span class="cross">confirmed, still reproduces</span>. Server PID changed <code>102996</code> → <code>89748</code> during my run 2. Mid-session silent restart.</li>
+<li><code>B12</code> (runs.counters empty) — <code>run.json</code> counters populate correctly (<code>urls_crawled:9, urls_successful:N</code>), so the telemetry plumbing works. The SQL <code>runs.counters</code> row is what B12 is about; not re-verified this session.</li>
+<li><code>B6</code>, <code>B14</code> — not re-verified.</li>
+<li><code>B9</code> — out of scope.</li>
+</ul>
+
+<h3>Verdict on Session 2 work</h3>
+<div class="ok-box">
+<p>Real fixes, honestly scoped. Tier budgets, cooldown gate, novelty telemetry, <code>buildFieldHistories</code> all verified live in the 10 Session-3 runs. The doc explicitly did not claim to fix <code>fields_filled</code> — that's consistent with what I see. Open bugs (B6, B12, B13, B14) are real. Fetch/render/screenshot issues in this section are <strong>new findings</strong>, not things Session 2 should have caught — the earlier audit focused on the search-planning layer.</p>
+</div>
+
+<p style="color:#484f58;font-size:11px;margin-top:48px;text-align:center">Session 3 appended 2026-04-21 PM after 10 live-run audit of fetch / render / screenshot layer.</p>
+
+</body></html>

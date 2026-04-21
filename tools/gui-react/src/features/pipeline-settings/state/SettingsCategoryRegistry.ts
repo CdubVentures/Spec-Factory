@@ -72,6 +72,7 @@ export const SETTINGS_CATEGORY_REGISTRY: readonly SettingsCategoryDef[] = Object
     subtitle: 'Fetch plugins, browser config, network, observability',
     sections: Object.freeze([
       { id: 'browser', label: 'Browser & Crawlee', tip: 'Headless mode, robots.txt, Crawlee internals, and request timeouts' },
+      { id: 'web-unlockers', label: 'Web Unlockers', tip: 'On-demand bot-detection bypass APIs — fires only when our fetch is blocked' },
       { id: 'observability', label: 'Observability', tip: 'Runtime trace, event diagnostics, and screencast capture' },
       { id: 'fetch-global', label: 'Fetch Global', tip: 'Loading delay, dismiss round count, and suite execution mode' },
       { id: 'stealth', label: 'Stealth', tip: 'Pre-load fingerprint injection — masks webdriver flag before page loads', phase: 'pre-load' as const },

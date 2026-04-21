@@ -7,7 +7,7 @@ export function createModuleSettingsRouteContext(options = {}) {
     throw new TypeError('options must be an object');
   }
 
-  const { jsonRes, readJsonBody, getSpecDb, broadcastWs, helperRoot } = options;
+  const { jsonRes, readJsonBody, getSpecDb, broadcastWs, helperRoot, appDb } = options;
 
-  return { jsonRes, readJsonBody, getSpecDb, broadcastWs, helperRoot };
+  return { jsonRes, readJsonBody, getSpecDb, broadcastWs, helperRoot, appDb };
 }

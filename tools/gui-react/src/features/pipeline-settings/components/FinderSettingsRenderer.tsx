@@ -7,6 +7,7 @@ import {
   type FinderSettingsEntry,
   type FinderIdWithSettings,
 } from '../state/finderSettingsRegistry.generated.ts';
+import { MODULE_SETTINGS_SCOPE_BY_ID } from '../state/moduleSettingsSections.generated.ts';
 import { getSettingWidget } from './widgets/widgetRegistry.ts';
 // WHY: Side-effect import registers all built-in widgets with the registry at module load.
 import './widgets/index.ts';
@@ -33,10 +34,11 @@ export function FinderSettingsRenderer({ finderId, category }: FinderSettingsRen
 
   const visibleEntries = schema.filter((e) => !e.hidden && !claimedKeys.has(e.key));
   if (visibleEntries.length === 0) {
+    const scope = isFinderIdWithSettings(finderId) ? MODULE_SETTINGS_SCOPE_BY_ID[finderId] : 'category';
     return (
       <div className="sf-surface-elevated sf-border-soft rounded p-4">
         <p className="sf-text-caption sf-text-muted">
-          This module has no per-category settings.
+          {scope === 'global' ? 'This module has no configurable settings.' : 'This module has no per-category settings.'}
         </p>
       </div>
     );
@@ -44,20 +46,36 @@ export function FinderSettingsRenderer({ finderId, category }: FinderSettingsRen
 
   return (
     <div className="space-y-6">
-      {groups.map(({ label, entries }) => (
-        <SettingsGroup key={label} label={label}>
-          {entries.map((entry) => (
-            <SettingsEntryRow
-              key={entry.key}
-              entry={entry}
-              settings={settings}
-              category={category}
-              isSaving={isSaving}
-              onSave={saveSetting}
-            />
-          ))}
-        </SettingsGroup>
-      ))}
+      {groups.map(({ label, entries, rightEntries }) => {
+        const rightContent = rightEntries.length > 0 ? (
+          <div className="space-y-3">
+            {rightEntries.map((entry) => (
+              <SettingsEntryRow
+                key={entry.key}
+                entry={entry}
+                settings={settings}
+                category={category}
+                isSaving={isSaving}
+                onSave={saveSetting}
+              />
+            ))}
+          </div>
+        ) : null;
+        return (
+          <SettingsGroup key={label} label={label} right={rightContent}>
+            {entries.map((entry) => (
+              <SettingsEntryRow
+                key={entry.key}
+                entry={entry}
+                settings={settings}
+                category={category}
+                isSaving={isSaving}
+                onSave={saveSetting}
+              />
+            ))}
+          </SettingsGroup>
+        );
+      })}
     </div>
   );
 }
@@ -67,7 +85,11 @@ function isFinderIdWithSettings(id: string): id is FinderIdWithSettings {
 }
 
 interface GroupedSchema {
-  groups: { label: string; entries: FinderSettingsEntry[] }[];
+  groups: {
+    label: string;
+    entries: FinderSettingsEntry[];
+    rightEntries: FinderSettingsEntry[];
+  }[];
   claimedKeys: Set<string>;
 }
 
@@ -80,26 +102,60 @@ function groupSchema(schema: readonly FinderSettingsEntry[]): GroupedSchema {
     }
   }
 
-  const groupMap = new Map<string, FinderSettingsEntry[]>();
+  interface Bucket {
+    entries: FinderSettingsEntry[];
+    rightEntries: FinderSettingsEntry[];
+  }
+  const groupMap = new Map<string, Bucket>();
   for (const entry of schema) {
     if (entry.hidden || claimedKeys.has(entry.key)) continue;
     const label = entry.uiGroup ?? 'General';
-    const list = groupMap.get(label) ?? [];
-    list.push(entry);
-    groupMap.set(label, list);
+    const bucket = groupMap.get(label) ?? { entries: [], rightEntries: [] };
+    if (entry.uiRightPanel) {
+      bucket.rightEntries.push(entry);
+    } else {
+      bucket.entries.push(entry);
+    }
+    groupMap.set(label, bucket);
   }
 
   return {
-    groups: Array.from(groupMap, ([label, entries]) => ({ label, entries })),
+    groups: Array.from(groupMap, ([label, bucket]) => ({
+      label,
+      entries: bucket.entries,
+      rightEntries: bucket.rightEntries,
+    })),
     claimedKeys,
   };
 }
 
-function SettingsGroup({ label, children }: { label: string; children: React.ReactNode }) {
+function SettingsGroup({
+  label,
+  children,
+  right,
+}: {
+  label: string;
+  children: React.ReactNode;
+  right?: React.ReactNode;
+}) {
   return (
     <section className="sf-surface-elevated sf-border-soft rounded p-4 space-y-3">
       <h3 className="sf-text-label sf-text-primary">{label}</h3>
-      <div className="space-y-3">{children}</div>
+      {right ? (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(20rem, 28rem) minmax(0, 44rem)',
+            gap: '2rem',
+            alignItems: 'start',
+          }}
+        >
+          <div className="space-y-3">{children}</div>
+          <div style={{ minWidth: 0 }}>{right}</div>
+        </div>
+      ) : (
+        <div className="space-y-3">{children}</div>
+      )}
     </section>
   );
 }

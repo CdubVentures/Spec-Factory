@@ -92,6 +92,8 @@ const UI_GROUP_HINTS: Readonly<Record<string, GroupHint>> = Object.freeze({
   'Query Cooldowns':    { order: 1 },
   // Browser & Crawlee
   'Crawlee Internals':  { order: 0, collapsed: true },
+  // Web Unlockers
+  'Bright Data':        { order: 0 },
   // Observability
   'Trace':              { order: 0 },
   'Screencast':         { order: 1 },

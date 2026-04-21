@@ -73,7 +73,7 @@
 <div class="header">
   <h1>Per-Key Finder — Next-Dev Onboarding</h1>
   <p>Everything you should audit before you touch the orchestrator. ~30 min read.</p>
-  <span class="pill">Status as of 2026-04-20 · Phase 3a Part 1 shipped</span>
+  <span class="pill">Status as of 2026-04-21 · Phase 3a Part 2 shipped (orchestrator + custom route handler + real rebuild + reserved-keys denylist) · Phase 3b Loop next</span>
 </div>
 
 <div class="container">
@@ -103,12 +103,16 @@
       <li>Read the full roadmap at <code>docs/implementation/key feature implemenation/per-key-finder-roadmap.html</code>. The §1 status table tells you what's shipped vs pending.</li>
       <li>Skim every memory file listed in §7 below. They encode corrections from past sessions — you will repeat the same mistakes if you don't.</li>
       <li>Run the baseline test suite:
-        <pre><span class="c">// from repo root</span>
+        <pre><span class="c">// from repo root — run each file explicitly (node --test won't accept a directory)</span>
 node --test src/core/llm/client/tests/resolvePhaseModelByTier.test.js
-node --test src/features/key/tests/
-<span class="c">// expect 28/28 pass</span></pre>
+node --test src/features/key/tests/keySchema.test.js \
+            src/features/key/tests/keyBudgetCalc.test.js \
+            src/features/key/tests/keyLlmAdapter.test.js \
+            src/features/key/tests/keyFinder.test.js \
+            src/core/finder/tests/finderExclusions.test.js
+<span class="c">// expect 7 (routing) + 86 (key feature + denylist) = 93 pass</span></pre>
       </li>
-      <li>Boot the server + GUI, open <strong>LLM Config → Key Finder</strong> (4 tier cards + fallback + Limits + LLM Call Contract), <strong>Pipeline Settings → Key Finder</strong> (budget + bundling + discovery-history knobs), <strong>Billing</strong> (4 cyan entries under "Key Finder" group — all zero until Phase 3a Part 2 ships).</li>
+      <li>Boot the server + GUI, open <strong>LLM Config → Key Finder</strong> (4 tier cards + fallback + Limits + LLM Call Contract), <strong>Pipeline Settings → Key Finder</strong> (budget + bundling + discovery-history knobs), <strong>Billing</strong> (4 cyan entries under "Key Finder" group — will tick up on the first real Run).</li>
       <li>Restart the API server before you touch anything — there was a stub-route signature bug that intercepted every API call. See §6.</li>
     </ol>
   </div>
@@ -130,6 +134,13 @@ node --test src/features/key/tests/
     <tr><td><strong>Backend lives at <code>src/features/key/</code></strong></td><td>NOT <code>per-key-finder/</code>. <code>deriveFinderPaths</code> strips the <code>Finder</code> suffix from <code>id: 'keyFinder'</code>. Frontend panel is at <code>tools/gui-react/src/features/key-finder/</code> (panel path uses the full id).</td></tr>
     <tr><td><strong>Billing is per-tier</strong></td><td>4 reasons under "Key Finder" group: <code>key_finding_easy / _medium / _hard / _very_hard</code>. Cyan palette lightest→darkest. Phase 3a Part 2 orchestrator tags each call with the right tier reason.</td></tr>
     <tr><td><strong>Field-rule difficulty is 3-level today, 4-level target</strong></td><td>Studio still emits <code>easy|medium|hard</code>; <code>very_hard</code> is the Phase 1 target. Orchestrator must cascade unknown difficulty → fallback tier. Do NOT wait on Phase 1 — the cascade handles it.</td></tr>
+    <tr><td><strong>Multi-key response envelope</strong></td><td>LLM response is <code>{ primary_field_key, results: { [key]: perKeyShape }, discovery_log }</code>. Primary required; passengers optional. Per-key <code>value</code> is <code>z.unknown()</code> — LLM emits native JSON types per contract (number for numeric, array for list, enum literal for closed enum). Single-call shape also works for solo (passengers=[]).</td></tr>
+    <tr><td><strong>Additional-keys block is split into 5 top-level placeholders</strong></td><td>Not one mega block. <code>{{ADDITIONAL_FIELD_KEYS}}</code>, <code>{{ADDITIONAL_FIELD_GUIDANCE}}</code>, <code>{{ADDITIONAL_FIELD_CONTRACT}}</code>, <code>{{ADDITIONAL_CROSS_FIELD_CONSTRAINTS}}</code>, <code>{{ADDITIONAL_COMPONENT_KEYS}}</code> — each pre-renders per-passenger content so authors can reorder. No <code>{{ADDITIONAL_SEARCH_HINTS}}</code> — passengers inherit the primary's search session.</td></tr>
+    <tr><td><strong>Context injection is 3 independent knobs</strong></td><td><code>componentInjectionEnabled</code> (primary + additional component context), <code>knownFieldsInjectionEnabled</code> (shared known fields block), <code>searchHintsInjectionEnabled</code> (primary-only). Each toggleable per category. Component ON + known OFF → component injects, known doesn't. Orthogonal.</td></tr>
+    <tr><td><strong>Bundling has TWO gates</strong></td><td><code>bundlingEnabled</code> (master) + <code>groupBundlingOnly</code> (scope: ON = same-group only, OFF = cross-group allowed). Per-key Run + Loop always solo. Smart Loop honors both gates.</td></tr>
+    <tr><td><strong>keyFinder has its own prompt variable contract</strong></td><td><code>src/features/key/keyFinderPromptContract.js</code>. Not <code>SCALAR_FINDER_VARIABLES</code> — keyFinder is product-scoped (no VARIANT_DESC, no SIBLING_VARIANTS). 24 vars, 5 required: BRAND, MODEL, PRIMARY_FIELD_KEY, PRIMARY_FIELD_CONTRACT, RETURN_JSON_SHAPE. The overlay in <code>phaseSchemaRegistry.js</code> branches on <code>moduleId === 'keyFinder'</code>.</td></tr>
+    <tr><td><strong>Per-category prompts via existing <code>discoveryPromptTemplate</code> knob</strong></td><td>Stored per-category in finder_settings. <code>buildKeyFinderPrompt({ templateOverride })</code> honors it. LLM Config panel renders per-category tabs (MOUSE/KEYBOARD/MONITOR/MOUSEPAD) via the shared <code>PromptTemplatesSection</code>.</td></tr>
+    <tr><td><strong>RETURN_JSON_SHAPE is contract-aware per key</strong></td><td>Renders <code>"value": &lt;number (Hz)&gt;</code> for numeric fields with units, <code>"value": &lt;array of [usb-c | usb-a | 2.4ghz | bluetooth]&gt;</code> for list-shape closed-enum fields, etc. Primary + each passenger get their own shape annotation. Computed from each <code>fieldRule.contract</code>.</td></tr>
   </tbody>
 </table>
 
@@ -183,62 +194,131 @@ node --test src/features/key/tests/
   </div>
 </div>
 
-<!-- ───────────────────────── 4. NEXT ───────────────────────── -->
-<h2 id="next"><span class="num">4</span> What Phase 3a Part 2 must build</h2>
+<div class="card">
+  <div class="card-header"><span class="tag tag-green">Phase 3a Part 1.5</span> Contract rewrite + 3-section LLM Call Contract panel + injection knobs — shipped 2026-04-21</div>
+  <div class="card-body">
+    <p><strong>Schema rewrite</strong> — <code>src/features/key/keySchema.js</code></p>
+    <ul>
+      <li><code>keyFinderResponseSchema</code> is now a multi-key envelope: <code>{ primary_field_key, results: { [fk]: perKeyShape }, discovery_log }</code> with a <code>.refine</code> guaranteeing primary_field_key exists in results.</li>
+      <li><code>perKeyShape(valueKey)</code> reuses <code>createScalarFinderSchema({ includeEvidenceKind: true })</code> but <strong>overrides the value to <code>z.unknown()</code></strong> so the LLM emits native JSON types per each field's contract.</li>
+      <li>Same per-key shape convention as RDF/SKU for evidence_refs / confidence (0-100 int) / unknown_reason / discovery_log.notes (array).</li>
+    </ul>
+    <p><strong>Prompt template restructure</strong> — <code>src/features/key/keyLlmAdapter.js</code></p>
+    <ul>
+      <li>24 placeholders organized into: identity, primary (5 slots), additional (5 slots — split from a single mega block so authors can reorder), shared context (known fields), global scaffolding (evidence contract + verification + confidence rubric + previous discovery), return shape.</li>
+      <li>Field guidance is strictly <code>ai_assist.reasoning_note</code> (empty today; later editorial pass). No tooltip fallback.</li>
+      <li>Field contract block: type + shape + unit + rounding + list_rules + enum(policy + resolved values) + variance_policy + unknown_reason_default + aliases.</li>
+      <li><code>{{RETURN_JSON_SHAPE}}</code> renders per-key contract-aware value shape: <code>&lt;array of [usb-c | usb-a | 2.4ghz | bluetooth]&gt;</code> for list enum, <code>&lt;number (Hz)&gt;</code> for numeric with unit, etc.</li>
+      <li>Generic prose: GOAL paragraph (primary vs passengers), honest-unk line. Tier guidance + contract-matching rules removed — already covered by EVIDENCE_CONTRACT and per-key shape rendering.</li>
+    </ul>
+    <p><strong>4 new registry knobs</strong> — <code>src/core/finder/finderModuleRegistry.js</code></p>
+    <ul>
+      <li><code>groupBundlingOnly</code> (bool, default true) — under Bundling group, directly below <code>bundlingEnabled</code>.</li>
+      <li><code>componentInjectionEnabled</code>, <code>knownFieldsInjectionEnabled</code>, <code>searchHintsInjectionEnabled</code> — new "Context Injection" group. Independent.</li>
+    </ul>
+    <p><strong>keyFinder-specific variable contract</strong> — <code>src/features/key/keyFinderPromptContract.js</code></p>
+    <ul>
+      <li>24 vars with category tags (deterministic / global-fragment) driving the 3-section VariableReferencePanels display.</li>
+      <li>5 required: BRAND, MODEL, PRIMARY_FIELD_KEY, PRIMARY_FIELD_CONTRACT, RETURN_JSON_SHAPE — all present in the default template.</li>
+      <li>Overlay in <code>phaseSchemaRegistry.js</code> branches: <code>moduleId === 'keyFinder'</code> uses this contract; RDF/SKU stay on <code>scalarFinderPromptContract</code>.</li>
+    </ul>
+    <p><strong>LLM Config panel upgrade</strong> — <code>LlmKeyFinderSection.tsx</code></p>
+    <ul>
+      <li>Replaced bespoke read-only <code>&lt;pre&gt;</code> blocks with the shared <code>PromptTemplatesSection</code> (exported from <code>LlmPhaseSection.tsx</code>).</li>
+      <li>Per-category tabs (MOUSE / KEYBOARD / MONITOR / MOUSEPAD) wired to the <code>discoveryPromptTemplate</code> knob.</li>
+      <li>3-section Variable Reference panels: Global template variables / Deterministic / Other.</li>
+      <li>Budget calc key rename <code>variantPointsPerExtra</code> → <code>budgetVariantPointsPerExtra</code> so code reads the registry key correctly.</li>
+    </ul>
+    <p><strong>62 unit tests green</strong> — 14 schema + 39 adapter + 9 budget calc. Typecheck clean. Codegen re-emitted.</p>
+  </div>
+</div>
 
 <div class="card">
-  <div class="card-header"><span class="tag tag-orange">NEXT</span> Orchestrator + routes + rebuild</div>
+  <div class="card-header"><span class="tag tag-green">Phase 3a Part 2</span> Orchestrator + custom route + real rebuild + reserved-keys denylist — shipped 2026-04-21</div>
   <div class="card-body">
-    <p>Pattern to follow: <strong>mirror RDF's shape, not its factory</strong>. RDF uses <code>registerScalarFinder</code> → <code>createVariantScalarFieldProducer</code>, which is variant-scoped. keyFinder is product-scoped, so you need a custom orchestrator. Structural template to study: <code>src/features/release-date/releaseDateFinder.js</code> (how it composes) + <code>src/core/finder/variantScalarFieldProducer.js</code> (what the factory does under the hood — lift the relevant pieces, drop the variant iteration).</p>
+    <p><strong>Orchestrator</strong> — <code>src/features/key/keyFinder.js</code></p>
+    <ul>
+      <li><code>runKeyFinder({ product, fieldKey, category, specDb, appDb, config, policy?, broadcastWs?, signal?, logger?, productRoot?, _callLlmOverride?, _submitCandidateOverride? })</code> — product-scoped (<code>variantId: null</code> on publisher submission).</li>
+      <li>Step sequence (each step reuses an existing utility — no reinvention): reserved-key guard → <code>FieldRulesEngine.create</code> lookup → settings read → <code>resolvePhaseModelByTier(policy, fieldRule.difficulty)</code> → <code>calcKeyBudget</code> (informational) → per-key discovery-log via <code>accumulateDiscoveryLog</code> with <code>runMatcher: (r) =&gt; r.response?.primary_field_key === fieldKey</code> → identity ambiguity (best-effort) → <code>buildKeyFinderPrompt</code> (solo mode) → LLM call with per-call <code>modelOverride</code> → <code>keyFinderResponseSchema.parse</code> → <code>submitCandidate</code> (on non-"unk") → <code>mergeKeyFinderDiscovery</code> + <code>specDb.getFinderStore('keyFinder').insertRun</code>.</li>
+      <li><strong>Pitfall #4 respected</strong> — every persisted run carries <code>response.primary_field_key === fieldKey</code>. Future runMatcher lookups work.</li>
+      <li>Test seams: <code>_callLlmOverride(domainArgs, mapped)</code> receives the resolved <code>{ reason, modelOverride }</code>; <code>_submitCandidateOverride(args)</code> captures the publisher call without running the gate.</li>
+    </ul>
+    <p><strong>Custom route handler</strong> — <code>src/features/key/api/keyFinderRoutes.js</code></p>
+    <ul>
+      <li>Signature <code>(parts, _params, _method, _req, res)</code> with <code>parts[0] !== 'key-finder' → return false</code> (Pitfall #1 respected).</li>
+      <li>POST <code>/key-finder/:cat/:pid</code> body <code>{ field_key, mode? = 'run' }</code> → <code>fireAndForget</code> → 202 + live WS events. Reserved keys rejected 400 before any LLM; unknown field_key 404; <code>mode === 'loop'</code> rejected 400 (Phase 3b owns that).</li>
+      <li>GET <code>/key-finder/:cat/:pid?field_key=X</code> returns summary + per-key filtered runs + field_candidates scoped to the field_key. GET <code>/key-finder/:cat</code> lists product summaries.</li>
+      <li>DELETE <code>/runs/:runNumber?field_key=X</code> cascades through <code>stripRunSourceFromCandidates</code> (widened export from <code>src/core/finder/finderRoutes.js</code>).</li>
+      <li>Reuses — not duplicates — <code>registerOperation</code> / <code>fireAndForget</code> / <code>emitDataChange</code> / <code>createStreamBatcher</code> from core.</li>
+    </ul>
+    <p><strong>Reserved-keys denylist</strong> — <code>src/core/finder/finderExclusions.js</code> (NEW)</p>
+    <ul>
+      <li><code>getReservedFieldKeys()</code> + <code>isReservedFieldKey(key)</code> derived from <code>FINDER_MODULES</code> (every non-keyFinder entry's <code>fieldKeys</code>) ∪ <code>EG_LOCKED_KEYS = ['colors', 'editions', 'release_date', 'sku']</code>. O(1) scaling — new finders auto-register.</li>
+      <li>Called as hard guard in <code>runKeyFinder</code> step 1 AND in the POST handler pre-op-register (rejects reserved keys before the orchestrator spins up).</li>
+    </ul>
+    <p><strong>Real rebuild</strong> — <code>src/features/key/keyStore.js</code></p>
+    <ul>
+      <li>Replaces no-op stub. Walks <code>.workspace/products/*/key_finder.json</code>; upserts <code>key_finder</code> summary + every run into <code>key_finder_runs</code>. Mirrors <code>rebuildReleaseDateFinderFromJson</code> shape — summary + runs only (field_candidates have their own rebuild path).</li>
+      <li>DI seam: <code>src/app/api/specDbRuntime.js</code> imports <code>rebuildKeyFinderFromJson</code> and passes it to <code>buildReseedSurfaces</code>. <code>src/db/seedRegistry.js</code> auto-discovers it via <code>FINDER_MODULES[keyFinder].rebuildFnKey === 'rebuildKeyFinderFromJson'</code>.</li>
+    </ul>
+    <p><strong>Tier-aware LLM caller</strong> — <code>src/features/key/keyLlmAdapter.js</code></p>
+    <ul>
+      <li><code>createKeyFinderCallLlm(deps, tierOrBundle)</code> — accepts either a tier name string (legacy; billing reason only) or a tier bundle <code>{ name, model, thinking, ... }</code>. When <code>bundle.model</code> is non-empty, it flows through as per-call <code>modelOverride</code> — routes each fieldKey to its difficulty-matched model at runtime.</li>
+      <li><code>thinking</code> / <code>webSearch</code> / <code>thinkingEffort</code> still derive from phase config (<code>_resolvedKeyFinderWebSearch</code> etc.) — per-call override of those flags is a Phase 3b concern if it becomes load-bearing.</li>
+    </ul>
+    <p><strong>Domain contract</strong> — <code>src/features/key/README.md</code> (NEW) · Purpose / Public API / Dependencies / Domain Invariants / Settings, per CLAUDE.md.</p>
+    <p><strong>Tests green (727+):</strong> 11 orchestrator characterization + 9 denylist + 43 adapter (39 prior + 4 new tier-bundle) + 14 schema + 9 budget + 7 routing + 15 policy + 98 RDF/SKU characterization/store + 513 core/finder + 14 billing drift + 2 panel sync. Zero regressions.</p>
+  </div>
+</div>
+
+<!-- ───────────────────────── 4. NEXT ───────────────────────── -->
+<h2 id="next"><span class="num">4</span> What Phase 3b Loop must build</h2>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-orange">NEXT</span> Budget-bounded retry loop wrapping <code>runKeyFinder</code></div>
+  <div class="card-body">
+    <p>Pattern to follow: <strong>wrap <code>runKeyFinder</code>, don't duplicate it</strong>. The orchestrator is idempotent per call; a loop is just the budget-aware retry around it. Study <code>src/core/finder/variantFieldLoop.js</code> for the loop_id + satisfaction-predicate pattern, but adapt to per-key (not per-variant) scope.</p>
 
     <h3>4.1 &nbsp; Files to create</h3>
     <table>
       <thead><tr><th>File</th><th>Responsibility</th></tr></thead>
       <tbody>
-        <tr><td><code>src/features/key/keyFinder.js</code></td><td><code>runKeyFinder({ product, fieldKey, specDb, config, appDb, broadcastWs, signal, logger, category })</code>. See §4.3 for the step list.</td></tr>
-        <tr><td><code>src/features/key/tests/keyFinder.test.js</code></td><td>Characterization (mock LLM) covering: tier dispatch, prompt shape, discovery-log plumbing, candidate submission, run record shape.</td></tr>
+        <tr><td><code>src/features/key/keyFinderLoop.js</code></td><td><code>runKeyFinderLoop({ product, fieldKey, category, specDb, appDb, config, onLoopProgress?, signal?, ...runOpts })</code> — wraps <code>runKeyFinder</code>, iterates up to <code>calcKeyBudget(...).attempts</code>, stamps <code>loop_id</code> on every child run.</td></tr>
+        <tr><td><code>src/features/key/tests/keyFinderLoop.test.js</code></td><td>Characterization: budget honored, exits on publish, exits on definitive unk, loop_id stamped consistently, suppressions accumulate across iterations.</td></tr>
       </tbody>
     </table>
 
-    <h3>4.2 &nbsp; Files to replace</h3>
+    <h3>4.2 &nbsp; Files to modify</h3>
     <table>
-      <thead><tr><th>File</th><th>What the Phase 2 stub does today</th><th>What Phase 3a Part 2 wires</th></tr></thead>
+      <thead><tr><th>File</th><th>Change</th></tr></thead>
       <tbody>
-        <tr><td><code>src/features/key/api/keyFinderRoutes.js</code></td><td>501 placeholder (correctly signed, thanks to this session's fix).</td><td>Custom handler — signature <code>(parts, params, method, req, res)</code>, returns <code>false</code> for non-<code>key-finder</code> prefixes. Accepts POST body <code>{ field_key, mode? }</code> where <code>mode ∈ {'run','loop'}</code>. Calls <code>runKeyFinder</code>.</td></tr>
-        <tr><td><code>src/features/key/keyStore.js</code></td><td>No-op <code>rebuildKeyFinderFromJson</code>.</td><td>Real rebuild — walk <code>.workspace/products/*/key_finder.json</code>, upsert <code>key_finder</code> summary + <code>key_finder_runs</code> rows. Rebuild Contract: SQL must be reconstructible from JSON alone.</td></tr>
-        <tr><td><code>src/features/key/keySchema.js</code></td><td>Baseline shape (field_key, value, confidence, evidence, discovery_log).</td><td>Extend: <code>unknown_reason</code> (required when value is "unk"), richer evidence entry ({url, supporting_evidence, evidence_kind, tier, confidence}). Match RDF's evidence_ref shape.</td></tr>
+        <tr><td><code>src/features/key/api/keyFinderRoutes.js</code></td><td>Replace the <code>mode === 'loop'</code> 400 branch with a dispatch to <code>runKeyFinderLoop</code>. Emit <code>key-finder-loop</code> WS event instead of <code>key-finder-run</code>. Thread <code>onLoopProgress → updateLoopProgress</code>.</td></tr>
+        <tr><td><code>src/features/key/keyFinder.js</code></td><td>(Optional) accept an opaque <code>loop_id</code> opt and thread it into the persisted run's <code>response.loop_id</code>. Keep the single-run orchestrator otherwise unchanged.</td></tr>
       </tbody>
     </table>
 
-    <h3>4.3 &nbsp; runKeyFinder step list</h3>
+    <h3>4.3 &nbsp; runKeyFinderLoop step list</h3>
     <div class="callout callout-info">
       <strong>Canonical order</strong>
       <ol>
-        <li><code>FieldRulesEngine.create(category, { specDb })</code> → <code>engine.rules[fieldKey]</code>. Throw if missing.</li>
-        <li>Resolve policy via existing assembler, then <code>resolvePhaseModelByTier(policy, fieldRule.difficulty)</code> → tier bundle.</li>
-        <li><code>calcKeyBudget({ fieldRule, variantCount, settings })</code> — Run mode ignores <code>attempts</code> but the breakdown goes in run metadata for display + Phase 3b consumption.</li>
-        <li>Read previous runs via <code>keyStore.read(productId)</code>. Build discovery log via <code>accumulateDiscoveryLog(runs, { runMatcher: (r) =&gt; r.response?.field_key === fieldKey, includeUrls: keyFinderUrlHistoryEnabled, includeQueries: keyFinderQueryHistoryEnabled })</code>.</li>
-        <li><code>buildKeyFinderPrompt({ product, fieldKey, fieldRule, previousDiscovery, ambiguityLevel, familyModelCount, siblingsExcluded, templateOverride?: settings.discoveryPromptTemplate })</code>.</li>
-        <li><code>createKeyFinderCallLlm(deps, tier)({ product, fieldKey, variantCount })</code>. The SPEC emits <code>reason: key_finding_${tier}</code>, so billing rolls up automatically.</li>
-        <li><code>keyFinderResponseSchema.parse(result)</code> — reject malformed responses.</li>
-        <li>If value is defensible (not "unk"), call <code>submitCandidate</code> with the publisher metadata (mirror RDF at <code>releaseDateFinder.js</code>).</li>
-        <li>Append run record to JSON store + SQL via <code>keyStore.write</code>/<code>merge</code>. Tag: <code>{ field_key, tier, run_number, ran_at, response: { field_key, ..., discovery_log }, model, duration_ms }</code>.</li>
-        <li>Emit WS broadcast for live UI refresh.</li>
+        <li>Resolve settings + field rule + compute <code>{ attempts } = calcKeyBudget({ fieldRule, variantCount, settings })</code>.</li>
+        <li>Generate a <code>loop_id</code> (uuid or <code>${productId}-${fieldKey}-${Date.now()}</code>).</li>
+        <li>For iteration 1..attempts: call <code>runKeyFinder({ ...opts, loop_id })</code>. After each iteration re-read the JSON store so discovery accumulates.</li>
+        <li>Satisfaction check per iteration: stop when <code>result.status === 'accepted'</code> AND publisher published, OR <code>result.status === 'unk'</code> with non-empty <code>unknown_reason</code>.</li>
+        <li>Emit <code>onLoopProgress</code> event each iteration (iteration #, attempts remaining).</li>
+        <li>Return <code>{ iterations, final_status, loop_id, runs: [run_numbers] }</code>.</li>
       </ol>
     </div>
 
-    <h3>4.4 &nbsp; Route contract</h3>
-    <pre><span class="c">// POST /api/v1/key-finder/:category/:productId</span>
-{ <span class="k">field_key</span>: <span class="s">"polling_rate"</span>, <span class="k">mode</span>: <span class="s">"run"</span> }    <span class="c">// mode defaults to "run"</span>
+    <h3>4.4 &nbsp; Route contract (addition to Phase 3a Part 2's table)</h3>
+    <pre><span class="c">// POST /api/v1/key-finder/:category/:productId — now accepts mode='loop'</span>
+{ <span class="k">field_key</span>: <span class="s">"polling_rate"</span>, <span class="k">mode</span>: <span class="s">"loop"</span> }    <span class="c">// Phase 3b flips the 400 rejection into a dispatch</span>
 
-<span class="c">// GET /api/v1/key-finder/:category/:productId?field_key=polling_rate</span>
-<span class="c">// Returns: { summary, runs[], candidates[], published? } — scoped by field_key</span>
+<span class="c">// GET / DELETE unchanged from Phase 3a Part 2</span></pre>
 
-<span class="c">// DELETE /api/v1/key-finder/:category/:productId/runs/:runNumber?field_key=polling_rate</span></pre>
-
-    <div class="callout callout-warn">
-      <strong>Why a custom handler instead of <code>createFinderRouteHandler</code></strong>
-      The generic handler expects static <code>fieldKeys: ['release_date']</code>. keyFinder's <code>fieldKeys</code> are dynamic per request (from POST body). Either extend the generic handler to accept a dynamic field-key resolver (risky — touches RDF + SKU) or build a custom wrapper for keyFinder and refactor later. Do the custom wrapper.
+    <div class="callout callout-info">
+      <strong>Open question for Phase 3b</strong>
+      Should the loop re-resolve the tier bundle on every iteration (could drift if LLM Config is edited mid-loop) or snapshot it once at loop start? Recommend snapshot — cleaner, matches RDF's pattern. If the user edits LLM Config mid-loop they can just wait for the next loop.
     </div>
   </div>
 </div>
@@ -259,7 +339,9 @@ node --test src/features/key/tests/
         <tr><td><code>src/core/finder/discoveryLog.js</code></td><td><code>accumulateDiscoveryLog</code> + <code>buildPreviousDiscoveryBlock</code>. Note the <code>runMatcher</code> callback — your per-key filter goes here.</td></tr>
         <tr><td><code>src/core/finder/finderModuleRegistry.js:491</code></td><td>keyFinder FINDER_MODULES entry. Read every settingsSchema knob — those are your runtime inputs.</td></tr>
         <tr><td><code>src/core/config/llmPhaseDefs.js:86</code></td><td>keyFinder phase entry + 4 billing reasons.</td></tr>
-        <tr><td><code>src/features/key/*.js</code></td><td>Every file in the stub + helper set. Fully 600 LOC total. Read it.</td></tr>
+        <tr><td><code>src/features/key/*.js</code></td><td>Every file in the feature. Schema + adapter + budget calc + prompt contract + store + route stub + index. Read all.</td></tr>
+        <tr><td><code>src/features/key/keyFinderPromptContract.js</code></td><td>24-var keyFinder-specific variable contract. Overlay in <code>phaseSchemaRegistry.js</code> branches on moduleId to pick this vs scalar contract.</td></tr>
+        <tr><td><code>src/features/indexing/pipeline/shared/phaseSchemaRegistry.js:268-294</code></td><td><code>buildFinderPromptTemplates</code> branch + <code>SCALAR_FINDER_OVERLAYS</code>. This is where keyFinder gets its own contract.</td></tr>
         <tr><td><code>src/engine/fieldRulesEngine.js</code></td><td>How <code>specDb.getCompiledRules()</code> → <code>engine.rules[fieldKey]</code> works.</td></tr>
         <tr><td><code>src/core/finder/submitCandidate.js</code> (grep)</td><td>Publisher-gate entry point. Every accepted LLM response flows through this.</td></tr>
       </tbody>
@@ -363,6 +445,24 @@ node --test</pre>
 </div>
 
 <div class="card">
+  <div class="card-header"><span class="tag tag-red">PITFALL #7</span> Adding a placeholder to the template WITHOUT updating keyFinderPromptContract</div>
+  <div class="card-body">
+    <p><strong>Symptom:</strong> LLM Config Key Finder tab shows "Missing required variable: {{YOUR_NEW_VAR}}" in red.</p>
+    <p><strong>Root cause:</strong> <code>PromptTemplateEditor</code> validates the saved template against the <code>variables</code> declared by the phase schema. keyFinder's variables are sourced from <code>src/features/key/keyFinderPromptContract.js</code> via the overlay branch in <code>phaseSchemaRegistry.js</code>. Add a new <code>{{FOO}}</code> placeholder in <code>KEY_FINDER_DEFAULT_TEMPLATE</code> <em>and</em> add an entry to <code>KEY_FINDER_VARIABLES</code> (name + description + required + category). Regen with <code>generateLlmPhaseRegistry.js</code>.</p>
+    <p><strong>Inverse symptom:</strong> "Missing required variable: {{VARIANT_DESC}}" — you opted keyFinder into the scalar contract somehow. Check that the overlay branch in <code>phaseSchemaRegistry.js:SCALAR_FINDER_OVERLAYS</code> still routes <code>moduleId === 'keyFinder'</code> to <code>buildKeyFinderPromptTemplates</code>.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-red">PITFALL #8</span> Per-key value shape disagreement with the schema</div>
+  <div class="card-body">
+    <p><strong>Symptom:</strong> Real LLM responses reject at Zod parse with "Expected string, received array" (or similar) for fields whose contract declares <code>shape: 'list'</code> or <code>type: 'number'</code>.</p>
+    <p><strong>Root cause:</strong> <code>perKeyShape</code> was hand-coded to <code>z.string()</code> while the prompt asked the LLM to return native types per contract. The fix is in place: <code>perKeyShape</code> calls <code>createScalarFinderSchema</code> and then <code>.extend({ [valueKey]: z.unknown() })</code> — that lets the LLM emit native JSON values. Do NOT revert this to <code>z.string()</code>; you'll fight the LLM's JSON mode.</p>
+    <p><strong>Downstream:</strong> the orchestrator (Phase 3a Part 2) parses each per-key value against that field's <code>contract</code> to coerce to canonical storage shape before calling <code>submitCandidate</code>.</p>
+  </div>
+</div>
+
+<div class="card">
   <div class="card-header"><span class="tag tag-red">PITFALL #6</span> CEF / PIF / RDF / SKU-owned keys must be excluded</div>
   <div class="card-body">
     <p>Don't let the orchestrator attempt <code>release_date</code> (RDF owns), <code>sku</code> (SKF owns), colors/editions (CEF owns), or hero/product images (PIF owns). Keys with <code>eg_defaults</code> in field_rules are also excluded — they come from a different path.</p>
@@ -391,6 +491,7 @@ node --test</pre>
         <tr><td><code>feedback_data_over_guards.md</code></td><td>Prefer imprecise data over no data (day → month → year graceful precision).</td></tr>
         <tr><td><code>feedback_duplicate_urls_ok.md</code></td><td>Same URL across runs is fine if real. Don't over-dedupe.</td></tr>
         <tr><td><code>feedback_test_indexlab_via_gui.md</code></td><td>Never call <code>indexlab</code> directly from CLI — it's fenced. Use the GUI's Run button.</td></tr>
+        <tr><td><code>project_keyfinder_phase3a_part2_shipped.md</code></td><td><strong>Must-read</strong> — the full shipped-state map from Part 2 (orchestrator flow, route handler, denylist, DI seam). Read before touching Phase 3b.</td></tr>
         <tr><td><code>reference_per_key_finder_roadmap.md</code></td><td>Pointer to the roadmap HTML next to this doc.</td></tr>
       </tbody>
     </table>
@@ -406,9 +507,10 @@ node --test</pre>
     <table>
       <thead><tr><th>Path</th><th>Role</th></tr></thead>
       <tbody>
-        <tr><td><code>features/key/keyLlmAdapter.js</code></td><td>Prompt + SPEC + bound caller factory. <strong>Shipped.</strong></td></tr>
-        <tr><td><code>features/key/keyBudgetCalc.js</code></td><td>Pure budget calc. <strong>Shipped.</strong></td></tr>
-        <tr><td><code>features/key/keySchema.js</code></td><td>Zod response schema. Extend in 3a Part 2.</td></tr>
+        <tr><td><code>features/key/keyLlmAdapter.js</code></td><td>Prompt + SPEC + bound caller factory. <strong>Shipped (rewritten in Part 1.5 — 24 placeholders, multi-key, knob-gated injection slots).</strong></td></tr>
+        <tr><td><code>features/key/keyBudgetCalc.js</code></td><td>Pure budget calc. <strong>Shipped.</strong> Reads <code>budgetVariantPointsPerExtra</code> (renamed in Part 1.5 to match registry).</td></tr>
+        <tr><td><code>features/key/keySchema.js</code></td><td>Zod response schema. <strong>Shipped (rewritten in Part 1.5 — multi-key envelope, z.unknown value per contract).</strong></td></tr>
+        <tr><td><code>features/key/keyFinderPromptContract.js</code></td><td><strong>NEW in Part 1.5.</strong> 24-var keyFinder-specific contract (no VARIANT_DESC / SIBLING_VARIANTS — product-scoped). Drives PromptTemplateEditor validation.</td></tr>
         <tr><td><code>features/key/keyStore.js</code></td><td>JSON store wrapper + stub rebuild. Replace rebuild in 3a Part 2.</td></tr>
         <tr><td><code>features/key/api/keyFinderRoutes.js</code></td><td>501 stub with correct signature. Replace in 3a Part 2.</td></tr>
         <tr><td><code>features/key/keyFinder.js</code></td><td><strong>Does not exist yet.</strong> 3a Part 2 creates it.</td></tr>
@@ -454,15 +556,17 @@ node tools/gui-react/scripts/generateFinderHooks.js</pre>
 </div>
 
 <div style="margin-top:40px; padding:20px; background:var(--accent-light); border-radius:var(--radius); border-left:4px solid var(--accent); font-size:14px;">
-  <strong style="display:block; margin-bottom:6px; color:var(--accent);">Final sanity check before you start coding Phase 3a Part 2</strong>
+  <strong style="display:block; margin-bottom:6px; color:var(--accent);">Final sanity check before you start coding Phase 3b</strong>
   <ol style="margin-left:20px; margin-top:6px;">
-    <li>Server boots, API tab returns data, billing tab renders empty-but-working.</li>
-    <li><code>node --test src/features/key/tests/</code> → 21 pass.</li>
+    <li>Server boots, API tab returns data, <code>GET /api/v1/key-finder/mouse</code> returns 200 (list — possibly empty).</li>
+    <li><code>node --test src/features/key/tests/keyFinder.test.js</code> → 11 pass.</li>
+    <li><code>node --test src/core/finder/tests/finderExclusions.test.js</code> → 9 pass.</li>
+    <li><code>node --test src/features/key/tests/keyLlmAdapter.test.js</code> → 43 pass (4 tier-bundle tests added in Part 2).</li>
     <li><code>node --test src/core/llm/client/tests/resolvePhaseModelByTier.test.js</code> → 7 pass.</li>
-    <li>GUI LLM Config → Key Finder panel loads and edits persist across reload.</li>
-    <li>GUI Pipeline Settings → Key Finder loads and edits persist.</li>
-    <li>You've read every file in §5 (the audit list) and can articulate how RDF's orchestrator flow maps to per-key.</li>
-    <li>You've read every memory file in §7.</li>
+    <li>GUI: from a mouse product page, <code>POST /api/v1/key-finder/mouse/{pid}</code> with <code>{ field_key: 'polling_rate' }</code> fires; billing tab shows a <code>key_finding_medium</code> tick under "Key Finder".</li>
+    <li>Reserved-key rejection: <code>POST { field_key: 'release_date' }</code> returns 400 <code>reserved_field_key</code>; no billing entry.</li>
+    <li>You've read the Part 2 shipped card above and can articulate the 14-step <code>runKeyFinder</code> flow.</li>
+    <li>You've read every memory file in §7 — especially <code>project_keyfinder_phase3a_part2_shipped</code>.</li>
   </ol>
   If any of these fail, fix the underlying issue before proceeding — do not layer new work on broken plumbing.
 </div>

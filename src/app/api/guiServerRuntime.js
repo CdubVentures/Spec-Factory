@@ -189,7 +189,7 @@ export function createGuiServerRuntime({
         unitRegistryPath: path.resolve(HELPER_ROOT, '_global', 'unit_registry.json'),
       },
       moduleSettingsRouteContext: createModuleSettingsRouteContext({
-        jsonRes, readJsonBody, getSpecDb, broadcastWs, helperRoot: HELPER_ROOT,
+        jsonRes, readJsonBody, getSpecDb, broadcastWs, helperRoot: HELPER_ROOT, appDb,
       }),
       publisherRouteContext: createPublisherRouteContext({
         jsonRes, readJsonBody, getSpecDb, broadcastWs, config,

@@ -78,10 +78,12 @@ export function generateFinderDdl(modules) {
     );
 
     // ── Settings table: per-category key-value config ───────────
-    // WHY: Each module owns its own settings table. SpecDb is already
-    // per-category, so no category column needed. Reseed rebuilds from
-    // the JSON mirror in category_authority.
-    if (Array.isArray(mod.settingsSchema) && mod.settingsSchema.length > 0) {
+    // WHY: Only emitted for settingsScope='category' modules. Global-scope
+    // modules share `finder_global_settings` in appDb (see appDbSchema.js)
+    // keyed by (module_id, key) — no per-category table needed.
+    const hasSchema = Array.isArray(mod.settingsSchema) && mod.settingsSchema.length > 0;
+    const isCategoryScoped = (mod.settingsScope || 'category') === 'category';
+    if (hasSchema && isCategoryScoped) {
       const settingsTableName = `${mod.tableName}_settings`;
       statements.push([
         `CREATE TABLE IF NOT EXISTS ${settingsTableName} (`,

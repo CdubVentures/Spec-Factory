@@ -2,9 +2,12 @@
 // Unlike specDb (per-category, lazy-loaded), appDb is a single global instance
 // opened eagerly at bootstrap. Mirrors specDb constructor pattern.
 
+import fs from 'node:fs';
+import path from 'node:path';
 import Database from 'better-sqlite3';
 import { APP_DB_SCHEMA } from './appDbSchema.js';
 import { applyAppDbMigrations } from './appDbMigrations.js';
+import { FINDER_MODULES } from '../core/finder/finderModuleRegistry.js';
 
 function safeParseJson(str, fallback) {
   try { return JSON.parse(str); } catch { return fallback; }
@@ -145,6 +148,24 @@ export class AppDb {
     `);
     this._countBillingEntries = this.db.prepare('SELECT COUNT(*) as c FROM billing_entries');
 
+    // ── Finder global settings ─────────────────────────────────────
+    this._upsertFinderGlobalSetting = this.db.prepare(`
+      INSERT INTO finder_global_settings (module_id, key, value, updated_at)
+      VALUES (?, ?, ?, datetime('now'))
+      ON CONFLICT(module_id, key) DO UPDATE SET
+        value = excluded.value,
+        updated_at = excluded.updated_at
+    `);
+    this._getFinderGlobalSetting = this.db.prepare(
+      'SELECT value FROM finder_global_settings WHERE module_id = ? AND key = ?'
+    );
+    this._listFinderGlobalSettings = this.db.prepare(
+      'SELECT key, value FROM finder_global_settings WHERE module_id = ?'
+    );
+    this._deleteFinderGlobalSetting = this.db.prepare(
+      'DELETE FROM finder_global_settings WHERE module_id = ? AND key = ?'
+    );
+
     this._insertBillingEntriesBatchTx = this.db.transaction((entries) => {
       for (const entry of entries) { this._insertBillingEntry.run(entry); }
     });
@@ -254,6 +275,62 @@ export class AppDb {
 
   deleteSection(section) {
     return this._deleteSection.run(section).changes;
+  }
+
+  // ── Finder Global Settings ──
+  // WHY: Shared settings for finder modules with settingsScope='global' (CEF,
+  // RDF, SKU, keyFinder). Single table for all global finders — adding a new
+  // one requires zero DDL changes.
+
+  upsertFinderGlobalSetting(moduleId, key, value) {
+    this._upsertFinderGlobalSetting.run(moduleId, key, String(value));
+  }
+
+  getFinderGlobalSetting(moduleId, key) {
+    const row = this._getFinderGlobalSetting.get(moduleId, key);
+    return row ? row.value : null;
+  }
+
+  listFinderGlobalSettings(moduleId) {
+    const rows = this._listFinderGlobalSettings.all(moduleId);
+    const out = {};
+    for (const row of rows) out[row.key] = row.value;
+    return out;
+  }
+
+  deleteFinderGlobalSetting(moduleId, key) {
+    this._deleteFinderGlobalSetting.run(moduleId, key);
+  }
+
+  // WHY: Rebuild-contract surface. On fresh appDb (e.g. deleted app.sqlite)
+  // we seed finder_global_settings from category_authority/_global JSON so the
+  // table rebuilds from durable storage. Called once by the bootstrap wiring.
+  reseedFinderGlobalSettingsFromJson({ helperRoot }) {
+    const globalDir = path.join(helperRoot, '_global');
+    let seeded = 0;
+    for (const mod of FINDER_MODULES) {
+      if (mod.settingsScope !== 'global') continue;
+      const jsonPath = path.join(globalDir, `${mod.filePrefix}_settings.json`);
+      let raw;
+      try {
+        raw = fs.readFileSync(jsonPath, 'utf8');
+      } catch {
+        continue;
+      }
+      let parsed;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        continue;
+      }
+      if (!parsed || typeof parsed !== 'object') continue;
+      for (const [key, value] of Object.entries(parsed)) {
+        if (typeof key !== 'string' || key.length === 0) continue;
+        this._upsertFinderGlobalSetting.run(mod.id, key, String(value));
+        seeded += 1;
+      }
+    }
+    return { seeded };
   }
 
   // ── Studio Maps ──

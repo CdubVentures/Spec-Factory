@@ -114,4 +114,46 @@ describe('generateFinderDdl', () => {
     const ddl = generateFinderDdl([]);
     assert.deepEqual(ddl, []);
   });
+
+  // WHY: Per-category settings DDL is the contract for settingsScope='category'.
+  // Global-scope modules share finder_global_settings in appDb; their per-category
+  // table must not be emitted, otherwise we'd keep orphan tables around forever.
+  it('emits per-category settings DDL for settingsScope=category', () => {
+    const mod = {
+      ...SIMPLE_MODULE,
+      settingsScope: 'category',
+      settingsSchema: [{ key: 'foo', type: 'bool', default: false }],
+    };
+    const ddl = generateFinderDdl([mod]);
+    const joined = ddl.join('\n');
+    assert.ok(
+      joined.includes('CREATE TABLE IF NOT EXISTS sku_finder_settings'),
+      'per-category module must emit a <tableName>_settings table',
+    );
+  });
+
+  it('omits per-category settings DDL for settingsScope=global', () => {
+    const mod = {
+      ...SIMPLE_MODULE,
+      settingsScope: 'global',
+      settingsSchema: [{ key: 'foo', type: 'bool', default: false }],
+    };
+    const ddl = generateFinderDdl([mod]);
+    const joined = ddl.join('\n');
+    assert.ok(
+      !joined.includes('sku_finder_settings'),
+      'global-scope module must NOT emit a per-category <tableName>_settings table',
+    );
+  });
+
+  it('defaults missing settingsScope to category (back-compat safety)', () => {
+    const mod = {
+      ...SIMPLE_MODULE,
+      // no settingsScope declared — must behave as 'category'
+      settingsSchema: [{ key: 'foo', type: 'bool', default: false }],
+    };
+    const ddl = generateFinderDdl([mod]);
+    const joined = ddl.join('\n');
+    assert.ok(joined.includes('CREATE TABLE IF NOT EXISTS sku_finder_settings'));
+  });
 });

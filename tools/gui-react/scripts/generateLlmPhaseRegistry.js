@@ -505,6 +505,7 @@ function generateModuleSettingsSections() {
   for (const m of FINDER_MODULES) {
     if (!m.settingsLabel) continue;
     const sectionId = `module-${m.moduleType}`;
+    const scope = m.settingsScope === 'global' ? 'global' : 'category';
     lines.push(`  {`);
     lines.push(`    id: ${quote(sectionId)} as const,`);
     lines.push(`    moduleId: ${quote(m.id)},`);
@@ -512,6 +513,7 @@ function generateModuleSettingsSections() {
     lines.push(`    subtitle: ${quote(m.settingsSubtitle || '')},`);
     lines.push(`    tip: ${quote(m.settingsTip || '')},`);
     lines.push(`    iconName: ${quote(m.iconName || 'default')} as const,`);
+    lines.push(`    settingsScope: ${quote(scope)} as const,`);
     lines.push(`    group: 'modules',`);
     lines.push(`  },`);
   }
@@ -524,6 +526,18 @@ function generateModuleSettingsSections() {
   lines.push('export type ModuleSettingsModuleId = typeof MODULE_IDS[number];\n');
 
   lines.push('export type ModuleSettingsSectionId = typeof MODULE_SETTINGS_SECTIONS[number][\'id\'];\n');
+
+  // WHY: Scope lookup — authority hook and panel read this to branch on
+  // global vs category without re-scanning sections. Derived at codegen time
+  // so consumers avoid the runtime .find() cost.
+  lines.push('export type ModuleSettingsScope = \'global\' | \'category\';');
+  lines.push('export const MODULE_SETTINGS_SCOPE_BY_ID: Record<ModuleSettingsModuleId, ModuleSettingsScope> = {');
+  for (const m of FINDER_MODULES) {
+    if (!m.settingsLabel) continue;
+    const scope = m.settingsScope === 'global' ? 'global' : 'category';
+    lines.push(`  ${quote(m.id)}: ${quote(scope)},`);
+  }
+  lines.push('};\n');
 
   return lines.join('\n');
 }
@@ -554,6 +568,7 @@ function serializeSettingEntry(entry) {
   if (entry.uiTip !== undefined) parts.push(`uiTip: ${quote(entry.uiTip)}`);
   if (entry.uiGroup !== undefined) parts.push(`uiGroup: ${quote(entry.uiGroup)}`);
   if (entry.uiHero !== undefined) parts.push(`uiHero: ${entry.uiHero}`);
+  if (entry.uiRightPanel !== undefined) parts.push(`uiRightPanel: ${entry.uiRightPanel}`);
   if (entry.secret !== undefined) parts.push(`secret: ${entry.secret}`);
   if (entry.disabledBy !== undefined) parts.push(`disabledBy: ${quote(entry.disabledBy)}`);
   if (entry.allowEmpty !== undefined) parts.push(`allowEmpty: ${entry.allowEmpty}`);
@@ -587,6 +602,7 @@ function generateFinderSettingsRegistry() {
   lines.push('  uiTip?: string;');
   lines.push('  uiGroup?: string;');
   lines.push('  uiHero?: boolean;');
+  lines.push('  uiRightPanel?: boolean;');
   lines.push('  secret?: boolean;');
   lines.push('  disabledBy?: string;');
   lines.push('  allowEmpty?: boolean;');

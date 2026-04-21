@@ -32,6 +32,9 @@
   --sf-token-state-error-fg: #dc2626;
   --sf-token-state-error-bg: rgba(220, 38, 38, 0.12);
   --sf-token-state-error-border: rgba(220, 38, 38, 0.32);
+  --sf-token-state-key-fg: #4263eb;
+  --sf-token-state-key-bg: rgba(66, 99, 235, 0.10);
+  --sf-token-state-key-border: rgba(66, 99, 235, 0.28);
   --sf-token-font-family-ui: "Segoe UI", "Inter", "Helvetica Neue", "Noto Sans", sans-serif;
   --sf-token-font-family-mono: "SFMono-Regular", "Consolas", "Liberation Mono", "Menlo", monospace;
   --sf-token-font-size-micro: 8px;
@@ -119,6 +122,9 @@ html[data-sf-theme-mode='dark'] {
   --sf-token-state-error-fg: #f87171;
   --sf-token-state-error-bg: rgba(248, 113, 113, 0.2);
   --sf-token-state-error-border: rgba(248, 113, 113, 0.42);
+  --sf-token-state-key-fg: #93a9ff;
+  --sf-token-state-key-bg: rgba(147, 169, 255, 0.14);
+  --sf-token-state-key-border: rgba(147, 169, 255, 0.30);
   --sf-color-surface-rgb: 10 19 48;
   --sf-color-surface-elevated-rgb: 17 31 65;
   --sf-color-panel-rgb: 13 24 52;
@@ -982,6 +988,9 @@ html[data-sf-radius] {
   --sf-state-danger-fg: var(--sf-token-state-error-fg);
   --sf-state-danger-bg: var(--sf-token-state-error-bg);
   --sf-state-danger-border: var(--sf-token-state-error-border);
+  --sf-state-key-fg: var(--sf-token-state-key-fg);
+  --sf-state-key-bg: var(--sf-token-state-key-bg);
+  --sf-state-key-border: var(--sf-token-state-key-border);
   --sf-font-family-ui: var(--sf-token-font-family-ui);
   --sf-font-family-mono: var(--sf-token-font-family-mono);
   --sf-space-0: var(--sf-token-space-0);
@@ -1861,41 +1870,46 @@ html[data-sf-theme-mode='dark'] .sf-tab-item.sf-tab-item-active:active {
   transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
 }
 
+/* ON: theme accent fill (blue on default theme) */
 .sf-switch-on {
-  color: var(--sf-state-success-fg);
-  background: var(--sf-state-success-bg);
-  border-color: var(--sf-state-success-border);
+  color: rgb(var(--sf-color-surface-elevated-rgb));
+  background: rgb(var(--sf-color-accent-rgb));
+  border-color: rgb(var(--sf-color-accent-strong-rgb));
 }
 
+/* OFF: two-gray pattern — light gray button, mid gray track */
 .sf-switch-off {
   color: rgb(var(--sf-color-text-muted-rgb));
-  background: rgb(var(--sf-color-border-default-rgb) / 0.42);
-  border-color: rgb(var(--sf-color-border-subtle-rgb) / 0.52);
+  background: rgb(var(--sf-color-border-subtle-rgb) / 0.6);
+  border-color: rgb(var(--sf-color-border-default-rgb));
 }
 
 html[data-sf-theme-mode='dark'] .sf-switch-off {
   color: rgb(var(--sf-color-text-subtle-rgb));
-  background: rgb(var(--sf-color-border-subtle-rgb) / 0.22);
-  border-color: rgb(var(--sf-color-border-subtle-rgb) / 0.58);
+  background: rgb(var(--sf-color-border-subtle-rgb) / 0.45);
+  border-color: rgb(var(--sf-color-border-default-rgb) / 0.8);
 }
 
+/* Off track = the darker of the two grays */
 .sf-switch-track {
-  border: 1px solid rgb(var(--sf-color-border-subtle-rgb) / 0.7);
-  background: rgb(var(--sf-color-border-default-rgb) / 0.56);
+  border: 1px solid rgb(var(--sf-color-border-default-rgb));
+  background: rgb(var(--sf-color-border-default-rgb) / 0.9);
 }
 
 html[data-sf-theme-mode='dark'] .sf-switch-track {
-  background: rgb(var(--sf-color-border-subtle-rgb) / 0.34);
+  background: rgb(var(--sf-color-border-default-rgb) / 0.6);
 }
 
+/* On track = darker accent recess inside the accent-filled button */
 .sf-switch-track-on {
-  border-color: var(--sf-state-success-border);
-  background: var(--sf-state-success-bg);
+  border-color: rgb(var(--sf-color-accent-strong-rgb));
+  background: rgb(0 0 0 / 0.22);
 }
 
+/* Thumb stays bright white on both states so the slide reads clearly */
 .sf-switch-thumb {
   background: rgb(var(--sf-color-surface-elevated-rgb));
-  box-shadow: 0 1px 2px rgb(15 23 42 / 0.22);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.35);
 }
 
 .sf-status-text-info {
@@ -5172,10 +5186,8 @@ html[data-sf-theme='slate'] .sf-switch-track {
   border-color: #2e3a50;
 }
 
-html[data-sf-theme='slate'] .sf-switch-off {
-  background: rgb(37 45 61 / 0.40);
-  border-color: #2e3a50;
-}
+/* WHY: off-state is now transparent+dashed across all themes for clear contrast
+   with the filled on-state; no slate-specific override needed. */
 
 html[data-sf-theme='slate'] .sf-switch-thumb {
   background: #e2e8f0;

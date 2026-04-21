@@ -28,6 +28,8 @@ interface FireAndForgetContext {
 interface FireOptions {
   readonly subType?: string;
   readonly variantKey?: string;
+  /** Per-key scope — keyFinder uses this. */
+  readonly fieldKey?: string;
 }
 
 let _tempSeq = 0;
@@ -48,6 +50,7 @@ function makeStub(
     productId,
     productLabel: productId,
     variantKey: opts.variantKey ?? '',
+    fieldKey: opts.fieldKey ?? '',
     stages: [] as readonly string[],
     currentStageIndex: 0,
     status: 'running' as const,

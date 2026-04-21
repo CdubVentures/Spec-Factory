@@ -1,5 +1,5 @@
 /**
- * Pure keyboard-nav helper for FinderTabBar. Testable under `node --test`.
+ * Pure keyboard-nav helper for IndexingTabBar. Testable under `node --test`.
  * Wraps at both ends; Home / End jump to first / last id.
  */
 

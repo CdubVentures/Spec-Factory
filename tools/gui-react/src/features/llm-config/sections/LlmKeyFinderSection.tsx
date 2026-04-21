@@ -5,6 +5,8 @@ import { ModelSelectDropdown, GlobalDefaultIcon } from '../components/ModelSelec
 import { buildModelDropdownOptions } from '../state/llmModelDropdownOptions.ts';
 import { parseModelKey, resolveProviderForModel } from '../state/llmProviderRegistryBridge.ts';
 import { extractEffortFromModelName } from '../state/llmEffortFromModelName.ts';
+import { PromptTemplatesSection } from './LlmPhaseSection.tsx';
+import type { PromptTemplateDef } from './LlmPhaseSection.tsx';
 import type { LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes.generated.ts';
 import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes.ts';
 import type { GlobalDraftSlice } from '../state/llmPhaseOverridesBridge.generated.ts';
@@ -56,6 +58,7 @@ const DIFFICULTY_TIERS: Array<{ key: 'easy' | 'medium' | 'hard' | 'very_hard'; l
 interface PhaseSchema {
   system_prompt?: string;
   response_schema?: Record<string, unknown>;
+  prompt_templates?: readonly PromptTemplateDef[];
 }
 
 interface LlmKeyFinderSectionProps {
@@ -336,21 +339,33 @@ export const LlmKeyFinderSection = memo(function LlmKeyFinderSection({
 
       {phaseSchema && (
         <SettingGroupBlock title="LLM Call Contract" collapsible storageKey="sf:llm-phase:key-finder:contract">
-          {phaseSchema.system_prompt && (
-            <div className="mb-3">
-              <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">System Prompt</div>
-              <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
-                {String(phaseSchema.system_prompt)}
-              </pre>
-            </div>
-          )}
-          {phaseSchema.response_schema && (
-            <div>
-              <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Response Schema</div>
-              <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
-                {JSON.stringify(phaseSchema.response_schema, null, 2)}
-              </pre>
-            </div>
+          {phaseSchema.prompt_templates && phaseSchema.prompt_templates.length > 0 ? (
+            <PromptTemplatesSection
+              phaseId="key-finder"
+              promptTemplates={phaseSchema.prompt_templates}
+              phaseOverrides={phaseOverrides}
+              onPhaseOverrideChange={onPhaseOverrideChange}
+              responseSchemas={phaseSchema.response_schema ? [phaseSchema.response_schema] : []}
+            />
+          ) : (
+            <>
+              {phaseSchema.system_prompt && (
+                <div className="mb-3">
+                  <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">System Prompt</div>
+                  <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
+                    {String(phaseSchema.system_prompt)}
+                  </pre>
+                </div>
+              )}
+              {phaseSchema.response_schema && (
+                <div>
+                  <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Response Schema</div>
+                  <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
+                    {JSON.stringify(phaseSchema.response_schema, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </>
           )}
         </SettingGroupBlock>
       )}

@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Indexing Panel Header — Unified Spec</title>
+<style>
+  :root {
+    --bg: #f8f9fa; --surface: #fff; --surface-alt: #f1f3f5; --surface-soft: #fafbfc;
+    --border: #dee2e6; --border-light: #e9ecef; --border-strong: #ced4da;
+    --text: #212529; --text-muted: #6c757d; --text-dim: #868e96;
+    --accent: #4263eb; --accent-light: #edf2ff; --accent-border: #bac8ff;
+
+    /* Per-panel color tokens (mirror the tab SVG icon colors) */
+    --pipe-fg: #1864ab; --pipe-bg: #e7f5ff; --pipe-border: #a5d8ff;
+    --cef-fg:  #d97706; --cef-bg:  #fff4e6; --cef-border:  #ffd8a8;
+    --pif-fg:  #0c8599; --pif-bg:  #e3fafc; --pif-border:  #99e9f2;
+    --rdf-fg:  #7048e8; --rdf-bg:  #f3f0ff; --rdf-border:  #d0bfff;
+    --sku-fg:  #2b8a3e; --sku-bg:  #ebfbee; --sku-border:  #b2f2bb;
+    --key-fg:  #3b4cca; --key-bg:  #edf2ff; --key-border:  #bac8ff;
+
+    /* Difficulty tier colors (used inside key model strip) */
+    --tier-easy-fg:     #2b8a3e; --tier-easy-bg:     #ebfbee; --tier-easy-border:     #b2f2bb;
+    --tier-medium-fg:   #0c8599; --tier-medium-bg:   #e3fafc; --tier-medium-border:   #99e9f2;
+    --tier-hard-fg:     #e67700; --tier-hard-bg:     #fff4e6; --tier-hard-border:     #ffd8a8;
+    --tier-vhard-fg:    #c92a2a; --tier-vhard-bg:    #fff5f5; --tier-vhard-border:    #ffc9c9;
+
+    --red: #c92a2a; --green: #2b8a3e;
+
+    --mono: 'SF Mono','Cascadia Code','Fira Code',Consolas,monospace;
+    --font: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    --radius: 8px;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.05), 0 1px 3px rgba(0,0,0,.08);
+    --shadow-md: 0 2px 4px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.08);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:var(--font); color:var(--text); background:var(--bg); line-height:1.55; }
+  .page-header { background:linear-gradient(135deg,#1864ab,#4263eb); color:#fff; padding:34px 0 30px; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,.08); }
+  .page-header h1 { font-size:26px; font-weight:700; letter-spacing:-.3px; }
+  .page-header p { font-size:14px; opacity:.92; margin-top:6px; max-width:780px; margin-left:auto; margin-right:auto; }
+  .page-header .pill { display:inline-block; background:rgba(255,255,255,.2); padding:4px 12px; border-radius:99px; font-size:12px; font-weight:600; letter-spacing:.3px; margin-top:14px; }
+  .container { max-width:1320px; margin:0 auto; padding:28px 24px 80px; }
+  h2 { font-size:19px; font-weight:700; margin:40px 0 14px; padding-bottom:8px; border-bottom:2px solid var(--accent); display:flex; align-items:center; gap:10px; }
+  h2 .num { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%; background:var(--accent); color:#fff; font-size:13px; font-weight:700; }
+  h3 { font-size:15px; font-weight:700; margin:20px 0 8px; }
+  p { margin-bottom:10px; font-size:13.5px; }
+  code { font-family:var(--mono); font-size:12.5px; background:var(--surface-alt); padding:2px 6px; border-radius:3px; color:var(--accent); }
+
+  .callout { border-left:4px solid; padding:12px 16px; border-radius:0 var(--radius) var(--radius) 0; margin:12px 0; font-size:13.5px; background:var(--surface); }
+  .callout-info { border-color:var(--accent); background:var(--accent-light); }
+  .callout-ok { border-color:var(--green); background:#ebfbee; }
+  .callout-warn { border-color:#e67700; background:#fff4e6; }
+  .callout-red { border-color:var(--red); background:#fff5f5; }
+  .callout strong { display:block; margin-bottom:4px; }
+
+  /* ── Tables ─────────────────────────────────────────────────────── */
+  table.t { width:100%; border-collapse:collapse; font-size:13px; background:var(--surface); border:1px solid var(--border); border-radius:6px; overflow:hidden; box-shadow:var(--shadow-sm); margin:12px 0 18px; }
+  table.t th, table.t td { padding:10px 14px; text-align:left; border-bottom:1px solid var(--border-light); vertical-align:middle; }
+  table.t th { background:var(--surface-soft); font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); font-weight:700; }
+  table.t tbody tr:last-child td { border-bottom:none; }
+  table.t tbody tr:hover { background:#fafbfd; }
+  table.t td.muted { color:var(--text-muted); }
+  table.t td.center, table.t th.center { text-align:center; }
+  table.t .yes { color:var(--green); font-weight:700; }
+  table.t .no  { color:var(--red); font-weight:700; }
+  table.t .swatch { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:6px; vertical-align:-1px; border:1px solid rgba(0,0,0,.12); }
+
+  /* ── Unified panel header (spec demo only; not full samples) ───── */
+  .sf-panel {
+    background:var(--surface); border:1px solid var(--border-light); border-radius:10px;
+    box-shadow:var(--shadow-sm); margin:10px 0 14px; position:relative; overflow:hidden;
+  }
+  .sf-panel-rail {
+    position:absolute; left:0; top:0; bottom:0; width:3px;
+  }
+  .sf-panel-header {
+    display:flex; align-items:center; gap:10px; padding:10px 16px 10px 18px;
+  }
+  .sf-chev {
+    width:22px; height:22px; border-radius:4px; background:transparent; border:1px solid var(--border);
+    color:var(--text-muted); font-size:12px; cursor:pointer; font-family:var(--font);
+    display:inline-flex; align-items:center; justify-content:center;
+  }
+  .sf-chev:hover { background:var(--surface-alt); color:var(--text); }
+  .sf-panel-icon {
+    width:26px; height:26px; border-radius:6px; border:1px solid;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:14px; line-height:1; font-weight:600;
+  }
+  .sf-panel-title { font-size:14px; font-weight:700; color:var(--text); letter-spacing:-.1px; }
+  .sf-tip {
+    width:16px; height:16px; border-radius:50%; background:var(--surface-alt);
+    color:var(--text-muted); font-size:11px; font-style:italic;
+    display:inline-flex; align-items:center; justify-content:center; cursor:help;
+  }
+  .sf-running {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:2px 8px; border-radius:99px;
+    background:var(--accent-light); color:var(--accent);
+    font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px;
+  }
+  .sf-running .dot { width:6px; height:6px; border-radius:50%; background:currentColor; animation:pulse 1.4s infinite; }
+  @keyframes pulse { 0%,100%{opacity:.45} 50%{opacity:1} }
+
+  /* Model strip */
+  .sf-model-strip { display:inline-flex; gap:4px; align-items:center; flex-wrap:wrap; }
+  .sf-model-chip {
+    display:inline-flex; align-items:center; gap:4px;
+    padding:2px 6px; border-radius:4px;
+    font-family:var(--mono); font-size:10px; font-weight:700;
+    background:var(--surface-alt); color:var(--text); border:1px solid var(--border-light);
+    white-space:nowrap;
+  }
+  .sf-model-chip .pfx { font-size:8.5px; letter-spacing:.5px; color:var(--accent); }
+  .sf-model-chip .eff { font-size:8.5px; letter-spacing:.5px; color:var(--accent); padding:0 3px; border-radius:2px; background:rgba(66,99,235,.1); }
+  .sf-model-chip.tier-easy   { background:var(--tier-easy-bg);   border-color:var(--tier-easy-border);   color:var(--tier-easy-fg); }
+  .sf-model-chip.tier-medium { background:var(--tier-medium-bg); border-color:var(--tier-medium-border); color:var(--tier-medium-fg); }
+  .sf-model-chip.tier-hard   { background:var(--tier-hard-bg);   border-color:var(--tier-hard-border);   color:var(--tier-hard-fg); }
+  .sf-model-chip.tier-vhard  { background:var(--tier-vhard-bg);  border-color:var(--tier-vhard-border);  color:var(--tier-vhard-fg); }
+
+  /* Actions */
+  .sf-actions { margin-left:auto; display:inline-flex; gap:6px; align-items:center; }
+  .sf-btn-ghost {
+    padding:4px 10px; border-radius:5px; font-size:11.5px; font-weight:600;
+    background:transparent; border:1px solid var(--border); color:var(--text-muted);
+    cursor:pointer; font-family:var(--font);
+  }
+  .sf-btn-ghost:hover { background:var(--surface-alt); color:var(--text); }
+  .sf-btn-primary {
+    padding:4px 14px; border-radius:5px; font-size:11px; font-weight:700;
+    background:var(--accent); color:#fff; border:1px solid var(--accent);
+    cursor:pointer; font-family:var(--font); text-transform:uppercase; letter-spacing:.4px;
+  }
+  .sf-btn-primary:hover { filter:brightness(1.05); }
+  .sf-btn-loop {
+    padding:4px 10px; border-radius:5px; font-size:11.5px; font-weight:700;
+    background:transparent; border:1px solid var(--accent); color:var(--accent);
+    cursor:pointer; font-family:var(--font);
+  }
+
+  /* Panel theming (rail + icon colors) — data-panel attribute drives all */
+  .sf-panel[data-panel="pipeline"] .sf-panel-rail { background:var(--pipe-fg); }
+  .sf-panel[data-panel="pipeline"] .sf-panel-icon { color:var(--pipe-fg); background:var(--pipe-bg); border-color:var(--pipe-border); }
+  .sf-panel[data-panel="cef"] .sf-panel-rail { background:var(--cef-fg); }
+  .sf-panel[data-panel="cef"] .sf-panel-icon { color:var(--cef-fg); background:var(--cef-bg); border-color:var(--cef-border); }
+  .sf-panel[data-panel="pif"] .sf-panel-rail { background:var(--pif-fg); }
+  .sf-panel[data-panel="pif"] .sf-panel-icon { color:var(--pif-fg); background:var(--pif-bg); border-color:var(--pif-border); }
+  .sf-panel[data-panel="rdf"] .sf-panel-rail { background:var(--rdf-fg); }
+  .sf-panel[data-panel="rdf"] .sf-panel-icon { color:var(--rdf-fg); background:var(--rdf-bg); border-color:var(--rdf-border); }
+  .sf-panel[data-panel="sku"] .sf-panel-rail { background:var(--sku-fg); }
+  .sf-panel[data-panel="sku"] .sf-panel-icon { color:var(--sku-fg); background:var(--sku-bg); border-color:var(--sku-border); }
+  .sf-panel[data-panel="key"] .sf-panel-rail { background:var(--key-fg); }
+  .sf-panel[data-panel="key"] .sf-panel-icon { color:var(--key-fg); background:var(--key-bg); border-color:var(--key-border); }
+
+  /* ── Anatomy diagram ────────────────────────────────────────────── */
+  .anatomy { position:relative; padding:40px 30px 80px; background:var(--surface-soft); border:1px dashed var(--border-strong); border-radius:10px; margin:18px 0 24px; }
+  .anatomy .sf-panel { margin:0; }
+  .anatomy .callouts { position:absolute; left:0; right:0; bottom:0; top:0; pointer-events:none; }
+  .anatomy .co {
+    position:absolute; font-size:11px; font-weight:700; color:var(--accent);
+    font-family:var(--mono); text-transform:uppercase; letter-spacing:.5px;
+    background:var(--surface); padding:3px 8px; border-radius:4px;
+    border:1px solid var(--accent-border);
+  }
+  .anatomy .co::before {
+    content:""; position:absolute; width:1px; background:var(--accent-border);
+  }
+  .anatomy .co.top    { bottom:calc(100% + 6px); left:50%; transform:translateX(-50%); }
+  .anatomy .co.top::before { bottom:-10px; left:50%; height:10px; }
+  .anatomy .co.bot    { top:calc(100% + 6px); left:50%; transform:translateX(-50%); }
+  .anatomy .co.bot::before { top:-10px; left:50%; height:10px; }
+
+  /* Rule cards */
+  .rule-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:10px 0 20px; }
+  .rule {
+    background:var(--surface); border:1px solid var(--border-light); border-radius:8px;
+    padding:14px 16px; box-shadow:var(--shadow-sm);
+  }
+  .rule h4 { font-size:13px; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+  .rule.do h4    { color:var(--green); }
+  .rule.do h4::before { content:"✓"; }
+  .rule.dont h4  { color:var(--red); }
+  .rule.dont h4::before { content:"✗"; }
+  .rule ul { margin:4px 0 0 20px; font-size:12.5px; color:var(--text); }
+  .rule li { margin:4px 0; }
+
+  .token-swatch {
+    display:inline-flex; align-items:center; gap:8px;
+    padding:8px 12px; border-radius:6px;
+    font-family:var(--mono); font-size:11.5px; font-weight:700;
+  }
+  .token-row { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 16px; }
+  .token-swatch.pipe { background:var(--pipe-bg); color:var(--pipe-fg); border:1px solid var(--pipe-border); }
+  .token-swatch.cef  { background:var(--cef-bg);  color:var(--cef-fg);  border:1px solid var(--cef-border); }
+  .token-swatch.pif  { background:var(--pif-bg);  color:var(--pif-fg);  border:1px solid var(--pif-border); }
+  .token-swatch.rdf  { background:var(--rdf-bg);  color:var(--rdf-fg);  border:1px solid var(--rdf-border); }
+  .token-swatch.sku  { background:var(--sku-bg);  color:var(--sku-fg);  border:1px solid var(--sku-border); }
+  .token-swatch.key  { background:var(--key-bg);  color:var(--key-fg);  border:1px solid var(--key-border); }
+
+  /* Small footer note */
+  .footnote { font-size:11.5px; color:var(--text-muted); margin-top:6px; }
+
+  hr { border:none; border-top:1px solid var(--border-light); margin:28px 0; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Indexing Panel Header — Unified Spec</h1>
+  <p>One reusable header component for Pipeline · CEF · PIF · RDF · SKU · Key. Kills drift. Adds per-panel color, expandable state, model chips, and a strict button matrix.</p>
+  <span class="pill">v1 · 2026-04-21 · spec + anatomy</span>
+</div>
+
+<div class="container">
+
+  <!-- ══════════════════════════════ -->
+  <h2><span class="num">1</span> Why this exists</h2>
+  <p>The six indexing tabs (Pipeline + 4 finders + Key) currently render six different headers. The drift is structural, not cosmetic — Key uses a bespoke gradient toolbar, Pipeline hand-writes its own layout, CEF/PIF/RDF/SKU share a partial component but fill it inconsistently.</p>
+
+  <div class="callout callout-warn">
+    <strong>Current drift summary</strong>
+    Three separate header implementations across six panels. Only the Key panel shows product id (not needed). Only CEF exposes the Prompt button today. Model badges appear in four panels but not in Pipeline or Key. The <code>.finder-tab-icon-key</code> color class is missing from <code>FinderTabBar.css</code>.
+  </div>
+
+  <h3>Feature matrix — BEFORE (today)</h3>
+  <table class="t">
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th class="center">Pipeline</th>
+        <th class="center">CEF</th>
+        <th class="center">PIF</th>
+        <th class="center">RDF</th>
+        <th class="center">SKU</th>
+        <th class="center">Key</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Uses shared <code>FinderPanelHeader</code></td>
+        <td class="center no">✗</td><td class="center yes">✓</td><td class="center yes">✓</td>
+        <td class="center yes">✓</td><td class="center yes">✓</td><td class="center no">✗</td></tr>
+      <tr><td>Collapse / expand control</td>
+        <td class="center yes">✓</td><td class="center yes">✓</td><td class="center yes">✓</td>
+        <td class="center yes">✓</td><td class="center yes">✓</td><td class="center no">✗</td></tr>
+      <tr><td>Panel-colored icon chip</td>
+        <td class="center yes">✓</td><td class="center yes">✓</td><td class="center yes">✓</td>
+        <td class="center yes">✓</td><td class="center yes">✓</td><td class="center no">✗ missing</td></tr>
+      <tr><td>Model chip(s)</td>
+        <td class="center no">✗</td><td class="center yes">1</td><td class="center yes">2</td>
+        <td class="center yes">1</td><td class="center yes">1</td><td class="center no">✗</td></tr>
+      <tr><td>Running pill</td>
+        <td class="center no">✗</td><td class="center yes">✓</td><td class="center yes">✓</td>
+        <td class="center yes">✓</td><td class="center yes">✓</td><td class="center no">✗</td></tr>
+      <tr><td>History button</td>
+        <td class="center no">✗</td><td class="center yes">✓</td><td class="center yes">✓</td>
+        <td class="center yes">✓</td><td class="center yes">✓</td><td class="center yes">✓</td></tr>
+      <tr><td>Prompt button</td>
+        <td class="center no">✗</td><td class="center yes">✓</td><td class="center no">✗</td>
+        <td class="center no">✗</td><td class="center no">✗</td><td class="center no">✗</td></tr>
+      <tr><td>Shows product id (undesired)</td>
+        <td class="center no">✗</td><td class="center no">✗</td><td class="center no">✗</td>
+        <td class="center no">✗</td><td class="center no">✗</td><td class="center yes" style="color:var(--red)">✓</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Feature matrix — AFTER (unified contract)</h3>
+  <table class="t">
+    <thead>
+      <tr>
+        <th>Slot</th>
+        <th class="center">Pipeline</th>
+        <th class="center">CEF</th>
+        <th class="center">PIF</th>
+        <th class="center">RDF</th>
+        <th class="center">SKU</th>
+        <th class="center">Key</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Expand/collapse chevron</td>
+        <td class="center yes">✓</td><td class="center yes">✓</td><td class="center yes">✓</td>
+        <td class="center yes">✓</td><td class="center yes">✓</td><td class="center yes">✓</td></tr>
+      <tr><td>Icon chip + rail (panel color)</td>
+        <td class="center yes">sky</td><td class="center yes">amber</td><td class="center yes">cyan</td>
+        <td class="center yes">purple</td><td class="center yes">green</td><td class="center yes">indigo</td></tr>
+      <tr><td>Title + tip</td>
+        <td class="center yes">✓</td><td class="center yes">✓</td><td class="center yes">✓</td>
+        <td class="center yes">✓</td><td class="center yes">✓</td><td class="center yes">✓</td></tr>
+      <tr><td>Running pill (while active)</td>
+        <td class="center yes">✓</td><td class="center yes">✓</td><td class="center yes">✓</td>
+        <td class="center yes">✓</td><td class="center yes">✓</td><td class="center yes">✓</td></tr>
+      <tr><td>Model strip</td>
+        <td class="center yes">5 phase chips</td>
+        <td class="center yes">1 chip</td>
+        <td class="center yes">2 chips</td>
+        <td class="center yes">1 chip</td>
+        <td class="center yes">1 chip</td>
+        <td class="center yes">4 tier chips</td></tr>
+      <tr><td>History button</td>
+        <td class="center no">— none</td><td class="center yes">✓</td><td class="center yes">✓</td>
+        <td class="center yes">✓</td><td class="center yes">✓</td><td class="center yes">✓</td></tr>
+      <tr><td>Prompt button</td>
+        <td class="center no">— none</td><td class="center yes">✓</td><td class="center yes">✓</td>
+        <td class="center yes">✓</td><td class="center yes">✓</td><td class="center no">— none</td></tr>
+      <tr><td>Run primary</td>
+        <td class="center yes">Run</td><td class="center yes">Run</td><td class="center yes">Run</td>
+        <td class="center yes">Run</td><td class="center yes">Run</td><td class="center yes">Run all</td></tr>
+      <tr><td>Loop secondary</td>
+        <td class="center no">— none</td><td class="center no">— none</td><td class="center yes">✓</td>
+        <td class="center yes">✓</td><td class="center yes">✓</td><td class="center yes">Loop all</td></tr>
+      <tr><td>Product id</td>
+        <td class="center no"><strong>forbidden slot — removed</strong></td>
+        <td class="center no">—</td><td class="center no">—</td>
+        <td class="center no">—</td><td class="center no">—</td><td class="center no">—</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ══════════════════════════════ -->
+  <h2><span class="num">2</span> Anatomy of the unified header</h2>
+  <p>One component: <code>&lt;IndexingPanelHeader panel="..." slots={{...}} /&gt;</code>. All 6 panels pass the same prop shape; differences are data, not markup.</p>
+
+  <div class="anatomy">
+    <div class="sf-panel" data-panel="cef">
+      <div class="sf-panel-rail"></div>
+      <div class="sf-panel-header">
+        <button class="sf-chev" title="Collapse">▾</button>
+        <span class="sf-panel-icon">◈</span>
+        <span class="sf-panel-title">Color &amp; Edition Finder</span>
+        <span class="sf-tip">i</span>
+        <span class="sf-running"><span class="dot"></span>Running</span>
+        <span class="sf-model-strip">
+          <span class="sf-model-chip"><span class="pfx">LAB</span>gpt-5.4<span class="eff">HIGH</span></span>
+        </span>
+        <span class="sf-actions">
+          <button class="sf-btn-ghost">History</button>
+          <button class="sf-btn-ghost">Prompt</button>
+          <button class="sf-btn-primary">Run</button>
+        </span>
+      </div>
+    </div>
+
+    <div class="callouts">
+      <div class="co top" style="left:32px;">A · Rail</div>
+      <div class="co top" style="left:78px;">B · Chevron</div>
+      <div class="co top" style="left:125px;">C · Icon chip</div>
+      <div class="co top" style="left:245px;">D · Title</div>
+      <div class="co top" style="left:320px;">E · Tip</div>
+      <div class="co top" style="left:390px;">F · Running</div>
+      <div class="co top" style="left:510px;">G · Model strip</div>
+      <div class="co bot" style="right:200px; left:auto;">H · History / Prompt</div>
+      <div class="co bot" style="right:50px; left:auto;">I · Run</div>
+    </div>
+  </div>
+
+  <h3>Slot reference</h3>
+  <table class="t">
+    <thead>
+      <tr><th style="width:50px">#</th><th style="width:150px">Slot</th><th>Purpose</th><th>Driven by</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>A</strong></td><td>Rail</td><td>3px-wide accent stripe on the panel's left edge. Matches panel color exactly.</td><td><code>data-panel</code></td></tr>
+      <tr><td><strong>B</strong></td><td>Chevron</td><td>Single-click toggle. <code>▸</code> collapsed, <code>▾</code> expanded. Keyboard: Space/Enter.</td><td><code>collapsed</code> prop</td></tr>
+      <tr><td><strong>C</strong></td><td>Icon chip</td><td>Same glyph and color as the tab's SVG icon. Non-interactive. Tinted fg/bg/border from panel token.</td><td><code>data-panel</code> (glyph &amp; tint)</td></tr>
+      <tr><td><strong>D</strong></td><td>Title</td><td>Short bold label, ≤24 chars. Never includes product id.</td><td>panel registry</td></tr>
+      <tr><td><strong>E</strong></td><td>Tip</td><td>Hover-only explainer; no click. Long-form one-liner about what the panel does.</td><td>panel registry</td></tr>
+      <tr><td><strong>F</strong></td><td>Running pill</td><td>Visible only while the panel has an active run. Pulses. Hidden when idle.</td><td>finder run state</td></tr>
+      <tr><td><strong>G</strong></td><td>Model strip</td><td>1 chip for scalar finders; 2 for PIF; 4 tier chips for Key; 5 phase chips for Pipeline. Always visible.</td><td>llm-config resolved settings</td></tr>
+      <tr><td><strong>H</strong></td><td>History / Prompt</td><td>Ghost-style secondary actions. Rendered only when the slot is wired for that panel.</td><td>panel button matrix</td></tr>
+      <tr><td><strong>I</strong></td><td>Run primary</td><td>Accent-filled. Disabled while <em>running</em>, <em>sending</em>, or prereqs missing. Loop (if any) sits to the left of Run.</td><td>panel button matrix</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ══════════════════════════════ -->
+  <h2><span class="num">3</span> Panel color tokens</h2>
+  <p>Each panel's rail + icon chip use three semantic tokens: <code>--{panel}-fg</code>, <code>--{panel}-bg</code>, <code>--{panel}-border</code>. These mirror the tab-bar SVG icon already defined in <code>FinderTabBar.css</code>. The only net-new token is the <strong>key</strong> trio (currently missing — Key tab falls back to neutral).</p>
+
+  <div class="token-row">
+    <div class="token-swatch pipe">◉ pipeline · sky</div>
+    <div class="token-swatch cef">◈ cef · amber</div>
+    <div class="token-swatch pif">▣ pif · cyan</div>
+    <div class="token-swatch rdf">◷ rdf · purple</div>
+    <div class="token-swatch sku">⌗ sku · green</div>
+    <div class="token-swatch key">⚙ key · indigo</div>
+  </div>
+
+  <table class="t">
+    <thead><tr><th>Panel</th><th>Icon</th><th>Token base</th><th>fg</th><th>bg</th><th>border</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Pipeline</td><td><span class="sf-panel-icon" style="color:var(--pipe-fg);background:var(--pipe-bg);border:1px solid var(--pipe-border);">◉</span></td><td><code>--sf-state-run-ai-*</code></td><td><span class="swatch" style="background:var(--pipe-fg)"></span>#1864ab</td><td><span class="swatch" style="background:var(--pipe-bg)"></span>#e7f5ff</td><td><span class="swatch" style="background:var(--pipe-border)"></span>#a5d8ff</td><td>Keep existing.</td></tr>
+      <tr><td>CEF</td><td><span class="sf-panel-icon" style="color:var(--cef-fg);background:var(--cef-bg);border:1px solid var(--cef-border);">◈</span></td><td><code>--sf-state-warning-*</code></td><td><span class="swatch" style="background:var(--cef-fg)"></span>#d97706</td><td><span class="swatch" style="background:var(--cef-bg)"></span>#fff4e6</td><td><span class="swatch" style="background:var(--cef-border)"></span>#ffd8a8</td><td>Keep existing.</td></tr>
+      <tr><td>PIF</td><td><span class="sf-panel-icon" style="color:var(--pif-fg);background:var(--pif-bg);border:1px solid var(--pif-border);">▣</span></td><td><code>--sf-state-info-*</code></td><td><span class="swatch" style="background:var(--pif-fg)"></span>#0c8599</td><td><span class="swatch" style="background:var(--pif-bg)"></span>#e3fafc</td><td><span class="swatch" style="background:var(--pif-border)"></span>#99e9f2</td><td>Keep existing.</td></tr>
+      <tr><td>RDF</td><td><span class="sf-panel-icon" style="color:var(--rdf-fg);background:var(--rdf-bg);border:1px solid var(--rdf-border);">◷</span></td><td><code>--sf-color-accent-*</code></td><td><span class="swatch" style="background:var(--rdf-fg)"></span>#7048e8</td><td><span class="swatch" style="background:var(--rdf-bg)"></span>#f3f0ff</td><td><span class="swatch" style="background:var(--rdf-border)"></span>#d0bfff</td><td>Keep existing.</td></tr>
+      <tr><td>SKU</td><td><span class="sf-panel-icon" style="color:var(--sku-fg);background:var(--sku-bg);border:1px solid var(--sku-border);">⌗</span></td><td><code>--sf-state-success-*</code></td><td><span class="swatch" style="background:var(--sku-fg)"></span>#2b8a3e</td><td><span class="swatch" style="background:var(--sku-bg)"></span>#ebfbee</td><td><span class="swatch" style="background:var(--sku-border)"></span>#b2f2bb</td><td>Keep existing.</td></tr>
+      <tr><td>Key</td><td><span class="sf-panel-icon" style="color:var(--key-fg);background:var(--key-bg);border:1px solid var(--key-border);">⚙</span></td><td><code>--sf-state-key-indigo-*</code></td><td><span class="swatch" style="background:var(--key-fg)"></span>#3b4cca</td><td><span class="swatch" style="background:var(--key-bg)"></span>#edf2ff</td><td><span class="swatch" style="background:var(--key-border)"></span>#bac8ff</td><td><strong>NEW.</strong> Register these + add <code>.finder-tab-icon-key</code> to <code>FinderTabBar.css</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ══════════════════════════════ -->
+  <h2><span class="num">4</span> Model strip variants</h2>
+  <p>Every panel always shows its models in the header. The strip is the <em>only</em> slot whose content shape varies by panel — the rest are fixed.</p>
+
+  <table class="t">
+    <thead><tr><th style="width:110px">Panel</th><th>Shape</th><th>Content</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Pipeline</td>
+        <td>5 phase chips</td>
+        <td>
+          <span class="sf-model-strip">
+            <span class="sf-model-chip"><span class="pfx">CEF</span>gpt-5.4<span class="eff">H</span></span>
+            <span class="sf-model-chip"><span class="pfx">PIF</span>gpt-5.4<span class="eff">H</span></span>
+            <span class="sf-model-chip"><span class="pfx">RDF</span>haiku-4.5<span class="eff">L</span></span>
+            <span class="sf-model-chip"><span class="pfx">SKU</span>haiku-4.5<span class="eff">L</span></span>
+            <span class="sf-model-chip"><span class="pfx">KEY</span>mixed</span>
+          </span>
+        </td>
+      </tr>
+      <tr>
+        <td>CEF</td>
+        <td>1 chip</td>
+        <td><span class="sf-model-strip"><span class="sf-model-chip"><span class="pfx">LAB</span>gpt-5.4<span class="eff">HIGH</span></span></span></td>
+      </tr>
+      <tr>
+        <td>PIF</td>
+        <td>2 chips</td>
+        <td>
+          <span class="sf-model-strip">
+            <span class="sf-model-chip"><span class="pfx">PIF</span>gpt-5.4<span class="eff">HIGH</span></span>
+            <span class="sf-model-chip"><span class="pfx">EVAL</span>haiku-4.5<span class="eff">LOW</span></span>
+          </span>
+        </td>
+      </tr>
+      <tr>
+        <td>RDF</td>
+        <td>1 chip</td>
+        <td><span class="sf-model-strip"><span class="sf-model-chip"><span class="pfx">API</span>haiku-4.5<span class="eff">LOW</span></span></span></td>
+      </tr>
+      <tr>
+        <td>SKU</td>
+        <td>1 chip</td>
+        <td><span class="sf-model-strip"><span class="sf-model-chip"><span class="pfx">API</span>haiku-4.5<span class="eff">LOW</span></span></span></td>
+      </tr>
+      <tr>
+        <td>Key</td>
+        <td>4 tier chips</td>
+        <td>
+          <span class="sf-model-strip">
+            <span class="sf-model-chip tier-easy"><span class="pfx">EASY</span>haiku-4.5</span>
+            <span class="sf-model-chip tier-medium"><span class="pfx">MED</span>haiku-4.5</span>
+            <span class="sf-model-chip tier-hard"><span class="pfx">HARD</span>sonnet-4.6</span>
+            <span class="sf-model-chip tier-vhard"><span class="pfx">V.HARD</span>opus-4.7</span>
+          </span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <strong>Chip shape is stable</strong>
+    Every chip shares the same token structure: <code>[prefix] [model-name] [effort?]</code>. Access-mode (LAB/API) or phase label lives in <code>prefix</code>. Thinking / web-search icons can still attach when enabled, reusing <code>FinderRunModelBadge</code>.
+  </div>
+
+  <!-- ══════════════════════════════ -->
+  <h2><span class="num">5</span> Button matrix (anti-drift contract)</h2>
+  <p>The component accepts one <code>buttonSet</code> prop. There are exactly three permitted presets; adding a fourth requires a CLAUDE.md exception.</p>
+
+  <table class="t">
+    <thead>
+      <tr><th>Preset</th><th>Used by</th><th class="center">History</th><th class="center">Prompt</th><th class="center">Loop</th><th class="center">Run</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>pipeline</code></td><td>Pipeline</td><td class="center no">✗</td><td class="center no">✗</td><td class="center no">✗</td><td class="center yes">Run</td></tr>
+      <tr><td><code>finder-full</code></td><td>CEF · PIF · RDF · SKU</td><td class="center yes">✓</td><td class="center yes">✓</td><td class="center muted">optional</td><td class="center yes">Run</td></tr>
+      <tr><td><code>key</code></td><td>Key</td><td class="center yes">✓</td><td class="center no">✗</td><td class="center yes">Loop all</td><td class="center yes">Run all</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ══════════════════════════════ -->
+  <h2><span class="num">6</span> Expandable behavior</h2>
+  <p>The header row itself does not change between collapsed and expanded — only the <em>body</em> below it appears/disappears. The chevron flips and the panel's specialized content (KPI strip, phase progress, run controls, filter row) slides in.</p>
+
+  <table class="t">
+    <thead><tr><th>Panel</th><th>Expanded body</th></tr></thead>
+    <tbody>
+      <tr><td>Pipeline</td><td>Run IndexLab button · Stop / force-kill · Replay selected run · Product history KPI &amp; panel</td></tr>
+      <tr><td>CEF</td><td>Variant grid · CEF-specific controls</td></tr>
+      <tr><td>PIF</td><td>Image grid · per-variant eval actions</td></tr>
+      <tr><td>RDF</td><td>Resolved date + evidence</td></tr>
+      <tr><td>SKU</td><td>Resolved SKUs + evidence</td></tr>
+      <tr><td>Key</td><td>KPI strip · filter bar · grouped key list (today's <code>KeyFinderToolbar</code> minus the gradient bar)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-ok">
+    <strong>Key panel becomes compliant</strong>
+    The dark blue gradient bar in <code>KeyFinderToolbar</code> becomes the indigo rail + icon of the unified header. The KPI strip and filter row become the expanded body. No more product-id display, no more bespoke layout, no more missing chevron.
+  </div>
+
+  <!-- ══════════════════════════════ -->
+  <h2><span class="num">7</span> Consistency rules</h2>
+  <div class="rule-grid">
+    <div class="rule do">
+      <h4>DO</h4>
+      <ul>
+        <li>Every panel renders the same <code>IndexingPanelHeader</code> component — no exceptions.</li>
+        <li>Panel identity is passed via <code>panel</code> prop; all styling reads from tokens.</li>
+        <li>Model strip data comes from the resolved llm-config, not hardcoded names.</li>
+        <li>Add new panels by adding one token trio + one button-matrix row — nothing else.</li>
+        <li>Register the <code>key</code> color trio + <code>.finder-tab-icon-key</code> CSS class before Key migrates.</li>
+      </ul>
+    </div>
+    <div class="rule dont">
+      <h4>DON'T</h4>
+      <ul>
+        <li>Don't hand-build a panel header. If a preset doesn't fit, propose a new preset — don't fork.</li>
+        <li>Don't show product id anywhere in the header. Product id belongs in the global product switcher.</li>
+        <li>Don't hardcode <code>#4263eb</code> or any hex in the header — use panel tokens.</li>
+        <li>Don't put run state in the title ("Pipeline · Running"); use the Running pill slot.</li>
+        <li>Don't render a Prompt button for Pipeline or Key. Don't render History for Pipeline.</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr>
+  <p class="footnote">Companion: <code>indexing-header-unified-samples.html</code> — visual gallery of all 6 panels in both collapsed and expanded states.</p>
+</div>
+
+</body>
+</html>

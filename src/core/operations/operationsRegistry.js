@@ -72,7 +72,7 @@ export function initOperationsRegistry({ broadcastWs }) {
 /**
  * Register a new operation. Returns { id }.
  */
-export function registerOperation({ type, subType, category, productId, productLabel, variantKey, variantId, stages }) {
+export function registerOperation({ type, subType, category, productId, productLabel, variantKey, variantId, fieldKey, stages }) {
   if (!type) throw new Error('type is required');
   const id = crypto.randomUUID();
   const operation = {
@@ -84,6 +84,9 @@ export function registerOperation({ type, subType, category, productId, productL
     productLabel: productLabel || '',
     variantKey: variantKey || '',
     variantId: variantId || '',
+    // WHY: keyFinder uses fieldKey instead of variantKey for per-key scope.
+    // Existing finders pass '' (default). Per-key running-state selectors key off this.
+    fieldKey: fieldKey || '',
     stages: Array.isArray(stages) ? stages : [],
     currentStageIndex: 0,
     status: 'running',

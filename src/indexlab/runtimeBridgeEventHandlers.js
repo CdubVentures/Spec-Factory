@@ -8,11 +8,41 @@ import {
 } from './runtimeBridgeCoercers.js';
 import { toNeedSetSnapshot, pickSearchQueryFromUrl } from './runtimeBridgePayloads.js';
 import {
-  ensureRun, writeRunMeta, writeNeedSet, writeSearchProfile,
+  ensureRun, writeRunMeta, writeNeedSet, writeSearchProfile, writeFocusGroups,
   ensureBaselineArtifacts, recordSearchProfileQuery,
   applySearchProfilePlannedPayload, extractRuntimeEventPayload,
   emit, finishFetchUrl
 } from './runtimeBridgeArtifacts.js';
+import { classifyHostClass, classifyEvidenceClass } from './buildFieldHistories.js';
+
+function extractRootDomain(url, hostHint = '') {
+  const host = String(hostHint || '').trim().toLowerCase();
+  if (host) return host;
+  try { return String(new URL(String(url || '')).hostname || '').toLowerCase(); } catch { return ''; }
+}
+
+function accumulateFieldProvenance(state, { url, host, tier, tierName, contentType, method, candidates }) {
+  if (!Array.isArray(candidates) || candidates.length === 0) return;
+  const rootDomain = extractRootDomain(url, host);
+  const evBase = {
+    url: String(url || ''),
+    host: String(host || ''),
+    rootDomain,
+    tier,
+    tierName: String(tierName || ''),
+    method: String(method || ''),
+  };
+  const host_class = classifyHostClass(evBase);
+  const evidence_class = classifyEvidenceClass({ ...evBase, method: method || (String(contentType || '').includes('pdf') ? 'pdf' : '') });
+  const evidence = { url: evBase.url, rootDomain, host_class, evidence_class, tier, tierName: evBase.tierName };
+
+  for (const candidate of candidates) {
+    const field = String(candidate?.field || '').trim();
+    if (!field) continue;
+    if (!state.fieldProvenance[field]) state.fieldProvenance[field] = { evidence: [] };
+    state.fieldProvenance[field].evidence.push({ ...evidence });
+  }
+}
 import { setStageCursor, recordStartupMs, startStage, finishStage, advanceCrawlCursorIfReady } from './runtimeBridgeStageLifecycle.js';
 
 // ── Individual event handlers ──────────────────────────────────────────────
@@ -165,6 +195,18 @@ async function handleSourceProcessed(state, deps, { ts, url, row }) {
   await startStage(state, 'fetch', ts, { trigger: 'source_processed' });
   await startStage(state, 'parse', ts, { trigger: 'source_processed' });
   await startStage(state, 'index', ts, { trigger: 'source_processed' });
+
+  // WHY: Accumulate per-field provenance so the finalization hook can call
+  // buildFieldHistories(). One evidence entry per (source, field) match.
+  accumulateFieldProvenance(state, {
+    url,
+    host: row.host,
+    tier: row.tier,
+    tierName: row.tier_name || row.tierName,
+    contentType: row.content_type,
+    method: row.article_extraction_method,
+    candidates: row.candidates,
+  });
 
   const status = asInt(row.status, 0);
   const workerId = url ? state.workerByUrl.get(url) || '' : '';
@@ -390,6 +432,28 @@ async function handleBlockedDomainCooldownApplied(state, deps, { ts, row }) {
   }, ts);
 }
 
+async function handleFocusGroupsComputed(state, deps, { ts, row }) {
+  // WHY: Persist focusGroups[] as its own artifact so we can diagnose tier 2/3
+  // emission post-run (B4). focus_groups lived only in-memory before this.
+  const payload = {
+    run_id: state.runId || String(row.run_id || ''),
+    category: state.context?.category || String(row.category || ''),
+    product_id: state.context?.productId || String(row.product_id || ''),
+    generated_at: String(row.generated_at || ts || new Date().toISOString()),
+    focus_groups: Array.isArray(row.focus_groups) ? row.focus_groups : [],
+    seed_status: row.seed_status && typeof row.seed_status === 'object' ? row.seed_status : {},
+  };
+  await writeFocusGroups(state, payload);
+  await emit(state, 'index', 'focus_groups_computed', {
+    scope: 'needset',
+    focus_groups_count: payload.focus_groups.length,
+    worthy_count: payload.focus_groups.filter((g) => g?.group_search_worthy === true).length,
+    non_worthy_with_keys_count: payload.focus_groups.filter((g) =>
+      g?.group_search_worthy === false && Array.isArray(g?.normalized_key_queue) && g.normalized_key_queue.length > 0,
+    ).length,
+  }, ts);
+}
+
 async function handleNeedsetComputed(state, deps, { ts, row }) {
   // WHY: startStage('index') was here but jumped cursor to stage:index (pos 10),
   // blocking all intermediate phases. Index timing starts from source_processed.
@@ -521,6 +585,14 @@ async function handleSearchPlanGenerated(state, deps, { ts, row }) {
     // run-over-run novelty. Default novelty_rate=1 means no history was injected.
     novelty_rate: typeof row.novelty_rate === 'number' ? row.novelty_rate : 1,
     rotations_applied: asInt(row.rotations_applied, 0),
+    // WHY: tier_counts surfaces per-tier emission in O(1) for observability.
+    // Pipe through with zero-defaults so the GUI can distinguish "missing field"
+    // from "tier produced 0 rows".
+    tier_counts: {
+      seed: asInt(row.tier_counts?.seed, 0),
+      group_search: asInt(row.tier_counts?.group_search, 0),
+      key_search: asInt(row.tier_counts?.key_search, 0),
+    },
   }, ts);
   if (advanced) await writeRunMeta(state);
 }
@@ -946,6 +1018,7 @@ const EVENT_HANDLERS = new Map([
   ['url_cooldown_applied',            handleUrlCooldownApplied],
   ['blocked_domain_cooldown_applied', handleBlockedDomainCooldownApplied],
   ['needset_computed',                handleNeedsetComputed],
+  ['focus_groups_computed',           handleFocusGroupsComputed],
   ['brand_resolved',                  handleBrandResolved],
   ['search_plan_generated',           handleSearchPlanGenerated],
   ['query_journey_completed',         handleQueryJourneyCompleted],

@@ -12,6 +12,7 @@ import { REPAIR_SYSTEM_PROMPT, HALLUCINATION_PATTERNS } from '../../../publisher
 import { repairResponseJsonSchema } from '../../../publisher/repair-adapter/repairResponseSchema.js';
 import { FINDER_PHASE_SCHEMAS, FINDER_SCALAR_DEFAULT_TEMPLATES } from './phaseSchemaRegistry.generated.js';
 import { buildScalarFinderPromptTemplates } from '../../../../core/finder/scalarFinderPromptContract.js';
+import { buildKeyFinderPromptTemplates } from '../../../key/keyFinderPromptContract.js';
 import { buildVariantIdentityCheckPrompt, CEF_DISCOVERY_DEFAULT_TEMPLATE } from '../../../color-edition/colorEditionLlmAdapter.js';
 import { variantIdentityCheckResponseSchema } from '../../../color-edition/colorEditionSchema.js';
 import { buildViewEvalPrompt, buildHeroSelectionPrompt, VIEW_EVAL_DEFAULT_TEMPLATE, HERO_EVAL_DEFAULT_TEMPLATE } from '../../../product-image/imageEvaluator.js';
@@ -270,13 +271,23 @@ const IMAGE_FINDER_TEMPLATES = Object.freeze({
 //
 // Not applicable to CEF (variantGenerator), PIF (variantArtifactProducer), or
 // the carousel image-evaluator — those have bespoke multi-prompt overlays.
+// WHY: keyFinder is product-scoped (productFieldProducer), not variant-scoped,
+// so its prompt variables diverge from RDF/SKU. Route it to its own contract;
+// all other scalar finders use the shared variant-scoped contract.
+function buildFinderPromptTemplates({ moduleId, defaultTemplate }) {
+  if (moduleId === 'keyFinder') {
+    return buildKeyFinderPromptTemplates({ moduleId, defaultTemplate });
+  }
+  return buildScalarFinderPromptTemplates({ moduleId, defaultTemplate });
+}
+
 const SCALAR_FINDER_OVERLAYS = Object.freeze(
   Object.fromEntries(
     Object.entries(FINDER_SCALAR_DEFAULT_TEMPLATES).map(([phaseId, { moduleId, defaultTemplate }]) => [
       phaseId,
       {
         ...FINDER_PHASE_SCHEMAS[phaseId],
-        prompt_templates: buildScalarFinderPromptTemplates({ moduleId, defaultTemplate }),
+        prompt_templates: buildFinderPromptTemplates({ moduleId, defaultTemplate }),
       },
     ]),
   ),
