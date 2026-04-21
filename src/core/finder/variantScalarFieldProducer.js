@@ -125,6 +125,16 @@ export function createVariantScalarFieldProducer(cfg) {
       };
     }
 
+    // WHY: Canonical shape matches runPerVariant's transformation so the
+    // sibling-variants helper can filter by `.key`. Loaded once here and
+    // threaded through ctx to each produceForVariant call.
+    const allVariants = dbVariantsPre.map((v) => ({
+      variant_id: v.variant_id,
+      key: v.variant_key,
+      label: v.variant_label,
+      type: v.variant_type,
+    }));
+
     const llmDeps = buildLlmCallDeps({
       config, logger,
       onPhaseChange: onStageAdvance ? (p) => { if (p === 'writer') onStageAdvance('Writer'); } : undefined,
@@ -161,6 +171,7 @@ export function createVariantScalarFieldProducer(cfg) {
         onLlmCallComplete,
         promptOverride,
         evidenceCache,
+        allVariants,
       },
       _mt,
       finderStore,
@@ -176,6 +187,7 @@ export function createVariantScalarFieldProducer(cfg) {
       _mt, ranAt,
       onLlmCallComplete, promptOverride,
       evidenceCache,
+      allVariants,
     } = ctx;
 
     return async function produceForVariant(variant, _i, callCtx = {}) {
@@ -204,6 +216,8 @@ export function createVariantScalarFieldProducer(cfg) {
         product,
         variantLabel: variant.label,
         variantType: variant.type,
+        variantKey: variant.key,
+        allVariants,
         siblingsExcluded,
         familyModelCount,
         ambiguityLevel,

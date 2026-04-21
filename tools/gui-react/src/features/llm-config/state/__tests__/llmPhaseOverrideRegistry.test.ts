@@ -8,8 +8,8 @@ import {
 import { resolvePhaseModel } from '../llmPhaseOverridesBridge.generated.ts';
 
 describe('PHASE_OVERRIDE_REGISTRY', () => {
-  it('has exactly 9 entries', () => {
-    strictEqual(PHASE_OVERRIDE_REGISTRY.length, 9);
+  it('has exactly 11 entries', () => {
+    strictEqual(PHASE_OVERRIDE_REGISTRY.length, 11);
   });
 
   it('every entry has uiPhaseId, overrideKey, and globalModel', () => {
@@ -29,10 +29,12 @@ describe('PHASE_OVERRIDE_REGISTRY', () => {
       'color-finder',
       'image-evaluator',
       'image-finder',
+      'key-finder',
       'needset',
       'release-date-finder',
       'search-planner',
       'serp-selector',
+      'sku-finder',
       'validate',
     ]);
   });

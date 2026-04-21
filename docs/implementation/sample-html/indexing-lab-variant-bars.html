@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en" data-sf-theme-mode="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Indexing Lab — Variant Bar Options</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --sf-font-ui: "Segoe UI", "Inter", "Helvetica Neue", sans-serif;
+  --sf-font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  --sf-surface-canvas: #060b1a;
+  --sf-surface-base: #0a1330;
+  --sf-surface-elevated: #111f41;
+  --sf-surface-panel: #0d1834;
+  --sf-surface-card: #111f41;
+  --sf-surface-raised: #152548;
+  --sf-text-primary: #ecf1ff;
+  --sf-text-muted: #adc2eb;
+  --sf-text-subtle: #94a3b8;
+  --sf-text-dim: #6b7fa0;
+  --sf-border-soft: #243a65;
+  --sf-border-soft-alpha: rgba(36, 58, 101, 0.6);
+  --sf-border-strong: #334b7a;
+  --sf-accent: #6366f1;
+  --sf-accent-strong: #818cf8;
+  --sf-accent-glow: rgba(99, 102, 241, 0.12);
+  --sf-accent-glow-strong: rgba(99, 102, 241, 0.28);
+  --sf-success-fg: #86efac;
+  --sf-success-bg: rgba(34, 197, 94, 0.14);
+  --sf-success-ring: rgba(34, 197, 94, 0.4);
+  --sf-warning-fg: #fcd34d;
+  --sf-warning-bg: rgba(234, 179, 8, 0.15);
+  --sf-danger-fg: #f87171;
+  --sf-danger-bg: rgba(248, 113, 113, 0.15);
+  --sf-info-fg: #93c5fd;
+  --sf-info-bg: rgba(14, 165, 233, 0.15);
+  --sf-purple-fg: #d8b4fe;
+  --sf-neutral-fg: #94a3b8;
+  --sf-shadow-card: 0 1px 3px rgba(0,0,0,0.35), 0 4px 20px rgba(0,0,0,0.18);
+}
+
+body {
+  font-family: var(--sf-font-ui);
+  background: linear-gradient(180deg, var(--sf-surface-canvas), var(--sf-surface-base));
+  color: var(--sf-text-primary);
+  min-height: 100vh;
+  padding: 28px 16px 80px;
+  line-height: 1.45;
+  font-size: 13px;
+}
+.mono { font-family: var(--sf-font-mono); letter-spacing: -0.01em; }
+.preview-root { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+
+/* Intro */
+.design-intro {
+  padding: 18px 22px;
+  border: 1px solid var(--sf-accent-strong);
+  background: linear-gradient(180deg, rgba(99,102,241,0.10), rgba(99,102,241,0.02));
+  border-radius: 12px;
+}
+.design-intro h1 { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+.design-intro p { font-size: 12.5px; color: var(--sf-text-muted); max-width: 960px; }
+.design-intro p + p { margin-top: 6px; }
+.design-intro strong { color: var(--sf-accent-strong); }
+
+/* Option card shell */
+.option-group {
+  display: flex; flex-direction: column; gap: 14px;
+}
+.option-header {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 0 2px 6px;
+  border-bottom: 1px solid var(--sf-border-soft-alpha);
+}
+.option-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;
+  font-weight: 800; color: var(--sf-accent-strong);
+  padding: 3px 9px;
+  background: var(--sf-accent-glow);
+  border: 1px solid var(--sf-accent-strong);
+  border-radius: 6px;
+}
+.option-title { font-size: 15px; font-weight: 700; color: var(--sf-text-primary); }
+.option-desc { font-size: 12px; color: var(--sf-text-subtle); margin-left: auto; }
+
+.panel-frame {
+  background: var(--sf-surface-panel);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 12px;
+  box-shadow: var(--sf-shadow-card);
+  overflow: hidden;
+}
+.panel-frame-head {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--sf-border-soft-alpha);
+  background: linear-gradient(180deg, rgba(99,102,241,0.06), transparent);
+  display: flex; align-items: center; gap: 10px;
+}
+.panel-frame-title { font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--sf-text-muted); }
+.panel-frame-sub { font-size: 11px; color: var(--sf-text-dim); font-family: var(--sf-font-mono); }
+.panel-frame-body { padding: 14px 18px; display: flex; flex-direction: column; gap: 8px; }
+
+/* Section labels */
+.section-label {
+  align-self: flex-start;
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; font-weight: 700;
+  color: var(--sf-text-dim);
+  padding: 5px 12px;
+  background: rgba(99,102,241,0.08);
+  border: 1px dashed var(--sf-border-soft-alpha);
+  border-radius: 6px;
+  margin-bottom: -4px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   SCALAR VARIANT BAR — OPTIONS A / B / C
+   ═══════════════════════════════════════════════════════ */
+
+/* ▸ OPTION A — Inline Clean. Swatch + name + value chip + confidence + actions on one row. */
+.row-a {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--sf-surface-elevated);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 10px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.row-a:hover { border-color: var(--sf-border-strong); background: var(--sf-surface-raised); }
+.row-a-name { font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+.row-a-value {
+  font-family: var(--sf-font-mono); font-size: 13px; font-weight: 600;
+  padding: 4px 12px;
+  background: var(--sf-success-bg);
+  color: var(--sf-success-fg);
+  border: 1px solid var(--sf-success-ring);
+  border-radius: 6px;
+  letter-spacing: -0.01em;
+}
+.row-a-value.unknown { background: var(--sf-warning-bg); color: var(--sf-warning-fg); border-color: rgba(234,179,8,0.35); }
+.row-a-conf {
+  display: flex; flex-direction: column; gap: 2px; align-items: flex-end;
+  font-family: var(--sf-font-mono);
+  min-width: 64px;
+}
+.row-a-conf-val { font-size: 13px; font-weight: 700; color: var(--sf-text-primary); letter-spacing: -0.01em; }
+.row-a-conf-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--sf-text-dim); font-weight: 700; font-family: var(--sf-font-ui); }
+
+/* ▸ OPTION B — Value-forward. Value is the heading, name + confidence below as context. */
+.row-b {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 18px;
+  background: var(--sf-surface-elevated);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 10px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.row-b:hover { border-color: var(--sf-border-strong); background: var(--sf-surface-raised); }
+.row-b-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.row-b-value {
+  font-family: var(--sf-font-mono); font-size: 14.5px; font-weight: 700;
+  color: var(--sf-text-primary); letter-spacing: -0.01em;
+  display: flex; align-items: center; gap: 8px;
+}
+.row-b-value.unknown { color: var(--sf-warning-fg); }
+.row-b-sub {
+  font-size: 11px; color: var(--sf-text-subtle);
+  display: flex; align-items: center; gap: 10px;
+}
+.row-b-sub .name { color: var(--sf-text-muted); font-weight: 600; font-family: var(--sf-font-ui); }
+.row-b-sub .conf-bar {
+  flex: 1; max-width: 120px; height: 3px; border-radius: 2px;
+  background: rgba(0,0,0,0.35); overflow: hidden;
+}
+.row-b-sub .conf-bar-fill { height: 100%; background: var(--sf-success-fg); border-radius: 2px; }
+.row-b-sub .conf-bar-fill.warn { background: var(--sf-warning-fg); }
+.row-b-sub .conf-pct { font-family: var(--sf-font-mono); color: var(--sf-text-muted); font-size: 10.5px; }
+
+/* ▸ OPTION C — Minimal list. Tight single line; value in mono, confidence as subtle suffix. */
+.row-c {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 14px;
+  align-items: center;
+  padding: 10px 14px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: 1px solid var(--sf-border-soft-alpha);
+  border-radius: 0;
+  transition: background 0.12s;
+}
+.row-c:hover { background: var(--sf-surface-elevated); }
+.row-c:last-child { border-bottom: none; }
+.row-c-name { font-size: 13px; font-weight: 600; }
+.row-c-value {
+  font-family: var(--sf-font-mono); font-size: 12.5px; font-weight: 600;
+  color: var(--sf-success-fg);
+  letter-spacing: -0.01em;
+}
+.row-c-value.unknown { color: var(--sf-warning-fg); }
+.row-c-conf {
+  font-family: var(--sf-font-mono);
+  font-size: 11px;
+  color: var(--sf-text-subtle);
+  min-width: 52px; text-align: right;
+}
+
+/* ═══════════════════════════════════════════════════════
+   PIF VARIANT BAR — OPTIONS A / B / C / D
+   ═══════════════════════════════════════════════════════ */
+
+/* ▸ PIF OPTION A — Twin progress bars. Views + Hero each get a bar + count. */
+.pif-a {
+  display: grid;
+  grid-template-columns: auto 1.4fr 1.5fr auto;
+  gap: 18px;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--sf-surface-elevated);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 10px;
+}
+.pif-a:hover { border-color: var(--sf-border-strong); background: var(--sf-surface-raised); }
+.pif-a-ident { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.pif-a-name-col { display: flex; flex-direction: column; gap: 2px; }
+.pif-a-name { font-size: 13.5px; font-weight: 700; }
+.pif-a-count { font-size: 11px; color: var(--sf-text-subtle); font-family: var(--sf-font-mono); }
+.pif-a-bars { display: flex; flex-direction: column; gap: 5px; }
+.pif-a-bar-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--sf-text-muted); font-family: var(--sf-font-mono); }
+.pif-a-bar-label { font-family: var(--sf-font-ui); color: var(--sf-text-dim); text-transform: uppercase; font-size: 9.5px; letter-spacing: 0.1em; font-weight: 700; min-width: 38px; }
+.pif-a-bar { flex: 1; height: 4px; border-radius: 2px; background: rgba(0,0,0,0.4); overflow: hidden; min-width: 80px; }
+.pif-a-bar-fill { height: 100%; background: var(--sf-success-fg); border-radius: 2px; transition: width 0.3s; }
+.pif-a-bar-fill.warn { background: var(--sf-warning-fg); }
+.pif-a-bar-fill.empty { background: var(--sf-danger-fg); opacity: 0.55; }
+.pif-a-count-frac { color: var(--sf-text-muted); min-width: 36px; text-align: right; }
+
+/* ▸ PIF OPTION B — Unified fraction + caption. Single inline spec line. */
+.pif-b {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 18px; align-items: center;
+  padding: 12px 16px;
+  background: var(--sf-surface-elevated);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 10px;
+}
+.pif-b:hover { border-color: var(--sf-border-strong); background: var(--sf-surface-raised); }
+.pif-b-main { display: flex; flex-direction: column; gap: 2px; }
+.pif-b-name { font-size: 13.5px; font-weight: 700; }
+.pif-b-spec {
+  display: flex; align-items: center; gap: 14px;
+  font-family: var(--sf-font-mono); font-size: 11.5px; color: var(--sf-text-muted);
+}
+.pif-b-spec .tag { font-family: var(--sf-font-ui); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; color: var(--sf-text-dim); margin-right: 4px; }
+.pif-b-spec .val.done { color: var(--sf-success-fg); }
+.pif-b-spec .val.part { color: var(--sf-warning-fg); }
+.pif-b-spec .val.none { color: var(--sf-danger-fg); opacity: 0.7; }
+.pif-b-spec .sep { color: var(--sf-border-strong); }
+
+/* ▸ PIF OPTION C — Segmented slots. Each view + hero as a dot (filled/empty). */
+.pif-c {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 18px; align-items: center;
+  padding: 12px 16px;
+  background: var(--sf-surface-elevated);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 10px;
+}
+.pif-c:hover { border-color: var(--sf-border-strong); background: var(--sf-surface-raised); }
+.pif-c-main { display: flex; flex-direction: column; gap: 5px; }
+.pif-c-name { font-size: 13.5px; font-weight: 700; }
+.pif-c-slots { display: flex; align-items: center; gap: 10px; }
+.pif-c-slot-group { display: flex; align-items: center; gap: 4px; }
+.pif-c-slot-label { font-size: 9.5px; color: var(--sf-text-dim); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; margin-right: 2px; }
+.pif-c-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: transparent;
+  border: 1.5px solid rgba(148,163,184,0.4);
+}
+.pif-c-dot.filled { background: var(--sf-success-fg); border-color: var(--sf-success-fg); }
+.pif-c-dot.hero { border-radius: 2px; transform: rotate(45deg); }
+.pif-c-count {
+  font-family: var(--sf-font-mono); font-size: 12px; color: var(--sf-text-muted);
+  min-width: 72px; text-align: right;
+}
+.pif-c-count strong { color: var(--sf-text-primary); font-weight: 700; }
+
+/* ▸ PIF OPTION D — Big combined bar + fractions. Single segmented bar views|hero. */
+.pif-d {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 18px; align-items: center;
+  padding: 12px 16px;
+  background: var(--sf-surface-elevated);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 10px;
+}
+.pif-d:hover { border-color: var(--sf-border-strong); background: var(--sf-surface-raised); }
+.pif-d-main { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.pif-d-heading { display: flex; align-items: baseline; gap: 10px; }
+.pif-d-name { font-size: 13.5px; font-weight: 700; }
+.pif-d-total { font-family: var(--sf-font-mono); font-size: 11px; color: var(--sf-text-subtle); }
+.pif-d-bar-track {
+  display: grid; grid-template-columns: 8fr 1fr; gap: 4px;
+  height: 8px;
+  min-width: 240px;
+}
+.pif-d-bar-seg {
+  height: 100%; border-radius: 3px;
+  background: rgba(0,0,0,0.35);
+  position: relative; overflow: hidden;
+}
+.pif-d-bar-fill {
+  position: absolute; inset: 0 auto 0 0;
+  background: var(--sf-success-fg); border-radius: 3px;
+}
+.pif-d-bar-fill.warn { background: var(--sf-warning-fg); }
+.pif-d-bar-fill.empty { background: var(--sf-danger-fg); opacity: 0.55; }
+.pif-d-legend { display: flex; gap: 12px; font-family: var(--sf-font-mono); font-size: 10.5px; color: var(--sf-text-subtle); }
+.pif-d-legend .tag { font-family: var(--sf-font-ui); text-transform: uppercase; letter-spacing: 0.1em; font-size: 9px; font-weight: 700; color: var(--sf-text-dim); margin-right: 4px; }
+.pif-d-legend .num.done { color: var(--sf-success-fg); }
+.pif-d-legend .num.part { color: var(--sf-warning-fg); }
+.pif-d-legend .num.none { color: var(--sf-danger-fg); opacity: 0.7; }
+
+/* ═══════════════════════════════════════════════════════
+   SHARED — swatch + action buttons (used by all options)
+   ═══════════════════════════════════════════════════════ */
+.swatch {
+  width: 28px; height: 28px; border-radius: 7px;
+  border: 1px solid var(--sf-border-strong);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.04);
+  flex-shrink: 0;
+}
+.swatch-sm { width: 22px; height: 22px; border-radius: 6px; }
+
+.actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 11px;
+  background: var(--sf-surface-base);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 7px;
+  font-size: 11px; font-weight: 600;
+  color: var(--sf-text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+.btn:hover { color: var(--sf-text-primary); border-color: var(--sf-border-strong); background: var(--sf-accent-glow); }
+.btn.primary { background: var(--sf-accent-glow); border-color: var(--sf-accent-strong); color: var(--sf-accent-strong); }
+.btn.primary:hover { background: var(--sf-accent); color: #fff; border-color: var(--sf-accent); }
+.btn.icon-only { padding: 6px 8px; min-width: 28px; justify-content: center; }
+.btn-ic { font-size: 11px; opacity: 0.85; }
+
+/* Footer pick-one card */
+.pick-card {
+  padding: 18px 22px;
+  background: var(--sf-surface-panel);
+  border: 1px solid var(--sf-border-soft);
+  border-radius: 12px;
+}
+.pick-card h3 { font-size: 13px; font-weight: 800; letter-spacing: 0.02em; margin-bottom: 8px; }
+.pick-card p { font-size: 12px; color: var(--sf-text-muted); margin-bottom: 6px; }
+.pick-card code {
+  font-family: var(--sf-font-mono); font-size: 11.5px;
+  padding: 1px 6px; background: var(--sf-surface-canvas); border-radius: 4px; color: var(--sf-teal-fg);
+}
+
+</style>
+</head>
+<body>
+
+<div class="preview-root">
+
+  <div class="design-intro">
+    <h1>Variant Bar — Options Preview</h1>
+    <p><strong>Scope:</strong> dial in the per-variant row shape for SKU / RDF (scalar finders — one value each) and PIF (per-variant image finder) before touching the command deck.</p>
+    <p><strong>Removed everywhere:</strong> the <code>CLR</code> / <code>ED</code> 3-letter type chips. The swatch already communicates the variant; the finder panel already communicates scope.</p>
+    <p><strong>Scalar (SKU/RDF) shows:</strong> swatch · name · value · confidence · actions. <strong>PIF shows:</strong> swatch · name · total images · views fill · hero fill · actions.</p>
+    <p>Pick one scalar option (A / B / C) and one PIF option (A / B / C / D), or cherry-pick elements.</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SCALAR — SKU / RDF variant bars
+       ═══════════════════════════════════════════════════════ -->
+
+  <div class="section-label">Scalar variant bars — SKU &amp; Release Date</div>
+
+  <!-- ▸ OPTION A — Inline Clean -->
+  <div class="option-group">
+    <div class="option-header">
+      <span class="option-label">Option A</span>
+      <span class="option-title">Inline Clean</span>
+      <span class="option-desc">Value as a pill chip, confidence as a mono percentage, one line per variant.</span>
+    </div>
+
+    <div class="panel-frame">
+      <div class="panel-frame-head">
+        <span class="panel-frame-title">SKU · All Variants</span>
+        <span class="panel-frame-sub">4 / 4 published</span>
+      </div>
+      <div class="panel-frame-body">
+        <div class="row-a">
+          <span class="swatch" style="background:#1a1a1a;"></span>
+          <span class="row-a-name">Black</span>
+          <span class="row-a-value">CH-9310100-NA</span>
+          <span class="row-a-conf"><span class="row-a-conf-val">0.97</span><span class="row-a-conf-label">conf</span></span>
+          <span class="actions">
+            <button class="btn primary">Run</button>
+            <button class="btn">Loop</button>
+            <button class="btn icon-only" title="More">⋯</button>
+          </span>
+        </div>
+        <div class="row-a">
+          <span class="swatch" style="background:#f8fafc;"></span>
+          <span class="row-a-name">White</span>
+          <span class="row-a-value">CH-9310101-NA</span>
+          <span class="row-a-conf"><span class="row-a-conf-val">0.95</span><span class="row-a-conf-label">conf</span></span>
+          <span class="actions">
+            <button class="btn primary">Run</button>
+            <button class="btn">Loop</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+        <div class="row-a">
+          <span class="swatch" style="background:#d1d5db;"></span>
+          <span class="row-a-name">Light Gray</span>
+          <span class="row-a-value">CH-9310102-NA</span>
+          <span class="row-a-conf"><span class="row-a-conf-val">0.94</span><span class="row-a-conf-label">conf</span></span>
+          <span class="actions">
+            <button class="btn primary">Run</button>
+            <button class="btn">Loop</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+        <div class="row-a">
+          <span class="swatch" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);"></span>
+          <span class="row-a-name">Launch Edition</span>
+          <span class="row-a-value">CH-9310103-NA</span>
+          <span class="row-a-conf"><span class="row-a-conf-val">0.89</span><span class="row-a-conf-label">conf</span></span>
+          <span class="actions">
+            <button class="btn primary">Run</button>
+            <button class="btn">Loop</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-frame">
+      <div class="panel-frame-head">
+        <span class="panel-frame-title">Release Date · All Variants</span>
+        <span class="panel-frame-sub">3 / 4 published</span>
+      </div>
+      <div class="panel-frame-body">
+        <div class="row-a">
+          <span class="swatch" style="background:#1a1a1a;"></span>
+          <span class="row-a-name">Black</span>
+          <span class="row-a-value">2024-03-14</span>
+          <span class="row-a-conf"><span class="row-a-conf-val">0.94</span><span class="row-a-conf-label">conf</span></span>
+          <span class="actions">
+            <button class="btn primary">Run</button>
+            <button class="btn">Loop</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+        <div class="row-a">
+          <span class="swatch" style="background:#f8fafc;"></span>
+          <span class="row-a-name">White</span>
+          <span class="row-a-value">2024-03-14</span>
+          <span class="row-a-conf"><span class="row-a-conf-val">0.91</span><span class="row-a-conf-label">conf</span></span>
+          <span class="actions">
+            <button class="btn primary">Run</button>
+            <button class="btn">Loop</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+        <div class="row-a">
+          <span class="swatch" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);"></span>
+          <span class="row-a-name">Launch Edition</span>
+          <span class="row-a-value unknown">unknown</span>
+          <span class="row-a-conf"><span class="row-a-conf-val">—</span><span class="row-a-conf-label">12 attempts</span></span>
+          <span class="actions">
+            <button class="btn primary">Run</button>
+            <button class="btn">Loop</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ▸ OPTION B — Value-forward -->
+  <div class="option-group">
+    <div class="option-header">
+      <span class="option-label">Option B</span>
+      <span class="option-title">Value-forward</span>
+      <span class="option-desc">Value is the headline in monospace; name + confidence-bar form a subtitle line.</span>
+    </div>
+
+    <div class="panel-frame">
+      <div class="panel-frame-head">
+        <span class="panel-frame-title">SKU · All Variants</span>
+        <span class="panel-frame-sub">4 / 4 published</span>
+      </div>
+      <div class="panel-frame-body">
+        <div class="row-b">
+          <span class="swatch" style="background:#1a1a1a;"></span>
+          <span class="row-b-main">
+            <span class="row-b-value">CH-9310100-NA</span>
+            <span class="row-b-sub">
+              <span class="name">Black</span>
+              <span class="conf-bar"><span class="conf-bar-fill" style="width:97%"></span></span>
+              <span class="conf-pct">0.97</span>
+            </span>
+          </span>
+          <span class="actions">
+            <button class="btn primary">Run</button>
+            <button class="btn">Loop</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+        <div class="row-b">
+          <span class="swatch" style="background:#f8fafc;"></span>
+          <span class="row-b-main">
+            <span class="row-b-value">CH-9310101-NA</span>
+            <span class="row-b-sub">
+              <span class="name">White</span>
+              <span class="conf-bar"><span class="conf-bar-fill" style="width:95%"></span></span>
+              <span class="conf-pct">0.95</span>
+            </span>
+          </span>
+          <span class="actions">
+            <button class="btn primary">Run</button>
+            <button class="btn">Loop</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+        <div class="row-b">
+          <span class="swatch" style="background:#d1d5db;"></span>
+          <span class="row-b-main">
+            <span class="row-b-value">CH-9310102-NA</span>
+            <span class="row-b-sub">
+              <span class="name">Light Gray</span>
+              <span class="conf-bar"><span class="conf-bar-fill" style="width:94%"></span></span>
+              <span class="conf-pct">0.94</span>
+            </span>
+          </span>
+          <span class="actions">
+            <button class="btn primary">Run</button>
+            <button class="btn">Loop</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+        <div class="row-b">
+          <span class="swatch" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);"></span>
+          <span class="row-b-main">
+            <span class="row-b-value">CH-9310103-NA</span>
+            <span class="row-b-sub">
+              <span class="name">Launch Edition</span>
+              <span class="conf-bar"><span class="conf-bar-fill" style="width:89%"></span></span>
+              <span class="conf-pct">0.89</span>
+            </span>
+          </span>
+          <span class="actions">
+            <button class="btn primary">Run</button>
+            <button class="btn">Loop</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-frame">
+      <div class="panel-frame-head">
+        <span class="panel-frame-title">Release Date · All Variants</span>
+        <span class="panel-frame-sub">3 / 4 published</span>
+      </div>
+      <div class="panel-frame-body">
+        <div class="row-b">
+          <span class="swatch" style="background:#1a1a1a;"></span>
+          <span class="row-b-main">
+            <span class="row-b-value">2024-03-14</span>
+            <span class="row-b-sub">
+              <span class="name">Black</span>
+              <span class="conf-bar"><span class="conf-bar-fill" style="width:94%"></span></span>
+              <span class="conf-pct">0.94</span>
+            </span>
+          </span>
+          <span class="actions">
+            <button class="btn primary">Run</button>
+            <button class="btn">Loop</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+        <div class="row-b">
+          <span class="swatch" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);"></span>
+          <span class="row-b-main">
+            <span class="row-b-value unknown">unknown</span>
+            <span class="row-b-sub">
+              <span class="name">Launch Edition</span>
+              <span class="conf-bar"><span class="conf-bar-fill warn" style="width:12%"></span></span>
+              <span class="conf-pct">12 attempts</span>
+            </span>
+          </span>
+          <span class="actions">
+            <button class="btn primary">Run</button>
+            <button class="btn">Loop</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ▸ OPTION C — Minimal list -->
+  <div class="option-group">
+    <div class="option-header">
+      <span class="option-label">Option C</span>
+      <span class="option-title">Minimal list</span>
+      <span class="option-desc">No per-row borders; hairline separators. Feels like a terminal-grade inventory listing.</span>
+    </div>
+
+    <div class="panel-frame">
+      <div class="panel-frame-head">
+        <span class="panel-frame-title">SKU · All Variants</span>
+        <span class="panel-frame-sub">4 / 4 published</span>
+      </div>
+      <div class="panel-frame-body" style="padding: 2px 0;">
+        <div class="row-c">
+          <span class="swatch swatch-sm" style="background:#1a1a1a;"></span>
+          <span class="row-c-name">Black</span>
+          <span class="row-c-value">CH-9310100-NA</span>
+          <span class="row-c-conf">0.97 conf</span>
+        </div>
+        <div class="row-c">
+          <span class="swatch swatch-sm" style="background:#f8fafc;"></span>
+          <span class="row-c-name">White</span>
+          <span class="row-c-value">CH-9310101-NA</span>
+          <span class="row-c-conf">0.95 conf</span>
+        </div>
+        <div class="row-c">
+          <span class="swatch swatch-sm" style="background:#d1d5db;"></span>
+          <span class="row-c-name">Light Gray</span>
+          <span class="row-c-value">CH-9310102-NA</span>
+          <span class="row-c-conf">0.94 conf</span>
+        </div>
+        <div class="row-c">
+          <span class="swatch swatch-sm" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);"></span>
+          <span class="row-c-name">Launch Edition</span>
+          <span class="row-c-value">CH-9310103-NA</span>
+          <span class="row-c-conf">0.89 conf</span>
+        </div>
+      </div>
+    </div>
+    <div style="padding: 0 2px; font-size: 11px; color: var(--sf-text-dim); font-style: italic;">
+      Actions in Option C live in a <em>row hover</em> or in the panel top-bar bulk actions, keeping the table ultra-clean. Hover a row to expose Run / Loop / ⋯.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       PIF — Product Image variant bars
+       ═══════════════════════════════════════════════════════ -->
+
+  <div class="section-label">PIF variant bars — Product Image</div>
+
+  <!-- ▸ PIF A — Twin progress bars -->
+  <div class="option-group">
+    <div class="option-header">
+      <span class="option-label">PIF A</span>
+      <span class="option-title">Twin progress bars</span>
+      <span class="option-desc">Views and Hero each get their own labeled bar — accurate, scannable, but visually "busy".</span>
+    </div>
+    <div class="panel-frame">
+      <div class="panel-frame-head">
+        <span class="panel-frame-title">Product Image · All Variants</span>
+        <span class="panel-frame-sub">5 images · 0 / 4 heroes</span>
+      </div>
+      <div class="panel-frame-body">
+        <div class="pif-a">
+          <span class="pif-a-ident">
+            <span class="swatch" style="background:#1a1a1a;"></span>
+            <span class="pif-a-name-col"><span class="pif-a-name">Black</span><span class="pif-a-count">0 images</span></span>
+          </span>
+          <div class="pif-a-bars">
+            <div class="pif-a-bar-row"><span class="pif-a-bar-label">Views</span><span class="pif-a-bar"><span class="pif-a-bar-fill empty" style="width:0%"></span></span><span class="pif-a-count-frac">0 / 8</span></div>
+            <div class="pif-a-bar-row"><span class="pif-a-bar-label">Hero</span><span class="pif-a-bar"><span class="pif-a-bar-fill empty" style="width:0%"></span></span><span class="pif-a-count-frac">0 / 1</span></div>
+          </div>
+          <div></div>
+          <span class="actions">
+            <button class="btn primary">Discover</button>
+            <button class="btn">Loop</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+        <div class="pif-a">
+          <span class="pif-a-ident">
+            <span class="swatch" style="background:#d1d5db;"></span>
+            <span class="pif-a-name-col"><span class="pif-a-name">Light Gray</span><span class="pif-a-count">3 images</span></span>
+          </span>
+          <div class="pif-a-bars">
+            <div class="pif-a-bar-row"><span class="pif-a-bar-label">Views</span><span class="pif-a-bar"><span class="pif-a-bar-fill" style="width:37.5%"></span></span><span class="pif-a-count-frac">3 / 8</span></div>
+            <div class="pif-a-bar-row"><span class="pif-a-bar-label">Hero</span><span class="pif-a-bar"><span class="pif-a-bar-fill empty" style="width:0%"></span></span><span class="pif-a-count-frac">0 / 1</span></div>
+          </div>
+          <div></div>
+          <span class="actions">
+            <button class="btn primary">Hero</button>
+            <button class="btn">Eval</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+        <div class="pif-a">
+          <span class="pif-a-ident">
+            <span class="swatch" style="background:#f8fafc;"></span>
+            <span class="pif-a-name-col"><span class="pif-a-name">White</span><span class="pif-a-count">0 images</span></span>
+          </span>
+          <div class="pif-a-bars">
+            <div class="pif-a-bar-row"><span class="pif-a-bar-label">Views</span><span class="pif-a-bar"><span class="pif-a-bar-fill empty" style="width:0%"></span></span><span class="pif-a-count-frac">0 / 8</span></div>
+            <div class="pif-a-bar-row"><span class="pif-a-bar-label">Hero</span><span class="pif-a-bar"><span class="pif-a-bar-fill empty" style="width:0%"></span></span><span class="pif-a-count-frac">0 / 1</span></div>
+          </div>
+          <div></div>
+          <span class="actions">
+            <button class="btn primary">Discover</button>
+            <button class="btn">Loop</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+        <div class="pif-a">
+          <span class="pif-a-ident">
+            <span class="swatch" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);"></span>
+            <span class="pif-a-name-col"><span class="pif-a-name">Launch Edition</span><span class="pif-a-count">2 images</span></span>
+          </span>
+          <div class="pif-a-bars">
+            <div class="pif-a-bar-row"><span class="pif-a-bar-label">Views</span><span class="pif-a-bar"><span class="pif-a-bar-fill warn" style="width:25%"></span></span><span class="pif-a-count-frac">2 / 8</span></div>
+            <div class="pif-a-bar-row"><span class="pif-a-bar-label">Hero</span><span class="pif-a-bar"><span class="pif-a-bar-fill empty" style="width:0%"></span></span><span class="pif-a-count-frac">0 / 1</span></div>
+          </div>
+          <div></div>
+          <span class="actions">
+            <button class="btn primary">Hero</button>
+            <button class="btn">Eval</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ▸ PIF B — Unified fraction -->
+  <div class="option-group">
+    <div class="option-header">
+      <span class="option-label">PIF B</span>
+      <span class="option-title">Unified spec line</span>
+      <span class="option-desc">Name as heading; images / views / heroes read as a single mono spec line underneath. No bars.</span>
+    </div>
+    <div class="panel-frame">
+      <div class="panel-frame-head">
+        <span class="panel-frame-title">Product Image · All Variants</span>
+        <span class="panel-frame-sub">5 images · 0 / 4 heroes</span>
+      </div>
+      <div class="panel-frame-body">
+        <div class="pif-b">
+          <span class="swatch" style="background:#1a1a1a;"></span>
+          <span class="pif-b-main">
+            <span class="pif-b-name">Black</span>
+            <span class="pif-b-spec">
+              <span><span class="tag">Images</span><span class="val none">0</span></span>
+              <span class="sep">·</span>
+              <span><span class="tag">Views</span><span class="val none">0 / 8</span></span>
+              <span class="sep">·</span>
+              <span><span class="tag">Hero</span><span class="val none">0 / 1</span></span>
+            </span>
+          </span>
+          <span class="actions">
+            <button class="btn primary">Discover</button>
+            <button class="btn">Loop</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+        <div class="pif-b">
+          <span class="swatch" style="background:#d1d5db;"></span>
+          <span class="pif-b-main">
+            <span class="pif-b-name">Light Gray</span>
+            <span class="pif-b-spec">
+              <span><span class="tag">Images</span><span class="val part">3</span></span>
+              <span class="sep">·</span>
+              <span><span class="tag">Views</span><span class="val part">3 / 8</span></span>
+              <span class="sep">·</span>
+              <span><span class="tag">Hero</span><span class="val none">0 / 1</span></span>
+            </span>
+          </span>
+          <span class="actions">
+            <button class="btn primary">Hero</button>
+            <button class="btn">Eval</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+        <div class="pif-b">
+          <span class="swatch" style="background:#f8fafc;"></span>
+          <span class="pif-b-main">
+            <span class="pif-b-name">White</span>
+            <span class="pif-b-spec">
+              <span><span class="tag">Images</span><span class="val none">0</span></span>
+              <span class="sep">·</span>
+              <span><span class="tag">Views</span><span class="val none">0 / 8</span></span>
+              <span class="sep">·</span>
+              <span><span class="tag">Hero</span><span class="val none">0 / 1</span></span>
+            </span>
+          </span>
+          <span class="actions">
+            <button class="btn primary">Discover</button>
+            <button class="btn">Loop</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+        <div class="pif-b">
+          <span class="swatch" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);"></span>
+          <span class="pif-b-main">
+            <span class="pif-b-name">Launch Edition</span>
+            <span class="pif-b-spec">
+              <span><span class="tag">Images</span><span class="val part">2</span></span>
+              <span class="sep">·</span>
+              <span><span class="tag">Views</span><span class="val part">2 / 8</span></span>
+              <span class="sep">·</span>
+              <span><span class="tag">Hero</span><span class="val none">0 / 1</span></span>
+            </span>
+          </span>
+          <span class="actions">
+            <button class="btn primary">Hero</button>
+            <button class="btn">Eval</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ▸ PIF C — Segmented slot dots -->
+  <div class="option-group">
+    <div class="option-header">
+      <span class="option-label">PIF C</span>
+      <span class="option-title">Slot dots</span>
+      <span class="option-desc">Each view slot is a circle dot, hero is a diamond. Visually shows "which slots are filled" at a glance.</span>
+    </div>
+    <div class="panel-frame">
+      <div class="panel-frame-head">
+        <span class="panel-frame-title">Product Image · All Variants</span>
+        <span class="panel-frame-sub">5 images · 0 / 4 heroes</span>
+      </div>
+      <div class="panel-frame-body">
+        <div class="pif-c">
+          <span class="swatch" style="background:#1a1a1a;"></span>
+          <span class="pif-c-main">
+            <span class="pif-c-name">Black</span>
+            <span class="pif-c-slots">
+              <span class="pif-c-slot-group">
+                <span class="pif-c-slot-label">Views</span>
+                <span class="pif-c-dot"></span><span class="pif-c-dot"></span><span class="pif-c-dot"></span><span class="pif-c-dot"></span>
+                <span class="pif-c-dot"></span><span class="pif-c-dot"></span><span class="pif-c-dot"></span><span class="pif-c-dot"></span>
+              </span>
+              <span class="pif-c-slot-group">
+                <span class="pif-c-slot-label">Hero</span>
+                <span class="pif-c-dot hero"></span>
+              </span>
+            </span>
+          </span>
+          <span class="pif-c-count"><strong>0</strong> images</span>
+          <span class="actions">
+            <button class="btn primary">Discover</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+        <div class="pif-c">
+          <span class="swatch" style="background:#d1d5db;"></span>
+          <span class="pif-c-main">
+            <span class="pif-c-name">Light Gray</span>
+            <span class="pif-c-slots">
+              <span class="pif-c-slot-group">
+                <span class="pif-c-slot-label">Views</span>
+                <span class="pif-c-dot filled"></span><span class="pif-c-dot filled"></span><span class="pif-c-dot filled"></span><span class="pif-c-dot"></span>
+                <span class="pif-c-dot"></span><span class="pif-c-dot"></span><span class="pif-c-dot"></span><span class="pif-c-dot"></span>
+              </span>
+              <span class="pif-c-slot-group">
+                <span class="pif-c-slot-label">Hero</span>
+                <span class="pif-c-dot hero"></span>
+              </span>
+            </span>
+          </span>
+          <span class="pif-c-count"><strong>3</strong> images</span>
+          <span class="actions">
+            <button class="btn primary">Hero</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+        <div class="pif-c">
+          <span class="swatch" style="background:#f8fafc;"></span>
+          <span class="pif-c-main">
+            <span class="pif-c-name">White</span>
+            <span class="pif-c-slots">
+              <span class="pif-c-slot-group">
+                <span class="pif-c-slot-label">Views</span>
+                <span class="pif-c-dot"></span><span class="pif-c-dot"></span><span class="pif-c-dot"></span><span class="pif-c-dot"></span>
+                <span class="pif-c-dot"></span><span class="pif-c-dot"></span><span class="pif-c-dot"></span><span class="pif-c-dot"></span>
+              </span>
+              <span class="pif-c-slot-group">
+                <span class="pif-c-slot-label">Hero</span>
+                <span class="pif-c-dot hero"></span>
+              </span>
+            </span>
+          </span>
+          <span class="pif-c-count"><strong>0</strong> images</span>
+          <span class="actions">
+            <button class="btn primary">Discover</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+        <div class="pif-c">
+          <span class="swatch" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);"></span>
+          <span class="pif-c-main">
+            <span class="pif-c-name">Launch Edition</span>
+            <span class="pif-c-slots">
+              <span class="pif-c-slot-group">
+                <span class="pif-c-slot-label">Views</span>
+                <span class="pif-c-dot filled"></span><span class="pif-c-dot filled"></span><span class="pif-c-dot"></span><span class="pif-c-dot"></span>
+                <span class="pif-c-dot"></span><span class="pif-c-dot"></span><span class="pif-c-dot"></span><span class="pif-c-dot"></span>
+              </span>
+              <span class="pif-c-slot-group">
+                <span class="pif-c-slot-label">Hero</span>
+                <span class="pif-c-dot hero"></span>
+              </span>
+            </span>
+          </span>
+          <span class="pif-c-count"><strong>2</strong> images</span>
+          <span class="actions">
+            <button class="btn primary">Hero</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ▸ PIF D — Single combined bar -->
+  <div class="option-group">
+    <div class="option-header">
+      <span class="option-label">PIF D</span>
+      <span class="option-title">Combined bar</span>
+      <span class="option-desc">One segmented bar — views chunk (wide) + hero chunk (narrow). Compact, high visual rhythm.</span>
+    </div>
+    <div class="panel-frame">
+      <div class="panel-frame-head">
+        <span class="panel-frame-title">Product Image · All Variants</span>
+        <span class="panel-frame-sub">5 images · 0 / 4 heroes</span>
+      </div>
+      <div class="panel-frame-body">
+        <div class="pif-d">
+          <span class="swatch" style="background:#1a1a1a;"></span>
+          <span class="pif-d-main">
+            <span class="pif-d-heading">
+              <span class="pif-d-name">Black</span>
+              <span class="pif-d-total">0 images</span>
+            </span>
+            <span class="pif-d-bar-track">
+              <span class="pif-d-bar-seg"><span class="pif-d-bar-fill empty" style="width:0%"></span></span>
+              <span class="pif-d-bar-seg"><span class="pif-d-bar-fill empty" style="width:0%"></span></span>
+            </span>
+            <span class="pif-d-legend">
+              <span><span class="tag">Views</span><span class="num none">0 / 8</span></span>
+              <span><span class="tag">Hero</span><span class="num none">0 / 1</span></span>
+            </span>
+          </span>
+          <span class="actions">
+            <button class="btn primary">Discover</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+        <div class="pif-d">
+          <span class="swatch" style="background:#d1d5db;"></span>
+          <span class="pif-d-main">
+            <span class="pif-d-heading">
+              <span class="pif-d-name">Light Gray</span>
+              <span class="pif-d-total">3 images</span>
+            </span>
+            <span class="pif-d-bar-track">
+              <span class="pif-d-bar-seg"><span class="pif-d-bar-fill" style="width:37.5%"></span></span>
+              <span class="pif-d-bar-seg"><span class="pif-d-bar-fill empty" style="width:0%"></span></span>
+            </span>
+            <span class="pif-d-legend">
+              <span><span class="tag">Views</span><span class="num part">3 / 8</span></span>
+              <span><span class="tag">Hero</span><span class="num none">0 / 1</span></span>
+            </span>
+          </span>
+          <span class="actions">
+            <button class="btn primary">Hero</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+        <div class="pif-d">
+          <span class="swatch" style="background:#f8fafc;"></span>
+          <span class="pif-d-main">
+            <span class="pif-d-heading">
+              <span class="pif-d-name">White</span>
+              <span class="pif-d-total">0 images</span>
+            </span>
+            <span class="pif-d-bar-track">
+              <span class="pif-d-bar-seg"><span class="pif-d-bar-fill empty" style="width:0%"></span></span>
+              <span class="pif-d-bar-seg"><span class="pif-d-bar-fill empty" style="width:0%"></span></span>
+            </span>
+            <span class="pif-d-legend">
+              <span><span class="tag">Views</span><span class="num none">0 / 8</span></span>
+              <span><span class="tag">Hero</span><span class="num none">0 / 1</span></span>
+            </span>
+          </span>
+          <span class="actions">
+            <button class="btn primary">Discover</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+        <div class="pif-d">
+          <span class="swatch" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);"></span>
+          <span class="pif-d-main">
+            <span class="pif-d-heading">
+              <span class="pif-d-name">Launch Edition</span>
+              <span class="pif-d-total">2 images</span>
+            </span>
+            <span class="pif-d-bar-track">
+              <span class="pif-d-bar-seg"><span class="pif-d-bar-fill warn" style="width:25%"></span></span>
+              <span class="pif-d-bar-seg"><span class="pif-d-bar-fill empty" style="width:0%"></span></span>
+            </span>
+            <span class="pif-d-legend">
+              <span><span class="tag">Views</span><span class="num part">2 / 8</span></span>
+              <span><span class="tag">Hero</span><span class="num none">0 / 1</span></span>
+            </span>
+          </span>
+          <span class="actions">
+            <button class="btn primary">Hero</button>
+            <button class="btn icon-only">⋯</button>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pick one -->
+  <div class="pick-card">
+    <h3>How to pick</h3>
+    <p><strong>Scalar (SKU / RDF):</strong> reply with <code>A</code>, <code>B</code>, or <code>C</code>. Trade-off summary:</p>
+    <p>&nbsp;&nbsp;&nbsp;<code>A</code> — most balanced; value pill + confidence stat.<br>
+       &nbsp;&nbsp;&nbsp;<code>B</code> — value is the hero; great when the value IS the product identity (a SKU).<br>
+       &nbsp;&nbsp;&nbsp;<code>C</code> — densest; good if you often compare many rows at once.</p>
+    <p><strong>PIF:</strong> reply with <code>A</code>, <code>B</code>, <code>C</code>, or <code>D</code>. Trade-off summary:</p>
+    <p>&nbsp;&nbsp;&nbsp;<code>A</code> — twin bars; precise but visually heavy.<br>
+       &nbsp;&nbsp;&nbsp;<code>B</code> — spec line; text-first, zero bars.<br>
+       &nbsp;&nbsp;&nbsp;<code>C</code> — slot dots; playful, reads like a board-game progress tracker.<br>
+       &nbsp;&nbsp;&nbsp;<code>D</code> — combined bar; single visual rhythm, compact.</p>
+    <p>Cherry-picking is fine — e.g. "scalar B, PIF D, but swap the action buttons to the Option C style".</p>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -43,7 +43,19 @@ export interface LlmPolicyReasoning {
   mode: boolean;
 }
 
-export type LlmPolicyGroup = 'apiKeys' | 'provider' | 'budget' | 'tokens' | 'models' | 'reasoning';
+export interface LlmPolicyKeyFinder {
+  modelEasy: string;
+  modelMedium: string;
+  modelHard: string;
+  modelVeryHard: string;
+  modelFallback: string;
+  variantPointsPerExtra: number;
+  budgetFloor: number;
+  bundlingEnabled: boolean;
+  passengerDifficultyPolicy: string;
+}
+
+export type LlmPolicyGroup = 'apiKeys' | 'provider' | 'budget' | 'tokens' | 'models' | 'reasoning' | 'keyFinder';
 
 export interface LlmPolicy {
   apiKeys: LlmPolicyApiKeys;
@@ -52,8 +64,14 @@ export interface LlmPolicy {
   tokens: LlmPolicyTokens;
   models: LlmPolicyModels;
   reasoning: LlmPolicyReasoning;
+  keyFinder: LlmPolicyKeyFinder;
   phaseOverrides: Record<string, Partial<LlmPhaseOverride>>;
   providerRegistry: LlmProviderEntry[];
+  keyFinderBudgetRequired: Record<string, number>;
+  keyFinderBudgetAvailability: Record<string, number>;
+  keyFinderBudgetDifficulty: Record<string, number>;
+  keyFinderBundlingPassengerCost: Record<string, number>;
+  keyFinderBundlingPoolPerPrimary: Record<string, number>;
   labQueueDelayMs: number;
   timeoutMs: number;
 }
@@ -80,6 +98,15 @@ export const FLAT_TO_GROUP: Record<string, { group: LlmPolicyGroup; field: strin
   llmPlanUseReasoning:                       { group: 'reasoning', field: 'enabled' },
   llmReasoningBudget:                        { group: 'reasoning', field: 'budget' },
   llmReasoningMode:                          { group: 'reasoning', field: 'mode' },
+  keyFinderModelEasy:                        { group: 'keyFinder', field: 'modelEasy' },
+  keyFinderModelMedium:                      { group: 'keyFinder', field: 'modelMedium' },
+  keyFinderModelHard:                        { group: 'keyFinder', field: 'modelHard' },
+  keyFinderModelVeryHard:                    { group: 'keyFinder', field: 'modelVeryHard' },
+  keyFinderModelFallback:                    { group: 'keyFinder', field: 'modelFallback' },
+  keyFinderBudgetVariantPointsPerExtra:      { group: 'keyFinder', field: 'variantPointsPerExtra' },
+  keyFinderBudgetFloor:                      { group: 'keyFinder', field: 'budgetFloor' },
+  keyFinderBundlingEnabled:                  { group: 'keyFinder', field: 'bundlingEnabled' },
+  keyFinderPassengerDifficultyPolicy:        { group: 'keyFinder', field: 'passengerDifficultyPolicy' },
 };
 
 export const FLAT_TOP_LEVEL: Record<string, string> = {
@@ -109,10 +136,24 @@ export const LLM_POLICY_MANAGED_KEYS = [
   'llmPlanUseReasoning',
   'llmReasoningBudget',
   'llmReasoningMode',
+  'keyFinderModelEasy',
+  'keyFinderModelMedium',
+  'keyFinderModelHard',
+  'keyFinderModelVeryHard',
+  'keyFinderModelFallback',
+  'keyFinderBudgetVariantPointsPerExtra',
+  'keyFinderBudgetFloor',
+  'keyFinderBundlingEnabled',
+  'keyFinderPassengerDifficultyPolicy',
   'llmLabQueueDelayMs',
   'llmTimeoutMs',
   'llmPhaseOverridesJson',
   'llmProviderRegistryJson',
+  'keyFinderBudgetRequiredPointsJson',
+  'keyFinderBudgetAvailabilityPointsJson',
+  'keyFinderBudgetDifficultyPointsJson',
+  'keyFinderBundlingPassengerCostJson',
+  'keyFinderBundlingPoolPerPrimaryJson',
 ] as const;
 
 // --- Reader utilities (inlined for zero-dependency assembly) ---
@@ -174,8 +215,24 @@ export function assembleLlmPolicyFromFlat(source: Record<string, unknown>): LlmP
       budget: readNum(source, 'llmReasoningBudget', 32768),
       mode: readBool(source, 'llmReasoningMode', true),
     },
+    keyFinder: {
+      modelEasy: readStr(source, 'keyFinderModelEasy', ""),
+      modelMedium: readStr(source, 'keyFinderModelMedium', ""),
+      modelHard: readStr(source, 'keyFinderModelHard', ""),
+      modelVeryHard: readStr(source, 'keyFinderModelVeryHard', ""),
+      modelFallback: readStr(source, 'keyFinderModelFallback', ""),
+      variantPointsPerExtra: readNum(source, 'keyFinderBudgetVariantPointsPerExtra', 1),
+      budgetFloor: readNum(source, 'keyFinderBudgetFloor', 3),
+      bundlingEnabled: readBool(source, 'keyFinderBundlingEnabled', false),
+      passengerDifficultyPolicy: readStr(source, 'keyFinderPassengerDifficultyPolicy', "less_or_equal"),
+    },
     phaseOverrides: safeJsonParse(source.llmPhaseOverridesJson, {}),
     providerRegistry: safeJsonParse(source.llmProviderRegistryJson, []),
+    keyFinderBudgetRequired: safeJsonParse(source.keyFinderBudgetRequiredPointsJson, {}),
+    keyFinderBudgetAvailability: safeJsonParse(source.keyFinderBudgetAvailabilityPointsJson, {}),
+    keyFinderBudgetDifficulty: safeJsonParse(source.keyFinderBudgetDifficultyPointsJson, {}),
+    keyFinderBundlingPassengerCost: safeJsonParse(source.keyFinderBundlingPassengerCostJson, {}),
+    keyFinderBundlingPoolPerPrimary: safeJsonParse(source.keyFinderBundlingPoolPerPrimaryJson, {}),
     labQueueDelayMs: readNum(source, 'llmLabQueueDelayMs', 1000),
     timeoutMs: readNum(source, 'llmTimeoutMs', 30000),
   };

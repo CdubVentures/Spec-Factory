@@ -63,6 +63,9 @@ export interface RuntimeSettingDefaults {
   openaiApiKey: string;
   pipelineSchemaEnforcementMode: string;
   publishConfidenceThreshold: number;
+  evidenceVerificationEnabled: boolean;
+  evidenceVerificationTimeoutMs: number;
+  evidenceVerificationStrict: boolean;
   runtimeControlFile: string;
   runtimeScreencastEnabled: boolean;
   searchEngines: string;
@@ -142,6 +145,20 @@ export interface RuntimeSettingDefaults {
   capturePageScreenshotStabilizeEnabled: boolean;
   capturePageScreenshotStabilizeTimeoutMs: number;
   capturePageScreenshotStitchEnabled: boolean;
+  keyFinderModelEasy: string;
+  keyFinderModelMedium: string;
+  keyFinderModelHard: string;
+  keyFinderModelVeryHard: string;
+  keyFinderModelFallback: string;
+  keyFinderBudgetRequiredPointsJson: string;
+  keyFinderBudgetAvailabilityPointsJson: string;
+  keyFinderBudgetDifficultyPointsJson: string;
+  keyFinderBudgetVariantPointsPerExtra: number;
+  keyFinderBudgetFloor: number;
+  keyFinderBundlingEnabled: boolean;
+  keyFinderBundlingPassengerCostJson: string;
+  keyFinderBundlingPoolPerPrimaryJson: string;
+  keyFinderPassengerDifficultyPolicy: string;
 }
 
 export type RuntimeProfile = 'standard';

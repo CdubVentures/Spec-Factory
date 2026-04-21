@@ -28,6 +28,7 @@ describe('GLOBAL_PROMPTS registry', () => {
     'discoveryLogShape',
     'scalarSourceGuidanceCloser',
     'scalarReturnJsonTail',
+    'siblingVariantsExclusion',
   ];
 
   it('exports all expected keys', () => {

@@ -655,6 +655,16 @@ export async function runProductImageFinder({
     return { images: [], rejected: true, rejections: [{ reason_code: 'unknown_variant', message: `Variant not found: ${variantKey}` }] };
   }
 
+  // WHY: Canonical shape for sibling-variants prompt injection. View mode
+  // passes this into buildProductImageFinderPrompt so the LLM knows which
+  // other variants to skip. Hero mode does NOT use it.
+  const allVariants = dbVariantsPre.map((v) => ({
+    variant_id: v.variant_id,
+    key: v.variant_key,
+    label: v.variant_label,
+    type: v.variant_type,
+  }));
+
   // Read previous PIF runs for discovery log feedback
   const pifDoc = readProductImages({ productId: product.product_id, productRoot });
   const previousPifRuns = Array.isArray(pifDoc?.runs) ? pifDoc.runs : [];
@@ -745,7 +755,7 @@ export async function runProductImageFinder({
     const heroQuality = viewQualityMap.hero || {};
     const promptArgs = mode === 'hero'
       ? { product, variantLabel: variant.label, variantType: variant.type, minWidth: heroQuality.minWidth || 600, minHeight: heroQuality.minHeight || 400, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: heroPromptOverride }
-      : { product, variantLabel: variant.label, variantType: variant.type, priorityViews, additionalViews, minWidth, minHeight, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: viewPromptOverride };
+      : { product, variantLabel: variant.label, variantType: variant.type, variantKey: variant.key, allVariants, priorityViews, additionalViews, minWidth, minHeight, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: viewPromptOverride };
     const systemPrompt = promptBuilder(promptArgs);
     const userMsg = JSON.stringify({ brand: product.brand, model: product.model, base_model: product.base_model, variant: variant.key });
 
@@ -977,7 +987,9 @@ export async function runCarouselLoop({
     return { images: [], download_errors: [], totalLlmCalls: 0, rejected: true, rejections: [{ reason_code: 'no_cef_data', message: 'Run CEF first — no color data found' }] };
   }
 
-  const allVariants = dbVariants.map(v => ({
+  // WHY: Canonical shape for sibling-variants prompt injection (loop mode uses
+  // the view template, which declares {{SIBLING_VARIANTS}}).
+  const allVariants = dbVariants.map((v) => ({
     variant_id: v.variant_id,
     key: v.variant_key,
     label: v.variant_label,
@@ -1100,7 +1112,7 @@ export async function runCarouselLoop({
     const heroQuality = viewQualityMap.hero || {};
     const promptArgs = callMode === 'hero'
       ? { product, variantLabel: variant.label, variantType: variant.type, minWidth: heroQuality.minWidth || 600, minHeight: heroQuality.minHeight || 400, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: heroPromptOverride }
-      : { product, variantLabel: variant.label, variantType: variant.type, priorityViews, additionalViews, minWidth, minHeight, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: viewPromptOverride };
+      : { product, variantLabel: variant.label, variantType: variant.type, variantKey: variant.key, allVariants, priorityViews, additionalViews, minWidth, minHeight, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, promptOverride: viewPromptOverride };
     const systemPrompt = promptBuilder(promptArgs);
     const userMsg = JSON.stringify({ brand: product.brand, model: product.model, base_model: product.base_model, variant: variant.key });
 

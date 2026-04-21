@@ -14,7 +14,8 @@ export type LlmPhaseId =
   | 'image-finder'
   | 'image-evaluator'
   | 'release-date-finder'
-  | 'sku-finder';
+  | 'sku-finder'
+  | 'key-finder';
 
 export type LlmPhaseGroup =
   | 'global'

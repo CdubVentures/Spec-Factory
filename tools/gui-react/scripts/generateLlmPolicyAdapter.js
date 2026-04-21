@@ -101,6 +101,12 @@ export function generateLlmPolicyAdapter() {
   // JSON blob fields (not derivable from registry — use hand-written types)
   lines.push('  phaseOverrides: Record<string, Partial<LlmPhaseOverride>>;');
   lines.push('  providerRegistry: LlmProviderEntry[];');
+  // Other JSON blobs — typed as Record<string, number> (tables of axis-keyed ints).
+  // Specialize per key if a tighter type is needed.
+  for (const policyKey of Object.keys(JSON_KEYS)) {
+    if (policyKey === 'phaseOverrides' || policyKey === 'providerRegistry') continue;
+    lines.push(`  ${policyKey}: Record<string, number>;`);
+  }
   // Top-level scalars
   for (const [policyKey, flatKey] of Object.entries(TOP_LEVEL_KEYS)) {
     const tsType = tsTypeFor(flatKeyToType.get(flatKey));

@@ -183,6 +183,19 @@ Do not inflate confidence beyond what the cited evidence supports.`,
     defaultTemplate: 'You decide which sources to query and in what order — the above describes what kind of evidence counts and how to tag it, not a script to execute.',
   },
 
+  siblingVariantsExclusion: {
+    label: 'Sibling variants exclusion',
+    description: 'Lists OTHER variants of the same product. Injected into per-variant finder prompts (PIF-view, PIF-loop, RDF, SKU) so the LLM skips images/SKUs/dates for variants other than the target. Empty when the product has only one variant. NOT used by PIF-hero (separate call path) or CEF (generates variants rather than filtering them).',
+    appliesTo: ['pif', 'rdf', 'scalar'],
+    variables: [
+      { name: 'VARIANT_LABEL', required: true },
+      { name: 'WHAT_TO_SKIP', required: true },
+      { name: 'SIBLING_VARIANTS_LIST', required: true },
+    ],
+    defaultTemplate: `Other variants of this same product — DO NOT return {{WHAT_TO_SKIP}} for these; this call targets ONLY the "{{VARIANT_LABEL}}" variant:
+{{SIBLING_VARIANTS_LIST}}`,
+  },
+
   scalarReturnJsonTail: {
     label: 'Scalar finder — return-JSON tail',
     description: 'Bundles confidence + unknown_reason + extended evidence_refs (5-field) + discovery_log for scalar finders (RDF, SKU, future price/msrp/discontinued). VALUE_NOUN fills phrases like "returned date" or "returned MPN". VALUE_KEY fills the "unk" check. UNKNOWN_REASON_EXAMPLES is an optional suffix — pass empty string when no examples are desired.',

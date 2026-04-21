@@ -17,6 +17,7 @@ import { zodToLlmSchema } from '../../core/llm/zodToLlmSchema.js';
 import { resolvePromptTemplate } from '../../core/llm/resolvePromptTemplate.js';
 import { resolveGlobalPrompt } from '../../core/llm/prompts/globalPromptRegistry.js';
 import { buildPreviousDiscoveryBlock } from '../../core/finder/discoveryLog.js';
+import { buildSiblingVariantsPromptBlock } from '../../core/finder/siblingVariantsPromptFragment.js';
 import { buildIdentityWarning } from '../../core/llm/prompts/identityContext.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
 import { productImageFinderResponseSchema } from './productImageSchema.js';
@@ -585,6 +586,7 @@ export const PIF_VIEW_DEFAULT_TEMPLATE = `Find high-resolution product images fo
 
 {{IDENTITY_INTRO}}
 {{IDENTITY_WARNING}}
+{{SIBLING_VARIANTS}}
 
 VIEW DEFINITIONS — classify every image with one of these exact view names:
 
@@ -612,6 +614,8 @@ export function buildProductImageFinderPrompt({
   product = {},
   variantLabel = '',
   variantType = 'color',
+  variantKey = '',
+  allVariants = [],
   priorityViews = [],
   additionalViews = [],
   minWidth = 800,
@@ -691,6 +695,12 @@ export function buildProductImageFinderPrompt({
       BRAND: brand, MODEL: model, VARIANT_SUFFIX: variantSuffix,
     }),
     IDENTITY_WARNING: identityWarning,
+    SIBLING_VARIANTS: buildSiblingVariantsPromptBlock({
+      allVariants,
+      currentVariantKey: variantKey,
+      currentVariantLabel: variantLabel,
+      whatToSkip: 'images',
+    }),
     PRIORITY_VIEWS: prioritySection,
     ADDITIONAL_VIEWS: additionalSection,
     ADDITIONAL_GUIDANCE: additionalViews.length > 0
@@ -712,6 +722,8 @@ export const PRODUCT_IMAGE_FINDER_SPEC = {
     product: domainArgs.product,
     variantLabel: domainArgs.variantLabel || '',
     variantType: domainArgs.variantType || 'color',
+    variantKey: domainArgs.variantKey || '',
+    allVariants: domainArgs.allVariants || [],
     priorityViews: domainArgs.priorityViews || [],
     additionalViews: domainArgs.additionalViews || [],
     minWidth: domainArgs.minWidth || 800,

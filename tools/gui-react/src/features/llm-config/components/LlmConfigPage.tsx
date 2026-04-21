@@ -42,6 +42,11 @@ const LlmPhaseSection = lazy(async () => {
   return { default: module.LlmPhaseSection };
 });
 
+const LlmKeyFinderSection = lazy(async () => {
+  const module = await import('../sections/LlmKeyFinderSection.tsx');
+  return { default: module.LlmKeyFinderSection };
+});
+
 const GlobalPromptsSection = lazy(async () => {
   const module = await import('../sections/GlobalPromptsSection.tsx');
   return { default: module.GlobalPromptsSection };
@@ -318,6 +323,22 @@ export function LlmConfigPage() {
     activePanel = (
       <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
         <GlobalPromptsSection />
+      </Suspense>
+    );
+  } else if (activePhase === 'key-finder') {
+    activePanel = (
+      <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
+        <LlmKeyFinderSection
+          inputCls={inputCls}
+          llmModelOptions={llmModelOptions}
+          phaseOverrides={phaseOverrides}
+          onPhaseOverrideChange={onPhaseOverrideChange}
+          registry={registry}
+          globalDraft={globalDraft}
+          apiKeyFilter={apiKeyFilter}
+          runtimeDraft={runtimeDraft}
+          updateDraft={updateDraft}
+        />
       </Suspense>
     );
   } else if (uiPhaseIdToOverrideKey(activePhase) !== undefined) {

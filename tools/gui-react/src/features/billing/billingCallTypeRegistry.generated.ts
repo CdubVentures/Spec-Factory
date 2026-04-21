@@ -28,6 +28,7 @@ export const BILLING_CALL_TYPE_REGISTRY: readonly BillingCallTypeEntry[] = Objec
   { reason: 'image_hero_selection', label: 'Hero Eval', color: 'var(--sf-billing-image-3, #f76707)', group: 'Product Image' },
   { reason: 'release_date_finding', label: 'RDF', color: 'var(--sf-billing-releasedate-1, #fcc419)', group: 'Release Date' },
   { reason: 'sku_finding', label: 'SKF', color: 'var(--sf-billing-sku-1, #ae3ec9)', group: 'SKU' },
+  { reason: 'key_finding', label: 'Key Finder', color: 'var(--sf-billing-keyfinder-1, #22b8cf)', group: 'Key Finder' },
 ]);
 
 export const BILLING_CALL_TYPE_FALLBACK: BillingCallTypeEntry = Object.freeze({

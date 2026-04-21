@@ -17,6 +17,7 @@ export const LLM_PHASE_IDS = [
   'image-evaluator',
   'release-date-finder',
   'sku-finder',
+  'key-finder',
 ] as const satisfies readonly LlmPhaseId[];
 
 export const LLM_PHASES: readonly LlmPhaseDefinition[] = [
@@ -33,6 +34,7 @@ export const LLM_PHASES: readonly LlmPhaseDefinition[] = [
   { id: 'image-evaluator', label: 'Carousel Builder', subtitle: 'Discovery', tip: 'Vision-based image evaluator that selects the best product image per view and picks hero carousel shots.', roles: ['triage'], group: 'discovery' },
   { id: 'release-date-finder', label: 'Release Date Finder', subtitle: 'Discovery', tip: 'Discovers per-variant first-availability release dates via web search. Candidates flow through the publisher gate with evidence validation.', roles: ['triage'], group: 'discovery' },
   { id: 'sku-finder', label: 'SKU Finder', subtitle: 'Discovery', tip: 'Discovers per-variant manufacturer part numbers (MPNs) via web search. Candidates flow through the publisher gate with evidence validation.', roles: ['triage'], group: 'discovery' },
+  { id: 'key-finder', label: 'Key Finder', subtitle: 'Universal per-key extractor', tip: 'Runs one universal per-key extractor across every field_rule. Difficulty routes to a tier model override; required×availability×difficulty×variantCount scores the per-key attempt budget; same-group point-pool bundling is opt-in for Smart Loop modes only.', roles: ['triage'], group: 'discovery' },
 ] as const;
 
 export const LLM_PHASE_GROUP_LABELS: Record<string, string> = {

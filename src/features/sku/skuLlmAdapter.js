@@ -19,6 +19,7 @@ import { buildPreviousDiscoveryBlock } from '../../core/finder/discoveryLog.js';
 import { buildEvidencePromptBlock } from '../../core/finder/evidencePromptFragment.js';
 import { buildEvidenceVerificationPromptBlock } from '../../core/finder/evidenceVerificationPromptFragment.js';
 import { buildValueConfidencePromptBlock } from '../../core/finder/valueConfidencePromptFragment.js';
+import { buildSiblingVariantsPromptBlock } from '../../core/finder/siblingVariantsPromptFragment.js';
 import { buildIdentityWarning } from '../../core/llm/prompts/identityContext.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
 import { skuFinderResponseSchema } from './skuSchema.js';
@@ -31,6 +32,7 @@ export const SKF_DEFAULT_TEMPLATE = `Find the manufacturer part number (MPN) for
 
 {{IDENTITY_INTRO}}
 {{IDENTITY_WARNING}}
+{{SIBLING_VARIANTS}}
 
 GOAL: The manufacturer-assigned part number that uniquely identifies this specific {{VARIANT_TYPE_WORD}} variant. The MPN is distinct from:
   - Base product MPNs (the non-variant model code; e.g. "G502-HERO" applies to all colors, but "G502-HERO-BLACK" is the variant-specific MPN)
@@ -115,6 +117,8 @@ export function buildSkuFinderPrompt({
   product = {},
   variantLabel = '',
   variantType = 'color',
+  variantKey = '',
+  allVariants = [],
   siblingsExcluded = [],
   familyModelCount = 1,
   ambiguityLevel = 'easy',
@@ -159,6 +163,12 @@ export function buildSkuFinderPrompt({
       BRAND: brand, MODEL: model, VARIANT_SUFFIX: variantSuffix,
     }),
     IDENTITY_WARNING: identityWarning,
+    SIBLING_VARIANTS: buildSiblingVariantsPromptBlock({
+      allVariants,
+      currentVariantKey: variantKey,
+      currentVariantLabel: variantLabel,
+      whatToSkip: 'MPNs',
+    }),
     VARIANT_TYPE_WORD: variantType === 'edition' ? 'edition' : 'color',
     PREVIOUS_DISCOVERY: discoverySection,
     EVIDENCE_REQUIREMENTS: `${buildEvidencePromptBlock({ minEvidenceRefs, includeEvidenceKind: true })}\n\n${buildEvidenceVerificationPromptBlock()}`,
@@ -180,6 +190,8 @@ export const SKU_FINDER_SPEC = {
     product: domainArgs.product,
     variantLabel: domainArgs.variantLabel || '',
     variantType: domainArgs.variantType || 'color',
+    variantKey: domainArgs.variantKey || '',
+    allVariants: domainArgs.allVariants || [],
     siblingsExcluded: domainArgs.siblingsExcluded || [],
     familyModelCount: domainArgs.familyModelCount || 1,
     ambiguityLevel: domainArgs.ambiguityLevel || 'easy',

@@ -500,13 +500,13 @@ describe('resolveAmbiguityContext end-to-end with real resolver + specDb', () =>
 // contract so future scalar finders (price, msrp, discontinued, upc) inherit
 // the full GUI surface with one registry edit.
 describe('scalar finder prompt contract (O(1) overlay)', () => {
-  test('SCALAR_FINDER_VARIABLES has the 12 canonical entries in the expected order', () => {
+  test('SCALAR_FINDER_VARIABLES has the 13 canonical entries in the expected order', () => {
     const names = SCALAR_FINDER_VARIABLES.map((v) => v.name);
     assert.deepEqual(names, [
       'BRAND', 'MODEL', 'VARIANT_DESC', 'VARIANT_SUFFIX', 'VARIANT_TYPE_WORD',
       'IDENTITY_INTRO', 'IDENTITY_WARNING', 'EVIDENCE_REQUIREMENTS',
       'VALUE_CONFIDENCE_GUIDANCE', 'SCALAR_SOURCE_GUIDANCE_CLOSER',
-      'PREVIOUS_DISCOVERY', 'SCALAR_RETURN_JSON_TAIL',
+      'SIBLING_VARIANTS', 'PREVIOUS_DISCOVERY', 'SCALAR_RETURN_JSON_TAIL',
     ]);
   });
 
@@ -565,6 +565,111 @@ describe('scalar finder prompt contract (O(1) overlay)', () => {
     assert.equal(r.userMessageInfo, s.userMessageInfo); // same reference — shared bundle
     assert.notEqual(r.moduleId, s.moduleId);
     assert.notEqual(r.defaultTemplate, s.defaultTemplate);
+  });
+});
+
+// ── Section 5c: sibling-variants injection — scope by finder ──
+// WHY: PIF-view, PIF-loop (same template), RDF, SKU tell the LLM which OTHER
+// variants of the same product to skip. PIF-hero does NOT (separate call path,
+// confirmed by user). CEF does NOT (generates variants rather than filtering).
+describe('sibling-variants block — injected into per-variant finders only', () => {
+  const MULTI_VARIANTS = [
+    { variant_id: 'v_1', key: 'color:black', label: 'black', type: 'color' },
+    { variant_id: 'v_2', key: 'color:white', label: 'Glacier White', type: 'color' },
+    { variant_id: 'v_3', key: 'edition:cod-bo6', label: 'CoD BO6 Edition', type: 'edition' },
+  ];
+  const SIBLING_MARKER = 'Other variants of this same product';
+
+  test('RDF with multi-variant product contains the sibling-variants block', () => {
+    const out = buildReleaseDateFinderPrompt({
+      product: PRODUCT_AIR,
+      variantLabel: 'black',
+      variantType: 'color',
+      variantKey: 'color:black',
+      allVariants: MULTI_VARIANTS,
+      previousDiscovery: EMPTY_DISCOVERY,
+    });
+    assert.ok(out.includes(SIBLING_MARKER));
+    assert.ok(out.includes('release dates'), 'RDF must use "release dates" noun');
+    assert.ok(out.includes('"Glacier White" color variant'));
+    assert.ok(out.includes('"CoD BO6 Edition" edition'));
+  });
+
+  test('RDF with single-variant product does NOT contain the block', () => {
+    const out = buildReleaseDateFinderPrompt({
+      product: PRODUCT_AIR,
+      variantLabel: 'black',
+      variantType: 'color',
+      variantKey: 'color:black',
+      allVariants: [MULTI_VARIANTS[0]], // only current
+      previousDiscovery: EMPTY_DISCOVERY,
+    });
+    assert.ok(!out.includes(SIBLING_MARKER));
+  });
+
+  test('SKU with multi-variant product uses "MPNs" wording', () => {
+    const out = buildSkuFinderPrompt({
+      product: PRODUCT_AIR,
+      variantLabel: 'black',
+      variantType: 'color',
+      variantKey: 'color:black',
+      allVariants: MULTI_VARIANTS,
+      previousDiscovery: EMPTY_DISCOVERY,
+    });
+    assert.ok(out.includes(SIBLING_MARKER));
+    assert.ok(out.includes('DO NOT return MPNs'));
+  });
+
+  test('PIF view with multi-variant product uses "images" wording', () => {
+    const out = buildProductImageFinderPrompt({
+      product: PRODUCT_AIR,
+      variantLabel: 'black',
+      variantType: 'color',
+      variantKey: 'color:black',
+      allVariants: MULTI_VARIANTS,
+      priorityViews: [{ key: 'hero', description: 'hero shot', priority: true }],
+      additionalViews: [],
+      previousDiscovery: EMPTY_DISCOVERY,
+    });
+    assert.ok(out.includes(SIBLING_MARKER));
+    assert.ok(out.includes('DO NOT return images'));
+  });
+
+  test('PIF hero never contains the sibling-variants block (even with multi-variant data)', () => {
+    const out = buildHeroImageFinderPrompt({
+      product: PRODUCT_AIR,
+      variantLabel: 'black',
+      variantType: 'color',
+      previousDiscovery: EMPTY_DISCOVERY,
+    });
+    assert.ok(!out.includes(SIBLING_MARKER), 'PIF hero must NOT include sibling-variants block');
+  });
+
+  test('CEF never contains the sibling-variants block (discovers variants, does not filter them)', () => {
+    const out = buildColorEditionFinderPrompt({
+      colorNames: ['black', 'white'],
+      colors: [{ name: 'black', hex: '#000000' }, { name: 'white', hex: '#ffffff' }],
+      product: PRODUCT_AIR,
+      previousRuns: [],
+      previousDiscovery: EMPTY_DISCOVERY,
+    });
+    assert.ok(!out.includes(SIBLING_MARKER), 'CEF must NOT include sibling-variants block');
+  });
+
+  test('sibling block sits immediately after IDENTITY_WARNING and before GOAL (RDF)', () => {
+    const out = buildReleaseDateFinderPrompt({
+      product: PRODUCT_AIR,
+      variantLabel: 'black',
+      variantType: 'color',
+      variantKey: 'color:black',
+      allVariants: MULTI_VARIANTS,
+      previousDiscovery: EMPTY_DISCOVERY,
+    });
+    const identityWarningIdx = out.indexOf('no known siblings — standard');
+    const siblingIdx = out.indexOf(SIBLING_MARKER);
+    const goalIdx = out.indexOf('GOAL:');
+    assert.ok(identityWarningIdx >= 0 && siblingIdx > identityWarningIdx && goalIdx > siblingIdx,
+      'expected order: IDENTITY_WARNING → SIBLING_VARIANTS → GOAL');
   });
 });
 
