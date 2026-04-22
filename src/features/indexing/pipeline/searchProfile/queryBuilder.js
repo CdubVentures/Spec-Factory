@@ -17,6 +17,7 @@ import {
   buildVariantGuardTerms,
   buildModelAliasCandidates
 } from './queryIdentityNormalizer.js';
+import { getCategorySearchContext } from '../../../../shared/categorySearchContext.js';
 
 export function buildDeterministicAliases(identity = {}, maxAliases = 12, rejectLog = null) {
   const brand = clean(identity.brand || '');
@@ -518,7 +519,8 @@ export function buildTier1Queries(job, seedStatus, brandResolution, options = {}
   const identity = { ...resolved, category: clean(job?.category || '') };
   const queryModel = identity.base_model || identity.model;
   const queryVariant = identity.base_model ? identity.variant : '';
-  const product = clean([identity.brand, queryModel, queryVariant].filter(Boolean).join(' '));
+  const categoryCtx = getCategorySearchContext(identity.category);
+  const product = clean([identity.brand, queryModel, queryVariant, categoryCtx].filter(Boolean).join(' '));
   const rows = [];
   const emittedSources = new Set();
 
@@ -544,7 +546,8 @@ export function buildTier2Queries(job, focusGroups) {
   const brand = identity.brand;
   const model = identity.base_model || identity.model;
   const variant = identity.base_model ? identity.variant : '';
-  const product = clean([brand, model, variant].filter(Boolean).join(' '));
+  const categoryCtx = getCategorySearchContext(job?.category);
+  const product = clean([brand, model, variant, categoryCtx].filter(Boolean).join(' '));
   const groups = Array.isArray(focusGroups) ? focusGroups : [];
 
   return groups
@@ -622,7 +625,8 @@ export function buildTier3Queries(job, focusGroups, categoryConfig, fieldYieldBy
   const brand = identity.brand;
   const model = identity.base_model || identity.model;
   const variant = identity.base_model ? identity.variant : '';
-  const product = clean([brand, model, variant].filter(Boolean).join(' '));
+  const categoryCtx = getCategorySearchContext(job?.category);
+  const product = clean([brand, model, variant, categoryCtx].filter(Boolean).join(' '));
   const groups = Array.isArray(focusGroups) ? focusGroups : [];
   const rows = [];
 

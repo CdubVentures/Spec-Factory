@@ -79,6 +79,33 @@ test('applyRuntimeSettingsToConfig rebuilds registry lookup when provider regist
   assert.equal(route.apiKey, 'test-key-123');
 });
 
+test('applyRuntimeSettingsToConfig refreshes config._llmPolicy.keyFinderTiers when tier JSON changes', () => {
+  // WHY: Key Finder tier panel writes keyFinderTierSettingsJson via this path.
+  // Without this trigger, _llmPolicy stays stale → route handler reads the old
+  // (or empty) tier bundles → falls back to llmModelPlan (gemini-2.5-flash).
+  // Regression guard for the "run landed on gemini even after saving tier
+  // settings" bug.
+  const config = loadConfig();
+
+  const userTiers = {
+    easy:      { model: 'gpt-5.4-mini', useReasoning: false, reasoningModel: '', thinking: false, thinkingEffort: '',      webSearch: true  },
+    medium:    { model: 'gpt-5.4',      useReasoning: false, reasoningModel: '', thinking: true,  thinkingEffort: 'high',  webSearch: true  },
+    hard:      { model: 'gpt-5.4',      useReasoning: false, reasoningModel: '', thinking: true,  thinkingEffort: 'xhigh', webSearch: true  },
+    very_hard: { model: 'deepseek-chat', useReasoning: false, reasoningModel: '', thinking: true, thinkingEffort: 'xhigh', webSearch: true  },
+    fallback:  { model: 'gpt-5.4',      useReasoning: false, reasoningModel: '', thinking: true,  thinkingEffort: 'xhigh', webSearch: true  },
+  };
+
+  applyRuntimeSettingsToConfig(config, {
+    keyFinderTierSettingsJson: JSON.stringify(userTiers),
+  });
+
+  assert.ok(config._llmPolicy, 'config._llmPolicy must exist after apply (was re-derived)');
+  assert.equal(config._llmPolicy.keyFinderTiers.medium.model, 'gpt-5.4');
+  assert.equal(config._llmPolicy.keyFinderTiers.very_hard.model, 'deepseek-chat');
+  assert.equal(config._llmPolicy.keyFinderTiers.fallback.model, 'gpt-5.4');
+  assert.equal(config._llmPolicy.keyFinderTiers.hard.thinkingEffort, 'xhigh');
+});
+
 test('applyRuntimeSettingsToConfig bootstrap mode applies blank secrets from SQL (SQL is sole authority)', () => {
   const config = loadConfig({ geminiApiKey: 'gem-env-key' });
 

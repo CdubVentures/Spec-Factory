@@ -63,7 +63,7 @@ function formatElapsed(startedAt: string, endedAt: string | null): string {
 function DetailStagePipeline({ stages, currentIndex, status }: {
   readonly stages: readonly string[];
   readonly currentIndex: number;
-  readonly status: 'running' | 'done' | 'error' | 'cancelled';
+  readonly status: 'queued' | 'running' | 'done' | 'error' | 'cancelled';
 }) {
   return (
     <div className="flex items-center gap-0.5 flex-wrap">

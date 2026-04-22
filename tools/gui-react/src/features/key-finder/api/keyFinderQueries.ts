@@ -32,11 +32,13 @@ export function useReservedKeysQuery(category: string) {
 // ── Bundling config (for the BundlingStatusStrip) ─────────────────────
 export interface BundlingConfig {
   readonly enabled: boolean;
+  readonly alwaysSoloRun: boolean;
   readonly groupBundlingOnly: boolean;
   readonly passengerDifficultyPolicy: string;
   readonly poolPerPrimary: Record<string, number>;
   readonly passengerCost: Record<string, number>;
   readonly variantCount: number;
+  readonly overlapCaps: Record<string, number>;
 }
 
 export function useKeyFinderBundlingConfigQuery(category: string, productId: string) {

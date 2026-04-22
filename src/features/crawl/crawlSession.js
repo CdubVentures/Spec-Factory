@@ -13,6 +13,7 @@ import { runFetchSuiteLoop } from './core/suiteOrchestrator.js';
 import { trimVideo } from './videoTrim.js';
 import { classifyBlockStatus } from './bypassStrategies.js';
 import { unlockViaApi as _defaultUnlockViaApi } from './brightDataUnlocker.js';
+import { getPageContentWithRetry } from './getPageContent.js';
 
 // WHY: Prevent Crawlee from writing internal state to ./storage/ at project root.
 // Crawlee's key_value_stores and request_queues are internal bookkeeping.
@@ -182,7 +183,7 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           });
         }
 
-        const html = await page.content();
+        const html = await getPageContentWithRetry(page, { logger });
         const finalUrl = page.url?.() ?? request.url;
         const title = await page.title().catch(() => '');
         const status = typeof response?.status === 'function'

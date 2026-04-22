@@ -282,7 +282,7 @@ describe('packBundle — step 4 (resolvedFieldKeys)', () => {
 // ─── Step 5 — sort order ─────────────────────────────────────────────────
 
 describe('packBundle — step 5 (ordering)', () => {
-  it('sorts by (availability ASC, difficulty ASC, field_key ASC)', () => {
+  it('sorts by (required_level ASC, availability ASC, difficulty ASC, field_key ASC) — all non_mandatory still orders by availability first', () => {
     const result = packBundle({
       primary: entry('p', { difficulty: 'very_hard' }),
       candidates: [
@@ -306,6 +306,104 @@ describe('packBundle — step 5 (ordering)', () => {
       'sometimes_medium',    // sometimes + medium
       'rare_easy',           // rare + easy
     ]);
+  });
+
+  it('mandatory peer packs BEFORE non_mandatory peer at equal availability + difficulty (required_level is primary sort key)', () => {
+    const result = packBundle({
+      primary: entry('p', { difficulty: 'very_hard' }),
+      candidates: [
+        entry('opt', { difficulty: 'easy', availability: 'always', required_level: 'non_mandatory' }),
+        entry('req', { difficulty: 'easy', availability: 'always', required_level: 'mandatory' }),
+      ],
+      resolvedFieldKeys: new Set(),
+      settings: {
+        ...DEFAULT_SETTINGS,
+        bundlingPoolPerPrimary: { easy: 1000, medium: 1000, hard: 1000, very_hard: 1000 },
+      },
+      variantCount: 1,
+    });
+    assert.deepEqual(result.passengers.map((p) => p.fieldKey), ['req', 'opt']);
+  });
+
+  it('mandatory peer packs before non_mandatory EVEN WHEN mandatory has worse availability + difficulty', () => {
+    // non_mandatory is always+easy (best on every secondary axis) but mandatory
+    // still wins because required_level is the primary sort key.
+    const result = packBundle({
+      primary: entry('p', { difficulty: 'very_hard' }),
+      candidates: [
+        entry('opt_easy', { difficulty: 'easy', availability: 'always', required_level: 'non_mandatory' }),
+        entry('mand_hard', { difficulty: 'hard', availability: 'rare', required_level: 'mandatory' }),
+      ],
+      resolvedFieldKeys: new Set(),
+      settings: {
+        ...DEFAULT_SETTINGS,
+        bundlingPoolPerPrimary: { easy: 1000, medium: 1000, hard: 1000, very_hard: 1000 },
+      },
+      variantCount: 1,
+    });
+    assert.deepEqual(result.passengers.map((p) => p.fieldKey), ['mand_hard', 'opt_easy']);
+  });
+
+  it('two mandatory peers still sort by (availability, difficulty, field_key) among themselves', () => {
+    const result = packBundle({
+      primary: entry('p', { difficulty: 'very_hard' }),
+      candidates: [
+        entry('m_rare', { difficulty: 'easy', availability: 'rare', required_level: 'mandatory' }),
+        entry('m_always_z', { difficulty: 'easy', availability: 'always', required_level: 'mandatory' }),
+        entry('m_always_a', { difficulty: 'easy', availability: 'always', required_level: 'mandatory' }),
+      ],
+      resolvedFieldKeys: new Set(),
+      settings: {
+        ...DEFAULT_SETTINGS,
+        bundlingPoolPerPrimary: { easy: 1000, medium: 1000, hard: 1000, very_hard: 1000 },
+      },
+      variantCount: 1,
+    });
+    assert.deepEqual(result.passengers.map((p) => p.fieldKey), ['m_always_a', 'm_always_z', 'm_rare']);
+  });
+
+  it('tight pool: mandatory peers consume pool before non_mandatory get a chance', () => {
+    // Pool=2 (hard primary). Two mandatory easies (cost 1 each) + one non_mandatory easy (cost 1).
+    // Mandatories pack first and consume the full pool; non_mandatory is skipped.
+    const result = packBundle({
+      primary: entry('p', { difficulty: 'hard' }),
+      candidates: [
+        entry('opt', { difficulty: 'easy', availability: 'always', required_level: 'non_mandatory' }),
+        entry('req1', { difficulty: 'easy', availability: 'always', required_level: 'mandatory' }),
+        entry('req2', { difficulty: 'easy', availability: 'always', required_level: 'mandatory' }),
+      ],
+      resolvedFieldKeys: new Set(),
+      settings: DEFAULT_SETTINGS,
+      variantCount: 1,
+    });
+    assert.deepEqual(result.passengers.map((p) => p.fieldKey), ['req1', 'req2']);
+    assert.equal(result.totalCost, 2);
+  });
+
+  it('determinism: mixed required_level under shuffled input order produces identical output', () => {
+    const build = (order) => packBundle({
+      primary: entry('p', { difficulty: 'very_hard' }),
+      candidates: order.map(([key, req, avail, diff]) =>
+        entry(key, { required_level: req, availability: avail, difficulty: diff })
+      ),
+      resolvedFieldKeys: new Set(),
+      settings: {
+        ...DEFAULT_SETTINGS,
+        bundlingPoolPerPrimary: { easy: 1000, medium: 1000, hard: 1000, very_hard: 1000 },
+      },
+      variantCount: 1,
+    }).passengers.map((p) => p.fieldKey);
+    const peers = [
+      ['a', 'non_mandatory', 'always', 'easy'],
+      ['b', 'mandatory', 'rare', 'hard'],
+      ['c', 'mandatory', 'always', 'easy'],
+      ['d', 'non_mandatory', 'sometimes', 'medium'],
+    ];
+    const forward = build(peers);
+    const reverse = build([...peers].reverse());
+    const shuffled = build([peers[2], peers[0], peers[3], peers[1]]);
+    assert.deepEqual(forward, reverse);
+    assert.deepEqual(forward, shuffled);
   });
 
   it('field_key tiebreaker is load-bearing (two peers with same availability + difficulty)', () => {

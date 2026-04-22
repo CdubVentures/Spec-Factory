@@ -26,6 +26,9 @@ describe('resolveIntentClassName', () => {
   it('stop → sf-danger-button-solid (solid red for emergency halt)', () => {
     assert.equal(resolveIntentClassName('stop'), 'sf-danger-button-solid');
   });
+  it('neutral → sf-neutral-button (soft border, muted text)', () => {
+    assert.equal(resolveIntentClassName('neutral'), 'sf-neutral-button');
+  });
 });
 
 describe('shouldShowSpinner', () => {
@@ -53,10 +56,13 @@ describe('shouldShowSpinner', () => {
   it('stop + busy=false → false', () => {
     assert.equal(shouldShowSpinner('stop', false), false);
   });
+  it('neutral + busy=true → false (busy ignored for neutral)', () => {
+    assert.equal(shouldShowSpinner('neutral', true), false);
+  });
 });
 
 describe('shouldBlockClick', () => {
-  const allIntents: ActionButtonIntent[] = ['spammable', 'locked', 'prompt', 'history', 'delete', 'stop'];
+  const allIntents: ActionButtonIntent[] = ['spammable', 'locked', 'prompt', 'history', 'delete', 'stop', 'neutral'];
 
   it('disabled=true blocks every intent, regardless of busy', () => {
     for (const intent of allIntents) {
@@ -95,5 +101,9 @@ describe('shouldBlockClick', () => {
 
   it('stop + busy=false (not disabled) → not blocked', () => {
     assert.equal(shouldBlockClick('stop', false, false), false);
+  });
+
+  it('neutral + busy=true (not disabled) → not blocked (busy ignored)', () => {
+    assert.equal(shouldBlockClick('neutral', true, false), false);
   });
 });

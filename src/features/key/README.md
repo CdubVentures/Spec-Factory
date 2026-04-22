@@ -2,16 +2,15 @@
 
 Universal per-key field extractor. One LLM call per `(product, fieldKey)` pair, tier-routed by `fieldRule.difficulty`, submitting one candidate per key through the publisher gate. **Product-scoped** (not per-variant) — `variantId: null` on every submission. Long-term replacement for RDF / SKU / per-feature scalar finders as they migrate onto this engine.
 
-Phases live today (2026-04-21):
-- Phase 3a Run orchestrator (solo single-shot)
+Phases live today (2026-04-22):
+- Phase 3a Run orchestrator (solo single-shot) + Phase 3b Loop (budget-bounded retries)
 - Phase 4 per-key dashboard + bundling preview column + bundling status strip
-- Phase 4.5 bundling — passengers ride along with the primary on per-key Run when `bundlingEnabled=true`
-- Phase 5 prompt preview via shared `PromptPreviewModal` (live-compiled "what the next call would send")
+- Phase 4.5 bundling — passengers ride along with the primary (Stage A/B amendments: Run is solo by default via `alwaysSoloRun`; mandatory-first sort; fractional variant penalty)
+- Phase 5 prompt preview via shared `PromptPreviewModal` (live-compiled, registry-aware)
 - Phase 6 Discovery History drawer grouped by `field_key` with live group-history filter
+- Stage C 2026-04-22 — Run Group / Run All Groups / Loop Group / Loop All Groups + in-flight passenger registry + per-tier concurrent-ride caps + hard-block on busy primaries. See §6.2 / §6.3 of per-key-finder-roadmap.html.
 
 Upcoming:
-- Phase 3b per-key Loop (budget-bounded retries)
-- Phase 5 Smart Loop (Group + Header)
 - RDF / SKU cutover onto this engine
 
 ## Public API (The Contract)

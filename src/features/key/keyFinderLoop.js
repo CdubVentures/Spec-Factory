@@ -1,0 +1,209 @@
+/**
+ * Key Finder — Loop orchestrator (Phase 3b).
+ *
+ * Budget-bounded retry wrapping `runKeyFinder`. Each iteration re-reads
+ * discovery state (via runKeyFinder's existing load path) so mid-loop URLs
+ * and queries accumulate, and re-packs passengers (via runKeyFinder's
+ * existing buildPassengers call) so resolved peers drop from subsequent
+ * iterations' bundles. Pattern adapted from RDF's `variantFieldLoop` to
+ * per-key scope.
+ *
+ * Invariants:
+ *   - Tier bundle is SNAPSHOTTED once at loop entry and threaded into every
+ *     iteration via `tierBundleOverride`. Mid-loop LLM Config edits do not
+ *     split the Loop across two models.
+ *   - `loop_id` is generated once and stamped on every iteration's run
+ *     record via `runKeyFinder`'s `loop_id` opt.
+ *   - Exit conditions: publisher published, definitive unk (value='unk' AND
+ *     non-empty unknown_reason), AbortSignal aborted, or attempts exhausted.
+ *   - Per-(pid, fieldKey) queue lock lives at the ROUTE layer (not here) —
+ *     see keyFinderRoutes.js.
+ *
+ * Return shape: { iterations, final_status, loop_id, runs, last_result? }
+ *   final_status ∈ { 'published' | 'definitive_unk' | 'aborted' | 'budget_exhausted' }
+ */
+
+import { resolvePhaseModelByTier } from '../../core/llm/client/routing.js';
+import { generateLoopId } from '../../core/finder/loopIdGenerator.js';
+import { isReservedFieldKey } from '../../core/finder/finderExclusions.js';
+import { FieldRulesEngine } from '../../engine/fieldRulesEngine.js';
+import { calcKeyBudget, readFloatKnob } from './keyBudgetCalc.js';
+import { runKeyFinder as defaultRunKeyFinder } from './keyFinder.js';
+
+const VALID_TIERS = new Set(['easy', 'medium', 'hard', 'very_hard']);
+function normalizeTierName(difficulty) {
+  const raw = String(difficulty || '').trim();
+  return VALID_TIERS.has(raw) ? raw : 'medium';
+}
+
+function readKnob(finderStore, key) {
+  return finderStore?.getSetting?.(key) || '';
+}
+function parseJsonSetting(raw, fallback) {
+  if (!raw) return fallback;
+  try {
+    const parsed = JSON.parse(String(raw));
+    return parsed && typeof parsed === 'object' ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function loadBudgetSettings(finderStore) {
+  return {
+    budgetRequiredPoints: parseJsonSetting(readKnob(finderStore, 'budgetRequiredPoints'), { mandatory: 2, non_mandatory: 1 }),
+    budgetAvailabilityPoints: parseJsonSetting(readKnob(finderStore, 'budgetAvailabilityPoints'), { always: 1, sometimes: 2, rare: 3 }),
+    budgetDifficultyPoints: parseJsonSetting(readKnob(finderStore, 'budgetDifficultyPoints'), { easy: 1, medium: 2, hard: 3, very_hard: 4 }),
+    budgetVariantPointsPerExtra: readFloatKnob(readKnob(finderStore, 'budgetVariantPointsPerExtra'), 0.25),
+    budgetFloor: parseInt(readKnob(finderStore, 'budgetFloor') || '3', 10) || 3,
+  };
+}
+
+/**
+ * @param {object} opts
+ * @param {object} opts.product
+ * @param {string} opts.fieldKey
+ * @param {string} opts.category
+ * @param {object} opts.specDb
+ * @param {object|null} [opts.appDb]
+ * @param {object} [opts.config]
+ * @param {object} [opts.policy]
+ * @param {Function|null} [opts.broadcastWs]
+ * @param {AbortSignal} [opts.signal]
+ * @param {object} [opts.logger]
+ * @param {string} [opts.productRoot]
+ * @param {Function} [opts.onLoopProgress] — ({ iteration, attemptsRemaining, loopId }) => void
+ * @param {Function} [opts._runKeyFinderOverride] — test seam; default imports runKeyFinder
+ * @returns {Promise<{iterations:number, final_status:string, loop_id:string, runs:number[], last_result?:object}>}
+ */
+export async function runKeyFinderLoop(opts) {
+  const {
+    product, fieldKey, category,
+    specDb, appDb = null, config = {},
+    policy: explicitPolicy = null,
+    broadcastWs = null, signal, logger = null,
+    productRoot,
+    onLoopProgress,
+    // Telemetry callbacks — threaded per-iteration to runKeyFinder so each
+    // iteration's stage transitions + model info reach the operations panel.
+    onStageAdvance = null,
+    onModelResolved = null,
+    onStreamChunk = null,
+    onQueueWait = null,
+    onPhaseChange = null,
+    onLlmCallComplete = null,
+    onPassengersRegistered = null,
+    _runKeyFinderOverride = null,
+  } = opts;
+
+  if (!fieldKey) throw new Error('runKeyFinderLoop: fieldKey is required');
+  if (isReservedFieldKey(fieldKey)) {
+    throw new Error(`reserved_field_key: ${fieldKey} is owned by another finder and cannot be run through keyFinder`);
+  }
+
+  // 1. Field-rule lookup (fail-fast before budget calc or any iteration)
+  const engine = await FieldRulesEngine.create(category, { specDb });
+  const fieldRule = engine.rules?.[fieldKey];
+  if (!fieldRule) {
+    throw new Error(`missing_field_rule: no compiled field rule for "${fieldKey}" in category "${category}"`);
+  }
+
+  // 2. Budget calc — ONCE per loop
+  const finderStore = specDb.getFinderStore?.('keyFinder') ?? null;
+  const budgetSettings = loadBudgetSettings(finderStore);
+  const activeVariants = specDb?.variants?.listActive?.(product.product_id) || [];
+  const variantCount = activeVariants.length > 0 ? activeVariants.length : 1;
+  let { attempts } = calcKeyBudget({ fieldRule, variantCount, settings: budgetSettings });
+
+  // 2.5 Re-loop gate (SSOT §6.2): if the primary is already published at loop
+  //     entry, cap attempts via reloopRunBudget (default 1). A 0 value becomes
+  //     a no-op with distinct final_status='skipped_resolved' so the WS event +
+  //     op history reflect "we chose not to re-run" rather than budget
+  //     exhaustion from a 0-attempt loop.
+  const loop_id = generateLoopId();
+  const reloopRunBudget = parseInt(readKnob(finderStore, 'reloopRunBudget') || '1', 10);
+  const reloopBudget = Number.isFinite(reloopRunBudget) && reloopRunBudget >= 0 ? reloopRunBudget : 1;
+  const alreadyResolved = typeof specDb?.getResolvedFieldCandidate === 'function'
+    && Boolean(specDb.getResolvedFieldCandidate(product.product_id, fieldKey));
+  if (alreadyResolved) {
+    if (reloopBudget === 0) {
+      return {
+        iterations: 0,
+        final_status: 'skipped_resolved',
+        loop_id,
+        runs: [],
+        last_result: null,
+      };
+    }
+    attempts = Math.min(attempts, reloopBudget);
+  }
+
+  // 3. Tier bundle SNAPSHOT — once at loop entry. Locked: mid-loop LLM Config
+  //    edits do not affect iterations 2..N. See plan §tier-bundle.
+  const policy = explicitPolicy
+    || { keyFinderTiers: config.keyFinderTiers, models: { plan: config.llmModelPlan || '' } };
+  const tierBundle = resolvePhaseModelByTier(policy, fieldRule.difficulty);
+  const tierName = normalizeTierName(fieldRule.difficulty);
+
+  const runKeyFinder = _runKeyFinderOverride || defaultRunKeyFinder;
+  const runs = [];
+  let lastResult = null;
+  let final_status = 'budget_exhausted';
+  let iterations = 0;
+
+  for (let iter = 1; iter <= attempts; iter += 1) {
+    if (signal?.aborted) {
+      final_status = 'aborted';
+      break;
+    }
+
+    const result = await runKeyFinder({
+      product, fieldKey, category,
+      specDb, appDb, config,
+      policy,
+      broadcastWs, signal, logger,
+      productRoot,
+      // Phase 3b contract additions:
+      loop_id,
+      tierBundleOverride: { name: tierName, ...tierBundle },
+      mode: 'loop',
+      onStageAdvance, onModelResolved, onStreamChunk, onQueueWait, onPhaseChange, onLlmCallComplete,
+      onPassengersRegistered,
+    });
+
+    iterations = iter;
+    lastResult = result;
+    if (Number.isFinite(result?.run_number)) runs.push(result.run_number);
+
+    try {
+      onLoopProgress?.({
+        iteration: iter,
+        attemptsRemaining: attempts - iter,
+        loopId: loop_id,
+      });
+    } catch { /* onLoopProgress errors must not abort the loop */ }
+
+    // Exit on publisher published
+    if (result?.status === 'published') {
+      final_status = 'published';
+      break;
+    }
+
+    // Exit on definitive unk (explicit unknown_reason means the LLM has declared
+    // "this cannot be found" — further retries would waste budget)
+    if (result?.status === 'unk' && String(result?.unknown_reason || '').trim().length > 0) {
+      final_status = 'definitive_unk';
+      break;
+    }
+
+    // Otherwise: below_threshold / accepted / no_evidence / runtime issue — retry
+  }
+
+  return {
+    iterations,
+    final_status,
+    loop_id,
+    runs,
+    last_result: lastResult,
+  };
+}

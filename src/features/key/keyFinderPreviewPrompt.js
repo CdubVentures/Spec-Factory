@@ -19,6 +19,12 @@ import { FieldRulesEngine } from '../../engine/fieldRulesEngine.js';
 
 import { buildKeyFinderPrompt } from './keyLlmAdapter.js';
 import { buildPassengers } from './keyPassengerBuilder.js';
+import {
+  buildComponentRelationIndex,
+  resolveProductComponentInventory,
+  resolveKeyComponentRelation,
+  readKnownFieldsByProduct,
+} from '../../core/finder/productResolvedStateReader.js';
 import { keyFinderResponseSchema } from './keySchema.js';
 import { readKeyFinder } from './keyStore.js';
 
@@ -62,7 +68,12 @@ function readSettings(specDb) {
     knownFieldsInjectionEnabled: readBoolKnob(finderStore, 'knownFieldsInjectionEnabled', true),
     searchHintsInjectionEnabled: readBoolKnob(finderStore, 'searchHintsInjectionEnabled', true),
     bundlingEnabled: readBoolKnob(finderStore, 'bundlingEnabled', false),
+    alwaysSoloRun: readBoolKnob(finderStore, 'alwaysSoloRun', true),
     groupBundlingOnly: readBoolKnob(finderStore, 'groupBundlingOnly', true),
+    bundlingOverlapCapEasy: parseInt(readKnob(finderStore, 'bundlingOverlapCapEasy') || '2', 10),
+    bundlingOverlapCapMedium: parseInt(readKnob(finderStore, 'bundlingOverlapCapMedium') || '4', 10),
+    bundlingOverlapCapHard: parseInt(readKnob(finderStore, 'bundlingOverlapCapHard') || '6', 10),
+    bundlingOverlapCapVeryHard: parseInt(readKnob(finderStore, 'bundlingOverlapCapVeryHard') || '0', 10),
     bundlingPassengerCost: parseJsonSetting(readKnob(finderStore, 'bundlingPassengerCost'), { easy: 1, medium: 2, hard: 4, very_hard: 8 }),
     bundlingPoolPerPrimary: parseJsonSetting(readKnob(finderStore, 'bundlingPoolPerPrimary'), { easy: 6, medium: 4, hard: 2, very_hard: 1 }),
     passengerDifficultyPolicy: readKnob(finderStore, 'passengerDifficultyPolicy') || 'less_or_equal',
@@ -106,14 +117,20 @@ export async function compileKeyFinderPreviewPrompt(ctx) {
   if (!fieldRule) throw err(400, `missing_field_rule: ${fieldKey} not in compiled rules`);
 
   const settings = readSettings(specDb);
+  const mode = body?.mode === 'loop' ? 'loop' : 'run';
 
-  const passengers = buildPassengers({
-    primary: { fieldKey, fieldRule },
-    engineRules: engine.rules,
-    specDb,
-    productId: product.product_id,
-    settings,
-  });
+  // Mirror runKeyFinder's alwaysSoloRun gate — preview must reflect what a
+  // live call of this mode would actually pack, or the byte-for-byte drift
+  // guard fails and the Bundled column lies to the user.
+  const passengers = (settings.alwaysSoloRun && mode === 'run')
+    ? []
+    : buildPassengers({
+      primary: { fieldKey, fieldRule },
+      engineRules: engine.rules,
+      specDb,
+      productId: product.product_id,
+      settings,
+    });
 
   const activeVariants = specDb?.variants?.listActive?.(product.product_id) || [];
   const variantCount = activeVariants.length > 0 ? activeVariants.length : 1;
@@ -131,6 +148,41 @@ export async function compileKeyFinderPreviewPrompt(ctx) {
   const { familyModelCount, ambiguityLevel, siblingsExcluded } =
     await resolveIdentityForPreview({ config, product, specDb, logger });
 
+  // Context injection upstreams — mirrors keyFinder.js step 6.7 so preview
+  // and live runner produce byte-identical prompts (drift guard enforces).
+  const componentRelationIndex = buildComponentRelationIndex(engine.rules);
+  const productComponents = resolveProductComponentInventory({
+    specDb, productId: product.product_id,
+    compiledRulesFields: engine.rules, componentRelationIndex,
+  });
+  const componentKeysInInventory = new Set();
+  for (const c of productComponents) {
+    componentKeysInInventory.add(c.parentFieldKey);
+    for (const sf of c.subfields) componentKeysInInventory.add(sf.field_key);
+  }
+
+  const componentContext = settings.componentInjectionEnabled
+    ? {
+      primary: resolveKeyComponentRelation({ fieldKey, fieldRule, componentRelationIndex }),
+      passengers: passengers.map((p) => resolveKeyComponentRelation({
+        fieldKey: p.fieldKey, fieldRule: p.fieldRule, componentRelationIndex,
+      })),
+    }
+    : { primary: null, passengers: passengers.map(() => null) };
+
+  let knownFields = {};
+  if (settings.knownFieldsInjectionEnabled) {
+    const exclude = new Set([
+      fieldKey,
+      ...passengers.map((p) => p.fieldKey),
+      ...componentKeysInInventory,
+    ]);
+    knownFields = readKnownFieldsByProduct({
+      specDb, productId: product.product_id,
+      compiledRulesFields: engine.rules, excludeFieldKeys: exclude,
+    });
+  }
+
   const injectionKnobs = {
     componentInjectionEnabled: settings.componentInjectionEnabled,
     knownFieldsInjectionEnabled: settings.knownFieldsInjectionEnabled,
@@ -140,8 +192,9 @@ export async function compileKeyFinderPreviewPrompt(ctx) {
     product,
     primary: { fieldKey, fieldRule },
     passengers,
-    knownFields: {},
-    componentContext: { primary: null, passengers: passengers.map(() => null) },
+    knownFields,
+    componentContext,
+    productComponents,
     injectionKnobs,
     category: product.category,
     variantCount,
@@ -184,7 +237,7 @@ export async function compileKeyFinderPreviewPrompt(ctx) {
 
   return {
     finder: 'key',
-    mode: 'run',
+    mode,
     compiled_at: Date.now(),
     prompts: [{
       label,

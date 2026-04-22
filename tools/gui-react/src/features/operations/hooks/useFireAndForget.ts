@@ -30,6 +30,11 @@ interface FireOptions {
   readonly variantKey?: string;
   /** Per-key scope — keyFinder uses this. */
   readonly fieldKey?: string;
+  /** Invoked with the real server-assigned operationId as soon as the 202
+   *  accepts the POST. Use this to chain on the op (await terminal, await a
+   *  mid-flight flag like passengersRegistered) without changing the fire()
+   *  return type. Not called if the POST fails. */
+  readonly onDispatched?: (operationId: string) => void;
 }
 
 let _tempSeq = 0;
@@ -90,6 +95,7 @@ export function useFireAndForget({ type, category, productId }: FireAndForgetCon
           if (!alreadyDelivered) {
             upsert(makeStub(data.operationId, type, category, productId, opts));
           }
+          try { opts.onDispatched?.(data.operationId); } catch { /* caller bug must not break fire */ }
         })
         .catch(() => {
           // WHY: POST failed — remove the optimistic stub so it doesn't linger.

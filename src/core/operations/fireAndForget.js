@@ -23,6 +23,10 @@
  * @param {Function} opts.failOperation — ({ id, error }) => void
  * @param {Function} [opts.cancelOperation] — ({ id }) => void
  * @param {Function} [opts.emitDataChange] — (args) => void
+ * @param {Function} [opts.onSettled] — () => void, called exactly once on every
+ *   terminal transition (success / fail / cancel / abort). Safe place to release
+ *   per-key queue locks, unsubscribe side-channels, etc. Errors inside onSettled
+ *   are swallowed so they never unseat the status transition.
  */
 export function fireAndForget({
   res,
@@ -37,11 +41,20 @@ export function fireAndForget({
   failOperation,
   cancelOperation,
   emitDataChange,
+  onSettled,
 }) {
   const emitChange = () => {
     if (emitArgs && broadcastWs && emitDataChange) {
       emitDataChange({ broadcastWs, ...emitArgs });
     }
+  };
+
+  let settled = false;
+  const runOnSettled = () => {
+    if (settled) return;
+    settled = true;
+    if (typeof onSettled !== 'function') return;
+    try { onSettled(); } catch { /* swallow — lock cleanup must not mask op status */ }
   };
 
   asyncWork()
@@ -53,6 +66,7 @@ export function fireAndForget({
       if (signal?.aborted && cancelOperation) {
         cancelOperation({ id: op.id });
         emitChange();
+        runOnSettled();
         return;
       }
 
@@ -67,6 +81,7 @@ export function fireAndForget({
       // WHY: Emit data-change for BOTH success and rejection.
       // Rejected runs still update state (persisted run history, cooldown).
       emitChange();
+      runOnSettled();
     })
     .catch((err) => {
       if (batcher) batcher.dispose();
@@ -76,11 +91,13 @@ export function fireAndForget({
       if ((err.name === 'AbortError' || signal?.aborted) && cancelOperation) {
         cancelOperation({ id: op.id });
         emitChange();
+        runOnSettled();
         return;
       }
 
       failOperation({ id: op.id, error: err instanceof Error ? err.message : String(err) });
       // WHY: No data-change on throw — state is unchanged.
+      runOnSettled();
     });
 
   return jsonRes(res, 202, { ok: true, operationId: op.id });

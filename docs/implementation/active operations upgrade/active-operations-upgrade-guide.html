@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Active Operations Upgrade — Implementation Guide</title>
+<style>
+  :root {
+    --bg: #f8f9fa; --surface: #fff; --surface-alt: #f1f3f5;
+    --border: #dee2e6; --border-light: #e9ecef;
+    --text: #212529; --text-muted: #6c757d;
+    --accent: #4263eb; --accent-light: #edf2ff;
+    --green: #2b8a3e; --green-bg: #ebfbee;
+    --red: #c92a2a; --red-bg: #fff5f5;
+    --orange: #e67700; --orange-bg: #fff9db;
+    --teal: #0c8599; --teal-bg: #e6fcf5;
+    --mono: 'SF Mono','Cascadia Code','Fira Code',Consolas,monospace;
+    --font: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:var(--font); color:var(--text); background:var(--bg); line-height:1.6; }
+  .header { background:linear-gradient(135deg,#4263eb,#7048e8); color:#fff; padding:36px 0; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,.08); }
+  .header h1 { font-size:28px; font-weight:700; letter-spacing:-.5px; }
+  .header p { font-size:14px; opacity:.92; margin-top:6px; }
+  .header .pill { display:inline-block; background:rgba(255,255,255,.2); padding:4px 12px; border-radius:99px; font-size:12px; font-weight:600; letter-spacing:.3px; margin-top:12px; }
+  .container { max-width:1100px; margin:0 auto; padding:28px 24px 72px; }
+  .toc { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px 22px; margin-bottom:28px; box-shadow:var(--shadow); }
+  .toc h3 { font-size:12px; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted); margin-bottom:10px; }
+  .toc ol { list-style:none; counter-reset:toc; display:grid; grid-template-columns:1fr 1fr; gap:4px 24px; }
+  .toc li { counter-increment:toc; font-size:14px; }
+  .toc li::before { content:counter(toc) ". "; color:var(--text-muted); font-weight:600; margin-right:4px; }
+  .toc a { color:var(--accent); text-decoration:none; }
+  .toc a:hover { text-decoration:underline; }
+  h2 { font-size:20px; font-weight:700; margin:40px 0 14px; padding-bottom:8px; border-bottom:2px solid var(--accent); display:flex; align-items:center; gap:10px; }
+  h2 .num { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:50%; background:var(--accent); color:#fff; font-size:14px; font-weight:700; }
+  h3 { font-size:15px; font-weight:700; margin:20px 0 8px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:14px; overflow:hidden; }
+  .card-header { padding:12px 18px; font-weight:600; font-size:14px; background:var(--surface-alt); border-bottom:1px solid var(--border-light); display:flex; align-items:center; gap:10px; }
+  .card-body { padding:14px 18px; font-size:14px; }
+  code { font-family:var(--mono); background:var(--surface-alt); padding:2px 6px; border-radius:4px; font-size:12.5px; }
+  pre { background:#1e1e1e; color:#d4d4d4; padding:14px 18px; border-radius:var(--radius); overflow-x:auto; font-family:var(--mono); font-size:12.5px; line-height:1.5; margin:10px 0; }
+  pre code { background:none; padding:0; color:inherit; font-size:inherit; }
+  .kw { color:#569cd6; }
+  .str { color:#ce9178; }
+  .cm { color:#6a9955; font-style:italic; }
+  .fn { color:#dcdcaa; }
+  .callout { border-left:4px solid; padding:10px 14px; border-radius:4px; margin:12px 0; font-size:14px; }
+  .callout-warn { border-color:var(--red); background:var(--red-bg); }
+  .callout-info { border-color:var(--accent); background:var(--accent-light); }
+  .callout-ok { border-color:var(--green); background:var(--green-bg); }
+  .callout-warn strong { color:var(--red); }
+  .callout-info strong { color:var(--accent); }
+  .callout-ok strong { color:var(--green); }
+  ul, ol { padding-left:22px; margin:8px 0; }
+  li { margin:4px 0; }
+  .file-ref { font-family:var(--mono); font-size:12px; color:var(--teal); background:var(--teal-bg); padding:2px 6px; border-radius:4px; }
+  table { width:100%; border-collapse:collapse; margin:10px 0; font-size:13.5px; }
+  th { background:var(--surface-alt); padding:10px 12px; text-align:left; font-weight:600; border-bottom:2px solid var(--border); }
+  td { padding:10px 12px; border-bottom:1px solid var(--border-light); vertical-align:top; }
+  tr:last-child td { border-bottom:none; }
+  .tag { display:inline-block; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:600; letter-spacing:.2px; }
+  .tag-green { background:var(--green-bg); color:var(--green); }
+  .tag-red { background:var(--red-bg); color:var(--red); }
+  .tag-orange { background:var(--orange-bg); color:var(--orange); }
+  .tag-accent { background:var(--accent-light); color:var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Active Operations Upgrade — Implementation Guide</h1>
+  <p>Template-driven telemetry for all finders (RDF, SKU, keyFinder, CEF) without touching PIF.</p>
+  <span class="pill">Three-stage refactor · 2026-04-22</span>
+</div>
+
+<div class="container">
+
+<div class="toc">
+  <h3>Contents</h3>
+  <ol>
+    <li><a href="#why">Why this exists</a></li>
+    <li><a href="#constraints">Hard constraints</a></li>
+    <li><a href="#debt">Current debt inventory</a></li>
+    <li><a href="#stage1">Stage 1 · buildOperationTelemetry</a></li>
+    <li><a href="#stage2">Stage 2 · withLlmCallTracking</a></li>
+    <li><a href="#stage3">Stage 3 · Two-budget pill (no grid)</a></li>
+    <li><a href="#sequence">Sequencing &amp; plan-mode gates</a></li>
+    <li><a href="#nottouch">What NOT to touch</a></li>
+    <li><a href="#tests">Test strategy</a></li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="why"><span class="num">1</span> Why this exists</h2>
+
+<div class="card">
+<div class="card-body">
+<p>Five finders (RDF, SKU, keyFinder, PIF, CEF) each manually wire 6–8 telemetry callbacks from their route to the operations registry, and each orchestrator manually emits the pending-before / completed-after LLM-call shape by hand. Nothing enforces the shape. When I added keyFinder telemetry I used <code>stage:</code> instead of <code>label:</code> and the modal rendered blank rows until caught.</p>
+
+<p>This is a textbook <strong>O(1) Feature Scaling</strong> violation per <span class="file-ref">CLAUDE.md</span>. Adding a new finder today requires touching:</p>
+<ul>
+  <li>The orchestrator (declare 6 callback params, emit pending + completed per LLM call)</li>
+  <li>The route handler (map 6 callbacks to <code>updateStage</code> / <code>updateModelInfo</code> / <code>updateQueueDelay</code> / <code>appendLlmCall</code> / <code>markPassengersRegistered</code> / <code>updateLoopProgress</code>)</li>
+  <li>Every LLM emission point (get the 13-field payload exactly right)</li>
+</ul>
+<p>Goal: drop this to "call one helper, pass one config object."</p>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="constraints"><span class="num">2</span> Hard constraints</h2>
+
+<div class="callout callout-warn">
+<strong>PIF does not change.</strong> <code>productImageFinder.js</code>, its carousel strategy, <code>LoopProgressGrid</code> in <span class="file-ref">tools/gui-react/src/features/operations/components/OperationsTracker.tsx</span>, and PIF's <code>updateLoopProgress</code> shape all stay exactly as they are. Verified working. The refactor adds new helpers; it does not migrate PIF onto them.
+</div>
+
+<div class="callout callout-info">
+<strong>PIF keeps the grid; RDF / SKU / keyFinder get a pill.</strong> A grid only makes sense when a loop has multiple parallel sub-units (views + hero in PIF). Single-field loops (keyFinder) or single-variant-per-iteration loops (RDF / SKU) render as a <em>two-budget pill</em> — see <a href="#stage3">Stage 3</a>.
+</div>
+
+<div class="callout callout-ok">
+<strong>Subtractive engineering.</strong> After each stage lands, delete the now-dead inline callback wiring / emission code from the migrated finder. No dead fallbacks, no "just in case" branches.
+</div>
+
+<!-- ============================================================ -->
+<h2 id="debt"><span class="num">3</span> Current debt inventory</h2>
+
+<h3>3.1 Route-level callback wiring (Stage 1 target)</h3>
+<p>Every custom route rewrites the same 6-line block. Sample from <span class="file-ref">src/features/key/api/keyFinderRoutes.js</span>:</p>
+<pre><code>onStageAdvance: (name) =&gt; updateStage({ id: op.id, stageName: name }),
+onModelResolved: (info) =&gt; updateModelInfo({ id: op.id, ...info }),
+onStreamChunk: (delta) =&gt; {
+  if (delta?.reasoning) batcher.push(delta.reasoning);
+  if (delta?.content) batcher.push(delta.content);
+},
+onQueueWait: (ms) =&gt; updateQueueDelay({ id: op.id, queueDelayMs: ms }),
+onLlmCallComplete: (call) =&gt; appendLlmCall({ id: op.id, call }),
+onPassengersRegistered: (fks) =&gt; markPassengersRegistered({ id: op.id, passengerFieldKeys: fks }),
+</code></pre>
+<p>Near-identical copies live in <span class="file-ref">finderRoutes.js</span> (RDF/SKU), <span class="file-ref">productImageFinderRoutes.js</span> (PIF — leave alone), and <span class="file-ref">colorEditionFinderRoutes.js</span> (CEF).</p>
+
+<h3>3.2 LLM-call emission shape (Stage 2 target)</h3>
+<p>The modal's <code>LlmCallRow</code> reads 13 fields: <code>label</code>, <code>prompt.{system,user}</code>, <code>response</code>, <code>model</code>, <code>isFallback</code>, <code>thinking</code>, <code>webSearch</code>, <code>effortLevel</code>, <code>accessMode</code>, <code>usage</code>, <code>variant</code>, <code>mode</code>, <code>discovery_log</code> (via <code>response.discovery_log</code>).</p>
+<p>Every orchestrator emits these manually twice per call (pending → completed). One wrong key (e.g. <code>stage</code> vs <code>label</code>) and the row renders blank. No schema enforcement.</p>
+
+<h3>3.3 Loop progress shape (Stage 3 target)</h3>
+<p>PIF emits a rich <code>{ views[], hero, carouselProgress }</code> that <code>LoopProgressGrid</code> renders as a cell grid. keyFinder emits <code>{ iteration, attemptsRemaining, loopId }</code> — too thin for the grid, so it renders nothing. RDF/SKU emit minimal progress too. Goal: keyFinder/RDF/SKU get a <em>pill</em> shape; PIF keeps the grid.</p>
+
+<!-- ============================================================ -->
+<h2 id="stage1"><span class="num">4</span> Stage 1 · <code>buildOperationTelemetry</code></h2>
+
+<div class="card">
+<div class="card-header">Scope</div>
+<div class="card-body">
+<p><strong>What:</strong> a single helper that returns the full callback bundle pre-wired to <code>op.id</code> + <code>batcher</code>. Routes spread it into their opts object. Kills ~30 lines of duplicated wiring per route.</p>
+<p><strong>Risk:</strong> Low. Mechanical. Existing tests catch regressions.</p>
+<p><strong>Plan mode:</strong> Not needed.</p>
+</div>
+</div>
+
+<h3>4.1 New file</h3>
+<p><span class="file-ref">src/core/operations/buildOperationTelemetry.js</span></p>
+<pre><code><span class="kw">import</span> {
+  updateStage, updateModelInfo, updateQueueDelay,
+  updateLoopProgress, appendLlmCall, markPassengersRegistered,
+} <span class="kw">from</span> <span class="str">'./index.js'</span>;
+
+<span class="cm">// WHY: Canonical callback bundle that all finder routes map to the operations</span>
+<span class="cm">// registry. Any finder that accepts telemetry callbacks spreads this into its</span>
+<span class="cm">// opts. Adding a new standard callback = add it here once, not in every route.</span>
+<span class="kw">export function</span> <span class="fn">buildOperationTelemetry</span>({ op, batcher, mode = <span class="str">'run'</span> }) {
+  <span class="kw">const</span> bundle = {
+    <span class="fn">onStageAdvance</span>: (name) =&gt; <span class="fn">updateStage</span>({ id: op.id, stageName: name }),
+    <span class="fn">onModelResolved</span>: (info) =&gt; <span class="fn">updateModelInfo</span>({ id: op.id, ...info }),
+    <span class="fn">onStreamChunk</span>: (delta) =&gt; {
+      <span class="kw">if</span> (delta?.reasoning) batcher.push(delta.reasoning);
+      <span class="kw">if</span> (delta?.content) batcher.push(delta.content);
+    },
+    <span class="fn">onQueueWait</span>: (ms) =&gt; <span class="fn">updateQueueDelay</span>({ id: op.id, queueDelayMs: ms }),
+    <span class="fn">onLlmCallComplete</span>: (call) =&gt; <span class="fn">appendLlmCall</span>({ id: op.id, call }),
+    <span class="fn">onPassengersRegistered</span>: (fks) =&gt;
+      <span class="fn">markPassengersRegistered</span>({ id: op.id, passengerFieldKeys: fks }),
+  };
+  <span class="kw">if</span> (mode === <span class="str">'loop'</span>) {
+    bundle.onLoopProgress = (loopProgress) =&gt;
+      <span class="fn">updateLoopProgress</span>({ id: op.id, loopProgress });
+  }
+  <span class="kw">return</span> bundle;
+}
+</code></pre>
+
+<h3>4.2 Route migration pattern</h3>
+<p>Before (keyFinderRoutes.js ~line 563):</p>
+<pre><code><span class="kw">const</span> commonOpts = <span class="fn">buildKeyFinderCommonOpts</span>({
+  product, fieldKey, category, specDb, appDb, config,
+  logger, signal, broadcastWs,
+  <span class="fn">onStageAdvance</span>: (name) =&gt; <span class="fn">updateStage</span>({ id: op.id, stageName: name }),
+  <span class="fn">onModelResolved</span>: (info) =&gt; <span class="fn">updateModelInfo</span>({ id: op.id, ...info }),
+  <span class="fn">onStreamChunk</span>: (delta) =&gt; { <span class="cm">/* ... */</span> },
+  <span class="fn">onQueueWait</span>: (ms) =&gt; <span class="fn">updateQueueDelay</span>({ id: op.id, queueDelayMs: ms }),
+  <span class="fn">onLlmCallComplete</span>: (call) =&gt; <span class="fn">appendLlmCall</span>({ id: op.id, call }),
+  <span class="fn">onPassengersRegistered</span>: (fks) =&gt; <span class="fn">markPassengersRegistered</span>({ id: op.id, passengerFieldKeys: fks }),
+});
+<span class="kw">if</span> (mode === <span class="str">'loop'</span>) {
+  commonOpts.onLoopProgress = (lp) =&gt; <span class="fn">updateLoopProgress</span>({ id: op.id, loopProgress: lp });
+  <span class="kw">return</span> <span class="fn">runKeyFinderLoop</span>(commonOpts);
+}
+<span class="kw">return</span> <span class="fn">runKeyFinder</span>(commonOpts);
+</code></pre>
+<p>After:</p>
+<pre><code><span class="kw">const</span> commonOpts = <span class="fn">buildKeyFinderCommonOpts</span>({
+  product, fieldKey, category, specDb, appDb, config,
+  logger, signal, broadcastWs,
+  ...<span class="fn">buildOperationTelemetry</span>({ op, batcher, mode }),
+});
+<span class="kw">return</span> mode === <span class="str">'loop'</span> ? <span class="fn">runKeyFinderLoop</span>(commonOpts) : <span class="fn">runKeyFinder</span>(commonOpts);
+</code></pre>
+
+<h3>4.3 Migration order</h3>
+<table>
+<tr><th>Order</th><th>Route</th><th>File</th><th>Notes</th></tr>
+<tr><td>1</td><td>keyFinder</td><td><span class="file-ref">src/features/key/api/keyFinderRoutes.js</span></td><td>Known-good baseline post-fix. Easiest first migration.</td></tr>
+<tr><td>2</td><td>RDF / SKU (shared)</td><td><span class="file-ref">src/core/finder/finderRoutes.js</span></td><td><code>createFinderRouteHandler</code> — update in one place.</td></tr>
+<tr><td>3</td><td>CEF</td><td><span class="file-ref">src/features/color-edition/api/colorEditionFinderRoutes.js</span> (or equivalent)</td><td>Different stage names; verify stage transitions intact.</td></tr>
+<tr><td>—</td><td>PIF</td><td><span class="tag tag-red">DO NOT MIGRATE</span></td><td>Per constraint. Leave as-is.</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="stage2"><span class="num">5</span> Stage 2 · <code>withLlmCallTracking</code></h2>
+
+<div class="card">
+<div class="card-header">Scope</div>
+<div class="card-body">
+<p><strong>What:</strong> a wrapper that handles the pending-before / completed-after <code>onLlmCallComplete</code> dance. Enforces the canonical shape. Caller supplies the prompt + tier capabilities + callLlm function; wrapper takes care of both emissions + <code>resolveModelTracking</code> wiring.</p>
+<p><strong>Risk:</strong> Moderate. CEF emits <strong>three</strong> call rows per run (Discovery + Identity + Confirm). PIF carousel emits per-view. The abstraction must support N emissions per run, one per conceptual LLM call.</p>
+<p><strong>Plan mode:</strong> Yes — align on the signature before touching five orchestrators.</p>
+</div>
+</div>
+
+<h3>5.1 Proposed signature</h3>
+<p><span class="file-ref">src/core/llm/withLlmCallTracking.js</span></p>
+<pre><code><span class="cm">// WHY: Canonical LLM-call tracking wrapper. Emits onLlmCallComplete twice</span>
+<span class="cm">// (pending + completed) with the exact shape OperationDetailModal reads.</span>
+<span class="cm">// Use once per conceptual LLM call — CEF calls this 3x per run (Discovery,</span>
+<span class="cm">// Identity, Confirm), PIF calls it once per view/hero iteration, keyFinder</span>
+<span class="cm">// calls it once per iteration.</span>
+<span class="kw">export async function</span> <span class="fn">withLlmCallTracking</span>({
+  label,                    <span class="cm">// 'Discovery' | 'Identity' | 'Confirm' | ...</span>
+  prompt,                   <span class="cm">// { system, user }</span>
+  initialModel,             <span class="cm">// displayed in pending row (best-known pre-call)</span>
+  tierCapabilities,         <span class="cm">// { thinking, webSearch, effortLevel } snapshot</span>
+  modelTracking,            <span class="cm">// from resolveModelTracking(...)</span>
+  onLlmCallComplete,        <span class="cm">// downstream callback (plug in buildOperationTelemetry's)</span>
+  callFn,                   <span class="cm">// async () =&gt; ({ result, usage })</span>
+  extras = {},              <span class="cm">// tier, reason, variant, mode (passed through to both emissions)</span>
+}) {
+  <span class="cm">// Pending emit — makes row appear immediately with prompt visible</span>
+  onLlmCallComplete?.({
+    label, prompt, response: <span class="kw">null</span>,
+    model: initialModel, isFallback: <span class="kw">false</span>,
+    thinking: tierCapabilities.thinking,
+    webSearch: tierCapabilities.webSearch,
+    effortLevel: tierCapabilities.effortLevel,
+    accessMode: <span class="str">''</span>,
+    ...extras,
+  });
+
+  <span class="kw">const</span> startedAt = <span class="kw">new</span> Date().toISOString();
+  <span class="kw">const</span> startMs = Date.now();
+  <span class="kw">const</span> { result, usage } = <span class="kw">await</span> <span class="fn">callFn</span>();
+  <span class="kw">const</span> durationMs = Date.now() - startMs;
+
+  <span class="cm">// Completed emit — upserts pending row via appendLlmCall's merge rule</span>
+  onLlmCallComplete?.({
+    label, prompt, response: result,
+    model: modelTracking.actualModel || initialModel,
+    isFallback: modelTracking.actualFallbackUsed,
+    thinking: modelTracking.actualThinking,
+    webSearch: modelTracking.actualWebSearch,
+    effortLevel: modelTracking.actualEffortLevel,
+    accessMode: modelTracking.actualAccessMode,
+    usage, started_at: startedAt, duration_ms: durationMs,
+    ...extras,
+  });
+
+  <span class="kw">return</span> { result, usage, durationMs };
+}
+</code></pre>
+
+<h3>5.2 Orchestrator migration pattern (keyFinder example)</h3>
+<p>Before (<span class="file-ref">src/features/key/keyFinder.js</span>, current):</p>
+<pre><code><span class="cm">// 30+ lines: pending emit, call, completed emit, all by hand</span>
+</code></pre>
+<p>After:</p>
+<pre><code><span class="kw">const</span> modelTracking = <span class="fn">resolveModelTracking</span>({ config, phaseKey: <span class="str">'keyFinder'</span>, onModelResolved });
+<span class="kw">const</span> { result: llmResult } = <span class="kw">await</span> <span class="fn">withLlmCallTracking</span>({
+  label: <span class="str">'Discovery'</span>,
+  prompt: { system: systemPrompt, user: userMessage },
+  initialModel: tierBundle.model || config.llmModelPlan || <span class="str">''</span>,
+  tierCapabilities: {
+    thinking: <span class="fn">Boolean</span>(tierBundle.thinking),
+    webSearch: <span class="fn">Boolean</span>(tierBundle.webSearch),
+    effortLevel: <span class="fn">String</span>(tierBundle.thinkingEffort || <span class="str">''</span>),
+  },
+  modelTracking,
+  onLlmCallComplete,
+  extras: { tier: tierName, reason: <span class="str">`key_finding_${tierName}`</span> },
+  <span class="fn">callFn</span>: <span class="kw">async</span> () =&gt; {
+    <span class="kw">if</span> (_callLlmOverride) <span class="kw">return await</span> <span class="fn">_callLlmOverride</span>(domainArgs, mapped);
+    <span class="kw">const</span> llmDeps = <span class="fn">buildLlmCallDeps</span>({ <span class="cm">/* ... */</span> });
+    <span class="kw">const</span> callLlm = <span class="fn">createKeyFinderCallLlm</span>(llmDeps, { name: tierName, ...tierBundle });
+    <span class="kw">return await</span> <span class="fn">callLlm</span>(domainArgs);
+  },
+});
+</code></pre>
+
+<h3>5.3 Multi-call orchestrators (CEF example)</h3>
+<p>CEF calls <code>withLlmCallTracking</code> three times per run with different labels: <code>'Discovery'</code>, <code>'Identity'</code>, <code>'Confirm'</code>. Each call is independently emitted as pending + completed. <code>appendLlmCall</code>'s upsert rule only merges when the immediately previous call has <code>response: null</code> and the new call has non-null response, so consecutive label blocks stay separate. No change needed to the registry.</p>
+
+<h3>5.4 Migration order</h3>
+<p>Same as Stage 1, excluding PIF. Migrate one orchestrator per commit. After each commit, open the modal on a real run for that finder and confirm the LLM-call rows render identically to before.</p>
+
+<!-- ============================================================ -->
+<h2 id="stage3"><span class="num">6</span> Stage 3 · Two-budget pill (no grid)</h2>
+
+<div class="card">
+<div class="card-header">Scope</div>
+<div class="card-body">
+<p><strong>What:</strong> A new <code>LoopProgressPill</code> frontend component for RDF / SKU / keyFinder. Shows two budgets side by side: (a) publish progress (count resolved vs target), (b) LLM call budget (attempts used vs budget). User sees at a glance whether a loop stopped because the target was met or because the budget was exhausted.</p>
+<p><strong>PIF stays on <code>LoopProgressGrid</code></strong> — no change. Frontend branches on <code>op.loopProgress</code> shape: if <code>views[]</code> or <code>hero</code> present → grid; else → pill.</p>
+<p><strong>Risk:</strong> Moderate. Three loop orchestrators to migrate. Frontend gets one new component + a shape-based router.</p>
+<p><strong>Plan mode:</strong> Yes — finalize the pill visual + edge cases (target met with 0 budget used; budget exhausted with partial target; final_status display) before committing to a shape.</p>
+</div>
+</div>
+
+<h3>6.1 New <code>loopProgress</code> pill shape</h3>
+<p>Added to the existing <code>op.loopProgress</code> field. Frontend uses shape detection: if <code>views</code> or <code>hero</code> is present, render grid (PIF). Else render pill.</p>
+<pre><code>{
+  <span class="cm">// Publish-target budget — "count satisfied vs target"</span>
+  publish: {
+    count: <span class="str">&lt;number&gt;</span>,          <span class="cm">// e.g. 0 or 1 for keyFinder; up to N for RDF/SKU</span>
+    target: <span class="str">&lt;number&gt;</span>,         <span class="cm">// usually 1 (keyFinder) or field_count (RDF/SKU)</span>
+    satisfied: <span class="str">&lt;boolean&gt;</span>,     <span class="cm">// count &gt;= target</span>
+    confidence: <span class="str">&lt;number|null&gt;</span>, <span class="cm">// 0-100, latest publish confidence (keyFinder); null for RDF/SKU</span>
+  },
+  <span class="cm">// LLM-call budget — "attempts used vs attemptBudget"</span>
+  callBudget: {
+    used: <span class="str">&lt;number&gt;</span>,           <span class="cm">// iterations completed</span>
+    budget: <span class="str">&lt;number&gt;</span>,         <span class="cm">// max attempts</span>
+    exhausted: <span class="str">&lt;boolean&gt;</span>,     <span class="cm">// used &gt;= budget</span>
+  },
+  <span class="cm">// Terminal signal — populated on final iteration only</span>
+  final_status: <span class="str">'published' | 'definitive_unk' | 'budget_exhausted' | 'skipped_resolved' | null</span>,
+  loop_id: <span class="str">&lt;string&gt;</span>,
+}
+</code></pre>
+
+<h3>6.2 Pill visual</h3>
+<p>Two horizontal bars stacked in a single pill card. Cell grid is NOT used for these finders.</p>
+<ul>
+  <li><strong>Row 1 (publish):</strong> "✓ 1/1 published · conf 88" or "· 0/1 not yet" or "✗ 0/1 definitive unk"</li>
+  <li><strong>Row 2 (callBudget):</strong> "3/8 attempts" with a fill bar. Gray if not exhausted, red if exhausted before publish.</li>
+  <li><strong>Header:</strong> loop_id (short), final_status chip if non-null.</li>
+</ul>
+<p><strong>Early-stop readability:</strong> <code>publish.satisfied === true</code> AND <code>callBudget.used &lt; callBudget.budget</code> → "stopped pre-budget because target met" is visually obvious (green checkmark on row 1, unfilled bar on row 2).</p>
+
+<h3>6.3 Per-finder emission mapping</h3>
+
+<table>
+<tr><th>Finder</th><th>publish.target</th><th>publish.count</th><th>publish.confidence</th><th>Notes</th></tr>
+<tr><td>keyFinder</td><td><code>1</code></td><td><code>published ? 1 : 0</code></td><td>latest submit confidence</td><td>Single field per loop.</td></tr>
+<tr><td>RDF / SKU (single-field loop)</td><td><code>1</code></td><td><code>published ? 1 : 0</code></td><td><code>null</code></td><td>variantFieldLoop → single field at a time.</td></tr>
+<tr><td>RDF / SKU (multi-field batched loop)</td><td><code>fields.length</code></td><td>count of published fields</td><td><code>null</code></td><td>If/when batched variant loops exist.</td></tr>
+<tr><td>PIF</td><td colspan="3"><span class="tag tag-red">DO NOT CHANGE</span> — keeps <code>views[]</code> / <code>hero</code> grid.</td><td>Frontend detects shape and routes to existing grid.</td></tr>
+</table>
+
+<h3>6.4 Frontend router</h3>
+<p><span class="file-ref">tools/gui-react/src/features/operations/components/LoopProgressRouter.tsx</span> (new):</p>
+<pre><code><span class="kw">export function</span> <span class="fn">LoopProgressRouter</span>({ lp }: { lp: LoopProgress }) {
+  <span class="cm">// PIF path — grid renderer, unchanged</span>
+  <span class="kw">if</span> (lp.views || lp.hero) <span class="kw">return</span> &lt;<span class="fn">LoopProgressGrid</span> lp={lp} /&gt;;
+  <span class="cm">// RDF / SKU / keyFinder path — new pill renderer</span>
+  <span class="kw">if</span> (lp.publish &amp;&amp; lp.callBudget) <span class="kw">return</span> &lt;<span class="fn">LoopProgressPill</span> lp={lp} /&gt;;
+  <span class="kw">return null</span>;
+}
+</code></pre>
+
+<h3>6.5 Loop orchestrator emission pattern (keyFinder example)</h3>
+<p>In <span class="file-ref">src/features/key/keyFinderLoop.js</span>, after each iteration:</p>
+<pre><code><span class="fn">onLoopProgress</span>?.({
+  publish: {
+    count: result?.status === <span class="str">'published'</span> ? <span class="kw">1</span> : <span class="kw">0</span>,
+    target: <span class="kw">1</span>,
+    satisfied: result?.status === <span class="str">'published'</span>,
+    confidence: result?.candidate?.confidence ?? <span class="kw">null</span>,
+  },
+  callBudget: {
+    used: iter,
+    budget: attempts,
+    exhausted: iter &gt;= attempts,
+  },
+  final_status: <span class="kw">null</span>, <span class="cm">// populated on terminal iteration</span>
+  loop_id,
+});
+</code></pre>
+<p>On loop exit, emit once more with <code>final_status</code> set.</p>
+
+<!-- ============================================================ -->
+<h2 id="sequence"><span class="num">7</span> Sequencing &amp; plan-mode gates</h2>
+
+<table>
+<tr><th>#</th><th>Stage</th><th>Plan mode</th><th>Risk</th><th>Commit unit</th></tr>
+<tr><td>1</td><td><code>buildOperationTelemetry</code> + migrate keyFinder route</td><td><span class="tag tag-green">No</span></td><td>Low</td><td>One commit</td></tr>
+<tr><td>2</td><td>Migrate RDF/SKU route (<code>finderRoutes.js</code>)</td><td><span class="tag tag-green">No</span></td><td>Low</td><td>One commit</td></tr>
+<tr><td>3</td><td>Migrate CEF route</td><td><span class="tag tag-green">No</span></td><td>Low</td><td>One commit</td></tr>
+<tr><td>4</td><td><code>withLlmCallTracking</code> + migrate keyFinder orchestrator</td><td><span class="tag tag-accent">Yes</span></td><td>Medium</td><td>Plan → land</td></tr>
+<tr><td>5</td><td>Migrate RDF/SKU orchestrator</td><td><span class="tag tag-green">No</span></td><td>Low</td><td>One commit after Stage 4 pattern is validated</td></tr>
+<tr><td>6</td><td>Migrate CEF orchestrator (three call blocks)</td><td><span class="tag tag-accent">Yes</span></td><td>Medium</td><td>Plan — CEF's multi-call emission needs alignment on label ordering.</td></tr>
+<tr><td>7</td><td>Pill shape + <code>LoopProgressRouter</code> + <code>LoopProgressPill</code> frontend</td><td><span class="tag tag-accent">Yes</span></td><td>Medium</td><td>Plan — visual and edge cases.</td></tr>
+<tr><td>8</td><td>Migrate keyFinder / RDF / SKU loop orchestrators to pill shape</td><td><span class="tag tag-green">No</span></td><td>Low</td><td>Per-finder commits.</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="nottouch"><span class="num">8</span> What NOT to touch</h2>
+
+<div class="callout callout-warn">
+<strong>Do not modify any of these in this refactor:</strong>
+<ul>
+  <li><span class="file-ref">src/features/product-image/productImageFinder.js</span> — PIF orchestrator</li>
+  <li><span class="file-ref">src/features/product-image/api/productImageFinderRoutes.js</span> — PIF routes</li>
+  <li><span class="file-ref">src/features/product-image/carouselStrategy.js</span> — carousel logic</li>
+  <li><code>LoopProgressGrid</code> in <span class="file-ref">tools/gui-react/src/features/operations/components/OperationsTracker.tsx</span> — keeps current PIF rendering</li>
+  <li>PIF's <code>views[]</code> / <code>hero</code> / <code>carouselProgress</code> shape on <code>op.loopProgress</code></li>
+  <li><code>updateLoopProgress</code> in <span class="file-ref">src/core/operations/operationsRegistry.js</span> — signature stays; it just starts receiving a new shape from non-PIF finders</li>
+</ul>
+</div>
+
+<div class="callout callout-warn">
+<strong>Shape-detection branching in the frontend is intentional.</strong> PIF's shape and the pill's shape share the same <code>op.loopProgress</code> field, distinguished by field presence (<code>views</code>/<code>hero</code> → grid, <code>publish</code>/<code>callBudget</code> → pill). No enum, no type tag. If PIF's shape ever needs to evolve, the detection still holds.
+</div>
+
+<!-- ============================================================ -->
+<h2 id="tests"><span class="num">9</span> Test strategy</h2>
+
+<h3>9.1 Stage 1 (<code>buildOperationTelemetry</code>)</h3>
+<ul>
+  <li><strong>Unit:</strong> verify the bundle contains exactly the expected keys for run mode and loop mode. Each callback, when invoked, maps to the right registry function with the expected payload shape.</li>
+  <li><strong>Regression:</strong> existing route tests (<code>keyFinderRoutes.*.test.js</code>, finderRoutes.test.js, etc.) must stay green.</li>
+</ul>
+
+<h3>9.2 Stage 2 (<code>withLlmCallTracking</code>)</h3>
+<ul>
+  <li><strong>Unit:</strong> given a fake <code>callFn</code>, verify two <code>onLlmCallComplete</code> emissions — first with <code>response: null</code>, second with response + usage + modelTracking values.</li>
+  <li><strong>Multi-call test:</strong> three sequential <code>withLlmCallTracking</code> calls with labels <code>'A'</code>, <code>'B'</code>, <code>'C'</code> produce 6 emissions (2 per call) that the registry upserts into 3 separate rows.</li>
+  <li><strong>Regression:</strong> keyFinder's existing "emits onLlmCallComplete twice per LLM call" test must stay green after orchestrator migration.</li>
+</ul>
+
+<h3>9.3 Stage 3 (pill)</h3>
+<ul>
+  <li><strong>Shape contract test:</strong> keyFinderLoop emits <code>publish</code> + <code>callBudget</code> shape each iteration, and emits <code>final_status</code> on terminal iteration for each of the four exit conditions (published / definitive_unk / budget_exhausted / skipped_resolved).</li>
+  <li><strong>Frontend component tests:</strong>
+    <ul>
+      <li><code>LoopProgressPill</code> renders "0/1 not yet" when <code>publish.count === 0</code>.</li>
+      <li>Renders "1/1 published" with green check when <code>publish.satisfied</code>.</li>
+      <li>Renders "X/Y attempts" with red fill when <code>callBudget.exhausted</code>.</li>
+      <li>Renders early-stop state when <code>publish.satisfied &amp;&amp; callBudget.used &lt; callBudget.budget</code>.</li>
+    </ul>
+  </li>
+  <li><strong>PIF regression:</strong> snapshot the PIF grid with a representative <code>views[]</code> + <code>hero</code> payload and assert unchanged. Characterization-grade — this is the contract PIF stays on.</li>
+</ul>
+
+</div>
+
+</body>
+</html>

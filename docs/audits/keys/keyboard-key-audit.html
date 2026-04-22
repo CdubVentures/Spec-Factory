@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Keyboard Key Audit — Priority, Axes, Extraction Guidance</title>
+<style>
+:root {
+  --bg: #09090b; --s1: #18181b; --s2: #27272a; --s3: #3f3f46;
+  --border: rgba(161,161,170,0.12); --border-f: rgba(161,161,170,0.25);
+  --text: #fafafa; --t2: #a1a1aa; --t3: #71717a;
+  --accent: #3b82f6; --accent-s: rgba(59,130,246,0.12);
+  --green: #22c55e; --green-s: rgba(34,197,94,0.12);
+  --amber: #f59e0b; --amber-s: rgba(245,158,11,0.12);
+  --violet: #8b5cf6; --violet-s: rgba(139,92,246,0.12);
+  --rose: #f43f5e; --rose-s: rgba(244,63,94,0.14);
+  --cyan: #06b6d4; --cyan-s: rgba(6,182,212,0.12);
+  --teal: #14b8a6;
+  --fuchsia: #d946ef; --fuchsia-s: rgba(217,70,239,0.12);
+  --orange: #fb923c; --orange-s: rgba(251,146,60,0.12);
+  --lime: #84cc16; --lime-s: rgba(132,204,22,0.12);
+  --pink: #ec4899; --pink-s: rgba(236,72,153,0.12);
+  --mono: "SF Mono","Cascadia Code","Fira Code","JetBrains Mono",Consolas,monospace;
+  --sans: "Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px;-webkit-font-smoothing:antialiased}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.55;min-height:100vh}
+.page{max-width:1600px;margin:0 auto;padding:40px 20px 80px}
+
+.header{margin-bottom:20px}
+.header h1{font-size:1.9rem;font-weight:700;letter-spacing:-0.03em;margin-bottom:6px}
+.header p{color:var(--t2);max-width:1000px;font-size:0.9rem}
+.header .meta{display:flex;gap:20px;margin-top:14px;font-size:0.72rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;font-weight:600;flex-wrap:wrap}
+.header .meta code{font-family:var(--mono);background:var(--s2);padding:2px 6px;border-radius:4px;color:var(--t2);text-transform:none;letter-spacing:0}
+
+.banner{background:linear-gradient(180deg,rgba(34,197,94,0.08),rgba(34,197,94,0.02));border:1px solid rgba(34,197,94,0.3);border-radius:12px;padding:18px 22px;margin-bottom:28px}
+.banner h3{font-size:0.84rem;font-weight:700;color:#86efac;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em}
+.banner p{color:var(--t2);font-size:0.85rem;margin-bottom:10px;line-height:1.6}
+.banner p strong{color:var(--text)}
+.banner .list{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:6px 16px;margin-top:8px}
+.banner .list div{color:var(--t2);font-size:0.8rem;padding-left:14px;position:relative}
+.banner .list div::before{content:"✓";position:absolute;left:0;color:#4ade80;font-weight:700}
+.banner .list div code{font-family:var(--mono);font-size:0.76rem;background:var(--s2);padding:1px 5px;border-radius:3px;color:var(--text)}
+.banner .rule{color:#fde68a;font-size:0.82rem;margin-top:14px;padding-top:12px;border-top:1px solid rgba(34,197,94,0.2)}
+.banner .rule strong{color:#fcd34d}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--border);border-radius:10px;overflow:hidden;margin-bottom:28px}
+.stat{background:var(--s1);padding:14px 18px;display:flex;flex-direction:column;gap:2px}
+.stat .n{font-size:1.4rem;font-weight:700;letter-spacing:-0.02em}
+.stat .l{font-size:0.68rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;font-weight:600}
+
+.section{margin-bottom:36px}
+.section h2{font-size:1.1rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.section .desc{color:var(--t2);font-size:0.85rem;margin-bottom:14px;max-width:1000px}
+
+.legend{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:28px}
+.legend h3{font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--t3);margin-bottom:12px}
+.legend-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px 18px}
+.legend-row{display:flex;gap:8px;align-items:flex-start;font-size:0.82rem;color:var(--t2)}
+.legend-row .chip{flex-shrink:0;margin-top:1px}
+.legend-row strong{color:var(--text);font-weight:600}
+
+.chip{display:inline-flex;align-items:center;padding:2px 7px;border-radius:99px;font-family:var(--mono);font-size:0.66rem;font-weight:700;letter-spacing:0.03em;white-space:nowrap;line-height:1.5}
+.chip.p0{background:var(--rose-s);color:#fb7185;border:1px solid rgba(244,63,94,0.3)}
+.chip.p1{background:var(--orange-s);color:#fdba74;border:1px solid rgba(251,146,60,0.3)}
+.chip.p2{background:var(--amber-s);color:#fbbf24;border:1px solid rgba(245,158,11,0.3)}
+.chip.p3{background:var(--accent-s);color:#93c5fd;border:1px solid rgba(59,130,246,0.3)}
+.chip.p4{background:var(--violet-s);color:#c4b5fd;border:1px solid rgba(139,92,246,0.3)}
+.chip.mand{background:var(--rose-s);color:#fb7185;border:1px solid rgba(244,63,94,0.3)}
+.chip.nonmand{background:var(--s2);color:var(--t2);border:1px solid var(--border)}
+.chip.always{background:var(--green-s);color:#4ade80;border:1px solid rgba(34,197,94,0.3)}
+.chip.sometimes{background:var(--amber-s);color:#fbbf24;border:1px solid rgba(245,158,11,0.3)}
+.chip.rare{background:var(--rose-s);color:#fb7185;border:1px solid rgba(244,63,94,0.3)}
+.chip.easy{background:var(--green-s);color:#4ade80;border:1px solid rgba(34,197,94,0.3)}
+.chip.medium{background:var(--amber-s);color:#fbbf24;border:1px solid rgba(245,158,11,0.3)}
+.chip.hard{background:var(--orange-s);color:#fdba74;border:1px solid rgba(251,146,60,0.3)}
+.chip.very_hard{background:var(--rose-s);color:#fb7185;border:1px solid rgba(244,63,94,0.3)}
+.chip.delta{background:var(--cyan-s);color:#22d3ee;border:1px solid rgba(6,182,212,0.3)}
+.chip.new{background:var(--fuchsia-s);color:#f0abfc;border:1px solid rgba(217,70,239,0.3)}
+.chip.grp{background:var(--s2);color:var(--t2);border:1px solid var(--border);font-size:0.62rem;letter-spacing:0.04em}
+
+.cleanup-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:960px){.cleanup-grid{grid-template-columns:1fr}}
+.cleanup-card{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:16px}
+.cleanup-card h4{font-size:0.88rem;font-weight:700;margin-bottom:6px;color:var(--text);display:flex;align-items:center;gap:8px}
+.cleanup-card h4 code{font-family:var(--mono);font-size:0.78rem;background:var(--s2);padding:2px 6px;border-radius:4px;color:var(--text);font-weight:600}
+.cleanup-card .issue{color:var(--t2);font-size:0.82rem;margin-bottom:6px;line-height:1.55}
+.cleanup-card .fix{color:#4ade80;font-size:0.82rem;line-height:1.55}
+.cleanup-card .fix strong{color:#86efac}
+
+table.mat{width:100%;border-collapse:collapse;background:var(--s1);border:1px solid var(--border);border-radius:10px;overflow:hidden;font-size:0.81rem;table-layout:fixed}
+table.mat thead th{background:var(--s2);color:var(--t2);text-align:left;padding:9px 10px;font-size:0.68rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5}
+table.mat tbody td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.5}
+table.mat tbody tr:last-child td{border-bottom:none}
+table.mat tbody tr:hover td{background:rgba(255,255,255,0.015)}
+table.mat tbody tr.new-row td{background:rgba(217,70,239,0.06)}
+table.mat tbody tr.new-row:hover td{background:rgba(217,70,239,0.1)}
+table.mat .num{color:var(--t3);font-family:var(--mono);font-size:0.72rem;text-align:right;padding-right:4px}
+table.mat .key{font-family:var(--mono);font-weight:600;color:var(--text);font-size:0.82rem;word-break:break-word}
+table.mat .axes{display:flex;gap:3px;flex-wrap:wrap}
+table.mat .guidance{color:var(--t2);font-size:0.78rem;line-height:1.5}
+table.mat .guidance strong{color:var(--text);font-weight:600}
+table.mat .guidance em{color:#fdba74;font-style:normal;font-weight:600}
+table.mat .guidance code{font-family:var(--mono);font-size:0.74rem;background:var(--s2);padding:1px 5px;border-radius:3px;color:var(--text)}
+table.mat .guidance .none{color:var(--t3);font-style:italic;font-size:0.76rem}
+table.mat .delta-col{font-family:var(--mono);color:var(--t3);font-size:0.7rem}
+
+col.c-num{width:38px}
+col.c-key{width:170px}
+col.c-grp{width:82px}
+col.c-shape{width:60px}
+col.c-cur{width:140px}
+col.c-prop{width:140px}
+col.c-delta{width:70px}
+col.c-pri{width:46px}
+col.c-guide{width:auto}
+
+.footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);color:var(--t3);font-size:0.76rem}
+.footer code{font-family:var(--mono);background:var(--s2);color:var(--t2);padding:2px 6px;border-radius:4px}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="header">
+  <h1>Keyboard Key Audit — Priority, Axes, Extraction Guidance</h1>
+  <p>Review document. Each row proposes (a) tuned <code>required_level</code> / <code>availability</code> / <code>difficulty</code>, (b) a priority tier (P0–P4) for finder scheduling, and (c) the <strong>exact text</strong> that will land in <code>field_overrides.&lt;key&gt;.ai_assist.reasoning_note</code> inside <code>category_authority/keyboard/_control_plane/field_studio_map.json</code>. That string is what the keyFinder prompt picks up verbatim as <code>PRIMARY_FIELD_GUIDANCE</code>. Guidance is <strong>terse by design</strong> — it adds only what the generic keyFinder prompt doesn't already inject.</p>
+  <div class="meta">
+    <span>Writes to · <code>field_overrides.&lt;key&gt;.ai_assist.reasoning_note</code></span>
+    <span>Rendered as · <code>PRIMARY_FIELD_GUIDANCE</code> in keyFinder prompt</span>
+    <span>Prompt source · <code>src/features/key/keyLlmAdapter.js</code></span>
+    <span>Rev · 2026-04-22 (v3 — audit patches applied)</span>
+  </div>
+</div>
+
+<div class="banner" style="background:linear-gradient(180deg,rgba(59,130,246,0.1),rgba(59,130,246,0.02));border-color:rgba(59,130,246,0.3)">
+  <h3 style="color:#93c5fd">Purpose — what this doc is and what it isn't</h3>
+  <p><strong>This is a review artifact.</strong> Each row's guidance cell is the exact text that will land in <code>field_overrides.&lt;key&gt;.ai_assist.reasoning_note</code> inside <code>category_authority/keyboard/_control_plane/field_studio_map.json</code>. The compiler flows that string into every keyFinder LLM call for that key as the <code>{{PRIMARY_FIELD_GUIDANCE}}</code> slot.</p>
+  <p style="margin-top:10px"><strong>What a <em>reasoning_note</em> is for:</strong> field-specific pitfalls and disambiguations the generic prompt can't express — vendor-to-canonical name maps, null-vs-No rules, narrow traps where a reasonable LLM would mis-classify, derivation rules from sibling fields. It is the <em>only</em> author-editable per-key hook into the prompt.</p>
+  <p style="margin-top:10px"><strong>What a <em>reasoning_note</em> is NOT for:</strong> anything already supplied by the generic prompt (listed below). Repeating those wastes tokens and dilutes the signal.</p>
+</div>
+
+<div class="banner">
+  <h3>What the generic keyFinder prompt already supplies — do not restate in guidance</h3>
+  <p>The per-call prompt (<code>KEY_FINDER_DEFAULT_TEMPLATE</code> in <code>src/features/key/keyLlmAdapter.js</code>) auto-injects the following for every primary + passenger key. A per-key <code>reasoning_note</code> that repeats these is pure noise.</p>
+  <div class="list">
+    <div><code>PRIMARY_FIELD_CONTRACT</code> — type, shape, <strong>unit</strong>, rounding, <strong>enum values (first 24)</strong>, enum policy, variance policy, <strong>aliases</strong></div>
+    <div><code>PRIMARY_SEARCH_HINTS</code> — <strong>domain_hints + query_terms</strong> from <code>field_overrides.search_hints</code></div>
+    <div><code>PRIMARY_CROSS_FIELD_CONSTRAINTS</code> — cross-field ops (lte/gte/requires_when_value, etc.)</div>
+    <div><code>PRIMARY_COMPONENT_KEYS</code> — relation pointer (parent / subfield_of)</div>
+    <div><code>PRODUCT_COMPONENTS</code> — <strong>resolved component identity + subfields</strong> (e.g. switch_name → actuation_force/feel/lifespan auto-pulled)</div>
+    <div><code>KNOWN_PRODUCT_FIELDS</code> — all already-published scalar/list values on this product</div>
+    <div><code>EVIDENCE_CONTRACT</code> + <code>EVIDENCE_VERIFICATION</code> — tier definitions + mandatory URL fetch</div>
+    <div><code>SOURCE_TIER_STRATEGY</code> — PRIMARY / INDEPENDENT / RETAILER / COMMUNITY tier rubric</div>
+    <div><code>VALUE_CONFIDENCE_GUIDANCE</code> — 0-100 epistemic confidence rubric</div>
+    <div><code>UNK_POLICY</code> — "honest unk beats low-confidence guess"</div>
+    <div><code>IDENTITY_INTRO</code> + <code>IDENTITY_WARNING</code> — tiered sibling-model disambiguation</div>
+    <div><code>PREVIOUS_DISCOVERY</code> — prior run URLs and queries for the same (product, field_key)</div>
+  </div>
+  <p class="rule"><strong>Rule:</strong> Guidance gets written <em>only</em> when a field has a pitfall the contract + components + source-tier rules can't express. "Check the mfg page", "don't hallucinate", "in mm", "derive from switch_name", or lists of enum values never belong here. <strong>No brand-default shortcuts</strong> (warranty years, polling defaults by vendor, software-suite maps) — those rot. <strong>No convenience defaults</strong> (None / Standard / Tray Mount / Silent as a fallback when evidence is absent) — UNK policy owns that.</p>
+</div>
+
+<div class="stats">
+  <div class="stat"><span class="n">103</span><span class="l">Existing keys</span></div>
+  <div class="stat"><span class="n">3</span><span class="l">Proposed new keys</span></div>
+  <div class="stat"><span class="n">48</span><span class="l">Axis-value changes</span></div>
+  <div class="stat"><span class="n">76</span><span class="l">Guidance authored</span></div>
+  <div class="stat"><span class="n">30</span><span class="l">Guidance intentionally empty</span></div>
+  <div class="stat"><span class="n">11</span><span class="l">Enum cleanups</span></div>
+</div>
+
+<div class="legend">
+  <h3>Legend</h3>
+  <div class="legend-grid">
+    <div class="legend-row"><span class="chip p0">P0</span><span><strong>Critical</strong> — core identity / layout / primary filter</span></div>
+    <div class="legend-row"><span class="chip p1">P1</span><span><strong>High</strong> — top-of-filter, heavily marketed</span></div>
+    <div class="legend-row"><span class="chip p2">P2</span><span><strong>Standard</strong> — useful filter, usually published</span></div>
+    <div class="legend-row"><span class="chip p3">P3</span><span><strong>Deep</strong> — enthusiast filter, sometimes published</span></div>
+    <div class="legend-row"><span class="chip p4">P4</span><span><strong>Expert</strong> — review/measurement-only</span></div>
+    <div class="legend-row"><span class="chip mand">mandatory</span><span><strong>required_level</strong> — must resolve for publish</span></div>
+    <div class="legend-row"><span class="chip nonmand">non_mandatory</span><span>may remain null</span></div>
+    <div class="legend-row"><span class="chip always">always</span><span><strong>availability</strong> — on every product page</span></div>
+    <div class="legend-row"><span class="chip sometimes">sometimes</span><span>on many, not all</span></div>
+    <div class="legend-row"><span class="chip rare">rare</span><span>only in reviews / measurement</span></div>
+    <div class="legend-row"><span class="chip easy">easy</span><span><strong>difficulty</strong> — scan once, done</span></div>
+    <div class="legend-row"><span class="chip medium">medium</span><span>cross-check needed</span></div>
+    <div class="legend-row"><span class="chip hard">hard</span><span>multi-source, easy to hallucinate</span></div>
+    <div class="legend-row"><span class="chip very_hard">very_hard</span><span>measurement / review-only</span></div>
+    <div class="legend-row"><span class="chip delta">Δ</span><span>Axis value changed vs current</span></div>
+    <div class="legend-row"><span class="chip new">NEW</span><span>Proposed addition — whole row highlighted</span></div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Component DB &amp; Enum Cleanup</h2>
+  <p class="desc">Every enum becomes a facet filter on the site. Long enums and overlaps bloat the filter UI and confuse finders.</p>
+  <div class="cleanup-grid">
+
+    <div class="cleanup-card">
+      <h4><code>switch_name</code> · known_values out of sync with component DB</h4>
+      <div class="issue"><strong>Issue.</strong> <code>known_values.switch_name</code> has 15 entries; <code>component_db/switches.json</code> has 44. Products using e.g. <em>Cherry MX Black</em>, <em>Gateron Lekker L60</em>, <em>Kailh Box Brown</em>, <em>Razer Orange</em>, <em>Logitech GX Red</em> miss the known-values hint in the contract.</div>
+      <div class="fix"><strong>Fix.</strong> Generate <code>known_values.switch_name</code> from <code>component_db/switches.json</code> at compile time. Policy stays <code>open_prefer_known</code>.</div>
+    </div>
+
+    <div class="cleanup-card">
+      <h4><code>wireless_technology</code> vs <code>bluetooth_version</code> · duplicative</h4>
+      <div class="issue"><strong>Issue.</strong> <code>wireless_technology</code> enum contains <em>"Bluetooth 5.0 / 5.1 / 5.2 / 5.3"</em>; <code>bluetooth_version</code> covers exactly the same axis at finer grain.</div>
+      <div class="fix"><strong>Fix.</strong> Reduce <code>wireless_technology</code> to <em>2.4 GHz</em> / <em>Bluetooth</em> / <em>Both</em>, or retire it — <code>connection</code> already distinguishes radio types and <code>bluetooth_version</code> carries the BT number.</div>
+    </div>
+
+    <div class="cleanup-card">
+      <h4><code>case_material</code> · ABS/Plastic duplication, "CNC Aluminum"</h4>
+      <div class="issue"><strong>Issue.</strong> Enum contains both <em>ABS</em> and <em>Plastic</em> — plastic keyboard cases are nearly always ABS. <em>CNC Aluminum</em> is a manufacturing method, not a material.</div>
+      <div class="fix"><strong>Fix.</strong> Collapse to: <em>Aluminum, Plastic, Polycarbonate, FR4, Acrylic, Wood, Steel</em>. Drop <em>CNC Aluminum</em> → <em>Aluminum</em>. Collapse <em>ABS</em> → <em>Plastic</em>.</div>
+    </div>
+
+    <div class="cleanup-card">
+      <h4><code>stabilizer_type</code> vs <code>stabilizer_mount</code> · overlap</h4>
+      <div class="issue"><strong>Issue.</strong> <code>stabilizer_type</code>: Costar / PCB-mounted / Plate-mounted / Screw-in / Pre-lubed Screw-in. <code>stabilizer_mount</code>: Clip-in PCB / Screw-in PCB / Plate-mount / Plate-mount TPU. Same axis split across two fields.</div>
+      <div class="fix"><strong>Fix.</strong> Keep <code>stabilizer_mount</code> with enum <em>Plate-mount clip-in, Plate-mount screw-in, PCB clip-in, PCB screw-in, Costar, None/Other</em>. Retire <code>stabilizer_type</code>.</div>
+    </div>
+
+    <div class="cleanup-card">
+      <h4><code>gasket_mount</code> vs <code>mounting_style</code> · derived redundancy</h4>
+      <div class="issue"><strong>Issue.</strong> <code>mounting_style</code> has <em>Gasket Mount</em>. <code>gasket_mount</code> repeats the same signal as Yes/No/Double Gasket.</div>
+      <div class="fix"><strong>Fix.</strong> Derive <code>gasket_mount</code> from <code>mounting_style</code> or retire it. Double-gasket distinction lives in a component-db flag, not a filter.</div>
+    </div>
+
+    <div class="cleanup-card">
+      <h4><code>anti_ghosting</code> · duplicative enum values</h4>
+      <div class="issue"><strong>Issue.</strong> Values <em>Full anti-ghosting / No / Yes</em>. "Full anti-ghosting" and "Yes" are the same thing.</div>
+      <div class="fix"><strong>Fix.</strong> Make binary Yes/No. Or retire — <code>key_rollover</code> (NKRO/6KRO/10KRO) subsumes it.</div>
+    </div>
+
+    <div class="cleanup-card">
+      <h4><code>socd_cleaning</code> · mixes mode with toggle</h4>
+      <div class="issue"><strong>Issue.</strong> Enum <em>Last input priority / Neutral / No / Snap Tap / Yes</em> mixes on/off state with mode name.</div>
+      <div class="fix"><strong>Fix.</strong> Split: <code>socd_cleaning</code> = Yes / No. <code>socd_mode</code> = Last-input / Neutral / Snap Tap / Other (only when Yes).</div>
+    </div>
+
+    <div class="cleanup-card">
+      <h4><code>colors</code> closed enum · 76 values</h4>
+      <div class="issue"><strong>Issue.</strong> 76 closed tokens. Owned by CEF/variantGenerator (authoring is automatic) but the filter UI surface is massive.</div>
+      <div class="fix"><strong>Fix.</strong> Keep raw tokens (CEF needs precision for variant matching). At the filter layer, expose a hierarchical roll-up (chromatic family → shade). No change to tokens themselves.</div>
+    </div>
+
+    <div class="cleanup-card">
+      <h4><code>plate_material</code> · POM casing</h4>
+      <div class="issue"><strong>Issue.</strong> Both <code>plate_material</code> and <code>keycap_material</code> use <em>POM</em> — fine — but normalize casing across all material enums.</div>
+      <div class="fix"><strong>Fix.</strong> Normalize acronyms: <em>ABS, PBT, POM, PC, FR4</em>. No value changes, just the normalize rule.</div>
+    </div>
+
+    <div class="cleanup-card">
+      <h4><code>rgb_zones</code> · derivable from per_key_rgb</h4>
+      <div class="issue"><strong>Issue.</strong> When <code>per_key_rgb=Yes</code>, zones = Per-key. Two facets that collapse together.</div>
+      <div class="fix"><strong>Fix.</strong> Derive in the validator: <code>per_key_rgb=Yes</code> → <code>rgb_zones=Per-key</code>. Filter UI hides zones when per-key is selected.</div>
+    </div>
+
+    <div class="cleanup-card">
+      <h4><code>included_accessories</code> · keep closed at 8</h4>
+      <div class="issue"><strong>Issue.</strong> Niche bundle items (travel pouch, coiled cable in a special color) don't fit the 8-value enum.</div>
+      <div class="fix"><strong>Fix.</strong> Keep enum <strong>closed</strong> at 8. If not on the list, drop it. Authored 8-item enum covers 95%+ of real bundles; filter surface stays clean.</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="section">
+  <h2>Missing Keys — Proposed Additions</h2>
+  <p class="desc">Three fields not in the schema that would pay their way as filters. Note: NVIDIA Reflex is intentionally absent — <a href="https://www.nvidia.com/en-us/geforce/technologies/reflex/supported-products/" style="color:#93c5fd">NVIDIA's supported-products page</a> lists only mice + monitors; keyboards aren't in the Reflex ecosystem.</p>
+  <table class="mat">
+    <colgroup>
+      <col class="c-num"><col class="c-key"><col class="c-grp"><col class="c-shape">
+      <col class="c-cur"><col class="c-prop"><col class="c-delta"><col class="c-pri"><col class="c-guide">
+    </colgroup>
+    <thead>
+      <tr><th>#</th><th>Key</th><th>Group</th><th>Shape</th><th>Current R/A/D</th><th>Proposed R/A/D</th><th>Δ</th><th>Pri</th><th>Extraction guidance</th></tr>
+    </thead>
+    <tbody>
+      <tr class="new-row">
+        <td class="num">N1</td>
+        <td class="key">firmware_updateable</td>
+        <td><span class="chip grp">Features</span></td>
+        <td>scalar</td>
+        <td class="delta-col">—</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td><span class="chip new">NEW</span></td>
+        <td><span class="chip p3">P3</span></td>
+        <td class="guidance">QMK with a documented flash path, upstream firmware build, or mfg firmware download ⇒ Yes. VIA alone is <em>not</em> automatically Yes — VIA proves configurability, not flashability. Accept <code>.bin</code>/<code>.hex</code>/<code>.uf2</code> files or a signed vendor updater/release note. "Firmware update via software" must explicitly update MCU firmware, not just macros/profiles.</td>
+      </tr>
+      <tr class="new-row">
+        <td class="num">N2</td>
+        <td class="key">wireless_range_m</td>
+        <td><span class="chip grp">Connectivity</span></td>
+        <td>scalar</td>
+        <td class="delta-col">—</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td><span class="chip new">NEW</span></td>
+        <td><span class="chip p3">P3</span></td>
+        <td class="guidance">Null for wired-only products. Marketing terms ("long-range") without a numeric distance ⇒ unk. If BT and 2.4 GHz have separate ranges and this scalar is <em>explicitly</em> defined as max wireless range, record the longer advertised number; otherwise return unk rather than averaging or picking one.</td>
+      </tr>
+      <tr class="new-row">
+        <td class="num">N3</td>
+        <td class="key">screen_display</td>
+        <td><span class="chip grp">Features</span></td>
+        <td>scalar</td>
+        <td class="delta-col">—</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td><span class="chip new">NEW</span></td>
+        <td><span class="chip p3">P3</span></td>
+        <td class="guidance">Refers to a secondary information panel on the keyboard (LCD/OLED/E-ink or equivalent dashboard panel) — not per-key keycap screens and not a simple status LED strip. Record <em>None</em> only when product photos/specs provide enough evidence no such panel exists; otherwise unk.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="section">
+  <h2>Full 103-Key Matrix</h2>
+  <p class="desc">Ordered by group. R/A/D = required_level, availability, difficulty. Δ = axis value changed vs current. "—" in guidance means the generic prompt's contract + components + search-hints + source-tier rules are sufficient; no reasoning_note needed.</p>
+  <table class="mat">
+    <colgroup>
+      <col class="c-num"><col class="c-key"><col class="c-grp"><col class="c-shape">
+      <col class="c-cur"><col class="c-prop"><col class="c-delta"><col class="c-pri"><col class="c-guide">
+    </colgroup>
+    <thead>
+      <tr>
+        <th>#</th><th>Key</th><th>Group</th><th>Shape</th>
+        <th>Current R/A/D</th><th>Proposed R/A/D</th><th>Δ</th><th>Pri</th><th>Extraction guidance</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <!-- IDENTITY -->
+      <tr><td class="num">1</td><td class="key">brand</td><td><span class="chip grp">Identity</span></td><td>scalar</td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p0">P0</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">2</td><td class="key">model</td><td><span class="chip grp">Identity</span></td><td>scalar</td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p0">P0</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">3</td><td class="key">base_model</td><td><span class="chip grp">Identity</span></td><td>scalar</td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p0">P0</span></td>
+        <td class="guidance">Strip color / edition / layout suffixes. <em>"Keychron Q1 Pro Space Gray ANSI"</em> → <code>Keychron Q1 Pro</code>. But <em>do not</em> strip size/variant that the brand treats as a distinct product line ("Q1" vs "Q1 Pro" vs "Q1 Max" are separate base_models).</td></tr>
+
+      <tr><td class="num">4</td><td class="key">category</td><td><span class="chip grp">Identity</span></td><td>scalar</td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p0">P0</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">5</td><td class="key">variant</td><td><span class="chip grp">Identity</span></td><td>scalar</td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="delta-col">—</td><td><span class="chip p0">P0</span></td>
+        <td class="guidance">Owned by CEF / variantGenerator. Do not hand-author.</td></tr>
+
+      <tr><td class="num">6</td><td class="key">mpn</td><td><span class="chip grp">Identity</span></td><td>scalar</td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="delta-col"><span class="chip delta">R↓</span> <span class="chip delta">D↑</span></td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">Region variants (ANSI vs ISO) may differ by a single letter/digit in MPN — if mfg page shows multiple MPNs, match the one where the suffix corresponds to the selected <code>layout_standard</code>. The SKU-name slug on retailer URLs is not the MPN.</td></tr>
+
+      <tr><td class="num">7</td><td class="key">sku</td><td><span class="chip grp">Identity</span></td><td>scalar</td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="delta-col"><span class="chip delta">R↓</span> <span class="chip delta">D↑</span></td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">Distinct from MPN and GTIN. Prefer a manufacturer/direct-store SKU. Retailer IDs are valid only when the source labels them as SKU/item number for the exact variant. ASIN is an Amazon catalog identifier — record it only if the schema intentionally treats retailer catalog IDs as SKU. Record exactly one; preserve source casing.</td></tr>
+
+      <tr><td class="num">8</td><td class="key">gtin</td><td><span class="chip grp">Identity</span></td><td>scalar</td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip rare">rare</span><span class="chip easy">easy</span></td>
+        <td class="delta-col"><span class="chip delta">R↓</span> <span class="chip delta">A↓</span></td><td><span class="chip p3">P3</span></td>
+        <td class="guidance">Accept valid GTIN-8 / GTIN-12 / GTIN-13 / GTIN-14 (UPC-A = GTIN-12, EAN-13 = GTIN-13) per the schema. Numerically validate the check digit before returning — a wrong digit resolves to unrelated products. Evidence can come from manufacturer, GS1, retailer product-details blocks, or package — don't assume manufacturers never publish them.</td></tr>
+
+      <!-- LAYOUT -->
+      <tr><td class="num">9</td><td class="key">form_factor</td><td><span class="chip grp">Layout</span></td><td>scalar</td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p0">P0</span></td>
+        <td class="guidance"><code>key_count</code> is a clue, not the sole determinant — confirm with the physical layout since 60/65/75/TKL/96/1800/full-size overlap by region and nav-cluster design. Treat TKL and 80% as the same token (the enum uses <em>TKL (80%)</em>). Keep <em>1800 Compact</em> distinct from generic 96% when both exist in the enum — it preserves a numpad/nav-cluster arrangement difference.</td></tr>
+
+      <tr><td class="num">10</td><td class="key">layout</td><td><span class="chip grp">Layout</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col"><span class="chip delta">R↑</span></td><td><span class="chip p1">P1</span></td>
+        <td class="guidance">Physical shape, not ANSI/ISO. <em>Low-profile</em> only when chassis/switch/keycap stack is marketed as low-profile. <em>Split</em> = separated halves. <em>Ortholinear</em> = grid. <em>Alice</em> / <em>Arisu</em> / <em>Boomerang</em> = angled split-staggered. Use <em>Standard</em> only when photos/specs confirm a conventional staggered unibody layout — otherwise unk, not Standard.</td></tr>
+
+      <tr><td class="num">11</td><td class="key">layout_standard</td><td><span class="chip grp">Layout</span></td><td>scalar</td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p0">P0</span></td>
+        <td class="guidance">If a photo is the only evidence: rectangular Enter + 2.25u left-Shift ⇒ ANSI. Inverted-L (tall) Enter + 1.25u left-Shift + extra key next to left-Shift ⇒ ISO. JIS adds ¥ and かな/英数 keys. Same SKU name often ships as ANSI in US listings and ISO in EU listings — pick the one matching the source page region.</td></tr>
+
+      <tr><td class="num">12</td><td class="key">key_count</td><td><span class="chip grp">Layout</span></td><td>scalar</td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p0">P0</span></td>
+        <td class="guidance">ISO commonly adds one key vs ANSI — via the extra key next to the shortened left-Shift and the ISO Enter area (not the right-Shift). Compact layouts vary. If mfg publishes multiple counts, use the one matching the selected <code>layout_standard</code>/region. If only one count is published for a multi-region SKU, don't silently apply it to other layouts unless the source confirms.</td></tr>
+
+      <tr><td class="num">13</td><td class="key">numpad</td><td><span class="chip grp">Layout</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col"><span class="chip delta">R↑</span></td><td><span class="chip p0">P0</span></td>
+        <td class="guidance"><em>Detached</em> = numpad ships as a physically separate / detachable side module (Mountain Everest Max; ASUS ROG Claymore-style). Not interchangeable with <em>No</em>. Do <em>not</em> classify 75% boards with media/OLED side modules as detached numpads — those aren't numpads.</td></tr>
+
+      <tr><td class="num">14</td><td class="key">function_row</td><td><span class="chip grp">Layout</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p0">P0</span></td>
+        <td class="guidance">40% lacks F-row; some 60% variants omit it. Fn-layer F-keys ≠ dedicated F-row.</td></tr>
+
+      <tr><td class="num">15</td><td class="key">arrow_keys</td><td><span class="chip grp">Layout</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p0">P0</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <!-- SWITCH -->
+      <tr><td class="num">16</td><td class="key">switch_name</td><td><span class="chip grp">Switch</span></td><td>scalar</td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p0">P0</span></td>
+        <td class="guidance">Canonical form = <em>Brand SwitchName</em> (e.g. <code>Cherry MX Red</code>, <code>Gateron G Pro Brown</code>). Resolution cascade anchor — wrong value here breaks all derived switch subfields.</td></tr>
+
+      <tr><td class="num">17</td><td class="key">switch_type</td><td><span class="chip grp">Switch</span></td><td>scalar</td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p0">P0</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">18</td><td class="key">switch_brand</td><td><span class="chip grp">Switch</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p1">P1</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">19</td><td class="key">switch_feel</td><td><span class="chip grp">Switch</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p1">P1</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">20</td><td class="key">actuation_force</td><td><span class="chip grp">Switch</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col"><span class="chip delta">A↑</span> <span class="chip delta">D↓</span></td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">For HE/magnetic boards, the mfg often publishes "initial force" (~30 gf) alongside trigger force — record <em>trigger force at the default actuation point</em>, not the initial-press resistance.</td></tr>
+
+      <tr><td class="num">21</td><td class="key">actuation_distance</td><td><span class="chip grp">Switch</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col"><span class="chip delta">A↑</span> <span class="chip delta">D↓</span></td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">For adjustable HE / magnetic / analog-optical boards, record the factory-default actuation point <em>only when explicitly published or shown in default-profile documentation</em>. If the source only gives an adjustable range, leave this unk and populate <code>adjustable_actuation_min/max</code> instead. Don't hard-code brand "typical" defaults across model years.</td></tr>
+
+      <tr><td class="num">22</td><td class="key">bottom_out_force</td><td><span class="chip grp">Switch</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip hard">hard</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="delta-col"><span class="chip delta">D↓</span></td><td><span class="chip p3">P3</span></td>
+        <td class="guidance">Don't infer from actuation/operating force — bottom-out ratios vary per-switch and are often absent from official specs. Use the component DB only when the exact switch revision matches; for switches outside the DB, record only a stated numeric bottom-out / end force.</td></tr>
+
+      <tr><td class="num">23</td><td class="key">total_travel</td><td><span class="chip grp">Switch</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col"><span class="chip delta">A↑</span> <span class="chip delta">D↓</span></td><td><span class="chip p2">P2</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">24</td><td class="key">switch_lifespan</td><td><span class="chip grp">Switch</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col"><span class="chip delta">A↑</span></td><td><span class="chip p2">P2</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">25</td><td class="key">switch_output_type</td><td><span class="chip grp">Switch</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col"><span class="chip delta">A↑</span> <span class="chip delta">D↓</span></td><td><span class="chip p2">P2</span></td>
+        <td class="guidance"><em>Digital</em> = binary keystroke output. <em>Analog</em> = continuous per-key value or gamepad/analog HID output explicitly supported. <em>Adjustable Actuation</em> = configurable trigger point that still outputs a binary key event. Don't infer <em>Analog</em> from Hall-effect / magnetic / optical sensing or "analog switch" branding alone — require an analog-output claim.</td></tr>
+
+      <tr><td class="num">26</td><td class="key">hot_swappable</td><td><span class="chip grp">Switch</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col"><span class="chip delta">A↑</span></td><td><span class="chip p1">P1</span></td>
+        <td class="guidance">Product-level (PCB sockets), not switch-level. Switch component DB may claim <code>hot_swappable: Yes</code> for the switch itself — that means it's compatible with sockets <em>if the PCB has them</em>, not that the board does. Return unk rather than defaulting to No; the flag is heavily marketed when present.</td></tr>
+
+      <tr><td class="num">27</td><td class="key">switch_pin_support</td><td><span class="chip grp">Switch</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">Null when <code>hot_swappable=No</code>. 3-pin sockets accept plate-mount switches (most MX clones); 5-pin sockets accept both. <em>"3-pin and 5-pin"</em> means 5-pin sockets (which are a superset) — the dual label is marketing.</td></tr>
+
+      <tr><td class="num">28</td><td class="key">switch_compatibility</td><td><span class="chip grp">Switch</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">"MX-compatible" = MX-style electrical/PCB compatibility, not merely MX keycap-stem compatibility. Optical, Hall-effect/magnetic, Topre, and proprietary low-profile sockets are separate unless the manufacturer explicitly advertises cross-compatibility. Don't assume a Keychron/Gateron socket is universal without a source.</td></tr>
+
+      <tr><td class="num">29</td><td class="key">actuation_adjustment_step</td><td><span class="chip grp">Switch</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip hard">hard</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip rare">rare</span><span class="chip very_hard">very_hard</span></td>
+        <td class="delta-col"><span class="chip delta">A↓</span> <span class="chip delta">D↑</span></td><td><span class="chip p4">P4</span></td>
+        <td class="guidance">Position-sensing switches only. Record a step only when the source gives a numeric increment/resolution (often 0.1 mm; firmware UIs may expose different increments). "Adjustable" or a range alone ⇒ unk for step.</td></tr>
+
+      <tr><td class="num">30</td><td class="key">adjustable_actuation_min</td><td><span class="chip grp">Switch</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip hard">hard</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip rare">rare</span><span class="chip hard">hard</span></td>
+        <td class="delta-col"><span class="chip delta">A↓</span></td><td><span class="chip p4">P4</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">31</td><td class="key">adjustable_actuation_max</td><td><span class="chip grp">Switch</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip hard">hard</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip rare">rare</span><span class="chip hard">hard</span></td>
+        <td class="delta-col"><span class="chip delta">A↓</span></td><td><span class="chip p4">P4</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <!-- KEYCAPS -->
+      <tr><td class="num">32</td><td class="key">keycap_material</td><td><span class="chip grp">Keycaps</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p1">P1</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">33</td><td class="key">keycap_profile</td><td><span class="chip grp">Keycaps</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="delta-col"><span class="chip delta">D↑</span></td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">If <code>switch_type=Low-profile Mechanical</code> and stock keycaps are low-profile, profile = <em>Low Profile</em>. "Double-shot OEM" combines legend process + profile — capture only <em>OEM</em> here. Prefer the named manufacturer profile; do <em>not</em> classify Cherry vs OEM from brand defaults alone. "Sculpted profile" without a named profile ⇒ unk.</td></tr>
+
+      <tr><td class="num">34</td><td class="key">keycap_thickness</td><td><span class="chip grp">Keycaps</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip hard">hard</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip rare">rare</span><span class="chip very_hard">very_hard</span></td>
+        <td class="delta-col"><span class="chip delta">A↓</span> <span class="chip delta">D↑</span></td><td><span class="chip p4">P4</span></td>
+        <td class="guidance">No industry standard. Only record when a specific mm value is quoted. <em>PBT does not imply 1.5 mm</em>; ABS does not imply 1.0 mm — both vary. Teardown channel calipers are the only authority outside explicit mfg claims.</td></tr>
+
+      <tr><td class="num">35</td><td class="key">doubleshot</td><td><span class="chip grp">Keycaps</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col"><span class="chip delta">A↓</span></td><td><span class="chip p2">P2</span></td>
+        <td class="guidance"><code>legends = Double-shot ABS</code> or <code>Double-shot PBT</code> ⇒ Yes. Laser-etched shine-through exists (cheap gaming boards) so <em>"shine-through" alone is NOT evidence of double-shot</em> — the legend construction method is.</td></tr>
+
+      <tr><td class="num">36</td><td class="key">legends</td><td><span class="chip grp">Keycaps</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="delta-col"><span class="chip delta">A↓</span> <span class="chip delta">D↑</span></td><td><span class="chip p3">P3</span></td>
+        <td class="guidance">Don't infer legend process solely from legend color or keycap material. <em>Side-Printed</em> / front-printed = legends on the front face. Dye-sub usually appears on light PBT, but reverse dye-sub, UV print, and other methods exist. Record <em>Double-shot</em>, <em>Dye-sub</em>, <em>Pad-printed</em>, or <em>Laser-etched</em> only when the source or a reliable teardown/review states the process, or when construction is visually unambiguous.</td></tr>
+
+      <tr><td class="num">37</td><td class="key">shine_through</td><td><span class="chip grp">Keycaps</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance"><em>Partial</em> = primary legend only (Fn-layer labels stay opaque). <em>North-facing only</em> = legend lights only when LED is at the top edge of the switch — matters for OEM-profile caps on south-facing PCBs. Null (not No) when <code>backlighting=None</code>.</td></tr>
+
+      <!-- PERFORMANCE -->
+      <tr><td class="num">38</td><td class="key">polling_rate_wired</td><td><span class="chip grp">Performance</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p1">P1</span></td>
+        <td class="guidance">Record the maximum attainable wired USB polling rate as an integer Hz ("8K"→8000, "32K"→32000), including modes that require onboard/software enablement if available out of box. Do not copy wireless claims into this field.</td></tr>
+
+      <tr><td class="num">39</td><td class="key">polling_rate_wireless</td><td><span class="chip grp">Performance</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">Record the maximum explicitly advertised wireless polling rate — normally the 2.4 GHz dongle rate when both Bluetooth and dongle exist. Don't fill from wired-only products. If the source lists BT and 2.4 GHz separately and this scalar is max-wireless, take the higher; otherwise return unk. Avoid blanket "Bluetooth = 125 Hz" unless measured or specified in the source.</td></tr>
+
+      <tr><td class="num">40</td><td class="key">key_rollover</td><td><span class="chip grp">Performance</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">Record the <em>highest</em> mode reachable over USB. Some boards default to 6KRO (BIOS-compat) and toggle NKRO via Fn combo (e.g. HyperX Alloy: Fn+Delete) — the board is still NKRO. PS/2-only NKRO (old) doesn't count for USB products.</td></tr>
+
+      <tr><td class="num">41</td><td class="key">anti_ghosting</td><td><span class="chip grp">Performance</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">42</td><td class="key">rapid_trigger</td><td><span class="chip grp">Performance</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col"><span class="chip delta">D↓</span></td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">Requires position-aware sensing/firmware — not Hall-effect exclusive. Allow HE/magnetic, analog optical (Razer Huntsman V3 Pro), inductive, or other position-sensing switches when the manufacturer explicitly advertises rapid-trigger / dynamic-reset behavior. For ordinary binary mechanical switches, return No per schema. Distinct from SOCD — Snap Tap ≠ Rapid Trigger.</td></tr>
+
+      <tr><td class="num">43</td><td class="key">analog_input</td><td><span class="chip grp">Performance</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip hard">hard</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col"><span class="chip delta">D↓</span></td><td><span class="chip p2">P2</span></td>
+        <td class="guidance"><em>Yes</em> = continuous per-key analog value or gamepad/analog HID output. <em>Controller Input</em> = explicit XInput/DirectInput/gamepad emulation. Adjustable actuation alone is not analog input. Don't mark No based on brand heuristic — check whether the exact model/software exposes analog/gamepad output.</td></tr>
+
+      <tr><td class="num">44</td><td class="key">socd_cleaning</td><td><span class="chip grp">Performance</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col"><span class="chip delta">D↓</span></td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">Map only firmware / device-level SOCD resolution. Razer <em>Snap Tap</em> ≈ last-input-priority SOCD. Wooting <em>Snappy Tappy</em> is SOCD cleaning; Wooting <em>Rappy Snappy</em> is a related depth-comparison feature and should <em>not</em> be collapsed to Snap Tap unless the enum lacks a better value. <em>Null binds</em> are software console-command workarounds, not hardware SOCD — don't record as Yes. CS2 disallows hardware-assisted SOCD on Valve servers, but the feature still ships.</td></tr>
+
+      <tr><td class="num">45</td><td class="key">adjustable_input_granularity</td><td><span class="chip grp">Performance</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip hard">hard</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip rare">rare</span><span class="chip very_hard">very_hard</span></td>
+        <td class="delta-col"><span class="chip delta">A↓</span> <span class="chip delta">D↑</span></td><td><span class="chip p4">P4</span></td>
+        <td class="guidance">Overlaps with <code>actuation_adjustment_step</code>. Consider retiring (see enum-cleanup note).</td></tr>
+
+      <tr><td class="num">46</td><td class="key">debounce_time</td><td><span class="chip grp">Performance</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip hard">hard</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip rare">rare</span><span class="chip very_hard">very_hard</span></td>
+        <td class="delta-col"><span class="chip delta">A↓</span> <span class="chip delta">D↑</span></td><td><span class="chip p4">P4</span></td>
+        <td class="guidance">Firmware configuration, not a stable board spec. For QMK/VIA/custom firmware, record a value only if the product publishes a fixed stock debounce setting — user-tunable firmware defaults should usually be unk. Don't hard-code a universal QMK default.</td></tr>
+
+      <tr><td class="num">47</td><td class="key">scan_rate</td><td><span class="chip grp">Performance</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip hard">hard</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip rare">rare</span><span class="chip very_hard">very_hard</span></td>
+        <td class="delta-col"><span class="chip delta">A↓</span> <span class="chip delta">D↑</span></td><td><span class="chip p4">P4</span></td>
+        <td class="guidance">Matrix / per-key scan rate, not USB polling rate. Record only when the source explicitly says scan rate, matrix scan, or per-key scan; "polling rate", "response time", or "latency" alone is not enough. HE/analog boards may publish both — keep them separate.</td></tr>
+
+      <tr><td class="num">48</td><td class="key">single_key_latency</td><td><span class="chip grp">Performance</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip hard">hard</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip rare">rare</span><span class="chip very_hard">very_hard</span></td>
+        <td class="delta-col"><span class="chip delta">A↓</span> <span class="chip delta">D↑</span></td><td><span class="chip p4">P4</span></td>
+        <td class="guidance">Measurement-only. Mfg "polling rate" and "1 ms response" claims are theoretical floor, not measured latency. When a reviewer reports "latency", they typically mean single-key — multi-key comes as a separate metric in the same test.</td></tr>
+
+      <tr><td class="num">49</td><td class="key">multi_key_latency</td><td><span class="chip grp">Performance</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip hard">hard</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip rare">rare</span><span class="chip very_hard">very_hard</span></td>
+        <td class="delta-col"><span class="chip delta">A↓</span> <span class="chip delta">D↑</span></td><td><span class="chip p4">P4</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <!-- FEATURES -->
+      <tr><td class="num">50</td><td class="key">backlighting</td><td><span class="chip grp">Features</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p1">P1</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">51</td><td class="key">per_key_rgb</td><td><span class="chip grp">Features</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col"><span class="chip delta">A↑</span></td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">Derivable: <code>backlighting=Per-key RGB</code> ⇒ Yes. Kept separate for quick filter.</td></tr>
+
+      <tr><td class="num">52</td><td class="key">rgb_zones</td><td><span class="chip grp">Features</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p3">P3</span></td>
+        <td class="guidance">Only meaningful when backlighting ≠ None AND per_key_rgb=No.</td></tr>
+
+      <tr><td class="num">53</td><td class="key">macro_keys</td><td><span class="chip grp">Features</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">Name map: G-keys (Logitech) = M-keys (Corsair) = dedicated macro row. Count the physical keys (e.g. 6 G-keys → <em>6 dedicated</em>). Software-only remap (QMK/VIA, Razer Synapse, iCUE layers) ⇒ <em>All keys programmable</em>, not dedicated. Boards may have both — record the dedicated count.</td></tr>
+
+      <tr><td class="num">54</td><td class="key">media_controls</td><td><span class="chip grp">Features</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">Fn-layer F-keys don't count as media controls — must be a dedicated physical key or a rotary knob/scroll-roller on the case. If the board has both a volume knob and dedicated play/pause/skip keys ⇒ <em>Knob and keys</em>. Razer "digital roller" ⇒ <em>Dedicated keys and roller</em>.</td></tr>
+
+      <tr><td class="num">55</td><td class="key">knob_dial</td><td><span class="chip grp">Features</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col"><span class="chip delta">A↑</span></td><td><span class="chip p2">P2</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">56</td><td class="key">onboard_memory</td><td><span class="chip grp">Features</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">57</td><td class="key">onboard_profile_count</td><td><span class="chip grp">Features</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="delta-col"><span class="chip delta">D↑</span></td><td><span class="chip p3">P3</span></td>
+        <td class="guidance">Null when <code>onboard_memory=No</code>. Record profile slots only when the keyboard/software advertises saved onboard profiles or named onboard slots. <em>QMK layers are NOT onboard profiles</em> — layers are keymap states, not profile memories. If a board stores only one persistent configuration, record 1 only when that persistence is evidenced.</td></tr>
+
+      <tr><td class="num">58</td><td class="key">os_mode_switch</td><td><span class="chip grp">Features</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">Refers to a <em>physical</em> 2- or 3-position slider on the case that remaps keys for Win/Mac/Linux (Keychron K/Q/V series, Nuphy Air, Epomaker). Software-layer OS toggles via an app don't count. Usually visible in a side-edge photo.</td></tr>
+
+      <tr><td class="num">59</td><td class="key">qmk_via_support</td><td><span class="chip grp">Features</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance"><em>QMK</em> = open-source firmware support / source or build target. <em>VIA</em> = VIA-compatible firmware / configurator support. They often compose — but VIA alone does not prove upstream QMK source availability, and QMK alone does not prove VIA support. Cross-check mfg docs, <code>github.com/qmk/qmk_firmware/keyboards/&lt;brand&gt;</code>, and VIA/Vial device definitions when needed.</td></tr>
+
+      <tr><td class="num">60</td><td class="key">software</td><td><span class="chip grp">Features</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">Primary vendor/configuration suite only. VIA/Vial belongs in <code>qmk_via_support</code> unless the schema intentionally treats VIA/Launcher as software suites. Use the current name from the product/support page; don't rely on brand-default maps (they age) and don't default open-source boards to <em>None</em> — many now have web launchers (e.g. Keychron Launcher).</td></tr>
+
+      <!-- CONNECTIVITY -->
+      <tr><td class="num">61</td><td class="key">connection</td><td><span class="chip grp">Connectivity</span></td><td>list</td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p0">P0</span></td>
+        <td class="guidance">"Hybrid" = all three (wired + 2.4 GHz + Bluetooth) in the same SKU.</td></tr>
+
+      <tr><td class="num">62</td><td class="key">wired_interface</td><td><span class="chip grp">Connectivity</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">63</td><td class="key">cable_type</td><td><span class="chip grp">Connectivity</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">64</td><td class="key">cable_length</td><td><span class="chip grp">Connectivity</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p3">P3</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">65</td><td class="key">detachable_cable</td><td><span class="chip grp">Connectivity</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col"><span class="chip delta">A↑</span></td><td><span class="chip p1">P1</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">66</td><td class="key">usb_passthrough</td><td><span class="chip grp">Connectivity</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">True USB passthrough = a downstream USB port/hub on the keyboard that passes data to the host. A second upstream cable is common on older / high-power designs but is not required by definition. Audio jacks are not USB passthrough. Record Yes only when a USB downstream port is documented or visible on the case.</td></tr>
+
+      <tr><td class="num">67</td><td class="key">bluetooth_version</td><td><span class="chip grp">Connectivity</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">68</td><td class="key">wireless_technology</td><td><span class="chip grp">Connectivity</span></td><td>list</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">Radio types only. Enum has BT version strings but those duplicate <code>bluetooth_version</code> — record just <em>2.4 GHz</em> and/or the generic Bluetooth entry. Full retirement tracked in enum-cleanup.</td></tr>
+
+      <tr><td class="num">69</td><td class="key">multi_device_pairing</td><td><span class="chip grp">Connectivity</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">Usually Bluetooth multi-host, but not strictly Bluetooth-only. Look for "pair up to N devices", "Easy-Switch", or specific host slots across BT and/or proprietary dongle modes. Fn+1/2/3 hotkeys are a signal — require source confirmation.</td></tr>
+
+      <tr><td class="num">70</td><td class="key">multi_device_pairing_count</td><td><span class="chip grp">Connectivity</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p3">P3</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <!-- DIMENSIONS -->
+      <tr><td class="num">71</td><td class="key">weight</td><td><span class="chip grp">Dimensions</span></td><td>scalar</td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p0">P0</span></td>
+        <td class="guidance">Wireless boards: typically "with battery" — if mfg lists both, take with-battery. If a board has detachable wrist rest / numpad, weight is the main unit only.</td></tr>
+
+      <tr><td class="num">72</td><td class="key">width</td><td><span class="chip grp">Dimensions</span></td><td>scalar</td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p0">P0</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">73</td><td class="key">depth</td><td><span class="chip grp">Dimensions</span></td><td>scalar</td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip mand">mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p0">P0</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">74</td><td class="key">height_front</td><td><span class="chip grp">Dimensions</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p3">P3</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">75</td><td class="key">height_rear</td><td><span class="chip grp">Dimensions</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p3">P3</span></td>
+        <td class="guidance">Feet-retracted measurement. If mfg publishes both "with feet up" and "with feet down", take feet-down (closed). Feet-extended heights live implicitly in <code>adjustable_feet</code>.</td></tr>
+
+      <tr><td class="num">76</td><td class="key">typing_angle</td><td><span class="chip grp">Dimensions</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="delta-col"><span class="chip delta">D↑</span></td><td><span class="chip p3">P3</span></td>
+        <td class="guidance">Record the default / base typing angle with feet closed. If multiple foot stages are published, record the base stage. Derive only when <code>height_front</code>, <code>height_rear</code>, and the front-to-rear distance are measured on the <em>same reference plane</em>: <code>atan((rear − front) / front-to-rear distance)</code>. Don't substitute overall product depth if dimensions include detachable accessories or irregular case geometry.</td></tr>
+
+      <tr><td class="num">77</td><td class="key">adjustable_feet</td><td><span class="chip grp">Dimensions</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col"><span class="chip delta">A↑</span></td><td><span class="chip p2">P2</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <!-- BUILD -->
+      <tr><td class="num">78</td><td class="key">case_material</td><td><span class="chip grp">Build</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p1">P1</span></td>
+        <td class="guidance">If the manufacturer states a composite enclosure, preserve the composite when the enum supports it. For scalar enums, record the dominant/structural enclosure material as marketed. <em>Aluminum</em> is reserved for a full aluminum enclosure or mfg-labeled aluminum case — an aluminum top plate/frame over a plastic bottom is <em>not</em> full-aluminum.</td></tr>
+
+      <tr><td class="num">79</td><td class="key">plate_material</td><td><span class="chip grp">Build</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">Don't infer from case material. Record only a stated plate material or a reliable teardown. If multiple plates are offered, match the shipped/default plate for the selected SKU; optional aftermarket plates don't override stock.</td></tr>
+
+      <tr><td class="num">80</td><td class="key">mounting_style</td><td><span class="chip grp">Build</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="delta-col"><span class="chip delta">D↑</span></td><td><span class="chip p3">P3</span></td>
+        <td class="guidance">Do <em>not</em> default unstated boards to <em>Tray Mount</em>. Record mounting style only when a manufacturer, review, teardown, or exploded diagram states or makes it clear. Don't use brand/year heuristics — verify the exact model.</td></tr>
+
+      <tr><td class="num">81</td><td class="key">gasket_mount</td><td><span class="chip grp">Build</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">Derived: <code>mounting_style=Gasket Mount</code> ⇒ Yes. <em>Double Gasket</em> when mfg explicitly says so (Keychron Q2, some Mode boards). Retires when cleanup lands.</td></tr>
+
+      <tr><td class="num">82</td><td class="key">foam_dampening</td><td><span class="chip grp">Build</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="delta-col"><span class="chip delta">D↑</span></td><td><span class="chip p3">P3</span></td>
+        <td class="guidance">Record exactly the named dampening layers/materials. Case/bottom foam, plate foam, PCB/IXPE foam, silicone pads, acoustic mats are distinct when the enum supports them. <em>Poron strips at the case perimeter may be gasket material, not case foam</em> — only map them to foam_dampening when described as acoustic/dampening foam. Don't upgrade unnamed layers.</td></tr>
+
+      <tr><td class="num">83</td><td class="key">stabilizer_type</td><td><span class="chip grp">Build</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="delta-col"><span class="chip delta">D↑</span></td><td><span class="chip p3">P3</span></td>
+        <td class="guidance">See enum-cleanup — overlaps with <code>stabilizer_mount</code>. If retired, existing values migrate.</td></tr>
+
+      <tr><td class="num">84</td><td class="key">stabilizer_mount</td><td><span class="chip grp">Build</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="delta-col"><span class="chip delta">D↑</span></td><td><span class="chip p3">P3</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">85</td><td class="key">stabilizer_lubed</td><td><span class="chip grp">Build</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip hard">hard</span></td>
+        <td class="delta-col"><span class="chip delta">D↑</span></td><td><span class="chip p4">P4</span></td>
+        <td class="guidance">Record <em>Yes</em> / <em>Factory-lubed</em> when the manufacturer explicitly says pre-lubed, factory-lubed, or lubricated stabilizers. Record a specific lube only when a product name/compound is stated (e.g. Krytox 205g0, dielectric grease). Generic "factory tuned" without lubrication wording ⇒ unk.</td></tr>
+
+      <tr><td class="num">86</td><td class="key">south_facing_leds</td><td><span class="chip grp">Build</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="delta-col"><span class="chip delta">D↑</span></td><td><span class="chip p3">P3</span></td>
+        <td class="guidance">Requires switch / PCB orientation evidence: manufacturer spec, PCB-side photo, or keycap-off / switch-socket view. Don't infer from brand or category trends. If silent and not visible ⇒ unk. Note: south-facing LED marketing often implies Cherry-profile interference compatibility, not necessarily better shine-through legends.</td></tr>
+
+      <!-- SOUND -->
+      <tr><td class="num">87</td><td class="key">sound_dampening</td><td><span class="chip grp">Sound</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="delta-col">—</td><td><span class="chip p3">P3</span></td>
+        <td class="guidance">Derived: <code>foam_dampening=None</code> → None; any single layer → Basic; two layers → Moderate; three layers (Case + Plate + PCB) → Heavy. Null when foam stack is unknown — don't guess from general impression.</td></tr>
+
+      <tr><td class="num">88</td><td class="key">sound_profile</td><td><span class="chip grp">Sound</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip hard">hard</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip rare">rare</span><span class="chip very_hard">very_hard</span></td>
+        <td class="delta-col"><span class="chip delta">A↓</span> <span class="chip delta">D↑</span></td><td><span class="chip p4">P4</span></td>
+        <td class="guidance">Use review / measurement evidence, not manufacturer marketing. Keep the term only when a reviewer directly describes the board / switch sound. Don't hard-code community synonym mappings (creamy ≈ Neutral, poppy ≈ Thocky) unless the enum has documented aliases. When reviewer adjectives conflict ⇒ unk.</td></tr>
+
+      <tr><td class="num">89</td><td class="key">typing_noise</td><td><span class="chip grp">Sound</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip hard">hard</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip hard">hard</span></td>
+        <td class="delta-col">—</td><td><span class="chip p3">P3</span></td>
+        <td class="guidance">Don't derive Silent from heavy foam alone — foam reduces noise but doesn't silence. Prefer measured dBA or reviewer consensus. Fallback using strong switch / design evidence: silent switches or explicit silent-dampened design ⇒ Silent; clicky switches ⇒ Loud (unless the product is explicitly silent-clicky/dampened); ordinary linear/tactile ⇒ Moderate or unk per schema. Sound character stays in <code>sound_profile</code>.</td></tr>
+
+      <!-- POWER -->
+      <tr><td class="num">90</td><td class="key">battery_capacity</td><td><span class="chip grp">Power</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col"><span class="chip delta">D↓</span></td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">Null when <code>connection=Wired</code>. For tri-mode (Hybrid) boards, the capacity is shared across radios — record the single number mfg publishes.</td></tr>
+
+      <tr><td class="num">91</td><td class="key">battery_life_off</td><td><span class="chip grp">Power</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col"><span class="chip delta">D↓</span></td><td><span class="chip p2">P2</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">92</td><td class="key">battery_life_rgb</td><td><span class="chip grp">Power</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip medium">medium</span></td>
+        <td class="delta-col">—</td><td><span class="chip p3">P3</span></td>
+        <td class="guidance">Mfgs quote at different brightness levels with no standard (Logitech often at 100%, Corsair at 50%, Keychron rarely states). Record the as-published value; don't normalize across brands. If only "up to" given with no brightness, <em>prefer the lower bound</em> if stated, else unk.</td></tr>
+
+      <tr><td class="num">93</td><td class="key">charging_method</td><td><span class="chip grp">Power</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">Record only the method explicitly supported: <em>USB-C</em>, proprietary charging dock, Qi/wireless, fast charge, etc. <em>USB-C fast charge</em> requires a stated fast-charge claim such as wattage or time-to-charge. Don't cite brand examples unless the exact keyboard product page confirms the charging method.</td></tr>
+
+      <!-- GENERAL -->
+      <tr><td class="num">94</td><td class="key">color</td><td><span class="chip grp">General</span></td><td>list</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p1">P1</span></td>
+        <td class="guidance"><span class="none">—</span></td></tr>
+
+      <tr><td class="num">95</td><td class="key">colors</td><td><span class="chip grp">General</span></td><td>list</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p1">P1</span></td>
+        <td class="guidance">Owned by CEF / variantGenerator. Do not hand-author.</td></tr>
+
+      <tr><td class="num">96</td><td class="key">compatible_os</td><td><span class="chip grp">General</span></td><td>list</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col"><span class="chip delta">A↑</span></td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">Record OS / platforms the manufacturer explicitly supports or certifies. USB HID may function on Linux/ChromeOS, but only list them when support is stated. For consoles, distinguish basic USB keyboard input from game / console certification — record PlayStation / Xbox only when the product page or cert explicitly says so.</td></tr>
+
+      <tr><td class="num">97</td><td class="key">discontinued</td><td><span class="chip grp">General</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p3">P3</span></td>
+        <td class="guidance">Yes requires: mfg product page 404/removed, or explicit "discontinued" tag, or sustained "out of stock" (≥6 months) across all first-party + major-retailer channels. Single-retailer stock-outs aren't evidence — gaming keyboards cycle retailers.</td></tr>
+
+      <tr><td class="num">98</td><td class="key">editions</td><td><span class="chip grp">General</span></td><td>list</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p1">P1</span></td>
+        <td class="guidance">Owned by CEF / variantGenerator. Do not hand-author.</td></tr>
+
+      <tr><td class="num">99</td><td class="key">included_accessories</td><td><span class="chip grp">General</span></td><td>list</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p3">P3</span></td>
+        <td class="guidance">Closed enum. If the item isn't in the list, drop it — don't invent. "Quick start guide" / "documentation" / "warranty card" are paper goods, not accessories. Replacement keycaps = "Mac keycaps" only if they're Mac-specific; otherwise no entry.</td></tr>
+
+      <tr><td class="num">100</td><td class="key">price_range</td><td><span class="chip grp">General</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip always">always</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">Launch MSRP in USD — not current street price. If no MSRP quoted, use the earliest retail listing we can find. Crowdfunding (Kickstarter/Indiegogo) early-bird prices ≠ MSRP; use the post-campaign retail price.</td></tr>
+
+      <tr><td class="num">101</td><td class="key">release_date</td><td><span class="chip grp">General</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p2">P2</span></td>
+        <td class="guidance">Owned by release-date finder. Graceful precision: day → month → year allowed.</td></tr>
+
+      <tr><td class="num">102</td><td class="key">software_required</td><td><span class="chip grp">General</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p3">P3</span></td>
+        <td class="guidance"><em>Required for advanced features</em> = core features (RGB, macros, remaps) unavailable without the app installed. <em>Optional</em> = advanced features work via Fn combos and the software only adds convenience. <em>No</em> = there is no software for this board. VIA support alone ⇒ Optional (not Required).</td></tr>
+
+      <tr><td class="num">103</td><td class="key">warranty</td><td><span class="chip grp">General</span></td><td>scalar</td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="axes"><span class="chip nonmand">non_mand</span><span class="chip sometimes">sometimes</span><span class="chip easy">easy</span></td>
+        <td class="delta-col">—</td><td><span class="chip p3">P3</span></td>
+        <td class="guidance">Use the current manufacturer warranty policy for the product's sale region and cite the policy/support page. Don't encode brand-default durations — warranties vary by SKU, region, refurb status, and purchase channel.</td></tr>
+
+    </tbody>
+  </table>
+</div>
+
+<div class="footer">
+  <p><strong>Methodology.</strong> Baseline pulled from <code>category_authority/keyboard/_control_plane/field_studio_map.json</code> (103 <code>field_overrides</code> entries). Axis-enum schema confirmed from <code>src/features/studio/contracts/studioSchemas.js</code>. Generic prompt contents audited from <code>src/features/key/keyLlmAdapter.js</code> (KEY_FINDER_DEFAULT_TEMPLATE + slot builders) and <code>keyFinderPromptContract.js</code> (KEY_FINDER_VARIABLES). Guidance cells populated only when a field-specific pitfall remains after the generic prompt's contract, components, search-hints, source-tier, evidence, confidence, and UNK rules are applied.</p>
+  <p style="margin-top:10px"><strong>v3 changes vs v2 (2026-04-22).</strong> Applied 40 patches from <code>keyboard_extraction_guidance_audit.md</code>. Corrected factual errors: Wooting 80HE polling is 8 kHz <em>wired</em> (not wireless); ISO's extra key sits next to the <em>left</em> Shift (split left, not right); removed ASUS ROG Azoth Extreme as a detached-numpad example (it isn't one — ROG Claymore is); dropped SteelSeries Apex Pro Gen 3 "0.05 mm" step claim (OmniPoint 3.0 is ≈0.1 mm across 40 levels / 0.1–4.0 mm); dropped wrong charging-dock brand examples. Removed brand-default shortcut tables for warranty, software suites, per-model polling, and "typical" HE actuation points. Tightened every default-as-evidence phrasing to respect UNK policy. Separated Rapid Trigger (position-sensing, not HE-exclusive — Razer Huntsman V3 Pro analog-optical counts) from SOCD; separated Wooting Rappy Snappy (depth-comparison) from Snappy Tappy (SOCD cleaning). Clarified QMK layers ≠ onboard profiles.</p>
+  <p style="margin-top:10px"><strong>Next steps.</strong> Author approves row-by-row; a migration writes the <code>priority</code> block and populates <code>field_overrides.&lt;key&gt;.ai_assist.reasoning_note</code> with the guidance cell verbatim for every non-empty row. The keyFinder prompt picks it up on the next compile as <code>{{PRIMARY_FIELD_GUIDANCE}}</code>. Enum cleanups are separate <code>[CLASS: BEHAVIORAL]</code> changes (each changes filter semantics).</p>
+</div>
+
+</div>
+</body>
+</html>

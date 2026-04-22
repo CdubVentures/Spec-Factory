@@ -546,6 +546,7 @@ export class SpecDb {
   markFieldCandidateResolved(pid, fk, val, variantId) { this._fieldCandidateStore.markResolved(pid, fk, val, variantId); }
   demoteResolvedCandidates(pid, fk, variantId) { this._fieldCandidateStore.demoteResolved(pid, fk, variantId); }
   getResolvedFieldCandidate(pid, fk) { return this._fieldCandidateStore.getResolved(pid, fk); }
+  getTopFieldCandidate(pid, fk) { return this._fieldCandidateStore.getTopCandidate(pid, fk); }
   getDistinctCandidateProducts() { return this._fieldCandidateStore.getDistinctProducts(); }
 
   // --- Source-centric field candidate methods ---

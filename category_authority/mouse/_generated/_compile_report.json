@@ -5,8 +5,8 @@
       "version_id": null
     },
     "field_rules": {
-      "changed": false,
-      "hash": "ed4cbf5bc8f699b9599deb8d5bb6cc2fcdd7d2126110cd83f26b5f8843e76eda",
+      "changed": true,
+      "hash": "176cd74e48ca6e7ecd6f7ad8d5c67bb5732d93922457d91d8918e062f7b633e9",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\field_rules.json"
     },
     "key_migrations": {
@@ -14,18 +14,18 @@
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\key_migrations.json"
     },
     "known_values": {
-      "hash": "a5b99ba390c2ea5d486f5f8e94b707f645f282786b3034150846c100f70a28eb",
+      "hash": "d81e565c2f4f5a2b9c7f071a147441128a4c13432f37b035a76a225ba8540b03",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\known_values.json"
     },
     "ui_field_catalog": {
-      "hash": "6928fb362ae0aa0b19a8715ff2aa4127fd6a7e4325e0c481642d9f53a3f95c43",
+      "hash": "2165b35e0c0bb7eb0d5cf20927d8e5e5ea3991304217d83b4c67ce45ee84c696",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\ui_field_catalog.json"
     }
   },
   "category": "mouse",
   "compile_mode": "field_studio",
   "compiled": true,
-  "compiled_at": "2026-04-21T23:29:31.011Z",
+  "compiled_at": "2026-04-22T18:06:46.570Z",
   "counts": {
     "component_types": 4,
     "enums": 14,
@@ -34,8 +34,8 @@
     "non_mandatory": 65
   },
   "diff": {
-    "changed": false,
-    "current_hash": "ed4cbf5bc8f699b9599deb8d5bb6cc2fcdd7d2126110cd83f26b5f8843e76eda",
+    "changed": true,
+    "current_hash": "176cd74e48ca6e7ecd6f7ad8d5c67bb5732d93922457d91d8918e062f7b633e9",
     "fields": {
       "added_count": 0,
       "added_keys": [],
@@ -47,11 +47,11 @@
     "previous_hash": "ed4cbf5bc8f699b9599deb8d5bb6cc2fcdd7d2126110cd83f26b5f8843e76eda"
   },
   "errors": [],
-  "field_studio_map_hash": "9eb8abcf25e0a0d7ebcb494568aa40703624e5c60e67b734a4fe7ae560feb4cb",
+  "field_studio_map_hash": "3203d1b145b4001c3bcf6150bdfc10bc5495fc133acdeea1b6382bf053b422e4",
   "field_studio_map_path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_control_plane\\field_studio_map.json",
   "field_studio_source_hash": null,
   "field_studio_source_path": "",
-  "generated_at": "2026-04-21T23:29:31.011Z",
+  "generated_at": "2026-04-22T18:06:46.570Z",
   "source_summary": {
     "component_sheets": 4,
     "component_sources": 4,

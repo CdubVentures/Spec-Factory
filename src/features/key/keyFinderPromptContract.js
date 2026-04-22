@@ -27,17 +27,18 @@ export const KEY_FINDER_VARIABLES = Object.freeze([
   { name: 'PRIMARY_FIELD_CONTRACT', description: 'Return contract for the primary key: type, shape, unit, rounding, list rules, enum values (resolved), variance policy, aliases.', required: true, category: 'deterministic' },
   { name: 'PRIMARY_SEARCH_HINTS', description: 'domain_hints + query_terms for the primary key. Gated by the Pipeline Settings knob "Search hints". Primary-only \u2014 passengers inherit the primary search session.', required: false, category: 'deterministic' },
   { name: 'PRIMARY_CROSS_FIELD_CONSTRAINTS', description: 'Rendered from fieldRule.cross_field_constraints. Empty when the rule has no cross-field relations.', required: false, category: 'deterministic' },
-  { name: 'PRIMARY_COMPONENT_KEYS', description: 'Component context relevant to the primary key (parent type + resolved value). Gated by the Pipeline Settings knob "Component values". Empty when no relation.', required: false, category: 'deterministic' },
+  { name: 'PRIMARY_COMPONENT_KEYS', description: 'Relation pointer for the primary key when it belongs to (or IS) a component. Short marker only \u2014 resolved identity + sibling subfields live in {{PRODUCT_COMPONENTS}}. Gated by the Pipeline Settings knob "Component values". Empty when no relation.', required: false, category: 'deterministic' },
 
   // Additional keys \u2014 split into top-level placeholders (mirrors primary structure)
   { name: 'ADDITIONAL_FIELD_KEYS', description: 'Outline of passenger keys with display names. Empty when bundling is off or no passengers in this call.', required: false, category: 'deterministic' },
   { name: 'ADDITIONAL_FIELD_GUIDANCE', description: 'Per-passenger extraction guidance concatenated with labels. Empty when no passengers have non-empty reasoning_note.', required: false, category: 'deterministic' },
   { name: 'ADDITIONAL_FIELD_CONTRACT', description: 'Per-passenger return contract sections (aliases included). Empty when no passengers.', required: false, category: 'deterministic' },
   { name: 'ADDITIONAL_CROSS_FIELD_CONSTRAINTS', description: 'Per-passenger cross-field constraints. Empty when passengers have no cross-field relations.', required: false, category: 'deterministic' },
-  { name: 'ADDITIONAL_COMPONENT_KEYS', description: 'Per-passenger component context. Gated by the Pipeline Settings knob "Component values".', required: false, category: 'deterministic' },
+  { name: 'ADDITIONAL_COMPONENT_KEYS', description: 'Per-passenger relation pointers when passengers belong to (or ARE) a component. Short markers only \u2014 resolved identity + sibling subfields live in {{PRODUCT_COMPONENTS}}. Gated by the Pipeline Settings knob "Component values".', required: false, category: 'deterministic' },
 
   // Product-level context (deterministic, shared across primary + passengers)
-  { name: 'KNOWN_PRODUCT_FIELDS', description: 'Already-published non-component field values on this product. Gated by the Pipeline Settings knob "Known fields".', required: false, category: 'deterministic' },
+  { name: 'PRODUCT_COMPONENTS', description: 'Grouped inventory of resolved components on this product (identity + product-resolved subfields). Always rendered when any component exists on the product, independent of both injection knobs. The baseline component awareness for the LLM.', required: false, category: 'deterministic' },
+  { name: 'KNOWN_PRODUCT_FIELDS', description: 'Already-published non-component field values on this product, excluding anything already in {{PRODUCT_COMPONENTS}} (dedup) and the current primary + passenger keys. Gated by the Pipeline Settings knob "Known fields".', required: false, category: 'deterministic' },
 
   // Global fragments
   { name: 'IDENTITY_INTRO', description: 'Opening "IDENTITY: You are looking for the EXACT product..." line with sibling-skip sentence. Edit text via Global Prompts (identityIntro).', required: false, category: 'global-fragment' },

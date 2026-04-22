@@ -9,7 +9,8 @@ export type ActionButtonIntent =
   | 'prompt'
   | 'history'
   | 'delete'
-  | 'stop';
+  | 'stop'
+  | 'neutral';
 
 const INTENT_CLASS_MAP: Record<ActionButtonIntent, string> = {
   spammable: 'sf-primary-button',
@@ -18,6 +19,7 @@ const INTENT_CLASS_MAP: Record<ActionButtonIntent, string> = {
   history: 'sf-history-button',
   delete: 'sf-delete-button',
   stop: 'sf-danger-button-solid',
+  neutral: 'sf-neutral-button',
 };
 
 const LOCKING_INTENTS = new Set<ActionButtonIntent>(['locked', 'stop']);

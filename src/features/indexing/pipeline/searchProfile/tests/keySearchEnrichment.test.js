@@ -110,8 +110,8 @@ describe('buildTier3Queries enrichment order', () => {
     const enrichmentOrder = ['domain_hints', 'content_types', 'aliases'];
     const rows = buildTier3Queries(makeJob(), makeFocusGroupsWithKeys(0), {}, null, { enrichmentOrder });
     const query = rows[0].query;
-    assert.equal(query, 'Razer Viper V3 Pro polling rate',
-      `repeat=0 should be bare query. Got: ${query}`);
+    assert.equal(query, 'Razer Viper V3 Pro gaming mouse polling rate',
+      `repeat=0 should be bare query (with category context). Got: ${query}`);
   });
 
   it('backward compatible: no options produces default behavior', () => {

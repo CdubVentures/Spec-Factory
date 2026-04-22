@@ -676,6 +676,11 @@ const PHASE_RESOLUTION_INPUTS = [
   'llmPhaseOverridesJson', 'llmModelPlan', 'llmModelReasoning',
   'llmPlanUseReasoning', 'llmMaxOutputTokensPlan', 'llmMaxOutputTokensTriage',
   'llmPlanFallbackModel', 'llmReasoningFallbackModel',
+  // WHY: keyFinderTierSettingsJson feeds config._llmPolicy.keyFinderTiers.
+  // Without it here, a GUI tier edit lands in the flat config but _llmPolicy
+  // stays stale, so runKeyFinder sees empty tier bundles and falls back to
+  // llmModelPlan (gemini-2.5-flash). Must live here, not as an ad-hoc branch.
+  'keyFinderTierSettingsJson',
 ];
 
 function rebuildDerivedConfigState(config, appliedKeys) {

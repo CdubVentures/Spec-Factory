@@ -78,6 +78,10 @@ const POLICY = {
 const BUNDLING_ON_KNOBS = {
   bundlingEnabled: 'true',
   groupBundlingOnly: 'true',
+  // Legacy bundled-Run path — these integration tests exercise the packer via
+  // Run mode, so alwaysSoloRun must be off. The new alwaysSoloRun=true gate is
+  // covered by dedicated tests below.
+  alwaysSoloRun: 'false',
   bundlingPassengerCost: JSON.stringify({ easy: 1, medium: 2, hard: 4, very_hard: 8 }),
   bundlingPoolPerPrimary: JSON.stringify({ easy: 6, medium: 4, hard: 2, very_hard: 1 }),
   passengerDifficultyPolicy: 'less_or_equal',
@@ -400,4 +404,160 @@ test('bundling-OFF settings produce zero passengers even when other settings exi
   });
 
   assert.deepEqual(capturedPassengers, []);
+});
+
+// ─── alwaysSoloRun — Run-mode is always solo (new 2026-04-22) ────────────
+
+const ALWAYS_SOLO_ON = { ...BUNDLING_ON_KNOBS, alwaysSoloRun: 'true' };
+
+test('mode="run" + alwaysSoloRun=true + bundling ON → passengers suppressed (Run is focused)', async (t) => {
+  t.after(cleanupTmp);
+  const { specDb } = setupForProduct('kfb-solorun-run', { settings: ALWAYS_SOLO_ON });
+  let capturedPassengers = null;
+
+  await runKeyFinder({
+    product: { ...PRODUCT, product_id: 'kfb-solorun-run' },
+    fieldKey: 'polling_rate',
+    category: 'mouse',
+    mode: 'run',
+    specDb, appDb: null, config: {},
+    productRoot: PRODUCT_ROOT,
+    policy: POLICY,
+    _callLlmOverride: async (domainArgs) => {
+      capturedPassengers = domainArgs.passengers;
+      return responseWithPassengers('polling_rate', []);
+    },
+    _submitCandidateOverride: async () => ({ status: 'accepted' }),
+  });
+
+  assert.deepEqual(capturedPassengers, [], 'Run honors alwaysSoloRun=true');
+});
+
+test('default mode (no arg) treated as "run" → alwaysSoloRun=true suppresses passengers', async (t) => {
+  t.after(cleanupTmp);
+  const { specDb } = setupForProduct('kfb-solorun-default', { settings: ALWAYS_SOLO_ON });
+  let capturedPassengers = null;
+
+  await runKeyFinder({
+    product: { ...PRODUCT, product_id: 'kfb-solorun-default' },
+    fieldKey: 'polling_rate',
+    category: 'mouse',
+    // no mode arg on purpose
+    specDb, appDb: null, config: {},
+    productRoot: PRODUCT_ROOT,
+    policy: POLICY,
+    _callLlmOverride: async (domainArgs) => {
+      capturedPassengers = domainArgs.passengers;
+      return responseWithPassengers('polling_rate', []);
+    },
+    _submitCandidateOverride: async () => ({ status: 'accepted' }),
+  });
+
+  assert.deepEqual(capturedPassengers, [], 'default mode = Run → solo');
+});
+
+test('mode="loop" + alwaysSoloRun=true + bundling ON → passengers still pack (Loop path)', async (t) => {
+  t.after(cleanupTmp);
+  const { specDb } = setupForProduct('kfb-solorun-loop', { settings: ALWAYS_SOLO_ON });
+  let capturedPassengers = null;
+
+  await runKeyFinder({
+    product: { ...PRODUCT, product_id: 'kfb-solorun-loop' },
+    fieldKey: 'polling_rate',
+    category: 'mouse',
+    mode: 'loop',
+    specDb, appDb: null, config: {},
+    productRoot: PRODUCT_ROOT,
+    policy: POLICY,
+    _callLlmOverride: async (domainArgs) => {
+      capturedPassengers = domainArgs.passengers.map((p) => p.fieldKey);
+      return responseWithPassengers('polling_rate', capturedPassengers);
+    },
+    _submitCandidateOverride: async () => ({ status: 'accepted' }),
+  });
+
+  assert.ok(capturedPassengers.length >= 2, `Loop mode packs passengers even with alwaysSoloRun=true; got ${capturedPassengers.join(', ')}`);
+});
+
+test('mode="run" + alwaysSoloRun=false (legacy) → passengers pack', async (t) => {
+  t.after(cleanupTmp);
+  // Existing BUNDLING_ON_KNOBS has alwaysSoloRun='false' already; this test
+  // is the explicit contract that Run can bundle when the knob is OFF.
+  const { specDb } = setupForProduct('kfb-solorun-legacy');
+  let capturedPassengers = null;
+
+  await runKeyFinder({
+    product: { ...PRODUCT, product_id: 'kfb-solorun-legacy' },
+    fieldKey: 'polling_rate',
+    category: 'mouse',
+    mode: 'run',
+    specDb, appDb: null, config: {},
+    productRoot: PRODUCT_ROOT,
+    policy: POLICY,
+    _callLlmOverride: async (domainArgs) => {
+      capturedPassengers = domainArgs.passengers.map((p) => p.fieldKey);
+      return responseWithPassengers('polling_rate', capturedPassengers);
+    },
+    _submitCandidateOverride: async () => ({ status: 'accepted' }),
+  });
+
+  assert.ok(capturedPassengers.length >= 2, `Run with alwaysSoloRun=false bundles; got ${capturedPassengers.join(', ')}`);
+});
+
+test('onPassengersRegistered fires once with the packed passenger field_keys after registration', async (t) => {
+  t.after(cleanupTmp);
+  const { specDb } = setupForProduct('kfb-onreg');
+  const registrationEvents = [];
+
+  await runKeyFinder({
+    product: { ...PRODUCT, product_id: 'kfb-onreg' },
+    fieldKey: 'polling_rate',
+    category: 'mouse',
+    specDb, appDb: null, config: {},
+    productRoot: PRODUCT_ROOT,
+    policy: POLICY,
+    onPassengersRegistered: (passengerFieldKeys) => {
+      registrationEvents.push([...passengerFieldKeys]);
+    },
+    _callLlmOverride: async (domainArgs) => responseWithPassengers(
+      'polling_rate',
+      domainArgs.passengers.map((p) => p.fieldKey),
+    ),
+    _submitCandidateOverride: async () => ({ status: 'accepted' }),
+  });
+
+  assert.equal(registrationEvents.length, 1, 'callback fires exactly once');
+  const passengers = registrationEvents[0];
+  // Default bundling ON + less_or_equal + medium primary + pool=4: dpi + buttons + tracking
+  assert.ok(passengers.includes('dpi'));
+  assert.ok(passengers.includes('buttons'));
+  assert.ok(passengers.includes('tracking'));
+  assert.ok(!passengers.includes('sensor_model'), 'very_hard peer filtered out');
+  assert.ok(!passengers.includes('color'), 'cross-group peer filtered out');
+});
+
+test('onPassengersRegistered fires with empty array under alwaysSoloRun=true + mode=run', async (t) => {
+  t.after(cleanupTmp);
+  const { specDb } = setupForProduct('kfb-onreg-solo', {
+    settings: { ...BUNDLING_ON_KNOBS, alwaysSoloRun: 'true' },
+  });
+  const registrationEvents = [];
+
+  await runKeyFinder({
+    product: { ...PRODUCT, product_id: 'kfb-onreg-solo' },
+    fieldKey: 'polling_rate',
+    category: 'mouse',
+    mode: 'run',
+    specDb, appDb: null, config: {},
+    productRoot: PRODUCT_ROOT,
+    policy: POLICY,
+    onPassengersRegistered: (passengerFieldKeys) => {
+      registrationEvents.push([...passengerFieldKeys]);
+    },
+    _callLlmOverride: async () => responseWithPassengers('polling_rate', []),
+    _submitCandidateOverride: async () => ({ status: 'accepted' }),
+  });
+
+  assert.equal(registrationEvents.length, 1, 'callback still fires — panel needs the invalidation even when solo');
+  assert.deepEqual(registrationEvents[0], [], 'passengers array is empty under alwaysSoloRun=true + run');
 });

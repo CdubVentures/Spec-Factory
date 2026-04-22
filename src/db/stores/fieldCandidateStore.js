@@ -155,6 +155,26 @@ export function createFieldCandidateStore({ db, category, stmts }) {
     );
   }
 
+  // WHY: keyPassengerBuilder uses this for the §6.2 "good enough" exclusion —
+  // drop peers whose top candidate already meets a confidence + evidence
+  // threshold, even when the candidate isn't published yet. Single SELECT with
+  // a subquery returning substantive evidence count (matches the publisher's
+  // min_evidence_refs gate, which excludes identity_only refs).
+  function getTopCandidate(productId, fieldKey) {
+    const row = db.prepare(
+      `SELECT c.*, (
+         SELECT COUNT(*) FROM field_candidate_evidence
+         WHERE candidate_id = c.id
+           AND (evidence_kind IS NULL OR evidence_kind != 'identity_only')
+       ) AS evidence_count
+       FROM field_candidates c
+       WHERE c.category = ? AND c.product_id = ? AND c.field_key = ?
+       ORDER BY c.confidence DESC LIMIT 1`
+    ).get(category, String(productId || ''), String(fieldKey || ''));
+    if (!row) return null;
+    return { ...hydrateRow(row), evidence_count: Number(row.evidence_count || 0) };
+  }
+
   function getDistinctProducts() {
     return db.prepare(
       'SELECT DISTINCT product_id FROM field_candidates WHERE category = ?'
@@ -268,7 +288,7 @@ export function createFieldCandidateStore({ db, category, stmts }) {
   }
 
   return {
-    upsert, get, getByProductAndField, getAllByProduct, deleteByProduct, deleteByProductAndField, deleteByProductFieldValue, getPaginated, count, stats, markResolved, demoteResolved, getResolved, getDistinctProducts,
+    upsert, get, getByProductAndField, getAllByProduct, deleteByProduct, deleteByProductAndField, deleteByProductFieldValue, getPaginated, count, stats, markResolved, demoteResolved, getResolved, getTopCandidate, getDistinctProducts,
     insert, getBySourceId, getBySourceIdAndVariant, deleteBySourceId, deleteBySourceType, getByValue, markResolvedByValue, countBySourceId, updateValue, deleteByVariantId,
   };
 }

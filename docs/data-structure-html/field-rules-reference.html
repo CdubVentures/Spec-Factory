@@ -123,7 +123,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   <div class="stat"><div class="n">45</div><div class="l">Field Paths</div></div>
   <div class="stat"><div class="n">9</div><div class="l">Parent Groups</div></div>
   <div class="stat"><div class="n">11</div><div class="l">GUI Nav Sections</div></div>
-  <div class="stat"><div class="n">16</div><div class="l">llm.kf Consumers</div></div>
+  <div class="stat"><div class="n">18</div><div class="l">llm.kf Consumers</div></div>
   <div class="stat"><div class="n">30</div><div class="l">Sub-consumers</div></div>
 </div>
 
@@ -577,12 +577,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 
   <details class="fcard"><summary>
     <div class="fcard-head-left"><span class="fpath">component.type</span><span class="flabel">Component Type</span><span class="ftype">string</span></div>
-    <div class="fchips"><span class="chip eng">ENG.COMPONENT</span><span class="chip rev">REV.COMPONENT</span><span class="chip seed">SEED.SCHEMA</span></div>
+    <div class="fchips"><span class="chip eng">ENG.COMPONENT</span><span class="chip rev">REV.COMPONENT</span><span class="chip seed">SEED.SCHEMA</span><span class="chip llm">LLM.KF</span></div>
   </summary>
   <div class="fbody">
     <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.COMPONENT</span></div><div class="desc">Identifies the component type for component DB matching and identity resolution.</div></div>
     <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip rev">REV.COMPONENT</span></div><div class="desc">Validates component identity candidates against the known component database. Also used to resolve declared component property columns in the review surface. <code>componentReviewHelpers.js:165</code>.</div></div>
     <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip seed">SEED.SCHEMA</span></div><div class="desc">Creates component identity records and links in SpecDb via the compiled componentDBs.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.KF</span></div><div class="desc">Rendered as the type label in the always-on <code>PRODUCT_COMPONENTS</code> inventory block and in the per-key relation pointer ("This key IS the {type} component identity" / "This key belongs to the {type} component"). <code>keyLlmAdapter.js:211-216, 219-236</code>; <code>productResolvedStateReader.js:86, 108</code>.</div></div>
     <div class="faliases"><strong>Aliases:</strong> <code>component_type</code></div>
   </div>
   </details>
@@ -607,11 +608,12 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 
   <details class="fcard"><summary>
     <div class="fcard-head-left"><span class="fpath">component.match.property_keys</span><span class="flabel">Property Keys</span><span class="ftype">array</span></div>
-    <div class="fchips"><span class="chip eng">ENG.COMPONENT</span><span class="chip comp">COMP.REVIEW</span></div>
+    <div class="fchips"><span class="chip eng">ENG.COMPONENT</span><span class="chip comp">COMP.REVIEW</span><span class="chip llm">LLM.KF</span></div>
   </summary>
   <div class="fbody">
     <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.COMPONENT</span></div><div class="desc">Declares which property fields are compared during component matching.</div></div>
     <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip comp">COMP.REVIEW</span></div><div class="desc">Maps property columns in component review panel.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.KF</span></div><div class="desc">Drives the subfield list under each component in the <code>PRODUCT_COMPONENTS</code> inventory block and the subfield→parent map used for the per-key relation pointer. <code>productResolvedStateReader.js:31-36, 72-83</code>.</div></div>
   </div>
   </details>
 
@@ -830,8 +832,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
       </tr>
       <tr>
         <td><span class="chip llm">LLM.KF</span></td>
-        <td class="count-cell">16</td>
-        <td class="paths"><code>contract.type</code><code>contract.shape</code><code>contract.unit</code><code>contract.list_rules</code><code>contract.rounding.decimals</code><code>contract.rounding.mode</code><code>enum.policy</code><code>enum.values</code><code>evidence.min_evidence_refs</code><code>ai_assist.reasoning_note</code><code>search_hints.query_terms</code><code>search_hints.domain_hints</code><code>aliases</code><code>ui.label</code><code>constraints</code><code>variance_policy</code></td>
+        <td class="count-cell">18</td>
+        <td class="paths"><code>contract.type</code><code>contract.shape</code><code>contract.unit</code><code>contract.list_rules</code><code>contract.rounding.decimals</code><code>contract.rounding.mode</code><code>enum.policy</code><code>enum.values</code><code>evidence.min_evidence_refs</code><code>ai_assist.reasoning_note</code><code>search_hints.query_terms</code><code>search_hints.domain_hints</code><code>aliases</code><code>ui.label</code><code>constraints</code><code>variance_policy</code><code>component.type</code><code>component.match.property_keys</code></td>
       </tr>
       <tr>
         <td><span class="chip llm">LLM.ROUTE</span></td>

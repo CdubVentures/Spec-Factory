@@ -287,7 +287,7 @@ function renderActions({
   if (!hasSelection) return null;
   return (
     <HeaderActionButton
-      intent="delete"
+      intent="neutral"
       label="Clear"
       onClick={onClear}
       disabled={busy}

@@ -1,0 +1,1917 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Monitor key priority matrix — audit</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#c9d1d9;padding:24px;max-width:1800px;margin:0 auto}
+h1{color:#58a6ff;font-size:24px;margin-bottom:4px}
+h2{color:#f0f6fc;margin:28px 0 10px;font-size:18px;border-bottom:1px solid #30363d;padding-bottom:6px}
+h3{color:#f0f6fc;font-size:14px;margin:14px 0 6px}
+.subtitle{color:#8b949e;font-size:13px;margin-bottom:18px;line-height:1.6}
+.box{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:14px 18px;margin:14px 0}
+.box p,.box li{color:#c9d1d9;font-size:13px;line-height:1.6}
+.box ul{padding-left:20px;margin-top:4px}
+.stat-pill{display:inline-block;background:#21262d;color:#c9d1d9;padding:2px 8px;border-radius:10px;font-size:11px;margin:2px 4px 2px 0;font-family:monospace}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#8b949e;margin-bottom:6px}
+.legend .chip{display:inline-flex;align-items:center;gap:4px}
+.legend .sw{width:14px;height:14px;border-radius:3px;display:inline-block}
+.sw-new{background:#3d2a1a}
+.sw-changed{background:#1f2d3d}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:6px}
+th{background:#161b22;color:#58a6ff;padding:8px 6px;text-align:left;border-bottom:2px solid #30363d;position:sticky;top:0;white-space:nowrap}
+td{padding:6px 7px;border-bottom:1px solid #21262d;vertical-align:top}
+td.k{font-family:'Cascadia Code','Fira Code',monospace;font-size:12px;color:#e6edf3;font-weight:600;white-space:nowrap}
+td.g{color:#8b949e;font-size:11px;white-space:nowrap}
+td.s{color:#8b949e;font-size:11px;white-space:nowrap}
+td.s .dtype{color:#484f58;font-size:10px}
+td.pri{text-align:center;font-size:11px;font-family:monospace;white-space:nowrap}
+td.pri.chg{outline:1px solid #79c0ff;background:#0d2137}
+td.num{text-align:center;font-family:monospace}
+.rl-mandatory{color:#f97583;font-weight:700}
+.rl-nonmandatory{color:#8b949e}
+.rl-critical{color:#d2a8ff;font-weight:700}
+.av-always{color:#7ee787;font-weight:600}
+.av-sometimes{color:#e3b341}
+.av-rare{color:#f97583}
+.df-easy{color:#7ee787}
+.df-medium{color:#e3b341}
+.df-hard{color:#f97583;font-weight:600}
+tr.row-changed td{background:#0f1e2e}
+tr.row-new td{background:#2a1d10}
+tr.row-new td.k::after{content:' ★NEW';font-size:10px;color:#f0883e}
+tr.group-row td{background:#1f2a36;color:#58a6ff;font-weight:700;font-size:12px;padding:8px 10px;text-transform:uppercase;letter-spacing:0.4px}
+tr.group-row .group-count{color:#8b949e;font-weight:400;text-transform:none;font-size:11px;letter-spacing:0}
+td.notes{max-width:160px;line-height:1.4}
+td.guide{font-size:11px;color:#c9d1d9;line-height:1.45;max-width:460px}
+td.guide .empty{color:#484f58;font-style:italic}
+td.guide .empty::before{content:'— no per-key note (generic prompt suffices)'}
+.note-chip{display:inline-block;background:#21262d;color:#8b949e;padding:1px 6px;border-radius:10px;font-size:9px;margin:1px 2px 1px 0;white-space:nowrap}
+.note-lab_only,.note-review_only{background:#3d1f28;color:#f97583}
+.note-spec_sheet{background:#0f2f1e;color:#7ee787}
+.note-visual_only{background:#2f2a10;color:#f0883e}
+.note-derivable,.note-derivable_from_subpixel,.note-derivable_from_panel_bit_depth,.note-derivable_from_panel_type{background:#1a2a3d;color:#79c0ff}
+.note-enum_concern,.note-component_concern{background:#2a1d10;color:#f0883e}
+.note-duplicate_candidate,.note-retire_candidate{background:#2f1a2a;color:#d2a8ff}
+.note-identity_anchor{background:#0f2d38;color:#79c0ff;font-weight:600}
+.note-new{background:#3d2a1a;color:#f0883e;font-weight:600}
+.note-nvidia_feature,.note-pro_feature{background:#0f2d38;color:#7ee787;font-weight:600}
+.note-marketing{background:#3d1f28;color:#f97583}
+.note-subjective{background:#2a1d10;color:#f0883e}
+.note-version_trap,.note-methodology_trap,.note-terminology_trap{background:#3d1f28;color:#f97583;font-weight:600}
+.note-conditional_on_curved,.note-conditional_on_backlight,.note-conditional_on_factory_calibrated,.note-conditional_on_oled{background:#2a1d10;color:#e3b341}
+.note-external_db,.note-region_dependent,.note-multi_monitor_relevance,.note-enum_global_shared,.note-visual_hint,.note-component_concern{background:#21262d;color:#8b949e}
+.verdict-keep{color:#7ee787}
+.verdict-fix,.verdict-trim,.verdict-refactor_candidate{color:#f0883e;font-weight:700}
+.verdict-consolidate{color:#d2a8ff;font-weight:700}
+.verdict-keep_with_note{color:#79c0ff}
+.verdict-monitor_ok{color:#7ee787}
+td.verdict-cell{font-family:monospace;font-size:11px;white-space:nowrap}
+code{background:#21262d;padding:1px 6px;border-radius:3px;color:#e6edf3;font-size:11px}
+</style></head><body>
+
+<h1>Monitor key priority matrix</h1>
+<div class="subtitle">
+  Audit of all <strong>113 existing</strong> monitor field keys + <strong>11 proposed additions</strong>. v3 applies the peer audit in <code>monitor_extraction_guidance_audit.md</code> — 17 substantive rewrites + 24 minor rewrites + factual corrections.<br>
+  Current priority values come from <code>category_authority/monitor/_generated/field_rules.json</code>. Proposed priority + the Extraction-guidance column land in <code>ai_assist.reasoning_note</code>, which the keyFinder prompt renders as <code>PRIMARY_FIELD_GUIDANCE</code>.
+</div>
+
+<div class="box" style="border-color:#58a6ff">
+  <h3 style="color:#58a6ff">What this matrix is for — and what it is NOT</h3>
+  <p style="color:#c9d1d9"><strong>Purpose of the Extraction-guidance column:</strong> to produce a <em>short</em>, <em>additive</em> per-field note that lands in the keyFinder LLM prompt alongside the auto-generated contract. The goal is to close field-specific knowledge gaps (derivation formulas, terminology traps, measurement-method notes, version gotchas) that the contract, enum, and aliases cannot express on their own.</p>
+  <p style="color:#c9d1d9;margin-top:10px"><strong>The generic keyFinder prompt already does the following — per-key guidance must NOT restate any of it:</strong></p>
+  <ul>
+    <li><strong>Field contract</strong> (type, shape, unit, rounding, list rules, enum values, variance policy, aliases) — <code>buildFieldContractBlock</code> in <code>keyLlmAdapter.js</code></li>
+    <li><strong>Search hints</strong> (domain_hints + query_terms from field_overrides)</li>
+    <li><strong>Cross-field constraints</strong> + <strong>component relation pointer</strong> + product-level resolved components (auto-pulled sibling subfields when a component is resolved)</li>
+    <li><strong>Known-published product fields</strong> (dedup excludes current primary + passengers + components)</li>
+    <li><strong>Evidence contract</strong>: minimum evidence refs, 5-tier classification (tier1 mfr / tier2 independent / tier3 retailer / tier4 community / tier5 aggregator), URL-verification mandate (fetch-it-live), evidence-kind tagging (direct_quote / structured_metadata / lab_measurement / etc.)</li>
+    <li><strong>Source-tier strategy</strong> (PRIMARY → INDEPENDENT → RETAILER → COMMUNITY fall-through)</li>
+    <li><strong>Value confidence rubric</strong> (0-100 scale, tier-independent)</li>
+    <li><strong>UNK policy</strong>: honest "unk" + unknown_reason beats low-confidence guess</li>
+    <li><strong>Identity warning + sibling exclusion</strong> (easy / medium / hard tiered by family-model count)</li>
+    <li><strong>Previous discovery</strong> log (URLs + queries already tried for this field on this product)</li>
+  </ul>
+  <p style="color:#c9d1d9;margin-top:10px"><strong>So a reasoning_note should only contain one or more of:</strong></p>
+  <ul>
+    <li>Derivation formulas (e.g., PPI = √(hPx² + vPx²) / diagonal_inches)</li>
+    <li>Field-specific pitfalls (e.g., "dtype is integer — don't write 'per-pixel'")</li>
+    <li>Non-obvious terminology (e.g., "Nano-texture is Apple-proprietary")</li>
+    <li>Unit / methodology ambiguity (e.g., "RTINGS uniformity is % std dev, not the 0-10 rating")</li>
+    <li>Version / revision traps (e.g., "HDMI 2.1 FRL is UP TO 48Gbps; version label alone doesn't prove 48Gbps")</li>
+    <li>Cross-field logic not captured in cross_field_constraints (e.g., "Derive from adaptive_sync — No only when adaptive_sync='None'")</li>
+  </ul>
+  <p style="color:#8b949e;margin-top:10px"><strong>Result:</strong> 72 of 124 rows carry an additive note; the rest rely on the generic prompt alone. Median note length is short (&lt;200 chars) so prompt bloat stays bounded.</p>
+</div>
+
+<div class="box">
+  <h3>How to read the matrix</h3>
+  <ul>
+    <li>Each existing key has two columns per axis (required_level / availability / difficulty): <strong>current</strong> on the left, <strong>proposed</strong> on the right.</li>
+    <li>Any proposed cell that differs from current is <strong>outlined in blue</strong>; the whole row is tinted blue if anything on the row changed.</li>
+    <li>Proposed <strong>new keys</strong> (not yet in field_rules.json) are tinted orange and tagged <code>★NEW</code>. User must approve before adding.</li>
+    <li>Extraction guidance is the proposed <code>ai_assist.reasoning_note</code> value — it lands in <code>PRIMARY_FIELD_GUIDANCE</code> at prompt-build time. Where it says "(generic prompt suffices)" the contract + enum + aliases already communicate everything.</li>
+    <li>Required level is binary (<code>mandatory</code> / <code>non_mandatory</code>) per <code>feedback_field_axis_simplification.md</code>.</li>
+  </ul>
+
+  <div class="legend" style="margin-top:12px">
+    <span class="chip"><span class="sw sw-changed"></span>row has a priority-axis change</span>
+    <span class="chip"><span class="sw sw-new"></span>proposed new key</span>
+    <span class="chip"><span class="note-chip note-version_trap">version_trap</span> version/revision gotcha</span>
+    <span class="chip"><span class="note-chip note-methodology_trap">methodology_trap</span> measurement-method gotcha</span>
+    <span class="chip"><span class="note-chip note-terminology_trap">terminology_trap</span> field-specific term</span>
+    <span class="chip"><span class="note-chip note-derivable">derivable</span> compute from other keys</span>
+    <span class="chip"><span class="note-chip note-lab_only">lab_only</span> lab-measured only</span>
+    <span class="chip"><span class="note-chip note-identity_anchor">identity_anchor</span> identity lock</span>
+    <span class="chip"><span class="note-chip note-enum_concern">enum_concern</span> enum issue below</span>
+    <span class="chip"><span class="note-chip note-duplicate_candidate">duplicate_candidate</span> field overlaps another</span>
+    <span class="chip"><span class="note-chip note-nvidia_feature">nvidia_feature</span> NVIDIA-specific</span>
+  </div>
+</div>
+
+<div class="box">
+  <h3>Summary</h3>
+  <p><strong>Rows:</strong> 113 existing + 11 proposed new &nbsp;|&nbsp; <strong>Rows with any axis change:</strong> 31 &nbsp;|&nbsp; <strong>Rows with extraction guidance:</strong> 72</p>
+  <h3 style="margin-top:10px">Required level distribution (current → proposed)</h3>
+  <div><span class="stat-pill">mandatory: 17 → <strong>29</strong></span><span class="stat-pill">non_mandatory: 96 → <strong>84</strong></span></div>
+  <h3 style="margin-top:10px">Availability distribution</h3>
+  <div><span class="stat-pill">always: 54 → <strong>64</strong></span><span class="stat-pill">sometimes: 59 → <strong>49</strong></span></div>
+  <h3 style="margin-top:10px">Difficulty distribution</h3>
+  <div><span class="stat-pill">easy: 87 → <strong>84</strong></span><span class="stat-pill">hard: 15 → <strong>19</strong></span><span class="stat-pill">medium: 11 → <strong>10</strong></span></div>
+</div>
+
+<div class="box">
+  <h3>Top-level calls (v3)</h3>
+  <ul>
+    <li><strong>Promote to mandatory:</strong> aspect_ratio, curved, panel_bit_depth, pixel_density, adaptive_sync, variable_refresh_rate, brightness_sdr, contrast_ratio, hdr_support, displayport_ports, hdmi_ports, vesa_mount.</li>
+    <li><strong>Downgrade easy→hard:</strong> gradient_handling, text_clarity, flicker_frequency, response_time_60hz, response_time_120hz — lab measurements, not spec-sheet data.</li>
+    <li><strong>Fix availability claim:</strong> panel_type / resolution / refresh_rate / weight_without_stand / viewing angles / native_colors / osd_type / color tagged <code>sometimes</code> but always published; flipping to <code>always</code> stops wasting tier-3 budget.</li>
+    <li><strong>Enum cleanups:</strong> <code>overdrive</code> dtype=boolean but enum = 10 OSD level-names. <code>refresh_rate</code> includes 600/720/1040 Hz with no shipping products. <code>pivot_rotation</code> mixes boolean with direction. <code>audio_output</code> vs <code>headphone_jack</code> and <code>cable_type</code> vs <code>cables_included</code> are redundant. <code>local_dimming_zones</code> is integer — guidance must not propose writing strings like 'per-pixel' / 'n/a' (fixed in v3).</li>
+    <li><strong>Proposed new keys (11):</strong> bezel_width_top/side_mm, stand_included, power_supply_type, refresh_rate_dual_mode_max, ambient_light_sensor, burn_in_warranty_years, nvidia_reflex_analyzer, gsync_pulsar, srgb_emulation_mode, color_certifications.</li>
+    <li><strong>v3 factual corrections</strong> (per <code>monitor_extraction_guidance_audit.md</code>): G-SYNC Pulsar uses MediaTek integrated scalers (not the retired dedicated G-Sync module); HDMI 2.1 FRL is UP TO 48Gbps (can be 24/32/40/48) and HDMI 2.1 features are optional — version label alone doesn't prove anything; DP 2.1 has UHBR10/13.5/20 sub-tiers; RTINGS black / gray-50 uniformity is % std dev (not raw number and not the 0-10 rating); Dolby Vision is not available on any desktop monitor (TVs only) — do not require it for Xbox compat; PS5 supports 1440p output but cannot combine 1440p + VRR; <code>local_dimming_zones</code> integer field must not receive string values.</li>
+    <li><strong>v2 factual corrections (still applicable):</strong> Nano-texture is Apple-proprietary; IPS Black (LG+Dell, ~2000:1 contrast) is distinct from Nano IPS (LG, wider gamut); curve-radius direction: lower R = tighter.</li>
+  </ul>
+</div>
+
+<h2>Existing keys (113)</h2>
+<table>
+  <thead><tr>
+    <th rowspan="2">Key</th>
+    <th rowspan="2">Group</th>
+    <th rowspan="2">Shape /<br>dtype</th>
+    <th colspan="2">Required level</th>
+    <th colspan="2">Availability</th>
+    <th colspan="2">Difficulty</th>
+    <th rowspan="2">Flags</th>
+    <th rowspan="2">Extraction guidance</th>
+  </tr><tr>
+    <th>current</th><th>proposed</th>
+    <th>current</th><th>proposed</th>
+    <th>current</th><th>proposed</th>
+  </tr></thead>
+  <tbody>
+<tr class="group-row"><td colspan="11">Identity <span class="group-count">(7)</span></td></tr>
+<tr class="">
+    <td class="k">base_model</td>
+    <td class="g">identity</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-mandatory">mandatory</td>
+    <td class="pri rl-mandatory ">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-identity_anchor">identity_anchor</span></td>
+    <td class="guide">Strip ONLY explicitly separated / documented variant / color / region suffixes. Example: AW3423DWF-W → AW3423DWF (the -W is an explicit color suffix). Do NOT over-strip: U2723QE-R → U2723QE (strip only -R); do NOT also strip E unless Dell documents E as a region code. Err on keeping identity when in doubt.</td>
+  </tr>
+<tr class="">
+    <td class="k">brand</td>
+    <td class="g">identity</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-mandatory">mandatory</td>
+    <td class="pri rl-mandatory ">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-identity_anchor">identity_anchor</span></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">category</td>
+    <td class="g">identity</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-mandatory">mandatory</td>
+    <td class="pri rl-mandatory ">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">gtin</td>
+    <td class="g">identity</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-mandatory">mandatory</td>
+    <td class="pri rl-mandatory ">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-medium chg">medium</td>
+    <td class="notes"><span class="note-chip note-identity_anchor">identity_anchor</span></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">mpn</td>
+    <td class="g">identity</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-mandatory">mandatory</td>
+    <td class="pri rl-mandatory ">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-identity_anchor">identity_anchor</span></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">model</td>
+    <td class="g">identity</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-mandatory">mandatory</td>
+    <td class="pri rl-mandatory ">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-identity_anchor">identity_anchor</span></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">variant</td>
+    <td class="g">identity</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-mandatory">mandatory</td>
+    <td class="pri rl-mandatory ">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-hard">hard</td>
+    <td class="pri df-medium chg">medium</td>
+    <td class="notes"><span class="note-chip note-identity_anchor">identity_anchor</span></td>
+    <td class="guide">Token that differs between SKUs sharing a base_model. Monitor-relevant tokens: color, region, stand/bundle option, edition, panel finish, retailer pack, calibration package. Empty when the suffix is only logistics or not user-facing.</td>
+  </tr><tr class="group-row"><td colspan="11">Display panel <span class="group-count">(13)</span></td></tr>
+<tr class="row-changed">
+    <td class="k">aspect_ratio</td>
+    <td class="g">display_panel</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-mandatory chg">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-derivable">derivable</span></td>
+    <td class="guide">Prefer mfr-stated aspect ratio. When deriving, reduce width:height by GCD then map to the MARKETED class: 1920×1080 = 16:9 exact; 2560×1080 and 3440×1440 ≈ 21:9 (marketed ultrawide); 3840×1600 is mathematically 12:5 / 24:10 but often marketed 21:9 — use 21:9; 5120×1440 = 32:9.</td>
+  </tr>
+<tr class="">
+    <td class="k">curve_radius</td>
+    <td class="g">display_panel</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-conditional_on_curved">conditional_on_curved</span></td>
+    <td class="guide">Lower number = tighter curve (1000R tighter than 1800R). Range: 1000R tight, 1500R mid, 1800R gentle, 2500R+ very subtle. 'Flat' only when curved=No.</td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">curved</td>
+    <td class="g">display_panel</td>
+    <td class="s">scalar<br><span class="dtype">boolean</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-mandatory chg">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-visual_only">visual_only</span></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">frc</td>
+    <td class="g">display_panel</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-derivable_from_panel_bit_depth">derivable_from_panel_bit_depth</span></td>
+    <td class="guide">Set from explicit panel bit-depth evidence. '8-bit + FRC' OR '1.07B colours on an 8-bit panel' → Yes. Spec explicitly says 'native 10-bit' → No. Do not infer No from 'OLED' alone — confirm the OLED panel's native depth.</td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">native_colors</td>
+    <td class="g">display_panel</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-always chg">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-derivable">derivable</span></td>
+    <td class="guide">Formula: colours = 2^(effective bits per channel × 3). Field stores TRUE NATIVE colours by default — so 8-bit+FRC → 16.7M (the FRC=Yes flag carries the dithered 1.07B claim). Only record 1.07B as native if panel is confirmed native 10-bit.</td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">panel_bit_depth</td>
+    <td class="g">display_panel</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-mandatory chg">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide">Record NATIVE bit depth + FRC method, not marketing effective depth. '10-bit' claims are often '8-bit + FRC' — only record '10-bit' when panel is confirmed native 10-bit (most OLEDs, pro LCDs).</td>
+  </tr>
+<tr class="">
+    <td class="k">panel_coating</td>
+    <td class="g">display_panel</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-terminology_trap">terminology_trap</span></td>
+    <td class="guide">'Nano-texture' is Apple-proprietary (Studio Display / Pro Display XDR / iPad Pro / MacBook Pro option). Do NOT use for non-Apple matte coatings — those are 'Anti-glare' or 'Matte'.</td>
+  </tr>
+<tr class="">
+    <td class="k">panel_manufacturer</td>
+    <td class="g">display_panel</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-hard">hard</td>
+    <td class="pri df-hard ">hard</td>
+    <td class="notes"><span class="note-chip note-external_db">external_db</span></td>
+    <td class="guide">Primary evidence: panel part number in a panel-parts database (e.g., TFTCentral Monitor Panel Part DB). Safe shortcuts (sole producer): QD-OLED → Samsung Display; W-OLED / Tandem OLED → LG Display; PLS → Samsung Display. WEAK HINTS ONLY (marketing labels re-used across makers) — do NOT assign without panel-part evidence: Fast IPS, Rapid IPS, Mini-LED IPS, AHVA, ADS. 'Nano IPS' and 'IPS Black' are LG-specific marketing terms so those are safe hints.</td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">panel_type</td>
+    <td class="g">display_panel</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-mandatory">mandatory</td>
+    <td class="pri rl-mandatory ">mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-always chg">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-component_concern">component_concern</span></td>
+    <td class="guide">Panel CLASS only (IPS / VA / OLED / TN / ADS / AHVA / PLS). Mini-LED is a BACKLIGHT technology — goes in backlight_type, not here. IPS sub-variants (Fast IPS, Rapid IPS, Nano IPS) often need a panel-DB lookup when mfr just says 'IPS'. Nano IPS (wider gamut, LG) is distinct from IPS Black (deeper contrast ~2000:1, LG+Dell collab); a panel can be both (‘Nano IPS Black’).</td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">pixel_density</td>
+    <td class="g">display_panel</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-mandatory chg">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-derivable">derivable</span></td>
+    <td class="guide">Compute when unstated: PPI = √(hPx² + vPx²) / diagonal_inches. Example: 3840×2160 on 27&quot; = 163 PPI.</td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">resolution</td>
+    <td class="g">display_panel</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-mandatory">mandatory</td>
+    <td class="pri rl-mandatory ">mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-always chg">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">screen_size</td>
+    <td class="g">display_panel</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-mandatory">mandatory</td>
+    <td class="pri rl-mandatory ">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide">Marketed diagonal — may be slightly rounded up (e.g., 26.87&quot; panel marketed as 27&quot;). Use the marketed number.</td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">subpixel_layout</td>
+    <td class="g">display_panel</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-always chg">always</td>
+    <td class="pri df-medium">medium</td>
+    <td class="pri df-medium ">medium</td>
+    <td class="notes"><span class="note-chip note-derivable_from_panel_type">derivable_from_panel_type</span></td>
+    <td class="guide">Primary evidence: photo / macro review / panel DB. Hints: W-OLED usually WRGB; QD-OLED uses triangular QD subpixel arrangement (not RGB stripe); LCDs usually RGB but BGR and rotated layouts exist and matter for ClearType. Tandem OLED describes STACKED emissive layers — does not itself determine subpixel layout (tandem can be WRGB or RGB stripe).</td>
+  </tr><tr class="group-row"><td colspan="11">Performance <span class="group-count">(19)</span></td></tr>
+<tr class="row-changed">
+    <td class="k">adaptive_sync</td>
+    <td class="g">performance</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-mandatory chg">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide">Capture certification exactly as stated: FreeSync / FreeSync Premium / FreeSync Premium Pro / G-SYNC Compatible / G-SYNC / G-SYNC Ultimate. Do NOT collapse tiers — Premium and Premium Pro are separate certifications. (Note: post-2024, full G-SYNC is shipping on MediaTek integrated scalers; 'G-SYNC' no longer implies a dedicated hardware module.)</td>
+  </tr>
+<tr class="">
+    <td class="k">input_lag</td>
+    <td class="g">performance</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-hard">hard</td>
+    <td class="pri df-hard ">hard</td>
+    <td class="notes"><span class="note-chip note-lab_only">lab_only</span></td>
+    <td class="guide">NOT the same as response time. Input lag = click-to-pixel latency; response time = pixel transition speed. Don't substitute.</td>
+  </tr>
+<tr class="">
+    <td class="k">input_lag_120hz</td>
+    <td class="g">performance</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-hard">hard</td>
+    <td class="pri df-hard ">hard</td>
+    <td class="notes"><span class="note-chip note-lab_only">lab_only</span></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">input_lag_60hz</td>
+    <td class="g">performance</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-hard">hard</td>
+    <td class="pri df-hard ">hard</td>
+    <td class="notes"><span class="note-chip note-lab_only">lab_only</span></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">input_lag_max_refresh</td>
+    <td class="g">performance</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-hard">hard</td>
+    <td class="pri df-hard ">hard</td>
+    <td class="notes"><span class="note-chip note-lab_only">lab_only</span></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">max_refresh_rate_displayport</td>
+    <td class="g">performance</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide">Record the monitor's advertised max refresh over DP at native resolution. Version label alone does not cap bandwidth — DP 2.1 has sub-tiers UHBR10 / UHBR13.5 / UHBR20 (=DP40 / DP54 / DP80). USB-C DP Alt Mode may use fewer lanes. DSC changes what transports what. Capture the actual link mode when stated, not just the version.</td>
+  </tr>
+<tr class="">
+    <td class="k">max_refresh_rate_hdmi</td>
+    <td class="g">performance</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-version_trap">version_trap</span></td>
+    <td class="guide">HDMI 2.1 features are OPTIONAL. FRL rates are UP TO 48Gbps — actual ports can be FRL 24 / 32 / 40 / 48 Gbps, or TMDS-only (18Gbps). Record the advertised modes/bandwidth when stated. If the spec only says 'HDMI 2.1' with no bandwidth or mode, mark the bandwidth uncertain rather than assuming 48Gbps.</td>
+  </tr>
+<tr class="">
+    <td class="k">motion_blur_reduction</td>
+    <td class="g">performance</td>
+    <td class="s">scalar<br><span class="dtype">boolean</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-enum_concern">enum_concern</span></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">overdrive</td>
+    <td class="g">performance</td>
+    <td class="s">scalar<br><span class="dtype">boolean</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-enum_concern">enum_concern</span></td>
+    <td class="guide">Boolean — Yes when the monitor exposes any overdrive control in the OSD. Don't map level names (Fast / Faster / Extreme / Ultra) — those are level labels, not on/off.</td>
+  </tr>
+<tr class="">
+    <td class="k">overshoot_120hz</td>
+    <td class="g">performance</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-hard">hard</td>
+    <td class="pri df-hard ">hard</td>
+    <td class="notes"><span class="note-chip note-lab_only">lab_only</span></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">overshoot_60hz</td>
+    <td class="g">performance</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-hard">hard</td>
+    <td class="pri df-hard ">hard</td>
+    <td class="notes"><span class="note-chip note-lab_only">lab_only</span></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">overshoot_max_refresh</td>
+    <td class="g">performance</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-hard">hard</td>
+    <td class="pri df-hard ">hard</td>
+    <td class="notes"><span class="note-chip note-lab_only">lab_only</span></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">refresh_rate</td>
+    <td class="g">performance</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-mandatory">mandatory</td>
+    <td class="pri rl-mandatory ">mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-always chg">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-enum_concern">enum_concern</span></td>
+    <td class="guide">Native-resolution max. Dual-mode panels (e.g., 4K @ 240Hz / FHD @ 480Hz, or 4K @ 240Hz / 1080p @ 540Hz+) put the lower-resolution peak in refresh_rate_dual_mode_max. Newer (2025+) tandem OLEDs advertise 540 / 720 / 1080 Hz dual-mode peaks — accept these when officially stated.</td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">response_time_120hz</td>
+    <td class="g">performance</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-medium">medium</td>
+    <td class="pri df-hard chg">hard</td>
+    <td class="notes"><span class="note-chip note-lab_only">lab_only</span></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">response_time_60hz</td>
+    <td class="g">performance</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-medium">medium</td>
+    <td class="pri df-hard chg">hard</td>
+    <td class="notes"><span class="note-chip note-lab_only">lab_only</span></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">response_time_gtg</td>
+    <td class="g">performance</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-medium">medium</td>
+    <td class="pri df-medium ">medium</td>
+    <td class="notes"></td>
+    <td class="guide">Manufacturer GtG is usually best-case transition at max overdrive with overshoot ignored. Lab-measured AVERAGE GtG at max refresh is the comparable number — they differ by 2-4× on most LCDs.</td>
+  </tr>
+<tr class="">
+    <td class="k">response_time_mprt</td>
+    <td class="g">performance</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-hard">hard</td>
+    <td class="pri df-hard ">hard</td>
+    <td class="notes"></td>
+    <td class="guide">MPRT approaches 1ms only with BFI / strobing enabled (motion_blur_reduction=Yes). Without BFI, MPRT floor ≈ 1000 / refresh_rate ms.</td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">variable_refresh_rate</td>
+    <td class="g">performance</td>
+    <td class="s">scalar<br><span class="dtype">boolean</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-mandatory chg">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-derivable">derivable</span></td>
+    <td class="guide">Derive from adaptive_sync — No only when adaptive_sync = 'None'.</td>
+  </tr>
+<tr class="">
+    <td class="k">vrr_range</td>
+    <td class="g">performance</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide">Record the published range exactly (e.g., '48-240 Hz'). Low end = LFC (Low Framerate Compensation) threshold, typically 30-48 Hz. If NVIDIA claims full-range 1Hz-to-max G-SYNC, capture that only when the source or certification table states it — do not impose a blanket '1 Hz-max' rule.</td>
+  </tr><tr class="group-row"><td colspan="11">Color &amp; image quality <span class="group-count">(20)</span></td></tr>
+<tr class="">
+    <td class="k">backlight_type</td>
+    <td class="g">color_image_quality</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">black_uniformity</td>
+    <td class="g">color_image_quality</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-hard">hard</td>
+    <td class="pri df-hard ">hard</td>
+    <td class="notes"><span class="note-chip note-lab_only">lab_only</span></td>
+    <td class="guide">RTINGS black-uniformity std deviation, presented as a percentage (lower = more uniform; 0% is perfect). &lt;2% is a strong result. Captured with a black screen + white centre-cross test pattern. Do NOT confuse with the 0-10 subjective rating shown alongside it.</td>
+  </tr>
+<tr class="">
+    <td class="k">brightness_hdr_peak</td>
+    <td class="g">color_image_quality</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-medium">medium</td>
+    <td class="pri df-medium ">medium</td>
+    <td class="notes"><span class="note-chip note-methodology_trap">methodology_trap</span></td>
+    <td class="guide">Measurement window size is load-bearing — mfrs often quote 2-3% windows (largest number); labs vary. Record which window the source used (capture in evidence). Prefer a 10% window when labs publish one, but do not assume all labs use 10%. OLED peak falls off as window size grows; do not impose a fixed delta.</td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">brightness_sdr</td>
+    <td class="g">color_image_quality</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-mandatory chg">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide">Typical / full-screen value only — not peak. Peak brightness goes in brightness_hdr_peak.</td>
+  </tr>
+<tr class="">
+    <td class="k">color_accuracy_delta_e</td>
+    <td class="g">color_image_quality</td>
+    <td class="s">scalar<br><span class="dtype">integer</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-hard">hard</td>
+    <td class="pri df-hard ">hard</td>
+    <td class="notes"><span class="note-chip note-conditional_on_factory_calibrated">conditional_on_factory_calibrated</span></td>
+    <td class="guide">Record AVERAGE Delta E across the test-patch set (not max). Capture the test mode/profile + what was measured (grayscale, white balance, ColorChecker, gamut validation) because thresholds differ by methodology. Rough interpretation: &lt;2 consumer-grade calibrated, &lt;1 professional — but don't treat those as a hard field rule.</td>
+  </tr>
+<tr class="">
+    <td class="k">color_gamut_adobe_rgb</td>
+    <td class="g">color_image_quality</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-medium">medium</td>
+    <td class="pri df-medium ">medium</td>
+    <td class="notes"><span class="note-chip note-terminology_trap">terminology_trap</span></td>
+    <td class="guide">Adobe RGB ≠ DCI-P3. They cover different corners of the gamut triangle — do not back-derive one from the other.</td>
+  </tr>
+<tr class="">
+    <td class="k">color_gamut_dci_p3</td>
+    <td class="g">color_image_quality</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-medium">medium</td>
+    <td class="pri df-medium ">medium</td>
+    <td class="notes"><span class="note-chip note-methodology_trap">methodology_trap</span></td>
+    <td class="guide">'Coverage' = fraction of P3 the monitor can reach; 'Volume' = total gamut including over-saturation outside P3. Record COVERAGE unless the field explicitly asks for volume. The coverage-vs-volume gap varies widely by panel tech — do not assume a fixed delta.</td>
+  </tr>
+<tr class="">
+    <td class="k">color_gamut_srgb</td>
+    <td class="g">color_image_quality</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-medium">medium</td>
+    <td class="pri df-medium ">medium</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">contrast_ratio</td>
+    <td class="g">color_image_quality</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-mandatory chg">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide">STATIC contrast only. Typical ranges: IPS ~1000:1, IPS Black ~2000:1, VA ~3000-4000:1, OLED 'Inf:1'. Dynamic contrast goes in contrast_ratio_dynamic.</td>
+  </tr>
+<tr class="">
+    <td class="k">contrast_ratio_dynamic</td>
+    <td class="g">color_image_quality</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-marketing">marketing</span></td>
+    <td class="guide">Marketing DCR number, usually 80M:1-100M:1. Record if stated; NEVER substitute for contrast_ratio.</td>
+  </tr>
+<tr class="">
+    <td class="k">factory_calibrated</td>
+    <td class="g">color_image_quality</td>
+    <td class="s">scalar<br><span class="dtype">boolean</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide">Yes when the mfr explicitly states factory calibration for the shipped unit/model OR provides a calibration report (paper/PDF/unit-specific). A per-unit calibration report is higher-confidence evidence but not required. An sRGB PRESET alone is not factory calibration.</td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">gradient_handling</td>
+    <td class="g">color_image_quality</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-hard chg">hard</td>
+    <td class="notes"><span class="note-chip note-lab_only">lab_only</span><span class="note-chip note-retire_candidate">retire_candidate</span></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">gray_uniformity_50</td>
+    <td class="g">color_image_quality</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-hard">hard</td>
+    <td class="pri df-hard ">hard</td>
+    <td class="notes"><span class="note-chip note-lab_only">lab_only</span></td>
+    <td class="guide">RTINGS 50%-gray std deviation presented as a percentage (lower = more uniform). &lt;2.5% is a strong result. Keep distinct from the 50% DSE figure (centre-only deviation, used to assess dirty-screen effect on panning shots).</td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">hdr_support</td>
+    <td class="g">color_image_quality</td>
+    <td class="s">list<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-mandatory chg">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide">Three independent families to capture: content codecs (HDR10 / HDR10+ / Dolby Vision / HLG) + VESA brightness certs (DisplayHDR 400/500/600/1000/1400) + VESA True Black certs (True Black 400/500/600/1000). All VESA DisplayHDR tiers REQUIRE HDR10 as the baseline codec — so a DisplayHDR cert implies HDR10 support. 'HDR-ready' / 'HDR compatible' are non-VESA claims; verify separately.</td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">horizontal_viewing_angle</td>
+    <td class="g">color_image_quality</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-always chg">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">local_dimming_zones</td>
+    <td class="g">color_image_quality</td>
+    <td class="s">scalar<br><span class="dtype">integer</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-medium">medium</td>
+    <td class="pri df-medium ">medium</td>
+    <td class="notes"><span class="note-chip note-conditional_on_backlight">conditional_on_backlight</span><span class="note-chip note-dtype_trap">dtype_trap</span></td>
+    <td class="guide">Integer field — record ONLY the numeric FALD / Mini-LED / edge-lit zone count. For OLED / self-emissive (each pixel is its own dimming zone), leave the field empty/UNK (do NOT write 'per-pixel' or 'n/a' as strings — the dtype is integer). Edge-lit 'local dimming' with &lt;32 zones is not true FALD; capture the zone count but mention backlight type in evidence.</td>
+  </tr>
+<tr class="">
+    <td class="k">reflections</td>
+    <td class="g">color_image_quality</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-hard">hard</td>
+    <td class="pri df-hard ">hard</td>
+    <td class="notes"><span class="note-chip note-lab_only">lab_only</span></td>
+    <td class="guide">Percentage of incoming light reflected off the screen, integrating-sphere measurement (lower % = better). NOT the 0-10 subjective rating. RTINGS reports multiple reflection metrics — total, direct, and indirect/ambient-black — capture which one the field is meant to store (default: total reflections) and preserve the specific metric name in evidence.</td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">text_clarity</td>
+    <td class="g">color_image_quality</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-hard chg">hard</td>
+    <td class="notes"><span class="note-chip note-lab_only">lab_only</span></td>
+    <td class="guide">Influenced by subpixel layout, PPI, scaling, panel coating, pixel shape, and OS font rendering. WRGB (W-OLED) and QD-OLED can need ClearType tuning; RGB stripe is generally easier but still depends on resolution + scaling. Do not attribute text clarity to subpixel layout alone.</td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">vertical_viewing_angle</td>
+    <td class="g">color_image_quality</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-always chg">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">wide_color_gamut</td>
+    <td class="g">color_image_quality</td>
+    <td class="s">scalar<br><span class="dtype">boolean</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-derivable">derivable</span></td>
+    <td class="guide">Derive: Yes when DCI-P3 ≥ 90% OR Adobe RGB ≥ 90%.</td>
+  </tr><tr class="group-row"><td colspan="11">Connectivity <span class="group-count">(14)</span></td></tr>
+<tr class="row-changed">
+    <td class="k">audio_output</td>
+    <td class="g">connectivity</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-always chg">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-duplicate_candidate">duplicate_candidate</span></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">daisy_chain</td>
+    <td class="g">connectivity</td>
+    <td class="s">scalar<br><span class="dtype">boolean</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide">Requires a DP-Out or Thunderbolt-Out port — a second DP INPUT does not enable daisy chaining.</td>
+  </tr>
+<tr class="">
+    <td class="k">display_stream_compression</td>
+    <td class="g">connectivity</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">displayport_ports</td>
+    <td class="g">connectivity</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-mandatory chg">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide">Count INPUT ports only. DP-Out (daisy-chain) is not an input.</td>
+  </tr>
+<tr class="">
+    <td class="k">displayport_version</td>
+    <td class="g">connectivity</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-mandatory">mandatory</td>
+    <td class="pri rl-mandatory ">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">ethernet_rj45</td>
+    <td class="g">connectivity</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">hdmi_ports</td>
+    <td class="g">connectivity</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-mandatory chg">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">hdmi_version</td>
+    <td class="g">connectivity</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-mandatory">mandatory</td>
+    <td class="pri rl-mandatory ">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-version_trap">version_trap</span></td>
+    <td class="guide">HDMI 2.1 features are OPTIONAL. When the source states it, capture actual FRL rate (24 / 32 / 40 / 48 Gbps), DSC support, VRR, ALLM, eARC, and advertised max modes. If bandwidth / mode is unstated, mark bandwidth uncertain rather than assuming either 48Gbps FRL or TMDS-only — 'HDMI 2.1' alone is ambiguous.</td>
+  </tr>
+<tr class="">
+    <td class="k">headphone_jack</td>
+    <td class="g">connectivity</td>
+    <td class="s">scalar<br><span class="dtype">boolean</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-duplicate_candidate">duplicate_candidate</span><span class="note-chip note-derivable">derivable</span></td>
+    <td class="guide">Redundant with audio_output='3.5mm headphone jack'; derive from that field rather than asking.</td>
+  </tr>
+<tr class="">
+    <td class="k">kvm_switch</td>
+    <td class="g">connectivity</td>
+    <td class="s">scalar<br><span class="dtype">boolean</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">thunderbolt_ports</td>
+    <td class="g">connectivity</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide">Count as Thunderbolt only when explicitly documented with a Thunderbolt version or TB certification/logo. Bandwidth alone is NOT sufficient — USB4 can also be 40 Gbps without being Thunderbolt-certified. Thunderbolt 5 exceeds 40 Gbps (up to 80/120 Gbps); include TB5 ports here.</td>
+  </tr>
+<tr class="">
+    <td class="k">thunderbolt_version</td>
+    <td class="g">connectivity</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">usb_c_ports</td>
+    <td class="g">connectivity</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide">Count USB-C only; exclude ports that are actually Thunderbolt (count those in thunderbolt_ports).</td>
+  </tr>
+<tr class="">
+    <td class="k">usb_hub</td>
+    <td class="g">connectivity</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr><tr class="group-row"><td colspan="11">Ergonomics <span class="group-count">(5)</span></td></tr>
+<tr class="">
+    <td class="k">height_adjustment</td>
+    <td class="g">ergonomics</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide">Factory-stand travel in mm. Do NOT include VESA-arm adjustment range.</td>
+  </tr>
+<tr class="">
+    <td class="k">pivot_rotation</td>
+    <td class="g">ergonomics</td>
+    <td class="s">scalar<br><span class="dtype">boolean</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-enum_concern">enum_concern</span></td>
+    <td class="guide">'Yes (±90°)' = rotates both directions. 'Yes (90°)' = one direction only. Do not blanket-assume ultrawides are 'No' — use the mfr's stated ergonomics spec for the specific SKU.</td>
+  </tr>
+<tr class="">
+    <td class="k">swivel_range</td>
+    <td class="g">ergonomics</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">tilt_range</td>
+    <td class="g">ergonomics</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">wall_mountable</td>
+    <td class="g">ergonomics</td>
+    <td class="s">scalar<br><span class="dtype">boolean</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-derivable">derivable</span></td>
+    <td class="guide">Derive from vesa_mount — Yes unless vesa_mount='None'.</td>
+  </tr><tr class="group-row"><td colspan="11">Dimensions &amp; weight <span class="group-count">(7)</span></td></tr>
+<tr class="">
+    <td class="k">depth</td>
+    <td class="g">dimensions_weight</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide">Total depth WITH stand base (deepest point front-to-back).</td>
+  </tr>
+<tr class="">
+    <td class="k">height</td>
+    <td class="g">dimensions_weight</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-mandatory">mandatory</td>
+    <td class="pri rl-mandatory ">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide">Panel-only height (no stand). Use the 'without stand' / 'panel only' spec or the dimensional drawing. Do NOT derive panel-only height by subtracting stand travel or stand height from 'with stand' — stand-to-panel geometry (overlap, hinge offset) makes that unreliable. Mark UNK when the drawing isn't available.</td>
+  </tr>
+<tr class="">
+    <td class="k">height_with_stand</td>
+    <td class="g">dimensions_weight</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide">At LOWEST stand position. Some spec sheets list highest — confirm direction.</td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">vesa_mount</td>
+    <td class="g">dimensions_weight</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-mandatory chg">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">weight_with_stand</td>
+    <td class="g">dimensions_weight</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">weight_without_stand</td>
+    <td class="g">dimensions_weight</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-mandatory">mandatory</td>
+    <td class="pri rl-mandatory ">mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-always chg">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide">Panel-only weight. Needed for VESA-arm max-weight compliance.</td>
+  </tr>
+<tr class="">
+    <td class="k">width</td>
+    <td class="g">dimensions_weight</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-mandatory">mandatory</td>
+    <td class="pri rl-mandatory ">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr><tr class="group-row"><td colspan="11">Power <span class="group-count">(3)</span></td></tr>
+<tr class="">
+    <td class="k">energy_rating</td>
+    <td class="g">power</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-region_dependent">region_dependent</span></td>
+    <td class="guide">EU energy label letter (A–G). Mandatory on monitors sold in EU post-2021; US-only SKUs typically lack one.</td>
+  </tr>
+<tr class="">
+    <td class="k">power_consumption_max</td>
+    <td class="g">power</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">power_consumption_typical</td>
+    <td class="g">power</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr><tr class="group-row"><td colspan="11">Features <span class="group-count">(14)</span></td></tr>
+<tr class="">
+    <td class="k">cables_included</td>
+    <td class="g">features</td>
+    <td class="s">list<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">crosshair_overlay</td>
+    <td class="g">features</td>
+    <td class="s">scalar<br><span class="dtype">boolean</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">flicker_free</td>
+    <td class="g">features</td>
+    <td class="s">scalar<br><span class="dtype">boolean</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide">Yes when backlight is DC-dimmed across the relevant brightness range OR when brand/lab certifies flicker-free. Some panels use DC dimming at high brightness and PWM at low brightness; set per schema policy and put the PWM threshold / frequency in evidence.</td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">flicker_frequency</td>
+    <td class="g">features</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-hard chg">hard</td>
+    <td class="notes"><span class="note-chip note-lab_only">lab_only</span></td>
+    <td class="guide">PWM backlight frequency in Hz. Use 0 ONLY if schema defines 0 as 'no PWM' AND source confirms no flicker; otherwise leave empty/UNK. Record the brightness range at which the measurement applies when relevant. Rough risk cues: &gt;2000 Hz usually imperceptible, &lt;500 Hz visible to sensitive viewers — but flicker sensitivity is waveform- and user-dependent; not absolute.</td>
+  </tr>
+<tr class="">
+    <td class="k">low_blue_light</td>
+    <td class="g">features</td>
+    <td class="s">scalar<br><span class="dtype">boolean</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">macos_compatibility</td>
+    <td class="g">features</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide">Mark 'Limited' only when a source or tested behavior shows a specific issue: broken/poor HiDPI scaling, USB-C / Thunderbolt handshake, brightness-control, KVM, DSC, HDR, or refresh-rate shortcomings on macOS. Do NOT infer 'Limited' from resolution alone — macOS scaling tolerance depends on PPI, connection, macOS version.</td>
+  </tr>
+<tr class="">
+    <td class="k">microphone</td>
+    <td class="g">features</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">osd_type</td>
+    <td class="g">features</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-always chg">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-visual_hint">visual_hint</span></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">pip_pbp</td>
+    <td class="g">features</td>
+    <td class="s">scalar<br><span class="dtype">boolean</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-enum_concern">enum_concern</span></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">ps5_compatibility</td>
+    <td class="g">features</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-derivable">derivable</span></td>
+    <td class="guide">Tiers: 'Yes' when the monitor supports 4K@120 over HDMI with HDR/VRR. 'Limited' on 1440p panels (PS5 outputs 1440p but cannot combine 1440p with VRR — VRR requires 1080p or 4K) or when VRR is missing. ALLM is useful but not required for basic PS5 use. Do NOT downgrade to 'No' just because a monitor is 1440p.</td>
+  </tr>
+<tr class="">
+    <td class="k">speakers</td>
+    <td class="g">features</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">usb_power_delivery_watts</td>
+    <td class="g">features</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">webcam</td>
+    <td class="g">features</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">xbox_series_xs_compatibility</td>
+    <td class="g">features</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-derivable">derivable</span></td>
+    <td class="guide">Tiers: 'Yes' when the monitor supports 4K@120 with VRR/HDR over HDMI 2.1. 1440p@120 + VRR or 1080p@120 are also compatible (Xbox Series X/S supports both). Dolby Vision is NOT required — and is currently not available on any desktop monitor anyway (TVs only). Mention DV only when present; never require it.</td>
+  </tr><tr class="group-row"><td colspan="11">General <span class="group-count">(11)</span></td></tr>
+<tr class="row-changed">
+    <td class="k">sku</td>
+    <td class="g">general</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-mandatory">mandatory</td>
+    <td class="pri rl-mandatory ">mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-sometimes chg">sometimes</td>
+    <td class="pri df-hard">hard</td>
+    <td class="pri df-hard ">hard</td>
+    <td class="notes"><span class="note-chip note-identity_anchor">identity_anchor</span></td>
+    <td class="guide">SKU is brand-internal (retailer catalog number). MPN is the printed part number on the box. They are frequently different; don't conflate.</td>
+  </tr>
+<tr class="">
+    <td class="k">cable_length</td>
+    <td class="g">general</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">cable_type</td>
+    <td class="g">general</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-duplicate_candidate">duplicate_candidate</span></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="row-changed">
+    <td class="k">color</td>
+    <td class="g">general</td>
+    <td class="s">list<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-always chg">always</td>
+    <td class="pri df-medium">medium</td>
+    <td class="pri df-easy chg">easy</td>
+    <td class="notes"><span class="note-chip note-visual_only">visual_only</span></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">colors</td>
+    <td class="g">general</td>
+    <td class="s">list<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-derivable">derivable</span><span class="note-chip note-enum_global_shared">enum_global_shared</span></td>
+    <td class="guide">Normalized EG-palette tokens. Derive from `color`: 'Matte Black'→'black', 'Space Gray'→'dark-gray', 'Platinum Silver'→'silver'.</td>
+  </tr>
+<tr class="">
+    <td class="k">discontinued</td>
+    <td class="g">general</td>
+    <td class="s">scalar<br><span class="dtype">boolean</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide">Yes when the brand's current catalog no longer lists this SKU: product page 404s, page is labelled 'Previous generation' / 'Legacy' / 'Archive', or SKU is absent from current model navigation. Retailer out-of-stock is NOT a signal — check the brand site.</td>
+  </tr>
+<tr class="">
+    <td class="k">editions</td>
+    <td class="g">general</td>
+    <td class="s">list<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">material</td>
+    <td class="g">general</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-visual_hint">visual_hint</span></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">price_range</td>
+    <td class="g">general</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-always">always</td>
+    <td class="pri av-always ">always</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-derivable">derivable</span></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">release_date</td>
+    <td class="g">general</td>
+    <td class="s">scalar<br><span class="dtype">date</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-medium">medium</td>
+    <td class="pri df-medium ">medium</td>
+    <td class="notes"></td>
+    <td class="guide"><span class="empty">—</span></td>
+  </tr>
+<tr class="">
+    <td class="k">warranty</td>
+    <td class="g">general</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-nonmandatory">non_mandatory</td>
+    <td class="pri rl-nonmandatory ">non_mandatory</td>
+    <td class="pri av-sometimes">sometimes</td>
+    <td class="pri av-sometimes ">sometimes</td>
+    <td class="pri df-easy">easy</td>
+    <td class="pri df-easy ">easy</td>
+    <td class="notes"><span class="note-chip note-region_dependent">region_dependent</span></td>
+    <td class="guide">Report US warranty when region differs. OLED burn-in coverage length goes in burn_in_warranty_years (proposed separate field) — don't bury it here.</td>
+  </tr>
+  </tbody>
+</table>
+
+<h2>Proposed new keys (11)</h2>
+<table>
+  <thead><tr>
+    <th>Key</th>
+    <th>Group</th>
+    <th>Shape /<br>dtype</th>
+    <th colspan="2">Required level</th>
+    <th colspan="2">Availability</th>
+    <th colspan="2">Difficulty</th>
+    <th>Flags</th>
+    <th>Extraction guidance</th>
+  </tr></thead>
+  <tbody>
+<tr class="group-row"><td colspan="11">Display panel (proposed new) <span class="group-count">(2 new)</span></td></tr>
+<tr class="row-new">
+    <td class="k">bezel_width_top_mm</td>
+    <td class="g">display_panel</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-">—</td>
+    <td class="pri rl-nonmandatory chg">non_mandatory</td>
+    <td class="pri av-">—</td>
+    <td class="pri av-sometimes chg">sometimes</td>
+    <td class="pri df-">—</td>
+    <td class="pri df-medium chg">medium</td>
+    <td class="notes"><span class="note-chip note-new">new</span><span class="note-chip note-multi_monitor_relevance">multi_monitor_relevance</span></td>
+    <td class="guide">Top bezel in mm. Authoritative source: mfr dimensional-drawing PDF (support / downloads). Image-based estimation is acceptable ONLY when the image is orthographic / square-on, high-resolution, and has a reliable scale reference (panel width). Otherwise return UNK. When estimating, note it's image-derived in evidence and widen uncertainty.</td>
+  </tr>
+<tr class="row-new">
+    <td class="k">bezel_width_side_mm</td>
+    <td class="g">display_panel</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-">—</td>
+    <td class="pri rl-nonmandatory chg">non_mandatory</td>
+    <td class="pri av-">—</td>
+    <td class="pri av-sometimes chg">sometimes</td>
+    <td class="pri df-">—</td>
+    <td class="pri df-medium chg">medium</td>
+    <td class="notes"><span class="note-chip note-new">new</span><span class="note-chip note-multi_monitor_relevance">multi_monitor_relevance</span></td>
+    <td class="guide">Side bezel in mm. Same sourcing as bezel_width_top_mm — dimensional drawing first; image estimation only on orthographic views with a scale reference, else UNK. The visible multi-monitor seam = two side bezels + any gap between panels.</td>
+  </tr><tr class="group-row"><td colspan="11">Performance (proposed new) <span class="group-count">(3 new)</span></td></tr>
+<tr class="row-new">
+    <td class="k">refresh_rate_dual_mode_max</td>
+    <td class="g">performance</td>
+    <td class="s">scalar<br><span class="dtype">number</span></td>
+    <td class="pri rl-">—</td>
+    <td class="pri rl-nonmandatory chg">non_mandatory</td>
+    <td class="pri av-">—</td>
+    <td class="pri av-sometimes chg">sometimes</td>
+    <td class="pri df-">—</td>
+    <td class="pri df-easy chg">easy</td>
+    <td class="notes"><span class="note-chip note-new">new</span></td>
+    <td class="guide">Officially advertised lower-resolution max refresh (not an overclock). Example: 4K@240 / 1080p@480 panel → put 480 here. 2024+ tandem-OLED monitors advertise 540 / 720 / 1000+ Hz in dual-mode. Empty when not supported.</td>
+  </tr>
+<tr class="row-new">
+    <td class="k">nvidia_reflex_analyzer</td>
+    <td class="g">performance</td>
+    <td class="s">scalar<br><span class="dtype">boolean</span></td>
+    <td class="pri rl-">—</td>
+    <td class="pri rl-nonmandatory chg">non_mandatory</td>
+    <td class="pri av-">—</td>
+    <td class="pri av-sometimes chg">sometimes</td>
+    <td class="pri df-">—</td>
+    <td class="pri df-easy chg">easy</td>
+    <td class="notes"><span class="note-chip note-new">new</span><span class="note-chip note-nvidia_feature">nvidia_feature</span></td>
+    <td class="guide">Hardware Reflex Latency Analyzer — a designated USB port measures click-to-pixel latency with a Reflex-compatible mouse. Originally shipped on G-SYNC esports displays with the dedicated hardware module (2020+); newer G-SYNC monitors on MediaTek integrated scalers may also carry the feature — do NOT require the old module.</td>
+  </tr>
+<tr class="row-new">
+    <td class="k">gsync_pulsar</td>
+    <td class="g">performance</td>
+    <td class="s">scalar<br><span class="dtype">boolean</span></td>
+    <td class="pri rl-">—</td>
+    <td class="pri rl-nonmandatory chg">non_mandatory</td>
+    <td class="pri av-">—</td>
+    <td class="pri av-sometimes chg">sometimes</td>
+    <td class="pri df-">—</td>
+    <td class="pri df-easy chg">easy</td>
+    <td class="notes"><span class="note-chip note-new">new</span><span class="note-chip note-nvidia_feature">nvidia_feature</span></td>
+    <td class="guide">Variable-frequency backlight strobing + VRR, advertised for 1000+ Hz effective motion clarity. Shipped on MediaTek INTEGRATED SCALERS — NVIDIA has retired the dedicated G-SYNC hardware module for new designs. First Pulsar monitors (Jan 2026): Acer Predator XB273U F5, ASUS ROG Strix XG27AQNGV, AOC AG276QSG2, MSI MPG 272QRF X36.</td>
+  </tr><tr class="group-row"><td colspan="11">Color &amp; image quality (proposed new) <span class="group-count">(2 new)</span></td></tr>
+<tr class="row-new">
+    <td class="k">srgb_emulation_mode</td>
+    <td class="g">color_image_quality</td>
+    <td class="s">scalar<br><span class="dtype">boolean</span></td>
+    <td class="pri rl-">—</td>
+    <td class="pri rl-nonmandatory chg">non_mandatory</td>
+    <td class="pri av-">—</td>
+    <td class="pri av-sometimes chg">sometimes</td>
+    <td class="pri df-">—</td>
+    <td class="pri df-easy chg">easy</td>
+    <td class="notes"><span class="note-chip note-new">new</span><span class="note-chip note-pro_feature">pro_feature</span></td>
+    <td class="guide">Yes when an OSD / software mode clamps a wide-gamut panel to sRGB coverage. Clamp QUALITY varies — some lock brightness / white-point / R,G,B gain controls when engaged (bad for calibration). Note any such lockouts in evidence. Distinct from being an sRGB-only panel.</td>
+  </tr>
+<tr class="row-new">
+    <td class="k">color_certifications</td>
+    <td class="g">color_image_quality</td>
+    <td class="s">list<br><span class="dtype">string</span></td>
+    <td class="pri rl-">—</td>
+    <td class="pri rl-nonmandatory chg">non_mandatory</td>
+    <td class="pri av-">—</td>
+    <td class="pri av-sometimes chg">sometimes</td>
+    <td class="pri df-">—</td>
+    <td class="pri df-easy chg">easy</td>
+    <td class="notes"><span class="note-chip note-new">new</span><span class="note-chip note-pro_feature">pro_feature</span></td>
+    <td class="guide">COLOR / CALIBRATION certs only: Pantone Validated, Pantone SkinTone Validated, Calman Verified, mfr factory-calibration certs. Do NOT include: VESA DisplayHDR (that's hdr_support), UltraHD Premium (that's HDR/content), TUV Eye Comfort / Low Blue Light / Flicker-Free (those belong in a separate eye-comfort certifications field if one exists).</td>
+  </tr><tr class="group-row"><td colspan="11">Dimensions &amp; weight (proposed new) <span class="group-count">(1 new)</span></td></tr>
+<tr class="row-new">
+    <td class="k">stand_included</td>
+    <td class="g">dimensions_weight</td>
+    <td class="s">scalar<br><span class="dtype">boolean</span></td>
+    <td class="pri rl-">—</td>
+    <td class="pri rl-mandatory chg">mandatory</td>
+    <td class="pri av-">—</td>
+    <td class="pri av-always chg">always</td>
+    <td class="pri df-">—</td>
+    <td class="pri df-easy chg">easy</td>
+    <td class="notes"><span class="note-chip note-new">new</span></td>
+    <td class="guide">No for bare-panel SKUs (some workstation monitors and 'Display+' kits ship without a stand).</td>
+  </tr><tr class="group-row"><td colspan="11">Power (proposed new) <span class="group-count">(1 new)</span></td></tr>
+<tr class="row-new">
+    <td class="k">power_supply_type</td>
+    <td class="g">power</td>
+    <td class="s">scalar<br><span class="dtype">string</span></td>
+    <td class="pri rl-">—</td>
+    <td class="pri rl-nonmandatory chg">non_mandatory</td>
+    <td class="pri av-">—</td>
+    <td class="pri av-always chg">always</td>
+    <td class="pri df-">—</td>
+    <td class="pri df-easy chg">easy</td>
+    <td class="notes"><span class="note-chip note-new">new</span></td>
+    <td class="guide">'Internal' = kettle / figure-8 cable plugs directly into the monitor. 'External' = power brick in the cable run. Rarely stated explicitly; infer from explicit spec mention, 'In the Box' accessory photo (brick visible), manual power-connector diagram, back-panel connector shape (kettle → internal, DC barrel → external), or replacement-adapter retailer listings. Avoid product-class stereotypes as anything stronger than a search hint.</td>
+  </tr><tr class="group-row"><td colspan="11">Features (proposed new) <span class="group-count">(1 new)</span></td></tr>
+<tr class="row-new">
+    <td class="k">ambient_light_sensor</td>
+    <td class="g">features</td>
+    <td class="s">scalar<br><span class="dtype">boolean</span></td>
+    <td class="pri rl-">—</td>
+    <td class="pri rl-nonmandatory chg">non_mandatory</td>
+    <td class="pri av-">—</td>
+    <td class="pri av-sometimes chg">sometimes</td>
+    <td class="pri df-">—</td>
+    <td class="pri df-easy chg">easy</td>
+    <td class="notes"><span class="note-chip note-new">new</span></td>
+    <td class="guide">Spec-sheet wording varies: 'ambient light sensor', 'auto-brightness sensor', 'ALS', 'ambient adaptive technology', 'adaptive brightness'. Historically most common on Apple / pro displays; newer G-SYNC Pulsar / gaming OLEDs are adding it — do not assume gaming monitors won't have it.</td>
+  </tr><tr class="group-row"><td colspan="11">General (proposed new) <span class="group-count">(1 new)</span></td></tr>
+<tr class="row-new">
+    <td class="k">burn_in_warranty_years</td>
+    <td class="g">general</td>
+    <td class="s">scalar<br><span class="dtype">integer</span></td>
+    <td class="pri rl-">—</td>
+    <td class="pri rl-nonmandatory chg">non_mandatory</td>
+    <td class="pri av-">—</td>
+    <td class="pri av-sometimes chg">sometimes</td>
+    <td class="pri df-">—</td>
+    <td class="pri df-easy chg">easy</td>
+    <td class="notes"><span class="note-chip note-new">new</span><span class="note-chip note-conditional_on_oled">conditional_on_oled</span></td>
+    <td class="guide">OLED-only. Years of burn-in coverage beyond / within the base warranty. n/a for LCD. Major buying consideration for OLED panels.</td>
+  </tr>
+  </tbody>
+</table>
+
+<h2>Enum & known-values review</h2>
+<p class="subtitle" style="margin-bottom:10px">User asked specifically to review enums — every enum becomes a site filter, so over-long lists generate UI noise.</p>
+<table>
+  <thead><tr>
+    <th>Enum / key</th>
+    <th>Values</th>
+    <th>Policy</th>
+    <th>Verdict</th>
+    <th>Concern + action</th>
+  </tr></thead>
+  <tbody>
+<tr class="verdict-keep">
+  <td class="k">colors</td>
+  <td class="num">76</td>
+  <td>closed</td>
+  <td class="verdict-cell">keep</td>
+  <td>Global shared palette across all categories. Not monitor-specific.</td>
+</tr>
+<tr class="verdict-keep_with_note">
+  <td class="k">motion_blur_reduction</td>
+  <td class="num">14</td>
+  <td>open</td>
+  <td class="verdict-cell">keep_with_note</td>
+  <td>Vendor-branded BFI implementations (DyAc, ULMB, ELMB, PureXP). Each is a distinct feature; keep.</td>
+</tr>
+<tr class="verdict-fix">
+  <td class="k">overdrive</td>
+  <td class="num">10</td>
+  <td>open</td>
+  <td class="verdict-cell">fix</td>
+  <td>dtype is boolean but known_values lists 10 OSD level-names. Pick: (a) keep boolean, trim enum to Yes/No — recommended; or (b) rename to overdrive_level (string) and keep the levels.</td>
+</tr>
+<tr class="verdict-trim">
+  <td class="k">refresh_rate</td>
+  <td class="num">19</td>
+  <td>open</td>
+  <td class="verdict-cell">trim</td>
+  <td>Includes 600/720/1040 Hz — no consumer monitor ships these yet. Trim until a real product lands.</td>
+</tr>
+<tr class="verdict-refactor_candidate">
+  <td class="k">panel_type</td>
+  <td class="num">20</td>
+  <td>open</td>
+  <td class="verdict-cell">refactor_candidate</td>
+  <td>IPS class alone covers 10 sub-variants. Split proposal: panel_class (IPS / VA / OLED / TN / ADS etc.) as the filter + panel_variant (free-text) as the sub-variant detail.</td>
+</tr>
+<tr class="verdict-keep">
+  <td class="k">screen_size</td>
+  <td class="num">20</td>
+  <td>open</td>
+  <td class="verdict-cell">keep</td>
+  <td>Fine for data fidelity; bucket for UI filters (24-25&quot; / 27&quot; / 32&quot; / 34&quot;+).</td>
+</tr>
+<tr class="verdict-fix">
+  <td class="k">pivot_rotation</td>
+  <td class="num">3</td>
+  <td>open</td>
+  <td class="verdict-cell">fix</td>
+  <td>'Yes (±90°)' / 'Yes (90°)' mix boolean + direction. Split: pivot_rotation (boolean) + pivot_direction (enum: 'cw'|'ccw'|'both').</td>
+</tr>
+<tr class="verdict-keep">
+  <td class="k">hdr_support</td>
+  <td class="num">13</td>
+  <td>open</td>
+  <td class="verdict-cell">keep</td>
+  <td>Distinct certs across content codecs + VESA tiers. Keep.</td>
+</tr>
+<tr class="verdict-consolidate">
+  <td class="k">audio_output_vs_headphone_jack</td>
+  <td class="num">—</td>
+  <td>—</td>
+  <td class="verdict-cell">consolidate</td>
+  <td>audio_output (string) and headphone_jack (boolean) overlap. Retire headphone_jack; derive from audio_output.</td>
+</tr>
+<tr class="verdict-consolidate">
+  <td class="k">cable_type_vs_cables_included</td>
+  <td class="num">—</td>
+  <td>—</td>
+  <td class="verdict-cell">consolidate</td>
+  <td>cable_type (scalar) duplicates a subset of cables_included (list). Retire cable_type.</td>
+</tr>
+  </tbody>
+</table>
+
+<h2>Component-table review</h2>
+<table>
+  <thead><tr>
+    <th>Table</th>
+    <th>Entities</th>
+    <th>Verdict</th>
+    <th>Notes</th>
+  </tr></thead>
+  <tbody>
+<tr>
+  <td class="k">panel</td>
+  <td class="num">20</td>
+  <td class="verdict-cell">monitor_ok</td>
+  <td>Panel variance policies look correct (IPS variants mostly override_allowed, OLED families mostly authoritative). Important distinction: IPS Black (LG+Dell collab, ~2000:1 contrast, launched 2022) is DIFFERENT from Nano IPS (LG, wider gamut) — a panel can combine both as 'Nano IPS Black'. Current enum lists them separately, which is correct.</td>
+</tr>
+  </tbody>
+</table>
+
+<div class="box" style="margin-top:24px">
+  <h3>Next steps (for the user to drive)</h3>
+  <ul>
+    <li>Review the proposed mandatory promotions and confirm. These are the highest-impact changes — they tighten the gate at publish time.</li>
+    <li>Review the 7 proposed new keys and say which to add / drop / rename. Nothing in the schema changes until explicit approval.</li>
+    <li>Review the enum cleanups (<code>overdrive</code>, <code>refresh_rate</code>, <code>pivot_rotation</code>, <code>audio_output</code> vs <code>headphone_jack</code>). Each is a separate change.</li>
+    <li>If you accept the extraction guidance, we can push it into each field's <code>ui.guidance_md</code> — the compiler will surface it in the Field Studio + LLM prompts.</li>
+  </ul>
+</div>
+
+</body></html>

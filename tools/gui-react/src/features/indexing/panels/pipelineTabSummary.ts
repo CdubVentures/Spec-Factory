@@ -16,7 +16,16 @@ export function derivePipelineTabSummary(data: ProductHistoryResponse | null): F
     agg.failed_runs === 0 ? 'complete' :
     agg.completed_runs === 0 ? 'empty' :
     'partial';
-  return { kpi, status };
+  if (agg.total_urls === 0) {
+    return { kpi, status };
+  }
+  return {
+    kpi,
+    status,
+    numerator: agg.urls_success,
+    denominator: agg.total_urls,
+    percent: successPct,
+  };
 }
 
 export function usePipelineTabSummary(productId: string, category: string): FinderTabSummary {

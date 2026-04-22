@@ -334,54 +334,84 @@ node --test src/features/key/tests/keySchema.test.js \
   </div>
 </div>
 
-<!-- ───────────────────────── 4. NEXT ───────────────────────── -->
-<h2 id="next"><span class="num">4</span> What Phase 3b Loop must build</h2>
+<!-- ───────────────────────── 4. PHASE 3B SHIPPED ───────────────────────── -->
+<h2 id="next"><span class="num">4</span> Phase 3b shipped — per-key Loop</h2>
 
 <div class="card">
-  <div class="card-header"><span class="tag tag-orange">NEXT</span> Budget-bounded retry loop wrapping <code>runKeyFinder</code></div>
+  <div class="card-header"><span class="tag tag-green">SHIPPED 2026-04-21</span> Budget-bounded retry + per-(pid, fieldKey) queue lock</div>
   <div class="card-body">
-    <p>Pattern to follow: <strong>wrap <code>runKeyFinder</code>, don't duplicate it</strong>. The orchestrator is idempotent per call; a loop is just the budget-aware retry around it. Study <code>src/core/finder/variantFieldLoop.js</code> for the loop_id + satisfaction-predicate pattern, but adapt to per-key (not per-variant) scope.</p>
+    <p><strong>What shipped:</strong> clicking ▶Loop on a per-key row fires a budget-bounded retry over <code>runKeyFinder</code>. Each iteration re-reads discovery + re-packs passengers. Concurrent Run / Loop requests on the same key serialize via a per-(pid, fieldKey) queue lock in the operations registry, so JSON / SQL writes never race. Run stays clickable always (serializes silently); Loop shows spinner while running + Queued pill while waiting + disabled throughout.</p>
 
-    <h3>4.1 &nbsp; Files to create</h3>
+    <h3>4.1 &nbsp; Files created</h3>
     <table>
       <thead><tr><th>File</th><th>Responsibility</th></tr></thead>
       <tbody>
-        <tr><td><code>src/features/key/keyFinderLoop.js</code></td><td><code>runKeyFinderLoop({ product, fieldKey, category, specDb, appDb, config, onLoopProgress?, signal?, ...runOpts })</code> — wraps <code>runKeyFinder</code>, iterates up to <code>calcKeyBudget(...).attempts</code>, stamps <code>loop_id</code> on every child run.</td></tr>
-        <tr><td><code>src/features/key/tests/keyFinderLoop.test.js</code></td><td>Characterization: budget honored, exits on publish, exits on definitive unk, loop_id stamped consistently, discovery log accumulates across iterations, passengers re-pack per tick.</td></tr>
+        <tr><td><code>src/features/key/keyFinderLoop.js</code></td><td><code>runKeyFinderLoop({ product, fieldKey, category, specDb, appDb, config, policy?, signal?, onLoopProgress?, productRoot?, _runKeyFinderOverride? })</code>. Snapshots tier bundle once, iterates up to <code>calcKeyBudget(...).attempts</code>, exits on publish / definitive unk / abort. Returns <code>{ iterations, final_status, loop_id, runs, last_result }</code>.</td></tr>
+        <tr><td><code>src/features/key/tests/keyFinderLoop.test.js</code></td><td>Full contract matrix: budget honored, publish/unk exits, loop_id stamping, tier snapshot under mid-loop policy mutation, AbortSignal, onLoopProgress event shape, reserved-key + missing-rule pre-flight gates.</td></tr>
+        <tr><td><code>src/features/key/tests/keyFinderRoutes.loop.test.js</code></td><td>Route-level dispatch assertions: mode='loop' returns 202 (not 400), registers op with subType='loop', error-parity with mode='run' for reserved / missing-rule.</td></tr>
+        <tr><td><code>src/core/operations/tests/keyLocks.test.js</code></td><td>Queue lock FIFO correctness (1+ waiters), different-key independence, double-release safety, status='queued' initial state + setStatus transition.</td></tr>
       </tbody>
     </table>
 
-    <h3>4.2 &nbsp; Files to modify</h3>
+    <h3>4.2 &nbsp; Files modified</h3>
     <table>
       <thead><tr><th>File</th><th>Change</th></tr></thead>
       <tbody>
-        <tr><td><code>src/features/key/api/keyFinderRoutes.js</code></td><td>Replace the <code>mode === 'loop'</code> 400 branch with a dispatch to <code>runKeyFinderLoop</code>. Emit <code>key-finder-loop</code> WS event instead of <code>key-finder-run</code>. Thread <code>onLoopProgress → updateLoopProgress</code>.</td></tr>
-        <tr><td><code>src/features/key/keyFinder.js</code></td><td>(Optional) accept an opaque <code>loop_id</code> opt and thread it into the persisted run's <code>response.loop_id</code>. Keep the single-run orchestrator otherwise unchanged.</td></tr>
+        <tr><td><code>src/features/key/api/keyFinderRoutes.js</code></td><td>Flipped mode='loop' 400 → dispatch to <code>runKeyFinderLoop</code>. Acquires key lock before <code>fireAndForget</code>; registers op with <code>subType='loop'</code> + initial <code>status='queued'</code>; transitions to running on lock acquire. Emits <code>key-finder-loop</code> on completion (Run path unchanged).</td></tr>
+        <tr><td><code>src/features/key/keyFinder.js</code></td><td>Accepts two new opts: <code>loop_id</code> (threaded into <code>response.loop_id</code>) and <code>tierBundleOverride</code> (skip internal <code>resolvePhaseModelByTier</code> and use the pinned bundle). Single-run behavior otherwise unchanged.</td></tr>
+        <tr><td><code>src/core/operations/operationsRegistry.js</code></td><td>Added <code>keyLocks: Map&lt;string, Promise&lt;void&gt;&gt;</code> + <code>acquireKeyLock/releaseKeyLock</code> (FIFO promise-chain). Extended status enum with <code>'queued'</code>. Added <code>setStatus</code> for queued→running. <code>cancelOperation</code> now also accepts queued ops.</td></tr>
+        <tr><td><code>src/core/operations/fireAndForget.js</code></td><td>Added <code>onSettled</code> callback, called on every terminal transition (success / fail / cancel / abort). Route handler passes the lock-release fn so the lock always frees.</td></tr>
+        <tr><td><code>src/core/finder/finderModuleRegistry.js</code></td><td>Added <code>'loop'</code> to keyFinder's <code>dataChangeEvents</code> — auto-propagates through <code>FINDER_DATA_CHANGE_EVENTS</code> to both backend <code>dataChangeContract.js</code> and frontend <code>invalidationResolver.js</code>.</td></tr>
+        <tr><td>GUI: <code>types.ts</code>, <code>KeyRow.tsx</code>, <code>KeyGroupSection.tsx</code>, <code>KeyFinderPanel.tsx</code>, <code>operationsStore.ts</code>, <code>useFinderOperations.ts</code>, <code>keyFinderGroupedRows.ts</code>, <code>OperationDetailModal.tsx</code>, <code>OperationsTracker.tsx</code></td><td>Flipped <code>LIVE_MODES.keyLoop: true</code>. Extended <code>Operation.status</code> with <code>'queued'</code>. New <code>selectKeyFieldOpStatesSignature</code> + <code>useKeyFieldOpStates</code> hook returns per-fieldKey <code>{ status, mode }</code>. <code>KeyRow</code> renders Loop button with spinner/Queued/idle state; disabled when this key has any active op.</td></tr>
       </tbody>
     </table>
 
-    <h3>4.3 &nbsp; runKeyFinderLoop step list</h3>
+    <h3>4.3 &nbsp; Canonical algorithm</h3>
     <div class="callout callout-info">
-      <strong>Canonical order</strong>
+      <strong>runKeyFinderLoop steps</strong>
       <ol>
-        <li>Resolve settings + field rule + compute <code>{ attempts } = calcKeyBudget({ fieldRule, variantCount, settings })</code>.</li>
-        <li>Generate a <code>loop_id</code> (uuid or <code>${productId}-${fieldKey}-${Date.now()}</code>).</li>
-        <li>For iteration 1..attempts: call <code>runKeyFinder({ ...opts, loop_id })</code>. After each iteration re-read the JSON store so discovery accumulates.</li>
-        <li>Satisfaction check per iteration: stop when <code>result.status === 'accepted'</code> AND publisher published, OR <code>result.status === 'unk'</code> with non-empty <code>unknown_reason</code>.</li>
-        <li>Emit <code>onLoopProgress</code> event each iteration (iteration #, attempts remaining).</li>
-        <li>Return <code>{ iterations, final_status, loop_id, runs: [run_numbers] }</code>.</li>
+        <li>Resolve field rule + settings; compute <code>{ attempts } = calcKeyBudget({ fieldRule, variantCount, settings })</code>.</li>
+        <li>Snapshot tier bundle: <code>resolvePhaseModelByTier(policy, fieldRule.difficulty)</code> — ONCE at loop entry. Mid-loop LLM Config edits do not affect iterations 2..N.</li>
+        <li>Generate <code>loop_id</code> via shared <code>generateLoopId()</code> (<code>loop-${Date.now()}-${rand6}</code>, matches RDF's variantFieldLoop pattern).</li>
+        <li>For iteration <code>1..attempts</code>:
+          <ul>
+            <li>Abort check: <code>signal?.aborted</code> → return <code>final_status='aborted'</code>.</li>
+            <li>Call <code>runKeyFinder({ ...opts, loop_id, tierBundleOverride })</code>. Each call re-runs <code>buildPassengers</code> so resolved peers drop from the bundle.</li>
+            <li>Emit <code>onLoopProgress({ iteration, attemptsRemaining, loopId })</code>.</li>
+            <li>Exit on <code>status === 'published'</code> → <code>final_status='published'</code>.</li>
+            <li>Exit on <code>status === 'unk' &amp;&amp; unknown_reason.trim()</code> → <code>final_status='definitive_unk'</code>.</li>
+          </ul>
+        </li>
+        <li>Return <code>{ iterations, final_status, loop_id, runs, last_result }</code>. <code>final_status='budget_exhausted'</code> when the loop runs all attempts without resolving.</li>
       </ol>
     </div>
 
-    <h3>4.4 &nbsp; Route contract (addition to Phase 3a Part 2's table)</h3>
-    <pre><span class="c">// POST /api/v1/key-finder/:category/:productId — now accepts mode='loop'</span>
-{ <span class="k">field_key</span>: <span class="s">"polling_rate"</span>, <span class="k">mode</span>: <span class="s">"loop"</span> }    <span class="c">// Phase 3b flips the 400 rejection into a dispatch</span>
-
-<span class="c">// GET / DELETE unchanged from Phase 3a Part 2</span></pre>
-
+    <h3>4.4 &nbsp; Queue lock algorithm</h3>
     <div class="callout callout-info">
-      <strong>Open question for Phase 3b</strong>
-      Should the loop re-resolve the tier bundle on every iteration (could drift if LLM Config is edited mid-loop) or snapshot it once at loop start? Recommend snapshot — cleaner, matches RDF's pattern. If the user edits LLM Config mid-loop they can just wait for the next loop.
+      <strong>Per-(type, pid, fieldKey) FIFO promise chain</strong>
+      <ol>
+        <li><code>acquireKeyLock(type, pid, fieldKey)</code> returns a release fn. Reads the current tail of the chain (or <code>Promise.resolve()</code>), creates a new &quot;my finished&quot; promise, stores <code>prev.then(() =&gt; myFinished)</code> as the new tail, awaits prev.</li>
+        <li>Route flow: register op (status='queued' → broadcast) → await lock → <code>setStatus(id, 'running')</code> → <code>fireAndForget(runKeyFinderLoop, { onSettled: release })</code>.</li>
+        <li><code>onSettled</code> runs on every terminal transition (success / fail / cancel / abort). Single code path, no lock leak on exceptions.</li>
+      </ol>
+    </div>
+
+    <h3>4.5 &nbsp; Route contract</h3>
+    <pre><span class="c">// POST /api/v1/key-finder/:category/:productId</span>
+{ <span class="k">field_key</span>: <span class="s">"polling_rate"</span>, <span class="k">mode</span>: <span class="s">"run"</span> }     <span class="c">// → runKeyFinder; emits key-finder-run</span>
+{ <span class="k">field_key</span>: <span class="s">"polling_rate"</span>, <span class="k">mode</span>: <span class="s">"loop"</span> }    <span class="c">// → runKeyFinderLoop; emits key-finder-loop</span>
+
+<span class="c">// Both share the same per-(pid, field_key) queue lock.
+// GET / DELETE unchanged from Phase 3a Part 2.</span></pre>
+
+    <div class="callout callout-ok">
+      <strong>Locked decisions</strong>
+      <ul>
+        <li><strong>Tier bundle</strong> snapshots at loop start — mid-loop LLM Config edits never split a single Loop.</li>
+        <li><strong>Passengers re-pack</strong> every iteration via the existing <code>buildPassengers</code> call inside <code>runKeyFinder</code> — resolved peers auto-drop.</li>
+        <li><strong>No new Stop button</strong> — ops sidebar Stop (AbortController cascade) cancels cleanly. The loop's abort check runs between iterations.</li>
+        <li><strong>Run stays clickable</strong> — serializes silently through the same lock. Loop button locks while Loop-on-this-key is running or queued.</li>
+      </ul>
     </div>
   </div>
 </div>

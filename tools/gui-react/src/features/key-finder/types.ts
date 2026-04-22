@@ -23,6 +23,23 @@ export interface KeyFinderSummaryRow {
   readonly variant_dependent: boolean;
   /** calcKeyBudget(fieldRule, variantCount, settings).attempts — what Loop mode would spend. */
   readonly budget: number | null;
+  /** Fractional raw budget (before ceil). attempts = ceil(raw_budget) so this value
+   *  is what the UI displays in the Re-Run column. With default perExtra=0.25, a
+   *  5-variant mandatory-rare-very_hard key would show 9.5 here, budget=10. */
+  readonly raw_budget: number | null;
+  /** True when this key is currently running as a primary in some in-flight call.
+   *  Used by the frontend to show a "busy primary" visual state on the Loop button. */
+  readonly in_flight_as_primary: boolean;
+  /** How many concurrent calls are currently carrying this key as a passenger.
+   *  Non-zero → render a "riding elsewhere" badge on the Loop button. */
+  readonly in_flight_as_passenger_count: number;
+  /** Bundling pool for this row's difficulty tier (bundlingPoolPerPrimary[difficulty]).
+   *  Capacity this key can carry in passengers when it's the primary. Returned even
+   *  when bundlingEnabled=false so the UI can surface per-tier capacity. */
+  readonly bundle_pool: number;
+  /** Sum of `bundle_preview[].cost` — what the packer actually packed. Rendered
+   *  alongside the pool ("{used}/{pool}") so users can confirm the pack fits. */
+  readonly bundle_total_cost: number;
   /** Passengers that WOULD bundle with this row if run now. Each entry carries
    *  the per-passenger cost (from `bundlingPassengerCost[difficulty]`) so the
    *  UI can render "{field_key} (cost)" and the user can eyeball-sum against
@@ -110,6 +127,11 @@ export interface KeyEntry {
   readonly required_level: string;
   readonly variant_dependent: boolean;
   readonly budget: number | null;
+  readonly raw_budget: number | null;
+  readonly in_flight_as_primary: boolean;
+  readonly in_flight_as_passenger_count: number;
+  readonly bundle_pool: number;
+  readonly bundle_total_cost: number;
   readonly bundle_preview: ReadonlyArray<{ readonly field_key: string; readonly cost: number }>;
   readonly last_run_number: number | null;
   readonly last_value: unknown;
@@ -119,7 +141,19 @@ export interface KeyEntry {
   readonly candidate_count: number;
   readonly published: boolean;
   readonly run_count: number;
+  /** True when ANY op (Run or Loop) is active (running or queued) for this key. */
   readonly running: boolean;
+  /**
+   * Mode of the active op if any. null when idle. Used by KeyRow to route the
+   * running-spinner / queued-pill onto the correct button (Run vs Loop).
+   */
+  readonly opMode: 'run' | 'loop' | null;
+  /**
+   * Status of the active op if any. null when idle. 'queued' only applies to
+   * Loop per Phase 3b UX — Run serializes silently through the lock and never
+   * shows as queued to the user.
+   */
+  readonly opStatus: 'running' | 'queued' | null;
 }
 
 export interface KeyGroup {
@@ -136,6 +170,9 @@ export interface KeyGroup {
 export interface GroupedRows {
   readonly groups: readonly KeyGroup[];
   readonly totals: {
+    /** Rows that survive variant-dependent + reserved exclusion, BEFORE user filters. */
+    readonly base: number;
+    /** Rows that survive exclusions AND the current user filter state. */
     readonly eligible: number;
     readonly resolved: number;
     readonly unresolved: number;
@@ -156,23 +193,38 @@ export type RunMode =
 
 /**
  * Which run verbs are LIVE at each scope today.
- * Phase 3b ships → flip `keyLoop` to true + wire the loop mutation.
- * Phase 5 ships → flip the 4 group/product flags + wire Smart Loop backend.
+ * All 6 modes are live after Stage C 2026-04-22.
  */
 export const LIVE_MODES: Readonly<Record<RunMode, boolean>> = Object.freeze({
   keyRun: true,
-  keyLoop: false,
-  groupRun: false,
-  groupLoop: false,
-  productRun: false,
-  productLoop: false,
+  keyLoop: true,
+  groupRun: true,
+  groupLoop: true,
+  productRun: true,
+  productLoop: true,
 });
 
 export const DISABLED_REASONS: Readonly<Record<RunMode, string>> = Object.freeze({
   keyRun: '',
-  keyLoop: 'Per-key Smart Loop — Phase 3b',
-  groupRun: 'Group walk — Phase 5',
-  groupLoop: 'Group Smart Loop — Phase 5',
-  productRun: 'All-groups walk — Phase 5',
-  productLoop: 'All-groups Smart Loop — Phase 5',
+  keyLoop: '',
+  groupRun: '',
+  groupLoop: '',
+  productRun: '',
+  productLoop: '',
+});
+
+/**
+ * Professional tooltip copy keyed by run mode + context. Rendered via the
+ * native `title` attribute for now; future upgrade to <Tooltip> component
+ * is a UI polish pass.
+ */
+export const TOOLTIPS = Object.freeze({
+  keyRun: 'Focused key run — one LLM call for this key only. Click multiple times to queue additional runs (the server serializes them per-key). Honors the alwaysSoloRun contract: never bundles passengers when that knob is on.',
+  keyLoop: 'Budget-bounded retry loop. Each iteration packs passengers live, subject to per-tier caps and hard-block on busy primaries.',
+  keyRiding: 'Already riding as a passenger in another call — firing Loop now would add a dedicated primary attempt for this key.',
+  keyPrompt: 'Preview the exact LLM prompt this key would send right now (registry-aware).',
+  groupRun: 'Fire a focused Run on every key in this group. Parallel when alwaysSoloRun is on; sequential otherwise (recalc between).',
+  groupLoop: 'Loop each unresolved key in this group one at a time. Each Loop exits on published or budget exhausted.',
+  productRun: 'Fire a focused Run on every key across every group. Expensive — N LLM calls for a product with N keys.',
+  productLoop: 'Loop every group in sequence. Long-running; can take many minutes.',
 });

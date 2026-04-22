@@ -7504,7 +7504,9 @@
       "difficulty": "easy",
       "display_name": "RGB",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "X zone (rgb), X zone (led)"
+        },
         "new_value_policy": {},
         "policy": "open_prefer_known",
         "source": "known_values.yes_no"

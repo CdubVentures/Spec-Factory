@@ -1,112 +1,244 @@
 /*
- * IndexingTabBar — tab icon swatches, status-light colors, and the
- * mini divider rendered between adjacent tabs. Extends .sf-tab-strip /
- * .sf-tab-item (house primitives, in theme.css). All colors come from
- * semantic tokens; no hardcoded hex.
+ * IndexingTabBar — nav-control redesign.
+ *
+ * A self-contained rounded-card bar that sits above the finder panels with
+ * a gap (not a seam). The active tab fills with the finder's color tint;
+ * the icon badge inverts to the surface color so it stays legible. Every
+ * color comes from a semantic token — nothing hardcoded.
+ *
+ * Layout utilities (flex, padding, radius, typography) are applied via
+ * Tailwind utility classes on the component's className. This file owns
+ * the per-finder color behavior, the active-state fill, and the ring /
+ * pip status glyphs.
  */
 
-/* ── Mini divider between tabs ──────────────────────────────────── */
-/* Scoped to .finder-tab-bar so the global .sf-tab-strip usage (e.g.,
-   ProductHistoryPanel) is not affected. Pseudo sits in the flex gap,
-   centered vertically, shortened top/bottom for a subtle "pip". */
-.finder-tab-bar .sf-tab-item { position: relative; }
+/* ── Bar shell ───────────────────────────────────────────────────────
+   Baseline is styled by Tailwind utilities in IndexingTabBar.tsx.
+   Nothing needed here; kept for future scoped rules. */
 
-.finder-tab-bar .sf-tab-item + .sf-tab-item::before {
+/* ── Tab item — base (idle) ────────────────────────────────────────── */
+.finder-tab-item {
+  position: relative;
+  color: rgb(var(--sf-color-text-muted-rgb));
+  transition:
+    background-color .14s ease,
+    color .14s ease,
+    border-color .14s ease,
+    box-shadow .14s ease;
+}
+
+/* Vertical divider between adjacent tabs. Sits in the flex gap, centered
+   vertically, shortened top/bottom for a subtle pip. Suppressed next to
+   the active tab so its accent border is not cut by a neutral line. */
+.finder-tab-item + .finder-tab-item::before {
   content: "";
   position: absolute;
-  left: -4px;
-  top: 28%;
-  bottom: 28%;
+  left: -3px;
+  top: 22%;
+  bottom: 22%;
   width: 1px;
   background: rgb(var(--sf-color-border-subtle-rgb) / 0.7);
   pointer-events: none;
 }
 
-/* Suppress the divider immediately adjacent to the active tab so the
-   accent border isn't visually cut by a neutral line. */
-.finder-tab-bar .sf-tab-item.sf-tab-item-active::before,
-.finder-tab-bar .sf-tab-item.sf-tab-item-active + .sf-tab-item::before {
+.finder-tab-item-active::before,
+.finder-tab-item-active + .finder-tab-item::before {
   display: none;
 }
 
-/* ── Icon badges (one per finder) ────────────────────────────────── */
+.finder-tab-item:hover:not(.finder-tab-item-active) {
+  background: rgb(var(--sf-color-text-subtle-rgb) / 0.04);
+  color: rgb(var(--sf-color-text-primary-rgb));
+}
 
+.finder-tab-item:focus-visible {
+  outline: 2px solid rgb(var(--sf-color-accent-rgb));
+  outline-offset: -2px;
+}
+
+/* ── Active state — per-finder tinted fill ─────────────────────────── */
+.finder-tab-item-active {
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.04),
+    0 2px 6px rgb(0 0 0 / 0.06);
+}
+
+.finder-tab-item[data-f="pipeline"].finder-tab-item-active {
+  background: rgb(var(--sf-color-run-ai-rgb) / 0.18);
+  border-color: rgb(var(--sf-color-run-ai-rgb) / 0.4);
+  color: var(--sf-state-run-ai-fg);
+}
+.finder-tab-item[data-f="cef"].finder-tab-item-active {
+  background: var(--sf-state-warning-bg);
+  border-color: var(--sf-state-warning-border);
+  color: var(--sf-state-warning-fg);
+}
+.finder-tab-item[data-f="pif"].finder-tab-item-active {
+  background: var(--sf-state-info-bg);
+  border-color: var(--sf-state-info-border);
+  color: var(--sf-state-info-fg);
+}
+.finder-tab-item[data-f="rdf"].finder-tab-item-active {
+  background: rgb(var(--sf-color-accent-rgb) / 0.18);
+  border-color: rgb(var(--sf-color-accent-rgb) / 0.4);
+  color: rgb(var(--sf-color-accent-strong-rgb));
+}
+.finder-tab-item[data-f="sku"].finder-tab-item-active {
+  background: var(--sf-state-success-bg);
+  border-color: var(--sf-state-success-border);
+  color: var(--sf-state-success-fg);
+}
+.finder-tab-item[data-f="key"].finder-tab-item-active {
+  background: var(--sf-state-key-bg);
+  border-color: var(--sf-state-key-border);
+  color: var(--sf-state-key-fg);
+}
+
+/* ── Icon badge — per-finder color pill (idle and active both use tokens) */
 .finder-tab-icon {
-  color: rgb(var(--sf-color-text-muted-rgb));
-  background: rgb(var(--sf-color-surface-elevated-rgb) / 0.65);
-  border: 1px solid rgb(var(--sf-color-border-subtle-rgb) / 0.4);
   line-height: 1;
+  transition: background .14s ease, border-color .14s ease;
 }
 
 .finder-tab-icon-cef {
   color: var(--sf-state-warning-fg);
   background: var(--sf-state-warning-bg);
-  border-color: var(--sf-state-warning-border);
+  border: 1px solid var(--sf-state-warning-border);
 }
-
 .finder-tab-icon-pif {
   color: var(--sf-state-info-fg);
   background: var(--sf-state-info-bg);
-  border-color: var(--sf-state-info-border);
+  border: 1px solid var(--sf-state-info-border);
 }
-
 .finder-tab-icon-rdf {
   color: rgb(var(--sf-color-accent-strong-rgb));
   background: rgb(var(--sf-color-accent-rgb) / 0.18);
-  border-color: rgb(var(--sf-color-accent-rgb) / 0.4);
+  border: 1px solid rgb(var(--sf-color-accent-rgb) / 0.4);
 }
-
 .finder-tab-icon-sku {
   color: var(--sf-state-success-fg);
   background: var(--sf-state-success-bg);
-  border-color: var(--sf-state-success-border);
+  border: 1px solid var(--sf-state-success-border);
 }
-
 .finder-tab-icon-pipeline {
   color: var(--sf-state-run-ai-fg);
   background: rgb(var(--sf-color-run-ai-rgb) / 0.18);
-  border-color: rgb(var(--sf-color-run-ai-rgb) / 0.4);
+  border: 1px solid rgb(var(--sf-color-run-ai-rgb) / 0.4);
 }
-
 .finder-tab-icon-key {
   color: var(--sf-state-key-fg);
   background: var(--sf-state-key-bg);
-  border-color: var(--sf-state-key-border);
+  border: 1px solid var(--sf-state-key-border);
 }
 
-/* ── Status lights ──────────────────────────────────────────────── */
-
-.finder-tab-status {
-  box-shadow: 0 0 0 2px rgb(var(--sf-color-surface-rgb) / 0.6);
+/* Active: icon flips to surface bg with currentColor border — legibility
+   against the finder-tinted tab. */
+.finder-tab-item-active .finder-tab-icon {
+  background: rgb(var(--sf-color-surface-rgb));
+  border-color: currentColor;
 }
 
-.finder-tab-status-complete {
-  background: var(--sf-state-success-fg);
-  box-shadow: 0 0 0 2.5px var(--sf-state-success-border);
+/* Idle: slight desaturation so the active tab's icon stands out more. */
+.finder-tab-item:not(.finder-tab-item-active) .finder-tab-icon {
+  opacity: 0.92;
 }
 
-.finder-tab-status-partial {
-  background: var(--sf-state-warning-fg);
-  box-shadow: 0 0 0 2.5px var(--sf-state-warning-border);
+/* ── KPI strap — inherits currentColor when active ─────────────────── */
+.finder-tab-kpi {
+  color: rgb(var(--sf-color-text-muted-rgb));
+}
+.finder-tab-item-active .finder-tab-kpi {
+  color: currentColor;
+  opacity: 0.78;
 }
 
-.finder-tab-status-running {
-  background: rgb(var(--sf-color-accent-strong-rgb));
-  box-shadow: 0 0 0 2.5px rgb(var(--sf-color-accent-rgb) / 0.4);
-  animation: finder-tab-status-breathe 1.6s ease-in-out infinite;
+/* ── Progress ring (SVG) ───────────────────────────────────────────── */
+.finder-tab-ring {
+  width: 26px;
+  height: 26px;
+  display: block;
+  flex: none;
+}
+.finder-tab-ring-track {
+  stroke: rgb(var(--sf-color-text-subtle-rgb) / 0.25);
+}
+.finder-tab-item-active .finder-tab-ring-track {
+  stroke: currentColor;
+  opacity: 0.2;
+}
+.finder-tab-item[data-f="pipeline"] .finder-tab-ring-fill { stroke: var(--sf-state-run-ai-fg); }
+.finder-tab-item[data-f="cef"]      .finder-tab-ring-fill { stroke: var(--sf-state-warning-fg); }
+.finder-tab-item[data-f="pif"]      .finder-tab-ring-fill { stroke: var(--sf-state-info-fg); }
+.finder-tab-item[data-f="rdf"]      .finder-tab-ring-fill { stroke: rgb(var(--sf-color-accent-strong-rgb)); }
+.finder-tab-item[data-f="sku"]      .finder-tab-ring-fill { stroke: var(--sf-state-success-fg); }
+.finder-tab-item[data-f="key"]      .finder-tab-ring-fill { stroke: var(--sf-state-key-fg); }
+
+.finder-tab-ring-label {
+  font-family: var(--sf-font-family-mono);
+  font-size: 7.5px;
+  fill: rgb(var(--sf-color-text-primary-rgb));
+  font-weight: 700;
+}
+.finder-tab-item-active .finder-tab-ring-label {
+  fill: currentColor;
 }
 
-.finder-tab-status-idle {
-  background: rgb(var(--sf-color-text-subtle-rgb) / 0.7);
-  box-shadow: 0 0 0 2.5px rgb(var(--sf-color-text-subtle-rgb) / 0.2);
+/* Complete / "done" ring — green fill with check */
+.finder-tab-ring-check {
+  stroke: var(--sf-state-success-fg);
+}
+.finder-tab-ring-done .finder-tab-ring-fill {
+  stroke: var(--sf-state-success-fg);
+}
+.finder-tab-item-active .finder-tab-ring-done .finder-tab-ring-fill,
+.finder-tab-item-active .finder-tab-ring-check {
+  stroke: currentColor;
 }
 
-.finder-tab-status-empty {
+/* ── Status pip (idle / empty / running) ───────────────────────────── */
+.finder-tab-pip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: var(--sf-radius-pill);
+  font-size: 9.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.45px;
+  background: rgb(var(--sf-color-text-subtle-rgb) / 0.1);
+  color: rgb(var(--sf-color-text-muted-rgb));
+  border: 1px solid rgb(var(--sf-color-border-subtle-rgb) / 0.5);
+  white-space: nowrap;
+  flex: none;
+}
+.finder-tab-pip-empty {
+  border-style: dashed;
+  color: rgb(var(--sf-color-text-subtle-rgb));
+}
+.finder-tab-pip-running {
+  color: rgb(var(--sf-color-accent-strong-rgb));
+  background: rgb(var(--sf-color-accent-rgb) / 0.1);
+  border-color: rgb(var(--sf-color-accent-rgb) / 0.4);
+}
+.finder-tab-pip-blink {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: finder-tab-pip-breathe 1.2s ease-in-out infinite;
+}
+.finder-tab-item-active .finder-tab-pip {
+  background: rgb(var(--sf-color-surface-rgb));
+  border-color: currentColor;
+  color: currentColor;
+}
+.finder-tab-item-active .finder-tab-pip-empty {
   background: transparent;
-  box-shadow: inset 0 0 0 1.5px rgb(var(--sf-color-text-subtle-rgb) / 0.6);
+  border-style: dashed;
 }
 
-@keyframes finder-tab-status-breathe {
+@keyframes finder-tab-pip-breathe {
   0%, 100% { opacity: 1; }
-  50%      { opacity: 0.5; }
+  50% { opacity: 0.5; }
 }

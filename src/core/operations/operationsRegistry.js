@@ -21,6 +21,35 @@ const ops = new Map();
 /** @type {Map<string, AbortController>} */
 const controllers = new Map();
 
+/**
+ * Per-(type, productId, fieldKey) serialization queue.
+ *
+ * When a Run or Loop for (kf, pid, fieldKey) is in-flight, a concurrent request
+ * for the same key awaits the first's release instead of racing on JSON/SQL
+ * writes. Under single-shot Run this was rare; under Loop (2–5 min) it matters.
+ *
+ * Implementation: per-key promise chain. Each acquire:
+ *   1. reads the current tail of the chain (or resolved promise if empty)
+ *   2. creates its own "finished" promise (held until caller releases)
+ *   3. stores `prev.then(() => myFinished)` as the new tail — next waiter awaits this
+ *   4. awaits prev — when prev resolves, caller holds the lock
+ * Release: caller invokes the release fn returned from acquire; chain advances.
+ *
+ * FIFO is guaranteed by `.then` composition. 3+ waiters serialize correctly.
+ *
+ * Ephemeral (in-memory only). Process restart clears all locks — acceptable:
+ * operations registry is also ephemeral. The queue map accumulates one entry
+ * per unique (type, pid, fieldKey) touched during session lifetime; memory is
+ * bounded by the product catalog's active working set.
+ *
+ * @type {Map<string, Promise<void>>}
+ */
+const keyLocks = new Map();
+
+function lockKey(type, productId, fieldKey) {
+  return `${type}:${productId}:${fieldKey}`;
+}
+
 /** @type {Function|null} */
 let _broadcastWs = null;
 
@@ -71,10 +100,15 @@ export function initOperationsRegistry({ broadcastWs }) {
 
 /**
  * Register a new operation. Returns { id }.
+ *
+ * Optional `status` defaults to 'running'. Pass 'queued' when the op is
+ * waiting on a per-key queue lock — use setStatus to transition to 'running'
+ * once the lock is acquired.
  */
-export function registerOperation({ type, subType, category, productId, productLabel, variantKey, variantId, fieldKey, stages }) {
+export function registerOperation({ type, subType, category, productId, productLabel, variantKey, variantId, fieldKey, stages, status }) {
   if (!type) throw new Error('type is required');
   const id = crypto.randomUUID();
+  const initialStatus = status === 'queued' ? 'queued' : 'running';
   const operation = {
     id,
     type,
@@ -89,7 +123,7 @@ export function registerOperation({ type, subType, category, productId, productL
     fieldKey: fieldKey || '',
     stages: Array.isArray(stages) ? stages : [],
     currentStageIndex: 0,
-    status: 'running',
+    status: initialStatus,
     startedAt: new Date().toISOString(),
     _seq: ++_seq,
     endedAt: null,
@@ -103,6 +137,24 @@ export function registerOperation({ type, subType, category, productId, productL
   broadcast(operation);
   enforceCap();
   return { id };
+}
+
+/**
+ * Transition an op to a new status. Intended for the queued→running flip
+ * when a per-key lock is acquired. Silently no-ops on missing id or on
+ * invalid transitions (terminal → anything, running → queued).
+ */
+export function setStatus({ id, status }) {
+  const op = ops.get(id);
+  if (!op) return;
+  if (status !== 'queued' && status !== 'running') return;
+  // Terminal ops cannot be reset
+  if (op.status === 'done' || op.status === 'error' || op.status === 'cancelled') return;
+  // Don't allow running → queued (only queued → running)
+  if (op.status === 'running' && status === 'queued') return;
+  if (op.status === status) return;
+  op.status = status;
+  broadcast(op);
 }
 
 /**
@@ -216,6 +268,25 @@ export function updateModelInfo({ id, model, provider, isFallback, accessMode, t
 }
 
 /**
+ * Mark that passenger registration is complete for a keyFinder op. Signals
+ * to the frontend that the next POST in a Run-Group chain can fire — the
+ * in-flight registry now sees this op's primary+passengers and will hard-
+ * block them from the next call's passenger pack. No-op on non-running ops.
+ *
+ * @param {{id: string, passengerFieldKeys?: ReadonlyArray<string>}} args
+ */
+export function markPassengersRegistered({ id, passengerFieldKeys }) {
+  const op = ops.get(id);
+  if (!op || op.status !== 'running') return;
+  if (op.passengersRegistered === true) return;
+  op.passengersRegistered = true;
+  if (Array.isArray(passengerFieldKeys)) {
+    op.passengerFieldKeys = passengerFieldKeys.slice();
+  }
+  broadcast(op);
+}
+
+/**
  * Mark operation as completed. Idempotent.
  */
 export function completeOperation({ id }) {
@@ -243,12 +314,16 @@ export function failOperation({ id, error }) {
 }
 
 /**
- * Cancel a running operation. Aborts the AbortController signal so in-flight
- * fetch() calls terminate immediately. Idempotent on non-running ops.
+ * Cancel a running or queued operation. Aborts the AbortController signal so
+ * in-flight fetch() calls terminate immediately. Idempotent on terminal ops.
+ *
+ * A 'queued' op may be cancelled before it ever runs — useful when a user
+ * dismisses a waiting op.
  */
 export function cancelOperation({ id }) {
   const op = ops.get(id);
-  if (!op || op.status !== 'running') return;
+  if (!op) return;
+  if (op.status !== 'running' && op.status !== 'queued') return;
   controllers.get(id)?.abort();
   controllers.delete(id);
   op.status = 'cancelled';
@@ -288,12 +363,55 @@ export function listOperations() {
 }
 
 /**
+ * Acquire a per-(type, productId, fieldKey) lock. Returns a release function.
+ * If no lock is held the promise resolves immediately; otherwise the caller
+ * awaits all prior acquires in FIFO order. Call the returned fn to release.
+ *
+ * @param {string} type — e.g. 'kf' for keyFinder (future-proofs for other finders)
+ * @param {string} productId
+ * @param {string} fieldKey
+ * @returns {Promise<() => void>} release function — call exactly once
+ */
+export async function acquireKeyLock(type, productId, fieldKey) {
+  const key = lockKey(type, productId, fieldKey);
+  const prev = keyLocks.get(key) || Promise.resolve();
+  let releaseFn;
+  const myFinished = new Promise((r) => { releaseFn = r; });
+  // Next acquire awaits prev + my finished — FIFO by construction
+  const newTail = prev.then(() => myFinished);
+  keyLocks.set(key, newTail);
+  await prev;
+  // On release, advance the chain and clean up the map entry if it's still
+  // our tail (no new waiters registered behind us).
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    releaseFn();
+    // Best-effort cleanup: if our tail is still the Map entry, drop it so the
+    // next acquire is instant instead of awaiting an already-resolved promise.
+    if (keyLocks.get(key) === newTail) keyLocks.delete(key);
+  };
+}
+
+/**
+ * Release helper — invokes the release function returned from acquireKeyLock.
+ * Tolerates non-fn input (e.g. null from an error path that never acquired).
+ *
+ * @param {(() => void) | null | undefined} releaseFn
+ */
+export function releaseKeyLock(releaseFn) {
+  if (typeof releaseFn === 'function') releaseFn();
+}
+
+/**
  * Test seam: clear all state. Not exported from index.js.
  */
 export function _resetForTest() {
   ops.clear();
   for (const ctrl of controllers.values()) ctrl.abort();
   controllers.clear();
+  keyLocks.clear();
   _broadcastWs = null;
   _seq = 0;
 }

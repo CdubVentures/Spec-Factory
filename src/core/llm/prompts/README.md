@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Universal prompt fragments shared across finders (CEF, PIF, RDF, and future). Single source of truth for text that every finder sends to the LLM: identity warning, siblings exclusion, evidence contract, value confidence rubric, discovery history header.
+Universal prompt fragments shared across finders (CEF, PIF, RDF, and future) and the category-audit report. Single source of truth for text that every finder sends to the LLM: identity warning, siblings exclusion, evidence contract, value confidence rubric, discovery history header, and the five pure field-rule → prompt-text renderers.
 
 ## Public API (The Contract)
 
@@ -16,6 +16,13 @@ Universal prompt fragments shared across finders (CEF, PIF, RDF, and future). Si
 - `loadGlobalPromptsSync({ settingsRoot? })` — reads from disk, populates snapshot. Called at bootstrap.
 - `writeGlobalPromptsPatch(patch, { settingsRoot? })` — merges patch into disk file + refreshes snapshot. `null` value in patch removes the key.
 - `GLOBAL_PROMPTS_FILENAME` — `'global-prompts.json'`.
+- `fieldRuleRenderers.js` — pure field-rule → prompt-text renderers, consumed by key finder today and category-audit (and future indexing-audit) tomorrow:
+  - `buildPrimaryKeyHeaderBlock(fieldKey, fieldRule) → string` — "Field key: <key> (<display name>)".
+  - `buildFieldGuidanceBlock(fieldRule) → string` — "Extraction guidance:" + `ai_assist.reasoning_note`, empty when unauthored.
+  - `buildFieldContractBlock(fieldRule) → string` — full "Return contract:" block (type, shape, unit, rounding, list rules, enum values+policy, variance, aliases).
+  - `buildSearchHintsBlock(fieldRule, { searchHintsInjectionEnabled }) → string` — domain hints + query terms, gated by the injection knob.
+  - `buildCrossFieldConstraintsBlock(fieldRule) → string` — human-readable rendering of `cross_field_constraints` (`lte`, `lt`, `gte`, `gt`, `eq`, `requires_when_value`, `requires_one_of`).
+  - `joinList(list, max?)` / `resolveDisplayName(fieldKey, fieldRule)` — small shared helpers.
 
 ## Dependencies
 

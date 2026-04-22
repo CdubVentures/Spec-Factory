@@ -29,9 +29,6 @@ export async function stabilizePage({ page, settings } = {}) {
   const timeoutMs = Number(settings?.capturePageScreenshotStabilizeTimeoutMs) || 1500;
 
   try {
-    // WHY: Single evaluate call runs all 3 gates in parallel INSIDE the browser
-    // AND reads page dimensions. This is 1 CDP round-trip for everything —
-    // gates + height estimation that previously required a separate call.
     const gatePromise = page.evaluate(() => {
       const fonts = document.fonts.ready.then(() => 'fonts').catch(() => null);
       const images = Promise.all(

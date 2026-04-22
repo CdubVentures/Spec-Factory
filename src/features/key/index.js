@@ -25,4 +25,5 @@ export {
   rebuildKeyFinderFromJson,
 } from './keyStore.js';
 export { runKeyFinder } from './keyFinder.js';
+export { runKeyFinderLoop } from './keyFinderLoop.js';
 export { registerKeyFinderRoutes } from './api/keyFinderRoutes.js';

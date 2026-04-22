@@ -33,6 +33,9 @@ export function derivePifTabSummary(
   return {
     kpi: `${images} img · ${variants} var`,
     status,
+    numerator: images,
+    denominator: target,
+    percent: Math.round((images / target) * 100),
   };
 }
 

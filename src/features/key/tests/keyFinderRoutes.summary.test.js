@@ -182,6 +182,53 @@ describe('GET /key-finder/:category/:productId/summary', () => {
     assert.equal(byKey.polling_rate.budget, 5);          // medium(2)+always(1)+mandatory(2)=5
   });
 
+  it('surfaces raw_budget alongside integer budget; integer case: raw_budget === budget', async (t) => {
+    t.after(cleanupTmp);
+    fs.mkdirSync(path.join(PRODUCT_ROOT, 'raw-budget-prod'), { recursive: true });
+    const specDb = makeSpecDbStub();
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(['key-finder', 'mouse', 'raw-budget-prod', 'summary'], null, 'GET', {}, {});
+
+    const byKey = Object.fromEntries(responses[0].body.map((r) => [r.field_key, r]));
+    // With default perExtra and variantCount=1 (no variants), variant=0 so raw_budget is integer.
+    for (const row of Object.values(byKey)) {
+      assert.ok('raw_budget' in row, `row ${row.field_key} must expose raw_budget`);
+      assert.equal(row.raw_budget, row.budget, `integer case: raw_budget should equal budget for ${row.field_key}`);
+    }
+  });
+
+  it('surfaces in_flight_as_primary + in_flight_as_passenger_count from the registry', async (t) => {
+    t.after(cleanupTmp);
+    t.after(async () => {
+      const reg = await import('../../../core/operations/keyFinderRegistry.js');
+      reg._resetForTest();
+    });
+    const { register: registryRegister, _resetForTest: registryReset } = await import('../../../core/operations/keyFinderRegistry.js');
+    registryReset();
+    fs.mkdirSync(path.join(PRODUCT_ROOT, 'in-flight-prod'), { recursive: true });
+    // Seed registry: polling_rate is a primary; acceleration is a passenger 2x.
+    registryRegister('in-flight-prod', 'polling_rate', 'primary');
+    registryRegister('in-flight-prod', 'acceleration', 'passenger');
+    registryRegister('in-flight-prod', 'acceleration', 'passenger');
+
+    const specDb = makeSpecDbStub();
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(['key-finder', 'mouse', 'in-flight-prod', 'summary'], null, 'GET', {}, {});
+
+    const byKey = Object.fromEntries(responses[0].body.map((r) => [r.field_key, r]));
+    assert.equal(byKey.polling_rate.in_flight_as_primary, true);
+    assert.equal(byKey.polling_rate.in_flight_as_passenger_count, 0);
+    assert.equal(byKey.acceleration.in_flight_as_primary, false);
+    assert.equal(byKey.acceleration.in_flight_as_passenger_count, 2);
+    // Other rows: not in flight
+    assert.equal(byKey.sensor_model.in_flight_as_primary, false);
+    assert.equal(byKey.sensor_model.in_flight_as_passenger_count, 0);
+  });
+
   it('rolls up one row per field_key — newest run wins, keeps run_count', async (t) => {
     t.after(cleanupTmp);
     const pid = 'rollup-prod';
@@ -360,14 +407,20 @@ describe('GET /key-finder/:category/:productId/summary', () => {
     // polling_rate (medium, pool=4): sensor_model (very_hard) filtered by less_or_equal;
     //   acceleration (easy, cost 1) fits → [{field_key:'acceleration', cost:1}]
     assert.deepEqual(byKey.polling_rate.bundle_preview, [{ field_key: 'acceleration', cost: 1 }]);
+    assert.equal(byKey.polling_rate.bundle_pool, 4, 'medium primary pool=4');
+    assert.equal(byKey.polling_rate.bundle_total_cost, 1, '1 easy passenger @ cost 1');
 
     // sensor_model (very_hard, pool=1): polling_rate (medium, cost 2) doesn't fit;
     //   acceleration (easy, cost 1) fits → [{field_key:'acceleration', cost:1}]
     assert.deepEqual(byKey.sensor_model.bundle_preview, [{ field_key: 'acceleration', cost: 1 }]);
+    assert.equal(byKey.sensor_model.bundle_pool, 1, 'very_hard primary pool=1');
+    assert.equal(byKey.sensor_model.bundle_total_cost, 1);
 
     // acceleration (easy, pool=6): less_or_equal limits peers to easy; but in same group
     //   (sensor_performance) no other easy keys → []
     assert.deepEqual(byKey.acceleration.bundle_preview, []);
+    assert.equal(byKey.acceleration.bundle_pool, 6, 'easy primary pool=6 surfaced even with 0 passengers');
+    assert.equal(byKey.acceleration.bundle_total_cost, 0);
 
     // wireless_technology (connectivity group): no same-group peers → []
     assert.deepEqual(byKey.wireless_technology.bundle_preview, []);
@@ -437,6 +490,83 @@ describe('GET /key-finder/:category/:productId/summary', () => {
     assert.equal(responses[0].body.enabled, false, 'default OFF');
     assert.equal(responses[0].body.groupBundlingOnly, true, 'default same-group only');
     assert.equal(responses[0].body.passengerDifficultyPolicy, 'less_or_equal', 'default policy');
+  });
+
+  it('bundle_preview surfaces cross-group peers when groupBundlingOnly=false', async (t) => {
+    t.after(cleanupTmp);
+    fs.mkdirSync(path.join(PRODUCT_ROOT, 'bp-cross-prod'), { recursive: true });
+    const specDb = makeSpecDbStub({
+      finderSettings: {
+        bundlingEnabled: 'true',
+        groupBundlingOnly: 'false',
+        bundlingPassengerCost: JSON.stringify({ easy: 1, medium: 2, hard: 4, very_hard: 8 }),
+        bundlingPoolPerPrimary: JSON.stringify({ easy: 6, medium: 4, hard: 2, very_hard: 1 }),
+        passengerDifficultyPolicy: 'less_or_equal',
+        budgetVariantPointsPerExtra: '1',
+      },
+    });
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(['key-finder', 'mouse', 'bp-cross-prod', 'summary'], null, 'GET', {}, {});
+    const byKey = Object.fromEntries(responses[0].body.map((r) => [r.field_key, r]));
+
+    // wireless_technology (connectivity, easy, pool=6, mandatory+always):
+    //   cross-group pulls acceleration (sensor_performance, easy, non-mand+sometimes, cost 1).
+    //   less_or_equal from easy primary filters out medium+very_hard peers.
+    assert.deepEqual(
+      byKey.wireless_technology.bundle_preview,
+      [{ field_key: 'acceleration', cost: 1 }],
+      'easy primary picks up cross-group easy peer',
+    );
+
+    // polling_rate (sensor_performance, medium, pool=4):
+    //   cross-group adds wireless_technology (easy, mandatory+always).
+    //   Sort: required_level first → wireless_technology (mandatory) before acceleration (non-mand).
+    //   Both easy (cost 1) fit in pool 4. sensor_model (very_hard) filtered by policy.
+    assert.deepEqual(
+      byKey.polling_rate.bundle_preview,
+      [
+        { field_key: 'wireless_technology', cost: 1 },
+        { field_key: 'acceleration', cost: 1 },
+      ],
+      'medium primary picks up cross-group peers, mandatory sorts first',
+    );
+  });
+
+  it('bundle_preview excludes a peer currently serving as primary in the registry', async (t) => {
+    t.after(cleanupTmp);
+    t.after(async () => {
+      const reg = await import('../../../core/operations/keyFinderRegistry.js');
+      reg._resetForTest();
+    });
+    const { register: registryRegister, _resetForTest: registryReset } = await import('../../../core/operations/keyFinderRegistry.js');
+    registryReset();
+    fs.mkdirSync(path.join(PRODUCT_ROOT, 'bp-regprimary-prod'), { recursive: true });
+
+    // Seed: acceleration is currently running as a primary elsewhere. When polling_rate
+    // is previewed, buildPassengers must hard-block acceleration.
+    registryRegister('bp-regprimary-prod', 'acceleration', 'primary');
+
+    const specDb = makeSpecDbStub({
+      finderSettings: {
+        bundlingEnabled: 'true',
+        groupBundlingOnly: 'true',
+        bundlingPassengerCost: JSON.stringify({ easy: 1, medium: 2, hard: 4, very_hard: 8 }),
+        bundlingPoolPerPrimary: JSON.stringify({ easy: 6, medium: 4, hard: 2, very_hard: 1 }),
+        passengerDifficultyPolicy: 'less_or_equal',
+        budgetVariantPointsPerExtra: '1',
+      },
+    });
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(['key-finder', 'mouse', 'bp-regprimary-prod', 'summary'], null, 'GET', {}, {});
+    const byKey = Object.fromEntries(responses[0].body.map((r) => [r.field_key, r]));
+
+    // polling_rate had acceleration as its only eligible peer (same group, policy-ok).
+    // Registry says acceleration is a primary → hard-block → empty preview.
+    assert.deepEqual(byKey.polling_rate.bundle_preview, [], 'primary-elsewhere peer hard-blocked');
   });
 
   it('bundle_preview is deterministic (sort stable under input order)', async (t) => {

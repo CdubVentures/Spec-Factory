@@ -354,6 +354,7 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
       'eng.component': { desc: 'Identifies the component type for component DB matching and identity resolution.' },
       'rev.component': { desc: 'Validates component identity candidates against the known component database. Also used to resolve declared component property columns in the review surface. componentReviewHelpers.js:165.' },
       'seed.schema': { desc: 'Creates component identity records and links in SpecDb via the compiled componentDBs.' },
+      'llm.kf': { desc: 'Rendered as the type label in the always-on PRODUCT_COMPONENTS inventory block and in the per-key relation pointer ("This key IS the {type} component identity" / "This key belongs to the {type} component"). keyLlmAdapter.js:211-216, 219-236; productResolvedStateReader.js:86, 108.' },
     } },
 
   { path: 'component.match.name_weight', type: 'presence', flatAliases: [],
@@ -373,6 +374,7 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
     consumers: {
       'eng.component': { desc: 'Declares which property fields are compared during component matching.' },
       'comp.review': { desc: 'Maps property columns in component review panel.' },
+      'llm.kf': { desc: 'Drives the subfield list under each component in the PRODUCT_COMPONENTS inventory block and the subfield→parent map used for the per-key relation pointer. productResolvedStateReader.js:31-36, 72-83.' },
     } },
 
   { path: 'component.match.auto_accept_score', type: 'presence', flatAliases: [],

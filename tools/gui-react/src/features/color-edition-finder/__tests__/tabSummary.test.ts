@@ -53,4 +53,16 @@ describe('deriveCefTabSummary', () => {
     strictEqual(r.kpi, '3c · 1ed');
     strictEqual(r.status, 'complete');
   });
+
+  it('never emits ratio fields — colors + editions are not a progress ratio', () => {
+    const withData = deriveCefTabSummary(makeResult({ colors: ['black'], editions: ['launch'] }));
+    strictEqual(withData.numerator, undefined);
+    strictEqual(withData.denominator, undefined);
+    strictEqual(withData.percent, undefined);
+
+    const empty = deriveCefTabSummary(null);
+    strictEqual(empty.numerator, undefined);
+    strictEqual(empty.denominator, undefined);
+    strictEqual(empty.percent, undefined);
+  });
 });

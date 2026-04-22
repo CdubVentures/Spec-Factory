@@ -5,6 +5,8 @@
 
 import { captureScreenshots } from './screenshotCapture.js';
 import { stabilizePage } from './pageStabilizer.js';
+import { waitForPageReady } from './pageReadinessGate.js';
+import { validateScreenshot } from './screenshotValidator.js';
 
 async function tryStitch({ page, settings }) {
   const stitchEnabled = settings?.capturePageScreenshotStitchEnabled !== false
@@ -40,6 +42,17 @@ export const screenshotExtractionPlugin = {
   async onExtract(ctx) {
     if (!ctx.settings?.capturePageScreenshotEnabled) return { screenshots: [] };
 
+    // WHY: Layer 1 — multi-signal readiness gate. Blocks the capture until
+    // the page has actually rendered meaningful content (semantic landmark,
+    // substantial text, commerce markers, or product imagery) OR the full
+    // timeout + second-chance wait budget has elapsed. Emits diagnostic
+    // events on second-chance use and full failure.
+    const readiness = await waitForPageReady(ctx.page, {
+      timeoutMs: Number(ctx.settings?.capturePageReadinessTimeoutMs) || 3000,
+      secondChanceMs: Number(ctx.settings?.capturePageReadinessSecondChanceMs) || 3000,
+      logger: ctx.logger,
+    });
+
     // WHY: Single CDP round-trip: waits for fonts/images/paint AND returns
     // page dimensions (scrollHeight, exceedsLimit). Eliminates the separate
     // estimatePageHeight call that was an extra round-trip.
@@ -58,6 +71,29 @@ export const screenshotExtractionPlugin = {
           screenshots.push(stitched);
         }
       }
+    }
+
+    // WHY: Layer 2 — post-capture validation. Inspects actual pixel output
+    // (size + per-channel stddev entropy proxy) to catch blanks that slipped
+    // past the readiness gate. Attaches { validation } to each screenshot and
+    // emits diagnostic events for invalid captures. Does NOT drop invalid
+    // screenshots — downstream may still want them for debugging.
+    const url = ctx.url || (typeof ctx.page?.url === 'function' ? ctx.page.url() : '');
+    for (const shot of screenshots) {
+      try {
+        const validation = await validateScreenshot(shot.bytes);
+        shot.validation = validation;
+        if (!validation.valid) {
+          ctx.logger?.info?.('screenshot_validation_failed', {
+            url,
+            worker_id: ctx.workerId || '',
+            kind: shot.kind || 'page',
+            reason: validation.reason,
+            metrics: validation.metrics,
+            readiness: { ready: readiness.ready, signals: readiness.signals, reason: readiness.reason },
+          });
+        }
+      } catch { /* validator never throws, but belt-and-suspenders */ }
     }
 
     return { screenshots };

@@ -8,7 +8,7 @@ export interface Operation {
   readonly productLabel: string;
   readonly stages: readonly string[];
   readonly currentStageIndex: number;
-  readonly status: 'running' | 'done' | 'error' | 'cancelled';
+  readonly status: 'queued' | 'running' | 'done' | 'error' | 'cancelled';
   readonly startedAt: string;
   readonly endedAt: string | null;
   readonly error: string | null;
@@ -69,6 +69,15 @@ export interface Operation {
   readonly queuedAt?: string;
   /** Frozen ms from optimistic insert to first WS broadcast. Stays visible. */
   readonly queueDelayMs?: number;
+  /** keyFinder-only: true once runKeyFinder has populated the in-flight registry
+   *  with this op's primary + passengers. Consumers chaining Run Group under
+   *  alwaysSoloRun=false await this per-opId to ensure registration-ordered
+   *  dispatch (the N+1 POST's buildPassengers sees the N-th's pack in the
+   *  registry). Never clears once set. */
+  readonly passengersRegistered?: boolean;
+  /** keyFinder-only: the passenger field_keys selected when registration completed.
+   *  Debug visibility; UI doesn't render this today. */
+  readonly passengerFieldKeys?: readonly string[];
   /** Accumulated LLM call records — prompt, response, model per call. */
   readonly llmCalls: ReadonlyArray<LlmCallRecord>;
 }

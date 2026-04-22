@@ -9,7 +9,7 @@
 import { memo, useCallback } from 'react';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import type { KeyGroup } from '../types.ts';
-import { LIVE_MODES, DISABLED_REASONS } from '../types.ts';
+import { LIVE_MODES, DISABLED_REASONS, TOOLTIPS } from '../types.ts';
 import { KeyRow } from './KeyRow.tsx';
 import { RowActionButton, ACTION_BUTTON_WIDTH } from '../../../shared/ui/actionButton/index.ts';
 import { DiscoveryHistoryButton } from '../../../shared/ui/finder/DiscoveryHistoryButton.tsx';
@@ -20,9 +20,17 @@ interface KeyGroupSectionProps {
   readonly productId: string;
   readonly category: string;
   readonly onRunKey: (fieldKey: string) => void;
+  readonly onLoopKey: (fieldKey: string) => void;
   readonly onOpenKeyPrompt: (fieldKey: string) => void;
   readonly onRunGroup: (groupName: string) => void;
   readonly onLoopGroup: (groupName: string) => void;
+  /** Non-null when THIS group has an active Loop chain. Drives the progress
+   *  label on the "Loop group" button. */
+  readonly loopChainProgress?: { readonly current: number; readonly total: number } | null;
+  /** True when ANY Loop chain is active (this group's, another group's, or
+   *  Loop All). Used to disable Loop group buttons panel-wide so only one
+   *  chain runs at a time. */
+  readonly anyChainActive?: boolean;
 }
 
 
@@ -39,9 +47,12 @@ export const KeyGroupSection = memo(function KeyGroupSection({
   productId,
   category,
   onRunKey,
+  onLoopKey,
   onOpenKeyPrompt,
   onRunGroup,
   onLoopGroup,
+  loopChainProgress = null,
+  anyChainActive = false,
 }: KeyGroupSectionProps) {
   const [open, toggle] = usePersistedToggle(`${storeKeyPrefix}:grp:${group.name}`, true);
   const badge = groupBadge(group.stats);
@@ -83,19 +94,27 @@ export const KeyGroupSection = memo(function KeyGroupSection({
           />
           <div style={{ width: 1, height: 16, background: 'var(--sf-token-border, #dee2e6)' }} />
           <RowActionButton
-            intent="locked"
+            intent={LIVE_MODES.groupRun ? 'spammable' : 'locked'}
             label="Run group"
             onClick={handleRunGroup}
             disabled={!LIVE_MODES.groupRun}
-            title={LIVE_MODES.groupRun ? '' : DISABLED_REASONS.groupRun}
+            title={LIVE_MODES.groupRun ? TOOLTIPS.groupRun : DISABLED_REASONS.groupRun}
             width={ACTION_BUTTON_WIDTH.keyGroup}
           />
           <RowActionButton
-            intent="locked"
-            label="Loop group"
+            intent={LIVE_MODES.groupLoop && !anyChainActive ? 'spammable' : 'locked'}
+            label={loopChainProgress ? `Loop (${loopChainProgress.current}/${loopChainProgress.total})` : 'Loop group'}
             onClick={handleLoopGroup}
-            disabled={!LIVE_MODES.groupLoop}
-            title={LIVE_MODES.groupLoop ? '' : DISABLED_REASONS.groupLoop}
+            disabled={!LIVE_MODES.groupLoop || anyChainActive}
+            title={
+              !LIVE_MODES.groupLoop
+                ? DISABLED_REASONS.groupLoop
+                : loopChainProgress
+                  ? `Loop chain in progress for this group (${loopChainProgress.current} of ${loopChainProgress.total}). Cancel the running Loop from the Operations panel to halt.`
+                  : anyChainActive
+                    ? 'Another Loop chain is active — finish or cancel it before starting this one.'
+                    : TOOLTIPS.groupLoop
+            }
             width={ACTION_BUTTON_WIDTH.keyGroup}
           />
         </span>
@@ -106,8 +125,8 @@ export const KeyGroupSection = memo(function KeyGroupSection({
             <tr className="sf-surface-soft">
               <th className="px-3 py-1.5 text-left text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted w-[22%]">Key</th>
               <th className="px-3 py-1.5 text-left text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted">Axes</th>
-              <th className="px-3 py-1.5 text-center text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted w-[64px]" title="Attempt budget (Loop spend)">Budget</th>
-              <th className="px-3 py-1.5 text-left text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted w-[15%]" title="Passengers that would bundle with this key if Run now">Bundled</th>
+              <th className="px-3 py-1.5 text-center text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted w-[64px]" title="Re-Run budget — attempts Loop mode would spend (calcKeyBudget)">Re-Run</th>
+              <th className="px-3 py-1.5 text-left text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted w-[18%]" title="Bundling budget (used / pool for this primary's difficulty) + passengers that would ride along with cost breakdown">Bundled (used/pool)</th>
               <th className="px-3 py-1.5 text-left text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted w-[14%]">Last model</th>
               <th className="px-3 py-1.5 text-left text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted w-[18%]">Value</th>
               <th className="px-3 py-1.5 text-center text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted w-[56px]">Conf</th>
@@ -121,6 +140,7 @@ export const KeyGroupSection = memo(function KeyGroupSection({
                 key={entry.field_key}
                 entry={entry}
                 onRun={onRunKey}
+                onLoop={onLoopKey}
                 onOpenPrompt={onOpenKeyPrompt}
               />
             ))}

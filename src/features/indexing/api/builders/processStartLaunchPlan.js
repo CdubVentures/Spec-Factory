@@ -2,6 +2,7 @@ import path from 'node:path';
 
 import { buildRunId } from '../../../../shared/primitives.js';
 import { writeRuntimeSettingsSnapshot } from '../../../../core/config/runtimeSettingsSnapshot.js';
+import { loadUserSettingsSync } from '../../../settings-authority/userSettingsService.js';
 
 function buildError(status, body) {
   return { ok: false, status, body };
@@ -124,8 +125,22 @@ export function buildProcessStartLaunchPlan(options = {}) {
 
   // WHY: Plan 05 — runtime settings snapshot is the SSOT for child settings.
   // The child reads this via RUNTIME_SETTINGS_SNAPSHOT env var in config.js.
+  //
+  // Merge user-settings.json (runtime section) BELOW the POST body so that
+  // any missing settings in the body fall back to the user's persisted
+  // configuration. Without this, a /process/start caller that omits (say)
+  // serperApiKey gets empty config and the pipeline silently falls back to
+  // SearXNG+Bing — 2026-04-22 outage where every non-GUI curl test hit Bing.
+  // The GUI sends full settings in the body so it wins (body over merge).
+  let mergedBody = body;
   try {
-    const snapshotPath = writeRuntimeSettingsSnapshot(requestedRunId, body, snapshotsDir);
+    const userSnapshot = loadUserSettingsSync();
+    const userRuntime = (userSnapshot && userSnapshot.runtime) || {};
+    mergedBody = { ...userRuntime, ...body };
+  } catch { /* user-settings unreadable — fall through to body-only */ }
+
+  try {
+    const snapshotPath = writeRuntimeSettingsSnapshot(requestedRunId, mergedBody, snapshotsDir);
     envOverrides.RUNTIME_SETTINGS_SNAPSHOT = snapshotPath;
   } catch (err) {
     return buildError(500, {

@@ -27,17 +27,19 @@ function makeSeedStatus() {
 
 describe('buildTier1Queries spec seed templates', () => {
   it('null specSeeds falls back to single "{product} specifications" query', () => {
+    // {product} includes the category search context "gaming keyboard" to
+    // disambiguate brand-word collisions (e.g. Glorious, Razer, Apex).
     const rows = buildTier1Queries(makeJob(), makeSeedStatus(), null, { specSeeds: null });
     const specRows = rows.filter(r => r.doc_hint === 'spec');
     assert.equal(specRows.length, 1);
-    assert.equal(specRows[0].query, 'Corsair K95 Platinum specifications');
+    assert.equal(specRows[0].query, 'Corsair K95 Platinum gaming keyboard specifications');
   });
 
   it('empty array specSeeds falls back to default', () => {
     const rows = buildTier1Queries(makeJob(), makeSeedStatus(), null, { specSeeds: [] });
     const specRows = rows.filter(r => r.doc_hint === 'spec');
     assert.equal(specRows.length, 1);
-    assert.equal(specRows[0].query, 'Corsair K95 Platinum specifications');
+    assert.equal(specRows[0].query, 'Corsair K95 Platinum gaming keyboard specifications');
   });
 
   it('custom specSeeds produce one row per template', () => {
@@ -49,19 +51,19 @@ describe('buildTier1Queries spec seed templates', () => {
     const rows = buildTier1Queries(makeJob(), makeSeedStatus(), null, { specSeeds });
     const specRows = rows.filter(r => r.doc_hint === 'spec');
     assert.equal(specRows.length, 3);
-    assert.equal(specRows[0].query, 'Corsair K95 Platinum specifications');
-    assert.equal(specRows[1].query, 'Corsair K95 Platinum datasheet pdf');
+    assert.equal(specRows[0].query, 'Corsair K95 Platinum gaming keyboard specifications');
+    assert.equal(specRows[1].query, 'Corsair K95 Platinum gaming keyboard datasheet pdf');
     assert.equal(specRows[2].query, 'keyboard Corsair K95 Platinum spec sheet');
   });
 
-  it('{product} variable resolves to brand + model + variant', () => {
+  it('{product} variable resolves to brand + model + variant + category_context', () => {
     const job = makeJob({ variant: 'XT' });
     job.identityLock.variant = 'XT';
     const rows = buildTier1Queries(job, makeSeedStatus(), null, {
       specSeeds: ['{product} specs'],
     });
     const specRows = rows.filter(r => r.doc_hint === 'spec');
-    assert.equal(specRows[0].query, 'Corsair K95 Platinum XT specs');
+    assert.equal(specRows[0].query, 'Corsair K95 Platinum XT gaming keyboard specs');
   });
 
   it('{category} variable resolves correctly', () => {

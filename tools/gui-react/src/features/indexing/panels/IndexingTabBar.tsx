@@ -1,14 +1,17 @@
 /**
  * IndexingTabBar — top-level navigation for the indexing lab.
- * Pipeline is a fixed first tab (not part of the auto-generated finder
- * registry); finders come from FINDER_PANELS. Adding/removing finders
- * is still a backend-registry change, unaffected by Pipeline.
+ *
+ * Rendered as a self-contained rounded-card nav control. Active tab fills
+ * with the finder's color tint; the icon badge flips to the surface color
+ * so it stays legible. Pipeline is a fixed first tab (not part of the
+ * auto-generated finder registry); finders come from FINDER_PANELS.
  */
 
 import { useCallback, useMemo, useRef, type KeyboardEvent } from 'react';
 import { INDEXING_TAB_META, getIndexingTabIds, type IndexingTabId } from './finderTabMeta.ts';
 import { nextTabId, type TabNavDirection } from './finderTabKeyboard.ts';
-import type { FinderTabStatus, FinderTabSummary } from '../../../shared/ui/finder/tabSummary.ts';
+import type { FinderTabSummary } from '../../../shared/ui/finder/tabSummary.ts';
+import { FinderTabStatus } from './FinderTabStatus.tsx';
 import './FinderTabBar.css';
 
 export interface IndexingTabBarProps {
@@ -36,7 +39,7 @@ export function IndexingTabBar({ activeId, onSelect, productId, category }: Inde
       role="tablist"
       aria-label="Indexing Lab tabs"
       onKeyDown={handleKey}
-      className="finder-tab-bar sf-tab-strip flex gap-1.5 p-1.5 overflow-x-auto"
+      className="finder-tab-bar flex gap-1 p-1.5 bg-sf-surface border border-sf-border-default rounded-lg shadow-sm overflow-x-auto"
     >
       {ids.map((id) => (
         <IndexingTab
@@ -75,34 +78,33 @@ function IndexingTab({ id, isActive, productId, category, onSelect, tabRef }: In
       aria-selected={isActive}
       aria-controls={`finder-panel-${id}`}
       tabIndex={isActive ? 0 : -1}
+      data-f={meta.iconClass}
       onClick={() => onSelect(id)}
       className={[
-        'sf-tab-item',
-        isActive ? 'sf-tab-item-active' : '',
-        'flex items-center gap-2.5 px-3 py-2 min-w-[180px] flex-1 text-left cursor-pointer',
+        'finder-tab-item',
+        isActive ? 'finder-tab-item-active' : '',
+        'grid grid-cols-[32px_1fr_auto] items-center gap-x-2.5',
+        'px-3 py-2 min-w-0 flex-1 text-left cursor-pointer',
+        'rounded-md border border-transparent',
       ].filter(Boolean).join(' ')}
     >
       <span
         aria-hidden
-        className={`finder-tab-icon finder-tab-icon-${meta.iconClass} inline-flex items-center justify-center w-7 h-7 rounded-md font-bold text-body`}
+        className={`finder-tab-icon finder-tab-icon-${meta.iconClass} inline-flex items-center justify-center w-8 h-8 rounded-md text-body font-bold`}
       >
         {meta.icon}
       </span>
-      <span className="flex flex-col gap-0.5 min-w-0 flex-1">
+      <span className="flex flex-col gap-0.5 min-w-0">
         <span className="font-bold text-caption truncate">{meta.shortName}</span>
-        <span className="font-sf-mono text-nano sf-text-subtle truncate">{summary.kpi}</span>
+        <span className="finder-tab-kpi font-sf-mono text-nano truncate">{summary.kpi}</span>
       </span>
-      <StatusDot status={summary.status} />
+      <FinderTabStatus
+        status={summary.status}
+        percent={summary.percent}
+        numerator={summary.numerator}
+        denominator={summary.denominator}
+      />
     </button>
-  );
-}
-
-function StatusDot({ status }: { readonly status: FinderTabStatus }) {
-  return (
-    <span
-      aria-label={`status: ${status}`}
-      className={`finder-tab-status finder-tab-status-${status} inline-block w-2.5 h-2.5 rounded-full shrink-0`}
-    />
   );
 }
 

@@ -20,8 +20,10 @@ interface ConfidenceChipProps {
   readonly title?: string;
 }
 
+// Matches Chip's border weight (border-[1.5px] border-current) so the
+// confidence pill reads as part of the same badge family next to Chips.
 const BASE_CLS =
-  'text-[10px] font-bold px-1.5 py-0.5 rounded font-mono min-w-[2.2rem] text-center shrink-0 border border-current';
+  'text-[10px] font-bold px-1.5 py-0.5 rounded-sm font-mono min-w-[2.2rem] text-center shrink-0 border-[1.5px] border-current';
 
 export function ConfidenceChip({
   value,

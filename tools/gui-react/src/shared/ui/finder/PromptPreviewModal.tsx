@@ -6,7 +6,7 @@
  * Closes on backdrop click, escape key, or header X.
  */
 
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import type { UseQueryResult } from '@tanstack/react-query';
 import { Spinner } from '../feedback/Spinner.tsx';
 import { PromptPreviewView } from './PromptPreviewView.tsx';
@@ -20,9 +20,13 @@ interface PromptPreviewModalProps {
   readonly title: string;
   readonly subtitle?: string;
   readonly storageKeyPrefix: string;
+  /** Optional slot rendered in the header between the title block and Close
+   *  button — callers use it to inject a mode toggle (Run ↔ Loop for keyFinder).
+   *  Omit for finders that don't need a mode selector. */
+  readonly headerSlot?: ReactNode;
 }
 
-export function PromptPreviewModal({ open, onClose, query, title, subtitle, storageKeyPrefix }: PromptPreviewModalProps) {
+export function PromptPreviewModal({ open, onClose, query, title, subtitle, storageKeyPrefix, headerSlot }: PromptPreviewModalProps) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -50,6 +54,7 @@ export function PromptPreviewModal({ open, onClose, query, title, subtitle, stor
             <h3 id={`${storageKeyPrefix}-title`} className="text-sm font-bold sf-text-primary">{title}</h3>
             {subtitle ? <p className="sf-text-caption sf-text-muted mt-0.5">{subtitle}</p> : null}
           </div>
+          {headerSlot}
           <button
             type="button"
             onClick={onClose}

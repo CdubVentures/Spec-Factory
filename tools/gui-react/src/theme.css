@@ -1589,6 +1589,30 @@ html[data-sf-theme-mode='dark'] .sf-history-button:hover {
   background: transparent;
 }
 
+/* WHY: Neutral / ghost buttons (Picker Clear, future reset/deselect gestures)
+   read as "low-key reversible action" — not primary (accent), not destructive
+   (delete), not informational (prompt/history). Soft grey border + muted text
+   by default, brightens to primary text + faint wash on hover. Paired with
+   <ActionButton intent="neutral">. */
+.sf-neutral-button {
+  border: 1px solid rgb(var(--sf-color-border-default-rgb) / 0.76);
+  border-radius: var(--sf-radius-sm);
+  color: var(--sf-token-text-muted);
+  background: transparent;
+}
+
+.sf-neutral-button:hover {
+  background: rgb(var(--sf-color-border-default-rgb) / 0.1);
+  color: var(--sf-token-text-primary);
+}
+
+.sf-neutral-button:disabled,
+.sf-neutral-button:disabled:hover {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: transparent;
+}
+
 .sf-success-button-solid:hover {
   filter: brightness(0.94);
 }

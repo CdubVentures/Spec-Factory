@@ -210,7 +210,7 @@ export function DepsTab({
                     )} />
                 </div>
                 <div className="col-span-2">
-                  <div className={labelCls}>Property Keys<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.comp_match_property_keys} /></div>
+                  <div className={`${labelCls} flex items-center`}><span>Property Keys<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.comp_match_property_keys} /></span><B p="component.match.property_keys" /></div>
                   {(() => {
                     const compType = strN(rule, 'component.type');
                     const compSource = componentSources.find(

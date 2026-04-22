@@ -468,4 +468,102 @@ All under <code>uiCategory: "planner" / uiSection: "search-profile" / uiGroup: "
 
 <p style="color:#484f58;font-size:11px;margin-top:48px;text-align:center">Session 3 appended 2026-04-21 PM after 10 live-run audit of fetch / render / screenshot layer.</p>
 
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="session-4">Session 4 — Tier 1 Implementation + Serper Routing Discovery (2026-04-22)</h2>
+
+<h3>The big discovery</h3>
+<div class="crit-box">
+<p><strong>Every Session 4 curl-based test run before ~19:00 was routing through SearXNG+Bing, NOT Serper.</strong> The settings-snapshot architecture only captures what the <code>/process/start</code> POST body contains. Curl bodies sent only product identity (<code>brand</code>, <code>model</code>, etc.) — so the snapshot was nearly empty, and the subprocess fell back to registry defaults (empty <code>serperApiKey</code>) and routed to the fallback engine list (<code>bing</code>). The GUI sends full settings in the body, which is why the GUI path worked.</p>
+<p><strong>Every "Serper returns dictionary pages for Glorious" conclusion was wrong</strong> — Bing was returning them, not Serper. Direct Serper API calls (and the first pipeline run with explicit <code>serperApiKey</code> in the body) returned clean product pages (Glorious.com, Amazon, rtings, techpowerup, BestBuy).</p>
+</div>
+
+<h3>Fix shipped (snapshot fallback)</h3>
+<p><code>src/features/indexing/api/builders/processStartLaunchPlan.js</code> now merges <code>user-settings.json::runtime</code> <em>beneath</em> the POST body before writing the snapshot. Body still wins for overlapping keys (GUI keeps full control). Curl callers get defaults automatically.</p>
+
+<h3>Tier 1 item status</h3>
+<table>
+<tr><th>#</th><th>Item</th><th>Unit tests</th><th>Live proof status</th><th>Decision</th></tr>
+<tr>
+  <td>1</td>
+  <td>URL canonicalization + tracking-param dedup (srsltid, utm_*, gclid, fbclid, etc.)</td>
+  <td>33/33 green (11 stripTracking + 6 dedup + 8 baseline + 8 buildOrderedFetchPlan)</td>
+  <td>Event fires end-to-end via bridge; <strong>live collapse proven at 0 tracking dupes only</strong> (Bing runs never produced srsltid URLs). Serper runs DO produce srsltid (confirmed in debug log) — dedup should fire; not yet observed in run.json.</td>
+  <td><span class="tag open">NEEDS RE-VERIFY</span> under Serper</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>page.content()</code> retry on SPA nav-race</td>
+  <td>10/10 green (nav-race regex, retry budget, logger event)</td>
+  <td>Never triggered in any live run (race is non-deterministic); wired at <code>crawlSession.js:186</code>, bridge handler registered.</td>
+  <td><span class="tag shipped">CODE READY</span> — natural occurrence pending</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td>Resource-blocking route (images/fonts/media/trackers)</td>
+  <td>15/15 green (resource types, tracker hosts, fallback behavior)</td>
+  <td>Live-proven on Cougar: 40/41 fetches succeeded, median 5683ms vs 6330ms baseline. <strong>But that run routed through Bing</strong> — Serper URLs (product sites) are different shapes; blocker may behave differently on manufacturer CDN hosts.</td>
+  <td><span class="tag open">NEEDS RE-VERIFY</span> under Serper</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td>Screenshot quality gate (Layer 1 readiness + Layer 2 validator + Layer 3 audit tool)</td>
+  <td>34/34 green (16 pageStabilizer + 23 pageReadinessGate + 11 validator minus overlap)</td>
+  <td>Audit tool verified ran on Sabre/Glorious but <strong>all screenshots were of Bing-selected URLs</strong> (forums, dictionaries). No product-page screenshots were ever audited. Quality-gate logic correct; applied surface was wrong.</td>
+  <td><span class="tag open">NEEDS RE-VERIFY</span> under Serper</td>
+</tr>
+<tr>
+  <td>5a</td>
+  <td>Category-term injection in queries (<code>gaming mouse</code>, <code>gaming keyboard</code>, etc.)</td>
+  <td>8/8 green (per-category map + case handling + unknown fallback)</td>
+  <td>Serper debug log showed perfect product-dominated results for Glorious with <code>&quot;Glorious Model O 2 Wireless gaming mouse ...&quot;</code> queries — injection works correctly when Serper receives the query.</td>
+  <td><span class="tag open">NEEDS RE-VERIFY</span> under Serper (full run)</td>
+</tr>
+<tr>
+  <td>5b</td>
+  <td>Brand quoting + <code>site:</code> directive in queries</td>
+  <td>—</td>
+  <td>Proposed when we thought Serper was returning dictionary pages; since root cause was Bing fallback not Serper, re-evaluate need after 10 Serper-routed runs.</td>
+  <td><span class="tag open">DEFERRED</span> pending new data</td>
+</tr>
+<tr>
+  <td>5c</td>
+  <td>Region/SKU filter in SERP-selector prompt</td>
+  <td>—</td>
+  <td>Original Item 5 scope (zhihu.com + EU-locale picks). Not started. Re-scope after Serper-routed baseline shows what actually slips through.</td>
+  <td><span class="tag open">OPEN</span></td>
+</tr>
+</table>
+
+<h3>Audit tool (Layer 3 of Item 4) — confirmed-useful</h3>
+<p><code>.tmp/audit-run-screenshots.mjs</code> — reads a run's screenshots, runs <code>validateScreenshot</code> (entropy + size) + center-region blank-check + optional <code>--curl</code> URL reachability cross-check. Proved useful on Sabre run by catching the chrome-only blank Downloads page that validator alone missed. Will keep using on all future re-verification runs.</p>
+
+<h3>Path forward</h3>
+<ol>
+<li><strong>Snapshot fix deployed</strong> — requires GUI server restart to take effect.</li>
+<li><strong>10 Serper-routed runs</strong> across diverse products (different brands, different SERP-ambiguity profiles) — verify each Tier 1 item's behavior against real Serper output.</li>
+<li><strong>Honest per-item verdicts</strong> — any item that doesn't demonstrate its claim under Serper gets re-opened and iterated.</li>
+<li><strong>Re-scope 5b/5c</strong> only after seeing what Serper output actually delivers to the SERP selector.</li>
+</ol>
+
+<h3>Files touched in Session 4 (not yet committed)</h3>
+<ul>
+<li><code>src/shared/urlNormalize.js</code> + tests — <code>stripTracking</code> option</li>
+<li><code>src/features/indexing/pipeline/domainClassifier/runDomainClassifier.js</code> + tests — <code>dedupByCanonical</code> before URL cap</li>
+<li><code>src/features/crawl/getPageContent.js</code> + tests — nav-race retry helper</li>
+<li><code>src/features/crawl/crawlSession.js</code> — wire <code>getPageContentWithRetry</code></li>
+<li><code>src/features/crawl/plugins/resourceBlockerPlugin.js</code> + tests + registry</li>
+<li><code>src/features/extraction/plugins/screenshot/pageReadinessGate.js</code> + tests</li>
+<li><code>src/features/extraction/plugins/screenshot/screenshotValidator.js</code> + tests</li>
+<li><code>src/features/extraction/plugins/screenshot/screenshotPlugin.js</code> — Layer 1 + Layer 2 wire-in</li>
+<li><code>src/shared/categorySearchContext.js</code> + tests</li>
+<li><code>src/features/indexing/pipeline/searchProfile/queryBuilder.js</code> — 3 sites for category injection</li>
+<li><code>src/indexlab/runtimeBridgeEventHandlers.js</code> — 5 new bridge handlers (<code>discovery_dedup_summary</code>, <code>page_content_retry</code>, <code>page_readiness_second_chance</code>, <code>page_readiness_failed</code>, <code>screenshot_validation_failed</code>)</li>
+<li><code>src/shared/settingsRegistry.js</code> — 3 new knobs (<code>resourceBlockingEnabled</code>, <code>capturePageReadinessTimeoutMs</code>, <code>capturePageReadinessSecondChanceMs</code>)</li>
+<li><code>tools/gui-react/src/features/pipeline-settings/state/SettingsCategoryRegistry.ts</code> — new <code>resource-blocker</code> section</li>
+<li><strong><code>src/features/indexing/api/builders/processStartLaunchPlan.js</code> — snapshot fallback merge (the critical fix)</strong></li>
+<li><code>.tmp/audit-run-screenshots.mjs</code> — post-run audit tool (scratch; dev-only)</li>
+</ul>
+
+<p style="color:#484f58;font-size:11px;margin-top:48px;text-align:center">Session 4 appended 2026-04-22 after snapshot-routing bug surfaced and every prior Tier 1 live proof was invalidated.</p>
+
 </body></html>

@@ -927,6 +927,63 @@ async function handleDiscoveryEnqueueSummary(state, deps, { ts, row }) {
   if (advanced) await writeRunMeta(state);
 }
 
+async function handleDiscoveryDedupSummary(state, _deps, { ts, row }) {
+  await emit(state, 'search', 'discovery_dedup_summary', {
+    scope: 'dedup',
+    input_count: asInt(row.input_count, 0),
+    unique_count: asInt(row.unique_count, 0),
+    deduped_count: asInt(row.deduped_count, 0),
+  }, ts);
+}
+
+async function handlePageContentRetry(state, _deps, { ts, url, row }) {
+  const workerId = url ? (state.workerByUrl.get(url) || '') : '';
+  await emit(state, 'fetch', 'page_content_retry', {
+    scope: 'url',
+    url,
+    worker_id: workerId,
+    error: String(row.error || '').slice(0, 200),
+  }, ts);
+}
+
+async function handlePageReadinessSecondChance(state, _deps, { ts, url, row }) {
+  const workerId = url ? (state.workerByUrl.get(url) || '') : (row.worker_id || '');
+  await emit(state, 'extract', 'page_readiness_second_chance', {
+    scope: 'url',
+    url,
+    worker_id: workerId,
+    resolved: Boolean(row.resolved),
+    duration_ms: asInt(row.duration_ms, 0),
+    signals: row.signals && typeof row.signals === 'object' ? row.signals : null,
+  }, ts);
+}
+
+async function handlePageReadinessFailed(state, _deps, { ts, url, row }) {
+  const workerId = url ? (state.workerByUrl.get(url) || '') : (row.worker_id || '');
+  await emit(state, 'extract', 'page_readiness_failed', {
+    scope: 'url',
+    url,
+    worker_id: workerId,
+    duration_ms: asInt(row.duration_ms, 0),
+    second_chance_waitfor_resolved: Boolean(row.second_chance_waitfor_resolved),
+    signals: row.signals && typeof row.signals === 'object' ? row.signals : null,
+  }, ts);
+}
+
+async function handleScreenshotValidationFailed(state, _deps, { ts, url, row }) {
+  const workerId = url ? (state.workerByUrl.get(url) || '') : (row.worker_id || '');
+  await emit(state, 'extract', 'screenshot_validation_failed', {
+    scope: 'url',
+    url,
+    worker_id: workerId,
+    kind: String(row.kind || 'page'),
+    reason: String(row.reason || ''),
+    metrics: row.metrics && typeof row.metrics === 'object' ? row.metrics : null,
+    readiness: row.readiness && typeof row.readiness === 'object' ? row.readiness : null,
+  }, ts);
+}
+
+
 // ── Browser pool warm-up handlers ──────────────────────────────────────────
 
 async function handleBrowserPoolWarming(state, _deps, { row }) {
@@ -1047,6 +1104,11 @@ const EVENT_HANDLERS = new Map([
   ['domains_classified',              handleDomainsClassified],
   ['prime_sources_built',             handlePrimeSourcesBuilt],
   ['discovery_enqueue_summary',       handleDiscoveryEnqueueSummary],
+  ['discovery_dedup_summary',         handleDiscoveryDedupSummary],
+  ['page_content_retry',              handlePageContentRetry],
+  ['page_readiness_second_chance',    handlePageReadinessSecondChance],
+  ['page_readiness_failed',           handlePageReadinessFailed],
+  ['screenshot_validation_failed',    handleScreenshotValidationFailed],
   ['search_queued',                   handleSearchQueued],
   ['bootstrap_step',                  handleBootstrapStep],
   ['browser_pool_warming',            handleBrowserPoolWarming],

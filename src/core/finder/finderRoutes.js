@@ -9,7 +9,8 @@
  */
 
 import { emitDataChange } from '../events/dataChangeContract.js';
-import { registerOperation, getOperationSignal, updateStage, updateModelInfo, updateLoopProgress, updateQueueDelay, appendLlmCall, completeOperation, failOperation, cancelOperation, fireAndForget } from '../operations/index.js';
+import { registerOperation, getOperationSignal, completeOperation, failOperation, cancelOperation, fireAndForget } from '../operations/index.js';
+import { buildOperationTelemetry } from '../operations/buildOperationTelemetry.js';
 import { createStreamBatcher } from '../llm/streamBatcher.js';
 import { defaultProductRoot } from '../config/runtimeArtifactRoots.js';
 import { normalizeConfidence } from '../../features/publisher/publish/publishCandidate.js';
@@ -434,16 +435,9 @@ export function createFinderRouteHandler(finderConfig) {
                 config,
                 logger: logger || null,
                 signal,
-                onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
-                onModelResolved: (info) => updateModelInfo({ id: op.id, ...info }),
-                onStreamChunk: (delta) => { if (delta.reasoning) batcher.push(delta.reasoning); if (delta.content) batcher.push(delta.content); },
-                onQueueWait: (ms) => updateQueueDelay({ id: op.id, queueDelayMs: ms }),
-                onLlmCallComplete: (call) => appendLlmCall({ id: op.id, call }),
+                ...buildOperationTelemetry({ op, batcher, mode: isLoopPost ? 'loop' : 'run' }),
               };
               if (wantsVariantKey) orchestratorOpts.variantKey = variantKey;
-              if (isLoopPost) {
-                orchestratorOpts.onLoopProgress = (loopProgress) => updateLoopProgress({ id: op.id, loopProgress });
-              }
               return orchestrator(orchestratorOpts);
             },
             completeOperation,

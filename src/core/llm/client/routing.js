@@ -479,6 +479,7 @@ export async function callLlmWithRouting({
   role = '',
   phase = '',
   modelOverride = '',
+  capabilityOverride = null,
   requestOptions = null,
   system,
   user,
@@ -516,10 +517,19 @@ export async function callLlmWithRouting({
           : null)
   );
 
-  // WHY: Phase-level web_search and thinking flags from LLM settings panel.
-  const phaseWebSearch = resolvePhaseFlag(config, phase, 'WebSearch');
-  const phaseThinking = resolvePhaseFlag(config, phase, 'Thinking');
-  const phaseThinkingEffort = resolvePhaseString(config, phase, 'ThinkingEffort');
+  // WHY: Phase-level web_search / thinking / thinkingEffort flags. When a
+  // per-call capabilityOverride is provided (e.g. keyFinder tier bundle), it
+  // supersedes these reads. Limits (tokens, timeout, budget, disableLimits,
+  // jsonStrict) deliberately stay phase-level — they're shared across tiers.
+  const phaseWebSearch = capabilityOverride
+    ? Boolean(capabilityOverride.webSearch)
+    : resolvePhaseFlag(config, phase, 'WebSearch');
+  const phaseThinking = capabilityOverride
+    ? Boolean(capabilityOverride.thinking)
+    : resolvePhaseFlag(config, phase, 'Thinking');
+  const phaseThinkingEffort = capabilityOverride
+    ? String(capabilityOverride.thinkingEffort || '')
+    : resolvePhaseString(config, phase, 'ThinkingEffort');
   // WHY: Suffixed models (e.g. gpt-5.4-xhigh) carry effort in the name.
   // LLM Lab extracts it server-side. Sending reasoning_effort too would double-specify.
   const primaryBakedEffort = extractEffortFromModelName(primary.model);
@@ -532,7 +542,10 @@ export async function callLlmWithRouting({
 
   // WHY: Reasoning + tokens auto-resolved from config via phase. Callers never set these.
   // The LLM Settings panel is the SSOT — configPostMerge writes _resolved${Phase}* keys.
-  const reasoningMode = resolvePhaseReasoning(config, phase);
+  // capabilityOverride.useReasoning wins when a tier-aware caller supplies one.
+  const reasoningMode = capabilityOverride
+    ? Boolean(capabilityOverride.useReasoning)
+    : resolvePhaseReasoning(config, phase);
 
   // WHY: Fallback shares the phase's call-level caps with the primary. Only
   // the registry ceiling may differ per model, so we compute both role caps

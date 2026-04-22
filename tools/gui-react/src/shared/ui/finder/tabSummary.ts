@@ -10,6 +10,13 @@ export type FinderTabStatus = 'complete' | 'partial' | 'empty' | 'idle' | 'runni
 export interface FinderTabSummary {
   readonly kpi: string;
   readonly status: FinderTabStatus;
+  /** Raw count (resolved / published / succeeded). Drives the progress ring numerator. */
+  readonly numerator?: number;
+  /** Denominator the numerator is "of" (total variants, url target, field total). */
+  readonly denominator?: number;
+  /** Rounded integer 0–100 — same ratio as numerator/denominator, pre-computed so
+   *  IndexingTabBar doesn't recompute and risk drift with the kpi string. */
+  readonly percent?: number;
 }
 
 interface PublisherCandidateLike {
@@ -47,5 +54,8 @@ export function deriveScalarPublishedSummary({
   return {
     kpi: `${publishedCount} / ${totalVariants} published`,
     status,
+    numerator: publishedCount,
+    denominator: totalVariants,
+    percent: Math.round((publishedCount / totalVariants) * 100),
   };
 }

@@ -63,6 +63,32 @@ export function selectRunningFieldKeys(
   return [...keys].sort().join('|');
 }
 
+/**
+ * Per-key scope (keyFinder) extended: per-fieldKey operation state and mode.
+ * Returned as a pipe-separated signature string for stable Zustand equality.
+ * Format: `fieldKey:status:mode|fieldKey:status:mode|...` sorted by fieldKey.
+ * Only non-terminal ops are included (running + queued). Later ops on the
+ * same key win (the ops map preserves insertion order; the last match stays).
+ */
+export function selectKeyFieldOpStatesSignature(
+  ops: ReadonlyMap<string, Operation>,
+  type: string,
+  productId: string,
+): string {
+  const byFieldKey = new Map<string, { status: 'running' | 'queued'; mode: 'run' | 'loop' }>();
+  for (const op of ops.values()) {
+    if (op.type !== type || op.productId !== productId || !op.fieldKey) continue;
+    if (op.status !== 'running' && op.status !== 'queued') continue;
+    const mode = op.subType === 'loop' ? 'loop' : 'run';
+    // Later ops on the same key overwrite — most recent state wins.
+    byFieldKey.set(op.fieldKey, { status: op.status, mode });
+  }
+  return [...byFieldKey.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([fk, { status, mode }]) => `${fk}:${status}:${mode}`)
+    .join('|');
+}
+
 /* ── React hooks (thin wrappers) ───────────────────────────────────── */
 
 export function useIsModuleRunning(type: string, productId: string): boolean {
@@ -102,4 +128,114 @@ export function useRunningFieldKeys(type: string, productId: string): ReadonlySe
     () => new Set(serialized ? serialized.split('|') : []),
     [serialized],
   );
+}
+
+export interface KeyFieldOpState {
+  readonly status: 'running' | 'queued';
+  readonly mode: 'run' | 'loop';
+}
+
+/* ── Imperative promise helpers (for chain orchestration) ─────────── */
+
+const TERMINAL_STATUSES: ReadonlySet<Operation['status']> = new Set(['done', 'error', 'cancelled']);
+
+export type PassengersRegisteredOutcome = 'registered' | 'terminal' | 'timeout';
+
+/**
+ * Resolve when the server-side passengersRegistered flag lands for the given
+ * operation — keyFinder's runKeysSequential awaits this per-opId so the N-th
+ * POST is registration-ordered behind the (N-1)-th's in-flight registry entries.
+ *
+ * Resolves immediately if the op already has the flag (race-safe) OR if the
+ * op has already reached a terminal status (no chain can ever come). Falls
+ * through with 'timeout' after `timeoutMs` so a flaky server never deadlocks
+ * a chain — callers log + fire the next POST anyway.
+ */
+export function awaitPassengersRegistered(
+  operationId: string,
+  { timeoutMs = 10_000 }: { readonly timeoutMs?: number } = {},
+): Promise<PassengersRegisteredOutcome> {
+  return new Promise<PassengersRegisteredOutcome>((resolve) => {
+    const current = useOperationsStore.getState().operations.get(operationId);
+    if (current?.passengersRegistered) { resolve('registered'); return; }
+    if (current && TERMINAL_STATUSES.has(current.status)) { resolve('terminal'); return; }
+
+    let done = false;
+    const finalize = (outcome: PassengersRegisteredOutcome) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      unsubscribe();
+      resolve(outcome);
+    };
+
+    const unsubscribe = useOperationsStore.subscribe((state) => {
+      const op = state.operations.get(operationId);
+      if (!op) return;
+      if (op.passengersRegistered) { finalize('registered'); return; }
+      if (TERMINAL_STATUSES.has(op.status)) finalize('terminal');
+    });
+
+    const timer = setTimeout(() => finalize('timeout'), timeoutMs);
+  });
+}
+
+export type TerminalStatus = 'done' | 'error' | 'cancelled';
+
+/**
+ * Resolve when the given operation reaches a terminal status (done / error /
+ * cancelled). Used by the Loop chain orchestrator in KeyFinderPanel to run
+ * one Loop at a time — fire, await, advance.
+ *
+ * Returns the terminal status so the caller can decide whether to continue
+ * (advance after done / error / cancelled) or halt (cancel → stop chain).
+ * If the op never appears in the store (bad opId), the promise never resolves
+ * — callers should guard with an AbortSignal or timeout if they want a bound.
+ */
+export function awaitOperationTerminal(operationId: string): Promise<TerminalStatus> {
+  return new Promise<TerminalStatus>((resolve) => {
+    const current = useOperationsStore.getState().operations.get(operationId);
+    if (current && TERMINAL_STATUSES.has(current.status)) {
+      resolve(current.status as TerminalStatus);
+      return;
+    }
+
+    const unsubscribe = useOperationsStore.subscribe((state) => {
+      const op = state.operations.get(operationId);
+      if (!op) return;
+      if (TERMINAL_STATUSES.has(op.status)) {
+        unsubscribe();
+        resolve(op.status as TerminalStatus);
+      }
+    });
+  });
+}
+
+/**
+ * Per-key scope with mode + status. Returns a Map from fieldKey to
+ * { status, mode } for every non-terminal op on this product. Used by the
+ * per-key row to distinguish running Run vs running Loop vs queued Loop,
+ * so the correct button shows the spinner / queued pill.
+ */
+export function useKeyFieldOpStates(type: string, productId: string): ReadonlyMap<string, KeyFieldOpState> {
+  const serialized = useOperationsStore(
+    useCallback(
+      (s: { operations: ReadonlyMap<string, Operation> }) =>
+        selectKeyFieldOpStatesSignature(s.operations, type, productId),
+      [type, productId],
+    ),
+  );
+  return useMemo(() => {
+    const map = new Map<string, KeyFieldOpState>();
+    if (!serialized) return map;
+    for (const token of serialized.split('|')) {
+      if (!token) continue;
+      const [fk, status, mode] = token.split(':');
+      if (!fk) continue;
+      if ((status === 'running' || status === 'queued') && (mode === 'run' || mode === 'loop')) {
+        map.set(fk, { status, mode });
+      }
+    }
+    return map;
+  }, [serialized]);
 }

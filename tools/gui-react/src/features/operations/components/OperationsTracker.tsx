@@ -34,7 +34,7 @@ function formatElapsed(startedAt: string, endedAt: string | null): string {
 function StagePipeline({ stages, currentIndex, status }: {
   readonly stages: readonly string[];
   readonly currentIndex: number;
-  readonly status: 'running' | 'done' | 'error' | 'cancelled';
+  readonly status: 'queued' | 'running' | 'done' | 'error' | 'cancelled';
 }) {
   return (
     <span className="grid grid-cols-4 gap-x-1 gap-y-0.5 w-full">

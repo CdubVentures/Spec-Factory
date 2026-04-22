@@ -709,4 +709,65 @@ describe('fieldCandidateStore', () => {
     db.deleteFieldCandidateBySourceId('mouse-dec', 'editions', sid);
     assert.equal(db.countFieldCandidatesBySourceId('mouse-dec', sid), 0);
   });
+
+  // ── getTopCandidate — for keyPassengerBuilder threshold exclusion ──────
+
+  it('getTopFieldCandidate returns null when product has no candidates for the field', () => {
+    const row = db.getTopFieldCandidate('nonexistent-prod', 'weight');
+    assert.equal(row, null);
+  });
+
+  it('getTopFieldCandidate returns highest-confidence row regardless of status', () => {
+    // Insert three candidates with different confidences (all status='candidate').
+    db.insertFieldCandidate({
+      productId: 'mouse-top', fieldKey: 'weight', sourceId: 'top-low', sourceType: 'cef',
+      value: '55', confidence: 60, model: '', validationJson: {}, metadataJson: {},
+    });
+    db.insertFieldCandidate({
+      productId: 'mouse-top', fieldKey: 'weight', sourceId: 'top-high', sourceType: 'cef',
+      value: '58', confidence: 92, model: '', validationJson: {}, metadataJson: {},
+    });
+    db.insertFieldCandidate({
+      productId: 'mouse-top', fieldKey: 'weight', sourceId: 'top-mid', sourceType: 'cef',
+      value: '57', confidence: 75, model: '', validationJson: {}, metadataJson: {},
+    });
+
+    const top = db.getTopFieldCandidate('mouse-top', 'weight');
+    assert.ok(top);
+    assert.equal(top.confidence, 92);
+    assert.equal(top.source_id, 'top-high');
+    assert.equal(top.evidence_count, 0, 'no evidence attached yet');
+  });
+
+  it('getTopFieldCandidate exposes evidence_count via JOIN (substantive only, excludes identity_only)', () => {
+    db.insertFieldCandidate({
+      productId: 'mouse-topev', fieldKey: 'weight', sourceId: 'topev-1', sourceType: 'cef',
+      value: '60', confidence: 88, model: '', validationJson: {}, metadataJson: {},
+    });
+    const inserted = db.getFieldCandidateBySourceId('mouse-topev', 'weight', 'topev-1');
+    db.insertFieldCandidateEvidenceMany(inserted.id, [
+      { url: 'https://razer.com/a', tier: 'tier1', confidence: 90, evidence_kind: 'direct_quote' },
+      { url: 'https://razer.com/b', tier: 'tier2', confidence: 80, evidence_kind: 'structured_metadata' },
+      { url: 'https://razer.com/c', tier: 'tier3', confidence: 70, evidence_kind: 'identity_only' },
+    ]);
+
+    const top = db.getTopFieldCandidate('mouse-topev', 'weight');
+    assert.ok(top);
+    assert.equal(top.evidence_count, 2, 'substantive evidence (identity_only excluded)');
+  });
+
+  it('getTopFieldCandidate counts null-evidence_kind rows as substantive (legacy)', () => {
+    db.insertFieldCandidate({
+      productId: 'mouse-topev-legacy', fieldKey: 'weight', sourceId: 'topev-legacy-1', sourceType: 'cef',
+      value: '62', confidence: 85, model: '', validationJson: {}, metadataJson: {},
+    });
+    const inserted = db.getFieldCandidateBySourceId('mouse-topev-legacy', 'weight', 'topev-legacy-1');
+    // Raw insert bypassing evidence_kind (legacy shape — evidence_kind NULL).
+    db.insertFieldCandidateEvidenceMany(inserted.id, [
+      { url: 'https://legacy.example', tier: 'tier1', confidence: 85 },
+    ]);
+
+    const top = db.getTopFieldCandidate('mouse-topev-legacy', 'weight');
+    assert.equal(top.evidence_count, 1);
+  });
 });

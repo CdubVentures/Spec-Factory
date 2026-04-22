@@ -57,6 +57,9 @@ describe('deriveScalarPublishedSummary', () => {
     });
     strictEqual(result.kpi, '2 / 4 published');
     strictEqual(result.status, 'partial');
+    strictEqual(result.numerator, 2);
+    strictEqual(result.denominator, 4);
+    strictEqual(result.percent, 50);
   });
 
   it('returns complete when published >= total', () => {
@@ -69,10 +72,30 @@ describe('deriveScalarPublishedSummary', () => {
     });
     strictEqual(result.kpi, '2 / 2 published');
     strictEqual(result.status, 'complete');
+    strictEqual(result.numerator, 2);
+    strictEqual(result.denominator, 2);
+    strictEqual(result.percent, 100);
   });
 
-  it('returns a frozen-shape FinderTabSummary (kpi + status only)', () => {
-    const result = deriveScalarPublishedSummary({ candidates: [], totalVariants: 1 });
+  it('rounds percent to the nearest integer', () => {
+    const result = deriveScalarPublishedSummary({
+      candidates: [{ publisher_candidates: [{ status: 'resolved' }] }],
+      totalVariants: 3,
+    });
+    // 1/3 = 33.333… → 33
+    strictEqual(result.percent, 33);
+  });
+
+  it('omits ratio fields entirely when totalVariants is 0 (no ratio semantics)', () => {
+    const result = deriveScalarPublishedSummary({ candidates: [], totalVariants: 0 });
     deepStrictEqual(Object.keys(result).sort(), ['kpi', 'status']);
+  });
+
+  it('includes numerator/denominator/percent whenever a ratio is meaningful', () => {
+    const result = deriveScalarPublishedSummary({ candidates: [], totalVariants: 4 });
+    deepStrictEqual(
+      Object.keys(result).sort(),
+      ['denominator', 'kpi', 'numerator', 'percent', 'status'],
+    );
   });
 });

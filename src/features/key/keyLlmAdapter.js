@@ -25,6 +25,14 @@ import { buildEvidencePromptBlock } from '../../core/finder/evidencePromptFragme
 import { buildEvidenceVerificationPromptBlock } from '../../core/finder/evidenceVerificationPromptFragment.js';
 import { buildValueConfidencePromptBlock } from '../../core/finder/valueConfidencePromptFragment.js';
 import { buildIdentityWarning } from '../../core/llm/prompts/identityContext.js';
+import {
+  resolveDisplayName,
+  buildPrimaryKeyHeaderBlock,
+  buildFieldGuidanceBlock,
+  buildFieldContractBlock,
+  buildSearchHintsBlock,
+  buildCrossFieldConstraintsBlock,
+} from '../../core/llm/prompts/fieldRuleRenderers.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
 import { keyFinderResponseSchema } from './keySchema.js';
 
@@ -68,6 +76,8 @@ GOAL: Extract the PRIMARY KEY value for this product using the FIELD CONTRACT be
 {{ADDITIONAL_COMPONENT_KEYS}}
 
 \u2500\u2500 CONTEXT \u2500\u2500
+{{PRODUCT_COMPONENTS}}
+
 {{KNOWN_PRODUCT_FIELDS}}
 
 {{EVIDENCE_CONTRACT}}
@@ -87,136 +97,36 @@ GOAL: Extract the PRIMARY KEY value for this product using the FIELD CONTRACT be
 {{RETURN_JSON_SHAPE}}
 `;
 
-/* ── Small helpers ─────────────────────────────────────────────────── */
-
-function joinList(list, max = 16) {
-  if (!Array.isArray(list) || list.length === 0) return '';
-  return list.slice(0, max).map((s) => String(s).trim()).filter(Boolean).join(', ');
-}
-
-function resolveDisplayName(fieldKey, fieldRule) {
-  return String(fieldRule?.ui?.label || fieldRule?.display_name || fieldKey || '').trim();
-}
-
-/* ── Primary-key slot builders ─────────────────────────────────────── */
-
-function buildPrimaryKeyHeaderBlock(fieldKey, fieldRule) {
-  if (!fieldKey) return '';
-  const label = resolveDisplayName(fieldKey, fieldRule);
-  return label && label !== fieldKey
-    ? `Field key: ${fieldKey} (${label})`
-    : `Field key: ${fieldKey}`;
-}
-
-function buildFieldGuidanceBlock(fieldRule) {
-  const note = String(fieldRule?.ai_assist?.reasoning_note || '').trim();
-  if (!note) return '';
-  return `Extraction guidance:\n${note}`;
-}
-
-function buildFieldContractBlock(fieldRule) {
-  const type = String(fieldRule?.contract?.type || fieldRule?.data_type || 'string').toLowerCase();
-  const shape = String(fieldRule?.contract?.shape || fieldRule?.output_shape || 'scalar').toLowerCase();
-  const unit = String(fieldRule?.contract?.unit || '').trim();
-  const rounding = fieldRule?.contract?.rounding;
-  const listRules = fieldRule?.contract?.list_rules;
-  const enumPolicy = String(fieldRule?.enum?.policy || '').trim();
-  const enumValues = Array.isArray(fieldRule?.enum?.values) ? fieldRule.enum.values : [];
-  const aliases = Array.isArray(fieldRule?.aliases) ? fieldRule.aliases.filter(Boolean) : [];
-  const variancePolicy = String(fieldRule?.variance_policy || '').trim();
-
-  const lines = ['Return contract:'];
-  lines.push(`- Type: ${type}${shape === 'list' ? ' (list / array)' : ' (scalar)'}`);
-  if (unit) lines.push(`- Unit: ${unit} (include the numeric value only; unit is known from context)`);
-  if (rounding && Number.isFinite(rounding.decimals)) {
-    lines.push(`- Rounding: ${rounding.decimals} decimal(s), mode=${rounding.mode || 'nearest'}`);
-  }
-  if (shape === 'list' && listRules) {
-    const ruleParts = [];
-    if (listRules.dedupe) ruleParts.push('dedupe');
-    if (listRules.sort && listRules.sort !== 'none') ruleParts.push(`sort=${listRules.sort}`);
-    if (ruleParts.length) lines.push(`- List rules: ${ruleParts.join(', ')}`);
-  }
-  if (enumValues.length > 0) {
-    lines.push(`- Allowed values (policy: ${enumPolicy || 'open'}): ${enumValues.slice(0, 24).join(' | ')}`);
-  } else if (enumPolicy) {
-    lines.push(`- Enum policy: ${enumPolicy} (no fixed list \u2014 use an authoritative value)`);
-  }
-  if (variancePolicy) {
-    lines.push(`- Variance policy: ${variancePolicy} (how to resolve disagreeing sources)`);
-  }
-  if (aliases.length > 0) {
-    lines.push(`- Aliases (recognize these in source text): ${joinList(aliases)}`);
-  }
-  if (shape === 'list') {
-    lines.push('- Return an array; each element must independently satisfy the type rule above.');
-  }
-  return lines.join('\n');
-}
-
-function buildSearchHintsBlock(fieldRule, { searchHintsInjectionEnabled } = {}) {
-  if (!searchHintsInjectionEnabled) return '';
-  const hints = fieldRule?.search_hints || {};
-  const domainHints = joinList(hints.domain_hints);
-  const queryTerms = joinList(hints.query_terms);
-  if (!domainHints && !queryTerms) return '';
-  const lines = ['Search hints:'];
-  if (domainHints) lines.push(`- Preferred source domains: ${domainHints}`);
-  if (queryTerms) lines.push(`- Search terms to try: ${queryTerms}`);
-  return lines.join('\n');
-}
-
-function renderConstraintLine(c) {
-  if (!c || typeof c !== 'object') return '';
-  const target = String(c.target || '').trim();
-  switch (c.op) {
-    case 'lte': return target ? `must be \u2264 \`${target}\`` : '';
-    case 'lt': return target ? `must be < \`${target}\`` : '';
-    case 'gte': return target ? `must be \u2265 \`${target}\`` : '';
-    case 'gt': return target ? `must be > \`${target}\`` : '';
-    case 'eq': return target ? `must equal \`${target}\`` : '';
-    case 'requires_when_value': {
-      if (!target) return '';
-      const val = String(c.value || '').trim();
-      return `required when \`${target}\` = "${val}"`;
-    }
-    case 'requires_one_of': {
-      if (!Array.isArray(c.targets) || c.targets.length === 0) return '';
-      return `requires one of: ${c.targets.join(', ')}`;
-    }
-    default: return '';
-  }
-}
-
-function buildCrossFieldConstraintsBlock(fieldRule) {
-  const constraints = Array.isArray(fieldRule?.cross_field_constraints)
-    ? fieldRule.cross_field_constraints
-    : [];
-  if (constraints.length === 0) return '';
-  const lines = ['Cross-field constraints:'];
-  for (const c of constraints) {
-    const rendered = renderConstraintLine(c);
-    if (rendered) lines.push(`- ${rendered}`);
-  }
-  if (lines.length === 1) return '';
-  return lines.join('\n');
-}
+/* ── Per-product / per-call slot builders ──────────────────────────── */
 
 function buildComponentContextForKey(componentEntry, { componentInjectionEnabled } = {}) {
+  // Relation pointer only. Resolved identity + sibling subfields live in
+  // {{PRODUCT_COMPONENTS}}, which is always-on regardless of this knob.
   if (!componentInjectionEnabled || !componentEntry) return '';
   const type = String(componentEntry.type || '').trim();
-  const resolved = String(componentEntry.resolvedValue || '').trim();
-  const relation = componentEntry.relation === 'parent' ? 'parent' : 'subfield_of';
   if (!type) return '';
-  const lines = ['Component context:'];
-  if (relation === 'parent') {
-    lines.push(`- This field IS the component identity (type: ${type})`);
-  } else {
-    lines.push(`- This value belongs to the ${type} component on this product`);
+  const relation = componentEntry.relation === 'parent' ? 'parent' : 'subfield_of';
+  return relation === 'parent'
+    ? `This key IS the ${type} component identity.`
+    : `This key belongs to the ${type} component on this product.`;
+}
+
+function buildProductComponentsBlock(inventory) {
+  const list = Array.isArray(inventory) ? inventory : [];
+  if (list.length === 0) return '';
+  const lines = ['Components on this product:'];
+  for (const entry of list) {
+    const type = String(entry.componentType || entry.parentFieldKey || '').trim();
+    if (!type) continue;
+    const resolved = String(entry.resolvedValue || '').trim();
+    lines.push(resolved ? `- ${type}: ${resolved}` : `- ${type}: (unidentified)`);
+    const subs = Array.isArray(entry.subfields) ? entry.subfields : [];
+    for (const sf of subs) {
+      if (!sf || !sf.field_key) continue;
+      const value = Array.isArray(sf.value) ? `[${sf.value.join(', ')}]` : String(sf.value);
+      lines.push(`    ${sf.field_key}: ${value}`);
+    }
   }
-  lines.push(resolved
-    ? `- Component: ${type} = ${resolved}`
-    : `- Component: ${type} = (not yet identified)`);
   return lines.join('\n');
 }
 
@@ -367,7 +277,8 @@ function buildReturnJsonShape(primaryEntry, passengerEntries) {
  * @param {{fieldKey: string, fieldRule: object}} opts.primary
  * @param {Array<{fieldKey: string, fieldRule: object}>} [opts.passengers]
  * @param {Record<string, unknown>} [opts.knownFields]
- * @param {{primary: object|null, passengers: Array<object|null>}} [opts.componentContext]
+ * @param {{primary: object|null, passengers: Array<object|null>}} [opts.componentContext] — per-key relation pointers (knob-gated)
+ * @param {Array<{parentFieldKey: string, componentType: string, resolvedValue: string, subfields: Array<{field_key: string, value: unknown}>}>} [opts.productComponents] — always-on grouped inventory
  * @param {{componentInjectionEnabled: boolean, knownFieldsInjectionEnabled: boolean, searchHintsInjectionEnabled: boolean}} [opts.injectionKnobs]
  * @param {string} [opts.category]
  * @param {number} [opts.variantCount]
@@ -385,6 +296,7 @@ export function buildKeyFinderPrompt({
   passengers = [],
   knownFields = {},
   componentContext = { primary: null, passengers: [] },
+  productComponents = [],
   injectionKnobs = DEFAULT_KNOBS,
   category = '',
   variantCount = 1,
@@ -444,6 +356,7 @@ export function buildKeyFinderPrompt({
     ADDITIONAL_CROSS_FIELD_CONSTRAINTS: buildAdditionalCrossFieldConstraintsBlock(passengerList),
     ADDITIONAL_COMPONENT_KEYS: buildAdditionalComponentKeysBlock(passengerList, componentContext?.passengers, knobs),
 
+    PRODUCT_COMPONENTS: buildProductComponentsBlock(productComponents),
     KNOWN_PRODUCT_FIELDS: buildKnownFieldsBlock(knownFields, knobs),
 
     EVIDENCE_CONTRACT: buildEvidencePromptBlock({ minEvidenceRefs, includeEvidenceKind: true }),
@@ -489,14 +402,38 @@ export const KEY_FINDER_SPEC = buildKeyFinderSpec({ tier: 'medium' });
 /* ── Bound LLM caller factory ──────────────────────────────────────── */
 
 // WHY: Accepts either a tier name string (legacy — billing reason only) or a
-// tier bundle { name, model, ... } from resolvePhaseModelByTier. When a bundle
-// carries a non-empty model, it flows through as per-call modelOverride so the
-// Phase 3 orchestrator routes each field_key to its difficulty-matched model.
+// tier bundle { name, model, useReasoning, reasoningModel, thinking,
+// thinkingEffort, webSearch } from resolvePhaseModelByTier. The bundle is the
+// full authority for keyFinder's per-call model + capabilities — phase-level
+// _resolvedKeyFinder* reads for those 5 capability fields are superseded once
+// a bundle is supplied. Phase-level LIMITS (tokens, timeout, reasoning budget,
+// disableLimits, jsonStrict) are intentionally shared across all tiers and
+// stay phase-level.
 export function createKeyFinderCallLlm(deps, tierOrBundle = 'medium') {
   const isBundle = tierOrBundle && typeof tierOrBundle === 'object';
   const tierName = isBundle ? String(tierOrBundle.name || 'medium') : String(tierOrBundle);
-  const modelOverride = isBundle ? String(tierOrBundle.model || '').trim() : '';
   const spec = buildKeyFinderSpec({ tier: tierName });
+
+  // WHY: When useReasoning=true AND reasoningModel is non-empty, route to
+  // reasoningModel (mirrors resolvePhaseModel's base/reasoning selection). When
+  // useReasoning=true but reasoningModel is empty, fall back to tier.model so
+  // we never emit an empty override (which would wipe the resolver's
+  // last-resort path and land on llmModelPlan).
+  let modelOverride = '';
+  let capabilityOverride = null;
+  if (isBundle) {
+    const useReasoning = Boolean(tierOrBundle.useReasoning);
+    const reasoningModel = String(tierOrBundle.reasoningModel || '').trim();
+    const baseModel = String(tierOrBundle.model || '').trim();
+    modelOverride = useReasoning && reasoningModel ? reasoningModel : baseModel;
+    capabilityOverride = {
+      useReasoning,
+      thinking: Boolean(tierOrBundle.thinking),
+      thinkingEffort: String(tierOrBundle.thinkingEffort || ''),
+      webSearch: Boolean(tierOrBundle.webSearch),
+    };
+  }
+
   return createPhaseCallLlm(deps, spec, (domainArgs) => {
     const mapped = {
       user: JSON.stringify({
@@ -508,6 +445,7 @@ export function createKeyFinderCallLlm(deps, tierOrBundle = 'medium') {
       }),
     };
     if (modelOverride) mapped.modelOverride = modelOverride;
+    if (capabilityOverride) mapped.capabilityOverride = capabilityOverride;
     return mapped;
   });
 }

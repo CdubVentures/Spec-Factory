@@ -80,6 +80,7 @@ export const SETTINGS_CATEGORY_REGISTRY: readonly SettingsCategoryDef[] = Object
       { id: 'overlay-dismissal', label: 'Overlay Dismissal', tip: 'Dismiss non-cookie popups — newsletter signups, chat widgets, paywalls', phase: 'suite' as const },
       { id: 'dom-expansion', label: 'DOM Expansion', tip: 'Click expand/show-more buttons to reveal collapsed sections', phase: 'suite' as const },
       { id: 'css-override', label: 'CSS Override', tip: 'Force-display hidden elements via CSS injection', phase: 'suite' as const },
+      { id: 'resource-blocker', label: 'Resource Blocker', tip: 'Abort image/font/media/tracker requests — major fetch speedup', phase: 'pre-load' as const },
       { id: 'auto-scroll', label: 'Auto Scroll', tip: 'Scroll passes between dismiss rounds to trigger lazy content', phase: 'scroll' as const },
     ]),
   },

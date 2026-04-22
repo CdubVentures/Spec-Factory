@@ -51,12 +51,18 @@ describe('derivePifTabSummary', () => {
     const r = derivePifTabSummary(pif(5), cef(4));
     strictEqual(r.status, 'partial');
     strictEqual(r.kpi, '5 img · 4 var');
+    strictEqual(r.numerator, 5);
+    strictEqual(r.denominator, 16);
+    strictEqual(r.percent, 31);
   });
 
   it('complete when images >= variants × 4', () => {
     const r = derivePifTabSummary(pif(16), cef(4));
     strictEqual(r.status, 'complete');
     strictEqual(r.kpi, '16 img · 4 var');
+    strictEqual(r.numerator, 16);
+    strictEqual(r.denominator, 16);
+    strictEqual(r.percent, 100);
   });
 
   it('handles null pifData (no result yet)', () => {

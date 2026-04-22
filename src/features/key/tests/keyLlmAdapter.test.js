@@ -108,6 +108,7 @@ test('default template contains every placeholder the builder injects', () => {
     '{{ADDITIONAL_FIELD_CONTRACT}}',
     '{{ADDITIONAL_CROSS_FIELD_CONSTRAINTS}}',
     '{{ADDITIONAL_COMPONENT_KEYS}}',
+    '{{PRODUCT_COMPONENTS}}',
     '{{KNOWN_PRODUCT_FIELDS}}',
     '{{EVIDENCE_CONTRACT}}',
     '{{EVIDENCE_VERIFICATION}}',
@@ -229,12 +230,12 @@ test('PRIMARY_CROSS_FIELD_CONSTRAINTS empty when absent/[]', () => {
 test('PRIMARY_COMPONENT_KEYS renders when knob ON + relation exists', () => {
   const out = renderPrimary('sensor_date', SENSOR_DATE_RULE, {
     componentContext: {
-      primary: { type: 'sensor', resolvedValue: 'PixArt PAW3395', relation: 'subfield_of' },
+      primary: { type: 'sensor', relation: 'subfield_of', parentFieldKey: 'sensor' },
       passengers: [],
     },
   });
-  assert.match(out, /PixArt PAW3395/);
-  assert.match(out, /sensor/i);
+  // Relation pointer only \u2014 resolved identity (and siblings) live in {{PRODUCT_COMPONENTS}}.
+  assert.match(out, /belongs to the sensor component/i);
 });
 
 test('PRIMARY_COMPONENT_KEYS empty when componentInjectionEnabled OFF', () => {
@@ -347,16 +348,17 @@ test('ADDITIONAL_COMPONENT_KEYS renders per-passenger component context when kno
       { fieldKey: 'encoder_steps', fieldRule: { field_key: 'encoder_steps', contract: { type: 'number' } } },
     ],
     componentContext: {
-      primary: { type: 'sensor', resolvedValue: 'PixArt PAW3395', relation: 'subfield_of' },
+      primary: { type: 'sensor', relation: 'subfield_of', parentFieldKey: 'sensor' },
       passengers: [
-        { type: 'encoder', resolvedValue: 'Logitech Scrolling 2.0', relation: 'subfield_of' },
+        { type: 'encoder', relation: 'subfield_of', parentFieldKey: 'encoder' },
       ],
     },
     category: 'mouse',
     variantCount: 1,
     injectionKnobs: ALL_KNOBS_ON,
   });
-  assert.match(out, /Logitech Scrolling 2\.0/);
+  // Passenger relation pointer renders \u2014 resolved identity lives in {{PRODUCT_COMPONENTS}}.
+  assert.match(out, /belongs to the encoder component/i);
 });
 
 test('ADDITIONAL_COMPONENT_KEYS empty when componentInjectionEnabled OFF (even with data)', () => {
@@ -373,6 +375,126 @@ test('ADDITIONAL_COMPONENT_KEYS empty when componentInjectionEnabled OFF (even w
     variantCount: 1,
   });
   assert.doesNotMatch(out, /Logitech Scrolling 2\.0/);
+});
+
+// ── Product-level: PRODUCT_COMPONENTS (ALWAYS ON — ungated by either knob) ──
+
+test('PRODUCT_COMPONENTS renders grouped inventory with identity + product-resolved subfields', () => {
+  const out = renderPrimary('polling_rate', POLLING_RATE_RULE, {
+    productComponents: [
+      {
+        parentFieldKey: 'sensor', componentType: 'sensor',
+        resolvedValue: 'Logitech Hero 25K',
+        subfields: [
+          { field_key: 'sensor_type', value: 'optical' },
+          { field_key: 'sensor_date', value: '2021-04-15' },
+        ],
+      },
+      {
+        parentFieldKey: 'switch', componentType: 'switch',
+        resolvedValue: 'Omron D2F-01F',
+        subfields: [{ field_key: 'switch_type', value: 'mechanical' }],
+      },
+    ],
+  });
+  assert.match(out, /Components on this product/i);
+  assert.match(out, /Logitech Hero 25K/);
+  assert.match(out, /sensor_type.*optical/);
+  assert.match(out, /sensor_date.*2021-04-15/);
+  assert.match(out, /Omron D2F-01F/);
+});
+
+test('PRODUCT_COMPONENTS still renders when BOTH injection knobs OFF (ungated)', () => {
+  const out = renderPrimary('polling_rate', POLLING_RATE_RULE, {
+    productComponents: [
+      { parentFieldKey: 'sensor', componentType: 'sensor', resolvedValue: 'Hero 25K', subfields: [] },
+    ],
+    injectionKnobs: {
+      componentInjectionEnabled: false,
+      knownFieldsInjectionEnabled: false,
+      searchHintsInjectionEnabled: false,
+    },
+  });
+  assert.match(out, /Hero 25K/, 'inventory is unconditional, not gated by either knob');
+});
+
+test('PRODUCT_COMPONENTS renders unidentified components without subfield lines', () => {
+  const out = renderPrimary('polling_rate', POLLING_RATE_RULE, {
+    productComponents: [
+      { parentFieldKey: 'encoder', componentType: 'encoder', resolvedValue: '', subfields: [] },
+    ],
+  });
+  assert.match(out, /encoder/i);
+  assert.match(out, /unidentified/i);
+});
+
+test('PRODUCT_COMPONENTS renders identified component with no product-resolved subfields', () => {
+  const out = renderPrimary('polling_rate', POLLING_RATE_RULE, {
+    productComponents: [
+      { parentFieldKey: 'material', componentType: 'material', resolvedValue: 'ABS', subfields: [] },
+    ],
+  });
+  assert.match(out, /material/i);
+  assert.match(out, /ABS/);
+});
+
+test('PRODUCT_COMPONENTS empty when productComponents array empty', () => {
+  const out = renderPrimary('polling_rate', POLLING_RATE_RULE, { productComponents: [] });
+  assert.doesNotMatch(out, /Components on this product/i);
+});
+
+// ── Per-key component slots shrink to relation pointer only ─────────────
+
+test('PRIMARY_COMPONENT_KEYS (new shape) renders relation pointer without resolvedValue data', () => {
+  const out = renderPrimary('sensor_date', SENSOR_DATE_RULE, {
+    componentContext: {
+      primary: { type: 'sensor', relation: 'subfield_of', parentFieldKey: 'sensor' },
+      passengers: [],
+    },
+  });
+  assert.match(out, /belongs to the sensor component/i);
+  // The data line "Component: sensor = ..." moved to {{PRODUCT_COMPONENTS}}
+  // — per-key slot is relation-pointer only now.
+  assert.doesNotMatch(out, /Component:\s*\w+\s*=/i, 'resolvedValue data belongs in the inventory, not in the per-key slot');
+  assert.doesNotMatch(out, /not yet identified/i, 'unidentified copy also lives in the inventory');
+});
+
+test('PRIMARY_COMPONENT_KEYS (new shape) parent relation pointer', () => {
+  const out = renderPrimary('sensor', {
+    field_key: 'sensor',
+    contract: { type: 'string', shape: 'scalar' },
+    component: { type: 'sensor', match: { property_keys: ['sensor_type'] } },
+  }, {
+    componentContext: {
+      primary: { type: 'sensor', relation: 'parent', parentFieldKey: 'sensor' },
+      passengers: [],
+    },
+  });
+  assert.match(out, /IS the sensor component identity/i);
+  assert.doesNotMatch(out, /Component:\s*\w+\s*=/i);
+});
+
+// ── Orchestrator-level invariants (render happens but with ungated inventory) ──
+
+test('knob independence (new shape): both OFF → inventory still renders, per-key pointer empty, known empty', () => {
+  const out = renderPrimary('polling_rate', POLLING_RATE_RULE, {
+    productComponents: [
+      { parentFieldKey: 'sensor', componentType: 'sensor', resolvedValue: 'Hero 25K', subfields: [] },
+    ],
+    knownFields: { release_date: '2023-09-15' }, // orchestrator would've suppressed this when knob off; but the adapter still respects the knob directly
+    componentContext: {
+      primary: { type: 'sensor', relation: 'subfield_of', parentFieldKey: 'sensor' },
+      passengers: [],
+    },
+    injectionKnobs: {
+      componentInjectionEnabled: false,
+      knownFieldsInjectionEnabled: false,
+      searchHintsInjectionEnabled: true,
+    },
+  });
+  assert.match(out, /Hero 25K/, 'inventory unconditional');
+  assert.doesNotMatch(out, /belongs to the sensor component/i, 'per-key relation pointer gated by componentInjectionEnabled');
+  assert.doesNotMatch(out, /2023-09-15/, 'known-fields gated by knownFieldsInjectionEnabled');
 });
 
 // ── Product-level: known_fields (knob-gated) ────────────────────────────
@@ -402,29 +524,29 @@ test('KNOWN_PRODUCT_FIELDS empty when no values present', () => {
 
 // ── Knob independence ──────────────────────────────────────────────────
 
-test('knob independence: component ON, known OFF → component injects but known does not', () => {
+test('knob independence: component ON, known OFF → per-key relation pointer renders, known does not', () => {
   const out = renderPrimary('sensor_date', SENSOR_DATE_RULE, {
     knownFields: { release_date: '2023-09-15' },
     componentContext: {
-      primary: { type: 'sensor', resolvedValue: 'PixArt PAW3395', relation: 'subfield_of' },
+      primary: { type: 'sensor', relation: 'subfield_of', parentFieldKey: 'sensor' },
       passengers: [],
     },
     injectionKnobs: { componentInjectionEnabled: true, knownFieldsInjectionEnabled: false, searchHintsInjectionEnabled: true },
   });
-  assert.match(out, /PixArt PAW3395/); // component rendered
+  assert.match(out, /belongs to the sensor component/i); // relation pointer rendered
   assert.doesNotMatch(out, /2023-09-15/); // known-fields suppressed
 });
 
-test('knob independence: component OFF, known ON → known injects but component does not', () => {
+test('knob independence: component OFF, known ON → known injects but per-key relation pointer does not', () => {
   const out = renderPrimary('sensor_date', SENSOR_DATE_RULE, {
     knownFields: { release_date: '2023-09-15' },
     componentContext: {
-      primary: { type: 'sensor', resolvedValue: 'PixArt PAW3395', relation: 'subfield_of' },
+      primary: { type: 'sensor', relation: 'subfield_of', parentFieldKey: 'sensor' },
       passengers: [],
     },
     injectionKnobs: { componentInjectionEnabled: false, knownFieldsInjectionEnabled: true, searchHintsInjectionEnabled: true },
   });
-  assert.doesNotMatch(out, /PixArt PAW3395/);
+  assert.doesNotMatch(out, /belongs to the sensor component/i);
   assert.match(out, /2023-09-15/);
 });
 
@@ -602,4 +724,113 @@ test('createKeyFinderCallLlm with no args defaults to medium tier', async () => 
     variantCount: 1,
   });
   assert.equal(captured[0].reason, 'key_finding_medium');
+});
+
+// ── createKeyFinderCallLlm: tier-aware capability override (Stage 2) ────
+//
+// The tier bundle carries 6 fields (model, useReasoning, reasoningModel,
+// thinking, thinkingEffort, webSearch). Until Stage 2 only `model` was read;
+// the others were dead data. These tests lock the full thread-through.
+
+test('tier bundle threads capabilityOverride (thinking / thinkingEffort / webSearch)', async () => {
+  const { callLlm, captured } = captureCallLlmArgs({
+    name: 'hard',
+    model: 'gpt-5.4',
+    useReasoning: false,
+    reasoningModel: '',
+    thinking: true,
+    thinkingEffort: 'xhigh',
+    webSearch: true,
+  });
+  await callLlm({
+    product: PRODUCT,
+    primary: { fieldKey: 'sensor_date', fieldRule: SENSOR_DATE_RULE },
+    passengers: [],
+    variantCount: 1,
+  });
+  const cap = captured[0].capabilityOverride;
+  assert.ok(cap, 'capabilityOverride must be emitted when tier bundle is provided');
+  assert.equal(cap.thinking, true);
+  assert.equal(cap.thinkingEffort, 'xhigh');
+  assert.equal(cap.webSearch, true);
+  assert.equal(cap.useReasoning, false);
+});
+
+test('tier bundle useReasoning=true routes modelOverride to reasoningModel (not model)', async () => {
+  const { callLlm, captured } = captureCallLlmArgs({
+    name: 'very_hard',
+    model: 'gpt-5.4',
+    useReasoning: true,
+    reasoningModel: 'gpt-5.4-mini',
+    thinking: true,
+    thinkingEffort: 'xhigh',
+    webSearch: true,
+  });
+  await callLlm({
+    product: PRODUCT,
+    primary: { fieldKey: 'sensor_date', fieldRule: SENSOR_DATE_RULE },
+    passengers: [],
+    variantCount: 1,
+  });
+  assert.equal(captured[0].modelOverride, 'gpt-5.4-mini',
+    'when useReasoning=true, adapter must pick reasoningModel so the caller lands on the correct model');
+  assert.equal(captured[0].capabilityOverride.useReasoning, true);
+});
+
+test('tier bundle useReasoning=true with empty reasoningModel falls back to tier.model (never emits empty override)', async () => {
+  const { callLlm, captured } = captureCallLlmArgs({
+    name: 'hard',
+    model: 'gpt-5.4',
+    useReasoning: true,
+    reasoningModel: '',
+    thinking: false,
+    thinkingEffort: '',
+    webSearch: false,
+  });
+  await callLlm({
+    product: PRODUCT,
+    primary: { fieldKey: 'sensor_date', fieldRule: SENSOR_DATE_RULE },
+    passengers: [],
+    variantCount: 1,
+  });
+  assert.equal(captured[0].modelOverride, 'gpt-5.4',
+    'empty reasoningModel must not override — fall back to tier.model so we never send ""');
+  assert.equal(captured[0].capabilityOverride.useReasoning, true,
+    'useReasoning flag still flows so the caller can enable reasoning mode on the base model');
+});
+
+test('tier bundle with empty model AND empty reasoningModel emits no modelOverride but keeps capabilityOverride', async () => {
+  // WHY: Empty-model tier inherits whole fallback bundle upstream (resolvePhaseModelByTier),
+  // so we should never see this in practice. But if it sneaks through, do NOT override with ""
+  // (that would wipe out the resolver's last-resort path). Capability flags still flow.
+  const { callLlm, captured } = captureCallLlmArgs({
+    name: 'medium',
+    model: '',
+    useReasoning: false,
+    reasoningModel: '',
+    thinking: true,
+    thinkingEffort: 'high',
+    webSearch: false,
+  });
+  await callLlm({
+    product: PRODUCT,
+    primary: { fieldKey: 'polling_rate', fieldRule: POLLING_RATE_RULE },
+    passengers: [],
+    variantCount: 1,
+  });
+  assert.equal(captured[0].modelOverride ?? '', '');
+  assert.equal(captured[0].capabilityOverride?.thinking, true);
+  assert.equal(captured[0].capabilityOverride?.thinkingEffort, 'high');
+});
+
+test('legacy string-form tier emits NO capabilityOverride (phase-level reads stay authoritative)', async () => {
+  const { callLlm, captured } = captureCallLlmArgs('hard');
+  await callLlm({
+    product: PRODUCT,
+    primary: { fieldKey: 'sensor_date', fieldRule: SENSOR_DATE_RULE },
+    passengers: [],
+    variantCount: 1,
+  });
+  assert.equal(captured[0].capabilityOverride ?? null, null,
+    'string form is legacy/billing-only — it must not synthesize a capability override');
 });

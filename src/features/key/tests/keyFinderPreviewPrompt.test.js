@@ -104,6 +104,7 @@ function makeSpecDbStub({ finderStore, resolvedSet = new Set() } = {}) {
     },
     getFieldCandidatesByProductAndField: () => [],
     getResolvedFieldCandidate: (_pid, fk) => (resolvedSet.has(fk) ? { value: 'X', confidence: 95 } : null),
+    getItemComponentLinks: () => [],
   };
 }
 
@@ -181,7 +182,7 @@ test('field_key not in compiled rules → 400', async (t) => {
   );
 });
 
-test('drift guard: preview passenger_field_keys match buildPassengers directly', async (t) => {
+test('drift guard: preview passenger_field_keys match buildPassengers directly (Loop mode)', async (t) => {
   t.after(cleanupTmp);
   const { specDb } = setup('kfp-drift');
 
@@ -199,10 +200,12 @@ test('drift guard: preview passenger_field_keys match buildPassengers directly',
     },
   });
 
+  // Preview with mode='loop' so alwaysSoloRun gate is bypassed, matching
+  // the direct buildPassengers call which ignores alwaysSoloRun.
   const env = await compileKeyFinderPreviewPrompt({
     product: { ...PRODUCT, product_id: 'kfp-drift' },
     specDb, appDb: null, config: {}, productRoot: PRODUCT_ROOT,
-    body: { field_key: 'polling_rate' },
+    body: { field_key: 'polling_rate', mode: 'loop' },
   });
 
   const directKeys = directPassengers.map((p) => p.fieldKey);
@@ -269,14 +272,15 @@ test('drift guard: preview systemPrompt matches live runner byte-for-byte', asyn
   assert.deepEqual(preview.inputs_resolved.passenger_field_keys, runnerPassengerKeys);
 });
 
-test('bundling ON: systemPrompt contains ADDITIONAL_FIELD_KEYS section when passengers present', async (t) => {
+test('bundling ON: systemPrompt contains ADDITIONAL_FIELD_KEYS section when passengers present (Loop mode)', async (t) => {
   t.after(cleanupTmp);
   const { specDb } = setup('kfp-adl-on');
 
+  // mode='loop' bypasses the alwaysSoloRun gate so passengers pack into preview.
   const env = await compileKeyFinderPreviewPrompt({
     product: { ...PRODUCT, product_id: 'kfp-adl-on' },
     specDb, appDb: null, config: {}, productRoot: PRODUCT_ROOT,
-    body: { field_key: 'polling_rate' },
+    body: { field_key: 'polling_rate', mode: 'loop' },
   });
 
   assert.ok(env.inputs_resolved.passenger_field_keys.length > 0, 'fixture must produce passengers');
@@ -320,4 +324,69 @@ test('notes include bundling state', async (t) => {
   assert.match(joined, /bundling_enabled: true/);
   assert.match(joined, /passenger_policy: less_or_equal/);
   assert.match(joined, /tier: medium/);
+});
+
+// ─── Registry parity (new 2026-04-22) ─────────────────────────────────
+
+import {
+  register as registryRegister,
+  _resetForTest as registryReset,
+  _sizeForTest as registrySize,
+} from '../../../core/operations/keyFinderRegistry.js';
+
+test('registry parity: peer as primary elsewhere is excluded from preview passengers (Loop mode)', async (t) => {
+  t.after(cleanupTmp);
+  t.after(() => registryReset());
+  registryReset();
+  const { specDb } = setup('kfp-registry-primary');
+  // dpi is running as primary in some other in-flight call
+  registryRegister('kfp-registry-primary', 'dpi', 'primary');
+
+  const env = await compileKeyFinderPreviewPrompt({
+    product: { ...PRODUCT, product_id: 'kfp-registry-primary' },
+    specDb, appDb: null, config: {}, productRoot: PRODUCT_ROOT,
+    body: { field_key: 'polling_rate', mode: 'loop' },
+  });
+
+  assert.ok(
+    !env.inputs_resolved.passenger_field_keys.includes('dpi'),
+    'dpi hard-blocked in preview just like a live Loop would see it',
+  );
+});
+
+test('registry parity: preview does NOT register or release (read-only)', async (t) => {
+  t.after(cleanupTmp);
+  t.after(() => registryReset());
+  registryReset();
+  const { specDb } = setup('kfp-registry-noside');
+  const sizeBefore = registrySize();
+
+  await compileKeyFinderPreviewPrompt({
+    product: { ...PRODUCT, product_id: 'kfp-registry-noside' },
+    specDb, appDb: null, config: {}, productRoot: PRODUCT_ROOT,
+    body: { field_key: 'polling_rate', mode: 'loop' },
+  });
+
+  assert.equal(registrySize(), sizeBefore, 'preview must not register anything');
+});
+
+test('registry parity: peer at cap excluded from preview', async (t) => {
+  t.after(cleanupTmp);
+  t.after(() => registryReset());
+  registryReset();
+  const { specDb } = setup('kfp-registry-cap');
+  // dpi is already passenger in 2 other in-flight calls (easy cap = 2)
+  registryRegister('kfp-registry-cap', 'dpi', 'passenger');
+  registryRegister('kfp-registry-cap', 'dpi', 'passenger');
+
+  const env = await compileKeyFinderPreviewPrompt({
+    product: { ...PRODUCT, product_id: 'kfp-registry-cap' },
+    specDb, appDb: null, config: {}, productRoot: PRODUCT_ROOT,
+    body: { field_key: 'polling_rate', mode: 'loop' },
+  });
+
+  assert.ok(
+    !env.inputs_resolved.passenger_field_keys.includes('dpi'),
+    'dpi at cap is skipped in preview',
+  );
 });

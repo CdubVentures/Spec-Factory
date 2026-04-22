@@ -18,22 +18,25 @@ import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import {
   registerOperation,
   getOperationSignal,
-  updateStage,
-  updateModelInfo,
-  appendLlmCall,
+  markPassengersRegistered,
   completeOperation,
   failOperation,
   cancelOperation,
   fireAndForget,
+  setStatus,
+  acquireKeyLock,
 } from '../../../core/operations/index.js';
+import { buildOperationTelemetry } from '../../../core/operations/buildOperationTelemetry.js';
 import { createStreamBatcher } from '../../../core/llm/streamBatcher.js';
 import { stripRunSourceFromCandidates } from '../../../core/finder/finderRoutes.js';
 import { buildOrchestratorProduct } from '../../../core/finder/finderOrchestrationHelpers.js';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
 import { isReservedFieldKey, getReservedFieldKeys } from '../../../core/finder/finderExclusions.js';
-import { calcKeyBudget } from '../keyBudgetCalc.js';
-import { packBundle } from '../keyBundler.js';
+import { calcKeyBudget, readFloatKnob } from '../keyBudgetCalc.js';
+import * as keyFinderRegistry from '../../../core/operations/keyFinderRegistry.js';
+import { buildPassengers } from '../keyPassengerBuilder.js';
 import { runKeyFinder } from '../keyFinder.js';
+import { runKeyFinderLoop } from '../keyFinderLoop.js';
 import { compileKeyFinderPreviewPrompt } from '../keyFinderPreviewPrompt.js';
 import {
   readKeyFinder,
@@ -47,6 +50,51 @@ const SOURCE_TYPE = 'key_finder';
 
 function resolveProductRoot(config) {
   return config?.productRoot || defaultProductRoot();
+}
+
+// WHY: extracted so the route → runKeyFinder wiring is unit-testable. The load-
+// bearing bit is `policy: config?._llmPolicy`. Without that, runKeyFinder's
+// policy fallback (`config.keyFinderTiers`) is always undefined → tier cascade
+// collapses to `llmModelPlan` (default "gemini-2.5-flash"), and every tier
+// the user configured in the Key Finder LLM panel gets silently ignored.
+export function buildKeyFinderCommonOpts({
+  product,
+  fieldKey,
+  category,
+  specDb,
+  appDb = null,
+  config,
+  logger = null,
+  signal = null,
+  broadcastWs = null,
+  onStageAdvance = null,
+  onModelResolved = null,
+  onStreamChunk = null,
+  onQueueWait = null,
+  onPhaseChange = null,
+  onLlmCallComplete = null,
+  onPassengersRegistered = null,
+}) {
+  return {
+    product,
+    fieldKey,
+    category,
+    specDb,
+    appDb,
+    config,
+    policy: config?._llmPolicy ?? null,
+    logger: logger || null,
+    signal,
+    broadcastWs,
+    productRoot: resolveProductRoot(config),
+    onStageAdvance,
+    onModelResolved,
+    onStreamChunk,
+    onQueueWait,
+    onPhaseChange,
+    onLlmCallComplete,
+    onPassengersRegistered,
+  };
 }
 
 function filterRunsByFieldKey(runs, fieldKey) {
@@ -98,7 +146,7 @@ function readBudgetSettings(specDb) {
     budgetRequiredPoints: parseJsonSetting(readKnobString(store, 'budgetRequiredPoints'), { mandatory: 2, non_mandatory: 1 }),
     budgetAvailabilityPoints: parseJsonSetting(readKnobString(store, 'budgetAvailabilityPoints'), { always: 1, sometimes: 2, rare: 3 }),
     budgetDifficultyPoints: parseJsonSetting(readKnobString(store, 'budgetDifficultyPoints'), { easy: 1, medium: 2, hard: 3, very_hard: 4 }),
-    budgetVariantPointsPerExtra: parseInt(readKnobString(store, 'budgetVariantPointsPerExtra') || '1', 10) || 1,
+    budgetVariantPointsPerExtra: readFloatKnob(readKnobString(store, 'budgetVariantPointsPerExtra'), 0.25),
     budgetFloor: parseInt(readKnobString(store, 'budgetFloor') || '3', 10) || 3,
   };
 }
@@ -114,11 +162,16 @@ function readBundlingSettings(specDb) {
   };
   return {
     bundlingEnabled: boolKnob('bundlingEnabled', false),
+    alwaysSoloRun: boolKnob('alwaysSoloRun', true),
     groupBundlingOnly: boolKnob('groupBundlingOnly', true),
     bundlingPassengerCost: parseJsonSetting(readKnobString(store, 'bundlingPassengerCost'), { easy: 1, medium: 2, hard: 4, very_hard: 8 }),
     bundlingPoolPerPrimary: parseJsonSetting(readKnobString(store, 'bundlingPoolPerPrimary'), { easy: 6, medium: 4, hard: 2, very_hard: 1 }),
     passengerDifficultyPolicy: readKnobString(store, 'passengerDifficultyPolicy') || 'less_or_equal',
-    budgetVariantPointsPerExtra: parseInt(readKnobString(store, 'budgetVariantPointsPerExtra') || '1', 10) || 1,
+    budgetVariantPointsPerExtra: readFloatKnob(readKnobString(store, 'budgetVariantPointsPerExtra'), 0.25),
+    bundlingOverlapCapEasy: parseInt(readKnobString(store, 'bundlingOverlapCapEasy') || '2', 10),
+    bundlingOverlapCapMedium: parseInt(readKnobString(store, 'bundlingOverlapCapMedium') || '4', 10),
+    bundlingOverlapCapHard: parseInt(readKnobString(store, 'bundlingOverlapCapHard') || '6', 10),
+    bundlingOverlapCapVeryHard: parseInt(readKnobString(store, 'bundlingOverlapCapVeryHard') || '0', 10),
   };
 }
 
@@ -156,37 +209,34 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
   const threshold = Number.isFinite(publishConfidenceThreshold) ? publishConfidenceThreshold : 0;
   const hasResolvedHook = typeof specDb?.getResolvedFieldCandidate === 'function';
 
-  // Bulk-compute the resolved set once (O(keys) SQL reads, not O(keys²)) + group
-  // rules by group name so packBundle can find same-group candidates cheaply.
-  // Reserved field_keys (CEF/PIF/RDF/SKF-owned + EG-locked) are excluded from
-  // the candidate pool so keyFinder doesn't bundle peers owned by other finders.
-  const resolvedSet = new Set();
-  const rulesByGroup = new Map();
-  for (const [fk, rule] of Object.entries(fields)) {
-    if (isReservedFieldKey(fk)) continue;
-    if (hasResolvedHook && specDb.getResolvedFieldCandidate(productId, fk)) {
-      resolvedSet.add(fk);
-    }
-    const g = rule?.group || '';
-    if (!rulesByGroup.has(g)) rulesByGroup.set(g, []);
-    rulesByGroup.get(g).push({ fieldKey: fk, fieldRule: rule });
-  }
-
+  // Returns { preview, pool, totalCost }. `pool` is the primary's bundling
+  // budget (bundlingPoolPerPrimary[difficulty]) — surfaced even when bundling
+  // is OFF so the UI can show the theoretical capacity per difficulty tier.
+  // `preview` is the packed passenger list with per-passenger cost; users can
+  // eyeball-sum it against the pool via the Bundled cell's "{used}/{pool}" prefix.
+  //
+  // Routes through buildPassengers (the live-run path) so the column reflects
+  // cross-group scope, in-flight registry hard-block, per-tier overlap caps,
+  // and passengerExclude* gates — not just same-group + resolved-peers.
   function computeBundlePreview(fk, rule) {
-    if (!bundlingSettings.bundlingEnabled || !rule) return [];
-    const group = rule.group || '';
-    const sameGroup = rulesByGroup.get(group) || [];
-    const candidates = sameGroup.filter((c) => c.fieldKey !== fk);
-    const { breakdown } = packBundle({
+    const ruleDifficulty = rule?.difficulty || '';
+    const pool = Number(bundlingSettings.bundlingPoolPerPrimary?.[ruleDifficulty]) || 0;
+    if (!bundlingSettings.bundlingEnabled || !rule) {
+      return { preview: [], pool, totalCost: 0 };
+    }
+    const passengers = buildPassengers({
       primary: { fieldKey: fk, fieldRule: rule },
-      candidates,
-      resolvedFieldKeys: resolvedSet,
+      engineRules: fields,
+      specDb,
+      productId,
       settings: bundlingSettings,
     });
-    // Breakdown entries carry the passenger cost directly from the packer.
-    // UI renders "{field_key} (cost)" so users can eyeball-sum against the
-    // primary's pool without re-deriving costs on the client.
-    return breakdown.map((b) => ({ field_key: b.fieldKey, cost: b.cost }));
+    const preview = passengers.map((p) => ({
+      field_key: p.fieldKey,
+      cost: Number(bundlingSettings.bundlingPassengerCost?.[p.fieldRule.difficulty]) || 0,
+    }));
+    const totalCost = preview.reduce((sum, e) => sum + e.cost, 0);
+    return { preview, pool, totalCost };
   }
 
   function buildRow(fk, rule) {
@@ -213,9 +263,12 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
     }
 
     const candidateRows = specDb?.getFieldCandidatesByProductAndField?.(productId, fk) || [];
-    const { attempts: budget } = rule
+    const budgetResult = rule
       ? calcKeyBudget({ fieldRule: rule, variantCount, settings: budgetSettings })
-      : { attempts: null };
+      : { attempts: null, rawBudget: null };
+    const { attempts: budget, rawBudget: raw_budget } = budgetResult;
+    const { preview, pool, totalCost } = computeBundlePreview(fk, rule);
+    const inFlight = keyFinderRegistry.count(productId, fk);
 
     return {
       field_key: fk,
@@ -226,7 +279,10 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
       required_level: String(rule?.required_level || '').trim(),
       variant_dependent: rule?.variant_dependent === true,
       budget,
-      bundle_preview: computeBundlePreview(fk, rule),
+      raw_budget,
+      bundle_pool: pool,
+      bundle_total_cost: totalCost,
+      bundle_preview: preview,
       last_run_number: run ? (run.run_number || null) : null,
       last_ran_at: run ? (run.ran_at || run.started_at || '') : null,
       last_status: lastStatus,
@@ -236,6 +292,8 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
       candidate_count: candidateRows.length,
       published,
       run_count: runCountByKey.get(fk) || 0,
+      in_flight_as_primary: inFlight.asPrimary > 0,
+      in_flight_as_passenger_count: inFlight.asPassenger,
     };
   }
 
@@ -314,11 +372,18 @@ export function registerKeyFinderRoutes(ctx) {
       const s = readBundlingSettings(specDb);
       return jsonRes(res, 200, {
         enabled: s.bundlingEnabled,
+        alwaysSoloRun: s.alwaysSoloRun,
         groupBundlingOnly: s.groupBundlingOnly,
         passengerDifficultyPolicy: s.passengerDifficultyPolicy,
         poolPerPrimary: s.bundlingPoolPerPrimary,
         passengerCost: s.bundlingPassengerCost,
         variantCount: resolveVariantCount(specDb, productId),
+        overlapCaps: {
+          easy: s.bundlingOverlapCapEasy,
+          medium: s.bundlingOverlapCapMedium,
+          hard: s.bundlingOverlapCapHard,
+          very_hard: s.bundlingOverlapCapVeryHard,
+        },
       });
     }
 
@@ -436,14 +501,8 @@ export function registerKeyFinderRoutes(ctx) {
             message: `${fieldKey} is owned by another finder (CEF / PIF / RDF / SKF) and cannot run through keyFinder`,
           });
         }
-        if (mode === 'loop') {
-          return jsonRes(res, 400, {
-            error: 'loop_mode_not_yet_supported',
-            message: 'Phase 3b owns Loop mode. Phase 3a ships Run mode only.',
-          });
-        }
-        if (mode !== 'run') {
-          return jsonRes(res, 400, { error: 'invalid_mode', message: `mode must be "run" (got "${mode}")` });
+        if (mode !== 'run' && mode !== 'loop') {
+          return jsonRes(res, 400, { error: 'invalid_mode', message: `mode must be "run" or "loop" (got "${mode}")` });
         }
 
         // Field rule gate — reject unknown field keys before registering an op
@@ -456,8 +515,14 @@ export function registerKeyFinderRoutes(ctx) {
           });
         }
 
+        // WHY: Register with status='queued' immediately so the GUI can render
+        // a queue badge. For mode='loop' the button visibly locks; for 'run' it
+        // stays clickable (serializes silently). Transition to 'running' after
+        // acquiring the per-(pid, fieldKey) lock so two concurrent requests on
+        // the same key don't race on key_finder.json / SQL writes.
         const opArgs = {
           type: MODULE_TYPE,
+          subType: mode === 'loop' ? 'loop' : '',
           category,
           productId,
           productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
@@ -466,10 +531,19 @@ export function registerKeyFinderRoutes(ctx) {
           // useFireAndForget window.
           fieldKey,
           stages: ['Discovery', 'Validate', 'Publish'],
+          status: 'queued',
         };
         op = registerOperation(opArgs);
         batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
         const signal = getOperationSignal(op.id);
+
+        // Acquire the per-(pid, fieldKey) lock BEFORE dispatching asyncWork.
+        // Both 'run' and 'loop' share the same lock so Run doesn't race with
+        // an in-flight Loop on the same key.
+        const release = await acquireKeyLock(MODULE_TYPE, productId, fieldKey);
+        setStatus({ id: op.id, status: 'running' });
+
+        const eventName = mode === 'loop' ? `${ROUTE_PREFIX}-loop` : `${ROUTE_PREFIX}-run`;
 
         return fireAndForget({
           res,
@@ -479,30 +553,44 @@ export function registerKeyFinderRoutes(ctx) {
           broadcastWs,
           signal,
           emitArgs: {
-            event: `${ROUTE_PREFIX}-run`,
+            event: eventName,
             category,
             entities: { productIds: [productId] },
             meta: { productId, field_key: fieldKey },
           },
           asyncWork: () => {
             const product = buildOrchestratorProduct({ productId, category, productRow });
-            return runKeyFinder({
-              product,
-              fieldKey,
-              category,
-              specDb,
-              appDb,
-              config,
-              logger: logger || null,
-              signal,
-              broadcastWs,
-              productRoot: resolveProductRoot(config),
+            const commonOpts = buildKeyFinderCommonOpts({
+              product, fieldKey, category, specDb, appDb, config,
+              logger, signal, broadcastWs,
+              // Canonical telemetry bundle — maps the six standard callbacks
+              // to the operations registry. Matches RDF / SKU / CEF shape.
+              ...buildOperationTelemetry({ op, batcher, mode }),
+              // WHY: keyFinder overrides onPassengersRegistered to ALSO emit a
+              // data-change event for mid-run /summary invalidation. Under solo
+              // Run the passenger list is empty but the PRIMARY is still in the
+              // registry, and the hard-block (§priority runs: "additional keys
+              // should NOT USE keys on priority runs") must be visible to peer
+              // previews immediately. Without this emit, users can't see that
+              // a running primary is reserved until the call completes.
+              onPassengersRegistered: (passengerFieldKeys) => {
+                markPassengersRegistered({ id: op.id, passengerFieldKeys });
+                emitDataChange({
+                  broadcastWs,
+                  event: `${ROUTE_PREFIX}-run`,
+                  category,
+                  entities: { productIds: [productId] },
+                  meta: { productId, field_key: fieldKey, passenger_field_keys: passengerFieldKeys, phase: 'registered' },
+                });
+              },
             });
+            return mode === 'loop' ? runKeyFinderLoop(commonOpts) : runKeyFinder(commonOpts);
           },
           completeOperation,
           failOperation,
           cancelOperation,
           emitDataChange,
+          onSettled: release,
         });
       } catch (err) {
         if (batcher) batcher.dispose();

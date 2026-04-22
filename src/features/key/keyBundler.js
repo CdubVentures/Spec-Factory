@@ -9,13 +9,15 @@
  * Invariants:
  *   - Primary owns the budget line; passengers deduct from the primary's
  *     pool, NOT from primary's per-key attempt budget.
- *   - Sort key (availability, difficulty, field_key) ASC — field_key is
+ *   - Sort key (required_level, availability, difficulty, field_key) ASC —
+ *     mandatory peers pack before non_mandatory; field_key tiebreaker is
  *     load-bearing for deterministic output.
  *   - Output is stable regardless of input candidate order.
  */
 
 const AVAILABILITY_RANK = Object.freeze({ always: 0, sometimes: 1, rare: 2 });
 const DIFFICULTY_RANK = Object.freeze({ easy: 0, medium: 1, hard: 2, very_hard: 3 });
+const REQUIRED_RANK = Object.freeze({ mandatory: 0, non_mandatory: 1 });
 const VALID_REQ = new Set(['mandatory', 'non_mandatory']);
 
 function rankOr(table, key, fallback) {
@@ -90,9 +92,14 @@ export function packBundle({
     eligible.push(c);
   }
 
-  // Step 5 — deterministic sort: availability ASC, difficulty ASC, field_key ASC.
-  // "Cheap wins first" — easiest + most-available peers pack first.
+  // Step 5 — deterministic sort: required_level ASC, availability ASC,
+  // difficulty ASC, field_key ASC. Mandatory peers pack before non_mandatory;
+  // within each required_level tier, "cheap wins first" by availability then
+  // difficulty; field_key is the deterministic tiebreaker.
   eligible.sort((a, b) => {
+    const aReq = rankOr(REQUIRED_RANK, a.fieldRule.required_level, REQUIRED_RANK.non_mandatory + 1);
+    const bReq = rankOr(REQUIRED_RANK, b.fieldRule.required_level, REQUIRED_RANK.non_mandatory + 1);
+    if (aReq !== bReq) return aReq - bReq;
     const aAvail = rankOr(AVAILABILITY_RANK, a.fieldRule.availability, AVAILABILITY_RANK.rare + 1);
     const bAvail = rankOr(AVAILABILITY_RANK, b.fieldRule.availability, AVAILABILITY_RANK.rare + 1);
     if (aAvail !== bAvail) return aAvail - bAvail;
