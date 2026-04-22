@@ -21,6 +21,7 @@ import { HeaderActionButton, ACTION_BUTTON_WIDTH } from '../../../shared/ui/acti
 import { FinderSectionCard } from '../../../shared/ui/finder/FinderSectionCard.tsx';
 import { PromptPreviewModal } from '../../../shared/ui/finder/PromptPreviewModal.tsx';
 import { FinderDeleteConfirmModal } from '../../../shared/ui/finder/FinderDeleteConfirmModal.tsx';
+import { PromptDrawerChevron } from '../../../shared/ui/finder/PromptDrawerChevron.tsx';
 import type { DeleteTarget } from '../../../shared/ui/finder/types.ts';
 import { TabStrip } from '../../../shared/ui/navigation/TabStrip.tsx';
 import { usePersistedToggle, useCollapseStore } from '../../../stores/collapseStore.ts';
@@ -432,25 +433,35 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
               width={ACTION_BUTTON_WIDTH.keyHeader}
             />
             <div style={{ width: 1, height: 16, background: 'var(--sf-token-border, #dee2e6)' }} />
-            <HeaderActionButton
-              intent={publishedCountAll === 0 ? 'locked' : 'delete'}
-              label="Unresolve all"
-              onClick={handleUnresolveAll}
-              disabled={publishedCountAll === 0}
-              title={publishedCountAll === 0
-                ? 'Nothing to unresolve — no published keys in view.'
-                : `Demote all ${publishedCountAll} published key(s) back to candidate. Reversible.`}
-              width={ACTION_BUTTON_WIDTH.keyHeader}
-            />
-            <HeaderActionButton
-              intent={dataCountAll === 0 ? 'locked' : 'delete'}
-              label="Delete all"
-              onClick={handleDeleteAll}
-              disabled={dataCountAll === 0}
-              title={dataCountAll === 0
-                ? 'Nothing to delete — no keys with runs, candidates, or published values.'
-                : `Wipe every trace of ${dataCountAll} key(s) across every group. Not reversible.`}
-              width={ACTION_BUTTON_WIDTH.keyHeader}
+            <PromptDrawerChevron
+              storageKey={`key-finder:destructive-drawer:panel:${productId}`}
+              openWidthClass="w-96"
+              ariaLabel="Destructive actions for every key"
+              closedTitle="Show Unresolve all / Delete all"
+              openedTitle="Hide Unresolve all / Delete all"
+              chevronClass="sf-status-text-danger"
+              actions={[
+                {
+                  label: 'Unresolve all',
+                  onClick: handleUnresolveAll,
+                  disabled: publishedCountAll === 0,
+                  intent: publishedCountAll === 0 ? 'locked' : 'delete',
+                  width: ACTION_BUTTON_WIDTH.keyHeader,
+                  title: publishedCountAll === 0
+                    ? 'Nothing to unresolve — no published keys in view.'
+                    : `Demote all ${publishedCountAll} published key(s) back to candidate. Reversible.`,
+                },
+                {
+                  label: 'Delete all',
+                  onClick: handleDeleteAll,
+                  disabled: dataCountAll === 0,
+                  intent: dataCountAll === 0 ? 'locked' : 'delete',
+                  width: ACTION_BUTTON_WIDTH.keyHeader,
+                  title: dataCountAll === 0
+                    ? 'Nothing to delete — no keys with runs, candidates, or published values.'
+                    : `Wipe every trace of ${dataCountAll} key(s) across every group. Not reversible.`,
+                },
+              ]}
             />
           </>
         }

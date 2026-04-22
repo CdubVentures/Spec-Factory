@@ -300,7 +300,7 @@ test('AbortSignal: already-aborted signal → no iterations run', async () => {
 // after the loop exits with the computed final_status. Shape is identical
 // across all finders so LoopProgressRouter can shape-detect on the frontend.
 
-test('onLoopProgress emits pill per iteration + 1 terminal emission with final_status', async () => {
+test('onLoopProgress emits pre+post pill per iteration + 1 terminal with final_status', async () => {
   const specDb = makeSpecDb();
   const runOverride = makeRunOverride([
     { status: 'below_threshold' },
@@ -316,30 +316,44 @@ test('onLoopProgress emits pill per iteration + 1 terminal emission with final_s
     _runKeyFinderOverride: runOverride,
   });
 
-  // 3 per-iteration + 1 terminal = 4 emissions. Budget is 5 (medium/mandatory/always/1-variant).
-  assert.equal(progressEvents.length, 4, '3 per-iteration events + 1 terminal event');
+  // WHY: 2 per iteration (pre + post) * 3 iterations + 1 terminal = 7.
+  // The pre-iter pill updates the sidebar to "call N/budget" the instant iter
+  // N starts, so the user sees which LLM call is in flight — not only after
+  // it finishes. The post-iter pill then fills in satisfied + confidence.
+  assert.equal(progressEvents.length, 7, '3 pre-iter + 3 post-iter + 1 terminal');
 
-  // Per-iteration shape check (final_status: null)
-  for (let i = 0; i < 3; i += 1) {
-    const e = progressEvents[i];
-    assert.equal(e.final_status, null, `per-iteration event ${i} must carry final_status=null`);
-    assert.equal(e.loop_id, result.loop_id);
-    assert.equal(e.publish.target, 1);
-    assert.equal(e.callBudget.budget, 5);
-    assert.equal(e.callBudget.used, i + 1, `used increments — iteration ${i + 1}`);
+  // Every event shares the same loop_id.
+  assert.ok(progressEvents.every((e) => e.loop_id === result.loop_id));
+
+  // Intermediate events (6) carry final_status=null + budget=5.
+  for (let i = 0; i < 6; i += 1) {
+    assert.equal(progressEvents[i].final_status, null);
+    assert.equal(progressEvents[i].publish.target, 1);
+    assert.equal(progressEvents[i].callBudget.budget, 5);
   }
+  // callBudget.used ticks: pre-1=1, post-1=1, pre-2=2, post-2=2, pre-3=3, post-3=3
+  assert.equal(progressEvents[0].callBudget.used, 1, 'pre-iter 1');
+  assert.equal(progressEvents[1].callBudget.used, 1, 'post-iter 1');
+  assert.equal(progressEvents[2].callBudget.used, 2, 'pre-iter 2');
+  assert.equal(progressEvents[4].callBudget.used, 3, 'pre-iter 3');
+  assert.equal(progressEvents[5].callBudget.used, 3, 'post-iter 3');
 
-  // Iter 3 published → satisfied=true + confidence
-  assert.equal(progressEvents[2].publish.satisfied, true);
-  assert.equal(progressEvents[2].publish.count, 1);
-  assert.equal(progressEvents[2].publish.confidence, 92);
+  // Pre-iter pills never have satisfied=true (iter hasn't run yet).
+  assert.equal(progressEvents[0].publish.satisfied, false);
+  assert.equal(progressEvents[2].publish.satisfied, false);
+  assert.equal(progressEvents[4].publish.satisfied, false);
 
-  // Terminal event carries the final_status
-  const terminal = progressEvents[3];
+  // Post-iter 3 — the call published → satisfied + confidence.
+  assert.equal(progressEvents[5].publish.satisfied, true);
+  assert.equal(progressEvents[5].publish.count, 1);
+  assert.equal(progressEvents[5].publish.confidence, 92);
+
+  // Terminal pill — final_status='published'.
+  const terminal = progressEvents[6];
   assert.equal(terminal.final_status, 'published');
   assert.equal(terminal.publish.satisfied, true);
   assert.equal(terminal.publish.confidence, 92);
-  assert.equal(terminal.callBudget.used, 3, 'stopped at iteration 3');
+  assert.equal(terminal.callBudget.used, 3);
   assert.equal(terminal.callBudget.exhausted, false, 'early-stopped before budget');
 });
 

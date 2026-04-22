@@ -20,6 +20,7 @@
 import { memo } from 'react';
 import { ConfidenceRing } from '../../../shared/ui/finder/ConfidenceRing.tsx';
 import { DiscoveryHistoryButton } from '../../../shared/ui/finder/DiscoveryHistoryButton.tsx';
+import { PromptDrawerChevron } from '../../../shared/ui/finder/PromptDrawerChevron.tsx';
 import { RowActionButton, ACTION_BUTTON_WIDTH } from '../../../shared/ui/actionButton/index.ts';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
@@ -359,33 +360,39 @@ export const KeyRow = memo(function KeyRow({ entry, productId, category, onRun, 
             width={ACTION_BUTTON_WIDTH.keyRow}
           />
           <div style={{ width: 1, height: 16, background: 'var(--sf-token-border, #dee2e6)' }} />
-          <RowActionButton
-            intent={unresolveDisabled ? 'locked' : 'delete'}
-            label="Unresolve"
-            onClick={() => onUnresolve(entry.field_key)}
-            disabled={unresolveDisabled}
-            title={
-              entry.running
-                ? 'Wait for the running op to finish before unresolving.'
-                : !entry.published
-                  ? 'Nothing to unresolve — no published value for this key.'
-                  : TOOLTIPS.keyUnresolve
-            }
-            width={ACTION_BUTTON_WIDTH.keyRow}
-          />
-          <RowActionButton
-            intent={deleteDisabled ? 'locked' : 'delete'}
-            label="Delete"
-            onClick={() => onDelete(entry.field_key)}
-            disabled={deleteDisabled}
-            title={
-              entry.running
-                ? 'Wait for the running op to finish before deleting.'
-                : !hasAnyData
-                  ? 'Nothing to delete — no runs, candidates, or published value for this key.'
-                  : TOOLTIPS.keyDelete
-            }
-            width={ACTION_BUTTON_WIDTH.keyRow}
+          <PromptDrawerChevron
+            storageKey={`key-finder:destructive-drawer:${entry.field_key}`}
+            openWidthClass="w-52"
+            ariaLabel={`Destructive actions for ${entry.field_key}`}
+            closedTitle="Show Unresolve / Delete"
+            openedTitle="Hide Unresolve / Delete"
+            chevronClass="sf-status-text-danger"
+            actions={[
+              {
+                label: 'Unresolve',
+                onClick: () => onUnresolve(entry.field_key),
+                disabled: unresolveDisabled,
+                intent: unresolveDisabled ? 'locked' : 'delete',
+                width: ACTION_BUTTON_WIDTH.keyRow,
+                title: entry.running
+                  ? 'Wait for the running op to finish before unresolving.'
+                  : !entry.published
+                    ? 'Nothing to unresolve — no published value for this key.'
+                    : TOOLTIPS.keyUnresolve,
+              },
+              {
+                label: 'Delete',
+                onClick: () => onDelete(entry.field_key),
+                disabled: deleteDisabled,
+                intent: deleteDisabled ? 'locked' : 'delete',
+                width: ACTION_BUTTON_WIDTH.keyRow,
+                title: entry.running
+                  ? 'Wait for the running op to finish before deleting.'
+                  : !hasAnyData
+                    ? 'Nothing to delete — no runs, candidates, or published value for this key.'
+                    : TOOLTIPS.keyDelete,
+              },
+            ]}
           />
         </span>
       </td>

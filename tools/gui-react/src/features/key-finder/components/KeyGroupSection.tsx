@@ -13,6 +13,7 @@ import { LIVE_MODES, DISABLED_REASONS, TOOLTIPS } from '../types.ts';
 import { KeyRow } from './KeyRow.tsx';
 import { RowActionButton, ACTION_BUTTON_WIDTH } from '../../../shared/ui/actionButton/index.ts';
 import { DiscoveryHistoryButton } from '../../../shared/ui/finder/DiscoveryHistoryButton.tsx';
+import { PromptDrawerChevron } from '../../../shared/ui/finder/PromptDrawerChevron.tsx';
 
 interface KeyGroupSectionProps {
   readonly group: KeyGroup;
@@ -130,25 +131,35 @@ export const KeyGroupSection = memo(function KeyGroupSection({
             width={ACTION_BUTTON_WIDTH.keyGroup}
           />
           <div style={{ width: 1, height: 16, background: 'var(--sf-token-border, #dee2e6)' }} />
-          <RowActionButton
-            intent={publishedCount === 0 ? 'locked' : 'delete'}
-            label="Unresolve group"
-            onClick={handleUnresolveGroup}
-            disabled={publishedCount === 0}
-            title={publishedCount === 0
-              ? 'Nothing to unresolve — no published keys in this group.'
-              : `Demote all ${publishedCount} published key(s) in this group back to candidate. Reversible.`}
-            width={ACTION_BUTTON_WIDTH.keyGroup}
-          />
-          <RowActionButton
-            intent={dataCount === 0 ? 'locked' : 'delete'}
-            label="Delete group"
-            onClick={handleDeleteGroup}
-            disabled={dataCount === 0}
-            title={dataCount === 0
-              ? 'Nothing to delete — no keys in this group have runs, candidates, or published values.'
-              : `Wipe every trace of ${dataCount} key(s) in this group. Not reversible.`}
-            width={ACTION_BUTTON_WIDTH.keyGroup}
+          <PromptDrawerChevron
+            storageKey={`key-finder:destructive-drawer:group:${group.name}`}
+            openWidthClass="w-80"
+            ariaLabel={`Destructive actions for group ${group.name}`}
+            closedTitle={`Show Unresolve / Delete for "${group.name}"`}
+            openedTitle={`Hide Unresolve / Delete for "${group.name}"`}
+            chevronClass="sf-status-text-danger"
+            actions={[
+              {
+                label: 'Unresolve group',
+                onClick: handleUnresolveGroup,
+                disabled: publishedCount === 0,
+                intent: publishedCount === 0 ? 'locked' : 'delete',
+                width: ACTION_BUTTON_WIDTH.keyGroup,
+                title: publishedCount === 0
+                  ? 'Nothing to unresolve — no published keys in this group.'
+                  : `Demote all ${publishedCount} published key(s) in this group back to candidate. Reversible.`,
+              },
+              {
+                label: 'Delete group',
+                onClick: handleDeleteGroup,
+                disabled: dataCount === 0,
+                intent: dataCount === 0 ? 'locked' : 'delete',
+                width: ACTION_BUTTON_WIDTH.keyGroup,
+                title: dataCount === 0
+                  ? 'Nothing to delete — no keys in this group have runs, candidates, or published values.'
+                  : `Wipe every trace of ${dataCount} key(s) in this group. Not reversible.`,
+              },
+            ]}
           />
         </span>
       </button>

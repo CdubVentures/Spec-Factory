@@ -12,14 +12,22 @@
  * RDF/SKU Phase 3 (reveals Run/Loop).
  */
 
+import type { ReactNode } from 'react';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { RowActionButton, ACTION_BUTTON_WIDTH } from '../actionButton/index.ts';
+import type { ActionButtonIntent } from '../actionButton/index.ts';
 
 interface PromptDrawerAction {
   readonly label: string;
   readonly onClick: () => void;
   readonly disabled?: boolean;
   readonly title?: string;
+  /** Override the default 'prompt' intent. Use 'delete' for destructive
+   *  actions like Unresolve / Delete. */
+  readonly intent?: ActionButtonIntent;
+  /** Override the default standardRow width. Use for actions with longer
+   *  labels (e.g. "Unresolve" / "Delete group" need keyRow / keyGroup). */
+  readonly width?: string;
 }
 
 interface PromptDrawerChevronProps {
@@ -30,6 +38,18 @@ interface PromptDrawerChevronProps {
   readonly ariaLabel: string;
   /** Small caps label shown at the left edge of the drawer when open. */
   readonly openTitle?: string;
+  /** Chevron + prompt-preview-label class. Use a destructive-tinted variant
+   *  when wrapping Delete/Unresolve actions so the collapsed chevron signals
+   *  the drawer's contents. Defaults to the prompt-preview tokens. */
+  readonly chevronClass?: string;
+  readonly labelClass?: string;
+  /** Tooltip shown when the chevron is closed / open. Defaults to the
+   *  prompt-preview wording. */
+  readonly closedTitle?: string;
+  readonly openedTitle?: string;
+  /** Optional element rendered in place of the default title label when
+   *  open. Useful for leading icons or compound labels. */
+  readonly openTitleContent?: ReactNode;
 }
 
 export function PromptDrawerChevron({
@@ -39,6 +59,11 @@ export function PromptDrawerChevron({
   closedWidthClass = 'w-7',
   ariaLabel,
   openTitle,
+  chevronClass,
+  labelClass,
+  closedTitle,
+  openedTitle,
+  openTitleContent,
 }: PromptDrawerChevronProps) {
   const [open, toggleOpen] = usePersistedToggle(storageKey, false);
 
@@ -52,28 +77,28 @@ export function PromptDrawerChevron({
         <div
           className={`flex min-w-0 flex-1 items-center justify-end gap-1.5 pr-1 transition-opacity duration-200 ${open ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
         >
-          {openTitle && (
-            <span className="text-[9px] font-bold uppercase tracking-[0.12em] sf-prompt-preview-label mr-3 whitespace-nowrap">
+          {openTitleContent ?? (openTitle && (
+            <span className={`text-[9px] font-bold uppercase tracking-[0.12em] mr-3 whitespace-nowrap ${labelClass ?? 'sf-prompt-preview-label'}`}>
               {openTitle}
             </span>
-          )}
+          ))}
           {actions.map((action) => (
             <RowActionButton
               key={action.label}
-              intent="prompt"
+              intent={action.intent ?? 'prompt'}
               label={action.label}
               onClick={action.onClick}
               disabled={action.disabled}
               title={action.title ?? `Preview ${action.label} prompt`}
-              width={ACTION_BUTTON_WIDTH.standardRow}
+              width={action.width ?? ACTION_BUTTON_WIDTH.standardRow}
             />
           ))}
         </div>
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); toggleOpen(); }}
-          className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded sf-text-muted opacity-60 hover:opacity-100 transition-opacity"
-          title={open ? 'Hide prompt previews' : 'Show prompt previews'}
+          className={`inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded opacity-60 hover:opacity-100 transition-opacity ${chevronClass ?? 'sf-text-muted'}`}
+          title={open ? (openedTitle ?? 'Hide prompt previews') : (closedTitle ?? 'Show prompt previews')}
           aria-expanded={open}
           aria-controls={`${storageKey}-drawer`}
         >

@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { wsManager } from '../api/ws.ts';
 
-type WsChannel = 'events' | 'process' | 'process-status' | 'data-change' | 'test-import-progress' | 'test-run-progress' | 'test-repair-progress' | 'indexlab-event' | 'operations' | 'llm-stream';
+type WsChannel = 'events' | 'process' | 'process-status' | 'data-change' | 'test-import-progress' | 'test-run-progress' | 'test-repair-progress' | 'indexlab-event' | 'operations' | 'llm-stream' | 'heartbeat';
 type WsMessageHandler = (channel: WsChannel, data: unknown) => void;
 
 interface UseWsSubscriptionOptions {

@@ -173,6 +173,19 @@ export async function runKeyFinderLoop(opts) {
       break;
     }
 
+    // Pre-iteration pill — fires BEFORE runKeyFinder so the sidebar card shows
+    // "we're on call iter/attempts" the moment the LLM call starts, not only
+    // after it returns. publish state is always not-yet at this point (the
+    // loop breaks on publish so no accumulation across iters).
+    try {
+      onLoopProgress?.({
+        publish: { count: 0, target: 1, satisfied: false, confidence: null },
+        callBudget: { used: iter, budget: attempts, exhausted: iter >= attempts },
+        final_status: null,
+        loop_id,
+      });
+    } catch { /* onLoopProgress errors must not abort the loop */ }
+
     const result = await runKeyFinder({
       product, fieldKey, category,
       specDb, appDb, config,
