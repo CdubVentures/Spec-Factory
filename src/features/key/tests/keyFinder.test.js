@@ -783,6 +783,15 @@ test('emits onLlmCallComplete twice per LLM call: pending (response:null) then c
   assert.ok('thinking' in completed && 'webSearch' in completed && 'effortLevel' in completed && 'accessMode' in completed,
     'full modelTracking shape — modal reads these for the capability chip');
   assert.ok('usage' in completed, 'usage field so modal can render token counts + cost');
+
+  // WHY: Locks the withLlmCallTracking migration — the wrapper stamps these at
+  // the top level of the completed emission so the modal's LlmCallCard can
+  // render "dur <ms>" without hunting through response.*. If a future refactor
+  // drops the wrapper these assertions break loudly.
+  assert.equal(typeof completed.started_at, 'string');
+  assert.match(completed.started_at, /^\d{4}-\d{2}-\d{2}T/, 'ISO-8601 timestamp');
+  assert.equal(typeof completed.duration_ms, 'number');
+  assert.ok(completed.duration_ms >= 0, 'duration_ms non-negative');
 });
 
 test('threads onModelResolved / onStreamChunk / onQueueWait to buildLlmCallDeps (regression: was dropped)', async (t) => {

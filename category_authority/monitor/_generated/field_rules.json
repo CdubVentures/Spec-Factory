@@ -8372,7 +8372,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "general",
+        "group": "General",
         "guidance_md": null,
         "label": "Release Date",
         "order": 104,
@@ -9061,7 +9061,7 @@
           "sheet": null
         }
       },
-      "group": "general",
+      "group": "identity",
       "key": "sku",
       "output_shape": "scalar",
       "parse": {},
@@ -9098,7 +9098,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "general",
+        "group": "Identity",
         "guidance_md": null,
         "label": "SKU",
         "order": 5,

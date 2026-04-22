@@ -35,7 +35,14 @@ import { generateLoopId } from './loopIdGenerator.js';
  * @param {number} [opts.staggerMs]                         — delay between variants
  * @param {(stage: string) => void} [opts.onStageAdvance]
  * @param {(completed, total, variantKey) => void} [opts.onVariantProgress]
- * @param {(ev: { variantKey, variantLabel, attempt, budget, satisfied, skipped, loopId }) => void} [opts.onLoopProgress]
+ * @param {Function} [opts.onLoopProgress] — Canonical pill-shape emission; see
+ *   docs/implementation/active operations upgrade/active-operations-upgrade-guide.html §6.
+ *   Shape: { publish: {count, target, satisfied, confidence},
+ *            callBudget: {used, budget, exhausted},
+ *            final_status, loop_id, variantKey, variantLabel }
+ *   Per-attempt events carry final_status=null. A terminal per-variant event
+ *   fires once with the derived final_status ('published' | 'budget_exhausted'
+ *   | 'skipped_resolved'). The skipped path emits exactly one pill.
  * @param {object} [opts.logger]
  */
 export async function runVariantFieldLoop({
@@ -58,39 +65,60 @@ export async function runVariantFieldLoop({
     const variantBudget = Number.isFinite(rawBudget) ? Math.max(0, Math.floor(rawBudget)) : 0;
 
     if (variantBudget === 0) {
+      // Skipped-resolved path — one pill, no attempts fire.
       onLoopProgress?.({
+        publish: { count: 1, target: 1, satisfied: true, confidence: null },
+        callBudget: { used: 0, budget: 0, exhausted: false },
+        final_status: 'skipped_resolved',
+        loop_id: loopId,
         variantKey: variant.key,
         variantLabel: variant.label,
-        attempt: 0,
-        budget: 0,
-        satisfied: true,
-        skipped: true,
-        loopId,
       });
       return { _loop: { attempts: 0, satisfied: true, skipped: true, loopId } };
     }
 
     let lastResult = null;
+    let satisfiedFinal = false;
+    let stoppedAtAttempt = 0;
     for (let attempt = 1; attempt <= variantBudget; attempt++) {
       const attemptCtx = { ...ctx, attempt, budget: variantBudget, loopId };
       const result = await produceForVariant(variant, i, attemptCtx);
       lastResult = result;
       const satisfied = Boolean(satisfactionPredicate?.(result));
+      // Per-attempt pill — final_status=null while the loop is still running.
       onLoopProgress?.({
+        publish: { count: satisfied ? 1 : 0, target: 1, satisfied, confidence: null },
+        callBudget: { used: attempt, budget: variantBudget, exhausted: attempt >= variantBudget },
+        final_status: null,
+        loop_id: loopId,
         variantKey: variant.key,
         variantLabel: variant.label,
-        attempt,
-        budget: variantBudget,
-        satisfied,
-        skipped: false,
-        loopId,
       });
       if (satisfied) {
-        return {
-          ...(result || {}),
-          _loop: { attempts: attempt, satisfied: true, skipped: false, loopId },
-        };
+        satisfiedFinal = true;
+        stoppedAtAttempt = attempt;
+        break;
       }
+      stoppedAtAttempt = attempt;
+    }
+
+    // Terminal per-variant pill — the derived final_status lets the modal show
+    // whether this variant stopped because the target met or budget exhausted.
+    const terminalStatus = satisfiedFinal ? 'published' : 'budget_exhausted';
+    onLoopProgress?.({
+      publish: { count: satisfiedFinal ? 1 : 0, target: 1, satisfied: satisfiedFinal, confidence: null },
+      callBudget: { used: stoppedAtAttempt, budget: variantBudget, exhausted: stoppedAtAttempt >= variantBudget && !satisfiedFinal },
+      final_status: terminalStatus,
+      loop_id: loopId,
+      variantKey: variant.key,
+      variantLabel: variant.label,
+    });
+
+    if (satisfiedFinal) {
+      return {
+        ...(lastResult || {}),
+        _loop: { attempts: stoppedAtAttempt, satisfied: true, skipped: false, loopId },
+      };
     }
     return {
       ...(lastResult || {}),

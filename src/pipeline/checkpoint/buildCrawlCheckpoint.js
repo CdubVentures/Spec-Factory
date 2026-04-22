@@ -27,18 +27,32 @@ function mapSource(result) {
     video_file: workerId ? `${workerId}.webm` : null,
     timeout_rescued: Boolean(result.timeoutRescued),
     fetch_error: fetchError,
+    // WHY: B6 — triage metadata joined into crawlResults upstream by
+    // enrichCrawlResults(). Forwarded here so run.json sources[] carry
+    // evidence-tier scoring inputs.
+    hint_source: result.hint_source || null,
+    tier: result.tier || null,
+    providers: result.providers || null,
   };
 }
 
 /**
- * @param {{ crawlResults: Array, runId: string, category: string, productId: string, s3Key: string, startMs: number, fetchPlanStats?: object, needset?: object, searchProfile?: object, runSummary?: object, status?: string, identityLock?: object }} opts
+ * @param {{ crawlResults: Array, runId: string, category: string, productId: string, s3Key: string, startMs: number, fetchPlanStats?: object, needset?: object, searchProfile?: object, runSummary?: object, status?: string, identityLock?: object, bridgeCounters?: object }} opts
  * @returns {object} Run checkpoint manifest (run.json)
  */
-export function buildCrawlCheckpoint({ crawlResults, runId, category, productId, s3Key, startMs, fetchPlanStats, needset, searchProfile, runSummary, brandResolution, status, identityLock, runtimeOpsPanels } = {}) {
+export function buildCrawlCheckpoint({ crawlResults, runId, category, productId, s3Key, startMs, fetchPlanStats, needset, searchProfile, runSummary, brandResolution, status, identityLock, runtimeOpsPanels, bridgeCounters } = {}) {
   const results = Array.isArray(crawlResults) ? crawlResults : [];
   const sources = results.map(mapSource);
   const stats = fetchPlanStats || {};
   const id = identityLock || {};
+
+  // WHY: B12 — runs.counters was only ever getting URL-level counts because
+  // checkpoint.counters didn't carry bridge counters (pages_checked,
+  // parse_completed, indexed_docs, fields_filled, search_workers). On server
+  // boot, scanAndSeedCheckpoints reseeds runs.counters from checkpoint.counters
+  // and overwrites whatever writeRunMeta had written. Merge bridge counters
+  // beneath URL counters so both survive the round-trip.
+  const bridgeCountersSafe = (bridgeCounters && typeof bridgeCounters === 'object') ? bridgeCounters : null;
 
   return {
     schema_version: runtimeOpsPanels ? 3 : 2,
@@ -67,6 +81,7 @@ export function buildCrawlCheckpoint({ crawlResults, runId, category, productId,
       blocked_count: Number(stats.blocked_count || 0),
     },
     counters: {
+      ...(bridgeCountersSafe || {}),
       urls_crawled: sources.length,
       urls_successful: sources.filter((s) => s.success).length,
       urls_blocked: sources.filter((s) => s.blocked).length,

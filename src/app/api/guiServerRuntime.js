@@ -12,6 +12,7 @@ import { registerIndexlabRoutes } from '../../features/indexing/api/indexlabRout
 import { registerCatalogRoutes } from '../../features/catalog/api/catalogRoutes.js';
 import { registerBrandRoutes } from '../../features/catalog/api/brandRoutes.js';
 import { registerStudioRoutes } from '../../features/studio/api/studioRoutes.js';
+import { registerCategoryAuditRoutes } from '../../features/category-audit/index.js';
 import { registerDataAuthorityRoutes } from '../../features/category-authority/api/dataAuthorityRoutes.js';
 import { registerReviewRoutes } from '../../features/review/api/reviewRoutes.js';
 import { registerTestModeRoutes } from './routes/testModeRoutes.js';
@@ -205,6 +206,9 @@ export function createGuiServerRuntime({
         getSpecDb, getSpecDbReady, storage, startProcess, broadcastWs,
         reviewLayoutByCategory, appDb,
       }),
+      categoryAuditRouteContext: {
+        jsonRes, readJsonBody, config,
+      },
       testModeRouteContext: createTestModeRouteContext({
         jsonRes, readJsonBody, HELPER_ROOT,
         getSpecDbReady, path, safeReadJson,
@@ -243,6 +247,7 @@ export function createGuiServerRuntime({
       ...finderRouteDefinitions,
       { key: 'moduleSettings', registrar: registerModuleSettingsRoutes },
       { key: 'studio', registrar: registerStudioRoutes },
+      { key: 'categoryAudit', registrar: registerCategoryAuditRoutes },
       { key: 'dataAuthority', registrar: registerDataAuthorityRoutes },
       { key: 'queueBillingLearning', registrar: registerQueueBillingLearningRoutes },
       { key: 'review', registrar: registerReviewRoutes },

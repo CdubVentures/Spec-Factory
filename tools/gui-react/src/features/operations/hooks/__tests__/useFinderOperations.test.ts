@@ -4,6 +4,8 @@ import {
   selectIsRunning,
   selectRunningVariantKeys,
   selectKeyFieldOpStatesSignature,
+  selectPassengerRidesSignature,
+  selectActivePassengersSignature,
 } from '../useFinderOperations.ts';
 import type { Operation } from '../../state/operationsStore.ts';
 
@@ -190,5 +192,118 @@ describe('selectKeyFieldOpStatesSignature', () => {
       makeOp({ id: 'b', type: 'kf', productId: 'p1', fieldKey: 'dpi', subType: 'loop', status: 'running' }),
     );
     assert.equal(selectKeyFieldOpStatesSignature(ops, 'kf', 'p1'), 'dpi:running:loop');
+  });
+});
+
+/* ── selectPassengerRidesSignature (Riding column feed) ─────────── */
+
+describe('selectPassengerRidesSignature', () => {
+  it('empty when no ops have passengers', () => {
+    assert.equal(selectPassengerRidesSignature(new Map(), 'kf', 'p1'), '');
+  });
+
+  it('builds reverse map from running ops with passengerFieldKeys', () => {
+    const ops = opsMap(
+      makeOp({ id: 'a', type: 'kf', productId: 'p1', fieldKey: 'ips', status: 'running', passengerFieldKeys: ['acceleration', 'motion_sync'] }),
+    );
+    assert.equal(selectPassengerRidesSignature(ops, 'kf', 'p1'), 'acceleration:ips|motion_sync:ips');
+  });
+
+  it('aggregates the same passenger across multiple primaries', () => {
+    const ops = opsMap(
+      makeOp({ id: 'a', type: 'kf', productId: 'p1', fieldKey: 'ips', status: 'running', passengerFieldKeys: ['acceleration'] }),
+      makeOp({ id: 'b', type: 'kf', productId: 'p1', fieldKey: 'dpi', status: 'running', passengerFieldKeys: ['acceleration'] }),
+    );
+    assert.equal(selectPassengerRidesSignature(ops, 'kf', 'p1'), 'acceleration:dpi,ips');
+  });
+
+  it('excludes terminal ops (done/error/cancelled)', () => {
+    const ops = opsMap(
+      makeOp({ id: 'a', type: 'kf', productId: 'p1', fieldKey: 'ips', status: 'done', passengerFieldKeys: ['acceleration'] }),
+      makeOp({ id: 'b', type: 'kf', productId: 'p1', fieldKey: 'dpi', status: 'error', passengerFieldKeys: ['motion_sync'] }),
+      makeOp({ id: 'c', type: 'kf', productId: 'p1', fieldKey: 'nvidia_reflex', status: 'cancelled', passengerFieldKeys: ['lift_settings'] }),
+    );
+    assert.equal(selectPassengerRidesSignature(ops, 'kf', 'p1'), '', 'terminal ops drop off the Riding column');
+  });
+
+  it('excludes ops with no passengerFieldKeys (solo Run)', () => {
+    const ops = opsMap(
+      makeOp({ id: 'a', type: 'kf', productId: 'p1', fieldKey: 'ips', status: 'running' }),
+      makeOp({ id: 'b', type: 'kf', productId: 'p1', fieldKey: 'dpi', status: 'running', passengerFieldKeys: [] }),
+    );
+    assert.equal(selectPassengerRidesSignature(ops, 'kf', 'p1'), '');
+  });
+
+  it('scopes by type + productId', () => {
+    const ops = opsMap(
+      makeOp({ id: 'a', type: 'kf', productId: 'p1', fieldKey: 'ips', status: 'running', passengerFieldKeys: ['acceleration'] }),
+      makeOp({ id: 'b', type: 'kf', productId: 'p2', fieldKey: 'dpi', status: 'running', passengerFieldKeys: ['motion_sync'] }),
+      makeOp({ id: 'c', type: 'pif', productId: 'p1', fieldKey: 'ips', status: 'running', passengerFieldKeys: ['hero'] }),
+    );
+    assert.equal(selectPassengerRidesSignature(ops, 'kf', 'p1'), 'acceleration:ips', 'only p1/kf counts');
+  });
+
+  it('does not list the primary as its own passenger (defensive)', () => {
+    const ops = opsMap(
+      makeOp({ id: 'a', type: 'kf', productId: 'p1', fieldKey: 'ips', status: 'running', passengerFieldKeys: ['ips', 'acceleration'] }),
+    );
+    assert.equal(selectPassengerRidesSignature(ops, 'kf', 'p1'), 'acceleration:ips', 'primary-as-self-passenger filtered');
+  });
+});
+
+/* ── selectActivePassengersSignature (Passengers column feed) ───── */
+
+describe('selectActivePassengersSignature', () => {
+  it('empty when no ops have passengers', () => {
+    assert.equal(selectActivePassengersSignature(new Map(), 'kf', 'p1'), '');
+  });
+
+  it('maps primary → its packed passengers for running ops', () => {
+    const ops = opsMap(
+      makeOp({ id: 'a', type: 'kf', productId: 'p1', fieldKey: 'ips', status: 'running', passengerFieldKeys: ['acceleration', 'motion_sync'] }),
+    );
+    assert.equal(selectActivePassengersSignature(ops, 'kf', 'p1'), 'ips:acceleration,motion_sync');
+  });
+
+  it('handles multiple concurrent primaries independently', () => {
+    const ops = opsMap(
+      makeOp({ id: 'a', type: 'kf', productId: 'p1', fieldKey: 'flawless_sensor', status: 'running', passengerFieldKeys: ['sensor_link'] }),
+      makeOp({ id: 'b', type: 'kf', productId: 'p1', fieldKey: 'dpi', status: 'running', passengerFieldKeys: ['hardware_acceleration', 'motion_sync'] }),
+    );
+    assert.equal(
+      selectActivePassengersSignature(ops, 'kf', 'p1'),
+      'dpi:hardware_acceleration,motion_sync|flawless_sensor:sensor_link',
+    );
+  });
+
+  it('excludes terminal ops — the primary has already released its passengers', () => {
+    const ops = opsMap(
+      makeOp({ id: 'a', type: 'kf', productId: 'p1', fieldKey: 'ips', status: 'done', passengerFieldKeys: ['acceleration'] }),
+      makeOp({ id: 'b', type: 'kf', productId: 'p1', fieldKey: 'dpi', status: 'cancelled', passengerFieldKeys: ['motion_sync'] }),
+    );
+    assert.equal(selectActivePassengersSignature(ops, 'kf', 'p1'), '');
+  });
+
+  it('excludes primary with empty passenger list (solo run)', () => {
+    const ops = opsMap(
+      makeOp({ id: 'a', type: 'kf', productId: 'p1', fieldKey: 'ips', status: 'running', passengerFieldKeys: [] }),
+      makeOp({ id: 'b', type: 'kf', productId: 'p1', fieldKey: 'dpi', status: 'running' }), // no field at all
+    );
+    assert.equal(selectActivePassengersSignature(ops, 'kf', 'p1'), '');
+  });
+
+  it('scopes by type + productId', () => {
+    const ops = opsMap(
+      makeOp({ id: 'a', type: 'kf', productId: 'p1', fieldKey: 'ips', status: 'running', passengerFieldKeys: ['acceleration'] }),
+      makeOp({ id: 'b', type: 'kf', productId: 'p2', fieldKey: 'dpi', status: 'running', passengerFieldKeys: ['motion_sync'] }),
+    );
+    assert.equal(selectActivePassengersSignature(ops, 'kf', 'p1'), 'ips:acceleration');
+  });
+
+  it('filters self-as-passenger (defensive)', () => {
+    const ops = opsMap(
+      makeOp({ id: 'a', type: 'kf', productId: 'p1', fieldKey: 'ips', status: 'running', passengerFieldKeys: ['ips', 'acceleration'] }),
+    );
+    assert.equal(selectActivePassengersSignature(ops, 'kf', 'p1'), 'ips:acceleration');
   });
 });

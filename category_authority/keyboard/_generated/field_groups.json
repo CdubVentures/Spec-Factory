@@ -1,6 +1,6 @@
 {
   "category": "keyboard",
-  "generated_at": "2026-04-17T05:52:22.278Z",
+  "generated_at": "2026-04-22T03:39:54.835Z",
   "group_index": {
     "build": [
       "case_material",
@@ -198,7 +198,7 @@
     },
     {
       "count": 10,
-      "display_name": "general",
+      "display_name": "General",
       "field_keys": [
         "color",
         "colors",

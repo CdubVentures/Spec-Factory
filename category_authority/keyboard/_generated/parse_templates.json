@@ -1,6 +1,6 @@
 {
   "category": "keyboard",
-  "generated_at": "2026-04-17T05:52:22.278Z",
+  "generated_at": "2026-04-22T03:39:54.835Z",
   "template_library": {
     "boolean_yes_no_unk": {
       "description": "Parse yes/no/true/false/1/0 tokens. Output boolean or 'unk'.",

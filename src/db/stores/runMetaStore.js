@@ -48,9 +48,16 @@ export function createRunMetaStore({ db, category, stmts }) {
     return rows.map(hydrateRunRow);
   }
 
+  function sweepOrphanRuns({ maxAgeMinutes = 60 } = {}) {
+    const minutes = Math.max(0, Math.floor(Number(maxAgeMinutes) || 60));
+    const result = stmts._sweepOrphanRuns.run({ age_offset: `-${minutes} minutes` });
+    return { swept: result.changes || 0 };
+  }
+
   return {
     upsertRun,
     getRunByRunId,
     getRunsByCategory,
+    sweepOrphanRuns,
   };
 }

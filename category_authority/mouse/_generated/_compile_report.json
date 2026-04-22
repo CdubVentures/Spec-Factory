@@ -5,7 +5,7 @@
       "version_id": null
     },
     "field_rules": {
-      "changed": true,
+      "changed": false,
       "hash": "176cd74e48ca6e7ecd6f7ad8d5c67bb5732d93922457d91d8918e062f7b633e9",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\field_rules.json"
     },
@@ -34,7 +34,7 @@
     "non_mandatory": 65
   },
   "diff": {
-    "changed": true,
+    "changed": false,
     "current_hash": "176cd74e48ca6e7ecd6f7ad8d5c67bb5732d93922457d91d8918e062f7b633e9",
     "fields": {
       "added_count": 0,
@@ -44,7 +44,7 @@
       "removed_count": 0,
       "removed_keys": []
     },
-    "previous_hash": "ed4cbf5bc8f699b9599deb8d5bb6cc2fcdd7d2126110cd83f26b5f8843e76eda"
+    "previous_hash": "176cd74e48ca6e7ecd6f7ad8d5c67bb5732d93922457d91d8918e062f7b633e9"
   },
   "errors": [],
   "field_studio_map_hash": "3203d1b145b4001c3bcf6150bdfc10bc5495fc133acdeea1b6382bf053b422e4",

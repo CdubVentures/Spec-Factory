@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useCallback, useState, useRef } from 'react';
-import { useOperationsStore, isCarouselLoopProgress, type Operation } from '../state/operationsStore.ts';
+import { useOperationsStore, type Operation } from '../state/operationsStore.ts';
+import { LoopProgressRouter } from './LoopProgressRouter.tsx';
 import { variantHexPartsForOp } from '../state/opVariantSwatch.ts';
 import { useOpVariantAtomsMap } from '../state/useOpVariantAtomsMap.ts';
 import { sortOperations, readSortMode, writeSortMode, SORT_MODES, type OpSortMode } from '../state/opSort.ts';
@@ -72,58 +73,6 @@ function StagePipeline({ stages, currentIndex, status }: {
         );
       })}
     </span>
-  );
-}
-
-/* ── Loop progress grid ──────────────────────────────────────────── */
-
-// WHY: `lp` is narrowed to the carousel shape by isCarouselLoopProgress at the
-// call site — so `lp.views` is guaranteed to be an array here.
-type CarouselLoopProgress = NonNullable<Operation['loopProgress']> & {
-  readonly views: NonNullable<NonNullable<Operation['loopProgress']>['views']>;
-};
-
-function LoopProgressGrid({ lp }: { readonly lp: CarouselLoopProgress }) {
-  const variantTotal = lp.variantTotal ?? 1;
-  const variantIndex = lp.variantIndex ?? 0;
-  const variantPos = variantTotal > 1 ? ` (${variantIndex + 1}/${variantTotal})` : '';
-  const target = lp.mode === 'hero' ? 'hero' : (lp.focusView || '\u2013');
-
-  // Merge views + hero into one grid
-  const cells: Array<{ label: string; count: number; target: number; attempts: number; attemptBudget: number; done: boolean; fail: boolean; active: boolean }> = [];
-  for (const v of lp.views) {
-    cells.push({ label: v.view, count: v.count, target: v.target, attempts: v.attempts, attemptBudget: v.attemptBudget, done: v.satisfied, fail: v.exhausted, active: lp.mode === 'view' && lp.focusView === v.view });
-  }
-  if (lp.hero) {
-    cells.push({ label: 'hero', count: lp.hero.count, target: lp.hero.target, attempts: lp.hero.attempts, attemptBudget: lp.hero.attemptBudget, done: lp.hero.satisfied, fail: lp.hero.exhausted, active: lp.mode === 'hero' });
-  }
-
-  return (
-    <div className="flex flex-col gap-0.5">
-      {/* Header row */}
-      <span className="text-[9px] font-mono sf-text-subtle leading-[1.3]">
-        {lp.variantLabel}{variantPos} {'\u00B7'} call {lp.callNumber} {'\u00B7'} {lp.mode}: {target} {'\u00B7'} ~{lp.estimatedRemaining} left
-      </span>
-      {/* View grid */}
-      <span className="grid gap-x-1.5 gap-y-0" style={{ gridTemplateColumns: `repeat(${Math.min(cells.length, 3)}, 1fr)` }}>
-        {cells.map((c) => {
-          const icon = c.done ? '\u2713' : c.fail ? '\u2717' : c.active ? '\u25B8' : ' ';
-          const cls = c.done
-            ? 'sf-text-success'
-            : c.fail
-              ? 'text-[var(--sf-state-danger-fg)] opacity-50'
-              : c.active
-                ? 'text-[rgb(var(--sf-color-accent-strong-rgb))]'
-                : 'sf-text-subtle opacity-60';
-          return (
-            <span key={c.label} className={`text-[8px] font-mono font-semibold leading-[1.6] ${cls}`}>
-              {icon} {c.label} {c.count}/{c.target}
-              <span className="opacity-50 font-normal"> ({c.attempts}/{c.attemptBudget})</span>
-            </span>
-          );
-        })}
-      </span>
-    </div>
   );
 }
 
@@ -268,11 +217,11 @@ function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
       {/* Row 2–3: stage pipeline grid */}
       <StagePipeline stages={op.stages} currentIndex={op.currentStageIndex} status={op.status} />
 
-      {/* Loop progress grid (structured — carousel shape only) or fallback progress text.
-          WHY: `loopProgress` is written by two finders with different shapes (PIF carousel
-          vs RDF/variantFieldLoop simple). Only render the grid for the carousel shape. */}
-      {isCarouselLoopProgress(op.loopProgress) ? (
-        <LoopProgressGrid lp={op.loopProgress} />
+      {/* Structured loop progress — LoopProgressRouter shape-detects PIF's
+          carousel grid vs. the canonical pill shape (keyFinderLoop + RDF/SKU).
+          Falls back to free-form progressText when neither shape is present. */}
+      {op.loopProgress ? (
+        <LoopProgressRouter lp={op.loopProgress} />
       ) : op.progressText ? (
         <span className="text-[9px] font-mono sf-text-subtle whitespace-pre-wrap leading-[1.4]">{op.progressText}</span>
       ) : null}

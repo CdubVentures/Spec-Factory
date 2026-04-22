@@ -85,6 +85,13 @@ export function createRealtimeBridge({
   forwardScreencastControl,
   webSocketServerClass = WebSocketServer,
   now = () => new Date(),
+  // WHY: WS half-open detection. Without heartbeat, a silently-dropped TCP
+  // connection leaves client.readyState=OPEN while broadcasts vanish. Server
+  // pings every heartbeatMs; clients that miss one round (tick with no pong)
+  // are terminate()d so the client's onclose → reconnect path fires.
+  // Default 0 (off) keeps existing unit tests timer-free; production wiring
+  // in serverBootstrap passes a real value.
+  heartbeatMs = 0,
 } = {}) {
   assertObject('path', path);
   assertFunction('path.join', path.join?.bind(path));
@@ -164,6 +171,10 @@ export function createRealtimeBridge({
 
   function bindClient(ws) {
     wsClients.add(ws);
+    // WHY: Heartbeat state. Fresh clients are alive; pong resets the flag after
+    // each ping. tickHeartbeat terminates any client still flagged not-alive.
+    ws._isAlive = true;
+    ws.on('pong', () => { ws._isAlive = true; });
     ws.on('message', (msg) => {
       try {
         const data = JSON.parse(msg.toString());
@@ -197,6 +208,34 @@ export function createRealtimeBridge({
     ws.on('error', () => wsClients.delete(ws));
   }
 
+  let heartbeatTimer = null;
+
+  function tickHeartbeat() {
+    for (const client of wsClients) {
+      if (client.readyState !== 1) continue;
+      if (client._isAlive === false) {
+        // WHY: No pong between the last tick and this one → half-open. terminate()
+        // is abrupt by design; graceful close() can block on a dead socket.
+        try { client.terminate(); } catch { /* ignore */ }
+        continue;
+      }
+      client._isAlive = false;
+      try { client.ping(); } catch { /* ignore broken sockets */ }
+    }
+    // WHY: App-level heartbeat broadcast gives the client a reliable "server is
+    // alive" signal regardless of whether any pipeline is broadcasting. The
+    // client's idle watchdog resets on every onmessage; without this, a truly
+    // idle server would trip false-positive reloads every idle window.
+    broadcastWs('heartbeat', { ts: now().toISOString() });
+  }
+
+  function stopHeartbeat() {
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = null;
+    }
+  }
+
   function attachWebSocketUpgrade(server) {
     if (!server || typeof server.on !== 'function') {
       throw new TypeError('server.on must be a function');
@@ -213,6 +252,13 @@ export function createRealtimeBridge({
         socket.destroy();
       }
     });
+
+    if (heartbeatMs > 0 && !heartbeatTimer) {
+      heartbeatTimer = setInterval(tickHeartbeat, heartbeatMs);
+      // WHY: Don't hold the event loop open just for the heartbeat — graceful
+      // shutdowns (and tests that forget stopHeartbeat) should still exit.
+      if (typeof heartbeatTimer.unref === 'function') heartbeatTimer.unref();
+    }
 
     return wsServer;
   }
@@ -232,5 +278,7 @@ export function createRealtimeBridge({
     setupWatchers,
     attachWebSocketUpgrade,
     getLastScreencastFrame,
+    tickHeartbeat,
+    stopHeartbeat,
   };
 }

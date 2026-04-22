@@ -1,6 +1,6 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { useOperationsStore, isCarouselLoopProgress } from '../operationsStore.ts';
+import { useOperationsStore, isCarouselLoopProgress, isPillLoopProgress } from '../operationsStore.ts';
 import type { Operation } from '../operationsStore.ts';
 
 /* ── Factory ────────────────────────────────────────────────────── */
@@ -327,17 +327,17 @@ describe('isCarouselLoopProgress', () => {
     assert.equal(isCarouselLoopProgress(undefined), false);
   });
 
-  it('returns false for RDF simple-loop shape (no views)', () => {
-    // Shape emitted by src/core/finder/variantFieldLoop.js
-    const rdfShape = {
-      variantLabel: 'black',
+  it('returns false for pill shape (emitted by keyFinderLoop + variantFieldLoop)', () => {
+    // Canonical pill shape per active-operations-upgrade §6. Never has views[].
+    const pillShape = {
+      loop_id: 'loop-abc',
+      publish: { count: 1, target: 1, satisfied: true, confidence: 88 },
+      callBudget: { used: 2, budget: 5, exhausted: false },
+      final_status: 'published',
       variantKey: 'color:black',
-      attempt: 1,
-      budget: 3,
-      satisfied: true,
-      loopId: 'loop-abc',
+      variantLabel: 'Black',
     } as unknown as Operation['loopProgress'];
-    assert.equal(isCarouselLoopProgress(rdfShape), false);
+    assert.equal(isCarouselLoopProgress(pillShape), false);
   });
 
   it('returns false when views is explicitly not an array', () => {
@@ -378,5 +378,66 @@ describe('isCarouselLoopProgress', () => {
       hero: { count: 0, target: 3, satisfied: false, exhausted: false, attempts: 0, attemptBudget: 3 },
     };
     assert.equal(isCarouselLoopProgress(pifShape), true);
+  });
+});
+
+/* ── isPillLoopProgress ─────────────────────────────────────────── */
+// WHY: Stage 3 canonical pill shape — emitted by keyFinderLoop +
+// variantFieldLoop. The router (LoopProgressRouter) narrows with this guard.
+
+describe('isPillLoopProgress', () => {
+  it('returns false for null', () => {
+    assert.equal(isPillLoopProgress(null), false);
+  });
+
+  it('returns false for undefined', () => {
+    assert.equal(isPillLoopProgress(undefined), false);
+  });
+
+  it('returns false for PIF carousel shape (no publish/callBudget fields)', () => {
+    const pifShape = {
+      variantLabel: 'x',
+      views: [],
+    } as unknown as Operation['loopProgress'];
+    assert.equal(isPillLoopProgress(pifShape), false);
+  });
+
+  it('returns true for canonical pill shape with publish + callBudget', () => {
+    const pill = {
+      loop_id: 'loop-abc',
+      publish: { count: 1, target: 1, satisfied: true, confidence: 88 },
+      callBudget: { used: 2, budget: 5, exhausted: false },
+      final_status: 'published',
+    } as unknown as Operation['loopProgress'];
+    assert.equal(isPillLoopProgress(pill), true);
+  });
+
+  it('returns true for pill shape with final_status=null (intermediate iteration)', () => {
+    const pill = {
+      loop_id: 'loop-abc',
+      publish: { count: 0, target: 1, satisfied: false, confidence: null },
+      callBudget: { used: 1, budget: 5, exhausted: false },
+      final_status: null,
+    } as unknown as Operation['loopProgress'];
+    assert.equal(isPillLoopProgress(pill), true);
+  });
+
+  it('returns true for pill shape with variant extras (variantFieldLoop)', () => {
+    const pill = {
+      loop_id: 'loop-abc',
+      publish: { count: 0, target: 1, satisfied: false, confidence: null },
+      callBudget: { used: 1, budget: 3, exhausted: false },
+      final_status: null,
+      variantKey: 'color:black',
+      variantLabel: 'Black',
+    } as unknown as Operation['loopProgress'];
+    assert.equal(isPillLoopProgress(pill), true);
+  });
+
+  it('returns false when only publish is present (callBudget missing)', () => {
+    const bad = {
+      publish: { count: 1, target: 1, satisfied: true, confidence: null },
+    } as unknown as Operation['loopProgress'];
+    assert.equal(isPillLoopProgress(bad), false);
   });
 });

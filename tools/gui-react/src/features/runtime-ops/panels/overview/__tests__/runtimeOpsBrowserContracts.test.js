@@ -134,6 +134,22 @@ test('BrowserStream copy stays generic and covers both browser-backed and non-br
   assert.equal(shouldHydrateRetainedBrowserFrame('running'), false);
   assert.equal(shouldHydrateRetainedBrowserFrame('stuck'), false);
   assert.equal(shouldHydrateRetainedBrowserFrame(undefined), false);
+
+  // WHY: BrightData API unlock has no browser session — the generic
+  // "screencast didn't capture a frame" copy reads as a bug. Swap to
+  // API-mode copy so the user understands no visual is ever possible.
+  assert.deepEqual(
+    describeBrowserStreamGap({
+      workerPool: 'fetch',
+      fetchMode: 'crawlee',
+      lastError: null,
+      brightDataUnlocked: true,
+    }),
+    {
+      title: 'Unlocked via Bright Data API — no browser capture.',
+      detail: 'This URL was unlocked via the Bright Data Web Unlocker API, which returns HTML only. No screenshot or video is possible in API mode.',
+    },
+  );
 });
 
 test('FetchWorkerPanel derives BrowserStream props from the selected worker row', async () => {
@@ -157,6 +173,25 @@ test('FetchWorkerPanel derives BrowserStream props from the selected worker row'
       fetchMode: 'crawlee',
       lastError: 'captured timeout',
       wsUrl: 'ws://runtime.test',
+      brightDataUnlocked: false,
     },
+  );
+});
+
+test('FetchWorkerPanel forwards bright_data_unlocked so BrowserStream can show API-mode copy', async () => {
+  const { buildBrowserStreamProps } = await loadFetchWorkerPanelModule();
+
+  const worker = {
+    worker_id: 'fetch-7',
+    pool: 'fetch',
+    state: 'crawled',
+    fetch_mode: 'crawlee',
+    last_error: null,
+    bright_data_unlocked: true,
+  };
+
+  assert.equal(
+    buildBrowserStreamProps(worker, 'run-9', 'ws://runtime.test').brightDataUnlocked,
+    true,
   );
 });

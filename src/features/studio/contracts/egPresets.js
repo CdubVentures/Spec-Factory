@@ -14,8 +14,11 @@
 
 // ── Editable paths (which dot-paths are user-editable on locked fields) ──────
 
+// WHY: ui.group is editable so Field Studio group moves survive re-sanitization.
+// Preset values in each builder are seeds, not locks.
 export const EG_EDITABLE_PATHS = Object.freeze([
   'ui.aliases',
+  'ui.group',
   'search_hints.domain_hints',
   'search_hints.content_types',
   'search_hints.query_terms',
@@ -240,7 +243,7 @@ export function buildEgSkuFieldRule(ctx) {
     },
     ui: {
       label: 'SKU',
-      group: 'general',
+      group: 'identity',
       tooltip_md: 'Manufacturer Part Number (MPN) for this specific variant. Prefer the code the manufacturer assigns on their product page. Retailer SKUs (Amazon ASIN, Best Buy SKU) are NOT the MPN. If no MPN is provable, emit unk with unknown_reason.',
     },
     search_hints: {

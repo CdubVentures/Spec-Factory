@@ -9,10 +9,13 @@
  * Invariants:
  *   - Primary owns the budget line; passengers deduct from the primary's
  *     pool, NOT from primary's per-key attempt budget.
- *   - Sort key (required_level, availability, difficulty, field_key) ASC —
- *     mandatory peers pack before non_mandatory; field_key tiebreaker is
- *     load-bearing for deterministic output.
- *   - Output is stable regardless of input candidate order.
+ *   - Sort key (required_level, availability, difficulty, currentRides,
+ *     field_key) ASC — mandatory peers pack before non_mandatory; within a
+ *     tier, the peer with the fewest concurrent rides sorts first so multiple
+ *     bundled calls distribute across same-tier peers instead of stacking on
+ *     the alphabetical first. field_key is the final deterministic tiebreaker.
+ *   - Output is stable for fixed candidates (same {fieldKey, currentRides}
+ *     always yields the same order).
  */
 
 const AVAILABILITY_RANK = Object.freeze({ always: 0, sometimes: 1, rare: 2 });
@@ -56,7 +59,7 @@ function matchesPolicy(policy, primaryDifficulty, peerDifficulty) {
  *
  * @param {object} args
  * @param {{fieldKey: string, fieldRule: object}} args.primary
- * @param {ReadonlyArray<{fieldKey: string, fieldRule: object}>} [args.candidates]  Eligible same-group peers
+ * @param {ReadonlyArray<{fieldKey: string, fieldRule: object, currentRides?: number}>} [args.candidates]  Eligible same-group peers. `currentRides` is the peer's live `asPassenger` count from the in-flight registry; used as a round-robin tiebreaker so rides distribute across same-tier peers (e.g., 5 hard peers each take one ride instead of one peer taking 5). Defaults to 0 when absent (e.g., in pure-function tests without a registry).
  * @param {ReadonlySet<string>} [args.resolvedFieldKeys]  Published-resolved keys to exclude
  * @param {object} args.settings  Bundling settings (from finderStore or test fixture)
  * @returns {{ passengers: Array<{fieldKey, fieldRule}>, totalCost: number, pool: number, breakdown: Array<{fieldKey, cost}> }}
@@ -93,9 +96,11 @@ export function packBundle({
   }
 
   // Step 5 — deterministic sort: required_level ASC, availability ASC,
-  // difficulty ASC, field_key ASC. Mandatory peers pack before non_mandatory;
-  // within each required_level tier, "cheap wins first" by availability then
-  // difficulty; field_key is the deterministic tiebreaker.
+  // difficulty ASC, currentRides ASC, field_key ASC. Mandatory peers pack
+  // before non_mandatory; within each required_level tier, "cheap wins first"
+  // by availability then difficulty. currentRides ASC distributes rides across
+  // same-tier peers so one key doesn't hog all the slots while its tier-mates
+  // sit idle. field_key is the final deterministic tiebreaker.
   eligible.sort((a, b) => {
     const aReq = rankOr(REQUIRED_RANK, a.fieldRule.required_level, REQUIRED_RANK.non_mandatory + 1);
     const bReq = rankOr(REQUIRED_RANK, b.fieldRule.required_level, REQUIRED_RANK.non_mandatory + 1);
@@ -106,6 +111,9 @@ export function packBundle({
     const aDiff = rankOr(DIFFICULTY_RANK, a.fieldRule.difficulty, DIFFICULTY_RANK.very_hard + 1);
     const bDiff = rankOr(DIFFICULTY_RANK, b.fieldRule.difficulty, DIFFICULTY_RANK.very_hard + 1);
     if (aDiff !== bDiff) return aDiff - bDiff;
+    const aRides = Number.isFinite(a.currentRides) && a.currentRides >= 0 ? a.currentRides : 0;
+    const bRides = Number.isFinite(b.currentRides) && b.currentRides >= 0 ? b.currentRides : 0;
+    if (aRides !== bRides) return aRides - bRides;
     if (a.fieldKey < b.fieldKey) return -1;
     if (a.fieldKey > b.fieldKey) return 1;
     return 0;

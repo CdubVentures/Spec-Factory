@@ -6,7 +6,7 @@
     },
     "field_rules": {
       "changed": true,
-      "hash": "0bf95e730b3bf0837583592de5017f035bbb0093dc40973da022645ded8485cf",
+      "hash": "b4ff9460a34170ce4dda01a5b4fdb18daa354a0e299fce3f43ca19bcc93b3b79",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\monitor\\_generated\\field_rules.json"
     },
     "key_migrations": null,
@@ -15,7 +15,7 @@
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\monitor\\_generated\\known_values.json"
     },
     "ui_field_catalog": {
-      "hash": "b42359aa7cbf81339ffca0506b69b315cbd2fbc9c4da13caca6c29a2e7ff6720",
+      "hash": "6158176d4986f84b80cb4d2c4e25296cf49267b93dbedccc7dd4e18dd1938c15",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\monitor\\_generated\\ui_field_catalog.json"
     }
   },
@@ -32,16 +32,19 @@
   },
   "diff": {
     "changed": true,
-    "current_hash": "0bf95e730b3bf0837583592de5017f035bbb0093dc40973da022645ded8485cf",
+    "current_hash": "b4ff9460a34170ce4dda01a5b4fdb18daa354a0e299fce3f43ca19bcc93b3b79",
     "fields": {
       "added_count": 0,
       "added_keys": [],
-      "changed_count": 0,
-      "changed_keys": [],
+      "changed_count": 2,
+      "changed_keys": [
+        "release_date",
+        "sku"
+      ],
       "removed_count": 0,
       "removed_keys": []
     },
-    "previous_hash": "36c6a4de165a6a69c4f154b075bc97487e18899fb995f3f6a74baa6a8ae8c662"
+    "previous_hash": "0bf95e730b3bf0837583592de5017f035bbb0093dc40973da022645ded8485cf"
   },
   "errors": [],
   "field_studio_map_hash": "4936e31457ac9b0f1e4ecfdd83626db755d95c6a6b179962f67ffcea3babc35c",

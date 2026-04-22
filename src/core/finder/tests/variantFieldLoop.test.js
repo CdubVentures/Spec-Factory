@@ -100,10 +100,11 @@ describe('runVariantFieldLoop', () => {
 
     assert.equal(produceCalls, 0, 'produceForVariant is NOT called when budget is 0');
     assert.equal(events.length, 1, 'exactly one skip event is emitted');
-    assert.equal(events[0].skipped, true);
-    assert.equal(events[0].satisfied, true);
-    assert.equal(events[0].attempt, 0);
-    assert.equal(events[0].budget, 0);
+    // Pill shape (Stage 3): skip emits a terminal pill with final_status='skipped_resolved'.
+    assert.equal(events[0].final_status, 'skipped_resolved');
+    assert.equal(events[0].publish.satisfied, true);
+    assert.equal(events[0].callBudget.used, 0);
+    assert.equal(events[0].callBudget.budget, 0);
 
     const pvr = out.perVariantResults[0];
     assert.equal(pvr.result._loop.skipped, true);
@@ -247,16 +248,17 @@ describe('runVariantFieldLoop', () => {
       onLoopProgress: (ev) => events2.push(ev),
     });
 
-    const ids1 = new Set(events1.map((e) => e.loopId));
-    const ids2 = new Set(events2.map((e) => e.loopId));
-    assert.equal(ids1.size, 1, 'all attempts in call #1 share one loopId');
-    assert.equal(ids2.size, 1, 'all attempts in call #2 share one loopId');
-    assert.notEqual([...ids1][0], [...ids2][0], 'two calls have different loopIds');
+    // Pill shape carries loop_id (snake_case) as part of the canonical Stage 3 contract.
+    const ids1 = new Set(events1.map((e) => e.loop_id));
+    const ids2 = new Set(events2.map((e) => e.loop_id));
+    assert.equal(ids1.size, 1, 'all events in call #1 share one loop_id');
+    assert.equal(ids2.size, 1, 'all events in call #2 share one loop_id');
+    assert.notEqual([...ids1][0], [...ids2][0], 'two calls have different loop_ids');
     assert.equal(r1.loopId, [...ids1][0]);
     assert.equal(r2.loopId, [...ids2][0]);
   });
 
-  it('onLoopProgress emits satisfied=true only on the final stopping attempt', async () => {
+  it('onLoopProgress emits per-attempt pill + 1 terminal pill per variant (Stage 3 pill shape)', async () => {
     const events = [];
     await runVariantFieldLoop({
       specDb: makeSpecDbStub(ONE_BLACK),
@@ -268,14 +270,76 @@ describe('runVariantFieldLoop', () => {
       onLoopProgress: (ev) => events.push(ev),
     });
 
-    assert.equal(events.length, 3, 'stopped after attempt 3 — no further emissions');
-    assert.equal(events[0].satisfied, false);
-    assert.equal(events[1].satisfied, false);
-    assert.equal(events[2].satisfied, true);
-    assert.equal(events[2].attempt, 3);
-    assert.equal(events[2].budget, 5);
-    assert.equal(events[2].variantKey, 'color:black');
-    assert.equal(events[2].variantLabel, 'Black');
+    // 3 per-attempt pills + 1 terminal per-variant pill = 4 events.
+    assert.equal(events.length, 4, 'stopped after attempt 3 → 3 per-attempt + 1 terminal emission');
+
+    // Per-attempt shape: final_status=null, callBudget.used increments.
+    assert.equal(events[0].final_status, null);
+    assert.equal(events[0].publish.satisfied, false);
+    assert.equal(events[0].callBudget.used, 1);
+    assert.equal(events[0].callBudget.budget, 5);
+
+    assert.equal(events[1].final_status, null);
+    assert.equal(events[1].publish.satisfied, false);
+
+    // Attempt 3 — per-attempt event fires with satisfied=true but final_status=null.
+    assert.equal(events[2].final_status, null);
+    assert.equal(events[2].publish.satisfied, true);
+    assert.equal(events[2].callBudget.used, 3);
+
+    // Terminal pill: final_status='published', same variant identity.
+    const terminal = events[3];
+    assert.equal(terminal.final_status, 'published');
+    assert.equal(terminal.publish.satisfied, true);
+    assert.equal(terminal.callBudget.used, 3);
+    assert.equal(terminal.variantKey, 'color:black');
+    assert.equal(terminal.variantLabel, 'Black');
+  });
+
+  it('onLoopProgress: budget exhausted variant emits terminal with final_status=budget_exhausted', async () => {
+    const events = [];
+    await runVariantFieldLoop({
+      specDb: makeSpecDbStub(ONE_BLACK),
+      product: PRODUCT,
+      resolveBudget: constBudget(3),
+      staggerMs: 0,
+      produceForVariant: () => ({ ok: false }),
+      satisfactionPredicate: () => false,
+      onLoopProgress: (ev) => events.push(ev),
+    });
+
+    // 3 per-attempt + 1 terminal = 4 events.
+    assert.equal(events.length, 4);
+    const terminal = events[3];
+    assert.equal(terminal.final_status, 'budget_exhausted');
+    assert.equal(terminal.publish.satisfied, false);
+    assert.equal(terminal.callBudget.used, 3);
+    assert.equal(terminal.callBudget.budget, 3);
+    assert.equal(terminal.callBudget.exhausted, true);
+  });
+
+  it('onLoopProgress: multi-variant emits complete pill lifecycle per variant', async () => {
+    // One variant publishes on attempt 1; the other exhausts its 2-call budget.
+    const events = [];
+    await runVariantFieldLoop({
+      specDb: makeSpecDbStub(TWO_VARIANTS),
+      product: PRODUCT,
+      resolveBudget: constBudget(2),
+      staggerMs: 0,
+      produceForVariant: (variant) => ({ variant: variant.key }),
+      satisfactionPredicate: (r) => r?.variant === 'color:black',
+      onLoopProgress: (ev) => events.push(ev),
+    });
+
+    // Per-variant: black = 1 per-attempt + 1 terminal published = 2.
+    // Per-variant: white = 2 per-attempt + 1 terminal budget_exhausted = 3.
+    // Total = 5.
+    assert.equal(events.length, 5);
+
+    const blackTerminal = events.find((e) => e.variantKey === 'color:black' && e.final_status);
+    assert.equal(blackTerminal?.final_status, 'published');
+    const whiteTerminal = events.find((e) => e.variantKey === 'color:white' && e.final_status);
+    assert.equal(whiteTerminal?.final_status, 'budget_exhausted');
   });
 
   it('surfaces the last result (with _loop metadata) when budget exhausts', async () => {

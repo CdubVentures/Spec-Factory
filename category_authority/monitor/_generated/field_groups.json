@@ -1,6 +1,6 @@
 {
   "category": "monitor",
-  "generated_at": "2026-04-17T05:52:22.787Z",
+  "generated_at": "2026-04-22T03:39:57.663Z",
   "group_index": {
     "color_image_quality": [
       "backlight_type",
@@ -254,7 +254,7 @@
     },
     {
       "count": 10,
-      "display_name": "general",
+      "display_name": "General",
       "field_keys": [
         "cable_length",
         "cable_type",

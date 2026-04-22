@@ -86,6 +86,11 @@ export function bootstrapServer({ projectRoot }) {
     parseNdjson, dataChangeMatchesCategory,
     processStatus: () => processStatusProvider(),
     forwardScreencastControl: (options) => forwardScreencastControlProvider(options),
+    // WHY: 30s ping interval catches half-open WS connections (NAT idle timeout,
+    // OS sleep/wake, proxy drop) before the client gives up. Missing one pong →
+    // server terminate() → client onclose → reconnect → hadConnection triggers
+    // page reload, restoring a clean WS and fresh op broadcasts.
+    heartbeatMs: 30_000,
   });
 
   // ── Process manager (stays inline — consumes all above + rebinds providers) ──

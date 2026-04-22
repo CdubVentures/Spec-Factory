@@ -8,6 +8,11 @@ interface FinderDeleteConfirmModalProps {
   moduleLabel?: string;
   /** Override the default description with a module-specific explanation per kind. */
   descriptionOverrides?: Readonly<Partial<Record<DeleteTarget['kind'], string>>>;
+  /** Override the confirm button label. Defaults to "Delete". Use for non-delete
+   *  destructive verbs like "Unresolve" that share this modal's confirmation UX. */
+  confirmLabel?: string;
+  /** Override the in-progress confirm label. Defaults to `${confirmLabel}...`. */
+  pendingLabel?: string;
 }
 
 function resolveTitle(target: DeleteTarget, moduleLabel: string): string {
@@ -23,6 +28,12 @@ function resolveTitle(target: DeleteTarget, moduleLabel: string): string {
     case 'eval-variant': return `Delete ${target.count ?? 0} eval(s) for variant?`;
     case 'variant': return `Delete variant "${target.label}"?`;
     case 'variant-all': return `Delete all ${target.count ?? 0} variant(s)?`;
+    case 'key-unresolve': return `Unresolve "${target.fieldKey ?? ''}"?`;
+    case 'key-delete': return `Delete all data for "${target.fieldKey ?? ''}"?`;
+    case 'key-unresolve-group': return `Unresolve ${target.count ?? 0} key(s) in "${target.label ?? ''}"?`;
+    case 'key-delete-group': return `Delete all data for ${target.count ?? 0} key(s) in "${target.label ?? ''}"?`;
+    case 'key-unresolve-all': return `Unresolve all ${target.count ?? 0} published key(s)?`;
+    case 'key-delete-all': return `Delete all data for ${target.count ?? 0} key(s) in this product?`;
   }
 }
 
@@ -50,12 +61,26 @@ function resolveDefaultDescription(target: DeleteTarget, moduleLabel: string): s
       return `This will permanently strip this variant's values from all field candidates, remove its colors/editions from published values, delete all PIF data (images, runs, evals), and remove carousel slots. This cannot be undone.`;
     case 'variant-all':
       return `This will permanently delete all ${target.count ?? 0} variant(s) and cascade-delete all variant-scoped data (field candidates, images, evals, carousel slots). This cannot be undone.`;
+    case 'key-unresolve':
+      return `Demote the published value for "${target.fieldKey ?? ''}" back to a candidate. Candidates, runs, and discovery history are preserved — a future Run can re-resolve. Reversible.`;
+    case 'key-delete':
+      return `Permanently wipe every trace of "${target.fieldKey ?? ''}": the published value, confidence, all candidates and evidence, URL history, query history, and every run where this key was the primary. Fresh slate. This cannot be undone.`;
+    case 'key-unresolve-group':
+      return `Demote every currently published value in "${target.label ?? ''}" back to a candidate. Candidates, runs, and discovery history are preserved per key. Reversible.`;
+    case 'key-delete-group':
+      return `Permanently wipe every trace of ${target.count ?? 0} key(s) in "${target.label ?? ''}": published values, candidates, evidence, URL/query history, and every primary run. Fresh slate for each. This cannot be undone.`;
+    case 'key-unresolve-all':
+      return `Demote every currently published value across every group back to a candidate. Candidates, runs, and discovery history are preserved per key. Reversible.`;
+    case 'key-delete-all':
+      return `Permanently wipe every trace of ${target.count ?? 0} key(s) across every group: published values, candidates, evidence, URL/query history, and every primary run. Fresh slate for each. This cannot be undone.`;
   }
 }
 
-export function FinderDeleteConfirmModal({ target, onConfirm, onCancel, isPending, moduleLabel = 'Finder', descriptionOverrides }: FinderDeleteConfirmModalProps) {
+export function FinderDeleteConfirmModal({ target, onConfirm, onCancel, isPending, moduleLabel = 'Finder', descriptionOverrides, confirmLabel, pendingLabel }: FinderDeleteConfirmModalProps) {
   const title = resolveTitle(target, moduleLabel);
   const description = descriptionOverrides?.[target.kind] ?? resolveDefaultDescription(target, moduleLabel);
+  const finalConfirmLabel = confirmLabel ?? 'Delete';
+  const finalPendingLabel = pendingLabel ?? `${finalConfirmLabel.replace(/e$/, '')}ing...`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -75,7 +100,7 @@ export function FinderDeleteConfirmModal({ target, onConfirm, onCancel, isPendin
             disabled={isPending}
             className="px-3 py-1.5 text-[11px] font-bold rounded sf-danger-button disabled:opacity-50"
           >
-            {isPending ? 'Deleting...' : 'Delete'}
+            {isPending ? finalPendingLabel : finalConfirmLabel}
           </button>
         </div>
       </div>

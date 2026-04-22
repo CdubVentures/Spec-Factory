@@ -96,6 +96,58 @@ describe('buildCrawlCheckpoint — sources', () => {
     assert.equal(cp.counters.urls_timeout_rescued, 1);
   });
 
+  test('B12 — checkpoint.counters merges bridgeCounters when provided', () => {
+    const results = [makeResult()];
+    const cp = buildCrawlCheckpoint({
+      ...BASE_OPTS,
+      crawlResults: results,
+      bridgeCounters: { pages_checked: 5, parse_completed: 3, indexed_docs: 2, fields_filled: 14, search_workers: 7 },
+    });
+    // URL-derived counters still present (not overwritten)
+    assert.equal(cp.counters.urls_crawled, 1);
+    assert.equal(cp.counters.urls_successful, 1);
+    // Bridge counters merged in
+    assert.equal(cp.counters.pages_checked, 5);
+    assert.equal(cp.counters.parse_completed, 3);
+    assert.equal(cp.counters.indexed_docs, 2);
+    assert.equal(cp.counters.fields_filled, 14);
+    assert.equal(cp.counters.search_workers, 7);
+  });
+
+  test('B12 — checkpoint.counters defaults without bridgeCounters (backward compat)', () => {
+    const cp = buildCrawlCheckpoint({ ...BASE_OPTS, crawlResults: [makeResult()] });
+    assert.equal(cp.counters.urls_crawled, 1);
+    assert.equal(cp.counters.pages_checked, undefined, 'no bridge counters when not passed');
+  });
+
+  test('B12 — URL-derived counters win over bridgeCounters on name collision', () => {
+    // Defensive: even if an upstream bug names a bridge counter "urls_crawled",
+    // the authoritative fetch-result count wins.
+    const cp = buildCrawlCheckpoint({
+      ...BASE_OPTS,
+      crawlResults: [makeResult(), makeResult({ url: 'https://b.com', finalUrl: 'https://b.com' })],
+      bridgeCounters: { urls_crawled: 999, fields_filled: 3 },
+    });
+    assert.equal(cp.counters.urls_crawled, 2, 'URL-derived truth wins');
+    assert.equal(cp.counters.fields_filled, 3);
+  });
+
+  test('B6 — mapSource forwards hint_source / tier / providers when present on result', () => {
+    const results = [makeResult({ hint_source: 'tier1_seed', tier: 'seed', providers: ['serper'] })];
+    const cp = buildCrawlCheckpoint({ ...BASE_OPTS, crawlResults: results });
+    assert.equal(cp.sources[0].hint_source, 'tier1_seed');
+    assert.equal(cp.sources[0].tier, 'seed');
+    assert.deepEqual(cp.sources[0].providers, ['serper']);
+  });
+
+  test('B6 — mapSource defaults triage fields to null when missing', () => {
+    const results = [makeResult()];
+    const cp = buildCrawlCheckpoint({ ...BASE_OPTS, crawlResults: results });
+    assert.equal(cp.sources[0].hint_source, null);
+    assert.equal(cp.sources[0].tier, null);
+    assert.equal(cp.sources[0].providers, null);
+  });
+
   test('failed URL with fetchError', () => {
     const results = [makeResult({ html: '', fetchError: 'ERR_NAME_NOT_RESOLVED' })];
     const cp = buildCrawlCheckpoint({ ...BASE_OPTS, crawlResults: results });

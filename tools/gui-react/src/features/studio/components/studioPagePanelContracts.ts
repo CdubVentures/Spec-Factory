@@ -61,6 +61,7 @@ export interface StudioPageActivePanelContractProps {
 }
 
 export interface StudioPageActivePanelReportsProps {
+  category: string;
   artifacts: ArtifactEntry[];
   compileErrors: string[];
   compileWarnings: string[];

@@ -425,6 +425,89 @@ describe('packBundle — step 5 (ordering)', () => {
   });
 });
 
+// ─── Step 5b — round-robin tiebreaker (currentRides) ────────────────────
+
+describe('packBundle — currentRides tiebreaker', () => {
+  function entryWithRides(fieldKey, ruleOverrides, currentRides) {
+    return { fieldKey, fieldRule: rule(ruleOverrides), currentRides };
+  }
+
+  it('same-tier peers sort by currentRides ASC before field_key', () => {
+    // Five hard peers, same axes. Without currentRides the alphabetical first
+    // (sensor_latency) wins every time. With currentRides, the peer at 0 rides
+    // beats the peer at 4 even if the 0 sorts alphabetically later.
+    // Medium primary pool=4 + any_but_very_hard policy → exactly one hard fits per pack.
+    const result = packBundle({
+      primary: entry('p', { difficulty: 'medium' }),
+      candidates: [
+        entryWithRides('sensor_latency',            { difficulty: 'hard', availability: 'sometimes' }, 4),
+        entryWithRides('sensor_latency_bluetooth',  { difficulty: 'hard', availability: 'sometimes' }, 0),
+        entryWithRides('sensor_latency_wired',      { difficulty: 'hard', availability: 'sometimes' }, 0),
+        entryWithRides('sensor_latency_wireless',   { difficulty: 'hard', availability: 'sometimes' }, 0),
+        entryWithRides('shift_latency',             { difficulty: 'hard', availability: 'sometimes' }, 0),
+      ],
+      resolvedFieldKeys: new Set(),
+      settings: { ...DEFAULT_SETTINGS, passengerDifficultyPolicy: 'any_but_very_hard' },
+      variantCount: 1,
+    });
+    // Under old sort: sensor_latency wins alphabetically regardless of rides.
+    // Under round-robin: sensor_latency_bluetooth wins (0 rides, alphabetical first among 0-riders).
+    assert.equal(result.passengers[0]?.fieldKey, 'sensor_latency_bluetooth', 'peer with 0 rides beats peer at 4 rides');
+  });
+
+  it('stable within equal currentRides — field_key is the final tiebreaker', () => {
+    const build = (input) => packBundle({
+      primary: entry('p', { difficulty: 'easy' }),
+      candidates: input,
+      resolvedFieldKeys: new Set(),
+      settings: DEFAULT_SETTINGS,
+      variantCount: 1,
+    }).passengers.map((p) => p.fieldKey);
+    const all0 = [
+      entryWithRides('charlie', { difficulty: 'easy', availability: 'always' }, 0),
+      entryWithRides('alpha',   { difficulty: 'easy', availability: 'always' }, 0),
+      entryWithRides('bravo',   { difficulty: 'easy', availability: 'always' }, 0),
+    ];
+    const forward = build(all0);
+    const reverse = build([...all0].reverse());
+    assert.deepEqual(forward, ['alpha', 'bravo', 'charlie'], 'alphabetical when rides tied');
+    assert.deepEqual(forward, reverse, 'stable regardless of input order');
+  });
+
+  it('omitted/negative/NaN currentRides treated as 0', () => {
+    const result = packBundle({
+      primary: entry('p', { difficulty: 'easy' }), // pool=6, easy cost=1 → all 3 fit
+      candidates: [
+        { fieldKey: 'x', fieldRule: rule({ difficulty: 'easy', availability: 'always' }) }, // no currentRides
+        { fieldKey: 'y', fieldRule: rule({ difficulty: 'easy', availability: 'always' }), currentRides: -5 },
+        { fieldKey: 'z', fieldRule: rule({ difficulty: 'easy', availability: 'always' }), currentRides: NaN },
+      ],
+      resolvedFieldKeys: new Set(),
+      settings: DEFAULT_SETTINGS,
+      variantCount: 1,
+    });
+    // All normalize to 0 → alphabetical wins within the tied-rides bucket.
+    assert.deepEqual(result.passengers.map((p) => p.fieldKey), ['x', 'y', 'z']);
+  });
+
+  it('currentRides does NOT override higher-priority sort axes', () => {
+    // Mandatory peer at currentRides=5 should still beat non-mandatory at 0 —
+    // required_level is the most significant axis.
+    const result = packBundle({
+      primary: entry('p', { difficulty: 'medium' }),
+      candidates: [
+        { fieldKey: 'non_mand_0', fieldRule: rule({ difficulty: 'easy', required_level: 'non_mandatory' }), currentRides: 0 },
+        { fieldKey: 'mand_5',     fieldRule: rule({ difficulty: 'easy', required_level: 'mandatory' }),     currentRides: 5 },
+      ],
+      resolvedFieldKeys: new Set(),
+      settings: DEFAULT_SETTINGS,
+      variantCount: 1,
+    });
+    assert.equal(result.passengers[0].fieldKey, 'mand_5', 'mandatory wins despite higher rides');
+    assert.equal(result.passengers[1].fieldKey, 'non_mand_0');
+  });
+});
+
 // ─── Step 6 — greedy pack + variant scaling ──────────────────────────────
 
 describe('packBundle — step 6 (greedy pack + variant cost)', () => {

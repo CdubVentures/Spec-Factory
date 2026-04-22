@@ -42,6 +42,8 @@ import {
   readKeyFinder,
   deleteKeyFinderRun,
   deleteKeyFinderAll,
+  unselectKeyFinderField,
+  scrubFieldFromKeyFinder,
 } from '../keyStore.js';
 
 const ROUTE_PREFIX = 'key-finder';
@@ -74,6 +76,10 @@ export function buildKeyFinderCommonOpts({
   onPhaseChange = null,
   onLlmCallComplete = null,
   onPassengersRegistered = null,
+  // WHY: threaded through so the pill shape emitted by runKeyFinderLoop reaches
+  // updateLoopProgress on the ops registry. Without this the Loop sidebar card
+  // never renders publish/callBudget and the user sees no budget/target info.
+  onLoopProgress = null,
 }) {
   return {
     product,
@@ -94,6 +100,7 @@ export function buildKeyFinderCommonOpts({
     onPhaseChange,
     onLlmCallComplete,
     onPassengersRegistered,
+    onLoopProgress,
   };
 }
 
@@ -476,6 +483,74 @@ export function registerKeyFinderRoutes(ctx) {
         if (statusCode >= 500) console.error('[key-finder] POST /preview-prompt failed:', message);
         return jsonRes(res, statusCode, { error: 'preview failed', message });
       }
+    }
+
+    // ── POST /key-finder/:cat/:pid/keys/:fk/unresolve ─────────────
+    // Demote resolved→candidate in DB + clear doc.selected.keys[fk] in JSON.
+    // Keeps candidate pool, runs, and discovery history intact. Reversible.
+    if (method === 'POST' && category && productId && parts[3] === 'keys' && parts[4] && parts[5] === 'unresolve') {
+      const specDb = getSpecDb(category);
+      if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+      const fieldKey = parts[4];
+      if (keyFinderRegistry.count(productId, fieldKey).total > 0) {
+        return jsonRes(res, 409, {
+          error: 'key_busy',
+          field_key: fieldKey,
+          message: 'Run or Loop is in flight for this key — wait for it to finish or stop it first.',
+        });
+      }
+      if (typeof specDb.demoteResolvedCandidates === 'function') {
+        specDb.demoteResolvedCandidates(productId, fieldKey);
+      }
+      unselectKeyFinderField({ productId, productRoot: resolveProductRoot(config), fieldKey });
+      emitDataChange({
+        broadcastWs,
+        event: `${ROUTE_PREFIX}-unresolved`,
+        category,
+        entities: { productIds: [productId] },
+        meta: { productId, field_key: fieldKey },
+      });
+      return jsonRes(res, 200, { status: 'unresolved', field_key: fieldKey });
+    }
+
+    // ── DELETE /key-finder/:cat/:pid/keys/:fk ─────────────────────
+    // Full wipe for one key: demote + strip keyFinder-sourced candidates
+    // (evidence cascades via FK) + scrub fk from every run's selected.keys
+    // and response.results. Run records stay as audit trail.
+    if (method === 'DELETE' && category && productId && parts[3] === 'keys' && parts[4] && !parts[5]) {
+      const specDb = getSpecDb(category);
+      if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+      const fieldKey = parts[4];
+      if (keyFinderRegistry.count(productId, fieldKey).total > 0) {
+        return jsonRes(res, 409, {
+          error: 'key_busy',
+          field_key: fieldKey,
+          message: 'Run or Loop is in flight for this key — wait for it to finish or stop it first.',
+        });
+      }
+      if (typeof specDb.demoteResolvedCandidates === 'function') {
+        specDb.demoteResolvedCandidates(productId, fieldKey);
+      }
+      if (typeof specDb.deleteFieldCandidatesBySourceType === 'function') {
+        specDb.deleteFieldCandidatesBySourceType(productId, fieldKey, SOURCE_TYPE);
+      }
+      const { deletedRuns } = scrubFieldFromKeyFinder({ productId, productRoot: resolveProductRoot(config), fieldKey });
+      // Cascade the SQL row deletes for each primary run that got wiped,
+      // otherwise the key_finder_runs table keeps stale rows that the summary
+      // rebuild contract assumes reflect JSON state.
+      if (deletedRuns.length > 0 && typeof specDb.deleteFinderRun === 'function') {
+        for (const runNumber of deletedRuns) {
+          specDb.deleteFinderRun('keyFinder', productId, runNumber);
+        }
+      }
+      emitDataChange({
+        broadcastWs,
+        event: `${ROUTE_PREFIX}-field-deleted`,
+        category,
+        entities: { productIds: [productId] },
+        meta: { productId, field_key: fieldKey, deleted_runs: deletedRuns },
+      });
+      return jsonRes(res, 200, { status: 'deleted', field_key: fieldKey, deleted_runs: deletedRuns });
     }
 
     // ── POST /key-finder/:category/:productId — trigger run ───────

@@ -162,7 +162,16 @@ function DiscoveryLogSection({ log }: { readonly log: Record<string, unknown> })
 
 /* ── Single LLM call row ───────────────────────────────────── */
 
-function LlmCallRow({ call }: { readonly call: LlmCallRecord }) {
+interface LlmCallRowProps {
+  readonly call: LlmCallRecord;
+  /** 1-based index within calls sharing the same label. Omitted = label appears only once. */
+  readonly labelIndex?: number;
+  /** Total calls with this label. Shown only when > 1 so the "#N/M" tag
+   *  surfaces only for Loop-style finders. */
+  readonly labelTotal?: number;
+}
+
+function LlmCallRow({ call, labelIndex, labelTotal }: LlmCallRowProps) {
   const [expanded, setExpanded] = useState(false);
   const formatTime = useFormatTime();
   const isPending = call.response === null || call.response === undefined;
@@ -172,8 +181,20 @@ function LlmCallRow({ call }: { readonly call: LlmCallRecord }) {
     : null;
   const time = call.timestamp ? formatTime(call.timestamp) : '';
 
+  // WHY: Loop-style finders (keyFinder / RDF / SKU Loop) emit N Discovery rows.
+  // Without the "#N/M" tag the user can't tell iteration 1 from iteration 5 —
+  // they all share the same label. Single-call labels (CEF Identity Check,
+  // single Run) hide the tag.
+  const showIterationTag = typeof labelIndex === 'number'
+    && typeof labelTotal === 'number'
+    && labelTotal > 1;
+
   return (
-    <div className="rounded-sm border border-[rgb(var(--sf-color-border-subtle-rgb)/0.2)] overflow-hidden">
+    <div
+      className={`rounded-sm overflow-hidden border ${isPending
+        ? 'border-[rgb(var(--sf-color-accent-strong-rgb)/0.55)] ring-1 ring-[rgb(var(--sf-color-accent-strong-rgb)/0.25)]'
+        : 'border-[rgb(var(--sf-color-border-subtle-rgb)/0.2)]'}`}
+    >
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
@@ -184,7 +205,20 @@ function LlmCallRow({ call }: { readonly call: LlmCallRecord }) {
         </span>
         <span className="text-[11px] font-mono font-bold text-[var(--sf-token-accent-strong)]">
           {call.label || call.mode || `Call #${call.callIndex + 1}`}
+          {showIterationTag && (
+            <span className="ml-1 sf-text-muted font-normal">
+              #{labelIndex}/{labelTotal}
+            </span>
+          )}
         </span>
+        {isPending && (
+          <span
+            className="inline-flex items-center px-1 text-[8px] font-bold font-mono uppercase tracking-[0.04em] rounded-[2px] border border-current leading-[1.5] text-[rgb(var(--sf-color-accent-strong-rgb))] animate-pulse"
+            title="This LLM call is currently in flight"
+          >
+            active
+          </span>
+        )}
         <span className="inline-flex items-center gap-0.5">
           <ModelBadgeGroup
             accessMode={(call.accessMode || 'api') as LlmAccessMode}
@@ -262,6 +296,27 @@ function LlmCallsSection({ calls }: { readonly calls: ReadonlyArray<LlmCallRecor
     return counted > 0 ? { promptTokens, completionTokens, costUsd } : null;
   }, [calls]);
 
+  // WHY: Per-label iteration numbering. For keyFinder Loop ("Discovery #3/5"),
+  // RDF/SKU Loop per-variant attempts, and any future multi-call label. Single-
+  // call labels (CEF Identity Check, single Run) end up with total=1 and the
+  // tag is suppressed by LlmCallRow.
+  const labelIndexMap = useMemo(() => {
+    const labelTotals = new Map<string, number>();
+    for (const c of calls) {
+      const key = c.label || c.mode || `#${c.callIndex + 1}`;
+      labelTotals.set(key, (labelTotals.get(key) || 0) + 1);
+    }
+    const result = new Map<number, { labelIndex: number; labelTotal: number }>();
+    const runningIndex = new Map<string, number>();
+    for (const c of calls) {
+      const key = c.label || c.mode || `#${c.callIndex + 1}`;
+      const next = (runningIndex.get(key) || 0) + 1;
+      runningIndex.set(key, next);
+      result.set(c.callIndex, { labelIndex: next, labelTotal: labelTotals.get(key) || 1 });
+    }
+    return result;
+  }, [calls]);
+
   return (
     <section>
       <div className="text-[10px] font-semibold sf-text-subtle uppercase tracking-[0.06em] mb-2">
@@ -274,9 +329,17 @@ function LlmCallsSection({ calls }: { readonly calls: ReadonlyArray<LlmCallRecor
         )}
       </div>
       <div className="space-y-1.5 max-h-[50vh] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
-        {calls.map((call) => (
-          <LlmCallRow key={call.callIndex} call={call} />
-        ))}
+        {calls.map((call) => {
+          const idx = labelIndexMap.get(call.callIndex);
+          return (
+            <LlmCallRow
+              key={call.callIndex}
+              call={call}
+              labelIndex={idx?.labelIndex}
+              labelTotal={idx?.labelTotal}
+            />
+          );
+        })}
       </div>
     </section>
   );

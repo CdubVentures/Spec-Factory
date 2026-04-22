@@ -39,6 +39,17 @@ interface SelectArgs {
   readonly runningSet: ReadonlySet<string>;
   /** Phase 3b: per-fieldKey op status + mode (Loop spinner vs Queued pill). */
   readonly opStates?: ReadonlyMap<string, OpState>;
+  /** Per-fieldKey list of primaries currently carrying this key as passenger.
+   *  Feeds the Riding column on each KeyRow. */
+  readonly passengerRides?: ReadonlyMap<string, ReadonlyArray<string>>;
+  /** Per-primaryFieldKey list of passengers it's actively carrying (dual of
+   *  passengerRides). Feeds the Passengers column on each KeyRow. */
+  readonly activePassengers?: ReadonlyMap<string, ReadonlyArray<string>>;
+  /** Keys currently waiting in a Loop-group chain (the current key in the
+   *  chain is running and has its own opState; these are the ones NOT yet
+   *  dispatched). Rendered as Loop-queued so the row's Loop button shows
+   *  "Queued" without needing a fake server-side op. */
+  readonly chainQueuedKeys?: ReadonlySet<string>;
   readonly filters: KeyFilterState;
 }
 
@@ -118,6 +129,9 @@ export function selectKeyFinderGroupedRows({
   reserved,
   runningSet,
   opStates,
+  passengerRides,
+  activePassengers,
+  chainQueuedKeys,
   filters,
 }: SelectArgs): GroupedRows {
   const layoutRows = Array.isArray(layout) ? layout : [];
@@ -149,6 +163,12 @@ export function selectKeyFinderGroupedRows({
     // legacy status-pill rendering + KPI count; opMode/opStatus route the
     // Loop-specific UI (spinner on Loop button vs Queued pill).
     const running = opState !== null || runningSet.has(fk);
+    // Chain-queued keys don't have a real opState yet — synthesize loop/queued
+    // so the row's Loop button renders as Queued. Falls through when a real
+    // opState takes over (once the chain advances to this key).
+    const chainQueued = !opState && (chainQueuedKeys?.has(fk) ?? false);
+    const effectiveOpMode = opState?.mode ?? (chainQueued ? 'loop' : null);
+    const effectiveOpStatus = opState?.status ?? (chainQueued ? 'queued' : null);
     const baseStatus: KeyStatus = (s?.last_status ?? null) as KeyStatus;
 
     const entry: KeyEntry = {
@@ -174,8 +194,10 @@ export function selectKeyFinderGroupedRows({
       published: s?.published ?? false,
       run_count: s?.run_count ?? 0,
       running,
-      opMode: opState?.mode ?? null,
-      opStatus: opState?.status ?? null,
+      opMode: effectiveOpMode,
+      opStatus: effectiveOpStatus,
+      ridingPrimaries: passengerRides?.get(fk) ?? [],
+      activePassengers: activePassengers?.get(fk) ?? [],
     };
 
     if (!matchesFilters(entry, groupName, filters)) continue;

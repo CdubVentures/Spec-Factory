@@ -6,6 +6,7 @@
  */
 
 import { buildLlmCallDeps } from '../../core/llm/buildLlmCallDeps.js';
+import { withLlmCallTracking } from '../../core/llm/withLlmCallTracking.js';
 import { buildBillingOnUsage } from '../../billing/costLedger.js';
 import {
   computeRanAt,
@@ -272,26 +273,79 @@ export async function runColorEditionFinder({
   const cefStartedAt = new Date().toISOString();
   const cefStartMs = Date.now();
 
-  onLlmCallComplete?.({
-    prompt: { system: systemPrompt, user: userMessage },
-    response: null,
-    model: modelTracking.actualModel,
-    isFallback: modelTracking.actualFallbackUsed,
-    thinking: modelTracking.actualThinking,
-    webSearch: modelTracking.actualWebSearch,
-    effortLevel: modelTracking.actualEffortLevel,
-    accessMode: modelTracking.actualAccessMode,
-    label: 'Discovery',
-  });
-
-  // WHY: callLlmWithRouting (via createPhaseCallLlm) already handles
-  // primary→fallback internally. A single try/catch is sufficient —
-  // if both primary and fallback fail, the error propagates here.
   if (signal?.aborted) throw new DOMException('Operation cancelled', 'AbortError');
 
+  // Outer-scoped refs populated inside withLlmCallTracking's callFn so the
+  // Discovery extraction runs once and the rest of the orchestrator reads
+  // from here. withLlmCallTracking owns the pending + completed emissions —
+  // the completed emit still carries the enriched {colors, color_names,
+  // editions, default_color, siblings_excluded, discovery_log} shape the
+  // modal has shown for months.
   let response, usage;
+  let colors, colorNamesMap, editions, defaultColor;
+  const discoveryEvidenceByAtomRaw = new Map();
+  const discoveryConfidenceByAtomRaw = new Map();
+  const discoveryEvidenceByEditionSlug = new Map();
+  const discoveryConfidenceByEditionSlug = new Map();
+
   try {
-    ({ result: response, usage } = await callLlm({ colorNames, colors: allColors, product, previousRuns, previousDiscovery, familyModelCount, ambiguityLevel, siblingModels }));
+    ({ usage } = await withLlmCallTracking({
+      label: 'Discovery',
+      prompt: { system: systemPrompt, user: userMessage },
+      modelTracking,
+      onLlmCallComplete,
+      callFn: async () => {
+        const r = await callLlm({ colorNames, colors: allColors, product, previousRuns, previousDiscovery, familyModelCount, ambiguityLevel, siblingModels });
+        response = r.result;
+
+        // WHY: LLM schema returns per-item: colors[]={name, evidence_refs}, editions[slug]={display_name, colors, evidence_refs}.
+        // Extract atom names for validation/registry work, keep per-item evidence in parallel maps.
+        const rawColors = Array.isArray(response?.colors) ? response.colors : [];
+        colors = rawColors
+          .map((c) => (c && typeof c === 'object' ? c.name : (typeof c === 'string' ? c : '')))
+          .filter((n) => typeof n === 'string' && n.length > 0);
+        for (const c of rawColors) {
+          if (c && typeof c === 'object' && typeof c.name === 'string') {
+            if (Array.isArray(c.evidence_refs)) discoveryEvidenceByAtomRaw.set(c.name, c.evidence_refs);
+            if (Number.isFinite(c.confidence)) discoveryConfidenceByAtomRaw.set(c.name, c.confidence);
+          }
+        }
+        colorNamesMap = (response?.color_names && typeof response.color_names === 'object' && !Array.isArray(response.color_names))
+          ? response.color_names
+          : {};
+        // WHY: LLM may return editions as Record<slug, {display_name, colors, evidence_refs}> or
+        // Array<{slug, display_name, colors, evidence_refs}>. Normalize to Record.
+        editions = {};
+        if (response?.editions && typeof response.editions === 'object' && !Array.isArray(response.editions)) {
+          editions = response.editions;
+        } else if (Array.isArray(response?.editions)) {
+          for (const entry of response.editions) {
+            if (entry && typeof entry === 'object' && typeof entry.slug === 'string' && entry.slug) {
+              const { slug, ...rest } = entry;
+              editions[slug] = rest;
+            }
+          }
+        }
+        for (const [slug, ed] of Object.entries(editions)) {
+          if (ed && Array.isArray(ed.evidence_refs)) discoveryEvidenceByEditionSlug.set(slug, ed.evidence_refs);
+          if (ed && Number.isFinite(ed.confidence)) discoveryConfidenceByEditionSlug.set(slug, ed.confidence);
+        }
+        defaultColor = response?.default_color || colors[0] || '';
+
+        // WHY: Return the enriched shape so the wrapper's completed emission
+        // carries the same response payload the modal has read for months —
+        // not the raw multi-variant LLM output.
+        const enrichedResponse = {
+          colors,
+          color_names: colorNamesMap,
+          editions,
+          default_color: defaultColor,
+          siblings_excluded: Array.isArray(response?.siblings_excluded) ? response.siblings_excluded : [],
+          discovery_log: response?.discovery_log || {},
+        };
+        return { result: enrichedResponse, usage: r.usage };
+      },
+    }));
   } catch (err) {
     logger?.error?.('color_edition_finder_llm_failed', {
       product_id: product.product_id,
@@ -299,75 +353,6 @@ export async function runColorEditionFinder({
     });
     return { colors: [], editions: {}, default_color: '', fallbackUsed: false, rejected: true, rejections: [{ reason_code: 'llm_error', message: err.message }] };
   }
-
-  // WHY: LLM schema returns per-item: colors[]={name, evidence_refs}, editions[slug]={display_name, colors, evidence_refs}.
-  // Extract atom names for validation/registry work, keep per-item evidence in parallel maps.
-  const rawColors = Array.isArray(response?.colors) ? response.colors : [];
-  const colors = rawColors
-    .map((c) => (c && typeof c === 'object' ? c.name : (typeof c === 'string' ? c : '')))
-    .filter((n) => typeof n === 'string' && n.length > 0);
-  // Map: raw atom name (pre-repair) → evidence_refs from discovery
-  const discoveryEvidenceByAtomRaw = new Map();
-  // Map: raw atom name (pre-repair) → LLM's overall value-level confidence
-  const discoveryConfidenceByAtomRaw = new Map();
-  for (const c of rawColors) {
-    if (c && typeof c === 'object' && typeof c.name === 'string') {
-      if (Array.isArray(c.evidence_refs)) {
-        discoveryEvidenceByAtomRaw.set(c.name, c.evidence_refs);
-      }
-      if (Number.isFinite(c.confidence)) {
-        discoveryConfidenceByAtomRaw.set(c.name, c.confidence);
-      }
-    }
-  }
-  const colorNamesMap = (response?.color_names && typeof response.color_names === 'object' && !Array.isArray(response.color_names))
-    ? response.color_names
-    : {};
-  // WHY: LLM may return editions as Record<slug, {display_name, colors, evidence_refs}> or
-  // Array<{slug, display_name, colors, evidence_refs}>. Normalize to Record.
-  let editions = {};
-  if (response?.editions && typeof response.editions === 'object' && !Array.isArray(response.editions)) {
-    editions = response.editions;
-  } else if (Array.isArray(response?.editions)) {
-    for (const entry of response.editions) {
-      if (entry && typeof entry === 'object' && typeof entry.slug === 'string' && entry.slug) {
-        const { slug, ...rest } = entry;
-        editions[slug] = rest;
-      }
-    }
-  }
-  // Map: edition slug → evidence_refs from discovery
-  const discoveryEvidenceByEditionSlug = new Map();
-  // Map: edition slug → LLM's overall value-level confidence
-  const discoveryConfidenceByEditionSlug = new Map();
-  for (const [slug, ed] of Object.entries(editions)) {
-    if (ed && Array.isArray(ed.evidence_refs)) {
-      discoveryEvidenceByEditionSlug.set(slug, ed.evidence_refs);
-    }
-    if (ed && Number.isFinite(ed.confidence)) {
-      discoveryConfidenceByEditionSlug.set(slug, ed.confidence);
-    }
-  }
-  const defaultColor = response?.default_color || colors[0] || '';
-
-  // WHY: Discovery post-emit must fire BEFORE identity check section.
-  // The smart-update logic in operationsRegistry merges the first non-null
-  // response into the last pending entry. If identity check fires first,
-  // it overwrites the discovery entry.
-  onLlmCallComplete?.({
-    prompt: { system: systemPrompt, user: userMessage },
-    response: { colors, color_names: colorNamesMap, editions, default_color: defaultColor,
-      siblings_excluded: Array.isArray(response?.siblings_excluded) ? response.siblings_excluded : [],
-      discovery_log: response?.discovery_log || {} },
-    model: modelTracking.actualModel,
-    isFallback: modelTracking.actualFallbackUsed,
-    thinking: modelTracking.actualThinking,
-    webSearch: modelTracking.actualWebSearch,
-    effortLevel: modelTracking.actualEffortLevel,
-    accessMode: modelTracking.actualAccessMode,
-    usage,
-    label: 'Discovery',
-  });
 
   // --- Candidate gate: validate ALL fields before any writes ---
   // WHY: If any field fails validation, the entire LLM response is compromised.
@@ -524,41 +509,25 @@ export async function runColorEditionFinder({
         callIdentityCheck = createVariantIdentityCheckCallLlm(llmDeps);
       }
 
-      // WHY: Two-phase emit for identity check — pre-emit shows prompt immediately
-      // in operations modal, post-emit fills in response + tokens.
-      onLlmCallComplete?.({
-        prompt: { system: identityCheckPrompt, user: identityCheckUser },
-        response: null,
-        model: modelTracking.actualModel,
-        isFallback: modelTracking.actualFallbackUsed,
-        thinking: modelTracking.actualThinking,
-        webSearch: modelTracking.actualWebSearch,
-        effortLevel: modelTracking.actualEffortLevel,
-        accessMode: modelTracking.actualAccessMode,
+      // WHY: Second wrapper call shares the same modelTracking as Discovery —
+      // routing internals decide model per call. appendLlmCall's alternation
+      // rule keeps the Identity Check row distinct from the Discovery row
+      // because Discovery completed (response non-null) fires BEFORE Identity
+      // Check pending (response null) appends as a new row.
+      const idWrapped = await withLlmCallTracking({
         label: 'Identity Check',
-      });
-
-      const { result: idResult, usage: idUsage } = await callIdentityCheck({
-        product, existingRegistry,
-        newColors: gateColors, newColorNames: colorNamesMap, newEditions: gateEditions,
-        promptOverride: identityCheckPromptTemplate,
-        familyModelCount, ambiguityLevel, siblingModels, runCount: previousRuns.length,
-        orphanedPifKeys,
-      });
-      identityCheckResult = idResult;
-
-      onLlmCallComplete?.({
         prompt: { system: identityCheckPrompt, user: identityCheckUser },
-        response: identityCheckResult,
-        model: modelTracking.actualModel,
-        isFallback: modelTracking.actualFallbackUsed,
-        thinking: modelTracking.actualThinking,
-        webSearch: modelTracking.actualWebSearch,
-        effortLevel: modelTracking.actualEffortLevel,
-        accessMode: modelTracking.actualAccessMode,
-        usage: idUsage || null,
-        label: 'Identity Check',
+        modelTracking,
+        onLlmCallComplete,
+        callFn: () => callIdentityCheck({
+          product, existingRegistry,
+          newColors: gateColors, newColorNames: colorNamesMap, newEditions: gateEditions,
+          promptOverride: identityCheckPromptTemplate,
+          familyModelCount, ambiguityLevel, siblingModels, runCount: previousRuns.length,
+          orphanedPifKeys,
+        }),
       });
+      identityCheckResult = idWrapped.result;
     } catch (err) {
       logger?.error?.('variant_identity_check_failed', {
         product_id: product.product_id, error: err.message,

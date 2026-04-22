@@ -30,6 +30,7 @@ import {
   bootstrapRunEventIndexing,
 } from '../features/indexing/orchestration/bootstrap/index.js';
 import { createCrawlLedgerAdapter } from '../features/indexing/orchestration/shared/crawlLedgerAdapter.js';
+import { enrichCrawlResults } from './enrichCrawlResults.js';
 import { configInt } from '../shared/settingsAccessor.js';
 
 import {
@@ -291,7 +292,7 @@ export async function runProduct({
 
   try {
     const maxRunMs = (Number(config.maxRunSeconds) || 0) * 1000;
-    const { crawlResults } = await session.runFetchPlan({
+    const { crawlResults: rawCrawlResults } = await session.runFetchPlan({
       orderedSources: orderedFetchPlan,
       workerIdMap,
       frontierDb,
@@ -299,6 +300,11 @@ export async function runProduct({
       startMs,
       maxRunMs,
     });
+
+    // WHY: B6 — runFetchPlan drops triage metadata (hint_source / providers)
+    // because it only forwards URL to the fetcher. Rejoin by URL so the
+    // downstream checkpoint mappers can record evidence-tier inputs.
+    const crawlResults = enrichCrawlResults(rawCrawlResults, orderedFetchPlan);
 
     logger.info('run_completed', {
       runId,

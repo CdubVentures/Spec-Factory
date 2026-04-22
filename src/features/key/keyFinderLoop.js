@@ -72,7 +72,13 @@ function loadBudgetSettings(finderStore) {
  * @param {AbortSignal} [opts.signal]
  * @param {object} [opts.logger]
  * @param {string} [opts.productRoot]
- * @param {Function} [opts.onLoopProgress] — ({ iteration, attemptsRemaining, loopId }) => void
+ * @param {Function} [opts.onLoopProgress] — Canonical pill-shape emission; see
+ *   docs/implementation/active operations upgrade/active-operations-upgrade-guide.html §6.
+ *   Shape: { publish: {count, target, satisfied, confidence},
+ *            callBudget: {used, budget, exhausted},
+ *            final_status, loop_id }
+ *   Intermediate iterations emit final_status=null; terminal iteration emits
+ *   the computed final_status. Skipped-resolved path emits exactly once.
  * @param {Function} [opts._runKeyFinderOverride] — test seam; default imports runKeyFinder
  * @returns {Promise<{iterations:number, final_status:string, loop_id:string, runs:number[], last_result?:object}>}
  */
@@ -127,6 +133,16 @@ export async function runKeyFinderLoop(opts) {
     && Boolean(specDb.getResolvedFieldCandidate(product.product_id, fieldKey));
   if (alreadyResolved) {
     if (reloopBudget === 0) {
+      // WHY: Emit a terminal pill so the operations panel sees the skip path
+      // explicitly instead of a silent op that never renders loopProgress.
+      try {
+        onLoopProgress?.({
+          publish: { count: 1, target: 1, satisfied: true, confidence: null },
+          callBudget: { used: 0, budget: 0, exhausted: false },
+          final_status: 'skipped_resolved',
+          loop_id,
+        });
+      } catch { /* onLoopProgress errors must not abort the loop */ }
       return {
         iterations: 0,
         final_status: 'skipped_resolved',
@@ -175,11 +191,27 @@ export async function runKeyFinderLoop(opts) {
     lastResult = result;
     if (Number.isFinite(result?.run_number)) runs.push(result.run_number);
 
+    // Per-iteration pill with final_status=null. Satisfied + confidence
+    // reflect this iteration's publisher outcome; the modal shows the latest
+    // state as the loop advances.
     try {
+      const iterSatisfied = result?.status === 'published';
       onLoopProgress?.({
-        iteration: iter,
-        attemptsRemaining: attempts - iter,
-        loopId: loop_id,
+        publish: {
+          count: iterSatisfied ? 1 : 0,
+          target: 1,
+          satisfied: iterSatisfied,
+          confidence: Number.isFinite(result?.candidate?.confidence)
+            ? result.candidate.confidence
+            : null,
+        },
+        callBudget: {
+          used: iter,
+          budget: attempts,
+          exhausted: iter >= attempts,
+        },
+        final_status: null,
+        loop_id,
       });
     } catch { /* onLoopProgress errors must not abort the loop */ }
 
@@ -198,6 +230,30 @@ export async function runKeyFinderLoop(opts) {
 
     // Otherwise: below_threshold / accepted / no_evidence / runtime issue — retry
   }
+
+  // Terminal pill — re-emits the final state with the computed final_status so
+  // the operations panel shows the exit outcome (published / definitive_unk /
+  // budget_exhausted / aborted) instead of the last null-status snapshot.
+  try {
+    const terminalSatisfied = lastResult?.status === 'published';
+    onLoopProgress?.({
+      publish: {
+        count: terminalSatisfied ? 1 : 0,
+        target: 1,
+        satisfied: terminalSatisfied,
+        confidence: Number.isFinite(lastResult?.candidate?.confidence)
+          ? lastResult.candidate.confidence
+          : null,
+      },
+      callBudget: {
+        used: iterations,
+        budget: attempts,
+        exhausted: iterations >= attempts && iterations > 0,
+      },
+      final_status,
+      loop_id,
+    });
+  } catch { /* onLoopProgress errors must not abort the loop */ }
 
   return {
     iterations,

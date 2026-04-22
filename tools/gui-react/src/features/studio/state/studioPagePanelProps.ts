@@ -198,6 +198,7 @@ export function buildStudioPageActivePanelProps({
       autoSaveLockReason,
     },
     reportsTabProps: {
+      category,
       artifacts: normalizeArtifacts(artifacts),
       compileErrors,
       compileWarnings,

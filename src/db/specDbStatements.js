@@ -186,6 +186,18 @@ export function prepareStatements(db) {
       SELECT * FROM runs WHERE category = ? ORDER BY created_at DESC, id DESC LIMIT ?
     `),
 
+    // WHY: B14 — boot-time sweep. Orphan runs (status='running' + updated_at
+    // older than threshold) never transition when the process dies uncleanly.
+    // Flip them to 'aborted' so the GUI stops showing stale progress.
+    _sweepOrphanRuns: db.prepare(`
+      UPDATE runs
+      SET status = 'aborted',
+          ended_at = datetime('now'),
+          updated_at = datetime('now')
+      WHERE status = 'running'
+        AND updated_at < datetime('now', @age_offset)
+    `),
+
     _upsertRunArtifact: db.prepare(`
       INSERT INTO run_artifacts (run_id, artifact_type, category, payload, updated_at)
       VALUES (@run_id, @artifact_type, @category, @payload, datetime('now'))

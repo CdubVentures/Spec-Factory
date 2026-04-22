@@ -294,7 +294,13 @@ test('AbortSignal: already-aborted signal → no iterations run', async () => {
   assert.equal(result.final_status, 'aborted');
 });
 
-test('onLoopProgress fires once per iteration with {iteration, attemptsRemaining, loopId}', async () => {
+// ── onLoopProgress pill shape (Stage 3) ──────────────────────────────
+// WHY: Canonical two-budget pill shape per active-operations-upgrade §6.
+// Per-iteration events carry final_status=null; a terminal event fires once
+// after the loop exits with the computed final_status. Shape is identical
+// across all finders so LoopProgressRouter can shape-detect on the frontend.
+
+test('onLoopProgress emits pill per iteration + 1 terminal emission with final_status', async () => {
   const specDb = makeSpecDb();
   const runOverride = makeRunOverride([
     { status: 'below_threshold' },
@@ -310,14 +316,118 @@ test('onLoopProgress fires once per iteration with {iteration, attemptsRemaining
     _runKeyFinderOverride: runOverride,
   });
 
-  assert.equal(progressEvents.length, 3);
-  assert.equal(progressEvents[0].iteration, 1);
-  assert.equal(progressEvents[1].iteration, 2);
-  assert.equal(progressEvents[2].iteration, 3);
-  assert.ok(progressEvents.every((e) => e.loopId === result.loop_id));
-  // attemptsRemaining = budget - iteration; budget is 5 here.
-  assert.equal(progressEvents[0].attemptsRemaining, 4);
-  assert.equal(progressEvents[2].attemptsRemaining, 2);
+  // 3 per-iteration + 1 terminal = 4 emissions. Budget is 5 (medium/mandatory/always/1-variant).
+  assert.equal(progressEvents.length, 4, '3 per-iteration events + 1 terminal event');
+
+  // Per-iteration shape check (final_status: null)
+  for (let i = 0; i < 3; i += 1) {
+    const e = progressEvents[i];
+    assert.equal(e.final_status, null, `per-iteration event ${i} must carry final_status=null`);
+    assert.equal(e.loop_id, result.loop_id);
+    assert.equal(e.publish.target, 1);
+    assert.equal(e.callBudget.budget, 5);
+    assert.equal(e.callBudget.used, i + 1, `used increments — iteration ${i + 1}`);
+  }
+
+  // Iter 3 published → satisfied=true + confidence
+  assert.equal(progressEvents[2].publish.satisfied, true);
+  assert.equal(progressEvents[2].publish.count, 1);
+  assert.equal(progressEvents[2].publish.confidence, 92);
+
+  // Terminal event carries the final_status
+  const terminal = progressEvents[3];
+  assert.equal(terminal.final_status, 'published');
+  assert.equal(terminal.publish.satisfied, true);
+  assert.equal(terminal.publish.confidence, 92);
+  assert.equal(terminal.callBudget.used, 3, 'stopped at iteration 3');
+  assert.equal(terminal.callBudget.exhausted, false, 'early-stopped before budget');
+});
+
+test('onLoopProgress: budget_exhausted path sets final_status + exhausted=true on terminal', async () => {
+  const specDb = makeSpecDb();
+  // Budget is 5 for this rule.
+  const runOverride = makeRunOverride([
+    { status: 'below_threshold', candidate: { value: 4000, confidence: 50 } },
+    { status: 'below_threshold', candidate: { value: 4000, confidence: 55 } },
+    { status: 'below_threshold', candidate: { value: 4000, confidence: 60 } },
+    { status: 'below_threshold', candidate: { value: 4000, confidence: 65 } },
+    { status: 'below_threshold', candidate: { value: 4000, confidence: 70 } },
+  ]);
+  const events = [];
+
+  await runKeyFinderLoop({
+    product: PRODUCT, fieldKey: 'polling_rate', category: 'mouse',
+    specDb, policy: POLICY,
+    onLoopProgress: (e) => events.push(e),
+    _runKeyFinderOverride: runOverride,
+  });
+
+  const terminal = events[events.length - 1];
+  assert.equal(terminal.final_status, 'budget_exhausted');
+  assert.equal(terminal.publish.satisfied, false);
+  assert.equal(terminal.callBudget.used, 5);
+  assert.equal(terminal.callBudget.budget, 5);
+  assert.equal(terminal.callBudget.exhausted, true, 'used === budget → exhausted');
+});
+
+test('onLoopProgress: definitive_unk path emits terminal with final_status set', async () => {
+  const specDb = makeSpecDb();
+  const runOverride = makeRunOverride([
+    { status: 'unk', unknown_reason: 'Manufacturer does not disclose' },
+  ]);
+  const events = [];
+
+  await runKeyFinderLoop({
+    product: PRODUCT, fieldKey: 'polling_rate', category: 'mouse',
+    specDb, policy: POLICY,
+    onLoopProgress: (e) => events.push(e),
+    _runKeyFinderOverride: runOverride,
+  });
+
+  const terminal = events[events.length - 1];
+  assert.equal(terminal.final_status, 'definitive_unk');
+  assert.equal(terminal.publish.satisfied, false);
+  assert.equal(terminal.callBudget.used, 1);
+});
+
+test('onLoopProgress: aborted path emits terminal with final_status=aborted', async () => {
+  const specDb = makeSpecDb();
+  const controller = new AbortController();
+  controller.abort(); // abort before the loop body runs
+  const events = [];
+
+  await runKeyFinderLoop({
+    product: PRODUCT, fieldKey: 'polling_rate', category: 'mouse',
+    specDb, policy: POLICY, signal: controller.signal,
+    onLoopProgress: (e) => events.push(e),
+    _runKeyFinderOverride: async () => ({ status: 'below_threshold' }),
+  });
+
+  // Zero per-iteration events (loop body never ran). One terminal event.
+  assert.equal(events.length, 1, 'only the terminal pill fires when the signal is pre-aborted');
+  assert.equal(events[0].final_status, 'aborted');
+  assert.equal(events[0].callBudget.used, 0);
+});
+
+test('onLoopProgress: skipped_resolved path emits single terminal pill before early-return', async () => {
+  const specDb = makeSpecDb({
+    settings: { ...KNOBS, reloopRunBudget: '0' },
+    resolvedPrimary: true,
+  });
+  const events = [];
+
+  const result = await runKeyFinderLoop({
+    product: PRODUCT, fieldKey: 'polling_rate', category: 'mouse',
+    specDb, policy: POLICY,
+    onLoopProgress: (e) => events.push(e),
+    _runKeyFinderOverride: async () => { throw new Error('LLM must not be called'); },
+  });
+
+  assert.equal(events.length, 1, 'exactly one pill fires in the skip branch');
+  assert.equal(events[0].final_status, 'skipped_resolved');
+  assert.equal(events[0].publish.satisfied, true, 'primary is already resolved');
+  assert.equal(events[0].callBudget.budget, 0);
+  assert.equal(events[0].loop_id, result.loop_id);
 });
 
 test('reserved field_key rejected before any iteration fires', async () => {

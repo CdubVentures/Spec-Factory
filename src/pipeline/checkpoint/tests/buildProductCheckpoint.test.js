@@ -92,6 +92,25 @@ describe('buildProductCheckpoint — sources', () => {
     const cp = buildProductCheckpoint({ identity: {}, category: 'mouse', productId: 'test', runId: 'run-001', sources: [] });
     assert.deepEqual(cp.sources, []);
   });
+
+  test('B6 — mapProductSource forwards hint_source / tier / providers when present on src', () => {
+    const sources = [{
+      url: 'https://rtings.com/x', status: 200, content_hash: 'h1',
+      hint_source: 'tier1_seed', tier: 'seed', providers: ['serper'],
+    }];
+    const cp = buildProductCheckpoint({ identity: {}, category: 'mouse', productId: 'test', runId: 'run-001', sources });
+    assert.equal(cp.sources[0].hint_source, 'tier1_seed');
+    assert.equal(cp.sources[0].tier, 'seed');
+    assert.deepEqual(cp.sources[0].providers, ['serper']);
+  });
+
+  test('B6 — mapProductSource defaults triage fields to null when missing', () => {
+    const sources = [{ url: 'https://rtings.com/x', status: 200, content_hash: 'h1' }];
+    const cp = buildProductCheckpoint({ identity: {}, category: 'mouse', productId: 'test', runId: 'run-001', sources });
+    assert.equal(cp.sources[0].hint_source, null);
+    assert.equal(cp.sources[0].tier, null);
+    assert.equal(cp.sources[0].providers, null);
+  });
 });
 
 describe('buildProductCheckpoint — query_cooldowns', () => {

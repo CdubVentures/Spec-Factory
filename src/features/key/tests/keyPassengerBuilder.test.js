@@ -342,4 +342,101 @@ describe('buildPassengers — concurrent-ride caps', () => {
     assert.ok(keys.includes('tracking'), 'medium peer fills in');
     assert.ok(keys.includes('battery'), 'hard peer fills in');
   });
+
+  it('round-robin within a tier — peer with fewer rides packs before peer at higher rides', () => {
+    // Setup: very_hard primary (pool=1, cost 8 → can't fit; test with easy primary pool=6).
+    // Three easy peers same axes. dpi has 1 ride already; buttons has 0.
+    // Under old sort: dpi sorts first alphabetically. Under round-robin:
+    // buttons (0 rides, alphabetical first among 0-riders) packs first.
+    registryRegister('p1', 'dpi', 'passenger'); // dpi now at 1 ride
+    const easyOnly = {
+      polling_rate: rule({ difficulty: 'easy', availability: 'always' }),
+      dpi: rule({ difficulty: 'easy', availability: 'always' }),
+      buttons: rule({ difficulty: 'easy', availability: 'always' }),
+    };
+    const easyPrimary = { fieldKey: 'polling_rate', fieldRule: easyOnly.polling_rate };
+    const specDb = makeSpecDb();
+    const passengers = buildPassengers({
+      primary: easyPrimary, engineRules: easyOnly, specDb, productId: 'p1',
+      settings: { ...SETTINGS_BASE, bundlingOverlapCapEasy: 10 }, // keep cap high so no exclusion
+    });
+    const keys = passengers.map((p) => p.fieldKey);
+    // Both packed (pool=6 has room), but buttons sorts BEFORE dpi now.
+    assert.deepEqual(keys, ['buttons', 'dpi'], 'peer at 0 rides packs before peer at 1 ride');
+  });
+
+  it('round-robin spans groups when groupBundlingOnly=false — currentRides is global, not per-group', () => {
+    // Peer A lives in group_x with 2 existing rides. Peers B + C live in group_y
+    // with 0 rides. Primary is in group_y. groupBundlingOnly=false → all three
+    // are candidates. Round-robin must prefer the under-ridden peers regardless
+    // of group membership.
+    registryRegister('p1', 'peer_a', 'passenger');
+    registryRegister('p1', 'peer_a', 'passenger'); // peer_a at asPassenger=2
+    // peer_b, peer_c at 0
+    const crossGroupRules = {
+      primary_y: rule({ difficulty: 'medium', group: 'group_y', required_level: 'mandatory' }),
+      peer_a:    rule({ difficulty: 'easy', availability: 'always', group: 'group_x' }),
+      peer_b:    rule({ difficulty: 'easy', availability: 'always', group: 'group_y' }),
+      peer_c:    rule({ difficulty: 'easy', availability: 'always', group: 'group_y' }),
+    };
+    const specDb = makeSpecDb();
+    const passengers = buildPassengers({
+      primary: { fieldKey: 'primary_y', fieldRule: crossGroupRules.primary_y },
+      engineRules: crossGroupRules, specDb, productId: 'p1',
+      settings: {
+        ...SETTINGS_BASE,
+        groupBundlingOnly: false, // cross-group enabled
+        passengerDifficultyPolicy: 'less_or_equal',
+        bundlingOverlapCapEasy: 10, // keep cap permissive — testing sort, not exclusion
+      },
+    });
+    const keys = passengers.map((p) => p.fieldKey);
+    // Pool for medium primary = 4, easy cost = 1 → all three fit. Order matters:
+    // peer_b + peer_c (both at 0 rides) ahead of peer_a (at 2 rides).
+    assert.deepEqual(keys, ['peer_b', 'peer_c', 'peer_a'],
+      'peers from different groups round-robin together: low-rides first regardless of group');
+  });
+
+  it('round-robin distributes across 5 same-tier hard peers over successive primary fires', () => {
+    // Simulates the user's scenario: 5 hard peers, repeated primary fires each
+    // pick ONE hard passenger (pool=2, cost 4 for hard — only room for one).
+    // After 5 fires with round-robin, every hard peer should have asPassenger=1.
+    // Under the old alphabetical-only sort, the first peer gets all 5 rides.
+    const hardsOnly = {
+      sensor:                    rule({ difficulty: 'medium', required_level: 'mandatory' }),
+      sensor_latency:            rule({ difficulty: 'hard', availability: 'sometimes' }),
+      sensor_latency_bluetooth:  rule({ difficulty: 'hard', availability: 'sometimes' }),
+      sensor_latency_wired:      rule({ difficulty: 'hard', availability: 'sometimes' }),
+      sensor_latency_wireless:   rule({ difficulty: 'hard', availability: 'sometimes' }),
+      shift_latency:             rule({ difficulty: 'hard', availability: 'sometimes' }),
+    };
+    const specDb = makeSpecDb();
+    const medPrimary = { fieldKey: 'sensor', fieldRule: hardsOnly.sensor };
+    const picked = [];
+    for (let i = 0; i < 5; i += 1) {
+      const passengers = buildPassengers({
+        primary: medPrimary, engineRules: hardsOnly, specDb, productId: 'p1',
+        // any_but_very_hard lets a medium primary pack hard peers; less_or_equal
+        // would exclude them (hard > medium). Pool=4, hard cost=4 → one per fire.
+        settings: { ...SETTINGS_BASE, bundlingOverlapCapHard: 6, passengerDifficultyPolicy: 'any_but_very_hard' },
+      });
+      const firstHard = passengers.find((p) => p.fieldRule.difficulty === 'hard');
+      assert.ok(firstHard, `iteration ${i + 1}: at least one hard peer packed`);
+      picked.push(firstHard.fieldKey);
+      registryRegister('p1', firstHard.fieldKey, 'passenger');
+    }
+    // Expected picks in order: alphabetical at equal rides each round.
+    // Round 1: all at 0 → sensor_latency (alpha first)
+    // Round 2: sensor_latency at 1, others at 0 → sensor_latency_bluetooth
+    // Round 3: two at 1, three at 0 → sensor_latency_wired
+    // Round 4: three at 1, two at 0 → sensor_latency_wireless
+    // Round 5: four at 1, one at 0 → shift_latency
+    assert.deepEqual(picked, [
+      'sensor_latency',
+      'sensor_latency_bluetooth',
+      'sensor_latency_wired',
+      'sensor_latency_wireless',
+      'shift_latency',
+    ], 'rides distribute across all 5 hard peers in one full cycle');
+  });
 });

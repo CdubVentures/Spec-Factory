@@ -27,6 +27,11 @@ function mapProductSource(src, runId) {
     ok_count: Number(src.ok_count || (isOkStatus(status) ? 1 : 0)),
     blocked_count: Number(src.blocked_count || (isBlockedStatus(status) ? 1 : 0)),
     timeout_count: Number(src.timeout_count || 0),
+    // WHY: B6 — forward triage provenance so product.json sources[] can
+    // drive evidence-tier scoring on downstream consumers.
+    hint_source: src.hint_source || null,
+    tier: src.tier || null,
+    providers: src.providers || null,
   };
 }
 

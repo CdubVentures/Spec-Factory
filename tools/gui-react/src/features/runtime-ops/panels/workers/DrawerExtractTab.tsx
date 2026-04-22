@@ -6,14 +6,16 @@ interface DrawerExtractTabProps {
   fields: WorkerExtractionField[];
   extractionPlugins: ExtractionPluginEvent[];
   workerState: string;
+  brightDataUnlocked?: boolean;
 }
 
-type PluginStatus = 'pending' | 'completed' | 'failed';
+type PluginStatus = 'pending' | 'completed' | 'failed' | 'n_a';
 
 const STATUS_BADGE: Record<PluginStatus, { label: string; className: string }> = {
   pending: { label: 'Pending', className: 'sf-chip-neutral' },
   completed: { label: 'Success', className: 'sf-chip-success' },
   failed: { label: 'Failed', className: 'sf-chip-danger' },
+  n_a: { label: 'API mode', className: 'sf-chip-accent' },
 };
 
 function pluginLabel(name: string): string {
@@ -21,7 +23,7 @@ function pluginLabel(name: string): string {
   return meta?.label ?? name;
 }
 
-export function DrawerExtractTab({ fields, extractionPlugins, workerState }: DrawerExtractTabProps) {
+export function DrawerExtractTab({ fields, extractionPlugins, workerState, brightDataUnlocked }: DrawerExtractTabProps) {
   // WHY: Plugin events are the ONLY source of truth for execution status.
   // extraction_plugin_completed → Success. extraction_plugin_failed → Failed.
   // No event → Pending. We do NOT guess from worker state.
@@ -40,8 +42,18 @@ export function DrawerExtractTab({ fields, extractionPlugins, workerState }: Dra
       map.set(evt.plugin, evt.status === 'failed' ? 'failed' : 'completed');
     }
 
+    // WHY: BrightData API unlock succeeded without a browser session, so
+    // screenshot/video plugins never ran and can never produce artifacts.
+    // Flip remaining 'pending' stages to 'n_a' so users don't think the
+    // run is still in progress.
+    if (brightDataUnlocked) {
+      for (const [key, status] of map.entries()) {
+        if (status === 'pending') map.set(key, 'n_a');
+      }
+    }
+
     return map;
-  }, [extractionPlugins]);
+  }, [extractionPlugins, brightDataUnlocked]);
 
   return (
     <div className="space-y-3">

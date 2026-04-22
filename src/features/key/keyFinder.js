@@ -13,6 +13,7 @@
  *   - Response is a multi-key envelope; solo mode parses only the primary
  */
 import { buildLlmCallDeps } from '../../core/llm/buildLlmCallDeps.js';
+import { withLlmCallTracking } from '../../core/llm/withLlmCallTracking.js';
 import { buildBillingOnUsage } from '../../billing/costLedger.js';
 import { resolvePhaseModelByTier } from '../../core/llm/client/routing.js';
 import { accumulateDiscoveryLog } from '../../core/finder/discoveryLog.js';
@@ -321,90 +322,41 @@ export async function runKeyFinder(opts) {
     variant_count: variantCount,
   });
 
-  // 8. Invoke LLM (test seam vs production factory)
+  // 8. Invoke LLM via the canonical tracking wrapper. withLlmCallTracking owns
+  // the pending-before / completed-after onLlmCallComplete emission and the
+  // modelTracking.actual* snapshot so the shape stays identical across every
+  // finder — one bug fix in the wrapper propagates to all of them.
   onStageAdvance?.('Discovery');
 
-  // WHY: Mirror CEF/RDF/SKU — modelTracking captures what callLlmWithRouting
-  // actually resolved (including fallback usage, access mode, effort level).
-  // The LLM-call log in the active-operations modal reads these fields to
-  // render the model chip consistently with every other finder.
   const modelTracking = resolveModelTracking({ config, phaseKey: 'keyFinder', onModelResolved });
-
-  // Initial values for the pending row — these reflect the tier bundle the
-  // user configured. The completed emission below upserts this row (via
-  // appendLlmCall's response===null → response!=null merge rule) with the
-  // final values from modelTracking after the LLM call resolves.
-  const initialModel = tierBundle.model || config.llmModelPlan || '';
-  const tierCapabilities = {
-    thinking: Boolean(tierBundle.thinking),
-    webSearch: Boolean(tierBundle.webSearch),
-    effortLevel: String(tierBundle.thinkingEffort || ''),
-  };
-
-  // WHY: Pending emit BEFORE the call — PIF/CEF/RDF pattern. Makes the call
-  // row appear immediately with the system + user prompt visible, labeled
-  // "Awaiting response..." until the completed emit upserts it. Without this,
-  // the LLM-call list stays empty for the entire call duration and the user
-  // can't see the prompt that's in flight.
-  onLlmCallComplete?.({
-    label: 'Discovery',
-    prompt: { system: systemPrompt, user: userMessage },
-    response: null,
-    model: initialModel,
-    isFallback: false,
-    thinking: tierCapabilities.thinking,
-    webSearch: tierCapabilities.webSearch,
-    effortLevel: tierCapabilities.effortLevel,
-    accessMode: '',
-    tier: tierName,
-    reason: `key_finding_${tierName}`,
-  });
-
-  const callStartedAt = new Date().toISOString();
-  const callStartMs = Date.now();
   const mapped = {
     reason: `key_finding_${tierName}`,
     ...(tierBundle.model ? { modelOverride: tierBundle.model } : {}),
   };
 
-  let llmResult;
-  let llmUsage = null;
-  if (_callLlmOverride) {
-    const r = await _callLlmOverride(domainArgs, mapped);
-    llmResult = r?.result;
-    llmUsage = r?.usage || null;
-  } else {
-    const llmDeps = buildLlmCallDeps({
-      config, logger, signal,
-      onModelResolved: modelTracking.wrappedOnModelResolved,
-      onStreamChunk, onQueueWait, onPhaseChange,
-      onUsage: appDb ? buildBillingOnUsage({ config, appDb, category: product.category, productId: product.product_id }) : undefined,
-    });
-    const callLlm = createKeyFinderCallLlm(llmDeps, { name: tierName, ...tierBundle });
-    const r = await callLlm(domainArgs);
-    llmResult = r?.result;
-    llmUsage = r?.usage || null;
-  }
-  const durationMs = Date.now() - callStartMs;
-
-  // WHY: Completed emit — upserts the pending row via appendLlmCall (same label
-  // + non-null response triggers the merge). Carries the final model-tracking
-  // set + usage/cost so the modal can render token counts and cost metrics.
-  onLlmCallComplete?.({
+  const { result: llmResult, usage: llmUsage, durationMs, startedAt: callStartedAt } = await withLlmCallTracking({
     label: 'Discovery',
     prompt: { system: systemPrompt, user: userMessage },
-    response: llmResult,
-    model: modelTracking.actualModel || initialModel,
-    isFallback: modelTracking.actualFallbackUsed,
-    thinking: modelTracking.actualThinking,
-    webSearch: modelTracking.actualWebSearch,
-    effortLevel: modelTracking.actualEffortLevel,
-    accessMode: modelTracking.actualAccessMode,
-    tier: tierName,
-    reason: `key_finding_${tierName}`,
-    usage: llmUsage,
-    started_at: callStartedAt,
-    duration_ms: durationMs,
+    initialModel: tierBundle.model || config.llmModelPlan || '',
+    tierCapabilities: {
+      thinking: Boolean(tierBundle.thinking),
+      webSearch: Boolean(tierBundle.webSearch),
+      effortLevel: String(tierBundle.thinkingEffort || ''),
+    },
+    modelTracking,
+    onLlmCallComplete,
+    extras: { tier: tierName, reason: `key_finding_${tierName}` },
+    callFn: async () => {
+      if (_callLlmOverride) return _callLlmOverride(domainArgs, mapped);
+      const llmDeps = buildLlmCallDeps({
+        config, logger, signal,
+        onModelResolved: modelTracking.wrappedOnModelResolved,
+        onStreamChunk, onQueueWait, onPhaseChange,
+        onUsage: appDb ? buildBillingOnUsage({ config, appDb, category: product.category, productId: product.product_id }) : undefined,
+      });
+      const callLlm = createKeyFinderCallLlm(llmDeps, { name: tierName, ...tierBundle });
+      return callLlm(domainArgs);
+    },
   });
 
   // 9. Validate multi-key envelope

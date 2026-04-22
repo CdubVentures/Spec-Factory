@@ -5,10 +5,21 @@ import { deriveCompileReportsViewState } from "../state/compileReportsState.ts";
 import { STUDIO_TIPS } from "../components/studioConstants.ts";
 import type { StudioPageActivePanelReportsProps as CompileReportsTabProps } from "../components/studioPagePanelContracts.ts";
 import { useFormatDateTime } from '../../../utils/dateTime.ts';
+import { api } from '../../../api/client.ts';
 
 import { btnPrimary, sectionCls } from '../../../shared/ui/buttonClasses.ts';
 
+interface KeyFinderAuditResult {
+  category: string;
+  consumer: string;
+  htmlPath: string;
+  mdPath: string;
+  generatedAt: string;
+  stats: Record<string, unknown>;
+}
+
 export function CompileReportsTab({
+  category,
   artifacts,
   compileErrors,
   compileWarnings,
@@ -26,6 +37,9 @@ export function CompileReportsTab({
   onRunCompile,
   onRunValidate,
 }: CompileReportsTabProps) {
+  const [auditPending, setAuditPending] = useState(false);
+  const [auditResult, setAuditResult] = useState<KeyFinderAuditResult | null>(null);
+  const [auditError, setAuditError] = useState<string | null>(null);
   const [progressTick, setProgressTick] = useState(0);
   const formatDateTime = useFormatDateTime();
   const compileReportsViewState = deriveCompileReportsViewState({
@@ -67,6 +81,23 @@ export function CompileReportsTab({
   const artifactProgressPercent =
     compileReportsViewState.artifactProgressPercent;
 
+  async function handleGenerateKeyFinderAudit() {
+    setAuditPending(true);
+    setAuditError(null);
+    try {
+      const result = await api.post<KeyFinderAuditResult>(
+        `/category-audit/${encodeURIComponent(category)}/generate-report`,
+        { consumer: 'key_finder' },
+      );
+      setAuditResult(result);
+    } catch (err) {
+      setAuditError(err instanceof Error ? err.message : String(err));
+      setAuditResult(null);
+    } finally {
+      setAuditPending(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 overflow-x-auto pb-1">
@@ -97,6 +128,14 @@ export function CompileReportsTab({
               : anyProcessRunning
                 ? "Process Running..."
                 : "Validate Rules"}
+        </button>
+        <button
+          onClick={handleGenerateKeyFinderAudit}
+          disabled={auditPending}
+          className={`${btnPrimary} h-10 min-h-10 w-56 inline-flex items-center justify-center whitespace-nowrap shrink-0`}
+          title="Generate the paired HTML + Markdown key-finder audit report for this category at .workspace/reports/."
+        >
+          {auditPending ? "Generating..." : "Generate Key Finder Audit"}
         </button>
         <span
           className={`h-10 min-h-10 w-52 inline-flex items-center justify-center rounded border px-3 text-sm font-medium truncate shrink-0 ${compileBadgeClass}`}
@@ -132,6 +171,24 @@ export function CompileReportsTab({
           </span>
         </div>
       </div>
+
+      {auditResult ? (
+        <div className={`${sectionCls} sf-border-ok-soft`}>
+          <h4 className="text-sm font-semibold mb-2">Key Finder Audit generated</h4>
+          <div className="text-xs sf-text-muted space-y-1">
+            <div>Generated: <span className="font-mono">{auditResult.generatedAt}</span></div>
+            <div>HTML: <span className="font-mono break-all">{auditResult.htmlPath}</span></div>
+            <div>Markdown: <span className="font-mono break-all">{auditResult.mdPath}</span></div>
+          </div>
+        </div>
+      ) : null}
+
+      {auditError ? (
+        <div className={`${sectionCls} sf-border-danger-soft`}>
+          <h4 className="text-sm font-semibold sf-danger-text mb-2">Key Finder Audit failed</h4>
+          <p className="text-sm sf-danger-text">{auditError}</p>
+        </div>
+      ) : null}
 
       {compileErrors.length > 0 ? (
         <div className={`${sectionCls} sf-border-danger-soft`}>

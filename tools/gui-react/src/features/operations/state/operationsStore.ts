@@ -1,5 +1,75 @@
 import { create } from 'zustand';
 
+/**
+ * PIF-only carousel grid shape. Emitted by productImageFinder.js. Rendered by
+ * LoopProgressGrid via the `views[]` + `hero` fields.
+ */
+export interface CarouselLoopProgress {
+  readonly variantLabel: string;
+  readonly variantIndex?: number;
+  readonly variantTotal?: number;
+  readonly callNumber?: number;
+  readonly estimatedRemaining?: number;
+  readonly mode?: string;
+  readonly focusView?: string | null;
+  readonly views?: ReadonlyArray<{
+    readonly view: string;
+    readonly count: number;
+    readonly target: number;
+    readonly satisfied: boolean;
+    readonly exhausted: boolean;
+    readonly attempts: number;
+    readonly attemptBudget: number;
+  }>;
+  readonly hero?: {
+    readonly count: number;
+    readonly target: number;
+    readonly satisfied: boolean;
+    readonly exhausted: boolean;
+    readonly attempts: number;
+    readonly attemptBudget: number;
+  } | null;
+}
+
+/**
+ * Canonical two-budget pill shape. Emitted by keyFinderLoop + variantFieldLoop
+ * per the active-operations-upgrade guide §6. Rendered by LoopProgressPill.
+ * Intermediate iterations carry final_status=null; the terminal pill fires
+ * once per loop (keyFinder) or per variant (variantFieldLoop) with the
+ * derived final_status.
+ */
+export interface PillLoopProgress {
+  readonly loop_id: string;
+  readonly publish: {
+    readonly count: number;
+    readonly target: number;
+    readonly satisfied: boolean;
+    readonly confidence: number | null;
+  };
+  readonly callBudget: {
+    readonly used: number;
+    readonly budget: number;
+    readonly exhausted: boolean;
+  };
+  readonly final_status:
+    | 'published'
+    | 'definitive_unk'
+    | 'budget_exhausted'
+    | 'skipped_resolved'
+    | 'aborted'
+    | null;
+  /** variantFieldLoop stamps variant identity; keyFinderLoop omits these. */
+  readonly variantKey?: string;
+  readonly variantLabel?: string;
+}
+
+/**
+ * Union of the two shapes that flow into `op.loopProgress`. Frontend uses
+ * `isCarouselLoopProgress` (PIF) or `isPillLoopProgress` (everything else)
+ * to narrow before rendering.
+ */
+export type LoopProgress = CarouselLoopProgress | PillLoopProgress;
+
 export interface Operation {
   readonly id: string;
   readonly type: string;
@@ -27,44 +97,7 @@ export interface Operation {
   /** Per-key scope — keyFinder uses this instead of variantKey. */
   readonly fieldKey?: string;
   readonly progressText?: string;
-  // WHY: Two shapes flow into this slot from different finders.
-  //   PIF (carousel) — rich per-view + hero fields (views, hero, mode, focusView, ...).
-  //   RDF + anything using core/finder/variantFieldLoop — simple {attempt, budget, satisfied, loopId}.
-  // Only `variantLabel` is shared. All other fields are optional at the type level;
-  // use `isCarouselLoopProgress` to narrow before reading carousel-specific fields.
-  readonly loopProgress?: {
-    readonly variantLabel: string;
-    // Carousel shape (PIF):
-    readonly variantIndex?: number;
-    readonly variantTotal?: number;
-    readonly callNumber?: number;
-    readonly estimatedRemaining?: number;
-    readonly mode?: string;
-    readonly focusView?: string | null;
-    readonly views?: ReadonlyArray<{
-      readonly view: string;
-      readonly count: number;
-      readonly target: number;
-      readonly satisfied: boolean;
-      readonly exhausted: boolean;
-      readonly attempts: number;
-      readonly attemptBudget: number;
-    }>;
-    readonly hero?: {
-      readonly count: number;
-      readonly target: number;
-      readonly satisfied: boolean;
-      readonly exhausted: boolean;
-      readonly attempts: number;
-      readonly attemptBudget: number;
-    } | null;
-    // Simple-loop shape (RDF / variantFieldLoop):
-    readonly variantKey?: string;
-    readonly attempt?: number;
-    readonly budget?: number;
-    readonly satisfied?: boolean;
-    readonly loopId?: string;
-  } | null;
+  readonly loopProgress?: LoopProgress | null;
   /** Set on optimistic insert (202 returned, server hasn't started yet). Cleared on first real WS update. */
   readonly queuedAt?: string;
   /** Frozen ms from optimistic insert to first WS broadcast. Stays visible. */
@@ -205,14 +238,25 @@ export const useOperationsStore = create<OperationsState>((set) => ({
     }),
 }));
 
-// WHY: Narrow `loopProgress` to the carousel shape (PIF). Consumers that read
+// WHY: Narrow `loopProgress` to the PIF carousel shape. Consumers that read
 // carousel-specific fields (views, hero, mode, ...) must gate on this first —
-// otherwise they can crash on RDF/variantFieldLoop emissions that share the
-// `loopProgress` slot with a different shape.
+// otherwise they can crash on pill-shape emissions that share the slot.
 export function isCarouselLoopProgress(
-  lp: Operation['loopProgress'],
-): lp is NonNullable<Operation['loopProgress']> & {
-  readonly views: NonNullable<NonNullable<Operation['loopProgress']>['views']>;
+  lp: LoopProgress | null | undefined,
+): lp is CarouselLoopProgress & {
+  readonly views: NonNullable<CarouselLoopProgress['views']>;
 } {
-  return !!lp && Array.isArray(lp.views);
+  return !!lp && Array.isArray((lp as CarouselLoopProgress).views);
+}
+
+// WHY: Narrow `loopProgress` to the canonical pill shape emitted by
+// keyFinderLoop + variantFieldLoop. The LoopProgressRouter uses this to pick
+// LoopProgressPill. Check order: isCarouselLoopProgress first (PIF wins).
+export function isPillLoopProgress(
+  lp: LoopProgress | null | undefined,
+): lp is PillLoopProgress {
+  return !!lp
+    && typeof lp === 'object'
+    && 'publish' in lp
+    && 'callBudget' in lp;
 }

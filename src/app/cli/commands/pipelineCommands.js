@@ -321,6 +321,10 @@ export function createPipelineCommands({
           status: 'completed',
           identityLock: result.job?.identityLock || null,
           runtimeOpsPanels,
+          // WHY: B12 — merge bridge.counters (pages_checked, parse_completed,
+          // indexed_docs, fields_filled, search_workers) into checkpoint so
+          // they survive scanAndSeedCheckpoints round-trips at server boot.
+          bridgeCounters: bridge.counters || null,
         });
         // WHY: Compute + persist field_histories as a run_artifact BEFORE
         // writing product.json. This drives tier-3 enrichment progression

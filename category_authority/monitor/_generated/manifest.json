@@ -15,12 +15,12 @@
     {
       "bytes": 7313,
       "path": "field_groups.json",
-      "sha256": "5be3576beafbf9ca36df2c2573435a3f70ea901c26943efac8170a0c0b3280df"
+      "sha256": "5dde9a3a9124f599f56d9ecf447abacf13273280c8792398a960e222ba2d8aa2"
     },
     {
-      "bytes": 310555,
+      "bytes": 282054,
       "path": "field_rules.json",
-      "sha256": "858d7ae44c738766565c7df9ae745f587d5c0b67d337f75e64e9aab11c0664a0"
+      "sha256": "2c9a463411bd9ce236f28274ff89bacc7e7e7ea91dc6f5467e55bd256cfeca11"
     },
     {
       "bytes": 201,
@@ -38,13 +38,13 @@
       "sha256": "e2a50c986aa6ee6128b7dae55f17c291dcf806806fad2f3186a0fe17ae411f33"
     },
     {
-      "bytes": 94553,
+      "bytes": 92786,
       "path": "ui_field_catalog.json",
-      "sha256": "ac216c55e81cafbb673a415988e2593afc6fec3bb5680bbf02724b8d734e140f"
+      "sha256": "799f44da70d6f1b3fa9be95030924f2efdcfa71cea75640ff8d7c0ae0cf40592"
     }
   ],
   "category": "monitor",
-  "generated_at": "2026-04-17T21:39:57.936Z",
-  "source_map_hash": "0b6855650faf43418d678898ba94faa617569692cb13469fa007a3f647605c6a",
+  "generated_at": "2026-04-22T21:07:14.109Z",
+  "source_map_hash": "4936e31457ac9b0f1e4ecfdd83626db755d95c6a6b179962f67ffcea3babc35c",
   "version": 1
 }

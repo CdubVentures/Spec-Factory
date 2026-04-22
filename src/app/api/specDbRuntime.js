@@ -169,6 +169,7 @@ export function createSpecDbRuntime({
       const db = new specDbClass({ dbPath: primaryPath, category: resolvedCategory, globalDb: appDb?.db });
       if (db.isSeeded()) {
         specDbCache.set(resolvedCategory, db);
+        sweepOrphanRunsIfSupported(resolvedCategory, db);
         triggerHashGatedReconcile(resolvedCategory, db);
         triggerReseedPhases(resolvedCategory, db);
         return db;
@@ -190,6 +191,18 @@ export function createSpecDbRuntime({
       logger.error(`[getSpecDb] fallback create failed for ${resolvedCategory}:`, err?.message || err);
       specDbCache.set(resolvedCategory, null);
       return null;
+    }
+  }
+
+  function sweepOrphanRunsIfSupported(category, db) {
+    if (typeof db?.sweepOrphanRuns !== 'function') return;
+    try {
+      const { swept } = db.sweepOrphanRuns({ maxAgeMinutes: 60 }) || {};
+      if (swept > 0) {
+        logger.log(`[sweep] ${category}: ${swept} orphan run(s) marked aborted`);
+      }
+    } catch (err) {
+      logger.error(`[sweep] ${category} failed:`, err?.message || err);
     }
   }
 

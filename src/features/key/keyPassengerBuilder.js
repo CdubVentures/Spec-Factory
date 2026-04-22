@@ -42,7 +42,13 @@ export function buildPassengers({ primary, engineRules, specDb, productId, setti
     if (!rule || fk === primary.fieldKey) continue;
     if (isReservedFieldKey(fk)) continue; // never bundle CEF/PIF/RDF/SKF-owned peers
     if (settings.groupBundlingOnly && rule.group !== primaryGroup) continue;
-    peerCandidates.push({ fieldKey: fk, fieldRule: rule });
+    // Stamp the peer's live passenger-ride count so packBundle's sort can
+    // round-robin within a same-tier group (peer with fewer rides packs first).
+    // Without this, the alphabetical first key in a tier hogs every slot until
+    // it hits its cap — e.g., one hard peer at asPassenger=4 while four others
+    // sit at 0.
+    const rides = registryCount(productId, fk).asPassenger;
+    peerCandidates.push({ fieldKey: fk, fieldRule: rule, currentRides: rides });
   }
 
   const resolvedFieldKeys = new Set();

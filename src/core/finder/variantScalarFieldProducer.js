@@ -19,6 +19,7 @@
  */
 
 import { buildLlmCallDeps } from '../llm/buildLlmCallDeps.js';
+import { withLlmCallTracking } from '../llm/withLlmCallTracking.js';
 import { buildBillingOnUsage } from '../../billing/costLedger.js';
 import {
   resolveModelTracking,
@@ -194,27 +195,25 @@ export function createVariantScalarFieldProducer(cfg) {
 
       const systemPrompt = buildPrompt(domainArgs);
 
-      const callStartedAt = new Date().toISOString();
-      const callStartMs = Date.now();
-
-      onLlmCallComplete?.({
-        prompt: { system: systemPrompt, user: userMsg },
-        response: null,
-        model: _mt.actualModel,
-        isFallback: _mt.actualFallbackUsed,
-        thinking: _mt.actualThinking,
-        webSearch: _mt.actualWebSearch,
-        effortLevel: _mt.actualEffortLevel,
-        accessMode: _mt.actualAccessMode,
-        variant: variant.label,
-        label: 'Discovery',
-      });
-
-      let llmResult, usage;
+      // WHY: withLlmCallTracking owns the pending-before / completed-after
+      // emission shape and the started_at/duration_ms timing. The catch below
+      // preserves the legacy "LLM throw → skip this variant" behavior so other
+      // variants in the run continue to be processed (per variantFieldLoop
+      // semantics).
+      let llmResult, usage, durationMs, callStartedAt;
       try {
-        const r = await callLlm(domainArgs);
-        llmResult = r.result;
-        usage = r.usage;
+        const wrapperResult = await withLlmCallTracking({
+          label: 'Discovery',
+          prompt: { system: systemPrompt, user: userMsg },
+          modelTracking: _mt,
+          onLlmCallComplete,
+          extras: { variant: variant.label },
+          callFn: () => callLlm(domainArgs),
+        });
+        llmResult = wrapperResult.result;
+        usage = wrapperResult.usage;
+        durationMs = wrapperResult.durationMs;
+        callStartedAt = wrapperResult.startedAt;
       } catch (err) {
         logger?.error?.(`${logPrefix}_llm_failed`, {
           product_id: product.product_id, variant: variant.key, error: err.message,
@@ -222,7 +221,6 @@ export function createVariantScalarFieldProducer(cfg) {
         return { error: err.message, candidate: null, persisted: false };
       }
 
-      const durationMs = Date.now() - callStartMs;
       const extracted = extractCandidate(llmResult);
       const { value, confidence, unknownReason, evidenceRefs, discoveryLog, isUnknown } = extracted;
 
@@ -244,6 +242,10 @@ export function createVariantScalarFieldProducer(cfg) {
         ran_at: ranAt,
       };
 
+      // WHY: started_at / duration_ms stay INSIDE responsePayload because the
+      // JSON store readers (keyStore / skuStore / releaseDateStore) fall back
+      // to run.response?.started_at when run.started_at is missing. Preserves
+      // persisted-shape compatibility with historical runs.
       const responsePayload = {
         started_at: callStartedAt,
         duration_ms: durationMs,
@@ -257,20 +259,6 @@ export function createVariantScalarFieldProducer(cfg) {
         discovery_log: discoveryLog || { urls_checked: [], queries_run: [], notes: [] },
         ...(loopId ? { loop_id: loopId } : {}),
       };
-
-      onLlmCallComplete?.({
-        prompt: { system: systemPrompt, user: userMsg },
-        response: responsePayload,
-        model: _mt.actualModel,
-        isFallback: _mt.actualFallbackUsed,
-        thinking: _mt.actualThinking,
-        webSearch: _mt.actualWebSearch,
-        effortLevel: _mt.actualEffortLevel,
-        accessMode: _mt.actualAccessMode,
-        variant: variant.label,
-        usage,
-        label: 'Discovery',
-      });
 
       let publishResult = null;
       if (!isUnknown && fieldRules && evidenceRefs.length > 0) {

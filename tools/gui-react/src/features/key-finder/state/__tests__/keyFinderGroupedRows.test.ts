@@ -266,6 +266,124 @@ describe('selectKeyFinderGroupedRows', () => {
   });
 });
 
+describe('ridingPrimaries — Riding column data wiring', () => {
+  it('populates ridingPrimaries from passengerRides map', () => {
+    const result = selectKeyFinderGroupedRows({
+      layout: [layoutRow('a', 'g1'), layoutRow('b', 'g1'), layoutRow('c', 'g1')],
+      summary: [sumRow('a'), sumRow('b'), sumRow('c')],
+      reserved: new Set(),
+      runningSet: new Set(),
+      passengerRides: new Map([
+        ['b', ['primary_x', 'primary_y']],
+        ['c', ['primary_z']],
+      ]),
+      filters: DEFAULT_FILTERS,
+    });
+    const byKey = Object.fromEntries(
+      result.groups.flatMap((g) => g.keys).map((k) => [k.field_key, k]),
+    );
+    assert.deepEqual(byKey.a.ridingPrimaries, [], 'not riding anywhere');
+    assert.deepEqual(byKey.b.ridingPrimaries, ['primary_x', 'primary_y'], '2 primaries');
+    assert.deepEqual(byKey.c.ridingPrimaries, ['primary_z'], '1 primary');
+  });
+
+  it('defaults ridingPrimaries to empty array when passengerRides is omitted', () => {
+    const result = selectKeyFinderGroupedRows({
+      layout: [layoutRow('a', 'g1')],
+      summary: [sumRow('a')],
+      reserved: new Set(),
+      runningSet: new Set(),
+      filters: DEFAULT_FILTERS,
+    });
+    const entry = result.groups[0].keys[0];
+    assert.deepEqual(entry.ridingPrimaries, [], 'empty default');
+  });
+});
+
+describe('activePassengers — Passengers column data wiring', () => {
+  it('populates activePassengers from activePassengers map (dual of ridingPrimaries)', () => {
+    const result = selectKeyFinderGroupedRows({
+      layout: [layoutRow('a', 'g1'), layoutRow('b', 'g1'), layoutRow('c', 'g1')],
+      summary: [sumRow('a'), sumRow('b'), sumRow('c')],
+      reserved: new Set(),
+      runningSet: new Set(),
+      activePassengers: new Map([
+        ['a', ['b', 'c']],   // a is a running primary carrying b + c
+      ]),
+      filters: DEFAULT_FILTERS,
+    });
+    const byKey = Object.fromEntries(
+      result.groups.flatMap((g) => g.keys).map((k) => [k.field_key, k]),
+    );
+    assert.deepEqual(byKey.a.activePassengers, ['b', 'c'], 'primary a lists its 2 passengers');
+    assert.deepEqual(byKey.b.activePassengers, [], 'b is not a primary — empty');
+    assert.deepEqual(byKey.c.activePassengers, [], 'c is not a primary — empty');
+  });
+
+  it('defaults activePassengers to empty array when map is omitted', () => {
+    const result = selectKeyFinderGroupedRows({
+      layout: [layoutRow('a', 'g1')],
+      summary: [sumRow('a')],
+      reserved: new Set(),
+      runningSet: new Set(),
+      filters: DEFAULT_FILTERS,
+    });
+    const entry = result.groups[0].keys[0];
+    assert.deepEqual(entry.activePassengers, []);
+  });
+});
+
+describe('chainQueuedKeys — Loop queued synthesis', () => {
+  it('synthesizes opMode=loop + opStatus=queued for keys waiting in a chain', () => {
+    const result = selectKeyFinderGroupedRows({
+      layout: [layoutRow('a', 'g1'), layoutRow('b', 'g1'), layoutRow('c', 'g1')],
+      summary: [sumRow('a'), sumRow('b'), sumRow('c')],
+      reserved: new Set(),
+      runningSet: new Set(),
+      chainQueuedKeys: new Set(['b', 'c']),
+      filters: DEFAULT_FILTERS,
+    });
+    const byKey = Object.fromEntries(result.groups.flatMap((g) => g.keys).map((k) => [k.field_key, k]));
+    assert.equal(byKey.a.opMode, null, 'a is not chain-queued');
+    assert.equal(byKey.a.opStatus, null);
+    assert.equal(byKey.b.opMode, 'loop', 'b is chain-queued → synthesized as loop');
+    assert.equal(byKey.b.opStatus, 'queued');
+    assert.equal(byKey.c.opMode, 'loop');
+    assert.equal(byKey.c.opStatus, 'queued');
+  });
+
+  it('real opState wins over chainQueued synthesis', () => {
+    // If a key is chain-queued AND has a real opState (e.g., the chain just
+    // advanced and its Loop is now firing), the real state takes priority.
+    const result = selectKeyFinderGroupedRows({
+      layout: [layoutRow('a', 'g1')],
+      summary: [sumRow('a')],
+      reserved: new Set(),
+      runningSet: new Set(),
+      opStates: new Map([['a', { status: 'running', mode: 'loop' }]]),
+      chainQueuedKeys: new Set(['a']),
+      filters: DEFAULT_FILTERS,
+    });
+    const entry = result.groups[0].keys[0];
+    assert.equal(entry.opStatus, 'running', 'real opState beats chain synthesis');
+    assert.equal(entry.running, true, 'running flag stays true — chain-queued alone does not flip it');
+  });
+
+  it('chain-queued alone does not set running=true (it is not active yet)', () => {
+    const result = selectKeyFinderGroupedRows({
+      layout: [layoutRow('a', 'g1')],
+      summary: [sumRow('a')],
+      reserved: new Set(),
+      runningSet: new Set(),
+      chainQueuedKeys: new Set(['a']),
+      filters: DEFAULT_FILTERS,
+    });
+    const entry = result.groups[0].keys[0];
+    assert.equal(entry.running, false, 'queued in chain ≠ running');
+    assert.equal(entry.opStatus, 'queued');
+  });
+});
+
 describe('sortKeysByPriority — Loop chain ordering', () => {
   const row = (
     field_key: string,

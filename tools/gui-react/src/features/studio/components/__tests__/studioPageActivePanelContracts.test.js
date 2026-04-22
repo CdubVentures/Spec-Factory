@@ -154,6 +154,7 @@ function createActivePanelProps(activeTab) {
       autoSaveLockReason: '',
     },
     reportsTabProps: {
+      category: 'mouse',
       artifacts: [{ kind: 'report' }],
       compileErrors: ['missing unit'],
       compileWarnings: [],
@@ -230,6 +231,7 @@ test('StudioPageActivePanel preserves the known-values warning banner and mappin
         autoSaveLockReason: '',
       },
       reportsTabProps: {
+        category: 'mouse',
         artifacts: [],
         compileErrors: [],
         compileWarnings: [],
@@ -319,6 +321,7 @@ test('StudioPageActivePanel switches to reports and contract tabs without render
         autoSaveLockReason: '',
       },
       reportsTabProps: {
+        category: 'mouse',
         artifacts: [{ kind: 'report' }],
         compileErrors: ['missing unit'],
         compileWarnings: [],

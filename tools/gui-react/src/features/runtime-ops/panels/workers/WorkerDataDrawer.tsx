@@ -135,6 +135,7 @@ export function WorkerDataDrawer({
             fields={data?.extraction_fields ?? []}
             extractionPlugins={data?.extraction_plugins ?? []}
             workerState={worker?.state ?? ''}
+            brightDataUnlocked={Boolean(worker?.bright_data_unlocked)}
           />
         )}
         {activeTab === 'screenshots' && (

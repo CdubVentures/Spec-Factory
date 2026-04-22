@@ -10,6 +10,7 @@ interface BrowserStreamProps {
   fetchMode?: string | null;
   lastError?: string | null;
   wsUrl?: string;
+  brightDataUnlocked?: boolean;
 }
 
 interface ScreencastFrameResponse {
@@ -35,11 +36,22 @@ export function describeBrowserStreamGap({
   workerPool,
   fetchMode,
   lastError,
+  brightDataUnlocked,
 }: {
   workerPool?: string;
   fetchMode?: string | null;
   lastError?: string | null;
+  brightDataUnlocked?: boolean;
 }) {
+  // WHY: BrightData API unlock has no browser session. The generic
+  // "screencast didn't capture a frame" copy reads as a bug — clarify
+  // the URL was unlocked via API and no visual is possible.
+  if (brightDataUnlocked) {
+    return {
+      title: 'Unlocked via Bright Data API — no browser capture.',
+      detail: 'This URL was unlocked via the Bright Data Web Unlocker API, which returns HTML only. No screenshot or video is possible in API mode.',
+    };
+  }
   const browserBackedFetchWorker = isBrowserBackedFetchWorker(workerPool, fetchMode);
   const title = browserBackedFetchWorker
     ? 'No stream image was captured for this browser-backed fetch worker.'
@@ -71,7 +83,7 @@ export function shouldHydrateRetainedBrowserFrame(workerState?: string) {
   );
 }
 
-export function BrowserStream({ runId, workerId, workerState, workerPool, fetchMode, lastError, wsUrl }: BrowserStreamProps) {
+export function BrowserStream({ runId, workerId, workerState, workerPool, fetchMode, lastError, wsUrl, brightDataUnlocked }: BrowserStreamProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   const hasFrameRef = useRef(false);
   const [status, setStatus] = useState<'connecting' | 'live' | 'ended'>('connecting');
@@ -86,6 +98,7 @@ export function BrowserStream({ runId, workerId, workerState, workerPool, fetchM
     workerPool,
     fetchMode,
     lastError,
+    brightDataUnlocked,
   });
 
   useEffect(() => {

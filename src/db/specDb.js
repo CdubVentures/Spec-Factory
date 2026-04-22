@@ -101,7 +101,12 @@ export class SpecDb {
     this._purgeStore = createPurgeStore({ db: this.db, category: this.category });
     this._runMetaStore = createRunMetaStore({
       db: this.db, category: this.category,
-      stmts: { _upsertRun: this._upsertRun, _getRunByRunId: this._getRunByRunId, _getRunsByCategory: this._getRunsByCategory }
+      stmts: {
+        _upsertRun: this._upsertRun,
+        _getRunByRunId: this._getRunByRunId,
+        _getRunsByCategory: this._getRunsByCategory,
+        _sweepOrphanRuns: this._sweepOrphanRuns,
+      }
     });
     this._artifactStore = createArtifactStore({
       db: this.db, category: this.category,
@@ -497,6 +502,7 @@ export class SpecDb {
   upsertRun(row) { this._runMetaStore.upsertRun(row); }
   getRunByRunId(runId) { return this._runMetaStore.getRunByRunId(runId); }
   getRunsByCategory(category, limit) { return this._runMetaStore.getRunsByCategory(category, limit); }
+  sweepOrphanRuns(opts) { return this._runMetaStore.sweepOrphanRuns(opts); }
 
   // --- Run Artifacts (needset, search_profile, brand_resolution payloads) ---
 

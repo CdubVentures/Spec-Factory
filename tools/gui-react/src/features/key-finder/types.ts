@@ -118,6 +118,11 @@ export const DEFAULT_FILTERS: KeyFilterState = Object.freeze({
   status: '',
 });
 
+/** Per-fieldKey list of primaries currently carrying it as a passenger.
+ *  Empty when the key isn't riding anywhere. Drives the "Riding" column on
+ *  each KeyRow (one chip per primary, with a live spinner). */
+export type RidingPrimaries = readonly string[];
+
 /** A key merged with its summary + runtime running state. */
 export interface KeyEntry {
   readonly field_key: string;
@@ -154,6 +159,20 @@ export interface KeyEntry {
    * shows as queued to the user.
    */
   readonly opStatus: 'running' | 'queued' | null;
+  /**
+   * Primaries this key is currently riding on as a passenger. Empty when not
+   * riding anywhere. Populated from `useOperationsStore` via
+   * `selectPassengerRidesSignature` — each entry is a primary fieldKey whose
+   * op is still running and has this key in its `passengerFieldKeys`.
+   */
+  readonly ridingPrimaries: RidingPrimaries;
+  /**
+   * Passengers this key is currently carrying (dual of ridingPrimaries).
+   * Populated when THIS key is a running primary; each entry is one of the
+   * keys packed into its LLM call. Empty when the key is idle OR running solo.
+   * Drops to empty the moment the primary's op reaches a terminal status.
+   */
+  readonly activePassengers: RidingPrimaries;
 }
 
 export interface KeyGroup {
@@ -223,6 +242,8 @@ export const TOOLTIPS = Object.freeze({
   keyLoop: 'Budget-bounded retry loop. Each iteration packs passengers live, subject to per-tier caps and hard-block on busy primaries.',
   keyRiding: 'Already riding as a passenger in another call — firing Loop now would add a dedicated primary attempt for this key.',
   keyPrompt: 'Preview the exact LLM prompt this key would send right now (registry-aware).',
+  keyUnresolve: 'Unresolve — demote the published value back to a candidate. Runs, candidates, and discovery history stay intact; a future Run can re-resolve. Reversible.',
+  keyDelete: 'Delete — wipe every trace for this key: published value, confidence, candidates, evidence, URL/query history, and every run where this key was the primary. Fresh slate. Not reversible.',
   groupRun: 'Fire a focused Run on every key in this group. Parallel when alwaysSoloRun is on; sequential otherwise (recalc between).',
   groupLoop: 'Loop each unresolved key in this group one at a time. Each Loop exits on published or budget exhausted.',
   productRun: 'Fire a focused Run on every key across every group. Expensive — N LLM calls for a product with N keys.',

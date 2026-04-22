@@ -29,9 +29,10 @@ describe('EG_LOCKED_KEYS', () => {
 });
 
 describe('EG_EDITABLE_PATHS', () => {
-  it('contains only search/alias paths', () => {
+  it('contains search/alias paths plus user-movable ui.group', () => {
     const allowed = new Set([
       'ui.aliases',
+      'ui.group',
       'search_hints.domain_hints',
       'search_hints.content_types',
       'search_hints.query_terms',
@@ -309,6 +310,13 @@ describe('buildEgSkuFieldRule', () => {
     assert.equal(rule.ui.label, 'SKU');
   });
 
+  // WHY: sku is an identity field (DEFAULT_IDENTITY_FIELDS + common_identity).
+  // Seed matches the system-wide convention; users may still move it via Field Studio.
+  it('seeds ui.group to identity', () => {
+    const rule = buildEgSkuFieldRule();
+    assert.equal(rule.ui.group, 'identity');
+  });
+
   it('has search_hints with MPN-oriented query terms', () => {
     const rule = buildEgSkuFieldRule();
     assert.ok(rule.search_hints.query_terms.includes('part number'));
@@ -580,6 +588,20 @@ describe('preserveEgEditablePaths', () => {
     assert.deepEqual(merged.ui.aliases, ['launch_date', 'available_since']);
     assert.deepEqual(merged.search_hints.domain_hints, ['custom.com']);
   });
+
+  // WHY: Group is user-movable via Field Studio. Preset supplies only a seed;
+  // any user-set ui.group on the override must win.
+  it('preserves user-set ui.group over preset seed', () => {
+    const current = {
+      key: 'sku',
+      ui: { group: 'identity', label: 'MUTATED' },
+    };
+    const preset = buildEgSkuFieldRule();
+    const merged = preserveEgEditablePaths(current, preset);
+
+    assert.equal(merged.ui.group, 'identity');
+    assert.equal(merged.ui.label, preset.ui.label);
+  });
 });
 
 // ── sanitizeEgLockedOverrides ───────────────────────────────────────────────
@@ -663,5 +685,25 @@ describe('sanitizeEgLockedOverrides', () => {
   it('handles null/undefined gracefully', () => {
     assert.equal(sanitizeEgLockedOverrides(null, {}), null);
     assert.equal(sanitizeEgLockedOverrides(undefined, {}), undefined);
+  });
+
+  // WHY: A user moving sku into the identity group must survive re-save.
+  it('preserves user-set ui.group on locked sku override', () => {
+    const overrides = {
+      sku: {
+        key: 'sku',
+        contract: { type: 'HACKED' },
+        ui: { label: 'HACKED', group: 'identity' },
+      },
+    };
+    const sanitized = sanitizeEgLockedOverrides(
+      overrides,
+      { colors: true, editions: true, release_date: true, sku: true },
+    );
+    const preset = buildEgSkuFieldRule();
+
+    assert.equal(sanitized.sku.contract.type, preset.contract.type);
+    assert.equal(sanitized.sku.ui.label, preset.ui.label);
+    assert.equal(sanitized.sku.ui.group, 'identity');
   });
 });

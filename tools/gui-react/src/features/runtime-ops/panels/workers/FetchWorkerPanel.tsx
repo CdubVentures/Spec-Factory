@@ -19,6 +19,7 @@ export function buildBrowserStreamProps(worker: RuntimeOpsWorkerRow, runId: stri
     fetchMode: worker.fetch_mode,
     lastError: worker.last_error,
     wsUrl,
+    brightDataUnlocked: Boolean(worker.bright_data_unlocked),
   };
 }
 

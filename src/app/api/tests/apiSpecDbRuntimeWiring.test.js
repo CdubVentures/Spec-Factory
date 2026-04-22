@@ -14,6 +14,64 @@ function createSyncResult(overrides = {}) {
   };
 }
 
+test('specdb runtime calls sweepOrphanRuns on first open of a seeded db', async () => {
+  const sweepCalls = [];
+  const logs = [];
+
+  class SeededDb {
+    constructor({ category }) {
+      this.category = category;
+    }
+    isSeeded() { return true; }
+    sweepOrphanRuns(opts) {
+      sweepCalls.push({ category: this.category, opts });
+      return { swept: 2 };
+    }
+  }
+
+  const runtime = createSpecDbRuntime({
+    resolveCategoryAlias: (v) => String(v || '').trim(),
+    specDbClass: SeededDb,
+    path,
+    fsSync: { accessSync: () => {}, mkdirSync: () => {} },
+    syncSpecDbForCategory: async () => createSyncResult(),
+    config: { localMode: true },
+    logger: { log: (m) => logs.push(m), error: () => {} },
+  });
+
+  runtime.getSpecDb('mouse');
+  runtime.getSpecDb('mouse'); // cached — must NOT re-sweep
+
+  assert.equal(sweepCalls.length, 1, 'sweep runs once per category open');
+  assert.equal(sweepCalls[0].category, 'mouse');
+  assert.equal(sweepCalls[0].opts.maxAgeMinutes, 60);
+  assert.ok(logs.some((m) => m.includes('[sweep]') && m.includes('2 orphan')));
+});
+
+test('specdb runtime survives sweep errors without breaking db access', async () => {
+  const errorLogs = [];
+
+  class BrokenSweepDb {
+    constructor({ category }) { this.category = category; }
+    isSeeded() { return true; }
+    sweepOrphanRuns() { throw new Error('sweep exploded'); }
+  }
+
+  const runtime = createSpecDbRuntime({
+    resolveCategoryAlias: (v) => String(v || '').trim(),
+    specDbClass: BrokenSweepDb,
+    path,
+    fsSync: { accessSync: () => {}, mkdirSync: () => {} },
+    syncSpecDbForCategory: async () => createSyncResult(),
+    config: { localMode: true },
+    logger: { log: () => {}, error: (m) => errorLogs.push(m) },
+  });
+
+  const db = runtime.getSpecDb('mouse');
+  assert.ok(db, 'db is still returned despite sweep error');
+  assert.ok(errorLogs.some((m) => m.includes('[sweep]') && m.includes('mouse')));
+});
+
 test('specdb runtime reuses seeded db handles immediately', async () => {
   class SeededDb {
     constructor({ dbPath, category }) {

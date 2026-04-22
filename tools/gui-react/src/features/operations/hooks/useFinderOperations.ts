@@ -135,6 +135,124 @@ export interface KeyFieldOpState {
   readonly mode: 'run' | 'loop';
 }
 
+/**
+ * Per-key passenger-rides map (keyFinder). For each passenger fieldKey currently
+ * being carried on one or more live keyFinder ops, lists the primary fieldKeys
+ * carrying it. Used by the KeyRow's "Riding" column to render "riding with X,
+ * Y" with live spinners per primary.
+ *
+ * Only includes ops that are running AND have passengersRegistered=true; queued
+ * / pre-registration ops don't contribute to the map because their passenger
+ * slate isn't known yet.
+ *
+ * Returns a pipe-serialized signature for Zustand equality: `fk:p1,p2|fk:p3`.
+ * Consumers deserialize via the `usePassengerRides` hook.
+ */
+export function selectPassengerRidesSignature(
+  ops: ReadonlyMap<string, Operation>,
+  type: string,
+  productId: string,
+): string {
+  const byPassenger = new Map<string, string[]>();
+  for (const op of ops.values()) {
+    if (op.type !== type || op.productId !== productId) continue;
+    if (op.status !== 'running') continue;
+    if (!Array.isArray(op.passengerFieldKeys) || op.passengerFieldKeys.length === 0) continue;
+    const primary = op.fieldKey;
+    if (!primary) continue;
+    for (const passenger of op.passengerFieldKeys) {
+      if (!passenger || passenger === primary) continue;
+      let list = byPassenger.get(passenger);
+      if (!list) { list = []; byPassenger.set(passenger, list); }
+      if (!list.includes(primary)) list.push(primary);
+    }
+  }
+  return [...byPassenger.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([fk, primaries]) => `${fk}:${primaries.slice().sort().join(',')}`)
+    .join('|');
+}
+
+export function usePassengerRides(type: string, productId: string): ReadonlyMap<string, readonly string[]> {
+  const serialized = useOperationsStore(
+    useCallback(
+      (s: { operations: ReadonlyMap<string, Operation> }) =>
+        selectPassengerRidesSignature(s.operations, type, productId),
+      [type, productId],
+    ),
+  );
+  return useMemo(() => {
+    const map = new Map<string, readonly string[]>();
+    if (!serialized) return map;
+    for (const token of serialized.split('|')) {
+      if (!token) continue;
+      const colonIdx = token.indexOf(':');
+      if (colonIdx <= 0) continue;
+      const fk = token.slice(0, colonIdx);
+      const primaries = token.slice(colonIdx + 1).split(',').filter(Boolean);
+      if (primaries.length > 0) map.set(fk, primaries);
+    }
+    return map;
+  }, [serialized]);
+}
+
+/**
+ * Per-primary active-passengers map — the dual of selectPassengerRidesSignature.
+ * For each running primary, lists the passengers it's currently carrying.
+ * Used by the KeyRow's "Passengers" column: a row that's running as a primary
+ * shows the field_keys it's taking along for the ride, each with a live spinner.
+ *
+ * Format: `primaryFk:p1,p2|primaryFk2:p3` — identical serialization shape to
+ * the Riding side, just flipped direction.
+ */
+export function selectActivePassengersSignature(
+  ops: ReadonlyMap<string, Operation>,
+  type: string,
+  productId: string,
+): string {
+  const byPrimary = new Map<string, string[]>();
+  for (const op of ops.values()) {
+    if (op.type !== type || op.productId !== productId) continue;
+    if (op.status !== 'running') continue;
+    const primary = op.fieldKey;
+    if (!primary) continue;
+    if (!Array.isArray(op.passengerFieldKeys) || op.passengerFieldKeys.length === 0) continue;
+    let list = byPrimary.get(primary);
+    if (!list) { list = []; byPrimary.set(primary, list); }
+    for (const p of op.passengerFieldKeys) {
+      if (!p || p === primary) continue;
+      if (!list.includes(p)) list.push(p);
+    }
+  }
+  return [...byPrimary.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([fk, passengers]) => `${fk}:${passengers.slice().sort().join(',')}`)
+    .join('|');
+}
+
+export function useActivePassengers(type: string, productId: string): ReadonlyMap<string, readonly string[]> {
+  const serialized = useOperationsStore(
+    useCallback(
+      (s: { operations: ReadonlyMap<string, Operation> }) =>
+        selectActivePassengersSignature(s.operations, type, productId),
+      [type, productId],
+    ),
+  );
+  return useMemo(() => {
+    const map = new Map<string, readonly string[]>();
+    if (!serialized) return map;
+    for (const token of serialized.split('|')) {
+      if (!token) continue;
+      const colonIdx = token.indexOf(':');
+      if (colonIdx <= 0) continue;
+      const fk = token.slice(0, colonIdx);
+      const passengers = token.slice(colonIdx + 1).split(',').filter(Boolean);
+      if (passengers.length > 0) map.set(fk, passengers);
+    }
+    return map;
+  }, [serialized]);
+}
+
 /* ── Imperative promise helpers (for chain orchestration) ─────────── */
 
 const TERMINAL_STATUSES: ReadonlySet<Operation['status']> = new Set(['done', 'error', 'cancelled']);

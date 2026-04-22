@@ -105,4 +105,42 @@ export function useDeleteAllKeyFinderRunsMutation(category: string, productId: s
   });
 }
 
+// ── Per-key Unresolve + Delete (KeyRow actions column) ───────────────
+// Unresolve demotes the published value back to candidate (reversible).
+// Delete wipes every trace for the key — candidates, evidence, run selections,
+// discovery history — while leaving run record shells as audit trail. Both
+// return 409 key_busy when an op is in flight for (pid, fieldKey).
+
+interface UnresolveResponse { readonly status: 'unresolved'; readonly field_key: string }
+interface DeleteFieldResponse { readonly status: 'deleted'; readonly field_key: string }
+
+export function useUnresolveKeyMutation(category: string, productId: string) {
+  const queryClient = useQueryClient();
+  const invalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['key-finder', category, productId] });
+  }, [queryClient, category, productId]);
+
+  return useMutation<UnresolveResponse, Error, { readonly fieldKey: string }>({
+    mutationFn: ({ fieldKey }) => api.post<UnresolveResponse>(
+      `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/keys/${encodeURIComponent(fieldKey)}/unresolve`,
+      {},
+    ),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteKeyMutation(category: string, productId: string) {
+  const queryClient = useQueryClient();
+  const invalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['key-finder', category, productId] });
+  }, [queryClient, category, productId]);
+
+  return useMutation<DeleteFieldResponse, Error, { readonly fieldKey: string }>({
+    mutationFn: ({ fieldKey }) => api.del<DeleteFieldResponse>(
+      `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/keys/${encodeURIComponent(fieldKey)}`,
+    ),
+    onSuccess: invalidate,
+  });
+}
+
 

@@ -4,6 +4,7 @@
 
 import { memo, type ReactNode } from 'react';
 import { Spinner } from '../feedback/Spinner.tsx';
+import { ActionTooltip } from '../feedback/ActionTooltip.tsx';
 import {
   resolveIntentClassName,
   shouldBlockClick,
@@ -43,7 +44,7 @@ export const HeaderActionButton = memo(function HeaderActionButton({
   const blocked = shouldBlockClick(intent, busy, disabled);
   const widthCls = width ? ` ${width}` : '';
 
-  return (
+  const btn = (
     <button
       type="button"
       onClick={(e) => {
@@ -51,7 +52,6 @@ export const HeaderActionButton = memo(function HeaderActionButton({
         if (!blocked) onClick();
       }}
       disabled={blocked}
-      title={title}
       aria-label={ariaLabel}
       className={`inline-flex items-center justify-center gap-1.5 h-8 px-3 text-[11px] font-bold uppercase tracking-wide rounded whitespace-nowrap ${intentCls} disabled:opacity-40 disabled:cursor-not-allowed${widthCls}`}
     >
@@ -60,4 +60,6 @@ export const HeaderActionButton = memo(function HeaderActionButton({
       <span>{label}</span>
     </button>
   );
+
+  return title ? <ActionTooltip text={title}>{btn}</ActionTooltip> : btn;
 });

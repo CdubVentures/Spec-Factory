@@ -23,6 +23,70 @@ export const deleteKeyFinderRuns = keyFinderStore.deleteRuns;
 export const deleteKeyFinderAll = keyFinderStore.deleteAll;
 
 /**
+ * Clear the currently-selected value for a single key. Mirrors
+ * clearPublishedField's JSON half for the keyFinder JSON store. Leaves runs,
+ * discovery_log, and every other doc field untouched — only removes
+ * doc.selected.keys[fieldKey]. Idempotent: missing entry → no-op.
+ */
+export function unselectKeyFinderField({ productId, productRoot, fieldKey }) {
+  const doc = keyFinderStore.read({ productId, productRoot });
+  if (!doc?.selected?.keys?.[fieldKey]) return { cleared: false };
+  delete doc.selected.keys[fieldKey];
+  keyFinderStore.write({ productId, productRoot, data: doc });
+  return { cleared: true };
+}
+
+/**
+ * Wipe every trace of one field_key from the keyFinder JSON. This is the
+ * "fresh slate" operation that backs the KeyRow Delete button:
+ *   - Runs where the key was the PRIMARY are deleted entirely. Their run-level
+ *     discovery_log (URLs checked / queries run) is attributed to that primary
+ *     key by the history drawer, so it must go with the key — without this,
+ *     the Discovery History count for the deleted key would stay non-zero.
+ *   - Runs where the key rode only as a PASSENGER are kept: their discovery
+ *     log belongs to their own primary. We just delete the passenger's
+ *     selected and results entries so no orphan data survives.
+ *   - Returns `{ scrubbed, deletedRuns }` so the route can cascade SQL row
+ *     deletes for each deleted run.
+ *
+ * Idempotent — missing doc / empty runs → no-op.
+ */
+export function scrubFieldFromKeyFinder({ productId, productRoot, fieldKey }) {
+  const doc = keyFinderStore.read({ productId, productRoot });
+  if (!doc) return { scrubbed: false, deletedRuns: [] };
+
+  const deletedRuns = [];
+  const remaining = [];
+  for (const run of doc.runs || []) {
+    if (run?.response?.primary_field_key === fieldKey) {
+      deletedRuns.push(run.run_number);
+      continue;
+    }
+    if (run.selected?.keys) delete run.selected.keys[fieldKey];
+    if (run.response?.results) delete run.response.results[fieldKey];
+    remaining.push(run);
+  }
+
+  doc.runs = remaining;
+  doc.run_count = remaining.length;
+  // Rebuild top-level selected from the latest remaining run (latest-run-wins
+  // per keyFinder semantics). Empty fallback when all runs were primary for
+  // this key. Defensive: also strip fieldKey from the new selected in case a
+  // passenger-only run still carried it.
+  if (remaining.length > 0) {
+    const latest = remaining[remaining.length - 1];
+    doc.selected = latest.selected ? { ...latest.selected, keys: { ...(latest.selected.keys || {}) } } : { keys: {} };
+  } else {
+    doc.selected = { keys: {} };
+  }
+  if (doc.selected?.keys) delete doc.selected.keys[fieldKey];
+  doc.last_ran_at = remaining.length > 0 ? (remaining[remaining.length - 1].ran_at || '') : '';
+
+  keyFinderStore.write({ productId, productRoot, data: doc });
+  return { scrubbed: true, deletedRuns };
+}
+
+/**
  * Rebuild the key_finder + key_finder_runs SQL tables from per-product JSON
  * files. Called when the SQLite file is deleted to satisfy the Rebuild Contract
  * (CLAUDE.md §Dual-State Architecture). JSON remains the SSOT.

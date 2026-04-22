@@ -20,6 +20,8 @@ export const ACTION_BUTTON_WIDTH = {
   standardRow: 'w-14',
   /** Key row: Run + Loop + Prompt (fits 'Prompt' cleanly). */
   keyRow: 'w-20',
+  /** Key row History button — wider to fit "History (NNqu)(NNurl)" counts. */
+  keyRowHistory: 'w-32',
 } as const;
 
 export type ActionButtonWidth = typeof ACTION_BUTTON_WIDTH[keyof typeof ACTION_BUTTON_WIDTH];
