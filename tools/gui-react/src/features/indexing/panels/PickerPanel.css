@@ -1,0 +1,409 @@
+/*
+ * PickerPanel — layout for the Indexing Lab product picker.
+ * Sibling of .sf-indexing-panel; uses semantic --sf-token-* tokens only.
+ * Primitives (KpiTile, DrillColumn, CopyButton) carry their own CSS.
+ * This file is ONLY panel-body composition + picker-scoped micro-atoms
+ * (selection row, search bar, empty hero, recents rail, stale notice).
+ *
+ * The picker's rail + icon color mirror the currently active finder tab —
+ * see IndexingPanelHeader.css for the base [data-panel=...] rules. The
+ * selection row's "filled slot" accent is derived here via the
+ * --sf-picker-accent-* custom props, also driven by [data-panel=...].
+ */
+
+.sf-picker-panel {
+  /* keeps outer panel flex column for header + body stacking */
+}
+
+/* WHY: pin the picker at the top of the indexing panel stack. Flex order
+   was previously set via an inline style on the container. */
+.sf-picker-order {
+  order: -20;
+}
+
+/* WHY: the sibling panel header uses pt-4 pb-0 which is vertically top-
+   aligned and reads misaligned for the picker (which has a multi-row body
+   below). Balance top/bottom padding so the header content is centered in
+   its own row. Scoped to picker so sibling finder panels are unchanged. */
+.sf-picker-panel .sf-indexing-panel {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+/* ── Linked-panel accent plumbing ────────────────────────────────
+   The picker takes on its active tab's color via data-panel. We also
+   forward those colors to picker-scoped parts (selection slots,
+   recents, search focus ring) as CSS variables so the picker feels
+   uniformly "linked" to whichever tab is active. */
+.sf-picker-panel[data-panel="pipeline"] {
+  --sf-picker-accent-fg: var(--sf-state-run-ai-fg);
+  --sf-picker-accent-bg: rgb(var(--sf-color-run-ai-rgb) / 0.08);
+  --sf-picker-accent-border: rgb(var(--sf-color-run-ai-rgb) / 0.35);
+}
+.sf-picker-panel[data-panel="cef"] {
+  --sf-picker-accent-fg: var(--sf-state-warning-fg);
+  --sf-picker-accent-bg: var(--sf-state-warning-bg);
+  --sf-picker-accent-border: var(--sf-state-warning-border);
+}
+.sf-picker-panel[data-panel="pif"] {
+  --sf-picker-accent-fg: var(--sf-state-info-fg);
+  --sf-picker-accent-bg: var(--sf-state-info-bg);
+  --sf-picker-accent-border: var(--sf-state-info-border);
+}
+.sf-picker-panel[data-panel="rdf"] {
+  --sf-picker-accent-fg: rgb(var(--sf-color-accent-strong-rgb));
+  --sf-picker-accent-bg: rgb(var(--sf-color-accent-strong-rgb) / 0.08);
+  --sf-picker-accent-border: rgb(var(--sf-color-accent-strong-rgb) / 0.35);
+}
+.sf-picker-panel[data-panel="sku"] {
+  --sf-picker-accent-fg: var(--sf-state-success-fg);
+  --sf-picker-accent-bg: var(--sf-state-success-bg);
+  --sf-picker-accent-border: var(--sf-state-success-border);
+}
+.sf-picker-panel[data-panel="key"] {
+  --sf-picker-accent-fg: var(--sf-state-key-fg);
+  --sf-picker-accent-bg: var(--sf-state-key-bg);
+  --sf-picker-accent-border: var(--sf-state-key-border);
+}
+.sf-picker-panel[data-panel="picker"] {
+  --sf-picker-accent-fg: rgb(var(--sf-color-accent-rgb));
+  --sf-picker-accent-bg: rgb(var(--sf-color-accent-rgb) / 0.08);
+  --sf-picker-accent-border: rgb(var(--sf-color-accent-rgb) / 0.35);
+}
+/* Stale overrides everything — red danger regardless of linked panel. */
+.sf-picker-panel.sf-picker-stale {
+  --sf-picker-accent-fg: var(--sf-state-danger-fg);
+  --sf-picker-accent-bg: var(--sf-state-danger-bg);
+  --sf-picker-accent-border: var(--sf-state-danger-border);
+}
+
+/* Loading state — shown while the catalog query is on its first fetch.
+   Prevents flashing a "no brands / no models" empty-state before data
+   has actually arrived. */
+.sf-picker-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px 16px;
+  font-size: 13px;
+  color: var(--sf-token-text-muted);
+}
+
+/* Panel body wraps the selection row + search + drill + meter + recents.
+   WHY: no `background` — the outer .sf-surface-panel gradient shows through
+   so the 3px inset box-shadow rail on [data-panel=...] spans full height.
+   An opaque body background would clip the rail. */
+.sf-picker-body {
+  padding: 14px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid var(--sf-token-border-default, rgba(0, 0, 0, 0.06));
+}
+
+/* ── Header subtitle — stale-only, no breadcrumb ─────────────────── */
+.sf-picker-subtitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sf-picker-subtitle-empty {
+  color: var(--sf-token-text-muted);
+  font-style: italic;
+  font-size: 12.5px;
+}
+
+.sf-picker-stale-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--sf-state-danger-fg);
+  background: var(--sf-state-danger-bg);
+  border: 1px solid var(--sf-state-danger-border);
+  white-space: nowrap;
+}
+
+/* ── Header action buttons ──────────────────────────────────────── */
+.sf-picker-btn {
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  background: transparent;
+}
+
+.sf-picker-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sf-picker-btn-danger {
+  border-color: var(--sf-state-danger-border);
+  color: var(--sf-state-danger-fg);
+}
+
+.sf-picker-btn-danger:hover:not(:disabled) {
+  background: var(--sf-state-danger-bg);
+}
+
+/* ── Selection row (first row below header) ─────────────────────── */
+.sf-picker-selection-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.sf-picker-slot {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--sf-token-border-default, rgba(0, 0, 0, 0.1));
+  background: var(--sf-token-surface-base);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sf-picker-slot-filled {
+  border-color: var(--sf-picker-accent-border, rgba(0, 0, 0, 0.12));
+  background: var(--sf-picker-accent-bg, var(--sf-token-surface-base));
+}
+
+.sf-picker-slot-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sf-token-text-muted);
+  font-weight: 700;
+}
+
+.sf-picker-slot-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sf-token-text-primary);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sf-picker-slot-filled .sf-picker-slot-value {
+  color: var(--sf-picker-accent-fg, var(--sf-token-text-primary));
+}
+
+.sf-picker-slot-placeholder {
+  color: var(--sf-token-text-muted);
+  font-weight: 500;
+  font-style: italic;
+  font-size: 13px;
+}
+
+/* ── Search bar ─────────────────────────────────────────────────── */
+.sf-picker-search {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sf-picker-search-row {
+  position: relative;
+}
+
+.sf-picker-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--sf-token-text-muted);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.sf-picker-search-input {
+  width: 100%;
+  padding: 9px 44px 9px 38px;
+  font-size: 13.5px;
+  border-radius: 7px;
+  border: 1px solid var(--sf-token-border-default, rgba(0, 0, 0, 0.15));
+  background: var(--sf-token-surface-elevated);
+  color: var(--sf-token-text-primary);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.sf-picker-search-input:focus {
+  outline: none;
+  border-color: var(--sf-picker-accent-fg, rgb(var(--sf-color-accent-rgb)));
+  box-shadow: 0 0 0 3px var(--sf-picker-accent-bg, rgb(var(--sf-color-accent-rgb) / 0.15));
+}
+
+.sf-picker-search-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sf-picker-search-kbd {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+  font-size: 10.5px;
+  color: var(--sf-token-text-muted);
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--sf-token-surface-base);
+  border: 1px solid var(--sf-token-border-default, rgba(0, 0, 0, 0.08));
+}
+
+.sf-picker-search-hint {
+  font-size: 11.5px;
+  color: var(--sf-token-text-muted);
+}
+
+.sf-picker-search-hint b {
+  color: var(--sf-token-text-primary);
+  font-weight: 700;
+}
+
+/* ── Drill-down row ─────────────────────────────────────────────── */
+.sf-picker-drill {
+  display: grid;
+  grid-template-columns: 1.1fr 1.3fr 1fr;
+  gap: 0;
+  background: var(--sf-token-surface-base);
+  border: 1px solid var(--sf-token-border-default, rgba(0, 0, 0, 0.08));
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* ── Empty hero ─────────────────────────────────────────────────── */
+.sf-picker-empty-hero {
+  padding: 28px 16px;
+  text-align: center;
+  border: 1px dashed var(--sf-token-border-default, rgba(0, 0, 0, 0.14));
+  border-radius: 8px;
+  background: var(--sf-token-surface-base);
+}
+
+.sf-picker-empty-icon {
+  font-size: 34px;
+  color: var(--sf-picker-accent-fg, rgb(var(--sf-color-accent-rgb)));
+  margin-bottom: 8px;
+  opacity: 0.8;
+}
+
+.sf-picker-empty-hero h4 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--sf-token-text-primary);
+  margin: 0 0 4px 0;
+}
+
+.sf-picker-empty-hero p {
+  font-size: 12.5px;
+  color: var(--sf-token-text-muted);
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+/* ── Stale notice ───────────────────────────────────────────────── */
+.sf-picker-stale-notice {
+  padding: 14px 16px;
+  border: 1px solid var(--sf-state-danger-border);
+  background: var(--sf-state-danger-bg);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sf-picker-stale-head {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sf-state-danger-fg);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.sf-picker-stale-body {
+  font-size: 12.5px;
+  color: var(--sf-token-text-primary);
+}
+
+.sf-picker-stale-body code {
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+  font-size: 11.5px;
+  padding: 1px 4px;
+  background: var(--sf-token-surface-elevated);
+  border-radius: 3px;
+}
+
+.sf-picker-stale-notice .sf-picker-btn {
+  align-self: flex-start;
+}
+
+/* ── Recents rail ───────────────────────────────────────────────── */
+.sf-picker-recents {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 2px 4px 2px;
+  border-top: 1px solid var(--sf-token-border-default, rgba(0, 0, 0, 0.06));
+}
+
+.sf-picker-recents-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sf-token-text-muted);
+  flex: none;
+}
+
+.sf-picker-recent-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: var(--sf-token-surface-elevated);
+  border: 1px solid var(--sf-token-border-default, rgba(0, 0, 0, 0.12));
+  font-size: 11.5px;
+  color: var(--sf-token-text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  flex: none;
+}
+
+.sf-picker-recent-chip:hover:not(:disabled) {
+  background: var(--sf-token-surface-base);
+}
+
+.sf-picker-recent-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sf-picker-recent-brand {
+  color: var(--sf-picker-accent-fg, rgb(var(--sf-color-accent-rgb)));
+  font-weight: 700;
+}
+
+.sf-picker-recent-current {
+  border-color: var(--sf-picker-accent-border, rgb(var(--sf-color-accent-rgb) / 0.35));
+  background: var(--sf-picker-accent-bg, rgb(var(--sf-color-accent-rgb) / 0.08));
+}

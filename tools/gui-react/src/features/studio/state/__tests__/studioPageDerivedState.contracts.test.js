@@ -344,7 +344,6 @@ test('studio page field rows preserve field order and resolve labels through the
         sku: {
           group: 'identity',
           required_level: 'required',
-          enum_name: 'SkuEnum',
           contract: {
             type: 'string',
           },
@@ -366,7 +365,6 @@ test('studio page field rows preserve field order and resolve labels through the
         type: 'string',
         required: 'required',
         unit: '',
-        enumName: 'SkuEnum',
       },
       {
         key: 'weight',
@@ -375,7 +373,6 @@ test('studio page field rows preserve field order and resolve labels through the
         type: 'number',
         required: '',
         unit: 'g',
-        enumName: '',
       },
     ],
   );

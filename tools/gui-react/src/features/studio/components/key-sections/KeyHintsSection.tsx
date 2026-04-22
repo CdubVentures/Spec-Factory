@@ -122,17 +122,17 @@ export function KeyHintsSection({
                   text={STUDIO_TIPS.content_types}
                 />
               </span>
-              <B p="search_hints.preferred_content_types" />
+              <B p="search_hints.content_types" />
             </div>
             <TagPicker
               values={arrN(
                 currentRule,
-                "search_hints.preferred_content_types",
+                "search_hints.content_types",
               )}
               onChange={(v) =>
                 updateField(
                   selectedKey,
-                  "search_hints.preferred_content_types",
+                  "search_hints.content_types",
                   v,
                 )
               }

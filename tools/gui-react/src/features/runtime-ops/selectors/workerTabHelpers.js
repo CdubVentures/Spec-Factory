@@ -197,10 +197,14 @@ export function buildWorkerButtonSubtitle(worker) {
 
   if (worker.pool === 'fetch') {
     // WHY: Show truncated URL path (more useful than bare hostname).
-    // Add proxy label so you can see it switch from "direct" to proxy on retry.
+    // Label precedence: BrightData (API unlock) > proxy host > "direct".
+    // So you can see at a glance which fetches needed Bright Data as fallback.
     const urlPath = fetchUrlPath(worker.current_url);
-    const proxyLabel = worker.proxy_url ? proxyShortLabel(worker.proxy_url) : 'direct';
-    const parts = [urlPath || fetchHostLabel(worker.current_url), proxyLabel].filter(Boolean);
+    let accessLabel;
+    if (worker.bright_data_unlocked) accessLabel = 'BrightData';
+    else if (worker.proxy_url) accessLabel = proxyShortLabel(worker.proxy_url);
+    else accessLabel = 'direct';
+    const parts = [urlPath || fetchHostLabel(worker.current_url), accessLabel].filter(Boolean);
     return parts.join(' \u00b7 ') || null;
   }
 

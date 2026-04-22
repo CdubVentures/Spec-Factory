@@ -29,11 +29,9 @@ const SENSOR_DATE_RULE = {
   enum: { policy: 'open', source: null },
   evidence: { min_evidence_refs: 1 },
   variance_policy: 'authoritative',
-  unknown_reason_default: 'not_found_after_search',
   search_hints: {
     content_types: ['spec_sheet', 'review'],
     domain_hints: ['sensor.fyi', 'mousespecs.org'],
-    query_templates: ['{brand} {model} sensor release date'],
     query_terms: ['PAW3395 launch date', 'PixArt release 3395'],
   },
   ai_assist: { reasoning_note: '' },
@@ -53,7 +51,6 @@ const POLLING_RATE_RULE = {
   enum: { policy: 'open' },
   evidence: { min_evidence_refs: 2 },
   variance_policy: 'upper_bound',
-  unknown_reason_default: 'not_specified',
   search_hints: { domain_hints: ['razer.com'], query_terms: ['polling rate', 'report rate Hz'] },
   ai_assist: { reasoning_note: 'Report the native wireless polling rate, not wired boosted.' },
 };
@@ -117,6 +114,7 @@ test('default template contains every placeholder the builder injects', () => {
     '{{SOURCE_TIER_STRATEGY}}',
     '{{SCALAR_SOURCE_GUIDANCE_CLOSER}}',
     '{{VALUE_CONFIDENCE_GUIDANCE}}',
+    '{{UNK_POLICY}}',
     '{{PREVIOUS_DISCOVERY}}',
     '{{RETURN_JSON_SHAPE}}',
   ];
@@ -162,7 +160,7 @@ test('PRIMARY_FIELD_GUIDANCE empty-string when reasoning_note empty (no tooltip 
   assert.doesNotMatch(out, /Date the sensor was released\./);
 });
 
-// ── Primary: contract (type/shape/unit/enum/variance/unknown_reason_default/aliases) ──
+// ── Primary: contract (type/shape/unit/enum/variance/aliases) ──
 
 test('PRIMARY_FIELD_CONTRACT includes type + shape + unit', () => {
   const out = renderPrimary('polling_rate', POLLING_RATE_RULE);
@@ -179,11 +177,6 @@ test('PRIMARY_FIELD_CONTRACT includes aliases', () => {
 test('PRIMARY_FIELD_CONTRACT includes variance_policy when present', () => {
   const out = renderPrimary('polling_rate', POLLING_RATE_RULE);
   assert.match(out, /upper_bound/);
-});
-
-test('PRIMARY_FIELD_CONTRACT includes unknown_reason_default when present', () => {
-  const out = renderPrimary('polling_rate', POLLING_RATE_RULE);
-  assert.match(out, /not_specified/);
 });
 
 test('PRIMARY_FIELD_CONTRACT includes enum allowed values when populated', () => {
@@ -502,6 +495,13 @@ test('SCALAR_SOURCE_GUIDANCE_CLOSER renders closer line from global fragment', (
   const out = renderPrimary('polling_rate', POLLING_RATE_RULE);
   // Invariant wording from scalarSourceGuidanceCloser default
   assert.match(out, /You decide which sources to query/);
+});
+
+test('UNK_POLICY renders honest-unk policy from global fragment', () => {
+  const out = renderPrimary('polling_rate', POLLING_RATE_RULE);
+  // Invariant wording from unkPolicy default
+  assert.match(out, /Honest "unk" policy/);
+  assert.match(out, /strictly better than a low-confidence guess/);
 });
 
 // ── Previous discovery (per-key scope) ──────────────────────────────────

@@ -212,6 +212,7 @@ export function KeyContractSection({
           <div>
             <div className={`${labelCls} flex items-center`}>
               <span>Dedupe<Tip style={TIP_STYLE} text={STUDIO_TIPS.list_rules_dedupe} /></span>
+              <B p="contract.list_rules.dedupe" />
             </div>
             <select
               className={`${selectCls} w-full`}
@@ -226,6 +227,7 @@ export function KeyContractSection({
           <div>
             <div className={`${labelCls} flex items-center`}>
               <span>Sort<Tip style={TIP_STYLE} text={STUDIO_TIPS.list_rules_sort} /></span>
+              <B p="contract.list_rules.sort" />
             </div>
             <select
               className={`${selectCls} w-full`}
@@ -241,6 +243,7 @@ export function KeyContractSection({
           <div>
             <div className={`${labelCls} flex items-center`}>
               <span>Item Union<Tip style={TIP_STYLE} text={STUDIO_TIPS.list_rules_item_union} /></span>
+              <B p="contract.list_rules.item_union" />
             </div>
             <select
               className={`${selectCls} w-full`}

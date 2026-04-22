@@ -1,16 +1,17 @@
-// WHY: Shared grouping+suppression logic used by both DiscoveryHistoryDrawer
-// (for rendering) and DiscoveryHistoryButton (for count badges). Keeps the two
+// WHY: Shared grouping logic used by both DiscoveryHistoryDrawer (for
+// rendering) and DiscoveryHistoryButton (for count badges). Keeps the two
 // in lock-step so the button's (XXqu)(XXurl) counts always match what the
 // drawer actually shows.
 
-import type { DiscoverySuppressionRow } from './discoverySuppressionsQueries.ts';
-
-export type ScopeLevel = 'product' | 'variant' | 'variant+mode' | '';
+export type ScopeLevel = 'product' | 'variant' | 'variant+mode' | 'field_key' | '';
 
 export interface FinderRunResponse {
   variant_id?: string | null;
   variant_key?: string;
   mode?: string;
+  // keyFinder — the key this run was dispatched for. Also appears as a top-
+  // level group key when scopeLevel='field_key'.
+  primary_field_key?: string;
   discovery_log?: { urls_checked?: string[]; queries_run?: string[] };
   // CEF two-gate shape
   discovery?: { discovery_log?: { urls_checked?: string[]; queries_run?: string[] } };
@@ -28,6 +29,7 @@ export interface GroupedHistory {
   productQueries: string[];
   byVariant: Map<string, { urls: Set<string>; queries: Set<string> }>;
   byVariantMode: Map<string, Map<string, { urls: Set<string>; queries: Set<string> }>>;
+  byFieldKey: Map<string, { urls: Set<string>; queries: Set<string> }>;
 }
 
 export function getLogFromRun(run: FinderRun) {
@@ -37,12 +39,12 @@ export function getLogFromRun(run: FinderRun) {
 export function groupHistory(
   runs: readonly FinderRun[],
   scopeLevel: ScopeLevel,
-  suppressions: readonly DiscoverySuppressionRow[],
 ): GroupedHistory {
   const productUrls = new Set<string>();
   const productQueries = new Set<string>();
   const byVariant = new Map<string, { urls: Set<string>; queries: Set<string> }>();
   const byVariantMode = new Map<string, Map<string, { urls: Set<string>; queries: Set<string> }>>();
+  const byFieldKey = new Map<string, { urls: Set<string>; queries: Set<string> }>();
 
   for (const run of runs) {
     const log = getLogFromRun(run);
@@ -70,24 +72,13 @@ export function groupHistory(
       if (!bucket) { bucket = { urls: new Set(), queries: new Set() }; modes.set(mode, bucket); }
       for (const u of urls) bucket.urls.add(u);
       for (const q of queries) bucket.queries.add(q);
-    }
-  }
-
-  // Subtract suppressions so counts reflect what would actually be injected.
-  for (const s of suppressions) {
-    if (scopeLevel === 'product' && !s.variant_id && !s.mode) {
-      if (s.kind === 'url') productUrls.delete(s.item);
-      else productQueries.delete(s.item);
-    } else if (scopeLevel === 'variant' && s.variant_id && !s.mode) {
-      const bucket = byVariant.get(s.variant_id);
-      if (!bucket) continue;
-      if (s.kind === 'url') bucket.urls.delete(s.item);
-      else bucket.queries.delete(s.item);
-    } else if (scopeLevel === 'variant+mode' && s.variant_id && s.mode) {
-      const bucket = byVariantMode.get(s.variant_id)?.get(s.mode);
-      if (!bucket) continue;
-      if (s.kind === 'url') bucket.urls.delete(s.item);
-      else bucket.queries.delete(s.item);
+    } else if (scopeLevel === 'field_key') {
+      const fk = run.response?.primary_field_key || '';
+      if (!fk) continue;
+      let bucket = byFieldKey.get(fk);
+      if (!bucket) { bucket = { urls: new Set(), queries: new Set() }; byFieldKey.set(fk, bucket); }
+      for (const u of urls) bucket.urls.add(u);
+      for (const q of queries) bucket.queries.add(q);
     }
   }
 
@@ -96,13 +87,15 @@ export function groupHistory(
     + [...byVariantMode.values()].reduce(
         (s1, modes) => s1 + [...modes.values()].reduce((s2, b) => s2 + b.urls.size, 0),
         0,
-      );
+      )
+    + [...byFieldKey.values()].reduce((sum, b) => sum + b.urls.size, 0);
   const totalQueries = productQueries.size
     + [...byVariant.values()].reduce((sum, b) => sum + b.queries.size, 0)
     + [...byVariantMode.values()].reduce(
         (s1, modes) => s1 + [...modes.values()].reduce((s2, b) => s2 + b.queries.size, 0),
         0,
-      );
+      )
+    + [...byFieldKey.values()].reduce((sum, b) => sum + b.queries.size, 0);
 
   return {
     totalUrls,
@@ -111,5 +104,6 @@ export function groupHistory(
     productQueries: [...productQueries],
     byVariant,
     byVariantMode,
+    byFieldKey,
   };
 }

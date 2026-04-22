@@ -340,11 +340,21 @@ function ToggleSwitch({
   onChange: (next: string) => void;
 }) {
   const isOn = value === 'true';
-  const activeStyle: React.CSSProperties = {
-    background: 'rgb(var(--sf-color-text-primary-rgb) / 0.12)',
+  // WHY: Selected-state styles must be clearly distinguishable at a glance.
+  // ON-selected = theme accent (blue on default theme). OFF-selected = filled
+  // dark gray. Idle = muted gray text on transparent.
+  const onActiveStyle: React.CSSProperties = {
+    background: 'rgb(var(--sf-color-accent-rgb))',
+    color: 'rgb(var(--sf-color-surface-elevated-rgb))',
+    fontWeight: 700,
+  };
+  const offActiveStyle: React.CSSProperties = {
+    background: 'rgb(var(--sf-color-border-default-rgb) / 0.9)',
     color: 'rgb(var(--sf-color-text-primary-rgb))',
+    fontWeight: 700,
   };
   const idleStyle: React.CSSProperties = {
+    background: 'transparent',
     color: 'rgb(var(--sf-color-text-muted-rgb))',
   };
   return (
@@ -361,7 +371,7 @@ function ToggleSwitch({
         disabled={disabled}
         onClick={() => { if (!isOn) onChange('true'); }}
         className="sf-stepper-btn sf-stepper-btn-compact"
-        style={isOn ? activeStyle : idleStyle}
+        style={isOn ? onActiveStyle : idleStyle}
       >
         On
       </button>
@@ -372,7 +382,7 @@ function ToggleSwitch({
         disabled={disabled}
         onClick={() => { if (isOn) onChange('false'); }}
         className="sf-stepper-btn sf-stepper-btn-compact"
-        style={!isOn ? activeStyle : idleStyle}
+        style={!isOn ? offActiveStyle : idleStyle}
       >
         Off
       </button>

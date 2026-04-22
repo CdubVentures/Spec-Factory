@@ -900,7 +900,6 @@ export function buildStudioFieldRule({
     required_level: requiredLevel,
     search_hints: searchHints,
     ui: uiOut,
-    unknown_reason_default: normalizeText(rule.unknown_reason_default || '') || 'not_found_after_search',
     value_form: canonicalValueForm
   };
   const variancePolicy = normalizeToken(rule.variance_policy || '');

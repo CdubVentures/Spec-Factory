@@ -383,6 +383,12 @@ export const FINDER_MODULES = Object.freeze([
     // FINDER_SCALAR_DEFAULT_TEMPLATES — the phase-registry overlay is derived
     // from this map via buildScalarFinderPromptTemplates (no hand-written block).
     defaultTemplateExport: 'RDF_DEFAULT_TEMPLATE',
+    // WHY: Parameterized source-guidance + variant-disambiguation globals are
+    // auto-composed by buildScalarFinderPromptTemplates. Every variant-scoped
+    // scalar finder declares both slot-bag exports; registration throws if
+    // either is missing.
+    sourceVariantGuidanceSlotsExport: 'RDF_SOURCE_VARIANT_GUIDANCE_SLOTS',
+    variantDisambiguationSlotsExport: 'RDF_VARIANT_DISAMBIGUATION_SLOTS',
     // Editorial GET response schema — drives types.generated.ts + hooks codegen
     // (Phase 3). Opt-in per finder: CEF/PIF don't declare one → codegen skips them.
     getResponseSchemaExport: 'releaseDateFinderGetResponseSchema',
@@ -485,6 +491,8 @@ export const FINDER_MODULES = Object.freeze([
     responseSchemaExport: 'skuFinderResponseSchema',
     // WHY: see releaseDateFinder for the defaultTemplateExport contract.
     defaultTemplateExport: 'SKF_DEFAULT_TEMPLATE',
+    sourceVariantGuidanceSlotsExport: 'SKU_SOURCE_VARIANT_GUIDANCE_SLOTS',
+    variantDisambiguationSlotsExport: 'SKU_VARIANT_DISAMBIGUATION_SLOTS',
     getResponseSchemaExport: 'skuFinderGetResponseSchema',
 
     // Generic scalar finder panel display config.
@@ -579,7 +587,7 @@ export const FINDER_MODULES = Object.freeze([
         uiTip: 'Points contributed by extraction difficulty (harder reasoning earns more attempts).' },
       { key: 'budgetVariantPointsPerExtra', type: 'int', default: 1, min: 0, max: 10,
         uiLabel: 'Variant points per extra', uiGroup: 'Budget Scoring',
-        uiTip: 'Points added for each variant beyond the first. Also scales bundling passenger cost.' },
+        uiTip: 'Points added to the per-key attempt budget for each variant beyond the first. Does NOT scale bundling passenger cost — passenger cost is always the raw bundlingPassengerCost value.' },
       { key: 'budgetFloor', type: 'int', default: 3, min: 1, max: 20,
         uiLabel: 'Budget floor', uiGroup: 'Budget Scoring',
         uiTip: 'Minimum per-key attempts, regardless of axis sum.' },
@@ -588,7 +596,7 @@ export const FINDER_MODULES = Object.freeze([
         uiLabel: 'Live preview', uiGroup: 'Budget Scoring', uiRightPanel: true,
         uiTip: 'Computed attempt budgets for every difficulty × availability combination, split by required-level tier.' },
 
-      // Bundling (Smart Loop only; per-key Run and Loop always solo)
+      // Bundling (Run / Loop / Smart Loop all honor these when bundlingEnabled=true)
       { key: 'bundlingEnabled', type: 'bool', default: false,
         uiLabel: 'Bundling', uiGroup: 'Bundling',
         uiTip: 'Pack same-group passenger keys onto the primary call during Smart Loop. Off = single-key calls only.' },
@@ -601,7 +609,7 @@ export const FINDER_MODULES = Object.freeze([
         default: { easy: 1, medium: 2, hard: 4, very_hard: 8 },
         min: 0, max: 64,
         uiLabel: 'Passenger cost', uiGroup: 'Bundling',
-        uiTip: 'Point cost to carry a passenger of each difficulty (scaled by variant count).' },
+        uiTip: 'Point cost to carry a passenger of each difficulty. Cost is raw (not scaled by variant count) — easy pool / easy cost = max easy passengers.' },
       { key: 'bundlingPoolPerPrimary', type: 'intMap',
         keys: ['easy', 'medium', 'hard', 'very_hard'],
         keyLabels: { easy: 'Easy primary', medium: 'Medium primary', hard: 'Hard primary', very_hard: 'Very hard primary' },
@@ -629,7 +637,7 @@ export const FINDER_MODULES = Object.freeze([
         uiTip: 'Inject already-published non-component field values on this product as a shared context block.' },
       { key: 'searchHintsInjectionEnabled', type: 'bool', default: true,
         uiLabel: 'Search hints', uiGroup: 'Context Injection',
-        uiTip: 'Inject domain_hints + query_terms + query_templates for the PRIMARY key only (passengers inherit the primary session).' },
+        uiTip: 'Inject domain_hints + query_terms for the PRIMARY key only (passengers inherit the primary session).' },
 
       // Discovery history — per-key scope (locked by design; not global per product)
       { key: 'urlHistoryEnabled', type: 'bool', default: true,

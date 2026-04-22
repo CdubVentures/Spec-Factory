@@ -36,7 +36,6 @@ export const FieldRuleSchema = z.object({
     template: z.string().optional(),
   }).passthrough().optional(),
   constraints: z.array(z.string()).optional(),
-  enum_name: z.string().optional(),
   ui: z.object({
     group: z.string().optional(),
     label: z.string().optional(),

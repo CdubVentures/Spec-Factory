@@ -106,6 +106,7 @@ export function selectKeyFinderGroupedRows({
       required_level: s?.required_level || '',
       variant_dependent: false,
       budget: s?.budget ?? null,
+      bundle_preview: s?.bundle_preview ?? [],
       last_run_number: s?.last_run_number ?? null,
       last_value: s?.last_value ?? null,
       last_confidence: s?.last_confidence ?? null,

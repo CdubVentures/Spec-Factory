@@ -13,7 +13,7 @@ const SYSTEM_ALIASES = new Map([
 // WHY: FIELD_SYSTEM_MAP derived from the unified consumerBadgeRegistry.
 // Maps parent group keys to legacy system names for backward compat with
 // resolveConsumerGate / projectFieldRulesForConsumer callers.
-const _PARENT_TO_LEGACY = { idx: 'indexlab', eng: null, rev: 'review', flag: 'review', seed: 'seed', comp: null, val: null, pub: null };
+const _PARENT_TO_LEGACY = { idx: 'indexlab', eng: null, rev: 'review', flag: 'review', seed: 'seed', comp: null, val: null, pub: null, llm: null };
 
 function _buildFieldSystemMap() {
   const map = {};
@@ -37,7 +37,6 @@ const FIELD_PATH_ALIAS_DELETE_MAP = {
   'priority.required_level': [['priority', 'required_level'], ['required_level']],
   'priority.availability': [['priority', 'availability'], ['availability']],
   'priority.difficulty': [['priority', 'difficulty'], ['difficulty']],
-  'priority.effort': [['priority', 'effort'], ['effort']],
   'ai_assist.reasoning_note': [['ai_assist', 'reasoning_note']],
   // WHY: parse.template retired — type+shape is the contract.
   'enum.policy': [['enum', 'policy'], ['enum_policy']],

@@ -5,6 +5,24 @@
 
 import { normalizeHost } from '../../../../shared/hostParser.js';
 import { configInt } from '../../../../shared/settingsAccessor.js';
+import { canonicalizeUrl } from '../../../../shared/urlNormalize.js';
+
+// WHY: Collapses tracking-param variants of the same page (Google Shopping
+// srsltid, utm_*, gclid, etc.) into a single canonical URL before fetch.
+// Session 3 audit found 6× duplicate Razer pages from srsltid variants burning
+// 6 worker slots for 1 page; this reclaims slots, cap budget, and proxy cost.
+function dedupByCanonical(urls) {
+  const seen = new Map(); // canonical -> firstSeenCanonicalUrl
+  const unique = [];
+  for (const raw of urls) {
+    const { canonical_url } = canonicalizeUrl(raw, { stripTracking: true });
+    if (!canonical_url) continue;
+    if (seen.has(canonical_url)) continue;
+    seen.set(canonical_url, canonical_url);
+    unique.push(canonical_url);
+  }
+  return unique;
+}
 
 // ── Inlined from sourcePlannerUrlUtils (sole consumer after planner removal) ──
 
@@ -136,9 +154,28 @@ export function buildOrderedFetchPlan({
 }) {
   const triageMetaMap = _buildTriageMetaMap(discoveryResult, logger);
 
-  // 1. Apply URL cap to discovery-approved URLs
+  // 1. Canonicalize + dedup by stripped canonical URL (tracking-param collapse)
+  const rawApprovedUrls = discoveryResult.selectedUrls || [];
+  const dedupedUrls = dedupByCanonical(rawApprovedUrls);
+  const dedupedCount = rawApprovedUrls.length - dedupedUrls.length;
+  if (dedupedCount > 0) {
+    logger?.info?.('discovery_dedup_summary', {
+      input_count: rawApprovedUrls.length,
+      unique_count: dedupedUrls.length,
+      deduped_count: dedupedCount,
+    });
+  } else if (rawApprovedUrls.length > 0) {
+    // Emit always so telemetry shows zero-dedup as a data point
+    logger?.info?.('discovery_dedup_summary', {
+      input_count: rawApprovedUrls.length,
+      unique_count: dedupedUrls.length,
+      deduped_count: 0,
+    });
+  }
+
+  // 2. Apply URL cap to deduped canonical URLs
   const urlCap = configInt(config, 'domainClassifierUrlCap');
-  const allApprovedUrls = discoveryResult.selectedUrls || [];
+  const allApprovedUrls = dedupedUrls;
   const approvedUrls = _applyUrlCap(allApprovedUrls, urlCap, triageMetaMap);
   const overflowCount = allApprovedUrls.length - approvedUrls.length;
 

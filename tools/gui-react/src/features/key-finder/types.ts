@@ -23,6 +23,11 @@ export interface KeyFinderSummaryRow {
   readonly variant_dependent: boolean;
   /** calcKeyBudget(fieldRule, variantCount, settings).attempts — what Loop mode would spend. */
   readonly budget: number | null;
+  /** Passengers that WOULD bundle with this row if run now. Each entry carries
+   *  the per-passenger cost (from `bundlingPassengerCost[difficulty]`) so the
+   *  UI can render "{field_key} (cost)" and the user can eyeball-sum against
+   *  the primary's pool. Empty when bundlingEnabled=false or no eligible peers. */
+  readonly bundle_preview: ReadonlyArray<{ readonly field_key: string; readonly cost: number }>;
   readonly last_run_number: number | null;
   readonly last_ran_at: string | null;
   readonly last_status: KeyStatus;
@@ -34,42 +39,46 @@ export interface KeyFinderSummaryRow {
   readonly run_count: number;
 }
 
-export type KeyHistoryScope = 'key' | 'group' | 'product';
-
-export interface KeyHistoryRun {
+/** One run returned by GET /key-finder/:cat/:pid — mirrors what keyFinder.js
+ *  persists via `insertRun` (src/features/key/keyFinder.js:437-455). Used by
+ *  the Run History section at the bottom of the Key Finder panel. */
+export interface KeyFinderRun {
   readonly run_number: number;
   readonly ran_at: string;
+  readonly started_at?: string | null;
+  readonly duration_ms?: number | null;
   readonly model: string;
+  readonly access_mode?: string;
+  readonly effort_level?: string;
+  readonly fallback_used?: boolean;
   readonly thinking?: boolean;
   readonly web_search?: boolean;
-  readonly effort_level?: string;
-  readonly selected?: unknown;
-  readonly prompt?: { system?: string; user?: string };
+  readonly prompt?: { readonly system?: string; readonly user?: string };
   readonly response: {
     readonly primary_field_key: string;
     readonly results: Record<string, {
       readonly value: unknown;
       readonly confidence: number;
-      readonly unknown_reason: string;
-      readonly evidence_refs: ReadonlyArray<unknown>;
+      readonly unknown_reason?: string;
+      readonly evidence_refs?: ReadonlyArray<unknown>;
       readonly discovery_log?: {
-        readonly urls_checked: readonly string[];
-        readonly queries_run: readonly string[];
-        readonly notes: readonly string[];
+        readonly urls_checked?: readonly string[];
+        readonly queries_run?: readonly string[];
+        readonly notes?: readonly string[];
       };
     }>;
+    readonly discovery_log?: {
+      readonly urls_checked?: readonly string[];
+      readonly queries_run?: readonly string[];
+      readonly notes?: readonly string[];
+    };
   };
 }
 
-export interface KeyFinderDetail {
+export interface KeyFinderAllRunsResponse {
   readonly product_id: string;
   readonly category: string;
-  readonly scope: string;
-  readonly field_key: string | null;
-  readonly group: string | null;
-  readonly selected: unknown;
-  readonly runs: readonly KeyHistoryRun[];
-  readonly candidates: readonly unknown[];
+  readonly runs: readonly KeyFinderRun[];
 }
 
 export interface ReservedKeysResponse {
@@ -101,6 +110,7 @@ export interface KeyEntry {
   readonly required_level: string;
   readonly variant_dependent: boolean;
   readonly budget: number | null;
+  readonly bundle_preview: ReadonlyArray<{ readonly field_key: string; readonly cost: number }>;
   readonly last_run_number: number | null;
   readonly last_value: unknown;
   readonly last_confidence: number | null;

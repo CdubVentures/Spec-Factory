@@ -7,8 +7,8 @@
  * chevron pattern used by FinderRunPromptDetails.
  */
 
-import { useCallback, useState } from 'react';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
+import { CopyButton } from '../button/CopyButton.tsx';
 import type { PromptPreviewPrompt } from '../../../features/indexing/api/promptPreviewTypes.ts';
 
 interface PromptPreviewViewProps {
@@ -84,29 +84,15 @@ function ToggleSection({ storageKey, label, children, defaultOpen = false, copyT
           <span className={`inline-block transition-transform duration-150 text-[8px] ${open ? 'rotate-90' : ''}`}>&#9656;</span>
           {label}
         </button>
-        {open && copyText ? <CopyButton text={copyText} /> : null}
+        {open && copyText ? (
+          <CopyButton
+            text={copyText}
+            className="mr-3 px-2 py-0.5 text-[10px] font-semibold rounded sf-icon-button"
+          />
+        ) : null}
       </div>
       {open && children}
     </div>
   );
 }
 
-function CopyButton({ text }: { readonly text: string }) {
-  const [copied, setCopied] = useState(false);
-  const onCopy = useCallback(() => {
-    navigator.clipboard?.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1400);
-    });
-  }, [text]);
-  return (
-    <button
-      type="button"
-      onClick={onCopy}
-      className="mr-3 px-2 py-0.5 text-[10px] font-semibold rounded sf-icon-button"
-      title="Copy to clipboard"
-    >
-      {copied ? 'Copied' : 'Copy'}
-    </button>
-  );
-}

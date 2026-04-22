@@ -13,6 +13,7 @@
  */
 
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
+import { RowActionButton, ACTION_BUTTON_WIDTH } from '../actionButton/index.ts';
 
 interface PromptDrawerAction {
   readonly label: string;
@@ -57,16 +58,15 @@ export function PromptDrawerChevron({
             </span>
           )}
           {actions.map((action) => (
-            <button
+            <RowActionButton
               key={action.label}
-              type="button"
-              onClick={(e) => { e.stopPropagation(); action.onClick(); }}
+              intent="prompt"
+              label={action.label}
+              onClick={action.onClick}
               disabled={action.disabled}
               title={action.title ?? `Preview ${action.label} prompt`}
-              className="inline-flex items-center justify-center h-7 px-2 text-[9px] font-bold uppercase tracking-wide rounded sf-prompt-preview-button"
-            >
-              {action.label}
-            </button>
+              width={ACTION_BUTTON_WIDTH.standardRow}
+            />
           ))}
         </div>
         <button

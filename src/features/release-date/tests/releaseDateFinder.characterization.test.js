@@ -66,7 +66,6 @@ function makeFinderStoreStub(settings = {}) {
       getSetting: (k) => (k in resolved ? String(resolved[k]) : ''),
       upsert: (row) => { upserts.push(row); },
       insertRun: (row) => { runs.push(row); },
-      listSuppressions: () => [],
     },
     upserts,
     runs,

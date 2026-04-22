@@ -276,14 +276,12 @@ export function auditFieldMetadata(fieldRules = {}) {
     const difficulty = String(rule.difficulty || rule.priority?.difficulty || '').trim();
     const dataType = String(rule.data_type || rule.contract?.type || rule.type || '').trim();
     const outputShape = String(rule.output_shape || rule.contract?.shape || rule.shape || '').trim();
-    const unknownReasonDefault = String(rule.unknown_reason_default || '').trim();
 
     if (!requiredLevel) missing.push('required_level');
     if (!availability) missing.push('availability');
     if (!difficulty) missing.push('difficulty');
     if (!dataType) missing.push('data_type');
     if (!outputShape) missing.push('output_shape');
-    if (!unknownReasonDefault) missing.push('unknown_reason_default');
 
     if (missing.length > 0) {
       results.errors.push(`field '${fieldKey}' missing metadata: ${missing.join(', ')}`);

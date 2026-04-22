@@ -39,7 +39,6 @@ const SAMPLE_FIELD_RULES = {
       required_level: 'mandatory',
       availability: 'always',
       difficulty: 'easy',
-      unknown_reason_default: 'not_found_after_search',
       priority: { required_level: 'mandatory', availability: 'always', difficulty: 'easy' },
       contract: { type: 'string', shape: 'scalar' },
       evidence: {}
@@ -53,7 +52,6 @@ const SAMPLE_FIELD_RULES = {
       required_level: 'non_mandatory',
       availability: 'always',
       difficulty: 'medium',
-      unknown_reason_default: 'not_found_after_search',
       priority: { required_level: 'non_mandatory', availability: 'always', difficulty: 'medium' },
       contract: { type: 'number', shape: 'scalar', unit: 'g' },
       evidence: {}
@@ -67,7 +65,6 @@ const SAMPLE_FIELD_RULES = {
       required_level: 'mandatory',
       availability: 'always',
       difficulty: 'easy',
-      unknown_reason_default: 'not_found_after_search',
       priority: { required_level: 'mandatory', availability: 'always', difficulty: 'easy' },
       contract: { type: 'number', shape: 'scalar' },
       evidence: {}

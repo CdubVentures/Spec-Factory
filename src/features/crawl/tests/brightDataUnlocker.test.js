@@ -41,6 +41,11 @@ describe('unlockViaApi — contract', () => {
     assert.equal(body.zone, 'web_unlocker1');
     assert.equal(body.url, 'https://example.com/p');
     assert.equal(body.format, 'json');
+    assert.deepEqual(
+      body.headers,
+      { 'x-unblock-expect': '{"element":"body"}' },
+      'must send expect:body in body.headers — bypasses the zone default site-specific selector wait',
+    );
   });
 
   it('happy path: returns target status + html + extracted title', async () => {

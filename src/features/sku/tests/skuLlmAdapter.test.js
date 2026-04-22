@@ -125,21 +125,29 @@ describe('buildSkuFinderPrompt', () => {
       'must call out retailer-specific SKUs as NOT MPN');
   });
 
-  it('default template includes a variant-disambiguation algorithm', () => {
-    assert.ok(/VARIANT DISAMBIGUATION/i.test(SKF_DEFAULT_TEMPLATE),
+  it('compiled prompt includes a variant-disambiguation algorithm', () => {
+    // WHY compiled output: VARIANT DISAMBIGUATION is composed from the shared
+    // variantScalarDisambiguation global + SKU_VARIANT_DISAMBIGUATION_SLOTS
+    // at build time. Assert the compiled prompt honors the contract, not the
+    // raw template (which now has a {{VARIANT_DISAMBIGUATION}} placeholder).
+    const prompt = buildSkuFinderPrompt({ product, variantLabel: 'Black' });
+    assert.ok(/VARIANT DISAMBIGUATION/i.test(prompt),
       'must have a named VARIANT DISAMBIGUATION section');
-    assert.ok(/shared MPN across all variants|base MPN|same base MPN/i.test(SKF_DEFAULT_TEMPLATE),
+    assert.ok(/shared MPN across all variants|base MPN|same base MPN/i.test(prompt),
       'must handle the shared-MPN case');
-    assert.ok(/variant[- ]specific MPN/i.test(SKF_DEFAULT_TEMPLATE),
+    assert.ok(/variant[- ]specific MPN/i.test(prompt),
       'must prefer variant-specific MPN when available');
   });
 
-  it('default template tags source tiers explicitly', () => {
-    assert.ok(/tier1/i.test(SKF_DEFAULT_TEMPLATE) && /manufacturer/i.test(SKF_DEFAULT_TEMPLATE),
+  it('compiled prompt tags source tiers explicitly', () => {
+    // WHY compiled output: source guidance is composed from the shared
+    // variantScalarSourceGuidance global + SKU_SOURCE_VARIANT_GUIDANCE_SLOTS.
+    const prompt = buildSkuFinderPrompt({ product, variantLabel: 'Black' });
+    assert.ok(/tier1/i.test(prompt) && /manufacturer/i.test(prompt),
       'manufacturer authority must be tagged as tier1');
-    assert.ok(/tier3/i.test(SKF_DEFAULT_TEMPLATE) && /(Amazon|Best Buy|retailer)/i.test(SKF_DEFAULT_TEMPLATE),
+    assert.ok(/tier3/i.test(prompt) && /(Amazon|Best Buy|retailer)/i.test(prompt),
       'retailer listings must reference tier3');
-    assert.ok(/tier2/i.test(SKF_DEFAULT_TEMPLATE),
+    assert.ok(/tier2/i.test(prompt),
       'independent corroboration must reference tier2');
   });
 

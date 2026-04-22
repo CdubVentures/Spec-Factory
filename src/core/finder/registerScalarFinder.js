@@ -67,7 +67,7 @@ export function registerScalarFinder(cfg = {}) {
     finderName, fieldKey, valueKey, sourceType, phase, logPrefix,
     createCallLlm, buildPrompt, store,
     extractCandidate, satisfactionPredicate, buildPublisherMetadata,
-    buildUserMessage, suppressionScope, defaultStaggerMs,
+    buildUserMessage, defaultStaggerMs,
   } = cfg;
 
   // WHY: No defaults on logPrefix — roadmap flagged the collision risk
@@ -98,7 +98,6 @@ export function registerScalarFinder(cfg = {}) {
     satisfactionPredicate: satisfactionPredicate || _defaultSatisfactionPredicate,
     buildPublisherMetadata,
     buildUserMessage,
-    suppressionScope,
     defaultStaggerMs,
   });
 }

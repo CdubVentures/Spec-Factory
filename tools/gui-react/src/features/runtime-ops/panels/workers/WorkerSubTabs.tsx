@@ -78,7 +78,8 @@ function primaryBadgeForWorker(w: RuntimeOpsWorkerRow): { label: string; cls: st
 function WorkerBadgeStack({ worker }: { worker: RuntimeOpsWorkerRow }) {
   const primary = primaryBadgeForWorker(worker);
   const isRetrying = worker.state === 'retrying';
-  if (!primary && !isRetrying) return null;
+  const bdUnlocked = Boolean(worker.bright_data_unlocked);
+  if (!primary && !isRetrying && !bdUnlocked) return null;
   return (
     <div className="flex flex-col gap-0.5 items-end shrink-0">
       {primary && (
@@ -89,6 +90,11 @@ function WorkerBadgeStack({ worker }: { worker: RuntimeOpsWorkerRow }) {
       {isRetrying && worker.started_at && (
         <span className="px-1 py-0 rounded sf-text-nano font-semibold sf-chip-info animate-pulse whitespace-nowrap">
           RETRY <TabTimer startTs={worker.started_at} />
+        </span>
+      )}
+      {bdUnlocked && (
+        <span className="px-1 py-0 rounded sf-text-nano font-bold tracking-wide sf-chip-accent whitespace-nowrap" title="Unlocked via Bright Data Web Unlocker API">
+          BRIGHTDATA
         </span>
       )}
     </div>

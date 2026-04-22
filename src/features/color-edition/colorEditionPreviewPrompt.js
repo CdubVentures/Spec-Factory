@@ -73,15 +73,9 @@ export async function resolveColorEditionDiscoveryInputs({
     ...r,
     response: { ...(r.response || {}), discovery_log: r.response?.discovery?.discovery_log },
   }));
-  const cefSuppRows = (finderStore.listSuppressions?.(product.product_id) || [])
-    .filter((s) => s.variant_id === '' && s.mode === '');
   const previousDiscovery = accumulateDiscoveryLog(normalizedRuns, {
     includeUrls: urlHistoryEnabled,
     includeQueries: queryHistoryEnabled,
-    suppressions: {
-      urlsChecked: new Set(cefSuppRows.filter((s) => s.kind === 'url').map((s) => s.item)),
-      queriesRun: new Set(cefSuppRows.filter((s) => s.kind === 'query').map((s) => s.item)),
-    },
   });
 
   const promptInputs = {

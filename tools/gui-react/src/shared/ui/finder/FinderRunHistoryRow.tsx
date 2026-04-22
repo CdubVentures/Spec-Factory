@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { FinderRunTimestamp } from './FinderRunTimestamp.tsx';
 import { FinderRunModelBadge } from './FinderRunModelBadge.tsx';
 import { pullFormatDate } from '../../../utils/dateTime.ts';
+import { RowActionButton } from '../actionButton/index.ts';
 
 interface FinderRunHistoryRowProps {
   readonly runNumber: number;
@@ -84,13 +85,12 @@ export function FinderRunHistoryRow({
         {leftContent}
         <div className="flex-1" />
         {rightContent}
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete(runNumber); }}
+        <RowActionButton
+          intent="delete"
+          label="Del"
+          onClick={() => onDelete(runNumber)}
           disabled={deleteDisabled}
-          className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded sf-status-text-danger border sf-border-soft opacity-50 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          Del
-        </button>
+        />
       </div>
 
       {expanded && children && (

@@ -634,66 +634,6 @@ export function createFinderRouteHandler(finderConfig) {
         return jsonRes(res, 200, { ok: true });
       }
 
-      // ── Suppressions (non-destructive discovery-log pruning) ─────
-      // Routes mirror for every finder since the store methods are universal.
-      if (moduleId && category && productId && parts[3] === 'suppressions') {
-        const specDb = getSpecDb(category);
-        if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
-        const store = specDb.getFinderStore(moduleId);
-        if (!store) return jsonRes(res, 500, { error: `store missing: ${moduleId}` });
-
-        if (method === 'GET' && !parts[4]) {
-          return jsonRes(res, 200, { suppressions: store.listSuppressions(productId) });
-        }
-
-        if (method === 'POST' && !parts[4]) {
-          const body = await readJsonBody(req).catch(() => ({}));
-          const { item, kind, variant_id = '', mode = '' } = body || {};
-          if (!item || !kind) return jsonRes(res, 400, { error: 'item and kind required' });
-          if (kind !== 'url' && kind !== 'query') return jsonRes(res, 400, { error: 'kind must be url|query' });
-          store.addSuppression(productId, { item, kind, variant_id, mode });
-          emitDataChange({
-            broadcastWs, event: `${routePrefix}-suppression-added`,
-            category, entities: { productIds: [productId] }, meta: { productId, kind },
-          });
-          return jsonRes(res, 200, { ok: true });
-        }
-
-        if (method === 'DELETE' && parts[4] === 'all') {
-          store.removeAllSuppressionsForProduct(productId);
-          emitDataChange({
-            broadcastWs, event: `${routePrefix}-suppression-cleared`,
-            category, entities: { productIds: [productId] }, meta: { productId },
-          });
-          return jsonRes(res, 200, { ok: true });
-        }
-
-        if (method === 'DELETE' && parts[4] === 'item') {
-          const body = await readJsonBody(req).catch(() => ({}));
-          const { item, kind, variant_id = '', mode = '' } = body || {};
-          if (!item || !kind) return jsonRes(res, 400, { error: 'item and kind required' });
-          store.removeSuppression(productId, { item, kind, variant_id, mode });
-          emitDataChange({
-            broadcastWs, event: `${routePrefix}-suppression-cleared`,
-            category, entities: { productIds: [productId] }, meta: { productId, kind },
-          });
-          return jsonRes(res, 200, { ok: true });
-        }
-
-        if (method === 'DELETE' && !parts[4]) {
-          // Scope-wide delete — variantId + mode from query string.
-          const variant_id = params?.variantId || '';
-          const mode = params?.mode || '';
-          store.removeSuppressionsByScope(productId, { variant_id, mode });
-          emitDataChange({
-            broadcastWs, event: `${routePrefix}-suppression-cleared`,
-            category, entities: { productIds: [productId] },
-            meta: { productId, variant_id, mode },
-          });
-          return jsonRes(res, 200, { ok: true });
-        }
-      }
-
       return false;
     };
   };

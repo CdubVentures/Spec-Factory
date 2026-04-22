@@ -312,7 +312,6 @@ function makePostSpecDbStub({ compiledFields = { release_date: { key: 'release_d
       remove: () => {},
       removeRun: () => {},
       removeAllRuns: () => {},
-      listSuppressions: () => [],
     }),
     getFieldCandidatesByProductAndField: () => [],
     getResolvedFieldCandidate: () => null,

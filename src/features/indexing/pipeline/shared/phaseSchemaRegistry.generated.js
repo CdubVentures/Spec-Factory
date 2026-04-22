@@ -13,8 +13,8 @@ import { buildSkuFinderPrompt } from '../../../sku/skuLlmAdapter.js';
 import { skuFinderResponseSchema } from '../../../sku/skuSchema.js';
 import { buildKeyFinderPrompt } from '../../../key/keyLlmAdapter.js';
 import { keyFinderResponseSchema } from '../../../key/keySchema.js';
-import { RDF_DEFAULT_TEMPLATE } from '../../../release-date/releaseDateLlmAdapter.js';
-import { SKF_DEFAULT_TEMPLATE } from '../../../sku/skuLlmAdapter.js';
+import { RDF_DEFAULT_TEMPLATE, RDF_SOURCE_VARIANT_GUIDANCE_SLOTS, RDF_VARIANT_DISAMBIGUATION_SLOTS } from '../../../release-date/releaseDateLlmAdapter.js';
+import { SKF_DEFAULT_TEMPLATE, SKU_SOURCE_VARIANT_GUIDANCE_SLOTS, SKU_VARIANT_DISAMBIGUATION_SLOTS } from '../../../sku/skuLlmAdapter.js';
 import { KEY_FINDER_DEFAULT_TEMPLATE } from '../../../key/keyLlmAdapter.js';
 
 export const FINDER_PHASE_SCHEMAS = Object.freeze({
@@ -44,7 +44,7 @@ export const FINDER_PHASE_SCHEMAS = Object.freeze({
 // defaultTemplateExport yields a full prompt_templates overlay in
 // phaseSchemaRegistry.js automatically. No hand-written block required.
 export const FINDER_SCALAR_DEFAULT_TEMPLATES = Object.freeze({
-  'release-date-finder': { moduleId: 'releaseDateFinder', defaultTemplate: RDF_DEFAULT_TEMPLATE },
-  'sku-finder': { moduleId: 'skuFinder', defaultTemplate: SKF_DEFAULT_TEMPLATE },
+  'release-date-finder': { moduleId: 'releaseDateFinder', defaultTemplate: RDF_DEFAULT_TEMPLATE, sourceVariantGuidanceSlots: RDF_SOURCE_VARIANT_GUIDANCE_SLOTS, variantDisambiguationSlots: RDF_VARIANT_DISAMBIGUATION_SLOTS },
+  'sku-finder': { moduleId: 'skuFinder', defaultTemplate: SKF_DEFAULT_TEMPLATE, sourceVariantGuidanceSlots: SKU_SOURCE_VARIANT_GUIDANCE_SLOTS, variantDisambiguationSlots: SKU_VARIANT_DISAMBIGUATION_SLOTS },
   'key-finder': { moduleId: 'keyFinder', defaultTemplate: KEY_FINDER_DEFAULT_TEMPLATE },
 });

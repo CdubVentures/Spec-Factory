@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Indexing Lab — Tab Bar Redesign</title>
+<style>
+  :root {
+    --bg: #f8f9fa; --surface: #fff; --surface-alt: #f1f3f5; --surface-soft: #fafbfc;
+    --border: #dee2e6; --border-light: #e9ecef; --border-strong: #ced4da;
+    --text: #212529; --text-muted: #6c757d; --text-dim: #868e96;
+    --accent: #4263eb; --accent-light: #edf2ff; --accent-border: #bac8ff;
+
+    /* finder colorways — matches FinderTabBar.css semantic tokens */
+    --pipe-fg: #1864ab; --pipe-bg: #e7f5ff; --pipe-border: #a5d8ff;
+    --cef-fg:  #d97706; --cef-bg:  #fff4e6; --cef-border:  #ffd8a8;
+    --pif-fg:  #0c8599; --pif-bg:  #e3fafc; --pif-border:  #99e9f2;
+    --rdf-fg:  #7048e8; --rdf-bg:  #f3f0ff; --rdf-border:  #d0bfff;
+    --sku-fg:  #2b8a3e; --sku-bg:  #ebfbee; --sku-border:  #b2f2bb;
+    --key-fg:  #3b4cca; --key-bg:  #edf2ff; --key-border:  #bac8ff;
+
+    --ok:#2b8a3e; --ok-bg:#ebfbee; --ok-border:#b2f2bb;
+    --warn:#e67700; --warn-bg:#fff4e6; --warn-border:#ffd8a8;
+    --bad:#c92a2a; --bad-bg:#fff5f5; --bad-border:#ffc9c9;
+
+    --mono:'SF Mono','Cascadia Code','Fira Code',Consolas,monospace;
+    --font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    --radius:8px;
+    --shadow-sm:0 1px 2px rgba(0,0,0,.05), 0 1px 3px rgba(0,0,0,.08);
+    --shadow-md:0 2px 4px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.08);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:var(--font); color:var(--text); background:var(--bg); line-height:1.55; }
+
+  /* ── Page chrome ────────────────────────────────────────────────── */
+  .page-header { background:linear-gradient(135deg,#1864ab,#4263eb); color:#fff; padding:32px 0 28px; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,.08); }
+  .page-header h1 { font-size:26px; font-weight:700; letter-spacing:-.3px; }
+  .page-header p { font-size:13.5px; opacity:.92; margin-top:6px; max-width:820px; margin-left:auto; margin-right:auto; }
+  .page-header .pill { display:inline-block; background:rgba(255,255,255,.2); padding:4px 12px; border-radius:99px; font-size:12px; font-weight:600; letter-spacing:.3px; margin-top:14px; }
+  .container { max-width:1320px; margin:0 auto; padding:24px 24px 72px; }
+
+  h2 { font-size:17px; font-weight:700; margin:36px 0 12px; padding:10px 14px; border-left:4px solid var(--accent); border-radius:0 6px 6px 0; background:var(--surface); box-shadow:var(--shadow-sm); display:flex; align-items:center; gap:10px; }
+  h2 .num { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--accent); color:#fff; font-size:11.5px; font-weight:700; flex:none; }
+  h2 .sub { font-size:12px; font-weight:500; color:var(--text-muted); margin-left:auto; font-family:var(--mono); letter-spacing:.2px; }
+  h3 { font-size:14px; font-weight:700; margin:22px 0 10px; color:var(--text); }
+
+  .caption { font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); margin:2px 0 6px; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .anno { display:inline-block; font-family:var(--mono); font-size:10.5px; font-weight:700; background:var(--surface); border:1px solid var(--border); color:var(--text-muted); padding:2px 7px; border-radius:4px; letter-spacing:.3px; }
+  .anno.ok { color:var(--ok); border-color:var(--ok-border); background:var(--ok-bg); }
+  .anno.warn { color:var(--warn); border-color:var(--warn-border); background:var(--warn-bg); }
+  .anno.bad { color:var(--bad); border-color:var(--bad-border); background:var(--bad-bg); }
+  .anno.neu { color:var(--accent); border-color:var(--accent-border); background:var(--accent-light); }
+
+  .frame { background:#eef2f7; border:1px solid var(--border); border-radius:10px; padding:14px 14px 18px; box-shadow:inset 0 2px 6px rgba(0,0,0,.04); }
+  .frame + .frame { margin-top:14px; }
+  .frame .note { font-size:12px; color:var(--text-muted); margin:10px 4px 0; font-style:italic; }
+
+  /* ── Audit card ─────────────────────────────────────────────────── */
+  .audit { background:var(--surface); border:1px solid var(--border-light); border-radius:10px; box-shadow:var(--shadow-sm); padding:18px 22px 22px; }
+  .audit ul { list-style:none; margin:6px 0 14px; }
+  .audit li { display:grid; grid-template-columns:28px 1fr; gap:10px; padding:9px 0; border-bottom:1px dashed var(--border-light); font-size:13px; }
+  .audit li:last-child { border-bottom:none; }
+  .audit li .badge { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:4px; background:var(--surface-alt); color:var(--text-muted); font-size:12px; font-weight:700; }
+  .audit li.ok .badge { background:var(--ok-bg); color:var(--ok); }
+  .audit li.warn .badge { background:var(--warn-bg); color:var(--warn); }
+  .audit li.bad .badge { background:var(--bad-bg); color:var(--bad); }
+  .audit li strong { display:block; font-weight:700; margin-bottom:2px; }
+  .audit li em { font-style:normal; color:var(--text-muted); }
+  .audit code { font-family:var(--mono); font-size:11.5px; background:var(--surface-alt); padding:1px 5px; border-radius:3px; color:var(--text); }
+
+  /* ═══════════════════════════════════════════════════════════════
+     CURRENT TAB BAR — faithful reproduction
+     ═══════════════════════════════════════════════════════════════ */
+  .cur-bar { display:flex; gap:6px; padding:6px; background:var(--surface); border:1px solid var(--border-light); border-radius:8px; box-shadow:var(--shadow-sm); }
+  .cur-tab { position:relative; display:flex; align-items:center; gap:10px; padding:8px 12px; min-width:180px; flex:1; background:transparent; border:1px solid transparent; border-radius:6px; cursor:pointer; text-align:left; font-family:var(--font); }
+  .cur-tab + .cur-tab::before { content:""; position:absolute; left:-3px; top:28%; bottom:28%; width:1px; background:rgba(0,0,0,.1); }
+  .cur-tab.active { background:var(--surface-alt); border-color:var(--border); }
+  .cur-tab.active::before, .cur-tab.active + .cur-tab::before { display:none; }
+  .cur-tab .ico { width:28px; height:28px; border-radius:6px; border:1px solid; display:inline-flex; align-items:center; justify-content:center; font-size:13px; line-height:1; flex:none; }
+  .cur-tab[data-f="pipeline"] .ico { color:var(--pipe-fg); background:var(--pipe-bg); border-color:var(--pipe-border); }
+  .cur-tab[data-f="cef"] .ico { color:var(--cef-fg); background:var(--cef-bg); border-color:var(--cef-border); }
+  .cur-tab[data-f="pif"] .ico { color:var(--pif-fg); background:var(--pif-bg); border-color:var(--pif-border); }
+  .cur-tab[data-f="rdf"] .ico { color:var(--rdf-fg); background:var(--rdf-bg); border-color:var(--rdf-border); }
+  .cur-tab[data-f="sku"] .ico { color:var(--sku-fg); background:var(--sku-bg); border-color:var(--sku-border); }
+  .cur-tab[data-f="key"] .ico { color:var(--key-fg); background:var(--key-bg); border-color:var(--key-border); }
+  .cur-tab .stk { display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; overflow:hidden; }
+  .cur-tab .name { font-size:12px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cur-tab .kpi { font-size:10.5px; color:var(--text-muted); font-family:var(--mono); white-space:nowrap; }
+  .cur-tab .dot { width:10px; height:10px; border-radius:50%; flex:none; }
+  .cur-tab .dot.ok { background:var(--ok); box-shadow:0 0 0 2.5px var(--ok-border); }
+  .cur-tab .dot.warn { background:var(--warn); box-shadow:0 0 0 2.5px var(--warn-border); }
+  .cur-tab .dot.idle { background:#adb5bd; box-shadow:0 0 0 2.5px rgba(173,181,189,.3); }
+  .cur-tab .dot.running { background:var(--accent); box-shadow:0 0 0 2.5px var(--accent-border); animation:breathe 1.6s ease-in-out infinite; }
+  .cur-tab .dot.empty { background:transparent; box-shadow:inset 0 0 0 1.5px #adb5bd; }
+  @keyframes breathe { 0%,100% {opacity:1;} 50% {opacity:.5;} }
+
+  /* ═══════════════════════════════════════════════════════════════
+     REDESIGN — NAV CONTROL  (recommended)
+
+     Self-contained rounded card. Active tab fills with the finder's
+     color tint. No seam to the panel below — they're two independent
+     components separated by a gap.
+     ═══════════════════════════════════════════════════════════════ */
+  .nb-shell { display:flex; flex-direction:column; gap:12px; }
+
+  .nb-bar {
+    display:flex; gap:4px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    box-shadow:var(--shadow-sm);
+    padding:6px;
+  }
+  .nb-tab {
+    flex:1 1 0; min-width:0;
+    display:grid; grid-template-columns:32px 1fr auto;
+    column-gap:11px; align-items:center;
+    padding:10px 12px;
+    background:transparent;
+    border:1px solid transparent;
+    border-radius:7px;
+    cursor:pointer;
+    text-align:left; font-family:var(--font);
+    color:var(--text-muted);
+    transition:background .14s ease, color .14s ease, border-color .14s ease, box-shadow .14s ease;
+  }
+  .nb-tab:hover:not(.active) { background:rgba(0,0,0,.028); color:var(--text); }
+  .nb-tab:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+
+  /* Active — finder-color tint fills the tab, colored border, soft lift */
+  .nb-tab.active { box-shadow:0 1px 2px rgba(0,0,0,.04), 0 2px 6px rgba(0,0,0,.06); }
+  .nb-tab[data-f="pipeline"].active { background:var(--pipe-bg); border-color:var(--pipe-border); color:var(--pipe-fg); }
+  .nb-tab[data-f="cef"].active      { background:var(--cef-bg);  border-color:var(--cef-border);  color:var(--cef-fg); }
+  .nb-tab[data-f="pif"].active      { background:var(--pif-bg);  border-color:var(--pif-border);  color:var(--pif-fg); }
+  .nb-tab[data-f="rdf"].active      { background:var(--rdf-bg);  border-color:var(--rdf-border);  color:var(--rdf-fg); }
+  .nb-tab[data-f="sku"].active      { background:var(--sku-bg);  border-color:var(--sku-border);  color:var(--sku-fg); }
+  .nb-tab[data-f="key"].active      { background:var(--key-bg);  border-color:var(--key-border);  color:var(--key-fg); }
+
+  /* Icon badge — idle keeps its color pill; active inverts to surface
+     so the icon stays legible on the tinted tab */
+  .nb-ico {
+    width:32px; height:32px; border-radius:7px;
+    border:1px solid;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:14px; line-height:1; font-weight:600; flex:none;
+    transition:background .14s ease, border-color .14s ease;
+  }
+  .nb-tab[data-f="pipeline"] .nb-ico { color:var(--pipe-fg); background:var(--pipe-bg); border-color:var(--pipe-border); }
+  .nb-tab[data-f="cef"] .nb-ico      { color:var(--cef-fg);  background:var(--cef-bg);  border-color:var(--cef-border); }
+  .nb-tab[data-f="pif"] .nb-ico      { color:var(--pif-fg);  background:var(--pif-bg);  border-color:var(--pif-border); }
+  .nb-tab[data-f="rdf"] .nb-ico      { color:var(--rdf-fg);  background:var(--rdf-bg);  border-color:var(--rdf-border); }
+  .nb-tab[data-f="sku"] .nb-ico      { color:var(--sku-fg);  background:var(--sku-bg);  border-color:var(--sku-border); }
+  .nb-tab[data-f="key"] .nb-ico      { color:var(--key-fg);  background:var(--key-bg);  border-color:var(--key-border); }
+  .nb-tab.active .nb-ico { background:var(--surface); border-color:currentColor; }
+  .nb-tab:not(.active) .nb-ico { opacity:.92; }
+
+  /* Text stack */
+  .nb-txt { min-width:0; display:flex; flex-direction:column; gap:2px; }
+  .nb-name {
+    font-size:12.5px; font-weight:700; letter-spacing:-.1px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    color:inherit;
+  }
+  .nb-kpi {
+    font-size:10.5px; font-family:var(--mono); font-weight:600;
+    color:var(--text-muted);
+    display:inline-flex; align-items:center; gap:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .nb-kpi .sep { color:var(--text-dim); font-weight:400; }
+  .nb-kpi .val { color:var(--text); font-weight:700; }
+  .nb-tab.active .nb-kpi { color:currentColor; opacity:.78; }
+  .nb-tab.active .nb-kpi .val { color:currentColor; opacity:1; }
+  .nb-tab.active .nb-kpi .sep { color:currentColor; opacity:.55; }
+
+  /* Status slot */
+  .nb-stat { flex:none; display:inline-flex; align-items:center; justify-content:center; }
+
+  /* Progress ring */
+  .nb-ring { width:26px; height:26px; display:block; }
+  .nb-ring .track { stroke:rgba(0,0,0,.08); }
+  .nb-tab.active .nb-ring .track { stroke:rgba(0,0,0,.1); }
+  .nb-tab[data-f="pipeline"] .nb-ring .fill { stroke:var(--pipe-fg); }
+  .nb-tab[data-f="cef"] .nb-ring .fill      { stroke:var(--cef-fg); }
+  .nb-tab[data-f="pif"] .nb-ring .fill      { stroke:var(--pif-fg); }
+  .nb-tab[data-f="rdf"] .nb-ring .fill      { stroke:var(--rdf-fg); }
+  .nb-tab[data-f="sku"] .nb-ring .fill      { stroke:var(--sku-fg); }
+  .nb-tab[data-f="key"] .nb-ring .fill      { stroke:var(--key-fg); }
+  .nb-ring .label { font-family:var(--mono); font-size:7.5px; fill:var(--text); font-weight:700; }
+  .nb-tab.active .nb-ring .label { fill:currentColor; }
+  .nb-ring .check { stroke:var(--ok); stroke-width:2.5; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+  .nb-ring.done .fill { stroke:var(--ok); }
+  .nb-tab.active .nb-ring.done .fill { stroke:currentColor; }
+  .nb-tab.active .nb-ring.done .check { stroke:currentColor; }
+
+  /* Status pip — idle / empty / running */
+  .nb-pip {
+    display:inline-flex; align-items:center; gap:5px;
+    padding:3px 8px; border-radius:99px;
+    font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.45px;
+    background:var(--surface-alt); color:var(--text-muted);
+    border:1px solid var(--border-light);
+  }
+  .nb-pip .blink { width:5px; height:5px; border-radius:50%; background:currentColor; animation:breathe 1.2s infinite; }
+  .nb-pip.empty { color:var(--text-dim); border-style:dashed; }
+  .nb-pip.running { color:var(--accent); background:var(--accent-light); border-color:var(--accent-border); }
+  .nb-tab.active .nb-pip { background:var(--surface); border-color:currentColor; color:currentColor; }
+  .nb-tab.active .nb-pip.empty { background:transparent; border-style:dashed; }
+
+  /* Panel sits below with a gap — the separation IS the design */
+  .nb-panel {
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    box-shadow:var(--shadow-sm);
+    padding:14px 18px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    font-size:12.5px; color:var(--text-muted);
+  }
+  .nb-panel .tag {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:3px 10px; border-radius:5px; font-size:11px; font-weight:700;
+    background:var(--surface-alt); color:var(--text); border:1px solid var(--border-light);
+  }
+  .nb-panel .tag .dot { width:7px; height:7px; border-radius:50%; }
+  .nb-panel .tag[data-f="pipeline"] .dot { background:var(--pipe-fg); }
+  .nb-panel .tag[data-f="cef"] .dot      { background:var(--cef-fg); }
+  .nb-panel .tag[data-f="pif"] .dot      { background:var(--pif-fg); }
+  .nb-panel .tag[data-f="rdf"] .dot      { background:var(--rdf-fg); }
+  .nb-panel .tag[data-f="sku"] .dot      { background:var(--sku-fg); }
+  .nb-panel .tag[data-f="key"] .dot      { background:var(--key-fg); }
+
+  /* Narrow variant */
+  .nb-bar.narrow .nb-tab { min-width:0; padding:9px 10px; column-gap:9px; grid-template-columns:28px 1fr auto; }
+  .nb-bar.narrow .nb-ico { width:28px; height:28px; font-size:13px; }
+  .nb-bar.narrow .nb-ring { width:22px; height:22px; }
+  .nb-bar.narrow .nb-name { font-size:12px; }
+  .nb-bar.narrow .nb-kpi { display:none; }
+
+  /* Sticky-in-context demo — shows the nav-control floating above content */
+  .sticky-demo {
+    background:var(--surface-soft);
+    border:1px dashed var(--border);
+    border-radius:8px;
+    padding:12px;
+    max-height:320px;
+    overflow:auto;
+  }
+  .sticky-demo .nb-bar { position:sticky; top:0; z-index:2; }
+  .sticky-demo .faux-line {
+    margin-top:10px; padding:14px 16px; background:var(--surface); border-radius:8px;
+    border:1px solid var(--border-light); font-size:12px; color:var(--text-muted);
+  }
+
+  /* Mini gallery grid */
+  .gallery { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .gallery .frame { margin:0; }
+
+  /* ═══════════════════════════════════════════════════════════════
+     ALTERNATE — SEGMENT RAIL (dense variant, optional)
+     ═══════════════════════════════════════════════════════════════ */
+  .sr-bar { display:inline-flex; padding:4px; gap:2px; background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; }
+  .sr-tab { display:inline-flex; align-items:center; gap:8px; padding:7px 11px; border-radius:7px; background:transparent; border:1px solid transparent; color:var(--text-muted); font-family:var(--font); font-size:12px; font-weight:600; cursor:pointer; }
+  .sr-tab:hover:not(.active) { background:rgba(0,0,0,.04); color:var(--text); }
+  .sr-tab.active { background:var(--surface); color:var(--text); border-color:var(--border); box-shadow:var(--shadow-sm); }
+  .sr-tab .ico { width:20px; height:20px; border-radius:4px; border:1px solid; display:inline-flex; align-items:center; justify-content:center; font-size:11px; }
+  .sr-tab[data-f="pipeline"] .ico { color:var(--pipe-fg); background:var(--pipe-bg); border-color:var(--pipe-border); }
+  .sr-tab[data-f="cef"] .ico      { color:var(--cef-fg); background:var(--cef-bg); border-color:var(--cef-border); }
+  .sr-tab[data-f="pif"] .ico      { color:var(--pif-fg); background:var(--pif-bg); border-color:var(--pif-border); }
+  .sr-tab[data-f="rdf"] .ico      { color:var(--rdf-fg); background:var(--rdf-bg); border-color:var(--rdf-border); }
+  .sr-tab[data-f="sku"] .ico      { color:var(--sku-fg); background:var(--sku-bg); border-color:var(--sku-border); }
+  .sr-tab[data-f="key"] .ico      { color:var(--key-fg); background:var(--key-bg); border-color:var(--key-border); }
+  .sr-tab .kpi { font-family:var(--mono); font-size:10.5px; color:var(--text-muted); font-weight:700; padding:1px 6px; background:rgba(0,0,0,.04); border-radius:3px; }
+  .sr-tab.active .kpi { background:var(--surface-alt); color:var(--text); }
+  .sr-tab .stat { width:7px; height:7px; border-radius:50%; flex:none; }
+  .sr-tab .stat.ok { background:var(--ok); }
+  .sr-tab .stat.warn { background:var(--warn); }
+  .sr-tab .stat.idle { background:#ced4da; }
+  .sr-tab .stat.running { background:var(--accent); animation:breathe 1.4s infinite; }
+  .sr-tab .stat.empty { background:transparent; box-shadow:inset 0 0 0 1.5px #ced4da; }
+
+  /* ═══════════════════════════════════════════════════════════════
+     ANATOMY
+     ═══════════════════════════════════════════════════════════════ */
+  .anat { display:grid; grid-template-columns:minmax(320px, 1fr) 380px; gap:28px; align-items:stretch; }
+  @media (max-width:960px) { .anat { grid-template-columns:1fr; } }
+  .anat .diagram {
+    position:relative;
+    background:var(--surface); border:1px solid var(--border-light); border-radius:10px;
+    padding:44px 28px 52px; box-shadow:var(--shadow-sm);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .anat .legend { background:var(--surface); border:1px solid var(--border-light); border-radius:10px; padding:16px 20px; box-shadow:var(--shadow-sm); font-size:13px; }
+  .anat .legend ol { list-style:none; counter-reset:pin; }
+  .anat .legend li { counter-increment:pin; padding:10px 0 10px 34px; border-bottom:1px dashed var(--border-light); position:relative; }
+  .anat .legend li:last-child { border-bottom:none; }
+  .anat .legend li::before {
+    content:counter(pin);
+    position:absolute; left:0; top:10px;
+    width:22px; height:22px; border-radius:50%;
+    background:var(--accent); color:#fff; font-size:11px; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 0 3px var(--accent-light);
+  }
+  .anat .legend li strong { display:block; font-weight:700; color:var(--text); font-size:13.5px; margin-bottom:2px; }
+  .anat .legend li span { color:var(--text-muted); font-size:12.5px; }
+  .anat .legend li code { font-family:var(--mono); font-size:11.5px; background:var(--surface-alt); padding:1px 5px; border-radius:3px; color:var(--text); }
+
+  .pin {
+    position:absolute; width:22px; height:22px; border-radius:50%;
+    background:var(--accent); color:#fff; font-size:11px; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 0 3px #fff, 0 0 0 4px var(--accent-border);
+    z-index:10;
+  }
+
+  /* Notes */
+  .notes { background:var(--surface); border:1px solid var(--border-light); border-radius:10px; padding:20px 24px; box-shadow:var(--shadow-sm); }
+  .notes h3 { margin-top:0; }
+  .notes h3 + h3 { margin-top:18px; }
+  .notes p { font-size:13px; color:var(--text-muted); margin-bottom:8px; }
+  .notes code { font-family:var(--mono); font-size:12px; background:var(--surface-alt); padding:1px 5px; border-radius:3px; color:var(--text); }
+  .notes ul { list-style:none; padding:0; }
+  .notes li { font-size:13px; padding:6px 0 6px 18px; position:relative; color:var(--text-muted); }
+  .notes li::before { content:"→"; position:absolute; left:0; color:var(--accent); font-weight:700; }
+  .notes li strong { color:var(--text); font-weight:700; }
+
+  .kpi-table { width:100%; border-collapse:collapse; margin-top:10px; font-size:12.5px; }
+  .kpi-table th, .kpi-table td { padding:8px 12px; text-align:left; border-bottom:1px solid var(--border-light); }
+  .kpi-table th { background:var(--surface-alt); font-weight:700; font-size:11.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); }
+  .kpi-table td.mono { font-family:var(--mono); font-size:11.5px; color:var(--text); }
+  .kpi-table td.fg-ok { color:var(--ok); font-weight:700; }
+
+  hr { border:none; border-top:1px solid var(--border-light); margin:28px 0; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Indexing Lab — Tab Bar Redesign</h1>
+  <p>Audit of the current tab strip and a self-contained nav-control replacement. The bar lives as its own rounded card — the active tab fills with the finder's color tint, the panel below sits on its own with a gap, and the brittle pseudo-dividers are gone.</p>
+  <span class="pill">target: IndexingTabBar.tsx · FinderTabBar.css</span>
+</div>
+
+<div class="container">
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- 1. AUDIT                                                      -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <h2><span class="num">1</span>Audit of the current tab strip <span class="sub">IndexingTabBar.tsx · FinderTabBar.css</span></h2>
+
+  <div class="audit">
+    <h3 style="margin-top:0;">Working — preserve</h3>
+    <ul>
+      <li class="ok"><span class="badge">✓</span><div>
+        <strong>Semantic color tokens per finder.</strong>
+        <em>Each finder has <code>iconClass</code> keyed tokens (<code>cef / pif / rdf / sku / key / pipeline</code>) with matching fg/bg/border triplets. The redesign inherits these directly — no new color tokens.</em>
+      </div></li>
+      <li class="ok"><span class="badge">✓</span><div>
+        <strong>Keyboard navigation.</strong>
+        <em><code>finderTabKeyboard.ts</code>: roving tabindex, Left/Right/Home/End. The redesign uses the same behavior — pure CSS/markup swap on the button.</em>
+      </div></li>
+      <li class="ok"><span class="badge">✓</span><div>
+        <strong>Cache-shared summary hooks.</strong>
+        <em>Each tab reuses the panel's <code>queryKey</code>. Keep the <code>FinderTabSummary</code> contract — <code>{ kpi, status }</code> — unchanged. The redesign only changes how those two fields render.</em>
+      </div></li>
+      <li class="ok"><span class="badge">✓</span><div>
+        <strong>Pipeline-as-first-tab invariant.</strong>
+        <em><code>PIPELINE_TAB_ID</code> is prepended to <code>FINDER_PANELS</code> in <code>finderTabMeta.ts</code>. Keep that ordering contract.</em>
+      </div></li>
+    </ul>
+
+    <h3>Issues — fix</h3>
+    <ul>
+      <li class="bad"><span class="badge">✗</span><div>
+        <strong>Active-state affordance is too quiet.</strong>
+        <em>Only <code>.sf-tab-item-active</code>'s surface tint signals "selected." From 3 ft away you can't tell which tab is active. A filled finder-color tint reads from across the room.</em>
+      </div></li>
+      <li class="bad"><span class="badge">✗</span><div>
+        <strong>Divider pseudo-elements are a workaround.</strong>
+        <em>Absolute-positioned slivers hide around the active tab (<code>FinderTabBar.css:27-30</code>). A card with internal gap eliminates the patch entirely.</em>
+      </div></li>
+      <li class="warn"><span class="badge">!</span><div>
+        <strong>KPI typography has no shared rhythm.</strong>
+        <em>Each finder invents its own shape: <code>18 runs · 56%</code>, <code>4c · 1ed</code>, <code>5 img · 4 var</code>, <code>4 / 4 published</code>, <code>6 / 80</code>. The redesign standardizes one <code>value · label</code> strap and lets numeric magnitude carry the weight.</em>
+      </div></li>
+      <li class="warn"><span class="badge">!</span><div>
+        <strong>Progress is hidden.</strong>
+        <em>Five of six tabs carry an implicit ratio. A 22 px progress ring in the finder's color communicates "3 of 4 resolved" in one glance — the status dot can't.</em>
+      </div></li>
+      <li class="warn"><span class="badge">!</span><div>
+        <strong>Status dot is too small and ambiguous.</strong>
+        <em>10 px + double ring fights the icon badge for attention, and <code>idle</code> vs <code>empty</code> are a muted circle vs a muted hollow ring — easy to miss.</em>
+      </div></li>
+      <li class="warn"><span class="badge">!</span><div>
+        <strong>Running state is whisper-quiet.</strong>
+        <em>A pulsing dot. Live activity should be shouted — a dedicated <code>Running</code> pip with a colored breathe wins.</em>
+      </div></li>
+      <li class="warn"><span class="badge">!</span><div>
+        <strong>Tab sizing is uneven across screen widths.</strong>
+        <em><code>min-width:180px flex-1</code> grows tabs unpredictably. Fine at 1200 px, ugly at 900 px. A dedicated narrow variant handles the fallback.</em>
+      </div></li>
+    </ul>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- 2. CURRENT (for comparison)                                   -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <h2><span class="num">2</span>Current strip — faithful reproduction <span class="sub">before</span></h2>
+
+  <div class="frame">
+    <div class="caption">Current · Pipeline active <span class="anno warn">before</span></div>
+    <div class="cur-bar">
+      <div class="cur-tab active" data-f="pipeline">
+        <span class="ico">▶</span>
+        <span class="stk"><span class="name">Pipeline</span><span class="kpi">18 runs · 56%</span></span>
+        <span class="dot warn"></span>
+      </div>
+      <div class="cur-tab" data-f="cef">
+        <span class="ico">◈</span>
+        <span class="stk"><span class="name">Color &amp; Edition</span><span class="kpi">4c · 1ed</span></span>
+        <span class="dot ok"></span>
+      </div>
+      <div class="cur-tab" data-f="pif">
+        <span class="ico">▣</span>
+        <span class="stk"><span class="name">Product Image</span><span class="kpi">5 img · 4 var</span></span>
+        <span class="dot warn"></span>
+      </div>
+      <div class="cur-tab" data-f="rdf">
+        <span class="ico">◷</span>
+        <span class="stk"><span class="name">Release Date</span><span class="kpi">4 / 4 published</span></span>
+        <span class="dot ok"></span>
+      </div>
+      <div class="cur-tab" data-f="sku">
+        <span class="ico">⌗</span>
+        <span class="stk"><span class="name">SKU</span><span class="kpi">4 / 4 published</span></span>
+        <span class="dot ok"></span>
+      </div>
+      <div class="cur-tab" data-f="key">
+        <span class="ico">⚙</span>
+        <span class="stk"><span class="name">Key</span><span class="kpi">6 / 80</span></span>
+        <span class="dot empty"></span>
+      </div>
+    </div>
+    <div class="note">The active tab (Pipeline) is only a subtle surface tint. From across the room you can't spot which one is selected, and the six KPIs each look like they belong to a different app.</div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- 3. RECOMMENDED — NAV CONTROL                                  -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <h2><span class="num">3</span>Recommended — <em style="font-style:italic;">Nav Control</em> <span class="sub">after · primary proposal</span></h2>
+
+  <h3>Default view · Pipeline active</h3>
+  <div class="frame">
+    <div class="caption">Mixed statuses · Pipeline active <span class="anno neu">recommended</span></div>
+    <div class="nb-shell">
+      <div class="nb-bar" role="tablist" aria-label="Indexing Lab tabs">
+
+        <button class="nb-tab active" data-f="pipeline" role="tab" aria-selected="true">
+          <span class="nb-ico">▶</span>
+          <span class="nb-txt">
+            <span class="nb-name">Pipeline</span>
+            <span class="nb-kpi"><span class="val">18</span> runs <span class="sep">·</span> <span class="val">56%</span> ok</span>
+          </span>
+          <span class="nb-stat">
+            <svg class="nb-ring" viewBox="0 0 28 28" aria-hidden="true">
+              <circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/>
+              <circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"
+                stroke-dasharray="69.12" stroke-dashoffset="30.4"
+                stroke-linecap="round" transform="rotate(-90 14 14)"/>
+              <text class="label" x="14" y="16.5" text-anchor="middle">56</text>
+            </svg>
+          </span>
+        </button>
+
+        <button class="nb-tab" data-f="cef" role="tab" aria-selected="false">
+          <span class="nb-ico">◈</span>
+          <span class="nb-txt">
+            <span class="nb-name">Color &amp; Edition</span>
+            <span class="nb-kpi"><span class="val">4</span> colors <span class="sep">·</span> <span class="val">1</span> edition</span>
+          </span>
+          <span class="nb-stat">
+            <svg class="nb-ring done" viewBox="0 0 28 28" aria-hidden="true">
+              <circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/>
+              <circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"
+                stroke-dasharray="69.12" stroke-dashoffset="0"
+                stroke-linecap="round" transform="rotate(-90 14 14)"/>
+              <polyline class="check" points="9.5,14.5 13,18 19,11" />
+            </svg>
+          </span>
+        </button>
+
+        <button class="nb-tab" data-f="pif" role="tab" aria-selected="false">
+          <span class="nb-ico">▣</span>
+          <span class="nb-txt">
+            <span class="nb-name">Product Image</span>
+            <span class="nb-kpi"><span class="val">5</span> img <span class="sep">·</span> <span class="val">4</span> var</span>
+          </span>
+          <span class="nb-stat">
+            <svg class="nb-ring" viewBox="0 0 28 28" aria-hidden="true">
+              <circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/>
+              <circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"
+                stroke-dasharray="69.12" stroke-dashoffset="47.5"
+                stroke-linecap="round" transform="rotate(-90 14 14)"/>
+              <text class="label" x="14" y="16.5" text-anchor="middle">31</text>
+            </svg>
+          </span>
+        </button>
+
+        <button class="nb-tab" data-f="rdf" role="tab" aria-selected="false">
+          <span class="nb-ico">◷</span>
+          <span class="nb-txt">
+            <span class="nb-name">Release Date</span>
+            <span class="nb-kpi"><span class="val">4</span> <span class="sep">of</span> <span class="val">4</span> published</span>
+          </span>
+          <span class="nb-stat">
+            <svg class="nb-ring done" viewBox="0 0 28 28" aria-hidden="true">
+              <circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/>
+              <circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"
+                stroke-dasharray="69.12" stroke-dashoffset="0"
+                stroke-linecap="round" transform="rotate(-90 14 14)"/>
+              <polyline class="check" points="9.5,14.5 13,18 19,11" />
+            </svg>
+          </span>
+        </button>
+
+        <button class="nb-tab" data-f="sku" role="tab" aria-selected="false">
+          <span class="nb-ico">⌗</span>
+          <span class="nb-txt">
+            <span class="nb-name">SKU</span>
+            <span class="nb-kpi"><span class="val">4</span> <span class="sep">of</span> <span class="val">4</span> published</span>
+          </span>
+          <span class="nb-stat">
+            <svg class="nb-ring done" viewBox="0 0 28 28" aria-hidden="true">
+              <circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/>
+              <circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"
+                stroke-dasharray="69.12" stroke-dashoffset="0"
+                stroke-linecap="round" transform="rotate(-90 14 14)"/>
+              <polyline class="check" points="9.5,14.5 13,18 19,11" />
+            </svg>
+          </span>
+        </button>
+
+        <button class="nb-tab" data-f="key" role="tab" aria-selected="false">
+          <span class="nb-ico">⚙</span>
+          <span class="nb-txt">
+            <span class="nb-name">Key</span>
+            <span class="nb-kpi"><span class="val">6</span> <span class="sep">of</span> <span class="val">80</span> fields</span>
+          </span>
+          <span class="nb-stat">
+            <svg class="nb-ring" viewBox="0 0 28 28" aria-hidden="true">
+              <circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/>
+              <circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"
+                stroke-dasharray="69.12" stroke-dashoffset="63.9"
+                stroke-linecap="round" transform="rotate(-90 14 14)"/>
+              <text class="label" x="14" y="16.5" text-anchor="middle">8</text>
+            </svg>
+          </span>
+        </button>
+
+      </div>
+
+      <div class="nb-panel">
+        <span class="tag" data-f="pipeline"><span class="dot"></span>Pipeline</span>
+        <span>Product: <strong style="color:var(--text);">Razer Viper V3 Pro</strong> · 3 panels collapsed · last run 4m ago</span>
+      </div>
+    </div>
+    <div class="note">The bar is its own rounded card, floating 12 px above the panel. The active tab fills with the finder's color tint; the icon badge flips to a white chip so it still pops. No shared chrome means this control can be docked anywhere — sticky header, drawer rail, side-by-side with other content.</div>
+  </div>
+
+  <h3>Active rotation · each finder in turn</h3>
+  <div class="gallery">
+
+    <!-- CEF -->
+    <div class="frame">
+      <div class="caption">CEF active <span class="anno neu">amber fill</span></div>
+      <div class="nb-shell">
+        <div class="nb-bar">
+          <button class="nb-tab" data-f="pipeline"><span class="nb-ico">▶</span><span class="nb-txt"><span class="nb-name">Pipeline</span><span class="nb-kpi"><span class="val">18</span> · <span class="val">56%</span></span></span><span class="nb-stat"><svg class="nb-ring" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="30.4" stroke-linecap="round" transform="rotate(-90 14 14)"/><text class="label" x="14" y="16.5" text-anchor="middle">56</text></svg></span></button>
+          <button class="nb-tab active" data-f="cef" aria-selected="true"><span class="nb-ico">◈</span><span class="nb-txt"><span class="nb-name">Color &amp; Edition</span><span class="nb-kpi"><span class="val">4</span>c · <span class="val">1</span>ed</span></span><span class="nb-stat"><svg class="nb-ring done" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/><polyline class="check" points="9.5,14.5 13,18 19,11"/></svg></span></button>
+          <button class="nb-tab" data-f="pif"><span class="nb-ico">▣</span><span class="nb-txt"><span class="nb-name">Product Image</span><span class="nb-kpi"><span class="val">5</span> img · <span class="val">4</span> var</span></span><span class="nb-stat"><svg class="nb-ring" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="47.5" stroke-linecap="round" transform="rotate(-90 14 14)"/><text class="label" x="14" y="16.5" text-anchor="middle">31</text></svg></span></button>
+          <button class="nb-tab" data-f="rdf"><span class="nb-ico">◷</span><span class="nb-txt"><span class="nb-name">Release Date</span><span class="nb-kpi"><span class="val">4</span>/<span class="val">4</span></span></span><span class="nb-stat"><svg class="nb-ring done" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/><polyline class="check" points="9.5,14.5 13,18 19,11"/></svg></span></button>
+          <button class="nb-tab" data-f="sku"><span class="nb-ico">⌗</span><span class="nb-txt"><span class="nb-name">SKU</span><span class="nb-kpi"><span class="val">4</span>/<span class="val">4</span></span></span><span class="nb-stat"><svg class="nb-ring done" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/><polyline class="check" points="9.5,14.5 13,18 19,11"/></svg></span></button>
+          <button class="nb-tab" data-f="key"><span class="nb-ico">⚙</span><span class="nb-txt"><span class="nb-name">Key</span><span class="nb-kpi"><span class="val">6</span>/<span class="val">80</span></span></span><span class="nb-stat"><svg class="nb-ring" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="63.9" stroke-linecap="round" transform="rotate(-90 14 14)"/><text class="label" x="14" y="16.5" text-anchor="middle">8</text></svg></span></button>
+        </div>
+        <div class="nb-panel"><span class="tag" data-f="cef"><span class="dot"></span>Color &amp; Edition Finder</span><span>4 colors resolved · 1 edition resolved · no candidates in review</span></div>
+      </div>
+    </div>
+
+    <!-- PIF -->
+    <div class="frame">
+      <div class="caption">PIF active <span class="anno neu">teal fill</span></div>
+      <div class="nb-shell">
+        <div class="nb-bar">
+          <button class="nb-tab" data-f="pipeline"><span class="nb-ico">▶</span><span class="nb-txt"><span class="nb-name">Pipeline</span><span class="nb-kpi"><span class="val">18</span> · <span class="val">56%</span></span></span><span class="nb-stat"><svg class="nb-ring" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="30.4" stroke-linecap="round" transform="rotate(-90 14 14)"/><text class="label" x="14" y="16.5" text-anchor="middle">56</text></svg></span></button>
+          <button class="nb-tab" data-f="cef"><span class="nb-ico">◈</span><span class="nb-txt"><span class="nb-name">Color &amp; Edition</span><span class="nb-kpi"><span class="val">4</span>c · <span class="val">1</span>ed</span></span><span class="nb-stat"><svg class="nb-ring done" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/><polyline class="check" points="9.5,14.5 13,18 19,11"/></svg></span></button>
+          <button class="nb-tab active" data-f="pif" aria-selected="true"><span class="nb-ico">▣</span><span class="nb-txt"><span class="nb-name">Product Image</span><span class="nb-kpi"><span class="val">5</span> img · <span class="val">4</span> var</span></span><span class="nb-stat"><svg class="nb-ring" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="47.5" stroke-linecap="round" transform="rotate(-90 14 14)"/><text class="label" x="14" y="16.5" text-anchor="middle">31</text></svg></span></button>
+          <button class="nb-tab" data-f="rdf"><span class="nb-ico">◷</span><span class="nb-txt"><span class="nb-name">Release Date</span><span class="nb-kpi"><span class="val">4</span>/<span class="val">4</span></span></span><span class="nb-stat"><svg class="nb-ring done" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/><polyline class="check" points="9.5,14.5 13,18 19,11"/></svg></span></button>
+          <button class="nb-tab" data-f="sku"><span class="nb-ico">⌗</span><span class="nb-txt"><span class="nb-name">SKU</span><span class="nb-kpi"><span class="val">4</span>/<span class="val">4</span></span></span><span class="nb-stat"><svg class="nb-ring done" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/><polyline class="check" points="9.5,14.5 13,18 19,11"/></svg></span></button>
+          <button class="nb-tab" data-f="key"><span class="nb-ico">⚙</span><span class="nb-txt"><span class="nb-name">Key</span><span class="nb-kpi"><span class="val">6</span>/<span class="val">80</span></span></span><span class="nb-stat"><svg class="nb-ring" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="63.9" stroke-linecap="round" transform="rotate(-90 14 14)"/><text class="label" x="14" y="16.5" text-anchor="middle">8</text></svg></span></button>
+        </div>
+        <div class="nb-panel"><span class="tag" data-f="pif"><span class="dot"></span>Product Image Finder</span><span>5 images harvested · target 16 (4 variants × 4 slots) · 31% toward full carousel</span></div>
+      </div>
+    </div>
+
+    <!-- RDF -->
+    <div class="frame">
+      <div class="caption">RDF active <span class="anno neu">purple fill</span></div>
+      <div class="nb-shell">
+        <div class="nb-bar">
+          <button class="nb-tab" data-f="pipeline"><span class="nb-ico">▶</span><span class="nb-txt"><span class="nb-name">Pipeline</span><span class="nb-kpi"><span class="val">18</span> · <span class="val">56%</span></span></span><span class="nb-stat"><svg class="nb-ring" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="30.4" stroke-linecap="round" transform="rotate(-90 14 14)"/><text class="label" x="14" y="16.5" text-anchor="middle">56</text></svg></span></button>
+          <button class="nb-tab" data-f="cef"><span class="nb-ico">◈</span><span class="nb-txt"><span class="nb-name">Color &amp; Edition</span><span class="nb-kpi"><span class="val">4</span>c · <span class="val">1</span>ed</span></span><span class="nb-stat"><svg class="nb-ring done" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/><polyline class="check" points="9.5,14.5 13,18 19,11"/></svg></span></button>
+          <button class="nb-tab" data-f="pif"><span class="nb-ico">▣</span><span class="nb-txt"><span class="nb-name">Product Image</span><span class="nb-kpi"><span class="val">5</span> img · <span class="val">4</span> var</span></span><span class="nb-stat"><svg class="nb-ring" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="47.5" stroke-linecap="round" transform="rotate(-90 14 14)"/><text class="label" x="14" y="16.5" text-anchor="middle">31</text></svg></span></button>
+          <button class="nb-tab active" data-f="rdf" aria-selected="true"><span class="nb-ico">◷</span><span class="nb-txt"><span class="nb-name">Release Date</span><span class="nb-kpi"><span class="val">4</span> <span class="sep">of</span> <span class="val">4</span> published</span></span><span class="nb-stat"><svg class="nb-ring done" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/><polyline class="check" points="9.5,14.5 13,18 19,11"/></svg></span></button>
+          <button class="nb-tab" data-f="sku"><span class="nb-ico">⌗</span><span class="nb-txt"><span class="nb-name">SKU</span><span class="nb-kpi"><span class="val">4</span>/<span class="val">4</span></span></span><span class="nb-stat"><svg class="nb-ring done" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/><polyline class="check" points="9.5,14.5 13,18 19,11"/></svg></span></button>
+          <button class="nb-tab" data-f="key"><span class="nb-ico">⚙</span><span class="nb-txt"><span class="nb-name">Key</span><span class="nb-kpi"><span class="val">6</span>/<span class="val">80</span></span></span><span class="nb-stat"><svg class="nb-ring" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="63.9" stroke-linecap="round" transform="rotate(-90 14 14)"/><text class="label" x="14" y="16.5" text-anchor="middle">8</text></svg></span></button>
+        </div>
+        <div class="nb-panel"><span class="tag" data-f="rdf"><span class="dot"></span>Release Date Finder</span><span>All 4 variants published · last resolution: 2026-03-14 · loop paused</span></div>
+      </div>
+    </div>
+
+    <!-- SKU -->
+    <div class="frame">
+      <div class="caption">SKU active <span class="anno neu">green fill</span></div>
+      <div class="nb-shell">
+        <div class="nb-bar">
+          <button class="nb-tab" data-f="pipeline"><span class="nb-ico">▶</span><span class="nb-txt"><span class="nb-name">Pipeline</span><span class="nb-kpi"><span class="val">18</span> · <span class="val">56%</span></span></span><span class="nb-stat"><svg class="nb-ring" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="30.4" stroke-linecap="round" transform="rotate(-90 14 14)"/><text class="label" x="14" y="16.5" text-anchor="middle">56</text></svg></span></button>
+          <button class="nb-tab" data-f="cef"><span class="nb-ico">◈</span><span class="nb-txt"><span class="nb-name">Color &amp; Edition</span><span class="nb-kpi"><span class="val">4</span>c · <span class="val">1</span>ed</span></span><span class="nb-stat"><svg class="nb-ring done" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/><polyline class="check" points="9.5,14.5 13,18 19,11"/></svg></span></button>
+          <button class="nb-tab" data-f="pif"><span class="nb-ico">▣</span><span class="nb-txt"><span class="nb-name">Product Image</span><span class="nb-kpi"><span class="val">5</span> img · <span class="val">4</span> var</span></span><span class="nb-stat"><svg class="nb-ring" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="47.5" stroke-linecap="round" transform="rotate(-90 14 14)"/><text class="label" x="14" y="16.5" text-anchor="middle">31</text></svg></span></button>
+          <button class="nb-tab" data-f="rdf"><span class="nb-ico">◷</span><span class="nb-txt"><span class="nb-name">Release Date</span><span class="nb-kpi"><span class="val">4</span>/<span class="val">4</span></span></span><span class="nb-stat"><svg class="nb-ring done" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/><polyline class="check" points="9.5,14.5 13,18 19,11"/></svg></span></button>
+          <button class="nb-tab active" data-f="sku" aria-selected="true"><span class="nb-ico">⌗</span><span class="nb-txt"><span class="nb-name">SKU</span><span class="nb-kpi"><span class="val">4</span> <span class="sep">of</span> <span class="val">4</span> published</span></span><span class="nb-stat"><svg class="nb-ring done" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/><polyline class="check" points="9.5,14.5 13,18 19,11"/></svg></span></button>
+          <button class="nb-tab" data-f="key"><span class="nb-ico">⚙</span><span class="nb-txt"><span class="nb-name">Key</span><span class="nb-kpi"><span class="val">6</span>/<span class="val">80</span></span></span><span class="nb-stat"><svg class="nb-ring" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="63.9" stroke-linecap="round" transform="rotate(-90 14 14)"/><text class="label" x="14" y="16.5" text-anchor="middle">8</text></svg></span></button>
+        </div>
+        <div class="nb-panel"><span class="tag" data-f="sku"><span class="dot"></span>SKU Finder</span><span>All 4 variants published · 0 candidates pending review</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <h3 style="margin-top:22px;">Running state · Key Finder mid-run</h3>
+  <div class="frame">
+    <div class="caption">Running <span class="anno warn">live</span></div>
+    <div class="nb-shell">
+      <div class="nb-bar">
+        <button class="nb-tab" data-f="pipeline"><span class="nb-ico">▶</span><span class="nb-txt"><span class="nb-name">Pipeline</span><span class="nb-kpi"><span class="val">18</span> · <span class="val">56%</span></span></span><span class="nb-stat"><svg class="nb-ring" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="30.4" stroke-linecap="round" transform="rotate(-90 14 14)"/><text class="label" x="14" y="16.5" text-anchor="middle">56</text></svg></span></button>
+        <button class="nb-tab" data-f="cef"><span class="nb-ico">◈</span><span class="nb-txt"><span class="nb-name">Color &amp; Edition</span><span class="nb-kpi"><span class="val">4</span>c · <span class="val">1</span>ed</span></span><span class="nb-stat"><svg class="nb-ring done" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/><polyline class="check" points="9.5,14.5 13,18 19,11"/></svg></span></button>
+        <button class="nb-tab" data-f="pif"><span class="nb-ico">▣</span><span class="nb-txt"><span class="nb-name">Product Image</span><span class="nb-kpi"><span class="val">5</span> img · <span class="val">4</span> var</span></span><span class="nb-stat"><svg class="nb-ring" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="47.5" stroke-linecap="round" transform="rotate(-90 14 14)"/><text class="label" x="14" y="16.5" text-anchor="middle">31</text></svg></span></button>
+        <button class="nb-tab" data-f="rdf"><span class="nb-ico">◷</span><span class="nb-txt"><span class="nb-name">Release Date</span><span class="nb-kpi"><span class="val">4</span>/<span class="val">4</span></span></span><span class="nb-stat"><svg class="nb-ring done" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/><polyline class="check" points="9.5,14.5 13,18 19,11"/></svg></span></button>
+        <button class="nb-tab" data-f="sku"><span class="nb-ico">⌗</span><span class="nb-txt"><span class="nb-name">SKU</span><span class="nb-kpi"><span class="val">4</span>/<span class="val">4</span></span></span><span class="nb-stat"><svg class="nb-ring done" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/><polyline class="check" points="9.5,14.5 13,18 19,11"/></svg></span></button>
+        <button class="nb-tab active" data-f="key" aria-selected="true"><span class="nb-ico">⚙</span><span class="nb-txt"><span class="nb-name">Key</span><span class="nb-kpi">per-key pass · <span class="val">22</span>/<span class="val">80</span></span></span><span class="nb-stat"><span class="nb-pip running"><span class="blink"></span>Running</span></span></button>
+      </div>
+      <div class="nb-panel"><span class="tag" data-f="key"><span class="dot"></span>Key Finder</span><span>Tier 3c · fields 22/80 · 4 min elapsed · loop + smart-loop enabled</span></div>
+    </div>
+    <div class="note">When a finder is <code style="font-family:var(--mono);">running</code>, the progress ring is replaced by a "Running" pip with a blinking dot, and the KPI reads the in-flight count instead of the persistent ratio.</div>
+  </div>
+
+  <h3>Empty product · nothing discovered yet</h3>
+  <div class="frame">
+    <div class="caption">Fresh product · no runs <span class="anno">idle / empty mix</span></div>
+    <div class="nb-shell">
+      <div class="nb-bar">
+        <button class="nb-tab active" data-f="pipeline" aria-selected="true"><span class="nb-ico">▶</span><span class="nb-txt"><span class="nb-name">Pipeline</span><span class="nb-kpi">no runs yet</span></span><span class="nb-stat"><span class="nb-pip empty">Idle</span></span></button>
+        <button class="nb-tab" data-f="cef"><span class="nb-ico">◈</span><span class="nb-txt"><span class="nb-name">Color &amp; Edition</span><span class="nb-kpi"><span class="sep">—</span> · <span class="sep">—</span></span></span><span class="nb-stat"><span class="nb-pip empty">Empty</span></span></button>
+        <button class="nb-tab" data-f="pif"><span class="nb-ico">▣</span><span class="nb-txt"><span class="nb-name">Product Image</span><span class="nb-kpi">no variants</span></span><span class="nb-stat"><span class="nb-pip empty">Empty</span></span></button>
+        <button class="nb-tab" data-f="rdf"><span class="nb-ico">◷</span><span class="nb-txt"><span class="nb-name">Release Date</span><span class="nb-kpi">no variants</span></span><span class="nb-stat"><span class="nb-pip empty">Empty</span></span></button>
+        <button class="nb-tab" data-f="sku"><span class="nb-ico">⌗</span><span class="nb-txt"><span class="nb-name">SKU</span><span class="nb-kpi">no variants</span></span><span class="nb-stat"><span class="nb-pip empty">Empty</span></span></button>
+        <button class="nb-tab" data-f="key"><span class="nb-ico">⚙</span><span class="nb-txt"><span class="nb-name">Key</span><span class="nb-kpi"><span class="val">0</span>/<span class="val">80</span></span></span><span class="nb-stat"><span class="nb-pip empty">Empty</span></span></button>
+      </div>
+      <div class="nb-panel"><span class="tag" data-f="pipeline"><span class="dot"></span>Pipeline</span><span>New product — run IndexLab to populate the finders.</span></div>
+    </div>
+    <div class="note">Dashed pip + muted text make <code>empty</code> unmistakable. <code>idle</code> on Pipeline reads the same but with a solid border, because Pipeline is always reachable even before finders exist.</div>
+  </div>
+
+  <h3>Sticky behavior · the nav-control advantage</h3>
+  <div class="frame">
+    <div class="caption">Bar sticky to the top of a scrolling panel <span class="anno neu">scroll ↓ inside to test</span></div>
+    <div class="sticky-demo">
+      <div class="nb-bar">
+        <button class="nb-tab active" data-f="pipeline" aria-selected="true"><span class="nb-ico">▶</span><span class="nb-txt"><span class="nb-name">Pipeline</span><span class="nb-kpi"><span class="val">18</span> · <span class="val">56%</span></span></span><span class="nb-stat"><svg class="nb-ring" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="30.4" stroke-linecap="round" transform="rotate(-90 14 14)"/><text class="label" x="14" y="16.5" text-anchor="middle">56</text></svg></span></button>
+        <button class="nb-tab" data-f="cef"><span class="nb-ico">◈</span><span class="nb-txt"><span class="nb-name">Color &amp; Edition</span><span class="nb-kpi"><span class="val">4</span>c · <span class="val">1</span>ed</span></span><span class="nb-stat"><svg class="nb-ring done" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/><polyline class="check" points="9.5,14.5 13,18 19,11"/></svg></span></button>
+        <button class="nb-tab" data-f="pif"><span class="nb-ico">▣</span><span class="nb-txt"><span class="nb-name">Product Image</span><span class="nb-kpi"><span class="val">5</span> img · <span class="val">4</span> var</span></span><span class="nb-stat"><svg class="nb-ring" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="47.5" stroke-linecap="round" transform="rotate(-90 14 14)"/><text class="label" x="14" y="16.5" text-anchor="middle">31</text></svg></span></button>
+        <button class="nb-tab" data-f="rdf"><span class="nb-ico">◷</span><span class="nb-txt"><span class="nb-name">Release Date</span><span class="nb-kpi"><span class="val">4</span>/<span class="val">4</span></span></span><span class="nb-stat"><svg class="nb-ring done" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/><polyline class="check" points="9.5,14.5 13,18 19,11"/></svg></span></button>
+        <button class="nb-tab" data-f="sku"><span class="nb-ico">⌗</span><span class="nb-txt"><span class="nb-name">SKU</span><span class="nb-kpi"><span class="val">4</span>/<span class="val">4</span></span></span><span class="nb-stat"><svg class="nb-ring done" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/><polyline class="check" points="9.5,14.5 13,18 19,11"/></svg></span></button>
+        <button class="nb-tab" data-f="key"><span class="nb-ico">⚙</span><span class="nb-txt"><span class="nb-name">Key</span><span class="nb-kpi"><span class="val">6</span>/<span class="val">80</span></span></span><span class="nb-stat"><svg class="nb-ring" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="63.9" stroke-linecap="round" transform="rotate(-90 14 14)"/><text class="label" x="14" y="16.5" text-anchor="middle">8</text></svg></span></button>
+      </div>
+      <div class="faux-line">Pipeline panel section · run history table starts here →</div>
+      <div class="faux-line">Run 2026-04-21 15:32 · 4 urls resolved · 2 urls failed · 0 retries</div>
+      <div class="faux-line">Run 2026-04-21 14:18 · 5 urls resolved · 1 url failed · 1 retry</div>
+      <div class="faux-line">Run 2026-04-21 13:04 · 3 urls resolved · 0 urls failed</div>
+      <div class="faux-line">Run 2026-04-21 11:50 · 4 urls resolved · 3 urls failed · 2 retries</div>
+      <div class="faux-line">Run 2026-04-21 10:36 · 5 urls resolved · 0 urls failed</div>
+      <div class="faux-line">Run 2026-04-20 22:14 · 4 urls resolved · 1 url failed</div>
+      <div class="faux-line">Run 2026-04-20 19:40 · 6 urls resolved · 0 urls failed</div>
+      <div class="faux-line">Run 2026-04-20 16:18 · 3 urls resolved · 2 urls failed · 1 retry</div>
+    </div>
+    <div class="note">Because the bar isn't welded to the panel, <code>position: sticky</code> is free — it floats above scrolling content as a true nav control. The card shadow does the work of "I'm above the content below."</div>
+  </div>
+
+  <h3>Narrow container · 860 px</h3>
+  <div class="frame">
+    <div class="caption">Narrow · KPI line suppressed, icon + name + ring stay <span class="anno neu">responsive</span></div>
+    <div style="max-width:860px;">
+      <div class="nb-shell">
+        <div class="nb-bar narrow">
+          <button class="nb-tab active" data-f="pipeline" aria-selected="true"><span class="nb-ico">▶</span><span class="nb-txt"><span class="nb-name">Pipeline</span></span><span class="nb-stat"><svg class="nb-ring" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="30.4" stroke-linecap="round" transform="rotate(-90 14 14)"/><text class="label" x="14" y="16.5" text-anchor="middle">56</text></svg></span></button>
+          <button class="nb-tab" data-f="cef"><span class="nb-ico">◈</span><span class="nb-txt"><span class="nb-name">Color</span></span><span class="nb-stat"><svg class="nb-ring done" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/><polyline class="check" points="9.5,14.5 13,18 19,11"/></svg></span></button>
+          <button class="nb-tab" data-f="pif"><span class="nb-ico">▣</span><span class="nb-txt"><span class="nb-name">Image</span></span><span class="nb-stat"><svg class="nb-ring" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="47.5" stroke-linecap="round" transform="rotate(-90 14 14)"/><text class="label" x="14" y="16.5" text-anchor="middle">31</text></svg></span></button>
+          <button class="nb-tab" data-f="rdf"><span class="nb-ico">◷</span><span class="nb-txt"><span class="nb-name">Date</span></span><span class="nb-stat"><svg class="nb-ring done" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/><polyline class="check" points="9.5,14.5 13,18 19,11"/></svg></span></button>
+          <button class="nb-tab" data-f="sku"><span class="nb-ico">⌗</span><span class="nb-txt"><span class="nb-name">SKU</span></span><span class="nb-stat"><svg class="nb-ring done" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/><polyline class="check" points="9.5,14.5 13,18 19,11"/></svg></span></button>
+          <button class="nb-tab" data-f="key"><span class="nb-ico">⚙</span><span class="nb-txt"><span class="nb-name">Key</span></span><span class="nb-stat"><svg class="nb-ring" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="63.9" stroke-linecap="round" transform="rotate(-90 14 14)"/><text class="label" x="14" y="16.5" text-anchor="middle">8</text></svg></span></button>
+        </div>
+        <div class="nb-panel" style="padding:10px 14px;"><span class="tag" data-f="pipeline"><span class="dot"></span>Pipeline</span><span>compact view — titles shorten, KPI suppressed</span></div>
+      </div>
+    </div>
+    <div class="note">Below ~1080 px viewport width the bar drops the KPI line and shrinks the icon badge. Shortened names (<code>Color</code>, <code>Image</code>, <code>Date</code>) are optional — default is to truncate with ellipsis.</div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- 4. ANATOMY                                                    -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <h2><span class="num">4</span>Anatomy <span class="sub">named parts for implementation</span></h2>
+
+  <div class="anat">
+    <div class="diagram">
+      <div style="position:relative; width:100%; max-width:360px;">
+        <div class="nb-shell">
+          <div class="nb-bar">
+            <button class="nb-tab active" data-f="cef" aria-selected="true" style="flex:1 1 100%;">
+              <span class="nb-ico">◈</span>
+              <span class="nb-txt">
+                <span class="nb-name">Color &amp; Edition</span>
+                <span class="nb-kpi"><span class="val">4</span> colors <span class="sep">·</span> <span class="val">1</span> edition</span>
+              </span>
+              <span class="nb-stat">
+                <svg class="nb-ring done" viewBox="0 0 28 28"><circle class="track" cx="14" cy="14" r="11" fill="none" stroke-width="2.5"/><circle class="fill" cx="14" cy="14" r="11" fill="none" stroke-width="2.5" stroke-dasharray="69.12" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/><polyline class="check" points="9.5,14.5 13,18 19,11"/></svg>
+              </span>
+            </button>
+          </div>
+          <div class="nb-panel" style="padding:10px 14px; min-height:30px;"><span style="font-size:11px; color:var(--text-dim);">panel content starts here</span></div>
+        </div>
+
+        <!-- Pins -->
+        <span class="pin" style="top:-12px; left:-12px;">1</span>
+        <span class="pin" style="top:14px; left:6px;">2</span>
+        <span class="pin" style="top:14px; left:112px;">3</span>
+        <span class="pin" style="top:14px; right:24px;">4</span>
+        <span class="pin" style="top:66px; left:42%;">5</span>
+      </div>
+    </div>
+
+    <div class="legend">
+      <ol>
+        <li><strong>Card shell</strong><span>Rounded container with 1 px border and a soft shadow. Holds every tab; no seam to the panel below. <code>padding:6 px · gap:4 px</code>.</span></li>
+        <li><strong>Icon badge (mode-switching)</strong><span>Idle: color-filled pill (same tokens as today). Active: flips to a white chip with a colored border so it stays legible against the tinted tab.</span></li>
+        <li><strong>Title + KPI stack</strong><span>Unified <code>value · label</code> typography. On active, the tab's <code>color</code> is the finder's <code>fg</code> token and everything inside inherits via <code>currentColor</code>.</span></li>
+        <li><strong>Status glyph slot</strong><span>Exactly one of: progress ring (with % label), done ring with check, or pip ("Running" / "Empty" / "Idle"). Rule table in §6.</span></li>
+        <li><strong>Gap to panel</strong><span>12 px of breathing room, not a border seam. The bar can now be sticky, docked, or positioned wherever — the panel is an independent sibling.</span></li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- 5. ALTERNATE — SEGMENT RAIL                                   -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <h2><span class="num">5</span>Alternate — <em style="font-style:italic;">Segment Rail</em> <span class="sub">dense variant · optional</span></h2>
+
+  <div class="frame">
+    <div class="caption">Segment rail — all six tabs in 560 px <span class="anno">alt</span></div>
+    <div class="sr-bar" role="tablist" aria-label="Indexing Lab tabs (compact)">
+      <button class="sr-tab active" data-f="pipeline" aria-selected="true"><span class="ico">▶</span>Pipeline<span class="kpi">56%</span><span class="stat warn"></span></button>
+      <button class="sr-tab" data-f="cef"><span class="ico">◈</span>Color<span class="kpi">4c·1e</span><span class="stat ok"></span></button>
+      <button class="sr-tab" data-f="pif"><span class="ico">▣</span>Image<span class="kpi">5/16</span><span class="stat warn"></span></button>
+      <button class="sr-tab" data-f="rdf"><span class="ico">◷</span>Date<span class="kpi">4/4</span><span class="stat ok"></span></button>
+      <button class="sr-tab" data-f="sku"><span class="ico">⌗</span>SKU<span class="kpi">4/4</span><span class="stat ok"></span></button>
+      <button class="sr-tab" data-f="key"><span class="ico">⚙</span>Key<span class="kpi">6/80</span><span class="stat running"></span></button>
+    </div>
+    <div class="note">For screens where vertical space is precious — e.g. docked in a sidebar. Loses the progress ring and the tinted active fill in favor of a plain lifted chip. Treat as a fallback, not the default.</div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- 6. IMPLEMENTATION NOTES                                       -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <h2><span class="num">6</span>Implementation notes <span class="sub">contract stays, CSS gets a rewrite</span></h2>
+
+  <div class="notes">
+    <h3>What stays identical</h3>
+    <ul>
+      <li><strong>Component signature.</strong> <code>IndexingTabBar({ activeId, onSelect, productId, category })</code> — no prop changes.</li>
+      <li><strong>Tab ordering.</strong> <code>getIndexingTabIds()</code> returns <code>[PIPELINE_TAB_ID, ...FINDER_PANELS]</code> — preserved.</li>
+      <li><strong>Summary contract.</strong> <code>FinderTabSummary = { kpi: string; status: FinderTabStatus }</code> — preserved.</li>
+      <li><strong>Hooks.</strong> <code>useCefTabSummary</code>, <code>usePifTabSummary</code>, etc. continue to reuse the panel's <code>queryKey</code>.</li>
+      <li><strong>Keyboard nav.</strong> <code>finderTabKeyboard.ts</code> untouched.</li>
+      <li><strong>Color tokens.</strong> <code>.finder-tab-icon-&lt;id&gt;</code> tokens remain the source of truth for per-finder color.</li>
+    </ul>
+
+    <h3>What changes</h3>
+    <ul>
+      <li><strong>Markup.</strong> Tab row becomes a self-contained card — no more panel coupling. Each button renders <code>[icon] [text stack] [status slot]</code>. Inline SVG progress ring replaces the <code>StatusDot</code> when status is <code>complete</code>, <code>partial</code>, or <code>empty</code> <em>and</em> a numeric ratio is available.</li>
+      <li><strong>CSS.</strong> <code>FinderTabBar.css</code> rewritten. Drops <code>::before</code> dividers and the <code>min-width:180 flex-1</code> scatter. Adds the tinted active fill + icon-mode-switch rules.</li>
+      <li><strong>KPI shape.</strong> Summary hooks gain a <em>structured</em> variant — the current KPI string keeps rendering as a fallback, but the new shape exposes <code>{ value, total?, percent?, label }</code> for ring rendering.</li>
+      <li><strong>Status glyph rule.</strong> See table below — removes the <code>idle</code> / <code>empty</code> ambiguity in the old dot.</li>
+      <li><strong>Layout on the page.</strong> <code>IndexingPage</code> renders the bar and the finder panel as siblings with a 12 px gap. Sticky positioning becomes available because nothing welds the two together.</li>
+    </ul>
+
+    <h3>Status → glyph rule (proposed)</h3>
+    <table class="kpi-table">
+      <thead><tr><th>Status</th><th>Condition</th><th>Glyph</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td class="fg-ok">complete</td><td>resolved &gt;= total</td><td>done ring + check</td><td class="mono">4 / 4 published</td></tr>
+        <tr><td style="color:var(--warn); font-weight:700;">partial</td><td>0 &lt; resolved &lt; total</td><td>progress ring w/ %</td><td class="mono">5 / 16 · 31%</td></tr>
+        <tr><td style="color:var(--text-dim); font-weight:700;">empty</td><td>total &gt; 0, resolved = 0</td><td>dashed pip "Empty"</td><td class="mono">0 / 80</td></tr>
+        <tr><td style="color:var(--text-muted); font-weight:700;">idle</td><td>total unknown or no data</td><td>solid pip "Idle"</td><td class="mono">no runs yet</td></tr>
+        <tr><td style="color:var(--accent); font-weight:700;">running</td><td>active process for this finder</td><td>pip "Running" + blink</td><td class="mono">22 / 80 · live</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Scope &amp; test budget</h3>
+    <p>This is a <code>[CLASS: COSMETIC]</code> change at its core — pure visual rework with no new conditionals beyond what the status enum already drives. The structured KPI upgrade (optional, for ring rendering) becomes <code>[CLASS: BEHAVIORAL]</code> — it adds fields to <code>FinderTabSummary</code> and deserves unit tests per finder's <code>derive*TabSummary</code> function. Split these into two commits.</p>
+  </div>
+
+</div>
+</body>
+</html>

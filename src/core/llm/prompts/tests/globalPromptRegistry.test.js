@@ -27,7 +27,10 @@ describe('GLOBAL_PROMPTS registry', () => {
     'identityIntro',
     'discoveryLogShape',
     'scalarSourceGuidanceCloser',
+    'variantScalarSourceGuidance',
+    'variantScalarDisambiguation',
     'scalarSourceTierStrategy',
+    'unkPolicy',
     'scalarReturnJsonTail',
     'siblingVariantsExclusion',
   ];
@@ -128,5 +131,40 @@ describe('resolveGlobalPrompt', () => {
       () => resolveGlobalPrompt('not-a-real-key'),
       /unknown global prompt key/i,
     );
+  });
+});
+
+describe('variantScalarSourceGuidance — parameterized block for variant scalar finders', () => {
+  it('template contains the 4-tier skeleton with all slot placeholders', () => {
+    const tpl = GLOBAL_PROMPTS.variantScalarSourceGuidance.defaultTemplate;
+    assert.match(tpl, /PRIMARY — manufacturer authority \(tag as tier1\)/);
+    assert.match(tpl, /\(tag as tier3\)/);
+    assert.match(tpl, /INDEPENDENT CORROBORATION \(tag as tier2\)/);
+    assert.match(tpl, /\(tag as tier4 or tier5\)/);
+    for (const slot of ['OPENER_TAIL', 'TIER1_CONTENT', 'TIER3_HEADER', 'TIER3_CONTENT',
+                        'TIER2_CONTENT', 'TIER4_HEADER', 'TIER4_CONTENT',
+                        'SCALAR_SOURCE_GUIDANCE_CLOSER']) {
+      assert.match(tpl, new RegExp(`\\{\\{${slot}\\}\\}`), `template must have {{${slot}}}`);
+    }
+  });
+
+  it('closer override via scalarSourceGuidanceCloser propagates through nested resolve', () => {
+    // WHY: Authors can override the closer via Global Prompts. After extraction
+    // the closer is nested inside variantScalarSourceGuidance — the override
+    // must still apply when the adapter composes the two templates together.
+    setGlobalPromptsSnapshot({ scalarSourceGuidanceCloser: 'CUSTOM CLOSER LINE' });
+    const closer = resolveGlobalPrompt('scalarSourceGuidanceCloser');
+    assert.equal(closer, 'CUSTOM CLOSER LINE');
+  });
+});
+
+describe('variantScalarDisambiguation — parameterized block for variant scalar finders', () => {
+  it('template has the VARIANT DISAMBIGUATION header and 4 numbered rules', () => {
+    const tpl = GLOBAL_PROMPTS.variantScalarDisambiguation.defaultTemplate;
+    assert.match(tpl, /^VARIANT DISAMBIGUATION/);
+    for (const n of [1, 2, 3, 4]) {
+      assert.match(tpl, new RegExp(`  ${n}\\. \\{\\{RULE${n}_`), `rule ${n} placeholder present`);
+    }
+    assert.match(tpl, /\{\{BASE_WARNING_CLOSER\}\}/);
   });
 });

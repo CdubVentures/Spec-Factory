@@ -1,0 +1,131 @@
+Find the manufacturer part number (MPN) for: Corsair M75 Air Wireless — the "black" color variant
+
+IDENTITY: You are looking for the EXACT product "Corsair M75 Air Wireless" (variant: black). Not a different model in the same product family. If you encounter sibling models, skip them.
+CAUTION: This product has 3 models in its family. Multiple similar products exist under "Corsair" with overlapping names. Verify model numbers, product page titles, and URL slugs to confirm you are researching exactly "M75 Air Wireless" — do not mix manufacturer part numbers from sibling models.
+This product is NOT: Corsair M75, Corsair M75 Wireless. Do not use manufacturer part numbers from those models.
+Other variants of this same product — DO NOT return MPNs for these; this call targets ONLY the "black" variant:
+- "White" color variant
+
+GOAL: The manufacturer-assigned part number that uniquely identifies this specific color variant. The MPN is distinct from:
+  - Base product MPNs (the non-variant model code; e.g. "G502-HERO" applies to all colors, but "G502-HERO-BLACK" is the variant-specific MPN)
+  - Amazon ASINs (10-character, starting with B0; retailer-assigned, not MPN)
+  - Retailer-specific SKUs (Best Buy SKU, Newegg item #, B&H item #, etc.)
+  - UPC / EAN / GTIN barcodes (12-13 digits; product-identification standards, not manufacturer part numbers)
+
+Return the variant-specific MPN when the manufacturer publishes one. MPN formats vary wildly per brand — Logitech uses "910-XXXXXX", Corsair uses "CH-XXXXXXX-XX", Razer uses "RZ01-XXXXXXXX-XX", etc. Do not normalize the format. Return exactly what the manufacturer publishes, character for character.
+
+Evidence requirements (CRITICAL — publisher will reject low-evidence candidates):
+- Provide AT LEAST 1 evidence entry with a source URL
+- Tag each source with a tier (classification only, no ranking)
+- Rate your confidence (0-100) that each source supports the claim
+
+Source tiers:
+- tier1: manufacturer / brand-official / press release
+- tier2: professional testing lab / review lab
+- tier3: authorized retailer / marketplace
+- tier4: community / forum / blog / user-generated
+- tier5: specs aggregator / product database
+- other: anything that doesn't fit the above
+
+For EACH evidence_ref, include TWO additional fields:
+
+- "supporting_evidence": <=280 chars. Either the EXACT on-page quote that
+  supports the claim, or — for deductive cases — a one-line summary of the
+  reasoning tying the URL to the claim.
+- "evidence_kind": one of the following. Pick the most specific match.
+
+  direct_quote          — verbatim on-page text states the claim
+  structured_metadata   — JSON-LD / OG / meta tag / "Date First Available"
+  byline_timestamp      — the URL's own publish/review date IS the proxy
+  artifact_metadata     — PDF manual/datasheet file metadata (footer, rev)
+  visual_inspection     — read from product images/renders
+  lab_measurement       — third-party test lab value (RTINGS, TFT Central)
+  comparative_rebadge   — component is a known OEM-part rebadge
+  inferred_reasoning    — chain-of-reasoning across multiple signals
+  absence_of_evidence   — the negative case (no listings before X)
+  identity_only         — URL proves SKU exists, NOT the field value
+
+Rules:
+- identity_only refs do NOT satisfy the minimum-evidence threshold — at least
+  one ref per field must be a substantive kind.
+- supporting_evidence MUST be "" when evidence_kind is identity_only.
+- For direct_quote: copy text exactly as it appears, do not paraphrase.
+- For inferred_reasoning: name the signals you combined (e.g. "review dated
+  2023-10 + Corsair press release 2023-10-12 + Amazon listing from Oct 2023").
+
+Evidence verification (MANDATORY):
+- Every URL you cite in evidence_refs MUST be one you personally fetched with your web tool during this session.
+- Do NOT synthesize URLs from training knowledge or pattern-match retailer URL shapes. URLs from the past may have moved or been restructured — only cite what loads NOW.
+- Fetch each URL at least once and confirm it returns a 2xx status. If it 404s, redirects to an unrelated page, or times out, omit it entirely.
+- Fewer verified sources is better than many unverified sources. The publisher HEAD-checks every URL you cite and strips 4xx/5xx automatically, so citing a hallucinated URL gets you nothing.
+
+Source guidance — use the strongest signal available:
+
+  PRIMARY — manufacturer authority (tag as tier1)
+    Brand product page (spec sheet, datasheet, "Where to Buy" panel listing each
+    variant with its own MPN), press release, official documentation, support
+    article. Direct manufacturer sources are authoritative for MPN.
+    NOTE: Check the manufacturer's product page for THIS VARIANT specifically.
+    If the page lists variants side-by-side with distinct MPNs, use the variant MPN.
+    If all variants share one MPN, return that MPN with a note in discovery_log.
+
+  RETAILER LISTINGS (tag as tier3)
+    Amazon product page (check "Part Number" or "Item model number" in product
+    details — ASINs are NOT MPNs), Best Buy, Newegg, B&H. Retailers often
+    display MPN in the spec table.
+    Cross-check: if two retailers show different "part numbers", the MPN is the
+    manufacturer-assigned one, NOT the retailer-specific SKU.
+    WARNING: Retailers frequently conflate MPN, SKU, and product codes.
+    When uncertain, defer to manufacturer primary source.
+
+  INDEPENDENT CORROBORATION (tag as tier2)
+    Reviews, unboxing videos, retailer comparisons that cite the official MPN.
+    Use to corroborate primary/retail, not as sole source for MPN.
+
+  SPEC AGGREGATORS / COMMUNITY (tag as tier4 or tier5)
+    TechSpecs.com, spec databases, forums. Cross-reference only for MPN —
+    community posts frequently propagate typos or cite retailer SKUs as MPNs.
+
+You decide which sources to query and in what order — the above describes what kind of evidence counts and how to tag it, not a script to execute.
+
+VARIANT DISAMBIGUATION — critical for multi-color / edition products:
+
+If the manufacturer product page shows multiple colors/editions:
+  1. Locate this variant's specific SKU/MPN listing (color row, edition selector).
+  2. If each variant has a distinct MPN suffix (e.g. "-BLACK", "-WHITE", "-001"),
+     return the full variant MPN.
+  3. If the manufacturer uses the same base MPN for all variants (entire product
+     family uses one MPN regardless of color), return the base MPN and note in
+     discovery_log.notes: "Manufacturer uses shared MPN across all variants."
+  4. If the page only lists one MPN but multiple colors are in stock, you CANNOT
+     assume that one MPN applies to this color. Return "unk" with unknown_reason
+     explaining that the variant MPN is not published.
+
+Do NOT return the base product MPN if the manufacturer clearly publishes
+variant-specific MPNs for other colors and you cannot find one for this variant.
+
+Confidence (0-100) — per-source AND overall:
+Rate how CONCRETE and UNAMBIGUOUS your interpretation of the content is. Epistemic self-rating; tier is a URL-type label ONLY and does not factor into confidence. A tier1 page with vague wording can score 60; a tier4 post stating the claim literally can score 95.
+
+- 90+:   Content states the claim literally or in clear paraphrase. Reading, not inferring.
+- 70-89: Content clearly implies the claim; light inference required.
+- 50-69: Content partially supports; meaningful interpretation needed.
+- 30-49: Content is tangentially related; heavy inference required.
+- 0-29:  Weak, contradicted, or not meaningfully supportive.
+
+Overall confidence: compose across sources — do NOT clip to the weakest. A literal 95 source + an implying 75 source = overall 95, because the literal source alone resolves the question.
+
+Do not inflate confidence beyond what the cited evidence supports.
+SKF-specific: MPN is exact-or-unknown. Do not return partial codes, guessed
+suffixes, or paraphrased values. If your evidence does not literally state a
+part number for this specific variant, return "unk" with a clear unknown_reason.
+
+Honest "unk" policy:
+When evidence cannot defend the value under the tier/confidence rules above, return "unk" (as a literal string) and supply a specific unknown_reason explaining what you searched, where, and why the value couldn't be confirmed. An honest "unk" with a clear reason is strictly better than a low-confidence guess — it keeps the publisher gate clean, and the unknown_reason is a useful diagnostic for future runs. Prefer "unk" over: paraphrased partial values, guessed placeholder characters, format-normalized approximations, or copying a sibling product's value.
+
+Return JSON:
+- "sku": "<exact MPN string>" | "unk"
+- "confidence": 0-100 (your overall confidence in the returned MPN — see rubric above)
+- "unknown_reason": "..." (required if sku is "unk"; empty string otherwise. Examples: "manufacturer does not publish variant-specific MPNs", "product page does not list this color variant", "only found ASIN, not MPN")
+- "evidence_refs": [{ "url": "...", "tier": "tier1|tier2|tier3|tier4|tier5|other", "confidence": 0-100, "supporting_evidence": "...", "evidence_kind": "..." }, ...]
+- "discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }

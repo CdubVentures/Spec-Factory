@@ -1,9 +1,10 @@
 /**
  * Key Finder — universal per-key orchestrator (product-scoped).
  *
- * One call = one (product, fieldKey) pair → one LLM call → one publisher
- * submission. Phase 3a Part 2 ships Run mode only. Loop (Phase 3b),
- * passengers/bundling (Phase 5), and the dashboard (Phase 4) are deferred.
+ * One call = one (product, fieldKey) pair → one LLM call → one-or-more
+ * publisher submissions (primary + optional passengers). Phase 4 dashboard
+ * shipped 2026-04-21. Phase 4.5 wires bundling into Run + Loop (this file).
+ * Phase 3b Loop orchestration is the next gate.
  *
  * Differences from variantScalarFieldProducer (RDF / SKU):
  *   - No variant iteration — `variantId: null` on candidate submission
@@ -27,6 +28,7 @@ import {
   buildKeyFinderPrompt,
   createKeyFinderCallLlm,
 } from './keyLlmAdapter.js';
+import { buildPassengers } from './keyPassengerBuilder.js';
 
 const VALID_TIERS = new Set(['easy', 'medium', 'hard', 'very_hard']);
 
@@ -137,6 +139,11 @@ export async function runKeyFinder(opts) {
     budgetDifficultyPoints: parseJsonSetting(readKnob(finderStore, 'budgetDifficultyPoints'), { easy: 1, medium: 2, hard: 3, very_hard: 4 }),
     budgetVariantPointsPerExtra: parseInt(readKnob(finderStore, 'budgetVariantPointsPerExtra') || '1', 10) || 1,
     budgetFloor: parseInt(readKnob(finderStore, 'budgetFloor') || '3', 10) || 3,
+    bundlingEnabled: readBoolKnob(finderStore, 'bundlingEnabled', false),
+    groupBundlingOnly: readBoolKnob(finderStore, 'groupBundlingOnly', true),
+    bundlingPassengerCost: parseJsonSetting(readKnob(finderStore, 'bundlingPassengerCost'), { easy: 1, medium: 2, hard: 4, very_hard: 8 }),
+    bundlingPoolPerPrimary: parseJsonSetting(readKnob(finderStore, 'bundlingPoolPerPrimary'), { easy: 6, medium: 4, hard: 2, very_hard: 1 }),
+    passengerDifficultyPolicy: readKnob(finderStore, 'passengerDifficultyPolicy') || 'less_or_equal',
   };
 
   // 3. Tier resolution — policy defaults to config's hydrated keyFinderTiers
@@ -153,7 +160,13 @@ export async function runKeyFinder(opts) {
   const previousDoc = readKeyFinder({ productId: product.product_id, productRoot: resolvedProductRoot });
   const previousRuns = Array.isArray(previousDoc?.runs) ? previousDoc.runs : [];
   const { urlsChecked, queriesRun } = accumulateDiscoveryLog(previousRuns, {
-    runMatcher: (r) => r?.response?.primary_field_key === fieldKey,
+    // WHY: Broadened to include prior appearances as a passenger — after bundling,
+    // a key may have resolved as a passenger in another primary's run. That run's
+    // discovery_log IS the passenger's (per contract: passengers inherit primary
+    // search session), so folding it into history prevents re-crawling URLs.
+    runMatcher: (r) =>
+      r?.response?.primary_field_key === fieldKey
+      || (r?.response?.results && Object.prototype.hasOwnProperty.call(r.response.results, fieldKey)),
     includeUrls: settings.urlHistoryEnabled,
     includeQueries: settings.queryHistoryEnabled,
   });
@@ -161,6 +174,15 @@ export async function runKeyFinder(opts) {
   // 6. Identity ambiguity (best-effort, non-fatal)
   const { familyModelCount, ambiguityLevel, siblingsExcluded } =
     await resolveIdentityForPrompt({ config, product, specDb, logger });
+
+  // 6.5 Passenger packing (bundling) — contract: §6.1 of per-key-finder-roadmap.html
+  const passengers = buildPassengers({
+    primary: { fieldKey, fieldRule },
+    engineRules: engine.rules,
+    specDb,
+    productId: product.product_id,
+    settings,
+  });
 
   // 7. Build prompt
   const injectionKnobs = {
@@ -171,9 +193,9 @@ export async function runKeyFinder(opts) {
   const domainArgs = {
     product,
     primary: { fieldKey, fieldRule },
-    passengers: [],
+    passengers,
     knownFields: {},
-    componentContext: { primary: null, passengers: [] },
+    componentContext: { primary: null, passengers: passengers.map(() => null) },
     injectionKnobs,
     category,
     variantCount,
@@ -188,7 +210,7 @@ export async function runKeyFinder(opts) {
     brand: product.brand || '',
     model: product.model || product.base_model || '',
     primary_field_key: fieldKey,
-    passenger_count: 0,
+    passenger_count: passengers.length,
     variant_count: variantCount,
   });
 
@@ -265,7 +287,102 @@ export async function runKeyFinder(opts) {
     }
   }
 
-  // 11. Persist run record → JSON + SQL
+  // 10b. Passenger submissions — each passenger writes its own field_candidates
+  // row (shares sourceMeta.run_number with primary so the run-delete cascade
+  // can strip them together). Per contract: primary owns budget; passengers
+  // ride free. "unk" / missing / empty-evidence passengers aren't submitted.
+  const passengerCandidates = [];
+  for (const p of passengers) {
+    const pResult = parsed.results?.[p.fieldKey];
+    if (!pResult) {
+      passengerCandidates.push({ fieldKey: p.fieldKey, status: 'missing' });
+      continue;
+    }
+    const pIsUnknown = pResult.value === 'unk' || pResult.value === undefined;
+    if (pIsUnknown) {
+      passengerCandidates.push({
+        fieldKey: p.fieldKey,
+        status: 'unk',
+        unknown_reason: String(pResult.unknown_reason || ''),
+      });
+      continue;
+    }
+    const pEvidence = Array.isArray(pResult.evidence_refs) ? pResult.evidence_refs : [];
+    if (pEvidence.length === 0) {
+      passengerCandidates.push({ fieldKey: p.fieldKey, status: 'no_evidence' });
+      continue;
+    }
+    try {
+      const pSubmit = await submitCandidate({
+        category: product.category,
+        productId: product.product_id,
+        fieldKey: p.fieldKey,
+        value: pResult.value,
+        confidence: pResult.confidence,
+        sourceMeta: {
+          source: 'key_finder',
+          source_type: 'feature',
+          tier: tierName,
+          run_number: (previousDoc?.next_run_number || 1),
+          model: tierBundle.model || config.llmModelPlan || '',
+        },
+        fieldRules: engine.rules,
+        knownValues: engine.knownValues ?? null,
+        componentDb: appDb?.componentDb ?? null,
+        specDb,
+        productRoot: resolvedProductRoot,
+        metadata: {
+          evidence_refs: pEvidence,
+          llm_access_mode: 'api',
+          llm_thinking: tierBundle.thinking,
+          llm_web_search: tierBundle.webSearch,
+          llm_effort_level: tierBundle.thinkingEffort || '',
+        },
+        appDb,
+        config,
+        variantId: null,
+        verifyEvidenceUrls: config.verifyEvidenceUrls,
+        strictEvidence: config.strictEvidence,
+      });
+      passengerCandidates.push({
+        fieldKey: p.fieldKey,
+        status: pSubmit?.status || 'accepted',
+        candidate: {
+          value: pResult.value,
+          confidence: pResult.confidence,
+          evidence_refs: pEvidence,
+        },
+      });
+    } catch (err) {
+      const pErr = err?.message || String(err);
+      logger?.error?.('kf_passenger_submit_failed', {
+        product_id: product.product_id,
+        field_key: p.fieldKey,
+        primary_field_key: fieldKey,
+        error: pErr,
+      });
+      passengerCandidates.push({
+        fieldKey: p.fieldKey,
+        status: 'error',
+        publisher_error: pErr,
+      });
+    }
+  }
+
+  // 11. Persist run record → JSON + SQL. selected.keys stores primary + every
+  // passenger answer, each with `rode_with` attribution (null for primary, the
+  // primary's fieldKey for each passenger). Load-bearing for the delete cascade
+  // and Phase 5 Group Loop skip logic.
+  const selectedKeys = {
+    [fieldKey]: { ...(perKey || { value: 'unk' }), rode_with: null },
+  };
+  for (const p of passengers) {
+    const pResult = parsed.results?.[p.fieldKey];
+    if (pResult) {
+      selectedKeys[p.fieldKey] = { ...pResult, rode_with: fieldKey };
+    }
+  }
+
   const merged = mergeKeyFinderDiscovery({
     productId: product.product_id,
     productRoot: resolvedProductRoot,
@@ -279,7 +396,7 @@ export async function runKeyFinder(opts) {
       web_search: tierBundle.webSearch,
       effort_level: tierBundle.thinkingEffort || '',
       access_mode: 'api',
-      selected: { keys: { [fieldKey]: perKey || { value: 'unk' } } },
+      selected: { keys: selectedKeys },
       prompt: { system: systemPrompt, user: userMessage },
       response: parsed,
     },
@@ -329,6 +446,7 @@ export async function runKeyFinder(opts) {
       confidence: perKey.confidence,
       evidence_refs: perKey.evidence_refs,
     },
+    passenger_candidates: passengerCandidates,
     ...(publisherError ? { publisher_error: publisherError } : {}),
     ...(isUnknown ? { unknown_reason: perKey?.unknown_reason || '' } : {}),
   };

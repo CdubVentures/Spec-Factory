@@ -50,7 +50,7 @@ describe('teardownFetch', () => {
     const harness = createFetchHarness();
 
     try {
-      teardownFetch({ url: '/api/v1/process/stop', method: 'POST', body: { force: true } });
+      teardownFetch({ url: '/api/v1/process/stop', method: 'POST', body: {} });
       strictEqual(harness.fetchCalls.length, 1);
       strictEqual(harness.fetchCalls[0].init.method, 'POST');
     } finally {

@@ -7,7 +7,6 @@ import type {
 
 interface UseIndexingRunQueriesInput {
   selectedIndexLabRunId: string;
-  runViewCleared: boolean;
   isProcessRunning: boolean;
   panelCollapsed: { picker: boolean };
 }
@@ -15,10 +14,9 @@ interface UseIndexingRunQueriesInput {
 export function useIndexingRunQueries(input: UseIndexingRunQueriesInput) {
   const {
     selectedIndexLabRunId,
-    runViewCleared,
     isProcessRunning,
   } = input;
-  const runQueryEnabled = Boolean(selectedIndexLabRunId) && !runViewCleared;
+  const runQueryEnabled = Boolean(selectedIndexLabRunId);
 
   const { data: indexlabEventsResp } = useQuery({
     queryKey: ['indexlab', 'run', selectedIndexLabRunId, 'events'],

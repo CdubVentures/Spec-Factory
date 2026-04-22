@@ -17,7 +17,6 @@ export interface FieldRule {
     [k: string]: unknown;
   };
   constraints?: string[];
-  enum_name?: string;
   ui?: {
     group?: string;
     label?: string;

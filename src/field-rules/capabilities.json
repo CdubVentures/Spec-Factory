@@ -128,12 +128,6 @@
       "consumer": "src/engine/fieldRulesEngine.js:normalizeCandidate",
       "description": "Token normalization map (e.g., grey -> gray)"
     },
-    "unknown_reason_default": {
-      "status": "deferred",
-      "consumer": null,
-      "reason": "Always 'not_found_after_search'; runtime hardcodes same",
-      "description": "Default reason when field value is unknown"
-    },
     "ai_assist.reasoning_note": {
       "status": "live",
       "consumer": "src/features/indexing/extraction/extractCandidatesLLM.js:buildPromptFieldContracts (passed as extraction_guidance to LLM)",

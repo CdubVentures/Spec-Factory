@@ -24,8 +24,8 @@ export const KEY_FINDER_VARIABLES = Object.freeze([
   // Primary key (deterministic, field-rule driven)
   { name: 'PRIMARY_FIELD_KEY', description: 'The primary field_key being extracted (with display_name). Required \u2014 every keyFinder call has exactly one primary.', required: true, category: 'deterministic' },
   { name: 'PRIMARY_FIELD_GUIDANCE', description: 'Extraction guidance for the primary key. Sourced from field_rule.ai_assist.reasoning_note (edited in Field Studio \u2192 Key Navigator \u2192 Extraction Guidance). Empty when unauthored.', required: false, category: 'deterministic' },
-  { name: 'PRIMARY_FIELD_CONTRACT', description: 'Return contract for the primary key: type, shape, unit, rounding, list rules, enum values (resolved), variance policy, unknown_reason_default, aliases.', required: true, category: 'deterministic' },
-  { name: 'PRIMARY_SEARCH_HINTS', description: 'domain_hints + query_terms + query_templates for the primary key. Gated by the Pipeline Settings knob "Search hints". Primary-only \u2014 passengers inherit the primary search session.', required: false, category: 'deterministic' },
+  { name: 'PRIMARY_FIELD_CONTRACT', description: 'Return contract for the primary key: type, shape, unit, rounding, list rules, enum values (resolved), variance policy, aliases.', required: true, category: 'deterministic' },
+  { name: 'PRIMARY_SEARCH_HINTS', description: 'domain_hints + query_terms for the primary key. Gated by the Pipeline Settings knob "Search hints". Primary-only \u2014 passengers inherit the primary search session.', required: false, category: 'deterministic' },
   { name: 'PRIMARY_CROSS_FIELD_CONSTRAINTS', description: 'Rendered from fieldRule.cross_field_constraints. Empty when the rule has no cross-field relations.', required: false, category: 'deterministic' },
   { name: 'PRIMARY_COMPONENT_KEYS', description: 'Component context relevant to the primary key (parent type + resolved value). Gated by the Pipeline Settings knob "Component values". Empty when no relation.', required: false, category: 'deterministic' },
 
@@ -47,6 +47,7 @@ export const KEY_FINDER_VARIABLES = Object.freeze([
   { name: 'SOURCE_TIER_STRATEGY', description: 'Universal source-tier strategy (PRIMARY/INDEPENDENT/RETAILER/COMMUNITY). Sourced from Global Prompts (scalarSourceTierStrategy). Shared with future scalar finders; RDF/SKU keep their own field-specific variants.', required: false, category: 'global-fragment' },
   { name: 'SCALAR_SOURCE_GUIDANCE_CLOSER', description: 'Closer line after the source strategy block. Tells the LLM the tier structure describes what kind of evidence counts, not a script. Sourced from Global Prompts (scalarSourceGuidanceCloser).', required: false, category: 'global-fragment' },
   { name: 'VALUE_CONFIDENCE_GUIDANCE', description: 'Epistemic confidence rubric (0-100 scale, tier-independent). Sourced from Global Prompts (valueConfidenceRubric).', required: false, category: 'global-fragment' },
+  { name: 'UNK_POLICY', description: 'Universal "honest unk beats low-confidence guess" policy. Tells the LLM when to return "unk" with a clear unknown_reason vs paraphrased/guessed value. Sourced from Global Prompts (unkPolicy). Shared with RDF + SKU.', required: false, category: 'global-fragment' },
   { name: 'PREVIOUS_DISCOVERY', description: 'URLs + queries from prior runs scoped to this (product, field_key). Header text editable via Global Prompts (discoveryHistoryBlock).', required: false, category: 'global-fragment' },
 
   // Return shape (deterministic \u2014 composed from primary + passenger keys)

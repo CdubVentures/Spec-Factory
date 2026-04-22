@@ -62,7 +62,6 @@ function makeStubFinderStore(settings = {}) {
       getSetting: (k) => (k in settings ? String(settings[k]) : ''),
       upsert: (row) => { upserts.push(row); },
       insertRun: (row) => { runs.push(row); },
-      listSuppressions: () => [],
     },
     upserts, runs,
   };

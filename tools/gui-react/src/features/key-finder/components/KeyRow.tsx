@@ -1,19 +1,20 @@
 /**
  * KeyRow — single row for one key in the Key Finder group table.
  *
- * Action buttons (4): ▶ Run (live), ∞ Loop (disabled Phase 3b), History, Prompt.
- * Running state is derived from parent (via KeyEntry.running).
+ * Action buttons (3): ▶ Run (live), ∞ Loop (disabled Phase 3b), Prompt.
+ * Per-key history moved to the panel-header Discovery History drawer (scoped
+ * by field_key). Running state is derived from parent (via KeyEntry.running).
  */
 
 import { memo } from 'react';
 import { ConfidenceRing } from '../../../shared/ui/finder/ConfidenceRing.tsx';
+import { RowActionButton, ACTION_BUTTON_WIDTH } from '../../../shared/ui/actionButton/index.ts';
 import type { KeyEntry } from '../types.ts';
 import { LIVE_MODES, DISABLED_REASONS } from '../types.ts';
 
 interface KeyRowProps {
   readonly entry: KeyEntry;
   readonly onRun: (fieldKey: string) => void;
-  readonly onOpenHistory: (fieldKey: string) => void;
   readonly onOpenPrompt: (fieldKey: string) => void;
 }
 
@@ -81,8 +82,26 @@ function valueClass(value: unknown, running: boolean): string {
   return 'sf-text-primary';
 }
 
-export const KeyRow = memo(function KeyRow({ entry, onRun, onOpenHistory, onOpenPrompt }: KeyRowProps) {
-  const runDisabled = entry.running || !LIVE_MODES.keyRun;
+function BundlePreviewText({ passengers }: { readonly passengers: ReadonlyArray<{ readonly field_key: string; readonly cost: number }> }) {
+  const total = passengers.reduce((sum, p) => sum + p.cost, 0);
+  const title = `Will bundle ${passengers.length} passenger${passengers.length === 1 ? '' : 's'} (total cost ${total}): ${passengers.map((p) => `${p.field_key} (${p.cost})`).join(', ')}`;
+  return (
+    <span
+      className="text-[11.5px] font-mono sf-text-primary whitespace-normal break-words leading-snug"
+      title={title}
+    >
+      {passengers.map((p, i) => (
+        <span key={p.field_key}>
+          {i > 0 ? ', ' : ''}
+          {p.field_key}
+          <span className="italic text-[10px] sf-text-muted ml-0.5">({p.cost})</span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+export const KeyRow = memo(function KeyRow({ entry, onRun, onOpenPrompt }: KeyRowProps) {
   const confidenceRingValue = entry.last_confidence !== null
     ? Math.max(0, Math.min(1, entry.last_confidence / 100))
     : null;
@@ -113,6 +132,13 @@ export const KeyRow = memo(function KeyRow({ entry, onRun, onOpenHistory, onOpen
           {entry.budget ?? '—'}
         </span>
       </td>
+      <td className="px-3 py-2 align-middle">
+        {entry.bundle_preview.length === 0 ? (
+          <span className="text-[11.5px] sf-text-subtle">—</span>
+        ) : (
+          <BundlePreviewText passengers={entry.bundle_preview} />
+        )}
+      </td>
       <td className="px-3 py-2 align-middle whitespace-nowrap sf-text-subtle text-[11.5px] font-mono">
         {entry.last_model || '—'}
       </td>
@@ -133,35 +159,30 @@ export const KeyRow = memo(function KeyRow({ entry, onRun, onOpenHistory, onOpen
         </span>
       </td>
       <td className="px-3 py-2 align-middle text-right whitespace-nowrap">
-        <button
-          onClick={() => onRun(entry.field_key)}
-          disabled={runDisabled}
-          title={entry.running ? 'Already running…' : ''}
-          className="ml-1 px-2 py-0.5 text-[11px] font-semibold rounded border sf-primary-button disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          ▶ Run
-        </button>
-        <button
-          disabled
-          title={DISABLED_REASONS.keyLoop}
-          className="ml-1 px-2 py-0.5 text-[11px] font-semibold rounded border sf-surface-alt sf-text-muted opacity-40 cursor-not-allowed"
-        >
-          ∞ Loop
-        </button>
-        <button
-          onClick={() => onOpenHistory(entry.field_key)}
-          className="ml-1 px-2 py-0.5 text-[11px] font-semibold rounded sf-text-muted hover:sf-surface-alt"
-        >
-          History
-        </button>
-        <button
-          onClick={() => onOpenPrompt(entry.field_key)}
-          disabled={entry.run_count === 0}
-          title={entry.run_count === 0 ? 'No runs yet — Run first to see the prompt.' : ''}
-          className="ml-1 px-2 py-0.5 text-[11px] font-semibold rounded sf-text-muted hover:sf-surface-alt disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          Prompt
-        </button>
+        <span className="inline-flex items-center gap-1">
+          <RowActionButton
+            intent="spammable"
+            label="Run"
+            onClick={() => onRun(entry.field_key)}
+            disabled={entry.running || !LIVE_MODES.keyRun}
+            title={entry.running ? 'Already running…' : ''}
+            width={ACTION_BUTTON_WIDTH.keyRow}
+          />
+          <RowActionButton
+            intent="locked"
+            label="Loop"
+            onClick={() => { /* placeholder */ }}
+            disabled
+            title={DISABLED_REASONS.keyLoop}
+            width={ACTION_BUTTON_WIDTH.keyRow}
+          />
+          <RowActionButton
+            intent="prompt"
+            label="Prompt"
+            onClick={() => onOpenPrompt(entry.field_key)}
+            width={ACTION_BUTTON_WIDTH.keyRow}
+          />
+        </span>
       </td>
     </tr>
   );

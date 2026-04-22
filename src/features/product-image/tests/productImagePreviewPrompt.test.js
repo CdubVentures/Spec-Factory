@@ -65,7 +65,6 @@ function makeFinderStoreStub(overrides = {}) {
   };
   return {
     getSetting: (key) => settings[key] ?? '',
-    listSuppressions: () => [],
     _settings: settings,
   };
 }

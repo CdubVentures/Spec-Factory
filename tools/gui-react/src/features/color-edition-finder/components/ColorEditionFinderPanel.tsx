@@ -4,7 +4,8 @@ import { api } from '../../../api/client.ts';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import { PubMark, PubLegend } from '../../../shared/ui/feedback/PubMark.tsx';
 import {
-  FinderPanelHeader,
+  IndexingPanelHeader,
+  PromptPreviewTriggerButton,
   FinderKpiCard,
   FinderPanelFooter,
   FinderRunModelBadge,
@@ -19,6 +20,7 @@ import {
   PagerSizeSelector,
   PagerNavFooter,
 } from '../../../shared/ui/finder/index.ts';
+import { RowActionButton, ACTION_BUTTON_WIDTH } from '../../../shared/ui/actionButton/index.ts';
 import { usePromptPreviewQuery } from '../../indexing/api/promptPreviewQueries.ts';
 import type { DeleteTarget } from '../../../shared/ui/finder/types.ts';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
@@ -45,20 +47,6 @@ import { useFireAndForget } from '../../operations/hooks/useFireAndForget.ts';
 import { useIsModuleRunning } from '../../operations/hooks/useFinderOperations.ts';
 
 /* ── CEF-specific sub-components ──────────────────────────────────── */
-
-function PromptPreviewTriggerButton({ onClick, disabled }: { readonly onClick: () => void; readonly disabled?: boolean }) {
-  return (
-    <button
-      type="button"
-      onClick={(e) => { e.stopPropagation(); onClick(); }}
-      disabled={disabled}
-      className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-prompt-preview-button"
-      title="Preview the compiled prompt that Run Now would send"
-    >
-      Prompt
-    </button>
-  );
-}
 
 function ColorPillInline({ pill }: { readonly pill: ColorPill }) {
   return (
@@ -118,13 +106,12 @@ function SelectedStateCard({ display, onDeleteVariant, deleteVariantPending, onD
         <div className="flex items-center gap-3">
           <PubLegend />
           {onDeleteAllVariants && variantCount > 0 && (
-            <button
+            <RowActionButton
+              intent="delete"
+              label="Delete All"
               onClick={() => onDeleteAllVariants(variantCount)}
               disabled={deleteAllVariantsPending || deleteVariantPending}
-              className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded sf-action-button sf-status-text-danger border sf-border-soft opacity-60 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              Delete All
-            </button>
+            />
           )}
         </div>
       </div>
@@ -279,29 +266,31 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
   };
 
   return (
-    <div className="sf-surface-panel p-0 flex flex-col">
+    <div className="sf-surface-panel p-0 flex flex-col" data-panel="cef">
       {/* Header */}
-      <FinderPanelHeader
+      <IndexingPanelHeader
+        panel="cef"
+        icon="◈"
         collapsed={collapsed}
         onToggle={toggleCollapsed}
         title="Color & Edition Finder"
         tip="Discovers color variants and edition slugs for this product via LLM analysis."
         isRunning={isRunningCef}
         onRun={() => fire(cefRunUrl, {})}
-        historyActionSlot={<>
-          <DiscoveryHistoryButton finderId="colorEditionFinder" productId={productId} category={category} />
-          <PromptPreviewTriggerButton onClick={() => setPromptModalOpen(true)} disabled={!productId} />
-        </>}
-      >
-        <FinderRunModelBadge
-          labelPrefix="CEF"
-          model={modelDisplay}
-          accessMode={resolvedAccessMode}
-          thinking={resolvedModel?.thinking ?? false}
-          webSearch={resolvedModel?.webSearch ?? false}
-          effortLevel={effortLevel}
-        />
-      </FinderPanelHeader>
+        modelStrip={
+          <FinderRunModelBadge
+            labelPrefix="CEF"
+            model={modelDisplay}
+            accessMode={resolvedAccessMode}
+            thinking={resolvedModel?.thinking ?? false}
+            webSearch={resolvedModel?.webSearch ?? false}
+            effortLevel={effortLevel}
+          />
+        }
+        historySlot={<DiscoveryHistoryButton finderId="colorEditionFinder" productId={productId} category={category} width={ACTION_BUTTON_WIDTH.standardHeader} />}
+        promptSlot={<PromptPreviewTriggerButton onClick={() => setPromptModalOpen(true)} disabled={!productId} width={ACTION_BUTTON_WIDTH.standardHeader} />}
+        defaultButtonWidth={ACTION_BUTTON_WIDTH.standardHeader}
+      />
 
       {/* Body */}
       {collapsed ? null : isLoading ? (
@@ -345,13 +334,12 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
               trailing={
                 <div className="flex items-center gap-2">
                   <PagerSizeSelector pageSize={cefPag.pageSize} onPageSizeChange={cefPag.setPageSize} />
-                  <button
+                  <RowActionButton
+                    intent="delete"
+                    label="Delete All"
                     onClick={() => setDeleteTarget({ kind: 'all', count: runHistoryRows.length })}
                     disabled={isAnyDeletePending}
-                    className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded sf-action-button sf-status-text-danger border sf-border-soft opacity-60 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    Delete All
-                  </button>
+                  />
                 </div>
               }
             >

@@ -84,6 +84,7 @@ export interface QueueJobRow extends QueueJobRowGen {
 
 export interface RuntimeOpsWorkerRow extends RuntimeOpsWorkerRowGen {
   idx_runtime?: RuntimeIdxBadge[];
+  bright_data_unlocked?: boolean;
 }
 
 export interface PrefetchLlmCall extends PrefetchLlmCallGen {

@@ -74,18 +74,3 @@ export function removeRunScopedQueries(input: RemoveRunScopedQueriesInput): void
   input.queryClient.removeQueries({ queryKey: ['runtime-ops', token] });
 }
 
-interface InvalidateRunScopedQueriesInput {
-  queryClient: QueryClient;
-  runId: string;
-}
-
-export function invalidateRunScopedQueries(input: InvalidateRunScopedQueriesInput): Promise<PromiseSettledResult<unknown>[]> {
-  const token = String(input.runId || '').trim();
-  if (!token) return Promise.resolve([]);
-  const invalidations = [
-    ...buildRunScopedQueryKeyMatrix(token).map((key) => input.queryClient.invalidateQueries(key)),
-    input.queryClient.invalidateQueries({ queryKey: ['runtime-ops', token] }),
-    input.queryClient.invalidateQueries({ queryKey: ['indexing', 'domain-checklist'] }),
-  ];
-  return Promise.allSettled(invalidations);
-}

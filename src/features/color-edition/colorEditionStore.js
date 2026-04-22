@@ -16,7 +16,7 @@ import { derivePublishedFromVariants } from './variantLifecycle.js';
 const store = createFinderJsonStore({
   filePrefix: 'color_edition',
   emptySelected: () => ({ colors: [], editions: {}, default_color: '' }),
-  extraFields: ['variant_registry', 'suppressions'],
+  extraFields: ['variant_registry'],
 });
 
 export const readColorEdition = store.read;

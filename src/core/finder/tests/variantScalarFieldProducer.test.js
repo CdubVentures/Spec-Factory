@@ -9,7 +9,7 @@
  *   - identity strings (finderName, fieldKey, sourceType, phase, responseValueKey, logPrefix)
  *   - factories / closures (createCallLlm, buildPrompt, extractCandidate,
  *     mergeDiscovery, readRuns, satisfactionPredicate)
- *   - optional hooks (buildPublisherMetadata, buildUserMessage, suppressionScope)
+ *   - optional hooks (buildPublisherMetadata, buildUserMessage)
  *   - shared orchestration invariants (candidateEntry / response key order,
  *     two-phase onLlmCallComplete, graceful error handling, loop semantics)
  */
@@ -108,7 +108,6 @@ function makeSpecDbStub({ variants = DEFAULT_VARIANTS, storeSettings = {}, throw
     getSetting: (k) => (k in storeSettings ? String(storeSettings[k]) : ''),
     upsert: (row) => { upserts.push(row); },
     insertRun: (row) => { insertRuns.push(row); },
-    listSuppressions: () => [],
   };
 
   const resolvedRows = resolvedVariantIds.map((vid) => ({
@@ -688,40 +687,6 @@ describe('variantScalarFieldProducer — reRunBudget semantics', () => {
     });
 
     assert.equal(callCount, 1, 'unset reRunBudget → default 1 → 1 attempt on resolved variant');
-  });
-});
-
-describe('variantScalarFieldProducer — suppressionScope injection', () => {
-  it('custom suppressionScope is used to filter feature-store suppressions', async () => {
-    const injection = makeFakeFeatureInjection({
-      suppressionScope: (variant) => ({ variant_id: variant.variant_id, mode: 'custom-mode' }),
-    });
-    const { runOnce } = createVariantScalarFieldProducer(injection);
-
-    const listSuppressionsCalls = [];
-    const specDb = makeSpecDbStub({ variants: [DEFAULT_VARIANTS[0]] });
-    // Replace finderStore.listSuppressions to track filter behavior
-    specDb.getFinderStore = () => ({
-      getSetting: () => '',
-      upsert: () => {},
-      insertRun: () => {},
-      listSuppressions: (pid) => {
-        listSuppressionsCalls.push(pid);
-        return [
-          { variant_id: 'v1', mode: 'custom-mode', kind: 'url', item: 'https://a' },
-          { variant_id: 'v1', mode: '', kind: 'url', item: 'https://b' },
-        ];
-      },
-    });
-
-    await runOnce({
-      product: PRODUCT, appDb: null, specDb, config: {}, productRoot: '/tmp',
-    });
-
-    // We can't directly observe which suppression was applied without a more
-    // invasive hook, but we can confirm listSuppressions was called. The
-    // suppressionScope injection controls WHICH rows get filtered-in.
-    assert.ok(listSuppressionsCalls.length > 0);
   });
 });
 

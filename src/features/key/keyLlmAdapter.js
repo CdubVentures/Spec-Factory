@@ -82,7 +82,7 @@ GOAL: Extract the PRIMARY KEY value for this product using the FIELD CONTRACT be
 
 {{PREVIOUS_DISCOVERY}}
 
-If you cannot defend a value with evidence from the tiers declared acceptable for this field, return "unk" (as a string) with a clear unknown_reason. An honest "unk" beats a low-confidence guess and keeps the publisher gate clean.
+{{UNK_POLICY}}
 
 {{RETURN_JSON_SHAPE}}
 `;
@@ -124,7 +124,6 @@ function buildFieldContractBlock(fieldRule) {
   const enumValues = Array.isArray(fieldRule?.enum?.values) ? fieldRule.enum.values : [];
   const aliases = Array.isArray(fieldRule?.aliases) ? fieldRule.aliases.filter(Boolean) : [];
   const variancePolicy = String(fieldRule?.variance_policy || '').trim();
-  const unknownReasonDefault = String(fieldRule?.unknown_reason_default || '').trim();
 
   const lines = ['Return contract:'];
   lines.push(`- Type: ${type}${shape === 'list' ? ' (list / array)' : ' (scalar)'}`);
@@ -146,9 +145,6 @@ function buildFieldContractBlock(fieldRule) {
   if (variancePolicy) {
     lines.push(`- Variance policy: ${variancePolicy} (how to resolve disagreeing sources)`);
   }
-  if (unknownReasonDefault) {
-    lines.push(`- Default unknown_reason token: ${unknownReasonDefault}`);
-  }
   if (aliases.length > 0) {
     lines.push(`- Aliases (recognize these in source text): ${joinList(aliases)}`);
   }
@@ -163,12 +159,10 @@ function buildSearchHintsBlock(fieldRule, { searchHintsInjectionEnabled } = {}) 
   const hints = fieldRule?.search_hints || {};
   const domainHints = joinList(hints.domain_hints);
   const queryTerms = joinList(hints.query_terms);
-  const queryTemplates = joinList(hints.query_templates, 4);
-  if (!domainHints && !queryTerms && !queryTemplates) return '';
+  if (!domainHints && !queryTerms) return '';
   const lines = ['Search hints:'];
   if (domainHints) lines.push(`- Preferred source domains: ${domainHints}`);
   if (queryTerms) lines.push(`- Search terms to try: ${queryTerms}`);
-  if (queryTemplates) lines.push(`- Query templates: ${queryTemplates}`);
   return lines.join('\n');
 }
 
@@ -457,6 +451,7 @@ export function buildKeyFinderPrompt({
     SOURCE_TIER_STRATEGY: resolveGlobalPrompt('scalarSourceTierStrategy'),
     SCALAR_SOURCE_GUIDANCE_CLOSER: resolveGlobalPrompt('scalarSourceGuidanceCloser'),
     VALUE_CONFIDENCE_GUIDANCE: buildValueConfidencePromptBlock(),
+    UNK_POLICY: resolveGlobalPrompt('unkPolicy'),
 
     PREVIOUS_DISCOVERY: buildPreviousDiscoveryBlock({
       urlsChecked: previousDiscovery.urlsChecked,

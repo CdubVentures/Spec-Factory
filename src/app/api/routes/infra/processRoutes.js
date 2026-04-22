@@ -104,14 +104,7 @@ export function createInfraProcessRoutes({
     }
 
     if (parts[1] === 'stop' && method === 'POST') {
-      let body = {};
-      try {
-        body = await readJsonBody(req);
-      } catch {
-        body = {};
-      }
-      const force = Boolean(body?.force);
-      const status = await stopProcess(9000, { force });
+      const status = await stopProcess(9000);
       return jsonRes(res, 200, status);
     }
 

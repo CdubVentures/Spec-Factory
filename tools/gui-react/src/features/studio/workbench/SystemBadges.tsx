@@ -1,13 +1,17 @@
 // ── SystemBadges: consumer badges per field ──────────────────────────
-// WHY: All badges are informational — they show which runtime systems
-// consume each field rule property. No toggle, no gating. Hover for
-// sub-consumer detail. Derived from the unified consumerBadgeRegistry.
+// WHY: All badges are informational — they show which runtime sub-consumers
+// read each field rule property. No toggle, no gating. Hover for detail.
+// Derived from the unified consumerBadgeRegistry.
+//
+// One chip per sub-consumer (LLM.KF, REV.GRID, REV.METADATA, etc.) — not
+// collapsed per parent group, so authors can see exactly which stages
+// consume the field.
 import * as Tooltip from '@radix-ui/react-tooltip';
 import {
   type ParentGroup,
   PARENT_BADGE_CONFIGS,
-  getFieldParentGroups,
-  formatBadgeTooltip,
+  CONSUMER_DETAIL_MAP,
+  KEY_NAVIGATION_PATHS,
 } from './systemMapping.ts';
 
 interface Props {
@@ -23,40 +27,46 @@ const badgeInline: Record<ParentGroup, React.CSSProperties> = {
   comp: { background: '#ede9fe', color: '#6d28d9', border: '1px solid #ddd6fe' },
   val:  { background: '#d1fae5', color: '#065f46', border: '1px solid #a7f3d0' },
   pub:  { background: '#dbeafe', color: '#1d4ed8', border: '1px solid #93c5fd' },
+  llm:  { background: '#fae8ff', color: '#a21caf', border: '1px solid #f5d0fe' },
 };
 
 const badgeStyle: React.CSSProperties = {
   fontSize: '9px',
   lineHeight: '14px',
-  padding: '0 4px',
+  padding: '0 5px',
   borderRadius: '3px',
-  fontWeight: 600,
+  fontWeight: 700,
+  letterSpacing: '0.02em',
   userSelect: 'none',
+  whiteSpace: 'nowrap',
 };
 
 export function SystemBadges({ fieldPath }: Props) {
-  const parents = getFieldParentGroups(fieldPath);
-  if (parents.length === 0) return null;
+  const consumers = CONSUMER_DETAIL_MAP[fieldPath] || {};
+  const consumerKeys = Object.keys(consumers);
+  if (consumerKeys.length === 0) return null;
+
+  const nav = KEY_NAVIGATION_PATHS[fieldPath];
+  const keyNavLine = nav ? `Key Navigation › ${nav.section} › ${nav.key}` : '';
 
   return (
-    <span className="inline-flex gap-0.5 ml-auto shrink-0">
-      {parents.map((parent) => {
+    <span className="inline-flex flex-wrap gap-0.5 ml-auto shrink-0 justify-end">
+      {consumerKeys.map((consumerKey) => {
+        const parent = consumerKey.split('.')[0] as ParentGroup;
         const cfg = PARENT_BADGE_CONFIGS[parent];
         if (!cfg) return null;
 
-        const tipText = formatBadgeTooltip(fieldPath, parent);
-        const lines = tipText.split('\n');
-        const title = lines[0] || cfg.title;
-        const detail = lines.slice(1).filter((l) => l.trim().length > 0);
+        const label = consumerKey.toUpperCase();
+        const desc = consumers[consumerKey]?.desc || '';
 
         return (
-          <Tooltip.Root key={parent} delayDuration={200}>
+          <Tooltip.Root key={consumerKey} delayDuration={200}>
             <Tooltip.Trigger asChild>
               <span
                 style={{ ...badgeStyle, ...badgeInline[parent] }}
                 className={cfg.cls}
               >
-                {cfg.label}
+                {label}
               </span>
             </Tooltip.Trigger>
             <Tooltip.Portal>
@@ -65,21 +75,14 @@ export function SystemBadges({ fieldPath }: Props) {
                 sideOffset={5}
               >
                 <div className="space-y-1.5">
-                  <div className="font-semibold sf-text-primary">{title}</div>
-                  {detail.map((line, i) => {
-                    const colonIdx = line.indexOf(':');
-                    if (colonIdx > 0 && (line.startsWith('idx.') || line.startsWith('eng.') || line.startsWith('rev.') || line.startsWith('seed.') || line.startsWith('comp.') || line.startsWith('val.') || line.startsWith('pub.'))) {
-                      const key = line.slice(0, colonIdx);
-                      const desc = line.slice(colonIdx + 1).trim();
-                      return (
-                        <div key={i} className="text-[11px]">
-                          <span className="font-medium sf-text-primary">{key}</span>
-                          <span className="sf-text-muted"> {desc}</span>
-                        </div>
-                      );
-                    }
-                    return <div key={i} className="text-[11px] sf-text-muted">{line}</div>;
-                  })}
+                  <div className="font-semibold sf-text-primary">{cfg.title}</div>
+                  {keyNavLine && (
+                    <div className="text-[10px] sf-text-muted">{keyNavLine}</div>
+                  )}
+                  <div className="text-[11px] pt-1">
+                    <span className="font-medium sf-text-primary">{consumerKey}</span>
+                    <span className="sf-text-muted">: {desc}</span>
+                  </div>
                 </div>
                 <Tooltip.Arrow className="sf-tooltip-arrow" />
               </Tooltip.Content>

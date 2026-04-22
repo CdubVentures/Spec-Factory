@@ -274,20 +274,25 @@ const IMAGE_FINDER_TEMPLATES = Object.freeze({
 // WHY: keyFinder is product-scoped (productFieldProducer), not variant-scoped,
 // so its prompt variables diverge from RDF/SKU. Route it to its own contract;
 // all other scalar finders use the shared variant-scoped contract.
-function buildFinderPromptTemplates({ moduleId, defaultTemplate }) {
+function buildFinderPromptTemplates({ moduleId, defaultTemplate, sourceVariantGuidanceSlots, variantDisambiguationSlots }) {
   if (moduleId === 'keyFinder') {
     return buildKeyFinderPromptTemplates({ moduleId, defaultTemplate });
   }
-  return buildScalarFinderPromptTemplates({ moduleId, defaultTemplate });
+  return buildScalarFinderPromptTemplates({
+    moduleId,
+    defaultTemplate,
+    sourceVariantGuidanceSlots,
+    variantDisambiguationSlots,
+  });
 }
 
 const SCALAR_FINDER_OVERLAYS = Object.freeze(
   Object.fromEntries(
-    Object.entries(FINDER_SCALAR_DEFAULT_TEMPLATES).map(([phaseId, { moduleId, defaultTemplate }]) => [
+    Object.entries(FINDER_SCALAR_DEFAULT_TEMPLATES).map(([phaseId, entry]) => [
       phaseId,
       {
         ...FINDER_PHASE_SCHEMAS[phaseId],
-        prompt_templates: buildFinderPromptTemplates({ moduleId, defaultTemplate }),
+        prompt_templates: buildFinderPromptTemplates(entry),
       },
     ]),
   ),

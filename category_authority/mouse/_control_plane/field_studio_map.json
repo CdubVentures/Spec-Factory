@@ -892,10 +892,6 @@
           "eloshapes.com",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} max acceleration G",
-          "{brand} {model} acceleration specification"
-        ],
         "query_terms": [
           "max acceleration",
           "acceleration",
@@ -925,7 +921,6 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "g",
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar",
       "variance_policy": "upper_bound"
@@ -1042,9 +1037,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} adjustable scroll wheel tension"
-        ],
         "query_terms": [
           "adjustable scroll wheel",
           "scroll tension",
@@ -1072,7 +1064,6 @@
         "tooltip_md": "Define 'Adjustable Scroll Wheel' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -1191,10 +1182,6 @@
           "eloshapes.com",
           "bestbuy.com"
         ],
-        "query_templates": [
-          "{brand} {model} adjustable weight system",
-          "{brand} {model} removable weights"
-        ],
         "query_terms": [
           "adjustable weight",
           "weight tuning",
@@ -1222,7 +1209,6 @@
         "tooltip_md": "Define 'Adjustable Weight' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -1313,10 +1299,6 @@
           "eloshapes.com",
           "bestbuy.com"
         ],
-        "query_templates": [
-          "{brand} {model} battery life hours",
-          "{brand} {model} battery runtime per charge"
-        ],
         "query_terms": [
           "battery life",
           "battery hours",
@@ -1346,7 +1328,6 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "h",
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -1464,10 +1445,6 @@
           "mousespecs.org",
           "bestbuy.com"
         ],
-        "query_templates": [
-          "{brand} {model} Bluetooth version",
-          "{brand} {model} Bluetooth support BLE"
-        ],
         "query_terms": [
           "Bluetooth",
           "BLE",
@@ -1496,7 +1473,6 @@
         "tooltip_md": "Define 'Bluetooth' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -1576,10 +1552,6 @@
           "eloshapes.com",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} cable type paracord braided",
-          "{brand} {model} cable material"
-        ],
         "query_terms": [
           "cable type",
           "paracord",
@@ -1609,7 +1581,6 @@
         "tooltip_md": "Define 'Cable Type' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -1693,10 +1664,6 @@
           "eloshapes.com",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} click force grams",
-          "{brand} {model} button actuation force"
-        ],
         "query_terms": [
           "click force",
           "actuation force",
@@ -1726,7 +1693,6 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "gf",
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar",
       "variance_policy": "override_allowed"
@@ -1813,10 +1779,6 @@
           "lttlabs.com",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} click latency ms measured",
-          "{brand} {model} click response time test"
-        ],
         "query_terms": [
           "click latency",
           "click response time",
@@ -1855,7 +1817,6 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "ms",
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -1944,10 +1905,6 @@
           "lttlabs.com",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} click latency ms measured",
-          "{brand} {model} click response time test"
-        ],
         "query_terms": [
           "click latency",
           "click response time",
@@ -1976,7 +1933,6 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "ms",
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -2065,10 +2021,6 @@
           "lttlabs.com",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} click latency ms measured",
-          "{brand} {model} click response time test"
-        ],
         "query_terms": [
           "click latency",
           "click response time",
@@ -2097,7 +2049,6 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "ms",
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -2186,10 +2137,6 @@
           "lttlabs.com",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} click latency ms measured",
-          "{brand} {model} click response time test"
-        ],
         "query_terms": [
           "click latency",
           "click response time",
@@ -2218,7 +2165,6 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "ms",
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -2319,10 +2265,6 @@
           "rtings.com",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} coating surface finish",
-          "{brand} {model} matte glossy textured coating"
-        ],
         "query_terms": [
           "coating",
           "surface coating",
@@ -2352,7 +2294,6 @@
         "tooltip_md": "Define 'Coating' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "set",
       "value_form_sample": "list"
     },
@@ -2599,9 +2540,6 @@
           "techpowerup.com",
           "bestbuy.com"
         ],
-        "query_templates": [
-          "{brand} {model} computer side USB connector type"
-        ],
         "query_terms": [
           "USB connector",
           "USB-A",
@@ -2630,7 +2568,6 @@
         "tooltip_md": "Define 'Computer-side Connector' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -2727,10 +2664,6 @@
           "bestbuy.com",
           "pcpartpicker.com"
         ],
-        "query_templates": [
-          "{brand} {model} connection type wired wireless",
-          "{brand} {model} connectivity 2.4GHz Bluetooth"
-        ],
         "query_terms": [
           "connection",
           "wired",
@@ -2761,7 +2694,6 @@
         "tooltip_md": "Primary connection mode (wired/wireless/hybrid/bluetooth). Prefer manufacturer docs.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -2863,10 +2795,6 @@
           "rtings.com",
           "bestbuy.com"
         ],
-        "query_templates": [
-          "{brand} {model} connectivity options",
-          "{brand} {model} wireless dongle receiver"
-        ],
         "query_terms": [
           "connectivity",
           "wireless technology",
@@ -2895,7 +2823,6 @@
         "tooltip_md": "Connectivity options (e.g., 2.4GHz, Bluetooth, USB). Use list if multiple.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "set",
       "value_form_sample": "list"
     },
@@ -2978,10 +2905,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} debounce time ms",
-          "{brand} {model} debounce delay setting"
-        ],
         "query_terms": [
           "debounce",
           "debounce time",
@@ -3011,7 +2934,6 @@
         "tooltip_source": null
       },
       "unit": "ms",
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -3101,9 +3023,6 @@
           "rtings.com",
           "mousespecs.org"
         ],
-        "query_templates": [
-          "{brand} {model} design review"
-        ],
         "query_terms": [
           "design",
           "aesthetics",
@@ -3131,7 +3050,6 @@
         "tooltip_md": "Define 'Design' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "set",
       "value_form_sample": "list"
     },
@@ -3139,7 +3057,11 @@
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "discontinued",
-      "component": null,
+      "component": {
+        "match": null,
+        "source": null,
+        "type": ""
+      },
       "constraints": [],
       "contract": {
         "list_rules": {},
@@ -3153,14 +3075,11 @@
       "enum": {
         "match": {},
         "new_value_policy": {},
-        "policy": "closed",
-        "source": "known_values.yes_no"
+        "policy": null,
+        "source": null
       },
-      "enum_policy": "closed",
-      "enum_source": {
-        "ref": "yes_no",
-        "type": "known_values"
-      },
+      "enum_policy": null,
+      "enum_source": null,
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -3241,9 +3160,6 @@
           "eloshapes.com",
           "bestbuy.com"
         ],
-        "query_templates": [
-          "{brand} {model} discontinued availability"
-        ],
         "query_terms": [
           "discontinued",
           "end of life",
@@ -3270,7 +3186,6 @@
         "tooltip_md": "Define 'Discontinued' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -3362,10 +3277,6 @@
           "techpowerup.com",
           "prosettings.net"
         ],
-        "query_templates": [
-          "{brand} {model} max DPI CPI",
-          "{brand} {model} DPI specifications"
-        ],
         "query_terms": [
           "DPI",
           "CPI",
@@ -3397,7 +3308,6 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "dpi",
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar",
       "variance_policy": "upper_bound"
@@ -3536,10 +3446,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} scroll encoder model",
-          "{brand} {model} encoder specifications"
-        ],
         "query_terms": [
           "encoder",
           "scroll wheel encoder",
@@ -3567,7 +3473,6 @@
         "tooltip_md": "Define 'Encoder' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -3643,9 +3548,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} encoder brand ALPS TTC Kailh"
-        ],
         "query_terms": [
           "encoder brand",
           "encoder manufacturer",
@@ -3674,7 +3576,6 @@
         "tooltip_md": "Define 'Encoder Brand' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -3746,9 +3647,6 @@
           "eloshapes.com",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} encoder datasheet"
-        ],
         "query_terms": [
           "encoder datasheet",
           "encoder specifications"
@@ -3774,7 +3672,6 @@
         "tooltip_md": "Define 'Encoder Link' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -3869,10 +3766,6 @@
           "techpowerup.com",
           "eloshapes.com"
         ],
-        "query_templates": [
-          "{brand} {model} mouse feet material PTFE",
-          "{brand} {model} skates glide pads"
-        ],
         "query_terms": [
           "feet material",
           "mouse feet",
@@ -3902,7 +3795,6 @@
         "tooltip_md": "Define 'Feet Material' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -4020,10 +3912,6 @@
           "techpowerup.com",
           "mousespecs.org"
         ],
-        "query_templates": [
-          "{brand} {model} flawless sensor",
-          "{brand} {model} sensor flawless no acceleration"
-        ],
         "query_terms": [
           "flawless sensor",
           "no acceleration",
@@ -4053,7 +3941,6 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": null,
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar",
       "variance_policy": "authoritative"
@@ -4148,10 +4035,6 @@
           "bestbuy.com",
           "pcpartpicker.com"
         ],
-        "query_templates": [
-          "{brand} {model} form factor size",
-          "{brand} {model} mouse size small medium large"
-        ],
         "query_terms": [
           "form factor",
           "mouse size",
@@ -4182,7 +4065,6 @@
         "tooltip_md": "Define 'Form Factor' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -4274,10 +4156,6 @@
           "eloshapes.com",
           "mousespecs.org"
         ],
-        "query_templates": [
-          "{brand} {model} front flare shape",
-          "{brand} {model} button flare width"
-        ],
         "query_terms": [
           "front flare",
           "button flare",
@@ -4306,7 +4184,6 @@
         "tooltip_md": "Define 'Front Flare' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -4395,10 +4272,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} grip style palm claw fingertip",
-          "{brand} {model} recommended grip type"
-        ],
         "query_terms": [
           "grip style",
           "palm grip",
@@ -4428,7 +4301,6 @@
         "tooltip_md": "Define 'Grip' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "set",
       "value_form_sample": "list"
     },
@@ -4516,10 +4388,6 @@
           "rtings.com",
           "mousespecs.org"
         ],
-        "query_templates": [
-          "{brand} {model} recommended hand size",
-          "{brand} {model} hand size compatibility"
-        ],
         "query_terms": [
           "hand size",
           "recommended hand size",
@@ -4547,7 +4415,6 @@
         "tooltip_md": "Define 'Hand Size' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "set",
       "value_form_sample": "list"
     },
@@ -4664,9 +4531,6 @@
           "techpowerup.com",
           "sensor.fyi"
         ],
-        "query_templates": [
-          "{brand} {model} hardware acceleration angle snapping"
-        ],
         "query_terms": [
           "hardware acceleration",
           "angle snapping",
@@ -4694,7 +4558,6 @@
         "tooltip_md": "Define 'Hardware Acceleration' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -4783,10 +4646,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} height mm dimensions",
-          "{brand} {model} mouse height profile"
-        ],
         "query_terms": [
           "height",
           "height mm",
@@ -4816,7 +4675,6 @@
         "tooltip_source": null
       },
       "unit": "mm",
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -4933,10 +4791,6 @@
           "rtings.com",
           "mousespecs.org"
         ],
-        "query_templates": [
-          "{brand} {model} honeycomb shell design",
-          "{brand} {model} perforated holes"
-        ],
         "query_terms": [
           "honeycomb",
           "perforated shell",
@@ -4965,7 +4819,6 @@
         "tooltip_md": "Define 'Honeycomb Frame' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -5083,10 +4936,6 @@
           "eloshapes.com",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} hot swappable switches",
-          "{brand} {model} hot-swap switch sockets"
-        ],
         "query_terms": [
           "hot swappable",
           "hot-swap switches",
@@ -5114,7 +4963,6 @@
         "tooltip_md": "Define 'Hot Swappable' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -5207,10 +5055,6 @@
           "mousespecs.org",
           "rtings.com"
         ],
-        "query_templates": [
-          "{brand} {model} hump position placement",
-          "{brand} {model} hump height center back"
-        ],
         "query_terms": [
           "hump",
           "hump position",
@@ -5240,7 +5084,6 @@
         "tooltip_md": "Define 'Hump' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -5328,10 +5171,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} tracking speed IPS",
-          "{brand} {model} max inches per second"
-        ],
         "query_terms": [
           "IPS",
           "tracking speed",
@@ -5360,7 +5199,6 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "ips",
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar",
       "variance_policy": "upper_bound"
@@ -5464,10 +5302,6 @@
           "rtings.com",
           "eloshapes.com"
         ],
-        "query_templates": [
-          "{brand} {model} lift-off distance LOD mm",
-          "{brand} {model} LOD measured"
-        ],
         "query_terms": [
           "lift-off distance",
           "LOD",
@@ -5497,7 +5331,6 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "mm",
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "mixed",
       "value_form_sample": "mixed_values_and_ranges"
     },
@@ -5593,9 +5426,6 @@
           "techpowerup.com",
           "rtings.com"
         ],
-        "query_templates": [
-          "{brand} {model} lift-off distance settings adjustable"
-        ],
         "query_terms": [
           "LOD settings",
           "lift-off distance adjustment",
@@ -5623,7 +5453,6 @@
         "tooltip_md": "Define 'Lift Settings' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "set",
       "value_form_sample": "list"
     },
@@ -5727,9 +5556,6 @@
           "mousespecs.org",
           "bestbuy.com"
         ],
-        "query_templates": [
-          "{brand} {model} lighting LED RGB zones"
-        ],
         "query_terms": [
           "lighting",
           "LED lighting",
@@ -5757,7 +5583,6 @@
         "tooltip_md": "Define 'Lighting' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "set",
       "value_form_sample": "list"
     },
@@ -5847,10 +5672,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} length mm dimensions",
-          "{brand} {model} mouse length"
-        ],
         "query_terms": [
           "length",
           "length mm",
@@ -5879,7 +5700,6 @@
         "tooltip_source": null
       },
       "unit": "mm",
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -5963,10 +5783,6 @@
           "rtings.com",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} shell material",
-          "{brand} {model} build material housing"
-        ],
         "query_terms": [
           "material",
           "shell material",
@@ -5995,7 +5811,6 @@
         "tooltip_md": "Define 'Material' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -6084,10 +5899,6 @@
           "mousespecs.org",
           "eloshapes.com"
         ],
-        "query_templates": [
-          "{brand} {model} MCU microcontroller chip",
-          "{brand} {model} teardown MCU controller"
-        ],
         "query_terms": [
           "MCU",
           "microcontroller",
@@ -6117,7 +5928,6 @@
         "tooltip_md": "Define 'MCU' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -6191,9 +6001,6 @@
         "domain_hints": [
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} MCU datasheet"
-        ],
         "query_terms": [
           "MCU datasheet",
           "MCU specifications"
@@ -6219,7 +6026,6 @@
         "tooltip_md": "Define 'MCU Link' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -6300,9 +6106,6 @@
           "rtings.com",
           "mousespecs.org"
         ],
-        "query_templates": [
-          "{brand} {model} middle buttons DPI button"
-        ],
         "query_terms": [
           "middle button",
           "DPI button",
@@ -6330,7 +6133,6 @@
         "tooltip_md": "Count of middle buttons (wheel click + extra middle buttons).",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -6447,10 +6249,6 @@
           "techpowerup.com",
           "mousespecs.org"
         ],
-        "query_templates": [
-          "{brand} {model} motion sync feature",
-          "{brand} {model} MotionSync"
-        ],
         "query_terms": [
           "motion sync",
           "MotionSync",
@@ -6478,7 +6276,6 @@
         "tooltip_md": "Define 'Motion Sync' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -6557,9 +6354,6 @@
           "rtings.com",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} mouse side connector USB-C micro-USB"
-        ],
         "query_terms": [
           "mouse connector",
           "USB-C mouse end",
@@ -6587,7 +6381,6 @@
         "tooltip_md": "Define 'Mouse-side Connector' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -6704,10 +6497,6 @@
           "techpowerup.com",
           "mousespecs.org"
         ],
-        "query_templates": [
-          "{brand} {model} NVIDIA Reflex support",
-          "{brand} {model} Reflex Analyzer compatible"
-        ],
         "query_terms": [
           "NVIDIA Reflex",
           "Reflex Analyzer",
@@ -6735,7 +6524,6 @@
         "tooltip_md": "Define 'NVIDIA Reflex' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -6853,10 +6641,6 @@
           "eloshapes.com",
           "bestbuy.com"
         ],
-        "query_templates": [
-          "{brand} {model} onboard memory profiles",
-          "{brand} {model} built-in memory storage"
-        ],
         "query_terms": [
           "onboard memory",
           "built-in memory",
@@ -6884,7 +6668,6 @@
         "tooltip_md": "Define 'Onboard Memory' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -6965,9 +6748,6 @@
           "rtings.com",
           "eloshapes.com"
         ],
-        "query_templates": [
-          "{brand} {model} onboard memory profiles count"
-        ],
         "query_terms": [
           "memory profiles",
           "number of profiles",
@@ -6995,7 +6775,6 @@
         "tooltip_md": "Define 'Onboard Memory (Value)' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -7112,10 +6891,6 @@
           "techpowerup.com",
           "eloshapes.com"
         ],
-        "query_templates": [
-          "{brand} {model} paracord cable",
-          "{brand} {model} flexible lightweight cable"
-        ],
         "query_terms": [
           "paracord",
           "paracord cable",
@@ -7143,7 +6918,6 @@
         "tooltip_md": "Define 'Paracord' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -7255,10 +7029,6 @@
           "prosettings.net",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} polling rate Hz",
-          "{brand} {model} max polling rate wired wireless"
-        ],
         "query_terms": [
           "polling rate",
           "report rate",
@@ -7290,7 +7060,6 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "Hz",
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "set",
       "value_form_sample": "list"
     },
@@ -7372,9 +7141,6 @@
           "amazon.com",
           "bhphotovideo.com"
         ],
-        "query_templates": [
-          "{brand} {model} price buy MSRP"
-        ],
         "query_terms": [
           "price",
           "MSRP",
@@ -7402,7 +7168,6 @@
         "tooltip_md": "MSRP price bracket or stated MSRP. Keep as a string token; do not guess if not public.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -7519,9 +7284,6 @@
           "rtings.com",
           "eloshapes.com"
         ],
-        "query_templates": [
-          "{brand} {model} profile switching button"
-        ],
         "query_terms": [
           "profile switching",
           "profile button",
@@ -7549,7 +7311,6 @@
         "tooltip_md": "Define 'Profile Switching' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -7631,10 +7392,6 @@
           "eloshapes.com",
           "bestbuy.com"
         ],
-        "query_templates": [
-          "{brand} {model} programmable buttons count",
-          "{brand} {model} button count customizable"
-        ],
         "query_terms": [
           "programmable buttons",
           "button count",
@@ -7663,7 +7420,6 @@
         "tooltip_md": "Define 'Programmable Buttons' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -7717,12 +7473,6 @@
           "eloshapes.com",
           "pcpartpicker.com",
           "techpowerup.com"
-        ],
-        "query_templates": [
-          "{brand} {model} release date",
-          "{brand} {model} launch date",
-          "{brand} {model} available since",
-          "\"{model}\" release date"
         ],
         "query_terms": [
           "release date",
@@ -7849,9 +7599,6 @@
           "mousespecs.org",
           "bestbuy.com"
         ],
-        "query_templates": [
-          "{brand} {model} RGB lighting zones"
-        ],
         "query_terms": [
           "RGB",
           "RGB lighting",
@@ -7880,7 +7627,6 @@
         "tooltip_md": "Define 'RGB' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -7971,10 +7717,6 @@
           "rtings.com",
           "mousespecs.org"
         ],
-        "query_templates": [
-          "{brand} {model} sensor model",
-          "{brand} {model} mouse sensor specifications"
-        ],
         "query_terms": [
           "sensor",
           "optical sensor",
@@ -8003,7 +7745,6 @@
         "tooltip_md": "Sensor model (component DB-backed). Must be evidence-backed; avoid wrong-variant merges.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -8086,10 +7827,6 @@
           "techpowerup.com",
           "mousespecs.org"
         ],
-        "query_templates": [
-          "{brand} {model} sensor brand manufacturer",
-          "{brand} {model} sensor PixArt HERO"
-        ],
         "query_terms": [
           "sensor brand",
           "sensor manufacturer",
@@ -8118,7 +7855,6 @@
         "tooltip_md": "Sensor manufacturer brand (e.g., PixArt). Prefer component DB if sensor identified.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -8213,9 +7949,6 @@
           "techpowerup.com",
           "eloshapes.com"
         ],
-        "query_templates": [
-          "{brand} {model} sensor release date generation"
-        ],
         "query_terms": [
           "sensor release date",
           "sensor launch",
@@ -8242,7 +7975,6 @@
         "tooltip_md": "Define 'Sensor Date' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar",
       "variance_policy": "authoritative"
@@ -8328,10 +8060,6 @@
           "mousespecs.org",
           "lttlabs.com"
         ],
-        "query_templates": [
-          "{brand} {model} sensor latency measured",
-          "{brand} {model} motion latency test results"
-        ],
         "query_terms": [
           "sensor latency",
           "motion latency",
@@ -8370,7 +8098,6 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "ms",
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -8458,10 +8185,6 @@
           "mousespecs.org",
           "lttlabs.com"
         ],
-        "query_templates": [
-          "{brand} {model} sensor latency measured",
-          "{brand} {model} motion latency test results"
-        ],
         "query_terms": [
           "sensor latency",
           "motion latency",
@@ -8490,7 +8213,6 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "ms",
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -8578,10 +8300,6 @@
           "mousespecs.org",
           "lttlabs.com"
         ],
-        "query_templates": [
-          "{brand} {model} sensor latency measured",
-          "{brand} {model} motion latency test results"
-        ],
         "query_terms": [
           "sensor latency",
           "motion latency",
@@ -8610,7 +8328,6 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "ms",
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -8698,10 +8415,6 @@
           "mousespecs.org",
           "lttlabs.com"
         ],
-        "query_templates": [
-          "{brand} {model} sensor latency measured",
-          "{brand} {model} motion latency test results"
-        ],
         "query_terms": [
           "sensor latency",
           "motion latency",
@@ -8730,7 +8443,6 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "ms",
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -8809,9 +8521,6 @@
           "techpowerup.com",
           "eloshapes.com"
         ],
-        "query_templates": [
-          "{brand} {model} sensor datasheet specifications"
-        ],
         "query_terms": [
           "sensor datasheet",
           "sensor specifications page",
@@ -8838,7 +8547,6 @@
         "tooltip_md": "Define 'Sensor Link' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -8931,10 +8639,6 @@
           "eloshapes.com",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} sensor type optical laser",
-          "{brand} {model} sensor technology"
-        ],
         "query_terms": [
           "sensor type",
           "optical",
@@ -8962,7 +8666,6 @@
         "tooltip_md": "Define 'Sensor Type' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar",
       "variance_policy": "authoritative"
@@ -9058,10 +8761,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} shape ergonomic ambidextrous",
-          "{brand} {model} mouse shape profile"
-        ],
         "query_terms": [
           "shape",
           "mouse shape",
@@ -9091,7 +8790,6 @@
         "tooltip_md": "Define 'Shape' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -9099,7 +8797,11 @@
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "shift_latency",
-      "component": null,
+      "component": {
+        "match": null,
+        "source": null,
+        "type": ""
+      },
       "constraints": [],
       "contract": {
         "list_rules": {},
@@ -9117,10 +8819,11 @@
       "enum": {
         "match": {},
         "new_value_policy": {},
-        "policy": "open",
+        "policy": null,
         "source": null
       },
-      "enum_policy": "open",
+      "enum_policy": null,
+      "enum_source": null,
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -9175,9 +8878,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} shift latency measured"
-        ],
         "query_terms": [
           "shift latency",
           "motion shift",
@@ -9205,7 +8905,6 @@
         "tooltip_source": null
       },
       "unit": "ms",
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -9287,10 +8986,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} side buttons count",
-          "{brand} {model} thumb buttons"
-        ],
         "query_terms": [
           "side buttons",
           "thumb buttons",
@@ -9318,7 +9013,6 @@
         "tooltip_md": "Count of side buttons (excluding main clicks and wheel).",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -9435,10 +9129,6 @@
           "rtings.com",
           "eloshapes.com"
         ],
-        "query_templates": [
-          "{brand} {model} silent clicks",
-          "{brand} {model} quiet silent switches"
-        ],
         "query_terms": [
           "silent clicks",
           "silent switches",
@@ -9467,7 +9157,6 @@
         "tooltip_md": "Define 'Silent Clicks' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -9515,11 +9204,6 @@
           "bhphotovideo.com",
           "newegg.com",
           "eloshapes.com"
-        ],
-        "query_templates": [
-          "{brand} {model} part number",
-          "{brand} {model} MPN",
-          "\"{model}\" part number"
         ],
         "query_terms": [
           "SKU",
@@ -9648,9 +9332,6 @@
           "techpowerup.com",
           "sensor.fyi"
         ],
-        "query_templates": [
-          "{brand} {model} sensor smoothing filtering"
-        ],
         "query_terms": [
           "smoothing",
           "sensor smoothing",
@@ -9679,7 +9360,6 @@
         "tooltip_md": "Define 'Smoothing' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -9769,10 +9449,6 @@
           "rtings.com",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} switch model",
-          "{brand} {model} mouse switch type"
-        ],
         "query_terms": [
           "mouse switch",
           "main switch",
@@ -9801,7 +9477,6 @@
         "tooltip_md": "Main click switch model (component DB-backed). Evidence required.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -9883,10 +9558,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} switch brand manufacturer",
-          "{brand} {model} Omron Kailh TTC switch"
-        ],
         "query_terms": [
           "switch brand",
           "switch manufacturer",
@@ -9917,7 +9588,6 @@
         "tooltip_md": "Switch manufacturer brand. Prefer component DB when switch identified.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -10012,9 +9682,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} switch type mechanical optical"
-        ],
         "query_terms": [
           "switch type",
           "mechanical switch",
@@ -10042,7 +9709,6 @@
         "tooltip_md": "Define 'Switch Type' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar",
       "variance_policy": "authoritative"
@@ -10124,9 +9790,6 @@
           "eloshapes.com",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} switch datasheet specifications"
-        ],
         "query_terms": [
           "switch datasheet",
           "switch specifications"
@@ -10152,7 +9815,6 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -10230,10 +9892,6 @@
           "mousespecs.org",
           "rtings.com"
         ],
-        "query_templates": [
-          "{brand} {model} thumb rest groove",
-          "{brand} {model} thumb area side grip"
-        ],
         "query_terms": [
           "thumb rest",
           "thumb groove",
@@ -10262,7 +9920,6 @@
         "tooltip_md": "Define 'Thumb Rest' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -10380,9 +10037,6 @@
           "techpowerup.com",
           "eloshapes.com"
         ],
-        "query_templates": [
-          "{brand} {model} tilt scroll wheel horizontal"
-        ],
         "query_terms": [
           "tilt scroll wheel",
           "horizontal scroll",
@@ -10410,7 +10064,6 @@
         "tooltip_md": "Define 'Tilt Scroll Wheel' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -10502,10 +10155,6 @@
           "techpowerup.com",
           "lttlabs.com"
         ],
-        "query_templates": [
-          "{brand} {model} weight grams",
-          "{brand} {model} actual weight measured"
-        ],
         "query_terms": [
           "weight",
           "weight grams",
@@ -10535,7 +10184,6 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "g",
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -10624,10 +10272,6 @@
           "mousespecs.org",
           "techpowerup.com"
         ],
-        "query_templates": [
-          "{brand} {model} width mm dimensions",
-          "{brand} {model} mouse width"
-        ],
         "query_terms": [
           "width",
           "width mm",
@@ -10656,7 +10300,6 @@
         "tooltip_source": null
       },
       "unit": "mm",
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
@@ -10774,10 +10417,6 @@
           "bestbuy.com",
           "eloshapes.com"
         ],
-        "query_templates": [
-          "{brand} {model} wireless charging support",
-          "{brand} {model} Qi charging dock POWERPLAY"
-        ],
         "query_terms": [
           "wireless charging",
           "Qi charging",
@@ -10806,7 +10445,6 @@
         "tooltip_md": "Define 'Wireless Charging' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     }

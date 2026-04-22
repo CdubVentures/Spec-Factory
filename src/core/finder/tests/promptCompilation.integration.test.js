@@ -500,12 +500,13 @@ describe('resolveAmbiguityContext end-to-end with real resolver + specDb', () =>
 // contract so future scalar finders (price, msrp, discontinued, upc) inherit
 // the full GUI surface with one registry edit.
 describe('scalar finder prompt contract (O(1) overlay)', () => {
-  test('SCALAR_FINDER_VARIABLES has the 13 canonical entries in the expected order', () => {
+  test('SCALAR_FINDER_VARIABLES has the canonical entries in the expected order', () => {
     const names = SCALAR_FINDER_VARIABLES.map((v) => v.name);
     assert.deepEqual(names, [
       'BRAND', 'MODEL', 'VARIANT_DESC', 'VARIANT_SUFFIX', 'VARIANT_TYPE_WORD',
       'IDENTITY_INTRO', 'IDENTITY_WARNING', 'EVIDENCE_REQUIREMENTS',
-      'VALUE_CONFIDENCE_GUIDANCE', 'SCALAR_SOURCE_GUIDANCE_CLOSER',
+      'VALUE_CONFIDENCE_GUIDANCE', 'UNK_POLICY',
+      'SOURCE_GUIDANCE', 'VARIANT_DISAMBIGUATION',
       'SIBLING_VARIANTS', 'PREVIOUS_DISCOVERY', 'SCALAR_RETURN_JSON_TAIL',
     ]);
   });
@@ -531,12 +532,30 @@ describe('scalar finder prompt contract (O(1) overlay)', () => {
 
   test('buildScalarFinderPromptTemplates returns the canonical overlay shape for a hypothetical new finder', () => {
     // Proof: adding a new scalar finder (e.g. priceFinder) with
-    // defaultTemplateExport only requires a FINDER_MODULES entry. No
-    // phaseSchemaRegistry.js edit. This mock demonstrates the contract.
-    const FAKE_TEMPLATE = 'Find the price for: {{BRAND}} {{MODEL}} — {{VARIANT_DESC}}\n{{IDENTITY_INTRO}}\n{{IDENTITY_WARNING}}\n{{EVIDENCE_REQUIREMENTS}}\n{{VALUE_CONFIDENCE_GUIDANCE}}\n{{SCALAR_SOURCE_GUIDANCE_CLOSER}}\n{{PREVIOUS_DISCOVERY}}Return JSON:\n- "price": "..." | "unk"\n{{SCALAR_RETURN_JSON_TAIL}}';
+    // defaultTemplateExport + slot-bag exports only requires a FINDER_MODULES
+    // entry. No phaseSchemaRegistry.js edit. This mock demonstrates the contract.
+    const FAKE_TEMPLATE = 'Find the price for: {{BRAND}} {{MODEL}} — {{VARIANT_DESC}}\n{{IDENTITY_INTRO}}\n{{IDENTITY_WARNING}}\n{{EVIDENCE_REQUIREMENTS}}\n{{VALUE_CONFIDENCE_GUIDANCE}}\n{{SOURCE_GUIDANCE}}\n{{VARIANT_DISAMBIGUATION}}\n{{PREVIOUS_DISCOVERY}}Return JSON:\n- "price": "..." | "unk"\n{{SCALAR_RETURN_JSON_TAIL}}';
+    const FAKE_SOURCE_SLOTS = {
+      OPENER_TAIL: '',
+      TIER1_CONTENT: '    Brand pricing page.',
+      TIER3_HEADER: 'RETAILER LISTINGS',
+      TIER3_CONTENT: '    Amazon, Best Buy, Newegg.',
+      TIER2_CONTENT: '    Reviews citing MSRP.',
+      TIER4_HEADER: 'COMMUNITY',
+      TIER4_CONTENT: '    Forums, Reddit threads.',
+    };
+    const FAKE_DISAMBIG_SLOTS = {
+      RULE1_LOCATE: 'Locate the per-variant price listing.',
+      RULE2_DISTINCT_SIGNAL: 'If distinct, return variant price.',
+      RULE3_SHARED_SIGNAL: 'If shared, return the shared price.',
+      RULE4_AMBIGUOUS_UNK: 'If ambiguous, return "unk".',
+      BASE_WARNING_CLOSER: 'Do NOT return the base price if variant pricing is published.',
+    };
     const tmpls = buildScalarFinderPromptTemplates({
       moduleId: 'priceFinder',
       defaultTemplate: FAKE_TEMPLATE,
+      sourceVariantGuidanceSlots: FAKE_SOURCE_SLOTS,
+      variantDisambiguationSlots: FAKE_DISAMBIG_SLOTS,
     });
     assert.equal(tmpls.length, 1);
     const t = tmpls[0];

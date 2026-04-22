@@ -28,6 +28,43 @@ const FIELD_DOMAIN_NOUN = 'manufacturer part numbers';
 
 /* ── Prompt builder ──────────────────────────────────────────────── */
 
+export const SKU_SOURCE_VARIANT_GUIDANCE_SLOTS = Object.freeze({
+  OPENER_TAIL: '',
+  TIER1_CONTENT: `    Brand product page (spec sheet, datasheet, "Where to Buy" panel listing each
+    variant with its own MPN), press release, official documentation, support
+    article. Direct manufacturer sources are authoritative for MPN.
+    NOTE: Check the manufacturer's product page for THIS VARIANT specifically.
+    If the page lists variants side-by-side with distinct MPNs, use the variant MPN.
+    If all variants share one MPN, return that MPN with a note in discovery_log.`,
+  TIER3_HEADER: 'RETAILER LISTINGS',
+  TIER3_CONTENT: `    Amazon product page (check "Part Number" or "Item model number" in product
+    details — ASINs are NOT MPNs), Best Buy, Newegg, B&H. Retailers often
+    display MPN in the spec table.
+    Cross-check: if two retailers show different "part numbers", the MPN is the
+    manufacturer-assigned one, NOT the retailer-specific SKU.
+    WARNING: Retailers frequently conflate MPN, SKU, and product codes.
+    When uncertain, defer to manufacturer primary source.`,
+  TIER2_CONTENT: `    Reviews, unboxing videos, retailer comparisons that cite the official MPN.
+    Use to corroborate primary/retail, not as sole source for MPN.`,
+  TIER4_HEADER: 'SPEC AGGREGATORS / COMMUNITY',
+  TIER4_CONTENT: `    TechSpecs.com, spec databases, forums. Cross-reference only for MPN —
+    community posts frequently propagate typos or cite retailer SKUs as MPNs.`,
+});
+
+export const SKU_VARIANT_DISAMBIGUATION_SLOTS = Object.freeze({
+  RULE1_LOCATE: `Locate this variant's specific SKU/MPN listing (color row, edition selector).`,
+  RULE2_DISTINCT_SIGNAL: `If each variant has a distinct MPN suffix (e.g. "-BLACK", "-WHITE", "-001"),
+     return the full variant MPN.`,
+  RULE3_SHARED_SIGNAL: `If the manufacturer uses the same base MPN for all variants (entire product
+     family uses one MPN regardless of color), return the base MPN and note in
+     discovery_log.notes: "Manufacturer uses shared MPN across all variants."`,
+  RULE4_AMBIGUOUS_UNK: `If the page only lists one MPN but multiple colors are in stock, you CANNOT
+     assume that one MPN applies to this color. Return "unk" with unknown_reason
+     explaining that the variant MPN is not published.`,
+  BASE_WARNING_CLOSER: `Do NOT return the base product MPN if the manufacturer clearly publishes
+variant-specific MPNs for other colors and you cannot find one for this variant.`,
+});
+
 export const SKF_DEFAULT_TEMPLATE = `Find the manufacturer part number (MPN) for: {{BRAND}} {{MODEL}} — {{VARIANT_DESC}}
 
 {{IDENTITY_INTRO}}
@@ -44,55 +81,16 @@ Return the variant-specific MPN when the manufacturer publishes one. MPN formats
 
 {{EVIDENCE_REQUIREMENTS}}
 
-Source guidance — use the strongest signal available:
+{{SOURCE_GUIDANCE}}
 
-  PRIMARY — manufacturer authority (tag as tier1)
-    Brand product page (spec sheet, datasheet, "Where to Buy" panel listing each
-    variant with its own MPN), press release, official documentation, support
-    article. Direct manufacturer sources are authoritative for MPN.
-    NOTE: Check the manufacturer's product page for THIS VARIANT specifically.
-    If the page lists variants side-by-side with distinct MPNs, use the variant MPN.
-    If all variants share one MPN, return that MPN with a note in discovery_log.
-
-  RETAILER LISTINGS (tag as tier3)
-    Amazon product page (check "Part Number" or "Item model number" in product
-    details — ASINs are NOT MPNs), Best Buy, Newegg, B&H. Retailers often
-    display MPN in the spec table.
-    Cross-check: if two retailers show different "part numbers", the MPN is the
-    manufacturer-assigned one, NOT the retailer-specific SKU.
-    WARNING: Retailers frequently conflate MPN, SKU, and product codes.
-    When uncertain, defer to manufacturer primary source.
-
-  INDEPENDENT CORROBORATION (tag as tier2)
-    Reviews, unboxing videos, retailer comparisons that cite the official MPN.
-    Use to corroborate primary/retail, not as sole source for MPN.
-
-  SPEC AGGREGATORS / COMMUNITY (tag as tier4 or tier5)
-    TechSpecs.com, spec databases, forums. Cross-reference only for MPN —
-    community posts frequently propagate typos or cite retailer SKUs as MPNs.
-
-{{SCALAR_SOURCE_GUIDANCE_CLOSER}}
-
-VARIANT DISAMBIGUATION — critical for multi-color / edition products:
-
-If the manufacturer product page shows multiple colors/editions:
-  1. Locate this variant's specific SKU/MPN listing (color row, edition selector).
-  2. If each variant has a distinct MPN suffix (e.g. "-BLACK", "-WHITE", "-001"),
-     return the full variant MPN.
-  3. If the manufacturer uses the same base MPN for all variants (entire product
-     family uses one MPN regardless of color), return the base MPN and note in
-     discovery_log.notes: "Manufacturer uses shared MPN across all variants."
-  4. If the page only lists one MPN but multiple colors are in stock, you CANNOT
-     assume that one MPN applies to this color. Return "unk" with unknown_reason
-     explaining that the variant MPN is not published.
-
-Do NOT return the base product MPN if the manufacturer clearly publishes
-variant-specific MPNs for other colors and you cannot find one for this variant.
+{{VARIANT_DISAMBIGUATION}}
 
 {{VALUE_CONFIDENCE_GUIDANCE}}
 SKF-specific: MPN is exact-or-unknown. Do not return partial codes, guessed
 suffixes, or paraphrased values. If your evidence does not literally state a
 part number for this specific variant, return "unk" with a clear unknown_reason.
+
+{{UNK_POLICY}}
 
 {{PREVIOUS_DISCOVERY}}Return JSON:
 - "sku": "<exact MPN string>" | "unk"
@@ -173,7 +171,15 @@ export function buildSkuFinderPrompt({
     PREVIOUS_DISCOVERY: discoverySection,
     EVIDENCE_REQUIREMENTS: `${buildEvidencePromptBlock({ minEvidenceRefs, includeEvidenceKind: true })}\n\n${buildEvidenceVerificationPromptBlock()}`,
     VALUE_CONFIDENCE_GUIDANCE: buildValueConfidencePromptBlock(),
-    SCALAR_SOURCE_GUIDANCE_CLOSER: resolveGlobalPrompt('scalarSourceGuidanceCloser'),
+    UNK_POLICY: resolveGlobalPrompt('unkPolicy'),
+    SOURCE_GUIDANCE: resolvePromptTemplate(resolveGlobalPrompt('variantScalarSourceGuidance'), {
+      ...SKU_SOURCE_VARIANT_GUIDANCE_SLOTS,
+      SCALAR_SOURCE_GUIDANCE_CLOSER: resolveGlobalPrompt('scalarSourceGuidanceCloser'),
+    }),
+    VARIANT_DISAMBIGUATION: resolvePromptTemplate(
+      resolveGlobalPrompt('variantScalarDisambiguation'),
+      SKU_VARIANT_DISAMBIGUATION_SLOTS,
+    ),
     SCALAR_RETURN_JSON_TAIL: resolvePromptTemplate(resolveGlobalPrompt('scalarReturnJsonTail'), {
       VALUE_NOUN: 'MPN',
       VALUE_KEY: 'sku',

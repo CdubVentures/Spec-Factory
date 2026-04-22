@@ -11,6 +11,7 @@ const FINDER_ROUTE_PREFIX: Record<PromptPreviewFinder, string> = {
   pif: 'product-image-finder',
   rdf: 'release-date-finder',
   sku: 'sku-finder',
+  key: 'key-finder',
 };
 
 function previewPromptUrl(finder: PromptPreviewFinder, category: string, productId: string): string {

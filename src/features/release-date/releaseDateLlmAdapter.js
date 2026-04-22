@@ -25,6 +25,43 @@ const FIELD_DOMAIN_NOUN = 'release dates';
 
 /* ── Prompt builder ──────────────────────────────────────────────── */
 
+export const RDF_VARIANT_DISAMBIGUATION_SLOTS = Object.freeze({
+  RULE1_LOCATE: `Locate this variant's specific launch / first-availability date (per-variant press post, color drop announcement, edition ship date).`,
+  RULE2_DISTINCT_SIGNAL: `If each variant has a distinct launch date (e.g. base launched 2023-05, anniversary
+     edition launched 2024-03), return the variant-specific date.`,
+  RULE3_SHARED_SIGNAL: `If the manufacturer launched all variants simultaneously (one press release or
+     "Date First Available" covering the whole product family), return that shared date
+     and note in discovery_log.notes: "Manufacturer launched all variants simultaneously."`,
+  RULE4_AMBIGUOUS_UNK: `If only one date is published but you cannot confirm whether it covers this
+     variant (variant was announced separately, later color drop without a dated listing),
+     return "unk" with unknown_reason explaining the ambiguity.`,
+  BASE_WARNING_CLOSER: `Do NOT return the base product launch date if limited editions, regional variants,
+or later color drops clearly launched after the base and you cannot find a
+variant-specific date.`,
+});
+
+export const RDF_SOURCE_VARIANT_GUIDANCE_SLOTS = Object.freeze({
+  OPENER_TAIL: ', fall back as needed',
+  TIER1_CONTENT: `    Brand product page, press release, official news/blog, support article.
+    Typically yields YYYY-MM-DD. Treat as authoritative when present.`,
+  TIER3_HEADER: 'STRUCTURED RETAIL BACKUPS',
+  TIER3_CONTENT: `    Use when manufacturer sources are dead, redesigned, or undated.
+    - Keepa.com, camelcamelcamel.com — price-history start date for the SKU
+    - Amazon "Date First Available" in product details
+    - Amazon JSON-LD releaseDate / datePublished if populated
+    For peripherals, Amazon listing is typically within days of launch.
+    But if Amazon/Keepa is your ONLY signal, return YYYY-MM (not YYYY-MM-DD)
+    — listing dates can predate shipping by 1–3 months on pre-order launches.`,
+  TIER2_CONTENT: `    Reviews, hands-on coverage, launch posts citing a specific date.
+    Use to corroborate primary/retail, not as a sole source.`,
+  TIER4_HEADER: 'COMMUNITY / AGGREGATOR',
+  TIER4_CONTENT: `    Forum posts, spec databases, review aggregators.
+    - For YYYY-MM-DD / YYYY-MM precision: cross-reference only, never sole source.
+    - For YYYY precision: multiple independent tier4/tier5 sources agreeing on a
+      calendar year are acceptable standalone evidence (e.g. a forum thread from
+      2018 discussing the product as current places it in 2018).`,
+});
+
 export const RDF_DEFAULT_TEMPLATE = `Find the first-availability release date for: {{BRAND}} {{MODEL}} — {{VARIANT_DESC}}
 
 {{IDENTITY_INTRO}}
@@ -51,36 +88,14 @@ Important framing:
 
 {{EVIDENCE_REQUIREMENTS}}
 
-Source guidance — use the strongest signal available, fall back as needed:
+{{SOURCE_GUIDANCE}}
 
-  PRIMARY — manufacturer authority (tag as tier1)
-    Brand product page, press release, official news/blog, support article.
-    Typically yields YYYY-MM-DD. Treat as authoritative when present.
-
-  STRUCTURED RETAIL BACKUPS (tag as tier3)
-    Use when manufacturer sources are dead, redesigned, or undated.
-    - Keepa.com, camelcamelcamel.com — price-history start date for the SKU
-    - Amazon "Date First Available" in product details
-    - Amazon JSON-LD releaseDate / datePublished if populated
-    For peripherals, Amazon listing is typically within days of launch.
-    But if Amazon/Keepa is your ONLY signal, return YYYY-MM (not YYYY-MM-DD)
-    — listing dates can predate shipping by 1–3 months on pre-order launches.
-
-  INDEPENDENT CORROBORATION (tag as tier2)
-    Reviews, hands-on coverage, launch posts citing a specific date.
-    Use to corroborate primary/retail, not as a sole source.
-
-  COMMUNITY / AGGREGATOR (tag as tier4 or tier5)
-    Forum posts, spec databases, review aggregators.
-    - For YYYY-MM-DD / YYYY-MM precision: cross-reference only, never sole source.
-    - For YYYY precision: multiple independent tier4/tier5 sources agreeing on a
-      calendar year are acceptable standalone evidence (e.g. a forum thread from
-      2018 discussing the product as current places it in 2018).
-
-{{SCALAR_SOURCE_GUIDANCE_CLOSER}}
+{{VARIANT_DISAMBIGUATION}}
 
 {{VALUE_CONFIDENCE_GUIDANCE}}
 RDF-specific: below 50, prefer returning the broadest precision level (YYYY) you can defend over returning "unk". Only return "unk" when you cannot defensibly place the product in any calendar year.
+
+{{UNK_POLICY}}
 
 {{PREVIOUS_DISCOVERY}}Return JSON:
 - "release_date": "YYYY-MM-DD" | "YYYY-MM" | "YYYY" | "MMM YYYY" | "Month YYYY" | "unk"
@@ -161,7 +176,15 @@ export function buildReleaseDateFinderPrompt({
     PREVIOUS_DISCOVERY: discoverySection,
     EVIDENCE_REQUIREMENTS: `${buildEvidencePromptBlock({ minEvidenceRefs, includeEvidenceKind: true })}\n\n${buildEvidenceVerificationPromptBlock()}`,
     VALUE_CONFIDENCE_GUIDANCE: buildValueConfidencePromptBlock(),
-    SCALAR_SOURCE_GUIDANCE_CLOSER: resolveGlobalPrompt('scalarSourceGuidanceCloser'),
+    UNK_POLICY: resolveGlobalPrompt('unkPolicy'),
+    SOURCE_GUIDANCE: resolvePromptTemplate(resolveGlobalPrompt('variantScalarSourceGuidance'), {
+      ...RDF_SOURCE_VARIANT_GUIDANCE_SLOTS,
+      SCALAR_SOURCE_GUIDANCE_CLOSER: resolveGlobalPrompt('scalarSourceGuidanceCloser'),
+    }),
+    VARIANT_DISAMBIGUATION: resolvePromptTemplate(
+      resolveGlobalPrompt('variantScalarDisambiguation'),
+      RDF_VARIANT_DISAMBIGUATION_SLOTS,
+    ),
     SCALAR_RETURN_JSON_TAIL: resolvePromptTemplate(resolveGlobalPrompt('scalarReturnJsonTail'), {
       VALUE_NOUN: 'date',
       VALUE_KEY: 'release_date',

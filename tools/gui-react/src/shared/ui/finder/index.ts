@@ -5,7 +5,9 @@
  * Module-specific content goes inside the body; the chrome is standardized.
  *
  * Required per panel:
- *   FinderPanelHeader   — collapse toggle, title, status chip, module chip, run button
+ *   IndexingPanelHeader — unified chrome for all indexing-lab panels (pipeline,
+ *                         cef, pif, rdf, sku, key). Drives rail + icon chip
+ *                         color via the `panel` prop. See IndexingPanelHeader.tsx.
  *   FinderKpiCard       — metric cards (grid of N, module decides count + tones)
  *   FinderPanelFooter   — last-run date, model badge, run count
  *   FinderDeleteConfirmModal — confirmation for single-run or delete-all
@@ -51,7 +53,6 @@
 export { ColorSwatch, colorCircleStyle } from './ColorSwatch.tsx';
 export { DataIntegrityBanner } from './DataIntegrityBanner.tsx';
 export { FinderKpiCard } from './FinderKpiCard.tsx';
-export { FinderPanelHeader } from './FinderPanelHeader.tsx';
 export { IndexingPanelHeader } from './IndexingPanelHeader.tsx';
 export type { IndexingPanelId, IndexingPanelHeaderProps } from './IndexingPanelHeader.tsx';
 export { PromptPreviewTriggerButton } from './PromptPreviewTriggerButton.tsx';

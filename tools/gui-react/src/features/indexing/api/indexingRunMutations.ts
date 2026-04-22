@@ -27,7 +27,6 @@ interface UseIndexingRunMutationsInput {
   selectedVariant: string;
   selectedIndexLabRunId: string;
   clearProcessOutput: () => void;
-  setClearedRunViewId: (value: string) => void;
   clearIndexLabRun: (runId: string) => void;
   removeRunScopedQueries: (runId: string) => void;
   queryClient: QueryClient;
@@ -38,7 +37,6 @@ interface UseIndexingRunMutationsInput {
   processStatus: ProcessStatus | undefined;
   runtimeSettingsAuthorityReady: boolean;
   runtimeSettingsLoading: boolean;
-  replayPending: boolean;
   preflightCheck?: () => PreflightResult | null;
 }
 
@@ -54,7 +52,6 @@ export function useIndexingRunMutations(input: UseIndexingRunMutationsInput) {
     selectedVariant,
     selectedIndexLabRunId,
     clearProcessOutput,
-    setClearedRunViewId,
     clearIndexLabRun,
     removeRunScopedQueries,
     queryClient,
@@ -65,7 +62,6 @@ export function useIndexingRunMutations(input: UseIndexingRunMutationsInput) {
     processStatus,
     runtimeSettingsAuthorityReady,
     runtimeSettingsLoading,
-    replayPending,
     preflightCheck,
   } = input;
 
@@ -115,7 +111,6 @@ export function useIndexingRunMutations(input: UseIndexingRunMutationsInput) {
       const previousRunId = String(selectedIndexLabRunId || '').trim();
       const optimisticRunId = String(requestedRunId || '').trim();
       clearProcessOutput();
-      setClearedRunViewId('');
       if (previousRunId) {
         clearIndexLabRun(previousRunId);
         removeRunScopedQueries(previousRunId);
@@ -147,10 +142,10 @@ export function useIndexingRunMutations(input: UseIndexingRunMutationsInput) {
   });
 
   const stopMut = useMutation({
-    mutationFn: async ({ force }: { force: boolean }) => {
-      const first = await api.post<ProcessStatus>('/process/stop', { force });
+    mutationFn: async () => {
+      const first = await api.post<ProcessStatus>('/process/stop');
       if (first?.running) {
-        return api.post<ProcessStatus>('/process/stop', { force });
+        return api.post<ProcessStatus>('/process/stop');
       }
       return first;
     },
@@ -173,7 +168,7 @@ export function useIndexingRunMutations(input: UseIndexingRunMutationsInput) {
         : (processStatus?.exitCode !== null && processStatus?.exitCode !== undefined ? 'failed' : 'idle')
     );
 
-  const busy = startIndexLabMut.isPending || stopMut.isPending || startSearxngMut.isPending || replayPending;
+  const busy = startIndexLabMut.isPending || stopMut.isPending || startSearxngMut.isPending;
   const runtimeSettingsReady = runtimeSettingsAuthorityReady && !runtimeSettingsLoading;
   const canRunSingle = !!singleProductId && runtimeSettingsReady;
 

@@ -59,7 +59,7 @@ export const FINDER_PANELS = [
     id: 'keyFinder',
     label: 'KF',
     moduleClass: 'productFieldProducer',
-    scopeLevel: 'product',
+    scopeLevel: 'field_key',
     routePrefix: 'key-finder',
     moduleType: 'kf',
     phase: 'keyFinder',

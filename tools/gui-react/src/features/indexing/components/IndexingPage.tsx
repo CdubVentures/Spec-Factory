@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { deriveLlmKeyGateErrors, deriveSerperKeyGateError } from '../../../hooks/llmKeyGateHelpers.js';
 import { useSerperCreditQuery } from '../../../hooks/useSerperCreditQuery.ts';
@@ -6,7 +6,7 @@ import { api } from '../../../api/client.ts';
 import { useUiStore } from '../../../stores/uiStore.ts';
 import { useRuntimeStore } from '../../runtime-ops/state/runtimeStore.ts';
 import { useIndexLabStore } from '../state/indexlabStore.ts';
-import { useCollapseStore, usePersistedToggle } from '../../../stores/collapseStore.ts';
+import { useCollapseStore } from '../../../stores/collapseStore.ts';
 import {
   readRuntimeSettingsBootstrap,
   useRuntimeSettingsReader,
@@ -18,9 +18,6 @@ import {
 import { useSettingsAuthorityStore } from '../../../stores/settingsAuthorityStore.ts';
 import type { ProcessStatus } from '../../../types/events.ts';
 import { parseCatalogRows } from '../../catalog/api/catalogParsers.ts';
-import {
-  displayVariant,
-} from '../helpers.tsx';
 import type {
   IndexingLlmConfigResponse,
   PanelKey,
@@ -48,8 +45,10 @@ import { FinderPanelSkeleton } from '../panels/FinderPanelSkeleton.tsx';
 import {
   PIPELINE_TAB_ID,
   getIndexingTabIds,
+  INDEXING_TAB_META,
   type IndexingTabId,
 } from '../panels/finderTabMeta.ts';
+import type { IndexingPanelId } from '../../../shared/ui/finder/IndexingPanelHeader.tsx';
 import { FINDER_PANELS } from '../state/finderPanelRegistry.generated.ts';
 import { DiscoveryHistoryDrawer } from '../../../shared/ui/finder/index.ts';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
@@ -96,12 +95,11 @@ export function IndexingPage() {
   const setSingleProductId = useIndexLabStore((s) => s.setPickerProductId);
   const selectedIndexLabRunId = useIndexLabStore((s) => s.pickerRunId);
   const setSelectedIndexLabRunId = useIndexLabStore((s) => s.setPickerRunId);
-  const [clearedRunViewId, setClearedRunViewId] = useState('');
+  const recentSelections = useIndexLabStore((s) => s.recentSelections);
+  const pushRecent = useIndexLabStore((s) => s.pushRecent);
   const collapseValues = useCollapseStore((s) => s.values);
   const collapseToggle = useCollapseStore((s) => s.toggle);
   const panelCollapsed = useMemo(() => deriveIndexingPanelCollapsed(collapseValues), [collapseValues]);
-  const [stopForceKill, , setStopForceKill] = usePersistedToggle(`indexing:stopForceKill:${category}`, true);
-  const [replayPending, setReplayPending] = useState(false);
   const previousCategoryRef = useRef(category);
 
   const { data: processStatus } = useQuery({
@@ -114,21 +112,28 @@ export function IndexingPage() {
     [processStatus],
   );
 
-  const { data: indexingLlmConfig } = useQuery({
+  const { data: indexingLlmConfig, isPending: indexingLlmConfigPending } = useQuery({
     queryKey: ['indexing', 'llm-config'],
     queryFn: () => api.get<IndexingLlmConfigResponse>('/indexing/llm-config'),
     refetchInterval: 15_000
   });
 
-  const { data: serperCredit } = useSerperCreditQuery();
+  const { data: serperCredit, isPending: serperCreditPending } = useSerperCreditQuery();
+
+  // WHY: while either key-gate source is still on its first fetch, don't
+  // evaluate missing-key errors — prevents a red banner from flashing
+  // during tab switches / initial mount. PipelinePanel shows a Spinner
+  // in place of the banner until both sources resolve.
+  const keyGateLoading = indexingLlmConfigPending || serperCreditPending;
 
   const llmKeyGateErrors = useMemo(() => {
+    if (keyGateLoading) return [];
     const llmErrors = deriveLlmKeyGateErrors(indexingLlmConfig?.routing_snapshot);
     const serperError = deriveSerperKeyGateError(serperCredit);
     return serperError ? [...llmErrors, serperError] : llmErrors;
-  }, [indexingLlmConfig?.routing_snapshot, serperCredit]);
+  }, [keyGateLoading, indexingLlmConfig?.routing_snapshot, serperCredit]);
 
-  const { data: catalog = [] } = useQuery({
+  const { data: catalog = [], isPending: catalogPending } = useQuery({
     queryKey: ['catalog', category, 'indexing'],
     queryFn: () => api.parsedGet(`/catalog/${category}`, parseCatalogRows),
     enabled: true,
@@ -137,7 +142,6 @@ export function IndexingPage() {
 
   const {
     indexlabRuns,
-    runViewCleared,
   } = useIndexingRunSelectionState({
     isProcessRunning,
     category,
@@ -145,23 +149,18 @@ export function IndexingPage() {
     processStartedAt: String(processStatus?.startedAt || ''),
     selectedIndexLabRunId,
     setSelectedIndexLabRunId,
-    clearedRunViewId,
-    setClearedRunViewId,
   });
 
   const {
     indexlabEventsResp,
   } = useIndexingRunQueries({
     selectedIndexLabRunId,
-    runViewCleared,
     isProcessRunning,
     panelCollapsed,
   });
 
   const {
-    brandOptions,
-    modelOptions,
-    variantOptions,
+    catalogRows,
     selectedCatalogProduct,
     selectedAmbiguityMeter,
   } = useIndexingCatalogDerivations({
@@ -210,17 +209,10 @@ export function IndexingPage() {
     publishProcessStatus,
     refreshAll,
     removeRunScopedQueries,
-    clearSelectedRunView,
-    replaySelectedRunView,
   } = useIndexingRunViewHandlers({
     queryClient,
     category,
     selectedIndexLabRunId,
-    clearProcessOutput,
-    clearIndexLabRun,
-    setClearedRunViewId,
-    replayPending,
-    setReplayPending,
     setRuntimeProcessStatus,
   });
 
@@ -252,7 +244,6 @@ export function IndexingPage() {
     selectedVariant: selectedCatalogProduct?.variant ?? '',
     selectedIndexLabRunId,
     clearProcessOutput,
-    setClearedRunViewId,
     clearIndexLabRun,
     removeRunScopedQueries,
     queryClient,
@@ -263,7 +254,6 @@ export function IndexingPage() {
     processStatus,
     runtimeSettingsAuthorityReady,
     runtimeSettingsLoading,
-    replayPending,
   });
 
   const togglePanel = (panel: PanelKey) => {
@@ -285,22 +275,25 @@ export function IndexingPage() {
     return entry.component;
   }, [activeTabId]);
 
+  const linkedPanel = (INDEXING_TAB_META[activeTabId]?.iconClass ?? 'picker') as IndexingPanelId;
+
   const pickerPanelProps = {
     collapsed: panelCollapsed.picker,
     onToggle: () => togglePanel('picker'),
     busy,
+    catalogRows,
     singleBrand,
     onBrandChange: setSingleBrand,
     singleModel,
     onModelChange: setSingleModel,
     singleProductId,
     onProductIdChange: setSingleProductId,
-    brandOptions,
-    modelOptions,
-    variantOptions,
     selectedCatalogProduct,
-    displayVariant,
     selectedAmbiguityMeter,
+    recentSelections,
+    onPushRecent: pushRecent,
+    linkedPanel,
+    catalogLoading: catalogPending,
   };
 
   const pipelinePanelProps = {
@@ -312,13 +305,9 @@ export function IndexingPage() {
     canRunSingle,
     onRunIndexLab: handleRunIndexLab,
     llmKeyGateErrors,
-    stopForceKill,
-    onStopForceKillChange: setStopForceKill,
-    onStopProcess: (opts: { force: boolean }) => stopMut.mutate(opts),
+    keyGateLoading,
+    onStopProcess: () => stopMut.mutate(),
     stopPending: stopMut.isPending,
-    selectedIndexLabRunId,
-    onClearSelectedRunView: clearSelectedRunView,
-    onReplaySelectedRunView: replaySelectedRunView,
     productId: singleProductId,
     category,
   };

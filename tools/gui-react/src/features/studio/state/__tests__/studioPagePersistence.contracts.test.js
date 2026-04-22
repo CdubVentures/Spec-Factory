@@ -38,9 +38,7 @@ test('studio page persistence builds a rename-aware autosave payload from the fi
       version: 2,
       selected_keys: ['legacy_key'],
       field_overrides: {
-        legacy_key: {
-          enum_name: 'LegacyEnum',
-        },
+        legacy_key: {},
       },
       enum_lists: [
         {

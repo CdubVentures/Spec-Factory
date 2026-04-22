@@ -159,7 +159,7 @@ test('process runtime stop returns a confirmed stop status for an active child',
   const h = createHarness();
   h.runtime.startProcess('src/app/cli/spec.js', ['indexlab', '--run-id', 'run_abcdefgh']);
 
-  const stopStatus = await h.runtime.stopProcess(1500, { force: false });
+  const stopStatus = await h.runtime.stopProcess(1500);
   assert.equal(stopStatus.stop_attempted, true);
   assert.equal(stopStatus.stop_confirmed, true);
   assert.equal(stopStatus.orphan_killed, 0);
@@ -239,7 +239,7 @@ test('process runtime non-zero exit skips compile completion but still reports t
   );
 });
 
-test('process runtime force stop reports orphan cleanup through the returned status', async () => {
+test('process runtime stop always sweeps orphan indexlab processes', async () => {
   const h = createHarness({
     processRef: {
       env: {},
@@ -249,7 +249,7 @@ test('process runtime force stop reports orphan cleanup through the returned sta
     spawn: () => createCommandChild({ stdout: '777\n', exitCode: 0 }),
   });
 
-  const stopStatus = await h.runtime.stopProcess(1500, { force: true });
+  const stopStatus = await h.runtime.stopProcess(1500);
   assert.equal(stopStatus.stop_attempted, true);
   assert.equal(stopStatus.stop_confirmed, true);
   assert.equal(stopStatus.orphan_killed, 1);

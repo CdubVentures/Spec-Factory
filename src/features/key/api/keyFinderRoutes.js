@@ -32,7 +32,9 @@ import { buildOrchestratorProduct } from '../../../core/finder/finderOrchestrati
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
 import { isReservedFieldKey, getReservedFieldKeys } from '../../../core/finder/finderExclusions.js';
 import { calcKeyBudget } from '../keyBudgetCalc.js';
+import { packBundle } from '../keyBundler.js';
 import { runKeyFinder } from '../keyFinder.js';
+import { compileKeyFinderPreviewPrompt } from '../keyFinderPreviewPrompt.js';
 import {
   readKeyFinder,
   deleteKeyFinderRun,
@@ -50,7 +52,14 @@ function resolveProductRoot(config) {
 function filterRunsByFieldKey(runs, fieldKey) {
   if (!Array.isArray(runs)) return [];
   if (!fieldKey) return runs;
-  return runs.filter((r) => r?.response?.primary_field_key === fieldKey);
+  // WHY: A key may appear in a run as either primary or passenger (bundling).
+  // Scoping history to primary-only would hide passenger-resolved runs from
+  // the key's own history drawer and prompt slide-over.
+  return runs.filter((r) => {
+    if (r?.response?.primary_field_key === fieldKey) return true;
+    const results = r?.response?.results;
+    return results && Object.prototype.hasOwnProperty.call(results, fieldKey);
+  });
 }
 
 function filterRunsByGroupKeys(runs, groupKeys) {
@@ -94,6 +103,25 @@ function readBudgetSettings(specDb) {
   };
 }
 
+// Bundling settings — mirrors keyFinder.js step 2 so /summary's bundle_preview
+// matches what Run / Loop would pack if the row were fired right now.
+function readBundlingSettings(specDb) {
+  const store = specDb?.getFinderStore?.('keyFinder') ?? null;
+  const boolKnob = (k, d) => {
+    const raw = readKnobString(store, k);
+    if (raw === '') return d;
+    return raw === 'true';
+  };
+  return {
+    bundlingEnabled: boolKnob('bundlingEnabled', false),
+    groupBundlingOnly: boolKnob('groupBundlingOnly', true),
+    bundlingPassengerCost: parseJsonSetting(readKnobString(store, 'bundlingPassengerCost'), { easy: 1, medium: 2, hard: 4, very_hard: 8 }),
+    bundlingPoolPerPrimary: parseJsonSetting(readKnobString(store, 'bundlingPoolPerPrimary'), { easy: 6, medium: 4, hard: 2, very_hard: 1 }),
+    passengerDifficultyPolicy: readKnobString(store, 'passengerDifficultyPolicy') || 'less_or_equal',
+    budgetVariantPointsPerExtra: parseInt(readKnobString(store, 'budgetVariantPointsPerExtra') || '1', 10) || 1,
+  };
+}
+
 function resolveVariantCount(specDb, productId) {
   const variants = specDb?.variants?.listActive?.(productId) || [];
   return variants.length > 0 ? variants.length : 1;
@@ -110,6 +138,7 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
   const fields = compiled?.fields || {};
   const runs = Array.isArray(doc?.runs) ? doc.runs : [];
   const budgetSettings = readBudgetSettings(specDb);
+  const bundlingSettings = readBundlingSettings(specDb);
   const variantCount = resolveVariantCount(specDb, productId);
 
   const newestByKey = new Map();
@@ -126,6 +155,39 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
 
   const threshold = Number.isFinite(publishConfidenceThreshold) ? publishConfidenceThreshold : 0;
   const hasResolvedHook = typeof specDb?.getResolvedFieldCandidate === 'function';
+
+  // Bulk-compute the resolved set once (O(keys) SQL reads, not O(keys²)) + group
+  // rules by group name so packBundle can find same-group candidates cheaply.
+  // Reserved field_keys (CEF/PIF/RDF/SKF-owned + EG-locked) are excluded from
+  // the candidate pool so keyFinder doesn't bundle peers owned by other finders.
+  const resolvedSet = new Set();
+  const rulesByGroup = new Map();
+  for (const [fk, rule] of Object.entries(fields)) {
+    if (isReservedFieldKey(fk)) continue;
+    if (hasResolvedHook && specDb.getResolvedFieldCandidate(productId, fk)) {
+      resolvedSet.add(fk);
+    }
+    const g = rule?.group || '';
+    if (!rulesByGroup.has(g)) rulesByGroup.set(g, []);
+    rulesByGroup.get(g).push({ fieldKey: fk, fieldRule: rule });
+  }
+
+  function computeBundlePreview(fk, rule) {
+    if (!bundlingSettings.bundlingEnabled || !rule) return [];
+    const group = rule.group || '';
+    const sameGroup = rulesByGroup.get(group) || [];
+    const candidates = sameGroup.filter((c) => c.fieldKey !== fk);
+    const { breakdown } = packBundle({
+      primary: { fieldKey: fk, fieldRule: rule },
+      candidates,
+      resolvedFieldKeys: resolvedSet,
+      settings: bundlingSettings,
+    });
+    // Breakdown entries carry the passenger cost directly from the packer.
+    // UI renders "{field_key} (cost)" so users can eyeball-sum against the
+    // primary's pool without re-deriving costs on the client.
+    return breakdown.map((b) => ({ field_key: b.fieldKey, cost: b.cost }));
+  }
 
   function buildRow(fk, rule) {
     const ui = rule?.ui || {};
@@ -164,6 +226,7 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
       required_level: String(rule?.required_level || '').trim(),
       variant_dependent: rule?.variant_dependent === true,
       budget,
+      bundle_preview: computeBundlePreview(fk, rule),
       last_run_number: run ? (run.run_number || null) : null,
       last_ran_at: run ? (run.ran_at || run.started_at || '') : null,
       last_status: lastStatus,
@@ -241,6 +304,24 @@ export function registerKeyFinderRoutes(ctx) {
       return jsonRes(res, 200, summaries);
     }
 
+    // ── GET /key-finder/:category/:productId/bundling-config — live settings
+    // snapshot. Panel uses this to render the BundlingStatusStrip at the top
+    // (enabled / scope / policy / pool / cost). Passenger cost is RAW (no
+    // variant scaling). Invalidates via the 'settings' domain template.
+    if (method === 'GET' && category && productId && parts[3] === 'bundling-config' && !parts[4]) {
+      const specDb = getSpecDb(category);
+      if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+      const s = readBundlingSettings(specDb);
+      return jsonRes(res, 200, {
+        enabled: s.bundlingEnabled,
+        groupBundlingOnly: s.groupBundlingOnly,
+        passengerDifficultyPolicy: s.passengerDifficultyPolicy,
+        poolPerPrimary: s.bundlingPoolPerPrimary,
+        passengerCost: s.bundlingPassengerCost,
+        variantCount: resolveVariantCount(specDb, productId),
+      });
+    }
+
     // ── GET /key-finder/:category/:productId/summary — per-key rollup ─
     // Panel uses this to populate one row per key (status, last_value, etc.).
     // Reads the JSON doc directly (Dual-State mandate: JSON is SSOT).
@@ -300,6 +381,36 @@ export function registerKeyFinderRoutes(ctx) {
         runs,
         candidates,
       });
+    }
+
+    // ── POST /key-finder/:category/:productId/preview-prompt — compile only
+    // WHY: read-only prompt preview. Mirrors the generic finder preview branch
+    // at finderRoutes.js:299-337 but hand-wired because keyFinder uses a custom
+    // router. No operation registration, no runKeyFinder, no persistence — pure
+    // compile. Shares buildPassengers + settings reader with the live runner so
+    // preview and run are byte-identical by construction.
+    if (method === 'POST' && category && productId && parts[3] === 'preview-prompt' && !parts[4]) {
+      try {
+        const specDb = getSpecDb(category);
+        if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+        const productRow = specDb.getProduct(productId);
+        if (!productRow) return jsonRes(res, 404, { error: 'product not found', product_id: productId, category });
+        const body = await readJsonBody(req).catch(() => ({}));
+        const product = buildOrchestratorProduct({ productId, category, productRow });
+        const envelope = await compileKeyFinderPreviewPrompt({
+          product, specDb, appDb, config,
+          productRoot: resolveProductRoot(config),
+          productId, category,
+          logger: logger || null,
+          body: body || {},
+        });
+        return jsonRes(res, 200, envelope);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        const statusCode = (err && typeof err === 'object' && Number.isInteger(err.statusCode)) ? err.statusCode : 500;
+        if (statusCode >= 500) console.error('[key-finder] POST /preview-prompt failed:', message);
+        return jsonRes(res, statusCode, { error: 'preview failed', message });
+      }
     }
 
     // ── POST /key-finder/:category/:productId — trigger run ───────
@@ -408,18 +519,19 @@ export function registerKeyFinderRoutes(ctx) {
       if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
       const runNumber = parseInt(parts[4], 10);
       if (!Number.isFinite(runNumber)) return jsonRes(res, 400, { error: 'invalid_run_number' });
-      const fieldKey = params?.get?.('field_key') || '';
       const productRoot = resolveProductRoot(config);
 
       const doc = readKeyFinder({ productId, productRoot });
       if (!doc) return jsonRes(res, 404, { error: 'not found' });
 
-      // Cascade: strip this run's contribution from field_candidates first
-      if (fieldKey) {
-        stripRunSourceFromCandidates(specDb, productId, [fieldKey], SOURCE_TYPE, [runNumber], config, false);
+      // Cascade: derive affected keys from run.selected.keys (primary + passengers)
+      // so bundled candidates don't orphan when their primary run is deleted.
+      const targetRun = (doc.runs || []).find((r) => r.run_number === runNumber);
+      const affectedKeys = targetRun?.selected?.keys ? Object.keys(targetRun.selected.keys) : [];
+      if (affectedKeys.length > 0) {
+        stripRunSourceFromCandidates(specDb, productId, affectedKeys, SOURCE_TYPE, [runNumber], config, false);
       }
 
-      // Then remove the run from JSON + SQL
       deleteKeyFinderRun({ productId, productRoot, runNumber });
       if (specDb.deleteFinderRun) specDb.deleteFinderRun('keyFinder', productId, runNumber);
 
@@ -428,7 +540,7 @@ export function registerKeyFinderRoutes(ctx) {
         event: `${ROUTE_PREFIX}-run-deleted`,
         category,
         entities: { productIds: [productId] },
-        meta: { productId, deletedRun: runNumber, field_key: fieldKey || null },
+        meta: { productId, deletedRun: runNumber, field_keys: affectedKeys },
       });
       return jsonRes(res, 200, { status: 'deleted', run_number: runNumber });
     }
@@ -437,16 +549,21 @@ export function registerKeyFinderRoutes(ctx) {
     if (method === 'DELETE' && category && productId && !parts[3]) {
       const specDb = getSpecDb(category);
       if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+      const productRoot = resolveProductRoot(config);
 
-      // Strip every candidate row keyFinder has contributed to for this product.
-      // Phase 3a Part 2 scope: a single call when field_key is provided; bulk
-      // cleanup across all keys is a Phase 4 concern when the dashboard ships.
-      const fieldKey = params?.get?.('field_key') || '';
-      if (fieldKey) {
-        stripRunSourceFromCandidates(specDb, productId, [fieldKey], SOURCE_TYPE, null, config, false);
+      // Collect every field_key this product's keyFinder runs have touched
+      // (primary + every passenger across every run) so the candidate cascade
+      // is complete, not just the query-string fieldKey.
+      const doc = readKeyFinder({ productId, productRoot });
+      const affectedKeys = new Set();
+      for (const r of doc?.runs || []) {
+        for (const k of Object.keys(r?.selected?.keys || {})) affectedKeys.add(k);
+      }
+      if (affectedKeys.size > 0) {
+        stripRunSourceFromCandidates(specDb, productId, [...affectedKeys], SOURCE_TYPE, null, config, false);
       }
 
-      deleteKeyFinderAll({ productId, productRoot: resolveProductRoot(config) });
+      deleteKeyFinderAll({ productId, productRoot });
       if (specDb.deleteFinderAll) specDb.deleteFinderAll('keyFinder', productId);
 
       emitDataChange({
@@ -454,7 +571,7 @@ export function registerKeyFinderRoutes(ctx) {
         event: `${ROUTE_PREFIX}-deleted`,
         category,
         entities: { productIds: [productId] },
-        meta: { productId, field_key: fieldKey || null },
+        meta: { productId, field_keys: [...affectedKeys] },
       });
       return jsonRes(res, 200, { status: 'deleted_all' });
     }

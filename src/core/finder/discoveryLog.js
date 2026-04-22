@@ -30,7 +30,6 @@ import { resolveGlobalPrompt } from '../llm/prompts/globalPromptRegistry.js';
  *   runMatcher?: (run: FinderRun) => boolean,
  *   includeUrls?: boolean,
  *   includeQueries?: boolean,
- *   suppressions?: { urlsChecked?: Set<string>, queriesRun?: Set<string> },
  * }} [opts]
  * @returns {{ urlsChecked: string[], queriesRun: string[] }}
  */
@@ -39,10 +38,7 @@ export function accumulateDiscoveryLog(previousRuns, opts = {}) {
     runMatcher,
     includeUrls = false,
     includeQueries = false,
-    suppressions = {},
   } = opts;
-  const urlSuppressions = suppressions.urlsChecked instanceof Set ? suppressions.urlsChecked : new Set();
-  const querySuppressions = suppressions.queriesRun instanceof Set ? suppressions.queriesRun : new Set();
 
   if (!includeUrls && !includeQueries) {
     return { urlsChecked: [], queriesRun: [] };
@@ -64,8 +60,8 @@ export function accumulateDiscoveryLog(previousRuns, opts = {}) {
   }
 
   return {
-    urlsChecked: [...urlSet].filter((u) => !urlSuppressions.has(u)),
-    queriesRun: [...querySet].filter((q) => !querySuppressions.has(q)),
+    urlsChecked: [...urlSet],
+    queriesRun: [...querySet],
   };
 }
 

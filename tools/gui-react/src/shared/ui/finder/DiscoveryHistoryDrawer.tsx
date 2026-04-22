@@ -18,7 +18,6 @@ import { FINDER_PANELS } from '../../../features/indexing/state/finderPanelRegis
 import { useFinderDiscoveryHistoryStore } from '../../../stores/finderDiscoveryHistoryStore.ts';
 import { useColorEditionFinderQuery } from '../../../features/color-edition-finder/index.ts';
 import { buildFinderVariantRows } from './variantRowHelpers.ts';
-import { useDiscoverySuppressions } from './discoverySuppressionsQueries.ts';
 import {
   groupHistory,
   getLogFromRun,
@@ -89,6 +88,11 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
   const scopeLevel = resolveScopeLevel(finderId);
   const routePrefix = resolveRoutePrefix(finderId);
   const finderLabel = resolveFinderLabel(finderId);
+  // WHY: Optional allow-list of field_keys. keyFinder's group-history button
+  // sets this to the current group's keys so the drawer shows one group's
+  // worth of buckets instead of all of them. Panel keeps this live by calling
+  // setFieldKeyFilter whenever the group's membership changes.
+  const fieldKeyFilter = useFinderDiscoveryHistoryStore((s) => s.fieldKeyFilter);
 
   // WHY: One-RAF flip so the component first paints off-screen then transitions
   // to on-screen. Without it, the initial paint already has translate-x-0 and
@@ -121,12 +125,10 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
     return m;
   }, [variantRows]);
 
-  const supp = useDiscoverySuppressions(finderId, category, productId);
-
   const grouped = useMemo(() => {
     const runs = runsQuery.data?.runs || [];
-    return groupHistory(runs, scopeLevel, supp.suppressions);
-  }, [runsQuery.data, scopeLevel, supp.suppressions]);
+    return groupHistory(runs, scopeLevel);
+  }, [runsQuery.data, scopeLevel]);
 
   const [searchText, setSearchText] = useState('');
   const [kind, setKind] = useState<KindFilter>('all');
@@ -175,19 +177,31 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
       if (mm.size > 0) byVariantMode.set(vid, mm);
     }
 
+    const allowedFieldKeys = fieldKeyFilter ? new Set(fieldKeyFilter) : null;
+    const byFieldKey = new Map<string, FilteredBucket>();
+    for (const [fk, bucket] of grouped.byFieldKey.entries()) {
+      if (allowedFieldKeys && !allowedFieldKeys.has(fk)) continue;
+      const u = filterUrls([...bucket.urls]);
+      const qu = filterQueries([...bucket.queries]);
+      if (u.length === 0 && qu.length === 0) continue;
+      byFieldKey.set(fk, { urls: u, queries: qu });
+    }
+
     const totalUrls = productUrls.length
       + [...byVariant.values()].reduce((s, b) => s + b.urls.length, 0)
       + [...byVariantMode.values()].reduce(
           (s1, modes) => s1 + [...modes.values()].reduce((s2, b) => s2 + b.urls.length, 0), 0,
-        );
+        )
+      + [...byFieldKey.values()].reduce((s, b) => s + b.urls.length, 0);
     const totalQueries = productQueries.length
       + [...byVariant.values()].reduce((s, b) => s + b.queries.length, 0)
       + [...byVariantMode.values()].reduce(
           (s1, modes) => s1 + [...modes.values()].reduce((s2, b) => s2 + b.queries.length, 0), 0,
-        );
+        )
+      + [...byFieldKey.values()].reduce((s, b) => s + b.queries.length, 0);
 
-    return { productUrls, productQueries, byVariant, byVariantMode, totalUrls, totalQueries };
-  }, [grouped, searchText, kind, variantFilter, modeFilter]);
+    return { productUrls, productQueries, byVariant, byVariantMode, byFieldKey, totalUrls, totalQueries };
+  }, [grouped, searchText, kind, variantFilter, modeFilter, fieldKeyFilter]);
 
   const variantOptions = useMemo(() => {
     const ids = new Set<string>();
@@ -218,43 +232,28 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
   }, [runsQuery.data]);
 
   const kpiCards: KpiCard[] = useMemo(() => {
-    const fourth: KpiCard = scopeLevel === 'product'
-      ? { label: 'Runs Used', value: String(runsUsed), tone: 'success' }
-      : {
-          label: 'Variants',
-          value: String(
-            scopeLevel === 'variant' ? grouped.byVariant.size : grouped.byVariantMode.size,
-          ),
-          tone: 'success',
-        };
+    let third: KpiCard;
+    if (scopeLevel === 'product') {
+      third = { label: 'Runs Used', value: String(runsUsed), tone: 'success' };
+    } else if (scopeLevel === 'field_key') {
+      third = { label: 'Keys', value: String(grouped.byFieldKey.size), tone: 'success' };
+    } else {
+      third = {
+        label: 'Variants',
+        value: String(
+          scopeLevel === 'variant' ? grouped.byVariant.size : grouped.byVariantMode.size,
+        ),
+        tone: 'success',
+      };
+    }
     return [
       { label: 'URLs', value: String(filtered.totalUrls), tone: 'info' },
       { label: 'Queries', value: String(filtered.totalQueries), tone: 'info' },
-      {
-        label: 'Hidden',
-        value: String(supp.suppressions.length),
-        tone: supp.suppressions.length > 0 ? 'warning' : 'info',
-      },
-      fourth,
+      third,
     ];
-  }, [scopeLevel, filtered, supp.suppressions, grouped, runsUsed]);
+  }, [scopeLevel, filtered, grouped, runsUsed]);
 
   const hasAnyData = filtered.totalUrls + filtered.totalQueries > 0;
-
-  const handleHideAllVisible = () => {
-    for (const u of filtered.productUrls) supp.addSuppression({ item: u, kind: 'url' });
-    for (const qu of filtered.productQueries) supp.addSuppression({ item: qu, kind: 'query' });
-    for (const [vid, bucket] of filtered.byVariant.entries()) {
-      for (const u of bucket.urls) supp.addSuppression({ item: u, kind: 'url', variant_id: vid });
-      for (const qu of bucket.queries) supp.addSuppression({ item: qu, kind: 'query', variant_id: vid });
-    }
-    for (const [vid, modes] of filtered.byVariantMode.entries()) {
-      for (const [m, bucket] of modes.entries()) {
-        for (const u of bucket.urls) supp.addSuppression({ item: u, kind: 'url', variant_id: vid, mode: m });
-        for (const qu of bucket.queries) supp.addSuppression({ item: qu, kind: 'query', variant_id: vid, mode: m });
-      }
-    }
-  };
 
   return (
     <div
@@ -272,7 +271,7 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
         onClose={onClose}
       />
 
-      <div className="px-5 py-4 border-b sf-border-soft shrink-0 grid grid-cols-4 gap-2">
+      <div className="px-5 py-4 border-b sf-border-soft shrink-0 grid grid-cols-3 gap-2">
         {kpiCards.map((card) => (
           <CompactKpiCard key={card.label} label={card.label} value={card.value} tone={card.tone} />
         ))}
@@ -315,11 +314,6 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
             urls={filtered.productUrls}
             queries={filtered.productQueries}
             kind={kind}
-            onSuppressItem={(item, k) => supp.addSuppression({ item, kind: k })}
-            onClearKind={(k) => {
-              const items = k === 'url' ? filtered.productUrls : filtered.productQueries;
-              for (const item of items) supp.addSuppression({ item, kind: k });
-            }}
           />
         )}
 
@@ -330,13 +324,6 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
             groups={filtered.byVariant}
             labelByVariantId={labelByVariantId}
             kind={kind}
-            onSuppressItem={(item, k, vid) =>
-              supp.addSuppression({ item, kind: k, variant_id: vid })
-            }
-            onClearVariant={(vid, bucket) => {
-              for (const u of bucket.urls) supp.addSuppression({ item: u, kind: 'url', variant_id: vid });
-              for (const qu of bucket.queries) supp.addSuppression({ item: qu, kind: 'query', variant_id: vid });
-            }}
           />
         )}
 
@@ -347,24 +334,18 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
             groups={filtered.byVariantMode}
             labelByVariantId={labelByVariantId}
             kind={kind}
-            onSuppressItem={(item, k, vid, m) =>
-              supp.addSuppression({ item, kind: k, variant_id: vid, mode: m })
-            }
-            onClearVariantMode={(vid, m, bucket) => {
-              for (const u of bucket.urls) supp.addSuppression({ item: u, kind: 'url', variant_id: vid, mode: m });
-              for (const qu of bucket.queries) supp.addSuppression({ item: qu, kind: 'query', variant_id: vid, mode: m });
-            }}
+          />
+        )}
+
+        {scopeLevel === 'field_key' && hasAnyData && (
+          <FieldKeyBody
+            finderId={finderId}
+            productId={productId}
+            groups={filtered.byFieldKey}
+            kind={kind}
           />
         )}
       </div>
-
-      <DrawerFooter
-        hiddenCount={supp.suppressions.length}
-        canHideAll={hasAnyData && !supp.isPending}
-        canRestoreAll={supp.suppressions.length > 0 && !supp.isPending}
-        onHideAll={handleHideAllVisible}
-        onRestoreAll={() => supp.deleteAll()}
-      />
     </div>
   );
 }
@@ -518,40 +499,15 @@ function KindToggle({ kind, onChange }: { kind: KindFilter; onChange: (v: KindFi
   );
 }
 
-function StandardActionButton({
-  label, onClick, tone = 'neutral', disabled = false,
-}: {
-  label: string;
-  onClick: () => void;
-  tone?: 'neutral' | 'danger' | 'primary';
-  disabled?: boolean;
-}) {
-  const toneClass =
-    tone === 'danger' ? 'sf-danger-button'
-    : tone === 'primary' ? 'sf-primary-button'
-    : 'sf-action-button';
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`h-7 px-2.5 text-[10px] font-bold uppercase tracking-wide rounded ${toneClass} disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap`}
-    >
-      {label}
-    </button>
-  );
-}
-
 interface FlatBodyProps {
   finderId: string;
   productId: string;
   urls: string[];
   queries: string[];
   kind: KindFilter;
-  onSuppressItem: (item: string, kind: 'url' | 'query') => void;
-  onClearKind: (kind: 'url' | 'query') => void;
 }
 
-function FlatBody({ finderId, productId, urls, queries, kind, onSuppressItem, onClearKind }: FlatBodyProps) {
+function FlatBody({ finderId, productId, urls, queries, kind }: FlatBodyProps) {
   return (
     <>
       {kind !== 'query' && urls.length > 0 && (
@@ -559,9 +515,8 @@ function FlatBody({ finderId, productId, urls, queries, kind, onSuppressItem, on
           title="URLs"
           count={`${urls.length}`}
           storeKey={`discoveryHistory:${finderId}:${productId}:urls`}
-          trailing={<StandardActionButton label="Hide all" tone="danger" onClick={() => onClearKind('url')} />}
         >
-          <ItemList items={urls} kind="url" onSuppress={(item) => onSuppressItem(item, 'url')} />
+          <ItemList items={urls} kind="url" />
         </FinderSectionCard>
       )}
       {kind !== 'url' && queries.length > 0 && (
@@ -569,9 +524,8 @@ function FlatBody({ finderId, productId, urls, queries, kind, onSuppressItem, on
           title="Queries"
           count={`${queries.length}`}
           storeKey={`discoveryHistory:${finderId}:${productId}:queries`}
-          trailing={<StandardActionButton label="Hide all" tone="danger" onClick={() => onClearKind('query')} />}
         >
-          <ItemList items={queries} kind="query" onSuppress={(item) => onSuppressItem(item, 'query')} />
+          <ItemList items={queries} kind="query" />
         </FinderSectionCard>
       )}
     </>
@@ -584,12 +538,10 @@ interface VariantBodyProps {
   groups: Map<string, FilteredBucket>;
   labelByVariantId: Map<string, string>;
   kind: KindFilter;
-  onSuppressItem: (item: string, kind: 'url' | 'query', variantId: string) => void;
-  onClearVariant: (variantId: string, bucket: FilteredBucket) => void;
 }
 
 function VariantBody({
-  finderId, productId, groups, labelByVariantId, kind, onSuppressItem, onClearVariant,
+  finderId, productId, groups, labelByVariantId, kind,
 }: VariantBodyProps) {
   return (
     <>
@@ -599,20 +551,12 @@ function VariantBody({
           title={labelByVariantId.get(vid) || vid}
           count={`${bucket.urls.length} url · ${bucket.queries.length} qu`}
           storeKey={`discoveryHistory:${finderId}:${productId}:variant:${vid}`}
-          trailing={
-            <StandardActionButton
-              label="Hide variant"
-              tone="danger"
-              onClick={() => onClearVariant(vid, bucket)}
-            />
-          }
         >
           {kind !== 'query' && bucket.urls.length > 0 && (
             <SubList
               label={`URLs (${bucket.urls.length})`}
               items={bucket.urls}
               kind="url"
-              onSuppress={(item) => onSuppressItem(item, 'url', vid)}
             />
           )}
           {kind !== 'url' && bucket.queries.length > 0 && (
@@ -620,7 +564,45 @@ function VariantBody({
               label={`Queries (${bucket.queries.length})`}
               items={bucket.queries}
               kind="query"
-              onSuppress={(item) => onSuppressItem(item, 'query', vid)}
+            />
+          )}
+        </FinderSectionCard>
+      ))}
+    </>
+  );
+}
+
+interface FieldKeyBodyProps {
+  finderId: string;
+  productId: string;
+  groups: Map<string, FilteredBucket>;
+  kind: KindFilter;
+}
+
+function FieldKeyBody({
+  finderId, productId, groups, kind,
+}: FieldKeyBodyProps) {
+  return (
+    <>
+      {[...groups.entries()].map(([fk, bucket]) => (
+        <FinderSectionCard
+          key={fk}
+          title={fk}
+          count={`${bucket.urls.length} url · ${bucket.queries.length} qu`}
+          storeKey={`discoveryHistory:${finderId}:${productId}:field:${fk}`}
+        >
+          {kind !== 'query' && bucket.urls.length > 0 && (
+            <SubList
+              label={`URLs (${bucket.urls.length})`}
+              items={bucket.urls}
+              kind="url"
+            />
+          )}
+          {kind !== 'url' && bucket.queries.length > 0 && (
+            <SubList
+              label={`Queries (${bucket.queries.length})`}
+              items={bucket.queries}
+              kind="query"
             />
           )}
         </FinderSectionCard>
@@ -635,12 +617,10 @@ interface VariantModeBodyProps {
   groups: Map<string, Map<string, FilteredBucket>>;
   labelByVariantId: Map<string, string>;
   kind: KindFilter;
-  onSuppressItem: (item: string, kind: 'url' | 'query', variantId: string, mode: string) => void;
-  onClearVariantMode: (variantId: string, mode: string, bucket: FilteredBucket) => void;
 }
 
 function VariantModeBody({
-  finderId, productId, groups, labelByVariantId, kind, onSuppressItem, onClearVariantMode,
+  finderId, productId, groups, labelByVariantId, kind,
 }: VariantModeBodyProps) {
   return (
     <>
@@ -661,20 +641,12 @@ function VariantModeBody({
                   title={m}
                   count={`${bucket.urls.length} url · ${bucket.queries.length} qu`}
                   storeKey={`discoveryHistory:${finderId}:${productId}:variant:${vid}:mode:${m}`}
-                  trailing={
-                    <StandardActionButton
-                      label="Hide mode"
-                      tone="danger"
-                      onClick={() => onClearVariantMode(vid, m, bucket)}
-                    />
-                  }
                 >
                   {kind !== 'query' && bucket.urls.length > 0 && (
                     <SubList
                       label={`URLs (${bucket.urls.length})`}
                       items={bucket.urls}
                       kind="url"
-                      onSuppress={(item) => onSuppressItem(item, 'url', vid, m)}
                     />
                   )}
                   {kind !== 'url' && bucket.queries.length > 0 && (
@@ -682,7 +654,6 @@ function VariantModeBody({
                       label={`Queries (${bucket.queries.length})`}
                       items={bucket.queries}
                       kind="query"
-                      onSuppress={(item) => onSuppressItem(item, 'query', vid, m)}
                     />
                   )}
                 </FinderSectionCard>
@@ -696,21 +667,21 @@ function VariantModeBody({
 }
 
 function SubList({
-  label, items, kind, onSuppress,
-}: { label: string; items: string[]; kind: 'url' | 'query'; onSuppress: (item: string) => void }) {
+  label, items, kind,
+}: { label: string; items: string[]; kind: 'url' | 'query' }) {
   return (
     <div className="text-left">
       <div className="text-[10px] font-bold uppercase tracking-wide sf-text-subtle mb-1">
         {label}
       </div>
-      <ItemList items={items} kind={kind} onSuppress={onSuppress} />
+      <ItemList items={items} kind={kind} />
     </div>
   );
 }
 
 function ItemList({
-  items, kind, onSuppress,
-}: { items: readonly string[]; kind: 'url' | 'query'; onSuppress: (item: string) => void }) {
+  items, kind,
+}: { items: readonly string[]; kind: 'url' | 'query' }) {
   return (
     <ul className="divide-y sf-border-soft border sf-border-soft rounded text-left">
       {items.map((item) => (
@@ -720,52 +691,8 @@ function ItemList({
               <a href={item} target="_blank" rel="noreferrer" className="hover:underline">{item}</a>
             ) : item}
           </span>
-          <button
-            onClick={() => onSuppress(item)}
-            className="shrink-0 w-5 h-5 flex items-center justify-center rounded sf-text-muted hover:sf-status-text-danger hover:bg-[var(--sf-state-danger-bg)]"
-            aria-label="Hide item"
-            title="Hide item"
-          >
-            &times;
-          </button>
         </li>
       ))}
     </ul>
-  );
-}
-
-interface DrawerFooterProps {
-  hiddenCount: number;
-  canHideAll: boolean;
-  canRestoreAll: boolean;
-  onHideAll: () => void;
-  onRestoreAll: () => void;
-}
-
-function DrawerFooter({ hiddenCount, canHideAll, canRestoreAll, onHideAll, onRestoreAll }: DrawerFooterProps) {
-  return (
-    <div className="px-5 py-3 border-t sf-border-default shrink-0 flex items-center gap-2 text-left">
-      <div className="flex-1 min-w-0 flex items-center gap-2">
-        <span className={`px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide rounded ${hiddenCount > 0 ? 'sf-chip-warning' : 'sf-chip-neutral'}`}>
-          Hidden: <span className="font-bold font-mono">{hiddenCount}</span>
-        </span>
-      </div>
-      <button
-        onClick={onRestoreAll}
-        disabled={!canRestoreAll}
-        className="h-8 w-28 px-3 text-[11px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed"
-        title="Un-hide everything that's currently suppressed"
-      >
-        Restore All
-      </button>
-      <button
-        onClick={onHideAll}
-        disabled={!canHideAll}
-        className="h-8 w-28 px-3 text-[11px] font-bold uppercase tracking-wide rounded sf-danger-button disabled:opacity-40 disabled:cursor-not-allowed"
-        title="Hide every currently visible URL and query (respects filters)"
-      >
-        Hide All
-      </button>
-    </div>
   );
 }

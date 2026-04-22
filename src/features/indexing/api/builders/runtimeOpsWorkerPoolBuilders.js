@@ -229,6 +229,7 @@ export function buildRuntimeOpsWorkers(events, options) {
         elapsed_ms: 0,
         last_error: null,
         proxy_url: null,
+        bright_data_unlocked: false,
         retries: toInt(payload.retries, 0),
         fetch_mode: String(payload.fetch_mode || payload.fetcher_kind || '').trim() || null,
         docs_processed: 0,
@@ -429,6 +430,30 @@ export function buildRuntimeOpsWorkers(events, options) {
         // the finish event typically carries an empty string that would
         // destroy the original preview set during llm_started.
         if (payload.prompt_preview != null && payload.prompt_preview !== '') w.prompt_preview = String(payload.prompt_preview);
+      }
+    } else if (type === 'brightdata_unlock_started') {
+      // WHY: Flip state to retrying + set the BrightData label immediately so the
+      // GUI shows live progress while the unlock is in flight (can take 5-60s).
+      // Without this, workers would stay frozen on "403 / direct" during the wait.
+      if (w.pool === 'fetch') {
+        w.bright_data_unlocked = true;
+        w.state = 'retrying';
+      }
+    } else if (type === 'url_unlocked_via_brightdata') {
+      // WHY: Mark worker so the GUI can badge fetches that needed Bright Data
+      // as a final unlock path (after Playwright + Webshare proxy retries failed).
+      // Also flip state from 'failed' to 'crawled' — Playwright failed but we
+      // recovered via BD, so the final outcome for this URL is success.
+      if (w.pool === 'fetch' && payload.succeeded) {
+        w.bright_data_unlocked = true;
+        if (w.state === 'failed' || w.state === 'blocked' || w.state === 'retrying') {
+          w.state = 'crawled';
+          w.last_error = null;
+        }
+      } else if (w.pool === 'fetch' && !payload.succeeded && w.state === 'retrying') {
+        // BD tried and failed → revert to failed so user sees the real outcome
+        w.state = 'failed';
+        w.last_error = String(payload.error || 'brightdata_failed').trim();
       }
     } else if (type === 'source_processed') {
       if (w.pool === 'fetch') {

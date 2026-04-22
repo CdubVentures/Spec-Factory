@@ -214,12 +214,6 @@ export function buildEgReleaseDatePreset(_ctx?: EgPresetCtx): FieldRule {
       domain_hints: ['mousespecs.org', 'eloshapes.com', 'pcpartpicker.com', 'techpowerup.com'],
       content_types: ['product_page', 'review'],
       query_terms: ['release date', 'launch date', 'available since', 'announced'],
-      query_templates: [
-        '{brand} {model} release date',
-        '{brand} {model} launch date',
-        '{brand} {model} available since',
-        '"{model}" release date',
-      ],
     },
   };
 }
@@ -266,11 +260,6 @@ export function buildEgSkuPreset(_ctx?: EgPresetCtx): FieldRule {
       domain_hints: [],
       content_types: ['product_page', 'spec_sheet'],
       query_terms: ['part number', 'mpn', 'model number', 'product code'],
-      query_templates: [
-        '{brand} {model} part number',
-        '{brand} {model} MPN',
-        '"{model}" part number',
-      ],
     },
   };
 }

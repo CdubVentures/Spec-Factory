@@ -31,6 +31,11 @@ const DOMAIN_QUERY_TEMPLATES = Object.freeze({
   'review-layout': Object.freeze([
     ['reviewLayout', CATEGORY_TOKEN],
     ['componentReviewLayout', CATEGORY_TOKEN],
+    // WHY: resolving a peer field shifts the keyFinder passenger set — any
+    // open PromptPreviewModal must refetch so the compiled prompt reflects
+    // the new resolved-field state (passengers drop out once their peer
+    // resolves above publish threshold).
+    ['prompt-preview', 'key', CATEGORY_TOKEN],
   ]),
   labels: Object.freeze([
     ['fieldLabels', CATEGORY_TOKEN],
@@ -123,6 +128,14 @@ const DOMAIN_QUERY_TEMPLATES = Object.freeze({
     ['ui-settings'],
     ['runtime-settings'],
     ['indexing', 'llm-config'],
+    // WHY: pipeline-settings save can change keyFinder bundling knobs, which
+    // affects /summary's bundle_preview column. Invalidate the keyFinder
+    // query tree so the Bundled column refreshes reactively.
+    ['key-finder', CATEGORY_TOKEN],
+    // Bundling knob changes also alter the compiled prompt (passenger list,
+    // ADDITIONAL_* sections). Refetch any open prompt preview so the modal
+    // reflects the new settings without a close/reopen cycle.
+    ['prompt-preview', 'key', CATEGORY_TOKEN],
   ]),
   storage: Object.freeze([
     ['indexlab', 'runs'],

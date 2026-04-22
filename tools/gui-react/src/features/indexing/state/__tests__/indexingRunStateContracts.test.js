@@ -74,7 +74,6 @@ test('run view actions publish status and refresh both shared and run-scoped que
     publishProcessStatus,
     refreshIndexingPageData,
     removeRunScopedQueries,
-    invalidateRunScopedQueries,
   } = await loadBundledModule(
     'tools/gui-react/src/features/indexing/state/indexingRunViewActions.ts',
     { prefix: 'indexing-run-view-actions-' },
@@ -98,7 +97,6 @@ test('run view actions publish status and refresh both shared and run-scoped que
     selectedIndexLabRunId: 'run-123',
   });
   removeRunScopedQueries({ queryClient, runId: 'run-123' });
-  await invalidateRunScopedQueries({ queryClient, runId: 'run-123' });
 
   assert.deepEqual(published, [status]);
   assert.deepEqual(

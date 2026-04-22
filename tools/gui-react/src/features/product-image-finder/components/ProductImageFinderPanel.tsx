@@ -10,8 +10,8 @@ import { useMemo, useCallback, useState } from 'react';
 import './ProductImageFinderPanel.css';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import {
-  AnimatedDots,
-  FinderPanelHeader,
+  IndexingPanelHeader,
+  PromptPreviewTriggerButton,
   FinderKpiCard,
   FinderPanelFooter,
   FinderRunModelBadge,
@@ -25,6 +25,7 @@ import {
   PagerSizeSelector,
   PagerNavFooter,
 } from '../../../shared/ui/finder/index.ts';
+import { HeaderActionButton, RowActionButton, ACTION_BUTTON_WIDTH } from '../../../shared/ui/actionButton/index.ts';
 import { usePromptPreviewQuery } from '../../indexing/api/promptPreviewQueries.ts';
 import type { KpiCard, DeleteTarget } from '../../../shared/ui/finder/types.ts';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
@@ -126,6 +127,15 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
     productId,
     promptPreviewBody,
     Boolean(activePromptModal),
+  );
+
+  const [headerPromptModalOpen, setHeaderPromptModalOpen] = useState(false);
+  const headerPromptQuery = usePromptPreviewQuery(
+    'pif',
+    category,
+    productId,
+    {},
+    headerPromptModalOpen,
   );
 
   const deleteRunMut = useDeleteProductImageFinderRunMutation(category, productId);
@@ -396,55 +406,60 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   const visiblePifEvalGroups = pifEvalGroups.slice(pifEvalPag.startIndex, pifEvalPag.endIndex);
 
   return (
-    <div className="sf-surface-panel p-0 flex flex-col">
+    <div className="sf-surface-panel p-0 flex flex-col" data-panel="pif">
       {/* Header */}
-      <FinderPanelHeader
+      <IndexingPanelHeader
+        panel="pif"
+        icon="▣"
         collapsed={collapsed}
         onToggle={toggleCollapsed}
         title="Product Image Finder"
         tip="Finds and downloads high-resolution product images per color variant and edition. Requires CEF data."
         isRunning={isRunning}
-        runDisabled={false}
-        runLabel="Loop"
-        onRun={handleLoopAll}
-        historyActionSlot={<DiscoveryHistoryButton finderId="productImageFinder" productId={productId} category={category} />}
-        actionSlot={
-          <div className="ml-auto flex items-center gap-1.5">
-            <button
-              onClick={(e) => { e.stopPropagation(); handleEvalAll(); }}
-              disabled={!hasCefData || imageCount === 0 || evaluatingVariants.size > 0}
-              className="w-28 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed text-center"
-              title="Carousel Builder: evaluate all variants"
-            >
-              Eval All
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); handleLoopAll(); }}
-              disabled={!hasCefData || (variants.length > 0 && variants.every((v) => loopingVariants.has(v.key)))}
-              className="w-28 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-primary-button disabled:opacity-40 disabled:cursor-not-allowed text-center"
-            >
-              {variants.length > 0 && variants.every((v) => loopingVariants.has(v.key)) ? <>Loop <AnimatedDots /></> : 'Loop'}
-            </button>
-          </div>
+        modelStrip={
+          <>
+            <FinderRunModelBadge
+              labelPrefix="PIF"
+              model={modelDisplay}
+              accessMode={resolvedAccessMode}
+              thinking={resolvedModel?.thinking ?? false}
+              webSearch={resolvedModel?.webSearch ?? false}
+              effortLevel={effortLevel}
+            />
+            <FinderRunModelBadge
+              labelPrefix="EVAL"
+              model={evalModelDisplay}
+              accessMode={evalAccessMode}
+              thinking={evalModel?.thinking ?? false}
+              webSearch={evalModel?.webSearch ?? false}
+              effortLevel={evalEffortLevel}
+            />
+          </>
         }
-      >
-        <FinderRunModelBadge
-          labelPrefix="PIF"
-          model={modelDisplay}
-          accessMode={resolvedAccessMode}
-          thinking={resolvedModel?.thinking ?? false}
-          webSearch={resolvedModel?.webSearch ?? false}
-          effortLevel={effortLevel}
-        />
-        <FinderRunModelBadge
-          labelPrefix="EVAL"
-          model={evalModelDisplay}
-          accessMode={evalAccessMode}
-          thinking={evalModel?.thinking ?? false}
-          webSearch={evalModel?.webSearch ?? false}
-          effortLevel={evalEffortLevel}
-        />
-      </FinderPanelHeader>
+        historySlot={<DiscoveryHistoryButton finderId="productImageFinder" productId={productId} category={category} width={ACTION_BUTTON_WIDTH.standardHeader} />}
+        promptSlot={<PromptPreviewTriggerButton onClick={() => setHeaderPromptModalOpen(true)} disabled={!productId} width={ACTION_BUTTON_WIDTH.standardHeader} />}
+        actionSlot={
+          <>
+            <HeaderActionButton
+              intent="locked"
+              label="Eval All"
+              onClick={handleEvalAll}
+              disabled={!hasCefData || imageCount === 0}
+              busy={evaluatingVariants.size > 0}
+              title="Carousel Builder: evaluate all variants"
+              width={ACTION_BUTTON_WIDTH.standardHeader}
+            />
+            <HeaderActionButton
+              intent="locked"
+              label="Loop"
+              onClick={handleLoopAll}
+              disabled={!hasCefData}
+              busy={variants.length > 0 && variants.every((v) => loopingVariants.has(v.key))}
+              width={ACTION_BUTTON_WIDTH.standardHeader}
+            />
+          </>
+        }
+      />
 
       {/* Body */}
       {collapsed ? null : !hasCefData ? (
@@ -502,16 +517,15 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                     {imageGroups.every(g => !!pifImageGroupExpand[g.key]) ? 'Collapse All' : 'Expand All'}
                   </button>
                   {imageCount > 0 && (
-                    <button
+                    <RowActionButton
+                      intent="delete"
+                      label="Delete All"
                       onClick={() => {
                         const allFilenames = galleryImages.map(img => img.filename).filter(Boolean);
                         setDeleteTarget({ kind: 'images-all', filenames: allFilenames, count: allFilenames.length });
                       }}
                       disabled={deleteImageMut.isPending}
-                      className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded sf-action-button sf-status-text-danger border sf-border-soft opacity-60 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                      Delete All
-                    </button>
+                    />
                   )}
                 </div>
               }
@@ -563,13 +577,12 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
               trailing={
                 <div className="flex items-center gap-2">
                   <PagerSizeSelector pageSize={pifRunPag.pageSize} onPageSizeChange={pifRunPag.setPageSize} />
-                  <button
+                  <RowActionButton
+                    intent="delete"
+                    label="Delete All"
                     onClick={() => setDeleteTarget({ kind: 'all', count: runCount })}
                     disabled={deleteAllMut.isPending}
-                    className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded sf-action-button sf-status-text-danger border sf-border-soft opacity-60 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    Delete All
-                  </button>
+                  />
                 </div>
               }
             >
@@ -614,16 +627,15 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
               trailing={
                 <div className="flex items-center gap-2">
                   <PagerSizeSelector pageSize={pifEvalPag.pageSize} onPageSizeChange={pifEvalPag.setPageSize} />
-                  <button
+                  <RowActionButton
+                    intent="delete"
+                    label="Delete All"
                     onClick={() => {
                       const allEvalNumbers = (pifData?.evaluations ?? []).map(e => e.eval_number);
                       setDeleteTarget({ kind: 'eval-all', evalNumbers: allEvalNumbers, count: allEvalNumbers.length });
                     }}
                     disabled={deleteEvalMut.isPending}
-                    className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded sf-action-button sf-status-text-danger border sf-border-soft opacity-60 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    Delete All
-                  </button>
+                  />
                 </div>
               }
             >
@@ -697,6 +709,15 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
         title={`PIF — ${activePromptModal?.mode ?? ''}`}
         subtitle={activePromptModal ? `variant: ${activePromptModal.variantKey}` : undefined}
         storageKeyPrefix={`indexing:pif:preview:${productId}:${activePromptModal?.variantKey ?? ''}:${activePromptModal?.mode ?? ''}`}
+      />
+
+      <PromptPreviewModal
+        open={headerPromptModalOpen}
+        onClose={() => setHeaderPromptModalOpen(false)}
+        query={headerPromptQuery}
+        title="Product Image Finder — Compiled Prompt"
+        subtitle={productId ? `product: ${productId}` : undefined}
+        storageKeyPrefix={`indexing:pif:header-preview:${productId}`}
       />
 
       {/* Lightbox overlay */}

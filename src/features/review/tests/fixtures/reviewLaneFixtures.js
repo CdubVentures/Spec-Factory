@@ -11,7 +11,7 @@ export const FIELD_RULES_FIELDS = {
   weight: { required_level: 'required', contract: { type: 'number', unit: 'g', shape: 'scalar', range: { min: 20, max: 300 } }, variance_policy: null, constraints: [] },
   dpi: { required_level: 'required', contract: { type: 'integer', unit: 'dpi', shape: 'scalar', range: { min: 50, max: 100000 } }, variance_policy: 'upper_bound', constraints: [] },
   sensor: { required_level: 'required', contract: { type: 'string', shape: 'scalar' }, component: { type: 'sensor', source: 'component_db.sensor' }, variance_policy: null, constraints: [] },
-  connection: { required_level: 'required', contract: { type: 'string', shape: 'scalar' }, enum: { policy: 'closed' }, enum_name: 'connection', variance_policy: null, constraints: [] },
+  connection: { required_level: 'required', contract: { type: 'string', shape: 'scalar' }, enum: { policy: 'closed' }, variance_policy: null, constraints: [] },
   dpi_max: { required_level: 'expected', contract: { type: 'number', unit: 'dpi', shape: 'scalar' }, variance_policy: 'upper_bound', constraints: [] },
   ips: { required_level: 'expected', contract: { type: 'number', unit: 'ips', shape: 'scalar' }, variance_policy: 'upper_bound', constraints: [] },
   acceleration: { required_level: 'expected', contract: { type: 'number', unit: 'g', shape: 'scalar' }, variance_policy: 'upper_bound', constraints: [] },

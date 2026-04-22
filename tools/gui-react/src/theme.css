@@ -1531,6 +1531,64 @@ html[data-sf-theme-mode='dark'] .sf-prompt-preview-label {
   color: rgb(216 180 254);
 }
 
+/* WHY: History buttons (panel header + key-group row) carry a warm-brown hue
+   so the eye can separate "look at past runs" from purple "inspect prompt"
+   and accent "run it now". Mirrors .sf-prompt-preview-button exactly —
+   transparent fill, 0.55 border alpha, 0.12 hover alpha — so only the hue
+   differs. Paired with <ActionButton intent="history">. */
+.sf-history-button {
+  border: 1px solid rgb(184 134 81 / 0.55);
+  border-radius: var(--sf-radius-sm);
+  color: rgb(184 134 81);
+  background: transparent;
+}
+
+.sf-history-button:hover {
+  background: rgb(184 134 81 / 0.12);
+}
+
+html[data-sf-theme-mode='dark'] .sf-history-button {
+  color: rgb(224 196 156);
+  border-color: rgb(224 196 156 / 0.55);
+}
+
+html[data-sf-theme-mode='dark'] .sf-history-button:hover {
+  background: rgb(184 134 81 / 0.18);
+}
+
+.sf-history-button:disabled,
+.sf-history-button:disabled:hover {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: transparent;
+}
+
+/* WHY: Delete buttons (Del, Delete All, Delete variant) use a subtle
+   treatment — soft grey border (matches sf-border-soft) + red text
+   (sf-state-danger-fg), faded to 0.6 opacity and brightened on hover. This
+   mirrors the canonical row-level "Del" in FinderRunHistoryRow and every
+   historical "Delete All" so the whole family reads as one gesture. Not an
+   alarm-red filled button — just a subtle "this destroys". Paired with
+   <ActionButton intent="delete">. */
+.sf-delete-button {
+  border: 1px solid rgb(var(--sf-color-border-default-rgb) / 0.76);
+  border-radius: var(--sf-radius-sm);
+  color: var(--sf-state-danger-fg);
+  background: transparent;
+  opacity: 0.6;
+}
+
+.sf-delete-button:hover {
+  opacity: 1;
+}
+
+.sf-delete-button:disabled,
+.sf-delete-button:disabled:hover {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: transparent;
+}
+
 .sf-success-button-solid:hover {
   filter: brightness(0.94);
 }
@@ -1870,46 +1928,41 @@ html[data-sf-theme-mode='dark'] .sf-tab-item.sf-tab-item-active:active {
   transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
 }
 
-/* ON: theme accent fill (blue on default theme) */
 .sf-switch-on {
-  color: rgb(var(--sf-color-surface-elevated-rgb));
-  background: rgb(var(--sf-color-accent-rgb));
-  border-color: rgb(var(--sf-color-accent-strong-rgb));
+  color: var(--sf-state-success-fg);
+  background: var(--sf-state-success-bg);
+  border-color: var(--sf-state-success-border);
 }
 
-/* OFF: two-gray pattern — light gray button, mid gray track */
 .sf-switch-off {
   color: rgb(var(--sf-color-text-muted-rgb));
-  background: rgb(var(--sf-color-border-subtle-rgb) / 0.6);
-  border-color: rgb(var(--sf-color-border-default-rgb));
+  background: rgb(var(--sf-color-border-default-rgb) / 0.42);
+  border-color: rgb(var(--sf-color-border-subtle-rgb) / 0.52);
 }
 
 html[data-sf-theme-mode='dark'] .sf-switch-off {
   color: rgb(var(--sf-color-text-subtle-rgb));
-  background: rgb(var(--sf-color-border-subtle-rgb) / 0.45);
-  border-color: rgb(var(--sf-color-border-default-rgb) / 0.8);
+  background: rgb(var(--sf-color-border-subtle-rgb) / 0.22);
+  border-color: rgb(var(--sf-color-border-subtle-rgb) / 0.58);
 }
 
-/* Off track = the darker of the two grays */
 .sf-switch-track {
-  border: 1px solid rgb(var(--sf-color-border-default-rgb));
-  background: rgb(var(--sf-color-border-default-rgb) / 0.9);
+  border: 1px solid rgb(var(--sf-color-border-subtle-rgb) / 0.7);
+  background: rgb(var(--sf-color-border-default-rgb) / 0.56);
 }
 
 html[data-sf-theme-mode='dark'] .sf-switch-track {
-  background: rgb(var(--sf-color-border-default-rgb) / 0.6);
+  background: rgb(var(--sf-color-border-subtle-rgb) / 0.34);
 }
 
-/* On track = darker accent recess inside the accent-filled button */
 .sf-switch-track-on {
-  border-color: rgb(var(--sf-color-accent-strong-rgb));
-  background: rgb(0 0 0 / 0.22);
+  border-color: var(--sf-state-success-border);
+  background: var(--sf-state-success-bg);
 }
 
-/* Thumb stays bright white on both states so the slide reads clearly */
 .sf-switch-thumb {
   background: rgb(var(--sf-color-surface-elevated-rgb));
-  box-shadow: 0 1px 2px rgb(15 23 42 / 0.35);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.22);
 }
 
 .sf-status-text-info {
@@ -5186,8 +5239,10 @@ html[data-sf-theme='slate'] .sf-switch-track {
   border-color: #2e3a50;
 }
 
-/* WHY: off-state is now transparent+dashed across all themes for clear contrast
-   with the filled on-state; no slate-specific override needed. */
+html[data-sf-theme='slate'] .sf-switch-off {
+  background: rgb(37 45 61 / 0.40);
+  border-color: #2e3a50;
+}
 
 html[data-sf-theme='slate'] .sf-switch-thumb {
   background: #e2e8f0;

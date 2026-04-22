@@ -512,6 +512,7 @@ export function KeyNavigatorTab({
                 saveIfAutoSaveEnabled={saveIfAutoSaveEnabled}
                 category={category}
                 isEgLocked={egLockedKeys.includes(selectedKey)}
+                BadgeRenderer={B}
               />
 
               {EG_TOGGLEABLE_KEY_SET.has(selectedKey) && (

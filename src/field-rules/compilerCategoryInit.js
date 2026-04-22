@@ -91,9 +91,6 @@ function starterFieldDefinition({ group, fieldKey }) {
     required_level: requiredLevel,
     availability,
     difficulty: 'easy',
-    unknown_reason_default: normalizedGroup === 'editorial'
-      ? 'editorial_not_generated'
-      : 'not_found_after_search',
     description: `Starter ${normalizedGroup} field`
   };
 }
@@ -125,7 +122,6 @@ function starterFieldRows({ category, templateName }) {
     required_level: '',
     availability: '',
     difficulty: '',
-    unknown_reason_default: '',
     description: `Add category-specific performance fields for '${category}'`
   });
   rows.push({
@@ -137,7 +133,6 @@ function starterFieldRows({ category, templateName }) {
     required_level: '',
     availability: '',
     difficulty: '',
-    unknown_reason_default: '',
     description: `Add category-specific feature fields for '${category}'`
   });
   return rows;

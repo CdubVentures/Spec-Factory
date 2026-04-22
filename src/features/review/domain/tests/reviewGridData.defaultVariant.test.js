@@ -15,7 +15,6 @@ function makeLayout(fields) {
       type: f.type || 'string',
       required: false,
       units: null,
-      enum_name: null,
       component_type: null,
       enum_source: null,
       variant_dependent: Boolean(f.variant_dependent),

@@ -16,7 +16,7 @@ const VALID_PARENT_PREFIXES = new Set(Object.keys(PARENT_GROUPS));
 const VALID_TYPES = new Set(['string', 'array', 'filteredArray', 'presence']);
 
 // WHY: sub-consumer key must match parent.name pattern
-const CONSUMER_KEY_RE = /^(idx|eng|rev|flag|seed|comp|val|pub)\.\w+$/;
+const CONSUMER_KEY_RE = /^(idx|eng|rev|flag|seed|comp|val|pub|llm)\.\w+$/;
 
 describe('Registry entry shape', () => {
   it('every entry has required fields', () => {
@@ -70,22 +70,27 @@ describe('Registry integrity', () => {
     assert.equal(paths.length, unique.size, `duplicate paths: ${paths.filter((p, i) => paths.indexOf(p) !== i)}`);
   });
 
-  it('all 12 sub-consumers appear at least once', () => {
+  it('all declared sub-consumers appear at least once', () => {
     const allKeys = new Set();
     for (const entry of CONSUMER_BADGE_REGISTRY) {
       for (const key of Object.keys(entry.consumers)) {
         allKeys.add(key);
       }
     }
-    // WHY: rev.grid/rev.flag/rev.enum removed — consensus scoring never shipped, LLM enum
-    // consistency dead-ended, and per-field flag semantics now live under a dedicated `flag`
-    // parent group instead of `rev`.
+    // WHY: rev.grid is the review-grid metadata consumer (reviewGridHelpers.js:134 reads
+    // evidence.min_evidence_refs, reviewGridData.js:140 reads variant_dependent). rev.metadata
+    // covers componentReviewHelpers.js reads of enum.policy + enum.source. llm.kf is the
+    // per-key finder LLM prompt composer (keyLlmAdapter.js reads contract/evidence/aliases/
+    // search_hints/etc. for prompt injection). llm.route is tier model selection
+    // (keyFinder.js resolvePhaseModelByTier). llm.budget is per-key attempt budget
+    // (keyBudgetCalc.js). llm.bundle is passenger packing (keyBundler.js, keyPassengerBuilder.js).
     const expected = [
       'idx.needset', 'idx.search',
       'eng.validate', 'eng.normalize', 'eng.enum', 'eng.list', 'eng.component', 'eng.gate',
-      'rev.component',
-      'flag.evidence',
+      'rev.component', 'rev.grid', 'rev.metadata', 'rev.override',
       'seed.schema', 'seed.component',
+      'val.publish_gate',
+      'llm.kf', 'llm.route', 'llm.budget', 'llm.bundle',
     ];
     for (const key of expected) {
       assert.ok(allKeys.has(key), `sub-consumer "${key}" not found in any registry entry`);

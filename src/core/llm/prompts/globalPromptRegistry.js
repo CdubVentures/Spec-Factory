@@ -177,10 +177,72 @@ Do not inflate confidence beyond what the cited evidence supports.`,
 
   scalarSourceGuidanceCloser: {
     label: 'Scalar finder — source guidance closer',
-    description: 'Closer line after the tier1/tier2/tier3/tier4 source-guidance block in scalar finders (RDF, SKU). Tells the LLM the above describes kind-of-evidence and tagging, not a script.',
+    description: 'Closer line after the tier1/tier2/tier3/tier4 source-guidance block in scalar finders (RDF, SKU). Tells the LLM the above describes kind-of-evidence and tagging, not a script. Composed inside variantScalarSourceGuidance for variant-scoped scalars; keyFinder uses it via scalarSourceTierStrategy.',
     appliesTo: ['rdf', 'scalar'],
     variables: [],
     defaultTemplate: 'You decide which sources to query and in what order — the above describes what kind of evidence counts and how to tag it, not a script to execute.',
+  },
+
+  variantScalarSourceGuidance: {
+    label: 'Variant scalar finder — source guidance block',
+    description: 'Parameterized 4-tier source guidance skeleton shared by variant-scoped scalar finders (RDF, SKU, future variant scalars). Each finder supplies field-specific slot values (see VARIANT_SOURCE_GUIDANCE_SLOT_KEYS). keyFinder is product-scoped and uses scalarSourceTierStrategy instead — not a consumer of this block.',
+    appliesTo: ['rdf', 'scalar'],
+    variables: [
+      { name: 'OPENER_TAIL', required: false },
+      { name: 'TIER1_CONTENT', required: true },
+      { name: 'TIER3_HEADER', required: true },
+      { name: 'TIER3_CONTENT', required: true },
+      { name: 'TIER2_CONTENT', required: true },
+      { name: 'TIER4_HEADER', required: true },
+      { name: 'TIER4_CONTENT', required: true },
+      { name: 'SCALAR_SOURCE_GUIDANCE_CLOSER', required: true },
+    ],
+    defaultTemplate: `Source guidance — use the strongest signal available{{OPENER_TAIL}}:
+
+  PRIMARY — manufacturer authority (tag as tier1)
+{{TIER1_CONTENT}}
+
+  {{TIER3_HEADER}} (tag as tier3)
+{{TIER3_CONTENT}}
+
+  INDEPENDENT CORROBORATION (tag as tier2)
+{{TIER2_CONTENT}}
+
+  {{TIER4_HEADER}} (tag as tier4 or tier5)
+{{TIER4_CONTENT}}
+
+{{SCALAR_SOURCE_GUIDANCE_CLOSER}}`,
+  },
+
+  variantScalarDisambiguation: {
+    label: 'Variant scalar finder — VARIANT DISAMBIGUATION block',
+    description: 'Parameterized 4-rule variant disambiguation skeleton shared by variant-scoped scalar finders (RDF, SKU, future variant scalars). Each finder supplies field-specific slot values (see VARIANT_DISAMBIGUATION_SLOT_KEYS). Not applicable to keyFinder (product-scoped) or CEF (owns variants authoritatively).',
+    appliesTo: ['rdf', 'scalar'],
+    variables: [
+      { name: 'RULE1_LOCATE', required: true },
+      { name: 'RULE2_DISTINCT_SIGNAL', required: true },
+      { name: 'RULE3_SHARED_SIGNAL', required: true },
+      { name: 'RULE4_AMBIGUOUS_UNK', required: true },
+      { name: 'BASE_WARNING_CLOSER', required: true },
+    ],
+    defaultTemplate: `VARIANT DISAMBIGUATION — critical for multi-color / edition products:
+
+If the manufacturer product page shows multiple colors/editions:
+  1. {{RULE1_LOCATE}}
+  2. {{RULE2_DISTINCT_SIGNAL}}
+  3. {{RULE3_SHARED_SIGNAL}}
+  4. {{RULE4_AMBIGUOUS_UNK}}
+
+{{BASE_WARNING_CLOSER}}`,
+  },
+
+  unkPolicy: {
+    label: 'Scalar finder — honest "unk" policy',
+    description: 'Universal "honest unk beats low-confidence guess" policy for scalar finders (keyFinder, RDF, SKU). Pairs with evidence/confidence rubrics — keeps publisher gate clean and produces useful unknown_reason diagnostics.',
+    appliesTo: ['rdf', 'scalar'],
+    variables: [],
+    defaultTemplate: `Honest "unk" policy:
+When evidence cannot defend the value under the tier/confidence rules above, return "unk" (as a literal string) and supply a specific unknown_reason explaining what you searched, where, and why the value couldn't be confirmed. An honest "unk" with a clear reason is strictly better than a low-confidence guess \u2014 it keeps the publisher gate clean, and the unknown_reason is a useful diagnostic for future runs. Prefer "unk" over: paraphrased partial values, guessed placeholder characters, format-normalized approximations, or copying a sibling product's value.`,
   },
 
   scalarSourceTierStrategy: {
@@ -242,6 +304,27 @@ Do not inflate confidence beyond what the cited evidence supports.`,
 };
 
 export const GLOBAL_PROMPT_KEYS = Object.freeze(Object.keys(GLOBAL_PROMPTS));
+
+// Slot keys for the parameterized globals. Exported so scalarFinderPromptContract
+// can validate per-finder slot bags at registration time without duplicating the
+// slot list. Keep in sync with the defaultTemplate placeholders above.
+export const VARIANT_SOURCE_GUIDANCE_SLOT_KEYS = Object.freeze([
+  'OPENER_TAIL',
+  'TIER1_CONTENT',
+  'TIER3_HEADER',
+  'TIER3_CONTENT',
+  'TIER2_CONTENT',
+  'TIER4_HEADER',
+  'TIER4_CONTENT',
+]);
+
+export const VARIANT_DISAMBIGUATION_SLOT_KEYS = Object.freeze([
+  'RULE1_LOCATE',
+  'RULE2_DISTINCT_SIGNAL',
+  'RULE3_SHARED_SIGNAL',
+  'RULE4_AMBIGUOUS_UNK',
+  'BASE_WARNING_CLOSER',
+]);
 
 export function resolveGlobalPrompt(key) {
   const entry = GLOBAL_PROMPTS[key];

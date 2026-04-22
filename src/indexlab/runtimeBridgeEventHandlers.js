@@ -47,6 +47,26 @@ import { setStageCursor, recordStartupMs, startStage, finishStage, advanceCrawlC
 
 // ── Individual event handlers ──────────────────────────────────────────────
 
+async function handleBrightDataUnlockStarted(state, deps, { ts, url, row }) {
+  const workerId = url ? (state.workerByUrl.get(url) || '') : '';
+  await emit(state, 'fetch', 'brightdata_unlock_started', {
+    scope: 'url', url,
+    worker_id: workerId,
+  }, ts);
+}
+
+async function handleUrlUnlockedViaBrightData(state, deps, { ts, url, row }) {
+  const workerId = url ? (state.workerByUrl.get(url) || '') : '';
+  await emit(state, 'fetch', 'url_unlocked_via_brightdata', {
+    scope: 'url', url,
+    worker_id: workerId,
+    succeeded: asBool(row.succeeded, false),
+    attempts: asInt(row.attempts, 0),
+    status: asInt(row.status, 0),
+    error: String(row.error || '').trim(),
+  }, ts);
+}
+
 async function handleRunStarted(state, deps, { ts, row }) {
   state.startedAt = ts;
   state.setContext({
@@ -1036,6 +1056,8 @@ const EVENT_HANDLERS = new Map([
   ['extraction_plugin_failed',        handleExtractionPluginFailed],
   ['extraction_artifacts_persisted',  handleExtractionArtifactsPersisted],
   ['crawler_stats',                   handleCrawlerStats],
+  ['brightdata_unlock_started',       handleBrightDataUnlockStarted],
+  ['url_unlocked_via_brightdata',     handleUrlUnlockedViaBrightData],
 ]);
 
 const LLM_EVENTS = new Set(['llm_call_started', 'llm_call_completed', 'llm_call_failed']);

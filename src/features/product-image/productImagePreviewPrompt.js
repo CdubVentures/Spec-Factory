@@ -259,8 +259,6 @@ export async function resolvePifPromptContext({
 
   const pifDoc = readProductImages({ productId: product.product_id, productRoot });
   const previousPifRuns = Array.isArray(pifDoc?.runs) ? pifDoc.runs : [];
-  const pifSuppRows = (finderStore.listSuppressions?.(product.product_id) || [])
-    .filter((s) => s.variant_id === (variantShape.variant_id || ''));
 
   function buildPreviousDiscoveryFor(mode) {
     return accumulateDiscoveryLog(previousPifRuns, {
@@ -272,10 +270,6 @@ export async function resolvePifPromptContext({
       },
       includeUrls: urlHistoryEnabled,
       includeQueries: queryHistoryEnabled,
-      suppressions: {
-        urlsChecked: new Set(pifSuppRows.filter((s) => s.kind === 'url' && s.mode === mode).map((s) => s.item)),
-        queriesRun: new Set(pifSuppRows.filter((s) => s.kind === 'query' && s.mode === mode).map((s) => s.item)),
-      },
     });
   }
 

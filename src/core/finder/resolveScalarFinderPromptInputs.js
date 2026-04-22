@@ -23,23 +23,21 @@ export function defaultBuildScalarUserMessage(product, variant) {
 }
 
 /**
- * Compute the per-variant previousDiscovery arg from accumulated runs +
- * suppressions. Both orchestrator (per-variant on each call) and preview
- * (one-shot for the variant being previewed) call this.
+ * Compute the per-variant previousDiscovery arg from accumulated runs. Both
+ * orchestrator (per-variant on each call) and preview (one-shot for the
+ * variant being previewed) call this.
  *
  * @param {object} opts
  * @param {Array} opts.previousRuns
  * @param {{variant_id?: string, key: string}} opts.variant
  * @param {boolean} opts.urlHistoryEnabled
  * @param {boolean} opts.queryHistoryEnabled
- * @param {Array<{kind: string, item: string}>} opts.suppRows
  */
 export function resolveScalarPreviousDiscovery({
   previousRuns,
   variant,
   urlHistoryEnabled,
   queryHistoryEnabled,
-  suppRows,
 }) {
   return accumulateDiscoveryLog(previousRuns, {
     runMatcher: (r) => {
@@ -49,10 +47,6 @@ export function resolveScalarPreviousDiscovery({
     },
     includeUrls: urlHistoryEnabled,
     includeQueries: queryHistoryEnabled,
-    suppressions: {
-      urlsChecked: new Set(suppRows.filter((s) => s.kind === 'url').map((s) => s.item)),
-      queriesRun: new Set(suppRows.filter((s) => s.kind === 'query').map((s) => s.item)),
-    },
   });
 }
 

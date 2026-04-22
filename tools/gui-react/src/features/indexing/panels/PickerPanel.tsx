@@ -1,186 +1,396 @@
-import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
-import { formatNumber } from '../helpers.tsx';
+import { forwardRef, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { IndexingPanelHeader, type IndexingPanelId } from '../../../shared/ui/finder/IndexingPanelHeader.tsx';
+import { HeaderActionButton, ACTION_BUTTON_WIDTH } from '../../../shared/ui/actionButton/index.ts';
+import { AmbiguityMeter } from '../../../shared/ui/data-display/AmbiguityMeter.tsx';
+import { DrillColumn } from '../../../shared/ui/forms/DrillColumn.tsx';
+import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
+import { useSlashFocus } from './useSlashFocus.ts';
+import { deriveStaleSelection } from '../selectors/staleSelection.ts';
+import { deriveFilteredCatalog } from '../selectors/filteredCatalog.ts';
+import { displayVariant } from '../indexingHelpers.ts';
 import type { CatalogRow } from '../../../types/product.ts';
-
-interface AmbiguityMeterShape {
-  count: number;
-  level: string;
-  label: string;
-  badgeCls: string;
-  barCls: string;
-  widthPct: number;
-}
-
-interface VariantOption {
-  productId: string;
-  label: string;
-}
+import type { PickerRecentSelection } from '../state/indexlabStore.ts';
+import type { SelectedAmbiguityMeter } from '../selectors/indexingCatalogSelectors.ts';
+import './PickerPanel.css';
 
 interface PickerPanelProps {
-  collapsed: boolean;
-  onToggle: () => void;
-  busy: boolean;
-  singleBrand: string;
-  onBrandChange: (brand: string) => void;
-  singleModel: string;
-  onModelChange: (model: string) => void;
-  singleProductId: string;
-  onProductIdChange: (productId: string) => void;
-  brandOptions: string[];
-  modelOptions: string[];
-  variantOptions: VariantOption[];
-  selectedCatalogProduct: CatalogRow | null;
-  displayVariant: (variant: string) => string;
-  selectedAmbiguityMeter: AmbiguityMeterShape;
-}
-
-function resolveAmbiguityToken(level: string): 'success' | 'warning' | 'danger' | 'neutral' {
-  const normalized = (level || '').toLowerCase().replace(/[_\s]+/g, '-');
-  if (normalized === 'easy') return 'success';
-  if (normalized === 'medium') return 'warning';
-  if (normalized === 'hard' || normalized === 'very-hard' || normalized === 'extra-hard') return 'danger';
-  return 'neutral';
-}
-
-function ambiguityBadgeClass(level: string): string {
-  const token = resolveAmbiguityToken(level);
-  if (token === 'success') return 'sf-chip-success';
-  if (token === 'warning') return 'sf-chip-warning';
-  if (token === 'danger') return 'sf-chip-danger';
-  return 'sf-chip-neutral';
-}
-
-function ambiguityBarColor(level: string): string {
-  const token = resolveAmbiguityToken(level);
-  if (token === 'success') return 'var(--sf-state-success-fg)';
-  if (token === 'warning') return 'var(--sf-state-warning-fg)';
-  if (token === 'danger') return 'var(--sf-state-danger-fg)';
-  return 'rgb(var(--sf-color-text-muted-rgb))';
+  readonly collapsed: boolean;
+  readonly onToggle: () => void;
+  readonly busy: boolean;
+  readonly catalogRows: CatalogRow[];
+  readonly singleBrand: string;
+  readonly onBrandChange: (brand: string) => void;
+  readonly singleModel: string;
+  readonly onModelChange: (model: string) => void;
+  readonly singleProductId: string;
+  readonly onProductIdChange: (productId: string) => void;
+  readonly selectedCatalogProduct: CatalogRow | null;
+  readonly selectedAmbiguityMeter: SelectedAmbiguityMeter;
+  readonly recentSelections: PickerRecentSelection[];
+  readonly onPushRecent: (entry: PickerRecentSelection) => void;
+  /** Panel whose accent color the picker rail + icon chip should mirror. */
+  readonly linkedPanel: IndexingPanelId;
+  /** True while the catalog query is on its first fetch — suppresses the
+   *  stale-state styling so we don't flash a red banner before the catalog
+   *  has actually resolved. */
+  readonly catalogLoading: boolean;
 }
 
 export function PickerPanel({
   collapsed,
   onToggle,
   busy,
+  catalogRows,
   singleBrand,
   onBrandChange,
   singleModel,
   onModelChange,
   singleProductId,
   onProductIdChange,
-  brandOptions,
-  modelOptions,
-  variantOptions,
   selectedCatalogProduct,
-  displayVariant,
   selectedAmbiguityMeter,
+  recentSelections,
+  onPushRecent,
+  linkedPanel,
+  catalogLoading,
 }: PickerPanelProps) {
-  return (
-    <div className="sf-surface-panel p-0" style={{ order: -20 }}>
-      <div className={`flex items-center gap-2.5 px-6 pt-4 ${collapsed ? 'pb-3' : 'pb-0'}`}>
-        <button
-          onClick={onToggle}
-          className="inline-flex items-center justify-center w-5 h-5 sf-text-caption sf-icon-button"
-          title={collapsed ? 'Expand' : 'Collapse'}
-        >
-          {collapsed ? '+' : '-'}
-        </button>
-        <span className="text-[15px] font-bold sf-text-primary">Product Picker</span>
-        <Tip text="Pick one exact product. Run and inspect runs from the Pipeline panel below." />
-      </div>
-      {!collapsed ? (
-        <div className="px-6 pb-4 pt-3 space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <select
-              value={singleBrand}
-              onChange={(e) => {
-                onBrandChange(e.target.value);
-              }}
-              disabled={busy}
-              className="px-2 py-2 text-sm rounded sf-select"
-              title="Step 1: Choose brand."
-            >
-              <option value="">1) select brand</option>
-              {brandOptions.map((brand) => (
-                <option key={brand} value={brand}>
-                  {brand}
-                </option>
-              ))}
-            </select>
-            <select
-              value={singleModel}
-              onChange={(e) => {
-                onModelChange(e.target.value);
-              }}
-              disabled={busy || !singleBrand}
-              className="px-2 py-2 text-sm rounded sf-select"
-              title="Step 2: Choose model."
-            >
-              <option value="">2) select model</option>
-              {modelOptions.map((model) => (
-                <option key={model} value={model}>
-                  {model}
-                </option>
-              ))}
-            </select>
-            <select
-              value={singleProductId}
-              onChange={(e) => onProductIdChange(e.target.value)}
-              disabled={busy || !singleModel || variantOptions.length <= 1}
-              className="px-2 py-2 text-sm rounded sf-select"
-              title="Step 3: Choose variant."
-            >
-              <option value="">{variantOptions.length <= 1 ? '(auto)' : '3) select variant'}</option>
-              {variantOptions.map((option) => (
-                <option key={option.productId} value={option.productId}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="sf-surface-elevated p-2 sf-text-caption sf-text-muted">
-            selected product id: <span className="font-mono">{singleProductId || '(none)'}</span>
-            {selectedCatalogProduct ? (
-              <span>
-                {' '}| {selectedCatalogProduct.brand} {selectedCatalogProduct.base_model} {displayVariant(selectedCatalogProduct.variant || '')}
-              </span>
-            ) : null}
-          </div>
-          <div className="sf-surface-elevated p-2">
-            <div className="flex flex-wrap items-center gap-2 sf-text-caption">
-              <span className="font-semibold sf-text-primary inline-flex items-center">
-                ambiguity meter
-                <Tip text={`Brand + model family size in catalog:
-- easy: 1 sibling (green)
-- medium: 2-3 siblings (amber/yellow)
-- hard: 4-5 siblings (red)
-- very hard: 6-8 siblings (fuchsia)
-- extra hard: 9+ siblings (purple, hardest)
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  useSlashFocus(searchInputRef);
 
-Variant-empty extraction policy:
-Variant-empty review hint:
-- easy/medium: fewer sibling pages usually need review
-- hard/very hard/extra hard: expect more sibling and variant review work`} />
-              </span>
-              <span className={`px-2 py-0.5 rounded ${ambiguityBadgeClass(selectedAmbiguityMeter.level)}`}>
-                {selectedAmbiguityMeter.label}
-              </span>
-              <span className="sf-text-muted">
-                family count {formatNumber(selectedAmbiguityMeter.count)}
-              </span>
+  // WHY: stale only has meaning AFTER the catalog has finished loading at
+  // least once. Before that, selectedCatalogProduct is always null even
+  // though the product may be perfectly valid — evaluating staleness
+  // early flashes a red "NOT IN CATALOG" state during tab switches.
+  const rawStale = useMemo(
+    () => deriveStaleSelection({ singleProductId, selectedCatalogProduct }),
+    [singleProductId, selectedCatalogProduct],
+  );
+  const stale = catalogLoading
+    ? { isStale: false, lastKnownId: '' }
+    : rawStale;
+  const filtered = useMemo(
+    () => deriveFilteredCatalog({ catalogRows, singleBrand, singleModel, searchQuery }),
+    [catalogRows, singleBrand, singleModel, searchQuery],
+  );
+
+  const activeStep: 1 | 2 | 3 = !singleBrand ? 1 : !singleModel ? 2 : 3;
+
+  const handleBrandPick = (brand: string) => {
+    if (busy) return;
+    onBrandChange(brand);
+  };
+  const handleModelPick = (model: string) => {
+    if (busy) return;
+    onModelChange(model);
+  };
+  const handleVariantPick = (productId: string) => {
+    if (busy) return;
+    onProductIdChange(productId);
+    const row = catalogRows.find((r) => r.productId === productId);
+    if (row) {
+      onPushRecent({
+        productId: row.productId,
+        brand: row.brand,
+        model: row.base_model,
+        variant: row.variant,
+        at: Date.now(),
+      });
+    }
+  };
+  const handleRecentPick = (entry: PickerRecentSelection) => {
+    if (busy) return;
+    onBrandChange(entry.brand);
+    onModelChange(entry.model);
+    onProductIdChange(entry.productId);
+    onPushRecent({ ...entry, at: Date.now() });
+  };
+  const handleClear = () => {
+    if (busy) return;
+    onBrandChange('');
+  };
+
+  const outerClass = `sf-surface-panel sf-picker-panel sf-picker-order p-0 flex flex-col${stale.isStale ? ' sf-picker-stale' : ''}`;
+  const headerPanelId: IndexingPanelId = stale.isStale ? 'picker' : linkedPanel;
+  const subtitleSlot = renderSubtitle({ stale, busy });
+  const actionSlot = renderActions({ stale, hasSelection: Boolean(selectedCatalogProduct), onClear: handleClear, onClearStale: () => onProductIdChange(''), busy });
+  const variantLabel = selectedCatalogProduct ? displayVariant(String(selectedCatalogProduct.variant || '')) : '';
+
+  return (
+    <div className={outerClass} data-panel={headerPanelId}>
+      <IndexingPanelHeader
+        panel={headerPanelId}
+        icon="◎"
+        title="Product Picker"
+        tip="Pick one exact product. Run and inspect runs from the Pipeline panel below."
+        collapsed={collapsed}
+        onToggle={onToggle}
+        isRunning={busy}
+        subtitleSlot={subtitleSlot}
+        actionSlot={actionSlot}
+      />
+      {!collapsed ? (
+        <div className="sf-picker-body">
+          <SelectionRow
+            brand={singleBrand}
+            model={singleModel}
+            variantLabel={variantLabel}
+            hasProduct={Boolean(selectedCatalogProduct)}
+          />
+          {catalogLoading ? (
+            <div className="sf-picker-loading" role="status" aria-live="polite">
+              <Spinner />
+              <span>Loading catalog…</span>
             </div>
-            <div className="mt-2 h-2 w-full rounded sf-surface-panel overflow-hidden">
-              <div
-                className="h-full"
-                style={{
-                  width: `${selectedAmbiguityMeter.widthPct}%`,
-                  backgroundColor: ambiguityBarColor(selectedAmbiguityMeter.level),
-                }}
+          ) : (
+            <>
+              <SearchBar
+                ref={searchInputRef}
+                value={searchQuery}
+                onChange={setSearchQuery}
+                totalMatches={filtered.totalMatches}
+                disabled={busy}
               />
-            </div>
-          </div>
+              <div className="sf-picker-drill">
+                <DrillColumn
+                  step={1}
+                  label="Brand"
+                  status={singleBrand ? 'done' : (activeStep === 1 ? 'active' : 'pending')}
+                  items={filtered.brandList}
+                  selectedValue={singleBrand}
+                  onSelect={handleBrandPick}
+                  disabled={busy}
+                  emptyHint={searchQuery ? 'no brands match' : 'no brands'}
+                  totalHeaderCount={filtered.brandList.length}
+                />
+                <DrillColumn
+                  step={2}
+                  label="Model"
+                  status={singleModel ? 'done' : (activeStep === 2 ? 'active' : 'pending')}
+                  items={filtered.modelList}
+                  selectedValue={singleModel}
+                  onSelect={handleModelPick}
+                  disabled={busy || !singleBrand}
+                  emptyHint={!singleBrand ? 'pick a brand first' : 'no models match'}
+                  totalHeaderCount={filtered.modelList.length}
+                />
+                <DrillColumn
+                  step={3}
+                  label="Variant"
+                  status={singleProductId ? 'done' : (activeStep === 3 ? 'active' : 'pending')}
+                  items={filtered.variantList}
+                  selectedValue={singleProductId}
+                  onSelect={handleVariantPick}
+                  disabled={busy || !singleModel}
+                  emptyHint={!singleModel ? 'pick a model first' : 'no variants match'}
+                  totalHeaderCount={filtered.variantList.length}
+                />
+              </div>
+
+              {stale.isStale ? (
+                <StaleNotice lastKnownId={stale.lastKnownId} onClear={() => onProductIdChange('')} />
+              ) : selectedAmbiguityMeter.level !== 'unknown' ? (
+                <AmbiguityMeter
+                  level={selectedAmbiguityMeter.level}
+                  familyCount={selectedAmbiguityMeter.count}
+                />
+              ) : !selectedCatalogProduct ? (
+                <EmptyHero hasBrandPicked={Boolean(singleBrand)} hasModelPicked={Boolean(singleModel)} />
+              ) : null}
+
+              {recentSelections.length > 0 ? (
+                <RecentsRail entries={recentSelections} currentProductId={singleProductId} onPick={handleRecentPick} disabled={busy} />
+              ) : null}
+            </>
+          )}
         </div>
       ) : null}
     </div>
   );
 }
+
+// ── Subcomponents ─────────────────────────────────────────────────────
+
+function renderSubtitle({
+  stale,
+  busy,
+}: {
+  stale: { isStale: boolean; lastKnownId: string };
+  busy: boolean;
+}) {
+  if (stale.isStale) {
+    return (
+      <span className="sf-picker-subtitle sf-picker-subtitle-stale">
+        <span className="sf-picker-stale-pill">Not in catalog</span>
+      </span>
+    );
+  }
+  if (busy) {
+    return (
+      <span className="sf-picker-subtitle sf-picker-subtitle-empty">— running…</span>
+    );
+  }
+  return null;
+}
+
+interface SelectionRowProps {
+  readonly brand: string;
+  readonly model: string;
+  readonly variantLabel: string;
+  readonly hasProduct: boolean;
+}
+
+function SelectionRow({ brand, model, variantLabel, hasProduct }: SelectionRowProps) {
+  return (
+    <div className="sf-picker-selection-row" role="status" aria-label="Current selection">
+      <SelectionSlot label="Brand" value={brand} filled={Boolean(brand)} />
+      <SelectionSlot label="Model" value={model} filled={Boolean(model)} />
+      <SelectionSlot label="Variant" value={variantLabel} filled={hasProduct && Boolean(variantLabel)} />
+    </div>
+  );
+}
+
+function SelectionSlot({ label, value, filled }: { label: string; value: string; filled: boolean }) {
+  return (
+    <div className={`sf-picker-slot${filled ? ' sf-picker-slot-filled' : ''}`}>
+      <div className="sf-picker-slot-label">{label}</div>
+      <div className="sf-picker-slot-value">
+        {filled ? value : <span className="sf-picker-slot-placeholder">— not picked —</span>}
+      </div>
+    </div>
+  );
+}
+
+function renderActions({
+  stale,
+  hasSelection,
+  onClear,
+  onClearStale,
+  busy,
+}: {
+  stale: { isStale: boolean };
+  hasSelection: boolean;
+  onClear: () => void;
+  onClearStale: () => void;
+  busy: boolean;
+}) {
+  if (stale.isStale) {
+    return (
+      <HeaderActionButton
+        intent="delete"
+        label="Clear stale"
+        onClick={onClearStale}
+        width={ACTION_BUTTON_WIDTH.standardHeader}
+      />
+    );
+  }
+  if (!hasSelection) return null;
+  return (
+    <HeaderActionButton
+      intent="delete"
+      label="Clear"
+      onClick={onClear}
+      disabled={busy}
+      width={ACTION_BUTTON_WIDTH.standardHeader}
+    />
+  );
+}
+
+interface SearchBarProps {
+  readonly value: string;
+  readonly onChange: (v: string) => void;
+  readonly totalMatches: number;
+  readonly disabled?: boolean;
+}
+
+const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function SearchBar(
+  { value, onChange, totalMatches, disabled },
+  ref,
+) {
+  return (
+    <div className="sf-picker-search">
+      <div className="sf-picker-search-row">
+        <span className="sf-picker-search-icon" aria-hidden="true">🔍</span>
+        <input
+          ref={ref}
+          type="text"
+          value={value}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+          placeholder="Find a product — brand, model, variant, or product_id"
+          className="sf-picker-search-input"
+          disabled={disabled}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded="true"
+        />
+        <kbd className="sf-picker-search-kbd" aria-hidden="true">/</kbd>
+      </div>
+      {value.trim() ? (
+        <div className="sf-picker-search-hint" aria-live="polite">
+          <b>{totalMatches}</b> {totalMatches === 1 ? 'product matches' : 'products match'}
+        </div>
+      ) : null}
+    </div>
+  );
+});
+
+function EmptyHero({ hasBrandPicked, hasModelPicked }: { hasBrandPicked: boolean; hasModelPicked: boolean }) {
+  const status = !hasBrandPicked ? 'Pick a brand to begin.' : !hasModelPicked ? 'Pick a model next.' : 'Pick a variant to finish.';
+  return (
+    <div className="sf-picker-empty-hero">
+      <div className="sf-picker-empty-icon" aria-hidden="true">◎</div>
+      <h4>Pick a product to run indexing</h4>
+      <p>Start typing above, or browse the catalog by brand. {status}</p>
+    </div>
+  );
+}
+
+function StaleNotice({ lastKnownId, onClear }: { lastKnownId: string; onClear: () => void }) {
+  return (
+    <div className="sf-picker-stale-notice">
+      <div className="sf-picker-stale-head">Selected product not in catalog</div>
+      <div className="sf-picker-stale-body">
+        The product <code>{lastKnownId}</code> was picked before but is no longer in the catalog. It may have been renamed, merged, or removed.
+      </div>
+      <button type="button" className="sf-picker-btn sf-picker-btn-danger" onClick={onClear}>
+        Clear stale selection
+      </button>
+    </div>
+  );
+}
+
+function RecentsRail({
+  entries,
+  currentProductId,
+  onPick,
+  disabled,
+}: {
+  entries: PickerRecentSelection[];
+  currentProductId: string;
+  onPick: (entry: PickerRecentSelection) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="sf-picker-recents">
+      <span className="sf-picker-recents-label">Recent</span>
+      {entries.map((entry) => {
+        const variantLabel = displayVariant(entry.variant);
+        const isCurrent = entry.productId === currentProductId;
+        return (
+          <button
+            key={entry.productId}
+            type="button"
+            className={`sf-picker-recent-chip${isCurrent ? ' sf-picker-recent-current' : ''}`}
+            onClick={() => onPick(entry)}
+            disabled={disabled}
+            title={entry.productId}
+          >
+            <span className="sf-picker-recent-brand">{entry.brand}</span>
+            <span>{entry.model} · {variantLabel}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+

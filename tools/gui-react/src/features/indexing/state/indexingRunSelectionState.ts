@@ -18,8 +18,6 @@ interface UseIndexingRunSelectionStateInput {
   processStartedAt: string;
   selectedIndexLabRunId: string;
   setSelectedIndexLabRunId: (value: string) => void;
-  clearedRunViewId: string;
-  setClearedRunViewId: (value: string) => void;
 }
 
 export function useIndexingRunSelectionState(input: UseIndexingRunSelectionStateInput) {
@@ -30,8 +28,6 @@ export function useIndexingRunSelectionState(input: UseIndexingRunSelectionState
     processStartedAt,
     selectedIndexLabRunId,
     setSelectedIndexLabRunId,
-    clearedRunViewId,
-    setClearedRunViewId,
   } = input;
   const categoryScope = category;
 
@@ -73,11 +69,6 @@ export function useIndexingRunSelectionState(input: UseIndexingRunSelectionState
     [category, selectedRunForChecklist],
   );
 
-  const runViewCleared = Boolean(
-    selectedIndexLabRunId
-    && selectedIndexLabRunId === clearedRunViewId,
-  );
-
   useEffect(() => {
     const selectionDecision = deriveRunAutoSelectionDecision({
       indexlabRuns,
@@ -96,20 +87,9 @@ export function useIndexingRunSelectionState(input: UseIndexingRunSelectionState
     setSelectedIndexLabRunId,
   ]);
 
-  useEffect(() => {
-    if (!selectedIndexLabRunId) {
-      if (clearedRunViewId) setClearedRunViewId('');
-      return;
-    }
-    if (clearedRunViewId && clearedRunViewId !== selectedIndexLabRunId) {
-      setClearedRunViewId('');
-    }
-  }, [selectedIndexLabRunId, clearedRunViewId, setClearedRunViewId]);
-
   return {
     indexlabRuns,
     selectedRunForChecklist,
     domainChecklistCategory,
-    runViewCleared,
   };
 }

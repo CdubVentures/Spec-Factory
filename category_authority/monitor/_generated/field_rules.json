@@ -130,10 +130,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} FreeSync G-Sync adaptive sync",
-          "{brand} {model} variable refresh rate VRR support"
-        ],
         "query_terms": [
           "adaptive sync",
           "FreeSync",
@@ -160,7 +156,6 @@
         "tooltip_md": "Adaptive sync technology: FreeSync, FreeSync Premium, FreeSync Premium Pro, G-Sync, G-Sync Compatible, G-Sync Ultimate",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "aspect_ratio": {
@@ -232,10 +227,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} aspect ratio",
-          "{brand} {model} ultrawide aspect ratio"
-        ],
         "query_terms": [
           "aspect ratio",
           "16:9",
@@ -262,7 +253,6 @@
         "tooltip_md": "Display aspect ratio (e.g. 16:9, 21:9, 32:9, 16:10)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "audio_output": {
@@ -335,10 +325,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} audio output options",
-          "{brand} {model} audio connectivity"
-        ],
         "query_terms": [
           "audio output",
           "audio out",
@@ -363,7 +349,6 @@
         "tooltip_md": "Audio output type (3.5mm, SPDIF, optical)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "backlight_type": {
@@ -437,10 +422,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} backlight type LED Mini-LED OLED",
-          "{brand} {model} backlight technology"
-        ],
         "query_terms": [
           "backlight",
           "backlight type",
@@ -470,7 +451,6 @@
         "tooltip_md": "Backlight technology: WLED edge-lit, WLED direct-lit, Mini-LED, none (OLED)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "base_model": {
@@ -540,10 +520,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} monitor series",
-          "{brand} {model} variants"
-        ],
         "query_terms": [
           "base model",
           "model series",
@@ -567,7 +543,6 @@
         "tooltip_md": "Base model without variant suffix",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "black_uniformity": {
@@ -635,7 +610,10 @@
       "search_hints": {
         "content_types": [
           "review",
-          "spec_sheet",
+          "support",
+          "manual",
+          "spec",
+          "pdf",
           "product_page"
         ],
         "domain_hints": [
@@ -643,22 +621,10 @@
           "pcmonitors.info",
           "tftcentral.co.uk"
         ],
-        "preferred_content_types": [
-          "review",
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} black uniformity",
-          "{brand} {model} black uniformity measured"
         ],
         "query_terms": [
           "black uniformity",
@@ -680,8 +646,7 @@
         "tooltip_key": "black_uniformity",
         "tooltip_md": "Measured black uniformity or luminance deviation across the screen.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "brand": {
       "ai_assist": {
@@ -751,10 +716,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} monitor specifications",
-          "{brand} {model} monitor"
-        ],
         "query_terms": [
           "brand",
           "manufacturer",
@@ -777,7 +738,6 @@
         "tooltip_md": "Manufacturer brand name",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "brightness_hdr_peak": {
@@ -860,10 +820,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} HDR peak brightness nits",
-          "{brand} {model} HDR brightness measured"
-        ],
         "query_terms": [
           "HDR peak brightness",
           "HDR brightness",
@@ -888,7 +844,6 @@
         "tooltip_md": "Peak HDR brightness in nits (measured)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "brightness_sdr": {
@@ -973,10 +928,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} brightness nits measured",
-          "{brand} {model} SDR brightness cd/m²"
-        ],
         "query_terms": [
           "brightness",
           "SDR brightness",
@@ -1003,7 +954,6 @@
         "tooltip_md": "Typical SDR peak brightness in nits (cd/m²)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "cable_length": {
@@ -1076,10 +1026,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} cable length",
-          "{brand} {model} included cable length"
-        ],
         "query_terms": [
           "cable length",
           "power cable length",
@@ -1103,7 +1049,6 @@
         "tooltip_md": "Included cable length in mm",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "cable_type": {
@@ -1175,10 +1120,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} included cable type",
-          "{brand} {model} cables in box"
-        ],
         "query_terms": [
           "cable type",
           "included cables",
@@ -1203,7 +1144,6 @@
         "tooltip_md": "Type of included cables",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "cables_included": {
@@ -1288,10 +1228,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} cables included in box",
-          "{brand} {model} package contents accessories"
-        ],
         "query_terms": [
           "cables included",
           "in the box",
@@ -1316,7 +1252,6 @@
         "tooltip_md": "Cables and accessories included in the box",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "category": {
@@ -1385,9 +1320,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} monitor type category"
-        ],
         "query_terms": [
           "monitor type",
           "category",
@@ -1412,7 +1344,6 @@
         "tooltip_md": "Product category",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "color": {
@@ -1495,10 +1426,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} color options",
-          "{brand} {model} available colors"
-        ],
         "query_terms": [
           "color",
           "color options",
@@ -1524,7 +1451,6 @@
         "tooltip_md": "Available chassis/body color options",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "color_accuracy_delta_e": {
@@ -1606,10 +1532,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} color accuracy Delta E measured",
-          "{brand} {model} dE2000 color accuracy test"
-        ],
         "query_terms": [
           "color accuracy",
           "Delta E",
@@ -1634,7 +1556,6 @@
         "tooltip_md": "Average color error measured as Delta E (lower is better)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "color_gamut_adobe_rgb": {
@@ -1716,10 +1637,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} Adobe RGB coverage percentage",
-          "{brand} {model} AdobeRGB color gamut"
-        ],
         "query_terms": [
           "Adobe RGB coverage",
           "Adobe RGB gamut",
@@ -1742,7 +1659,6 @@
         "tooltip_md": "Adobe RGB color gamut coverage percentage",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "color_gamut_dci_p3": {
@@ -1824,10 +1740,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} DCI-P3 coverage percentage",
-          "{brand} {model} DCI-P3 color gamut measured"
-        ],
         "query_terms": [
           "DCI-P3 coverage",
           "DCI-P3 gamut",
@@ -1851,7 +1763,6 @@
         "tooltip_md": "DCI-P3 color gamut coverage percentage",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "color_gamut_srgb": {
@@ -1933,10 +1844,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} sRGB coverage percentage",
-          "{brand} {model} sRGB color gamut measured"
-        ],
         "query_terms": [
           "sRGB coverage",
           "sRGB gamut",
@@ -1960,7 +1867,6 @@
         "tooltip_md": "sRGB color gamut coverage percentage",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "colors": {
@@ -2082,8 +1988,7 @@
         "tooltip_key": null,
         "tooltip_md": "EG-compatible colorway tokens. Lowercase + hyphens only. Multi-color variants use \"+\" (e.g. black+red). Must match canonical EG palette. Normalize grey→gray.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "contrast_ratio": {
       "ai_assist": {
@@ -2158,10 +2063,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} contrast ratio measured",
-          "{brand} {model} native contrast ratio"
-        ],
         "query_terms": [
           "contrast ratio",
           "static contrast",
@@ -2185,7 +2086,6 @@
         "tooltip_md": "Static contrast ratio (e.g. 1000:1, 3000:1, Infinite for OLED)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "contrast_ratio_dynamic": {
@@ -2257,10 +2157,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} dynamic contrast ratio",
-          "{brand} {model} DCR ASCR"
-        ],
         "query_terms": [
           "dynamic contrast",
           "dynamic contrast ratio",
@@ -2284,7 +2180,6 @@
         "tooltip_md": "Dynamic contrast ratio (marketing spec, not measured)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "crosshair_overlay": {
@@ -2357,10 +2252,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} crosshair overlay gaming",
-          "{brand} {model} on-screen crosshair"
-        ],
         "query_terms": [
           "crosshair",
           "crosshair overlay",
@@ -2385,7 +2276,6 @@
         "tooltip_md": "Built-in on-screen crosshair/aim-point overlay for gaming",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "curve_radius": {
@@ -2458,10 +2348,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} curvature radius",
-          "{brand} {model} 1000R 1500R 1800R curve"
-        ],
         "query_terms": [
           "curvature",
           "curve radius",
@@ -2487,7 +2373,6 @@
         "tooltip_md": "Curvature radius in R (e.g. 1000R, 1500R, 1800R)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "curved": {
@@ -2559,10 +2444,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} curved or flat",
-          "{brand} {model} curved monitor"
-        ],
         "query_terms": [
           "curved",
           "flat",
@@ -2586,7 +2467,6 @@
         "tooltip_md": "Whether the display is curved",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "daisy_chain": {
@@ -2660,10 +2540,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} daisy chain MST",
-          "{brand} {model} DisplayPort daisy chain support"
-        ],
         "query_terms": [
           "daisy chain",
           "MST",
@@ -2688,7 +2564,6 @@
         "tooltip_md": "DisplayPort output for daisy-chaining multiple monitors",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "depth": {
@@ -2769,10 +2644,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} dimensions depth mm",
-          "{brand} {model} panel thickness depth"
-        ],
         "query_terms": [
           "depth",
           "depth mm",
@@ -2796,7 +2667,6 @@
         "tooltip_md": "Depth/thickness of the monitor without stand in mm",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "discontinued": {
@@ -2867,10 +2737,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} discontinued",
-          "{brand} {model} end of life replacement"
-        ],
         "query_terms": [
           "discontinued",
           "end of life",
@@ -2895,7 +2761,6 @@
         "tooltip_md": "Whether the product is discontinued",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "display_stream_compression": {
@@ -2971,10 +2836,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} DSC display stream compression",
-          "{brand} {model} Display Stream Compression specifications"
-        ],
         "query_terms": [
           "display stream compression",
           "DSC",
@@ -2997,8 +2858,7 @@
         "tooltip_key": "display_stream_compression",
         "tooltip_md": "Display Stream Compression support or stated DSC revision.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "displayport_ports": {
       "ai_assist": {
@@ -3072,10 +2932,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} DisplayPort ports version",
-          "{brand} {model} connectivity DP 1.4 2.1"
-        ],
         "query_terms": [
           "DisplayPort",
           "DP",
@@ -3101,7 +2957,6 @@
         "tooltip_md": "DisplayPort count and version (e.g. 1x DP 1.4, 1x DP 2.1)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "displayport_version": {
@@ -3178,10 +3033,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} DisplayPort version",
-          "{brand} {model} DP 1.4 DP 2.1 specifications"
-        ],
         "query_terms": [
           "DisplayPort version",
           "DP version",
@@ -3204,8 +3055,7 @@
         "tooltip_key": "displayport_version",
         "tooltip_md": "Highest supported DisplayPort specification revision (for example DisplayPort 1.4a or 2.1).",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "editions": {
       "ai_assist": {
@@ -3307,8 +3157,7 @@
         "tooltip_key": null,
         "tooltip_md": "EG-compatible edition slugs. Kebab-case only (lowercase, hyphens, no spaces). Examples: cyberpunk-2077-edition, sf6-chun-li, wilderness.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "energy_rating": {
       "ai_assist": {
@@ -3381,10 +3230,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} energy rating class",
-          "{brand} {model} Energy Star TCO certification"
-        ],
         "query_terms": [
           "energy rating",
           "Energy Star",
@@ -3409,7 +3254,6 @@
         "tooltip_md": "Energy efficiency rating or Energy Star certification",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "ethernet_rj45": {
@@ -3485,10 +3329,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} RJ45 Ethernet monitor specs",
-          "{brand} {model} LAN port Ethernet speed"
-        ],
         "query_terms": [
           "RJ45",
           "Ethernet",
@@ -3512,8 +3352,7 @@
         "tooltip_key": "ethernet_rj45",
         "tooltip_md": "Integrated Ethernet uplink capability and stated LAN speed.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "factory_calibrated": {
       "ai_assist": {
@@ -3585,10 +3424,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} factory calibrated Delta E",
-          "{brand} {model} out of box calibration accuracy"
-        ],
         "query_terms": [
           "factory calibrated",
           "calibration report",
@@ -3612,7 +3447,6 @@
         "tooltip_md": "Whether the monitor ships factory-calibrated with dE < 2",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "flicker_free": {
@@ -3686,10 +3520,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} flicker free",
-          "{brand} {model} PWM flicker free DC dimming"
-        ],
         "query_terms": [
           "flicker free",
           "flicker-free",
@@ -3714,7 +3544,6 @@
         "tooltip_md": "Whether the backlight is flicker-free (DC dimming)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "flicker_frequency": {
@@ -3784,7 +3613,10 @@
       "search_hints": {
         "content_types": [
           "review",
-          "spec_sheet",
+          "support",
+          "manual",
+          "spec",
+          "pdf",
           "product_page"
         ],
         "domain_hints": [
@@ -3792,22 +3624,10 @@
           "pcmonitors.info",
           "tftcentral.co.uk"
         ],
-        "preferred_content_types": [
-          "review",
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} flicker frequency",
-          "{brand} {model} PWM frequency"
         ],
         "query_terms": [
           "flicker frequency",
@@ -3830,8 +3650,7 @@
         "tooltip_key": "flicker_frequency",
         "tooltip_md": "Measured pulse-width modulation or image flicker frequency.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "frc": {
       "ai_assist": {
@@ -3903,10 +3722,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} FRC frame rate control",
-          "{brand} {model} dithering 8-bit+FRC"
-        ],
         "query_terms": [
           "FRC",
           "frame rate control",
@@ -3931,7 +3746,6 @@
         "tooltip_md": "Frame Rate Control dithering to simulate higher bit depth",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "gradient_handling": {
@@ -3991,7 +3805,10 @@
       "search_hints": {
         "content_types": [
           "review",
-          "spec_sheet",
+          "support",
+          "manual",
+          "spec",
+          "pdf",
           "product_page"
         ],
         "domain_hints": [
@@ -3999,22 +3816,10 @@
           "pcmonitors.info",
           "tftcentral.co.uk"
         ],
-        "preferred_content_types": [
-          "review",
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} gradient handling",
-          "{brand} {model} color gradient banding"
         ],
         "query_terms": [
           "gradient handling",
@@ -4037,8 +3842,7 @@
         "tooltip_key": "gradient_handling",
         "tooltip_md": "Assessment of the panel's ability to render smooth gradients without banding.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "gray_uniformity_50": {
       "ai_assist": {
@@ -4106,7 +3910,10 @@
       "search_hints": {
         "content_types": [
           "review",
-          "spec_sheet",
+          "support",
+          "manual",
+          "spec",
+          "pdf",
           "product_page"
         ],
         "domain_hints": [
@@ -4114,22 +3921,10 @@
           "pcmonitors.info",
           "tftcentral.co.uk"
         ],
-        "preferred_content_types": [
-          "review",
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} gray uniformity 50",
-          "{brand} {model} 50% gray uniformity"
         ],
         "query_terms": [
           "gray uniformity",
@@ -4151,8 +3946,7 @@
         "tooltip_key": "gray_uniformity_50",
         "tooltip_md": "Measured gray uniformity around a 50% gray window.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "gtin": {
       "ai_assist": {
@@ -4220,10 +4014,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} UPC barcode",
-          "{brand} {model} EAN"
-        ],
         "query_terms": [
           "UPC",
           "EAN",
@@ -4247,7 +4037,6 @@
         "tooltip_md": "Global Trade Item Number / UPC barcode",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "hdmi_ports": {
@@ -4321,10 +4110,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} HDMI ports version",
-          "{brand} {model} connectivity HDMI 2.1"
-        ],
         "query_terms": [
           "HDMI",
           "HDMI 2.0",
@@ -4350,7 +4135,6 @@
         "tooltip_md": "HDMI port count and version (e.g. 2x HDMI 2.1)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "hdmi_version": {
@@ -4427,10 +4211,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} HDMI version",
-          "{brand} {model} HDMI 2.1 HDMI 2.1a specifications"
-        ],
         "query_terms": [
           "HDMI version",
           "HDMI revision",
@@ -4454,8 +4234,7 @@
         "tooltip_key": "hdmi_version",
         "tooltip_md": "Highest supported HDMI specification revision (for example HDMI 2.0 or HDMI 2.1a).",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "hdr_support": {
       "ai_assist": {
@@ -4541,10 +4320,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} HDR support certification",
-          "{brand} {model} DisplayHDR tier"
-        ],
         "query_terms": [
           "HDR",
           "HDR10",
@@ -4572,7 +4347,6 @@
         "tooltip_md": "HDR standards supported: HDR10, HDR10+, Dolby Vision, DisplayHDR 400/600/1000/1400",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "headphone_jack": {
@@ -4646,10 +4420,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} headphone jack audio output",
-          "{brand} {model} 3.5mm audio out"
-        ],
         "query_terms": [
           "headphone jack",
           "3.5mm audio",
@@ -4673,7 +4443,6 @@
         "tooltip_md": "Whether the monitor has a 3.5mm headphone output",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "height": {
@@ -4756,10 +4525,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} dimensions height mm",
-          "{brand} {model} height without stand"
-        ],
         "query_terms": [
           "height",
           "height mm",
@@ -4783,7 +4548,6 @@
         "tooltip_md": "Height of the monitor without stand in mm",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "height_adjustment": {
@@ -4858,10 +4622,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} height adjustment range mm",
-          "{brand} {model} stand height adjustable"
-        ],
         "query_terms": [
           "height adjustment",
           "height adjustable",
@@ -4886,7 +4646,6 @@
         "tooltip_md": "Height adjustment range in mm (e.g. 130mm, 0-150mm)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "height_with_stand": {
@@ -4967,10 +4726,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} height with stand mm",
-          "{brand} {model} total height including stand"
-        ],
         "query_terms": [
           "height with stand",
           "total height",
@@ -4994,7 +4749,6 @@
         "tooltip_md": "Total height with stand at lowest position in mm",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "horizontal_viewing_angle": {
@@ -5063,7 +4817,10 @@
       "search_hints": {
         "content_types": [
           "review",
-          "spec_sheet",
+          "support",
+          "manual",
+          "spec",
+          "pdf",
           "product_page"
         ],
         "domain_hints": [
@@ -5071,22 +4828,10 @@
           "pcmonitors.info",
           "tftcentral.co.uk"
         ],
-        "preferred_content_types": [
-          "review",
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} horizontal viewing angle",
-          "{brand} {model} viewing angle horizontal degrees"
         ],
         "query_terms": [
           "horizontal viewing angle",
@@ -5108,8 +4853,7 @@
         "tooltip_key": "horizontal_viewing_angle",
         "tooltip_md": "Measured horizontal viewing angle before notable color or luminance shift.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "input_lag": {
       "ai_assist": {
@@ -5190,10 +4934,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} input lag ms measured",
-          "{brand} {model} input lag test results"
-        ],
         "query_terms": [
           "input lag",
           "display lag",
@@ -5218,7 +4958,6 @@
         "tooltip_md": "Total input lag in ms (measured end-to-end signal delay)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "input_lag_120hz": {
@@ -5287,7 +5026,10 @@
       "search_hints": {
         "content_types": [
           "review",
-          "spec_sheet",
+          "support",
+          "manual",
+          "spec",
+          "pdf",
           "product_page"
         ],
         "domain_hints": [
@@ -5296,22 +5038,10 @@
           "pcmonitors.info",
           "tomshardware.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} input lag 120Hz",
-          "{brand} {model} 120 Hz input lag"
         ],
         "query_terms": [
           "input lag 120Hz",
@@ -5333,8 +5063,7 @@
         "tooltip_key": "input_lag_120hz",
         "tooltip_md": "Measured input lag at 120 Hz.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "input_lag_60hz": {
       "ai_assist": {
@@ -5402,7 +5131,10 @@
       "search_hints": {
         "content_types": [
           "review",
-          "spec_sheet",
+          "support",
+          "manual",
+          "spec",
+          "pdf",
           "product_page"
         ],
         "domain_hints": [
@@ -5411,22 +5143,10 @@
           "pcmonitors.info",
           "tomshardware.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} input lag 60Hz",
-          "{brand} {model} 60 Hz input lag"
         ],
         "query_terms": [
           "input lag 60Hz",
@@ -5448,8 +5168,7 @@
         "tooltip_key": "input_lag_60hz",
         "tooltip_md": "Measured input lag at 60 Hz.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "input_lag_max_refresh": {
       "ai_assist": {
@@ -5517,7 +5236,10 @@
       "search_hints": {
         "content_types": [
           "review",
-          "spec_sheet",
+          "support",
+          "manual",
+          "spec",
+          "pdf",
           "product_page"
         ],
         "domain_hints": [
@@ -5526,22 +5248,10 @@
           "pcmonitors.info",
           "tomshardware.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} input lag max refresh",
-          "{brand} {model} highest refresh input lag"
         ],
         "query_terms": [
           "input lag max refresh",
@@ -5563,8 +5273,7 @@
         "tooltip_key": "input_lag_max_refresh",
         "tooltip_md": "Measured input lag at the monitor's maximum supported refresh rate.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "kvm_switch": {
       "ai_assist": {
@@ -5636,10 +5345,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} KVM switch built-in",
-          "{brand} {model} KVM multi-computer"
-        ],
         "query_terms": [
           "KVM",
           "KVM switch",
@@ -5664,7 +5369,6 @@
         "tooltip_md": "Built-in KVM switch for multi-computer control",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "local_dimming_zones": {
@@ -5746,10 +5450,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} local dimming zones count",
-          "{brand} {model} FALD dimming zones number"
-        ],
         "query_terms": [
           "local dimming",
           "dimming zones",
@@ -5774,7 +5474,6 @@
         "tooltip_md": "Number of local dimming zones (for FALD / Mini-LED backlight)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "low_blue_light": {
@@ -5848,10 +5547,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} low blue light filter",
-          "{brand} {model} eye care blue light"
-        ],
         "query_terms": [
           "low blue light",
           "blue light filter",
@@ -5876,7 +5571,6 @@
         "tooltip_md": "Built-in blue light reduction / eye care mode",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "macos_compatibility": {
@@ -5936,7 +5630,10 @@
       "search_hints": {
         "content_types": [
           "review",
-          "spec_sheet",
+          "support",
+          "manual",
+          "spec",
+          "pdf",
           "product_page"
         ],
         "domain_hints": [
@@ -5944,22 +5641,10 @@
           "tomshardware.com",
           "pcmonitors.info"
         ],
-        "preferred_content_types": [
-          "review",
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} macOS compatibility",
-          "{brand} {model} Mac monitor compatibility"
         ],
         "query_terms": [
           "macOS compatibility",
@@ -5982,8 +5667,7 @@
         "tooltip_key": "macos_compatibility",
         "tooltip_md": "Practical compatibility status with macOS systems and common Apple workflows.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "material": {
       "ai_assist": {
@@ -6053,10 +5737,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} build material quality",
-          "{brand} {model} housing material"
-        ],
         "query_terms": [
           "material",
           "build material",
@@ -6082,7 +5762,6 @@
         "tooltip_md": "Chassis/body material",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "max_refresh_rate_displayport": {
@@ -6152,7 +5831,10 @@
       "search_hints": {
         "content_types": [
           "review",
-          "spec_sheet",
+          "support",
+          "manual",
+          "spec",
+          "pdf",
           "product_page"
         ],
         "domain_hints": [
@@ -6162,22 +5844,10 @@
           "asus.com",
           "dell.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} max refresh rate DisplayPort",
-          "{brand} {model} DisplayPort max Hz"
         ],
         "query_terms": [
           "DisplayPort max refresh",
@@ -6200,8 +5870,7 @@
         "tooltip_key": "max_refresh_rate_displayport",
         "tooltip_md": "Maximum refresh rate achievable over DisplayPort.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "max_refresh_rate_hdmi": {
       "ai_assist": {
@@ -6270,7 +5939,10 @@
       "search_hints": {
         "content_types": [
           "review",
-          "spec_sheet",
+          "support",
+          "manual",
+          "spec",
+          "pdf",
           "product_page"
         ],
         "domain_hints": [
@@ -6280,22 +5952,10 @@
           "asus.com",
           "dell.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} max refresh rate HDMI",
-          "{brand} {model} HDMI max Hz"
         ],
         "query_terms": [
           "HDMI max refresh",
@@ -6318,8 +5978,7 @@
         "tooltip_key": "max_refresh_rate_hdmi",
         "tooltip_md": "Maximum refresh rate achievable over HDMI.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "microphone": {
       "ai_assist": {
@@ -6395,10 +6054,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} microphone monitor specs",
-          "{brand} {model} built-in microphone array"
-        ],
         "query_terms": [
           "microphone",
           "built-in microphone",
@@ -6421,8 +6076,7 @@
         "tooltip_key": "microphone",
         "tooltip_md": "Integrated microphone presence or array type.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "model": {
       "ai_assist": {
@@ -6492,10 +6146,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} monitor specifications",
-          "{brand} {model} monitor review"
-        ],
         "query_terms": [
           "model",
           "model number",
@@ -6518,7 +6168,6 @@
         "tooltip_md": "Full model name/number",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "motion_blur_reduction": {
@@ -6593,10 +6242,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} motion blur reduction backlight strobing",
-          "{brand} {model} ULMB ELMB DyAc BFI"
-        ],
         "query_terms": [
           "motion blur reduction",
           "backlight strobing",
@@ -6624,7 +6269,6 @@
         "tooltip_md": "Backlight strobing for motion clarity (ELMB, DyAc, ULMB, BFI)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "mpn": {
@@ -6694,10 +6338,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} manufacturer part number",
-          "{brand} {model} MPN"
-        ],
         "query_terms": [
           "MPN",
           "manufacturer part number",
@@ -6720,7 +6360,6 @@
         "tooltip_md": "Manufacturer Part Number",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "native_colors": {
@@ -6793,10 +6432,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} display colors million",
-          "{brand} {model} number of colors"
-        ],
         "query_terms": [
           "display colors",
           "number of colors",
@@ -6821,7 +6456,6 @@
         "tooltip_md": "Number of displayable colors in millions (e.g. 16.7M, 1.07B)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "osd_type": {
@@ -6894,10 +6528,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} OSD menu type",
-          "{brand} {model} on-screen display joystick buttons"
-        ],
         "query_terms": [
           "OSD",
           "on-screen display",
@@ -6923,7 +6553,6 @@
         "tooltip_md": "OSD control method: buttons, joystick, touch-sensitive, remote",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "overdrive": {
@@ -6995,10 +6624,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} overdrive settings best",
-          "{brand} {model} overdrive overshoot test"
-        ],
         "query_terms": [
           "overdrive",
           "response time overdrive",
@@ -7024,7 +6649,6 @@
         "tooltip_md": "Whether overdrive/response time boost is available",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "overshoot_120hz": {
@@ -7093,7 +6717,10 @@
       "search_hints": {
         "content_types": [
           "review",
-          "spec_sheet",
+          "support",
+          "manual",
+          "spec",
+          "pdf",
           "product_page"
         ],
         "domain_hints": [
@@ -7101,22 +6728,10 @@
           "tftcentral.co.uk",
           "pcmonitors.info"
         ],
-        "preferred_content_types": [
-          "review",
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} overshoot 120Hz",
-          "{brand} {model} inverse ghosting 120Hz"
         ],
         "query_terms": [
           "overshoot 120Hz",
@@ -7138,8 +6753,7 @@
         "tooltip_key": "overshoot_120hz",
         "tooltip_md": "Measured overshoot or inverse ghosting at 120 Hz.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "overshoot_60hz": {
       "ai_assist": {
@@ -7207,7 +6821,10 @@
       "search_hints": {
         "content_types": [
           "review",
-          "spec_sheet",
+          "support",
+          "manual",
+          "spec",
+          "pdf",
           "product_page"
         ],
         "domain_hints": [
@@ -7215,22 +6832,10 @@
           "tftcentral.co.uk",
           "pcmonitors.info"
         ],
-        "preferred_content_types": [
-          "review",
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} overshoot 60Hz",
-          "{brand} {model} inverse ghosting 60Hz"
         ],
         "query_terms": [
           "overshoot 60Hz",
@@ -7252,8 +6857,7 @@
         "tooltip_key": "overshoot_60hz",
         "tooltip_md": "Measured overshoot or inverse ghosting at 60 Hz.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "overshoot_max_refresh": {
       "ai_assist": {
@@ -7321,7 +6925,10 @@
       "search_hints": {
         "content_types": [
           "review",
-          "spec_sheet",
+          "support",
+          "manual",
+          "spec",
+          "pdf",
           "product_page"
         ],
         "domain_hints": [
@@ -7329,22 +6936,10 @@
           "tftcentral.co.uk",
           "pcmonitors.info"
         ],
-        "preferred_content_types": [
-          "review",
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} overshoot max refresh",
-          "{brand} {model} inverse ghosting maximum refresh"
         ],
         "query_terms": [
           "overshoot max refresh",
@@ -7367,8 +6962,7 @@
         "tooltip_key": "overshoot_max_refresh",
         "tooltip_md": "Measured overshoot or inverse ghosting at the monitor's maximum refresh rate.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "panel_bit_depth": {
       "ai_assist": {
@@ -7440,10 +7034,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} bit depth 8-bit 10-bit",
-          "{brand} {model} color depth bits"
-        ],
         "query_terms": [
           "bit depth",
           "color depth",
@@ -7470,7 +7060,6 @@
         "tooltip_md": "Native panel bit depth: 6-bit, 8-bit, 10-bit",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "panel_coating": {
@@ -7544,10 +7133,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} screen coating matte glossy",
-          "{brand} {model} anti-glare coating"
-        ],
         "query_terms": [
           "coating",
           "matte",
@@ -7574,7 +7159,6 @@
         "tooltip_md": "Panel surface coating: matte, glossy, semi-glossy, anti-glare",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "panel_manufacturer": {
@@ -7645,10 +7229,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} panel manufacturer",
-          "{brand} {model} panel part number AUO LGD BOE Innolux"
-        ],
         "query_terms": [
           "panel manufacturer",
           "panel maker",
@@ -7676,7 +7256,6 @@
         "tooltip_md": "Panel manufacturer (LG Display, AU Optronics, BOE, Samsung Display, Innolux)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "panel_type": {
@@ -7751,10 +7330,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} panel type technology",
-          "{brand} {model} IPS VA OLED panel"
-        ],
         "query_terms": [
           "panel type",
           "panel technology",
@@ -7784,7 +7359,6 @@
         "tooltip_md": "Panel technology: IPS, VA, TN, OLED, QD-OLED, W-OLED, Mini-LED IPS, etc.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "pip_pbp": {
@@ -7859,10 +7433,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} PiP PbP picture in picture",
-          "{brand} {model} multi-window split screen"
-        ],
         "query_terms": [
           "PiP",
           "PbP",
@@ -7888,7 +7458,6 @@
         "tooltip_md": "Picture-in-Picture / Picture-by-Picture multi-source display",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "pivot_rotation": {
@@ -7962,10 +7531,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} pivot rotation portrait",
-          "{brand} {model} 90 degree pivot rotation"
-        ],
         "query_terms": [
           "pivot",
           "pivot rotation",
@@ -7990,7 +7555,6 @@
         "tooltip_md": "Whether the stand supports 90° pivot rotation for portrait mode",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "pixel_density": {
@@ -8073,10 +7637,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} pixel density PPI",
-          "{brand} {model} pixels per inch"
-        ],
         "query_terms": [
           "pixel density",
           "PPI",
@@ -8101,7 +7661,6 @@
         "tooltip_md": "Pixels per inch",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "power_consumption_max": {
@@ -8183,10 +7742,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} maximum power consumption watts",
-          "{brand} {model} peak power wattage"
-        ],
         "query_terms": [
           "max power consumption",
           "maximum wattage",
@@ -8210,7 +7765,6 @@
         "tooltip_md": "Maximum power consumption in watts",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "power_consumption_typical": {
@@ -8292,10 +7846,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} power consumption watts typical",
-          "{brand} {model} wattage power usage"
-        ],
         "query_terms": [
           "power consumption",
           "typical power",
@@ -8321,7 +7871,6 @@
         "tooltip_md": "Typical power consumption in watts",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "price_range": {
@@ -8395,10 +7944,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} price buy",
-          "{brand} {model} MSRP retail price"
-        ],
         "query_terms": [
           "price",
           "MSRP",
@@ -8423,7 +7968,6 @@
         "tooltip_md": "MSRP / launch retail price in USD",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "ps5_compatibility": {
@@ -8483,7 +8027,10 @@
       "search_hints": {
         "content_types": [
           "review",
-          "spec_sheet",
+          "support",
+          "manual",
+          "spec",
+          "pdf",
           "product_page"
         ],
         "domain_hints": [
@@ -8491,22 +8038,10 @@
           "tomshardware.com",
           "pcmonitors.info"
         ],
-        "preferred_content_types": [
-          "review",
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} PS5 compatibility",
-          "{brand} {model} PlayStation 5 monitor support"
         ],
         "query_terms": [
           "PS5 compatibility",
@@ -8529,8 +8064,7 @@
         "tooltip_key": "ps5_compatibility",
         "tooltip_md": "Compatibility status with PlayStation 5, including common console display modes.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "reflections": {
       "ai_assist": {
@@ -8598,7 +8132,10 @@
       "search_hints": {
         "content_types": [
           "review",
-          "spec_sheet",
+          "support",
+          "manual",
+          "spec",
+          "pdf",
           "product_page"
         ],
         "domain_hints": [
@@ -8606,22 +8143,10 @@
           "pcmonitors.info",
           "tftcentral.co.uk"
         ],
-        "preferred_content_types": [
-          "review",
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} reflections percentage",
-          "{brand} {model} reflection handling"
         ],
         "query_terms": [
           "reflections",
@@ -8644,8 +8169,7 @@
         "tooltip_key": "reflections",
         "tooltip_md": "Measured total reflections as a percentage of incident light.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "refresh_rate": {
       "ai_assist": {
@@ -8728,10 +8252,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} refresh rate Hz",
-          "{brand} {model} max refresh rate specifications"
-        ],
         "query_terms": [
           "refresh rate",
           "Hz",
@@ -8760,7 +8280,6 @@
         "tooltip_md": "Maximum native refresh rate in Hz",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "upper_bound"
     },
     "release_date": {
@@ -8841,12 +8360,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} release date",
-          "{brand} {model} launch date",
-          "{brand} {model} available since",
-          "\"{model}\" release date"
-        ],
         "query_terms": [
           "release date",
           "launch date",
@@ -8871,7 +8384,6 @@
         "tooltip_md": "Product release/launch date",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "resolution": {
@@ -8945,10 +8457,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} resolution pixels",
-          "{brand} {model} native resolution"
-        ],
         "query_terms": [
           "resolution",
           "native resolution",
@@ -8977,7 +8485,6 @@
         "tooltip_md": "Native resolution as WxH (e.g. 2560 x 1440, 3840 x 2160)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "response_time_120hz": {
@@ -9046,7 +8553,10 @@
       "search_hints": {
         "content_types": [
           "review",
-          "spec_sheet",
+          "support",
+          "manual",
+          "spec",
+          "pdf",
           "product_page"
         ],
         "domain_hints": [
@@ -9055,22 +8565,10 @@
           "pcmonitors.info",
           "tomshardware.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} response time 120Hz",
-          "{brand} {model} 120 Hz response time measured"
         ],
         "query_terms": [
           "response time 120Hz",
@@ -9093,8 +8591,7 @@
         "tooltip_key": "response_time_120hz",
         "tooltip_md": "Measured average response time when the display runs at 120 Hz.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "response_time_60hz": {
       "ai_assist": {
@@ -9162,7 +8659,10 @@
       "search_hints": {
         "content_types": [
           "review",
-          "spec_sheet",
+          "support",
+          "manual",
+          "spec",
+          "pdf",
           "product_page"
         ],
         "domain_hints": [
@@ -9171,22 +8671,10 @@
           "pcmonitors.info",
           "tomshardware.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} response time 60Hz",
-          "{brand} {model} 60 Hz response time measured"
         ],
         "query_terms": [
           "response time 60Hz",
@@ -9209,8 +8697,7 @@
         "tooltip_key": "response_time_60hz",
         "tooltip_md": "Measured average response time when the display runs at 60 Hz.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "response_time_gtg": {
       "ai_assist": {
@@ -9293,10 +8780,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} response time GtG ms measured",
-          "{brand} {model} pixel response time test"
-        ],
         "query_terms": [
           "response time",
           "GtG",
@@ -9322,7 +8805,6 @@
         "tooltip_md": "Gray-to-gray response time in ms (manufacturer-stated)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "response_time_mprt": {
@@ -9404,10 +8886,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} MPRT moving picture response time",
-          "{brand} {model} motion clarity persistence"
-        ],
         "query_terms": [
           "MPRT",
           "moving picture response time",
@@ -9432,7 +8910,6 @@
         "tooltip_md": "Moving Picture Response Time in ms (measured motion clarity)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "screen_size": {
@@ -9517,10 +8994,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} screen size inches",
-          "{brand} {model} specifications display size"
-        ],
         "query_terms": [
           "screen size",
           "display size",
@@ -9545,7 +9018,6 @@
         "tooltip_md": "Diagonal screen size in inches (e.g. 27, 31.5, 34)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "exact"
     },
     "sku": {
@@ -9615,11 +9087,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} part number",
-          "{brand} {model} MPN",
-          "\"{model}\" part number"
-        ],
         "query_terms": [
           "SKU",
           "part number",
@@ -9643,7 +9110,6 @@
         "tooltip_md": "Manufacturer SKU or part number",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "speakers": {
@@ -9717,10 +9183,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} built-in speakers watts",
-          "{brand} {model} integrated speakers"
-        ],
         "query_terms": [
           "speakers",
           "built-in speakers",
@@ -9745,7 +9207,6 @@
         "tooltip_md": "Built-in speakers (e.g. 2x 2W, 2x 5W, None)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "subpixel_layout": {
@@ -9816,10 +9277,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} subpixel layout",
-          "{brand} {model} subpixel RGB BGR"
-        ],
         "query_terms": [
           "subpixel layout",
           "RGB stripe",
@@ -9845,7 +9302,6 @@
         "tooltip_md": "Subpixel arrangement: RGB, BGR, WRGB, RWBG",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "swivel_range": {
@@ -9918,10 +9374,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} swivel range degrees",
-          "{brand} {model} swivel adjustment left right"
-        ],
         "query_terms": [
           "swivel",
           "swivel range",
@@ -9946,7 +9398,6 @@
         "tooltip_md": "Swivel adjustment range (e.g. -45° to 45°)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "text_clarity": {
@@ -10006,7 +9457,10 @@
       "search_hints": {
         "content_types": [
           "review",
-          "spec_sheet",
+          "support",
+          "manual",
+          "spec",
+          "pdf",
           "product_page"
         ],
         "domain_hints": [
@@ -10014,22 +9468,10 @@
           "pcmonitors.info",
           "tftcentral.co.uk"
         ],
-        "preferred_content_types": [
-          "review",
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} text clarity",
-          "{brand} {model} monitor text clarity review"
         ],
         "query_terms": [
           "text clarity",
@@ -10052,8 +9494,7 @@
         "tooltip_key": "text_clarity",
         "tooltip_md": "Overall text clarity assessment for desktop use.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "thunderbolt_ports": {
       "ai_assist": {
@@ -10128,10 +9569,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} Thunderbolt ports monitor",
-          "{brand} {model} Thunderbolt hub connectivity"
-        ],
         "query_terms": [
           "Thunderbolt ports",
           "Thunderbolt monitor",
@@ -10154,8 +9591,7 @@
         "tooltip_key": "thunderbolt_ports",
         "tooltip_md": "Thunderbolt port count exposed by the monitor.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "thunderbolt_version": {
       "ai_assist": {
@@ -10231,10 +9667,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} Thunderbolt version",
-          "{brand} {model} Thunderbolt 4 Thunderbolt 5 specifications"
-        ],
         "query_terms": [
           "Thunderbolt version",
           "Thunderbolt 3",
@@ -10257,8 +9689,7 @@
         "tooltip_key": "thunderbolt_version",
         "tooltip_md": "Supported Thunderbolt generation (for example Thunderbolt 3, 4, or 5).",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "tilt_range": {
       "ai_assist": {
@@ -10331,10 +9762,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} tilt range degrees",
-          "{brand} {model} tilt adjustment forward backward"
-        ],
         "query_terms": [
           "tilt",
           "tilt range",
@@ -10360,7 +9787,6 @@
         "tooltip_md": "Tilt adjustment range (e.g. -5° to 20°)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "usb_c_ports": {
@@ -10435,10 +9861,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} USB-C Thunderbolt ports",
-          "{brand} {model} USB Type-C connectivity"
-        ],
         "query_terms": [
           "USB-C",
           "USB Type-C",
@@ -10463,7 +9885,6 @@
         "tooltip_md": "USB-C port count, alt mode, and power delivery wattage",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "usb_hub": {
@@ -10536,10 +9957,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} USB hub downstream ports",
-          "{brand} {model} built-in USB hub"
-        ],
         "query_terms": [
           "USB hub",
           "USB downstream",
@@ -10564,7 +9981,6 @@
         "tooltip_md": "Built-in USB hub port count and version (e.g. 4x USB 3.0)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "usb_power_delivery_watts": {
@@ -10648,10 +10064,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} USB Power Delivery watts",
-          "{brand} {model} USB-C PD charging wattage"
-        ],
         "query_terms": [
           "USB Power Delivery",
           "USB PD",
@@ -10677,7 +10089,6 @@
         "tooltip_md": "USB-C Power Delivery wattage for laptop charging",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "variable_refresh_rate": {
@@ -10750,10 +10161,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} variable refresh rate support",
-          "{brand} {model} VRR adaptive sync"
-        ],
         "query_terms": [
           "variable refresh rate",
           "VRR",
@@ -10778,7 +10185,6 @@
         "tooltip_md": "Whether the monitor supports variable refresh rate",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "variant": {
@@ -10848,10 +10254,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} variants",
-          "{brand} {model} versions differences"
-        ],
         "query_terms": [
           "variant",
           "version",
@@ -10876,7 +10278,6 @@
         "tooltip_md": "Variant identifier (size, region, revision)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "vertical_viewing_angle": {
@@ -10945,7 +10346,10 @@
       "search_hints": {
         "content_types": [
           "review",
-          "spec_sheet",
+          "support",
+          "manual",
+          "spec",
+          "pdf",
           "product_page"
         ],
         "domain_hints": [
@@ -10953,22 +10357,10 @@
           "pcmonitors.info",
           "tftcentral.co.uk"
         ],
-        "preferred_content_types": [
-          "review",
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} vertical viewing angle",
-          "{brand} {model} viewing angle vertical degrees"
         ],
         "query_terms": [
           "vertical viewing angle",
@@ -10990,8 +10382,7 @@
         "tooltip_key": "vertical_viewing_angle",
         "tooltip_md": "Measured vertical viewing angle before notable color or luminance shift.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "vesa_mount": {
       "ai_assist": {
@@ -11065,10 +10456,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} VESA mount pattern",
-          "{brand} {model} VESA compatibility 100x100"
-        ],
         "query_terms": [
           "VESA",
           "VESA mount",
@@ -11095,7 +10482,6 @@
         "tooltip_md": "VESA mount pattern (e.g. 100x100, 200x200, 75x75, None)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "vrr_range": {
@@ -11169,10 +10555,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} VRR range Hz",
-          "{brand} {model} FreeSync G-Sync frequency range"
-        ],
         "query_terms": [
           "VRR range",
           "FreeSync range",
@@ -11197,7 +10579,6 @@
         "tooltip_md": "Variable refresh rate range in Hz (e.g. 48-165 Hz)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "wall_mountable": {
@@ -11270,10 +10651,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} wall mount VESA",
-          "{brand} {model} wall mountable"
-        ],
         "query_terms": [
           "wall mountable",
           "wall mount",
@@ -11297,7 +10674,6 @@
         "tooltip_md": "Whether the monitor is wall-mountable",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "warranty": {
@@ -11370,10 +10746,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} warranty years",
-          "{brand} {model} manufacturer warranty policy"
-        ],
         "query_terms": [
           "warranty",
           "warranty years",
@@ -11398,7 +10770,6 @@
         "tooltip_md": "Manufacturer warranty period",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "webcam": {
@@ -11475,10 +10846,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} webcam resolution monitor",
-          "{brand} {model} integrated camera specifications"
-        ],
         "query_terms": [
           "webcam",
           "camera",
@@ -11502,8 +10869,7 @@
         "tooltip_key": "webcam",
         "tooltip_md": "Integrated webcam capability or headline resolution.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "weight_with_stand": {
       "ai_assist": {
@@ -11585,10 +10951,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} weight with stand kg",
-          "{brand} {model} total weight including stand"
-        ],
         "query_terms": [
           "weight with stand",
           "total weight",
@@ -11612,7 +10974,6 @@
         "tooltip_md": "Weight with stand in grams",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "weight_without_stand": {
@@ -11695,10 +11056,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} weight without stand kg",
-          "{brand} {model} panel only weight"
-        ],
         "query_terms": [
           "weight without stand",
           "panel weight",
@@ -11723,7 +11080,6 @@
         "tooltip_md": "Weight without stand in grams",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "wide_color_gamut": {
@@ -11796,10 +11152,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} wide color gamut",
-          "{brand} {model} quantum dot wide gamut"
-        ],
         "query_terms": [
           "wide color gamut",
           "WCG",
@@ -11824,7 +11176,6 @@
         "tooltip_md": "Whether the monitor supports wide color gamut (typically >90% DCI-P3)",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "width": {
@@ -11907,10 +11258,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} dimensions width mm",
-          "{brand} {model} width without stand"
-        ],
         "query_terms": [
           "width",
           "width mm",
@@ -11934,7 +11281,6 @@
         "tooltip_md": "Width of the monitor without stand in mm",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "xbox_series_xs_compatibility": {
@@ -11995,7 +11341,10 @@
       "search_hints": {
         "content_types": [
           "review",
-          "spec_sheet",
+          "support",
+          "manual",
+          "spec",
+          "pdf",
           "product_page"
         ],
         "domain_hints": [
@@ -12003,22 +11352,10 @@
           "tomshardware.com",
           "pcmonitors.info"
         ],
-        "preferred_content_types": [
-          "review",
-          "support",
-          "manual",
-          "spec",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} Xbox Series X compatibility",
-          "{brand} {model} Xbox Series S monitor support"
         ],
         "query_terms": [
           "Xbox Series X compatibility",
@@ -12041,11 +11378,10 @@
         "tooltip_key": "xbox_series_xs_compatibility",
         "tooltip_md": "Compatibility status with Xbox Series X and Series S display modes.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     }
   },
-  "generated_at": "2026-04-21T00:18:18.141Z",
+  "generated_at": "2026-04-22T03:39:57.663Z",
   "key_range": "field_catalog!B2:B2000",
   "notes": [
     "Generated by Field Rules Studio compiler.",

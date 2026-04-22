@@ -408,7 +408,6 @@ test('monitor search hints use approved real hostnames instead of tier tokens', 
     for (const payload of [field, override]) {
       const domainHints = payload?.search_hints?.domain_hints || [];
       assert.equal(domainHints.length >= 3, true, `Too few domain hints for ${fieldKey}`);
-      assert.equal(payload?.search_hints?.query_templates?.length > 0, true, `query_templates missing for ${fieldKey}`);
       assert.equal(payload?.search_hints?.query_terms?.length > 0, true, `query_terms missing for ${fieldKey}`);
       for (const domainHint of domainHints) {
         const normalized = String(domainHint || '').trim().toLowerCase();

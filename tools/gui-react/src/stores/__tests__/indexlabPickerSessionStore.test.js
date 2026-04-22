@@ -57,3 +57,39 @@ test('indexlab picker brand change resets model and variant selection', async ()
   assert.equal(state.pickerModel, '');
   assert.equal(state.pickerProductId, '');
 });
+
+test('indexlab picker model change resets product but keeps brand', async () => {
+  const localStorage = createStorage({}, { trackCalls: false });
+  const sessionStorage = createStorage({}, { trackCalls: false });
+
+  const mod = await withWindowStub({ localStorage, sessionStorage }, () => loadIndexlabStoreModule());
+  const store = mod.useIndexLabStore;
+
+  store.getState().setPickerBrand('Razer');
+  store.getState().setPickerModel('Viper V2 Pro');
+  store.getState().setPickerProductId('razer-viper-v2-pro-white');
+  store.getState().setPickerModel('Basilisk V3 Pro');
+
+  const state = store.getState();
+  assert.equal(state.pickerBrand, 'Razer');
+  assert.equal(state.pickerModel, 'Basilisk V3 Pro');
+  assert.equal(state.pickerProductId, '');
+});
+
+test('indexlab picker productId change does not disturb brand or model', async () => {
+  const localStorage = createStorage({}, { trackCalls: false });
+  const sessionStorage = createStorage({}, { trackCalls: false });
+
+  const mod = await withWindowStub({ localStorage, sessionStorage }, () => loadIndexlabStoreModule());
+  const store = mod.useIndexLabStore;
+
+  store.getState().setPickerBrand('Razer');
+  store.getState().setPickerModel('Viper V2 Pro');
+  store.getState().setPickerProductId('razer-viper-v2-pro-white');
+  store.getState().setPickerProductId('razer-viper-v2-pro-black');
+
+  const state = store.getState();
+  assert.equal(state.pickerBrand, 'Razer');
+  assert.equal(state.pickerModel, 'Viper V2 Pro');
+  assert.equal(state.pickerProductId, 'razer-viper-v2-pro-black');
+});

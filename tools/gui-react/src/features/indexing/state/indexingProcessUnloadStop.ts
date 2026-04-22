@@ -3,13 +3,11 @@ import { useEffect } from 'react';
 export function useIndexingProcessUnloadStop(processRunning: boolean): void {
   useEffect(() => {
     const stopUrl = '/api/v1/process/stop';
-    const stopPayload = JSON.stringify({ force: true });
     const sendStop = () => {
       if (!processRunning) return;
       try {
-        const payload = new Blob([stopPayload], { type: 'application/json' });
         if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
-          navigator.sendBeacon(stopUrl, payload);
+          navigator.sendBeacon(stopUrl);
           return;
         }
       } catch {
@@ -18,8 +16,6 @@ export function useIndexingProcessUnloadStop(processRunning: boolean): void {
       try {
         void fetch(stopUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: stopPayload,
           keepalive: true,
         });
       } catch {

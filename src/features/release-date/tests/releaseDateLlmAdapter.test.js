@@ -127,10 +127,13 @@ describe('buildReleaseDateFinderPrompt', () => {
     }
   });
 
-  it('default template names structured retail backups (Keepa / CamelCamelCamel / Amazon)', () => {
+  it('compiled prompt names structured retail backups (Keepa / CamelCamelCamel / Amazon)', () => {
+    // WHY compiled output: source guidance is composed from the shared
+    // variantScalarSourceGuidance global + RDF_SOURCE_VARIANT_GUIDANCE_SLOTS.
+    const prompt = buildReleaseDateFinderPrompt({ product, variantLabel: 'Black' });
     for (const expected of ['Keepa', 'camelcamelcamel', 'Amazon', 'JSON-LD']) {
       assert.ok(
-        RDF_DEFAULT_TEMPLATE.includes(expected),
+        prompt.includes(expected),
         `structured retail backup "${expected}" must be named`,
       );
     }
@@ -145,22 +148,25 @@ describe('buildReleaseDateFinderPrompt', () => {
       'must call out announcement dates as not-the-answer');
   });
 
-  it('default template enforces Amazon-only → YYYY-MM precision rule', () => {
+  it('compiled prompt enforces Amazon-only → YYYY-MM precision rule', () => {
     // The single most important honesty rule: don't promise YYYY-MM-DD
-    // when the only source is a retail listing date.
-    assert.ok(/Amazon\/Keepa is your ONLY signal/i.test(RDF_DEFAULT_TEMPLATE)
-      || /Amazon.*ONLY signal/i.test(RDF_DEFAULT_TEMPLATE),
+    // when the only source is a retail listing date. Lives in the tier3
+    // content slot of RDF_SOURCE_VARIANT_GUIDANCE_SLOTS after extraction.
+    const prompt = buildReleaseDateFinderPrompt({ product, variantLabel: 'Black' });
+    assert.ok(/Amazon\/Keepa is your ONLY signal/i.test(prompt)
+      || /Amazon.*ONLY signal/i.test(prompt),
       'must include the "Amazon/Keepa-only → YYYY-MM" precision rule');
   });
 
-  it('default template tags source tiers explicitly so the LLM knows which tier code to attach', () => {
+  it('compiled prompt tags source tiers explicitly so the LLM knows which tier code to attach', () => {
     // Source hierarchy maps each kind of evidence to a concrete tier code
     // matching the universal evidence taxonomy.
-    assert.ok(/tier1/i.test(RDF_DEFAULT_TEMPLATE) && /manufacturer/i.test(RDF_DEFAULT_TEMPLATE),
+    const prompt = buildReleaseDateFinderPrompt({ product, variantLabel: 'Black' });
+    assert.ok(/tier1/i.test(prompt) && /manufacturer/i.test(prompt),
       'manufacturer authority must be tagged as tier1');
-    assert.ok(/tier3/i.test(RDF_DEFAULT_TEMPLATE),
+    assert.ok(/tier3/i.test(prompt),
       'retail backups must reference tier3 explicitly');
-    assert.ok(/tier2/i.test(RDF_DEFAULT_TEMPLATE),
+    assert.ok(/tier2/i.test(prompt),
       'independent corroboration must reference tier2 explicitly');
   });
 
@@ -212,11 +218,42 @@ describe('buildReleaseDateFinderPrompt', () => {
       'must tell the LLM that YYYY is a valid answer for older/obscure products');
   });
 
-  it('default template allows community/forum/spec-DB sources for year-level corroboration', () => {
+  // ── Variant disambiguation contract ──────────────────────────────
+  // WHY: RDF gained a VARIANT DISAMBIGUATION section in Commit 3 via the
+  // shared variantScalarDisambiguation global + RDF_VARIANT_DISAMBIGUATION_SLOTS
+  // bag. Addresses the real failure mode where limited editions / regional
+  // color drops silently return the base product's launch date.
+  // Tests enforce behavior/structure, not exact wording (prompts are editable).
+
+  it('compiled prompt contains a named VARIANT DISAMBIGUATION section with 4 numbered rules', () => {
+    const prompt = buildReleaseDateFinderPrompt({ product, variantLabel: 'Black' });
+    assert.match(prompt, /VARIANT DISAMBIGUATION/,
+      'must have a named VARIANT DISAMBIGUATION section');
+    for (const n of [1, 2, 3, 4]) {
+      assert.match(prompt, new RegExp(`  ${n}\\. `),
+        `must have rule ${n}`);
+    }
+  });
+
+  it('compiled prompt handles the shared-launch case (all variants launched simultaneously)', () => {
+    const prompt = buildReleaseDateFinderPrompt({ product, variantLabel: 'Black' });
+    assert.match(prompt, /launched all variants simultaneously|shared.*(launch|date)|simultaneously/i,
+      'must handle the shared-launch case where one date covers all variants');
+  });
+
+  it('compiled prompt instructs the LLM to prefer "unk" over returning the base launch date for later drops', () => {
+    const prompt = buildReleaseDateFinderPrompt({ product, variantLabel: 'Black' });
+    assert.match(prompt, /Do NOT return the base product launch date|base.*launch.*later|later.*launch.*base/i,
+      'must warn against returning the base launch date for later-dropped variants');
+  });
+
+  it('compiled prompt allows community/forum/spec-DB sources for year-level corroboration', () => {
     // The LLM must understand tier4/tier5 are not just cross-reference — for
     // YYYY precision, they can be standalone evidence when they agree.
-    assert.ok(/year.*(?:tier4|tier5|forum|community|spec[- ]?(?:DB|database))/i.test(RDF_DEFAULT_TEMPLATE)
-      || /(?:tier4|tier5|forum|community|spec[- ]?(?:DB|database)).*year/i.test(RDF_DEFAULT_TEMPLATE),
+    // Lives in the tier4 content slot of RDF_SOURCE_VARIANT_GUIDANCE_SLOTS.
+    const prompt = buildReleaseDateFinderPrompt({ product, variantLabel: 'Black' });
+    assert.ok(/year.*(?:tier4|tier5|forum|community|spec[- ]?(?:DB|database))/i.test(prompt)
+      || /(?:tier4|tier5|forum|community|spec[- ]?(?:DB|database)).*year/i.test(prompt),
       'must allow low-tier sources for YYYY-level corroboration');
   });
 });

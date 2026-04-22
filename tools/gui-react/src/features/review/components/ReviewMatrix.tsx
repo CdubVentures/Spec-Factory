@@ -204,13 +204,12 @@ export const ReviewMatrix = memo(function ReviewMatrix({
                         parts.push(`Type: ${r.type}`);
                         if (r.required) parts.push('Required');
                         if (r.units) parts.push(`Units: ${r.units}`);
-                        if (r.enum_name) parts.push(`Enum: ${r.enum_name}`);
                         return r.required ? (
                           <span
                             className="ml-auto inline-block w-2 h-2 rounded-full sf-review-matrix-required-dot flex-shrink-0 cursor-help"
                             title={parts.join(' · ')}
                           />
-                        ) : r.units || r.enum_name ? (
+                        ) : r.units ? (
                           <span
                             className="ml-auto inline-block w-1.5 h-1.5 rounded-full sf-review-matrix-optional-dot flex-shrink-0 cursor-help"
                             title={parts.join(' · ')}

@@ -706,8 +706,6 @@ export async function runProductImageFinder({
   async function produceForVariant(variant) {
     // Universal discovery-log history — scope: variant + mode (view vs hero).
     // View-mode runs don't leak URLs to hero-mode runs and vice versa.
-    const pifSuppRows = (finderStore.listSuppressions?.(product.product_id) || [])
-      .filter((s) => s.variant_id === (variant.variant_id || '') && s.mode === mode);
     const previousDiscovery = accumulateDiscoveryLog(previousPifRuns, {
       runMatcher: (r) => {
         const rId = r.response?.variant_id;
@@ -717,10 +715,6 @@ export async function runProductImageFinder({
       },
       includeUrls: urlHistoryEnabled,
       includeQueries: queryHistoryEnabled,
-      suppressions: {
-        urlsChecked: new Set(pifSuppRows.filter((s) => s.kind === 'url').map((s) => s.item)),
-        queriesRun: new Set(pifSuppRows.filter((s) => s.kind === 'query').map((s) => s.item)),
-      },
     });
 
     const variantImages = (pifDoc?.selected?.images || []).filter(img => matchVariant(img, { variantId: variant.variant_id, variantKey: variant.key }));
@@ -1052,9 +1046,6 @@ export async function runCarouselLoop({
     const pifDoc = readProductImages({ productId: product.product_id, productRoot });
     const previousPifRuns = Array.isArray(pifDoc?.runs) ? pifDoc.runs : [];
     // Scope matches the current call's mode so view/hero histories stay separate.
-    const loopFinderStore = specDb.getFinderStore('productImageFinder');
-    const loopSuppRows = (loopFinderStore?.listSuppressions?.(product.product_id) || [])
-      .filter((s) => s.variant_id === (variant.variant_id || '') && s.mode === callMode);
     const previousDiscovery = accumulateDiscoveryLog(previousPifRuns, {
       runMatcher: (r) => {
         const rId = r.response?.variant_id;
@@ -1064,10 +1055,6 @@ export async function runCarouselLoop({
       },
       includeUrls: urlHistoryEnabled,
       includeQueries: queryHistoryEnabled,
-      suppressions: {
-        urlsChecked: new Set(loopSuppRows.filter((s) => s.kind === 'url').map((s) => s.item)),
-        queriesRun: new Set(loopSuppRows.filter((s) => s.kind === 'query').map((s) => s.item)),
-      },
     });
 
     const llmDeps = buildLlmCallDeps({

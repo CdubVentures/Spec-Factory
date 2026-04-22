@@ -1,7 +1,26 @@
 // WHY: Minimal URL canonicalization for consistent dedup keys.
-// Only normalizations that affect page identity: hash, param order, trailing slash, HTTPS.
-// No www-stripping, no locale-stripping, no tracking-param-stripping — Google/Serper
-// returns clean canonical URLs that don't need aggressive normalization.
+// Default: hash strip, param order, trailing slash, HTTPS — preserves all params
+// so DB / audit paths keep full URL identity (Google/Serper canonical URLs).
+// Opt-in { stripTracking: true }: also removes known ad/analytics tracking params
+// so the fetch layer can dedup SERP results whose only difference is tracking noise
+// (e.g. Google Shopping's srsltid redirects produce 6× variants of the same page).
+
+// Exact-match tracking params (ad click IDs, analytics, campaign refs).
+const TRACKING_PARAMS_EXACT = new Set([
+  'srsltid',
+  'gclid', 'fbclid', 'yclid', 'msclkid', 'dclid',
+  'mc_cid', 'mc_eid',
+  '_ga', '_gl',
+  'ref_src',
+]);
+
+// Prefix-match tracking params (whole UTM family).
+const TRACKING_PARAM_PREFIXES = ['utm_'];
+
+function isTrackingParam(key) {
+  if (TRACKING_PARAMS_EXACT.has(key)) return true;
+  return TRACKING_PARAM_PREFIXES.some((prefix) => key.startsWith(prefix));
+}
 
 export function pathSignature(pathname = '') {
   const normalized = String(pathname || '').replace(/\/+/g, '/');
@@ -13,7 +32,7 @@ export function pathSignature(pathname = '') {
   return parts.length ? `/${parts.slice(0, 6).join('/')}` : '/';
 }
 
-export function canonicalizeUrl(rawUrl) {
+export function canonicalizeUrl(rawUrl, { stripTracking = false } = {}) {
   const input = String(rawUrl || '').trim();
   if (!input) {
     return { original_url: '', canonical_url: '', domain: '', path_sig: '' };
@@ -31,6 +50,15 @@ export function canonicalizeUrl(rawUrl) {
   if (url.pathname.length > 1 && url.pathname.endsWith('/')) {
     url.pathname = url.pathname.slice(0, -1);
   }
+
+  if (stripTracking) {
+    const keysToRemove = [];
+    for (const key of url.searchParams.keys()) {
+      if (isTrackingParam(key)) keysToRemove.push(key);
+    }
+    for (const key of keysToRemove) url.searchParams.delete(key);
+  }
+
   url.searchParams.sort();
 
   const canonical = url.toString();

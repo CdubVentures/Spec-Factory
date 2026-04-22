@@ -36,10 +36,6 @@ import {
   defaultBuildScalarUserMessage,
 } from './resolveScalarFinderPromptInputs.js';
 
-function defaultSuppressionScope(variant) {
-  return { variant_id: variant.variant_id || '', mode: '' };
-}
-
 /**
  * @param {object} cfg
  * @param {string} cfg.finderName        — SpecDb finder-store key + phase tracking key (e.g. 'releaseDateFinder')
@@ -56,7 +52,6 @@ function defaultSuppressionScope(variant) {
  * @param {Function} cfg.satisfactionPredicate — (produceResult) => boolean  (loop stop)
  * @param {Function} [cfg.buildPublisherMetadata] — (variant, candidate, ctx, extracted) => metadata
  * @param {Function} [cfg.buildUserMessage]        — (product, variant) => string
- * @param {Function} [cfg.suppressionScope]        — (variant) => { variant_id, mode }
  * @param {number}   [cfg.defaultStaggerMs=1000]
  * @returns {{ runOnce, runLoop }}
  */
@@ -67,7 +62,6 @@ export function createVariantScalarFieldProducer(cfg) {
     mergeDiscovery, readRuns, satisfactionPredicate,
     buildPublisherMetadata,
     buildUserMessage = defaultBuildScalarUserMessage,
-    suppressionScope = defaultSuppressionScope,
     defaultStaggerMs = 1000,
   } = cfg;
 
@@ -187,12 +181,8 @@ export function createVariantScalarFieldProducer(cfg) {
       const loopId = callCtx?.loopId || null;
       const previousRuns = previousRunsProvider();
 
-      const scope = suppressionScope(variant);
-      const featureStore = specDb.getFinderStore(finderName);
-      const suppRows = (featureStore?.listSuppressions?.(product.product_id) || [])
-        .filter((s) => s.variant_id === scope.variant_id && s.mode === scope.mode);
       const previousDiscovery = resolveScalarPreviousDiscovery({
-        previousRuns, variant, urlHistoryEnabled, queryHistoryEnabled, suppRows,
+        previousRuns, variant, urlHistoryEnabled, queryHistoryEnabled,
       });
 
       const { domainArgs, userMessage: userMsg } = resolveScalarFinderPromptInputs({

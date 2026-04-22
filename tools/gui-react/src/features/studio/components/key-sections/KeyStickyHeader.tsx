@@ -27,6 +27,7 @@ export interface KeyStickyHeaderProps {
   saveIfAutoSaveEnabled: () => void;
   category: string;
   isEgLocked?: boolean;
+  BadgeRenderer?: React.ComponentType<{ p: string }>;
 }
 
 export function KeyStickyHeader({
@@ -44,6 +45,7 @@ export function KeyStickyHeader({
   onSetAutoSaveEnabled,
   updateField,
   isEgLocked = false,
+  BadgeRenderer: B,
 }: KeyStickyHeaderProps) {
   // Label edit state
   const [editingLabel, setEditingLabel] = useState(false);
@@ -223,6 +225,7 @@ export function KeyStickyHeader({
             >
               &#9998;
             </span>
+            {B ? <B p="ui.label" /> : null}
             <span className="sf-text-subtle select-none text-lg leading-snug">
               |
             </span>

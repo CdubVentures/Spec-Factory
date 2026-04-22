@@ -17,8 +17,12 @@ import { useState, useCallback, useMemo, type ReactNode } from 'react';
 import type { UseQueryResult, UseMutationResult } from '@tanstack/react-query';
 import { Spinner } from '../feedback/Spinner.tsx';
 import { Chip } from '../feedback/Chip.tsx';
-import { FinderPanelHeader } from './FinderPanelHeader.tsx';
-import { AnimatedDots } from './AnimatedDots.tsx';
+import { IndexingPanelHeader } from './IndexingPanelHeader.tsx';
+import type { IndexingPanelId } from './IndexingPanelHeader.tsx';
+import { PromptPreviewTriggerButton } from './PromptPreviewTriggerButton.tsx';
+import { HeaderActionButton, RowActionButton, ACTION_BUTTON_WIDTH } from '../actionButton/index.ts';
+// WHY: AnimatedDots removed — busy state now renders via <RowActionButton>'s
+// built-in spinner for the 'locked' intent.
 import { FinderKpiCard } from './FinderKpiCard.tsx';
 import { FinderPanelFooter } from './FinderPanelFooter.tsx';
 import { FinderRunModelBadge } from './FinderRunModelBadge.tsx';
@@ -27,6 +31,7 @@ import { FinderSectionCard } from './FinderSectionCard.tsx';
 import { FinderHowItWorks, type HiwSection } from './FinderHowItWorks.tsx';
 import { FinderVariantRow } from './FinderVariantRow.tsx';
 import { FinderRunHistoryRow } from './FinderRunHistoryRow.tsx';
+import { ConfidenceChip } from './ConfidenceChip.tsx';
 import { ConfidenceRing } from './ConfidenceRing.tsx';
 import { FinderDiscoveryDetails, type DiscoverySection } from './FinderDiscoveryDetails.tsx';
 import { FinderRunPromptDetails } from './FinderRunPromptDetails.tsx';
@@ -42,6 +47,8 @@ import { buildFinderVariantRows, buildEditionsMap } from './variantRowHelpers.ts
 import { deriveFinderKpiCards, deriveVariantRows, sortRunsNewestFirst } from './scalarFinderSelectors.ts';
 import type { DeleteTarget } from './types.ts';
 import { FINDER_PANELS } from '../../../features/indexing/state/finderPanelRegistry.generated.ts';
+import { FINDER_TAB_META } from '../../../features/indexing/panels/finderTabMeta.ts';
+import type { FinderPanelId } from '../../../features/indexing/panels/finderTabMeta.ts';
 import type { LlmOverridePhaseId } from '../../../features/llm-config/types/llmPhaseOverrideTypes.generated.ts';
 import { ModelBadgeGroup } from '../../../features/llm-config/components/ModelAccessBadges.tsx';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
@@ -185,6 +192,14 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
   const [variantExpand, toggleVariantExpand] = usePersistedExpandMap(`indexing:${moduleType}:variantExpand:${productId}`);
   const [runExpand, toggleRunExpand] = usePersistedExpandMap(`indexing:${moduleType}:runExpand:${productId}`);
   const [activePromptModal, setActivePromptModal] = useState<ScalarPromptModalState | null>(null);
+  const [headerPromptModalOpen, setHeaderPromptModalOpen] = useState(false);
+  const headerPromptQuery = usePromptPreviewQuery(
+    previewFinder ?? 'rdf',
+    category,
+    productId,
+    {},
+    Boolean(previewFinder) && headerPromptModalOpen,
+  );
 
   const promptPreviewBody: PromptPreviewRequestBody = useMemo(() => (
     activePromptModal
@@ -274,44 +289,55 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
   const isAnyDeletePending = deleteRunMut.isPending || deleteAllMut.isPending;
   const withValueCount = variantRows.filter((r) => r.candidate?.value).length;
 
+  const tabMeta = FINDER_TAB_META[finderId as FinderPanelId];
+  const panelId = (tabMeta?.iconClass ?? finderId) as IndexingPanelId;
+  const iconGlyph = tabMeta?.icon ?? '◆';
+
   return (
-    <div className="sf-surface-panel p-0 flex flex-col">
-      <FinderPanelHeader
+    <div className="sf-surface-panel p-0 flex flex-col" data-panel={panelId}>
+      <IndexingPanelHeader
+        panel={panelId}
+        icon={iconGlyph}
         collapsed={collapsed}
         onToggle={toggleCollapsed}
         title={panelTitle}
         tip={panelTip}
         isRunning={isRunningModule}
-        onRun={handleRunAll}
-        historyActionSlot={<DiscoveryHistoryButton finderId={finderId} productId={productId} category={category} />}
-        actionSlot={
-          <div className="ml-auto flex items-center gap-1.5">
-            <button
-              onClick={(e) => { e.stopPropagation(); handleRunAll(); }}
-              disabled={cefVariants.length === 0}
-              className="w-28 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed text-center"
-            >
-              Run
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); handleLoopAll(); }}
-              disabled={cefVariants.length === 0 || (variantRows.length > 0 && variantRows.every((r) => loopingVariantKeys.has(r.variant_key)))}
-              className="w-28 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide rounded sf-primary-button disabled:opacity-40 disabled:cursor-not-allowed text-center"
-            >
-              {variantRows.length > 0 && variantRows.every((r) => loopingVariantKeys.has(r.variant_key)) ? <>Loop <AnimatedDots /></> : 'Loop'}
-            </button>
-          </div>
+        modelStrip={
+          <FinderRunModelBadge
+            labelPrefix={moduleLabel}
+            model={modelDisplay}
+            accessMode={accessMode}
+            thinking={resolvedModel?.thinking ?? false}
+            webSearch={resolvedModel?.webSearch ?? false}
+            effortLevel={effortLevel}
+          />
         }
-      >
-        <FinderRunModelBadge
-          labelPrefix={moduleLabel}
-          model={modelDisplay}
-          accessMode={accessMode}
-          thinking={resolvedModel?.thinking ?? false}
-          webSearch={resolvedModel?.webSearch ?? false}
-          effortLevel={effortLevel}
-        />
-      </FinderPanelHeader>
+        historySlot={<DiscoveryHistoryButton finderId={finderId} productId={productId} category={category} width={ACTION_BUTTON_WIDTH.standardHeader} />}
+        promptSlot={previewFinder ? (
+          <PromptPreviewTriggerButton onClick={() => setHeaderPromptModalOpen(true)} disabled={!productId} width={ACTION_BUTTON_WIDTH.standardHeader} />
+        ) : undefined}
+        actionSlot={
+          <>
+            <HeaderActionButton
+              intent="locked"
+              label="Run"
+              onClick={handleRunAll}
+              disabled={cefVariants.length === 0}
+              busy={isRunningModule}
+              width={ACTION_BUTTON_WIDTH.standardHeader}
+            />
+            <HeaderActionButton
+              intent="locked"
+              label="Loop"
+              onClick={handleLoopAll}
+              disabled={cefVariants.length === 0}
+              busy={variantRows.length > 0 && variantRows.every((r) => loopingVariantKeys.has(r.variant_key))}
+              width={ACTION_BUTTON_WIDTH.standardHeader}
+            />
+          </>
+        }
+      />
 
       {collapsed ? null : isLoading ? (
         <div className="flex items-center justify-center py-12"><Spinner /></div>
@@ -374,19 +400,19 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
                           confidence={c && c.confidence > 0 ? c.confidence / 100 : null}
                         />
                         <div className="shrink-0 flex items-center gap-1">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleRunVariant(row.variant_key); }}
-                            className="inline-flex items-center justify-center h-7 px-2 text-[9px] font-bold uppercase tracking-wide rounded sf-primary-button"
-                          >
-                            Run
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleLoopVariant(row.variant_key); }}
-                            disabled={isLooping}
-                            className="inline-flex items-center justify-center h-7 px-2 text-[9px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed"
-                          >
-                            {isLooping ? <>Loop <AnimatedDots /></> : 'Loop'}
-                          </button>
+                          <RowActionButton
+                            intent="spammable"
+                            label="Run"
+                            onClick={() => handleRunVariant(row.variant_key)}
+                            width={ACTION_BUTTON_WIDTH.standardRow}
+                          />
+                          <RowActionButton
+                            intent="locked"
+                            label="Loop"
+                            onClick={() => handleLoopVariant(row.variant_key)}
+                            busy={isLooping}
+                            width={ACTION_BUTTON_WIDTH.standardRow}
+                          />
                           {previewFinder && (
                             <>
                               <span className="inline-block h-5 w-px mx-0.5 bg-current opacity-20" aria-hidden />
@@ -469,13 +495,12 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
               count={`${runHistoryRuns.length} run${runHistoryRuns.length !== 1 ? 's' : ''}`}
               storeKey={`${moduleType}:history:${productId}`}
               trailing={
-                <button
+                <RowActionButton
+                  intent="delete"
+                  label="Delete All"
                   onClick={() => setDeleteTarget({ kind: 'all', count: runHistoryRuns.length })}
                   disabled={isAnyDeletePending}
-                  className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.04em] rounded sf-action-button sf-status-text-danger border sf-border-soft opacity-60 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  Delete All
-                </button>
+                />
               }
             >
               <div className="space-y-1.5">
@@ -524,9 +549,7 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
                             label={valueDisplay || 'unk'}
                             className={valueDisplay ? 'sf-chip-success font-mono' : 'sf-chip-warning font-mono'}
                           />
-                          {(resp?.confidence ?? 0) > 0 && (
-                            <span className="text-[10px] font-mono sf-text-muted">{resp?.confidence}%</span>
-                          )}
+                          <ConfidenceChip value={resp?.confidence ?? 0} />
                           <Chip
                             label={`${evidenceCount} evidence`}
                             className={evidenceCount > 0 ? 'sf-chip-info' : 'sf-chip-neutral'}
@@ -590,6 +613,17 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
           title={`${moduleLabel} — ${activePromptModal?.mode === 'loop' ? 'Loop (iter 1)' : 'Run'}`}
           subtitle={activePromptModal ? `variant: ${activePromptModal.variantLabel}` : undefined}
           storageKeyPrefix={`indexing:${moduleType}:preview:${productId}:${activePromptModal?.variantKey ?? ''}:${activePromptModal?.mode ?? ''}`}
+        />
+      )}
+
+      {previewFinder && (
+        <PromptPreviewModal
+          open={headerPromptModalOpen}
+          onClose={() => setHeaderPromptModalOpen(false)}
+          query={headerPromptQuery}
+          title={`${moduleLabel} — Compiled Prompt`}
+          subtitle={productId ? `product: ${productId}` : undefined}
+          storageKeyPrefix={`indexing:${moduleType}:header-preview:${productId}`}
         />
       )}
     </div>

@@ -53,3 +53,81 @@ test('pathSignature buckets numeric and uuid-like segments', () => {
     '/api/v1/item/:id'
   );
 });
+
+// --- stripTracking option (fetch-layer dedup) ---
+
+test('stripTracking removes srsltid (Google Shopping)', () => {
+  const out = canonicalizeUrl(
+    'https://www.razer.com/gaming-mice/razer-deathadder-v3?srsltid=AfmBOor8X2q3',
+    { stripTracking: true }
+  );
+  assert.equal(out.canonical_url, 'https://www.razer.com/gaming-mice/razer-deathadder-v3');
+});
+
+test('stripTracking removes all utm_* prefix params', () => {
+  const out = canonicalizeUrl(
+    'https://example.com/p?utm_source=g&utm_medium=cpc&utm_campaign=x&utm_term=y&utm_content=z&utm_id=123',
+    { stripTracking: true }
+  );
+  assert.equal(out.canonical_url, 'https://example.com/p');
+});
+
+test('stripTracking does not strip params merely starting with "utm" (e.g. utmz)', () => {
+  const out = canonicalizeUrl('https://example.com/p?utmz=keep&utm_source=drop', { stripTracking: true });
+  assert.equal(out.canonical_url, 'https://example.com/p?utmz=keep');
+});
+
+test('stripTracking removes platform click-ids', () => {
+  const out = canonicalizeUrl(
+    'https://example.com/p?gclid=a&fbclid=b&yclid=c&msclkid=d&dclid=e',
+    { stripTracking: true }
+  );
+  assert.equal(out.canonical_url, 'https://example.com/p');
+});
+
+test('stripTracking removes mailchimp, analytics, and ref_src params', () => {
+  const out = canonicalizeUrl(
+    'https://example.com/p?mc_cid=1&mc_eid=2&_ga=3&_gl=4&ref_src=tw',
+    { stripTracking: true }
+  );
+  assert.equal(out.canonical_url, 'https://example.com/p');
+});
+
+test('stripTracking preserves real product params (id, sku, variant, color)', () => {
+  const out = canonicalizeUrl(
+    'https://example.com/p?id=123&sku=ABC&variant=red&color=black&utm_source=x&srsltid=y',
+    { stripTracking: true }
+  );
+  assert.equal(out.canonical_url, 'https://example.com/p?color=black&id=123&sku=ABC&variant=red');
+});
+
+test('stripTracking yields empty query for tracking-only URL', () => {
+  const out = canonicalizeUrl('https://example.com/p?utm_source=x&gclid=y&srsltid=z', { stripTracking: true });
+  assert.equal(out.canonical_url, 'https://example.com/p');
+  assert.equal(out.query, '');
+});
+
+test('stripTracking makes two URLs differing only by tracking produce identical canonical_url', () => {
+  const a = canonicalizeUrl('https://www.razer.com/p/deathadder?srsltid=AfmBOor1', { stripTracking: true });
+  const b = canonicalizeUrl('https://www.razer.com/p/deathadder?srsltid=AfmBOor2', { stripTracking: true });
+  const c = canonicalizeUrl('https://www.razer.com/p/deathadder?utm_source=google', { stripTracking: true });
+  assert.equal(a.canonical_url, b.canonical_url);
+  assert.equal(a.canonical_url, c.canonical_url);
+});
+
+test('default (no option) preserves tracking params (regression safety)', () => {
+  const out = canonicalizeUrl('https://example.com/p?srsltid=x&utm_source=y');
+  assert.ok(out.canonical_url.includes('srsltid=x'));
+  assert.ok(out.canonical_url.includes('utm_source=y'));
+});
+
+test('explicit stripTracking:false matches default (parity)', () => {
+  const withFlag = canonicalizeUrl('https://example.com/p?srsltid=x&utm_source=y', { stripTracking: false });
+  const noFlag = canonicalizeUrl('https://example.com/p?srsltid=x&utm_source=y');
+  assert.equal(withFlag.canonical_url, noFlag.canonical_url);
+});
+
+test('stripTracking with no query yields clean URL (no trailing ?)', () => {
+  const out = canonicalizeUrl('https://example.com/p', { stripTracking: true });
+  assert.equal(out.canonical_url, 'https://example.com/p');
+});

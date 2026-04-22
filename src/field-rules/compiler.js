@@ -126,9 +126,6 @@ export function normalizeFieldRulesForPhase1(fieldRules = {}) {
     const { required: _evReq, conflict_policy: _cp, ...restEvidence } = evidence;
     rule.evidence = restEvidence;
     delete rule.evidence_required;
-    if (!nonEmptyString(rule.unknown_reason_default)) {
-      rule.unknown_reason_default = 'not_found_after_search';
-    }
     out.fields[fieldKey] = rule;
   }
   return out;

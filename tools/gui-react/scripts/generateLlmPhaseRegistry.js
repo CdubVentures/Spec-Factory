@@ -415,8 +415,8 @@ function generateFinderPhaseSchemaRegistry() {
 
   // WHY: Scalar finders (variantFieldProducer + defaultTemplateExport) get a
   // derived prompt_templates overlay in phaseSchemaRegistry.js via
-  // buildScalarFinderPromptTemplates. Import their default templates here so
-  // the overlay loop can reference them by phaseUiId.
+  // buildScalarFinderPromptTemplates. Import their default templates + optional
+  // slot-bag exports here so the overlay loop can reference them by phaseUiId.
   const scalarFinders = FINDER_MODULES.filter(
     (m) =>
       (m.moduleClass === 'variantFieldProducer' || m.moduleClass === 'productFieldProducer')
@@ -424,7 +424,12 @@ function generateFinderPhaseSchemaRegistry() {
   );
   for (const m of scalarFinders) {
     const { featurePath, adapterModule } = deriveFinderPaths(m.id);
-    lines.push(`import { ${m.defaultTemplateExport} } from '../../../${featurePath}/${adapterModule}.js';`);
+    const slotExports = [
+      m.defaultTemplateExport,
+      m.sourceVariantGuidanceSlotsExport,
+      m.variantDisambiguationSlotsExport,
+    ].filter(Boolean);
+    lines.push(`import { ${slotExports.join(', ')} } from '../../../${featurePath}/${adapterModule}.js';`);
   }
 
   lines.push('\nexport const FINDER_PHASE_SCHEMAS = Object.freeze({');
@@ -444,7 +449,14 @@ function generateFinderPhaseSchemaRegistry() {
   lines.push('export const FINDER_SCALAR_DEFAULT_TEMPLATES = Object.freeze({');
   for (const m of scalarFinders) {
     const uiId = phaseUiId(m.phase);
-    lines.push(`  ${quote(uiId)}: { moduleId: ${quote(m.id)}, defaultTemplate: ${m.defaultTemplateExport} },`);
+    const parts = [`moduleId: ${quote(m.id)}`, `defaultTemplate: ${m.defaultTemplateExport}`];
+    if (m.sourceVariantGuidanceSlotsExport) {
+      parts.push(`sourceVariantGuidanceSlots: ${m.sourceVariantGuidanceSlotsExport}`);
+    }
+    if (m.variantDisambiguationSlotsExport) {
+      parts.push(`variantDisambiguationSlots: ${m.variantDisambiguationSlotsExport}`);
+    }
+    lines.push(`  ${quote(uiId)}: { ${parts.join(', ')} },`);
   }
   lines.push('});\n');
 
@@ -484,12 +496,14 @@ function generateFinderPanelRegistry() {
 
 // WHY: Discovery-history drawer dispatches on scopeLevel — derived from moduleClass.
 // variantGenerator → product-scoped (flat), variantFieldProducer → variant-scoped
-// (2-level), variantArtifactProducer → variant+mode-scoped (3-level).
+// (2-level), variantArtifactProducer → variant+mode-scoped (3-level),
+// productFieldProducer → field_key-scoped (keyFinder: one section per field_key
+// that ran, each with URLs + queries aggregated across runs).
 function deriveScopeLevel(moduleClass) {
   if (moduleClass === 'variantGenerator') return 'product';
   if (moduleClass === 'variantFieldProducer') return 'variant';
   if (moduleClass === 'variantArtifactProducer') return 'variant+mode';
-  if (moduleClass === 'productFieldProducer') return 'product';
+  if (moduleClass === 'productFieldProducer') return 'field_key';
   return '';
 }
 

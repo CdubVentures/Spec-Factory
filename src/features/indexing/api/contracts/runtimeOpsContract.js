@@ -190,6 +190,7 @@ export const WORKER_ROW_BASE_SHAPE = Object.freeze([
   { key: 'elapsed_ms', coerce: 'int' },
   { key: 'last_error', coerce: 'string', nullable: true },
   { key: 'proxy_url', coerce: 'string', nullable: true },
+  { key: 'bright_data_unlocked', coerce: 'bool' },
   { key: 'retries', coerce: 'int' },
   { key: 'fetch_mode', coerce: 'string', nullable: true },
   { key: 'docs_processed', coerce: 'int' },

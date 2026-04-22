@@ -161,8 +161,8 @@ export function SearchTab({
         <TagPicker values={arrN(rule, 'search_hints.domain_hints')} onChange={(v) => onUpdate('search_hints.domain_hints', v)} suggestions={DOMAIN_HINT_SUGGESTIONS} placeholder="manufacturer, rtings.com..." />
       </div>
       <div>
-        <div className={`${labelCls} flex items-center`}><span>Content Types<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.content_types} /></span><B p="search_hints.preferred_content_types" /></div>
-        <TagPicker values={arrN(rule, 'search_hints.preferred_content_types')} onChange={(v) => onUpdate('search_hints.preferred_content_types', v)} suggestions={CONTENT_TYPE_SUGGESTIONS} placeholder="spec_sheet, datasheet..." />
+        <div className={`${labelCls} flex items-center`}><span>Content Types<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.content_types} /></span><B p="search_hints.content_types" /></div>
+        <TagPicker values={arrN(rule, 'search_hints.content_types')} onChange={(v) => onUpdate('search_hints.content_types', v)} suggestions={CONTENT_TYPE_SUGGESTIONS} placeholder="spec_sheet, datasheet..." />
       </div>
       <div>
         <div className={`${labelCls} flex items-center`}><span>Query Terms<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.query_terms} /></span><B p="search_hints.query_terms" /></div>

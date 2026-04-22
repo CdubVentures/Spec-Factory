@@ -94,28 +94,6 @@ export function generateFinderDdl(modules) {
       ].join('\n'));
     }
 
-    // ── Suppressions table: non-destructive discovery-log pruning ─
-    // WHY: Users can suppress URLs/queries from prompt injection without
-    // mutating run records. Accumulator subtracts these at read time.
-    // Scope encoded via variant_id + mode (empty string = "all variants"/"any mode").
-    // Rebuild contract: mirrored in JSON suppressions[] array — see finderJsonStore.
-    const suppressionsTableName = `${mod.tableName}_suppressions`;
-    statements.push([
-      `CREATE TABLE IF NOT EXISTS ${suppressionsTableName} (`,
-      `  id INTEGER PRIMARY KEY AUTOINCREMENT,`,
-      `  category TEXT NOT NULL,`,
-      `  product_id TEXT NOT NULL,`,
-      `  item TEXT NOT NULL,`,
-      `  kind TEXT NOT NULL CHECK (kind IN ('url','query')),`,
-      `  variant_id TEXT NOT NULL DEFAULT '',`,
-      `  mode TEXT NOT NULL DEFAULT '',`,
-      `  suppressed_at TEXT NOT NULL DEFAULT (datetime('now')),`,
-      `  UNIQUE(category, product_id, item, kind, variant_id, mode)`,
-      `);`,
-    ].join('\n'));
-    statements.push(
-      `CREATE INDEX IF NOT EXISTS idx_${mod.tableName}_supp_lookup ON ${suppressionsTableName}(product_id, kind, variant_id, mode);`
-    );
   }
 
   return statements;

@@ -16,6 +16,7 @@ import type { ReactElement } from 'react';
 import { EvidenceKindTooltip } from '../feedback/EvidenceKindTooltip';
 import type { EvidenceKind } from '../icons/evidenceKindRegistry';
 import { formatEvidenceTier } from './evidenceTierLabels';
+import { ConfidenceChip } from './ConfidenceChip.tsx';
 
 export interface FinderEvidenceRowSource {
   readonly url: string;
@@ -52,9 +53,7 @@ export function FinderEvidenceRow({ source }: { readonly source: FinderEvidenceR
         <span className={`${tierTone(source.tier)} text-[9px] font-bold uppercase tracking-[0.04em] px-1.5 py-0.5 rounded`}>
           {formatEvidenceTier(source.tier)}
         </span>
-        <span className="text-[10px] font-mono sf-text-muted">
-          {source.confidence}%
-        </span>
+        <ConfidenceChip value={source.confidence} hideWhenEmpty={false} />
         {source.url && (
           <a
             href={source.url}

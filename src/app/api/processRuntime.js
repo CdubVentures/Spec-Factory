@@ -435,21 +435,16 @@ export function createProcessRuntime({
     };
   }
 
-  async function stopProcess(timeoutMs = 8000, options = {}) {
-    const force = Boolean(options?.force);
+  async function stopProcess(timeoutMs = 8000) {
     const runningProc = childProc;
     if (!runningProc || runningProc.exitCode !== null) {
+      const orphanStop = await stopOrphanIndexLabProcesses(timeoutMs);
       const status = {
         ...processStatus(),
-        stop_attempted: force,
+        stop_attempted: true,
         stop_confirmed: true,
-        orphan_killed: 0,
+        orphan_killed: orphanStop.killed,
       };
-      if (force) {
-        const orphanStop = await stopOrphanIndexLabProcesses(timeoutMs);
-        status.stop_attempted = Boolean(orphanStop.attempted || force);
-        status.orphan_killed = orphanStop.killed;
-      }
       broadcastWs('process-status', status);
       return status;
     }
@@ -463,13 +458,10 @@ export function createProcessRuntime({
       await killWindowsProcessTree({ pid: runningProc.pid, platform: processRef.platform, execCb });
       exited = await waitForProcessExit(runningProc, Math.max(1000, timeoutMs - 2000));
     }
-    let orphanKilled = 0;
-    if (force) {
-      const orphanStop = await stopOrphanIndexLabProcesses(timeoutMs);
-      orphanKilled += Number(orphanStop.killed || 0);
-      if (orphanStop.killed > 0) {
-        exited = true;
-      }
+    const orphanStop = await stopOrphanIndexLabProcesses(timeoutMs);
+    const orphanKilled = Number(orphanStop.killed || 0);
+    if (orphanKilled > 0) {
+      exited = true;
     }
 
     const status = {

@@ -74,12 +74,8 @@ export async function compileReleaseDateFinderPreviewPrompt(ctx) {
   const doc = readReleaseDates({ productId: product.product_id, productRoot });
   const previousRuns = Array.isArray(doc?.runs) ? doc.runs : [];
 
-  const scope = { variant_id: variant.variant_id || '', mode: '' };
-  const suppRows = (finderStore?.listSuppressions?.(product.product_id) || [])
-    .filter((s) => s.variant_id === scope.variant_id && s.mode === scope.mode);
-
   const previousDiscovery = resolveScalarPreviousDiscovery({
-    previousRuns, variant, urlHistoryEnabled, queryHistoryEnabled, suppRows,
+    previousRuns, variant, urlHistoryEnabled, queryHistoryEnabled,
   });
 
   const { domainArgs, userMessage, inputsResolved, notes: baseNotes } = resolveScalarFinderPromptInputs({

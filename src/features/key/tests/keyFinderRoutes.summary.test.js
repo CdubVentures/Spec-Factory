@@ -68,7 +68,10 @@ const COMPILED_RULES_MOUSE = {
   },
 };
 
-function makeSpecDbStub({ candidateCountByKey = {}, publishedKeys = new Set(), compiledRules = COMPILED_RULES_MOUSE } = {}) {
+function makeSpecDbStub({ candidateCountByKey = {}, publishedKeys = new Set(), compiledRules = COMPILED_RULES_MOUSE, finderSettings = {} } = {}) {
+  const finderStore = {
+    getSetting: (k) => (k in finderSettings ? String(finderSettings[k]) : ''),
+  };
   return {
     category: 'mouse',
     getFieldCandidatesByProductAndField: (_pid, fk) => {
@@ -78,6 +81,7 @@ function makeSpecDbStub({ candidateCountByKey = {}, publishedKeys = new Set(), c
     getResolvedFieldCandidate: (_pid, fk) => (publishedKeys.has(fk) ? { field_key: fk, value: 'published', confidence: 99 } : null),
     getProduct: () => null,
     getCompiledRules: () => compiledRules,
+    getFinderStore: (id) => (id === 'keyFinder' ? finderStore : null),
   };
 }
 
@@ -319,5 +323,157 @@ describe('GET /key-finder/:category/:productId/summary', () => {
     assert.equal(byKey.sensor_model.published, false);
     assert.equal(byKey.acceleration.last_status, 'below_threshold');
     assert.equal(byKey.acceleration.published, false);
+  });
+
+  it('bundle_preview is [] for every row when bundlingEnabled is off (default)', async (t) => {
+    t.after(cleanupTmp);
+    fs.mkdirSync(path.join(PRODUCT_ROOT, 'bp-off-prod'), { recursive: true });
+    const specDb = makeSpecDbStub();
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(['key-finder', 'mouse', 'bp-off-prod', 'summary'], null, 'GET', {}, {});
+    for (const row of responses[0].body) {
+      assert.deepEqual(row.bundle_preview, [], `${row.field_key} bundle_preview empty when bundling off`);
+    }
+  });
+
+  it('bundle_preview populated when bundlingEnabled ON + same-group peers eligible', async (t) => {
+    t.after(cleanupTmp);
+    fs.mkdirSync(path.join(PRODUCT_ROOT, 'bp-on-prod'), { recursive: true });
+    const specDb = makeSpecDbStub({
+      finderSettings: {
+        bundlingEnabled: 'true',
+        groupBundlingOnly: 'true',
+        bundlingPassengerCost: JSON.stringify({ easy: 1, medium: 2, hard: 4, very_hard: 8 }),
+        bundlingPoolPerPrimary: JSON.stringify({ easy: 6, medium: 4, hard: 2, very_hard: 1 }),
+        passengerDifficultyPolicy: 'less_or_equal',
+        budgetVariantPointsPerExtra: '1',
+      },
+    });
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(['key-finder', 'mouse', 'bp-on-prod', 'summary'], null, 'GET', {}, {});
+    const byKey = Object.fromEntries(responses[0].body.map((r) => [r.field_key, r]));
+
+    // polling_rate (medium, pool=4): sensor_model (very_hard) filtered by less_or_equal;
+    //   acceleration (easy, cost 1) fits → [{field_key:'acceleration', cost:1}]
+    assert.deepEqual(byKey.polling_rate.bundle_preview, [{ field_key: 'acceleration', cost: 1 }]);
+
+    // sensor_model (very_hard, pool=1): polling_rate (medium, cost 2) doesn't fit;
+    //   acceleration (easy, cost 1) fits → [{field_key:'acceleration', cost:1}]
+    assert.deepEqual(byKey.sensor_model.bundle_preview, [{ field_key: 'acceleration', cost: 1 }]);
+
+    // acceleration (easy, pool=6): less_or_equal limits peers to easy; but in same group
+    //   (sensor_performance) no other easy keys → []
+    assert.deepEqual(byKey.acceleration.bundle_preview, []);
+
+    // wireless_technology (connectivity group): no same-group peers → []
+    assert.deepEqual(byKey.wireless_technology.bundle_preview, []);
+  });
+
+  it('bundle_preview excludes already-published peers', async (t) => {
+    t.after(cleanupTmp);
+    fs.mkdirSync(path.join(PRODUCT_ROOT, 'bp-resolved-prod'), { recursive: true });
+    const specDb = makeSpecDbStub({
+      publishedKeys: new Set(['acceleration']),
+      finderSettings: {
+        bundlingEnabled: 'true',
+        groupBundlingOnly: 'true',
+        passengerDifficultyPolicy: 'less_or_equal',
+        bundlingPassengerCost: JSON.stringify({ easy: 1, medium: 2, hard: 4, very_hard: 8 }),
+        bundlingPoolPerPrimary: JSON.stringify({ easy: 6, medium: 4, hard: 2, very_hard: 1 }),
+        budgetVariantPointsPerExtra: '1',
+      },
+    });
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(['key-finder', 'mouse', 'bp-resolved-prod', 'summary'], null, 'GET', {}, {});
+    const byKey = Object.fromEntries(responses[0].body.map((r) => [r.field_key, r]));
+
+    // acceleration already resolved → excluded from polling_rate's preview
+    assert.deepEqual(byKey.polling_rate.bundle_preview, []);
+    assert.deepEqual(byKey.sensor_model.bundle_preview, []);
+  });
+
+  it('GET /key-finder/:cat/:pid/bundling-config returns knobs + pool + cost + variantCount', async (t) => {
+    t.after(cleanupTmp);
+    const specDb = makeSpecDbStub({
+      finderSettings: {
+        bundlingEnabled: 'true',
+        groupBundlingOnly: 'false',
+        passengerDifficultyPolicy: 'same_only',
+        bundlingPassengerCost: JSON.stringify({ easy: 1, medium: 2, hard: 4, very_hard: 8 }),
+        bundlingPoolPerPrimary: JSON.stringify({ easy: 6, medium: 4, hard: 2, very_hard: 1 }),
+      },
+    });
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(['key-finder', 'mouse', 'pid-x', 'bundling-config'], null, 'GET', {}, {});
+
+    assert.equal(responses[0].status, 200);
+    const body = responses[0].body;
+    assert.equal(body.enabled, true);
+    assert.equal(body.groupBundlingOnly, false);
+    assert.equal(body.passengerDifficultyPolicy, 'same_only');
+    assert.deepEqual(body.poolPerPrimary, { easy: 6, medium: 4, hard: 2, very_hard: 1 });
+    assert.deepEqual(body.passengerCost, { easy: 1, medium: 2, hard: 4, very_hard: 8 },
+      'passenger cost is RAW — not variant-scaled');
+    assert.equal(body.variantCount, 1, 'stub specDb has no variants → defaults to 1');
+  });
+
+  it('GET /key-finder/:cat/:pid/bundling-config returns defaults when settings unset', async (t) => {
+    t.after(cleanupTmp);
+    const specDb = makeSpecDbStub(); // no finderSettings → all reads return ''
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(['key-finder', 'mouse', 'pid-x', 'bundling-config'], null, 'GET', {}, {});
+
+    assert.equal(responses[0].status, 200);
+    assert.equal(responses[0].body.enabled, false, 'default OFF');
+    assert.equal(responses[0].body.groupBundlingOnly, true, 'default same-group only');
+    assert.equal(responses[0].body.passengerDifficultyPolicy, 'less_or_equal', 'default policy');
+  });
+
+  it('bundle_preview is deterministic (sort stable under input order)', async (t) => {
+    t.after(cleanupTmp);
+    fs.mkdirSync(path.join(PRODUCT_ROOT, 'bp-stable-prod'), { recursive: true });
+    // Add 3 easy peers to force the field_key tiebreaker
+    const rules = {
+      fields: {
+        polling_rate: COMPILED_RULES_MOUSE.fields.polling_rate,
+        zebra: { field_key: 'zebra', difficulty: 'easy', availability: 'always', required_level: 'mandatory', group: 'sensor_performance', ui: { label: 'Zebra' } },
+        alpha: { field_key: 'alpha', difficulty: 'easy', availability: 'always', required_level: 'mandatory', group: 'sensor_performance', ui: { label: 'Alpha' } },
+        mango: { field_key: 'mango', difficulty: 'easy', availability: 'always', required_level: 'mandatory', group: 'sensor_performance', ui: { label: 'Mango' } },
+      },
+    };
+    const specDb = makeSpecDbStub({
+      compiledRules: rules,
+      finderSettings: {
+        bundlingEnabled: 'true',
+        groupBundlingOnly: 'true',
+        bundlingPassengerCost: JSON.stringify({ easy: 1, medium: 2, hard: 4, very_hard: 8 }),
+        bundlingPoolPerPrimary: JSON.stringify({ easy: 6, medium: 4, hard: 2, very_hard: 1 }),
+        passengerDifficultyPolicy: 'less_or_equal',
+        budgetVariantPointsPerExtra: '1',
+      },
+    });
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(['key-finder', 'mouse', 'bp-stable-prod', 'summary'], null, 'GET', {}, {});
+    const byKey = Object.fromEntries(responses[0].body.map((r) => [r.field_key, r]));
+
+    // polling_rate (medium, pool=4): alpha + mango + zebra all easy (cost 1) →
+    //   all fit under pool=4; sort by field_key ASC
+    assert.deepEqual(byKey.polling_rate.bundle_preview, [
+      { field_key: 'alpha', cost: 1 },
+      { field_key: 'mango', cost: 1 },
+      { field_key: 'zebra', cost: 1 },
+    ]);
   });
 });

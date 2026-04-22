@@ -27,7 +27,7 @@
 | POST | `/api/v1/searxng/start` | start local SearXNG stack | none | none | start result or error |
 | GET | `/api/v1/serper/credit` | Serper.dev credit balance (proxied without leaking API key) | none | none | `{ credit, configured, enabled }` or `500 { error: 'serper_account_check_failed' }` |
 | POST | `/api/v1/process/start` | spawn GUI-managed IndexLab child process | none | launch-plan fields such as `category`, `productId`, `brand`, `base_model`, `variant`, `fields`, `providers`, `requestedRunId`, `replaceRunning` | normalized process status or `4xx` launch error |
-| POST | `/api/v1/process/stop` | stop child process | none | `{ force? }` | normalized process status |
+| POST | `/api/v1/process/stop` | stop child process (SIGTERM → tree-kill → orphan-sweep, always) | none | none | normalized process status |
 | GET | `/api/v1/process/status` | read child-process status | none | none | normalized process status |
 | POST | `/api/v1/graphql` | proxy GraphQL request to local helper server (ORPHANED -- upstream `intelGraphApi.js` was deleted; always returns `502`) | none | GraphQL JSON body | proxied GraphQL JSON or `502 graphql_proxy_failed` |
 

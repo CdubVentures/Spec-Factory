@@ -1052,12 +1052,21 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
       const brightDataZone = String(settings.brightDataZone || '').trim();
       if (brightDataEnabled && brightDataKey && brightDataZone && typeof _brightDataUnlocker === 'function') {
         const stillBlocked = batchResults.filter((r) => r.blocked && r.blockReason !== 'robots_blocked');
+        // WHY: Emit "started" signal per-URL immediately so GUI worker tiles can flip
+        // to retrying/BrightData state while the API calls are still in flight.
+        // Without this, workers would stay visible as "403 / direct" for the 5-60s
+        // duration of each unlock.
         for (const blockedResult of stillBlocked) {
+          logger?.info?.('brightdata_unlock_started', { url: blockedResult.url });
+        }
+        // WHY: Unlock in parallel — each BD call is 5-60s; serial would be 7 URLs × 60s
+        // = 7 minutes on a heavily-blocked run. Promise.all drops that to ~60s wall time.
+        await Promise.all(stillBlocked.map(async (blockedResult) => {
           const unlockResult = await _brightDataUnlocker({
             url: blockedResult.url,
             apiKey: brightDataKey,
             zone: brightDataZone,
-            timeoutMs: Number(settings.brightDataTimeoutMs) || 30000,
+            timeoutMs: Number(settings.brightDataTimeoutMs) || 60000,
             maxRetries: Number(settings.brightDataMaxRetries) || 2,
           });
 
@@ -1071,7 +1080,7 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
               attempts: unlockResult.attemptsUsed,
               error: unlockResult.error || blockReason,
             });
-            continue;
+            return;
           }
 
           const merged = {
@@ -1090,6 +1099,16 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
             brightDataUnlocked: true,
             fetchError: null,
           };
+          if (typeof onHtmlPersist === 'function') {
+            try {
+              const htmlResult = onHtmlPersist({
+                html: merged.html, workerId: merged.workerId,
+                url: merged.url, finalUrl: merged.finalUrl,
+                status: merged.status, title: merged.title,
+              });
+              if (htmlResult) merged.htmlArtifact = htmlResult;
+            } catch { /* best-effort: keep unlocked result even if persist fails */ }
+          }
           const idx = batchResults.findIndex((r) => r.url === blockedResult.url && r.blocked);
           if (idx >= 0) batchResults[idx] = merged;
 
@@ -1099,7 +1118,7 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
             attempts: unlockResult.attemptsUsed,
             status: unlockResult.status,
           });
-        }
+        }));
       }
 
       // WHY: Transform-phase extraction plugins run AFTER the handler closes

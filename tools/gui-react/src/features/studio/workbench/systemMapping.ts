@@ -14,7 +14,7 @@ import {
 // WHY: DownstreamSystem kept for EnumConfigurator backward compat (uses 'review' strings).
 export type DownstreamSystem = 'indexlab' | 'seed' | 'review';
 
-export type ParentGroup = 'idx' | 'eng' | 'rev' | 'flag' | 'seed' | 'comp' | 'val' | 'pub';
+export type ParentGroup = 'idx' | 'eng' | 'rev' | 'flag' | 'seed' | 'comp' | 'val' | 'pub' | 'llm';
 
 // ── Badge configs (5 parent groups, all read-only) ───────────────────
 
@@ -62,6 +62,11 @@ export const PARENT_BADGE_CONFIGS: Record<ParentGroup, {
     label: 'PUB',
     title: 'Publisher Pipeline',
     cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  },
+  llm: {
+    label: 'LLM',
+    title: 'LLM Finder',
+    cls: 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/40 dark:text-fuchsia-300',
   },
 };
 
@@ -112,7 +117,7 @@ type ConsumerTip = { on: string; off: string };
 export const CONSUMER_TOOLTIPS: Record<string, Partial<Record<DownstreamSystem, ConsumerTip>>> = (() => {
   const tips: Record<string, Partial<Record<DownstreamSystem, ConsumerTip>>> = {};
   const parentToLegacy: Record<string, DownstreamSystem | null> = {
-    idx: 'indexlab', eng: null, rev: 'review', flag: 'review', seed: 'seed', comp: null, val: null, pub: null,
+    idx: 'indexlab', eng: null, rev: 'review', flag: 'review', seed: 'seed', comp: null, val: null, pub: null, llm: null,
   };
   for (const entry of CONSUMER_BADGE_REGISTRY as ReadonlyArray<{ path: string; consumers: Record<string, { desc: string }> }>) {
     const pathTips: Partial<Record<DownstreamSystem, ConsumerTip>> = {};

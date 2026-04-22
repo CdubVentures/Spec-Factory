@@ -128,7 +128,6 @@ export function normalizeFieldContract(rule = {}) {
     shape: String(contract.shape || 'scalar').trim().toLowerCase() || 'scalar',
     required: level === 'mandatory',
     units: contract.unit || null,
-    enum_name: String(rule.enum_name || '').trim() || null,
     component_type: comp?.type || null,
     enum_source: enu?.source || null,
     min_evidence_refs: toInt(evidence.min_evidence_refs, 1),

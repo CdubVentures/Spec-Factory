@@ -205,10 +205,14 @@
         <tr><td>3a Part 1.5 — Contract rewrite + 3-section panel + injection knobs</td><td><span class="tag tag-green">done 2026-04-21</span></td><td>Closed schema/prompt drift before the orchestrator lands. Rewrote <code>keySchema.js</code> into a multi-key envelope with per-key <code>z.unknown()</code> value (native JSON types per contract). Rewrote <code>keyLlmAdapter.js</code> template into 24 placeholders — primary (5 slots) + additional (5 split slots) + shared context (known fields) + global scaffolding + contract-aware <code>RETURN_JSON_SHAPE</code>. Added <code>keyFinderPromptContract.js</code> with its own variable contract (no VARIANT_DESC — product-scoped). Wired per-category tabs + 3-section VariableReferencePanels in <code>LlmKeyFinderSection.tsx</code> via shared <code>PromptTemplatesSection</code>. Added 4 registry knobs: <code>groupBundlingOnly</code> + 3 independent injection knobs (<code>componentInjectionEnabled</code>, <code>knownFieldsInjectionEnabled</code>, <code>searchHintsInjectionEnabled</code>). Renamed <code>variantPointsPerExtra</code> → <code>budgetVariantPointsPerExtra</code> to match registry. 62 unit tests green; typecheck clean; codegen re-emitted.</td></tr>
         <tr><td>3a Part 2 — Orchestrator + routes + rebuild</td><td><span class="tag tag-green">done 2026-04-21</span></td><td><code>runKeyFinder({ product, fieldKey, ... })</code> product-scoped orchestrator with tier-aware model routing (<code>modelOverride</code> plumbed per call via <code>createKeyFinderCallLlm(deps, tierBundle)</code>), reserved-keys denylist at <code>src/core/finder/finderExclusions.js</code> (derived from <code>FINDER_MODULES</code> ∪ EG-locked keys), custom route handler at <code>src/features/key/api/keyFinderRoutes.js</code> (POST <code>{field_key, mode?}</code>, GET scoped by <code>field_key</code>, DELETE with <code>stripRunSourceFromCandidates</code> cascade), real <code>rebuildKeyFinderFromJson</code> wired into <code>specDbRuntime.js</code> DI, <code>src/features/key/README.md</code> domain contract. 11 orchestrator characterization tests + 9 denylist tests + 4 new tier-bundle tests in keyLlmAdapter; 727+ tests across the blast radius green, zero regressions.</td></tr>
         <tr><td>3b — Loop mode</td><td><span class="tag tag-orange">next</span></td><td>Per-key budget-driven retry wrapping <code>runKeyFinder</code>. Re-reads discovery on each iteration so mid-loop URLs/queries accumulate. Consumes <code>calcKeyBudget(...).attempts</code>. Mode <code>'loop'</code> route handler currently returns 400; Phase 3b flips it on.</td></tr>
-        <tr><td>4 — Dashboard UI</td><td><span class="tag tag-muted">pending</span></td><td>Indexing Lab tab is a placeholder. Phase 4 builds the key table + filters + bulk run controls per §7 mockups.</td></tr>
-        <tr><td>5 — Bundling runtime</td><td><span class="tag tag-muted">pending</span></td><td>Point-pool passenger packing; consumed by Group Smart Loop.</td></tr>
-        <tr><td>6 — RDF cutover</td><td><span class="tag tag-muted">pending</span></td><td>Retire <code>src/features/release-date/</code>; route release_date through keyFinder.</td></tr>
-        <tr><td>7 — Broader migration</td><td><span class="tag tag-muted">pending</span></td><td>Cutover remaining finders per group (SKU, then mouse/keyboard/monitor fields).</td></tr>
+        <tr><td>4 — Dashboard UI</td><td><span class="tag tag-green">done 2026-04-21</span></td><td>Key Finder tab is live (panel + toolbar + group sections + per-key row + prompt button). Per-key Run wired live; Loop / Group Run-Loop / Product Run-all-groups / Loop-all-groups render disabled with phase tooltips via <code>LIVE_MODES</code> + <code>DISABLED_REASONS</code>. Bundled column + BundlingStatusStrip shipped with Phase 4.5.</td></tr>
+        <tr><td>4.5 — Run + Loop bundling</td><td><span class="tag tag-green">done 2026-04-21</span></td><td>Packer (<code>keyBundler.js</code>) + orchestrator wiring so per-key Run honors <code>bundlingEnabled</code>. Passengers share primary's LLM call; each answer writes its own <code>field_candidates</code> row. Delete-cascade expanded + history broadening so passenger-resolved keys show up in their own history queries. Bundled column + BundlingStatusStrip in the dashboard. See §6.1 for the locked algorithm.</td></tr>
+        <tr><td>5 — Prompt preview</td><td><span class="tag tag-green">done 2026-04-21</span></td><td>Live-compiled "what the next Run would send" via shared <code>PromptPreviewModal</code> / <code>PromptPreviewView</code> (same primitives CEF/PIF/RDF/SKU use). New backend endpoint <code>POST /key-finder/:cat/:pid/preview-prompt</code> calls <code>compileKeyFinderPreviewPrompt</code> which shares <code>buildPassengers</code> with the live runner (drift guard test enforces byte-for-byte systemPrompt parity). <code>PromptPreviewFinder</code> union extended to <code>'key'</code>. Invalidates on <code>settings</code> + <code>reviewLayout</code> domains so the modal stays live when bundling knobs flip or peer fields resolve.</td></tr>
+        <tr><td>6 — Discovery History drawer</td><td><span class="tag tag-green">done 2026-04-21</span></td><td>Shared <code>DiscoveryHistoryDrawer</code> now supports <code>scopeLevel: 'field_key'</code> — each expandable section = one key grouped by <code>run.response.primary_field_key</code>, with URLs + queries aggregated across runs. keyFinder panel header uses shared <code>DiscoveryHistoryButton</code>; custom <code>KeyHistoryDrawer</code> + per-row History buttons deleted. Group-header History button reopens the shared drawer with a live <code>fieldKeyFilter</code> that tracks the group's current keys (moves in Field Studio flow through <code>reviewLayout</code> invalidation into the filter without reopening). <strong>Note:</strong> per-item Hide suppression retired (Stage A, see onboarding §retirement) — only the two pipeline settings knobs (<code>urlHistoryEnabled</code>, <code>queryHistoryEnabled</code>) control history injection.</td></tr>
+        <tr><td>3b — per-key Loop</td><td><span class="tag tag-orange">next</span></td><td>Budget-driven retry wrapping <code>runKeyFinder</code> (auto-inherits bundling per Phase 4.5). Mode <code>'loop'</code> route handler currently returns 400; Phase 3b flips it on + wires the <code>▶Loop</code> button in the dashboard.</td></tr>
+        <tr><td>7 — Smart Loop (Group + Header)</td><td><span class="tag tag-muted">pending</span></td><td>Group Smart Loop walks group easy→hard; Header Smart Loop chains groups. Reuses Phase 4.5 packer — no additional bundling code needed, just the loop drivers + button wiring.</td></tr>
+        <tr><td>8 — RDF cutover</td><td><span class="tag tag-muted">pending</span></td><td>Retire <code>src/features/release-date/</code>; route release_date through keyFinder.</td></tr>
+        <tr><td>9 — Broader migration</td><td><span class="tag tag-muted">pending</span></td><td>Cutover remaining finders per group (SKU, then mouse/keyboard/monitor fields).</td></tr>
       </tbody>
     </table>
     <p style="margin-top: 8px; font-size: 13px; color: var(--text-muted);"><strong>Backend folder note:</strong> the registry's <code>deriveFinderPaths</code> strips the <code>Finder</code> suffix from <code>id: 'keyFinder'</code>, so backend code lives at <code>src/features/key/</code> (not <code>per-key-finder/</code>). Frontend panel lives at <code>tools/gui-react/src/features/key-finder/</code> because the panel path uses the full id.</p>
@@ -337,7 +341,7 @@
 <p style="margin-top:8px; font-size:13px; color:var(--text-muted);">Example: <code>sensor_model</code> (mandatory, rare, very_hard) on a 4-variant product → 2 + 3 + 4 + 3×1 = 12 attempts. <code>form_factor</code> (non_mandatory, always, easy) on a 1-variant product → 1 + 1 + 1 + 0 = 3 (at floor).</p>
 
 <h3 class="subsection-title">3.3 &nbsp; Bundling — point pool per primary (opt-in)</h3>
-<p>Bundling is off by default. When on, only Group Smart Loop and Header Smart Loop use it — per-key Run and per-key Loop always run solo. Each primary's difficulty sets its point pool; each passenger costs points based on its own difficulty; variant count scales passenger cost via the same per-extra-variant knob as §3.2.</p>
+<p>Bundling is off by default. When <code>bundlingEnabled=true</code> <strong>every mode honors it — per-key Run, per-key Loop, Group Smart Loop, and Header Smart Loop</strong> (updated 2026-04-21). Each primary's difficulty sets its point pool; each passenger costs points based on its own difficulty; variant count scales passenger cost via the same per-extra-variant knob as §3.2. The authoritative 6-step algorithm is in §6.1.</p>
 <div class="two-col">
   <div class="card">
     <div class="card-header">Primary pool (<code>bundlingPoolPerPrimary</code>, intMap)</div>
@@ -364,12 +368,12 @@
           <tr><th>very_hard passenger</th><td>8 points</td></tr>
         </tbody>
       </table>
-      <p style="margin-top:8px; font-size:12.5px; color:var(--text-muted);">Variant scaling: <code>cost = basePassengerCost + max(0, variantCount − 1) × variantPointsPerExtra</code>.</p>
+      <p style="margin-top:8px; font-size:12.5px; color:var(--text-muted);">Cost is raw — NOT scaled by variant count. Variant scaling applies only to per-key attempt budget (§3.2), not to passenger cost.</p>
     </div>
   </div>
 </div>
 <div class="callout callout-info">
-  <strong>Planner rule:</strong> passengers must be same group, same variant scope, difficulty ≤ primary (<code>keyFinderPassengerDifficultyPolicy = less_or_equal</code>). Pack greedily until pool exhausted. Example: easy primary on a 1-variant product with pool=6 → "4 easy (4pt) + 1 medium (2pt) = 6pt" or "6 easy = 6pt". Same primary on a 4-variant product → each easy passenger now costs 1 + 3 = 4pt, so only 1 easy passenger fits the pool.
+  <strong>Planner rule:</strong> passengers must be same group, same variant scope, and pass <code>passengerDifficultyPolicy</code> (4 enum values — see §6.1). Pack greedily by <code>(availability ASC, difficulty ASC, field_key ASC)</code> until pool exhausted. Cost is <strong>raw</strong> — not scaled by variant count. Example with defaults (<code>less_or_equal</code>): easy primary pool=6 + easy cost=1 → 6 easy passengers fit. Medium primary pool=4 + easy cost=1 + medium cost=2 → 4 easies, or 2 mediums, or "2 easies + 1 medium". Hard primary pool=2 → 2 easies OR 1 medium.
 </div>
 
 <!-- ────────────────────────── 4. ARCHITECTURE ────────────────────────── -->
@@ -390,7 +394,7 @@
   keyFinder.js                      <span class="c">// runKeyFinder orchestrator (per-key run + loop)</span>
   keyBudgetCalc.js                  <span class="c">// pure fn: (keyAxes, variantCount, settings) → attempts</span>
   keyPromptComposer.js              <span class="c">// renders template with per-key {{FIELD_GUIDANCE}} etc.</span>
-  keyDiscoveryLog.js                <span class="c">// per-key URL/query suppression (extends discoveryLog.js)</span>
+  keyDiscoveryLog.js                <span class="c">// per-key URL/query history accumulator (extends discoveryLog.js)</span>
   tests/
     keyFinder.characterization.test.js
     keyBudgetCalc.test.js
@@ -531,17 +535,17 @@ z.<span class="p">object</span>({
 
 <div class="card">
   <div class="card-body">
-    <p><strong>Default: OFF.</strong> One call per key. Zero risk of LLM drift from overloaded prompts. Per-key Run and per-key Loop always run solo — bundling affects only Group Smart Loop and Header Smart Loop.</p>
-    <p><strong>ON:</strong> when a Smart Loop fires, each call has a primary key; passengers from the same group are packed via the point-pool model in §3.3 until the pool is exhausted.</p>
+    <p><strong>Default: OFF.</strong> One call per key. Zero risk of LLM drift from overloaded prompts.</p>
+    <p><strong>ON (updated 2026-04-21):</strong> <strong>every mode</strong> — per-key Run, per-key Loop, Group Smart Loop, Header Smart Loop — bundles. The primary key owns the budget line; passengers ride free (no budget deduction). Each answer (primary + each passenger) writes its own <code>field_candidates</code> row. Passengers from the same group are packed via the point-pool model in §3.3 until the pool is exhausted.</p>
     <div class="three-col">
       <div class="card">
         <div class="card-header"><span class="tag tag-green">eligible as passenger</span></div>
         <div class="card-body">
           <ul>
-            <li>Same <code>group</code> as primary</li>
-            <li>Same variant scope</li>
-            <li>Difficulty ≤ primary (<code>less_or_equal</code> policy)</li>
-            <li>Not already resolved</li>
+            <li>Same <code>group</code> as primary (unless <code>groupBundlingOnly=false</code>)</li>
+            <li>Not <code>variant_dependent</code> (manual-override turf)</li>
+            <li>Passes active <code>passengerDifficultyPolicy</code> vs primary</li>
+            <li>Not already <strong>published</strong>-resolved (below-threshold still retries)</li>
             <li>Has <code>ai_assist.reasoning_note</code> or schema</li>
           </ul>
         </div>
@@ -552,8 +556,8 @@ z.<span class="p">object</span>({
           <ul>
             <li>Primary pool = pool[primary.difficulty] (§3.3)</li>
             <li>Passenger cost = cost[passenger.difficulty] + variant scaling</li>
-            <li>Planner packs greedily, easiest passengers first</li>
-            <li>Stops when next candidate would exceed remaining pool</li>
+            <li>Planner sorts by <code>(availability, difficulty, field_key)</code> ASC</li>
+            <li>Packs greedily, stops at pool limit</li>
           </ul>
         </div>
       </div>
@@ -561,10 +565,10 @@ z.<span class="p">object</span>({
         <div class="card-header"><span class="tag tag-red">never</span></div>
         <div class="card-body">
           <ul>
-            <li>Cross-group bundling</li>
-            <li>Harder passengers than primary</li>
+            <li>Cross-group when <code>groupBundlingOnly=true</code> (default)</li>
             <li>Cross-variant bundling</li>
             <li>Passengers with their own URL/query history (primary owns discovery)</li>
+            <li>Passengers deducting from primary's per-key budget</li>
           </ul>
         </div>
       </div>
@@ -576,6 +580,69 @@ z.<span class="p">object</span>({
   </div>
 </div>
 
+<h3 id="bundling-contract" class="subsection-title">6.1 &nbsp; Bundling contract — authoritative algorithm</h3>
+<p>Locked 2026-04-21. This is the single source of truth for what the <code>keyBundler</code> packer emits and what the <code>bundle_preview</code> column in the dashboard shows. All modes (Run / Loop / Smart Loop) use this identical algorithm.</p>
+
+<div class="card">
+  <div class="card-header">5 settings (defined in <code>src/core/finder/finderModuleRegistry.js:591-621</code>)</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Key</th><th>Default</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td><code>bundlingEnabled</code></td><td><code>false</code></td><td>Master on/off</td></tr>
+        <tr><td><code>groupBundlingOnly</code></td><td><code>true</code></td><td>Same-group only vs cross-group (cross-group gated to Phase 5+ headroom trigger)</td></tr>
+        <tr><td><code>bundlingPassengerCost</code></td><td><code>{easy:1, medium:2, hard:4, very_hard:8}</code></td><td>Per-passenger point cost (scales with variant count)</td></tr>
+        <tr><td><code>bundlingPoolPerPrimary</code></td><td><code>{easy:6, medium:4, hard:2, very_hard:1}</code></td><td>Primary's carrying capacity</td></tr>
+        <tr><td><code>passengerDifficultyPolicy</code></td><td><code>less_or_equal</code></td><td>4 enums — see below</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <div class="card-header"><code>passengerDifficultyPolicy</code> enum values</div>
+  <div class="card-body">
+    <table>
+      <thead><tr><th>Value</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><code>less_or_equal</code> (default)</td><td>Passenger difficulty ≤ primary difficulty</td></tr>
+        <tr><td><code>same_only</code></td><td>Passenger difficulty == primary difficulty</td></tr>
+        <tr><td><code>any_but_very_hard</code></td><td>Any passenger except <code>very_hard</code></td></tr>
+        <tr><td><code>any_but_hard_very_hard</code></td><td>Only <code>easy</code> or <code>medium</code> passengers</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="callout callout-info" style="margin-top:16px;">
+  <strong>Packer algorithm — 6 steps:</strong>
+  <ol>
+    <li>If <code>bundlingEnabled=false</code> → return solo (no passengers). Done.</li>
+    <li>Build candidate pool: same-group peers of the primary (∪ cross-group when <code>groupBundlingOnly=false</code> AND pool headroom remains — Phase 5+ trigger only).</li>
+    <li>Filter by <code>passengerDifficultyPolicy</code> vs primary's difficulty.</li>
+    <li>Drop already-<strong>published</strong>-resolved candidates. Uses <code>specDb.getResolvedFieldCandidate</code>. NOT "has any candidate" — below-threshold passengers should keep retrying.</li>
+    <li>Sort <code>(availability ASC, difficulty ASC, field_key ASC)</code>. The <code>field_key</code> tiebreaker is load-bearing — without it, packer output is non-deterministic under Object-key iteration reordering.</li>
+    <li>Greedy-pack under <code>bundlingPoolPerPrimary[primary.difficulty]</code>. Per-passenger cost is <strong>raw</strong>:<br>
+      <code>cost(peer) = bundlingPassengerCost[peer.difficulty]</code><br>
+      User-facing math: <code>pool / cost = max passengers</code>. Example: easy primary pool=6 + easy cost=1 → 6 easy passengers fit. Hard primary pool=2 + medium cost=2 → 1 medium OR 2 easies fit. Variant count does NOT inflate passenger cost (contrast with primary attempt budget, which DOES scale with variants).
+    </li>
+  </ol>
+  <p style="margin-top:8px; margin-bottom:0;"><strong>Safety filters at step 3:</strong> packer also drops <code>variant_dependent=true</code> peers and peers with empty/unknown <code>required_level</code>, so it stays robust if upstream rule data drifts.</p>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <div class="card-header">Invariants across all modes</div>
+  <div class="card-body">
+    <ul>
+      <li><strong>Primary owns the budget line.</strong> Passengers ride free — they do not deduct from Loop's per-key budget.</li>
+      <li><strong>Each answer = its own <code>field_candidates</code> row.</strong> Primary and every passenger get their own row; publisher's dupe check is already per-<code>field_key</code> scoped at <code>submitCandidate.js:225-227</code>, so sharing <code>run_number</code> across all rows is safe at both JSON and SQL layers.</li>
+      <li><strong>Each passenger's run attribution:</strong> <code>run.selected.keys[fk].rode_with = primaryFieldKey</code> (primary's entry has <code>rode_with: null</code>). Answers "why was this resolved?" for Phase 5 Group Loop skip logic.</li>
+      <li><strong>Discovery inheritance:</strong> passengers inherit the primary's search session (URL + query history). The primary run's <code>discovery_log</code> IS the passenger's discovery log — no per-passenger history boxes.</li>
+      <li><strong>Billing stays at LLM-call level.</strong> Looping <code>submitCandidate</code> across passengers costs zero extra billing (verified at <code>submitCandidate.js:17</code> + <code>costLedger.js:372</code>).</li>
+    </ul>
+  </div>
+</div>
+
 <!-- ────────────────────────── 7. DASHBOARD MOCKUPS ────────────────────────── -->
 <h2 id="dashboard" class="section-title anchor-target"><span class="num">7</span> GUI dashboard mockups</h2>
 
@@ -584,9 +651,9 @@ z.<span class="p">object</span>({
 <div class="callout callout-info">
   <strong>Four run modes:</strong>
   <ul>
-    <li><strong>Per-key Run</strong> — 1 call, 0 passengers, no iteration. One key, one shot.</li>
-    <li><strong>Per-key Loop</strong> — iterates one key (no passengers) until its own budget is exhausted or it resolves.</li>
-    <li><strong>Group Smart Loop</strong> — runs a full group with bundling on; fires keys in difficulty order easy→medium→hard→very_hard; each key iterates until its budget is exhausted or it resolves.</li>
+    <li><strong>Per-key Run</strong> — 1 LLM call, no budget. Honors bundling when enabled (passengers ride free; each answer still writes its own candidate row).</li>
+    <li><strong>Per-key Loop</strong> — iterates one primary key until its own budget is exhausted or it resolves. Honors bundling each iteration (passengers cost no budget; resolved passengers carry over to group-loop skip lists).</li>
+    <li><strong>Group Smart Loop</strong> — walks the group <strong>easy→hard</strong>; skips keys already resolved (including prior bundle harvest). Each key runs its own Per-key Loop (which may itself bundle).</li>
     <li><strong>Header Smart Loop</strong> — applies Group Smart Loop to every group in sequence. Top-level "run everything" button.</li>
   </ul>
   Smart Loop modes are wired in a separate phase after Phase 2. Phase 2 registers only the per-tier LLM, per-key budget scoring, and bundling knobs.
@@ -962,16 +1029,17 @@ z.<span class="p">object</span>({
     <p><strong>3b — Loop mode.</strong> <span class="tag tag-orange">NEXT</span></p>
     <ul>
       <li>Per-key retry wrapping <code>runKeyFinder</code> up to <code>calcKeyBudget(...).attempts</code>. Re-read discovery on each iteration so mid-loop URLs/queries accumulate (vs Run mode's static snapshot).</li>
-      <li>Suppression: per-iteration URLs + queries added to <code>accumulateDiscoveryLog</code>'s <code>suppressions</code> option so the same crawl path isn't repeated.</li>
+      <li>Passenger re-pack per iteration: call <code>buildPassengers</code> on every tick so resolved peers drop out and pool capacity goes to remaining keys.</li>
       <li>Exit conditions: publisher published, OR LLM returned <code>"unk"</code> with a definitive <code>unknown_reason</code>, OR budget exhausted.</li>
       <li>Route wiring: flip the <code>mode === 'loop'</code> 400 rejection in <code>keyFinderRoutes.js</code> into a dispatch to <code>runKeyFinderLoop</code>. Emit <code>key-finder-loop</code> WS event.</li>
       <li><code>loop_id</code> propagation: every run inside a single loop call shares a <code>loop_id</code> (mirrors RDF's pattern at <code>variantFieldLoop.js</code>).</li>
+      <li>Per-(pid, fieldKey) queue lock: a second Run or Loop request for the same key waits for the first to finish rather than racing on <code>key_finder.json</code> / SQL writes.</li>
     </ul>
 
     <div class="phase-grid">
       <div><dt>Blockers</dt><dd>None for Phase 3b. Phase 3a Part 2 shipped means <code>runKeyFinder</code> is an idempotent building block the loop wraps.</dd></div>
       <div><dt>Exit criterion</dt><dd>3b: Loop mode fires repeated runs until publish, definitive unk, or budget exhaust. JSON+SQL carries <code>loop_id</code> on every run of a loop call. Billing rolls up as N ticks of <code>key_finding_${tier}</code> under "Key Finder".</dd></div>
-      <div><dt>Risk</dt><dd>Low-medium — the orchestrator contract is already in place. Main risk is discovery-suppression drift; characterization tests from Phase 3a Part 2 cover the happy path.</dd></div>
+      <div><dt>Risk</dt><dd>Low-medium — the orchestrator contract is already in place. Main risk is passenger re-pack drift; characterization tests from Phase 3a Part 2 cover the happy path.</dd></div>
     </div>
   </div>
 </div>

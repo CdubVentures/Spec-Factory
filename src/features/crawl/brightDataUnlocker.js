@@ -53,7 +53,17 @@ export async function unlockViaApi({
           'content-type': 'application/json',
           'authorization': `Bearer ${apiKey}`,
         },
-        body: JSON.stringify({ zone, url, format: 'json' }),
+        // WHY: x-unblock-expect embedded in body.headers (per Bright Data REST API
+        // spec) overrides the zone's default site-specific selector wait. Without
+        // this, known e-commerce zones default to waiting for selectors like
+        // #product-details that don't exist on the actual page, causing 30s
+        // timeouts + 502 responses. <body> exists on every HTML page so the
+        // wait succeeds immediately. Requires "Manual 'expect' elements" feature
+        // enabled on the zone in Bright Data dashboard.
+        body: JSON.stringify({
+          zone, url, format: 'json',
+          headers: { 'x-unblock-expect': '{"element":"body"}' },
+        }),
         signal: controller.signal,
       });
       clearTimeout(timer);

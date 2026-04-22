@@ -1,7 +1,7 @@
 // Types for the POST /:prefix/:category/:productId/preview-prompt response.
 // Shared by all four IndexLab finders (CEF Phase 1; PIF / RDF / SKU in later phases).
 
-export type PromptPreviewFinder = 'cef' | 'pif' | 'rdf' | 'sku';
+export type PromptPreviewFinder = 'cef' | 'pif' | 'rdf' | 'sku' | 'key';
 
 export interface PromptModelInfo {
   readonly id: string;
@@ -39,4 +39,5 @@ export interface PromptPreviewRequestBody {
   readonly variant_id?: string;
   readonly mode?: string;
   readonly view?: string;
+  readonly field_key?: string;
 }

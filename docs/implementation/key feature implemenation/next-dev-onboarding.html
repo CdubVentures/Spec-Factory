@@ -125,8 +125,11 @@ node --test src/features/key/tests/keySchema.test.js \
   <thead><tr><th style="width:30%">Decision</th><th>What it means</th></tr></thead>
   <tbody>
     <tr><td><strong>4 tiers + 1 fallback</strong></td><td>easy / medium / hard / very_hard + fallback. Empty tier inherits the <em>whole fallback bundle</em> (not per-field merge). Fallback default is <code>gpt-5.4</code> + xhigh + webSearch on.</td></tr>
-    <tr><td><strong>Run is per-key</strong></td><td>One button click = one <code>fieldKey</code> = one LLM call. The "run all keys by group" dashboard is Phase 4 — do not build it now.</td></tr>
-    <tr><td><strong>Loop is per-key</strong></td><td>Retries a single key up to <code>calcKeyBudget(...).attempts</code>. Smart Loop (group/header) is Phase 5+.</td></tr>
+    <tr><td><strong>Run is per-key</strong></td><td>One button click = one <code>fieldKey</code> = one LLM call. Dashboard shipped Phase 4 (2026-04-21). Phase 4.5 added bundling — primary's call can carry N passengers when <code>bundlingEnabled=true</code>.</td></tr>
+    <tr><td><strong>Loop is per-key</strong></td><td>Retries a single key up to <code>calcKeyBudget(...).attempts</code>. Phase 3b ships the Loop driver; Phase 7 Smart Loop (group/header) is after that.</td></tr>
+    <tr><td><strong>Bundling ships with Run</strong></td><td>Per-key Run honors <code>bundlingEnabled</code> since Phase 4.5. Primary owns the budget; passengers ride free. Passenger cost is <em>raw</em> (not scaled by variant count). Packer lives in <code>src/features/key/keyBundler.js</code>; orchestrator + preview compiler both import <code>buildPassengers</code> from <code>src/features/key/keyPassengerBuilder.js</code> so they can't drift.</td></tr>
+    <tr><td><strong>History is the shared drawer</strong></td><td>Phase 6 retired keyFinder's custom <code>KeyHistoryDrawer</code>. Panel header mounts the shared <code>DiscoveryHistoryButton</code> → <code>DiscoveryHistoryDrawer</code> with <code>scopeLevel: 'field_key'</code>. Each expandable section = one <code>primary_field_key</code> that ran, with URLs + queries (read-only; Stage A retired per-item Hide — only the two pipeline-settings knobs control history injection). Group-header History button reopens the same drawer with a live <code>fieldKeyFilter</code> that auto-syncs when keys move between groups.</td></tr>
+    <tr><td><strong>Prompt preview uses the shared modal</strong></td><td>Phase 5 deleted keyFinder's custom run-prompt slideover. "Prompt" button on each row opens <code>PromptPreviewModal</code> with a live-compiled preview of the next Run's system + user + schema (via <code>POST /key-finder/:cat/:pid/preview-prompt</code>). Historical run prompts are deferred — SKU/RDF/PIF don't have a historical view either.</td></tr>
     <tr><td><strong>Budget in Pipeline Settings, NOT LLM Config</strong></td><td>The 12 settingsSchema knobs (3 axis JSON tables + floor + variant weight + bundling toggle + 2 bundling tables + policy enum + 2 history toggles + hidden prompt template) live on the <code>keyFinder</code> finder module. LLM Config only carries the 5 tier bundles.</td></tr>
     <tr><td><strong>Discovery history is per-key</strong></td><td>Scoped by <code>(product_id, field_key)</code>. If the URL+query history toggles are on and you click Run 11 times, the 11th call sees all 10 prior URL+query lists. No table change — every run record tags itself with <code>response.field_key</code>; the orchestrator passes a <code>runMatcher</code> to <code>accumulateDiscoveryLog</code>.</td></tr>
     <tr><td><strong>CEF/PIF/RDF/SKU-owned keys are EXCLUDED</strong></td><td>color/edition, hero_image/product_image, release_date, sku — each has its own finder. Field-rule <code>eg_defaults</code> keys are also excluded. Keyfinder runs only on <em>everything else</em>.</td></tr>
@@ -271,6 +274,66 @@ node --test src/features/key/tests/keySchema.test.js \
   </div>
 </div>
 
+<div class="card">
+  <div class="card-header"><span class="tag tag-green">Phase 4</span> Dashboard — shipped 2026-04-21</div>
+  <div class="card-body">
+    <p>Full Key Finder tab under Indexing Lab. Renders only when ReviewLayout + summary + reserved-keys all resolve.</p>
+    <ul>
+      <li><code>KeyFinderPanel.tsx</code> — Review Grid's same WS chain (<code>field-studio-map-saved</code> → <code>invalidationResolver</code>).</li>
+      <li><code>KeyFinderToolbar</code> — search + difficulty / availability / required / status filters.</li>
+      <li><code>KeyGroupSection</code> — collapsible group containers with per-group Run / Loop / History buttons (most disabled by <code>LIVE_MODES</code>).</li>
+      <li><code>KeyRow</code> — per-key row with ▶ Run (live), ∞ Loop (disabled Phase 3b), and Prompt button.</li>
+      <li>New <code>GET /key-finder/:cat/:pid/summary</code> rollup + <code>GET /key-finder/:cat/reserved-keys</code> denylist export for panel filter.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-green">Phase 4.5</span> Run bundling — shipped 2026-04-21</div>
+  <div class="card-body">
+    <p>Per-key Run honors <code>bundlingEnabled</code>. Primary owns the budget; passengers ride free. Contract locked in memory <code>project_keyfinder_bundling_contract</code> and roadmap §6.1.</p>
+    <ul>
+      <li><code>src/features/key/keyBundler.js</code> — 6-step deterministic packer (eligibility → sort by <code>(availability, difficulty, field_key)</code> → greedy-pack under <code>bundlingPoolPerPrimary[primary.difficulty]</code>). Passenger cost is <strong>raw</strong> (not scaled by variant count).</li>
+      <li><code>src/features/key/keyPassengerBuilder.js</code> — shared <code>buildPassengers</code> helper called by both <code>runKeyFinder</code> and the Phase 5 preview compiler so they cannot drift.</li>
+      <li>Orchestrator: each passenger written as its own <code>field_candidates</code> row with <code>sourceMeta.run_number</code> shared across primary + passengers. <code>run.selected.keys[fk].rode_with</code> attributes which primary carried each passenger.</li>
+      <li>Delete-run cascade expanded: before calling <code>stripRunSourceFromCandidates</code>, expand <code>fieldKeys = Object.keys(run.selected.keys)</code> so passenger candidate rows clear too.</li>
+      <li>History broadening: <code>filterRunsByFieldKey</code> matches primary OR passenger appearances; <code>accumulateDiscoveryLog.runMatcher</code> mirrors so passenger-resolved keys inherit the primary's discovery session.</li>
+      <li>Dashboard Bundled column + BundlingStatusStrip added. /summary endpoint enriches every row with <code>bundle_preview: string[]</code> via the same packer.</li>
+      <li>4 policy enums for <code>passengerDifficultyPolicy</code>: <code>less_or_equal</code> / <code>same_only</code> / <code>any_but_very_hard</code> / <code>any_but_hard_very_hard</code>.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-green">Phase 5</span> Prompt preview — shipped 2026-04-21</div>
+  <div class="card-body">
+    <p>Replaced the custom historical-run slideover with the shared <code>PromptPreviewModal</code> + <code>PromptPreviewView</code> that CEF / PIF / RDF / SKU use. Per-row "Prompt" button opens a live-compiled preview of what the next Run would send.</p>
+    <ul>
+      <li><code>src/features/key/keyFinderPreviewPrompt.js</code> — <code>compileKeyFinderPreviewPrompt(ctx)</code> mirrors <code>skuFinderPreviewPrompt.js</code>. Shares <code>buildPassengers</code> with the runner.</li>
+      <li><code>POST /key-finder/:cat/:pid/preview-prompt</code> — new route handler, no operation registration, no persistence, pure compile.</li>
+      <li><code>PromptPreviewFinder</code> TS union extended to <code>'key'</code> + <code>FINDER_ROUTE_PREFIX.key = 'key-finder'</code>.</li>
+      <li>Drift guard: <code>src/features/key/tests/keyFinderPreviewPrompt.test.js</code> runs the preview + the live runner with the same fixtures and asserts systemPrompt byte-for-byte match.</li>
+      <li>Live invalidation: <code>['prompt-preview', 'key', :category]</code> added to <code>settings</code> + <code>reviewLayout</code> domain templates so open modals refresh when bundling knobs flip or peer fields resolve.</li>
+      <li>Deleted: <code>KeyPromptSlideover.tsx</code> + <code>useKeyFinderPromptQuery</code> hook.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="tag tag-green">Phase 6</span> Discovery History drawer — shipped 2026-04-21</div>
+  <div class="card-body">
+    <p>Replaced the custom 3-scope <code>KeyHistoryDrawer</code> with the shared <code>DiscoveryHistoryDrawer</code>, extended to support <code>scopeLevel: 'field_key'</code> (grouped by <code>primary_field_key</code>). Panel header mounts the shared <code>DiscoveryHistoryButton</code> with live <code>(Nqu)(Murl)</code> counts.</p>
+    <ul>
+      <li><strong>Shared helper</strong> — <code>discoveryHistoryHelpers.ts</code> adds a <code>'field_key'</code> branch + <code>byFieldKey</code> Map.</li>
+      <li><strong>Drawer</strong> — <code>DiscoveryHistoryDrawer.tsx</code> renders a new <code>FieldKeyBody</code> component (one expandable per field_key with URLs + queries; read-only).</li>
+      <li><strong>Registry</strong> — <code>deriveScopeLevel('productFieldProducer') === 'field_key'</code>. keyFinder is the only consumer today; generator regenerates <code>finderPanelRegistry.generated.ts</code>.</li>
+      <li><strong>Group-history filter</strong> — <code>useFinderDiscoveryHistoryStore</code> now carries an optional <code>fieldKeyFilter: ReadonlyArray&lt;string&gt; | null</code>. <code>KeyFinderPanel</code>'s group History button opens the drawer with the group's current keys, and a <code>useEffect</code> on <code>grouped.groups</code> pushes the new key list into the store when a key moves groups via Field Studio (reviewLayout invalidation chain). Drawer re-renders without reopening.</li>
+      <li><strong>Deleted</strong> — <code>KeyHistoryDrawer.tsx</code>, <code>useKeyFinderHistoryQuery</code>, <code>KeyHistoryScope</code> / <code>KeyHistoryRun</code> / <code>KeyFinderDetail</code> types. Per-row History buttons removed.</li>
+      <li><strong>Stage A retirement</strong> — the entire suppressions feature (Hide button, suppressions table, <code>listSuppressions</code> store methods, 5 generic routes, JSON carry-forward) was removed across all 5 finders. The two pipeline-settings knobs (<code>urlHistoryEnabled</code>, <code>queryHistoryEnabled</code>) are the only remaining history controls.</li>
+    </ul>
+  </div>
+</div>
+
 <!-- ───────────────────────── 4. NEXT ───────────────────────── -->
 <h2 id="next"><span class="num">4</span> What Phase 3b Loop must build</h2>
 
@@ -284,7 +347,7 @@ node --test src/features/key/tests/keySchema.test.js \
       <thead><tr><th>File</th><th>Responsibility</th></tr></thead>
       <tbody>
         <tr><td><code>src/features/key/keyFinderLoop.js</code></td><td><code>runKeyFinderLoop({ product, fieldKey, category, specDb, appDb, config, onLoopProgress?, signal?, ...runOpts })</code> — wraps <code>runKeyFinder</code>, iterates up to <code>calcKeyBudget(...).attempts</code>, stamps <code>loop_id</code> on every child run.</td></tr>
-        <tr><td><code>src/features/key/tests/keyFinderLoop.test.js</code></td><td>Characterization: budget honored, exits on publish, exits on definitive unk, loop_id stamped consistently, suppressions accumulate across iterations.</td></tr>
+        <tr><td><code>src/features/key/tests/keyFinderLoop.test.js</code></td><td>Characterization: budget honored, exits on publish, exits on definitive unk, loop_id stamped consistently, discovery log accumulates across iterations, passengers re-pack per tick.</td></tr>
       </tbody>
     </table>
 
@@ -533,8 +596,8 @@ node --test</pre>
       <tbody>
         <tr><td><code>features/llm-config/sections/LlmKeyFinderSection.tsx</code></td><td>4 tier cards + Fallback + Limits + LLM Call Contract panel.</td></tr>
         <tr><td><code>features/llm-config/state/llmPolicyAdapter.ts</code></td><td>Hand-wired flatten + route for keyFinderTierSettingsJson. See Pitfall #2.</td></tr>
-        <tr><td><code>features/key-finder/components/KeyFinderPanel.tsx</code></td><td>Placeholder — Phase 4 builds the real dashboard.</td></tr>
-        <tr><td><code>features/key-finder/tabSummary.ts</code></td><td>Idle stub — Phase 4 wires real KPIs.</td></tr>
+        <tr><td><code>features/key-finder/components/KeyFinderPanel.tsx</code></td><td>Live dashboard — ReviewLayout + summary + reserved-keys + runningSet + filters + Bundled column + prompt modal + shared Discovery History button.</td></tr>
+        <tr><td><code>features/key-finder/tabSummary.ts</code></td><td>Live — emits per-tab KPIs from the summary query.</td></tr>
         <tr><td><code>features/indexing/panels/finderTabMeta.ts</code></td><td>keyFinder tab entry (glyph <code>⚙</code>, iconClass <code>key</code>).</td></tr>
         <tr><td><code>features/billing/billingCallTypeRegistry.generated.ts</code></td><td>4 <code>key_finding_*</code> reasons under "Key Finder" group.</td></tr>
         <tr><td><code>features/pipeline-settings/components/PipelineSettingsPageShell.tsx</code></td><td>Sidebar icon (SVG key lock + shaft) for the Key Finder section.</td></tr>

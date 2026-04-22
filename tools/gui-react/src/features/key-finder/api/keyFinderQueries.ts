@@ -7,13 +7,13 @@
  * so the invalidationResolver auto-invalidates on `key-finder-*` WS events.
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
 import type {
   KeyFinderSummaryRow,
-  KeyFinderDetail,
+  KeyFinderAllRunsResponse,
   ReservedKeysResponse,
-  KeyHistoryScope,
 } from '../types.ts';
 
 // ── Reserved keys (long-cached: static across runtime) ────────────────
@@ -29,6 +29,26 @@ export function useReservedKeysQuery(category: string) {
   });
 }
 
+// ── Bundling config (for the BundlingStatusStrip) ─────────────────────
+export interface BundlingConfig {
+  readonly enabled: boolean;
+  readonly groupBundlingOnly: boolean;
+  readonly passengerDifficultyPolicy: string;
+  readonly poolPerPrimary: Record<string, number>;
+  readonly passengerCost: Record<string, number>;
+  readonly variantCount: number;
+}
+
+export function useKeyFinderBundlingConfigQuery(category: string, productId: string) {
+  return useQuery<BundlingConfig>({
+    queryKey: ['key-finder', category, productId, 'bundling-config'],
+    queryFn: () => api.get<BundlingConfig>(
+      `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/bundling-config`,
+    ),
+    enabled: Boolean(category) && Boolean(productId),
+  });
+}
+
 // ── Per-product key summary ───────────────────────────────────────────
 export function useKeyFinderSummaryQuery(category: string, productId: string) {
   return useQuery<readonly KeyFinderSummaryRow[]>({
@@ -40,41 +60,47 @@ export function useKeyFinderSummaryQuery(category: string, productId: string) {
   });
 }
 
-// ── History (scope-parameterized: key / group / product) ──────────────
-interface HistoryArgs {
-  readonly category: string;
-  readonly productId: string;
-  readonly scope: KeyHistoryScope;
-  /** field_key for scope=key; group name for scope=group; ignored for product */
-  readonly id?: string;
-  readonly enabled?: boolean;
-}
-
-export function useKeyFinderHistoryQuery({ category, productId, scope, id, enabled = true }: HistoryArgs) {
-  const params = new URLSearchParams();
-  params.set('scope', scope);
-  if (scope === 'key' && id) params.set('field_key', id);
-  if (scope === 'group' && id) params.set('group', id);
-  const qs = params.toString();
-  return useQuery<KeyFinderDetail>({
-    queryKey: ['key-finder', category, productId, 'history', scope, id ?? ''],
-    queryFn: () => api.get<KeyFinderDetail>(
-      `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}?${qs}`,
+// ── All runs for a product (Run History section) ─────────────────────
+// GET with no query string hits the default scope='key' branch which returns
+// every run when fieldKey is empty (see filterRunsByFieldKey in routes).
+export function useKeyFinderAllRunsQuery(category: string, productId: string) {
+  return useQuery<KeyFinderAllRunsResponse>({
+    queryKey: ['key-finder', category, productId, 'all-runs'],
+    queryFn: () => api.get<KeyFinderAllRunsResponse>(
+      `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`,
     ),
-    enabled: enabled && Boolean(category) && Boolean(productId)
-      && (scope === 'product' || Boolean(id)),
+    enabled: Boolean(category) && Boolean(productId),
   });
 }
 
-// ── Prompt data (reuses key-scope detail to get the one run's prompt) ─
-export function useKeyFinderPromptQuery({
-  category, productId, fieldKey, enabled = true,
-}: { category: string; productId: string; fieldKey: string; enabled?: boolean }) {
-  return useQuery<KeyFinderDetail>({
-    queryKey: ['key-finder', category, productId, 'prompt', fieldKey],
-    queryFn: () => api.get<KeyFinderDetail>(
-      `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}?field_key=${encodeURIComponent(fieldKey)}`,
+interface DeleteRunBody { readonly runNumber: number; readonly fieldKey: string }
+
+export function useDeleteKeyFinderRunMutation(category: string, productId: string) {
+  const queryClient = useQueryClient();
+  const invalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['key-finder', category, productId] });
+  }, [queryClient, category, productId]);
+
+  return useMutation<{ ok: boolean }, Error, DeleteRunBody>({
+    mutationFn: ({ runNumber, fieldKey }) => api.del<{ ok: boolean }>(
+      `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/runs/${encodeURIComponent(String(runNumber))}?field_key=${encodeURIComponent(fieldKey)}`,
     ),
-    enabled: enabled && Boolean(category) && Boolean(productId) && Boolean(fieldKey),
+    onSuccess: invalidate,
   });
 }
+
+export function useDeleteAllKeyFinderRunsMutation(category: string, productId: string) {
+  const queryClient = useQueryClient();
+  const invalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['key-finder', category, productId] });
+  }, [queryClient, category, productId]);
+
+  return useMutation<{ ok: boolean }>({
+    mutationFn: () => api.del<{ ok: boolean }>(
+      `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`,
+    ),
+    onSuccess: invalidate,
+  });
+}
+
+

@@ -107,7 +107,6 @@ export interface StudioFieldRow {
   type: string;
   required: string;
   unit: string;
-  enumName: string;
 }
 
 export interface StudioFieldRowsOptions {
@@ -320,7 +319,6 @@ export function deriveStudioFieldRows({
       type: String(contract.type || 'string'),
       required: String(rule.required_level || ''),
       unit: String(contract.unit || ''),
-      enumName: String(rule.enum_name || ''),
     };
   });
 }

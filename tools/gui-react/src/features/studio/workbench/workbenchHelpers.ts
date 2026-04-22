@@ -129,7 +129,7 @@ export function buildWorkbenchRows(
 
       queryTermsCount: arrN(r, 'search_hints.query_terms').length,
       domainHintsCount: arrN(r, 'search_hints.domain_hints').length,
-      contentTypesCount: arrN(r, 'search_hints.preferred_content_types').length,
+      contentTypesCount: arrN(r, 'search_hints.content_types').length,
       constraintsCount: arrN(r, 'constraints').length,
       constraintVariables: extractConstraintVariables(arrN(r, 'constraints'), key).join(', '),
 

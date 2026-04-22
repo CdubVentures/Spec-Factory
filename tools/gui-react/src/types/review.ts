@@ -15,7 +15,6 @@ export interface ReviewLayoutRow {
     type: string;
     required: boolean;
     units: string | null;
-    enum_name: string | null;
     component_type: string | null;
     enum_source: string | null;
     // WHY: Backend-derived from FINDER_MODULES registry. True when the field's

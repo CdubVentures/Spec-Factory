@@ -89,6 +89,15 @@ export const MIGRATIONS = [
   `ALTER TABLE product_image_finder_runs ADD COLUMN duration_ms INTEGER DEFAULT NULL`,
   `ALTER TABLE release_date_finder_runs ADD COLUMN started_at TEXT DEFAULT NULL`,
   `ALTER TABLE release_date_finder_runs ADD COLUMN duration_ms INTEGER DEFAULT NULL`,
+  // WHY: Suppressions tables retired — Stage A suppressions retirement. DDL no
+  // longer creates <finder>_suppressions tables on fresh DBs. Existing DBs keep
+  // the orphaned tables until reseed; applyMigrations() swallows "no such table"
+  // errors, so dropping the ALTER statements here is safe on old + new DBs.
+  `DROP TABLE IF EXISTS color_edition_finder_suppressions`,
+  `DROP TABLE IF EXISTS product_image_finder_suppressions`,
+  `DROP TABLE IF EXISTS release_date_finder_suppressions`,
+  `DROP TABLE IF EXISTS sku_finder_suppressions`,
+  `DROP TABLE IF EXISTS key_finder_suppressions`,
 ];
 
 export const SECONDARY_INDEXES = `

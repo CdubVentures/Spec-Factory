@@ -88,7 +88,6 @@ test('start mutation invalidates the full indexlab run-list family for structure
       singleProductId: 'logitech-g-pro-wireless',
       selectedIndexLabRunId: '',
       clearProcessOutput() {},
-      setClearedRunViewId() {},
       clearIndexLabRun(runId) {
         globalThis.__indexingRunMutationsHarness.clearedRunIds.push(runId);
       },
@@ -103,7 +102,6 @@ test('start mutation invalidates the full indexlab run-list family for structure
       processStatus: undefined,
       runtimeSettingsAuthorityReady: true,
       runtimeSettingsLoading: false,
-      replayPending: false,
       preflightCheck() {
         return { valid: true, errors: [] };
       },

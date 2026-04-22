@@ -123,8 +123,9 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
+          "support",
+          "spec",
           "product_page",
-          "spec_sheet",
           "review"
         ],
         "domain_hints": [
@@ -134,20 +135,10 @@
           "rtings.com",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "product_page",
-          "review"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} actuation adjustment step",
-          "{brand} {model} actuation precision"
         ],
         "query_terms": [
           "actuation adjustment step",
@@ -170,8 +161,7 @@
         "tooltip_key": "actuation_adjustment_step",
         "tooltip_md": "Smallest adjustable actuation increment.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "actuation_distance": {
       "ai_assist": {
@@ -238,9 +228,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -249,21 +241,10 @@
           "techpowerup.com",
           "tomshardware.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} actuation distance",
-          "{brand} {model} keyboard actuation distance specs"
         ],
         "query_terms": [
           "actuation distance",
@@ -286,7 +267,6 @@
         "tooltip_md": "Distance before actuation.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "actuation_force": {
@@ -354,9 +334,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -365,21 +347,10 @@
           "techpowerup.com",
           "tomshardware.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} actuation force",
-          "{brand} {model} keyboard actuation force specs"
         ],
         "query_terms": [
           "actuation force",
@@ -402,7 +373,6 @@
         "tooltip_md": "Force required to actuate the switch.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "adjustable_actuation_max": {
@@ -471,8 +441,9 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
+          "support",
+          "spec",
           "product_page",
-          "spec_sheet",
           "review"
         ],
         "domain_hints": [
@@ -482,20 +453,10 @@
           "rtings.com",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "product_page",
-          "review"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} maximum actuation",
-          "{brand} {model} adjustable actuation range"
         ],
         "query_terms": [
           "maximum actuation",
@@ -518,8 +479,7 @@
         "tooltip_key": "adjustable_actuation_max",
         "tooltip_md": "Highest configurable actuation point.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "adjustable_actuation_min": {
       "ai_assist": {
@@ -587,8 +547,9 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
+          "support",
+          "spec",
           "product_page",
-          "spec_sheet",
           "review"
         ],
         "domain_hints": [
@@ -598,20 +559,10 @@
           "rtings.com",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "product_page",
-          "review"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} minimum actuation",
-          "{brand} {model} adjustable actuation range"
         ],
         "query_terms": [
           "minimum actuation",
@@ -634,8 +585,7 @@
         "tooltip_key": "adjustable_actuation_min",
         "tooltip_md": "Lowest configurable actuation point.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "adjustable_feet": {
       "ai_assist": {
@@ -693,8 +643,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "mechanicalkeyboards.com",
@@ -703,21 +656,10 @@
           "newegg.com",
           "keychron.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} adjustable feet",
-          "{brand} {model} keyboard adjustable feet specs"
         ],
         "query_terms": [
           "adjustable feet",
@@ -739,8 +681,7 @@
         "tooltip_key": "adjustable_feet",
         "tooltip_md": "Built-in foot positions for height adjustment.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "adjustable_input_granularity": {
       "ai_assist": {
@@ -800,7 +741,8 @@
         "content_types": [
           "review",
           "benchmark",
-          "spec_sheet"
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "rtings.com",
@@ -809,20 +751,10 @@
           "steelseries.com",
           "razer.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "benchmark",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} adjustable input granularity",
-          "{brand} {model} keyboard adjustable input granularity specs"
         ],
         "query_terms": [
           "adjustable input granularity",
@@ -844,8 +776,7 @@
         "tooltip_key": "adjustable_input_granularity",
         "tooltip_md": "Minimum adjustable actuation step size.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "analog_input": {
       "ai_assist": {
@@ -904,8 +835,9 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
+          "support",
+          "spec",
           "product_page",
-          "spec_sheet",
           "review"
         ],
         "domain_hints": [
@@ -915,20 +847,10 @@
           "rtings.com",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "product_page",
-          "review"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} analog input",
-          "{brand} {model} controller input keyboard"
         ],
         "query_terms": [
           "analog input",
@@ -951,8 +873,7 @@
         "tooltip_key": "analog_input",
         "tooltip_md": "Whether the keyboard can output analog or controller-style input.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "anti_ghosting": {
       "ai_assist": {
@@ -1013,7 +934,8 @@
         "content_types": [
           "review",
           "benchmark",
-          "spec_sheet"
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "rtings.com",
@@ -1022,20 +944,10 @@
           "steelseries.com",
           "razer.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "benchmark",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} anti-ghosting",
-          "{brand} {model} keyboard anti-ghosting specs"
         ],
         "query_terms": [
           "anti-ghosting",
@@ -1058,8 +970,7 @@
         "tooltip_key": "anti_ghosting",
         "tooltip_md": "Ghosting prevention level.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "arrow_keys": {
       "ai_assist": {
@@ -1117,9 +1028,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -1128,21 +1041,10 @@
           "amazon.com",
           "rtings.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} arrow keys",
-          "{brand} {model} keyboard arrow keys specs"
         ],
         "query_terms": [
           "arrow keys",
@@ -1164,8 +1066,7 @@
         "tooltip_key": "arrow_keys",
         "tooltip_md": "Whether dedicated arrow keys are present.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "backlighting": {
       "ai_assist": {
@@ -1223,9 +1124,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -1234,21 +1137,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} backlighting",
-          "{brand} {model} keyboard backlighting specs"
         ],
         "query_terms": [
           "backlighting",
@@ -1270,8 +1162,7 @@
         "tooltip_key": "backlighting",
         "tooltip_md": "Backlight class supported by the keyboard.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "base_model": {
       "ai_assist": {
@@ -1329,8 +1220,11 @@
       "required_level": "mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -1339,21 +1233,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} base model",
-          "{brand} {model} keyboard base model specs"
         ],
         "query_terms": [
           "base model",
@@ -1375,8 +1258,7 @@
         "tooltip_key": "base_model",
         "tooltip_md": "Base model without bundle suffixes.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "battery_capacity": {
       "ai_assist": {
@@ -1442,9 +1324,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -1453,21 +1337,10 @@
           "bestbuy.com",
           "rtings.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} battery capacity",
-          "{brand} {model} keyboard battery capacity specs"
         ],
         "query_terms": [
           "battery capacity"
@@ -1488,8 +1361,7 @@
         "tooltip_key": "battery_capacity",
         "tooltip_md": "Nominal battery capacity for wireless keyboards.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "battery_life_off": {
       "ai_assist": {
@@ -1557,9 +1429,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -1568,21 +1442,10 @@
           "bestbuy.com",
           "rtings.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} battery life (lighting off)",
-          "{brand} {model} keyboard battery life (lighting off) specs"
         ],
         "query_terms": [
           "battery life (lighting off)",
@@ -1605,8 +1468,7 @@
         "tooltip_key": "battery_life_off",
         "tooltip_md": "Battery life estimate with lighting disabled.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "battery_life_rgb": {
       "ai_assist": {
@@ -1674,9 +1536,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -1685,21 +1549,10 @@
           "bestbuy.com",
           "rtings.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} battery life (lighting on)",
-          "{brand} {model} keyboard battery life (lighting on) specs"
         ],
         "query_terms": [
           "battery life (lighting on)",
@@ -1722,8 +1575,7 @@
         "tooltip_key": "battery_life_rgb",
         "tooltip_md": "Battery life estimate with lighting enabled.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "bluetooth_version": {
       "ai_assist": {
@@ -1781,8 +1633,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -1791,21 +1646,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} bluetooth version",
-          "{brand} {model} keyboard bluetooth version specs"
         ],
         "query_terms": [
           "bluetooth version",
@@ -1827,8 +1671,7 @@
         "tooltip_key": "bluetooth_version",
         "tooltip_md": "Highest supported Bluetooth version.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "bottom_out_force": {
       "ai_assist": {
@@ -1895,9 +1738,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -1906,21 +1751,10 @@
           "techpowerup.com",
           "tomshardware.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} bottom-out force",
-          "{brand} {model} keyboard bottom-out force specs"
         ],
         "query_terms": [
           "bottom-out force",
@@ -1943,7 +1777,6 @@
         "tooltip_md": "Force required to bottom out.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "brand": {
@@ -2009,8 +1842,11 @@
       "required_level": "mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -2019,21 +1855,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} brand",
-          "{brand} {model} keyboard brand specs"
         ],
         "query_terms": [
           "brand",
@@ -2055,8 +1880,7 @@
         "tooltip_key": "brand",
         "tooltip_md": "Manufacturer brand name.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "cable_length": {
       "ai_assist": {
@@ -2123,8 +1947,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -2133,21 +1960,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} cable length",
-          "{brand} {model} keyboard cable length specs"
         ],
         "query_terms": [
           "cable length",
@@ -2169,8 +1985,7 @@
         "tooltip_key": "cable_length",
         "tooltip_md": "Included cable length.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "cable_type": {
       "ai_assist": {
@@ -2228,8 +2043,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -2238,21 +2056,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} cable type",
-          "{brand} {model} keyboard cable type specs"
         ],
         "query_terms": [
           "cable type",
@@ -2274,8 +2081,7 @@
         "tooltip_key": "cable_type",
         "tooltip_md": "Factory cable type.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "case_material": {
       "ai_assist": {
@@ -2333,9 +2139,10 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
           "review",
-          "discussion"
+          "benchmark",
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -2344,20 +2151,10 @@
           "geekhack.org",
           "keebtalk.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "benchmark",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} case material",
-          "{brand} {model} keyboard case material specs"
         ],
         "query_terms": [
           "case material",
@@ -2379,8 +2176,7 @@
         "tooltip_key": "case_material",
         "tooltip_md": "Main enclosure material.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "category": {
       "ai_assist": {
@@ -2438,8 +2234,11 @@
       "required_level": "mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -2448,21 +2247,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} category",
-          "{brand} {model} keyboard category specs"
         ],
         "query_terms": [
           "category",
@@ -2484,8 +2272,7 @@
         "tooltip_key": "category",
         "tooltip_md": "Canonical category slug.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "charging_method": {
       "ai_assist": {
@@ -2543,9 +2330,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -2554,21 +2343,10 @@
           "bestbuy.com",
           "rtings.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} charging method",
-          "{brand} {model} keyboard charging method specs"
         ],
         "query_terms": [
           "charging method",
@@ -2590,8 +2368,7 @@
         "tooltip_key": "charging_method",
         "tooltip_md": "How the keyboard recharges or receives replaceable power.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "color": {
       "ai_assist": {
@@ -2660,9 +2437,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -2671,21 +2450,10 @@
           "mechanicalkeyboards.com",
           "bestbuy.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} color",
-          "{brand} {model} keyboard color specs"
         ],
         "query_terms": [
           "color",
@@ -2707,8 +2475,7 @@
         "tooltip_key": "color",
         "tooltip_md": "Factory color options or primary colorway.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "colors": {
       "ai_assist": {
@@ -2829,8 +2596,7 @@
         "tooltip_key": null,
         "tooltip_md": "EG-compatible colorway tokens. Lowercase + hyphens only. Multi-color variants use \"+\" (e.g. black+red). Must match canonical EG palette. Normalize grey→gray.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "compatible_os": {
       "ai_assist": {
@@ -2899,9 +2665,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -2910,21 +2678,10 @@
           "mechanicalkeyboards.com",
           "bestbuy.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} compatible os",
-          "{brand} {model} keyboard compatible os specs"
         ],
         "query_terms": [
           "compatible os",
@@ -2946,8 +2703,7 @@
         "tooltip_key": "compatible_os",
         "tooltip_md": "Operating systems or platforms officially supported.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "connection": {
       "ai_assist": {
@@ -3016,8 +2772,11 @@
       "required_level": "mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -3026,21 +2785,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} connection",
-          "{brand} {model} keyboard connection specs"
         ],
         "query_terms": [
           "connection",
@@ -3062,8 +2810,7 @@
         "tooltip_key": "connection",
         "tooltip_md": "Supported connectivity modes.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "debounce_time": {
       "ai_assist": {
@@ -3132,7 +2879,8 @@
         "content_types": [
           "review",
           "benchmark",
-          "spec_sheet"
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "rtings.com",
@@ -3141,20 +2889,10 @@
           "steelseries.com",
           "razer.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "benchmark",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} debounce time",
-          "{brand} {model} keyboard debounce time specs"
         ],
         "query_terms": [
           "debounce time",
@@ -3176,8 +2914,7 @@
         "tooltip_key": "debounce_time",
         "tooltip_md": "Configurable or measured debounce time.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "depth": {
       "ai_assist": {
@@ -3244,8 +2981,11 @@
       "required_level": "mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "mechanicalkeyboards.com",
@@ -3254,21 +2994,10 @@
           "newegg.com",
           "keychron.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} depth",
-          "{brand} {model} keyboard depth specs"
         ],
         "query_terms": [
           "depth",
@@ -3290,8 +3019,7 @@
         "tooltip_key": "depth",
         "tooltip_md": "Overall keyboard depth.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "detachable_cable": {
       "ai_assist": {
@@ -3349,9 +3077,9 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -3360,19 +3088,10 @@
           "rtings.com",
           "duckychannel.com.tw"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} detachable cable",
-          "{brand} {model} removable cable"
         ],
         "query_terms": [
           "detachable cable",
@@ -3394,8 +3113,7 @@
         "tooltip_key": "detachable_cable",
         "tooltip_md": "Whether the wired cable can be removed from the keyboard.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "discontinued": {
       "ai_assist": {
@@ -3453,9 +3171,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -3464,21 +3184,10 @@
           "mechanicalkeyboards.com",
           "bestbuy.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} discontinued",
-          "{brand} {model} keyboard discontinued specs"
         ],
         "query_terms": [
           "discontinued",
@@ -3500,8 +3209,7 @@
         "tooltip_key": "discontinued",
         "tooltip_md": "Whether the product is no longer sold by the manufacturer.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "doubleshot": {
       "ai_assist": {
@@ -3559,9 +3267,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -3570,21 +3280,10 @@
           "geekhack.org",
           "keebtalk.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} doubleshot",
-          "{brand} {model} keyboard doubleshot specs"
         ],
         "query_terms": [
           "doubleshot",
@@ -3606,8 +3305,7 @@
         "tooltip_key": "doubleshot",
         "tooltip_md": "Whether keycaps are doubleshot molded.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "editions": {
       "ai_assist": {
@@ -3709,8 +3407,7 @@
         "tooltip_key": null,
         "tooltip_md": "EG-compatible edition slugs. Kebab-case only (lowercase, hyphens, no spaces). Examples: cyberpunk-2077-edition, sf6-chun-li, wilderness.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "foam_dampening": {
       "ai_assist": {
@@ -3768,9 +3465,10 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
           "review",
-          "discussion"
+          "benchmark",
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -3779,20 +3477,10 @@
           "geekhack.org",
           "keebtalk.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "benchmark",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} foam dampening",
-          "{brand} {model} keyboard foam dampening specs"
         ],
         "query_terms": [
           "foam dampening",
@@ -3814,8 +3502,7 @@
         "tooltip_key": "foam_dampening",
         "tooltip_md": "Factory-installed foam treatment.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "form_factor": {
       "ai_assist": {
@@ -3873,9 +3560,11 @@
       "required_level": "mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -3884,21 +3573,10 @@
           "amazon.com",
           "rtings.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} form factor",
-          "{brand} {model} keyboard form factor specs"
         ],
         "query_terms": [
           "form factor",
@@ -3920,8 +3598,7 @@
         "tooltip_key": "form_factor",
         "tooltip_md": "Overall keyboard size class.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "function_row": {
       "ai_assist": {
@@ -3979,9 +3656,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -3990,21 +3669,10 @@
           "amazon.com",
           "rtings.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} function row",
-          "{brand} {model} keyboard function row specs"
         ],
         "query_terms": [
           "function row",
@@ -4026,8 +3694,7 @@
         "tooltip_key": "function_row",
         "tooltip_md": "Whether a dedicated F-row is present.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "gasket_mount": {
       "ai_assist": {
@@ -4085,9 +3752,10 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
           "review",
-          "discussion"
+          "benchmark",
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -4096,20 +3764,10 @@
           "geekhack.org",
           "keebtalk.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "benchmark",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} gasket mount",
-          "{brand} {model} keyboard gasket mount specs"
         ],
         "query_terms": [
           "gasket mount",
@@ -4131,8 +3789,7 @@
         "tooltip_key": "gasket_mount",
         "tooltip_md": "Whether a gasket isolation mount is used.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "gtin": {
       "ai_assist": {
@@ -4191,8 +3848,11 @@
       "required_level": "mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -4201,21 +3861,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} gtin",
-          "{brand} {model} keyboard gtin specs"
         ],
         "query_terms": [
           "gtin",
@@ -4238,8 +3887,7 @@
         "tooltip_key": "gtin",
         "tooltip_md": "Trade identifier such as UPC or EAN.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "height_front": {
       "ai_assist": {
@@ -4307,8 +3955,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "mechanicalkeyboards.com",
@@ -4317,21 +3968,10 @@
           "newegg.com",
           "keychron.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} front height",
-          "{brand} {model} keyboard front height specs"
         ],
         "query_terms": [
           "front height",
@@ -4354,8 +3994,7 @@
         "tooltip_key": "height_front",
         "tooltip_md": "Keyboard height at the front edge.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "height_rear": {
       "ai_assist": {
@@ -4423,8 +4062,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "mechanicalkeyboards.com",
@@ -4433,21 +4075,10 @@
           "newegg.com",
           "keychron.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} rear height",
-          "{brand} {model} keyboard rear height specs"
         ],
         "query_terms": [
           "rear height",
@@ -4470,8 +4101,7 @@
         "tooltip_key": "height_rear",
         "tooltip_md": "Keyboard height at the rear edge.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "hot_swappable": {
       "ai_assist": {
@@ -4530,9 +4160,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -4541,21 +4173,10 @@
           "techpowerup.com",
           "tomshardware.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} hot-swappable",
-          "{brand} {model} keyboard hot-swappable specs"
         ],
         "query_terms": [
           "hot-swappable",
@@ -4579,7 +4200,6 @@
         "tooltip_md": "Whether switches can be swapped without soldering.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "included_accessories": {
@@ -4649,9 +4269,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -4660,21 +4282,10 @@
           "mechanicalkeyboards.com",
           "bestbuy.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} included accessories",
-          "{brand} {model} keyboard included accessories specs"
         ],
         "query_terms": [
           "included accessories",
@@ -4696,8 +4307,7 @@
         "tooltip_key": "included_accessories",
         "tooltip_md": "Accessories included in the box.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "key_count": {
       "ai_assist": {
@@ -4763,9 +4373,11 @@
       "required_level": "mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -4774,21 +4386,10 @@
           "amazon.com",
           "rtings.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} key count",
-          "{brand} {model} keyboard key count specs"
         ],
         "query_terms": [
           "key count",
@@ -4810,8 +4411,7 @@
         "tooltip_key": "key_count",
         "tooltip_md": "Factory key count.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "key_rollover": {
       "ai_assist": {
@@ -4872,7 +4472,8 @@
         "content_types": [
           "review",
           "benchmark",
-          "spec_sheet"
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "rtings.com",
@@ -4881,20 +4482,10 @@
           "steelseries.com",
           "razer.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "benchmark",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} key rollover",
-          "{brand} {model} keyboard key rollover specs"
         ],
         "query_terms": [
           "key rollover",
@@ -4917,8 +4508,7 @@
         "tooltip_key": "key_rollover",
         "tooltip_md": "Maximum simultaneous key rollover support.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "keycap_material": {
       "ai_assist": {
@@ -4976,9 +4566,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -4987,21 +4579,10 @@
           "geekhack.org",
           "keebtalk.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} keycap material",
-          "{brand} {model} keyboard keycap material specs"
         ],
         "query_terms": [
           "keycap material",
@@ -5023,8 +4604,7 @@
         "tooltip_key": "keycap_material",
         "tooltip_md": "Primary keycap plastic material.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "keycap_profile": {
       "ai_assist": {
@@ -5082,9 +4662,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -5093,21 +4675,10 @@
           "geekhack.org",
           "keebtalk.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} keycap profile",
-          "{brand} {model} keyboard keycap profile specs"
         ],
         "query_terms": [
           "keycap profile",
@@ -5129,8 +4700,7 @@
         "tooltip_key": "keycap_profile",
         "tooltip_md": "Installed keycap profile family.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "keycap_thickness": {
       "ai_assist": {
@@ -5197,9 +4767,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -5208,21 +4780,10 @@
           "geekhack.org",
           "keebtalk.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} keycap thickness",
-          "{brand} {model} keyboard keycap thickness specs"
         ],
         "query_terms": [
           "keycap thickness",
@@ -5244,8 +4805,7 @@
         "tooltip_key": "keycap_thickness",
         "tooltip_md": "Approximate keycap wall thickness.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "knob_dial": {
       "ai_assist": {
@@ -5306,9 +4866,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -5317,21 +4879,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} knob / dial",
-          "{brand} {model} keyboard knob / dial specs"
         ],
         "query_terms": [
           "knob / dial",
@@ -5356,8 +4907,7 @@
         "tooltip_key": "knob_dial",
         "tooltip_md": "Presence of a rotary control.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "layout": {
       "ai_assist": {
@@ -5415,9 +4965,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -5426,21 +4978,10 @@
           "amazon.com",
           "rtings.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} layout",
-          "{brand} {model} keyboard layout specs"
         ],
         "query_terms": [
           "layout",
@@ -5462,8 +5003,7 @@
         "tooltip_key": "layout",
         "tooltip_md": "Physical key arrangement family.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "layout_standard": {
       "ai_assist": {
@@ -5523,9 +5063,11 @@
       "required_level": "mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -5534,21 +5076,10 @@
           "amazon.com",
           "rtings.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} layout standard",
-          "{brand} {model} keyboard layout standard specs"
         ],
         "query_terms": [
           "layout standard",
@@ -5572,8 +5103,7 @@
         "tooltip_key": "layout_standard",
         "tooltip_md": "Regional physical key standard.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "legends": {
       "ai_assist": {
@@ -5632,9 +5162,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -5643,21 +5175,10 @@
           "geekhack.org",
           "keebtalk.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} legends",
-          "{brand} {model} keyboard legends specs"
         ],
         "query_terms": [
           "legends",
@@ -5680,8 +5201,7 @@
         "tooltip_key": "legends",
         "tooltip_md": "Legend printing or molding method.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "macro_keys": {
       "ai_assist": {
@@ -5739,9 +5259,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -5750,21 +5272,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} macro keys",
-          "{brand} {model} keyboard macro keys specs"
         ],
         "query_terms": [
           "macro keys",
@@ -5786,8 +5297,7 @@
         "tooltip_key": "macro_keys",
         "tooltip_md": "Dedicated or universal macro programmability.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "media_controls": {
       "ai_assist": {
@@ -5846,9 +5356,9 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "corsair.com",
@@ -5857,19 +5367,10 @@
           "steelseries.com",
           "rtings.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} media controls",
-          "{brand} {model} media keys"
         ],
         "query_terms": [
           "media controls",
@@ -5892,8 +5393,7 @@
         "tooltip_key": "media_controls",
         "tooltip_md": "Type of dedicated media playback and volume controls.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "model": {
       "ai_assist": {
@@ -5951,8 +5451,11 @@
       "required_level": "mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -5961,21 +5464,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} model",
-          "{brand} {model} keyboard model specs"
         ],
         "query_terms": [
           "model",
@@ -5997,8 +5489,7 @@
         "tooltip_key": "model",
         "tooltip_md": "Full model name or number.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "mounting_style": {
       "ai_assist": {
@@ -6056,9 +5547,10 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
           "review",
-          "discussion"
+          "benchmark",
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -6067,20 +5559,10 @@
           "geekhack.org",
           "keebtalk.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "benchmark",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} mounting style",
-          "{brand} {model} keyboard mounting style specs"
         ],
         "query_terms": [
           "mounting style",
@@ -6102,8 +5584,7 @@
         "tooltip_key": "mounting_style",
         "tooltip_md": "Internal plate/PCB mounting style.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "mpn": {
       "ai_assist": {
@@ -6161,8 +5642,11 @@
       "required_level": "mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -6171,21 +5655,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} mpn",
-          "{brand} {model} keyboard mpn specs"
         ],
         "query_terms": [
           "mpn",
@@ -6207,8 +5680,7 @@
         "tooltip_key": "mpn",
         "tooltip_md": "Manufacturer part number.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "multi_device_pairing": {
       "ai_assist": {
@@ -6267,8 +5739,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -6277,21 +5752,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} multi-device pairing",
-          "{brand} {model} keyboard multi-device pairing specs"
         ],
         "query_terms": [
           "multi-device pairing",
@@ -6314,8 +5778,7 @@
         "tooltip_key": "multi_device_pairing",
         "tooltip_md": "How many wireless devices can be stored.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "multi_device_pairing_count": {
       "ai_assist": {
@@ -6382,8 +5845,9 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -6392,19 +5856,10 @@
           "mechanicalkeyboards.com",
           "rtings.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} paired devices",
-          "{brand} {model} multi-device count"
         ],
         "query_terms": [
           "paired devices",
@@ -6427,8 +5882,7 @@
         "tooltip_key": "multi_device_pairing_count",
         "tooltip_md": "How many devices can be stored for quick switching.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "multi_key_latency": {
       "ai_assist": {
@@ -6498,7 +5952,8 @@
         "content_types": [
           "review",
           "benchmark",
-          "spec_sheet"
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "rtings.com",
@@ -6507,20 +5962,10 @@
           "steelseries.com",
           "razer.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "benchmark",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} multi-key latency",
-          "{brand} {model} keyboard multi-key latency specs"
         ],
         "query_terms": [
           "multi-key latency",
@@ -6543,8 +5988,7 @@
         "tooltip_key": "multi_key_latency",
         "tooltip_md": "Latency for multiple simultaneous keys.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "numpad": {
       "ai_assist": {
@@ -6602,9 +6046,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -6613,21 +6059,10 @@
           "amazon.com",
           "rtings.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} numpad",
-          "{brand} {model} keyboard numpad specs"
         ],
         "query_terms": [
           "numpad",
@@ -6649,8 +6084,7 @@
         "tooltip_key": "numpad",
         "tooltip_md": "Whether a numpad is present.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "onboard_memory": {
       "ai_assist": {
@@ -6708,9 +6142,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -6719,21 +6155,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} onboard memory",
-          "{brand} {model} keyboard onboard memory specs"
         ],
         "query_terms": [
           "onboard memory",
@@ -6755,8 +6180,7 @@
         "tooltip_key": "onboard_memory",
         "tooltip_md": "Ability to store profiles onboard.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "onboard_profile_count": {
       "ai_assist": {
@@ -6823,9 +6247,9 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "corsair.com",
@@ -6834,19 +6258,10 @@
           "steelseries.com",
           "rtings.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} onboard profiles",
-          "{brand} {model} profile count"
         ],
         "query_terms": [
           "onboard profiles",
@@ -6869,8 +6284,7 @@
         "tooltip_key": "onboard_profile_count",
         "tooltip_md": "How many profiles can be stored locally.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "os_mode_switch": {
       "ai_assist": {
@@ -6929,9 +6343,9 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -6940,19 +6354,10 @@
           "rtings.com",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} mac windows switch",
-          "{brand} {model} os mode switch"
         ],
         "query_terms": [
           "mac windows switch",
@@ -6975,8 +6380,7 @@
         "tooltip_key": "os_mode_switch",
         "tooltip_md": "Dedicated switch or shortcut for Windows/macOS mode.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "per_key_rgb": {
       "ai_assist": {
@@ -7035,9 +6439,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -7046,21 +6452,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} per-key rgb",
-          "{brand} {model} keyboard per-key rgb specs"
         ],
         "query_terms": [
           "per-key rgb",
@@ -7083,8 +6478,7 @@
         "tooltip_key": "per_key_rgb",
         "tooltip_md": "Whether each key can be lit independently.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "plate_material": {
       "ai_assist": {
@@ -7142,9 +6536,10 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
           "review",
-          "discussion"
+          "benchmark",
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -7153,20 +6548,10 @@
           "geekhack.org",
           "keebtalk.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "benchmark",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} plate material",
-          "{brand} {model} keyboard plate material specs"
         ],
         "query_terms": [
           "plate material",
@@ -7188,8 +6573,7 @@
         "tooltip_key": "plate_material",
         "tooltip_md": "Internal switch plate material.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "polling_rate_wired": {
       "ai_assist": {
@@ -7259,7 +6643,8 @@
         "content_types": [
           "review",
           "benchmark",
-          "spec_sheet"
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "rtings.com",
@@ -7268,20 +6653,10 @@
           "steelseries.com",
           "razer.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "benchmark",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} polling rate wired",
-          "{brand} {model} keyboard polling rate wired specs"
         ],
         "query_terms": [
           "polling rate wired",
@@ -7304,8 +6679,7 @@
         "tooltip_key": "polling_rate_wired",
         "tooltip_md": "Maximum wired polling rate.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "polling_rate_wireless": {
       "ai_assist": {
@@ -7375,7 +6749,8 @@
         "content_types": [
           "review",
           "benchmark",
-          "spec_sheet"
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "rtings.com",
@@ -7384,20 +6759,10 @@
           "steelseries.com",
           "razer.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "benchmark",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} polling rate wireless",
-          "{brand} {model} keyboard polling rate wireless specs"
         ],
         "query_terms": [
           "polling rate wireless",
@@ -7420,8 +6785,7 @@
         "tooltip_key": "polling_rate_wireless",
         "tooltip_md": "Maximum 2.4 GHz wireless polling rate.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "price_range": {
       "ai_assist": {
@@ -7479,9 +6843,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -7490,21 +6856,10 @@
           "mechanicalkeyboards.com",
           "bestbuy.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} price range",
-          "{brand} {model} keyboard price range specs"
         ],
         "query_terms": [
           "price range",
@@ -7526,8 +6881,7 @@
         "tooltip_key": "price_range",
         "tooltip_md": "Typical launch or current street-price band.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "qmk_via_support": {
       "ai_assist": {
@@ -7587,9 +6941,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -7598,21 +6954,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} qmk / via support",
-          "{brand} {model} keyboard qmk / via support specs"
         ],
         "query_terms": [
           "qmk / via support",
@@ -7636,8 +6981,7 @@
         "tooltip_key": "qmk_via_support",
         "tooltip_md": "Open firmware and live remapping support.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "rapid_trigger": {
       "ai_assist": {
@@ -7697,7 +7041,8 @@
         "content_types": [
           "review",
           "benchmark",
-          "spec_sheet"
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "rtings.com",
@@ -7706,20 +7051,10 @@
           "steelseries.com",
           "razer.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "benchmark",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} rapid trigger",
-          "{brand} {model} keyboard rapid trigger specs"
         ],
         "query_terms": [
           "rapid trigger",
@@ -7741,8 +7076,7 @@
         "tooltip_key": "rapid_trigger",
         "tooltip_md": "Dynamic key reset support.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "release_date": {
       "ai_assist": {
@@ -7808,9 +7142,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -7823,12 +7159,6 @@
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} release date",
-          "{brand} {model} launch date",
-          "{brand} {model} available since",
-          "\"{model}\" release date"
         ],
         "query_terms": [
           "release date",
@@ -7850,8 +7180,7 @@
         "tooltip_key": "release_date",
         "tooltip_md": "Product release or launch date.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "rgb_zones": {
       "ai_assist": {
@@ -7909,9 +7238,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -7920,21 +7251,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} rgb zones",
-          "{brand} {model} keyboard rgb zones specs"
         ],
         "query_terms": [
           "rgb zones",
@@ -7956,8 +7276,7 @@
         "tooltip_key": "rgb_zones",
         "tooltip_md": "Lighting zone granularity.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "scan_rate": {
       "ai_assist": {
@@ -8025,8 +7344,9 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
+          "support",
+          "spec",
           "product_page",
-          "spec_sheet",
           "review"
         ],
         "domain_hints": [
@@ -8036,20 +7356,10 @@
           "rtings.com",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "product_page",
-          "review"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} scan rate",
-          "{brand} {model} keyboard scan rate"
         ],
         "query_terms": [
           "scan rate",
@@ -8072,8 +7382,7 @@
         "tooltip_key": "scan_rate",
         "tooltip_md": "Internal keyboard scan rate when disclosed separately from polling rate.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "shine_through": {
       "ai_assist": {
@@ -8132,9 +7441,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -8143,21 +7454,10 @@
           "geekhack.org",
           "keebtalk.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} shine-through",
-          "{brand} {model} keyboard shine-through specs"
         ],
         "query_terms": [
           "shine-through",
@@ -8180,8 +7480,7 @@
         "tooltip_key": "shine_through",
         "tooltip_md": "Whether legends allow light through.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "single_key_latency": {
       "ai_assist": {
@@ -8251,7 +7550,8 @@
         "content_types": [
           "review",
           "benchmark",
-          "spec_sheet"
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "rtings.com",
@@ -8260,20 +7560,10 @@
           "steelseries.com",
           "razer.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "benchmark",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} single-key latency",
-          "{brand} {model} keyboard single-key latency specs"
         ],
         "query_terms": [
           "single-key latency",
@@ -8296,8 +7586,7 @@
         "tooltip_key": "single_key_latency",
         "tooltip_md": "Latency for isolated key presses.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "sku": {
       "ai_assist": {
@@ -8355,8 +7644,11 @@
       "required_level": "mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -8369,11 +7661,6 @@
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} part number",
-          "{brand} {model} MPN",
-          "\"{model}\" part number"
         ],
         "query_terms": [
           "sku",
@@ -8395,8 +7682,7 @@
         "tooltip_key": "sku",
         "tooltip_md": "Retail SKU identifier.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "socd_cleaning": {
       "ai_assist": {
@@ -8457,7 +7743,8 @@
         "content_types": [
           "review",
           "benchmark",
-          "spec_sheet"
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "rtings.com",
@@ -8466,20 +7753,10 @@
           "steelseries.com",
           "razer.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "benchmark",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} socd cleaning",
-          "{brand} {model} keyboard socd cleaning specs"
         ],
         "query_terms": [
           "socd cleaning",
@@ -8502,8 +7779,7 @@
         "tooltip_key": "socd_cleaning",
         "tooltip_md": "Simultaneous opposite cardinal direction handling.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "software": {
       "ai_assist": {
@@ -8561,9 +7837,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -8572,21 +7850,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} software",
-          "{brand} {model} keyboard software specs"
         ],
         "query_terms": [
           "software",
@@ -8608,8 +7875,7 @@
         "tooltip_key": "software",
         "tooltip_md": "Primary software ecosystem.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "software_required": {
       "ai_assist": {
@@ -8667,9 +7933,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -8678,21 +7946,10 @@
           "mechanicalkeyboards.com",
           "bestbuy.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} software required",
-          "{brand} {model} keyboard software required specs"
         ],
         "query_terms": [
           "software required",
@@ -8714,8 +7971,7 @@
         "tooltip_key": "software_required",
         "tooltip_md": "Whether software is required for headline features.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "sound_dampening": {
       "ai_assist": {
@@ -8775,7 +8031,8 @@
         "content_types": [
           "review",
           "benchmark",
-          "discussion"
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "rtings.com",
@@ -8784,20 +8041,10 @@
           "geekhack.org",
           "keebtalk.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "benchmark",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} sound dampening",
-          "{brand} {model} keyboard sound dampening specs"
         ],
         "query_terms": [
           "sound dampening",
@@ -8819,8 +8066,7 @@
         "tooltip_key": "sound_dampening",
         "tooltip_md": "Level of factory sound dampening treatment.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "sound_profile": {
       "ai_assist": {
@@ -8881,7 +8127,8 @@
         "content_types": [
           "review",
           "benchmark",
-          "discussion"
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "rtings.com",
@@ -8890,20 +8137,10 @@
           "geekhack.org",
           "keebtalk.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "benchmark",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} sound profile",
-          "{brand} {model} keyboard sound profile specs"
         ],
         "query_terms": [
           "sound profile",
@@ -8926,8 +8163,7 @@
         "tooltip_key": "sound_profile",
         "tooltip_md": "Subjective acoustic profile.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "south_facing_leds": {
       "ai_assist": {
@@ -8985,9 +8221,10 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
           "review",
-          "discussion"
+          "benchmark",
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -8996,20 +8233,10 @@
           "geekhack.org",
           "keebtalk.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "benchmark",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} south-facing leds",
-          "{brand} {model} keyboard south-facing leds specs"
         ],
         "query_terms": [
           "south-facing leds",
@@ -9032,8 +8259,7 @@
         "tooltip_key": "south_facing_leds",
         "tooltip_md": "Whether the PCB uses south-facing LEDs.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "stabilizer_lubed": {
       "ai_assist": {
@@ -9091,9 +8317,10 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
           "review",
-          "discussion"
+          "benchmark",
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -9102,20 +8329,10 @@
           "geekhack.org",
           "keebtalk.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "benchmark",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} stabilizer lubed",
-          "{brand} {model} keyboard stabilizer lubed specs"
         ],
         "query_terms": [
           "stabilizer lubed",
@@ -9137,8 +8354,7 @@
         "tooltip_key": "stabilizer_lubed",
         "tooltip_md": "Factory lube status for stabilizers.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "stabilizer_mount": {
       "ai_assist": {
@@ -9197,8 +8413,9 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
           "review",
+          "spec",
+          "product_page",
           "discussion"
         ],
         "domain_hints": [
@@ -9208,20 +8425,10 @@
           "geekhack.org",
           "keebtalk.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "spec",
-          "product_page",
-          "discussion"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} stabilizer mount",
-          "{brand} {model} screw-in stabilizer"
         ],
         "query_terms": [
           "stabilizer mount",
@@ -9244,8 +8451,7 @@
         "tooltip_key": "stabilizer_mount",
         "tooltip_md": "How the stabilizers mount to the plate or PCB.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "stabilizer_type": {
       "ai_assist": {
@@ -9303,9 +8509,10 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
           "review",
-          "discussion"
+          "benchmark",
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -9314,20 +8521,10 @@
           "geekhack.org",
           "keebtalk.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "benchmark",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} stabilizer type",
-          "{brand} {model} keyboard stabilizer type specs"
         ],
         "query_terms": [
           "stabilizer type",
@@ -9349,8 +8546,7 @@
         "tooltip_key": "stabilizer_type",
         "tooltip_md": "Stabilizer mounting style.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "switch_brand": {
       "ai_assist": {
@@ -9408,9 +8604,11 @@
       "required_level": "mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -9419,21 +8617,10 @@
           "techpowerup.com",
           "tomshardware.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} switch brand",
-          "{brand} {model} keyboard switch brand specs"
         ],
         "query_terms": [
           "switch brand",
@@ -9455,8 +8642,7 @@
         "tooltip_key": "switch_brand",
         "tooltip_md": "Switch manufacturer or in-house brand.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "switch_compatibility": {
       "ai_assist": {
@@ -9515,8 +8701,9 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
+          "support",
+          "spec",
           "product_page",
-          "spec_sheet",
           "review"
         ],
         "domain_hints": [
@@ -9526,20 +8713,10 @@
           "rtings.com",
           "techpowerup.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "product_page",
-          "review"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} switch compatibility",
-          "{brand} {model} compatible switches"
         ],
         "query_terms": [
           "switch compatibility",
@@ -9562,8 +8739,7 @@
         "tooltip_key": "switch_compatibility",
         "tooltip_md": "Which switch families or magnetic formats the board supports.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "switch_feel": {
       "ai_assist": {
@@ -9621,9 +8797,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -9632,21 +8810,10 @@
           "techpowerup.com",
           "tomshardware.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} switch feel",
-          "{brand} {model} keyboard switch feel specs"
         ],
         "query_terms": [
           "switch feel",
@@ -9669,7 +8836,6 @@
         "tooltip_md": "User-facing switch feel category.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "switch_lifespan": {
@@ -9738,9 +8904,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -9749,21 +8917,10 @@
           "techpowerup.com",
           "tomshardware.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} switch lifespan",
-          "{brand} {model} keyboard switch lifespan specs"
         ],
         "query_terms": [
           "switch lifespan",
@@ -9787,7 +8944,6 @@
         "tooltip_md": "Rated lifetime in millions of keystrokes.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "switch_name": {
@@ -9870,9 +9026,11 @@
       "required_level": "mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -9881,21 +9039,10 @@
           "techpowerup.com",
           "tomshardware.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} switch name",
-          "{brand} {model} keyboard switch name specs"
         ],
         "query_terms": [
           "switch name",
@@ -9919,8 +9066,7 @@
         "tooltip_key": "switch_name",
         "tooltip_md": "Factory-installed switch model.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "switch_output_type": {
       "ai_assist": {
@@ -9979,9 +9125,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -9990,21 +9138,10 @@
           "techpowerup.com",
           "tomshardware.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} switch output type",
-          "{brand} {model} keyboard switch output type specs"
         ],
         "query_terms": [
           "switch output type",
@@ -10028,7 +9165,6 @@
         "tooltip_md": "Digital, adjustable, or analog output.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "switch_pin_support": {
@@ -10088,8 +9224,9 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
+          "support",
+          "spec",
           "product_page",
-          "spec_sheet",
           "review"
         ],
         "domain_hints": [
@@ -10099,20 +9236,10 @@
           "techpowerup.com",
           "tomshardware.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "product_page",
-          "review"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} switch pin support",
-          "{brand} {model} 3-pin 5-pin compatibility"
         ],
         "query_terms": [
           "switch pin support",
@@ -10135,8 +9262,7 @@
         "tooltip_key": "switch_pin_support",
         "tooltip_md": "Which MX-style switch pin formats the PCB accepts.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "switch_type": {
       "ai_assist": {
@@ -10225,9 +9351,11 @@
       "required_level": "mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -10236,21 +9364,10 @@
           "techpowerup.com",
           "tomshardware.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} switch type",
-          "{brand} {model} keyboard switch type specs"
         ],
         "query_terms": [
           "switch type",
@@ -10272,8 +9389,7 @@
         "tooltip_key": "switch_type",
         "tooltip_md": "Underlying switch technology.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "total_travel": {
       "ai_assist": {
@@ -10340,9 +9456,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -10351,21 +9469,10 @@
           "techpowerup.com",
           "tomshardware.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} total travel",
-          "{brand} {model} keyboard total travel specs"
         ],
         "query_terms": [
           "total travel",
@@ -10388,7 +9495,6 @@
         "tooltip_md": "Total key travel distance.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "typing_angle": {
@@ -10456,8 +9562,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "mechanicalkeyboards.com",
@@ -10466,21 +9575,10 @@
           "newegg.com",
           "keychron.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} typing angle",
-          "{brand} {model} keyboard typing angle specs"
         ],
         "query_terms": [
           "typing angle",
@@ -10502,8 +9600,7 @@
         "tooltip_key": "typing_angle",
         "tooltip_md": "Default typing angle in degrees.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "typing_noise": {
       "ai_assist": {
@@ -10563,7 +9660,8 @@
         "content_types": [
           "review",
           "benchmark",
-          "discussion"
+          "spec",
+          "product_page"
         ],
         "domain_hints": [
           "rtings.com",
@@ -10572,20 +9670,10 @@
           "geekhack.org",
           "keebtalk.com"
         ],
-        "preferred_content_types": [
-          "review",
-          "benchmark",
-          "spec",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier2",
           "tier1",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} typing noise",
-          "{brand} {model} keyboard typing noise specs"
         ],
         "query_terms": [
           "typing noise",
@@ -10607,8 +9695,7 @@
         "tooltip_key": "typing_noise",
         "tooltip_md": "Overall typing loudness.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "usb_passthrough": {
       "ai_assist": {
@@ -10666,8 +9753,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -10676,21 +9766,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} usb passthrough",
-          "{brand} {model} keyboard usb passthrough specs"
         ],
         "query_terms": [
           "usb passthrough",
@@ -10712,8 +9791,7 @@
         "tooltip_key": "usb_passthrough",
         "tooltip_md": "Built-in downstream passthrough.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "variant": {
       "ai_assist": {
@@ -10772,8 +9850,11 @@
       "required_level": "mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -10782,21 +9863,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} variant",
-          "{brand} {model} keyboard variant specs"
         ],
         "query_terms": [
           "variant",
@@ -10819,8 +9889,7 @@
         "tooltip_key": "variant",
         "tooltip_md": "Variant or edition.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "warranty": {
       "ai_assist": {
@@ -10877,9 +9946,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -10888,21 +9959,10 @@
           "mechanicalkeyboards.com",
           "bestbuy.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} warranty",
-          "{brand} {model} keyboard warranty specs"
         ],
         "query_terms": [
           "warranty"
@@ -10923,8 +9983,7 @@
         "tooltip_key": "warranty",
         "tooltip_md": "Official warranty duration or terms.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "weight": {
       "ai_assist": {
@@ -10990,8 +10049,11 @@
       "required_level": "mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "mechanicalkeyboards.com",
@@ -11000,21 +10062,10 @@
           "newegg.com",
           "keychron.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} weight",
-          "{brand} {model} keyboard weight specs"
         ],
         "query_terms": [
           "weight"
@@ -11035,8 +10086,7 @@
         "tooltip_key": "weight",
         "tooltip_md": "Keyboard weight including the main chassis.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "width": {
       "ai_assist": {
@@ -11102,8 +10152,11 @@
       "required_level": "mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "mechanicalkeyboards.com",
@@ -11112,21 +10165,10 @@
           "newegg.com",
           "keychron.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} width",
-          "{brand} {model} keyboard width specs"
         ],
         "query_terms": [
           "width"
@@ -11147,8 +10189,7 @@
         "tooltip_key": "width",
         "tooltip_md": "Overall keyboard width.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "wired_interface": {
       "ai_assist": {
@@ -11206,8 +10247,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -11216,21 +10260,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} wired interface",
-          "{brand} {model} keyboard wired interface specs"
         ],
         "query_terms": [
           "wired interface",
@@ -11252,8 +10285,7 @@
         "tooltip_key": "wired_interface",
         "tooltip_md": "Physical wired interface.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "wireless_technology": {
       "ai_assist": {
@@ -11322,8 +10354,11 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "support",
+          "spec",
+          "manual",
+          "pdf",
+          "product_page"
         ],
         "domain_hints": [
           "keychron.com",
@@ -11332,21 +10367,10 @@
           "logitechg.com",
           "mechanicalkeyboards.com"
         ],
-        "preferred_content_types": [
-          "support",
-          "spec",
-          "manual",
-          "pdf",
-          "product_page"
-        ],
         "preferred_tiers": [
           "tier1",
           "tier2",
           "tier3"
-        ],
-        "query_templates": [
-          "{brand} {model} wireless technology",
-          "{brand} {model} keyboard wireless technology specs"
         ],
         "query_terms": [
           "wireless technology",
@@ -11368,11 +10392,10 @@
         "tooltip_key": "wireless_technology",
         "tooltip_md": "Wireless transport protocols supported.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     }
   },
-  "generated_at": "2026-04-21T00:18:17.656Z",
+  "generated_at": "2026-04-22T03:39:54.835Z",
   "key_range": "field_catalog!B2:B2000",
   "notes": [
     "Generated by Field Rules Studio compiler.",

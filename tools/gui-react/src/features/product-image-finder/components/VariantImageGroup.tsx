@@ -8,13 +8,13 @@
  */
 import { memo, useMemo } from 'react';
 import {
-  AnimatedDots,
   DataIntegrityBanner,
   FinderVariantRow,
   ImageCountBadge,
   PromptDrawerChevron,
   VariantSlotDots,
 } from '../../../shared/ui/finder/index.ts';
+import { RowActionButton, ACTION_BUTTON_WIDTH } from '../../../shared/ui/actionButton/index.ts';
 import { resolveVariantColorAtoms, resolveSlots } from '../selectors/pifSelectors.ts';
 import { GalleryCard } from './GalleryCard.tsx';
 import { CarouselSlotRow } from './CarouselSlotRow.tsx';
@@ -128,49 +128,47 @@ export const VariantImageGroup = memo(function VariantImageGroup({
         <>
           <ImageCountBadge count={group.images.length} />
           <div className="shrink-0 flex items-center gap-1">
-            <button
-              onClick={(e) => { e.stopPropagation(); onRunView(group.key); }}
-              className="inline-flex items-center justify-center h-7 px-2 text-[9px] font-bold uppercase tracking-wide rounded sf-primary-button"
+            <RowActionButton
+              intent="spammable"
+              label="View"
+              onClick={() => onRunView(group.key)}
               title="Single view run"
-            >
-              View
-            </button>
+              width={ACTION_BUTTON_WIDTH.standardRow}
+            />
             {heroEnabled && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onRunHero(group.key); }}
-                className="inline-flex items-center justify-center h-7 px-2 text-[9px] font-bold uppercase tracking-wide rounded sf-primary-button"
+              <RowActionButton
+                intent="spammable"
+                label="Hero"
+                onClick={() => onRunHero(group.key)}
                 title="Single hero run"
-              >
-                Hero
-              </button>
+                width={ACTION_BUTTON_WIDTH.standardRow}
+              />
             )}
-            <button
-              onClick={(e) => { e.stopPropagation(); onLoopVariant(group.key); }}
-              disabled={loopingVariant}
-              className="inline-flex items-center justify-center h-7 px-2 text-[9px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed"
+            <RowActionButton
+              intent="locked"
+              label="Loop"
+              onClick={() => onLoopVariant(group.key)}
+              busy={loopingVariant}
               title="Loop: views then heroes until carousel complete"
-            >
-              {loopingVariant ? <>Loop <AnimatedDots /></> : 'Loop'}
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onEvalVariant(group.key); }}
-              disabled={evaluatingVariant || group.images.length === 0}
-              className="inline-flex items-center justify-center h-7 px-2 text-[9px] font-bold uppercase tracking-wide rounded sf-action-button disabled:opacity-40 disabled:cursor-not-allowed"
+              width={ACTION_BUTTON_WIDTH.standardRow}
+            />
+            <RowActionButton
+              intent="locked"
+              label="Eval"
+              onClick={() => onEvalVariant(group.key)}
+              busy={evaluatingVariant}
+              disabled={group.images.length === 0}
               title="Carousel Builder: evaluate images and pick best per view"
-            >
-              Eval
-            </button>
+              width={ACTION_BUTTON_WIDTH.standardRow}
+            />
             {group.images.length > 0 && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteVariantImages(group.images.map(img => img.filename).filter(Boolean), group.label);
-                }}
-                className="inline-flex items-center justify-center h-7 px-2 text-[9px] font-bold uppercase tracking-wide rounded sf-status-text-danger border sf-border-soft opacity-60 hover:opacity-100"
+              <RowActionButton
+                intent="delete"
+                label="Del"
+                onClick={() => onDeleteVariantImages(group.images.map(img => img.filename).filter(Boolean), group.label)}
                 title={`Delete all ${group.images.length} images for this variant`}
-              >
-                Del
-              </button>
+                width={ACTION_BUTTON_WIDTH.standardRow}
+              />
             )}
             <span className="inline-block h-5 w-px mx-0.5 bg-current opacity-20" aria-hidden />
             <PromptDrawerChevron

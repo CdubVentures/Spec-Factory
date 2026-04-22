@@ -568,10 +568,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} max acceleration G",
-          "{brand} {model} acceleration specification"
-        ],
         "query_terms": [
           "max acceleration",
           "acceleration",
@@ -596,7 +592,6 @@
         "tooltip_md": "Define 'Max Acceleration' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "upper_bound"
     },
     "adjustable_scroll_wheel": {
@@ -669,9 +664,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} adjustable scroll wheel tension"
-        ],
         "query_terms": [
           "adjustable scroll wheel",
           "scroll tension",
@@ -694,8 +686,7 @@
         "tooltip_key": "adjustable_scroll_wheel",
         "tooltip_md": "Define 'Adjustable Scroll Wheel' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "adjustable_weight": {
       "ai_assist": {
@@ -770,10 +761,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} adjustable weight system",
-          "{brand} {model} removable weights"
-        ],
         "query_terms": [
           "adjustable weight",
           "weight tuning",
@@ -796,8 +783,7 @@
         "tooltip_key": "adjustable_weight",
         "tooltip_md": "Define 'Adjustable Weight' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "battery_hours": {
       "ai_assist": {
@@ -883,10 +869,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} battery life hours",
-          "{brand} {model} battery runtime per charge"
-        ],
         "query_terms": [
           "battery life",
           "battery hours",
@@ -910,8 +892,7 @@
         "tooltip_key": "battery_hours",
         "tooltip_md": "Define 'Battery Life (Hours)' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "bluetooth": {
       "ai_assist": {
@@ -985,10 +966,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} Bluetooth version",
-          "{brand} {model} Bluetooth support BLE"
-        ],
         "query_terms": [
           "Bluetooth",
           "BLE",
@@ -1012,8 +989,7 @@
         "tooltip_key": null,
         "tooltip_md": "Define 'Bluetooth' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "cable_type": {
       "ai_assist": {
@@ -1087,10 +1063,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} cable type paracord braided",
-          "{brand} {model} cable material"
-        ],
         "query_terms": [
           "cable type",
           "paracord",
@@ -1115,8 +1087,7 @@
         "tooltip_key": null,
         "tooltip_md": "Define 'Cable Type' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "click_force": {
       "ai_assist": {
@@ -1195,10 +1166,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} click force grams",
-          "{brand} {model} button actuation force"
-        ],
         "query_terms": [
           "click force",
           "actuation force",
@@ -1223,7 +1190,6 @@
         "tooltip_md": "Define 'Click Force' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "override_allowed"
     },
     "click_latency": {
@@ -1305,10 +1271,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} click latency ms measured",
-          "{brand} {model} click response time test"
-        ],
         "query_terms": [
           "click latency",
           "click response time",
@@ -1342,8 +1304,7 @@
         "tooltip_key": "click_latency",
         "tooltip_md": "Define 'Click Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "click_latency_bluetooth": {
       "ai_assist": {
@@ -1427,10 +1388,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} click latency ms measured",
-          "{brand} {model} click response time test"
-        ],
         "query_terms": [
           "click latency",
           "click response time",
@@ -1454,8 +1411,7 @@
         "tooltip_key": "click_latency",
         "tooltip_md": "Define 'Click Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "click_latency_wired": {
       "ai_assist": {
@@ -1539,10 +1495,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} click latency ms measured",
-          "{brand} {model} click response time test"
-        ],
         "query_terms": [
           "click latency",
           "click response time",
@@ -1566,8 +1518,7 @@
         "tooltip_key": "click_latency",
         "tooltip_md": "Define 'Click Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "click_latency_wireless": {
       "ai_assist": {
@@ -1651,10 +1602,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} click latency ms measured",
-          "{brand} {model} click response time test"
-        ],
         "query_terms": [
           "click latency",
           "click response time",
@@ -1678,8 +1625,7 @@
         "tooltip_key": "click_latency",
         "tooltip_md": "Define 'Click Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "coating": {
       "ai_assist": {
@@ -1774,10 +1720,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} coating surface finish",
-          "{brand} {model} matte glossy textured coating"
-        ],
         "query_terms": [
           "coating",
           "surface coating",
@@ -1802,8 +1744,7 @@
         "tooltip_key": "coating",
         "tooltip_md": "Define 'Coating' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "colors": {
       "ai_assist": {
@@ -1927,8 +1868,7 @@
         "tooltip_key": null,
         "tooltip_md": "Colorway tokens. Use list<string>. Normalize grey?gray; multi-colorways may use '+'.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "computer_side_connector": {
       "ai_assist": {
@@ -2002,9 +1942,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} computer side USB connector type"
-        ],
         "query_terms": [
           "USB connector",
           "USB-A",
@@ -2028,8 +1965,7 @@
         "tooltip_key": null,
         "tooltip_md": "Define 'Computer-side Connector' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "connection": {
       "ai_assist": {
@@ -2117,10 +2053,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} connection type wired wireless",
-          "{brand} {model} connectivity 2.4GHz Bluetooth"
-        ],
         "query_terms": [
           "connection",
           "wired",
@@ -2146,8 +2078,7 @@
         "tooltip_key": null,
         "tooltip_md": "Primary connection mode (wired/wireless/hybrid/bluetooth). Prefer manufacturer docs.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "connectivity": {
       "ai_assist": {
@@ -2243,10 +2174,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} connectivity options",
-          "{brand} {model} wireless dongle receiver"
-        ],
         "query_terms": [
           "connectivity",
           "wireless technology",
@@ -2270,8 +2197,7 @@
         "tooltip_key": "connectivity",
         "tooltip_md": "Connectivity options (e.g., 2.4GHz, Bluetooth, USB). Use list if multiple.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "debounce": {
       "ai_assist": {
@@ -2349,10 +2275,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} debounce time ms",
-          "{brand} {model} debounce delay setting"
-        ],
         "query_terms": [
           "debounce",
           "debounce time",
@@ -2376,8 +2298,7 @@
         "tooltip_key": null,
         "tooltip_md": "Define 'Debounce' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "design": {
       "ai_assist": {
@@ -2461,9 +2382,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} design review"
-        ],
         "query_terms": [
           "design",
           "aesthetics",
@@ -2486,8 +2404,7 @@
         "tooltip_key": "design",
         "tooltip_md": "Define 'Design' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "discontinued": {
       "ai_assist": {
@@ -2506,12 +2423,9 @@
       "display_name": "Discontinued",
       "enum": {
         "match": {},
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
+        "new_value_policy": {},
         "policy": "open_prefer_known",
-        "source": "yes_no"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -2554,9 +2468,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} discontinued availability"
-        ],
         "query_terms": [
           "discontinued",
           "end of life",
@@ -2578,8 +2489,7 @@
         "tooltip_key": null,
         "tooltip_md": "Define 'Discontinued' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "dpi": {
       "ai_assist": {
@@ -2666,10 +2576,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} max DPI CPI",
-          "{brand} {model} DPI specifications"
-        ],
         "query_terms": [
           "DPI",
           "CPI",
@@ -2696,7 +2602,6 @@
         "tooltip_md": "Max DPI (or max CPI) as integer. Do not list steps; store maximum unless field_rules later adds a steps field.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "upper_bound"
     },
     "editions": {
@@ -2796,8 +2701,7 @@
         "tooltip_key": null,
         "tooltip_md": "Special/limited editions. Kebab-case slugs (e.g. cyberpunk-2077-edition).",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "encoder": {
       "ai_assist": {
@@ -2896,10 +2800,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} scroll encoder model",
-          "{brand} {model} encoder specifications"
-        ],
         "query_terms": [
           "encoder",
           "scroll wheel encoder",
@@ -2922,8 +2822,7 @@
         "tooltip_key": null,
         "tooltip_md": "Define 'Encoder' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "encoder_brand": {
       "ai_assist": {
@@ -2994,9 +2893,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} encoder brand ALPS TTC Kailh"
-        ],
         "query_terms": [
           "encoder brand",
           "encoder manufacturer",
@@ -3020,8 +2916,7 @@
         "tooltip_key": null,
         "tooltip_md": "Define 'Encoder Brand' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "encoder_link": {
       "ai_assist": {
@@ -3088,9 +2983,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} encoder datasheet"
-        ],
         "query_terms": [
           "encoder datasheet",
           "encoder specifications"
@@ -3111,8 +3003,7 @@
         "tooltip_key": null,
         "tooltip_md": "Define 'Encoder Link' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "feet_material": {
       "ai_assist": {
@@ -3197,10 +3088,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} mouse feet material PTFE",
-          "{brand} {model} skates glide pads"
-        ],
         "query_terms": [
           "feet material",
           "mouse feet",
@@ -3225,8 +3112,7 @@
         "tooltip_key": "feet_material",
         "tooltip_md": "Define 'Feet Material' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "flawless_sensor": {
       "ai_assist": {
@@ -3300,10 +3186,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} flawless sensor",
-          "{brand} {model} sensor flawless no acceleration"
-        ],
         "query_terms": [
           "flawless sensor",
           "no acceleration",
@@ -3328,7 +3210,6 @@
         "tooltip_md": "Define 'Flawless Sensor' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "form_factor": {
@@ -3416,10 +3297,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} form factor size",
-          "{brand} {model} mouse size small medium large"
-        ],
         "query_terms": [
           "form factor",
           "mouse size",
@@ -3445,8 +3322,7 @@
         "tooltip_key": "form_factor",
         "tooltip_md": "Define 'Form Factor' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "front_flare": {
       "ai_assist": {
@@ -3528,10 +3404,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} front flare shape",
-          "{brand} {model} button flare width"
-        ],
         "query_terms": [
           "front flare",
           "button flare",
@@ -3555,8 +3427,7 @@
         "tooltip_key": "front_flare",
         "tooltip_md": "Define 'Front Flare' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "grip": {
       "ai_assist": {
@@ -3640,10 +3511,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} grip style palm claw fingertip",
-          "{brand} {model} recommended grip type"
-        ],
         "query_terms": [
           "grip style",
           "palm grip",
@@ -3668,8 +3535,7 @@
         "tooltip_key": "grip",
         "tooltip_md": "Define 'Grip' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "hand_size": {
       "ai_assist": {
@@ -3752,10 +3618,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} recommended hand size",
-          "{brand} {model} hand size compatibility"
-        ],
         "query_terms": [
           "hand size",
           "recommended hand size",
@@ -3778,8 +3640,7 @@
         "tooltip_key": "hand_size",
         "tooltip_md": "Define 'Hand Size' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "hardware_acceleration": {
       "ai_assist": {
@@ -3852,9 +3713,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} hardware acceleration angle snapping"
-        ],
         "query_terms": [
           "hardware acceleration",
           "angle snapping",
@@ -3877,8 +3735,7 @@
         "tooltip_key": "hardware_acceleration",
         "tooltip_md": "Define 'Hardware Acceleration' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "height": {
       "ai_assist": {
@@ -3962,10 +3819,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} height mm dimensions",
-          "{brand} {model} mouse height profile"
-        ],
         "query_terms": [
           "height",
           "height mm",
@@ -3989,8 +3842,7 @@
         "tooltip_key": null,
         "tooltip_md": "Overall height in millimeters. Convert inches/cm to mm; require unit when parsing.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "honeycomb_frame": {
       "ai_assist": {
@@ -4063,10 +3915,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} honeycomb shell design",
-          "{brand} {model} perforated holes"
-        ],
         "query_terms": [
           "honeycomb",
           "perforated shell",
@@ -4090,8 +3938,7 @@
         "tooltip_key": "honeycomb_frame",
         "tooltip_md": "Define 'Honeycomb Frame' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "hot_swappable": {
       "ai_assist": {
@@ -4165,10 +4012,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} hot swappable switches",
-          "{brand} {model} hot-swap switch sockets"
-        ],
         "query_terms": [
           "hot swappable",
           "hot-swap switches",
@@ -4191,8 +4034,7 @@
         "tooltip_key": "hot_swappable",
         "tooltip_md": "Define 'Hot Swappable' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "hump": {
       "ai_assist": {
@@ -4275,10 +4117,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} hump position placement",
-          "{brand} {model} hump height center back"
-        ],
         "query_terms": [
           "hump",
           "hump position",
@@ -4303,8 +4141,7 @@
         "tooltip_key": "hump",
         "tooltip_md": "Define 'Hump' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "ips": {
       "ai_assist": {
@@ -4387,10 +4224,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} tracking speed IPS",
-          "{brand} {model} max inches per second"
-        ],
         "query_terms": [
           "IPS",
           "tracking speed",
@@ -4414,7 +4247,6 @@
         "tooltip_md": "Define 'Max IPS' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "upper_bound"
     },
     "lift": {
@@ -4511,10 +4343,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} lift-off distance LOD mm",
-          "{brand} {model} LOD measured"
-        ],
         "query_terms": [
           "lift-off distance",
           "LOD",
@@ -4538,8 +4366,7 @@
         "tooltip_key": "lift",
         "tooltip_md": "Lift-off distance (LOD) in mm. May be a range or set; normalize ranges to {min,max}.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "lift_settings": {
       "ai_assist": {
@@ -4629,9 +4456,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} lift-off distance settings adjustable"
-        ],
         "query_terms": [
           "LOD settings",
           "lift-off distance adjustment",
@@ -4654,8 +4478,7 @@
         "tooltip_key": "lift_settings",
         "tooltip_md": "Define 'Lift Settings' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "lighting": {
       "ai_assist": {
@@ -4750,9 +4573,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} lighting LED RGB zones"
-        ],
         "query_terms": [
           "lighting",
           "LED lighting",
@@ -4775,8 +4595,7 @@
         "tooltip_key": "lighting",
         "tooltip_md": "Define 'Lighting' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "lngth": {
       "ai_assist": {
@@ -4861,10 +4680,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} length mm dimensions",
-          "{brand} {model} mouse length"
-        ],
         "query_terms": [
           "length",
           "length mm",
@@ -4887,8 +4702,7 @@
         "tooltip_key": null,
         "tooltip_md": "Overall length in millimeters. Convert inches/cm to mm; require unit when parsing.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "material": {
       "ai_assist": {
@@ -4988,10 +4802,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} shell material",
-          "{brand} {model} build material housing"
-        ],
         "query_terms": [
           "material",
           "shell material",
@@ -5015,8 +4825,7 @@
         "tooltip_key": null,
         "tooltip_md": "Define 'Material' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "mcu": {
       "ai_assist": {
@@ -5099,10 +4908,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} MCU microcontroller chip",
-          "{brand} {model} teardown MCU controller"
-        ],
         "query_terms": [
           "MCU",
           "microcontroller",
@@ -5127,8 +4932,7 @@
         "tooltip_key": "mcu",
         "tooltip_md": "Define 'MCU' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "mcu_link": {
       "ai_assist": {
@@ -5196,9 +5000,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} MCU datasheet"
-        ],
         "query_terms": [
           "MCU datasheet",
           "MCU specifications"
@@ -5219,8 +5020,7 @@
         "tooltip_key": null,
         "tooltip_md": "Define 'MCU Link' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "middle_buttons": {
       "ai_assist": {
@@ -5297,9 +5097,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} middle buttons DPI button"
-        ],
         "query_terms": [
           "middle button",
           "DPI button",
@@ -5322,8 +5119,7 @@
         "tooltip_key": "middle_buttons",
         "tooltip_md": "Count of middle buttons (wheel click + extra middle buttons).",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "motion_sync": {
       "ai_assist": {
@@ -5396,10 +5192,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} motion sync feature",
-          "{brand} {model} MotionSync"
-        ],
         "query_terms": [
           "motion sync",
           "MotionSync",
@@ -5422,8 +5214,7 @@
         "tooltip_key": "motion_sync",
         "tooltip_md": "Define 'Motion Sync' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "mouse_side_connector": {
       "ai_assist": {
@@ -5496,9 +5287,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} mouse side connector USB-C micro-USB"
-        ],
         "query_terms": [
           "mouse connector",
           "USB-C mouse end",
@@ -5521,8 +5309,7 @@
         "tooltip_key": null,
         "tooltip_md": "Define 'Mouse-side Connector' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "nvidia_reflex": {
       "ai_assist": {
@@ -5595,10 +5382,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} NVIDIA Reflex support",
-          "{brand} {model} Reflex Analyzer compatible"
-        ],
         "query_terms": [
           "NVIDIA Reflex",
           "Reflex Analyzer",
@@ -5621,8 +5404,7 @@
         "tooltip_key": "nvidia_reflex",
         "tooltip_md": "Define 'NVIDIA Reflex' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "onboard_memory": {
       "ai_assist": {
@@ -5696,10 +5478,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} onboard memory profiles",
-          "{brand} {model} built-in memory storage"
-        ],
         "query_terms": [
           "onboard memory",
           "built-in memory",
@@ -5722,8 +5500,7 @@
         "tooltip_key": "onboard_memory",
         "tooltip_md": "Define 'Onboard Memory' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "onboard_memory_value": {
       "ai_assist": {
@@ -5800,9 +5577,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} onboard memory profiles count"
-        ],
         "query_terms": [
           "memory profiles",
           "number of profiles",
@@ -5825,8 +5599,7 @@
         "tooltip_key": null,
         "tooltip_md": "Define 'Onboard Memory (Value)' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "paracord": {
       "ai_assist": {
@@ -5899,10 +5672,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} paracord cable",
-          "{brand} {model} flexible lightweight cable"
-        ],
         "query_terms": [
           "paracord",
           "paracord cable",
@@ -5925,8 +5694,7 @@
         "tooltip_key": "paracord",
         "tooltip_md": "Define 'Paracord' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "polling_rate": {
       "ai_assist": {
@@ -6032,10 +5800,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} polling rate Hz",
-          "{brand} {model} max polling rate wired wireless"
-        ],
         "query_terms": [
           "polling rate",
           "report rate",
@@ -6061,8 +5825,7 @@
         "tooltip_key": "polling_rate",
         "tooltip_md": "Polling rate options in Hz. Normalize to list of integers, sorted ascending; common values: 125/250/500/1000/2000/4000/8000.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "price_range": {
       "ai_assist": {
@@ -6136,9 +5899,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} price buy MSRP"
-        ],
         "query_terms": [
           "price",
           "MSRP",
@@ -6161,8 +5921,7 @@
         "tooltip_key": null,
         "tooltip_md": "MSRP price bracket or stated MSRP. Keep as a string token; do not guess if not public.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "profile_switching": {
       "ai_assist": {
@@ -6235,9 +5994,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} profile switching button"
-        ],
         "query_terms": [
           "profile switching",
           "profile button",
@@ -6260,8 +6016,7 @@
         "tooltip_key": "profile_switching",
         "tooltip_md": "Define 'Profile Switching' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "programmable_buttons": {
       "ai_assist": {
@@ -6339,10 +6094,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} programmable buttons count",
-          "{brand} {model} button count customizable"
-        ],
         "query_terms": [
           "programmable buttons",
           "button count",
@@ -6366,8 +6117,7 @@
         "tooltip_key": "programmable_buttons",
         "tooltip_md": "Define 'Programmable Buttons' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "release_date": {
       "ai_assist": {
@@ -6455,12 +6205,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} release date",
-          "{brand} {model} launch date",
-          "{brand} {model} available since",
-          "\"{model}\" release date"
-        ],
         "query_terms": [
           "release date",
           "launch date",
@@ -6483,8 +6227,7 @@
         "tooltip_key": "release_date",
         "tooltip_md": "Define 'Release Date' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "rgb": {
       "ai_assist": {
@@ -6558,9 +6301,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} RGB lighting zones"
-        ],
         "query_terms": [
           "RGB",
           "RGB lighting",
@@ -6584,8 +6324,7 @@
         "tooltip_key": null,
         "tooltip_md": "Define 'RGB' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "sensor": {
       "ai_assist": {
@@ -6699,10 +6438,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} sensor model",
-          "{brand} {model} mouse sensor specifications"
-        ],
         "query_terms": [
           "sensor",
           "optical sensor",
@@ -6726,8 +6461,7 @@
         "tooltip_key": "sensor",
         "tooltip_md": "Sensor model (component DB-backed). Must be evidence-backed; avoid wrong-variant merges.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "sensor_brand": {
       "ai_assist": {
@@ -6804,10 +6538,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} sensor brand manufacturer",
-          "{brand} {model} sensor PixArt HERO"
-        ],
         "query_terms": [
           "sensor brand",
           "sensor manufacturer",
@@ -6831,8 +6561,7 @@
         "tooltip_key": null,
         "tooltip_md": "Sensor manufacturer brand (e.g., PixArt). Prefer component DB if sensor identified.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "sensor_date": {
       "ai_assist": {
@@ -6917,9 +6646,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} sensor release date generation"
-        ],
         "query_terms": [
           "sensor release date",
           "sensor launch",
@@ -6942,7 +6668,6 @@
         "tooltip_md": "Define 'Sensor Date' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "sensor_latency": {
@@ -7023,10 +6748,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} sensor latency measured",
-          "{brand} {model} motion latency test results"
-        ],
         "query_terms": [
           "sensor latency",
           "motion latency",
@@ -7060,8 +6781,7 @@
         "tooltip_key": "sensor_latency",
         "tooltip_md": "Define 'Sensor Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "sensor_latency_bluetooth": {
       "ai_assist": {
@@ -7144,10 +6864,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} sensor latency measured",
-          "{brand} {model} motion latency test results"
-        ],
         "query_terms": [
           "sensor latency",
           "motion latency",
@@ -7171,8 +6887,7 @@
         "tooltip_key": "sensor_latency",
         "tooltip_md": "Define 'Sensor Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "sensor_latency_wired": {
       "ai_assist": {
@@ -7255,10 +6970,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} sensor latency measured",
-          "{brand} {model} motion latency test results"
-        ],
         "query_terms": [
           "sensor latency",
           "motion latency",
@@ -7282,8 +6993,7 @@
         "tooltip_key": "sensor_latency",
         "tooltip_md": "Define 'Sensor Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "sensor_latency_wireless": {
       "ai_assist": {
@@ -7366,10 +7076,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} sensor latency measured",
-          "{brand} {model} motion latency test results"
-        ],
         "query_terms": [
           "sensor latency",
           "motion latency",
@@ -7393,8 +7099,7 @@
         "tooltip_key": "sensor_latency",
         "tooltip_md": "Define 'Sensor Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "sensor_link": {
       "ai_assist": {
@@ -7467,9 +7172,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} sensor datasheet specifications"
-        ],
         "query_terms": [
           "sensor datasheet",
           "sensor specifications page",
@@ -7491,8 +7193,7 @@
         "tooltip_key": null,
         "tooltip_md": "Define 'Sensor Link' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "sensor_type": {
       "ai_assist": {
@@ -7575,10 +7276,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} sensor type optical laser",
-          "{brand} {model} sensor technology"
-        ],
         "query_terms": [
           "sensor type",
           "optical",
@@ -7602,7 +7299,6 @@
         "tooltip_md": "Define 'Sensor Type' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "shape": {
@@ -7688,10 +7384,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} shape ergonomic ambidextrous",
-          "{brand} {model} mouse shape profile"
-        ],
         "query_terms": [
           "shape",
           "mouse shape",
@@ -7716,8 +7408,7 @@
         "tooltip_key": "shape",
         "tooltip_md": "Define 'Shape' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "shift_latency": {
       "ai_assist": {
@@ -7741,11 +7432,8 @@
       "display_name": "DPI Shift Latency",
       "enum": {
         "match": {},
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open",
+        "new_value_policy": {},
+        "policy": "open_prefer_known",
         "source": null
       },
       "evidence": {
@@ -7796,9 +7484,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} shift latency measured"
-        ],
         "query_terms": [
           "shift latency",
           "motion shift",
@@ -7820,8 +7505,7 @@
         "tooltip_key": null,
         "tooltip_md": "Define 'DPI Shift Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "side_buttons": {
       "ai_assist": {
@@ -7899,10 +7583,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} side buttons count",
-          "{brand} {model} thumb buttons"
-        ],
         "query_terms": [
           "side buttons",
           "thumb buttons",
@@ -7925,8 +7605,7 @@
         "tooltip_key": "side_buttons",
         "tooltip_md": "Count of side buttons (excluding main clicks and wheel).",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "silent_clicks": {
       "ai_assist": {
@@ -7999,10 +7678,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} silent clicks",
-          "{brand} {model} quiet silent switches"
-        ],
         "query_terms": [
           "silent clicks",
           "silent switches",
@@ -8026,8 +7701,7 @@
         "tooltip_key": "silent_clicks",
         "tooltip_md": "Define 'Silent Clicks' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "sku": {
       "ai_assist": {
@@ -8106,11 +7780,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} part number",
-          "{brand} {model} MPN",
-          "\"{model}\" part number"
-        ],
         "query_terms": [
           "SKU",
           "part number",
@@ -8133,8 +7802,7 @@
         "tooltip_key": null,
         "tooltip_md": "Define 'SKU / Part #' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "smoothing": {
       "ai_assist": {
@@ -8207,9 +7875,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} sensor smoothing filtering"
-        ],
         "query_terms": [
           "smoothing",
           "sensor smoothing",
@@ -8233,8 +7898,7 @@
         "tooltip_key": "smoothing",
         "tooltip_md": "Define 'Smoothing' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "switch": {
       "ai_assist": {
@@ -8345,10 +8009,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} switch model",
-          "{brand} {model} mouse switch type"
-        ],
         "query_terms": [
           "mouse switch",
           "main switch",
@@ -8372,8 +8032,7 @@
         "tooltip_key": "switch",
         "tooltip_md": "Main click switch model (component DB-backed). Evidence required.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "switch_brand": {
       "ai_assist": {
@@ -8449,10 +8108,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} switch brand manufacturer",
-          "{brand} {model} Omron Kailh TTC switch"
-        ],
         "query_terms": [
           "switch brand",
           "switch manufacturer",
@@ -8478,8 +8133,7 @@
         "tooltip_key": null,
         "tooltip_md": "Switch manufacturer brand. Prefer component DB when switch identified.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "switch_type": {
       "ai_assist": {
@@ -8564,9 +8218,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} switch type mechanical optical"
-        ],
         "query_terms": [
           "switch type",
           "mechanical switch",
@@ -8590,7 +8241,6 @@
         "tooltip_md": "Define 'Switch Type' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unknown_reason_default": "not_found_after_search",
       "variance_policy": "authoritative"
     },
     "switches_link": {
@@ -8667,9 +8317,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} switch datasheet specifications"
-        ],
         "query_terms": [
           "switch datasheet",
           "switch specifications"
@@ -8690,8 +8337,7 @@
         "tooltip_key": null,
         "tooltip_md": "",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "thumb_rest": {
       "ai_assist": {
@@ -8763,10 +8409,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} thumb rest groove",
-          "{brand} {model} thumb area side grip"
-        ],
         "query_terms": [
           "thumb rest",
           "thumb groove",
@@ -8790,8 +8432,7 @@
         "tooltip_key": null,
         "tooltip_md": "Define 'Thumb Rest' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "tilt_scroll_wheel": {
       "ai_assist": {
@@ -8865,9 +8506,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} tilt scroll wheel horizontal"
-        ],
         "query_terms": [
           "tilt scroll wheel",
           "horizontal scroll",
@@ -8890,8 +8528,7 @@
         "tooltip_key": "tilt_scroll_wheel",
         "tooltip_md": "Define 'Tilt Scroll Wheel' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "weight": {
       "ai_assist": {
@@ -8978,10 +8615,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} weight grams",
-          "{brand} {model} actual weight measured"
-        ],
         "query_terms": [
           "weight",
           "weight grams",
@@ -9005,8 +8638,7 @@
         "tooltip_key": "weight",
         "tooltip_md": "Mouse weight in grams. Convert oz?g when necessary; keep decimals if provided.",
         "tooltip_source": "hbs_tooltipsMouse.js"
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "width": {
       "ai_assist": {
@@ -9090,10 +8722,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} width mm dimensions",
-          "{brand} {model} mouse width"
-        ],
         "query_terms": [
           "width",
           "width mm",
@@ -9116,8 +8744,7 @@
         "tooltip_key": null,
         "tooltip_md": "Overall width in millimeters. Convert inches/cm to mm; require unit when parsing.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     },
     "wireless_charging": {
       "ai_assist": {
@@ -9191,10 +8818,6 @@
           "tier2",
           "tier3"
         ],
-        "query_templates": [
-          "{brand} {model} wireless charging support",
-          "{brand} {model} Qi charging dock POWERPLAY"
-        ],
         "query_terms": [
           "wireless charging",
           "Qi charging",
@@ -9218,11 +8841,10 @@
         "tooltip_key": null,
         "tooltip_md": "Define 'Wireless Charging' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
-      },
-      "unknown_reason_default": "not_found_after_search"
+      }
     }
   },
-  "generated_at": "2026-04-20T23:54:53.825Z",
+  "generated_at": "2026-04-21T23:29:31.011Z",
   "key_range": "dataEntry!B9:B83",
   "notes": [
     "Generated by Field Rules Studio compiler.",

@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory — Field Rules Reference</title>
+<style>
+:root {
+  --bg: #09090b; --s1: #18181b; --s2: #27272a; --s3: #3f3f46;
+  --border: rgba(161,161,170,0.12); --border-f: rgba(161,161,170,0.25);
+  --text: #fafafa; --t2: #a1a1aa; --t3: #71717a;
+  --accent: #3b82f6; --accent-s: rgba(59,130,246,0.12);
+  --green: #22c55e; --green-s: rgba(34,197,94,0.12);
+  --amber: #f59e0b; --amber-s: rgba(245,158,11,0.12);
+  --violet: #8b5cf6; --violet-s: rgba(139,92,246,0.12);
+  --rose: #f43f5e; --cyan: #06b6d4; --teal: #14b8a6;
+  --fuchsia: #d946ef; --fuchsia-s: rgba(217,70,239,0.12);
+  --orange: #fb923c; --orange-s: rgba(251,146,60,0.12);
+  --lime: #84cc16; --lime-s: rgba(132,204,22,0.12);
+  --pink: #ec4899; --pink-s: rgba(236,72,153,0.12);
+  --mono: "SF Mono","Cascadia Code","Fira Code","JetBrains Mono",Consolas,monospace;
+  --sans: "Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;-webkit-font-smoothing:antialiased}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.page{max-width:1280px;margin:0 auto;padding:48px 24px 96px}
+
+.header{margin-bottom:32px}
+.header h1{font-size:2rem;font-weight:700;letter-spacing:-0.03em;margin-bottom:8px}
+.header p{color:var(--t2);max-width:800px;font-size:0.92rem}
+.header .meta{display:flex;gap:24px;margin-top:16px;font-size:0.8rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em;font-weight:600}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--border);border-radius:12px;overflow:hidden;margin-bottom:32px}
+.stat{background:var(--s1);padding:18px 22px;display:flex;flex-direction:column;gap:4px}
+.stat .n{font-size:1.6rem;font-weight:700;letter-spacing:-0.02em}
+.stat .l{font-size:0.72rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;font-weight:600}
+
+.callout{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:24px;font-size:0.88rem;color:var(--t2)}
+.callout strong{color:var(--text)}
+.callout code{font-family:var(--mono);font-size:0.82rem;background:var(--s2);color:var(--text);padding:2px 6px;border-radius:4px}
+
+.legend{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:40px}
+.legend h3{font-size:0.78rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--t3);margin-bottom:14px}
+.legend-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
+.legend-row{display:flex;gap:10px;align-items:flex-start;font-size:0.85rem;color:var(--t2)}
+.legend-row .chip{flex-shrink:0;margin-top:2px}
+.legend-row strong{color:var(--text);font-weight:600}
+
+/* Badge chips */
+.chip{display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-family:var(--mono);font-size:0.68rem;font-weight:700;letter-spacing:0.03em;white-space:nowrap;line-height:1.5}
+.chip.idx{background:var(--accent-s);color:#93c5fd;border:1px solid rgba(59,130,246,0.24)}
+.chip.eng{background:var(--amber-s);color:#fbbf24;border:1px solid rgba(245,158,11,0.24)}
+.chip.val{background:var(--green-s);color:#4ade80;border:1px solid rgba(34,197,94,0.24)}
+.chip.pub{background:rgba(6,182,212,0.12);color:#22d3ee;border:1px solid rgba(6,182,212,0.24)}
+.chip.seed{background:var(--lime-s);color:#a3e635;border:1px solid rgba(132,204,22,0.24)}
+.chip.rev{background:rgba(244,63,94,0.12);color:#fb7185;border:1px solid rgba(244,63,94,0.24)}
+.chip.comp{background:var(--violet-s);color:#c4b5fd;border:1px solid rgba(139,92,246,0.24)}
+.chip.flag{background:var(--orange-s);color:#fdba74;border:1px solid rgba(251,146,60,0.24)}
+.chip.llm{background:var(--fuchsia-s);color:#f0abfc;border:1px solid rgba(217,70,239,0.24)}
+
+/* Main section layout */
+.section{margin-bottom:48px}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.section-head h2{font-size:1.2rem;font-weight:700;letter-spacing:-0.02em}
+.section-head .count{font-size:0.78rem;color:var(--t3);font-weight:600;letter-spacing:0.04em}
+.section-desc{color:var(--t2);font-size:0.86rem;margin-bottom:16px;max-width:900px}
+
+/* Field card */
+.fcard{background:var(--s1);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden;transition:border-color 0.15s}
+.fcard:hover{border-color:var(--border-f)}
+.fcard summary{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;cursor:pointer;list-style:none;gap:16px;flex-wrap:wrap}
+.fcard summary::-webkit-details-marker{display:none}
+.fcard summary::after{content:"+";font-size:1rem;font-weight:300;color:var(--t3);transition:transform 0.15s;margin-left:auto}
+.fcard[open] summary::after{content:"\2212"}
+.fcard-head-left{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+.fpath{font-family:var(--mono);font-weight:600;font-size:0.9rem;color:var(--text)}
+.flabel{color:var(--t3);font-size:0.82rem}
+.fchips{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+
+/* Expanded body */
+.fbody{border-top:1px solid var(--border);padding:16px}
+.consumer-row{display:grid;grid-template-columns:140px 1fr;gap:12px;padding:8px 0;border-bottom:1px dashed rgba(161,161,170,0.08);align-items:start}
+.consumer-row:last-child{border-bottom:none}
+.consumer-row .consumer-chip-cell{display:flex;align-items:flex-start;padding-top:2px}
+.consumer-row .desc{color:var(--t2);font-size:0.85rem;line-height:1.55}
+.consumer-row .desc code{font-family:var(--mono);font-size:0.78rem;background:var(--s2);color:var(--text);padding:1px 5px;border-radius:3px}
+.ftype{color:var(--t3);font-size:0.72rem;font-family:var(--mono);padding:3px 7px;background:var(--s2);border-radius:4px;border:1px solid var(--border)}
+.faliases{color:var(--t3);font-size:0.78rem;font-family:var(--mono);margin-top:10px}
+.faliases strong{color:var(--t2);font-weight:600;font-family:var(--sans)}
+
+/* Reverse lookup */
+.reverse{margin-top:48px}
+.reverse h2{font-size:1.35rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:8px}
+.reverse-desc{color:var(--t2);font-size:0.88rem;margin-bottom:20px;max-width:800px}
+.rev-table{width:100%;border-collapse:collapse;background:var(--s1);border:1px solid var(--border);border-radius:10px;overflow:hidden;font-size:0.85rem}
+.rev-table thead th{background:var(--s2);color:var(--t2);text-align:left;padding:10px 14px;font-size:0.74rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;border-bottom:1px solid var(--border)}
+.rev-table tbody td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}
+.rev-table tbody tr:last-child td{border-bottom:none}
+.rev-table tbody tr:hover td{background:rgba(255,255,255,0.015)}
+.rev-table .paths{display:flex;flex-wrap:wrap;gap:4px}
+.rev-table .paths code{font-family:var(--mono);font-size:0.78rem;background:var(--s2);color:var(--text);padding:2px 7px;border-radius:4px;border:1px solid var(--border)}
+.rev-table .count-cell{color:var(--t3);font-weight:700;font-size:0.75rem;font-family:var(--mono)}
+
+/* Footer */
+.footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--t3);font-size:0.8rem}
+.footer code{font-family:var(--mono);background:var(--s2);color:var(--t2);padding:2px 6px;border-radius:4px}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="header">
+  <h1>Field Rules Reference</h1>
+  <p>Live reference for every field-rule path in the Spec Factory registry. Each entry shows which runtime pipelines consume the value, what they do with it, and where it appears in the Field Studio Key Navigation GUI. All data derived directly from the single source of truth — no hand-maintained duplicates.</p>
+  <div class="meta">
+    <span>SSOT · <code style="font-family:var(--mono);background:var(--s2);padding:2px 6px;border-radius:4px;color:var(--t2)">src/field-rules/consumerBadgeRegistry.js</code></span>
+    <span>GUI · <code style="font-family:var(--mono);background:var(--s2);padding:2px 6px;border-radius:4px;color:var(--t2)">tools/gui-react/src/features/studio/workbench/SystemBadges.tsx</code></span>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="n">45</div><div class="l">Field Paths</div></div>
+  <div class="stat"><div class="n">9</div><div class="l">Parent Groups</div></div>
+  <div class="stat"><div class="n">11</div><div class="l">GUI Nav Sections</div></div>
+  <div class="stat"><div class="n">16</div><div class="l">llm.kf Consumers</div></div>
+  <div class="stat"><div class="n">30</div><div class="l">Sub-consumers</div></div>
+</div>
+
+<div class="callout">
+  <strong>How to read this doc.</strong> Each field path expands to show every sub-consumer that reads it — one chip per sub-consumer. Chip labels follow the <code>PARENT.SUBNAME</code> pattern (e.g. <code>IDX.NEEDSET</code>, <code>LLM.KF</code>, <code>REV.GRID</code>) so two rev chips on the same row means two distinct rev-stage consumers (e.g. <code>REV.COMPONENT</code> + <code>REV.GRID</code>), not a duplicate. Chip color encodes the parent group; the full key encodes the specific stage. A field with multiple sub-consumer chips has a real dependency on each — editing the field value in Field Studio affects every one. The GUI Key Navigation breadcrumb (e.g. <code>Contract (Type, Shape, Unit) › Data Type</code>) mirrors the layout of the Field Studio editor, so a path's name here and the path a GUI author clicks through match one-to-one.
+</div>
+
+<div class="legend">
+  <h3>Parent Groups (Pipeline Owners)</h3>
+  <div class="legend-grid">
+    <div class="legend-row"><span class="chip idx">IDX.*</span><div><strong>Indexing Lab</strong> — search planning, query composition, field-need scoring. Reads happen during needset construction and per-tier query generation in <code>src/features/indexing/</code>. <em style="color:var(--t3)">Chips: IDX.NEEDSET, IDX.SEARCH</em></div></div>
+    <div class="legend-row"><span class="chip eng">ENG.*</span><div><strong>Field Rules Engine</strong> — runtime validation, normalization, enum resolution, component matching, evidence gating. Lives under <code>src/engine/</code>. <em style="color:var(--t3)">Chips: ENG.VALIDATE, ENG.NORMALIZE, ENG.LIST, ENG.ENUM, ENG.GATE, ENG.COMPONENT</em></div></div>
+    <div class="legend-row"><span class="chip val">VAL.*</span><div><strong>Publish Pipeline Validation</strong> — deterministic validators and publish-gates that run just before publish. Type, shape, unit, range, list, rounding, enum, format checks in <code>src/features/publisher/validation/</code>, plus the unk-block publish gate (<code>shouldBlockUnkPublish.js</code>). <em style="color:var(--t3)">Chips: VAL.TYPE, VAL.SHAPE, VAL.UNIT, VAL.RANGE, VAL.LIST, VAL.ROUNDING, VAL.ENUM, VAL.FORMAT, VAL.PUBLISH_GATE</em></div></div>
+    <div class="legend-row"><span class="chip pub">PUB.*</span><div><strong>Publisher Pipeline</strong> — set-union merges and final evidence gate at publish time. Lives under <code>src/features/publisher/publish/</code>. <em style="color:var(--t3)">Chips: PUB.UNION, PUB.GATE</em></div></div>
+    <div class="legend-row"><span class="chip seed">SEED.*</span><div><strong>Seed Pipeline</strong> — compile-time seeding of SpecDb field meta, enum lists, and component identities from the compiled field_rules artifacts. <em style="color:var(--t3)">Chips: SEED.SCHEMA, SEED.COMPONENT</em></div></div>
+    <div class="legend-row"><span class="chip rev">REV.*</span><div><strong>Component Review</strong> — review grid, component review helpers, and review-surface override services. Four distinct sub-consumers. A field may have multiple rev chips if it flows through several review surfaces. <em style="color:var(--t3)">Chips: REV.COMPONENT, REV.GRID, REV.METADATA, REV.OVERRIDE</em></div></div>
+    <div class="legend-row"><span class="chip comp">COMP.*</span><div><strong>Component System</strong> — component review panel column mapping. Lives alongside the review surface. <em style="color:var(--t3)">Chips: COMP.REVIEW</em></div></div>
+    <div class="legend-row"><span class="chip flag">FLAG.*</span><div><strong>Review Flags</strong> — reserved for field-level flag consumers. No live consumer at the moment; retained for future use.</div></div>
+    <div class="legend-row"><span class="chip llm">LLM.*</span><div><strong>LLM Finder</strong> — per-key LLM finder surface: prompt composition (LLM.KF), tier-based model routing (LLM.ROUTE), per-key attempt budget (LLM.BUDGET), and passenger bundling (LLM.BUNDLE). Lives in <code>src/features/key/keyLlmAdapter.js</code> (prompts), <code>keyFinder.js</code> (routing), <code>keyBudgetCalc.js</code> (budget), <code>keyBundler.js</code> + <code>keyPassengerBuilder.js</code> (bundling). <em style="color:var(--t3)">Chips: LLM.KF, LLM.ROUTE, LLM.BUDGET, LLM.BUNDLE</em></div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════ Priority & Effort ══════════════════════ -->
+<div class="section">
+  <div class="section-head"><h2>Priority & Effort</h2><span class="count">3 paths</span></div>
+  <p class="section-desc">Field-level prioritization. Required level, availability, and difficulty drive needset scheduling in IDX, and per-key LLM attempt budget, passenger bundling, and tier model routing in the per-key finder.</p>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">priority.required_level</span><span class="flabel">Required Level</span><span class="ftype">string</span></div>
+    <div class="fchips"><span class="chip idx">IDX.NEEDSET</span><span class="chip val">VAL.PUBLISH_GATE</span><span class="chip llm">LLM.BUDGET</span><span class="chip llm">LLM.BUNDLE</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip idx">IDX.NEEDSET</span></div><div class="desc">Maps to priority bucket (core/secondary/optional). Identity=100pts, critical=80, required=60, expected=30, optional=10 in need_score. Core fields scheduled first.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip val">VAL.PUBLISH_GATE</span></div><div class="desc">At publish time, the unk-block gate rejects "unk" values for mandatory/identity fields so missing critical data never reaches published state. <code>shouldBlockUnkPublish.js:10</code>, <code>phaseRegistry.js:174-181</code>.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.BUDGET</span></div><div class="desc">Adds mandatory/non_mandatory points to per-key attempt budget. <code>keyBudgetCalc.js:14</code>.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.BUNDLE</span></div><div class="desc">Passenger eligibility filter — bundler requires a valid required_level (mandatory|non_mandatory) or the peer is dropped. <code>keyBundler.js:86-87</code>.</div></div>
+    <div class="faliases"><strong>Aliases:</strong> <code>required_level</code></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">priority.availability</span><span class="flabel">Availability</span><span class="ftype">string</span></div>
+    <div class="fchips"><span class="chip idx">IDX.NEEDSET</span><span class="chip llm">LLM.BUDGET</span><span class="chip llm">LLM.BUNDLE</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip idx">IDX.NEEDSET</span></div><div class="desc">Primary sort key in sorted_unresolved_keys. Common fields searched before rare ones. Budget exhaustion means rare fields never run.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.BUDGET</span></div><div class="desc">Adds availability points (always/sometimes/rare) to per-key attempt budget. <code>keyBudgetCalc.js:15</code>.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.BUNDLE</span></div><div class="desc">Primary sort key in passenger packing — most-available peers pack first (cheap-wins-first). <code>keyBundler.js:96-98</code>.</div></div>
+    <div class="faliases"><strong>Aliases:</strong> <code>availability</code></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">priority.difficulty</span><span class="flabel">Difficulty</span><span class="ftype">string</span></div>
+    <div class="fchips"><span class="chip idx">IDX.NEEDSET</span><span class="chip llm">LLM.ROUTE</span><span class="chip llm">LLM.BUDGET</span><span class="chip llm">LLM.BUNDLE</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip idx">IDX.NEEDSET</span></div><div class="desc">Secondary sort within same bucket. Hard fields sorted after easy. Does not prevent search, just reorders.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.ROUTE</span></div><div class="desc">Selects which LLM model handles this key via <code>resolvePhaseModelByTier(policy, difficulty)</code> — tier name (easy/medium/hard/very_hard) billing-tags the call. <code>keyFinder.js:152-153</code>, <code>keyFinderPreviewPrompt.js:165</code>.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.BUDGET</span></div><div class="desc">Adds difficulty points (easy=1, medium=2, hard=3, very_hard=4 default) to per-key attempt budget. <code>keyBudgetCalc.js:16</code>.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.BUNDLE</span></div><div class="desc">Sets primary bundling pool size, filters passengers by <code>passengerDifficultyPolicy</code>, sorts after availability, and determines passenger point cost. <code>keyBundler.js:69, 89, 99-100, 114</code>.</div></div>
+    <div class="faliases"><strong>Aliases:</strong> <code>difficulty</code></div>
+  </div>
+  </details>
+</div>
+
+<!-- ══════════════════════ Contract ══════════════════════ -->
+<div class="section">
+  <div class="section-head"><h2>Contract (Type, Shape, Unit)</h2><span class="count">15 paths</span></div>
+  <p class="section-desc">The structural contract for every field value: variant scoping, data type, shape, unit, numeric range, list rules, rounding behavior, normalization function, and inline enum. Read by the engine's normalizer and validator, the publish validator, the publisher's set-union merge, the per-key finder LLM prompt, and the review grid.</p>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">variant_dependent</span><span class="flabel">Variant Dependent</span><span class="ftype">presence</span></div>
+    <div class="fchips"><span class="chip llm">LLM.BUNDLE</span><span class="chip rev">REV.GRID</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.BUNDLE</span></div><div class="desc">Passenger safety filter — variant-dependent fields are excluded from passenger bundling because the primary call is product-scoped (<code>variantId: null</code>). <code>keyBundler.js:85</code>.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip rev">REV.GRID</span></div><div class="desc">Determines whether the review grid renders per-variant lanes or a single product-scoped lane. <code>reviewGridData.js:140</code>.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">contract.type</span><span class="flabel">Data Type</span><span class="ftype">string</span></div>
+    <div class="fchips"><span class="chip eng">ENG.VALIDATE</span><span class="chip val">VAL.TYPE</span><span class="chip rev">REV.GRID</span><span class="chip llm">LLM.KF</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.VALIDATE</span></div><div class="desc">Validates candidate values match the expected data type (string, number, integer, boolean).</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip val">VAL.TYPE</span></div><div class="desc">Type Check. Verifies and coerces value type. Safe coercion only (e.g., "42" to 42).</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip rev">REV.GRID</span></div><div class="desc">Flows through <code>normalizeFieldContract()</code> into the review grid layout metadata. <code>reviewGridHelpers.js:127</code>.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.KF</span></div><div class="desc">Injected into return-contract block as the "Type:" line in the per-key finder prompt. <code>keyLlmAdapter.js:118</code>.</div></div>
+    <div class="faliases"><strong>Aliases:</strong> <code>data_type</code>, <code>type</code></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">contract.shape</span><span class="flabel">Shape</span><span class="ftype">string</span></div>
+    <div class="fchips"><span class="chip eng">ENG.VALIDATE</span><span class="chip val">VAL.SHAPE</span><span class="chip seed">SEED.SCHEMA</span><span class="chip rev">REV.GRID</span><span class="chip llm">LLM.KF</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.VALIDATE</span></div><div class="desc">Validates output shape (scalar, list, object) matches declaration.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip val">VAL.SHAPE</span></div><div class="desc">Shape Check. Validates value matches expected shape. Short-circuits pipeline on failure.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip seed">SEED.SCHEMA</span></div><div class="desc">Sets <code>is_list_field</code> on the seeded fieldMeta, which drives item_list_links seeding for list-shaped fields. <code>seed.js:473</code>.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip rev">REV.GRID</span></div><div class="desc">Flows through <code>normalizeFieldContract()</code> into the review grid layout metadata. <code>reviewGridHelpers.js:128</code>.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.KF</span></div><div class="desc">Drives scalar-vs-list formatting in the return-contract block and list-rules injection. <code>keyLlmAdapter.js:119</code>.</div></div>
+    <div class="faliases"><strong>Aliases:</strong> <code>output_shape</code>, <code>shape</code></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">contract.unit</span><span class="flabel">Unit</span><span class="ftype">string</span></div>
+    <div class="fchips"><span class="chip eng">ENG.NORMALIZE</span><span class="chip val">VAL.UNIT</span><span class="chip rev">REV.GRID</span><span class="chip llm">LLM.KF</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.NORMALIZE</span></div><div class="desc">Normalizes extracted values to the declared unit (e.g. "58 grams" to "58g").</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip val">VAL.UNIT</span></div><div class="desc">Unit Verification. Matches value unit against <code>contract.unit</code> (case-insensitive), rejects unknown units.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip rev">REV.GRID</span></div><div class="desc">Flows through <code>normalizeFieldContract()</code> into the review grid layout metadata. <code>reviewGridHelpers.js:130</code>.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.KF</span></div><div class="desc">Injected into contract block as numeric-precision context so the LLM returns bare numbers with known units. <code>keyLlmAdapter.js:120</code>.</div></div>
+    <div class="faliases"><strong>Aliases:</strong> <code>unit</code></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">contract.range.min</span><span class="flabel">Range Min</span><span class="ftype">presence</span></div>
+    <div class="fchips"><span class="chip eng">ENG.VALIDATE</span><span class="chip val">VAL.RANGE</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.VALIDATE</span></div><div class="desc">Rejects values below the declared minimum.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip val">VAL.RANGE</span></div><div class="desc">Range Check. Rejects values outside bounds. No clamping.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">contract.range.max</span><span class="flabel">Range Max</span><span class="ftype">presence</span></div>
+    <div class="fchips"><span class="chip eng">ENG.VALIDATE</span><span class="chip val">VAL.RANGE</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.VALIDATE</span></div><div class="desc">Rejects values above the declared maximum.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip val">VAL.RANGE</span></div><div class="desc">Range Check. Rejects values outside bounds. No clamping.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">contract.list_rules</span><span class="flabel">List Rules</span><span class="ftype">presence</span></div>
+    <div class="fchips"><span class="chip eng">ENG.LIST</span><span class="chip val">VAL.LIST</span><span class="chip pub">PUB.UNION</span><span class="chip llm">LLM.KF</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.LIST</span></div><div class="desc">Applies deduplication, sorting, and item count limits to list-shaped field values.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip val">VAL.LIST</span></div><div class="desc">List Rules. Enforces dedupe, sort, min/max items on list-shaped values.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip pub">PUB.UNION</span></div><div class="desc">Applies set-union merge for list fields — new candidate values are added to the published list.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.KF</span></div><div class="desc">Dedupe + sort rules injected into the contract block for list-shaped fields. <code>keyLlmAdapter.js:122</code>.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">contract.list_rules.dedupe</span><span class="flabel">List Dedupe</span><span class="ftype">presence</span></div>
+    <div class="fchips"><span class="chip eng">ENG.LIST</span><span class="chip val">VAL.LIST</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.LIST</span></div><div class="desc">Removes duplicate entries from list values.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip val">VAL.LIST</span></div><div class="desc">Deduplicates list values, preserving first occurrence.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">contract.list_rules.sort</span><span class="flabel">List Sort</span><span class="ftype">string</span></div>
+    <div class="fchips"><span class="chip eng">ENG.LIST</span><span class="chip val">VAL.LIST</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.LIST</span></div><div class="desc">Sorts list values using the declared sort order (asc, desc, none).</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip val">VAL.LIST</span></div><div class="desc">Sorts list values (alpha, numeric, or none).</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">contract.list_rules.item_union</span><span class="flabel">Item Union</span><span class="ftype">string</span></div>
+    <div class="fchips"><span class="chip pub">PUB.UNION</span><span class="chip rev">REV.OVERRIDE</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip pub">PUB.UNION</span></div><div class="desc">Controls how list-field candidates merge with published values. <code>set_union</code> = append unique values to published list. Publisher also implicitly dedupes during merge via Set semantics (<code>publishCandidate.js</code>, <code>republishField.js</code>, <code>reconcileThreshold.js</code>).</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip rev">REV.OVERRIDE</span></div><div class="desc">Read in <code>normalizeOverrideValue()</code> to decide whether GUI-submitted comma-separated strings should be split into arrays before candidate submission. <code>itemMutationService.js:97-103</code>, called by <code>itemMutationRoutes.js:88,125</code>.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">contract.rounding.decimals</span><span class="flabel">Rounding Decimals</span><span class="ftype">presence</span></div>
+    <div class="fchips"><span class="chip val">VAL.ROUNDING</span><span class="chip llm">LLM.KF</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip val">VAL.ROUNDING</span></div><div class="desc">Rounds numeric values to this many decimal places.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.KF</span></div><div class="desc">Decimal precision hint injected into the contract block. <code>keyLlmAdapter.js:121</code>.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">contract.rounding.mode</span><span class="flabel">Rounding Mode</span><span class="ftype">string</span></div>
+    <div class="fchips"><span class="chip val">VAL.ROUNDING</span><span class="chip llm">LLM.KF</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip val">VAL.ROUNDING</span></div><div class="desc">Rounding mode: nearest, floor, or ceil.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.KF</span></div><div class="desc">Rounding mode hint injected into the contract block alongside decimals. <code>keyLlmAdapter.js:121</code>.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">contract.normalization_fn</span><span class="flabel">Normalization Function</span><span class="ftype">string</span></div>
+    <div class="fchips"><span class="chip eng">ENG.NORMALIZE</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.NORMALIZE</span></div><div class="desc">Applies a named normalization function to extracted values before storage. Engine checks <code>rule.normalization_fn</code>, <code>contract.normalization_fn</code>, then <code>parse.normalization_fn</code> in that order. <code>fieldRulesEngine.js:50-54</code>.</div></div>
+    <div class="faliases"><strong>Aliases:</strong> <code>normalization_fn</code>, <code>parse.normalization_fn</code></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">contract.enum</span><span class="flabel">Contract Enum</span><span class="ftype">presence</span></div>
+    <div class="fchips"><span class="chip eng">ENG.ENUM</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.ENUM</span></div><div class="desc">Provides inline enum values for matching when no external enum source is configured.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">contract.aliases</span><span class="flabel">Contract Aliases</span><span class="ftype">array</span></div>
+    <div class="fchips"><span class="chip eng">ENG.ENUM</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.ENUM</span></div><div class="desc">Provides alternate value names for enum alias resolution during matching.</div></div>
+  </div>
+  </details>
+</div>
+
+<!-- ══════════════════════ Enum Policy ══════════════════════ -->
+<div class="section">
+  <div class="section-head"><h2>Enum Policy</h2><span class="count">5 paths</span></div>
+  <p class="section-desc">Controls how enum-constrained fields resolve values: policy (open / closed / open_prefer_known), value source (data_lists / component_db / yes_no), inline values, format hints, and aliases.</p>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">enum.policy</span><span class="flabel">Policy</span><span class="ftype">string</span></div>
+    <div class="fchips"><span class="chip eng">ENG.ENUM</span><span class="chip seed">SEED.SCHEMA</span><span class="chip val">VAL.ENUM</span><span class="chip pub">PUB.GATE</span><span class="chip rev">REV.METADATA</span><span class="chip llm">LLM.KF</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.ENUM</span></div><div class="desc">Enforces enum policy (open, closed, open_prefer_known) during value extraction and matching.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip seed">SEED.SCHEMA</span></div><div class="desc">Seeds enum policy into SpecDb field meta via the compile pass (used for downstream query construction).</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip val">VAL.ENUM</span></div><div class="desc">Enum Check. Validates values against known-values list using policy. <code>closed</code>: exact match. <code>open_prefer_known</code>: alias resolution.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip pub">PUB.GATE</span></div><div class="desc">Candidate gate persists the submitted value into the discovered-values store when policy is <code>open_prefer_known</code>. <code>submitCandidate.js:237</code>.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip rev">REV.METADATA</span></div><div class="desc">Surfaced in the component review grid as per-column enum policy metadata. <code>componentReviewHelpers.js:226</code>.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.KF</span></div><div class="desc">Injected into the return-contract block as the enum policy hint for the LLM. <code>keyLlmAdapter.js:123</code>.</div></div>
+    <div class="faliases"><strong>Aliases:</strong> <code>enum_policy</code></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">enum.source</span><span class="flabel">Source</span><span class="ftype">string</span></div>
+    <div class="fchips"><span class="chip seed">SEED.SCHEMA</span><span class="chip rev">REV.METADATA</span><span class="chip rev">REV.GRID</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip seed">SEED.SCHEMA</span></div><div class="desc">Compile pass loads the enum value list (data_lists, component_db, yes_no) into SpecDb as allowed values (via <code>fieldRules.knownValues.enums</code>).</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip rev">REV.METADATA</span></div><div class="desc">Resolves the list_key used to fetch known values during component review. <code>componentReviewHelpers.js:227-230</code>.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip rev">REV.GRID</span></div><div class="desc">Flows through <code>normalizeFieldContract()</code> into the review grid layout metadata as <code>enum_source</code>. <code>reviewGridHelpers.js:133</code>.</div></div>
+    <div class="faliases"><strong>Aliases:</strong> <code>enum_source</code></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">enum.values</span><span class="flabel">Inline Values</span><span class="ftype">array</span></div>
+    <div class="fchips"><span class="chip llm">LLM.KF</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.KF</span></div><div class="desc">Rendered into the return-contract block as "Allowed values (policy: …): a | b | c" and into the return-JSON shape as a union type. First 24 values injected. <code>keyLlmAdapter.js:124, 140-141, 308-311</code>.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">enum.match.format_hint</span><span class="flabel">Format Pattern</span><span class="ftype">string</span></div>
+    <div class="fchips"><span class="chip val">VAL.FORMAT</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip val">VAL.FORMAT</span></div><div class="desc">Format Check. Custom regex pattern applied after template registry check.</div></div>
+    <div class="faliases"><strong>Aliases:</strong> <code>enum_match_format_hint</code></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">enum.aliases</span><span class="flabel">Enum Aliases</span><span class="ftype">array</span></div>
+    <div class="fchips"><span class="chip eng">ENG.ENUM</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.ENUM</span></div><div class="desc">Provides alternate value names for alias-based enum matching.</div></div>
+  </div>
+  </details>
+</div>
+
+<!-- ══════════════════════ Evidence Requirements ══════════════════════ -->
+<div class="section">
+  <div class="section-head"><h2>Evidence Requirements</h2><span class="count">2 paths</span></div>
+  <p class="section-desc">Evidence thresholds applied at runtime by the field-rules engine, at publish time by the publisher, and surfaced in the review grid as status indicators.</p>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">evidence.min_evidence_refs</span><span class="flabel">Min Evidence Refs</span><span class="ftype">presence</span></div>
+    <div class="fchips"><span class="chip eng">ENG.GATE</span><span class="chip pub">PUB.GATE</span><span class="chip rev">REV.GRID</span><span class="chip llm">LLM.KF</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.GATE</span></div><div class="desc">Rejects field value if distinct evidence refs fall below this threshold.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip pub">PUB.GATE</span></div><div class="desc">Rejects candidate at publish time if distinct evidence refs fall below threshold.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip rev">REV.GRID</span></div><div class="desc">Surfaced in the review grid as the evidence-insufficient threshold displayed per row. <code>reviewGridHelpers.js:134</code>.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.KF</span></div><div class="desc">Injected into the evidence requirements block of the per-key finder prompt. <code>keyLlmAdapter.js:422-424</code>.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">evidence.tier_preference</span><span class="flabel">Tier Preference</span><span class="ftype">array</span></div>
+    <div class="fchips"><span class="chip eng">ENG.GATE</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.GATE</span></div><div class="desc">Prioritizes evidence from preferred tiers during conflict resolution. Higher-preferred tiers win ties.</div></div>
+  </div>
+  </details>
+</div>
+
+<!-- ══════════════════════ AI Assist ══════════════════════ -->
+<div class="section">
+  <div class="section-head"><h2>AI Assist</h2><span class="count">1 path</span></div>
+  <p class="section-desc">Per-field extraction guidance authored in Field Studio. Injected into the per-key finder LLM prompt to steer the model on format, units, and edge cases specific to this field.</p>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">ai_assist.reasoning_note</span><span class="flabel">Extraction Guidance</span><span class="ftype">string</span></div>
+    <div class="fchips"><span class="chip llm">LLM.KF</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.KF</span></div><div class="desc">Sent to the per-key finder LLM as extraction guidance. Describes expected format, units, edge cases. <code>keyLlmAdapter.js:112</code>.</div></div>
+  </div>
+  </details>
+</div>
+
+<!-- ══════════════════════ Search Hints ══════════════════════ -->
+<div class="section">
+  <div class="section-head"><h2>Search Hints</h2><span class="count">3 paths</span></div>
+  <p class="section-desc">Vocabulary hints that inform query composition. Read by the indexing pipeline to build tier queries and by the per-key finder LLM to suggest searches.</p>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">search_hints.query_terms</span><span class="flabel">Query Terms</span><span class="ftype">filteredArray</span></div>
+    <div class="fchips"><span class="chip idx">IDX.NEEDSET</span><span class="chip idx">IDX.SEARCH</span><span class="chip llm">LLM.KF</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip idx">IDX.NEEDSET</span></div><div class="desc">Aggregated per bundle, unioned per focus group, sent to LLM planner for search plan generation.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip idx">IDX.SEARCH</span></div><div class="desc">Used directly in <code>fieldSynonyms()</code> for literal query construction and synonym expansion.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.KF</span></div><div class="desc">Injected into the search hints block of the per-key finder prompt. <code>keyLlmAdapter.js:165</code>.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">search_hints.domain_hints</span><span class="flabel">Domain Hints</span><span class="ftype">filteredArray</span></div>
+    <div class="fchips"><span class="chip idx">IDX.NEEDSET</span><span class="chip idx">IDX.SEARCH</span><span class="chip llm">LLM.KF</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip idx">IDX.NEEDSET</span></div><div class="desc">Unioned per group, sent to LLM planner. Boosts matching URLs in result scoring.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip idx">IDX.SEARCH</span></div><div class="desc">At <code>repeat_count&gt;=2</code> added as literal terms to Tier 3 queries. <code>domain_hint_match</code> reason code.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.KF</span></div><div class="desc">Injected into the search hints block as preferred source domains. <code>keyLlmAdapter.js:164</code>.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">search_hints.content_types</span><span class="flabel">Content Types</span><span class="ftype">filteredArray</span></div>
+    <div class="fchips"><span class="chip idx">IDX.NEEDSET</span><span class="chip idx">IDX.SEARCH</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip idx">IDX.NEEDSET</span></div><div class="desc">Bundle grouping key. Fields with different content types get separate bundles.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip idx">IDX.SEARCH</span></div><div class="desc">At <code>repeat_count&gt;=3</code> adds content suffixes to queries ("specification", "datasheet pdf").</div></div>
+  </div>
+  </details>
+</div>
+
+<!-- ══════════════════════ Extraction Hints & Aliases ══════════════════════ -->
+<div class="section">
+  <div class="section-head"><h2>Extraction Hints & Aliases</h2><span class="count">2 paths</span></div>
+  <p class="section-desc">Alternate names the system should recognize when reading source text, plus author-maintained tooltip markdown that doubles as search-synonym input.</p>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">aliases</span><span class="flabel">Aliases</span><span class="ftype">array</span></div>
+    <div class="fchips"><span class="chip idx">IDX.NEEDSET</span><span class="chip idx">IDX.SEARCH</span><span class="chip eng">ENG.ENUM</span><span class="chip llm">LLM.KF</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip idx">IDX.NEEDSET</span></div><div class="desc">Included in <code>buildAllAliases()</code> and <code>shardAliases()</code>. At <code>repeat_count&gt;=1</code> added to Tier 3 queries via <code>applyAliasEnrichment()</code>.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip idx">IDX.SEARCH</span></div><div class="desc">At <code>repeat_count&gt;=1</code>, <code>applyAliasEnrichment()</code> adds <code>all_aliases</code> to Tier 3 query terms. <code>queryBuilder.js:591, 662, 669</code>.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.ENUM</span></div><div class="desc">Used for alias-based enum matching resolution.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.KF</span></div><div class="desc">Listed in the contract block as alternate names the LLM should recognize in source text. <code>keyLlmAdapter.js:125</code>.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">ui.tooltip_md</span><span class="flabel">Tooltip Markdown</span><span class="ftype">string</span></div>
+    <div class="fchips"><span class="chip idx">IDX.NEEDSET</span><span class="chip idx">IDX.SEARCH</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip idx">IDX.NEEDSET</span></div><div class="desc">Tooltip metadata included in field assessment output.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip idx">IDX.SEARCH</span></div><div class="desc"><code>extractTooltipTerms()</code> parses markdown for 2+ word phrases (max 4), merged into <code>fieldSynonyms()</code>.</div></div>
+    <div class="faliases"><strong>Aliases:</strong> <code>tooltip_md</code></div>
+  </div>
+  </details>
+</div>
+
+<!-- ══════════════════════ UI Display ══════════════════════ -->
+<div class="section">
+  <div class="section-head"><h2>UI Display</h2><span class="count">1 path</span></div>
+  <p class="section-desc">Human-readable labels used both in GUI rendering and in LLM prompt headers.</p>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">ui.label</span><span class="flabel">Label</span><span class="ftype">string</span></div>
+    <div class="fchips"><span class="chip idx">IDX.NEEDSET</span><span class="chip rev">REV.GRID</span><span class="chip llm">LLM.KF</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip idx">IDX.NEEDSET</span></div><div class="desc">Used as <code>display_name</code> in field assessments. Fallback for group description and field identification.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip rev">REV.GRID</span></div><div class="desc">Rendered as the column label in the review grid layout. <code>reviewGridData.js:63</code>.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.KF</span></div><div class="desc">Resolved as the field display name in prompt headers. <code>keyLlmAdapter.js:98</code>.</div></div>
+    <div class="faliases"><strong>Aliases:</strong> <code>label</code>, <code>display_name</code></div>
+  </div>
+  </details>
+</div>
+
+<!-- ══════════════════════ Field Groups ══════════════════════ -->
+<div class="section">
+  <div class="section-head"><h2>Field Groups</h2><span class="count">2 paths</span></div>
+  <p class="section-desc">Grouping keys used by the indexing pipeline for shared Tier 2 queries and by the engine for enum alias context.</p>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">group</span><span class="flabel">Group</span><span class="ftype">string</span></div>
+    <div class="fchips"><span class="chip idx">IDX.NEEDSET</span><span class="chip llm">LLM.BUNDLE</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip idx">IDX.NEEDSET</span></div><div class="desc">Fields with the same group get one shared Tier 2 query. Drives group productivity scoring and phase scheduling.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.BUNDLE</span></div><div class="desc">Group-only bundling filter — when <code>groupBundlingOnly</code> is on, only same-group peers are eligible as passengers for a primary key's LLM call. <code>keyPassengerBuilder.js:17,24</code>.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">ui.group</span><span class="flabel">UI Group</span><span class="ftype">string</span></div>
+    <div class="fchips"><span class="chip eng">ENG.ENUM</span><span class="chip rev">REV.GRID</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.ENUM</span></div><div class="desc">Groups enum fields for shared alias resolution context.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip rev">REV.GRID</span></div><div class="desc">Groups review-grid columns under the declared UI group. <code>reviewGridData.js:62, 134</code>.</div></div>
+  </div>
+  </details>
+</div>
+
+<!-- ══════════════════════ Components ══════════════════════ -->
+<div class="section">
+  <div class="section-head"><h2>Components</h2><span class="count">9 paths</span></div>
+  <p class="section-desc">Component identity matching — the engine resolves candidate values against a known component database using weighted name + property similarity. Thresholds control auto-accept vs. flag-for-review. Read by the engine, the component review helpers, and the seed pipeline.</p>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">component.type</span><span class="flabel">Component Type</span><span class="ftype">string</span></div>
+    <div class="fchips"><span class="chip eng">ENG.COMPONENT</span><span class="chip rev">REV.COMPONENT</span><span class="chip seed">SEED.SCHEMA</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.COMPONENT</span></div><div class="desc">Identifies the component type for component DB matching and identity resolution.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip rev">REV.COMPONENT</span></div><div class="desc">Validates component identity candidates against the known component database. Also used to resolve declared component property columns in the review surface. <code>componentReviewHelpers.js:165</code>.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip seed">SEED.SCHEMA</span></div><div class="desc">Creates component identity records and links in SpecDb via the compiled componentDBs.</div></div>
+    <div class="faliases"><strong>Aliases:</strong> <code>component_type</code></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">component.match.name_weight</span><span class="flabel">Name Weight</span><span class="ftype">presence</span></div>
+    <div class="fchips"><span class="chip eng">ENG.COMPONENT</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.COMPONENT</span></div><div class="desc">Weight for component name similarity in match scoring.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">component.match.property_weight</span><span class="flabel">Property Weight</span><span class="ftype">presence</span></div>
+    <div class="fchips"><span class="chip eng">ENG.COMPONENT</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.COMPONENT</span></div><div class="desc">Weight for component property alignment in match scoring.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">component.match.property_keys</span><span class="flabel">Property Keys</span><span class="ftype">array</span></div>
+    <div class="fchips"><span class="chip eng">ENG.COMPONENT</span><span class="chip comp">COMP.REVIEW</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.COMPONENT</span></div><div class="desc">Declares which property fields are compared during component matching.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip comp">COMP.REVIEW</span></div><div class="desc">Maps property columns in component review panel.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">component.match.auto_accept_score</span><span class="flabel">Auto Accept Score</span><span class="ftype">presence</span></div>
+    <div class="fchips"><span class="chip eng">ENG.COMPONENT</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.COMPONENT</span></div><div class="desc">Threshold above which component matches are automatically accepted.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">component.match.flag_review_score</span><span class="flabel">Flag Review Score</span><span class="ftype">presence</span></div>
+    <div class="fchips"><span class="chip eng">ENG.COMPONENT</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.COMPONENT</span></div><div class="desc">Threshold below which component matches are flagged for manual review.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">component.match.fuzzy_threshold</span><span class="flabel">Match Fuzzy Threshold</span><span class="ftype">presence</span></div>
+    <div class="fchips"><span class="chip eng">ENG.COMPONENT</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.COMPONENT</span></div><div class="desc">Fuzzy similarity threshold for component name matching.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">component.allow_new_components</span><span class="flabel">Allow New Components</span><span class="ftype">presence</span></div>
+    <div class="fchips"><span class="chip eng">ENG.COMPONENT</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.COMPONENT</span></div><div class="desc">When true, extraction can create new component identities not in the existing DB.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">component_db_ref</span><span class="flabel">Component DB Reference</span><span class="ftype">string</span></div>
+    <div class="fchips"><span class="chip eng">ENG.COMPONENT</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.COMPONENT</span></div><div class="desc">Links to the component database for identity resolution and property lookup.</div></div>
+  </div>
+  </details>
+</div>
+
+<!-- ══════════════════════ Cross-Field Constraints ══════════════════════ -->
+<div class="section">
+  <div class="section-head"><h2>Cross-Field Constraints</h2><span class="count">2 paths</span></div>
+  <p class="section-desc">Inter-field rules. Constraints encode relationships between field values; variance policy controls how disagreeing sources are reconciled.</p>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">constraints</span><span class="flabel">Constraints</span><span class="ftype">presence</span></div>
+    <div class="fchips"><span class="chip rev">REV.COMPONENT</span><span class="chip seed">SEED.COMPONENT</span><span class="chip llm">LLM.KF</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip rev">REV.COMPONENT</span></div><div class="desc">Enforces constraint rules during component review property validation.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip seed">SEED.COMPONENT</span></div><div class="desc">Seeds constraint definitions into component property meta for review-time enforcement.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.KF</span></div><div class="desc">Rendered as the cross-field constraints block in the per-key finder prompt (uses <code>cross_field_constraints</code> alias). <code>keyLlmAdapter.js:198</code>.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">variance_policy</span><span class="flabel">Variance Policy</span><span class="ftype">string</span></div>
+    <div class="fchips"><span class="chip rev">REV.COMPONENT</span><span class="chip seed">SEED.COMPONENT</span><span class="chip llm">LLM.KF</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip rev">REV.COMPONENT</span></div><div class="desc">Controls how component property variance is handled during review.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip seed">SEED.COMPONENT</span></div><div class="desc">Seeds variance policy into component property meta.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.KF</span></div><div class="desc">Injected into the contract block as "Variance policy" to tell the LLM how to resolve disagreeing sources. <code>keyLlmAdapter.js:126</code>.</div></div>
+  </div>
+  </details>
+</div>
+
+<!-- ══════════════════════ Reverse lookup ══════════════════════ -->
+<div class="reverse">
+  <h2>Reverse Lookup — Which Fields Each Consumer Reads</h2>
+  <p class="reverse-desc">For a given pipeline stage (sub-consumer), see every field path it reads. Use this when debugging: "why does changing field X affect pipeline Y?"</p>
+  <table class="rev-table">
+    <thead>
+      <tr><th style="width:170px">Sub-consumer</th><th style="width:60px">Count</th><th>Field paths</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="chip idx">IDX.NEEDSET</span></td>
+        <td class="count-cell">10</td>
+        <td class="paths"><code>priority.required_level</code><code>priority.availability</code><code>priority.difficulty</code><code>search_hints.query_terms</code><code>search_hints.domain_hints</code><code>search_hints.content_types</code><code>aliases</code><code>ui.tooltip_md</code><code>ui.label</code><code>group</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip idx">IDX.SEARCH</span></td>
+        <td class="count-cell">5</td>
+        <td class="paths"><code>search_hints.query_terms</code><code>search_hints.domain_hints</code><code>search_hints.content_types</code><code>ui.tooltip_md</code><code>aliases</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip eng">ENG.VALIDATE</span></td>
+        <td class="count-cell">4</td>
+        <td class="paths"><code>contract.type</code><code>contract.shape</code><code>contract.range.min</code><code>contract.range.max</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip eng">ENG.NORMALIZE</span></td>
+        <td class="count-cell">2</td>
+        <td class="paths"><code>contract.unit</code><code>contract.normalization_fn</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip eng">ENG.LIST</span></td>
+        <td class="count-cell">3</td>
+        <td class="paths"><code>contract.list_rules</code><code>contract.list_rules.dedupe</code><code>contract.list_rules.sort</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip eng">ENG.ENUM</span></td>
+        <td class="count-cell">6</td>
+        <td class="paths"><code>contract.enum</code><code>contract.aliases</code><code>enum.policy</code><code>enum.aliases</code><code>aliases</code><code>ui.group</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip eng">ENG.GATE</span></td>
+        <td class="count-cell">2</td>
+        <td class="paths"><code>evidence.min_evidence_refs</code><code>evidence.tier_preference</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip eng">ENG.COMPONENT</span></td>
+        <td class="count-cell">9</td>
+        <td class="paths"><code>component.type</code><code>component.match.name_weight</code><code>component.match.property_weight</code><code>component.match.property_keys</code><code>component.match.auto_accept_score</code><code>component.match.flag_review_score</code><code>component.match.fuzzy_threshold</code><code>component.allow_new_components</code><code>component_db_ref</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip val">VAL.TYPE</span></td>
+        <td class="count-cell">1</td>
+        <td class="paths"><code>contract.type</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip val">VAL.SHAPE</span></td>
+        <td class="count-cell">1</td>
+        <td class="paths"><code>contract.shape</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip val">VAL.UNIT</span></td>
+        <td class="count-cell">1</td>
+        <td class="paths"><code>contract.unit</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip val">VAL.RANGE</span></td>
+        <td class="count-cell">2</td>
+        <td class="paths"><code>contract.range.min</code><code>contract.range.max</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip val">VAL.LIST</span></td>
+        <td class="count-cell">3</td>
+        <td class="paths"><code>contract.list_rules</code><code>contract.list_rules.dedupe</code><code>contract.list_rules.sort</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip val">VAL.ROUNDING</span></td>
+        <td class="count-cell">2</td>
+        <td class="paths"><code>contract.rounding.decimals</code><code>contract.rounding.mode</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip val">VAL.ENUM</span></td>
+        <td class="count-cell">1</td>
+        <td class="paths"><code>enum.policy</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip val">VAL.FORMAT</span></td>
+        <td class="count-cell">1</td>
+        <td class="paths"><code>enum.match.format_hint</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip val">VAL.PUBLISH_GATE</span></td>
+        <td class="count-cell">1</td>
+        <td class="paths"><code>priority.required_level</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip pub">PUB.UNION</span></td>
+        <td class="count-cell">2</td>
+        <td class="paths"><code>contract.list_rules</code><code>contract.list_rules.item_union</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip pub">PUB.GATE</span></td>
+        <td class="count-cell">2</td>
+        <td class="paths"><code>evidence.min_evidence_refs</code><code>enum.policy</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip seed">SEED.SCHEMA</span></td>
+        <td class="count-cell">4</td>
+        <td class="paths"><code>contract.shape</code><code>enum.policy</code><code>enum.source</code><code>component.type</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip seed">SEED.COMPONENT</span></td>
+        <td class="count-cell">2</td>
+        <td class="paths"><code>constraints</code><code>variance_policy</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip rev">REV.COMPONENT</span></td>
+        <td class="count-cell">3</td>
+        <td class="paths"><code>component.type</code><code>constraints</code><code>variance_policy</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip rev">REV.GRID</span></td>
+        <td class="count-cell">8</td>
+        <td class="paths"><code>variant_dependent</code><code>contract.type</code><code>contract.shape</code><code>contract.unit</code><code>enum.source</code><code>evidence.min_evidence_refs</code><code>ui.label</code><code>ui.group</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip rev">REV.METADATA</span></td>
+        <td class="count-cell">2</td>
+        <td class="paths"><code>enum.policy</code><code>enum.source</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip rev">REV.OVERRIDE</span></td>
+        <td class="count-cell">1</td>
+        <td class="paths"><code>contract.list_rules.item_union</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip comp">COMP.REVIEW</span></td>
+        <td class="count-cell">1</td>
+        <td class="paths"><code>component.match.property_keys</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip llm">LLM.KF</span></td>
+        <td class="count-cell">16</td>
+        <td class="paths"><code>contract.type</code><code>contract.shape</code><code>contract.unit</code><code>contract.list_rules</code><code>contract.rounding.decimals</code><code>contract.rounding.mode</code><code>enum.policy</code><code>enum.values</code><code>evidence.min_evidence_refs</code><code>ai_assist.reasoning_note</code><code>search_hints.query_terms</code><code>search_hints.domain_hints</code><code>aliases</code><code>ui.label</code><code>constraints</code><code>variance_policy</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip llm">LLM.ROUTE</span></td>
+        <td class="count-cell">1</td>
+        <td class="paths"><code>priority.difficulty</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip llm">LLM.BUDGET</span></td>
+        <td class="count-cell">3</td>
+        <td class="paths"><code>priority.required_level</code><code>priority.availability</code><code>priority.difficulty</code></td>
+      </tr>
+      <tr>
+        <td><span class="chip llm">LLM.BUNDLE</span></td>
+        <td class="count-cell">5</td>
+        <td class="paths"><code>priority.required_level</code><code>priority.availability</code><code>priority.difficulty</code><code>variant_dependent</code><code>group</code></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="footer">
+  <p>Generated from <code>src/field-rules/consumerBadgeRegistry.js</code>. To add a new field rule path: create one entry in the registry array and the badge, tooltip, GUI navigation, and derived maps (<code>FIELD_PARENT_MAP</code>, <code>FIELD_CONSUMER_MAP</code>, <code>NAVIGATION_MAP</code>, <code>IDX_FIELD_PATHS</code>) update automatically. Structural tests live at <code>src/field-rules/tests/consumerBadgeRegistry.test.js</code>.</p>
+</div>
+
+</div>
+</body>
+</html>
