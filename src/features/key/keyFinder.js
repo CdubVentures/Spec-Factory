@@ -19,6 +19,7 @@ import { resolvePhaseModelByTier } from '../../core/llm/client/routing.js';
 import { accumulateDiscoveryLog } from '../../core/finder/discoveryLog.js';
 import { isReservedFieldKey } from '../../core/finder/finderExclusions.js';
 import { resolveModelTracking } from '../../core/finder/finderOrchestrationHelpers.js';
+import { resolveRequestedModel } from './resolveRequestedModel.js';
 import { resolveIdentityAmbiguitySnapshot } from '../indexing/orchestration/shared/identityHelpers.js';
 import { submitCandidate as defaultSubmitCandidate } from '../publisher/index.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
@@ -337,7 +338,12 @@ export async function runKeyFinder(opts) {
   const { result: llmResult, usage: llmUsage, durationMs, startedAt: callStartedAt } = await withLlmCallTracking({
     label: 'Discovery',
     prompt: { system: systemPrompt, user: userMessage },
-    initialModel: tierBundle.model || config.llmModelPlan || '',
+    // WHY: Same rule as the persisted run's `model` field (computed below via
+    // resolveRequestedModel). The pending LLM-call row in the operations
+    // panel must match the model the router will actually route to, or users
+    // see llmModelPlan here while the real call + persisted record use the
+    // tier's reasoningModel.
+    initialModel: resolveRequestedModel(tierBundle, config.llmModelPlan),
     tierCapabilities: {
       thinking: Boolean(tierBundle.thinking),
       webSearch: Boolean(tierBundle.webSearch),
@@ -368,6 +374,32 @@ export async function runKeyFinder(opts) {
   const perKey = parsed.results[fieldKey];
   const isUnknown = perKey?.value === 'unk' || perKey?.value === undefined;
 
+  // WHY: Record what ACTUALLY ran on the persisted run + sourceMeta so the
+  // keyFinder "last model" column shows the truth. Two cases:
+  //   1. Fallback fired (modelTracking.actualFallbackUsed) → use actualModel /
+  //      actualThinking / etc. (the router resolved a different model after
+  //      the primary failed; persist that one).
+  //   2. Primary succeeded → use the requested tier (mirrors what keyLlmAdapter
+  //      sent: reasoningModel when useReasoning + reasoningModel are set,
+  //      otherwise the base model). actualModel can't be trusted as the source
+  //      of truth here because it's initialized to configModel and only
+  //      updated by wrappedOnModelResolved (test seams bypass that).
+  const requestedModel = resolveRequestedModel(tierBundle, config.llmModelPlan);
+  const persistedFallbackUsed = Boolean(modelTracking.actualFallbackUsed);
+  const persistedModel = persistedFallbackUsed
+    ? (modelTracking.actualModel || requestedModel)
+    : requestedModel;
+  const persistedThinking = persistedFallbackUsed
+    ? Boolean(modelTracking.actualThinking)
+    : Boolean(tierBundle.thinking);
+  const persistedWebSearch = persistedFallbackUsed
+    ? Boolean(modelTracking.actualWebSearch)
+    : Boolean(tierBundle.webSearch);
+  const persistedEffort = persistedFallbackUsed
+    ? String(modelTracking.actualEffortLevel || '')
+    : String(tierBundle.thinkingEffort || '');
+  const persistedAccessMode = modelTracking.actualAccessMode || 'api';
+
   // 10. Publisher submission (skipped for honest unk)
   let submitResult = null;
   let publisherError = null;
@@ -385,7 +417,7 @@ export async function runKeyFinder(opts) {
           source_type: 'feature',
           tier: tierName,
           run_number: (previousDoc?.next_run_number || 1),
-          model: tierBundle.model || config.llmModelPlan || '',
+          model: persistedModel,
         },
         fieldRules: engine.rules,
         knownValues: engine.knownValues ?? null,
@@ -394,10 +426,10 @@ export async function runKeyFinder(opts) {
         productRoot: resolvedProductRoot,
         metadata: {
           evidence_refs: perKey.evidence_refs,
-          llm_access_mode: 'api',
-          llm_thinking: tierBundle.thinking,
-          llm_web_search: tierBundle.webSearch,
-          llm_effort_level: tierBundle.thinkingEffort || '',
+          llm_access_mode: persistedAccessMode,
+          llm_thinking: persistedThinking,
+          llm_web_search: persistedWebSearch,
+          llm_effort_level: persistedEffort,
         },
         appDb,
         config,
@@ -448,7 +480,7 @@ export async function runKeyFinder(opts) {
           source_type: 'feature',
           tier: tierName,
           run_number: (previousDoc?.next_run_number || 1),
-          model: tierBundle.model || config.llmModelPlan || '',
+          model: persistedModel,
         },
         fieldRules: engine.rules,
         knownValues: engine.knownValues ?? null,
@@ -457,10 +489,10 @@ export async function runKeyFinder(opts) {
         productRoot: resolvedProductRoot,
         metadata: {
           evidence_refs: pEvidence,
-          llm_access_mode: 'api',
-          llm_thinking: tierBundle.thinking,
-          llm_web_search: tierBundle.webSearch,
-          llm_effort_level: tierBundle.thinkingEffort || '',
+          llm_access_mode: persistedAccessMode,
+          llm_thinking: persistedThinking,
+          llm_web_search: persistedWebSearch,
+          llm_effort_level: persistedEffort,
         },
         appDb,
         config,
@@ -517,12 +549,12 @@ export async function runKeyFinder(opts) {
     run: {
       started_at: callStartedAt,
       duration_ms: durationMs,
-      model: tierBundle.model || config.llmModelPlan || 'unknown',
-      fallback_used: false,
-      thinking: tierBundle.thinking,
-      web_search: tierBundle.webSearch,
-      effort_level: tierBundle.thinkingEffort || '',
-      access_mode: 'api',
+      model: persistedModel,
+      fallback_used: persistedFallbackUsed,
+      thinking: persistedThinking,
+      web_search: persistedWebSearch,
+      effort_level: persistedEffort,
+      access_mode: persistedAccessMode,
       selected: { keys: selectedKeys },
       prompt: { system: systemPrompt, user: userMessage },
       response: persistedResponse,
@@ -539,12 +571,12 @@ export async function runKeyFinder(opts) {
       ran_at: callStartedAt,
       started_at: callStartedAt,
       duration_ms: durationMs,
-      model: tierBundle.model || config.llmModelPlan || 'unknown',
-      fallback_used: false,
-      effort_level: tierBundle.thinkingEffort || '',
-      access_mode: 'api',
-      thinking: tierBundle.thinking,
-      web_search: tierBundle.webSearch,
+      model: persistedModel,
+      fallback_used: persistedFallbackUsed,
+      effort_level: persistedEffort,
+      access_mode: persistedAccessMode,
+      thinking: persistedThinking,
+      web_search: persistedWebSearch,
       selected: latestRun.selected,
       prompt: latestRun.prompt,
       response: latestRun.response,
@@ -562,7 +594,18 @@ export async function runKeyFinder(opts) {
     });
   }
 
-  const status = isUnknown ? 'unk' : (publisherError ? 'accepted' : (submitResult?.status || 'accepted'));
+  // WHY: The publisher already runs all the gate logic (confidence, evidence
+  // count, manual-override) and returns a rich publishResult. The loop pill
+  // wants those numbers — surface the inner publishResult so callers can see
+  // "got 1/2 evidence at 70 conf, need ≥95" without recomputing anything.
+  const publishResult = submitResult?.publishResult ?? null;
+  const publishedNow = publishResult?.status === 'published';
+  const status = isUnknown
+    ? 'unk'
+    : publisherError
+      ? 'accepted'
+      : (publishedNow ? 'published' : (submitResult?.status || 'accepted'));
+
   return {
     status,
     run_number: runNumber,
@@ -573,6 +616,16 @@ export async function runKeyFinder(opts) {
       confidence: perKey.confidence,
       evidence_refs: perKey.evidence_refs,
     },
+    // Publisher gate snapshot — null when the call was unk / errored / had no
+    // evidence to submit. When present, mirrors src/features/publisher's
+    // publishResult shape: { status, confidence, threshold, required, actual }.
+    publish: publishResult ? {
+      status: publishResult.status,
+      confidence: typeof publishResult.confidence === 'number' ? publishResult.confidence : null,
+      threshold: typeof publishResult.threshold === 'number' ? publishResult.threshold : null,
+      required: typeof publishResult.required === 'number' ? publishResult.required : null,
+      actual: typeof publishResult.actual === 'number' ? publishResult.actual : null,
+    } : null,
     passenger_candidates: passengerCandidates,
     ...(publisherError ? { publisher_error: publisherError } : {}),
     ...(isUnknown ? { unknown_reason: perKey?.unknown_reason || '' } : {}),

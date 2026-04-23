@@ -5,6 +5,9 @@ import { AppShell } from './pages/layout/AppShell.tsx';
 import { ErrorBoundary } from './shared/ui/feedback/ErrorBoundary.tsx';
 import { Spinner } from './shared/ui/feedback/Spinner.tsx';
 import { ROUTE_ENTRIES } from './registries/pageRegistry.ts';
+import { wsManager } from './api/ws.ts';
+import { api } from './api/client.ts';
+import { useOperationsStore, type Operation } from './features/operations/state/operationsStore.ts';
 
 function lazyNamedPage(loader: () => Promise<Record<string, unknown>>, exportName: string) {
   return lazy(async () => {
@@ -33,6 +36,20 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
     },
   },
+});
+
+// WHY: Soft reconnect wiring. On WS reconnect (after server restart, idle
+// watchdog fire, or transient network drop) invalidate every active React
+// Query + rehydrate the operations store. Preserves zustand UI state (filters,
+// open modals, scroll) that a full page reload would destroy.
+wsManager.onReconnect(() => {
+  queryClient.invalidateQueries();
+  api.get<Operation[]>('/operations')
+    .then((ops) => {
+      const upsert = useOperationsStore.getState().upsert;
+      for (const op of ops) upsert(op);
+    })
+    .catch(() => { /* best effort — WS broadcasts will repopulate as ops progress */ });
 });
 
 function wrap(Component: ComponentType) {

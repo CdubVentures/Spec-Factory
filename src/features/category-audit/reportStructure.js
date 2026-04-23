@@ -17,7 +17,7 @@
  */
 
 import { renderKeyFinderPreview } from './adapters/keyFinderAdapter.js';
-import { composeTeachingSections, composeAuditorTask } from './teaching.js';
+import { composeTeachingSections, composeAuditorTask, composeAuditStandard } from './teaching.js';
 import { KEY_FINDER_DEFAULT_TEMPLATE } from '../key/keyLlmAdapter.js';
 
 const RUNTIME_SLOT_NAMES = new Set([
@@ -61,11 +61,51 @@ function buildSummarySection(reportData) {
     ['Empty `search_hints.domain_hints`', String(stats.emptySearchDomainsCount)],
     ['Open enums without a dominant pattern', String(stats.patternlessOpenEnumsCount)],
   ];
-  return {
-    id: 'summary',
-    title: 'Summary',
-    blocks: [{ kind: 'table', headers: ['Metric', 'Value'], rows }],
-  };
+
+  const blocks = [{ kind: 'table', headers: ['Metric', 'Value'], rows }];
+
+  // Highest-risk candidates — surfaced upfront so the auditor sees the
+  // spikes before walking the long tail. No judgement — pure ranking by
+  // enum size (filter-UI impact) and patternless-ness.
+  const topEnums = [...(reportData.enums || [])]
+    .filter((e) => Array.isArray(e.values) && e.values.length > 15)
+    .sort((a, b) => b.values.length - a.values.length)
+    .slice(0, 10);
+  if (topEnums.length > 0) {
+    blocks.push({ kind: 'subheading', level: 3, text: 'Highest-risk enums (size + pattern coverage)' });
+    blocks.push({
+      kind: 'paragraph',
+      text: 'Largest enums in this category, sorted by value count. Anything past 20 values is filter-fatigue territory (Part 1.5). Use this as a triage lead when writing your "Highest-risk corrections" response.',
+    });
+    blocks.push({
+      kind: 'table',
+      headers: ['Enum', 'Values', 'Policy', 'Top signature', 'Coverage %', 'Suspicious'],
+      rows: topEnums.map((e) => [
+        `\`${e.name}\``,
+        String(e.values.length),
+        e.policy || 'none',
+        e.analysis?.topSignature?.signature ?? '-',
+        e.analysis?.topSignature ? String(e.analysis.topSignature.coveragePct) : '-',
+        String(e.analysis?.suspiciousValues?.length || 0),
+      ]),
+    });
+  }
+
+  // Unreachable cross-field constraints — category-level flag so the
+  // alias-mismatch warning lives exactly once in the report.
+  const keysWithUnreachableConstraints = (reportData.keys || [])
+    .filter((k) => Array.isArray(k.constraints) && k.constraints.length > 0)
+    .map((k) => k.fieldKey);
+  if (keysWithUnreachableConstraints.length > 0) {
+    blocks.push({ kind: 'subheading', level: 3, text: 'Unreachable cross-field constraints (category-level flag)' });
+    blocks.push({
+      kind: 'note',
+      tone: 'warn',
+      text: `The keyFinder renderer reads \`cross_field_constraints\` (object shape), but compiled rules store \`constraints\` (string DSL). As a result, the following ${keysWithUnreachableConstraints.length} field(s) have constraints defined in the rule that are not reaching the LLM: ${keysWithUnreachableConstraints.map((fk) => `\`${fk}\``).join(', ')}. Include this in your Flags section; do NOT repeat per key.`,
+    });
+  }
+
+  return { id: 'summary', title: 'Summary', blocks };
 }
 
 function buildTeachingSections() {
@@ -435,12 +475,18 @@ function buildPerKeyBlocks(key, adapterPreview) {
 
   const blocks = [{ kind: 'paragraph', text: headerParagraph }];
 
-  blocks.push({ kind: 'subheading', level: 4, text: 'Contract (PRIMARY_FIELD_CONTRACT)' });
-  blocks.push({ kind: 'codeBlock', lang: 'text', text: adapterPreview.contract || '(empty — renderer produced no contract block)' });
+  // Contract — always present.
+  blocks.push({ kind: 'subheading', level: 4, text: 'Contract' });
+  blocks.push({ kind: 'codeBlock', lang: 'text', text: adapterPreview.contract || '(renderer produced no contract block)' });
 
-  blocks.push({ kind: 'subheading', level: 4, text: `Enum (filter UI: ${key.enum.filterUi})` });
+  // Enum — only if values exist. Filter UI line inline with count so the
+  // reviewer sees count + signature + values in one glance.
   if (key.enum.values.length > 0) {
-    blocks.push({ kind: 'paragraph', text: `Policy: \`${key.enum.policy}\` · Values: ${key.enum.values.length}${key.enum.analysis?.topSignature ? ` · Top signature: \`${key.enum.analysis.topSignature.signature}\` (coverage ${key.enum.analysis.topSignature.coveragePct}%)` : ''}` });
+    const topSig = key.enum.analysis?.topSignature;
+    blocks.push({ kind: 'subheading', level: 4, text: `Enum (${key.enum.values.length} values · filter UI: ${key.enum.filterUi} · policy: ${key.enum.policy})` });
+    if (topSig) {
+      blocks.push({ kind: 'paragraph', text: `Top signature: \`${topSig.signature}\` · coverage ${topSig.coveragePct}%` });
+    }
     if (key.enum.analysis?.signatureGroups?.length > 1) {
       blocks.push({
         kind: 'table',
@@ -449,42 +495,66 @@ function buildPerKeyBlocks(key, adapterPreview) {
       });
     }
     blocks.push({ kind: 'paragraph', text: key.enum.values.map((v) => `\`${v}\``).join(', ') });
-  } else {
-    blocks.push({ kind: 'paragraph', text: 'No enum values declared.' });
+    if (key.enum.analysis?.suspiciousValues?.length) {
+      blocks.push({
+        kind: 'bulletList',
+        items: key.enum.analysis.suspiciousValues.map((s) => `suspicious: \`${s.value}\` — ${s.reason}`),
+      });
+    }
   }
 
-  blocks.push({ kind: 'subheading', level: 4, text: 'Aliases' });
-  blocks.push({ kind: 'paragraph', text: key.aliases.length > 0 ? key.aliases.map((a) => `\`${a}\``).join(', ') : '(none)' });
+  // Aliases — only if present.
+  if (key.aliases.length > 0) {
+    blocks.push({ kind: 'subheading', level: 4, text: 'Aliases' });
+    blocks.push({ kind: 'paragraph', text: key.aliases.map((a) => `\`${a}\``).join(', ') });
+  }
 
-  blocks.push({ kind: 'subheading', level: 4, text: 'Search hints (PRIMARY_SEARCH_HINTS)' });
-  blocks.push({ kind: 'codeBlock', lang: 'text', text: adapterPreview.searchHints || '(empty — no domain or query hints on this rule)' });
+  // Search hints — only if renderer produced content.
+  if (adapterPreview.searchHints) {
+    blocks.push({ kind: 'subheading', level: 4, text: 'Search hints' });
+    blocks.push({ kind: 'codeBlock', lang: 'text', text: adapterPreview.searchHints });
+  }
 
-  blocks.push({ kind: 'subheading', level: 4, text: 'Cross-field constraints' });
+  // Cross-field constraints — only if defined. Alias-mismatch warning is
+  // hoisted to the category-level Flags section; no per-key repetition.
   if (key.constraints.length > 0) {
-    blocks.push({ kind: 'paragraph', text: 'Defined in compiled rule (string DSL):' });
+    blocks.push({ kind: 'subheading', level: 4, text: 'Cross-field constraints' });
     blocks.push({
       kind: 'bulletList',
       items: key.constraints.map((c) => `\`${c.raw}\` → op=${c.op}, left=${c.left}, right=${c.right}`),
     });
-  } else {
-    blocks.push({ kind: 'paragraph', text: 'No constraints defined.' });
+    if (adapterPreview.crossField) {
+      blocks.push({ kind: 'codeBlock', lang: 'text', text: adapterPreview.crossField });
+    }
   }
-  blocks.push({ kind: 'paragraph', text: 'Rendered in live prompt (PRIMARY_CROSS_FIELD_CONSTRAINTS):' });
-  blocks.push({ kind: 'codeBlock', lang: 'text', text: adapterPreview.crossField || '(empty — renderer emits nothing; alias mismatch between compiled `constraints` and renderer\'s `cross_field_constraints`)' });
 
-  blocks.push({ kind: 'subheading', level: 4, text: 'Component relation (PRIMARY_COMPONENT_KEYS)' });
+  // Component relation — only if present.
   if (key.component) {
+    blocks.push({ kind: 'subheading', level: 4, text: 'Component relation' });
     blocks.push({ kind: 'paragraph', text: `\`${key.component.relation}\` → \`${key.component.type}\` (source: \`${key.component.source}\`)` });
-    blocks.push({ kind: 'codeBlock', lang: 'text', text: adapterPreview.componentRel || '(belongs-to relation — no prompt pointer emitted; subfield values flow through PRODUCT_COMPONENTS at runtime)' });
-  } else {
-    blocks.push({ kind: 'paragraph', text: 'No component relation.' });
+    if (adapterPreview.componentRel) {
+      blocks.push({ kind: 'codeBlock', lang: 'text', text: adapterPreview.componentRel });
+    }
   }
 
-  blocks.push({ kind: 'subheading', level: 4, text: 'Extraction guidance (PRIMARY_FIELD_GUIDANCE)' });
-  blocks.push({ kind: 'codeBlock', lang: 'text', text: adapterPreview.guidance || '(empty — `ai_assist.reasoning_note` is blank on this rule)' });
+  // Extraction guidance — always show a heading so a reviewer seeing NO
+  // guidance block knows the cell is empty and needs authoring.
+  blocks.push({ kind: 'subheading', level: 4, text: 'Extraction guidance (`reasoning_note`)' });
+  if (adapterPreview.guidance) {
+    blocks.push({ kind: 'codeBlock', lang: 'text', text: adapterPreview.guidance });
+  } else {
+    blocks.push({ kind: 'paragraph', text: '_empty — unauthored_' });
+  }
 
-  blocks.push({ kind: 'subheading', level: 4, text: 'Evidence config' });
-  blocks.push({ kind: 'paragraph', text: `min_evidence_refs: ${key.evidence.min_evidence_refs} · tier_preference: ${key.evidence.tier_preference.join(', ') || '(default)'}` });
+  // Evidence config — one line, only if it deviates from the default
+  // (min_evidence_refs > 1 or a non-default tier order).
+  const hasInterestingEvidence = key.evidence.min_evidence_refs > 1 || (key.evidence.tier_preference.length > 0 && key.evidence.tier_preference.join(',') !== 'tier1,tier2,tier3');
+  if (hasInterestingEvidence) {
+    blocks.push({
+      kind: 'paragraph',
+      text: `**Evidence:** min_evidence_refs: ${key.evidence.min_evidence_refs} · tier_preference: ${key.evidence.tier_preference.join(', ') || '(default)'}`,
+    });
+  }
 
   return blocks;
 }
@@ -524,9 +594,19 @@ function buildAuditorTaskSection() {
     id: task.id,
     title: task.title,
     blocks: [
-      { kind: 'note', tone: 'good', text: 'Hand this document to a human reviewer or an LLM (Opus / GPT / Gemini / Claude Sonnet) exactly as-is. The handoff is self-contained — Part 1 teaches the system, Parts 2–7 are the data, and the instructions below tell the reviewer what to return.' },
+      { kind: 'note', tone: 'good', text: 'Hand this document to a human reviewer or an LLM (Opus / GPT / Gemini / Claude Sonnet) exactly as-is. The handoff is self-contained — Part 1 teaches the system, Part 1a sets the audit standard, Parts 2–7 are the data, and the instructions below tell the reviewer what to return.' },
       { kind: 'paragraph', text: task.body },
     ],
+    level: 2,
+  };
+}
+
+function buildAuditStandardSection() {
+  const std = composeAuditStandard();
+  return {
+    id: std.id,
+    title: std.title,
+    blocks: [{ kind: 'paragraph', text: std.body }],
     level: 2,
   };
 }
@@ -539,6 +619,7 @@ export function buildReportStructure(reportData) {
     level: 1,
   };
   const auditorTask = buildAuditorTaskSection();
+  const auditStandard = buildAuditStandardSection();
   const summary = buildSummarySection(reportData);
   const teaching = {
     id: 'part-1-teaching',
@@ -567,6 +648,6 @@ export function buildReportStructure(reportData) {
 
   return {
     meta: { category: reportData.category, generatedAt: reportData.generatedAt },
-    sections: [header, auditorTask, summary, teaching, genericPrompt, tierBundles, enumInventory, componentInventory, groups, perKey],
+    sections: [header, auditorTask, auditStandard, summary, teaching, genericPrompt, tierBundles, enumInventory, componentInventory, groups, perKey],
   };
 }

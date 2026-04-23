@@ -16,79 +16,176 @@
 import { KEY_FINDER_VARIABLES } from '../key/keyFinderPromptContract.js';
 
 const AUDITOR_TASK_BODY = `
-You are auditing every field in this category's keyFinder pipeline. Read Part 1 first — it teaches the system. Then walk Part 4 (enum inventory), Part 5 (component DB), and Part 7 (per-key detail blocks) and return a change-report that covers every key plus category-level cleanups.
+You are auditing every field in this category's keyFinder pipeline. Your deliverable is a Change Report that a human owner can apply directly into Field Studio. Be specific: exact strings to paste are infinitely more useful than "add better guidance here".
 
-**The single biggest lever in this audit is enum discipline.** Every non-numeric value becomes a filter chip on the consumer surface. Value count and pattern consistency directly drive usability (Part 1.5 has the empirical fatigue thresholds). Start with Part 4, triage every open enum by value count + pattern coverage, and only then walk the per-key detail blocks. Numeric ranges, dates, and booleans render as sliders / checkboxes — they don't carry the same filter-chip cost, so their contract review is second priority.
+**Read order:** Part 1 (the system) → Part 1a (Audit standard, the bar) → Part 4 (enum inventory — biggest lever) → Part 5 (component DB) → Part 6 (groups) → Part 7 (per-key detail).
 
-**What to return, per field key (even if "no change"):**
+**Your response leads with the top 5–10 must-fix items** (the "Highest-risk corrections" block below). Then field-by-field patches. Then category-level asks. Then flags/open questions.
 
-1. **Enum values + policy + pattern** — **lead with this.** If the enum has suspicious values, redundant entries, or inconsistent shape, propose:
-   - New canonical value list (or the delta: add / remove / rename).
-   - A pattern the LLM should emit (e.g. \`<N> zone (<rgb|led>)\`, \`<maker> <model>\`). Document the pattern in \`reasoning_note\` and trim known values to conform.
-   - Policy (\`closed\` / \`open_prefer_known\` / \`open\`) with rationale.
-   - Target value count per the fatigue thresholds in Part 1.6: ≤10 healthy, 11–15 fine, 16–20 tolerable, 21–30 filter fatigue, 30+ broken. Where the current enum sits, and where it should sit.
-2. **Contract changes** — if \`type\`, \`shape\`, \`unit\`, \`rounding\`, \`list_rules\`, \`range\`, or \`variance_policy\` should change, say what and why. Explain the extraction + filter-UI consequence (Part 1.4–1.5). Don't forget the value-format discipline rules in Part 1.4 (pattern preservation, descending numeric lists, units elided).
-3. **Extraction guidance (\`ai_assist.reasoning_note\`)** — propose new text or edits. Keep to Part 1.14's "FOR" scope: visual cues, semantic disambiguation between adjacent enum values, field-specific gotchas, rebrand/alias rules, "don't confuse with X" anchors. Do NOT duplicate anything already rendered by the template slots in Part 2. If the existing \`reasoning_note\` is strong, say "keep as-is" and state why. If an enum pattern was proposed in (1), document that pattern here so the LLM emits conformant values.
-4. **Aliases** — synonyms the LLM should recognize in source text before normalizing. Add only high-signal aliases; avoid marketing noise.
-5. **Search hints** — missing authoritative \`domain_hints\` or \`query_terms\` for this field.
-6. **Cross-field constraints** — relations between this field and others (\`lte\`, \`gte\`, \`eq\`, \`requires_when_value\`, \`requires_one_of\`). Reminder: the live renderer currently reads \`cross_field_constraints\` (object shape), but compiled rules store \`constraints\` as string DSL — flag any constraint that exists but isn't reaching the LLM.
-7. **Component relation** — if this field IS a component identity or belongs to one, confirm or correct the \`component.type\` / \`component.match.property_keys\` wiring.
+---
 
-**Category-level asks (return once, not per key):**
-
-- **Group audit (Part 6)** — for each group, answer:
-  - Is the membership coherent? Which field should move out, which should move in?
-  - Does the group name accurately describe the set? Propose a rename if not.
-  - Are there candidate splits (groups larger than ~15 fields, or that contain obviously different clusters) or merges (two groups reviewers always look at together)?
-  - Is there a "general" dumping ground that should be decomposed?
-  - Are the member difficulties coherent (a group of identity anchors should be mostly \`hard\` / \`very_hard\`, not \`easy\`)?
-  - Are there implicit cross-group couplings (via \`cross_field_constraints\`) that suggest a restructure?
-- **Component DB additions** — for each component type in Part 5, flag missing entities (sensors / switches / encoders / materials this category should know about), missing properties on existing entities, and entity-level constraints (e.g. \`sensor_date <= release_date\`).
-- **Enum cleanup** — for each enum in Part 4, flag suspicious values and recommend whether to tighten values, lock policy, or document a pattern.
-- **Global fragment tweaks** — if any of the category-level fragments in Part 2 (identity warning, evidence contract, source-tier strategy, confidence rubric, unk policy) have wording that drifts from this category's reality, propose a per-category override text.
-- **Reserved-key conflicts** — if a rule in this doc is listed as owned by CEF / RDF / SKF (see Part 1.13), note that its guidance will never reach the live keyFinder.
-
-**Return format (markdown):**
+**Return format (markdown — mirror this shape exactly):**
 
 \`\`\`markdown
 # <Category> Key Finder Audit — Change Report
 
-## Per-key changes
+## Verdict
 
-### \`<field_key>\` (<display_name>)
-- **Verdict:** <keep-as-is | minor revise | major revise | retire>
-- **Guidance (\`reasoning_note\`):** <new text, or "keep as-is">
-  - **Why:** <one-sentence rationale>
-- **Contract:** <changes or "none">
-- **Enum:** <changes or "none">
-  - **Pattern:** <proposed regex-like shape, or "no pattern recommended">
-- **Aliases to add:** <list or "none">
-- **Search hints to add:** <list or "none">
-- **Cross-field constraints:** <list or "none">
-- **Component relation:** <confirm / correct>
+<one-paragraph overall opinion: which cells hold up, which don't, what's the single highest-leverage change>
 
-(repeat for every field in Part 7)
+## Coverage
+
+- Fields audited: <N>
+- Verdict distribution: Keep <n> · Minor revise <n> · Major revise <n> · Schema decision <n>
+- Enums reviewed: <N> (of which <n> patternless / <n> suspicious)
+- Component DBs reviewed: <N>
+
+## Audit standard
+
+<restate, in your own words, the standard you applied from Part 1a — so the reader can judge your judgment>
+
+## References spot-checked
+
+- <live manufacturer / standards / lab URLs you verified the highest-risk technical claims against>
+
+## Highest-risk corrections
+
+<5–10 bullets, most impactful first. Each: one field or category-level item, one sentence on what's wrong + what to do. These are the items the human owner would apply tonight if they only had 15 minutes.>
+
+## Field-by-field patches
+
+### <Group display name> (N keys)
+
+#### \`<field_key>\` — <Keep | Minor revise | Major revise | Schema decision>
+
+- **Type / shape:** <type> · <scalar|list>
+- **- Current guidance**
+  > <verbatim current \`reasoning_note\`, or "(empty)">
+- **+ Proposed guidance**
+  > <new text — paste-ready. Use "(empty — keep)" if existing is fine and no guidance is needed.>
+- **Enum:** <proposed delta — add / remove / rename — with rationale, or "keep">
+  - **Pattern:** <proposed regex-like shape (e.g. \`<N> zone (rgb|led)\`), or "no pattern recommended">
+- **Contract:** <changes to type/shape/unit/rounding/list_rules/range/variance_policy, or "none">
+- **Aliases:** <additions, or "none">
+- **Search hints:** <domain_hints / query_terms to add, or "none">
+- **Cross-field constraints:** <additions or corrections, or "none">
+- **Component relation:** <confirm / correct \`component.type\` / \`component.match.property_keys\`>
+- **Why:** <one sentence>
+
+(repeat per field, grouped by Part 6's group order)
 
 ## Enum cleanup (category-wide)
-...
+
+<per enum with a change proposal: suspicious values to remove, values to rename, pattern to lock in, policy change>
 
 ## Component DB additions
-...
+
+<per component type in Part 5: entities missing, properties missing on existing entities, entity-level constraints like \`sensor_date <= release_date\`>
+
+## Group audit (Part 6)
+
+<per group: membership coherence, renames, splits, merges, misgrouped fields>
 
 ## Global fragment suggestions
-...
+
+<if any of Part 2's category-level fragments should get a per-category override>
 
 ## Flags + open questions
-- <anything you noticed that the human owner should decide — schema mismatches, ambiguous fields, missing finder coverage>
+
+- <schema mismatches, ambiguous fields, reserved-key conflicts, anything you want the human owner to decide>
 \`\`\`
 
+---
+
+**What's explicitly in scope:**
+
+1. **Enum discipline is the single biggest lever.** Every non-numeric enum value becomes a filter chip on the consumer site — so value count and pattern consistency directly drive usability. Lead with this in your Highest-risk block.
+2. **Pattern before policy.** An enum with a dominant structural signature (≥70% of values conform, per Part 4) is usable even at 20+ values. Freeform enums fail at much lower counts.
+3. **Target value counts (Part 1.6):** ≤10 healthy, 11–15 fine, 16–20 tolerable, 21–30 filter fatigue, 30+ broken. Call out where each enum sits now vs where it should sit.
+4. **Extraction guidance (\`reasoning_note\`) is the single editable slot per key.** Keep it to Part 1.14's "FOR" scope — visual cues, semantic disambiguation, field-specific gotchas, rebrand rules, "don't confuse with X" anchors. Do NOT duplicate anything already rendered by the template slots in Part 2. If existing guidance duplicates slot content, propose shortening.
+5. **Contract changes with consequences stated.** When you propose changing \`type\`/\`shape\`/\`unit\`/\`rounding\`/\`list_rules\`/\`range\`/\`variance_policy\`, explain the extraction + filter-UI consequence (Part 1.4–1.5 language).
+6. **Cross-field constraints alias mismatch (one-time flag, not per key).** The keyFinder renderer currently reads \`cross_field_constraints\` but compiled rules store \`constraints\` — flag this at the category level once in your "Flags" section with the list of fields that have unreachable constraints. Do NOT repeat on every field.
+
 **Out of scope — surface, don't decide:**
-- Deleting fields outright (requires human product call).
+
+- Deleting fields outright (human product call).
 - Changing which finder owns a reserved key (CEF / RDF / SKF ownership is architectural).
-- Adding or removing field groups.
 - Editing the 25-slot template itself.
 
-When you return, the human owner will apply whatever they agree with into the Field Studio authoring surface, recompile, and regenerate this report for the next iteration. Be specific — exact strings to paste in are infinitely more useful than "add better guidance here".
+**Quality bar for guidance rewrites:**
+
+- **Paste-ready.** The \`+ Proposed guidance\` blockquote should be the exact string the human will copy into Field Studio. No "consider adding…" meta-text.
+- **Specific.** "Extract the official manufacturer MPN for the exact variant; prefer brand SKU over retailer ASIN" beats "be more specific about SKU source".
+- **Visual cues name the view — and for subtle calls, teach the judgment.** The Audit standard's "Visual-answerable fields" section grades fields as Tier A (direct), Tier B (subtle), or Tier C (non-visual). For Tier A, one sentence naming the view + feature is enough. For Tier B — hump position, front_flare, grip, form_factor ambidextrous call — write 2–4 sentences that define the visible feature precisely, give threshold or relative-measurement rules, and say when to return \`unk\`. This is where \`reasoning_note\` earns its keep. For Tier C (sensor / dpi / mcu / sensor_date etc.), don't mention views at all; those are spec-sheet extractions.
+- **Web search is expected.** You have live internet access. Use it to: calibrate enum values against 3–5 real products before proposing a canonical list; verify that a current industry term still means what you think (technologies get rebranded); and spot-check any technical claim in proposed guidance. Cite the sources you checked under "References spot-checked".
+- **Evidence-grounded.** When a claim depends on an external fact (chip lineage, certification tier, firmware format), spot-check a live source and list it under "References spot-checked". Prefer manufacturer docs + standards bodies + instrumented review labs.
+- **UNK-safe.** Proposed guidance must never weaken the honest-unk policy. "Default to No" is a smell; "return unk when evidence is absent" is correct.
+`.trim();
+
+const AUDIT_STANDARD_BODY = `
+This is the bar you apply when judging every cell in Part 7. Read it, then read Part 7. If a rule doesn't clear these bars, propose a change.
+
+**Visual-answerable fields — a spectrum, not a binary. Guidance pays off most in the middle.**
+
+Fields decided from product photography fall on a spectrum. Treat each tier differently when authoring \`+ Proposed guidance\`:
+
+**Tier A — direct visual.** Decidable from a single photo in seconds; the answer is a literal visible feature. Guidance is short: name the view + the feature.
+- \`honeycomb_frame\` — top-down shell: holes visible? yes/no.
+- \`lighting\` zone count — lit-mode marketing photo: count independently-controllable zones.
+- \`shape\` (symmetrical / asymmetrical) — top-down silhouette: mirror along the centerline or not.
+- \`side_buttons\` count — left-profile: count buttons on the thumb side.
+- \`thumb_rest\` — side profile: is there a dedicated shelf extending below the main shell, or is the grip face continuous with the shell?
+
+**Tier B — subtle visual. Judgment call that NEEDS real guidance.** This is where \`reasoning_note\` earns its keep. The reviewer's job is to write guidance that teaches how to make the subtle call — not just "look at the profile view." Describe the feature precisely, give thresholds or relative measurements, name reference products as calibration anchors when stable, and say when to \`unk\` rather than guess.
+
+- \`hump\` position (back / mid / front) — left-profile. The apex of the top ridge relative to the shell length from front edge to rear edge. Example of better guidance: *"Measure apex along the dorsal ridge from the click-panel front edge to the shell rear edge. Back = apex in rear third (typical ergonomic shape). Mid = apex centered (typical ambidextrous). Front = apex forward of centerline (rare; aggressive claw shape). If the shell has a plateau rather than a point, pick the segment that contains the plateau center. Return unk when no clean profile photo is available."* That's guidance a subtle call can actually rely on.
+- \`front_flare\` — profile or 3/4 view. Whether the shell face above the click panels tapers inward, stays parallel, or flares outward. Subtle because many shells have compound curves; guidance should say whether to judge at the tip, mid-shell, or across the full face.
+- \`grip\` (palm / claw / fingertip) — biased by shape + length. Rarely decidable from a single photo alone; marketing ergonomics diagrams help but are partial. Guidance should instruct the reviewer to combine length + hump + rear-hump steepness and say when to return unk rather than picking one.
+- \`form_factor\` — ambidextrous requires BOTH shape symmetry AND usable buttons on both sides; a symmetrical shell with right-only buttons is still right-handed. Subtle enough to be a common error.
+
+**Tier C — not visual.** Text / spec-sheet / datasheet extraction. Visual guidance adds no value and can mislead — don't include a view instruction. Examples: \`sensor\`, \`sensor_brand\`, \`sensor_type\`, \`polling_rate\`, \`dpi\`, \`mcu\`, \`sensor_date\`, \`connection\`, \`battery_hours\`.
+
+**When writing a \`+ Proposed guidance\` blockquote:**
+
+- Tier A fields → one sentence naming the view + feature. Short.
+- Tier B fields → 2–4 sentences: name the view, define the visible feature precisely, give relative/threshold rules so the call is repeatable, name when to return \`unk\`. Optionally reference a stable, non-rebranding anchor product as a calibration example (avoid model-year-specific examples that age out).
+- Tier C fields → no view mention. Guidance focuses on source tiering, semantic disambiguation, or rebrand/alias rules.
+
+**Web search is expected.** Reviewers have live internet access. When uncertain about a spec's meaning, an enum value's taxonomy, whether a feature is visually decidable, or what a current industry term refers to (e.g. "flawless sensor", "rapid trigger", "FRL"), search. When proposing enum values or patterns, validate against 3–5 real products so the proposal reflects market vocabulary, not an isolated example. Cite authoritative sources in the "References spot-checked" block for any technical claim in the guidance.
+
+**Enum discipline (the biggest lever):**
+
+- **Value count is a UX metric.** ≤10 healthy, 11–15 fine, 16–20 tolerable, 21–30 filter fatigue, 30+ broken. Any enum in the 21+ range is a high-priority cleanup target.
+- **Pattern > free-form.** An open enum with ≥70% values matching a common structural signature (\`<N> zone (rgb|led)\`, \`<maker> <model>\`) scales gracefully; a free-form open enum doesn't.
+- **Closed policy when finite.** If the set is small, stable, and every new value should be a human decision, \`policy: closed\` is right.
+- **No garbage values.** Single-character entries, numeric-only strings in categorical enums, typos — flag them every time.
+
+**Guidance (\`ai_assist.reasoning_note\`) discipline:**
+
+- Keep guidance only when it prevents a likely extraction error the generic template (Part 2) doesn't already cover.
+- Prefer product-specific evidence over brand/model heuristics.
+- Never weaken the UNK policy. "Honest unk beats low-confidence guess" (Part 2, UNK_POLICY) wins against any "default to X when unsure" instruction.
+- Avoid volatile examples (model-year-specific, single-product anecdotes, component-lineage rebrand trails that will age out).
+- No duplication of slots rendered by the generic template: enum values, aliases, unit/rounding, source tiers, evidence contract, confidence rubric, etc. If the concept is already in Part 2, delete it from guidance.
+
+**Contract discipline:**
+
+- \`type\` and \`shape\` match the consumer surface rendering (Part 1.5). A string in a numeric context will render the wrong filter control.
+- \`unit\` is storage contract, not label — numeric values stored unit-less, unit applied at render.
+- \`rounding\` set whenever precision matters for equality comparison (index-level consistency).
+- Numeric lists with meaningful order declare \`list_rules.sort\` (e.g. \`polling_rate\` descending).
+- \`range\` set on numerics the LLM would otherwise fantasize about.
+
+**Evidence discipline:**
+
+- Identity-anchoring fields (sensor, switch, form_factor, material) should have \`evidence.min_evidence_refs ≥ 2\` — two independent sources before accepting a value.
+- \`tier_preference\` ordered from most authoritative to least (manufacturer → instrumented lab → review → retailer).
+
+**Component discipline:**
+
+- A field that IS a component identity (\`sensor\`, \`switch\`, \`encoder\`) must have \`component.type\` set.
+- A field that is a PROPERTY of a component (\`dpi\`, \`ips\`, \`acceleration\`) must appear in the relevant \`component_db/<type>.json\` entity's \`properties\`.
+- Missing component DB entries for known real-world entities are a high-priority cleanup.
 `.trim();
 
 const PURPOSE_BODY = `
@@ -323,6 +420,10 @@ export function buildTemplateSkeletonTable() {
 
 export function composeAuditorTask() {
   return { id: 'auditor-task', title: 'Auditor task (read this first)', body: AUDITOR_TASK_BODY };
+}
+
+export function composeAuditStandard() {
+  return { id: 'audit-standard', title: 'Audit standard (the bar you apply)', body: AUDIT_STANDARD_BODY };
 }
 
 export function composeTeachingSections() {

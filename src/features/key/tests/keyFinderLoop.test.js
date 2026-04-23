@@ -300,59 +300,69 @@ test('AbortSignal: already-aborted signal → no iterations run', async () => {
 // after the loop exits with the computed final_status. Shape is identical
 // across all finders so LoopProgressRouter can shape-detect on the frontend.
 
-test('onLoopProgress emits pre+post pill per iteration + 1 terminal with final_status', async () => {
+test('onLoopProgress emits pre+post pill per iteration + 1 terminal with publisher gate data', async () => {
   const specDb = makeSpecDb();
+  // WHY: result.publish mirrors the publisher's gate output in production
+  // (src/features/publisher/.../publishCandidate.js) — actual evidence count,
+  // confidence (0-1), threshold (0-1), required count.
   const runOverride = makeRunOverride([
-    { status: 'below_threshold' },
-    { status: 'below_threshold' },
-    { status: 'published', candidate: { value: 8000, confidence: 92 } },
+    { status: 'below_threshold', candidate: { value: 4000, confidence: 60 },
+      publish: { status: 'below_threshold', confidence: 0.60, threshold: 0.95, required: 1, actual: 1 } },
+    { status: 'below_threshold', candidate: { value: 4000, confidence: 80 },
+      publish: { status: 'below_threshold', confidence: 0.80, threshold: 0.95, required: 1, actual: 1 } },
+    { status: 'published', candidate: { value: 8000, confidence: 95 },
+      publish: { status: 'published', confidence: 0.95, threshold: 0.95, required: 1, actual: 1 } },
   ]);
   const progressEvents = [];
 
   const result = await runKeyFinderLoop({
     product: PRODUCT, fieldKey: 'polling_rate', category: 'mouse',
     specDb, policy: POLICY,
+    config: { publishConfidenceThreshold: 0.95 },
     onLoopProgress: (evt) => progressEvents.push(evt),
     _runKeyFinderOverride: runOverride,
   });
 
-  // WHY: 2 per iteration (pre + post) * 3 iterations + 1 terminal = 7.
-  // The pre-iter pill updates the sidebar to "call N/budget" the instant iter
-  // N starts, so the user sees which LLM call is in flight — not only after
-  // it finishes. The post-iter pill then fills in satisfied + confidence.
+  // 2 per iteration (pre + post) * 3 iterations + 1 terminal = 7.
   assert.equal(progressEvents.length, 7, '3 pre-iter + 3 post-iter + 1 terminal');
 
   // Every event shares the same loop_id.
   assert.ok(progressEvents.every((e) => e.loop_id === result.loop_id));
 
-  // Intermediate events (6) carry final_status=null + budget=5.
+  // Intermediate events carry final_status=null + threshold=95 (from config),
+  // evidenceTarget=1 (from POLLING_RATE_RULE has no evidence rule → default 1).
   for (let i = 0; i < 6; i += 1) {
     assert.equal(progressEvents[i].final_status, null);
-    assert.equal(progressEvents[i].publish.target, 1);
+    assert.equal(progressEvents[i].publish.evidenceTarget, 1);
+    assert.equal(progressEvents[i].publish.threshold, 95, 'threshold normalized to 0-100');
     assert.equal(progressEvents[i].callBudget.budget, 5);
   }
+
   // callBudget.used ticks: pre-1=1, post-1=1, pre-2=2, post-2=2, pre-3=3, post-3=3
   assert.equal(progressEvents[0].callBudget.used, 1, 'pre-iter 1');
   assert.equal(progressEvents[1].callBudget.used, 1, 'post-iter 1');
-  assert.equal(progressEvents[2].callBudget.used, 2, 'pre-iter 2');
-  assert.equal(progressEvents[4].callBudget.used, 3, 'pre-iter 3');
   assert.equal(progressEvents[5].callBudget.used, 3, 'post-iter 3');
 
   // Pre-iter pills never have satisfied=true (iter hasn't run yet).
   assert.equal(progressEvents[0].publish.satisfied, false);
-  assert.equal(progressEvents[2].publish.satisfied, false);
-  assert.equal(progressEvents[4].publish.satisfied, false);
 
-  // Post-iter 3 — the call published → satisfied + confidence.
+  // Post-iter 1 — confidence 60 from publisher (0.6 → 60).
+  assert.equal(progressEvents[1].publish.confidence, 60);
+  assert.equal(progressEvents[1].publish.evidenceCount, 1);
+
+  // Pre-iter 2 carries previous-best evidence/confidence (sticky between iters).
+  assert.equal(progressEvents[2].publish.confidence, 60, 'pre-iter shows last best until new call returns');
+
+  // Post-iter 3 published → satisfied + confidence 95.
   assert.equal(progressEvents[5].publish.satisfied, true);
-  assert.equal(progressEvents[5].publish.count, 1);
-  assert.equal(progressEvents[5].publish.confidence, 92);
+  assert.equal(progressEvents[5].publish.confidence, 95);
 
-  // Terminal pill — final_status='published'.
+  // Terminal pill — final_status='published', threshold present.
   const terminal = progressEvents[6];
   assert.equal(terminal.final_status, 'published');
   assert.equal(terminal.publish.satisfied, true);
-  assert.equal(terminal.publish.confidence, 92);
+  assert.equal(terminal.publish.confidence, 95);
+  assert.equal(terminal.publish.threshold, 95);
   assert.equal(terminal.callBudget.used, 3);
   assert.equal(terminal.callBudget.exhausted, false, 'early-stopped before budget');
 });

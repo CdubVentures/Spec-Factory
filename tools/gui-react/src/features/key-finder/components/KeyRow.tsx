@@ -20,6 +20,7 @@
 import { memo } from 'react';
 import { ConfidenceRing } from '../../../shared/ui/finder/ConfidenceRing.tsx';
 import { DiscoveryHistoryButton } from '../../../shared/ui/finder/DiscoveryHistoryButton.tsx';
+import { FinderRunModelBadge } from '../../../shared/ui/finder/FinderRunModelBadge.tsx';
 import { PromptDrawerChevron } from '../../../shared/ui/finder/PromptDrawerChevron.tsx';
 import { RowActionButton, ACTION_BUTTON_WIDTH } from '../../../shared/ui/actionButton/index.ts';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
@@ -232,13 +233,12 @@ export const KeyRow = memo(function KeyRow({ entry, productId, category, onRun, 
   const loopRunning = entry.opMode === 'loop' && entry.opStatus === 'running';
   const loopQueued = entry.opMode === 'loop' && entry.opStatus === 'queued';
   const loopDisabled = !LIVE_MODES.keyLoop || loopRunning || loopQueued;
-  const loopLabel = loopRunning ? '…' : loopQueued ? 'Queued' : 'Loop';
+  const loopLabel = loopQueued ? 'Queued' : 'Loop';
   const loopTitle = loopRunning
     ? 'Loop running — use the side panel Stop button to cancel'
     : loopQueued
       ? 'Queued — waiting for its turn in the group Loop chain'
       : TOOLTIPS.keyLoop;
-  const loopIntent: 'locked' | 'spammable' = loopDisabled ? 'locked' : 'spammable';
 
   // Unresolve / Delete: disabled while any op is in flight on this key (the
   // server enforces the same gate via 409 key_busy). Unresolve is also
@@ -301,7 +301,18 @@ export const KeyRow = memo(function KeyRow({ entry, productId, category, onRun, 
         )}
       </td>
       <td className="px-3 py-2 align-middle whitespace-nowrap sf-text-subtle text-[11.5px] font-mono">
-        {entry.last_model || '—'}
+        {entry.last_model ? (
+          <FinderRunModelBadge
+            model={entry.last_model}
+            accessMode={entry.last_access_mode ?? undefined}
+            effortLevel={entry.last_effort_level ?? undefined}
+            fallbackUsed={entry.last_fallback_used ?? undefined}
+            thinking={entry.last_thinking ?? undefined}
+            webSearch={entry.last_web_search ?? undefined}
+          />
+        ) : (
+          '—'
+        )}
       </td>
       <td className="px-3 py-2 align-middle">
         <span
@@ -321,9 +332,19 @@ export const KeyRow = memo(function KeyRow({ entry, productId, category, onRun, 
         <ConfidenceRing confidence={confidenceRingValue} />
       </td>
       <td className="px-3 py-2 align-middle whitespace-nowrap">
-        <span className={`text-[11px] font-bold uppercase tracking-wide ${statusPillClass(entry)}`}>
-          {statusLabel(entry)}
-        </span>
+        {entry.running ? (
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide sf-status-text-info animate-pulse">
+            <span className="relative inline-flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-current opacity-60 animate-ping" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-current" />
+            </span>
+            running
+          </span>
+        ) : (
+          <span className={`text-[11px] font-bold uppercase tracking-wide ${statusPillClass(entry)}`}>
+            {statusLabel(entry)}
+          </span>
+        )}
       </td>
       <td className="px-3 py-2 align-middle text-right whitespace-nowrap">
         <span className="inline-flex items-center gap-1">
@@ -345,10 +366,11 @@ export const KeyRow = memo(function KeyRow({ entry, productId, category, onRun, 
             width={ACTION_BUTTON_WIDTH.keyRow}
           />
           <RowActionButton
-            intent={loopIntent}
+            intent="locked"
             label={loopLabel}
             onClick={() => onLoop(entry.field_key)}
             disabled={loopDisabled}
+            busy={loopRunning}
             title={loopTitle}
             width={ACTION_BUTTON_WIDTH.keyRow}
           />

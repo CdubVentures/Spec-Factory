@@ -1,7 +1,10 @@
 // WHY: Canonical two-budget pill renderer for keyFinderLoop + variantFieldLoop
 // per the active-operations-upgrade guide §6. Two rows stacked:
-//   Row 1 publish — "✓ 1/1 published · conf 88" (or "0/1 not yet", etc.)
-//   Row 2 callBudget — "used/budget attempts" with a progress bar that turns
+//   Row 1 publish — "1/2 evidence · 70 conf (need ≥95)" while iterating;
+//                   "✓ 2/2 evidence · 95 conf" when published; "✗ 1/2 evidence
+//                   · 60 conf" on terminal failure. Numbers come straight
+//                   from the publisher's gate output (no recomputation here).
+//   Row 2 callBudget — "call N/M · K left" with a progress bar that turns
 //                      red when the budget ran out BEFORE the target was met.
 // A header line carries loop_id (truncated), optional variantLabel chip, and
 // a final_status chip when the loop has terminated. PIF keeps LoopProgressGrid.
@@ -31,17 +34,31 @@ export function publishLineIcon(pub: PillLoopProgress['publish'], final: PillLoo
   return '\u00B7'; // ·
 }
 
+/**
+ * Render the publish-row text: "<icon> N/M evidence · K conf (need ≥T)".
+ * Layered fall-throughs:
+ *   - Skipped path: "M/M evidence · skipped (resolved)" (count=target, no conf)
+ *   - Satisfied: "N/M evidence · K conf" (no "need ≥T" — already cleared it)
+ *   - Has confidence + threshold: "N/M evidence · K conf (need ≥T)"
+ *   - Has confidence only: "N/M evidence · K conf"
+ *   - No candidate yet (pre-iter): "N/M evidence · need ≥T conf"
+ *   - Nothing known: "N/M evidence"
+ */
 export function publishLineText(pub: PillLoopProgress['publish'], final: PillLoopProgress['final_status']): string {
-  const core = `${pub.count}/${pub.target}`;
+  const core = `${pub.evidenceCount}/${pub.evidenceTarget} evidence`;
+  const hasConf = pub.confidence != null;
+  const hasThresh = pub.threshold != null;
+
+  if (final === 'skipped_resolved') return `${core} \u00B7 skipped (resolved)`;
+
   if (pub.satisfied) {
-    const confPart = pub.confidence != null ? ` \u00B7 conf ${pub.confidence}` : '';
-    return `${core} published${confPart}`;
+    return hasConf ? `${core} \u00B7 ${pub.confidence} conf` : `${core} published`;
   }
-  if (final === 'definitive_unk') return `${core} definitive unk`;
-  if (final === 'skipped_resolved') return `${core} skipped (resolved)`;
-  if (final === 'budget_exhausted') return `${core} budget exhausted`;
-  if (final === 'aborted') return `${core} aborted`;
-  return `${core} not yet`;
+
+  if (hasConf && hasThresh) return `${core} \u00B7 ${pub.confidence} conf (need \u2265${pub.threshold})`;
+  if (hasConf) return `${core} \u00B7 ${pub.confidence} conf`;
+  if (hasThresh) return `${core} \u00B7 need \u2265${pub.threshold} conf`;
+  return core;
 }
 
 export function isBarDanger(pub: PillLoopProgress['publish'], cb: PillLoopProgress['callBudget']): boolean {

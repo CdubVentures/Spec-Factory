@@ -25,7 +25,9 @@ export interface DeleteTarget {
     | 'variant' | 'variant-all'
     | 'key-unresolve' | 'key-delete'
     | 'key-unresolve-group' | 'key-delete-group'
-    | 'key-unresolve-all' | 'key-delete-all';
+    | 'key-unresolve-all' | 'key-delete-all'
+    | 'field-variant-unpublish' | 'field-variant-delete'
+    | 'field-all-variants-unpublish' | 'field-all-variants-delete';
   readonly runNumber?: number;
   readonly runNumbers?: readonly number[];
   readonly evalNumber?: number;

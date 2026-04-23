@@ -1531,6 +1531,22 @@ html[data-sf-theme-mode='dark'] .sf-prompt-preview-label {
   color: rgb(216 180 254);
 }
 
+/* WHY: Section labels inside drawers ("Data:", "Hist:") pick up the hue of
+   the buttons they introduce so the drawer's purpose reads at a glance.
+   These mirror the sf-delete-button (red) and sf-history-button (brown)
+   foregrounds with a light/dark fork matching the button classes. */
+.sf-delete-label {
+  color: var(--sf-state-danger-fg);
+}
+
+.sf-history-label {
+  color: rgb(184 134 81);
+}
+
+html[data-sf-theme-mode='dark'] .sf-history-label {
+  color: rgb(224 196 156);
+}
+
 /* WHY: History buttons (panel header + key-group row) carry a warm-brown hue
    so the eye can separate "look at past runs" from purple "inspect prompt"
    and accent "run it now". Mirrors .sf-prompt-preview-button exactly —

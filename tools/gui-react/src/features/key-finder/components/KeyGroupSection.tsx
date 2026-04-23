@@ -117,10 +117,11 @@ export const KeyGroupSection = memo(function KeyGroupSection({
             width={ACTION_BUTTON_WIDTH.keyGroup}
           />
           <RowActionButton
-            intent={LIVE_MODES.groupLoop && !loopChainProgress ? 'spammable' : 'locked'}
+            intent="locked"
             label={loopChainProgress ? `Loop (${loopChainProgress.current}/${loopChainProgress.total})` : 'Loop group'}
             onClick={handleLoopGroup}
-            disabled={!LIVE_MODES.groupLoop || loopChainProgress !== null}
+            disabled={!LIVE_MODES.groupLoop}
+            busy={loopChainProgress !== null}
             title={
               !LIVE_MODES.groupLoop
                 ? DISABLED_REASONS.groupLoop

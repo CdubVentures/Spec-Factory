@@ -72,12 +72,18 @@ function makeFinderStoreStub(settings = {}) {
 
 function makeSpecDbStub({ finderStore, variants = DEFAULT_VARIANTS, category = 'mouse' } = {}) {
   const submittedCandidates = [];
-  // WHY: field_candidate_evidence projection — the publisher's evidence gate
-  // (checkEvidenceGate) reads `countFieldCandidateEvidenceByCandidateId` to
-  // decide if min_evidence_refs is satisfied. Simulate it here so
-  // publishCandidate can actually reach 'published' in test runs; otherwise
-  // every attempt would fail on below_evidence_refs regardless of confidence.
+  // WHY: field_candidate_evidence projection — the publisher's evaluator
+  // (evaluateFieldBuckets) pools evidence by value_fingerprint across
+  // candidate rows. Simulate it here so publishCandidate can actually reach
+  // 'published' in test runs.
   const evidenceByCandidateId = new Map();
+
+  function computeStubFingerprint(value) {
+    if (value === null || value === undefined) return '';
+    const str = typeof value === 'object' ? JSON.stringify(value) : String(value);
+    return str.toLowerCase().trim();
+  }
+
   return {
     category,
     getFinderStore: () => finderStore,
@@ -88,32 +94,66 @@ function makeSpecDbStub({ finderStore, variants = DEFAULT_VARIANTS, category = '
       listByProduct: () => variants,
     },
     // submitCandidate machinery
-    insertFieldCandidate: (entry) => { submittedCandidates.push(entry); },
-    getFieldCandidateBySourceId: (pid, fk, sid) => ({ id: submittedCandidates.findIndex(c => c.sourceId === sid) + 1, variant_id: submittedCandidates.find(c => c.sourceId === sid)?.variantId ?? null }),
-    // WHY: submitCandidate looks up the freshly-inserted row by (sourceId, variantId)
-    // to derive candidateId + evidence projection. Without this, the throw bubbles
-    // to produceForVariant's catch → publishStatus='skipped' → loop never satisfies.
+    insertFieldCandidate: (entry) => {
+      submittedCandidates.push({ ...entry, value_fingerprint: computeStubFingerprint(entry.value) });
+    },
+    getFieldCandidateBySourceId: (pid, fk, sid) => {
+      const row = submittedCandidates.find(c => c.sourceId === sid);
+      return row ? { id: submittedCandidates.indexOf(row) + 1, variant_id: row.variantId ?? null, value_fingerprint: row.value_fingerprint } : null;
+    },
     getFieldCandidateBySourceIdAndVariant: (pid, fk, sid, vid) => {
       const idx = submittedCandidates.findIndex(c => c.sourceId === sid && (c.variantId || null) === (vid || null));
       if (idx < 0) return null;
-      return { id: idx + 1, variant_id: submittedCandidates[idx].variantId ?? null };
+      return { id: idx + 1, variant_id: submittedCandidates[idx].variantId ?? null, value_fingerprint: submittedCandidates[idx].value_fingerprint };
     },
     getFieldCandidatesByProductAndField: () => [],
     getFieldCandidatesByValue: () => [],
     getFieldCandidate: () => null,
     upsertFieldCandidate: () => {},
-    // Publisher auto-publish needs these
     getResolvedFieldCandidate: () => null,
     markFieldCandidateResolved: () => {},
     demoteResolvedCandidates: () => {},
     publishCandidate: () => {},
-    // Evidence projection (submitCandidate → publisher evidence gate)
     replaceFieldCandidateEvidence: (candidateId, refs) => {
-      evidenceByCandidateId.set(Number(candidateId), Array.isArray(refs) ? refs.length : 0);
+      evidenceByCandidateId.set(Number(candidateId), Array.isArray(refs) ? refs : []);
     },
     countFieldCandidateEvidenceByCandidateId: (candidateId) => (
-      evidenceByCandidateId.get(Number(candidateId)) || 0
+      (evidenceByCandidateId.get(Number(candidateId)) || []).length
     ),
+    // Deterministic-publisher stubs for evaluateFieldBuckets
+    listFieldBuckets: ({ productId, fieldKey, variantId }) => {
+      const rows = submittedCandidates
+        .filter(c => (c.variantId || null) === (variantId ?? null))
+        .map((c, i) => ({ ...c, id: i + 1 }));
+      const grouped = new Map();
+      for (const r of rows) {
+        const fp = r.value_fingerprint || '';
+        if (!grouped.has(fp)) {
+          grouped.set(fp, { value_fingerprint: fp, top_confidence: r.confidence ?? 0, member_count: 0, member_ids: [], value: r.value });
+        }
+        const g = grouped.get(fp);
+        g.member_count += 1;
+        g.member_ids.push(r.id);
+        if ((r.confidence ?? 0) > g.top_confidence) g.top_confidence = r.confidence ?? 0;
+      }
+      return Array.from(grouped.values());
+    },
+    countPooledQualifyingEvidenceByFingerprint: ({ fingerprint, variantId, minConfidence }) => {
+      const rows = submittedCandidates
+        .filter(c => (c.variantId || null) === (variantId ?? null) && c.value_fingerprint === fingerprint);
+      const urls = new Set();
+      for (const r of rows) {
+        const refs = evidenceByCandidateId.get(submittedCandidates.indexOf(r) + 1) || [];
+        for (const ref of refs) {
+          const conf = ref?.confidence;
+          const normalized = (conf == null) ? 1 : (conf > 1 ? conf / 100 : conf);
+          if (normalized >= (minConfidence || 0)) urls.add(ref.url);
+        }
+      }
+      return urls.size;
+    },
+    hasPublishedValue: () => false,
+    db: { prepare: () => ({ get: () => null, run: () => {}, all: () => [] }) },
     _submittedCandidates: submittedCandidates,
   };
 }

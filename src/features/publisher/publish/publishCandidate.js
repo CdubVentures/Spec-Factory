@@ -10,7 +10,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { checkEvidenceGate } from './evidenceGate.js';
+import { evaluateFieldBuckets } from './evidenceGate.js';
 
 function safeReadJson(filePath) {
   try { return JSON.parse(fs.readFileSync(filePath, 'utf8')); }
@@ -91,22 +91,26 @@ export function publishCandidate({
       variantId: resolvedVariantId,
     });
   }
-  // --- Confidence gate ---
+  // --- Gate 1: LLM candidate confidence ---
   const threshold = config?.publishConfidenceThreshold ?? 0.7;
   if (normalizeConfidence(confidence) < threshold) {
     persistPublishResult(specDb, productId, fieldKey, serializeValue(value), { status: 'below_threshold', confidence, threshold });
     return { status: 'below_threshold', confidence, threshold };
   }
 
-  // --- Evidence gate (min_evidence_refs from field rule) ---
-  const evidenceCheck = checkEvidenceGate({ specDb, candidateId: candidateRow?.id, fieldRule });
-  if (!evidenceCheck.ok) {
+  // --- Gate 2: pooled evidence evaluator (deterministic) ---
+  const evalResult = evaluateFieldBuckets({
+    specDb, productId, fieldKey, fieldRule, variantId: null, threshold,
+  });
+  if (evalResult.publishedValue === undefined) {
+    const triggerBucket = evalResult.buckets.find(b => b.memberIds.includes(candidateRow?.id));
+    const actual = triggerBucket?.pooledCount ?? 0;
     persistPublishResult(specDb, productId, fieldKey, serializeValue(value), {
       status: 'below_evidence_refs',
-      required: evidenceCheck.required,
-      actual: evidenceCheck.actual,
+      required: evalResult.required,
+      actual,
     });
-    return { status: 'below_evidence_refs', required: evidenceCheck.required, actual: evidenceCheck.actual };
+    return { status: 'below_evidence_refs', required: evalResult.required, actual };
   }
 
   // --- Product.json read ---
@@ -126,59 +130,28 @@ export function publishCandidate({
     return { status: 'manual_override_locked', lockedValue: existing.value };
   }
 
-  // --- Set union for list fields ---
-  let publishedValue = value;
-  if (fieldRule?.contract?.list_rules?.item_union === 'set_union' && Array.isArray(value)) {
-    const existingList = Array.isArray(existing?.value) ? existing.value : [];
-    const merged = [...existingList];
-    for (const item of value) {
-      const serialized = serializeValue(item);
-      if (!merged.some(m => serializeValue(m) === serialized)) {
-        merged.push(item);
-      }
-    }
-    publishedValue = merged;
-  }
-
+  const publishedValue = evalResult.publishedValue;
   const serialized = serializeValue(publishedValue);
   const now = new Date().toISOString();
-  // WHY: Source-centric rows have no sources_json — the row IS the source.
-  // Build a source entry from the triggering row's own fields for backward compat.
   const sources = candidateRow?.source_id
     ? [{ source: candidateRow.source_type || '', source_id: candidateRow.source_id, model: candidateRow.model || '', confidence, submitted_at: candidateRow.submitted_at || now }]
     : (Array.isArray(candidateRow?.sources_json) ? candidateRow.sources_json : []);
 
-  // --- SQL: demote previous winners, mark contributing candidates resolved ---
+  // --- SQL: demote prior winners, mark every member of qualifying bucket(s) resolved ---
   specDb.demoteResolvedCandidates(productId, fieldKey);
-
-  const itemUnion = fieldRule?.contract?.list_rules?.item_union;
-  if (itemUnion === 'set_union' && Array.isArray(publishedValue)) {
-    // WHY: For set_union, the published array is a merge of multiple candidate rows.
-    // Each candidate whose array shares items with the published value contributed —
-    // mark all of them resolved, not just an exact serialization match.
-    const publishedSet = new Set(publishedValue.map(v => serializeValue(v)));
-    const allCandidates = specDb.getFieldCandidatesByProductAndField(productId, fieldKey);
-    for (const row of allCandidates) {
-      let items;
-      try { items = typeof row.value === 'string' ? JSON.parse(row.value) : row.value; }
-      catch { items = null; }
-      if (!Array.isArray(items)) continue;
-      if (items.some(item => publishedSet.has(serializeValue(item)))) {
-        specDb.markFieldCandidateResolved(productId, fieldKey, row.value);
-      }
-    }
-  } else {
-    specDb.markFieldCandidateResolved(productId, fieldKey, serialized);
+  const memberIds = new Set(evalResult.publishedMemberIds);
+  if (memberIds.size > 0) {
+    const placeholders = Array.from(memberIds).map(() => '?').join(',');
+    specDb.db.prepare(
+      `UPDATE field_candidates SET status = 'resolved', updated_at = datetime('now')
+       WHERE id IN (${placeholders})`
+    ).run(...Array.from(memberIds));
   }
 
   persistPublishResult(specDb, productId, fieldKey, serialized, { status: 'published', published_at: now });
 
-  // --- Build linked candidates (evidence chain) ---
-  // WHY: All candidate rows that match the published value are linked as proof.
-  // Each carries its own confidence and source history, sorted by confidence desc.
   const linkedCandidates = buildLinkedCandidates(specDb, productId, fieldKey, publishedValue, fieldRule);
 
-  // --- JSON: write to product.json fields[] ---
   productJson.fields[fieldKey] = {
     value: publishedValue,
     confidence,
@@ -217,14 +190,18 @@ function publishVariantScopedCandidate({
     return { status: 'below_threshold', confidence, threshold };
   }
 
-  const evidenceCheck = checkEvidenceGate({ specDb, candidateId: candidateRow?.id, fieldRule });
-  if (!evidenceCheck.ok) {
+  const evalResult = evaluateFieldBuckets({
+    specDb, productId, fieldKey, fieldRule, variantId, threshold,
+  });
+  if (evalResult.publishedValue === undefined) {
+    const triggerBucket = evalResult.buckets.find(b => b.memberIds.includes(candidateRow?.id));
+    const actual = triggerBucket?.pooledCount ?? 0;
     persistPublishResult(specDb, productId, fieldKey, serializeValue(value), {
       status: 'below_evidence_refs',
-      required: evidenceCheck.required,
-      actual: evidenceCheck.actual,
+      required: evalResult.required,
+      actual,
     }, variantId);
-    return { status: 'below_evidence_refs', required: evidenceCheck.required, actual: evidenceCheck.actual };
+    return { status: 'below_evidence_refs', required: evalResult.required, actual };
   }
 
   const productDir = path.join(productRoot, productId);
@@ -243,50 +220,27 @@ function publishVariantScopedCandidate({
     return { status: 'manual_override_locked', lockedValue: existing.value };
   }
 
-  // WHY: Set union within a single variant. Scalar/winner_only is the common case
-  // for variant-scoped fields today (release_date, SKU, price), but list+set_union
-  // is supported for forward-compat (per-variant tag lists, etc.).
-  let publishedValue = value;
-  if (fieldRule?.contract?.list_rules?.item_union === 'set_union' && Array.isArray(value)) {
-    const existingList = Array.isArray(existing?.value) ? existing.value : [];
-    const merged = [...existingList];
-    for (const item of value) {
-      const serialized = serializeValue(item);
-      if (!merged.some((m) => serializeValue(m) === serialized)) merged.push(item);
-    }
-    publishedValue = merged;
-  }
-
+  const publishedValue = evalResult.publishedValue;
   const serialized = serializeValue(publishedValue);
   const now = new Date().toISOString();
   const sources = candidateRow?.source_id
     ? [{ source: candidateRow.source_type || '', source_id: candidateRow.source_id, model: candidateRow.model || '', confidence, submitted_at: candidateRow.submitted_at || now }]
     : (Array.isArray(candidateRow?.sources_json) ? candidateRow.sources_json : []);
 
-  // --- SQL: variant-scoped demote + resolve ---
   specDb.demoteResolvedCandidates(productId, fieldKey, variantId);
-
-  const itemUnion = fieldRule?.contract?.list_rules?.item_union;
-  if (itemUnion === 'set_union' && Array.isArray(publishedValue)) {
-    const publishedSet = new Set(publishedValue.map((v) => serializeValue(v)));
-    const allCandidates = specDb.getFieldCandidatesByProductAndField(productId, fieldKey, variantId);
-    for (const row of allCandidates) {
-      let items;
-      try { items = typeof row.value === 'string' ? JSON.parse(row.value) : row.value; } catch { items = null; }
-      if (!Array.isArray(items)) continue;
-      if (items.some((item) => publishedSet.has(serializeValue(item)))) {
-        specDb.markFieldCandidateResolved(productId, fieldKey, row.value, variantId);
-      }
-    }
-  } else {
-    specDb.markFieldCandidateResolved(productId, fieldKey, serialized, variantId);
+  const memberIds = new Set(evalResult.publishedMemberIds);
+  if (memberIds.size > 0) {
+    const placeholders = Array.from(memberIds).map(() => '?').join(',');
+    specDb.db.prepare(
+      `UPDATE field_candidates SET status = 'resolved', updated_at = datetime('now')
+       WHERE id IN (${placeholders})`
+    ).run(...Array.from(memberIds));
   }
 
   persistPublishResult(specDb, productId, fieldKey, serialized, { status: 'published', published_at: now }, variantId);
 
   const linkedCandidates = buildLinkedCandidates(specDb, productId, fieldKey, publishedValue, fieldRule, variantId);
 
-  // --- JSON: variant_fields[vid][fieldKey] ---
   productJson.variant_fields[variantId][fieldKey] = {
     value: publishedValue,
     confidence,
@@ -305,7 +259,7 @@ function publishVariantScopedCandidate({
 // publisher GUI can display published vs rejected and the rejection reason.
 // WHY: Persist publish decision in existing row's metadata_json.
 // Uses the row's own source_id to upsert without creating a new row.
-function persistPublishResult(specDb, productId, fieldKey, serializedValue, result, variantId) {
+export function persistPublishResult(specDb, productId, fieldKey, serializedValue, result, variantId) {
   try {
     // WHY: Try value-based lookup first (may match multiple source-centric rows — pick first).
     // For variant-scoped publishes, filter by variantId so we don't pollute another variant's metadata.

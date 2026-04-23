@@ -18,6 +18,7 @@ import { submitCandidate } from '../../publisher/candidate-gate/submitCandidate.
 import { clearPublishedField } from '../../publisher/publish/clearPublishedField.js';
 import { writeManualOverride } from '../../publisher/publish/writeManualOverride.js';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
+import { clearScalarFinderVariant, deleteScalarFinderVariantRuns } from '../../../core/finder/scalarFinderVariantCleaner.js';
 
 // Re-export for characterization tests and any external consumers
 export {
@@ -201,6 +202,16 @@ async function handleReviewItemClearPublishedEndpoint({
       }
     }
 
+    // Scalar finders (RDF / SKU) persist per-variant entries in their own
+    // JSON + SQL summary — clean those too so the finder panel reflects the
+    // unpublish. Safe no-op for non-scalar fields. variant-single scope only.
+    if (normalizedVariantId) {
+      clearScalarFinderVariant({
+        specDb, productId, productRoot: root,
+        fieldKey: field, variantId: normalizedVariantId,
+      });
+    }
+
     return sendDataChangeResponse({
       jsonRes,
       res,
@@ -221,6 +232,109 @@ async function handleReviewItemClearPublishedEndpoint({
   }
 }
 
+// ── POST /review/:category/delete-variant-field ─────────────────────
+// Per-variant full wipe for one field. Deletes every field_candidates row
+// for (product, field, variant) — evidence cascades via FK — and clears
+// variant_fields[variantId][fieldKey] from product.json. Used by the
+// per-variant "Del" button in the RDF / SKU panels.
+//
+// Unlike the keyFinder /keys/:fk DELETE, runs are NOT touched: scalar-finder
+// runs produce per-variant candidates in one pass, so removing one variant's
+// share leaves siblings (and the run record) intact. Zero risk of cross-
+// variant data loss.
+async function handleReviewItemDeleteVariantFieldEndpoint({
+  parts,
+  method,
+  req,
+  res,
+  context,
+}) {
+  const {
+    readJsonBody,
+    jsonRes,
+    getSpecDb,
+    resolveGridFieldStateForMutation,
+    broadcastWs,
+    productRoot,
+  } = context || {};
+  if (method !== 'POST' || parts[2] !== 'delete-variant-field') return false;
+  const category = parts[1];
+  if (!category) return false;
+
+  const body = await readJsonBody(req);
+  const { variantId } = body || {};
+  if (typeof variantId !== 'string' || variantId.length === 0) {
+    jsonRes(res, 400, { error: 'invalid_variant_id', message: 'variantId is required for delete-variant-field.' });
+    return true;
+  }
+
+  const fieldRequest = resolveItemFieldMutationRequest({
+    getSpecDb,
+    resolveGridFieldStateForMutation,
+    category,
+    body,
+    missingSlotMessage: 'productId and field are required for delete-variant-field.',
+  });
+  if (jsonResIfError({ jsonRes, res, error: fieldRequest.error })) return true;
+  const { specDb, productId, field } = fieldRequest;
+
+  try {
+    // DB: demote (safety, covers the resolved row) then delete. Evidence
+    // rows cascade via the field_candidate_evidence FK.
+    if (typeof specDb.demoteResolvedCandidates === 'function') {
+      specDb.demoteResolvedCandidates(productId, field, variantId);
+    }
+    if (typeof specDb.deleteFieldCandidatesByProductFieldVariant === 'function') {
+      specDb.deleteFieldCandidatesByProductFieldVariant(productId, field, variantId);
+    }
+
+    // JSON: drop the variant_fields[vid][fk] entry. Also prune the variant
+    // map entry entirely when it becomes empty (matches clearVariantSingle
+    // behavior in clearPublishedField.js).
+    const root = productRoot || defaultProductRoot();
+    const productPath = path.join(root, productId, 'product.json');
+    const productJson = safeReadJson(productPath);
+    let jsonChanged = false;
+    if (productJson?.variant_fields?.[variantId]
+        && Object.prototype.hasOwnProperty.call(productJson.variant_fields[variantId], field)) {
+      delete productJson.variant_fields[variantId][field];
+      if (Object.keys(productJson.variant_fields[variantId]).length === 0) {
+        delete productJson.variant_fields[variantId];
+      }
+      productJson.updated_at = new Date().toISOString();
+      fs.writeFileSync(productPath, JSON.stringify(productJson, null, 2));
+      jsonChanged = true;
+    }
+
+    // Scalar finder store + SQL summary mirror — Del is a full per-variant
+    // wipe, so also delete every run whose response.variant_id matches.
+    // Without this the Hist (Nqu)(Nurl) counts stay populated from the run-
+    // level discovery_log and the panel still shows stale candidates.
+    const finderCleanup = deleteScalarFinderVariantRuns({
+      specDb, productId, productRoot: root,
+      fieldKey: field, variantId,
+    });
+
+    return sendDataChangeResponse({
+      jsonRes,
+      res,
+      broadcastWs,
+      eventType: 'review-variant-field-deleted',
+      category,
+      broadcastExtra: { productId, field, variantId },
+      payload: {
+        status: 'deleted', field, variantId,
+        json_changed: jsonChanged,
+        finder_cleaned: finderCleanup.cleaned,
+        finder_deleted_runs: finderCleanup.deletedRuns || [],
+      },
+    });
+  } catch (err) {
+    jsonRes(res, 500, { error: 'delete_variant_field_failed', message: err.message });
+    return true;
+  }
+}
+
 export async function handleReviewItemMutationRoute({
   parts,
   method,
@@ -233,6 +347,9 @@ export async function handleReviewItemMutationRoute({
   }
   if (parts[2] === 'clear-published') {
     return handleReviewItemClearPublishedEndpoint({ parts, method, req, res, context });
+  }
+  if (parts[2] === 'delete-variant-field') {
+    return handleReviewItemDeleteVariantFieldEndpoint({ parts, method, req, res, context });
   }
   return handleReviewItemOverrideMutationEndpoint({ parts, method, req, res, context });
 }

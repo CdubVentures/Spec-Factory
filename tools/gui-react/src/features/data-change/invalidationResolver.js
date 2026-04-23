@@ -217,6 +217,7 @@ export const DATA_CHANGE_EVENT_DOMAIN_FALLBACK = Object.freeze({
   'review-override': ['review', 'product'],
   'review-manual-override': ['review', 'product'],
   'review-clear-published': ['review', 'product'],
+  'review-variant-field-deleted': ['review', 'product'],
   'candidate-deleted': ['review', 'product'],
   'key-review-confirm': ['review', 'product'],
   'key-review-accept': ['review', 'product'],

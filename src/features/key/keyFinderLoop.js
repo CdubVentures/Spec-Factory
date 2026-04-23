@@ -121,6 +121,25 @@ export async function runKeyFinderLoop(opts) {
   const variantCount = activeVariants.length > 0 ? activeVariants.length : 1;
   let { attempts } = calcKeyBudget({ fieldRule, variantCount, settings: budgetSettings });
 
+  // 2.1 Publish-gate snapshot for the pill — read once at loop entry so the
+  // sidebar can show "0/N evidence @ ≥T conf" before any iteration runs. The
+  // publisher uses the same numbers (config.publishConfidenceThreshold default
+  // 0.7, fieldRule.evidence.min_evidence_refs) when it gates each candidate.
+  // Threshold normalized to 0–100 to match the LLM's confidence scale.
+  const evidenceTarget = Number.isFinite(fieldRule?.evidence?.min_evidence_refs)
+    ? fieldRule.evidence.min_evidence_refs
+    : 1;
+  const rawThreshold = Number.isFinite(config?.publishConfidenceThreshold)
+    ? config.publishConfidenceThreshold
+    : 0.7;
+  const thresholdPct = rawThreshold <= 1 ? Math.round(rawThreshold * 100) : Math.round(rawThreshold);
+
+  // Snapshot of "best so far" — the pill shows the most recent (and best
+  // available) candidate's actual evidence + confidence numbers so the user
+  // can read "got 1/2 evidence at 70 conf, need ≥95" between iterations.
+  let lastEvidenceCount = 0;
+  let lastConfidencePct = null;
+
   // 2.5 Re-loop gate (SSOT §6.2): if the primary is already published at loop
   //     entry, cap attempts via reloopRunBudget (default 1). A 0 value becomes
   //     a no-op with distinct final_status='skipped_resolved' so the WS event +
@@ -129,15 +148,27 @@ export async function runKeyFinderLoop(opts) {
   const loop_id = generateLoopId();
   const reloopRunBudget = parseInt(readKnob(finderStore, 'reloopRunBudget') || '1', 10);
   const reloopBudget = Number.isFinite(reloopRunBudget) && reloopRunBudget >= 0 ? reloopRunBudget : 1;
-  const alreadyResolved = typeof specDb?.getResolvedFieldCandidate === 'function'
-    && Boolean(specDb.getResolvedFieldCandidate(product.product_id, fieldKey));
+  // WHY: Deterministic publisher — "field is satisfied" means "any row for this
+  // (product, field) is resolved." hasPublishedValue is cheaper and more
+  // accurate than getResolvedFieldCandidate (which hydrates a single row and
+  // misses set_union cases where multiple rows are jointly resolved).
+  const alreadyResolved = typeof specDb?.hasPublishedValue === 'function'
+    ? specDb.hasPublishedValue(product.product_id, fieldKey)
+    : (typeof specDb?.getResolvedFieldCandidate === 'function'
+      && Boolean(specDb.getResolvedFieldCandidate(product.product_id, fieldKey)));
   if (alreadyResolved) {
     if (reloopBudget === 0) {
       // WHY: Emit a terminal pill so the operations panel sees the skip path
       // explicitly instead of a silent op that never renders loopProgress.
       try {
         onLoopProgress?.({
-          publish: { count: 1, target: 1, satisfied: true, confidence: null },
+          publish: {
+            evidenceCount: evidenceTarget,
+            evidenceTarget,
+            satisfied: true,
+            confidence: null,
+            threshold: thresholdPct,
+          },
           callBudget: { used: 0, budget: 0, exhausted: false },
           final_status: 'skipped_resolved',
           loop_id,
@@ -175,11 +206,19 @@ export async function runKeyFinderLoop(opts) {
 
     // Pre-iteration pill — fires BEFORE runKeyFinder so the sidebar card shows
     // "we're on call iter/attempts" the moment the LLM call starts, not only
-    // after it returns. publish state is always not-yet at this point (the
-    // loop breaks on publish so no accumulation across iters).
+    // after it returns. Carries the publisher's gate constants (target +
+    // threshold) immediately and the previous-best evidence/confidence so the
+    // user always sees "0/N evidence @ ≥T conf" while the next call is in
+    // flight.
     try {
       onLoopProgress?.({
-        publish: { count: 0, target: 1, satisfied: false, confidence: null },
+        publish: {
+          evidenceCount: lastEvidenceCount,
+          evidenceTarget,
+          satisfied: false,
+          confidence: lastConfidencePct,
+          threshold: thresholdPct,
+        },
         callBudget: { used: iter, budget: attempts, exhausted: iter >= attempts },
         final_status: null,
         loop_id,
@@ -204,19 +243,34 @@ export async function runKeyFinderLoop(opts) {
     lastResult = result;
     if (Number.isFinite(result?.run_number)) runs.push(result.run_number);
 
-    // Per-iteration pill with final_status=null. Satisfied + confidence
-    // reflect this iteration's publisher outcome; the modal shows the latest
-    // state as the loop advances.
+    // Post-iteration pill — uses the publisher's gate output (result.publish
+    // wired up in keyFinder.js) so the user sees the EXACT numbers the
+    // publish gate compared. result.publish.actual is the evidence-ref count
+    // the publisher counted; result.publish.confidence is the candidate's
+    // normalized confidence (0–1 → percent).
     try {
       const iterSatisfied = result?.status === 'published';
+      const pubGate = result?.publish ?? null;
+      const iterEvidence = Number.isFinite(pubGate?.actual)
+        ? pubGate.actual
+        : (Array.isArray(result?.candidate?.evidence_refs) ? result.candidate.evidence_refs.length : 0);
+      const iterConfidenceRaw = Number.isFinite(pubGate?.confidence)
+        ? pubGate.confidence
+        : (Number.isFinite(result?.candidate?.confidence) ? result.candidate.confidence : null);
+      const iterConfidencePct = iterConfidenceRaw == null
+        ? null
+        : (iterConfidenceRaw <= 1 ? Math.round(iterConfidenceRaw * 100) : Math.round(iterConfidenceRaw));
+
+      lastEvidenceCount = iterEvidence;
+      lastConfidencePct = iterConfidencePct;
+
       onLoopProgress?.({
         publish: {
-          count: iterSatisfied ? 1 : 0,
-          target: 1,
+          evidenceCount: iterEvidence,
+          evidenceTarget,
           satisfied: iterSatisfied,
-          confidence: Number.isFinite(result?.candidate?.confidence)
-            ? result.candidate.confidence
-            : null,
+          confidence: iterConfidencePct,
+          threshold: thresholdPct,
         },
         callBudget: {
           used: iter,
@@ -241,6 +295,13 @@ export async function runKeyFinderLoop(opts) {
       break;
     }
 
+    // Exit on Gate 1 inconsistency purge — retrying wastes budget against an
+    // unreliable model that already demonstrated conf/evidence conflict.
+    if (result?.status === 'rejected_inconsistent') {
+      final_status = 'definitive_reject';
+      break;
+    }
+
     // Otherwise: below_threshold / accepted / no_evidence / runtime issue — retry
   }
 
@@ -251,12 +312,11 @@ export async function runKeyFinderLoop(opts) {
     const terminalSatisfied = lastResult?.status === 'published';
     onLoopProgress?.({
       publish: {
-        count: terminalSatisfied ? 1 : 0,
-        target: 1,
+        evidenceCount: lastEvidenceCount,
+        evidenceTarget,
         satisfied: terminalSatisfied,
-        confidence: Number.isFinite(lastResult?.candidate?.confidence)
-          ? lastResult.candidate.confidence
-          : null,
+        confidence: lastConfidencePct,
+        threshold: thresholdPct,
       },
       callBudget: {
         used: iterations,

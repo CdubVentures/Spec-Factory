@@ -14,7 +14,8 @@
  */
 
 import { useState, useCallback, useMemo, type ReactNode } from 'react';
-import type { UseQueryResult, UseMutationResult } from '@tanstack/react-query';
+import { useMutation, useQueryClient, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
+import { clearPublishedField, deleteVariantField } from '../../../features/review/api/reviewApi.ts';
 import { Spinner } from '../feedback/Spinner.tsx';
 import { Chip } from '../feedback/Chip.tsx';
 import { IndexingPanelHeader } from './IndexingPanelHeader.tsx';
@@ -37,6 +38,8 @@ import { FinderDiscoveryDetails, type DiscoverySection } from './FinderDiscovery
 import { FinderRunPromptDetails } from './FinderRunPromptDetails.tsx';
 import { ColorSwatch } from './ColorSwatch.tsx';
 import { DiscoveryHistoryButton } from './DiscoveryHistoryButton.tsx';
+import { groupHistory, type FinderRun } from './discoveryHistoryHelpers.ts';
+import { useFinderDiscoveryHistoryStore } from '../../../stores/finderDiscoveryHistoryStore.ts';
 import { FinderEvidenceRow, type FinderEvidenceRowSource } from './FinderEvidenceRow.tsx';
 import { PromptDrawerChevron } from './PromptDrawerChevron.tsx';
 import { PromptPreviewModal } from './PromptPreviewModal.tsx';
@@ -228,6 +231,26 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
   const deleteRunMut = useDeleteRunMutation(category, productId);
   const deleteAllMut = useDeleteAllMutation(category, productId);
 
+  // Per-variant UnPub / Del — reuses the shared deleteTarget modal. UnPub
+  // hits POST /review/:cat/clear-published with variantId → variant-single
+  // scope (demote + strip variant_fields[vid][fk]). Del hits the new POST
+  // /review/:cat/delete-variant-field → wipes candidates + evidence for
+  // (pid, fk, vid) and strips the JSON entry. Both invalidate the panel's
+  // data query so the row flips state on success.
+  const queryClient = useQueryClient();
+  const invalidateFinder = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: [routePrefix, category, productId] });
+    queryClient.invalidateQueries({ queryKey: ['review', category] });
+  }, [queryClient, routePrefix, category, productId]);
+  const unpublishVariantMut = useMutation<unknown, Error, { readonly fieldKey: string; readonly variantId: string }>({
+    mutationFn: ({ fieldKey, variantId }) => clearPublishedField(category, { productId, field: fieldKey, variantId }),
+    onSuccess: invalidateFinder,
+  });
+  const deleteVariantMut = useMutation<unknown, Error, { readonly fieldKey: string; readonly variantId: string }>({
+    mutationFn: ({ fieldKey, variantId }) => deleteVariantField(category, { productId, field: fieldKey, variantId }),
+    onSuccess: invalidateFinder,
+  });
+
   const { model: resolvedModel, accessMode, modelDisplay, effortLevel } = useResolvedFinderModel(phase as LlmOverridePhaseId);
 
   const isRunningModule = useIsModuleRunning(moduleType, productId);
@@ -244,15 +267,57 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
   );
   const runHistoryRuns = useMemo(() => sortRunsNewestFirst<GenericScalarRun>(effectiveResult), [effectiveResult]);
 
+  // Panel-level UnPub All / Del All targets. Fans out per-variant mutations
+  // through the existing unpublishVariantMut / deleteVariantMut — each call
+  // cleans all four storage layers (field_candidates + product.json +
+  // finder JSON + finder SQL) for that variant. Declared before
+  // handleConfirmDelete so the fan-out loop can see them.
+  const variantIdsWithPublishedValue = useMemo(
+    () => variantRows.filter((r) => r.variant_id && Boolean(r.candidate?.value)).map((r) => r.variant_id as string),
+    [variantRows],
+  );
+  const variantIdsWithAnyData = useMemo(
+    () => variantRows.filter((r) => r.variant_id && Boolean(r.candidate)).map((r) => r.variant_id as string),
+    [variantRows],
+  );
+
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
     const dismiss = () => setDeleteTarget(null);
+    const onError = (err: Error) => {
+      setDeleteTarget(null);
+      window.alert(`Operation failed: ${err.message}`);
+    };
     if (deleteTarget.kind === 'run' && deleteTarget.runNumber) {
       deleteRunMut.mutate(deleteTarget.runNumber, { onSuccess: dismiss });
     } else if (deleteTarget.kind === 'all') {
       deleteAllMut.mutate(undefined, { onSuccess: dismiss });
+    } else if (deleteTarget.kind === 'field-variant-unpublish' && deleteTarget.variantId && deleteTarget.fieldKey) {
+      unpublishVariantMut.mutate(
+        { fieldKey: deleteTarget.fieldKey, variantId: deleteTarget.variantId },
+        { onSuccess: dismiss, onError },
+      );
+    } else if (deleteTarget.kind === 'field-variant-delete' && deleteTarget.variantId && deleteTarget.fieldKey) {
+      deleteVariantMut.mutate(
+        { fieldKey: deleteTarget.fieldKey, variantId: deleteTarget.variantId },
+        { onSuccess: dismiss, onError },
+      );
+    } else if (deleteTarget.kind === 'field-all-variants-unpublish' && deleteTarget.fieldKey) {
+      // Fan out — fires the same per-variant mutation N times. Each call
+      // invalidates the shared query; react-query batches refetches so we
+      // don't thrash. Dismiss immediately (fire-and-forget) to match the
+      // keyFinder "Unresolve all" pattern.
+      for (const variantId of variantIdsWithPublishedValue) {
+        unpublishVariantMut.mutate({ fieldKey: deleteTarget.fieldKey, variantId });
+      }
+      dismiss();
+    } else if (deleteTarget.kind === 'field-all-variants-delete' && deleteTarget.fieldKey) {
+      for (const variantId of variantIdsWithAnyData) {
+        deleteVariantMut.mutate({ fieldKey: deleteTarget.fieldKey, variantId });
+      }
+      dismiss();
     }
-  }, [deleteTarget, deleteRunMut, deleteAllMut]);
+  }, [deleteTarget, deleteRunMut, deleteAllMut, unpublishVariantMut, deleteVariantMut, variantIdsWithPublishedValue, variantIdsWithAnyData]);
 
   const handleRunVariant = useCallback((variantKey: string) => {
     fire(runAllUrl, { variant_key: variantKey });
@@ -286,7 +351,46 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
     webSearch: resolvedModel?.webSearch ?? false,
   };
 
-  const isAnyDeletePending = deleteRunMut.isPending || deleteAllMut.isPending;
+  const isAnyDeletePending = deleteRunMut.isPending || deleteAllMut.isPending || unpublishVariantMut.isPending || deleteVariantMut.isPending;
+
+  // Per-variant Hist — opens the shared Discovery History drawer pre-filtered
+  // to just this variant so users can scan URLs/queries for that one variant
+  // without hunting through the full product history.
+  const openHistoryForVariant = useFinderDiscoveryHistoryStore((s) => s.openDrawer);
+  const handleHistVariant = useCallback((variantId: string | null) => {
+    if (!variantId) return;
+    openHistoryForVariant({ finderId, productId, category, variantIdFilter: variantId });
+  }, [openHistoryForVariant, finderId, productId, category]);
+
+  // Per-variant URL/QU counts for the in-drawer Hist button label. Groups
+  // the finder's runs by scope='variant' (matches the drawer's own grouping)
+  // so the counts shown on each row exactly equal what the drawer will
+  // render when opened for that variant.
+  const histCountsByVariant = useMemo(() => {
+    const grouped = groupHistory(runHistoryRuns as readonly FinderRun[], 'variant');
+    const map = new Map<string, { urls: number; queries: number }>();
+    for (const [vid, bucket] of grouped.byVariant.entries()) {
+      map.set(vid, { urls: bucket.urls.size, queries: bucket.queries.size });
+    }
+    return map;
+  }, [runHistoryRuns]);
+
+  const handleUnpubAllVariants = useCallback(() => {
+    if (variantIdsWithPublishedValue.length === 0) return;
+    setDeleteTarget({
+      kind: 'field-all-variants-unpublish',
+      fieldKey: valueKey,
+      count: variantIdsWithPublishedValue.length,
+    });
+  }, [variantIdsWithPublishedValue, valueKey]);
+  const handleDelAllVariants = useCallback(() => {
+    if (variantIdsWithAnyData.length === 0) return;
+    setDeleteTarget({
+      kind: 'field-all-variants-delete',
+      fieldKey: valueKey,
+      count: variantIdsWithAnyData.length,
+    });
+  }, [variantIdsWithAnyData, valueKey]);
   const withValueCount = variantRows.filter((r) => r.candidate?.value).length;
 
   const tabMeta = FINDER_TAB_META[finderId as FinderPanelId];
@@ -320,11 +424,9 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
         actionSlot={
           <>
             <HeaderActionButton
-              intent="locked"
+              intent="spammable"
               label="Run"
               onClick={handleRunAll}
-              disabled={cefVariants.length === 0}
-              busy={isRunningModule}
               width={ACTION_BUTTON_WIDTH.standardHeader}
             />
             <HeaderActionButton
@@ -334,6 +436,39 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
               disabled={cefVariants.length === 0}
               busy={variantRows.length > 0 && variantRows.every((r) => loopingVariantKeys.has(r.variant_key))}
               width={ACTION_BUTTON_WIDTH.standardHeader}
+            />
+            <div style={{ width: 1, height: 16, background: 'var(--sf-token-border, #dee2e6)' }} />
+            <PromptDrawerChevron
+              storageKey={`indexing:${moduleType}:destructive-drawer:panel:${productId}`}
+              openWidthClass="w-[22rem]"
+              ariaLabel={`Destructive actions for every ${moduleLabel} variant`}
+              closedTitle={`Show UnPub all / Del all for ${moduleLabel}`}
+              openedTitle={`Hide UnPub all / Del all for ${moduleLabel}`}
+              chevronClass="sf-status-text-danger"
+              actions={[
+                {
+                  id: 'unpub-all',
+                  label: 'UnPub all',
+                  onClick: handleUnpubAllVariants,
+                  disabled: variantIdsWithPublishedValue.length === 0 || isAnyDeletePending,
+                  intent: variantIdsWithPublishedValue.length === 0 || isAnyDeletePending ? 'locked' : 'delete',
+                  width: ACTION_BUTTON_WIDTH.standardHeader,
+                  title: variantIdsWithPublishedValue.length === 0
+                    ? `Nothing to unpublish — no published ${valueKey} across any variant.`
+                    : `Demote every published ${valueKey} (${variantIdsWithPublishedValue.length} variant(s)) back to candidate. Reversible.`,
+                },
+                {
+                  id: 'del-all',
+                  label: 'Del all',
+                  onClick: handleDelAllVariants,
+                  disabled: variantIdsWithAnyData.length === 0 || isAnyDeletePending,
+                  intent: variantIdsWithAnyData.length === 0 || isAnyDeletePending ? 'locked' : 'delete',
+                  width: ACTION_BUTTON_WIDTH.standardHeader,
+                  title: variantIdsWithAnyData.length === 0
+                    ? `Nothing to delete — no ${valueKey} data in any variant.`
+                    : `Wipe every ${valueKey} candidate and run across ${variantIdsWithAnyData.length} variant(s). Not reversible.`,
+                },
+              ]}
             />
           </>
         }
@@ -418,12 +553,84 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
                               <span className="inline-block h-5 w-px mx-0.5 bg-current opacity-20" aria-hidden />
                               <PromptDrawerChevron
                                 storageKey={`indexing:${moduleType}:prompt-drawer:${productId}:${row.variant_key}`}
-                                openWidthClass="w-56"
-                                ariaLabel={`Prompt previews for ${row.variant_label}`}
+                                openWidthClass="w-[38rem]"
+                                ariaLabel={`Prompt + history + data actions for ${row.variant_label}`}
                                 openTitle="Prompts:"
                                 actions={[
                                   { label: 'Run',  onClick: () => setActivePromptModal({ variantKey: row.variant_key, variantLabel: row.variant_label, mode: 'run' }) },
                                   { label: 'Loop', onClick: () => setActivePromptModal({ variantKey: row.variant_key, variantLabel: row.variant_label, mode: 'loop' }) },
+                                ]}
+                                secondaryTitle="Hist:"
+                                secondaryLabelClass="sf-history-label"
+                                secondaryActions={[
+                                  {
+                                    id: 'hist',
+                                    label: (() => {
+                                      const counts = row.variant_id ? histCountsByVariant.get(row.variant_id) : null;
+                                      const q = counts?.queries ?? 0;
+                                      const u = counts?.urls ?? 0;
+                                      return (
+                                        <>
+                                          Hist
+                                          <span className="ml-1 font-mono">
+                                            (<span className="font-bold">{q}</span>
+                                            <span className="font-normal opacity-70">qu</span>)
+                                            (<span className="font-bold">{u}</span>
+                                            <span className="font-normal opacity-70">url</span>)
+                                          </span>
+                                        </>
+                                      );
+                                    })(),
+                                    onClick: () => handleHistVariant(row.variant_id),
+                                    disabled: !row.variant_id,
+                                    intent: row.variant_id ? 'history' : 'locked',
+                                    width: 'w-28',
+                                    title: !row.variant_id
+                                      ? 'Scalar (product-level) variants have no per-variant history.'
+                                      : `Open Discovery History filtered to "${row.variant_label}".`,
+                                  },
+                                ]}
+                                tertiaryTitle="Data:"
+                                tertiaryLabelClass="sf-delete-label"
+                                tertiaryActions={[
+                                  {
+                                    label: 'UnPub',
+                                    onClick: () => {
+                                      if (!row.variant_id) return;
+                                      setDeleteTarget({
+                                        kind: 'field-variant-unpublish',
+                                        fieldKey: valueKey,
+                                        variantId: row.variant_id,
+                                        label: row.variant_label,
+                                      });
+                                    },
+                                    disabled: !row.variant_id || !hasValue || isAnyDeletePending,
+                                    intent: row.variant_id && hasValue && !isAnyDeletePending ? 'delete' : 'locked',
+                                    title: !row.variant_id
+                                      ? 'Scalar (product-level) variants cannot be unpublished per-variant.'
+                                      : !hasValue
+                                        ? `Nothing to unpublish — no published ${valueKey} for this variant.`
+                                        : `Unpublish — demote this variant's ${valueKey} back to a candidate. Reversible.`,
+                                  },
+                                  {
+                                    label: 'Del',
+                                    onClick: () => {
+                                      if (!row.variant_id) return;
+                                      setDeleteTarget({
+                                        kind: 'field-variant-delete',
+                                        fieldKey: valueKey,
+                                        variantId: row.variant_id,
+                                        label: row.variant_label,
+                                      });
+                                    },
+                                    disabled: !row.variant_id || (!hasValue && !c) || isAnyDeletePending,
+                                    intent: row.variant_id && (hasValue || Boolean(c)) && !isAnyDeletePending ? 'delete' : 'locked',
+                                    title: !row.variant_id
+                                      ? 'Scalar (product-level) variants cannot be deleted per-variant.'
+                                      : (!hasValue && !c)
+                                        ? `Nothing to delete — no ${valueKey} data for this variant.`
+                                        : `Delete — wipe every ${valueKey} candidate and published value for this variant. Not reversible.`,
+                                  },
                                 ]}
                               />
                             </>
@@ -598,6 +805,11 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
           onCancel={() => setDeleteTarget(null)}
           isPending={isAnyDeletePending}
           moduleLabel={moduleLabel}
+          confirmLabel={
+            (deleteTarget.kind === 'field-variant-unpublish' || deleteTarget.kind === 'field-all-variants-unpublish')
+              ? 'Unpublish'
+              : 'Delete'
+          }
           descriptionOverrides={{
             run: `This will delete run #${deleteTarget.runNumber ?? ''}. Per-variant candidate rows are removed from field_candidates and the field re-publishes from remaining sources.`,
             all: `This will delete all ${deleteTarget.count ?? 0} run(s) and every candidate from this ${moduleLabel} module. Touches the ${moduleLabel} tables, JSON, and field_candidates.`,

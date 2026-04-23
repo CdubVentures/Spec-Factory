@@ -145,24 +145,29 @@ describe('publishCandidate', () => {
     assert.equal(resolved.value, '60');
   });
 
-  it('merges list values with set_union', () => {
-    ensureProductJson('pub-union', {
-      fields: { colors: { value: ['black', 'white'], confidence: 90, source: 'pipeline', resolved_at: new Date().toISOString(), sources: [] } },
-    });
-    const row = seedCandidate(specDb, 'pub-union', 'colors', ['white', 'red', 'blue'], 100);
+  it('set_union publishes union of ALL qualifying buckets in the candidate pool', () => {
+    ensureProductJson('pub-union');
+    seedCandidate(specDb, 'pub-union', 'colors', ['black', 'white'], 100, { sourceId: 'u-bw-1' });
+    seedCandidate(specDb, 'pub-union', 'colors', ['white', 'black'], 100, { sourceId: 'u-bw-2' });
+    const triggerRow = seedCandidate(specDb, 'pub-union', 'colors', ['white', 'red', 'blue'], 100, { sourceId: 'u-wrb-1' });
+    seedCandidate(specDb, 'pub-union', 'colors', ['red', 'blue', 'white'], 100, { sourceId: 'u-wrb-2' });
 
     const result = publishCandidate({
       specDb, category: 'mouse', productId: 'pub-union', fieldKey: 'colors',
-      candidateRow: row, value: ['white', 'red', 'blue'], unit: null, confidence: 100,
+      candidateRow: triggerRow, value: ['white', 'red', 'blue'], unit: null, confidence: 100,
       config: { publishConfidenceThreshold: 0.7 },
       fieldRule: listFieldRule, productRoot: PRODUCT_ROOT,
     });
 
     assert.equal(result.status, 'published');
-    // white was already in the list — should not duplicate
-    assert.deepEqual(result.value, ['black', 'white', 'red', 'blue']);
+    const published = new Set(result.value);
+    assert.ok(published.has('black'));
+    assert.ok(published.has('white'));
+    assert.ok(published.has('red'));
+    assert.ok(published.has('blue'));
     const pj = readProductJson('pub-union');
-    assert.deepEqual(pj.fields.colors.value, ['black', 'white', 'red', 'blue']);
+    const pjPublished = new Set(pj.fields.colors.value);
+    assert.equal(pjPublished.size, 4);
   });
 
   it('uses default threshold 0.7 when config is empty', () => {

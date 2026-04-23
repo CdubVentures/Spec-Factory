@@ -3,6 +3,8 @@
  * Extracted from specDb.js constructor — zero logic, pure DDL.
  */
 
+import { fingerprintValue } from './valueFingerprint.js';
+
 export const MIGRATIONS = [
   `ALTER TABLE component_identity ADD COLUMN review_status TEXT DEFAULT 'pending'`,
   `ALTER TABLE component_identity ADD COLUMN aliases_overridden INTEGER DEFAULT 0`,
@@ -98,6 +100,12 @@ export const MIGRATIONS = [
   `DROP TABLE IF EXISTS release_date_finder_suppressions`,
   `DROP TABLE IF EXISTS sku_finder_suppressions`,
   `DROP TABLE IF EXISTS key_finder_suppressions`,
+  // WHY: value_fingerprint pools evidence across candidate rows that agree on
+  // the same value (scalar equality, list set-equality). Computed at insert
+  // via valueFingerprint.js; backfilled for existing rows by
+  // backfillValueFingerprints(). Empty string on unpopulated rows is safe —
+  // backfill rewrites them on next boot.
+  `ALTER TABLE field_candidates ADD COLUMN value_fingerprint TEXT DEFAULT ''`,
 ];
 
 export const SECONDARY_INDEXES = `
@@ -106,6 +114,7 @@ export const SECONDARY_INDEXES = `
   CREATE INDEX IF NOT EXISTS idx_prod_brand_id ON products(category, brand_identifier);
   CREATE INDEX IF NOT EXISTS idx_fc_source_id ON field_candidates(category, product_id, field_key, source_id);
   CREATE INDEX IF NOT EXISTS idx_fce_accepted ON field_candidate_evidence(candidate_id, accepted);
+  CREATE INDEX IF NOT EXISTS idx_fc_fingerprint ON field_candidates(product_id, field_key, value_fingerprint, variant_id_key);
 `;
 
 /**
@@ -121,6 +130,36 @@ export function applyMigrations(db) {
   db.exec(SECONDARY_INDEXES);
   migrateFieldCandidatesToSourceCentric(db);
   migrateFieldCandidatesAddVariantColumns(db);
+  backfillValueFingerprints(db);
+}
+
+/**
+ * Fingerprint backfill for field_candidates rows missing value_fingerprint.
+ * Idempotent: skips rows that already have a non-empty fingerprint.
+ *
+ * @param {import('better-sqlite3').Database} db
+ */
+export function backfillValueFingerprints(db) {
+  const cols = db.pragma('table_info(field_candidates)');
+  if (!cols.some(c => c.name === 'value_fingerprint')) return;
+
+  const rows = db.prepare(
+    "SELECT id, value FROM field_candidates WHERE value_fingerprint IS NULL OR value_fingerprint = ''"
+  ).all();
+  if (rows.length === 0) return;
+
+  const update = db.prepare('UPDATE field_candidates SET value_fingerprint = ? WHERE id = ?');
+  const tx = db.transaction(() => {
+    for (const row of rows) {
+      const raw = row.value;
+      let parsed = raw;
+      if (typeof raw === 'string' && raw.length > 0 && (raw[0] === '[' || raw[0] === '{')) {
+        try { parsed = JSON.parse(raw); } catch { parsed = raw; }
+      }
+      update.run(fingerprintValue(parsed), row.id);
+    }
+  });
+  tx();
 }
 
 /**

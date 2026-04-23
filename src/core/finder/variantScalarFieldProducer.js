@@ -361,12 +361,23 @@ export function createVariantScalarFieldProducer(cfg) {
       // WHY: publishResult is submitCandidate's return ({status:'accepted', ...,
       // publishResult: { status: 'published'|'below_threshold'|... }}). The loop
       // stops on the INNER gate decision — outer 'accepted' is not enough.
-      const innerPublishStatus = publishResult?.publishResult?.status || 'skipped';
+      const innerPublish = publishResult?.publishResult ?? null;
+      const innerPublishStatus = innerPublish?.status || 'skipped';
       return {
         candidate: candidateEntry,
         persisted: true,
         publishStatus: innerPublishStatus,
         published: innerPublishStatus === 'published',
+        // Surface the publisher's gate metrics so variantFieldLoop can build
+        // the canonical pill (evidence target/actual + threshold/confidence).
+        // Mirrors keyFinder.js's `result.publish` shape — same source.
+        publish: innerPublish ? {
+          status: innerPublish.status,
+          confidence: typeof innerPublish.confidence === 'number' ? innerPublish.confidence : null,
+          threshold: typeof innerPublish.threshold === 'number' ? innerPublish.threshold : null,
+          required: typeof innerPublish.required === 'number' ? innerPublish.required : null,
+          actual: typeof innerPublish.actual === 'number' ? innerPublish.actual : null,
+        } : null,
       };
     };
   }
@@ -451,6 +462,16 @@ export function createVariantScalarFieldProducer(cfg) {
     };
     const produceForVariant = buildProduceForVariant(ctx, previousRunsProvider);
 
+    // Pill constants — same publisher gate config the candidate gate uses.
+    const fieldRule = ctx.fieldRules?.[fieldKey] ?? null;
+    const evidenceTarget = Number.isFinite(fieldRule?.evidence?.min_evidence_refs)
+      ? fieldRule.evidence.min_evidence_refs
+      : 1;
+    const rawThreshold = Number.isFinite(opts.config?.publishConfidenceThreshold)
+      ? opts.config.publishConfidenceThreshold
+      : 0.7;
+    const thresholdPct = rawThreshold <= 1 ? Math.round(rawThreshold * 100) : Math.round(rawThreshold);
+
     const { rejected, rejections, perVariantResults, variants, loopId } = await runVariantFieldLoop({
       specDb: ctx.specDb,
       product: ctx.product,
@@ -458,6 +479,8 @@ export function createVariantScalarFieldProducer(cfg) {
       resolveBudget,
       staggerMs: defaultStaggerMs,
       onStageAdvance, onVariantProgress, onLoopProgress,
+      evidenceTarget,
+      thresholdPct,
       logger,
       produceForVariant,
       satisfactionPredicate,

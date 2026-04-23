@@ -32,6 +32,7 @@ export class WsManager {
   private maxReconnectMs: number;
   private currentDelay: number;
   private handlers = new Set<MessageHandler>();
+  private reconnectHandlers = new Set<() => void>();
   private subscriptions: { channels: Channel[]; category?: string; productId?: string } | null = null;
   private closed = false;
   private hadConnection = false;
@@ -78,7 +79,23 @@ export class WsManager {
 
     this.ws.onopen = () => {
       if (this.hadConnection) {
-        this.reloadFn();
+        // WHY: Soft reconnect. Instead of the heavy-handed window.location.reload(),
+        // notify registered handlers so the app can invalidate caches + rehydrate
+        // operations without losing UI state (modals, filters, scroll position).
+        // reloadFn is kept as the fallback for when no handler is wired — safer
+        // than silently running with stale state.
+        if (this.reconnectHandlers.size === 0) {
+          this.reloadFn();
+          return;
+        }
+        for (const handler of this.reconnectHandlers) {
+          try { handler(); } catch (err) { console.error('[ws] reconnect handler failed:', err); }
+        }
+        this.currentDelay = this.reconnectMs;
+        if (this.subscriptions) {
+          this.ws?.send(JSON.stringify({ subscribe: this.subscriptions.channels, ...this.subscriptions }));
+        }
+        this.resetIdleTimer();
         return;
       }
       this.hadConnection = true;
@@ -122,6 +139,17 @@ export class WsManager {
   onMessage(handler: MessageHandler) {
     this.handlers.add(handler);
     return () => { this.handlers.delete(handler); };
+  }
+
+  /**
+   * Register a handler that fires on every successful reconnect (not the first
+   * connect). Returns an unsubscribe fn. When at least one handler is
+   * registered, the default window.location.reload() is suppressed — the
+   * handler is expected to invalidate caches and rehydrate server state.
+   */
+  onReconnect(handler: () => void) {
+    this.reconnectHandlers.add(handler);
+    return () => { this.reconnectHandlers.delete(handler); };
   }
 
   close() {

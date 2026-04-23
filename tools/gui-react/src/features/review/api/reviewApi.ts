@@ -49,3 +49,23 @@ export function clearPublishedField(
 ): Promise<ClearPublishedFieldResponse> {
   return api.post<ClearPublishedFieldResponse>(`/review/${category}/clear-published`, body);
 }
+
+interface DeleteVariantFieldBody {
+  readonly productId: string;
+  readonly field: string;
+  readonly variantId: string;
+}
+interface DeleteVariantFieldResponse {
+  readonly ok: boolean;
+  readonly status: 'deleted';
+  readonly field: string;
+  readonly variantId: string;
+  readonly json_changed: boolean;
+}
+
+export function deleteVariantField(
+  category: string,
+  body: DeleteVariantFieldBody,
+): Promise<DeleteVariantFieldResponse> {
+  return api.post<DeleteVariantFieldResponse>(`/review/${category}/delete-variant-field`, body);
+}

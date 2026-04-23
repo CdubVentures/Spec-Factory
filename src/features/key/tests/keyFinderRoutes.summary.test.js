@@ -301,6 +301,21 @@ describe('GET /key-finder/:category/:productId/summary', () => {
     assert.equal(byKey.sensor_model.last_value, 'unk');
     assert.equal(byKey.acceleration.run_count, 0);
     assert.equal(byKey.acceleration.last_run_number, null);
+
+    // WHY: Last Model column needs the same LAB/API + FB + thinking/webSearch
+    // badges the worker panel shows, not just the bare model string. These
+    // fields feed FinderRunModelBadge so the table cell and Run History
+    // render identically. Acceleration has no run → all null (not undefined).
+    assert.equal(byKey.polling_rate.last_fallback_used, false);
+    assert.equal(byKey.polling_rate.last_access_mode, 'api');
+    assert.equal(byKey.polling_rate.last_effort_level, 'xhigh');
+    assert.equal(byKey.polling_rate.last_thinking, true);
+    assert.equal(byKey.polling_rate.last_web_search, true);
+    assert.equal(byKey.acceleration.last_fallback_used, null);
+    assert.equal(byKey.acceleration.last_access_mode, null);
+    assert.equal(byKey.acceleration.last_effort_level, null);
+    assert.equal(byKey.acceleration.last_thinking, null);
+    assert.equal(byKey.acceleration.last_web_search, null);
   });
 
   it('derives last_status — resolved / below_threshold / unk / unresolved', async (t) => {

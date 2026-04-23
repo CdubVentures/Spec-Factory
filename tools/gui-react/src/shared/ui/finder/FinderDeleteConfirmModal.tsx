@@ -34,6 +34,10 @@ function resolveTitle(target: DeleteTarget, moduleLabel: string): string {
     case 'key-delete-group': return `Delete all data for ${target.count ?? 0} key(s) in "${target.label ?? ''}"?`;
     case 'key-unresolve-all': return `Unresolve all ${target.count ?? 0} published key(s)?`;
     case 'key-delete-all': return `Delete all data for ${target.count ?? 0} key(s) in this product?`;
+    case 'field-variant-unpublish': return `Unpublish ${target.fieldKey ?? ''} for "${target.label ?? target.variantId ?? ''}"?`;
+    case 'field-variant-delete': return `Delete all ${target.fieldKey ?? ''} data for "${target.label ?? target.variantId ?? ''}"?`;
+    case 'field-all-variants-unpublish': return `Unpublish ${target.fieldKey ?? ''} for all ${target.count ?? 0} variant(s)?`;
+    case 'field-all-variants-delete': return `Delete all ${target.fieldKey ?? ''} data across all ${target.count ?? 0} variant(s)?`;
   }
 }
 
@@ -73,6 +77,14 @@ function resolveDefaultDescription(target: DeleteTarget, moduleLabel: string): s
       return `Demote every currently published value across every group back to a candidate. Candidates, runs, and discovery history are preserved per key. Reversible.`;
     case 'key-delete-all':
       return `Permanently wipe every trace of ${target.count ?? 0} key(s) across every group: published values, candidates, evidence, URL/query history, and every primary run. Fresh slate for each. This cannot be undone.`;
+    case 'field-variant-unpublish':
+      return `Demote the published ${target.fieldKey ?? 'field'} value for "${target.label ?? target.variantId ?? ''}" back to a candidate. Candidates and run history are preserved — a future Run can re-resolve. Reversible.`;
+    case 'field-variant-delete':
+      return `Permanently wipe the ${target.fieldKey ?? 'field'} value, all candidates, and evidence for "${target.label ?? target.variantId ?? ''}". Other variants and run records are untouched. This cannot be undone.`;
+    case 'field-all-variants-unpublish':
+      return `Demote every published ${target.fieldKey ?? 'field'} value across all ${target.count ?? 0} variant(s) back to a candidate. Candidates, runs, and discovery history are preserved per variant. Reversible.`;
+    case 'field-all-variants-delete':
+      return `Permanently wipe the ${target.fieldKey ?? 'field'} value, every candidate, evidence, and every run for all ${target.count ?? 0} variant(s) in this product. Fresh slate. This cannot be undone.`;
   }
 }
 

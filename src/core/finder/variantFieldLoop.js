@@ -24,6 +24,11 @@
 import { runPerVariant } from './runPerVariant.js';
 import { generateLoopId } from './loopIdGenerator.js';
 
+function pctFrom(value) {
+  if (!Number.isFinite(value)) return null;
+  return value <= 1 ? Math.round(value * 100) : Math.round(value);
+}
+
 /**
  * @param {object} opts
  * @param {object} opts.specDb                              — SpecDb with variants store
@@ -35,14 +40,16 @@ import { generateLoopId } from './loopIdGenerator.js';
  * @param {number} [opts.staggerMs]                         — delay between variants
  * @param {(stage: string) => void} [opts.onStageAdvance]
  * @param {(completed, total, variantKey) => void} [opts.onVariantProgress]
- * @param {Function} [opts.onLoopProgress] — Canonical pill-shape emission; see
- *   docs/implementation/active operations upgrade/active-operations-upgrade-guide.html §6.
- *   Shape: { publish: {count, target, satisfied, confidence},
- *            callBudget: {used, budget, exhausted},
- *            final_status, loop_id, variantKey, variantLabel }
- *   Per-attempt events carry final_status=null. A terminal per-variant event
- *   fires once with the derived final_status ('published' | 'budget_exhausted'
- *   | 'skipped_resolved'). The skipped path emits exactly one pill.
+ * @param {Function} [opts.onLoopProgress] — Canonical pill-shape emission. See
+ *   active-operations-upgrade-guide.html §6. Shape:
+ *     { publish: {evidenceCount, evidenceTarget, satisfied, confidence, threshold},
+ *       callBudget: {used, budget, exhausted},
+ *       final_status, loop_id, variantKey, variantLabel }
+ *   Per-attempt events carry final_status=null + the publisher's gate metrics
+ *   from `produceForVariant`'s result.publish. A terminal per-variant event
+ *   fires with the derived final_status. Skipped path emits exactly one pill.
+ * @param {number} [opts.evidenceTarget=1]   — fieldRule.evidence.min_evidence_refs
+ * @param {number} [opts.thresholdPct]       — publishConfidenceThreshold * 100
  * @param {object} [opts.logger]
  */
 export async function runVariantFieldLoop({
@@ -56,6 +63,8 @@ export async function runVariantFieldLoop({
   onStageAdvance = null,
   onVariantProgress = null,
   onLoopProgress = null,
+  evidenceTarget = 1,
+  thresholdPct = null,
   logger = null,
 }) {
   const loopId = generateLoopId();
@@ -67,7 +76,13 @@ export async function runVariantFieldLoop({
     if (variantBudget === 0) {
       // Skipped-resolved path — one pill, no attempts fire.
       onLoopProgress?.({
-        publish: { count: 1, target: 1, satisfied: true, confidence: null },
+        publish: {
+          evidenceCount: evidenceTarget,
+          evidenceTarget,
+          satisfied: true,
+          confidence: null,
+          threshold: thresholdPct,
+        },
         callBudget: { used: 0, budget: 0, exhausted: false },
         final_status: 'skipped_resolved',
         loop_id: loopId,
@@ -80,20 +95,60 @@ export async function runVariantFieldLoop({
     let lastResult = null;
     let satisfiedFinal = false;
     let stoppedAtAttempt = 0;
+    let lastEvidenceCount = 0;
+    let lastConfidencePct = null;
+
     for (let attempt = 1; attempt <= variantBudget; attempt++) {
-      const attemptCtx = { ...ctx, attempt, budget: variantBudget, loopId };
-      const result = await produceForVariant(variant, i, attemptCtx);
-      lastResult = result;
-      const satisfied = Boolean(satisfactionPredicate?.(result));
-      // Per-attempt pill — final_status=null while the loop is still running.
+      // Pre-attempt pill — sidebar updates to "call N/budget" for THIS variant
+      // the moment the LLM call starts, not after it returns. Carries previous
+      // best evidence + confidence so the UI doesn't blank out between calls.
       onLoopProgress?.({
-        publish: { count: satisfied ? 1 : 0, target: 1, satisfied, confidence: null },
+        publish: {
+          evidenceCount: lastEvidenceCount,
+          evidenceTarget,
+          satisfied: false,
+          confidence: lastConfidencePct,
+          threshold: thresholdPct,
+        },
         callBudget: { used: attempt, budget: variantBudget, exhausted: attempt >= variantBudget },
         final_status: null,
         loop_id: loopId,
         variantKey: variant.key,
         variantLabel: variant.label,
       });
+
+      const attemptCtx = { ...ctx, attempt, budget: variantBudget, loopId };
+      const result = await produceForVariant(variant, i, attemptCtx);
+      lastResult = result;
+      const satisfied = Boolean(satisfactionPredicate?.(result));
+
+      // Post-attempt pill — uses the publisher's gate metrics threaded through
+      // result.publish (mirrors keyFinder.js). Falls back to the candidate's
+      // own evidence_refs.length / confidence when the publisher didn't gate.
+      const pubGate = result?.publish ?? null;
+      const iterEvidence = Number.isFinite(pubGate?.actual)
+        ? pubGate.actual
+        : (Array.isArray(result?.candidate?.sources) ? result.candidate.sources.length : 0);
+      const iterConfidencePct = pctFrom(pubGate?.confidence)
+        ?? pctFrom(result?.candidate?.confidence);
+      lastEvidenceCount = iterEvidence;
+      lastConfidencePct = iterConfidencePct;
+
+      onLoopProgress?.({
+        publish: {
+          evidenceCount: iterEvidence,
+          evidenceTarget,
+          satisfied,
+          confidence: iterConfidencePct,
+          threshold: thresholdPct,
+        },
+        callBudget: { used: attempt, budget: variantBudget, exhausted: attempt >= variantBudget },
+        final_status: null,
+        loop_id: loopId,
+        variantKey: variant.key,
+        variantLabel: variant.label,
+      });
+
       if (satisfied) {
         satisfiedFinal = true;
         stoppedAtAttempt = attempt;
@@ -102,12 +157,21 @@ export async function runVariantFieldLoop({
       stoppedAtAttempt = attempt;
     }
 
-    // Terminal per-variant pill — the derived final_status lets the modal show
-    // whether this variant stopped because the target met or budget exhausted.
+    // Terminal per-variant pill — derived final_status + last known metrics.
     const terminalStatus = satisfiedFinal ? 'published' : 'budget_exhausted';
     onLoopProgress?.({
-      publish: { count: satisfiedFinal ? 1 : 0, target: 1, satisfied: satisfiedFinal, confidence: null },
-      callBudget: { used: stoppedAtAttempt, budget: variantBudget, exhausted: stoppedAtAttempt >= variantBudget && !satisfiedFinal },
+      publish: {
+        evidenceCount: lastEvidenceCount,
+        evidenceTarget,
+        satisfied: satisfiedFinal,
+        confidence: lastConfidencePct,
+        threshold: thresholdPct,
+      },
+      callBudget: {
+        used: stoppedAtAttempt,
+        budget: variantBudget,
+        exhausted: stoppedAtAttempt >= variantBudget && !satisfiedFinal,
+      },
       final_status: terminalStatus,
       loop_id: loopId,
       variantKey: variant.key,

@@ -100,7 +100,7 @@ describe('republishField', () => {
     const origGetCompiledRules = specDb.getCompiledRules.bind(specDb);
     specDb.getCompiledRules = () => ({
       ...origGetCompiledRules(),
-      fields: { colors: { contract: { list_rules: { item_union: 'set_union' } } } },
+      fields: { colors: { contract: { shape: 'list', type: 'string', list_rules: { item_union: 'set_union' } } } },
     });
 
     seed('mouse-001', 'colors', '["black","white"]', 0.9);

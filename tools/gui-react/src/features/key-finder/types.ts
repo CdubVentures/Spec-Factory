@@ -51,6 +51,16 @@ export interface KeyFinderSummaryRow {
   readonly last_value: unknown;
   readonly last_confidence: number | null;
   readonly last_model: string | null;
+  /** Last-run badge fields — mirrors persisted run.fallback_used /
+   *  access_mode / effort_level / thinking / web_search so the Last Model
+   *  column can render the same LAB/API + FB + thinking/webSearch badge set
+   *  that Run History uses via FinderRunModelBadge. null when the key has
+   *  never been run. */
+  readonly last_fallback_used: boolean | null;
+  readonly last_access_mode: string | null;
+  readonly last_effort_level: string | null;
+  readonly last_thinking: boolean | null;
+  readonly last_web_search: boolean | null;
   readonly candidate_count: number;
   readonly published: boolean;
   readonly run_count: number;
@@ -143,6 +153,11 @@ export interface KeyEntry {
   readonly last_confidence: number | null;
   readonly last_status: KeyStatus;
   readonly last_model: string | null;
+  readonly last_fallback_used: boolean | null;
+  readonly last_access_mode: string | null;
+  readonly last_effort_level: string | null;
+  readonly last_thinking: boolean | null;
+  readonly last_web_search: boolean | null;
   readonly candidate_count: number;
   readonly published: boolean;
   readonly run_count: number;

@@ -1,17 +1,21 @@
 /**
  * Threshold Reconciliation — re-evaluate all candidates against a new confidence threshold.
  *
- * Tightening (threshold raised): unpublish resolved candidates below the new threshold.
- * Loosening (threshold lowered): publish highest-confidence candidates above the new threshold.
- * Manual overrides are never touched.
+ * Delegates the gate logic to evaluateFieldBuckets so reconcile, publish, and
+ * republish all apply identical semantics. Manual overrides never touched.
  *
- * Dual-state: updates both field_candidates SQL status and product.json fields[].
+ * Tightening (threshold raised): buckets that no longer qualify are demoted
+ *   and the field is removed from product.json.
+ * Loosening (threshold lowered): buckets that now qualify are published;
+ *   for set_union fields, union of qualifying buckets becomes the new value.
+ *
+ * Dual-state: updates field_candidates SQL status and product.json fields[].
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { normalizeConfidence, buildLinkedCandidates } from './publishCandidate.js';
-import { checkEvidenceGate } from './evidenceGate.js';
+import { buildLinkedCandidates, persistPublishResult } from './publishCandidate.js';
+import { evaluateFieldBuckets } from './evidenceGate.js';
 
 function safeReadJson(filePath) {
   try { return JSON.parse(fs.readFileSync(filePath, 'utf8')); }
@@ -35,30 +39,22 @@ export function reconcileThreshold({
 }) {
   const result = { unpublished: 0, published: 0, locked: 0, unaffected: 0, total_fields: 0 };
 
-  // WHY: Field rules needed for set_union detection and linked_candidates building.
   const compiled = specDb.getCompiledRules?.();
   const fieldRules = compiled?.fields || {};
 
-  // --- Stage 1: Scanning ---
   if (onStageAdvance) onStageAdvance('Scanning');
   const productIds = specDb.getDistinctCandidateProducts();
 
-  // --- Stage 2: Evaluating ---
   if (onStageAdvance) onStageAdvance('Evaluating');
 
   for (const productId of productIds) {
     const productDir = path.join(productRoot, productId);
     const productPath = path.join(productDir, 'product.json');
-    const productJson = dryRun ? null : safeReadJson(productPath);
-    const productFields = dryRun ? null : (productJson ? (productJson.fields || (productJson.fields = {})) : null);
-
-    // Read product.json fields for lock detection even in dry-run
-    const dryRunJson = dryRun ? safeReadJson(productPath) : null;
-    const dryRunFields = dryRunJson?.fields || {};
+    const productJson = safeReadJson(productPath);
+    const productFields = productJson ? (productJson.fields || (productJson.fields = {})) : {};
 
     const allCandidates = specDb.getAllFieldCandidatesByProduct(productId);
 
-    // Group by field_key
     const byField = new Map();
     for (const row of allCandidates) {
       if (!byField.has(row.field_key)) byField.set(row.field_key, []);
@@ -69,122 +65,85 @@ export function reconcileThreshold({
 
     for (const [fieldKey, candidates] of byField) {
       result.total_fields++;
-      const resolved = candidates.find(c => c.status === 'resolved');
+      const fieldRule = fieldRules[fieldKey] || null;
+      const jsonField = productFields[fieldKey];
+      const currentlyPublished = jsonField && jsonField.source !== 'manual_override'
+        ? serializeValue(jsonField.value)
+        : null;
 
-      // --- Lock check: manual override ---
-      const jsonField = dryRun ? dryRunFields[fieldKey] : productFields?.[fieldKey];
-      const isManualOverride =
-        jsonField?.source === 'manual_override' ||
-        resolved?.metadata_json?.source === 'manual_override';
-
-      if (isManualOverride) {
+      if (jsonField?.source === 'manual_override' || candidates.some(c => c.metadata_json?.source === 'manual_override')) {
         result.locked++;
         continue;
       }
 
-      if (resolved) {
-        // TIGHTENING: resolved exists but confidence below new threshold
-        if (normalizeConfidence(resolved.confidence) < threshold) {
+      const evalResult = evaluateFieldBuckets({
+        specDb, productId, fieldKey, fieldRule, variantId: null, threshold,
+      });
+
+      const nowPublishes = evalResult.publishedValue !== undefined;
+      const newSerialized = nowPublishes ? serializeValue(evalResult.publishedValue) : null;
+
+      if (!nowPublishes) {
+        if (currentlyPublished !== null) {
           if (!dryRun) {
             specDb.demoteResolvedCandidates(productId, fieldKey);
-            if (productFields) {
-              delete productFields[fieldKey];
-              productDirty = true;
-            }
+            delete productFields[fieldKey];
+            productDirty = true;
           }
           result.unpublished++;
-          continue;
-        }
-        // Resolved and still above threshold — no action
-        result.unaffected++;
-      } else {
-        // LOOSENING: no resolved candidate — find best above threshold that also clears the evidence gate
-        const fieldRuleForGate = fieldRules[fieldKey] || null;
-        const best = candidates
-          .filter(c => normalizeConfidence(c.confidence) >= threshold)
-          .filter(c => checkEvidenceGate({ specDb, candidateId: c.id, fieldRule: fieldRuleForGate }).ok)
-          .sort((a, b) => normalizeConfidence(b.confidence) - normalizeConfidence(a.confidence))[0];
-
-        if (best) {
-          if (!dryRun) {
-            const publishedValue = best.value;
-            let parsedValue;
-            try { parsedValue = typeof publishedValue === 'string' ? JSON.parse(publishedValue) : publishedValue; }
-            catch { parsedValue = publishedValue; }
-            const serialized = serializeValue(parsedValue);
-            const fieldRule = fieldRules[fieldKey] || null;
-            const itemUnion = fieldRule?.contract?.list_rules?.item_union;
-
-            // WHY: For set_union, mark all contributing candidates resolved (overlap match).
-            // For scalar, mark exact value match.
-            if (itemUnion === 'set_union' && Array.isArray(parsedValue)) {
-              const publishedSet = new Set(parsedValue.map(v => serializeValue(v)));
-              const allFieldCandidates = specDb.getFieldCandidatesByProductAndField(productId, fieldKey);
-              for (const row of allFieldCandidates) {
-                let items;
-                try { items = typeof row.value === 'string' ? JSON.parse(row.value) : row.value; }
-                catch { items = null; }
-                if (!Array.isArray(items)) continue;
-                if (items.some(item => publishedSet.has(serializeValue(item)))) {
-                  specDb.markFieldCandidateResolved(productId, fieldKey, row.value);
-                }
-              }
-            } else {
-              specDb.markFieldCandidateResolved(productId, fieldKey, serialized);
-            }
-
-            if (productFields) {
-              // WHY: Source-centric rows have no sources_json — the row IS the source.
-              // Build a source entry from the row's own columns for backward compat.
-              const sources = best.source_id
-                ? [{ source: best.source_type || '', source_id: best.source_id, model: best.model || '', confidence: best.confidence ?? 0 }]
-                : (Array.isArray(best.sources_json) ? best.sources_json : []);
-              const linkedCandidates = buildLinkedCandidates(specDb, productId, fieldKey, parsedValue, fieldRule);
-              productFields[fieldKey] = {
-                value: parsedValue,
-                confidence: best.confidence,
-                source: 'pipeline',
-                resolved_at: new Date().toISOString(),
-                sources,
-                linked_candidates: linkedCandidates,
-              };
-              productDirty = true;
-            }
-
-            // Persist publish result in metadata
-            // WHY: Uses the row's own source_id to upsert without creating a duplicate row.
-            try {
-              const row = specDb.getFieldCandidate(productId, fieldKey, serialized);
-              if (row) {
-                const meta = row.metadata_json && typeof row.metadata_json === 'object' ? { ...row.metadata_json } : {};
-                meta.publish_result = { status: 'published', published_at: new Date().toISOString() };
-                specDb.upsertFieldCandidate({
-                  productId, fieldKey, value: serialized,
-                  unit: row.unit, confidence: row.confidence,
-                  sourceId: row.source_id || '',
-                  sourceType: row.source_type || '',
-                  model: row.model || '',
-                  validationJson: row.validation_json, metadataJson: meta,
-                  status: 'resolved',
-                });
-              }
-            } catch { /* best-effort metadata update */ }
-          }
-          result.published++;
         } else {
           result.unaffected++;
         }
+        continue;
+      }
+
+      if (currentlyPublished === newSerialized) {
+        result.unaffected++;
+        continue;
+      }
+
+      if (!dryRun) {
+        specDb.demoteResolvedCandidates(productId, fieldKey);
+        const memberIds = new Set(evalResult.publishedMemberIds);
+        if (memberIds.size > 0) {
+          const placeholders = Array.from(memberIds).map(() => '?').join(',');
+          specDb.db.prepare(
+            `UPDATE field_candidates SET status = 'resolved', updated_at = datetime('now')
+             WHERE id IN (${placeholders})`
+          ).run(...Array.from(memberIds));
+        }
+
+        const topMember = candidates.find(c => memberIds.has(c.id))
+          || candidates.sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0))[0];
+        const sources = topMember?.source_id
+          ? [{ source: topMember.source_type || '', source_id: topMember.source_id, model: topMember.model || '', confidence: topMember.confidence ?? 0 }]
+          : [];
+        const linkedCandidates = buildLinkedCandidates(specDb, productId, fieldKey, evalResult.publishedValue, fieldRule);
+        productFields[fieldKey] = {
+          value: evalResult.publishedValue,
+          confidence: topMember?.confidence ?? 0,
+          source: 'pipeline',
+          resolved_at: new Date().toISOString(),
+          sources,
+          linked_candidates: linkedCandidates,
+        };
+        productDirty = true;
+        persistPublishResult(specDb, productId, fieldKey, newSerialized, { status: 'published', published_at: new Date().toISOString() });
+      }
+
+      if (currentlyPublished === null) {
+        result.published++;
+      } else {
+        result.published++;
       }
     }
 
-    // Write product.json if changed
     if (!dryRun && productDirty && productJson) {
       productJson.updated_at = new Date().toISOString();
       fs.writeFileSync(productPath, JSON.stringify(productJson, null, 2));
     }
   }
 
-  // --- Stage 3: Complete ---
   if (onStageAdvance) onStageAdvance('Complete');
 
   return result;

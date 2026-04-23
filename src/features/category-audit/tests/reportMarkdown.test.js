@@ -77,8 +77,10 @@ test('renderMarkdown places auditor-task section before summary and includes ret
   const auditorIdx = md.indexOf('## Auditor task');
   const summaryIdx = md.indexOf('## Summary');
   assert.ok(auditorIdx >= 0 && summaryIdx > auditorIdx, 'auditor-task appears before summary');
-  assert.ok(md.includes('Return format (markdown)'), 'return-format spec included');
-  assert.ok(md.includes('Per-key changes'), 'per-key checklist included');
+  assert.ok(md.includes('Return format (markdown'), 'return-format spec included');
+  assert.ok(md.includes('Field-by-field patches'), 'per-field patch section included');
+  assert.ok(md.includes('Highest-risk corrections'), 'highest-risk lead-in included');
+  assert.ok(md.includes('## Audit standard'), 'audit standard section emitted');
 });
 
 test('renderMarkdown emits GitHub-flavored table syntax', () => {

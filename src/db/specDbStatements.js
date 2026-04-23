@@ -440,10 +440,10 @@ export function prepareStatements(db) {
     _upsertFieldCandidate: db.prepare(`
       INSERT INTO field_candidates (
         category, product_id, field_key, value, unit,
-        confidence, source_id, source_type, model, validation_json, metadata_json, status, variant_id
+        confidence, source_id, source_type, model, validation_json, metadata_json, status, variant_id, value_fingerprint
       ) VALUES (
         @category, @product_id, @field_key, @value, @unit,
-        @confidence, @source_id, @source_type, @model, @validation_json, @metadata_json, @status, @variant_id
+        @confidence, @source_id, @source_type, @model, @validation_json, @metadata_json, @status, @variant_id, @value_fingerprint
       )
       ON CONFLICT(category, product_id, field_key, source_id, variant_id_key) DO UPDATE SET
         confidence = MAX(excluded.confidence, field_candidates.confidence),
@@ -451,6 +451,7 @@ export function prepareStatements(db) {
         validation_json = excluded.validation_json,
         metadata_json = excluded.metadata_json,
         status = excluded.status,
+        value_fingerprint = excluded.value_fingerprint,
         updated_at = datetime('now')
     `),
     _getFieldCandidate: db.prepare(
@@ -503,12 +504,12 @@ export function prepareStatements(db) {
       INSERT INTO field_candidates (
         category, product_id, field_key, source_id, source_type,
         value, unit, confidence, model,
-        validation_json, metadata_json, status, variant_id,
+        validation_json, metadata_json, status, variant_id, value_fingerprint,
         submitted_at, updated_at
       ) VALUES (
         @category, @product_id, @field_key, @source_id, @source_type,
         @value, @unit, @confidence, @model,
-        @validation_json, @metadata_json, @status, @variant_id,
+        @validation_json, @metadata_json, @status, @variant_id, @value_fingerprint,
         COALESCE(@submitted_at, datetime('now')),
         COALESCE(@submitted_at, datetime('now'))
       )
@@ -585,6 +586,55 @@ export function prepareStatements(db) {
          SUM(CASE WHEN accepted = 1 THEN 1 ELSE 0 END) AS accepted,
          SUM(CASE WHEN accepted = 0 THEN 1 ELSE 0 END) AS rejected
        FROM field_candidate_evidence WHERE candidate_id = ?`
+    ),
+
+    // WHY: Deterministic publisher — counts evidence URLs pooled across every
+    // candidate row that agrees on a value (scalar equality or list
+    // set-equality), filtered by per-ref confidence against the publish
+    // threshold. NULL evidence.confidence counts as qualifying so pre-upgrade
+    // rows still pass. DISTINCT url ensures the same URL submitted by multiple
+    // rows counts once.
+    _countPooledQualifyingEvidenceByFingerprint: db.prepare(
+      `SELECT COUNT(DISTINCT fce.url) AS total
+         FROM field_candidate_evidence fce
+         JOIN field_candidates fc ON fc.id = fce.candidate_id
+        WHERE fc.category = ? AND fc.product_id = ? AND fc.field_key = ?
+          AND fc.value_fingerprint = ?
+          AND fc.variant_id_key = COALESCE(?, '')
+          AND (fce.confidence IS NULL OR (fce.confidence * 1.0) / 100.0 >= ?)`
+    ),
+
+    // WHY: Bucket list for the field evaluator — groups rows by fingerprint,
+    // carries a representative value (highest-confidence row's value) and the
+    // full list of member candidate ids so the publisher can cascade the
+    // resolved mark across agreeing rows.
+    _listFieldBuckets: db.prepare(
+      `SELECT
+         value_fingerprint,
+         MAX(confidence) AS top_confidence,
+         COUNT(*) AS member_count,
+         GROUP_CONCAT(id) AS member_ids_csv,
+         (SELECT value FROM field_candidates
+            WHERE category = fc.category AND product_id = fc.product_id
+              AND field_key = fc.field_key
+              AND variant_id_key = fc.variant_id_key
+              AND value_fingerprint = fc.value_fingerprint
+            ORDER BY confidence DESC, id ASC LIMIT 1) AS value
+       FROM field_candidates fc
+       WHERE fc.category = ? AND fc.product_id = ? AND fc.field_key = ?
+         AND fc.variant_id_key = COALESCE(?, '')
+         AND fc.value_fingerprint != ''
+       GROUP BY value_fingerprint
+       ORDER BY top_confidence DESC, value_fingerprint ASC`
+    ),
+
+    // WHY: keyFinderLoop satisfaction check — publish state is "any row
+    // resolved for this field." Replaces the single-row getResolvedFieldCandidate
+    // lookup at the loop pre-check.
+    _hasPublishedValue: db.prepare(
+      `SELECT 1 AS ok FROM field_candidates
+         WHERE category = ? AND product_id = ? AND field_key = ? AND status = 'resolved'
+         LIMIT 1`
     ),
 
     // ── Variants ────────────────────────────────────────────────────

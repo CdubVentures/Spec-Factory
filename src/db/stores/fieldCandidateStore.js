@@ -6,9 +6,20 @@
  * Rebuildable from product.json (Phase A5).
  */
 
+import { fingerprintValue } from '../valueFingerprint.js';
+
 function safeParse(str, fallback) {
   try { return JSON.parse(str); }
   catch { return fallback; }
+}
+
+function computeFingerprint(rawValue) {
+  if (rawValue === null || rawValue === undefined) return '';
+  let parsed = rawValue;
+  if (typeof rawValue === 'string' && rawValue.length > 0 && (rawValue[0] === '[' || rawValue[0] === '{')) {
+    try { parsed = JSON.parse(rawValue); } catch { parsed = rawValue; }
+  }
+  return fingerprintValue(parsed);
 }
 
 function hydrateRow(row) {
@@ -45,6 +56,7 @@ export function createFieldCandidateStore({ db, category, stmts }) {
       metadata_json: JSON.stringify(metadataJson ?? {}),
       status: status || 'candidate',
       variant_id: variantId ?? null,
+      value_fingerprint: computeFingerprint(value),
     });
   }
 
@@ -210,6 +222,7 @@ export function createFieldCandidateStore({ db, category, stmts }) {
         metadata_json: JSON.stringify(metadataJson ?? {}),
         status: status || 'candidate',
         variant_id: vid,
+        value_fingerprint: computeFingerprint(value),
         submitted_at: submittedAt ?? null,
       });
     } catch (e) {
@@ -278,17 +291,26 @@ export function createFieldCandidateStore({ db, category, stmts }) {
     ).run(category, String(productId || ''), String(variantId || ''));
   }
 
+  // WHY: Per-field variant wipe — used by the GenericScalarFinderPanel's
+  // per-variant "Del" action. Deletes every row for one (product, field,
+  // variant) triplet; field_candidate_evidence cascades via FK.
+  function deleteByProductFieldVariant(productId, fieldKey, variantId) {
+    db.prepare(
+      'DELETE FROM field_candidates WHERE category = ? AND product_id = ? AND field_key = ? AND variant_id = ?'
+    ).run(category, String(productId || ''), String(fieldKey || ''), String(variantId || ''));
+  }
+
   // WHY: Variant deletion needs to update candidate values (splice items from
   // JSON arrays) without changing source_id or other columns.
   function updateValue(productId, fieldKey, sourceId, newValue) {
     db.prepare(
-      `UPDATE field_candidates SET value = ?, updated_at = datetime('now')
+      `UPDATE field_candidates SET value = ?, value_fingerprint = ?, updated_at = datetime('now')
        WHERE category = ? AND product_id = ? AND field_key = ? AND source_id = ?`
-    ).run(newValue, category, String(productId || ''), String(fieldKey || ''), String(sourceId || ''));
+    ).run(newValue, computeFingerprint(newValue), category, String(productId || ''), String(fieldKey || ''), String(sourceId || ''));
   }
 
   return {
     upsert, get, getByProductAndField, getAllByProduct, deleteByProduct, deleteByProductAndField, deleteByProductFieldValue, getPaginated, count, stats, markResolved, demoteResolved, getResolved, getTopCandidate, getDistinctProducts,
-    insert, getBySourceId, getBySourceIdAndVariant, deleteBySourceId, deleteBySourceType, getByValue, markResolvedByValue, countBySourceId, updateValue, deleteByVariantId,
+    insert, getBySourceId, getBySourceIdAndVariant, deleteBySourceId, deleteBySourceType, getByValue, markResolvedByValue, countBySourceId, updateValue, deleteByVariantId, deleteByProductFieldVariant,
   };
 }

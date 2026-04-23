@@ -8,6 +8,7 @@
 
 import { memo } from 'react';
 import { resolveEffortLabel } from '../../../features/llm-config/state/resolveEffortLabel.ts';
+import { displayModelName } from './displayModelName.ts';
 
 interface FinderRunModelBadgeProps {
   /** Model name as persisted in the run record (e.g. "gpt-5.4-xhigh"). */
@@ -139,7 +140,7 @@ export const FinderRunModelBadge = memo(function FinderRunModelBadge({
           <WebSearchIconMini />
         </span>
       )}
-      <span>{model}</span>
+      <span>{displayModelName(model)}</span>
       {resolvedEffort && (
         <span
           style={{

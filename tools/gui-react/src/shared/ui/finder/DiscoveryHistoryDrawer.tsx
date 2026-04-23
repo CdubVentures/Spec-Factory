@@ -134,14 +134,22 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
   const [kind, setKind] = useState<KindFilter>('all');
   const [variantFilter, setVariantFilter] = useState('');
   const [modeFilter, setModeFilter] = useState('');
+  // Optional preset: panels can open the drawer scoped to a single variant
+  // (per-variant Hist button) or leave it unset for the full history.
+  const variantIdFilter = useFinderDiscoveryHistoryStore((s) => s.variantIdFilter);
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      // Initialize the internal variant filter from the store's preset on
+      // open. Leaving it set after close would persist across subsequent
+      // unfiltered opens — so the close-branch below resets it too.
+      if (variantIdFilter) setVariantFilter(variantIdFilter);
+    } else {
       setSearchText('');
       setKind('all');
       setVariantFilter('');
       setModeFilter('');
     }
-  }, [open]);
+  }, [open, variantIdFilter]);
 
   const filtered = useMemo(() => {
     const q = searchText.trim().toLowerCase();

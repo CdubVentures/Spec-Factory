@@ -331,7 +331,7 @@ describe('isCarouselLoopProgress', () => {
     // Canonical pill shape per active-operations-upgrade §6. Never has views[].
     const pillShape = {
       loop_id: 'loop-abc',
-      publish: { count: 1, target: 1, satisfied: true, confidence: 88 },
+      publish: { evidenceCount: 1, evidenceTarget: 1, satisfied: true, confidence: 88, threshold: 70 },
       callBudget: { used: 2, budget: 5, exhausted: false },
       final_status: 'published',
       variantKey: 'color:black',
@@ -405,7 +405,7 @@ describe('isPillLoopProgress', () => {
   it('returns true for canonical pill shape with publish + callBudget', () => {
     const pill = {
       loop_id: 'loop-abc',
-      publish: { count: 1, target: 1, satisfied: true, confidence: 88 },
+      publish: { evidenceCount: 1, evidenceTarget: 1, satisfied: true, confidence: 88, threshold: 70 },
       callBudget: { used: 2, budget: 5, exhausted: false },
       final_status: 'published',
     } as unknown as Operation['loopProgress'];
@@ -415,7 +415,7 @@ describe('isPillLoopProgress', () => {
   it('returns true for pill shape with final_status=null (intermediate iteration)', () => {
     const pill = {
       loop_id: 'loop-abc',
-      publish: { count: 0, target: 1, satisfied: false, confidence: null },
+      publish: { evidenceCount: 0, evidenceTarget: 1, satisfied: false, confidence: null, threshold: 95 },
       callBudget: { used: 1, budget: 5, exhausted: false },
       final_status: null,
     } as unknown as Operation['loopProgress'];
@@ -425,7 +425,7 @@ describe('isPillLoopProgress', () => {
   it('returns true for pill shape with variant extras (variantFieldLoop)', () => {
     const pill = {
       loop_id: 'loop-abc',
-      publish: { count: 0, target: 1, satisfied: false, confidence: null },
+      publish: { evidenceCount: 0, evidenceTarget: 1, satisfied: false, confidence: null, threshold: 95 },
       callBudget: { used: 1, budget: 3, exhausted: false },
       final_status: null,
       variantKey: 'color:black',
@@ -436,7 +436,7 @@ describe('isPillLoopProgress', () => {
 
   it('returns false when only publish is present (callBudget missing)', () => {
     const bad = {
-      publish: { count: 1, target: 1, satisfied: true, confidence: null },
+      publish: { evidenceCount: 1, evidenceTarget: 1, satisfied: true, confidence: null, threshold: 95 },
     } as unknown as Operation['loopProgress'];
     assert.equal(isPillLoopProgress(bad), false);
   });

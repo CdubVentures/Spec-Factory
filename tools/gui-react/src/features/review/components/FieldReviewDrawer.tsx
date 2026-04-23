@@ -16,6 +16,7 @@ import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTy
 import { resolveEffortLabel } from '../../llm-config/state/resolveEffortLabel.ts';
 import { CandidateDeleteConfirm } from './CandidateDeleteConfirm.tsx';
 import { PublishedBadge } from '../../../shared/ui/feedback/PublishedBadge.tsx';
+import { PublishedMarkIcon } from '../../../shared/ui/icons/PublishedMarkIcon.tsx';
 import { DefaultVariantMark } from '../../../shared/ui/feedback/DefaultVariantMark.tsx';
 import { resolveDrawerBadge } from '../selectors/drawerBadgeSelector.ts';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
@@ -622,6 +623,7 @@ function CandidateCard({
     <DrawerCard className={cardClass}>
       {/* Value + confidence badge */}
       <div className="flex items-center gap-2">
+        {isResolved && <PublishedMarkIcon className="shrink-0" />}
         <span className="font-mono text-sm font-bold flex-1 truncate break-all" title={parsedArray ? parsedArray.join(', ') : formatCellValue(candidate.value)}>
           {parsedArray ? parsedArray.join(', ') : formatCellValue(candidate.value)}
         </span>

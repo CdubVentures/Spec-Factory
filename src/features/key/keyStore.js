@@ -87,6 +87,36 @@ export function scrubFieldFromKeyFinder({ productId, productRoot, fieldKey }) {
 }
 
 /**
+ * Per-run scrub: delete ONE keyFinder run by number, but only if its
+ * primary_field_key matches fieldKey. Used by Gate 1 inconsistency purge so a
+ * hallucinating LLM's primary run (queries + URLs + discovery_log) goes away
+ * without disturbing unrelated runs. Passenger runs are left intact — the
+ * caller already deleted the candidate row + its evidence, and the run's
+ * discovery_log still belongs to its own primary field.
+ *
+ * Returns `{ scrubbed, deletedRun?, wasPassenger? }`. Never throws on missing
+ * doc / missing run — returns a falsy scrubbed flag instead.
+ *
+ * @param {{ productId: string, productRoot?: string, fieldKey: string, runNumber: number }} opts
+ */
+export function scrubKeyFinderRunIfPrimary({ productId, productRoot, fieldKey, runNumber }) {
+  if (!productId || !fieldKey || !Number.isInteger(runNumber) || runNumber < 0) {
+    return { scrubbed: false };
+  }
+  const doc = keyFinderStore.read({ productId, productRoot });
+  if (!doc) return { scrubbed: false };
+  const run = (doc.runs || []).find((r) => r?.run_number === runNumber);
+  if (!run) return { scrubbed: false };
+
+  if (run.response?.primary_field_key !== fieldKey) {
+    return { scrubbed: false, wasPassenger: true };
+  }
+
+  keyFinderStore.deleteRun({ productId, productRoot, runNumber });
+  return { scrubbed: true, deletedRun: runNumber };
+}
+
+/**
  * Rebuild the key_finder + key_finder_runs SQL tables from per-product JSON
  * files. Called when the SQLite file is deleted to satisfy the Rebuild Contract
  * (CLAUDE.md §Dual-State Architecture). JSON remains the SSOT.

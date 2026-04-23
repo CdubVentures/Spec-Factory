@@ -1,17 +1,15 @@
-import { normalizeConfidence } from './publishCandidate.js';
-import { checkEvidenceGate } from './evidenceGate.js';
+import { evaluateFieldBuckets } from './evidenceGate.js';
 
 /**
  * Re-evaluate and republish a single field from its remaining candidates.
  *
  * WHY: After candidate deletion, the published field value may need recalculation.
- * Handles set_union merge, scalar pick, confidence gating, and linked_candidates.
+ * Delegates gating to evaluateFieldBuckets so pooled-evidence + set_union union
+ * semantics stay identical to publishCandidate and reconcileThreshold.
  *
  * Caller owns product.json file I/O — this function mutates productJson in place.
  *
  * @param {{ specDb, productId: string, fieldKey: string, config: object, productJson: object, variantId?: string|null }} opts
- *   variantId undefined/null → variant-blind (scalar fields[fieldKey])
- *   variantId set → variant-scoped (variant_fields[vid][fieldKey])
  * @returns {{ status: 'republished'|'unpublished'|'unchanged' }}
  */
 export function republishField({ specDb, productId, fieldKey, config, productJson, variantId }) {
@@ -40,15 +38,15 @@ export function republishField({ specDb, productId, fieldKey, config, productJso
 
   const threshold = config?.publishConfidenceThreshold ?? 0.7;
   const compiled = specDb.getCompiledRules?.();
-  const compiledFields = compiled?.fields || {};
-  const fieldRule = compiledFields[fieldKey] || null;
+  const fieldRule = compiled?.fields?.[fieldKey] || null;
 
-  // WHY: A candidate must clear BOTH gates to contribute to the republished value.
-  const aboveThreshold = remaining
-    .filter(c => normalizeConfidence(c.confidence) >= threshold)
-    .filter(c => checkEvidenceGate({ specDb, candidateId: c.id, fieldRule }).ok);
+  const evalResult = evaluateFieldBuckets({
+    specDb, productId, fieldKey, fieldRule,
+    variantId: isVariantScoped ? variantId : null,
+    threshold,
+  });
 
-  if (aboveThreshold.length === 0) {
+  if (evalResult.publishedValue === undefined) {
     specDb.demoteResolvedCandidates(productId, fieldKey, isVariantScoped ? variantId : undefined);
     delete publishedContainer[fieldKey];
     if (isVariantScoped && Object.keys(publishedContainer).length === 0) {
@@ -58,52 +56,27 @@ export function republishField({ specDb, productId, fieldKey, config, productJso
   }
 
   specDb.demoteResolvedCandidates(productId, fieldKey, isVariantScoped ? variantId : undefined);
-
-  const itemUnion = fieldRule?.contract?.list_rules?.item_union;
-
-  let publishedValue;
-  let publishedConfidence;
-  let winner;
-
-  if (itemUnion === 'set_union') {
-    const merged = [];
-    const seen = new Set();
-    let bestConfidence = 0;
-    let bestRow = null;
-    for (const row of aboveThreshold) {
-      let items;
-      try { items = typeof row.value === 'string' ? JSON.parse(row.value) : row.value; }
-      catch { items = null; }
-      if (!Array.isArray(items)) continue;
-      for (const item of items) {
-        const s = typeof item === 'object' ? JSON.stringify(item) : String(item);
-        if (!seen.has(s)) { seen.add(s); merged.push(item); }
-      }
-      specDb.markFieldCandidateResolved(productId, fieldKey, row.value, isVariantScoped ? variantId : undefined);
-      if ((row.confidence ?? 0) > bestConfidence) {
-        bestConfidence = row.confidence ?? 0;
-        bestRow = row;
-      }
-    }
-    publishedValue = merged;
-    publishedConfidence = bestConfidence;
-    winner = bestRow || aboveThreshold[0];
-  } else {
-    winner = aboveThreshold.sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0))[0];
-    specDb.markFieldCandidateResolved(productId, fieldKey, winner.value, isVariantScoped ? variantId : undefined);
-    try { publishedValue = typeof winner.value === 'string' ? JSON.parse(winner.value) : winner.value; }
-    catch { publishedValue = winner.value; }
-    publishedConfidence = winner.confidence ?? 0;
+  const memberIds = new Set(evalResult.publishedMemberIds);
+  if (memberIds.size > 0) {
+    const placeholders = Array.from(memberIds).map(() => '?').join(',');
+    specDb.db.prepare(
+      `UPDATE field_candidates SET status = 'resolved', updated_at = datetime('now')
+       WHERE id IN (${placeholders})`
+    ).run(...Array.from(memberIds));
   }
 
-  // WHY: Source-centric rows have no sources_json — build from row columns.
-  const sources = winner.source_id
+  const winner = remaining
+    .filter(r => memberIds.has(r.id))
+    .sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0))[0]
+    || remaining.sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0))[0];
+
+  const sources = winner?.source_id
     ? [{ source: winner.source_type || '', source_id: winner.source_id, model: winner.model || '', confidence: winner.confidence ?? 0 }]
-    : (Array.isArray(winner.sources_json) ? winner.sources_json : []);
+    : [];
 
   publishedContainer[fieldKey] = {
-    value: publishedValue,
-    confidence: publishedConfidence,
+    value: evalResult.publishedValue,
+    confidence: winner?.confidence ?? 0,
     source: 'pipeline',
     resolved_at: new Date().toISOString(),
     sources,

@@ -425,10 +425,11 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
               width={ACTION_BUTTON_WIDTH.keyHeader}
             />
             <HeaderActionButton
-              intent={LIVE_MODES.productLoop ? 'spammable' : 'locked'}
+              intent="locked"
               label="Loop all groups"
               onClick={loopAllGroups}
               disabled={!LIVE_MODES.productLoop}
+              busy={loopChains.size > 0}
               title={LIVE_MODES.productLoop ? TOOLTIPS.productLoop : DISABLED_REASONS.productLoop}
               width={ACTION_BUTTON_WIDTH.keyHeader}
             />

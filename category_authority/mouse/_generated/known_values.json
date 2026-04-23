@@ -113,6 +113,10 @@
         "unk"
       ]
     },
+    "design": {
+      "policy": "open_prefer_known",
+      "values": []
+    },
     "feet_material": {
       "policy": "open_prefer_known",
       "values": [
@@ -247,6 +251,6 @@
       ]
     }
   },
-  "generated_at": "2026-04-22T18:06:46.570Z",
+  "generated_at": "2026-04-23T00:12:29.727Z",
   "version": 1
 }

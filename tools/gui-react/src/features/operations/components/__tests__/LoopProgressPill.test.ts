@@ -5,10 +5,16 @@ import { loadBundledModule } from '../../../../../../../src/shared/tests/helpers
 /*
  * LoopProgressPill is a React component — per repo convention (node --test, no
  * jsdom/vitest) we test the extracted label / icon / chip-class / bar-color
- * helpers directly. Renders are exercised only indirectly by bun build passing.
+ * helpers directly. Renders are exercised only indirectly by `npm run build`.
  */
 
-type PillPublish = { count: number; target: number; satisfied: boolean; confidence: number | null };
+type PillPublish = {
+  evidenceCount: number;
+  evidenceTarget: number;
+  satisfied: boolean;
+  confidence: number | null;
+  threshold: number | null;
+};
 type PillCallBudget = { used: number; budget: number; exhausted: boolean };
 type FinalStatus = 'published' | 'definitive_unk' | 'budget_exhausted' | 'skipped_resolved' | 'aborted' | null;
 
@@ -34,9 +40,15 @@ before(async () => {
   ({ publishLineIcon, publishLineText, statusChipClass, isBarDanger } = mod);
 });
 
-const notSatisfied: PillPublish = { count: 0, target: 1, satisfied: false, confidence: null };
-const satisfied88: PillPublish = { count: 1, target: 1, satisfied: true, confidence: 88 };
-const satisfiedNoConf: PillPublish = { count: 1, target: 1, satisfied: true, confidence: null };
+const notSatisfied: PillPublish = {
+  evidenceCount: 0, evidenceTarget: 1, satisfied: false, confidence: null, threshold: 95,
+};
+const satisfied88: PillPublish = {
+  evidenceCount: 1, evidenceTarget: 1, satisfied: true, confidence: 88, threshold: 70,
+};
+const satisfiedNoConf: PillPublish = {
+  evidenceCount: 1, evidenceTarget: 1, satisfied: true, confidence: null, threshold: 95,
+};
 
 describe('publishLineIcon', () => {
   it('returns check for satisfied rows regardless of final_status', () => {
@@ -53,49 +65,54 @@ describe('publishLineIcon', () => {
   it('returns dot while loop is still running (final_status=null, not satisfied)', () => {
     assert.equal(publishLineIcon(notSatisfied, null), '\u00B7');
   });
-
-  it('returns dot for skipped_resolved (target met because pre-resolved; no failure)', () => {
-    // NOTE: skipped_resolved sets publish.satisfied=true in keyFinderLoop, so
-    // this path would normally hit the satisfied branch. Guard anyway.
-    assert.equal(publishLineIcon(notSatisfied, 'skipped_resolved'), '\u00B7');
-  });
 });
 
-describe('publishLineText', () => {
-  it('renders "1/1 published · conf 88" when satisfied with confidence', () => {
-    assert.equal(publishLineText(satisfied88, 'published'), '1/1 published \u00B7 conf 88');
+describe('publishLineText (publisher-driven)', () => {
+  it('renders "1/1 evidence · 88 conf" when satisfied with confidence', () => {
+    assert.equal(publishLineText(satisfied88, 'published'), '1/1 evidence \u00B7 88 conf');
   });
 
-  it('renders "1/1 published" with no confidence segment when confidence is null (RDF/SKU)', () => {
-    assert.equal(publishLineText(satisfiedNoConf, 'published'), '1/1 published');
+  it('renders "1/1 evidence published" when satisfied with no confidence (RDF/SKU stub)', () => {
+    assert.equal(publishLineText(satisfiedNoConf, 'published'), '1/1 evidence published');
   });
 
-  it('renders "0/1 not yet" during intermediate iteration (final_status=null)', () => {
-    assert.equal(publishLineText(notSatisfied, null), '0/1 not yet');
+  it('renders "0/1 evidence · need ≥95 conf" during pre-iter (no candidate yet, threshold known)', () => {
+    assert.equal(publishLineText(notSatisfied, null), '0/1 evidence \u00B7 need \u226595 conf');
   });
 
-  it('renders "0/1 definitive unk" on terminal definitive_unk', () => {
-    assert.equal(publishLineText(notSatisfied, 'definitive_unk'), '0/1 definitive unk');
+  it('renders "1/2 evidence · 70 conf (need ≥95)" during post-iter (latest candidate below threshold)', () => {
+    const inFlight: PillPublish = {
+      evidenceCount: 1, evidenceTarget: 2, satisfied: false, confidence: 70, threshold: 95,
+    };
+    assert.equal(publishLineText(inFlight, null), '1/2 evidence \u00B7 70 conf (need \u226595)');
   });
 
-  it('renders "0/1 budget exhausted" on terminal budget_exhausted', () => {
-    assert.equal(publishLineText(notSatisfied, 'budget_exhausted'), '0/1 budget exhausted');
+  it('renders "0/2 evidence · need ≥95 conf" terminal definitive_unk', () => {
+    const unk: PillPublish = {
+      evidenceCount: 0, evidenceTarget: 2, satisfied: false, confidence: null, threshold: 95,
+    };
+    assert.equal(publishLineText(unk, 'definitive_unk'), '0/2 evidence \u00B7 need \u226595 conf');
   });
 
-  it('renders "0/1 aborted" on terminal aborted', () => {
-    assert.equal(publishLineText(notSatisfied, 'aborted'), '0/1 aborted');
+  it('renders "1/2 evidence · 60 conf (need ≥95)" terminal budget_exhausted', () => {
+    const exhausted: PillPublish = {
+      evidenceCount: 1, evidenceTarget: 2, satisfied: false, confidence: 60, threshold: 95,
+    };
+    assert.equal(publishLineText(exhausted, 'budget_exhausted'), '1/2 evidence \u00B7 60 conf (need \u226595)');
   });
 
-  it('renders skipped path', () => {
-    // When skipped, keyFinderLoop emits count=target=1, satisfied=true, confidence=null.
-    const skippedShape: PillPublish = { count: 1, target: 1, satisfied: true, confidence: null };
-    // satisfied wins over "skipped" text since satisfied branch fires first.
-    assert.equal(publishLineText(skippedShape, 'skipped_resolved'), '1/1 published');
+  it('renders "1/1 evidence · skipped (resolved)" for skipped_resolved (already resolved at entry)', () => {
+    const skipped: PillPublish = {
+      evidenceCount: 1, evidenceTarget: 1, satisfied: true, confidence: null, threshold: 95,
+    };
+    assert.equal(publishLineText(skipped, 'skipped_resolved'), '1/1 evidence \u00B7 skipped (resolved)');
   });
 
-  it('renders multi-count publish target (e.g. RDF multi-field batched)', () => {
-    const multi: PillPublish = { count: 2, target: 5, satisfied: false, confidence: null };
-    assert.equal(publishLineText(multi, null), '2/5 not yet');
+  it('renders bare "0/1 evidence" when nothing is known (no candidate, no threshold)', () => {
+    const bare: PillPublish = {
+      evidenceCount: 0, evidenceTarget: 1, satisfied: false, confidence: null, threshold: null,
+    };
+    assert.equal(publishLineText(bare, null), '0/1 evidence');
   });
 });
 
@@ -121,7 +138,6 @@ describe('isBarDanger', () => {
   });
 
   it('returns false when budget is exhausted but target was met early', () => {
-    // Shouldn't visually panic the user — they already got what they wanted.
     assert.equal(isBarDanger(satisfied88, { used: 5, budget: 5, exhausted: true }), false);
   });
 

@@ -132,7 +132,7 @@ describe('deleteCandidateBySourceId', () => {
   it('non-variant set_union field → recomputes union of remaining candidates', withFreshEnv(({ specDb, root, ensureProductJson, readProductJson, seed }) => {
     // Inject compiled rules to mark 'tags' as set_union
     specDb.getCompiledRules = () => ({
-      fields: { tags: { contract: { list_rules: { item_union: 'set_union' } } } },
+      fields: { tags: { contract: { shape: 'list', type: 'string', list_rules: { item_union: 'set_union' } } } },
     });
 
     const sid1 = seed('mouse-001', 'tags', JSON.stringify(['a', 'b']), 0.9);

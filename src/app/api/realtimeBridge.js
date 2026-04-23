@@ -144,9 +144,14 @@ export function createRealtimeBridge({
         });
       }
     }
+    // WHY: 'heartbeat' is infrastructure — if it were subject to channel
+    // subscription filtering, clients that subscribed to specific channels
+    // (e.g. ['indexlab-event']) would never see heartbeats and their idle
+    // watchdog would false-trigger every 60s, causing a reload loop.
+    const bypassSubscriptionFilter = channel === 'heartbeat';
     for (const client of wsClients) {
       if (client.readyState !== 1) continue; // OPEN
-      if (!wsClientWantsChannel(client, channel)) continue;
+      if (!bypassSubscriptionFilter && !wsClientWantsChannel(client, channel)) continue;
       const filtered = wsFilterPayload(channel, data, client, dataChangeMatchesCategory);
       if (filtered === null || filtered === undefined) continue;
       try {

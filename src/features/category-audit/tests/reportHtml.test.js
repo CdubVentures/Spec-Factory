@@ -102,13 +102,15 @@ test('renderHtml includes every top-level section anchor in the TOC', () => {
   }
 });
 
-test('renderHtml places the auditor-task section before the summary', () => {
+test('renderHtml places auditor-task + audit-standard sections before the summary', () => {
   const html = renderHtml(fixtureReportData());
   const auditorIdx = html.indexOf('id="auditor-task"');
+  const standardIdx = html.indexOf('id="audit-standard"');
   const summaryIdx = html.indexOf('id="summary"');
-  assert.ok(auditorIdx > 0 && summaryIdx > auditorIdx, 'auditor-task anchor precedes summary');
+  assert.ok(auditorIdx > 0 && standardIdx > auditorIdx && summaryIdx > standardIdx, 'auditor-task → audit-standard → summary order');
   assert.ok(html.includes('Auditor task (read this first)'));
-  assert.ok(html.includes('What to return, per field key'), 'auditor task body rendered');
+  assert.ok(html.includes('Audit standard (the bar you apply)'));
+  assert.ok(html.includes('Return format (markdown'), 'return-format spec rendered');
 });
 
 test('renderHtml renders the compiled generic prompt with placeholders for runtime slots', () => {
@@ -125,13 +127,16 @@ test('renderHtml renders tier bundle table with all 5 rows', () => {
   }
 });
 
-test('renderHtml renders per-key sections with all named sub-blocks', () => {
+test('renderHtml renders per-key sections with always-shown sub-blocks (Contract + guidance) and conditional ones when content exists', () => {
   const html = renderHtml(fixtureReportData());
   assert.ok(html.includes('id="key-lighting"'));
   assert.ok(html.includes('id="key-sku"'));
-  assert.ok(html.includes('Contract (PRIMARY_FIELD_CONTRACT)'));
-  assert.ok(html.includes('Search hints (PRIMARY_SEARCH_HINTS)'));
-  assert.ok(html.includes('Extraction guidance (PRIMARY_FIELD_GUIDANCE)'));
+  // Contract is always shown (every rule has a contract).
+  assert.ok(html.includes('Contract'));
+  // Extraction guidance heading always emitted so reviewers see the empty slot.
+  assert.ok(html.includes('Extraction guidance'));
+  // Search hints only emitted when present — sku fixture has domain_hints so it should render.
+  assert.ok(html.includes('Search hints'));
 });
 
 test('renderHtml escapes user-supplied strings', () => {

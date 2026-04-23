@@ -40,11 +40,19 @@ export interface CarouselLoopProgress {
  */
 export interface PillLoopProgress {
   readonly loop_id: string;
+  /**
+   * Mirrors the publisher's gate output. `evidenceCount`/`evidenceTarget` come
+   * from `submitCandidate.publishResult.actual` / `.required` (the latter is
+   * `fieldRule.evidence.min_evidence_refs`). `confidence` is the candidate's
+   * normalized confidence (0–100); `threshold` is `publishConfidenceThreshold`
+   * (also 0–100). `satisfied` is `publishResult.status === 'published'`.
+   */
   readonly publish: {
-    readonly count: number;
-    readonly target: number;
+    readonly evidenceCount: number;
+    readonly evidenceTarget: number;
     readonly satisfied: boolean;
     readonly confidence: number | null;
+    readonly threshold: number | null;
   };
   readonly callBudget: {
     readonly used: number;

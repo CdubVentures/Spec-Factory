@@ -18,15 +18,20 @@ import { RowActionButton, ACTION_BUTTON_WIDTH } from '../actionButton/index.ts';
 import type { ActionButtonIntent } from '../actionButton/index.ts';
 
 interface PromptDrawerAction {
-  readonly label: string;
+  /** Display label. ReactNode so callers can embed count suffixes
+   *  (e.g. "Hist (5qu)(12url)") matching the existing history button shape. */
+  readonly label: ReactNode;
+  /** Stable string identifier for React keys. Defaults to label when it's a
+   *  plain string. Required when label is a ReactNode. */
+  readonly id?: string;
   readonly onClick: () => void;
   readonly disabled?: boolean;
   readonly title?: string;
   /** Override the default 'prompt' intent. Use 'delete' for destructive
-   *  actions like Unresolve / Delete. */
+   *  actions like Unresolve / Delete, 'history' for history. */
   readonly intent?: ActionButtonIntent;
   /** Override the default standardRow width. Use for actions with longer
-   *  labels (e.g. "Unresolve" / "Delete group" need keyRow / keyGroup). */
+   *  labels (e.g. "Unresolve" / "Hist (NNqu)(NNurl)" need more room). */
   readonly width?: string;
 }
 
@@ -50,6 +55,17 @@ interface PromptDrawerChevronProps {
   /** Optional element rendered in place of the default title label when
    *  open. Useful for leading icons or compound labels. */
   readonly openTitleContent?: ReactNode;
+  /** Second section rendered after a vertical divider. Used to group
+   *  secondary actions (e.g. destructive Data: UnPub/Del) inside the same
+   *  drawer as the primary Prompts: Run/Loop previews. */
+  readonly secondaryTitle?: string;
+  readonly secondaryLabelClass?: string;
+  readonly secondaryActions?: ReadonlyArray<PromptDrawerAction>;
+  /** Third section rendered after another divider. Used when the drawer
+   *  carries three distinct concerns (e.g. Prompts: | Data: | Hist:). */
+  readonly tertiaryTitle?: string;
+  readonly tertiaryLabelClass?: string;
+  readonly tertiaryActions?: ReadonlyArray<PromptDrawerAction>;
 }
 
 export function PromptDrawerChevron({
@@ -64,6 +80,12 @@ export function PromptDrawerChevron({
   closedTitle,
   openedTitle,
   openTitleContent,
+  secondaryTitle,
+  secondaryLabelClass,
+  secondaryActions,
+  tertiaryTitle,
+  tertiaryLabelClass,
+  tertiaryActions,
 }: PromptDrawerChevronProps) {
   const [open, toggleOpen] = usePersistedToggle(storageKey, false);
 
@@ -84,15 +106,57 @@ export function PromptDrawerChevron({
           ))}
           {actions.map((action) => (
             <RowActionButton
-              key={action.label}
+              key={action.id ?? (typeof action.label === 'string' ? action.label : 'prompt-action')}
               intent={action.intent ?? 'prompt'}
               label={action.label}
               onClick={action.onClick}
               disabled={action.disabled}
-              title={action.title ?? `Preview ${action.label} prompt`}
+              title={action.title ?? (typeof action.label === 'string' ? `Preview ${action.label} prompt` : undefined)}
               width={action.width ?? ACTION_BUTTON_WIDTH.standardRow}
             />
           ))}
+          {secondaryActions && secondaryActions.length > 0 && (
+            <>
+              <span className="inline-block h-5 w-px mx-1 bg-current opacity-20" aria-hidden />
+              {secondaryTitle && (
+                <span className={`text-[9px] font-bold uppercase tracking-[0.12em] mr-2 whitespace-nowrap ${secondaryLabelClass ?? labelClass ?? 'sf-prompt-preview-label'}`}>
+                  {secondaryTitle}
+                </span>
+              )}
+              {secondaryActions.map((action) => (
+                <RowActionButton
+                  key={`secondary-${action.id ?? (typeof action.label === 'string' ? action.label : 'action')}`}
+                  intent={action.intent ?? 'delete'}
+                  label={action.label}
+                  onClick={action.onClick}
+                  disabled={action.disabled}
+                  title={action.title ?? (typeof action.label === 'string' ? action.label : undefined)}
+                  width={action.width ?? ACTION_BUTTON_WIDTH.standardRow}
+                />
+              ))}
+            </>
+          )}
+          {tertiaryActions && tertiaryActions.length > 0 && (
+            <>
+              <span className="inline-block h-5 w-px mx-1 bg-current opacity-20" aria-hidden />
+              {tertiaryTitle && (
+                <span className={`text-[9px] font-bold uppercase tracking-[0.12em] mr-2 whitespace-nowrap ${tertiaryLabelClass ?? labelClass ?? 'sf-prompt-preview-label'}`}>
+                  {tertiaryTitle}
+                </span>
+              )}
+              {tertiaryActions.map((action) => (
+                <RowActionButton
+                  key={`tertiary-${action.id ?? (typeof action.label === 'string' ? action.label : 'action')}`}
+                  intent={action.intent ?? 'history'}
+                  label={action.label}
+                  onClick={action.onClick}
+                  disabled={action.disabled}
+                  title={action.title ?? (typeof action.label === 'string' ? action.label : undefined)}
+                  width={action.width ?? ACTION_BUTTON_WIDTH.standardRow}
+                />
+              ))}
+            </>
+          )}
         </div>
         <button
           type="button"

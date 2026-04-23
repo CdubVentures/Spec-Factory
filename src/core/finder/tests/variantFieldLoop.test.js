@@ -93,6 +93,8 @@ describe('runVariantFieldLoop', () => {
       product: PRODUCT,
       resolveBudget: constBudget(0),
       staggerMs: 0,
+      evidenceTarget: 2,
+      thresholdPct: 95,
       produceForVariant: () => { produceCalls++; return null; },
       satisfactionPredicate: () => false,
       onLoopProgress: (ev) => events.push(ev),
@@ -100,9 +102,13 @@ describe('runVariantFieldLoop', () => {
 
     assert.equal(produceCalls, 0, 'produceForVariant is NOT called when budget is 0');
     assert.equal(events.length, 1, 'exactly one skip event is emitted');
-    // Pill shape (Stage 3): skip emits a terminal pill with final_status='skipped_resolved'.
+    // Pill shape (publisher-driven): skip emits final_status='skipped_resolved' with
+    // evidenceCount === evidenceTarget (already-resolved variant has all evidence).
     assert.equal(events[0].final_status, 'skipped_resolved');
     assert.equal(events[0].publish.satisfied, true);
+    assert.equal(events[0].publish.evidenceCount, 2);
+    assert.equal(events[0].publish.evidenceTarget, 2);
+    assert.equal(events[0].publish.threshold, 95);
     assert.equal(events[0].callBudget.used, 0);
     assert.equal(events[0].callBudget.budget, 0);
 
@@ -258,39 +264,57 @@ describe('runVariantFieldLoop', () => {
     assert.equal(r2.loopId, [...ids2][0]);
   });
 
-  it('onLoopProgress emits per-attempt pill + 1 terminal pill per variant (Stage 3 pill shape)', async () => {
+  it('onLoopProgress emits pre+post per attempt + 1 terminal pill per variant', async () => {
     const events = [];
     await runVariantFieldLoop({
       specDb: makeSpecDbStub(ONE_BLACK),
       product: PRODUCT,
       resolveBudget: constBudget(5),
       staggerMs: 0,
-      produceForVariant: (v, i, ctx) => ({ attempt: ctx.attempt }),
+      evidenceTarget: 1,
+      thresholdPct: 95,
+      // result.publish mirrors the publisher's gate snapshot (see
+      // variantScalarFieldProducer.js — `publish` field on produceForVariant
+      // result). Here we simulate the publisher gating each attempt.
+      produceForVariant: (v, i, ctx) => ({
+        attempt: ctx.attempt,
+        publish: {
+          status: ctx.attempt === 3 ? 'published' : 'below_threshold',
+          confidence: ctx.attempt === 3 ? 0.95 : 0.60,
+          threshold: 0.95,
+          required: 1,
+          actual: 1,
+        },
+      }),
       satisfactionPredicate: (r) => r.attempt === 3,
       onLoopProgress: (ev) => events.push(ev),
     });
 
-    // 3 per-attempt pills + 1 terminal per-variant pill = 4 events.
-    assert.equal(events.length, 4, 'stopped after attempt 3 → 3 per-attempt + 1 terminal emission');
+    // 2 per attempt (pre + post) × 3 attempts + 1 terminal = 7.
+    assert.equal(events.length, 7, '3 pre-attempt + 3 post-attempt + 1 terminal');
 
-    // Per-attempt shape: final_status=null, callBudget.used increments.
-    assert.equal(events[0].final_status, null);
-    assert.equal(events[0].publish.satisfied, false);
-    assert.equal(events[0].callBudget.used, 1);
-    assert.equal(events[0].callBudget.budget, 5);
+    // Every event carries threshold=95 (from opts) and evidenceTarget=1.
+    for (let i = 0; i < 6; i += 1) {
+      assert.equal(events[i].final_status, null);
+      assert.equal(events[i].publish.evidenceTarget, 1);
+      assert.equal(events[i].publish.threshold, 95);
+      assert.equal(events[i].callBudget.budget, 5);
+    }
 
-    assert.equal(events[1].final_status, null);
+    // post-attempt 1 — confidence from the publisher's 0.60 → 60.
+    assert.equal(events[1].publish.confidence, 60);
     assert.equal(events[1].publish.satisfied, false);
 
-    // Attempt 3 — per-attempt event fires with satisfied=true but final_status=null.
-    assert.equal(events[2].final_status, null);
-    assert.equal(events[2].publish.satisfied, true);
-    assert.equal(events[2].callBudget.used, 3);
+    // post-attempt 3 — published → satisfied + confidence 95.
+    assert.equal(events[5].publish.satisfied, true);
+    assert.equal(events[5].publish.confidence, 95);
+    assert.equal(events[5].callBudget.used, 3);
 
-    // Terminal pill: final_status='published', same variant identity.
-    const terminal = events[3];
+    // Terminal pill — final_status='published' + variant identity preserved.
+    const terminal = events[6];
     assert.equal(terminal.final_status, 'published');
     assert.equal(terminal.publish.satisfied, true);
+    assert.equal(terminal.publish.confidence, 95);
     assert.equal(terminal.callBudget.used, 3);
     assert.equal(terminal.variantKey, 'color:black');
     assert.equal(terminal.variantLabel, 'Black');
@@ -303,16 +327,23 @@ describe('runVariantFieldLoop', () => {
       product: PRODUCT,
       resolveBudget: constBudget(3),
       staggerMs: 0,
-      produceForVariant: () => ({ ok: false }),
+      evidenceTarget: 2,
+      thresholdPct: 95,
+      produceForVariant: () => ({
+        ok: false,
+        publish: { status: 'below_evidence_refs', required: 2, actual: 1, confidence: 0.4 },
+      }),
       satisfactionPredicate: () => false,
       onLoopProgress: (ev) => events.push(ev),
     });
 
-    // 3 per-attempt + 1 terminal = 4 events.
-    assert.equal(events.length, 4);
-    const terminal = events[3];
+    // 3 attempts × 2 (pre+post) + 1 terminal = 7.
+    assert.equal(events.length, 7);
+    const terminal = events[events.length - 1];
     assert.equal(terminal.final_status, 'budget_exhausted');
     assert.equal(terminal.publish.satisfied, false);
+    assert.equal(terminal.publish.evidenceCount, 1, 'publisher counted 1 ref of 2 required');
+    assert.equal(terminal.publish.evidenceTarget, 2);
     assert.equal(terminal.callBudget.used, 3);
     assert.equal(terminal.callBudget.budget, 3);
     assert.equal(terminal.callBudget.exhausted, true);
@@ -326,15 +357,17 @@ describe('runVariantFieldLoop', () => {
       product: PRODUCT,
       resolveBudget: constBudget(2),
       staggerMs: 0,
+      evidenceTarget: 1,
+      thresholdPct: 95,
       produceForVariant: (variant) => ({ variant: variant.key }),
       satisfactionPredicate: (r) => r?.variant === 'color:black',
       onLoopProgress: (ev) => events.push(ev),
     });
 
-    // Per-variant: black = 1 per-attempt + 1 terminal published = 2.
-    // Per-variant: white = 2 per-attempt + 1 terminal budget_exhausted = 3.
-    // Total = 5.
-    assert.equal(events.length, 5);
+    // Per-variant cadence: black = 2 (pre+post) + 1 terminal = 3.
+    // Per-variant cadence: white = 4 (pre+post × 2) + 1 terminal = 5.
+    // Total = 8.
+    assert.equal(events.length, 8);
 
     const blackTerminal = events.find((e) => e.variantKey === 'color:black' && e.final_status);
     assert.equal(blackTerminal?.final_status, 'published');

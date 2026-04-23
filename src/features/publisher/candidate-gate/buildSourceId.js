@@ -21,3 +21,21 @@ export function buildSourceId(sourceMeta, productId) {
   // WHY: Review/manual actions use timestamp — unique per user action.
   return `${source}-${pid}-${Date.now()}`;
 }
+
+/**
+ * Reverse parser for finder run source_ids: `{source}-{productId}-{runNumber}`.
+ * Returns `{ source, productId, runNumber }` when the trailing segment is an
+ * integer (finder-run shape), else `null` (timestamp/manual/unknown shape).
+ *
+ * Tolerates hyphens inside productId — uses the FIRST dash after `source` and
+ * the LAST numeric trailing segment.
+ */
+export function parseFinderRunSourceId(sourceId) {
+  if (typeof sourceId !== 'string' || sourceId.length === 0) return null;
+  const match = sourceId.match(/^([^-]+)-(.+)-(\d+)$/);
+  if (!match) return null;
+  const [, source, productId, runStr] = match;
+  const runNumber = Number(runStr);
+  if (!Number.isInteger(runNumber) || runNumber < 0) return null;
+  return { source, productId, runNumber };
+}

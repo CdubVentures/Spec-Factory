@@ -296,6 +296,15 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
       last_value: run ? (perKey.value !== undefined ? perKey.value : null) : null,
       last_confidence: confidence,
       last_model: run ? (run.model || '') : null,
+      // WHY: Last Model column needs the same badge set (LAB/API + thinking +
+      // webSearch + effort + FB) that Run History already renders via
+      // FinderRunModelBadge. Without these the column is a bare string with
+      // no way to surface "this run fell back" or "this ran on the lab".
+      last_fallback_used: run ? Boolean(run.fallback_used) : null,
+      last_access_mode: run ? (run.access_mode || '') : null,
+      last_effort_level: run ? (run.effort_level || '') : null,
+      last_thinking: run ? Boolean(run.thinking) : null,
+      last_web_search: run ? Boolean(run.web_search) : null,
       candidate_count: candidateRows.length,
       published,
       run_count: runCountByKey.get(fk) || 0,

@@ -147,7 +147,35 @@ describe('WsManager idle watchdog', () => {
     mgr.close();
   });
 
-  it('idle-triggered close leads to reconnect which triggers reloadFn (hadConnection path)', async () => {
+  it('idle-triggered close leads to reconnect which fires onReconnect (no reload when handler is registered)', async () => {
+    let reloads = 0;
+    let reconnects = 0;
+    const mgr = new WsManager({
+      url: 'ws://fake/ws',
+      idleTimeoutMs: 60_000,
+      reconnectMs: 1_000,
+      webSocketClass: FakeWebSocket as unknown as typeof WebSocket,
+      reloadFn: () => { reloads += 1; },
+    });
+    mgr.onReconnect(() => { reconnects += 1; });
+    mgr.connect();
+    const first = FakeWebSocket.instances[0];
+    first.fireOpen();
+
+    mock.timers.tick(60_000);
+    await Promise.resolve();
+    mock.timers.runAll();
+
+    strictEqual(FakeWebSocket.instances.length, 2, 'reconnect spawned a fresh WS');
+    const second = FakeWebSocket.instances[1];
+    second.fireOpen();
+
+    strictEqual(reconnects, 1, 'onReconnect handler called on the hadConnection branch');
+    strictEqual(reloads, 0, 'reloadFn NOT called when onReconnect handler exists');
+    mgr.close();
+  });
+
+  it('reconnect with no onReconnect handlers falls back to reloadFn', async () => {
     let reloads = 0;
     const mgr = new WsManager({
       url: 'ws://fake/ws',
@@ -161,15 +189,102 @@ describe('WsManager idle watchdog', () => {
     first.fireOpen();
 
     mock.timers.tick(60_000);
-    // Flush the queueMicrotask in FakeWebSocket.close() that triggers onclose.
     await Promise.resolve();
     mock.timers.runAll();
-
-    strictEqual(FakeWebSocket.instances.length, 2, 'reconnect spawned a fresh WS');
     const second = FakeWebSocket.instances[1];
     second.fireOpen();
 
-    strictEqual(reloads, 1, 'reloadFn called on second successful open (hadConnection branch)');
+    strictEqual(reloads, 1, 'reloadFn is the fallback when no handlers are registered');
+    mgr.close();
+  });
+
+  it('first successful connect does not fire onReconnect', () => {
+    let reconnects = 0;
+    const mgr = new WsManager({
+      url: 'ws://fake/ws',
+      idleTimeoutMs: 60_000,
+      webSocketClass: FakeWebSocket as unknown as typeof WebSocket,
+      reloadFn: () => {},
+    });
+    mgr.onReconnect(() => { reconnects += 1; });
+    mgr.connect();
+    const ws = FakeWebSocket.instances[0];
+    ws.fireOpen();
+
+    strictEqual(reconnects, 0, 'onReconnect is reconnect-only, not first-connect');
+    mgr.close();
+  });
+
+  it('unsubscribed onReconnect handler is not called', async () => {
+    let calls = 0;
+    const mgr = new WsManager({
+      url: 'ws://fake/ws',
+      idleTimeoutMs: 60_000,
+      reconnectMs: 1_000,
+      webSocketClass: FakeWebSocket as unknown as typeof WebSocket,
+      reloadFn: () => {},
+    });
+    const unsub = mgr.onReconnect(() => { calls += 1; });
+    mgr.connect();
+    FakeWebSocket.instances[0].fireOpen();
+
+    unsub();
+
+    mock.timers.tick(60_000);
+    await Promise.resolve();
+    mock.timers.runAll();
+    FakeWebSocket.instances[1].fireOpen();
+
+    strictEqual(calls, 0, 'unsubscribed handler does not run');
+    mgr.close();
+  });
+
+  it('throwing onReconnect handler does not prevent other handlers from running', async () => {
+    let goodCalls = 0;
+    const mgr = new WsManager({
+      url: 'ws://fake/ws',
+      idleTimeoutMs: 60_000,
+      reconnectMs: 1_000,
+      webSocketClass: FakeWebSocket as unknown as typeof WebSocket,
+      reloadFn: () => {},
+    });
+    mgr.onReconnect(() => { throw new Error('bad handler'); });
+    mgr.onReconnect(() => { goodCalls += 1; });
+    mgr.connect();
+    FakeWebSocket.instances[0].fireOpen();
+
+    mock.timers.tick(60_000);
+    await Promise.resolve();
+    mock.timers.runAll();
+    FakeWebSocket.instances[1].fireOpen();
+
+    strictEqual(goodCalls, 1, 'second handler still ran despite first throwing');
+    mgr.close();
+  });
+
+  it('reconnect re-applies existing subscription so the new socket picks up filters', async () => {
+    const mgr = new WsManager({
+      url: 'ws://fake/ws',
+      idleTimeoutMs: 60_000,
+      reconnectMs: 1_000,
+      webSocketClass: FakeWebSocket as unknown as typeof WebSocket,
+      reloadFn: () => {},
+    });
+    mgr.onReconnect(() => {});
+    mgr.connect();
+    const first = FakeWebSocket.instances[0];
+    first.fireOpen();
+    mgr.subscribe(['operations'] as unknown as Parameters<WsManager['subscribe']>[0], 'mouse');
+    const subscribeFramesFirst = first.sent.length;
+
+    mock.timers.tick(60_000);
+    await Promise.resolve();
+    mock.timers.runAll();
+    const second = FakeWebSocket.instances[1];
+    second.fireOpen();
+
+    strictEqual(second.sent.length >= 1, true, 'subscription re-sent on reconnect');
+    strictEqual(subscribeFramesFirst >= 1, true, 'sanity: first socket also got initial subscription');
     mgr.close();
   });
 });

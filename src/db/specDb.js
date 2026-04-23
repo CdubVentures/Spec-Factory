@@ -11,7 +11,7 @@
 import Database from 'better-sqlite3';
 import { SCHEMA } from './specDbSchema.js';
 import { expandListLinkValues } from './specDbHelpers.js';
-import { applyMigrations } from './specDbMigrations.js';
+import { applyMigrations, backfillValueFingerprints } from './specDbMigrations.js';
 import { prepareStatements } from './specDbStatements.js';
 import {
   assertStrictIdentitySlotIntegrity as _assertIntegrity
@@ -554,6 +554,55 @@ export class SpecDb {
   getResolvedFieldCandidate(pid, fk) { return this._fieldCandidateStore.getResolved(pid, fk); }
   getTopFieldCandidate(pid, fk) { return this._fieldCandidateStore.getTopCandidate(pid, fk); }
   getDistinctCandidateProducts() { return this._fieldCandidateStore.getDistinctProducts(); }
+  backfillValueFingerprints() { return backfillValueFingerprints(this.db); }
+
+  // WHY: Deterministic publisher — pooled evidence count for a value bucket.
+  // fingerprint keys the bucket; minConfidence is the per-ref threshold on the
+  // 0-1 scale (caller normalizes publishConfidenceThreshold). NULL evidence
+  // confidence counts as qualifying (legacy tolerance).
+  countPooledQualifyingEvidenceByFingerprint({ productId, fieldKey, fingerprint, variantId, minConfidence }) {
+    const row = this._countPooledQualifyingEvidenceByFingerprint.get(
+      this.category,
+      String(productId || ''),
+      String(fieldKey || ''),
+      String(fingerprint ?? ''),
+      variantId ?? null,
+      Number(minConfidence ?? 0),
+    );
+    return Number(row?.total || 0);
+  }
+
+  // WHY: Bucket evaluator input — one row per distinct value (via
+  // value_fingerprint). Caller uses member_ids to cascade resolve marks.
+  listFieldBuckets({ productId, fieldKey, variantId }) {
+    const rows = this._listFieldBuckets.all(
+      this.category,
+      String(productId || ''),
+      String(fieldKey || ''),
+      variantId ?? null,
+    );
+    return rows.map(r => ({
+      value_fingerprint: r.value_fingerprint,
+      top_confidence: Number(r.top_confidence || 0),
+      member_count: Number(r.member_count || 0),
+      member_ids: String(r.member_ids_csv || '')
+        .split(',')
+        .filter(Boolean)
+        .map(n => Number(n)),
+      value: r.value,
+    }));
+  }
+
+  // WHY: keyFinderLoop satisfaction check — cheaper than getResolvedFieldCandidate
+  // (no row hydration, no JSON parse); returns boolean "any resolved?"
+  hasPublishedValue(productId, fieldKey) {
+    const row = this._hasPublishedValue.get(
+      this.category,
+      String(productId || ''),
+      String(fieldKey || ''),
+    );
+    return Boolean(row);
+  }
 
   // --- Source-centric field candidate methods ---
   insertFieldCandidate(opts) { this._fieldCandidateStore.insert(opts); }
@@ -566,6 +615,7 @@ export class SpecDb {
   countFieldCandidatesBySourceId(pid, sid) { return this._fieldCandidateStore.countBySourceId(pid, sid); }
   updateFieldCandidateValue(pid, fk, sid, val) { this._fieldCandidateStore.updateValue(pid, fk, sid, val); }
   deleteFieldCandidatesByVariantId(pid, vid) { this._fieldCandidateStore.deleteByVariantId(pid, vid); }
+  deleteFieldCandidatesByProductFieldVariant(pid, fk, vid) { this._fieldCandidateStore.deleteByProductFieldVariant(pid, fk, vid); }
 
   // ── Field candidate evidence (relational projection) ─────────────
   insertFieldCandidateEvidence(opts) { this._fieldCandidateEvidenceStore.insert(opts); }

@@ -118,7 +118,10 @@ describe('checkEvidenceGate', () => {
   });
 });
 
-describe('checkEvidenceGate — evidence-upgrade substantive count', () => {
+describe('checkEvidenceGate — evidence_kind is metadata only', () => {
+  // WHY: The identity_only SQL filter was retired. evidence_kind stays as UI
+  // metadata (tooltip, icon). Refs now count purely by URL uniqueness + per-ref
+  // confidence. These tests lock that contract — kind must NOT gate counting.
   let db;
   let testDir;
   let candidateId;
@@ -140,20 +143,20 @@ describe('checkEvidenceGate — evidence-upgrade substantive count', () => {
     try { fs.rmSync(testDir, { recursive: true, force: true }); } catch { /* */ }
   });
 
-  it('mixed identity_only + direct_quote passes min=1 (substantive count = 1)', () => {
+  it('identity_only + direct_quote both count toward the gate', () => {
     db.replaceFieldCandidateEvidence(candidateId, [
       { url: 'https://corsair.com/p/white-sku', tier: 'tier1', confidence: 60, evidence_kind: 'identity_only', supporting_evidence: '' },
       { url: 'https://corsair.com/explorer/m75', tier: 'tier1', confidence: 93, evidence_kind: 'direct_quote', supporting_evidence: 'As of 04/19/2024...' },
     ]);
     const res = checkEvidenceGate({
       specDb: db, candidateId,
-      fieldRule: { evidence: { min_evidence_refs: 1 } },
+      fieldRule: { evidence: { min_evidence_refs: 2 } },
     });
-    assert.equal(res.ok, true, 'substantive count should be 1');
-    assert.equal(res.actual, 1);
+    assert.equal(res.ok, true);
+    assert.equal(res.actual, 2);
   });
 
-  it('all-identity_only fails min=1 (no substantive refs)', () => {
+  it('all-identity_only now passes when count meets min_evidence_refs', () => {
     db.replaceFieldCandidateEvidence(candidateId, [
       { url: 'https://corsair.com/a', tier: 'tier1', confidence: 60, evidence_kind: 'identity_only', supporting_evidence: '' },
       { url: 'https://corsair.com/b', tier: 'tier1', confidence: 55, evidence_kind: 'identity_only', supporting_evidence: '' },
@@ -162,15 +165,13 @@ describe('checkEvidenceGate — evidence-upgrade substantive count', () => {
       specDb: db, candidateId,
       fieldRule: { evidence: { min_evidence_refs: 1 } },
     });
-    assert.equal(res.ok, false, 'all-identity_only must fail the gate');
-    assert.equal(res.actual, 0);
+    assert.equal(res.ok, true, 'identity_only no longer excluded by the gate');
+    assert.equal(res.actual, 2);
   });
 
-  it('legacy NULL-kind ref counts as substantive (pre-upgrade tolerance)', () => {
-    // WHY: pre-upgrade rebuilt rows have NULL evidence_kind. The gate must
-    // keep counting them — we don't retroactively invalidate legacy data.
+  it('legacy NULL-kind ref still counts', () => {
     db.replaceFieldCandidateEvidence(candidateId, [
-      { url: 'https://legacy.example.com', tier: 'tier1', confidence: 90 }, // no evidence_kind
+      { url: 'https://legacy.example.com', tier: 'tier1', confidence: 90 },
     ]);
     const res = checkEvidenceGate({
       specDb: db, candidateId,
@@ -180,17 +181,17 @@ describe('checkEvidenceGate — evidence-upgrade substantive count', () => {
     assert.equal(res.actual, 1);
   });
 
-  it('mix of legacy NULL + identity_only + direct_quote counts 2 substantive', () => {
+  it('mix of legacy NULL + identity_only + direct_quote counts 3', () => {
     db.replaceFieldCandidateEvidence(candidateId, [
-      { url: 'https://legacy.example.com', tier: 'tier1', confidence: 90 }, // legacy — substantive
+      { url: 'https://legacy.example.com', tier: 'tier1', confidence: 90 },
       { url: 'https://corsair.com/p/sku', tier: 'tier1', confidence: 60, evidence_kind: 'identity_only', supporting_evidence: '' },
       { url: 'https://corsair.com/explorer', tier: 'tier1', confidence: 93, evidence_kind: 'direct_quote', supporting_evidence: 'x' },
     ]);
     const res = checkEvidenceGate({
       specDb: db, candidateId,
-      fieldRule: { evidence: { min_evidence_refs: 2 } },
+      fieldRule: { evidence: { min_evidence_refs: 3 } },
     });
     assert.equal(res.ok, true);
-    assert.equal(res.actual, 2);
+    assert.equal(res.actual, 3);
   });
 });

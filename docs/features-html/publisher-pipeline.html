@@ -92,7 +92,7 @@
 
 <div class="header">
   <h1>Publisher Pipeline Reference</h1>
-  <p>Spec Factory &mdash; Candidate Gate + Confidence-Gated Auto-Publish + Manual Overrides + Threshold Reconciliation</p>
+  <p>Spec Factory &mdash; Candidate Gate + Deterministic Value-Bucket Publish + Manual Overrides + Threshold Reconciliation</p>
 </div>
 
 <div class="container">
@@ -138,11 +138,28 @@
   <div class="flow-box flow-write">Auto-Publish Gate</div>
 </div>
 <div class="flow-row">
-  <div class="flow-box flow-pass">Confidence &ge; threshold<br><small>Published (resolved)</small></div>
+  <div class="flow-box flow-pass">Bucket qualifies<br><small>Published (resolved)</small></div>
   <span style="width:40px"></span>
   <div class="flow-box flow-neutral">Below threshold<br><small>Candidate (pending)</small></div>
   <span style="width:40px"></span>
+  <div class="flow-box flow-fail">Inconsistency purge<br><small>Row + evidence deleted</small></div>
+  <span style="width:40px"></span>
   <div class="flow-box flow-fail">Manual override lock<br><small>Skipped</small></div>
+</div>
+
+<div class="card" style="margin-top:20px; border-left: 4px solid var(--teal);">
+  <div class="card-header" style="background:var(--teal-bg);">Deterministic Publish &mdash; Value-Bucket Pooling (shipped 2026-04-22)</div>
+  <div class="card-body">
+    <p style="margin-bottom:10px;">The publish decision is <strong>fully deterministic</strong>: given a value bucket, its pooled qualifying evidence count, the publish threshold, and the field rule's <code>min_evidence_refs</code>, the outcome is computable &mdash; the LLM's self-declared confidence is a <em>submission-time sanity check</em>, not a decision maker.</p>
+    <ul style="margin: 4px 0 0 18px;">
+      <li><strong>Value buckets:</strong> candidate rows are grouped by <code>value_fingerprint</code> (scalar equality, or list set-equality &mdash; order-independent, case-insensitive, NFC-normalized). Multiple submissions agreeing on the same value pool their evidence into one bucket.</li>
+      <li><strong>Per-ref qualifying:</strong> Gate 2 counts only refs where <code>ref.confidence / 100 &ge; publishConfidenceThreshold</code>. Evidence with NULL confidence counts as qualifying (legacy tolerance).</li>
+      <li><strong>Bucket-level Gate 1:</strong> a bucket publishes only if its <em>top</em> member's LLM confidence &ge; threshold. Buckets composed entirely of low-confidence guesses never publish, regardless of evidence count.</li>
+      <li><strong>set_union publish:</strong> for list fields with <code>item_union='set_union'</code>, the published value is the <em>union of all qualifying buckets' items</em>. Below-threshold buckets are excluded from both the union and the resolve cascade.</li>
+      <li><strong>evidence_kind is UI-only:</strong> the <code>identity_only</code> SQL exclusion is retired. The 10-kind enum remains as display metadata (tooltip, icon, supporting_evidence quote), but does not gate counting.</li>
+      <li><strong>Gate 1 inconsistency purge:</strong> if the LLM self-declares confidence below threshold <em>and</em> the submitted candidate's bucket has enough qualifying evidence to publish, the row + its evidence are hard-deleted at submit time &mdash; treated as an unreliable-model signal. When the candidate came from a <em>primary</em> finder run (keyFinder <code>primary_field_key === fieldKey</code>, or any RDF/SKU per-variant run), the run's JSON entry + <code>discovery_log.urls_checked</code> + <code>queries_run</code> + SQL runs row are deleted too so a re-run starts with a clean URL/query slate. Passenger keyFinder candidates leave the run intact (its discovery_log belongs to its own primary field).</li>
+    </ul>
+  </div>
 </div>
 
 <!-- ════════════════════════════════════════════════════════════════════════ -->
@@ -177,7 +194,7 @@
   <div class="card-header" style="background:var(--green-bg);">Output</div>
   <div class="card-body">
 <pre>{
-  status: 'accepted' | 'rejected',
+  status: 'accepted' | 'rejected' | 'rejected_inconsistent',
   candidateId: number | null,
   value: any,                        // Repaired/coerced value
   validationResult: {
@@ -188,12 +205,20 @@
     unknownReason?: string,
     repairPrompt?: object
   },
-  publishResult?: {                  // Only if auto-publish attempted
+
+  // Only present when status === 'rejected_inconsistent' (Gate 1 inconsistency purge):
+  reason?: 'llm_confidence_below_threshold_with_publishable_evidence',
+  confidence?: number,
+  threshold?: number,
+  pooledEvidence?: number,
+  requiredEvidence?: number,
+
+  publishResult?: {                  // Only if auto-publish attempted (accepted path)
     status: 'published' | 'below_threshold' | 'below_evidence_refs' | 'manual_override_locked' | 'skipped',
     confidence?: number,
     threshold?: number,
     required?: number,    // when status === 'below_evidence_refs' (fieldRule.evidence.min_evidence_refs)
-    actual?: number,      // when status === 'below_evidence_refs' (count of distinct evidence URLs)
+    actual?: number,      // when status === 'below_evidence_refs' (bucket's pooled qualifying count)
     reason?: string
   }
 }</pre>
@@ -253,11 +278,18 @@
           <div class="phase-desc">If field has <code>enum.policy === 'open_prefer_known'</code>: calls <code>persistDiscoveredValue()</code> to learn new vocab.</div>
         </div>
       </div>
+      <div class="phase phase-reject">
+        <div class="phase-line"><div class="phase-dot">8</div><div class="phase-connector"></div></div>
+        <div class="phase-content">
+          <div class="phase-title">Gate 1 Inconsistency Probe <span class="tag tag-reject">hard-reject path</span></div>
+          <div class="phase-desc">If LLM <code>confidence / 100 &lt; publishConfidenceThreshold</code> <strong>AND</strong> the newly-inserted row's bucket has <code>pooledCount &ge; min_evidence_refs</code>: hard-reject. Calls <code>purgeInconsistentCandidate()</code> (deletes the row; evidence cascades via FK), returns <code>status: 'rejected_inconsistent'</code>. Runs <em>before</em> product.json <code>candidates[]</code> append, so inconsistent submissions leave no audit trail.</div>
+        </div>
+      </div>
       <div class="phase phase-repair">
-        <div class="phase-line"><div class="phase-dot">8</div><div class="phase-connector" style="min-height:0"></div></div>
+        <div class="phase-line"><div class="phase-dot">9</div><div class="phase-connector" style="min-height:0"></div></div>
         <div class="phase-content">
           <div class="phase-title">Auto-Publish <span class="tag tag-gate">conditional</span></div>
-          <div class="phase-desc">If config provided: calls <code>publishCandidate()</code> with accepted value. Result stored in return object.</div>
+          <div class="phase-desc">If config provided: calls <code>publishCandidate()</code> &mdash; which routes through <code>evaluateFieldBuckets()</code> (see Section 3). Result stored in return object.</div>
         </div>
       </div>
     </div>
@@ -273,11 +305,12 @@
     <div class="card-body">
       <dl class="detail-grid" style="grid-template-columns:1fr;">
         <dt>When</dt><dd>Every accepted candidate (if config provided)</dd>
-        <dt>Confidence gate</dt><dd><code>confidence &ge; threshold</code> (default 0.7)</dd>
+        <dt>Gate 1 (submission)</dt><dd>Incoming candidate's <code>confidence &ge; publishConfidenceThreshold</code> (default 0.7)</dd>
+        <dt>Gate 2 (deterministic)</dt><dd><code>evaluateFieldBuckets()</code> groups candidates by <code>value_fingerprint</code>, pools evidence, and publishes the bucket whose top member passes Gate 1 AND whose pooled refs (per-ref confidence &ge; threshold) meet <code>fieldRule.evidence.min_evidence_refs</code>.</dd>
         <dt>Manual lock</dt><dd>Skips if existing published field has <code>source='manual_override'</code></dd>
-        <dt>List merge strategy</dt><dd><code>item_union</code> controls list publish behavior. <code>winner_only</code> (default for colors/editions): latest winning candidate's array replaces the published value entirely. <code>set_union</code>: merges with existing published list (dedup) &mdash; used when multiple independent sources each contribute partial items.</dd>
+        <dt>List publish strategy</dt><dd><code>item_union='winner_only'</code> (default, e.g. colors/editions): top qualifying bucket's array is the published value. <code>item_union='set_union'</code>: published value is the <strong>union of all qualifying buckets' items</strong>. Below-threshold buckets are excluded from the union and their member rows stay <code>status='candidate'</code>.</dd>
         <dt>Source tag</dt><dd><code>'pipeline'</code></dd>
-        <dt>Can be auto-overridden</dt><dd>Yes &mdash; next higher-confidence candidate replaces</dd>
+        <dt>Resolved cascade</dt><dd>Every <code>candidateId</code> in <code>publishedMemberIds</code> marked <code>status='resolved'</code>. For set_union, that's all members of qualifying buckets; for scalar/winner_only, all members of the single winning bucket.</dd>
       </dl>
     </div>
   </div>
@@ -313,9 +346,10 @@
     <table>
       <thead><tr><th>Status</th><th>Condition</th><th>What Happens</th></tr></thead>
       <tbody>
-        <tr><td><code>published</code></td><td>confidence &ge; threshold AND distinct evidence URLs &ge; <code>min_evidence_refs</code> AND no manual lock</td><td>SQL: demote previous resolved, mark this resolved. JSON: write to <code>product.json fields[fieldKey]</code></td></tr>
-        <tr><td><code>below_threshold</code></td><td>confidence &lt; threshold</td><td>Candidate stays pending. Metadata records threshold miss.</td></tr>
-        <tr><td><code>below_evidence_refs</code></td><td>distinct evidence URLs &lt; <code>fieldRule.evidence.min_evidence_refs</code></td><td>Candidate stays pending. Metadata records <code>{required, actual}</code>. No-op when rule's <code>min_evidence_refs</code> is 0 or unset. Pure helper: <code>publish/evidenceGate.js</code>; counts via <code>specDb.countFieldCandidateEvidenceByCandidateId</code> (<code>COUNT(DISTINCT url)</code> &mdash; duplicates do not inflate). Same gate runs in <code>reconcileThreshold</code> (loosening) and <code>republishField</code> (post-delete recompute).</td></tr>
+        <tr><td><code>published</code></td><td>Gate 1 passes (incoming candidate confidence &ge; threshold) AND <code>evaluateFieldBuckets()</code> returns a <code>publishedValue</code> AND no manual lock</td><td>SQL: demote previous resolved, mark every <code>publishedMemberIds</code> row resolved. JSON: write to <code>product.json fields[fieldKey]</code> (or <code>variant_fields[vid][fieldKey]</code> for variant-scoped).</td></tr>
+        <tr><td><code>below_threshold</code></td><td>Incoming candidate's LLM confidence &lt; threshold (Gate 1 on the submission)</td><td>Candidate stays pending. Metadata records threshold miss.</td></tr>
+        <tr><td><code>below_evidence_refs</code></td><td>No bucket qualifies: either every bucket's top_confidence &lt; threshold (bucket-level Gate 1) or no bucket has <code>pooledCount &ge; min_evidence_refs</code> (Gate 2).</td><td>Candidate stays pending. Metadata records <code>{required, actual}</code> where <code>actual</code> is the triggering candidate's bucket's pooled count. Pure helper: <code>publish/evidenceGate.js</code> &rarr; <code>evaluateFieldBuckets()</code>; counts via <code>specDb.countPooledQualifyingEvidenceByFingerprint</code> (JOIN by fingerprint, filtered by per-ref <code>confidence / 100 &ge; threshold</code>; NULL confidence counts). Same evaluator runs in <code>reconcileThreshold</code> and <code>republishField</code>.</td></tr>
+        <tr><td><code>rejected_inconsistent</code><br><small>(submitCandidate return)</small></td><td>Gate 1 inconsistency probe: incoming LLM confidence &lt; threshold BUT the candidate's bucket pooled count &ge; <code>min_evidence_refs</code>.</td><td>Row is hard-deleted (evidence cascades via FK). product.json is <em>not</em> touched. Loop callers exit with <code>final_status='definitive_reject'</code>.</td></tr>
         <tr><td><code>manual_override_locked</code></td><td>Existing published field has <code>source='manual_override'</code></td><td>Candidate stays pending. Lock prevents auto-publish.</td></tr>
         <tr><td><code>skipped</code></td><td>No product.json file exists</td><td>Candidate stays pending. Reason: <code>no_product_json</code></td></tr>
       </tbody>
@@ -447,6 +481,7 @@
   source_id    TEXT NOT NULL,
   source_type  TEXT NOT NULL,
   value        TEXT,
+  value_fingerprint TEXT DEFAULT '',    -- deterministic bucket key
   unit         TEXT DEFAULT NULL,
   confidence   REAL DEFAULT 0,
   model        TEXT DEFAULT '',
@@ -467,10 +502,14 @@ CREATE INDEX idx_fc_product
 CREATE INDEX idx_fc_field
   ON field_candidates(category, product_id, field_key);
 CREATE INDEX idx_fc_variant
-  ON field_candidates(category, product_id, variant_id);</pre>
+  ON field_candidates(category, product_id, variant_id);
+CREATE INDEX idx_fc_fingerprint
+  ON field_candidates(product_id, field_key,
+                      value_fingerprint, variant_id_key);</pre>
       <dl class="detail-grid" style="margin-top:8px;">
         <dt>status</dt><dd><code>'candidate'</code> (pending) or <code>'resolved'</code> (published)</dd>
         <dt>source_id</dt><dd>Deterministic per extraction: <code>{moduleType}-{productId}-{runNumber}</code>. Immutable.</dd>
+        <dt>value_fingerprint</dt><dd>Derived from <code>value</code> via <code>src/db/valueFingerprint.js</code>. Scalar: NFC + lowercase + trim. List: sort-unique of normalized items joined by <code>\u0001</code>. Set-equality for lists &mdash; <code>['x','y']</code> and <code>['y','X']</code> pool together. Written at every <code>insertFieldCandidate</code> / <code>upsertFieldCandidate</code>; backfilled for pre-upgrade rows by <code>backfillValueFingerprints(db)</code>. Drives <code>evaluateFieldBuckets</code>.</dd>
         <dt>variant_id</dt><dd><code>NULL</code> for product-scalar fields (CEF colors/editions, pipeline weight, etc.). <code>v_&lt;hex&gt;</code> for variant-scoped fields (RDF release_date, per-variant SKU/price). UNIQUE constraint uses the generated <code>variant_id_key</code> (COALESCE) so the same <code>source_id</code> can coexist with distinct variants.</dd>
         <dt>validation_json</dt><dd><code>{ valid, repairs[], rejections[], llmRepair?: {} }</code></dd>
         <dt>metadata_json</dt><dd><code>{ publish_result, variant_key, variant_label, variant_type, evidence_sources, ...llm_meta }</code></dd>
@@ -542,23 +581,24 @@ CREATE INDEX idx_fc_variant
       <dt>Stages</dt><dd><code>'Scanning'</code> &rarr; <code>'Evaluating'</code> &rarr; <code>'Complete'</code></dd>
     </dl>
 
-    <table style="margin-top:16px;">
+    <p style="margin: 12px 0; font-size: 13.5px;">Both tightening and loosening route through <code>evaluateFieldBuckets()</code> with the new threshold &mdash; identical semantics to <code>publishCandidate()</code>. The reconcile loop compares the evaluator's <code>publishedValue</code> to what's currently in <code>product.json</code> and takes one of three actions per field:</p>
+    <table style="margin-top:4px;">
       <thead><tr><th>Action</th><th>When</th><th>What Happens</th></tr></thead>
       <tbody>
         <tr>
-          <td style="font-weight:600; color:var(--orange);">Tightening (threshold raised)</td>
-          <td>Resolved candidate confidence &lt; new threshold</td>
-          <td>Unpublish: demote SQL to <code>'candidate'</code>, delete from <code>product.json fields[]</code></td>
+          <td style="font-weight:600; color:var(--orange);">Unpublish</td>
+          <td>Field is currently published but no bucket qualifies at the new threshold (bucket top_confidence fell below threshold, or pooled qualifying refs fell below <code>min_evidence_refs</code>).</td>
+          <td>Demote all resolved rows to <code>'candidate'</code>, delete from <code>product.json fields[]</code> (or <code>variant_fields[vid][fieldKey]</code>).</td>
         </tr>
         <tr>
-          <td style="font-weight:600; color:var(--green);">Loosening (threshold lowered)</td>
-          <td>No resolved candidate but best candidate &ge; new threshold</td>
-          <td>Publish best: mark resolved in SQL, write to <code>product.json fields[]</code> with <code>source='pipeline'</code></td>
+          <td style="font-weight:600; color:var(--green);">Publish</td>
+          <td>Evaluator returns a <code>publishedValue</code> that differs from (or replaces absent) current published state.</td>
+          <td>Demote any prior resolved rows, mark every <code>publishedMemberIds</code> row resolved, write new value + <code>linked_candidates</code> to <code>product.json</code>, persist <code>publish_result</code> in the row's <code>metadata_json</code>.</td>
         </tr>
         <tr>
           <td style="font-weight:600; color:var(--purple);">Manual override</td>
           <td><code>source === 'manual_override'</code></td>
-          <td>Never touched &mdash; locked fields are always skipped</td>
+          <td>Never touched &mdash; locked fields are always skipped.</td>
         </tr>
       </tbody>
     </table>
@@ -729,7 +769,8 @@ CREATE INDEX idx_fc_variant
         <tr><td><code>PublisherLlmRepairDecision</code></td><td><code>value</code>, <code>decision</code> (<code>map_to_existing</code> | <code>keep_new</code> | <code>set_unk</code> | <code>reject</code>), <code>resolved_to?</code>, <code>reasoning?</code></td></tr>
         <tr><td><code>PublisherLlmRepair</code></td><td><code>promptId</code>, <code>status</code>, <code>decisions[]</code></td></tr>
         <tr><td><code>PublisherValidationJson</code></td><td><code>valid?</code>, <code>repairs[]</code>, <code>rejections[]</code>, <code>llmRepair?</code></td></tr>
-        <tr><td><code>PublisherPublishResult</code></td><td><code>status</code> (<code>published</code> | <code>below_threshold</code> | <code>below_evidence_refs</code> | <code>manual_override_locked</code> | <code>skipped</code>), <code>confidence?</code>, <code>threshold?</code>, <code>required?</code>, <code>actual?</code>, <code>reason?</code>, <code>published_at?</code></td></tr>
+        <tr><td><code>PublisherPublishResult</code></td><td><code>status</code> (<code>published</code> | <code>below_threshold</code> | <code>below_evidence_refs</code> | <code>manual_override_locked</code> | <code>skipped</code>), <code>confidence?</code>, <code>threshold?</code>, <code>required?</code>, <code>actual?</code> (bucket's pooled qualifying count), <code>reason?</code>, <code>published_at?</code></td></tr>
+        <tr><td><code>PublisherSubmitResult</code></td><td><code>status</code> (<code>accepted</code> | <code>rejected</code> | <code>rejected_inconsistent</code>), <code>candidateId</code>, <code>value</code>, <code>validationResult</code>, <code>publishResult?</code>. On <code>rejected_inconsistent</code>: also carries <code>reason</code>, <code>confidence</code>, <code>threshold</code>, <code>pooledEvidence</code>, <code>requiredEvidence</code>.</td></tr>
         <tr><td><code>PublisherMetadataJson</code></td><td><code>source?</code>, <code>method?</code>, <code>publish_result?</code></td></tr>
         <tr><td><code>PublisherCandidateRow</code></td><td><code>id</code>, <code>category</code>, <code>product_id</code>, <code>field_key</code>, <code>value</code>, <code>confidence</code>, <code>source_count</code>, <code>sources_json</code>, <code>validation_json</code>, <code>metadata_json</code>, <code>status</code>, <code>submitted_at</code>, <code>updated_at</code>, <code>brand?</code>, <code>model?</code>, <code>variant?</code></td></tr>
         <tr><td><code>PublisherStats</code></td><td><code>total</code>, <code>resolved</code>, <code>pending</code>, <code>repaired</code>, <code>products</code></td></tr>
@@ -747,13 +788,15 @@ CREATE INDEX idx_fc_variant
     <table>
       <thead><tr><th>Concern</th><th>Behavior</th></tr></thead>
       <tbody>
-        <tr><td>Storage scale</td><td>0&ndash;1 in database</td></tr>
-        <tr><td>Mixed sources</td><td>CEF may use 0&ndash;100, provenance uses 0&ndash;1</td></tr>
-        <tr><td>Normalization</td><td><code>c &gt; 1 ? c / 100 : c</code></td></tr>
-        <tr><td>Default threshold</td><td><code>0.7</code> (<code>config.publishConfidenceThreshold</code>)</td></tr>
-        <tr><td>Source merge</td><td>Max confidence across all sources for a candidate</td></tr>
-        <tr><td>Manual override</td><td>Always <code>1.0</code></td></tr>
-        <tr><td>Candidate override</td><td>Preserves original candidate confidence (or <code>1.0</code> if missing)</td></tr>
+        <tr><td>Storage scale</td><td>0&ndash;100 in <code>field_candidates.confidence</code> (raw LLM); 0&ndash;1 in <code>settingsRegistry</code> (<code>publishConfidenceThreshold</code>)</td></tr>
+        <tr><td>Mixed sources</td><td>LLM returns 0&ndash;100; threshold stored 0&ndash;1 &mdash; normalize before compare</td></tr>
+        <tr><td>Normalization</td><td><code>c &gt; 1 ? c / 100 : c</code> (used by both publish gates)</td></tr>
+        <tr><td>Default threshold</td><td><code>0.7</code> (<code>config.publishConfidenceThreshold</code>) &mdash; drives both Gate 1 (candidate &amp; bucket top_confidence) and Gate 2 (per-ref evidence qualifying)</td></tr>
+        <tr><td>Per-ref evidence confidence</td><td>0&ndash;100 on <code>field_candidate_evidence.confidence</code>. Gate 2 counts refs where <code>COALESCE(fce.confidence, 100) / 100 &ge; threshold</code>. NULL counts as qualifying (legacy tolerance).</td></tr>
+        <tr><td>Bucket top confidence</td><td>MAX(LLM confidence) across all rows with the same <code>value_fingerprint</code>. Must be &ge; threshold for the bucket to publish.</td></tr>
+        <tr><td>Manual override</td><td>Always <code>1.0</code>. Never touched by evaluator or reconcile.</td></tr>
+        <tr><td>Candidate override</td><td>Preserves original candidate confidence (or <code>1.0</code> if missing). Does not lock.</td></tr>
+        <tr><td>Gate 1 inconsistency purge</td><td>If incoming LLM <code>confidence / 100 &lt; threshold</code> AND bucket has <code>pooledCount &ge; min_evidence_refs</code> &rarr; row + evidence hard-deleted. Detects model unreliability (low self-rating while providing strong evidence).</td></tr>
         <tr><td>GUI display</td><td>Color-coded bar + numeric (0&ndash;100 scale)</td></tr>
       </tbody>
     </table>
@@ -799,6 +842,11 @@ CREATE INDEX idx_fc_variant
           <td><code>publish/publishedFieldReseed.js</code></td>
           <td>Rebuilds resolved state from <code>product.json fields[]</code>. Used after DB wipe or migration.</td>
         </tr>
+        <tr>
+          <td><code>backfillValueFingerprints()</code></td>
+          <td><code>db/specDbMigrations.js</code></td>
+          <td>Idempotent: computes <code>value_fingerprint</code> for rows with empty / NULL fingerprints. Fires automatically from <code>applyMigrations()</code> at DB open; exposed on <code>SpecDb</code> for test reseeds.</td>
+        </tr>
       </tbody>
     </table>
   </div>
@@ -813,10 +861,12 @@ CREATE INDEX idx_fc_variant
       <thead><tr><th>File</th><th>Exports</th><th>Purpose</th></tr></thead>
       <tbody>
         <tr><td><code>index.js</code></td><td>Public API barrel</td><td>Feature module entry point</td></tr>
-        <tr><td><code>candidate-gate/submitCandidate.js</code></td><td><code>submitCandidate()</code></td><td>Single entry point for all submissions</td></tr>
-        <tr><td><code>publish/publishCandidate.js</code></td><td><code>publishCandidate()</code></td><td>Auto-publish with confidence + evidence + lock gates</td></tr>
-        <tr><td><code>publish/evidenceGate.js</code></td><td><code>checkEvidenceGate()</code>, <code>readMinEvidenceRefs()</code></td><td>Pure helper: counts distinct evidence URLs vs <code>fieldRule.evidence.min_evidence_refs</code></td></tr>
-        <tr><td><code>publish/republishField.js</code></td><td><code>republishField()</code></td><td>Post-delete recompute &mdash; filters by both confidence + evidence gates</td></tr>
+        <tr><td><code>candidate-gate/submitCandidate.js</code></td><td><code>submitCandidate()</code></td><td>Single entry point for all submissions. Hosts the Gate 1 inconsistency probe.</td></tr>
+        <tr><td><code>publish/publishCandidate.js</code></td><td><code>publishCandidate()</code>, <code>buildLinkedCandidates()</code>, <code>persistPublishResult()</code>, <code>normalizeConfidence()</code></td><td>Auto-publish. Routes through <code>evaluateFieldBuckets()</code>. Three dispatch paths: normal scalar, variant identifier (CEF), variant-scoped.</td></tr>
+        <tr><td><code>publish/evidenceGate.js</code></td><td><code>evaluateFieldBuckets()</code>, <code>checkEvidenceGate()</code> (back-compat shim), <code>readMinEvidenceRefs()</code></td><td>Deterministic evaluator: buckets candidates by <code>value_fingerprint</code>, pools evidence, enforces bucket-level Gate 1 + per-ref Gate 2, returns <code>publishedValue</code> + <code>publishedMemberIds</code>. set_union returns union of qualifying buckets only.</td></tr>
+        <tr><td><code>publish/purgeInconsistentCandidate.js</code></td><td><code>purgeInconsistentCandidate()</code></td><td>Hard-deletes a candidate row on Gate 1 inconsistency; evidence cascades via FK. Dispatches run-scrub by <code>sourceType</code>: <code>key_finder</code> &rarr; <code>scrubKeyFinderRunIfPrimary</code> (delete the run only if this field was its primary; passenger runs preserved); <code>release_date_finder</code> / <code>sku_finder</code> &rarr; <code>deleteScalarFinderRunByNumber</code> (always delete — RDF/SKU produce one field per run). Parses <code>source_id</code> via <code>parseFinderRunSourceId</code>.</td></tr>
+        <tr><td><code>db/valueFingerprint.js</code></td><td><code>fingerprintValue()</code></td><td>Pure function. Scalar: NFC + lowercase + trim. List: sort-unique of normalized items joined by <code>\u0001</code>. Stable-JSON for nested objects (recursive key-sort). Lives in <code>src/db/</code> so migrations and stores can reach it without importing features.</td></tr>
+        <tr><td><code>publish/republishField.js</code></td><td><code>republishField()</code></td><td>Post-delete recompute &mdash; delegates to <code>evaluateFieldBuckets()</code>. set_union union recomputed over remaining candidate rows.</td></tr>
         <tr><td><code>publish/publishManualOverride.js</code></td><td><code>publishManualOverride()</code></td><td>Manual override publish (locks field)</td></tr>
         <tr><td><code>publish/publishCandidateOverride.js</code></td><td><code>publishCandidateOverride()</code></td><td>Candidate override from review grid</td></tr>
         <tr><td><code>publish/reconcileThreshold.js</code></td><td><code>reconcileThreshold()</code></td><td>Threshold tightening/loosening</td></tr>
@@ -845,12 +895,18 @@ CREATE INDEX idx_fc_variant
         <tr><td>Field Studio rules are SSOT for validity</td><td>Compiled field rules drive all checks</td></tr>
         <tr><td>Every publish operation dual-writes SQL + JSON</td><td>All publish paths update both stores</td></tr>
         <tr><td>Manual overrides lock fields from auto-publish</td><td><code>publishCandidate()</code> checks <code>source === 'manual_override'</code></td></tr>
-        <tr><td>Publish is dual-gated: confidence AND evidence</td><td>Every publish path runs <code>publishConfidenceThreshold</code> first, then <code>checkEvidenceGate</code> from <code>publish/evidenceGate.js</code> against <code>fieldRule.evidence.min_evidence_refs</code>. Failure status: <code>below_evidence_refs</code> with <code>{required, actual}</code>.</td></tr>
+        <tr><td>Publish is fully deterministic given bucket state</td><td>Once rows exist, the evaluator's output is a pure function of (bucket, threshold, min_evidence_refs). Gate 1 (incoming submission &amp; bucket top_confidence) + Gate 2 (per-ref qualifying pool) share one threshold: <code>publishConfidenceThreshold</code>. LLM self-ratings are sanity checks, not decision inputs.</td></tr>
+        <tr><td>Evidence pools across agreeing candidates</td><td>Rows sharing a <code>value_fingerprint</code> pool their refs into one bucket. <code>DISTINCT url</code> ensures a URL submitted by multiple rows counts once. Legacy-null <code>evidence.confidence</code> counts as qualifying.</td></tr>
+        <tr><td>Lists use set-equality for bucket matching</td><td><code>['x','y']</code> and <code>['y','X']</code> produce the same fingerprint. <code>item_union='set_union'</code> publishes the union of all qualifying buckets; sub-threshold buckets never mark their members resolved.</td></tr>
+        <tr><td><code>evidence_kind</code> is UI metadata, not a gate</td><td>The 10-kind enum (<code>direct_quote</code>, <code>structured_metadata</code>, &hellip;, <code>identity_only</code>) drives tooltip + icon display. The SQL <code>identity_only</code> exclusion was retired 2026-04-22 &mdash; refs count purely by URL uniqueness + per-ref confidence.</td></tr>
+        <tr><td>Gate 1 inconsistency purge is a submit-time hard-reject</td><td>LLM <code>confidence / 100 &lt; threshold</code> AND bucket <code>pooledCount &ge; min_evidence_refs</code> &rarr; <code>purgeInconsistentCandidate()</code> deletes the row before product.json append. Detects unreliable models (low self-rating + strong evidence).</td></tr>
+        <tr><td>Primary-run scrub accompanies the inconsistency purge</td><td>When the purged candidate came from a primary finder run (keyFinder with <code>primary_field_key === fieldKey</code>, or any RDF/SKU per-variant run), the helper also deletes that run's JSON entry and SQL runs row so the cached <code>discovery_log.urls_checked</code> / <code>queries_run</code> are gone on re-run. Passenger keyFinder candidates leave the run intact &mdash; the discovery_log belongs to its own primary field.</td></tr>
         <tr><td>Candidate lookup is variant-aware</td><td><code>submitCandidate</code> uses <code>getFieldCandidateBySourceIdAndVariant(pid, fk, sid, vid)</code> matching the UNIQUE on <code>(source_id, variant_id_key = COALESCE(variant_id, ''))</code>. Required so dual-write rows (same source_id, different variant_id) each get their own evidence projected.</td></tr>
         <tr><td>Retired knob: <code>evidence.required</code></td><td>Tautological with <code>min_evidence_refs &gt;= 1</code>. Stripped at compile (<code>compileFieldRuleBuilder.js</code>) and defensively at <code>compiler.js:normalizeFieldRulesForPhase1</code>.</td></tr>
-        <tr><td>Threshold reconciliation never touches manual overrides</td><td><code>reconcileThreshold()</code> filters locked fields</td></tr>
-        <tr><td>Confidence normalization: mixed scales handled</td><td><code>c &gt; 1 ? c / 100 : c</code> everywhere</td></tr>
-        <tr><td>Candidates are unique per (category, product_id, field_key, value)</td><td>SQL UNIQUE constraint + source merge on collision</td></tr>
+        <tr><td>Threshold reconciliation never touches manual overrides</td><td><code>reconcileThreshold()</code> filters locked fields; routes through the same <code>evaluateFieldBuckets()</code> as publish so semantics cannot diverge.</td></tr>
+        <tr><td>Confidence normalization: mixed scales handled</td><td><code>c &gt; 1 ? c / 100 : c</code> in both Gate 1 (candidate + bucket top) and Gate 2 (per-ref)</td></tr>
+        <tr><td>Candidates are unique per (category, product_id, field_key, source_id, variant_id_key)</td><td>SQL UNIQUE constraint. Two submissions with the same value but different <code>source_id</code> are distinct rows that <em>pool</em> via <code>value_fingerprint</code>.</td></tr>
+        <tr><td>Loop satisfaction reads <code>hasPublishedValue</code></td><td><code>keyFinderLoop</code> pre-check uses <code>specDb.hasPublishedValue(productId, fieldKey)</code> (any resolved row for this field) instead of the legacy <code>getResolvedFieldCandidate</code> single-row lookup. Exit on <code>result.status === 'rejected_inconsistent'</code> with <code>final_status='definitive_reject'</code>.</td></tr>
       </tbody>
     </table>
   </div>
@@ -858,7 +914,7 @@ CREATE INDEX idx_fc_variant
 
 <div style="text-align:center; padding:32px 0; color:var(--text-muted); font-size:13px;">
   Generated from source &mdash; Spec Factory Publisher Pipeline<br>
-  3 publish paths, 5 HTTP routes, 4 publish statuses, 13 table columns, dual-write SQL + JSON
+  3 publish paths, 5 HTTP routes, 5 submit/publish statuses (<code>accepted</code> / <code>rejected</code> / <code>rejected_inconsistent</code> on submit; <code>published</code> / <code>below_threshold</code> / <code>below_evidence_refs</code> / <code>manual_override_locked</code> / <code>skipped</code> on publish), dual-write SQL + JSON, deterministic value-bucket evaluator, Gate 1 inconsistency probe shipped 2026-04-22.
 </div>
 
 </div>

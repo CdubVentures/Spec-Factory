@@ -79,3 +79,45 @@ test('return shape is always the 6-field bundle', () => {
   const r = resolvePhaseModelByTier({}, 'easy');
   assert.deepEqual(Object.keys(r).sort(), ['model', 'reasoningModel', 'thinking', 'thinkingEffort', 'useReasoning', 'webSearch']);
 });
+
+// WHY: Common GUI flow — user toggles "use reasoning" and picks a reasoning
+// model but leaves the base model field empty. Without this fix the cascade
+// silently drops the user's tier choice and falls through to the fallback
+// bundle, leading to "every Loop runs the fallback model" reports.
+test('tier with empty model BUT useReasoning=true + reasoningModel set → tier WINS, not fallback', () => {
+  const REASONING_ONLY = {
+    model: '',
+    useReasoning: true,
+    reasoningModel: 'lab-openai:gpt-5.4-mini',
+    thinking: true,
+    thinkingEffort: 'xhigh',
+    webSearch: true,
+  };
+  const policy = policyOf({
+    easy: REASONING_ONLY, medium: REASONING_ONLY, hard: REASONING_ONLY,
+    very_hard: REASONING_ONLY, fallback: FALLBACK_FULL,
+  });
+  const r = resolvePhaseModelByTier(policy, 'medium');
+  assert.equal(r.useReasoning, true, 'inherits the tier reasoning toggle');
+  assert.equal(r.reasoningModel, 'lab-openai:gpt-5.4-mini', 'tier reasoningModel wins');
+  assert.equal(r.thinking, true, 'tier capabilities preserved (NOT fallback.thinking)');
+  assert.equal(r.thinkingEffort, 'xhigh');
+  assert.equal(r.webSearch, true);
+  // model field is empty because user opted into reasoningModel — keyLlmAdapter
+  // routes modelOverride to reasoningModel when useReasoning=true.
+  assert.equal(r.model, 'deepseek-chat', 'last-resort policy.models.plan when tier model is empty');
+});
+
+test('tier with useReasoning=true but reasoningModel empty → still cascades to fallback', () => {
+  // Defensive: a tier that opts into reasoning without choosing a reasoning
+  // model is incomplete. The cascade should still fire so the user sees the
+  // fallback model rather than a silent crash.
+  const INCOMPLETE = { ...EMPTY_TIER, useReasoning: true };
+  const policy = policyOf({
+    easy: INCOMPLETE, medium: EMPTY_TIER, hard: EMPTY_TIER,
+    very_hard: EMPTY_TIER, fallback: FALLBACK_FULL,
+  });
+  const r = resolvePhaseModelByTier(policy, 'easy');
+  assert.equal(r.model, 'gpt-5.4', 'cascaded to fallback because reasoningModel is empty');
+  assert.equal(r.useReasoning, false, 'inherits fallback.useReasoning');
+});

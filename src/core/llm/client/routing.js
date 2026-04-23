@@ -127,17 +127,25 @@ function baseRouteForRole(config = {}, role = 'plan') {
 
 // WHY: Per-key finder tier router. Resolves a difficulty tier → full 6-field model
 // bundle from policy.keyFinderTiers. Cascade:
-//   1) tier[difficulty] if tier.model is non-empty  → use that tier's bundle
-//   2) tiers.fallback                               → bundle-level inheritance
-//   3) policy.models.plan                           → last-resort for the model id only
-// Whole-bundle inheritance (not per-field) — per Phase 2 spec: tiers with empty
-// model inherit the full fallback bundle, so reasoning/thinking/web flags don't
-// drift from the fallback configuration.
+//   1) tier[difficulty] is "configured" → use that tier's bundle
+//   2) tiers.fallback                   → bundle-level inheritance
+//   3) policy.models.plan               → last-resort for the model id only
+// A tier counts as configured when EITHER `model` is set OR
+// (`useReasoning` is true AND `reasoningModel` is set). This mirrors the LLM
+// Config panel for every other phase — a user who picks "use reasoning + this
+// reasoning model" for a tier should not silently fall back because the base
+// model field is empty. Whole-bundle inheritance (not per-field) — per Phase 2
+// spec: tiers without a configured model inherit the full fallback bundle so
+// reasoning/thinking/web flags don't drift from the fallback configuration.
 export function resolvePhaseModelByTier(policy = {}, difficulty = '') {
   const tiers = policy.keyFinderTiers || {};
   const tier = tiers[String(difficulty || '').trim()];
   const fallback = tiers.fallback || {};
-  const effective = (tier && tier.model) ? tier : fallback;
+  const tierConfigured = !!tier && (
+    !!tier.model
+    || (Boolean(tier.useReasoning) && !!tier.reasoningModel)
+  );
+  const effective = tierConfigured ? tier : fallback;
   return {
     model: String(effective.model || policy.models?.plan || '').trim(),
     useReasoning: Boolean(effective.useReasoning),

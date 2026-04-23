@@ -14,13 +14,19 @@ interface DiscoveryHistoryStoreState {
    *  means "show everything". Mutable after open — panels call setFieldKeyFilter
    *  when the group's membership changes so the drawer stays live. */
   fieldKeyFilter: ReadonlyArray<string> | null;
+  /** Optional single variant_id to pre-select in the drawer's variant filter
+   *  dropdown. Used by the per-variant "Hist" button in the RDF/SKU panels to
+   *  open the drawer scoped to one variant. */
+  variantIdFilter: string | null;
   openDrawer: (args: {
     finderId: string;
     productId: string;
     category: string;
     fieldKeyFilter?: ReadonlyArray<string> | null;
+    variantIdFilter?: string | null;
   }) => void;
   setFieldKeyFilter: (filter: ReadonlyArray<string> | null) => void;
+  setVariantIdFilter: (variantId: string | null) => void;
   closeDrawer: () => void;
 }
 
@@ -30,8 +36,10 @@ export const useFinderDiscoveryHistoryStore = create<DiscoveryHistoryStoreState>
   productId: null,
   category: null,
   fieldKeyFilter: null,
-  openDrawer: ({ finderId, productId, category, fieldKeyFilter = null }) =>
-    set({ open: true, finderId, productId, category, fieldKeyFilter }),
+  variantIdFilter: null,
+  openDrawer: ({ finderId, productId, category, fieldKeyFilter = null, variantIdFilter = null }) =>
+    set({ open: true, finderId, productId, category, fieldKeyFilter, variantIdFilter }),
   setFieldKeyFilter: (fieldKeyFilter) => set({ fieldKeyFilter }),
-  closeDrawer: () => set({ open: false, fieldKeyFilter: null }),
+  setVariantIdFilter: (variantIdFilter) => set({ variantIdFilter }),
+  closeDrawer: () => set({ open: false, fieldKeyFilter: null, variantIdFilter: null }),
 }));

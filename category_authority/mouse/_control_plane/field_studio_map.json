@@ -2956,9 +2956,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "open_prefer_known",
-        "source": null
+        "source": "data_lists.design"
       },
       "enum_policy": "open_prefer_known",
+      "enum_source": "data_lists.design",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [

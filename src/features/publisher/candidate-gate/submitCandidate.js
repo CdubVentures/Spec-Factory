@@ -13,7 +13,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { validateField } from '../validation/validateField.js';
 import { persistDiscoveredValue } from '../persistDiscoveredValues.js';
-import { publishCandidate as autoPublish } from '../publish/publishCandidate.js';
+import { publishCandidate as autoPublish, normalizeConfidence } from '../publish/publishCandidate.js';
+import { readMinEvidenceRefs } from '../publish/evidenceGate.js';
+import { purgeInconsistentCandidate } from '../publish/purgeInconsistentCandidate.js';
 import { buildSourceId } from './buildSourceId.js';
 import { batchHeadCheck } from '../../../core/http/urlHeadCheck.js';
 
@@ -195,6 +197,42 @@ export async function submitCandidate({
   // (same source_id) replace existing rows for the candidate.
   if (candidateId && hasMetadata && Array.isArray(metadata.evidence_refs) && metadata.evidence_refs.length > 0) {
     specDb.replaceFieldCandidateEvidence?.(candidateId, metadata.evidence_refs);
+  }
+
+  // --- Gate 1 inconsistency probe ---
+  // WHY: If the LLM self-declares confidence below threshold BUT the candidate's
+  // bucket has enough qualifying evidence to publish, that's an unreliable-model
+  // signal. Hard-reject the row + cascade evidence. Runs BEFORE the product.json
+  // candidates[] append so inconsistent submissions leave no audit trail. Guarded
+  // on the pooled-count helper to stay inert against test stubs that predate
+  // the evaluator API.
+  if (candidateRow && candidateId && typeof specDb.countPooledQualifyingEvidenceByFingerprint === 'function') {
+    const threshold = config?.publishConfidenceThreshold ?? 0.7;
+    const required = readMinEvidenceRefs(fieldRule);
+    if (required > 0 && normalizeConfidence(confidence) < threshold) {
+      const pooledCount = specDb.countPooledQualifyingEvidenceByFingerprint({
+        productId, fieldKey,
+        fingerprint: candidateRow.value_fingerprint,
+        variantId: normalizedVariantId,
+        minConfidence: threshold,
+      });
+      if (pooledCount >= required) {
+        purgeInconsistentCandidate({
+          specDb, productId, fieldKey, candidateId, sourceId, sourceType, productRoot,
+        });
+        return {
+          status: 'rejected_inconsistent',
+          candidateId: null,
+          value: repairedValue,
+          validationResult,
+          reason: 'llm_confidence_below_threshold_with_publishable_evidence',
+          confidence,
+          threshold,
+          pooledEvidence: pooledCount,
+          requiredEvidence: required,
+        };
+      }
+    }
   }
 
   // --- Product.json write (source-centric: flat entries, no source merge) ---

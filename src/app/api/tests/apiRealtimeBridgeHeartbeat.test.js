@@ -212,3 +212,19 @@ test('heartbeat: broadcast delivers heartbeat to clients with no subscription fi
   assert.equal(heartbeats.length, 1, 'unsubscribed clients receive heartbeat too');
   h.bridge.stopHeartbeat();
 });
+
+test('heartbeat: clients subscribed to non-heartbeat channels still receive heartbeat', () => {
+  const h = createHeartbeatHarness();
+  const a = h.upgrade();
+  // Real production clients subscribe to specific channels that do NOT include
+  // 'heartbeat' — this must not filter out the heartbeat broadcast or the
+  // client's idle watchdog will false-trigger.
+  a.emit('message', Buffer.from(JSON.stringify({ subscribe: ['indexlab-event', 'operations'] })));
+
+  h.bridge.tickHeartbeat();
+
+  const frames = a.sent.map((raw) => JSON.parse(raw));
+  const heartbeats = frames.filter((f) => f.channel === 'heartbeat');
+  assert.equal(heartbeats.length, 1, 'heartbeat bypasses channel subscription filter');
+  h.bridge.stopHeartbeat();
+});
