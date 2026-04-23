@@ -41,7 +41,12 @@ function fixtureReportData() {
       { name: 'lighting', policy: 'open_prefer_known', values: ['1 zone (rgb)'], analysis: { total: 1, signatureGroups: [{ signature: '<N> zone (rgb)', count: 1, values: ['1 zone (rgb)'] }], topSignature: { signature: '<N> zone (rgb)', count: 1, coveragePct: 100 }, suspiciousValues: [] }, usedBy: ['lighting'] },
     ],
     components: [],
-    globalFragments: { evidenceContract: 'Evidence contract text.' },
+    globalFragments: {
+      evidenceContract: 'Evidence contract text.',
+      scalarSourceTierStrategy: 'Source tier strategy text.',
+      scalarSourceGuidanceCloser: 'Scalar source closer text.',
+      valueConfidenceRubric: 'Value confidence rubric text.',
+    },
     tierBundles: {
       easy: { model: 'claude-haiku-4-5' },
       medium: { model: 'claude-sonnet-4-6' },
@@ -108,6 +113,15 @@ test('renderMarkdown tells auditors to validate the full field contract before w
   assert.ok(md.includes('Example bank recipe'));
   assert.ok(md.includes('5-10'));
   assert.ok(md.includes('filter-risk'));
+});
+
+test('renderMarkdown resolves non-camelized global prompt fragment slots', () => {
+  const md = renderMarkdown(fixtureReportData());
+  assert.ok(md.includes('Source tier strategy text.'));
+  assert.ok(md.includes('Scalar source closer text.'));
+  assert.ok(md.includes('Value confidence rubric text.'));
+  assert.ok(!md.includes('SOURCE_TIER_STRATEGY â€” fragment not configured'));
+  assert.ok(!md.includes('VALUE_CONFIDENCE_GUIDANCE â€” fragment not configured'));
 });
 
 test('renderMarkdown collapses excess blank lines', () => {
