@@ -616,6 +616,7 @@ export class SpecDb {
   updateFieldCandidateValue(pid, fk, sid, val) { this._fieldCandidateStore.updateValue(pid, fk, sid, val); }
   deleteFieldCandidatesByVariantId(pid, vid) { this._fieldCandidateStore.deleteByVariantId(pid, vid); }
   deleteFieldCandidatesByProductFieldVariant(pid, fk, vid) { this._fieldCandidateStore.deleteByProductFieldVariant(pid, fk, vid); }
+  resetFieldCandidateConfidence(id) { this._fieldCandidateStore.resetConfidence(id); }
 
   // ── Field candidate evidence (relational projection) ─────────────
   insertFieldCandidateEvidence(opts) { this._fieldCandidateEvidenceStore.insert(opts); }

@@ -171,6 +171,8 @@ function buildCommonStubs() {
       export function computePeriodDeltas() { return { cost_usd: { pct: 0, direction: 'flat' }, calls: { pct: 0, direction: 'flat' }, prompt_tokens: { pct: 0, direction: 'flat' }, completion_tokens: { pct: 0, direction: 'flat' } }; }
       export function computeFilterChipCounts() { return { model: {}, reason: {}, category: {} }; }
       export function computeTokenSegments() { return { promptPct: 0, completionPct: 0, cachedPct: 0 }; }
+      export function resolveBillingFilterState(filters) { return filters; }
+      export function resolveBillingPageIndex({ page }) { return page; }
     `,
     '../../features/billing/billingCallTypeRegistry.generated.ts': `
       export const BILLING_CALL_TYPE_REGISTRY = Object.freeze([]);

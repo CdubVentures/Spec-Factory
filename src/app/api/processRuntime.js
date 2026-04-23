@@ -231,11 +231,28 @@ export function createProcessRuntime({
       } catch { /* operations registry may not be initialized yet */ }
     }
 
+    // WHY: Persist subprocess stdout/stderr to disk so crash diagnostics
+    // survive the end of the WebSocket stream. The GUI only shows live
+    // events; if the run crashes the stderr vanishes with the socket.
+    // This tee has no side-effect beyond writing to .server-state/.
+    let crashLogStream = null;
+    try {
+      const crashLogDir = path.join(resolveProjectPath('.'), '.server-state');
+      try { fsSync.mkdirSync(crashLogDir, { recursive: true }); } catch { /* best-effort */ }
+      const crashLogPath = path.join(crashLogDir, `indexlab-${runId || 'nrid'}-${Date.now()}.log`);
+      crashLogStream = fsSync.createWriteStream(crashLogPath, { flags: 'a' });
+      crashLogStream.write(`# cmd: ${command}\n# started: ${startedAt}\n# runId: ${runId}\n\n`);
+    } catch { crashLogStream = null; }
+
     child.stdout.on('data', (d) => {
-      broadcastWs('process', d.toString().split('\n').filter(Boolean));
+      const text = d.toString();
+      broadcastWs('process', text.split('\n').filter(Boolean));
+      if (crashLogStream) { try { crashLogStream.write(text); } catch { /* ignore */ } }
     });
     child.stderr.on('data', (d) => {
-      broadcastWs('process', d.toString().split('\n').filter(Boolean));
+      const text = d.toString();
+      broadcastWs('process', text.split('\n').filter(Boolean));
+      if (crashLogStream) { try { crashLogStream.write(`[stderr] ${text}`); } catch { /* ignore */ } }
     });
     child.on('exit', (code, signal) => {
       const resolvedExitCode = Number.isFinite(code) ? code : null;
@@ -244,6 +261,10 @@ export function createProcessRuntime({
         'process',
         [`[process exited with code ${resolvedExitCode === null ? 'null' : resolvedExitCode}${resolvedSignal ? ` signal ${resolvedSignal}` : ''}]`],
       );
+      if (crashLogStream) {
+        try { crashLogStream.write(`\n# exited code=${resolvedExitCode} signal=${resolvedSignal}\n`); } catch { /* ignore */ }
+        try { crashLogStream.end(); } catch { /* ignore */ }
+      }
       dispatch({
         type: 'PROCESS_EXITED',
         payload: { exitCode: resolvedExitCode, endedAt: new Date().toISOString() },

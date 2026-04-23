@@ -188,6 +188,19 @@ describe('buildCrawlCheckpoint — content hash derivation', () => {
     assert.equal(cp.sources[0].html_file, null);
   });
 
+  test('A1 — crawl4ai_file mirrors html_file content-hash prefix when HTML present', () => {
+    const results = [makeResult({ html: '<html>crawl4ai test body</html>' })];
+    const cp = buildCrawlCheckpoint({ ...BASE_OPTS, crawlResults: results });
+    const src = cp.sources[0];
+    assert.equal(src.crawl4ai_file, `${src.content_hash.slice(0, 12)}.json`);
+  });
+
+  test('A1 — crawl4ai_file is null when HTML is empty (no content_hash)', () => {
+    const results = [makeResult({ html: '' })];
+    const cp = buildCrawlCheckpoint({ ...BASE_OPTS, crawlResults: results });
+    assert.equal(cp.sources[0].crawl4ai_file, null);
+  });
+
   test('deterministic: same HTML produces same hash', () => {
     const html = '<html>deterministic test</html>';
     const cp1 = buildCrawlCheckpoint({ ...BASE_OPTS, crawlResults: [makeResult({ html })] });

@@ -129,6 +129,15 @@ export class WsManager {
     };
   }
 
+  /**
+   * Set the app-level subscription. SINGLE SLOT — this overwrites any previous
+   * subscription. Call this exactly once at the app shell (see
+   * `useWsEventBridge`). Do NOT call this from pages to narrow scope — doing so
+   * silently drops every channel you didn't list, breaking features that rely
+   * on app-level broadcasts (operations, data-change, llm-stream, heartbeat).
+   * To receive channel data on a page, register an onMessage handler instead;
+   * handlers are additive.
+   */
   subscribe(channels: Channel[], category?: string, productId?: string) {
     this.subscriptions = { channels, category, productId };
     if (this.ws?.readyState === WebSocket.OPEN) {

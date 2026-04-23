@@ -83,6 +83,7 @@ const BUNDLING_ON_KNOBS = {
   // covered by dedicated tests below.
   alwaysSoloRun: 'false',
   bundlingPassengerCost: JSON.stringify({ easy: 1, medium: 2, hard: 4, very_hard: 8 }),
+  bundlingPassengerVariantCostPerExtra: '0',
   bundlingPoolPerPrimary: JSON.stringify({ easy: 6, medium: 4, hard: 2, very_hard: 1 }),
   passengerDifficultyPolicy: 'less_or_equal',
   budgetRequiredPoints: JSON.stringify({ mandatory: 2, non_mandatory: 1 }),
@@ -148,19 +149,38 @@ function makeFinderStoreStub(settings) {
   };
 }
 
-function makeSpecDbStub({ finderStore, resolvedSet = new Set() } = {}) {
+function makeSpecDbStub({ finderStore, resolvedSet = new Set(), bucketsByFieldKey = {}, activeVariants } = {}) {
+  const variants = activeVariants || [{ variant_id: 'v0', variant_key: 'default', variant_label: 'Default', variant_type: 'base' }];
   return {
     category: 'mouse',
     getFinderStore: (id) => (id === 'keyFinder' ? finderStore : null),
     getCompiledRules: () => BUNDLE_RULES,
     getProduct: () => null,
     variants: {
-      listActive: () => [{ variant_id: 'v0', variant_key: 'default', variant_label: 'Default', variant_type: 'base' }],
-      listByProduct: () => [{ variant_id: 'v0', variant_key: 'default', variant_label: 'Default', variant_type: 'base' }],
+      listActive: () => variants,
+      listByProduct: () => variants,
     },
     getFieldCandidatesByProductAndField: () => [],
     // Any key in resolvedSet is treated as published-resolved → excluded by packer
     getResolvedFieldCandidate: (_pid, fk) => (resolvedSet.has(fk) ? { value: 'X', confidence: 95 } : null),
+    // Bucket evaluator contract — used by isConcreteEvidence via evaluateFieldBuckets.
+    // Short-hand: bucketsByFieldKey[fk] = { top_confidence, pooled_count } drives
+    // both methods below; absence means no candidates for that key.
+    listFieldBuckets: ({ fieldKey }) => {
+      const b = bucketsByFieldKey[fieldKey];
+      if (!b) return [];
+      return [{
+        value_fingerprint: `fp_${fieldKey}`,
+        top_confidence: Number(b.top_confidence) || 0,
+        member_count: Number(b.pooled_count) || 0,
+        member_ids: [1],
+        value: 'X',
+      }];
+    },
+    countPooledQualifyingEvidenceByFingerprint: ({ fieldKey }) => {
+      const b = bucketsByFieldKey[fieldKey];
+      return Number(b?.pooled_count) || 0;
+    },
   };
 }
 
@@ -173,12 +193,12 @@ function cleanupTmp() {
   try { fs.rmSync(TMP, { recursive: true, force: true }); } catch { /* */ }
 }
 
-function setupForProduct(productId, { settings = BUNDLING_ON_KNOBS, resolvedSet = new Set() } = {}) {
+function setupForProduct(productId, { settings = BUNDLING_ON_KNOBS, resolvedSet = new Set(), bucketsByFieldKey = {}, activeVariants } = {}) {
   const dir = path.join(PRODUCT_ROOT, productId);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'product.json'), JSON.stringify({ product_id: productId, category: 'mouse', candidates: {}, fields: {} }));
   const fsStub = makeFinderStoreStub(settings);
-  const specDb = makeSpecDbStub({ finderStore: fsStub.store, resolvedSet });
+  const specDb = makeSpecDbStub({ finderStore: fsStub.store, resolvedSet, bucketsByFieldKey, activeVariants });
   return { fsStub, specDb };
 }
 
@@ -252,6 +272,45 @@ test('passengers populate domainArgs + user_message.passenger_count when bundlin
   assert.equal(userMsg.passenger_count, pkFks.length);
   capturedUserMsg = userMsg;
   assert.equal(capturedUserMsg.primary_field_key, 'polling_rate');
+});
+
+test('live bundling applies passenger variant surcharge from family size', async (t) => {
+  t.after(cleanupTmp);
+  const { specDb } = setupForProduct('kfb-variant-cost', {
+    settings: {
+      ...BUNDLING_ON_KNOBS,
+      bundlingPassengerVariantCostPerExtra: '0.25',
+      bundlingPoolPerPrimary: JSON.stringify({ easy: 2, medium: 2, hard: 2, very_hard: 2 }),
+    },
+    activeVariants: [
+      { variant_id: 'v1' },
+      { variant_id: 'v2' },
+      { variant_id: 'v3' },
+      { variant_id: 'v4' },
+    ],
+  });
+  let capturedDomainArgs = null;
+
+  await runKeyFinder({
+    product: { ...PRODUCT, product_id: 'kfb-variant-cost' },
+    fieldKey: 'polling_rate',
+    category: 'mouse',
+    mode: 'run',
+    specDb, appDb: null, config: {},
+    productRoot: PRODUCT_ROOT,
+    policy: POLICY,
+    _callLlmOverride: async (domainArgs) => {
+      capturedDomainArgs = domainArgs;
+      return responseWithPassengers('polling_rate', domainArgs.passengers.map((p) => p.fieldKey));
+    },
+    _submitCandidateOverride: async () => ({ status: 'accepted' }),
+  });
+
+  assert.deepEqual(
+    capturedDomainArgs.passengers.map((p) => p.fieldKey),
+    ['dpi'],
+    'family size 4 makes each easy passenger cost 1.75, so pool 2 fits only one live passenger',
+  );
 });
 
 test('passenger submissions use primary run_number + correct fieldKey', async (t) => {
@@ -358,10 +417,14 @@ test('unk + no_evidence passengers are NOT submitted but still appear in passeng
   assert.equal(pcByKey.get('tracking')?.status, 'no_evidence');
 });
 
-test('already-published passengers excluded via specDb.getResolvedFieldCandidate', async (t) => {
+test('already-published passengers excluded via specDb.getResolvedFieldCandidate (legacy gate — concrete knobs disabled)', async (t) => {
+  // Under replace-semantics (concrete knobs > 0) the contract flips: published
+  // but below-concrete peers keep riding to accumulate evidence. This test
+  // pins the LEGACY path — knobs at 0, resolved peers unconditionally dropped.
   t.after(cleanupTmp);
   const { specDb } = setupForProduct('kfb-resolved', {
     resolvedSet: new Set(['dpi', 'buttons']), // both already resolved
+    settings: { ...BUNDLING_ON_KNOBS, passengerExcludeAtConfidence: '0', passengerExcludeMinEvidence: '0' },
   });
   let capturedPassengers = null;
 
@@ -560,4 +623,48 @@ test('onPassengersRegistered fires with empty array under alwaysSoloRun=true + m
 
   assert.equal(registrationEvents.length, 1, 'callback still fires — panel needs the invalidation even when solo');
   assert.deepEqual(registrationEvents[0], [], 'passengers array is empty under alwaysSoloRun=true + run');
+});
+
+// ─── passengerExclude* knobs wired from settings → buildPassengers ────────
+// Asserts the live runner reads the two exclude knobs into its settings bundle
+// and that buildPassengers routes through the publisher's bucket evaluator to
+// honor them. Peer 'dpi' has a bucket that qualifies under 95/3 → excluded;
+// peer 'buttons' has a bucket that qualifies only under 70/1 (publisher's
+// default) but NOT under the stricter exclude thresholds → still packed.
+test('passengerExclude* knobs wired: concrete-bar peer drops, weak-bar peer packs', async (t) => {
+  t.after(cleanupTmp);
+  const { specDb } = setupForProduct('kfb-concrete', {
+    settings: {
+      ...BUNDLING_ON_KNOBS,
+      passengerExcludeAtConfidence: '95',
+      passengerExcludeMinEvidence: '3',
+    },
+    bucketsByFieldKey: {
+      // qualifies at 95/3 → excluded from passenger pool
+      dpi: { top_confidence: 98, pooled_count: 4 },
+      // weak publish: qualifies at 70/1 but fails 95/3 (top_confidence < 95)
+      buttons: { top_confidence: 80, pooled_count: 5 },
+      // no bucket → unaffected, packs normally
+    },
+  });
+  let captured = null;
+
+  await runKeyFinder({
+    product: { ...PRODUCT, product_id: 'kfb-concrete' },
+    fieldKey: 'polling_rate',
+    category: 'mouse',
+    specDb, appDb: null, config: {},
+    productRoot: PRODUCT_ROOT,
+    policy: POLICY,
+    _callLlmOverride: async (domainArgs) => {
+      captured = domainArgs;
+      return responseWithPassengers('polling_rate', domainArgs.passengers.map((p) => p.fieldKey));
+    },
+    _submitCandidateOverride: async () => ({ status: 'accepted' }),
+  });
+
+  const keys = captured.passengers.map((p) => p.fieldKey);
+  assert.ok(!keys.includes('dpi'), 'dpi excluded: bucket qualifies under stricter 95/3 thresholds');
+  assert.ok(keys.includes('buttons'), 'buttons packed: bucket below stricter thresholds');
+  assert.ok(keys.includes('tracking'), 'tracking packed: no bucket data, nothing to exclude');
 });

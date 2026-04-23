@@ -1,0 +1,193 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+
+import { generatePerKeyDocs } from '../perKeyDocBuilder.js';
+
+function mkRule(over = {}) {
+  return {
+    priority: { required_level: 'non_mandatory', availability: 'always', difficulty: 'medium' },
+    contract: { type: 'string', shape: 'scalar' },
+    enum: { policy: 'closed', values: ['a', 'b'] },
+    aliases: [],
+    ai_assist: { reasoning_note: '' },
+    search_hints: { domain_hints: [], query_terms: [] },
+    ui: { label: 'Field' },
+    ...over,
+  };
+}
+
+async function mkTmpDir() {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'per-key-docs-'));
+  return dir;
+}
+
+async function cleanupDir(dir) {
+  await fs.rm(dir, { recursive: true, force: true });
+}
+
+function loadedRulesFixture() {
+  return {
+    rules: {
+      fields: {
+        dpi: mkRule({ ui: { label: 'DPI', group: 'sensor_performance' }, contract: { type: 'number', shape: 'scalar', unit: 'dpi' }, enum: { policy: '', values: [] } }),
+        ips: mkRule({ ui: { label: 'IPS', group: 'sensor_performance' }, contract: { type: 'number', shape: 'scalar', unit: 'ips' }, enum: { policy: '', values: [] } }),
+        form_factor: mkRule({ ui: { label: 'Form Factor', group: 'ergonomics' }, enum: { policy: 'closed', values: ['ambidextrous', 'right'] } }),
+        colors: mkRule({ ui: { label: 'Colors', group: 'general' } }), // reserved
+      },
+    },
+    knownValues: { enums: {} },
+    componentDBs: {},
+  };
+}
+
+function fieldGroupsFixture() {
+  return {
+    group_index: {
+      sensor_performance: ['dpi', 'ips'],
+      ergonomics: ['form_factor'],
+      general: ['colors'],
+    },
+  };
+}
+
+test('generatePerKeyDocs writes one pair per non-reserved key', async () => {
+  const outputRoot = await mkTmpDir();
+  try {
+    const result = await generatePerKeyDocs({
+      category: 'mouse',
+      loadedRules: loadedRulesFixture(),
+      fieldGroups: fieldGroupsFixture(),
+      globalFragments: {},
+      tierBundles: { fallback: { model: 'test-model' } },
+      outputRoot,
+      now: new Date('2026-04-23T00:00:00Z'),
+    });
+
+    assert.equal(result.written.length, 3, 'three non-reserved keys written');
+    assert.equal(result.skipped.length, 1, 'one reserved key skipped');
+    assert.equal(result.skipped[0].fieldKey, 'colors');
+
+    // Verify the file tree
+    for (const entry of result.written) {
+      const htmlExists = await fs.access(entry.htmlPath).then(() => true).catch(() => false);
+      const mdExists = await fs.access(entry.mdPath).then(() => true).catch(() => false);
+      assert.ok(htmlExists, `html exists for ${entry.fieldKey}`);
+      assert.ok(mdExists, `md exists for ${entry.fieldKey}`);
+      assert.ok(entry.htmlPath.includes(entry.group), 'path includes group');
+      assert.ok(entry.htmlPath.includes(entry.fieldKey), 'path includes field key');
+    }
+
+    // Reserved-keys summary
+    assert.ok(result.reservedKeysPath, 'reservedKeysPath returned');
+    const reservedSummary = await fs.readFile(result.reservedKeysPath, 'utf8');
+    assert.match(reservedSummary, /colors/);
+    assert.match(reservedSummary, /CEF|colorEditionFinder/i);
+  } finally {
+    await cleanupDir(outputRoot);
+  }
+});
+
+test('output path is <outputRoot>/per-key/<category>/<group>/<fieldKey>.{html,md}', async () => {
+  const outputRoot = await mkTmpDir();
+  try {
+    const result = await generatePerKeyDocs({
+      category: 'mouse',
+      loadedRules: loadedRulesFixture(),
+      fieldGroups: fieldGroupsFixture(),
+      globalFragments: {},
+      tierBundles: {},
+      outputRoot,
+      now: new Date('2026-04-23T00:00:00Z'),
+    });
+    const dpiEntry = result.written.find((e) => e.fieldKey === 'dpi');
+    assert.ok(dpiEntry, 'dpi entry present');
+    const expected = path.join(outputRoot, 'per-key', 'mouse', 'sensor_performance', 'dpi.html');
+    assert.equal(dpiEntry.htmlPath, expected);
+  } finally {
+    await cleanupDir(outputRoot);
+  }
+});
+
+test('rolling overwrite — running twice replaces the prior contents', async () => {
+  const outputRoot = await mkTmpDir();
+  try {
+    await generatePerKeyDocs({
+      category: 'mouse',
+      loadedRules: loadedRulesFixture(),
+      fieldGroups: fieldGroupsFixture(),
+      globalFragments: {},
+      tierBundles: {},
+      outputRoot,
+      now: new Date('2026-04-23T00:00:00Z'),
+    });
+    const firstResult = await generatePerKeyDocs({
+      category: 'mouse',
+      loadedRules: loadedRulesFixture(),
+      fieldGroups: fieldGroupsFixture(),
+      globalFragments: {},
+      tierBundles: {},
+      outputRoot,
+      now: new Date('2026-04-24T00:00:00Z'),
+    });
+    const dpiHtml = firstResult.written.find((e) => e.fieldKey === 'dpi').htmlPath;
+    const content = await fs.readFile(dpiHtml, 'utf8');
+    assert.ok(content.includes('2026-04-24T00:00:00.000Z'), 'second run timestamp present');
+    assert.ok(!content.includes('2026-04-23T00:00:00.000Z'), 'first run timestamp replaced');
+  } finally {
+    await cleanupDir(outputRoot);
+  }
+});
+
+test('generated file contains the full contract schema table and placeholder prompt', async () => {
+  const outputRoot = await mkTmpDir();
+  try {
+    const result = await generatePerKeyDocs({
+      category: 'mouse',
+      loadedRules: loadedRulesFixture(),
+      fieldGroups: fieldGroupsFixture(),
+      globalFragments: {},
+      tierBundles: {},
+      outputRoot,
+      now: new Date('2026-04-23T00:00:00Z'),
+    });
+    const dpiHtml = await fs.readFile(result.written.find((e) => e.fieldKey === 'dpi').htmlPath, 'utf8');
+    assert.match(dpiHtml, /Contract schema/i);
+    assert.match(dpiHtml, /&lt;BRAND&gt;/i); // escaped placeholder in HTML
+    assert.match(dpiHtml, /priority\.difficulty/i);
+  } finally {
+    await cleanupDir(outputRoot);
+  }
+});
+
+test('rejects missing category / outputRoot', async () => {
+  await assert.rejects(
+    () => generatePerKeyDocs({ category: '', loadedRules: loadedRulesFixture(), fieldGroups: fieldGroupsFixture(), globalFragments: {}, tierBundles: {}, outputRoot: '/tmp/x' }),
+    /category/,
+  );
+  await assert.rejects(
+    () => generatePerKeyDocs({ category: 'mouse', loadedRules: loadedRulesFixture(), fieldGroups: fieldGroupsFixture(), globalFragments: {}, tierBundles: {}, outputRoot: '' }),
+    /outputRoot/,
+  );
+});
+
+test('creates output directories if absent', async () => {
+  const outputRoot = await mkTmpDir();
+  try {
+    const deepRoot = path.join(outputRoot, 'nested', 'deeper');
+    const result = await generatePerKeyDocs({
+      category: 'mouse',
+      loadedRules: loadedRulesFixture(),
+      fieldGroups: fieldGroupsFixture(),
+      globalFragments: {},
+      tierBundles: {},
+      outputRoot: deepRoot,
+      now: new Date('2026-04-23T00:00:00Z'),
+    });
+    assert.ok(result.written.length > 0);
+  } finally {
+    await cleanupDir(outputRoot);
+  }
+});

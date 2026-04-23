@@ -124,7 +124,7 @@ export function bootstrapServer({ projectRoot }) {
 
   // ── Phase 3: Domain runtimes (review + catalog) ──
   const domain = createBootstrapDomainRuntimes({
-    config, HELPER_ROOT, storage, getSpecDb, cleanVariant,
+    HELPER_ROOT, getSpecDb, cleanVariant,
   });
 
   // ── Crawl video cleanup (fire-and-forget, 24h TTL) ──

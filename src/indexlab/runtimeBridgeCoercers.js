@@ -81,12 +81,11 @@ export function toObject(value) {
 
 export function inferLlmRouteRole(routeRole = '', reason = '') {
   const explicit = String(routeRole || '').trim().toLowerCase();
-  if (['plan', 'validate'].includes(explicit)) {
+  if (explicit === 'plan') {
     return explicit;
   }
   const token = String(reason || '').trim().toLowerCase();
   if (!token) return '';
-  if (token.includes('validate') || token.includes('verify')) return 'validate';
   if (
     token.includes('planner')
     || token.includes('search_profile')
@@ -106,8 +105,6 @@ export function classifyLlmCallType(reason = '') {
   if (r.startsWith('search_planner') || r.startsWith('discovery_planner') || r === 'uber_query_planner') return 'search_planner';
   if (r.includes('triage') || r.includes('rerank') || r.includes('serp')) return 'serp_selector';
   if (r === 'domain_safety_classification') return 'domain_classifier';
-  if (r.startsWith('field_repair')) return 'field_repair';
-  if (r === 'validate' || r.startsWith('validate_')) return 'validation';
   if (r.startsWith('verify_extract')) return 'verification';
   if (r.startsWith('extract_')) return 'extraction';
   if (r === 'escalation_planner' || r.includes('escalation')) return 'escalation_planner';
@@ -120,7 +117,6 @@ export const LLM_CALL_TYPE_TAB = {
   search_planner: '04',
   serp_selector: '07',
   domain_classifier: '08',
-  field_repair: null,
 };
 
 export function buildLlmCallKey(row = {}, reason = '') {

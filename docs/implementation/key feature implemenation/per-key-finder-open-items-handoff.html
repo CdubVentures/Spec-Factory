@@ -191,8 +191,23 @@ The Bundled Column Should Dynamically update when a priority key is running to s
       </tr>
       <tr>
         <td>Bundled column (now labeled <em>Next bundle</em>) dynamic</td>
-        <td><span class="tag tag-green">Live</span> — <code>/summary</code> uses live <code>buildPassengers</code>; mid-run <code>emitDataChange</code> with <code>phase:'registered'</code>.</td>
-        <td><code>keyFinderRoutes.js:223-241</code> · UI <code>KeyGroupSection.tsx</code> header rename</td>
+        <td><span class="tag tag-green">Live</span> — <code>/summary</code> uses live <code>buildPassengers</code>; mid-run <code>emitDataChange</code> with <code>phase:'registered'</code>. Header carries <em>Loop only — see alwaysSoloRun setting</em> sub-label when <code>alwaysSoloRun=true</code> (shipped 2026-04-23).</td>
+        <td><code>keyFinderRoutes.js:223-241</code> · UI <code>KeyGroupSection.tsx</code></td>
+      </tr>
+      <tr>
+        <td>Status column (formerly Concrete) — ✓ / Improvable / —</td>
+        <td><span class="tag tag-green">Live 2026-04-23</span> — driven by <code>concrete_evidence</code> on each summary row via <code>isConcreteEvidence</code> → <code>evaluateFieldBuckets</code> at the stricter passenger-exclude thresholds. Header renamed <em>Concrete → Status</em>; badge text renamed <em>active → Improvable</em>; original Status column renamed to <em>Published</em>.</td>
+        <td><code>keyRow.tsx</code> <code>ConcreteBadge</code> · <code>keyFinderRoutes.js</code> <code>buildRow</code> · <code>keyConcreteEvidence.js</code></td>
+      </tr>
+      <tr>
+        <td>Concrete-evidence gate — replace-semantics</td>
+        <td><span class="tag tag-green">Live 2026-04-23</span> — defaults 95 / 3. When active, the concrete bar REPLACES the legacy "drop all published peers" rule: published-but-below-bar peers keep bundling to accumulate evidence. Same gate drives Run, Loop, Preview, and summary <code>bundle_preview</code>.</td>
+        <td><code>keyPassengerBuilder.js</code> · publisher evaluator extension in <code>evidenceGate.js</code></td>
+      </tr>
+      <tr>
+        <td>Resolved-via-passenger-cascade status UX</td>
+        <td><span class="tag tag-green">Live 2026-04-23</span> — keys published only because they rode as a passenger (no own primary run) now render <code>status='resolved'</code> with value/confidence/model populated from the top candidate instead of showing "—".</td>
+        <td><code>keyFinderRoutes.js</code> <code>buildRow</code></td>
       </tr>
       <tr>
         <td>Radix <code>ActionTooltip</code> on action buttons (P3)</td>
@@ -256,20 +271,18 @@ The Bundled Column Should Dynamically update when a priority key is running to s
   <!-- P5 -->
   <div class="card">
     <div class="card-header">
-      <span class="tag tag-muted">P5 · BEHAVIORAL</span>
+      <span class="tag tag-green">P5 · BEHAVIORAL</span>
       <span>Published-but-"could do better" peer re-bundling</span>
-      <span class="tag tag-muted">Parked — low value at defaults</span>
+      <span class="tag tag-green">✅ SHIPPED 2026-04-23 (Item 1)</span>
     </div>
     <div class="card-body">
       <p><strong>Spec line:</strong> <em>"re calculates the additional keys based on unresolved or lower confidence (need a knob in pipeline keys for this sometiing could be resolved but we could do better is the point)"</em></p>
 
-      <p><strong>Current behavior:</strong> <code>keyPassengerBuilder.js:54-61</code> drops every published peer unconditionally. The <code>passengerExcludeAtConfidence</code> + <code>passengerExcludeMinEvidence</code> knobs only gate unpublished peers (they read <code>getTopFieldCandidate</code>, not <code>getResolvedFieldCandidate</code>).</p>
+      <p><strong>Delivered:</strong> replace-semantics concrete gate. When <code>passengerExcludeAtConfidence</code> + <code>passengerExcludeMinEvidence</code> are both &gt; 0 (default 95 / 3), the gate REPLACES the legacy "drop all published peers" rule. A published peer that hasn't reached the stricter concrete bar KEEPS bundling so evidence accumulates toward concrete. Below-bar published peers retry until they qualify; concrete peers drop. Same check drives the Status column (✓ / Improvable / —) on each summary row.</p>
 
-      <p><strong>Why parked:</strong> default <code>publishConfidenceThreshold = 95</code> and publisher requires <code>≥2 evidence</code>. Any published peer ALREADY satisfies ≥95 conf + ≥2 evidence by definition. Applying a "drop if conf≥95 AND evidence≥2" re-filter would produce the same pool as "drop if published". Zero practical value at default thresholds.</p>
+      <p><strong>Implementation:</strong> <code>src/features/key/keyConcreteEvidence.js</code> (new helper) + <code>evaluateFieldBuckets({ requiredOverride })</code> extension in the publisher + replace-semantics branch in <code>keyPassengerBuilder.js</code>. Orchestrator settings builders (<code>keyFinder.js</code>, <code>keyFinderPreviewPrompt.js</code>, <code>keyFinderRoutes.js</code>) all wire the two knobs. See §6.2 of roadmap for the full mechanism.</p>
 
-      <p><strong>When to revive:</strong> if the PO lowers <code>publishConfidenceThreshold</code> to something like <code>80</code> and wants "published but below X / below Y" peers re-packable for refinement. Otherwise, leave alone.</p>
-
-      <p><strong>If revived:</strong> merge the two exclusion blocks in <code>keyPassengerBuilder.js:54-80</code>. Read <code>confidence</code> + <code>evidence_count</code> off the resolved row; drop only when both knob thresholds cleared. 2 new tests in <code>keyPassengerBuilder.test.js</code>: below-threshold published peer packs; above-threshold published peer drops.</p>
+      <p><strong>Tests:</strong> <code>keyConcreteEvidence.test.js</code> (new, 8 boundary cases) + the "concrete gate ACTIVE + published-below-bar peer → KEEPS bundling (replace-semantics)" test in <code>keyPassengerBuilder.test.js</code>. Full suite 11,490 / 11,490 green.</p>
     </div>
   </div>
 

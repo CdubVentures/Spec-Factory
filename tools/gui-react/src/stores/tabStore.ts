@@ -200,6 +200,44 @@ export function usePersistedExpandMap(
   return [value, toggle, replace];
 }
 
+/* ── Persisted JSON value ──────────────────────────────────────────── */
+
+export function resolvePersistedJson<T>({
+  storedValue,
+  defaultValue,
+  validate,
+}: {
+  storedValue: string | null | undefined;
+  defaultValue: T;
+  validate?: (parsed: unknown) => parsed is T;
+}): T {
+  if (typeof storedValue !== 'string' || storedValue === '') return defaultValue;
+  try {
+    const parsed: unknown = JSON.parse(storedValue);
+    if (validate && !validate(parsed)) return defaultValue;
+    return parsed as T;
+  } catch {
+    return defaultValue;
+  }
+}
+
+export function usePersistedJson<T>(
+  key: string,
+  defaultValue: T,
+  validate?: (parsed: unknown) => parsed is T,
+): [T, (next: T) => void] {
+  const storedValue = useTabStore((s) => s.values[key]);
+  const setFn = useTabStore((s) => s.set);
+
+  const value = resolvePersistedJson({ storedValue, defaultValue, validate });
+
+  const setter = useCallback((next: T) => {
+    setFn(key, JSON.stringify(next));
+  }, [key, setFn]);
+
+  return [value, setter];
+}
+
 /* ── Persisted Number ──────────────────────────────────────────────── */
 
 export function resolvePersistedNumber({

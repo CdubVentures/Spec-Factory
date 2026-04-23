@@ -599,8 +599,8 @@ z.<span class="p">object</span>({
         <tr><td><code>bundlingPoolPerPrimary</code></td><td><code>{easy:6, medium:4, hard:2, very_hard:1}</code></td><td>Primary's carrying capacity.</td></tr>
         <tr><td><code>passengerDifficultyPolicy</code></td><td><code>less_or_equal</code></td><td>4 enums &mdash; see below.</td></tr>
         <tr><td><code>reloopRunBudget</code></td><td><code>1</code></td><td>NEW 2026-04-21. When Loop is clicked on an already-<strong>published</strong> primary, attempts is capped to this value. Loop degrades to "Run + passengers with budget 1." See §6.2.</td></tr>
-        <tr><td><code>passengerExcludeAtConfidence</code></td><td><code>0</code> (disabled)</td><td>NEW 2026-04-21. When &gt; 0, peers already resolved with candidate confidence &ge; this value AND evidence count &ge; <code>passengerExcludeMinEvidence</code> are dropped from the passenger pool. "Good enough, don't spend passenger points on it." See §6.2.</td></tr>
-        <tr><td><code>passengerExcludeMinEvidence</code></td><td><code>0</code> (disabled)</td><td>NEW 2026-04-21. Companion to <code>passengerExcludeAtConfidence</code>. Both must be &gt; 0 for the exclusion rule to engage. See §6.2.</td></tr>
+        <tr><td><code>passengerExcludeAtConfidence</code></td><td><code>95</code></td><td>UPDATED 2026-04-23 (was <code>0</code>, wired + flipped in Item 1). When both this and <code>passengerExcludeMinEvidence</code> are &gt; 0, peers are dropped from the passenger pool when their <strong>bucket</strong> (via publisher's <code>evaluateFieldBuckets</code>) qualifies at <code>conf ≥ this / 100</code> AND pooled qualifying refs ≥ <code>passengerExcludeMinEvidence</code>. Concrete gate — replaces the legacy published-peer exclusion when active. See §6.2.</td></tr>
+        <tr><td><code>passengerExcludeMinEvidence</code></td><td><code>3</code></td><td>UPDATED 2026-04-23 (was <code>0</code>). Companion to <code>passengerExcludeAtConfidence</code>. Both must be &gt; 0 for the concrete gate to engage; both 0 = legacy behavior (published peers dropped unconditionally). See §6.2.</td></tr>
         <tr><td><code>bundlingOverlapCapEasy</code></td><td><code>2</code></td><td>NEW 2026-04-22. Max concurrent passenger rides for easy peers. See §6.3.</td></tr>
         <tr><td><code>bundlingOverlapCapMedium</code></td><td><code>4</code></td><td>NEW 2026-04-22. Max concurrent passenger rides for medium peers.</td></tr>
         <tr><td><code>bundlingOverlapCapHard</code></td><td><code>6</code></td><td>NEW 2026-04-22. Max concurrent passenger rides for hard peers.</td></tr>
@@ -631,7 +631,10 @@ z.<span class="p">object</span>({
     <li>If <code>bundlingEnabled=false</code> → return solo (no passengers). Done.</li>
     <li>Build candidate pool: same-group peers of the primary (∪ cross-group when <code>groupBundlingOnly=false</code> AND pool headroom remains — Phase 5+ trigger only).</li>
     <li>Filter by <code>passengerDifficultyPolicy</code> vs primary's difficulty.</li>
-    <li>Drop already-<strong>published</strong>-resolved candidates (via <code>specDb.getResolvedFieldCandidate</code>). <strong>Also drop</strong> peers whose current candidate confidence &ge; <code>passengerExcludeAtConfidence</code> AND evidence count &ge; <code>passengerExcludeMinEvidence</code> &mdash; the "good enough, skip it" exclusion (both knobs must be &gt; 0 to engage; defaults of 0 keep behavior unchanged). NOT "has any candidate" &mdash; below-threshold passengers keep retrying.</li>
+    <li><strong>Concrete-gate exclusion (REPLACE-semantics, shipped 2026-04-23).</strong><br>
+      When both <code>passengerExcludeAtConfidence</code> and <code>passengerExcludeMinEvidence</code> are &gt; 0 (default 95 / 3): route each peer through the publisher's <code>evaluateFieldBuckets</code> with <code>threshold = excludeConf / 100</code> and <code>requiredOverride = excludeEvd</code>. If the bucket qualifies (publishes) under the stricter thresholds, drop the peer. Otherwise keep it — <strong>even if the peer is already published at low evidence</strong>. Below-concrete peers keep riding so bundling accumulates more evidence toward the concrete bar ("below either threshold, peers keep retrying").<br>
+      When either knob = 0 (legacy): fall back to the original behavior — drop every peer that <code>specDb.getResolvedFieldCandidate</code> returns truthy for.<br>
+      Helper: <code>src/features/key/keyConcreteEvidence.js</code> → <code>isConcreteEvidence({..., excludeConf, excludeEvd})</code>. Same helper drives the Status column on each summary row, so UI and runtime can never diverge.</li>
     <li>Sort <code>(required_level ASC, availability ASC, difficulty ASC, field_key ASC)</code>. <strong>Mandatory keys pack before non-mandatory at equal availability/difficulty.</strong> The <code>field_key</code> tiebreaker is load-bearing &mdash; without it, packer output is non-deterministic under Object-key iteration reordering.</li>
     <li>Greedy-pack under <code>bundlingPoolPerPrimary[primary.difficulty]</code>. Per-passenger cost is <strong>raw</strong>:<br>
       <code>cost(peer) = bundlingPassengerCost[peer.difficulty]</code><br>
@@ -670,14 +673,49 @@ z.<span class="p">object</span>({
 </div>
 
 <div class="card" style="margin-top:16px;">
-  <div class="card-header">Good-enough exclusion &mdash; <code>passengerExcludeAtConfidence</code> + <code>passengerExcludeMinEvidence</code></div>
+  <div class="card-header">Concrete-evidence gate &mdash; <code>passengerExcludeAtConfidence</code> + <code>passengerExcludeMinEvidence</code> (shipped 2026-04-23)</div>
   <div class="card-body">
-    <p>Already-<strong>published</strong>-resolved peers are always dropped from the passenger pool (§6.1 step 4). But some peers sit at a below-threshold candidate that is <em>good enough to stop spending passenger points on</em> even though it's not published. This knob pair widens the drop filter.</p>
+    <p><strong>Replace-semantics:</strong> when both knobs are &gt; 0, the concrete gate REPLACES the legacy "drop all published peers" rule. A peer is excluded from the passenger pool <em>only</em> when its bucket would publish under the stricter thresholds. A peer already published at low confidence / 1 evidence ref KEEPS riding so bundling accumulates more qualifying evidence toward the concrete bar. This is the "we strive to do better" contract.</p>
     <ul>
-      <li><strong>Engage condition:</strong> both knobs must be &gt; 0. Either left at default 0 keeps behavior unchanged (only published peers drop).</li>
-      <li><strong>Drop rule:</strong> peer's current top candidate confidence &ge; <code>passengerExcludeAtConfidence</code> AND candidate evidence count &ge; <code>passengerExcludeMinEvidence</code> &rArr; peer is dropped from the candidate pool before sort/pack.</li>
-      <li><strong>Below either threshold:</strong> peer stays eligible and retries as a passenger, so the Loop keeps trying to upgrade it toward publisher-resolution.</li>
-      <li><strong>Implementation point:</strong> <code>src/features/key/keyPassengerBuilder.js</code> &mdash; extends the existing <code>resolvedFieldKeys</code> Set with threshold-check entries. Single-pass, no new DB read beyond the existing candidate lookup.</li>
+      <li><strong>Defaults shipped 2026-04-23:</strong> <code>95 / 3</code>. The gate is active out of the box on fresh installs.</li>
+      <li><strong>Engage condition:</strong> both knobs must be &gt; 0. Either left at 0 restores the legacy behavior (all published peers dropped unconditionally — no concrete check).</li>
+      <li><strong>Evaluation path:</strong> <code>keyConcreteEvidence.isConcreteEvidence</code> &rarr; <code>evaluateFieldBuckets({ threshold: excludeConf/100, requiredOverride: excludeEvd })</code> (publisher's deterministic bucket evaluator). Gate 1: bucket top confidence &ge; <code>excludeConf/100</code>. Gate 2: pooled qualifying refs at that threshold &ge; <code>excludeEvd</code>.</li>
+      <li><strong>Why the publisher's evaluator (not the top candidate shortcut):</strong> the top <em>candidate row</em> can diverge from the pooled-bucket decision the publisher would actually make. Using the same evaluator at a tighter knob means the concrete check never lies about what the publisher would do with stricter thresholds.</li>
+      <li><strong>Applies to both Run and Loop.</strong> Same <code>buildPassengers</code> call path, so <code>/summary.bundle_preview</code> is consistent with what either mode would pack.</li>
+      <li><strong>UI:</strong> the Status column (formerly Concrete, renamed 2026-04-23) on each summary row renders <code>✓</code> when the key meets the bar, <code>Improvable</code> when it has data below the bar, <code>—</code> when no candidate data. Powered by <code>concrete_evidence</code> / <code>top_confidence</code> / <code>top_evidence_count</code> fields on the summary row.</li>
+      <li><strong>Implementation points:</strong>
+        <ul style="margin-top:4px;">
+          <li><code>src/features/publisher/publish/evidenceGate.js</code> &mdash; <code>evaluateFieldBuckets({ requiredOverride? })</code> param (backward-compatible; existing publish-path callers don't pass it).</li>
+          <li><code>src/features/key/keyConcreteEvidence.js</code> &mdash; helper.</li>
+          <li><code>src/features/key/keyPassengerBuilder.js</code> &mdash; replace-semantics branch.</li>
+          <li><code>src/features/key/api/keyFinderRoutes.js</code> &mdash; per-row <code>concrete_evidence</code> field.</li>
+          <li>All three orchestrator settings builders now read the two knobs (<code>keyFinder.js</code>, <code>keyFinderPreviewPrompt.js</code>, <code>keyFinderRoutes.js</code>).</li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <div class="card-header">Summary row &mdash; resolved-via-passenger-cascade UX (shipped 2026-04-23)</div>
+  <div class="card-body">
+    <p>Keys that are resolved <em>only</em> because they rode as a passenger on another primary's run have no own primary-run record. Before 2026-04-23, <code>buildRow</code> set <code>last_status = null</code> in that case, so the UI showed "—" even though <code>getResolvedFieldCandidate</code> returned truthy &mdash; confusing users into thinking the key was unresolved while <code>buildPassengers</code> was correctly excluding it.</p>
+    <ul>
+      <li>Fix: when no primary run exists but <code>published=true</code>, set <code>last_status = 'resolved'</code>; populate <code>last_value</code> / <code>last_confidence</code> / <code>last_model</code> from the top candidate (JSON-parsed for list shapes).</li>
+      <li>Frontend column renames: "Concrete" &rarr; "Status"; the original "Status" column &rarr; "Published". Labels locked by UX preference 2026-04-23 &mdash; the ✓ variant in the Published column was reverted.</li>
+      <li>The "Improvable" badge text replaces the earlier "active" wording (same semantics: has data but below the concrete bar).</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <div class="card-header">Next Bundle column &mdash; conditional sub-label (shipped 2026-04-23)</div>
+  <div class="card-body">
+    <p>When <code>alwaysSoloRun=true</code>, per-key Run is solo &mdash; but the <code>bundle_preview</code> shown in the Next Bundle column reflects what a <em>Loop</em> would pack (Run would be empty). Previously this mismatch confused users who clicked Run and expected bundling.</p>
+    <ul>
+      <li>Header shows a small italic sub-label <em>"Loop only &mdash; see alwaysSoloRun setting"</em> when <code>alwaysSoloRun=true</code>. Hidden when off (Run and Loop pack identically, no ambiguity).</li>
+      <li>Header tooltip branches on the flag with a pointer to Pipeline Settings &rarr; Key Finder &rarr; Bundling.</li>
+      <li><code>alwaysSoloRun</code> already fetched by <code>KeyFinderPanel</code> via <code>useKeyFinderBundlingConfigQuery</code>; threaded into <code>KeyGroupSection</code> as a prop.</li>
     </ul>
   </div>
 </div>

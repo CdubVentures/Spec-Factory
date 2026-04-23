@@ -23,6 +23,10 @@ function mapSource(result) {
     worker_id: workerId || null,
     content_hash: contentHash,
     html_file: contentHash ? `${contentHash.slice(0, 12)}.html.gz` : null,
+    // WHY: Crawl4AI artifact filename is derived from the same 12-char content
+    // hash as html_file. Downstream bundle + LLM phases can join by content_hash.
+    // null when either the plugin didn't run or content_hash is empty.
+    crawl4ai_file: contentHash ? `${contentHash.slice(0, 12)}.json` : null,
     screenshot_count: (result.screenshots || []).length,
     video_file: workerId ? `${workerId}.webm` : null,
     timeout_rescued: Boolean(result.timeoutRescued),

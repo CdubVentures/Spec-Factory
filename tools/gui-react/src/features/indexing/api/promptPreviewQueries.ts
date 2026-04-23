@@ -36,11 +36,14 @@ export function usePromptPreviewQuery(
 ): UseQueryResult<PromptPreviewResponse> {
   // WHY: body is serialized into the query key so switching modes (view/hero/loop)
   // for the same variant refetches instead of returning the previous mode's cache.
+  // staleTime=0 → every modal open refetches, so the preview always reflects
+  // the current resolved-field + settings state without needing surgical
+  // invalidations from unrelated data-change events.
   const bodyKey = JSON.stringify(body);
   return useQuery<PromptPreviewResponse>({
     queryKey: ['prompt-preview', finder, category, productId, bodyKey],
     queryFn: () => postPromptPreview(finder, category, productId, body),
     enabled: enabled && Boolean(category) && Boolean(productId),
-    staleTime: 60_000,
+    staleTime: 0,
   });
 }

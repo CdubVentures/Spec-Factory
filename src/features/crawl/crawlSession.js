@@ -1132,9 +1132,11 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           try {
             const transforms = await extractionRunner.runTransforms({
               html: result.html,
+              url: result.url,
               finalUrl: result.finalUrl,
               title: result.title,
               status: result.status,
+              workerId: result.workerId,
               settings,
               captures: result.extractions || {},
             });

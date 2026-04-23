@@ -9,28 +9,42 @@
  * Invariants:
  *   - Primary owns the budget line; passengers deduct from the primary's
  *     pool, NOT from primary's per-key attempt budget.
- *   - Sort key (required_level, availability, difficulty, currentRides,
- *     field_key) ASC — mandatory peers pack before non_mandatory; within a
- *     tier, the peer with the fewest concurrent rides sorts first so multiple
- *     bundled calls distribute across same-tier peers instead of stacking on
- *     the alphabetical first. field_key is the final deterministic tiebreaker.
+ *   - Sort key (axisOrder..., currentRides, field_key) ASC — the 3 axes
+ *     (difficulty, required_level, availability) are reorderable via the
+ *     `bundlingSortAxisOrder` Pipeline Settings knob (default: difficulty →
+ *     required_level → availability). Idle peers pack before already-riding
+ *     peers so cross-group bundles maximize unique coverage before spending
+ *     fallback overlap budget. Within each pass, currentRides and field_key
+ *     remain deterministic tiebreakers.
  *   - Output is stable for fixed candidates (same {fieldKey, currentRides}
  *     always yields the same order).
  */
 
-const AVAILABILITY_RANK = Object.freeze({ always: 0, sometimes: 1, rare: 2 });
-const DIFFICULTY_RANK = Object.freeze({ easy: 0, medium: 1, hard: 2, very_hard: 3 });
-const REQUIRED_RANK = Object.freeze({ mandatory: 0, non_mandatory: 1 });
-const VALID_REQ = new Set(['mandatory', 'non_mandatory']);
+import { parseAxisOrder, buildSortComparator } from './keyBundlerSortAxes.js';
 
-function rankOr(table, key, fallback) {
-  const r = table[String(key || '').trim()];
-  return Number.isFinite(r) ? r : fallback;
-}
+const DIFFICULTY_RANK = Object.freeze({ easy: 0, medium: 1, hard: 2, very_hard: 3 });
+const VALID_REQ = new Set(['mandatory', 'non_mandatory']);
 
 function toIntOrZero(raw) {
   const n = Number(raw);
   return Number.isFinite(n) && n >= 0 ? Math.floor(n) : 0;
+}
+
+function toNumberOrZero(raw) {
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : 0;
+}
+
+function normalizeVariantCount(raw) {
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 1 ? Math.floor(n) : 1;
+}
+
+export function calcPassengerCost({ difficulty, settings, variantCount = 1 } = {}) {
+  const base = toNumberOrZero(settings?.bundlingPassengerCost?.[difficulty]);
+  const perExtraVariant = toNumberOrZero(settings?.bundlingPassengerVariantCostPerExtra);
+  const extraVariants = Math.max(0, normalizeVariantCount(variantCount) - 1);
+  return Number((base + (extraVariants * perExtraVariant)).toFixed(6));
 }
 
 function matchesPolicy(policy, primaryDifficulty, peerDifficulty) {
@@ -53,9 +67,9 @@ function matchesPolicy(policy, primaryDifficulty, peerDifficulty) {
 /**
  * Pack a bundle for one primary key.
  *
- * Passenger cost is RAW (bundlingPassengerCost[difficulty]) — not scaled by
- * variant count. The pool/cost ratio is the user's mental model: pool=6,
- * easy cost=1 → 6 easy passengers fit.
+ * Passenger cost starts from bundlingPassengerCost[difficulty] and adds the
+ * configured family-size surcharge for each variant beyond the first. The
+ * primary pool stays raw; larger families therefore pack fewer passengers.
  *
  * @param {object} args
  * @param {{fieldKey: string, fieldRule: object}} args.primary
@@ -69,6 +83,7 @@ export function packBundle({
   candidates,
   resolvedFieldKeys,
   settings,
+  variantCount = 1,
 } = {}) {
   const primaryRule = primary?.fieldRule || {};
   const pool = toIntOrZero(settings?.bundlingPoolPerPrimary?.[primaryRule.difficulty]);
@@ -95,42 +110,48 @@ export function packBundle({
     eligible.push(c);
   }
 
-  // Step 5 — deterministic sort: required_level ASC, availability ASC,
-  // difficulty ASC, currentRides ASC, field_key ASC. Mandatory peers pack
-  // before non_mandatory; within each required_level tier, "cheap wins first"
-  // by availability then difficulty. currentRides ASC distributes rides across
-  // same-tier peers so one key doesn't hog all the slots while its tier-mates
-  // sit idle. field_key is the final deterministic tiebreaker.
-  eligible.sort((a, b) => {
-    const aReq = rankOr(REQUIRED_RANK, a.fieldRule.required_level, REQUIRED_RANK.non_mandatory + 1);
-    const bReq = rankOr(REQUIRED_RANK, b.fieldRule.required_level, REQUIRED_RANK.non_mandatory + 1);
-    if (aReq !== bReq) return aReq - bReq;
-    const aAvail = rankOr(AVAILABILITY_RANK, a.fieldRule.availability, AVAILABILITY_RANK.rare + 1);
-    const bAvail = rankOr(AVAILABILITY_RANK, b.fieldRule.availability, AVAILABILITY_RANK.rare + 1);
-    if (aAvail !== bAvail) return aAvail - bAvail;
-    const aDiff = rankOr(DIFFICULTY_RANK, a.fieldRule.difficulty, DIFFICULTY_RANK.very_hard + 1);
-    const bDiff = rankOr(DIFFICULTY_RANK, b.fieldRule.difficulty, DIFFICULTY_RANK.very_hard + 1);
-    if (aDiff !== bDiff) return aDiff - bDiff;
-    const aRides = Number.isFinite(a.currentRides) && a.currentRides >= 0 ? a.currentRides : 0;
-    const bRides = Number.isFinite(b.currentRides) && b.currentRides >= 0 ? b.currentRides : 0;
-    if (aRides !== bRides) return aRides - bRides;
-    if (a.fieldKey < b.fieldKey) return -1;
-    if (a.fieldKey > b.fieldKey) return 1;
-    return 0;
-  });
+  // Step 5 — deterministic sort via the configurable axis-order comparator.
+  // Axes come from settings.bundlingSortAxisOrder (CSV of difficulty,
+  // required_level, availability in user-chosen precedence). Fallback to
+  // DEFAULT_AXIS_ORDER handles missing/empty/malformed input.
+  const axisOrder = parseAxisOrder(settings?.bundlingSortAxisOrder);
+  const comparator = buildSortComparator(axisOrder, { tiebreaker: 'currentRides' });
+  const idleEligible = [];
+  const ridingEligible = [];
+  for (const c of eligible) {
+    const rides = Number.isFinite(c?.currentRides) && c.currentRides > 0 ? c.currentRides : 0;
+    if (rides > 0) {
+      ridingEligible.push(c);
+      continue;
+    }
+    idleEligible.push(c);
+  }
+  idleEligible.sort(comparator);
+  ridingEligible.sort(comparator);
 
-  // Step 6 — greedy-pack under the primary's point pool. Cost is RAW (no
-  // variant scaling) — user-facing semantics: pool / cost = max passengers.
+  // Step 6 - greedy-pack under the primary's point pool. Passenger cost is
+  // variant-aware while the primary pool remains the configured raw pool.
   const passengers = [];
   const breakdown = [];
   let totalCost = 0;
 
-  for (const c of eligible) {
-    const cost = toIntOrZero(settings.bundlingPassengerCost?.[c.fieldRule.difficulty]);
-    if (totalCost + cost > pool) continue;
-    passengers.push({ fieldKey: c.fieldKey, fieldRule: c.fieldRule });
-    breakdown.push({ fieldKey: c.fieldKey, cost });
-    totalCost += cost;
+  const packFrom = (orderedCandidates) => {
+    for (const c of orderedCandidates) {
+      const cost = calcPassengerCost({
+        difficulty: c.fieldRule.difficulty,
+        settings,
+        variantCount,
+      });
+      if (totalCost + cost > pool) continue;
+      passengers.push({ fieldKey: c.fieldKey, fieldRule: c.fieldRule });
+      breakdown.push({ fieldKey: c.fieldKey, cost });
+      totalCost += cost;
+    }
+  };
+
+  packFrom(idleEligible);
+  if (totalCost < pool) {
+    packFrom(ridingEligible);
   }
 
   return { passengers, totalCost, pool, breakdown };

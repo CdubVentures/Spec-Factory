@@ -1,15 +1,13 @@
 ## Purpose
 Frontend feature boundary for publisher-owned UI primitives. Houses inputs that
 configure field-rule knobs consumed at runtime by `src/features/publisher/**`
-(validation pipeline + repair-adapter). Colocating the UI and the runtime
-consumer prevents accidental deletion of config surfaces during unrelated feature
-cleanups.
+(deterministic validation pipeline). Colocating the UI and the runtime consumer
+prevents accidental deletion of config surfaces during unrelated feature cleanups.
 
 ## Public API (The Contract)
 - `FormatPatternInput` — edits `enum.match.format_hint` on a field rule. The
   value is consumed by `src/features/publisher/validation/checks/checkFormat.js`
-  (Step 6, Format Check) and by `src/features/publisher/repair-adapter/promptBuilder.js`
-  (P1/P2/P4 repair prompts, as formatGuidance).
+  (Step 6, Format Check) as a custom regex pattern.
 
 Consumers must import from `tools/gui-react/src/features/publisher/index.ts`.
 

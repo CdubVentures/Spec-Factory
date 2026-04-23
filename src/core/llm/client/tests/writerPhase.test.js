@@ -120,7 +120,6 @@ describe('global writer — resolved from _resolvedWriter* regardless of source 
     { id: 'searchPlanner', cap: 'SearchPlanner', role: 'plan', reason: 'planner' },
     { id: 'brandResolver', cap: 'BrandResolver', role: 'triage', reason: 'brand_resolution' },
     { id: 'serpSelector', cap: 'SerpSelector', role: 'triage', reason: 'serp_url_selector' },
-    { id: 'validate', cap: 'Validate', role: 'validate', reason: 'validate' },
     { id: 'colorFinder', cap: 'ColorFinder', role: 'triage', reason: 'color_finder' },
     { id: 'imageFinder', cap: 'ImageFinder', role: 'triage', reason: 'image_finder' },
     { id: 'imageEvaluator', cap: 'ImageEvaluator', role: 'triage', reason: 'image_evaluator' },

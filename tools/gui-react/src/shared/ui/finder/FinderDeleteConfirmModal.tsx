@@ -28,11 +28,11 @@ function resolveTitle(target: DeleteTarget, moduleLabel: string): string {
     case 'eval-variant': return `Delete ${target.count ?? 0} eval(s) for variant?`;
     case 'variant': return `Delete variant "${target.label}"?`;
     case 'variant-all': return `Delete all ${target.count ?? 0} variant(s)?`;
-    case 'key-unresolve': return `Unresolve "${target.fieldKey ?? ''}"?`;
+    case 'key-unpublish': return `Unresolve "${target.fieldKey ?? ''}"?`;
     case 'key-delete': return `Delete all data for "${target.fieldKey ?? ''}"?`;
-    case 'key-unresolve-group': return `Unresolve ${target.count ?? 0} key(s) in "${target.label ?? ''}"?`;
+    case 'key-unpublish-group': return `Unresolve ${target.count ?? 0} key(s) in "${target.label ?? ''}"?`;
     case 'key-delete-group': return `Delete all data for ${target.count ?? 0} key(s) in "${target.label ?? ''}"?`;
-    case 'key-unresolve-all': return `Unresolve all ${target.count ?? 0} published key(s)?`;
+    case 'key-unpublish-all': return `Unresolve all ${target.count ?? 0} published key(s)?`;
     case 'key-delete-all': return `Delete all data for ${target.count ?? 0} key(s) in this product?`;
     case 'field-variant-unpublish': return `Unpublish ${target.fieldKey ?? ''} for "${target.label ?? target.variantId ?? ''}"?`;
     case 'field-variant-delete': return `Delete all ${target.fieldKey ?? ''} data for "${target.label ?? target.variantId ?? ''}"?`;
@@ -65,15 +65,15 @@ function resolveDefaultDescription(target: DeleteTarget, moduleLabel: string): s
       return `This will permanently strip this variant's values from all field candidates, remove its colors/editions from published values, delete all PIF data (images, runs, evals), and remove carousel slots. This cannot be undone.`;
     case 'variant-all':
       return `This will permanently delete all ${target.count ?? 0} variant(s) and cascade-delete all variant-scoped data (field candidates, images, evals, carousel slots). This cannot be undone.`;
-    case 'key-unresolve':
+    case 'key-unpublish':
       return `Demote the published value for "${target.fieldKey ?? ''}" back to a candidate. Candidates, runs, and discovery history are preserved — a future Run can re-resolve. Reversible.`;
     case 'key-delete':
       return `Permanently wipe every trace of "${target.fieldKey ?? ''}": the published value, confidence, all candidates and evidence, URL history, query history, and every run where this key was the primary. Fresh slate. This cannot be undone.`;
-    case 'key-unresolve-group':
+    case 'key-unpublish-group':
       return `Demote every currently published value in "${target.label ?? ''}" back to a candidate. Candidates, runs, and discovery history are preserved per key. Reversible.`;
     case 'key-delete-group':
       return `Permanently wipe every trace of ${target.count ?? 0} key(s) in "${target.label ?? ''}": published values, candidates, evidence, URL/query history, and every primary run. Fresh slate for each. This cannot be undone.`;
-    case 'key-unresolve-all':
+    case 'key-unpublish-all':
       return `Demote every currently published value across every group back to a candidate. Candidates, runs, and discovery history are preserved per key. Reversible.`;
     case 'key-delete-all':
       return `Permanently wipe every trace of ${target.count ?? 0} key(s) across every group: published values, candidates, evidence, URL/query history, and every primary run. Fresh slate for each. This cannot be undone.`;

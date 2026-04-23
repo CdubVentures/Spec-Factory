@@ -84,12 +84,6 @@ function routeRoleFromReason(reason = '') {
   ) {
     return 'write';
   }
-  if (
-    token === 'validate' ||
-    token.startsWith('validate_')
-  ) {
-    return 'validate';
-  }
   return 'plan';
 }
 
@@ -275,7 +269,6 @@ function reasonTokenGroup(reason = '') {
     token.includes('planner_reason')
     || token.includes('reasoning')
     || token.includes('verify_extract_reason')
-    || token.includes('validate')
   ) return 'reasoning';
   return 'default';
 }

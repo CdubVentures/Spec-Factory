@@ -9,9 +9,8 @@
 // WHY: Group IDs for sidebar section headers in the GUI.
 // 'global' stands alone, 'writer' is the global JSON formatter invoked
 // whenever any other phase runs with jsonStrict=false, 'indexing' groups
-// crawl-pipeline phases, 'publish' groups post-crawl validation,
-// 'discovery' groups standalone features.
-export const LLM_PHASE_GROUPS = Object.freeze(['global', 'writer', 'indexing', 'publish', 'discovery']);
+// crawl-pipeline phases, 'discovery' groups standalone features.
+export const LLM_PHASE_GROUPS = Object.freeze(['global', 'writer', 'indexing', 'discovery']);
 
 export const LLM_PHASE_UI_GLOBAL = Object.freeze({
   id: 'global',
@@ -57,11 +56,6 @@ export const LLM_PHASE_DEFS = Object.freeze([
     billing: { group: 'Pipeline', reasons: [{ reason: 'brand_resolution', label: 'Brand', color: 'var(--sf-billing-pipeline-2, #5c7cfa)' }] } },
   { id: 'serpSelector',  uiId: 'serp-selector',    label: 'SERP Selector',  subtitle: 'Base Model', tip: 'LLM-based URL selector that decides fetch-worthiness. Uses triage token budget.',                      roles: ['triage'],   sharedWith: ['brand-resolver'],  group: 'indexing', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensTriage', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalReasoningBudget: 'llmReasoningBudget', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel',
     billing: { group: 'Pipeline', reasons: [{ reason: 'serp_url_selector', label: 'SERP Selector', color: 'var(--sf-billing-pipeline-4, #4263eb)' }] } },
-  { id: 'validate',      uiId: 'validate',         label: 'Validate',       subtitle: 'Base Model', tip: 'Model override for the validation pass that confirms uncertain field candidates.',                      roles: ['validate'],                                  group: 'publish',  globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan',   globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalReasoningBudget: 'llmReasoningBudget', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel',
-    billing: { group: 'Validation', reasons: [
-      { reason: 'validate', label: 'Validate', color: 'var(--sf-billing-val-1, #38d9a9)' },
-      { reason: 'field_repair', label: 'Repair', color: 'var(--sf-billing-val-3, #12b886)' },
-    ] } },
   { id: 'colorFinder',   uiId: 'color-finder',      label: 'Color & Edition Finder', subtitle: 'Discovery', tip: 'Discovers product color variants and limited editions using web search. Runs independently of the crawl pipeline.', roles: ['triage'], group: 'discovery', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalReasoningBudget: 'llmReasoningBudget', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel',
     billing: { group: 'Color Edition', reasons: [
       { reason: 'color_edition_finding', label: 'CEF', color: 'var(--sf-billing-color-1, #da77f2)' },

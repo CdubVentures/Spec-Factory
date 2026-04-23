@@ -68,7 +68,15 @@ const COMPILED_RULES_MOUSE = {
   },
 };
 
-function makeSpecDbStub({ candidateCountByKey = {}, publishedKeys = new Set(), compiledRules = COMPILED_RULES_MOUSE, finderSettings = {} } = {}) {
+function makeSpecDbStub({
+  candidateCountByKey = {},
+  publishedKeys = new Set(),
+  compiledRules = COMPILED_RULES_MOUSE,
+  finderSettings = {},
+  topCandidatesByFieldKey = {},
+  bucketsByFieldKey = {},
+  activeVariants = [],
+} = {}) {
   const finderStore = {
     getSetting: (k) => (k in finderSettings ? String(finderSettings[k]) : ''),
   };
@@ -80,8 +88,30 @@ function makeSpecDbStub({ candidateCountByKey = {}, publishedKeys = new Set(), c
     },
     getResolvedFieldCandidate: (_pid, fk) => (publishedKeys.has(fk) ? { field_key: fk, value: 'published', confidence: 99 } : null),
     getProduct: () => null,
+    variants: {
+      listActive: () => activeVariants,
+    },
     getCompiledRules: () => compiledRules,
     getFinderStore: (id) => (id === 'keyFinder' ? finderStore : null),
+    // getTopFieldCandidate — display-only tooltip data (top_confidence + top_evidence_count
+    // columns on each row). Distinct from the bucket-evaluator path used for gating.
+    getTopFieldCandidate: (_pid, fk) => topCandidatesByFieldKey[fk] || null,
+    // Bucket evaluator contract — drives isConcreteEvidence.
+    listFieldBuckets: ({ fieldKey }) => {
+      const b = bucketsByFieldKey[fieldKey];
+      if (!b) return [];
+      return [{
+        value_fingerprint: `fp_${fieldKey}`,
+        top_confidence: Number(b.top_confidence) || 0,
+        member_count: Number(b.pooled_count) || 0,
+        member_ids: [1],
+        value: 'X',
+      }];
+    },
+    countPooledQualifyingEvidenceByFingerprint: ({ fieldKey }) => {
+      const b = bucketsByFieldKey[fieldKey];
+      return Number(b?.pooled_count) || 0;
+    },
   };
 }
 
@@ -441,7 +471,39 @@ describe('GET /key-finder/:category/:productId/summary', () => {
     assert.deepEqual(byKey.wireless_technology.bundle_preview, []);
   });
 
-  it('bundle_preview excludes already-published peers', async (t) => {
+  it('bundle_preview uses variant surcharge when computing passenger costs', async (t) => {
+    t.after(cleanupTmp);
+    fs.mkdirSync(path.join(PRODUCT_ROOT, 'bp-variant-prod'), { recursive: true });
+    const specDb = makeSpecDbStub({
+      activeVariants: [
+        { variant_id: 'v1' },
+        { variant_id: 'v2' },
+        { variant_id: 'v3' },
+      ],
+      finderSettings: {
+        bundlingEnabled: 'true',
+        groupBundlingOnly: 'true',
+        bundlingPassengerCost: JSON.stringify({ easy: 1, medium: 2, hard: 4, very_hard: 8 }),
+        bundlingPassengerVariantCostPerExtra: '0.25',
+        bundlingPoolPerPrimary: JSON.stringify({ easy: 6, medium: 4, hard: 2, very_hard: 1 }),
+        passengerDifficultyPolicy: 'less_or_equal',
+      },
+    });
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(['key-finder', 'mouse', 'bp-variant-prod', 'summary'], null, 'GET', {}, {});
+    const byKey = Object.fromEntries(responses[0].body.map((r) => [r.field_key, r]));
+
+    assert.deepEqual(byKey.polling_rate.bundle_preview, [{ field_key: 'acceleration', cost: 1.5 }]);
+    assert.equal(byKey.polling_rate.bundle_total_cost, 1.5);
+    assert.deepEqual(byKey.sensor_model.bundle_preview, [], 'family size 3 raises easy passenger cost above very_hard pool=1');
+  });
+
+  it('bundle_preview excludes already-published peers (legacy gate — concrete knobs disabled)', async (t) => {
+    // Legacy contract: with both exclude knobs at 0, published peers are
+    // dropped unconditionally. Under the new replace-semantics the contract
+    // changes — covered by a separate test.
     t.after(cleanupTmp);
     fs.mkdirSync(path.join(PRODUCT_ROOT, 'bp-resolved-prod'), { recursive: true });
     const specDb = makeSpecDbStub({
@@ -453,6 +515,8 @@ describe('GET /key-finder/:category/:productId/summary', () => {
         bundlingPassengerCost: JSON.stringify({ easy: 1, medium: 2, hard: 4, very_hard: 8 }),
         bundlingPoolPerPrimary: JSON.stringify({ easy: 6, medium: 4, hard: 2, very_hard: 1 }),
         budgetVariantPointsPerExtra: '1',
+        passengerExcludeAtConfidence: '0',
+        passengerExcludeMinEvidence: '0',
       },
     });
     const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
@@ -488,8 +552,8 @@ describe('GET /key-finder/:category/:productId/summary', () => {
     assert.equal(body.groupBundlingOnly, false);
     assert.equal(body.passengerDifficultyPolicy, 'same_only');
     assert.deepEqual(body.poolPerPrimary, { easy: 6, medium: 4, hard: 2, very_hard: 1 });
-    assert.deepEqual(body.passengerCost, { easy: 1, medium: 2, hard: 4, very_hard: 8 },
-      'passenger cost is RAW — not variant-scaled');
+    assert.deepEqual(body.passengerCost, { easy: 1, medium: 2, hard: 4, very_hard: 8 });
+    assert.equal(body.passengerVariantCostPerExtra, 0.25);
     assert.equal(body.variantCount, 1, 'stub specDb has no variants → defaults to 1');
   });
 
@@ -620,5 +684,66 @@ describe('GET /key-finder/:category/:productId/summary', () => {
       { field_key: 'mango', cost: 1 },
       { field_key: 'zebra', cost: 1 },
     ]);
+  });
+});
+
+// ─── passengerExclude* wired to summary + concrete_evidence column ────
+// Summary route reads the exclude knobs into readBundlingSettings and the
+// row builder exposes concrete_evidence: boolean. Cross-checks:
+//   1. A peer whose bucket qualifies under 95/3 is absent from the primary's
+//      bundle_preview (buildPassengers drops it).
+//   2. That peer's own row has concrete_evidence: true.
+//   3. A peer below the stricter thresholds stays in the primary's preview
+//      AND has concrete_evidence: false on its own row.
+describe('GET /summary — passengerExclude knobs + concrete_evidence column', () => {
+  it('concrete peer drops from primary bundle_preview and has concrete_evidence: true on its row', async (t) => {
+    t.after(cleanupTmp);
+    fs.mkdirSync(path.join(PRODUCT_ROOT, 'concrete-prod'), { recursive: true });
+
+    const specDb = makeSpecDbStub({
+      finderSettings: {
+        bundlingEnabled: 'true',
+        groupBundlingOnly: 'true',
+        bundlingPassengerCost: JSON.stringify({ easy: 1, medium: 2, hard: 4, very_hard: 8 }),
+        bundlingPoolPerPrimary: JSON.stringify({ easy: 6, medium: 4, hard: 2, very_hard: 1 }),
+        passengerDifficultyPolicy: 'less_or_equal',
+        passengerExcludeAtConfidence: '95',
+        passengerExcludeMinEvidence: '3',
+      },
+      bucketsByFieldKey: {
+        acceleration: { top_confidence: 98, pooled_count: 4 },       // concrete
+        wireless_technology: { top_confidence: 80, pooled_count: 5 }, // below stricter bar
+      },
+      topCandidatesByFieldKey: {
+        acceleration: { confidence: 98, evidence_count: 4 },
+        wireless_technology: { confidence: 80, evidence_count: 5 },
+      },
+    });
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(['key-finder', 'mouse', 'concrete-prod', 'summary'], null, 'GET', {}, {});
+
+    const byKey = Object.fromEntries(responses[0].body.map((r) => [r.field_key, r]));
+    // bundle_preview gate: acceleration is sensor_performance (same group as polling_rate),
+    // easy difficulty, normally packs. With the 95/3 concrete gate, its bucket qualifies
+    // → buildPassengers excludes it → absent from the preview.
+    const preview = byKey.polling_rate.bundle_preview.map((p) => p.field_key);
+    assert.ok(!preview.includes('acceleration'), 'acceleration excluded from primary preview (concrete)');
+
+    // Row-level concrete_evidence booleans — each row reflects its own state
+    // regardless of which primary's preview it shows up in.
+    assert.equal(byKey.acceleration.concrete_evidence, true, 'bucket qualifies at 95/3');
+    assert.equal(byKey.acceleration.top_confidence, 98);
+    assert.equal(byKey.acceleration.top_evidence_count, 4);
+
+    assert.equal(byKey.wireless_technology.concrete_evidence, false, 'bucket top_confidence 80 fails gate 1 at 95');
+    assert.equal(byKey.wireless_technology.top_confidence, 80);
+    assert.equal(byKey.wireless_technology.top_evidence_count, 5);
+
+    // Keys with no bucket data carry null display fields and concrete_evidence=false.
+    assert.equal(byKey.sensor_model.concrete_evidence, false);
+    assert.equal(byKey.sensor_model.top_confidence, null);
+    assert.equal(byKey.sensor_model.top_evidence_count, null);
   });
 });

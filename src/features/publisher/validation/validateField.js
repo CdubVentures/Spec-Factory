@@ -17,11 +17,11 @@ import { shouldBlockUnkPublish } from './shouldBlockUnkPublish.js';
  * parse.template is not read — all routing is by type.
  *
  * @param {{ fieldKey: string, value: *, fieldRule: object, knownValues?: object }} opts
- * @returns {{ valid: boolean, value: *, confidence: number, repairs: object[], rejections: object[], unknownReason: string|null, repairPrompt: object|null }}
+ * @returns {{ valid: boolean, value: *, confidence: number, repairs: object[], rejections: object[] }}
  */
 export function validateField({ fieldKey, value, fieldRule, knownValues, componentDb, consistencyMode, appDb }) {
   if (!fieldRule) {
-    return result(null, null, [], [], null, null);
+    return result(null, null, [], []);
   }
 
   const shape = fieldRule?.contract?.shape || 'scalar';
@@ -54,7 +54,7 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
   const shapeResult = checkShape(current, shape);
   if (!shapeResult.pass) {
     rejections.push({ reason_code: 'wrong_shape', detail: { expected: shape, reason: shapeResult.reason } });
-    return result(current, unit || null, repairs, rejections, null, null);
+    return result(current, unit || null, repairs, rejections);
   }
 
   // Step 2: Unit verification (BEFORE type coercion — needs unit suffix still in string)
@@ -67,7 +67,7 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
         const unitResult = checkUnit(el, unit, appDb);
         if (!unitResult.pass) {
           rejections.push({ reason_code: 'wrong_unit', detail: unitResult.detail });
-          return result(current, unit || null, repairs, rejections, null, null);
+          return result(current, unit || null, repairs, rejections);
         }
         if (unitResult.value !== el) {
           repairs.push({ step: 'unit', before: el, after: unitResult.value, rule: unitResult.rule || 'strip_same_unit' });
@@ -79,7 +79,7 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
       const unitResult = checkUnit(current, unit, appDb);
       if (!unitResult.pass) {
         rejections.push({ reason_code: 'wrong_unit', detail: unitResult.detail });
-        return result(current, unit || null, repairs, rejections, null, null);
+        return result(current, unit || null, repairs, rejections);
       }
       if (unitResult.value !== current) {
         repairs.push({ step: 'unit', before: current, after: unitResult.value, rule: unitResult.rule || 'strip_same_unit' });
@@ -188,7 +188,7 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
   return result(current, unit || null, repairs, rejections, null, null);
 }
 
-function result(value, unit, repairs, rejections, unknownReason, repairPrompt) {
+function result(value, unit, repairs, rejections) {
   return {
     valid: rejections.length === 0,
     value,
@@ -196,7 +196,5 @@ function result(value, unit, repairs, rejections, unknownReason, repairPrompt) {
     confidence: 1.0,
     repairs,
     rejections,
-    unknownReason,
-    repairPrompt,
   };
 }

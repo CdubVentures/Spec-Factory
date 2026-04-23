@@ -16,6 +16,8 @@
  * on a candidate that is no longer the resolved value.
  */
 
+import { wipePublisherStateForUnpub } from './wipePublisherStateForUnpub.js';
+
 export function clearPublishedField({
   specDb, productId, fieldKey, productJson,
   variantId, allVariants,
@@ -24,13 +26,27 @@ export function clearPublishedField({
     throw new Error('clearPublishedField: variantId and allVariants are mutually exclusive');
   }
 
+  let result;
   if (allVariants === true) {
-    return clearVariantAll({ specDb, productId, fieldKey, productJson });
+    result = clearVariantAll({ specDb, productId, fieldKey, productJson });
+  } else if (typeof variantId === 'string' && variantId.length > 0) {
+    result = clearVariantSingle({ specDb, productId, fieldKey, productJson, variantId });
+  } else {
+    result = clearScalar({ specDb, productId, fieldKey, productJson });
   }
-  if (typeof variantId === 'string' && variantId.length > 0) {
-    return clearVariantSingle({ specDb, productId, fieldKey, productJson, variantId });
+
+  // UnPub should roll back every publisher-observable signal on the now-
+  // demoted row. demoteResolvedCandidates (called above) flips status but
+  // leaves the row's confidence + evidence rows intact. This helper zeroes
+  // confidence and deletes field_candidate_evidence so the panel stops
+  // rendering the row as a "high-confidence resolved" candidate. The row
+  // itself survives so the LLM-submitted value can be re-evaluated by a
+  // future Run.
+  if (result.status === 'cleared') {
+    wipePublisherStateForUnpub({ specDb, productId, fieldKey, variantId, allVariants });
   }
-  return clearScalar({ specDb, productId, fieldKey, productJson });
+
+  return result;
 }
 
 function clearScalar({ specDb, productId, fieldKey, productJson }) {

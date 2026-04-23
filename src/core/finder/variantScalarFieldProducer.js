@@ -377,6 +377,7 @@ export function createVariantScalarFieldProducer(cfg) {
           threshold: typeof innerPublish.threshold === 'number' ? innerPublish.threshold : null,
           required: typeof innerPublish.required === 'number' ? innerPublish.required : null,
           actual: typeof innerPublish.actual === 'number' ? innerPublish.actual : null,
+          buckets: Array.isArray(innerPublish.buckets) ? innerPublish.buckets : null,
         } : null,
       };
     };

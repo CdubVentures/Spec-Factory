@@ -227,17 +227,20 @@ export function RuntimeOpsPage() {
   // WHY: Push-based updates — when the pipeline emits runtime events, the WS
   // channel delivers a lightweight signal and we invalidate cached queries
   // so the panel re-fetches immediately instead of waiting for the poll interval.
+  // The AppShell's useWsEventBridge already subscribes to 'indexlab-event' with
+  // the same category, so we only register a message listener here — calling
+  // wsManager.subscribe() again would clobber the app-level subscription and
+  // silently drop 'operations' / 'data-change' / 'llm-stream' broadcasts.
   const queryClient = useQueryClient();
   useEffect(() => {
     if (!effectiveRunId) return;
-    wsManager.subscribe(['indexlab-event'], categoryScope);
     const unsub = wsManager.onMessage((channel) => {
       if (channel === 'indexlab-event') {
         queryClient.invalidateQueries({ queryKey: ['runtime-ops', effectiveRunId] });
       }
     });
     return unsub;
-  }, [effectiveRunId, categoryScope, queryClient]);
+  }, [effectiveRunId, queryClient]);
 
   const selectedRun = useMemo(
     () => runOptions.find((run) => run.run_id === effectiveRunId) ?? null,

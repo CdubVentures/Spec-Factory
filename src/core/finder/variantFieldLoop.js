@@ -97,6 +97,10 @@ export async function runVariantFieldLoop({
     let stoppedAtAttempt = 0;
     let lastEvidenceCount = 0;
     let lastConfidencePct = null;
+    // Per-variant bucket snapshot from the publisher's evaluator. Carries
+    // across attempts so the pre-attempt pill shows the last known state
+    // while the next LLM call is in flight.
+    let lastBuckets = null;
 
     for (let attempt = 1; attempt <= variantBudget; attempt++) {
       // Pre-attempt pill — sidebar updates to "call N/budget" for THIS variant
@@ -109,6 +113,7 @@ export async function runVariantFieldLoop({
           satisfied: false,
           confidence: lastConfidencePct,
           threshold: thresholdPct,
+          buckets: lastBuckets,
         },
         callBudget: { used: attempt, budget: variantBudget, exhausted: attempt >= variantBudget },
         final_status: null,
@@ -133,6 +138,8 @@ export async function runVariantFieldLoop({
         ?? pctFrom(result?.candidate?.confidence);
       lastEvidenceCount = iterEvidence;
       lastConfidencePct = iterConfidencePct;
+      const iterBuckets = Array.isArray(pubGate?.buckets) ? pubGate.buckets : lastBuckets;
+      lastBuckets = iterBuckets;
 
       onLoopProgress?.({
         publish: {
@@ -141,6 +148,7 @@ export async function runVariantFieldLoop({
           satisfied,
           confidence: iterConfidencePct,
           threshold: thresholdPct,
+          buckets: iterBuckets,
         },
         callBudget: { used: attempt, budget: variantBudget, exhausted: attempt >= variantBudget },
         final_status: null,
@@ -166,6 +174,7 @@ export async function runVariantFieldLoop({
         satisfied: satisfiedFinal,
         confidence: lastConfidencePct,
         threshold: thresholdPct,
+        buckets: lastBuckets,
       },
       callBudget: {
         used: stoppedAtAttempt,

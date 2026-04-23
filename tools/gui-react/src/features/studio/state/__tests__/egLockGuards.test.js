@@ -50,6 +50,21 @@ describe('EG lock guards', async () => {
       assert.equal(rule.contract.type, 'string');
     });
 
+    it('keeps boolean enum policy closed yes_no through shared updateField path', () => {
+      useFieldRulesStore.getState().updateField('weight', 'contract.type', 'boolean');
+      useFieldRulesStore.getState().updateField('weight', 'enum.policy', 'open_prefer_known');
+      useFieldRulesStore.getState().updateField('weight', 'enum.source', 'data_lists.weight');
+      useFieldRulesStore.getState().updateField('weight', 'contract.shape', 'list');
+
+      const rule = useFieldRulesStore.getState().editedRules.weight;
+      assert.equal(rule.contract.type, 'boolean');
+      assert.equal(rule.contract.shape, 'scalar');
+      assert.equal(rule.enum.policy, 'closed');
+      assert.equal(rule.enum_policy, 'closed');
+      assert.equal(rule.enum.source, 'yes_no');
+      assert.equal(rule.enum_source, 'yes_no');
+    });
+
     it('blocks contract.type on locked key', () => {
       useFieldRulesStore.getState().updateField('colors', 'contract.type', 'number');
       const rule = useFieldRulesStore.getState().editedRules.colors;

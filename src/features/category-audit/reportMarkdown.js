@@ -1,9 +1,11 @@
 /**
- * Markdown renderer for the category audit report. Same content as the HTML
+ * Markdown renderer for audit reports. Same content as the HTML
  * renderer, plain-text skin for LLM auditors.
  *
- * Single export:
- *   - renderMarkdown(reportData) → string
+ * Two entry points:
+ *   - renderMarkdown(reportData) → string         — category-level audit report wrapper.
+ *   - renderMarkdownFromStructure(structure, { subtitleLine }) → string
+ *     pure structure consumer, used by per-key doc builder.
  */
 
 import { buildReportStructure } from './reportStructure.js';
@@ -65,12 +67,19 @@ function renderSection(section, depth = 0) {
   return parts.join('\n');
 }
 
-export function renderMarkdown(reportData) {
-  const structure = buildReportStructure(reportData);
+/**
+ * Pure structure consumer. Emits a Markdown document from a prebuilt
+ * { sections, meta } structure.
+ *
+ * @param {object} structure         — { sections, meta } from a structure builder
+ * @param {object} opts
+ * @param {string} opts.subtitleLine — italicized subtitle line rendered below the H1
+ */
+export function renderMarkdownFromStructure(structure, { subtitleLine }) {
   const lines = [];
   const [headerSection, ...body] = structure.sections;
   lines.push(`# ${headerSection.title}`, '');
-  lines.push(`_Category audit report · Consumer: \`key_finder\` · Generated ${structure.meta.generatedAt}_`, '');
+  lines.push(subtitleLine, '');
   for (const b of headerSection.blocks) {
     lines.push(renderBlock(b));
     lines.push('');
@@ -80,4 +89,11 @@ export function renderMarkdown(reportData) {
     lines.push('');
   }
   return lines.join('\n').replace(/\n{3,}/g, '\n\n').replace(/\n*$/, '\n');
+}
+
+export function renderMarkdown(reportData) {
+  const structure = buildReportStructure(reportData);
+  return renderMarkdownFromStructure(structure, {
+    subtitleLine: `_Category audit report \u00B7 Consumer: \`key_finder\` \u00B7 Generated ${structure.meta.generatedAt}_`,
+  });
 }

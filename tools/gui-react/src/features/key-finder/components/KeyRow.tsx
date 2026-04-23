@@ -114,6 +114,10 @@ function renderBudget(raw: number | null, attempts: number | null): string {
   return String(raw ?? attempts);
 }
 
+function renderBundleCost(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, '');
+}
+
 /**
  * Render the Riding column — one chip per primary currently carrying this key
  * as a passenger, each with a live spinner. Empty state shows em-dash. List
@@ -172,6 +176,77 @@ function PassengersCell({ passengers }: { readonly passengers: RidingPrimaries }
   );
 }
 
+/**
+ * Shared check-mark SVG. Used by the Status column (formerly Concrete) when a
+ * field meets the 95/3 bar, AND by the Published column (formerly Status) in
+ * place of the literal "resolved" label so the eye reads both columns the
+ * same visual way.
+ */
+function CheckMark() {
+  return (
+    <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden focusable="false">
+      <path
+        d="M3.5 8.5 L6.5 11.5 L12.5 5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/**
+ * Render the Status column — centered checkmark when the field's top bucket
+ * publishes under the stricter passenger-exclude thresholds (default 95 conf
+ * / 3 refs), "Improvable" when there's data but below the bar, em-dash when
+ * no candidates exist. Boolean is computed server-side via isConcreteEvidence
+ * → evaluateFieldBuckets, so the UI indicator can never drift from the
+ * runtime exclusion decision.
+ */
+function ConcreteBadge({
+  concrete,
+  confidence,
+  evidenceCount,
+}: {
+  readonly concrete: boolean;
+  readonly confidence: number | null;
+  readonly evidenceCount: number | null;
+}) {
+  const hasData = confidence !== null;
+  if (concrete) {
+    const tip = `Concrete evidence met (publisher evaluator): ${confidence ?? '—'} conf, ${evidenceCount ?? '—'} refs. Peer won't ride as a passenger until the knobs change.`;
+    return (
+      <span
+        className="inline-flex items-center justify-center w-5 h-5 rounded-full sf-chip-success"
+        title={tip}
+        aria-label="Concrete evidence met"
+      >
+        <CheckMark />
+      </span>
+    );
+  }
+  if (hasData) {
+    return (
+      <span
+        className="text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted"
+        title={`Improvable: ${confidence ?? '—'} conf, ${evidenceCount ?? '—'} refs. Below the concrete bar; peer remains eligible to ride as passenger so bundling accumulates more evidence.`}
+      >
+        Improvable
+      </span>
+    );
+  }
+  return (
+    <span
+      className="sf-text-subtle text-[11.5px]"
+      title="No candidate data yet."
+    >
+      —
+    </span>
+  );
+}
+
 function BundlePreviewText({
   passengers,
   pool,
@@ -181,9 +256,11 @@ function BundlePreviewText({
   readonly pool: number;
   readonly totalCost: number;
 }) {
-  const passengerDetail = passengers.map((p) => `${p.field_key} (${p.cost})`).join(', ');
+  const used = renderBundleCost(totalCost);
+  const capacity = renderBundleCost(pool);
+  const passengerDetail = passengers.map((p) => `${p.field_key} (${renderBundleCost(p.cost)})`).join(', ');
   const title = pool > 0
-    ? `Next bundle preview — what a fresh Run / Loop would pack RIGHT NOW. Budget ${totalCost}/${pool}. ${passengers.length} passenger${passengers.length === 1 ? '' : 's'}: ${passengerDetail || '—'}. Preview reflects Loop mode — Run mode is always solo when alwaysSoloRun is ON. For the running op's actual packed list see the Passengers column.`
+    ? `Next bundle preview — what a fresh Run / Loop would pack RIGHT NOW. Budget ${used}/${capacity}. ${passengers.length} passenger${passengers.length === 1 ? '' : 's'}: ${passengerDetail || '—'}. Preview reflects Loop mode — Run mode is always solo when alwaysSoloRun is ON. For the running op's actual packed list see the Passengers column.`
     : `Bundling pool is 0 for this difficulty.`;
   // "{used}/{pool}" prefix — bundling budget display sitting next to the
   // additional keys per user's request, so the sum is verifiable at a glance.
@@ -201,7 +278,7 @@ function BundlePreviewText({
         className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded-sm border-[1.5px] border-current ${poolBadgeClass}`}
         title="Bundling budget (used / pool for this primary's difficulty)"
       >
-        {totalCost}/{pool}
+        {used}/{capacity}
       </span>
       {passengers.length === 0 ? (
         <span className="sf-text-subtle">—</span>
@@ -211,7 +288,7 @@ function BundlePreviewText({
             <span key={p.field_key}>
               {i > 0 ? ', ' : ''}
               {p.field_key}
-              <span className="italic text-[10px] sf-text-muted ml-0.5">({p.cost})</span>
+              <span className="italic text-[10px] sf-text-muted ml-0.5">({renderBundleCost(p.cost)})</span>
             </span>
           ))}
         </span>
@@ -322,6 +399,13 @@ export const KeyRow = memo(function KeyRow({ entry, productId, category, onRun, 
           {valueText}
         </span>
       </td>
+      <td className="px-3 py-2 align-middle text-center">
+        <ConcreteBadge
+          concrete={entry.concrete_evidence}
+          confidence={entry.top_confidence}
+          evidenceCount={entry.top_evidence_count}
+        />
+      </td>
       <td className="px-3 py-2 align-middle">
         <RidingCell primaries={entry.ridingPrimaries} />
       </td>
@@ -348,15 +432,6 @@ export const KeyRow = memo(function KeyRow({ entry, productId, category, onRun, 
       </td>
       <td className="px-3 py-2 align-middle text-right whitespace-nowrap">
         <span className="inline-flex items-center gap-1">
-          <DiscoveryHistoryButton
-            finderId="keyFinder"
-            productId={productId}
-            category={category}
-            scope="row"
-            fieldKeyFilter={[entry.field_key]}
-            width={ACTION_BUTTON_WIDTH.keyRowHistory}
-          />
-          <div style={{ width: 1, height: 16, background: 'var(--sf-token-border, #dee2e6)' }} />
           <RowActionButton
             intent="spammable"
             label="Run"
@@ -374,33 +449,50 @@ export const KeyRow = memo(function KeyRow({ entry, productId, category, onRun, 
             title={loopTitle}
             width={ACTION_BUTTON_WIDTH.keyRow}
           />
-          <RowActionButton
-            intent="prompt"
-            label="Prompt"
-            onClick={() => onOpenPrompt(entry.field_key)}
-            title={TOOLTIPS.keyPrompt}
-            width={ACTION_BUTTON_WIDTH.keyRow}
-          />
-          <div style={{ width: 1, height: 16, background: 'var(--sf-token-border, #dee2e6)' }} />
+          <span className="inline-block h-5 w-px mx-0.5 bg-current opacity-20" aria-hidden />
           <PromptDrawerChevron
-            storageKey={`key-finder:destructive-drawer:${entry.field_key}`}
-            openWidthClass="w-52"
-            ariaLabel={`Destructive actions for ${entry.field_key}`}
-            closedTitle="Show Unresolve / Delete"
-            openedTitle="Hide Unresolve / Delete"
-            chevronClass="sf-status-text-danger"
+            storageKey={`key-finder:row-drawer:${entry.field_key}`}
+            openWidthClass="w-[40rem]"
+            ariaLabel={`Prompt + history + data actions for ${entry.field_key}`}
+            closedTitle={`Show Prompt / Hist / Data for "${entry.field_key}"`}
+            openedTitle={`Hide Prompt / Hist / Data for "${entry.field_key}"`}
+            openTitle="Prompts:"
             actions={[
               {
-                label: 'Unresolve',
+                id: 'prompt',
+                label: 'Prompt',
+                intent: 'prompt',
+                onClick: () => onOpenPrompt(entry.field_key),
+                width: ACTION_BUTTON_WIDTH.keyRow,
+                title: TOOLTIPS.keyPrompt,
+              },
+            ]}
+            secondaryTitle="Hist:"
+            secondaryLabelClass="sf-history-label"
+            secondaryCustom={
+              <DiscoveryHistoryButton
+                finderId="keyFinder"
+                productId={productId}
+                category={category}
+                scope="row"
+                fieldKeyFilter={[entry.field_key]}
+                width={ACTION_BUTTON_WIDTH.keyRowHistory}
+              />
+            }
+            tertiaryTitle="Data:"
+            tertiaryLabelClass="sf-delete-label"
+            tertiaryActions={[
+              {
+                label: 'Unpub',
                 onClick: () => onUnresolve(entry.field_key),
                 disabled: unresolveDisabled,
                 intent: unresolveDisabled ? 'locked' : 'delete',
                 width: ACTION_BUTTON_WIDTH.keyRow,
                 title: entry.running
-                  ? 'Wait for the running op to finish before unresolving.'
+                  ? 'Wait for the running op to finish before unpublishing.'
                   : !entry.published
-                    ? 'Nothing to unresolve — no published value for this key.'
-                    : TOOLTIPS.keyUnresolve,
+                    ? 'Nothing to unpublish — no published value for this key.'
+                    : TOOLTIPS.keyUnpub,
               },
               {
                 label: 'Delete',

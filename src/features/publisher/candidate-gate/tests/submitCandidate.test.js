@@ -364,69 +364,7 @@ describe('submitCandidate', async () => {
     assert.equal(dbRow.validation_json.valid, jsonEntry.validation.valid);
   });
 
-  // --- 12. repairHistory passthrough ---
-  it('persists llmRepair in validation_json when repairHistory is provided', async () => {
-    ensureProductJson('mouse-llm-repair');
-    const repairHistory = {
-      promptId: 'P2',
-      status: 'repaired',
-      decisions: [
-        { value: 'Sky Blue', decision: 'map_to_existing', resolved_to: 'light-blue', reasoning: 'Known color alias' },
-        { value: 'Matte Black', decision: 'keep_new', resolved_to: 'matte-black', reasoning: 'New but valid color' },
-      ],
-    };
-
-    const result = await submitCandidate({
-      ...baseDeps(specDb),
-      productId: 'mouse-llm-repair',
-      fieldKey: 'weight',
-      value: 62,
-      confidence: 90,
-      sourceMeta: { run_id: 'run-llm-1' },
-      repairHistory,
-    });
-
-    assert.equal(result.status, 'accepted');
-
-    // DB: validation_json has llmRepair
-    const dbRow = specDb.getFieldCandidate('mouse-llm-repair', 'weight', '62');
-    assert.ok(dbRow);
-    assert.ok(dbRow.validation_json.llmRepair);
-    assert.equal(dbRow.validation_json.llmRepair.promptId, 'P2');
-    assert.equal(dbRow.validation_json.llmRepair.status, 'repaired');
-    assert.equal(dbRow.validation_json.llmRepair.decisions.length, 2);
-    assert.equal(dbRow.validation_json.llmRepair.decisions[0].value, 'Sky Blue');
-    assert.equal(dbRow.validation_json.llmRepair.decisions[0].resolved_to, 'light-blue');
-    assert.equal(dbRow.validation_json.llmRepair.decisions[1].decision, 'keep_new');
-
-    // JSON: validation also has llmRepair
-    const pj = readProductJson('mouse-llm-repair');
-    const jsonEntry = pj.candidates.weight[0];
-    assert.ok(jsonEntry.validation.llmRepair);
-    assert.equal(jsonEntry.validation.llmRepair.promptId, 'P2');
-    assert.equal(jsonEntry.validation.llmRepair.decisions.length, 2);
-  });
-
-  // --- 13. No repairHistory = no llmRepair key ---
-  it('omits llmRepair from validation_json when repairHistory is not provided', async () => {
-    ensureProductJson('mouse-no-llm');
-    const result = await submitCandidate({
-      ...baseDeps(specDb),
-      productId: 'mouse-no-llm',
-      fieldKey: 'weight',
-      value: 65,
-      confidence: 85,
-      sourceMeta: { run_id: 'run-nollm-1' },
-    });
-
-    assert.equal(result.status, 'accepted');
-
-    const dbRow = specDb.getFieldCandidate('mouse-no-llm', 'weight', '65');
-    assert.ok(dbRow);
-    assert.equal(dbRow.validation_json.llmRepair, undefined);
-  });
-
-  // --- 14. Product.json missing candidates key ---
+  // --- 12. Product.json missing candidates key ---
   it('creates candidates key on product.json if missing', async () => {
     // Write product.json WITHOUT candidates key
     const dir = path.join(PRODUCT_ROOT, 'mouse-nokey');

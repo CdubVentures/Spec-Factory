@@ -8,8 +8,14 @@
  *
  * @param {{ specDb: object, fieldKey: string, value: *, fieldRule: object|null, onValueDiscovered?: Function }} opts
  */
+
+function isBooleanFieldRule(fieldRule) {
+  return String(fieldRule?.contract?.type || fieldRule?.type || fieldRule?.data_type || '').trim().toLowerCase() === 'boolean';
+}
+
 export function persistDiscoveredValue({ specDb, fieldKey, value, fieldRule, onValueDiscovered }) {
   if (!fieldRule || fieldRule?.enum?.policy !== 'open_prefer_known') return;
+  if (isBooleanFieldRule(fieldRule)) return;
   if (value == null || value === '') return;
 
   const strValue = String(value);

@@ -13,6 +13,7 @@
 
 import { isReservedFieldKey } from '../../core/finder/finderExclusions.js';
 import { packBundle } from './keyBundler.js';
+import { isConcreteEvidence } from './keyConcreteEvidence.js';
 import { isPrimary as registryIsPrimary, count as registryCount } from '../../core/operations/keyFinderRegistry.js';
 
 const CAP_KNOB_BY_TIER = Object.freeze({
@@ -32,7 +33,7 @@ function capForTier(settings, tier) {
   return raw;
 }
 
-export function buildPassengers({ primary, engineRules, specDb, productId, settings }) {
+export function buildPassengers({ primary, engineRules, specDb, productId, settings, variantCount = 1 }) {
   if (!settings?.bundlingEnabled) return [];
   const primaryGroup = primary?.fieldRule?.group || '';
   if (!primaryGroup && settings.groupBundlingOnly) return [];
@@ -51,29 +52,36 @@ export function buildPassengers({ primary, engineRules, specDb, productId, setti
     peerCandidates.push({ fieldKey: fk, fieldRule: rule, currentRides: rides });
   }
 
+  // Peer eligibility gate — applies to BOTH Run and Loop so the /summary
+  // bundle_preview is always consistent with what would actually pack.
+  //
+  // Contract (per user spec 2026-04-23):
+  //   - When BOTH exclude knobs > 0 (concrete gate ACTIVE): a peer is
+  //     dropped ONLY when its bucket publishes under the stricter concrete
+  //     thresholds. Published-but-not-concrete peers stay in the pool so
+  //     bundling accumulates more evidence toward the concrete bar. That's
+  //     the "below either threshold, peers keep retrying" rule.
+  //   - When EITHER knob is 0 (concrete gate DISABLED): fall back to legacy
+  //     behavior — every published peer is dropped unconditionally.
+  //
+  // Same gate fires for Run and Loop → next-bundle preview matches both.
+  const excludeConf = Number(settings.passengerExcludeAtConfidence) || 0;
+  const excludeEvd = Number(settings.passengerExcludeMinEvidence) || 0;
+  const concreteGateActive = excludeConf > 0 && excludeEvd > 0;
   const resolvedFieldKeys = new Set();
-  if (typeof specDb?.getResolvedFieldCandidate === 'function') {
+  if (concreteGateActive) {
     for (const c of peerCandidates) {
-      if (specDb.getResolvedFieldCandidate(productId, c.fieldKey)) {
+      if (isConcreteEvidence({
+        specDb, productId,
+        fieldKey: c.fieldKey, fieldRule: c.fieldRule,
+        excludeConf, excludeEvd,
+      })) {
         resolvedFieldKeys.add(c.fieldKey);
       }
     }
-  }
-
-  // §6.2 "good enough" exclusion — when BOTH knobs > 0, drop peers whose top
-  // candidate confidence ≥ X AND evidence_count ≥ Y. Below either threshold
-  // peers keep retrying as passengers (the Loop is still trying to upgrade
-  // them to published). Zero extra DB traffic when knobs are disabled.
-  const excludeConf = Number(settings.passengerExcludeAtConfidence) || 0;
-  const excludeEvd = Number(settings.passengerExcludeMinEvidence) || 0;
-  if (excludeConf > 0 && excludeEvd > 0 && typeof specDb?.getTopFieldCandidate === 'function') {
+  } else if (typeof specDb?.getResolvedFieldCandidate === 'function') {
     for (const c of peerCandidates) {
-      if (resolvedFieldKeys.has(c.fieldKey)) continue; // already dropped
-      const top = specDb.getTopFieldCandidate(productId, c.fieldKey);
-      if (!top) continue;
-      const conf = Number(top.confidence) || 0;
-      const evd = Number(top.evidence_count) || 0;
-      if (conf >= excludeConf && evd >= excludeEvd) {
+      if (specDb.getResolvedFieldCandidate(productId, c.fieldKey)) {
         resolvedFieldKeys.add(c.fieldKey);
       }
     }
@@ -100,6 +108,7 @@ export function buildPassengers({ primary, engineRules, specDb, productId, setti
     candidates: peerCandidates,
     resolvedFieldKeys,
     settings,
+    variantCount,
   });
   return passengers;
 }

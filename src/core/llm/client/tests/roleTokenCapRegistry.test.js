@@ -57,14 +57,6 @@ const TABLE = [
     expected: 8192,
   },
   {
-    label: 'validate: collapsed to plan default, user cap under ceiling',
-    role: 'validate',
-    reason: '',
-    registryMaxOutput: 65536,
-    configPlanCap: 4096,
-    expected: 4096,
-  },
-  {
     label: 'write: collapsed to plan default, user cap under ceiling',
     role: 'write',
     reason: '',

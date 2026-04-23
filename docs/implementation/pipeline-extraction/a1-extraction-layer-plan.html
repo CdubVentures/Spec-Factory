@@ -104,7 +104,8 @@
   <h1>A1 — Extraction Layer Plan</h1>
   <p>Crawl4AI + Metascraper + PDF.js + Network XHR Interception</p>
   <p>Turn captured HTML &amp; PDFs into structured field candidates</p>
-  <span class="pill">Drafted 2026-04-22 · Spec Factory / IndexLab</span>
+  <span class="pill">Drafted 2026-04-22 · Last updated 2026-04-23 · Spec Factory / IndexLab</span>
+  <p style="margin-top:12px; font-size: 14px; opacity: 0.95;"><strong>Status:</strong> Phase 1a + 1b shipped &middot; fine-tuning Crawl4AI &middot; M2–M6 queued</p>
 </header>
 
 <div class="container">
@@ -116,6 +117,7 @@
   <h3>Table of Contents</h3>
   <ol>
     <li><a href="#summary">Executive Summary</a></li>
+    <li><a href="#status">Implementation Status &amp; Roadmap</a></li>
     <li><a href="#current-state">Current State · What's Missing</a></li>
     <li><a href="#target-stack">Target Extraction Stack</a></li>
     <li><a href="#architecture">Architecture · Data Flow</a></li>
@@ -156,9 +158,117 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- 2. CURRENT STATE -->
+<!-- 2. IMPLEMENTATION STATUS & ROADMAP -->
 <!-- ============================================================ -->
-<h2 class="section-title" id="current-state"><span class="num">2</span>Current State · What's Missing</h2>
+<h2 class="section-title" id="status"><span class="num">2</span>Implementation Status &amp; Roadmap</h2>
+
+<div class="callout good">
+<strong>As of 2026-04-23:</strong> Phase 1a (registry refactor) + Phase 1b (Crawl4AI plugin) are shipped and live-verified. Four extractor phases remain (Metascraper, PDF.js, XHR, and one fine-tune pass on Crawl4AI) before the bundle + LLM-reviewer phases unlock the &quot;fields_filled&quot; counter.
+</div>
+
+<h3 class="subsection-title">Roadmap order (user-confirmed)</h3>
+<p>Bundling does <strong>NOT</strong> start until all four extractor plugins are shipped and live-verified. The bundle is only as good as the plugins feeding it, so we finish collection first.</p>
+
+<div class="flow-diagram" style="font-size: 13px; line-height: 1.6;">[ CURRENT ] Fine-tune Crawl4AI        &larr; we are here
+    &darr;
+   M2       Metascraper proper         (author/date/logo/publisher + Readability)
+    &darr;
+   M3       PDF.js layer               (FCC filings, BestBuy manuals)
+    &darr;
+   M4       XHR intercept layer        (Dell / Razer client-rendered JSON APIs)
+    &darr;
+   M5       BUNDLE phase               (stitch every plugin&apos;s output per URL)
+    &darr;
+   M6       LLM REVIEWER phase         (consume bundles, emit field_candidates)</div>
+
+<h3 class="subsection-title">Milestone status</h3>
+<table>
+<thead><tr><th>Milestone</th><th>Status</th><th>Ship date / notes</th></tr></thead>
+<tbody>
+<tr><td><strong>Phase 1a</strong> &mdash; Registry refactor (O(1) plugin onboarding)</td><td><span class="tag tag-green">Shipped</span></td><td>2026-04-23</td></tr>
+<tr><td><strong>Phase 1b</strong> &mdash; Crawl4AI plugin + Python sidecar</td><td><span class="tag tag-green">Shipped</span></td><td>2026-04-23 &middot; Bundle schema v2 incl. JSON-LD, microdata, OpenGraph, &lt;dl&gt;</td></tr>
+<tr><td><strong>Crawl4AI fine-tune</strong></td><td><span class="tag tag-orange">In progress</span></td><td>6-item backlog &mdash; see §13</td></tr>
+<tr><td><strong>M2</strong> &mdash; Metascraper proper (Node, no sidecar)</td><td><span class="tag tag-gray">Queued</span></td><td>Adds author / date / logo / publisher / Readability</td></tr>
+<tr><td><strong>M3</strong> &mdash; PDF.js layer</td><td><span class="tag tag-gray">Queued</span></td><td>FCC filings + BestBuy manuals currently dumped as raw HTML</td></tr>
+<tr><td><strong>M4</strong> &mdash; XHR intercept layer</td><td><span class="tag tag-gray">Queued</span></td><td>Dell / Razer client-rendered JSON APIs</td></tr>
+<tr><td><strong>M5</strong> &mdash; Bundle phase</td><td><span class="tag tag-gray">Gated</span></td><td>Blocked until Crawl4AI-fine-tune + M2 + M3 + M4 ship</td></tr>
+<tr><td><strong>M6</strong> &mdash; LLM reviewer phase</td><td><span class="tag tag-gray">Gated</span></td><td>Reuses keyFinder promptContract + LLM config</td></tr>
+</tbody>
+</table>
+
+<h3 class="subsection-title">What Phase 1b actually delivers</h3>
+
+<div class="grid-2">
+<div class="card">
+<div class="card-header"><span class="tag tag-green">Shipped</span> Python sidecar &middot; <code>pipeline-extraction-sidecar/</code></div>
+<div class="card-body">
+<ul>
+  <li>Pure BS4 + lxml (no AsyncWebCrawler, no Playwright-Python)</li>
+  <li>200ms cold spawn, stdio JSON-RPC protocol</li>
+  <li>Stdout redirected to stderr before imports so the JSON channel stays uncorrupted</li>
+  <li>Extraction tiers: markdown, tables, lists, <strong>JSON-LD, microdata, OpenGraph, <code>&lt;dl&gt;/&lt;dt&gt;/&lt;dd&gt;</code></strong></li>
+</ul>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header"><span class="tag tag-green">Shipped</span> Node client + plugin</div>
+<div class="card-body">
+<ul>
+  <li>Stream <code>'error'</code> listeners on stdin/stdout/stderr (fixes the subprocess-pipe-EOF crash)</li>
+  <li>Callback-form <code>stdin.write()</code> catches async pipe errors</li>
+  <li>CWD resolved via <code>fileURLToPath(import.meta.url)</code>; env inherits from parent so PATH survives on Windows</li>
+  <li>Auto-restart &le;3, graceful stop drains in-flight, emits <code>extraction_artifacts_persisted</code></li>
+</ul>
+</div>
+</div>
+</div>
+
+<div class="grid-2">
+<div class="card">
+<div class="card-header"><span class="tag tag-green">Shipped</span> Bundle JSON v2</div>
+<div class="card-body">
+<pre style="font-size: 11px;"><code>{ schema_version: 2, plugin: 'crawl4ai',
+  url, final_url, content_hash, captured_at,
+  markdown, tables: [{heading, rows}], lists,
+  json_ld: [entity], microdata: [scope],
+  opengraph: {...},
+  metrics: { duration_ms, word_count,
+             table_count, json_ld_count,
+             microdata_count, has_product_jsonld } }</code></pre>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header"><span class="tag tag-green">Shipped</span> Live-verified extraction</div>
+<div class="card-body">
+<p>Run <code>20260423071804-0f217e</code> &mdash; Corsair M75 Wireless:</p>
+<ul>
+  <li>5 URLs crawled, 5 JSON artifacts persisted</li>
+  <li>2 &times; <code>@type=Product</code> JSON-LD &mdash; black (<code>sku=CH-931D010-NA</code>) + white (<code>sku=CH-931D011-NA</code>)</li>
+  <li>brand=Corsair, offers.price=$69.99, availability=InStock</li>
+  <li>11–19 OpenGraph properties per URL</li>
+  <li>Filenames + sizes surface in Documents tab</li>
+</ul>
+</div>
+</div>
+</div>
+
+<h3 class="subsection-title">Tests</h3>
+<p><strong>11,525 Node tests</strong> &middot; <strong>11 Python tests</strong> &middot; all green. +26 tests added during Phase 1b.</p>
+
+<h3 class="subsection-title">Key environment lessons (captured for M2–M4)</h3>
+<ul>
+  <li><strong>Python stdout MUST be redirected before importing BS4/crawl4ai.</strong> Library banner text corrupts the stdio JSON protocol. Save <code>_RAW_STDOUT = sys.stdout.buffer</code> first, then <code>sys.stdout = sys.stderr</code>.</li>
+  <li><strong>Node subprocess stdio needs <code>'error'</code> listeners on all three streams.</strong> Without them, a pipe EOF crashes the parent with &quot;Unhandled 'error' event&quot; &mdash; appears as exit code 1 at Crawl stage.</li>
+  <li><strong>Python <code>-m &lt;package&gt;</code> requires CWD = package&apos;s PARENT dir.</strong> Resolve via <code>fileURLToPath(import.meta.url)</code>, not <code>process.cwd()</code>.</li>
+  <li><strong>Pass <code>env: { ...process.env, ... }</code> to spawn.</strong> Bare env strips PATH, which Windows needs to find <code>python.exe</code>.</li>
+</ul>
+
+<!-- ============================================================ -->
+<!-- 3. CURRENT STATE -->
+<!-- ============================================================ -->
+<h2 class="section-title" id="current-state"><span class="num">3</span>Current State · What's Missing</h2>
 
 <h3 class="subsection-title">Existing extraction plugins</h3>
 <table>
@@ -185,7 +295,7 @@
 <!-- ============================================================ -->
 <!-- 3. TARGET STACK -->
 <!-- ============================================================ -->
-<h2 class="section-title" id="target-stack"><span class="num">3</span>Target Extraction Stack</h2>
+<h2 class="section-title" id="target-stack"><span class="num">4</span>Target Extraction Stack</h2>
 
 <table>
 <thead><tr><th>Layer</th><th>Tool</th><th>Language</th><th>Evidence Tier</th><th>Covers</th></tr></thead>
@@ -232,7 +342,7 @@
 <!-- ============================================================ -->
 <!-- 4. ARCHITECTURE -->
 <!-- ============================================================ -->
-<h2 class="section-title" id="architecture"><span class="num">4</span>Architecture · Data Flow</h2>
+<h2 class="section-title" id="architecture"><span class="num">5</span>Architecture · Data Flow</h2>
 
 <div class="card">
 <div class="card-header">End-to-end flow per URL</div>
@@ -285,7 +395,7 @@ Plugins are <strong>pure transforms</strong> — they don't fetch, they don't na
 <!-- ============================================================ -->
 <!-- 5. PLUGIN ARCHITECTURE AUDIT -->
 <!-- ============================================================ -->
-<h2 class="section-title" id="plugin-audit"><span class="num">5</span>Plugin Architecture · O(1) Audit</h2>
+<h2 class="section-title" id="plugin-audit"><span class="num">6</span>Plugin Architecture · O(1) Audit</h2>
 
 <div class="callout good">
 <strong>Good news.</strong> The existing plugin system is <strong>near-O(1)</strong> for adding new plugins. Contract tests enforce the shape, the stage registry is codegen'd to the frontend, and a new plugin lands in roughly 3 central files plus its own implementation + test files. Review below before assuming zero GUI cascade.
@@ -351,10 +461,10 @@ Plugins are <strong>pure transforms</strong> — they don't fetch, they don't na
 <!-- ============================================================ -->
 <!-- 6. LAYER 1 — METASCRAPER -->
 <!-- ============================================================ -->
-<h2 class="section-title" id="layer-1"><span class="num">6</span>Layer 1 · Metascraper (Node)</h2>
+<h2 class="section-title" id="layer-1"><span class="num">7</span>Layer 1 · Metascraper (Node) <span class="tag tag-gray">Queued · M2</span></h2>
 
 <div class="card layer-card layer-1">
-<div class="card-header">Ships first — smallest surface, biggest immediate yield</div>
+<div class="card-header"><span class="tag tag-gray">Queued · M2</span> &middot; JSON-LD already shipped in Phase 1b; Metascraper adds author/date/logo/publisher + Readability</div>
 <div class="card-body">
 <p><strong>Why first:</strong> pure Node, no sidecar, ~2 hour write-up. Product pages on Amazon, BestBuy, Corsair, Razer, Logitech, RTINGS all ship Product schema in JSON-LD. One lib picks it up across 6 formats.</p>
 
@@ -422,10 +532,10 @@ metascraper-media-provider         // media provider detection</code></pre>
 <!-- ============================================================ -->
 <!-- 7. LAYER 2 — CRAWL4AI -->
 <!-- ============================================================ -->
-<h2 class="section-title" id="layer-2"><span class="num">7</span>Layer 2 · Crawl4AI (Python Sidecar)</h2>
+<h2 class="section-title" id="layer-2"><span class="num">8</span>Layer 2 · Crawl4AI (Python Sidecar) <span class="tag tag-green">Shipped Phase 1b</span></h2>
 
 <div class="card layer-card layer-2">
-<div class="card-header">Biggest content layer — runs in a Python sidecar, Node talks to it over stdio JSON-RPC</div>
+<div class="card-header"><span class="tag tag-green">Shipped Phase 1b</span> &middot; Pure BS4 + lxml (no AsyncWebCrawler). 200ms cold spawn. Bundle v2 with JSON-LD + microdata + OpenGraph + &lt;dl&gt;.</div>
 <div class="card-body">
 <p><strong>Why sidecar:</strong> crawl4ai is Python-native. Running it as a sidecar keeps our Node Playwright fetch layer untouched and lets crawl4ai focus on what it's best at (heuristic HTML → structured). Python dependency is bounded to one process — no pollution of Node code paths.</p>
 
@@ -511,7 +621,7 @@ orjson                             # fast JSON for stdio framing
 <!-- ============================================================ -->
 <!-- 8. LAYER 3 — PDF.JS -->
 <!-- ============================================================ -->
-<h2 class="section-title" id="layer-3"><span class="num">8</span>Layer 3 · PDF.js (Node)</h2>
+<h2 class="section-title" id="layer-3"><span class="num">9</span>Layer 3 · PDF.js (Node) <span class="tag tag-gray">Queued · M3</span></h2>
 
 <div class="card layer-card layer-3">
 <div class="card-header">Manufacturer spec sheets + manuals — highest evidence tier when present</div>
@@ -552,7 +662,7 @@ pdf-text-reader                    // thin wrapper for page-by-page text extract
 <!-- ============================================================ -->
 <!-- 9. LAYER 4 — NETWORK XHR INTERCEPTION -->
 <!-- ============================================================ -->
-<h2 class="section-title" id="layer-4"><span class="num">9</span>Layer 4 · Network XHR Interception</h2>
+<h2 class="section-title" id="layer-4"><span class="num">10</span>Layer 4 · Network XHR Interception <span class="tag tag-gray">Queued · M4</span></h2>
 
 <div class="card layer-card layer-4">
 <div class="card-header">The pro-scraper quiet move — grab the JSON the page renders from</div>
@@ -602,7 +712,7 @@ page.on('response', async (response) =&gt; {
 <!-- ============================================================ -->
 <!-- 10. STORAGE -->
 <!-- ============================================================ -->
-<h2 class="section-title" id="storage"><span class="num">10</span>Storage &amp; Schema Changes</h2>
+<h2 class="section-title" id="storage"><span class="num">11</span>Storage &amp; Schema Changes</h2>
 
 <h3 class="subsection-title">Existing tables reused</h3>
 <p>No new tables required. The existing schema already covers the write targets:</p>
@@ -646,7 +756,7 @@ page.on('response', async (response) =&gt; {
 <!-- ============================================================ -->
 <!-- 11. GUI SURFACES -->
 <!-- ============================================================ -->
-<h2 class="section-title" id="gui"><span class="num">11</span>GUI Surfaces · Panels · Events</h2>
+<h2 class="section-title" id="gui"><span class="num">12</span>GUI Surfaces · Panels · Events</h2>
 
 <h3 class="subsection-title">Panels changed</h3>
 <table>
@@ -702,7 +812,7 @@ page.on('response', async (response) =&gt; {
 <!-- ============================================================ -->
 <!-- 12. SETTINGS -->
 <!-- ============================================================ -->
-<h2 class="section-title" id="settings"><span class="num">12</span>Settings &amp; Knobs Registry</h2>
+<h2 class="section-title" id="settings"><span class="num">13</span>Settings &amp; Knobs Registry</h2>
 
 <p>Full list of new knobs, all registered in <code>src/shared/settingsRegistry.js</code> with <code>uiCategory: 'extraction'</code>, <code>group: 'runtime'</code>. Sections (<code>uiSection</code>) correspond to plugin names.</p>
 
@@ -742,72 +852,131 @@ page.on('response', async (response) =&gt; {
 <!-- ============================================================ -->
 <!-- 13. ROLLOUT -->
 <!-- ============================================================ -->
-<h2 class="section-title" id="rollout"><span class="num">13</span>Rollout Order · Milestones</h2>
+<h2 class="section-title" id="rollout"><span class="num">14</span>Rollout Order · Milestones</h2>
 
 <p>Ship plugins independently so each earns its place before the next starts. Order chosen by: zero-sidecar-first, highest-yield-first, easiest-revert-first.</p>
 
+<div class="callout warn">
+<strong>Revised order (2026-04-23).</strong> The original milestone order was reshuffled after Phase 1a/1b shipped. New order: fine-tune Crawl4AI, then Metascraper (M2), PDF.js (M3), XHR (M4), then Bundle (M5), then LLM Reviewer (M6). Bundling is now gated on all four extractor plugins.
+</div>
+
 <div class="milestone">
-  <div class="ms-num">M0</div>
+  <div class="ms-num">1a</div>
   <div class="ms-body">
-    <h4>Shared infra · FieldCandidate type + extractionCandidateWriter</h4>
-    <div class="ms-meta">Scope: define the FieldCandidate shape, write the writer (candidate → <code>field_candidates</code> + <code>field_candidate_evidence</code>), wire it into <code>extractionRunner</code>, add the new <code>extractions</code> key to checkpoint builder, add one new <code>candidate_emitted</code> bridge event + handler. <strong>~4 hr.</strong> No new plugins yet — just the plumbing they'll ride.</div>
+    <h4><span class="tag tag-green">Shipped</span> Phase 1a · Registry refactor</h4>
+    <div class="ms-meta">Extended <code>generateRuntimeStageKeys.js</code> to emit <code>EXTRACTION_SELECT_PROPS</code> + <code>EXTRACTION_SECTION_META</code> + <code>EXTRACTION_SECTION_ORDER</code>. Deleted <code>extractionStageSelectProps.ts</code>. <code>SettingsCategoryRegistry</code> extraction sections auto-derived. <code>CategoryPanel</code> supports per-section <code>iconPath</code>. Characterization tests lock before/after. Adding any future extraction plugin now costs 2 backend registry touches + impl files. Shipped 2026-04-23.</div>
   </div>
 </div>
 
 <div class="milestone">
-  <div class="ms-num">M1</div>
+  <div class="ms-num">1b</div>
   <div class="ms-body">
-    <h4>Metascraper · Layer 1 ships first</h4>
-    <div class="ms-meta">Scope: pure-Node, no sidecar. Plugin + settings + 1 new stage key + ~12 tests. Run on 10 products. Acceptance: JSON-LD Product extracted on Amazon/BestBuy, Microdata on older sites, OpenGraph fallback kicks in. <strong>~6 hr.</strong> After this: nonzero <code>fields_filled</code> for the first time in 129 runs.</div>
+    <h4><span class="tag tag-green">Shipped</span> Phase 1b · Crawl4AI plugin + Python sidecar</h4>
+    <div class="ms-meta">Python sidecar (BS4 + lxml, 200ms cold spawn) &middot; Node client with stream error handlers + callback writes &middot; plugin + persister + domain README &middot; 5 settings registered &middot; 4 extraction tiers (markdown/tables/lists, JSON-LD, microdata, OpenGraph, &lt;dl&gt;). Bundle schema v2. <strong>Live-verified on Corsair M75 Wireless:</strong> 2 Product JSON-LD entities with real SKUs (CH-931D010-NA / CH-931D011-NA). 11,525 Node tests + 11 Python tests green. Shipped 2026-04-23.</div>
+  </div>
+</div>
+
+<div class="milestone">
+  <div class="ms-num">1c</div>
+  <div class="ms-body">
+    <h4><span class="tag tag-orange">In progress</span> Crawl4AI fine-tune</h4>
+    <div class="ms-meta">6-item backlog addressing live-run quality issues before moving to M2. See &sect;13b below for detailed items.</div>
   </div>
 </div>
 
 <div class="milestone">
   <div class="ms-num">M2</div>
   <div class="ms-body">
-    <h4>Crawl4AI sidecar · Layer 2</h4>
-    <div class="ms-meta">Scope: Python sidecar + stdio client + table-to-candidate converter. Plugin + settings + 1 new stage key + tests (sidecar stubbed). Run on RTINGS/techpowerup URLs. Acceptance: spec tables → structured rows → candidates. <strong>~10–14 hr.</strong> Biggest content yield — most mouse specs live in review-site tables.</div>
+    <h4><span class="tag tag-gray">Queued</span> Metascraper proper (Node, no sidecar)</h4>
+    <div class="ms-meta">JSON-LD (covered by 1b) + Metascraper&apos;s author/date/logo/publisher + Mozilla Readability main-content extraction + site-specific rule plugins (Amazon, NYT, BBC). Node-native, runs in parallel with Crawl4AI on the same HTML. Bundle grows <code>metascraper: { title, author, date, description, image, logo, publisher, url }</code>. <strong>~4 hr.</strong></div>
   </div>
 </div>
 
 <div class="milestone">
   <div class="ms-num">M3</div>
   <div class="ms-body">
-    <h4>Network XHR interception · Layer 4</h4>
-    <div class="ms-meta">Scope: capture plugin + transform plugin. No new deps. Run on Dell/Corsair/Razer product pages. Acceptance: backend JSON API intercepted on at least 40% of first-party pages. <strong>~5 hr.</strong> Intentionally before PDF — more shared usefulness across all runs, not just the subset that has PDFs.</div>
+    <h4><span class="tag tag-gray">Queued</span> PDF.js layer</h4>
+    <div class="ms-meta">FCC filings + BestBuy manuals currently return PDF bodies served with HTML Content-Type &mdash; 200-700KB blobs of raw text. Node plugin using <code>pdfjs-dist</code>, content-sniff detection, outputs <code>pdf: { page_count, text, tables, metadata }</code>. <strong>~6 hr.</strong></div>
   </div>
 </div>
 
 <div class="milestone">
   <div class="ms-num">M4</div>
   <div class="ms-body">
-    <h4>PDF.js · Layer 3</h4>
-    <div class="ms-meta">Scope: pdfjs-dist integration + table heuristic + buffer retention in fetch layer. Plugin + settings + 1 new stage key + tests with fixture PDFs. Run on Logitech qsg.pdf, Razer master guides. Acceptance: full text extracted, basic table reconstruction works on ≥2 fixtures. <strong>~6–8 hr.</strong></div>
+    <h4><span class="tag tag-gray">Queued</span> XHR intercept layer</h4>
+    <div class="ms-meta">Dell configurator + some Razer/Corsair pages render from client-side JSON APIs. Two plugins: capture-phase <code>networkCapturePlugin</code> attaches <code>page.on(&apos;response&apos;, ...)</code>, transform-phase <code>xhrInterceptPlugin</code> applies shape detector. Strips auth headers before storage. <strong>~5 hr.</strong></div>
   </div>
 </div>
 
 <div class="milestone">
   <div class="ms-num">M5</div>
   <div class="ms-body">
-    <h4>Bake-off · 20-product end-to-end proof</h4>
-    <div class="ms-meta">Scope: 20 live runs across mouse/keyboard/monitor/mousepad, diverse brands. Success metric: <code>fields_filled &gt;= 15</code> on at least 75% of products. Audit: check where plugins disagree on the same field (evidence-tier scoring will downstream this, but worth measuring here). <strong>~4 hr.</strong></div>
+    <h4><span class="tag tag-gray">Gated</span> BUNDLE phase</h4>
+    <div class="ms-meta"><strong>Blocked until Crawl4AI-fine-tune + M2 + M3 + M4 ship.</strong> Stitches every plugin&apos;s per-URL artifact into one submittal file at <code>runs/&lt;id&gt;/bundles/&lt;hash12&gt;.json</code> with derived quick-access fields (canonical_url, title, brand, model, sku, mpn, price, image). GUI Bundles tab. <strong>~6–8 hr.</strong></div>
   </div>
 </div>
 
 <div class="milestone">
   <div class="ms-num">M6</div>
   <div class="ms-body">
-    <h4>Publisher + evidence routing (handoff)</h4>
-    <div class="ms-meta">Scope: not part of A1. The existing publisher picks up <code>field_candidates</code> and routes to field-finders. If any plumbing gaps surface during M5, log them as follow-up items — do not bundle into A1.</div>
+    <h4><span class="tag tag-gray">Gated</span> LLM REVIEWER phase</h4>
+    <div class="ms-meta"><strong>Blocked until M5 bundles exist.</strong> Consume bundles, emit <code>field_candidates</code> via existing publisher candidate-gate. Reuses <code>keyFinder</code>&apos;s <code>promptContract</code> pattern + <code>llm-config/</code> provider selection + <code>submitCandidate()</code> dual-write. Per-needset-field flow: find relevant bundle sections &rarr; prompt with strict JSON schema &rarr; validate &rarr; submit. <strong>~2–3 days.</strong></div>
   </div>
 </div>
 
-<p><strong>Total A1 budget:</strong> ~35–45 hr of focused work, one plugin at a time, each independently revertible.</p>
+<h3 class="subsection-title" id="finetune-backlog">§13b Crawl4AI fine-tune backlog</h3>
+<p>Six items surfaced during live runs. Priority order, with LOC estimates.</p>
+
+<table>
+<thead><tr><th>#</th><th>Issue</th><th>Fix</th><th>Cost</th></tr></thead>
+<tbody>
+<tr>
+  <td><strong>1</strong></td>
+  <td>Table <code>heading</code> crosses section boundaries. Amazon emits <code>heading=&quot;SSD &amp; Memory&quot;</code> for a mouse-spec table because <code>find_previous(&apos;h2&apos;,&apos;h3&apos;)</code> walks past the real header.</td>
+  <td>Scope lookup to same <code>&lt;section&gt;/&lt;article&gt;/&lt;main&gt;</code> ancestor. Fall back to empty string when no heading in scope.</td>
+  <td>~15 LOC + 2 tests</td>
+</tr>
+<tr>
+  <td><strong>2</strong></td>
+  <td>Eloshapes 2-row table headers concat into keys like <code>&quot;Category Size category&quot;</code>.</td>
+  <td>Dedupe repeated word sequences; prefer last <code>&lt;th&gt;</code> per column.</td>
+  <td>~20 LOC + 1 test</td>
+</tr>
+<tr>
+  <td><strong>3</strong></td>
+  <td>Corsair button-diagram pages emit 6 noise tables of <code>A. LEFT MOUSE BUTTON</code> labels &mdash; single-character keys, no specs.</td>
+  <td>Drop tables where &gt;50% of keys are single characters, OR heading is empty AND &lt;3 rows AND no row values contain digits.</td>
+  <td>~10 LOC + 1 test</td>
+</tr>
+<tr>
+  <td><strong>4</strong></td>
+  <td>Overview &quot;Extracting: 4 done&quot; inflation on a 3-URL run. <strong>Pre-existing counter bug</strong>, not from Phase 1b. Likely counts <code>extraction_plugin_completed</code> across plugins instead of unique URLs.</td>
+  <td>Triage <code>eventProcessingEngine</code> / <code>runtimeOpsDataBuilders</code>, then fix.</td>
+  <td>30–60 min triage + 5–30 LOC fix</td>
+</tr>
+<tr>
+  <td><strong>5</strong></td>
+  <td>Apple Store / some React-rendered sites extract 0 tables + 0 JSON-LD. CSS-grid + div-based spec layout.</td>
+  <td>Decision: (a) defer &mdash; M6 LLM reviewer reads markdown; (b) add CSS-grid detector (fragile). Recommend (a) unless M5 bake-off shows material loss.</td>
+  <td>0 LOC (defer) or ~40 LOC (detector)</td>
+</tr>
+<tr>
+  <td><strong>6</strong></td>
+  <td><code>crawl4ai</code> pip package is installed but unused &mdash; we run on BS4 + lxml (transitive deps).</td>
+  <td>Prune from <code>requirements.txt</code>, save ~300MB on future installs. Re-add documented when actually needed.</td>
+  <td>1 line change</td>
+</tr>
+</tbody>
+</table>
+
+<p><strong>Suggested execution order:</strong> #1 + #2 together (both in <code>_extract_tables</code>) &rarr; #3 &rarr; #6 &rarr; #4 triage &rarr; #5 decision.</p>
+
+<p><strong>Total A1 budget:</strong> ~35–45 hr of focused work, one plugin at a time, each independently revertible. Phases 1a + 1b consumed ~12 hr.</p>
 
 <!-- ============================================================ -->
 <!-- 14. TESTING -->
 <!-- ============================================================ -->
-<h2 class="section-title" id="testing"><span class="num">14</span>Testing Strategy</h2>
+<h2 class="section-title" id="testing"><span class="num">15</span>Testing Strategy</h2>
 
 <h3 class="subsection-title">Per-plugin tests</h3>
 <p>Every new plugin gets three categories of tests, following the existing <code>screenshotPlugin</code> pattern:</p>
@@ -831,7 +1000,7 @@ page.on('response', async (response) =&gt; {
 <!-- ============================================================ -->
 <!-- 15. RISKS -->
 <!-- ============================================================ -->
-<h2 class="section-title" id="risks"><span class="num">15</span>Risks &amp; Open Questions</h2>
+<h2 class="section-title" id="risks"><span class="num">16</span>Risks &amp; Open Questions</h2>
 
 <div class="card">
 <div class="card-body">
@@ -880,63 +1049,95 @@ page.on('response', async (response) =&gt; {
 <!-- ============================================================ -->
 <!-- 16. FILE MANIFEST -->
 <!-- ============================================================ -->
-<h2 class="section-title" id="manifest"><span class="num">16</span>File-Level Change Manifest</h2>
+<h2 class="section-title" id="manifest"><span class="num">17</span>File-Level Change Manifest</h2>
 
 <p>Full list of files created or edited, grouped by milestone. Use as an implementation checklist.</p>
 
-<h3 class="subsection-title">M0 · Shared infra</h3>
+<div class="callout warn">
+<strong>Note (2026-04-23).</strong> The original manifest assumed an <code>M0 FieldCandidate writer</code> phase (per-plugin candidate emit). That was <strong>descoped</strong> during Phase 1b &mdash; plugins now persist raw artifacts to disk and the bundle + LLM-reviewer phases (M5/M6) produce candidates downstream. The manifest below reflects this.
+</div>
+
+<h3 class="subsection-title"><span class="tag tag-green">Shipped</span> Phase 1a · Registry refactor (GUI O(1))</h3>
 <ul class="checklist">
-  <li><strong>New:</strong> <code>src/features/extraction/types/FieldCandidate.js</code> — shared type + validator</li>
-  <li><strong>New:</strong> <code>src/features/extraction/core/extractionCandidateWriter.js</code> — writes candidates to SQL + JSON</li>
-  <li><strong>New:</strong> <code>src/features/extraction/core/tests/extractionCandidateWriter.test.js</code></li>
-  <li><strong>Edit:</strong> <code>src/features/extraction/core/extractionRunner.js</code> — call writer after each plugin's <code>onExtract</code></li>
-  <li><strong>Edit:</strong> <code>src/pipeline/checkpoint/buildCrawlCheckpoint.js</code> — add <code>extractions</code> key to checkpoint</li>
-  <li><strong>Edit:</strong> <code>src/pipeline/checkpoint/seedFromCheckpoint.js</code> — rehydrate <code>extractions</code> on rebuild</li>
-  <li><strong>Edit:</strong> <code>src/indexlab/runtimeBridgeEventHandlers.js</code> — add <code>handleCandidateEmitted</code></li>
-  <li><strong>Edit:</strong> <code>src/pipeline/checkpoint/tests/buildCrawlCheckpoint.test.js</code> — extractions round-trip</li>
+  <li class="done"><strong>New:</strong> <code>tools/gui-react/src/features/runtime-ops/panels/extraction/__tests__/extractionStageRegistry.characterize.test.ts</code></li>
+  <li class="done"><strong>New:</strong> <code>tools/gui-react/src/features/pipeline-settings/state/__tests__/SettingsCategoryRegistry.characterize.test.ts</code></li>
+  <li class="done"><strong>Edit:</strong> <code>tools/gui-react/scripts/generateRuntimeStageKeys.js</code> — emit SELECT_PROPS + SECTION_META + SECTION_ORDER</li>
+  <li class="done"><strong>Edit:</strong> <code>src/core/config/runtimeStageDefs.js</code> — add optional <code>settingsSection</code> metadata per entry</li>
+  <li class="done"><strong>Edit:</strong> <code>tools/gui-react/src/features/runtime-ops/panels/extraction/extractionStageRegistry.ts</code> — import from generated file</li>
+  <li class="done"><strong>Edit:</strong> <code>tools/gui-react/src/features/pipeline-settings/state/SettingsCategoryRegistry.ts</code> — derive extraction sections</li>
+  <li class="done"><strong>Edit:</strong> <code>tools/gui-react/src/features/pipeline-settings/components/CategoryPanel.tsx</code> — icon override</li>
+  <li class="done"><strong>Delete:</strong> <code>tools/gui-react/src/features/runtime-ops/panels/extraction/extractionStageSelectProps.ts</code></li>
 </ul>
 
-<h3 class="subsection-title">M1 · Metascraper</h3>
+<h3 class="subsection-title"><span class="tag tag-green">Shipped</span> Phase 1b · Crawl4AI plugin</h3>
+<ul class="checklist">
+  <li class="done"><strong>New:</strong> <code>pipeline-extraction-sidecar/pipeline_extraction_sidecar/</code> (Python)
+    <ul>
+      <li class="done"><code>__init__.py</code> / <code>__main__.py</code> — stdio JSON-RPC loop</li>
+      <li class="done"><code>extract.py</code> — BS4 + lxml; markdown, tables, lists, JSON-LD, microdata, OpenGraph, &lt;dl&gt;</li>
+      <li class="done"><code>requirements.txt</code> (crawl4ai + orjson) &middot; <code>README.md</code></li>
+      <li class="done"><code>tests/test_extract.py</code> — 11 tests incl. JSON-LD + graph unwrap</li>
+    </ul>
+  </li>
+  <li class="done"><strong>New:</strong> <code>src/features/extraction/plugins/crawl4ai/crawl4aiPlugin.js</code></li>
+  <li class="done"><strong>New:</strong> <code>src/features/extraction/plugins/crawl4ai/crawl4aiClient.js</code> — with stream error handlers</li>
+  <li class="done"><strong>New:</strong> <code>src/features/extraction/plugins/crawl4ai/crawl4aiArtifactPersister.js</code> (schema v2)</li>
+  <li class="done"><strong>New:</strong> <code>src/features/extraction/plugins/crawl4ai/README.md</code> (Domain Contract)</li>
+  <li class="done"><strong>New:</strong> 3 Node tests (plugin/client/persister)</li>
+  <li class="done"><strong>Edit:</strong> <code>src/features/extraction/plugins/pluginRegistry.js</code> — register crawl4ai</li>
+  <li class="done"><strong>Edit:</strong> <code>src/core/config/runtimeStageDefs.js</code> — add crawl4ai stage def</li>
+  <li class="done"><strong>Edit:</strong> <code>src/shared/settingsRegistry.js</code> — 5 knobs</li>
+  <li class="done"><strong>Edit:</strong> <code>src/pipeline/runProduct.js</code> — client construct + <code>ctxExtensions</code> + stop on shutdown</li>
+  <li class="done"><strong>Edit:</strong> <code>src/features/extraction/core/extractionRunner.js</code> — <code>ctxExtensions</code> merge</li>
+  <li class="done"><strong>Edit:</strong> <code>src/features/crawl/crawlSession.js</code> — pass <code>url</code>/<code>workerId</code> through transform ctx</li>
+  <li class="done"><strong>Edit:</strong> <code>src/pipeline/checkpoint/buildCrawlCheckpoint.js</code> + <code>buildProductCheckpoint.js</code> — forward <code>crawl4ai_file</code></li>
+  <li class="done"><strong>Edit:</strong> <code>src/features/indexing/api/builders/runtimeOpsExtractionPluginBuilders.js</code> — two-pass event join (fixes Documents-tab size)</li>
+  <li class="done"><strong>Edit:</strong> <code>src/app/api/processRuntime.js</code> — subprocess log tee to <code>.server-state/</code></li>
+  <li class="done"><strong>Edit:</strong> <code>README.md</code> (root) — Python install callout</li>
+  <li class="done"><strong>New:</strong> <code>tools/gui-react/src/features/runtime-ops/panels/extraction/ExtractionCrawl4aiPanel.tsx</code> — 20 LOC, shared primitive</li>
+  <li class="done"><strong>Edit:</strong> <code>ExtractionArtifactPanel.tsx</code> — add <code>previewType: 'download'</code></li>
+  <li class="done"><strong>Edit:</strong> <code>extractionStageRegistry.ts</code> — register <code>ExtractionCrawl4aiPanel</code> in <code>EXTRACTION_COMPONENTS</code></li>
+  <li class="done"><strong>Edit:</strong> <code>runtimeOpsExtractionPluginBuilders.test.js</code> — 2 regression tests for event ordering</li>
+</ul>
+
+<h3 class="subsection-title"><span class="tag tag-orange">In progress</span> Crawl4AI fine-tune</h3>
+<ul class="checklist">
+  <li><strong>Edit:</strong> <code>pipeline-extraction-sidecar/pipeline_extraction_sidecar/extract.py</code> — scope <code>find_previous</code> to section ancestor (#1); dedupe &lt;th&gt; doubled headers (#2); noise-table filter (#3)</li>
+  <li><strong>Edit:</strong> Trace + fix <code>eventProcessingEngine</code> / <code>runtimeOpsDataBuilders</code> for counter inflation (#4)</li>
+  <li><strong>Edit:</strong> <code>pipeline-extraction-sidecar/pipeline_extraction_sidecar/requirements.txt</code> — remove <code>crawl4ai</code> (#6)</li>
+  <li><strong>New tests:</strong> 4 regression tests in <code>test_extract.py</code> covering fine-tune fixes</li>
+</ul>
+
+<h3 class="subsection-title"><span class="tag tag-gray">Queued</span> M2 · Metascraper proper</h3>
 <ul class="checklist">
   <li><strong>New:</strong> <code>src/features/extraction/plugins/metascraper/metascraperPlugin.js</code></li>
   <li><strong>New:</strong> <code>src/features/extraction/plugins/metascraper/metascraperConfig.js</code></li>
-  <li><strong>New:</strong> <code>src/features/extraction/plugins/metascraper/metascraperToCandidates.js</code></li>
-  <li><strong>New:</strong> <code>src/features/extraction/plugins/metascraper/tests/metascraperPlugin.test.js</code></li>
-  <li><strong>New:</strong> <code>src/features/extraction/plugins/metascraper/tests/metascraperToCandidates.test.js</code></li>
+  <li><strong>New:</strong> <code>src/features/extraction/plugins/metascraper/metascraperArtifactPersister.js</code></li>
+  <li><strong>New:</strong> <code>src/features/extraction/plugins/metascraper/README.md</code> (Domain Contract)</li>
+  <li><strong>New:</strong> <code>src/features/extraction/plugins/metascraper/tests/*.test.js</code></li>
   <li><strong>New:</strong> <code>src/features/extraction/plugins/metascraper/fixtures/</code> (5 HTML fixtures)</li>
-  <li><strong>Edit:</strong> <code>src/features/extraction/plugins/pluginRegistry.js</code> — import + register metascraper</li>
-  <li><strong>Edit:</strong> <code>src/core/config/runtimeStageDefs.js</code> — add <code>metascraper</code> stage</li>
-  <li><strong>Edit:</strong> <code>src/shared/settingsRegistry.js</code> — add 6 knobs</li>
-  <li><strong>Edit:</strong> <code>tools/gui-react/src/features/pipeline-settings/state/SettingsCategoryRegistry.ts</code> — add <code>metascraper</code> section under <code>extraction</code></li>
+  <li><strong>Edit:</strong> <code>src/features/extraction/plugins/pluginRegistry.js</code> — register metascraper</li>
+  <li><strong>Edit:</strong> <code>src/core/config/runtimeStageDefs.js</code> — add metascraper stage def (with <code>settingsSection</code>)</li>
+  <li><strong>Edit:</strong> <code>src/shared/settingsRegistry.js</code> — add 5–7 knobs</li>
+  <li><strong>Edit:</strong> <code>src/pipeline/runProduct.js</code> — inject metascraper into <code>ctxExtensions</code></li>
   <li><strong>Run:</strong> <code>node tools/gui-react/scripts/generateRuntimeStageKeys.js</code></li>
-  <li><strong>Edit:</strong> <code>package.json</code> — add metascraper + plugins</li>
+  <li><strong>Edit:</strong> <code>package.json</code> — add metascraper + core plugins</li>
+  <li><strong>New:</strong> <code>tools/gui-react/src/features/runtime-ops/panels/extraction/ExtractionMetascraperPanel.tsx</code> (~20 LOC via shared primitive)</li>
+  <li><strong>Edit:</strong> <code>extractionStageRegistry.ts</code> EXTRACTION_COMPONENTS</li>
 </ul>
 
-<h3 class="subsection-title">M2 · Crawl4AI sidecar</h3>
+<h3 class="subsection-title"><span class="tag tag-gray">Queued</span> M3 · PDF.js</h3>
 <ul class="checklist">
-  <li><strong>New:</strong> <code>pipeline-extraction-sidecar/</code> directory (Python)
-    <ul>
-      <li><code>pipeline_extraction_sidecar/__main__.py</code></li>
-      <li><code>pipeline_extraction_sidecar/extract.py</code></li>
-      <li><code>pipeline_extraction_sidecar/requirements.txt</code></li>
-      <li><code>pipeline_extraction_sidecar/README.md</code></li>
-      <li><code>pipeline_extraction_sidecar/tests/test_extract.py</code></li>
-    </ul>
-  </li>
-  <li><strong>New:</strong> <code>src/features/extraction/plugins/crawl4ai/crawl4aiPlugin.js</code></li>
-  <li><strong>New:</strong> <code>src/features/extraction/plugins/crawl4ai/crawl4aiClient.js</code></li>
-  <li><strong>New:</strong> <code>src/features/extraction/plugins/crawl4ai/crawl4aiToCandidates.js</code></li>
-  <li><strong>New:</strong> <code>src/features/extraction/plugins/crawl4ai/tests/crawl4aiPlugin.test.js</code></li>
-  <li><strong>New:</strong> <code>src/features/extraction/plugins/crawl4ai/tests/crawl4aiClient.test.js</code></li>
-  <li><strong>Edit:</strong> <code>src/features/extraction/plugins/pluginRegistry.js</code></li>
-  <li><strong>Edit:</strong> <code>src/core/config/runtimeStageDefs.js</code></li>
-  <li><strong>Edit:</strong> <code>src/shared/settingsRegistry.js</code> — add 7 knobs</li>
-  <li><strong>Edit:</strong> <code>tools/gui-react/src/features/pipeline-settings/state/SettingsCategoryRegistry.ts</code></li>
-  <li><strong>Edit:</strong> <code>src/indexlab/runtimeBridgeEventHandlers.js</code> — sidecar events</li>
-  <li><strong>Edit:</strong> <code>README.md</code> — root-level Python install callout</li>
+  <li><strong>New:</strong> <code>src/features/extraction/plugins/pdfExtract/pdfExtractPlugin.js</code></li>
+  <li><strong>New:</strong> <code>src/features/extraction/plugins/pdfExtract/pdfTextExtractor.js</code></li>
+  <li><strong>New:</strong> <code>src/features/extraction/plugins/pdfExtract/pdfTableDetector.js</code></li>
+  <li><strong>New:</strong> <code>src/features/extraction/plugins/pdfExtract/tests/*.test.js</code></li>
+  <li><strong>New:</strong> <code>src/features/extraction/plugins/pdfExtract/fixtures/</code> (3 PDFs)</li>
+  <li><strong>Edit:</strong> <code>src/features/crawl/crawlSession.js</code> — retain PDF buffer when content-type matches</li>
+  <li><strong>Edit:</strong> 3 central registries + settings + GUI panel (same O(1) pattern)</li>
 </ul>
 
-<h3 class="subsection-title">M3 · Network XHR</h3>
+<h3 class="subsection-title"><span class="tag tag-gray">Queued</span> M4 · Network XHR</h3>
 <ul class="checklist">
   <li><strong>New:</strong> <code>src/features/crawl/plugins/networkCapturePlugin.js</code></li>
   <li><strong>New:</strong> <code>src/features/extraction/plugins/xhrIntercept/xhrInterceptPlugin.js</code></li>
@@ -949,34 +1150,34 @@ page.on('response', async (response) =&gt; {
   <li><strong>Edit:</strong> <code>tools/gui-react/src/features/pipeline-settings/state/SettingsCategoryRegistry.ts</code></li>
 </ul>
 
-<h3 class="subsection-title">M4 · PDF.js</h3>
+<h3 class="subsection-title"><span class="tag tag-gray">Gated</span> M5 · Bundle phase</h3>
+<p><em>Starts only after Crawl4AI-fine-tune + M2 + M3 + M4 are shipped.</em></p>
 <ul class="checklist">
-  <li><strong>New:</strong> <code>src/features/extraction/plugins/pdfExtract/pdfExtractPlugin.js</code></li>
-  <li><strong>New:</strong> <code>src/features/extraction/plugins/pdfExtract/pdfTextExtractor.js</code></li>
-  <li><strong>New:</strong> <code>src/features/extraction/plugins/pdfExtract/pdfTableDetector.js</code></li>
-  <li><strong>New:</strong> <code>src/features/extraction/plugins/pdfExtract/tests/*.test.js</code></li>
-  <li><strong>New:</strong> <code>src/features/extraction/plugins/pdfExtract/fixtures/</code> (3 PDFs)</li>
-  <li><strong>Edit:</strong> <code>src/features/crawl/crawlSession.js</code> — retain PDF buffer when content-type matches</li>
-  <li><strong>Edit:</strong> <code>src/features/extraction/plugins/pluginRegistry.js</code></li>
-  <li><strong>Edit:</strong> <code>src/core/config/runtimeStageDefs.js</code></li>
-  <li><strong>Edit:</strong> <code>src/shared/settingsRegistry.js</code> — add 4 knobs</li>
-  <li><strong>Edit:</strong> <code>tools/gui-react/src/features/pipeline-settings/state/SettingsCategoryRegistry.ts</code></li>
-  <li><strong>Edit:</strong> <code>package.json</code> — add pdfjs-dist</li>
+  <li><strong>New:</strong> <code>src/features/extraction/bundling/bundleBuilder.js</code> — stitches per-URL plugin artifacts by content_hash</li>
+  <li><strong>New:</strong> <code>src/features/extraction/bundling/bundleSchema.js</code> — v1 schema definition</li>
+  <li><strong>New:</strong> <code>src/features/extraction/bundling/tests/*.test.js</code></li>
+  <li><strong>Edit:</strong> <code>src/pipeline/runProduct.js</code> — call bundler at end of transform phase</li>
+  <li><strong>Edit:</strong> <code>src/pipeline/checkpoint/buildCrawlCheckpoint.js</code> — add <code>bundles</code> key</li>
+  <li><strong>New:</strong> <code>tools/gui-react/src/features/runtime-ops/panels/bundles/BundlesTab.tsx</code> — new tab</li>
 </ul>
 
-<h3 class="subsection-title">M5 · Bake-off</h3>
+<h3 class="subsection-title"><span class="tag tag-gray">Gated</span> M6 · LLM reviewer phase</h3>
+<p><em>Starts only after M5 bundles exist. Reuses keyFinder infrastructure.</em></p>
 <ul class="checklist">
-  <li><strong>New:</strong> <code>.tmp/bakeoff-extraction.mjs</code> — orchestrates 20 runs, collects metrics</li>
-  <li><strong>Edit:</strong> <code>docs/implementation/pipeline-extraction/bakeoff-results-YYYY-MM-DD.md</code> — results writeup</li>
+  <li><strong>New:</strong> <code>src/features/extraction/reviewer/reviewerRunner.js</code></li>
+  <li><strong>New:</strong> <code>src/features/extraction/reviewer/fieldPromptContract.js</code> — per-field prompt templates (modeled on keyFinder)</li>
+  <li><strong>New:</strong> <code>src/features/extraction/reviewer/bundleToPrompt.js</code> — bundle JSON → LLM input</li>
+  <li><strong>New:</strong> <code>src/features/extraction/reviewer/reviewerCandidateGate.js</code> — calls existing <code>submitCandidate()</code></li>
+  <li><strong>Edit:</strong> <code>src/features/llm-config/</code> — add reviewer phase to provider registry</li>
 </ul>
 
-<p><strong>Summary:</strong> M0 is ~6 files. Each of M1–M4 adds ~8–12 files. Total new file count across A1: ~50. Total edited central-registry files: ~15 edits (same 5 files touched by multiple milestones).</p>
+<p><strong>Summary (revised 2026-04-23).</strong> Phase 1a + 1b consumed ~12 hr and ~40 files (new + edit). Crawl4AI fine-tune ~2 hr + 4 tests. M2–M4 each ~4–8 hr, 8–12 files. M5 bundle ~6–8 hr. M6 reviewer ~2–3 days. Per-milestone independently revertible.</p>
 
 <!-- ============================================================ -->
 <!-- END -->
 <!-- ============================================================ -->
 <div style="margin-top:60px; padding-top:24px; border-top:1px solid var(--border); text-align:center; color:var(--text-muted); font-size:13px;">
-  Plan drafted 2026-04-22 · revise as the architecture settles · replace with per-milestone implementation docs as each ships
+  Plan drafted 2026-04-22 · Last revised 2026-04-23 after Phase 1a + 1b ship · revise again after each milestone
 </div>
 
 </div>

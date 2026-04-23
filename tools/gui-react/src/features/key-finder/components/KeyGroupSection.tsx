@@ -23,9 +23,9 @@ interface KeyGroupSectionProps {
   readonly onRunKey: (fieldKey: string) => void;
   readonly onLoopKey: (fieldKey: string) => void;
   readonly onOpenKeyPrompt: (fieldKey: string) => void;
-  readonly onUnresolveKey: (fieldKey: string) => void;
+  readonly onUnpubKey: (fieldKey: string) => void;
   readonly onDeleteKey: (fieldKey: string) => void;
-  readonly onUnresolveGroup: (groupName: string) => void;
+  readonly onUnpubGroup: (groupName: string) => void;
   readonly onDeleteGroup: (groupName: string) => void;
   /** How many keys in this group currently have a published value (drives
    *  the Unresolve group button's enabled state). */
@@ -36,18 +36,19 @@ interface KeyGroupSectionProps {
   readonly onRunGroup: (groupName: string) => void;
   readonly onLoopGroup: (groupName: string) => void;
   /** Non-null when THIS group has an active Loop chain. Drives the progress
-   *  label on the "Loop group" button. Each group runs its chain independently
-   *  — multiple groups can chain concurrently via Loop All Groups. */
+   *  label on the "Loop group" button. */
   readonly loopChainProgress?: { readonly current: number; readonly total: number } | null;
+  /** True when another group/global Loop line is active. Bulk Loop is a single
+   *  ordered line so additional group chains must wait. */
+  readonly loopBlockedByChain?: boolean;
+  /** True when the Pipeline Settings `alwaysSoloRun` knob is ON. When true,
+   *  per-key Run is always solo — the `Next bundle` preview reflects Loop
+   *  mode only (Run would show empty passengers). Drives the small sub-label
+   *  under the column header so users understand why the preview packs
+   *  while their Run fires solo. */
+  readonly alwaysSoloRun?: boolean;
 }
 
-
-function groupBadge(stats: KeyGroup['stats']): { label: string; cls: string } | null {
-  if (stats.running > 0) return { label: 'ACTIVE', cls: 'sf-chip-info' };
-  if (stats.total > 0 && stats.resolved === stats.total) return { label: 'DONE', cls: 'sf-chip-success' };
-  if (stats.total > 0 && stats.resolved === 0) return { label: 'TODO', cls: 'sf-chip-warning' };
-  return null;
-}
 
 export const KeyGroupSection = memo(function KeyGroupSection({
   group,
@@ -57,22 +58,23 @@ export const KeyGroupSection = memo(function KeyGroupSection({
   onRunKey,
   onLoopKey,
   onOpenKeyPrompt,
-  onUnresolveKey,
+  onUnpubKey,
   onDeleteKey,
-  onUnresolveGroup,
+  onUnpubGroup,
   onDeleteGroup,
   publishedCount,
   dataCount,
   onRunGroup,
   onLoopGroup,
   loopChainProgress = null,
+  loopBlockedByChain = false,
+  alwaysSoloRun = false,
 }: KeyGroupSectionProps) {
   const [open, toggle] = usePersistedToggle(`${storeKeyPrefix}:grp:${group.name}`, true);
-  const badge = groupBadge(group.stats);
 
   const handleRunGroup = useCallback(() => { onRunGroup(group.name); }, [group.name, onRunGroup]);
   const handleLoopGroup = useCallback(() => { onLoopGroup(group.name); }, [group.name, onLoopGroup]);
-  const handleUnresolveGroup = useCallback(() => { onUnresolveGroup(group.name); }, [group.name, onUnresolveGroup]);
+  const handleUnpubGroup = useCallback(() => { onUnpubGroup(group.name); }, [group.name, onUnpubGroup]);
   const handleDeleteGroup = useCallback(() => { onDeleteGroup(group.name); }, [group.name, onDeleteGroup]);
 
   const groupFieldKeys = group.keys.map((k) => k.field_key);
@@ -94,20 +96,8 @@ export const KeyGroupSection = memo(function KeyGroupSection({
           · {group.stats.total} keys · {group.stats.resolved} resolved
           {group.stats.running > 0 ? ` · ${group.stats.running} running` : ''}
         </span>
-        {badge && (
-          <span className={`sf-chip ${badge.cls} ml-1`}>{badge.label}</span>
-        )}
         <div className="flex-1" />
         <span onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5">
-          <DiscoveryHistoryButton
-            finderId="keyFinder"
-            productId={productId}
-            category={category}
-            scope="row"
-            fieldKeyFilter={groupFieldKeys}
-            width={ACTION_BUTTON_WIDTH.keyGroup}
-          />
-          <div style={{ width: 1, height: 16, background: 'var(--sf-token-border, #dee2e6)' }} />
           <RowActionButton
             intent={LIVE_MODES.groupRun ? 'spammable' : 'locked'}
             label="Run group"
@@ -120,34 +110,49 @@ export const KeyGroupSection = memo(function KeyGroupSection({
             intent="locked"
             label={loopChainProgress ? `Loop (${loopChainProgress.current}/${loopChainProgress.total})` : 'Loop group'}
             onClick={handleLoopGroup}
-            disabled={!LIVE_MODES.groupLoop}
-            busy={loopChainProgress !== null}
+            disabled={!LIVE_MODES.groupLoop || loopBlockedByChain}
+            busy={loopChainProgress !== null || loopBlockedByChain}
             title={
               !LIVE_MODES.groupLoop
                 ? DISABLED_REASONS.groupLoop
+                : loopBlockedByChain
+                  ? 'A sorted Loop line is already active. Wait for it to finish before starting another group loop.'
                 : loopChainProgress
                   ? `Loop chain in progress for this group (${loopChainProgress.current} of ${loopChainProgress.total}). Cancel the running Loop from the Operations panel to halt.`
                   : TOOLTIPS.groupLoop
             }
             width={ACTION_BUTTON_WIDTH.keyGroup}
           />
-          <div style={{ width: 1, height: 16, background: 'var(--sf-token-border, #dee2e6)' }} />
+          <span className="inline-block h-5 w-px mx-0.5 bg-current opacity-20" aria-hidden />
           <PromptDrawerChevron
-            storageKey={`key-finder:destructive-drawer:group:${group.name}`}
-            openWidthClass="w-80"
-            ariaLabel={`Destructive actions for group ${group.name}`}
-            closedTitle={`Show Unresolve / Delete for "${group.name}"`}
-            openedTitle={`Hide Unresolve / Delete for "${group.name}"`}
-            chevronClass="sf-status-text-danger"
-            actions={[
+            storageKey={`key-finder:group-drawer:${group.name}`}
+            openWidthClass="w-[40rem]"
+            ariaLabel={`History + data actions for group ${group.name}`}
+            closedTitle={`Show Hist / Data for "${group.name}"`}
+            openedTitle={`Hide Hist / Data for "${group.name}"`}
+            openTitle="Hist:"
+            labelClass="sf-history-label"
+            primaryCustom={
+              <DiscoveryHistoryButton
+                finderId="keyFinder"
+                productId={productId}
+                category={category}
+                scope="row"
+                fieldKeyFilter={groupFieldKeys}
+                width={ACTION_BUTTON_WIDTH.keyGroup}
+              />
+            }
+            secondaryTitle="Data:"
+            secondaryLabelClass="sf-delete-label"
+            secondaryActions={[
               {
-                label: 'Unresolve group',
-                onClick: handleUnresolveGroup,
+                label: 'Unpub group',
+                onClick: handleUnpubGroup,
                 disabled: publishedCount === 0,
                 intent: publishedCount === 0 ? 'locked' : 'delete',
                 width: ACTION_BUTTON_WIDTH.keyGroup,
                 title: publishedCount === 0
-                  ? 'Nothing to unresolve — no published keys in this group.'
+                  ? 'Nothing to unpublish — no published keys in this group.'
                   : `Demote all ${publishedCount} published key(s) in this group back to candidate. Reversible.`,
               },
               {
@@ -171,9 +176,29 @@ export const KeyGroupSection = memo(function KeyGroupSection({
               <th className="px-3 py-1.5 text-left text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted w-[22%]">Key</th>
               <th className="px-3 py-1.5 text-left text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted">Axes</th>
               <th className="px-3 py-1.5 text-center text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted w-[64px]" title="Re-Run budget — attempts Loop mode would spend (calcKeyBudget)">Re-Run</th>
-              <th className="px-3 py-1.5 text-left text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted w-[18%]" title="Preview of what a fresh Run / Loop would pack right now (used / pool + passengers with cost breakdown). Updates live as registry state changes. For what an active run is ACTUALLY carrying, see the Passengers column; for where this key is riding, see the Riding column.">Next bundle (used/pool)</th>
+              <th
+                className="px-3 py-1.5 text-left text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted w-[18%]"
+                title={
+                  alwaysSoloRun
+                    ? "Preview of what a Loop would pack right now (used / pool + passengers with cost breakdown). Per-key Run is solo while alwaysSoloRun is ON — change that setting in Pipeline Settings → Key Finder → Bundling to bundle on Run too. Updates live as registry state changes."
+                    : "Preview of what a fresh Run / Loop would pack right now (used / pool + passengers with cost breakdown). Updates live as registry state changes. For what an active run is ACTUALLY carrying, see the Passengers column; for where this key is riding, see the Riding column."
+                }
+              >
+                <div>Next bundle (used/pool)</div>
+                {alwaysSoloRun && (
+                  <div className="text-[9px] font-normal normal-case tracking-normal sf-text-subtle italic mt-0.5">
+                    Loop only — see alwaysSoloRun setting
+                  </div>
+                )}
+              </th>
               <th className="px-3 py-1.5 text-left text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted w-[14%]">Last model</th>
               <th className="px-3 py-1.5 text-left text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted w-[18%]">Value</th>
+              <th
+                className="px-3 py-1.5 text-center text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted w-[70px]"
+                title="Status — does the field meet the passenger-exclude thresholds (≥95 conf + ≥3 refs by default) under the publisher's deterministic bucket evaluator? ✓ means the key has earned its way out of the passenger pool; 'Improvable' means it has data but more runs would strengthen it; — means no data yet."
+              >
+                Status
+              </th>
               <th
                 className="px-3 py-1.5 text-left text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted w-[12%]"
                 title="Primaries currently carrying this key as a passenger. Each chip spins while that primary's LLM call is in flight; drops off live as each call finishes."
@@ -187,7 +212,12 @@ export const KeyGroupSection = memo(function KeyGroupSection({
                 Passengers
               </th>
               <th className="px-3 py-1.5 text-center text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted w-[56px]">Conf</th>
-              <th className="px-3 py-1.5 text-left text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted w-[110px]">Status</th>
+              <th
+                className="px-3 py-1.5 text-left text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted w-[110px]"
+                title="Published — has the key crossed the publisher's gate (publishConfidenceThreshold + min_evidence_refs)? ✓ = published/resolved. Stricter maturity (≥95 conf + ≥3 refs) lives in the Status column to the left."
+              >
+                Published
+              </th>
               <th className="px-3 py-1.5 text-right text-[10.5px] font-semibold uppercase tracking-wide sf-text-muted w-[560px]">Actions</th>
             </tr>
           </thead>
@@ -201,7 +231,7 @@ export const KeyGroupSection = memo(function KeyGroupSection({
                 onRun={onRunKey}
                 onLoop={onLoopKey}
                 onOpenPrompt={onOpenKeyPrompt}
-                onUnresolve={onUnresolveKey}
+                onUnresolve={onUnpubKey}
                 onDelete={onDeleteKey}
               />
             ))}

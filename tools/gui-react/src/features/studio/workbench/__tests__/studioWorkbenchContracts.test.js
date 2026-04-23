@@ -68,3 +68,28 @@ test('studio workbench contracts preserve core field metadata after publish-gate
 
   assert.equal(resolveWorkbenchInlineEditPath('unknownColumn'), '');
 });
+
+test('studio workbench rows display boolean fields as closed yes_no even from stale rule payloads', async () => {
+  const { buildWorkbenchRows } = await loadWorkbenchHelpers();
+
+  const rows = buildWorkbenchRows(
+    ['discontinued'],
+    {
+      discontinued: {
+        ui: { label: 'Discontinued', group: 'lifecycle' },
+        contract: { type: 'boolean', shape: 'list' },
+        enum: { policy: 'open_prefer_known', source: 'data_lists.discontinued' },
+        enum_policy: 'open_prefer_known',
+        enum_source: 'data_lists.discontinued',
+      },
+    },
+    null,
+    {},
+  );
+
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].contractType, 'boolean');
+  assert.equal(rows[0].contractShape, 'scalar');
+  assert.equal(rows[0].enumPolicy, 'closed');
+  assert.equal(rows[0].enumSource, 'yes_no');
+});

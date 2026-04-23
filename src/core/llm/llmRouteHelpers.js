@@ -20,7 +20,6 @@ export function resolveLlmRoleDefaults(cfg = {}) {
     triage: plan,
     reasoning: String(cfg.llmModelReasoning || '').trim(),
     extract: plan,
-    validate: plan,
     write: plan
   };
 }

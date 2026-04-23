@@ -19,9 +19,14 @@ const DEFAULT_SETTINGS = Object.freeze({
   bundlingEnabled: true,
   groupBundlingOnly: true,
   bundlingPassengerCost: { easy: 1, medium: 2, hard: 4, very_hard: 8 },
+  bundlingPassengerVariantCostPerExtra: 0,
   bundlingPoolPerPrimary: { easy: 6, medium: 4, hard: 2, very_hard: 1 },
   passengerDifficultyPolicy: 'less_or_equal',
   budgetVariantPointsPerExtra: 1,
+  // Pins legacy axis order so the pre-configurable-sort test expectations
+  // in "step 5 (ordering)" stay authoritative. New default-order coverage
+  // lives in its own describe block below.
+  bundlingSortAxisOrder: 'required_level,availability,difficulty',
 });
 
 function rule({
@@ -425,6 +430,132 @@ describe('packBundle — step 5 (ordering)', () => {
   });
 });
 
+// ─── Step 5 — sort order under DEFAULT axis order (difficulty → required → availability) ──
+// The new configurable sort knob (bundlingSortAxisOrder) defaults to
+// "difficulty,required_level,availability" — easy wins first, mandatory
+// breaks ties within equal difficulty. Overrides DEFAULT_SETTINGS' legacy
+// pinning (which the existing describe block above preserves).
+
+describe('packBundle — step 5 (ordering) under default axis order (difficulty → required → availability)', () => {
+  const DEFAULT_ORDER_SETTINGS = {
+    ...DEFAULT_SETTINGS,
+    bundlingSortAxisOrder: 'difficulty,required_level,availability',
+    bundlingPoolPerPrimary: { easy: 1000, medium: 1000, hard: 1000, very_hard: 1000 },
+  };
+
+  it('easy non_mandatory packs BEFORE hard mandatory (difficulty is primary axis)', () => {
+    const result = packBundle({
+      primary: entry('p', { difficulty: 'very_hard' }),
+      candidates: [
+        entry('mand_hard', { difficulty: 'hard', availability: 'always', required_level: 'mandatory' }),
+        entry('opt_easy',  { difficulty: 'easy', availability: 'always', required_level: 'non_mandatory' }),
+      ],
+      resolvedFieldKeys: new Set(),
+      settings: DEFAULT_ORDER_SETTINGS,
+      variantCount: 1,
+    });
+    assert.deepEqual(result.passengers.map((p) => p.fieldKey), ['opt_easy', 'mand_hard']);
+  });
+
+  it('within same difficulty, mandatory packs before non_mandatory', () => {
+    const result = packBundle({
+      primary: entry('p', { difficulty: 'very_hard' }),
+      candidates: [
+        entry('opt', { difficulty: 'easy', availability: 'always', required_level: 'non_mandatory' }),
+        entry('req', { difficulty: 'easy', availability: 'always', required_level: 'mandatory' }),
+      ],
+      resolvedFieldKeys: new Set(),
+      settings: DEFAULT_ORDER_SETTINGS,
+      variantCount: 1,
+    });
+    assert.deepEqual(result.passengers.map((p) => p.fieldKey), ['req', 'opt']);
+  });
+
+  it('within same difficulty + required_level, always packs before rare (availability last)', () => {
+    const result = packBundle({
+      primary: entry('p', { difficulty: 'very_hard' }),
+      candidates: [
+        entry('rare_e',   { difficulty: 'easy', availability: 'rare',      required_level: 'mandatory' }),
+        entry('always_e', { difficulty: 'easy', availability: 'always',    required_level: 'mandatory' }),
+        entry('somet_e',  { difficulty: 'easy', availability: 'sometimes', required_level: 'mandatory' }),
+      ],
+      resolvedFieldKeys: new Set(),
+      settings: DEFAULT_ORDER_SETTINGS,
+      variantCount: 1,
+    });
+    assert.deepEqual(result.passengers.map((p) => p.fieldKey), ['always_e', 'somet_e', 'rare_e']);
+  });
+
+  it('full 3-axis precedence produces expected total order', () => {
+    const result = packBundle({
+      primary: entry('p', { difficulty: 'very_hard' }),
+      candidates: [
+        entry('mand_rare_easy',     { difficulty: 'easy',   availability: 'rare',   required_level: 'mandatory' }),
+        entry('mand_always_hard',   { difficulty: 'hard',   availability: 'always', required_level: 'mandatory' }),
+        entry('opt_always_easy',    { difficulty: 'easy',   availability: 'always', required_level: 'non_mandatory' }),
+        entry('opt_rare_very_hard', { difficulty: 'very_hard', availability: 'rare', required_level: 'non_mandatory' }),
+      ],
+      resolvedFieldKeys: new Set(),
+      settings: DEFAULT_ORDER_SETTINGS,
+      variantCount: 1,
+    });
+    // Difficulty drives everything:
+    //   easy first (mand beats opt, always beats rare within mand)
+    //   then hard, then very_hard.
+    // Within easy: mand_rare (mand) < opt_always (opt) per required-level tiebreaker.
+    assert.deepEqual(result.passengers.map((p) => p.fieldKey), [
+      'mand_rare_easy',
+      'opt_always_easy',
+      'mand_always_hard',
+      'opt_rare_very_hard',
+    ]);
+  });
+
+  it('determinism under shuffled input', () => {
+    const peers = [
+      ['a', 'non_mandatory', 'always', 'easy'],
+      ['b', 'mandatory', 'rare', 'hard'],
+      ['c', 'mandatory', 'always', 'easy'],
+      ['d', 'non_mandatory', 'sometimes', 'medium'],
+    ];
+    const build = (order) => packBundle({
+      primary: entry('p', { difficulty: 'very_hard' }),
+      candidates: order.map(([key, req, avail, diff]) =>
+        entry(key, { required_level: req, availability: avail, difficulty: diff })
+      ),
+      resolvedFieldKeys: new Set(),
+      settings: DEFAULT_ORDER_SETTINGS,
+      variantCount: 1,
+    }).passengers.map((p) => p.fieldKey);
+    const forward = build(peers);
+    const reverse = build([...peers].reverse());
+    const shuffled = build([peers[2], peers[0], peers[3], peers[1]]);
+    assert.deepEqual(forward, reverse);
+    assert.deepEqual(forward, shuffled);
+    // c (easy+mand) → a (easy+opt) → d (medium+opt) → b (hard+mand)
+    assert.deepEqual(forward, ['c', 'a', 'd', 'b']);
+  });
+
+  it('empty / missing bundlingSortAxisOrder → defaults to difficulty → required → availability', () => {
+    const noKnob = { ...DEFAULT_SETTINGS };
+    delete noKnob.bundlingSortAxisOrder;
+    noKnob.bundlingPoolPerPrimary = { easy: 1000, medium: 1000, hard: 1000, very_hard: 1000 };
+
+    const result = packBundle({
+      primary: entry('p', { difficulty: 'very_hard' }),
+      candidates: [
+        entry('mand_hard', { difficulty: 'hard', availability: 'always', required_level: 'mandatory' }),
+        entry('opt_easy',  { difficulty: 'easy', availability: 'always', required_level: 'non_mandatory' }),
+      ],
+      resolvedFieldKeys: new Set(),
+      settings: noKnob,
+      variantCount: 1,
+    });
+    // Default kicks in: easy wins, even though mand_hard is mandatory.
+    assert.deepEqual(result.passengers.map((p) => p.fieldKey), ['opt_easy', 'mand_hard']);
+  });
+});
+
 // ─── Step 5b — round-robin tiebreaker (currentRides) ────────────────────
 
 describe('packBundle — currentRides tiebreaker', () => {
@@ -490,9 +621,10 @@ describe('packBundle — currentRides tiebreaker', () => {
     assert.deepEqual(result.passengers.map((p) => p.fieldKey), ['x', 'y', 'z']);
   });
 
-  it('currentRides does NOT override higher-priority sort axes', () => {
-    // Mandatory peer at currentRides=5 should still beat non-mandatory at 0 —
-    // required_level is the most significant axis.
+  it('active ride avoidance overrides higher-priority sort axes during the clean pass', () => {
+    // The no-overlap-first contract is stronger than the axis ordering:
+    // an already-riding mandatory peer must not consume the clean pool ahead
+    // of an idle non-mandatory peer.
     const result = packBundle({
       primary: entry('p', { difficulty: 'medium' }),
       candidates: [
@@ -503,8 +635,39 @@ describe('packBundle — currentRides tiebreaker', () => {
       settings: DEFAULT_SETTINGS,
       variantCount: 1,
     });
-    assert.equal(result.passengers[0].fieldKey, 'mand_5', 'mandatory wins despite higher rides');
-    assert.equal(result.passengers[1].fieldKey, 'non_mand_0');
+    assert.equal(result.passengers[0].fieldKey, 'non_mand_0', 'idle peer wins clean pass despite weaker axes');
+    assert.equal(result.passengers[1].fieldKey, 'mand_5', 'already-riding peer is only fallback');
+  });
+
+  it('does not pack already-riding peers when idle peers can fill the pool', () => {
+    const result = packBundle({
+      primary: entry('p', { difficulty: 'hard' }), // pool=2
+      candidates: [
+        { fieldKey: 'active_mand', fieldRule: rule({ difficulty: 'easy', required_level: 'mandatory' }), currentRides: 1 },
+        { fieldKey: 'idle_a', fieldRule: rule({ difficulty: 'easy', required_level: 'non_mandatory' }), currentRides: 0 },
+        { fieldKey: 'idle_b', fieldRule: rule({ difficulty: 'easy', required_level: 'non_mandatory' }), currentRides: 0 },
+      ],
+      resolvedFieldKeys: new Set(),
+      settings: DEFAULT_SETTINGS,
+      variantCount: 1,
+    });
+    assert.deepEqual(result.passengers.map((p) => p.fieldKey), ['idle_a', 'idle_b']);
+    assert.equal(result.totalCost, 2);
+  });
+
+  it('falls back to already-riding peers when idle peers cannot fill the pool', () => {
+    const result = packBundle({
+      primary: entry('p', { difficulty: 'hard' }), // pool=2
+      candidates: [
+        { fieldKey: 'active_mand', fieldRule: rule({ difficulty: 'easy', required_level: 'mandatory' }), currentRides: 1 },
+        { fieldKey: 'idle_a', fieldRule: rule({ difficulty: 'easy', required_level: 'non_mandatory' }), currentRides: 0 },
+      ],
+      resolvedFieldKeys: new Set(),
+      settings: DEFAULT_SETTINGS,
+      variantCount: 1,
+    });
+    assert.deepEqual(result.passengers.map((p) => p.fieldKey), ['idle_a', 'active_mand']);
+    assert.equal(result.totalCost, 2);
   });
 });
 
@@ -567,8 +730,9 @@ describe('packBundle — step 6 (greedy pack + variant cost)', () => {
     assert.equal(result.totalCost, 1);
   });
 
-  it('passenger cost is RAW — no variant scaling regardless of variantCount', () => {
-    // easy pool=6, raw easy cost=1 → always 6 fit, variantCount is ignored
+  it('applies fractional passenger surcharge for each extra family variant', () => {
+    // easy pool=6, base easy cost=1, family size 4 with +0.25 per extra
+    // → cost 1.75 each, so only 3 easy peers fit.
     const candidates = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map((k) =>
       entry(k, { difficulty: 'easy', availability: 'always' })
     );
@@ -576,9 +740,36 @@ describe('packBundle — step 6 (greedy pack + variant cost)', () => {
       primary: entry('p', { difficulty: 'easy' }),
       candidates,
       resolvedFieldKeys: new Set(),
-      settings: DEFAULT_SETTINGS,
+      settings: {
+        ...DEFAULT_SETTINGS,
+        bundlingPassengerVariantCostPerExtra: 0.25,
+      },
+      variantCount: 4,
     });
-    assert.equal(result.passengers.length, 6, '6 easy peers fit a pool of 6 at cost 1 each');
+    assert.deepEqual(result.passengers.map((p) => p.fieldKey), ['a', 'b', 'c']);
+    assert.equal(result.totalCost, 5.25);
+    assert.deepEqual(result.breakdown, [
+      { fieldKey: 'a', cost: 1.75 },
+      { fieldKey: 'b', cost: 1.75 },
+      { fieldKey: 'c', cost: 1.75 },
+    ]);
+  });
+
+  it('leaves passenger cost raw for one-variant families', () => {
+    const candidates = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map((k) =>
+      entry(k, { difficulty: 'easy', availability: 'always' })
+    );
+    const result = packBundle({
+      primary: entry('p', { difficulty: 'easy' }),
+      candidates,
+      resolvedFieldKeys: new Set(),
+      settings: {
+        ...DEFAULT_SETTINGS,
+        bundlingPassengerVariantCostPerExtra: 0.25,
+      },
+      variantCount: 1,
+    });
+    assert.equal(result.passengers.length, 6, 'one variant keeps easy passenger cost at 1');
     assert.equal(result.totalCost, 6);
   });
 

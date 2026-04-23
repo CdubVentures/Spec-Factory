@@ -36,14 +36,10 @@ export interface CatalogRowGen {
   base_model: string;
   variant: string;
   status: string;
-  hasFinal: boolean;
-  validated: boolean;
   confidence: number;
   coverage: number;
   fieldsFilled: number;
   fieldsTotal: number;
-  lastRun: string;
-  inActive: boolean;
 }
 
 export interface BrandGen {

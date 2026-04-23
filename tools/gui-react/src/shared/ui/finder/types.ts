@@ -23,9 +23,9 @@ export interface DeleteTarget {
     | 'image' | 'images-all' | 'images-variant'
     | 'eval' | 'eval-all' | 'eval-variant'
     | 'variant' | 'variant-all'
-    | 'key-unresolve' | 'key-delete'
-    | 'key-unresolve-group' | 'key-delete-group'
-    | 'key-unresolve-all' | 'key-delete-all'
+    | 'key-unpublish' | 'key-delete'
+    | 'key-unpublish-group' | 'key-delete-group'
+    | 'key-unpublish-all' | 'key-delete-all'
     | 'field-variant-unpublish' | 'field-variant-delete'
     | 'field-all-variants-unpublish' | 'field-all-variants-delete';
   readonly runNumber?: number;

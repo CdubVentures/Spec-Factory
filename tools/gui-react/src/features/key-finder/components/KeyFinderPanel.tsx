@@ -23,7 +23,6 @@ import { PromptPreviewModal } from '../../../shared/ui/finder/PromptPreviewModal
 import { FinderDeleteConfirmModal } from '../../../shared/ui/finder/FinderDeleteConfirmModal.tsx';
 import { PromptDrawerChevron } from '../../../shared/ui/finder/PromptDrawerChevron.tsx';
 import type { DeleteTarget } from '../../../shared/ui/finder/types.ts';
-import { TabStrip } from '../../../shared/ui/navigation/TabStrip.tsx';
 import { usePersistedToggle, useCollapseStore } from '../../../stores/collapseStore.ts';
 import type { ReviewLayout } from '../../../types/review.ts';
 import { usePromptPreviewQuery } from '../../indexing/api/promptPreviewQueries.ts';
@@ -31,12 +30,19 @@ import {
   useReservedKeysQuery,
   useKeyFinderSummaryQuery,
   useKeyFinderBundlingConfigQuery,
-  useUnresolveKeyMutation,
+  useUnpublishKeyMutation,
   useDeleteKeyMutation,
 } from '../api/keyFinderQueries.ts';
 import { useKeyFinderFilters } from '../state/keyFinderFilters.ts';
-import { selectKeyFinderGroupedRows, sortKeysByPriority } from '../state/keyFinderGroupedRows.ts';
+import { selectKeyFinderGroupedRows, parseAxisOrder } from '../state/keyFinderGroupedRows.ts';
 import { runLoopChain } from '../state/runLoopChain.ts';
+import {
+  GLOBAL_LOOP_CHAIN_ID,
+  buildLoopAllDispatchKeys,
+  buildLoopGroupDispatchKeys,
+  buildRunAllDispatchKeys,
+  buildRunGroupDispatchKeys,
+} from '../state/keyFinderBulkDispatch.ts';
 import { KeyFinderToolbar } from './KeyFinderToolbar.tsx';
 import { KeyGroupSection } from './KeyGroupSection.tsx';
 import { KeyModelStrip } from './KeyModelStrip.tsx';
@@ -71,15 +77,15 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
   // ── Filter state ────────────────────────────────────────────────────
   const { filters, updateFilter, resetFilters, hasActiveFilters } = useKeyFinderFilters(category, productId);
 
-  // ── Per-group Loop chain state (declared before `grouped` so the selector
-  // can synthesize Loop-queued status for keys waiting in a chain). Each group
-  // runs its own chain independently — Loop All Groups just fires Loop Group
-  // on every group.
-  type GroupChainState = {
+  // ── Loop chain state (declared before `grouped` so the selector can
+  // synthesize Loop-queued status for keys waiting in a chain). Only one chain
+  // should be active at a time: either one group-local line or the global
+  // Loop All Groups line.
+  type LoopChainState = {
     readonly keys: readonly string[];
     readonly currentIndex: number; // -1 before first fire
   };
-  const [loopChains, setLoopChains] = useState<ReadonlyMap<string, GroupChainState>>(new Map());
+  const [loopChains, setLoopChains] = useState<ReadonlyMap<string, LoopChainState>>(new Map());
   const chainQueuedKeys = useMemo(() => {
     const set = new Set<string>();
     for (const chain of loopChains.values()) {
@@ -152,24 +158,24 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
   // history, per-run selections). Both route through the shared
   // FinderDeleteConfirmModal so the destructive-UX is consistent with
   // SKU/RDF/Run History delete flows. Server-side 409 gate on in-flight ops.
-  const unresolveMut = useUnresolveKeyMutation(category, productId);
+  const unpubMut = useUnpublishKeyMutation(category, productId);
   const deleteKeyMut = useDeleteKeyMutation(category, productId);
   const [keyDeleteTarget, setKeyDeleteTarget] = useState<DeleteTarget | null>(null);
 
-  const handleUnresolveKey = useCallback((fieldKey: string) => {
-    setKeyDeleteTarget({ kind: 'key-unresolve', fieldKey });
+  const handleUnpubKey = useCallback((fieldKey: string) => {
+    setKeyDeleteTarget({ kind: 'key-unpublish', fieldKey });
   }, []);
 
   const handleDeleteKey = useCallback((fieldKey: string) => {
     setKeyDeleteTarget({ kind: 'key-delete', fieldKey });
   }, []);
 
-  const handleUnresolveGroup = useCallback((groupName: string) => {
+  const handleUnpubGroup = useCallback((groupName: string) => {
     const group = grouped.groups.find((g) => g.name === groupName);
     if (!group) return;
     const fieldKeys = group.keys.filter((k) => k.published).map((k) => k.field_key);
     if (fieldKeys.length === 0) return;
-    setKeyDeleteTarget({ kind: 'key-unresolve-group', fieldKeys, label: groupName, count: fieldKeys.length });
+    setKeyDeleteTarget({ kind: 'key-unpublish-group', fieldKeys, label: groupName, count: fieldKeys.length });
   }, [grouped.groups]);
 
   const handleDeleteGroup = useCallback((groupName: string) => {
@@ -182,13 +188,13 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
     setKeyDeleteTarget({ kind: 'key-delete-group', fieldKeys, label: groupName, count: fieldKeys.length });
   }, [grouped.groups]);
 
-  const handleUnresolveAll = useCallback(() => {
+  const handleUnpubAll = useCallback(() => {
     const fieldKeys = grouped.groups
       .flatMap((g) => g.keys)
       .filter((k) => k.published)
       .map((k) => k.field_key);
     if (fieldKeys.length === 0) return;
-    setKeyDeleteTarget({ kind: 'key-unresolve-all', fieldKeys, count: fieldKeys.length });
+    setKeyDeleteTarget({ kind: 'key-unpublish-all', fieldKeys, count: fieldKeys.length });
   }, [grouped.groups]);
 
   const handleDeleteAll = useCallback(() => {
@@ -200,14 +206,14 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
     setKeyDeleteTarget({ kind: 'key-delete-all', fieldKeys, count: fieldKeys.length });
   }, [grouped.groups]);
 
-  const isKeyOpPending = unresolveMut.isPending || deleteKeyMut.isPending;
+  const isKeyOpPending = unpubMut.isPending || deleteKeyMut.isPending;
   const handleConfirmKeyOp = useCallback(() => {
     if (!keyDeleteTarget) return;
     const kind = keyDeleteTarget.kind;
     const dismiss = () => setKeyDeleteTarget(null);
     const onError = (err: Error) => {
       setKeyDeleteTarget(null);
-      const verb = kind.startsWith('key-unresolve') ? 'Unresolve' : 'Delete';
+      const verb = kind.startsWith('key-unpublish') ? 'Unpub' : 'Delete';
       window.alert(`${verb} failed: ${err.message}`);
     };
 
@@ -215,18 +221,18 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
     // dismisses on success. Bulk ops fan out N fire-and-forget mutations and
     // dismiss immediately — per-key WS events drive the UI updates as each
     // completes. Any 409 key_busy is silently skipped at the per-key level.
-    if (kind === 'key-unresolve' && keyDeleteTarget.fieldKey) {
-      unresolveMut.mutate({ fieldKey: keyDeleteTarget.fieldKey }, { onSuccess: dismiss, onError });
+    if (kind === 'key-unpublish' && keyDeleteTarget.fieldKey) {
+      unpubMut.mutate({ fieldKey: keyDeleteTarget.fieldKey }, { onSuccess: dismiss, onError });
     } else if (kind === 'key-delete' && keyDeleteTarget.fieldKey) {
       deleteKeyMut.mutate({ fieldKey: keyDeleteTarget.fieldKey }, { onSuccess: dismiss, onError });
-    } else if ((kind === 'key-unresolve-group' || kind === 'key-unresolve-all') && keyDeleteTarget.fieldKeys) {
-      for (const fieldKey of keyDeleteTarget.fieldKeys) unresolveMut.mutate({ fieldKey });
+    } else if ((kind === 'key-unpublish-group' || kind === 'key-unpublish-all') && keyDeleteTarget.fieldKeys) {
+      for (const fieldKey of keyDeleteTarget.fieldKeys) unpubMut.mutate({ fieldKey });
       dismiss();
     } else if ((kind === 'key-delete-group' || kind === 'key-delete-all') && keyDeleteTarget.fieldKeys) {
       for (const fieldKey of keyDeleteTarget.fieldKeys) deleteKeyMut.mutate({ fieldKey });
       dismiss();
     }
-  }, [keyDeleteTarget, unresolveMut, deleteKeyMut]);
+  }, [keyDeleteTarget, unpubMut, deleteKeyMut]);
 
   // Counts for disable-state on group / panel-level bulk buttons.
   const publishedCountInGroup = useCallback((groupName: string) => {
@@ -245,22 +251,20 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
   }, [grouped.groups]);
 
   // ── Prompt preview modal state ──────────────────────────────────────
-  // Run vs Loop matters: under alwaysSoloRun=true a Run prompt is solo while
-  // Loop still bundles passengers. The tab selector lets the user preview
-  // both without closing the modal.
-  const [promptState, setPromptState] = useState<{ readonly fieldKey: string; readonly mode: 'run' | 'loop' } | null>(null);
+  // Preview is always Loop-shape — it shows the compiled prompt the next
+  // Loop iteration would dispatch (with passengers). Live Run dispatches may
+  // still be solo under alwaysSoloRun=true; the preview intentionally shows
+  // the "full potential bundle" so users can always inspect the passenger set.
+  const [promptState, setPromptState] = useState<{ readonly fieldKey: string } | null>(null);
   const openKeyPrompt = useCallback((fieldKey: string) => {
-    setPromptState({ fieldKey, mode: 'run' });
+    setPromptState({ fieldKey });
   }, []);
   const closePrompt = useCallback(() => setPromptState(null), []);
-  const setPromptMode = useCallback((mode: 'run' | 'loop') => {
-    setPromptState((prev) => (prev ? { ...prev, mode } : prev));
-  }, []);
   const promptPreviewQuery = usePromptPreviewQuery(
     'key',
     category,
     productId,
-    { field_key: promptState?.fieldKey ?? '', mode: promptState?.mode ?? 'run' },
+    { field_key: promptState?.fieldKey ?? '', mode: 'loop' },
     Boolean(promptState),
   );
 
@@ -282,26 +286,22 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
     setCollapseBatch(updates);
   }, [grouped.groups, category, productId, setCollapseBatch]);
 
-  // ── Group / All fan-out handlers (Stage C 2026-04-22) ───────────────
-  // Fans out existing per-key /key-finder/:cat/:pid POST calls. When
-  // alwaysSoloRun=true every child is solo → fan out in parallel. When
-  // alwaysSoloRun=false each child packs passengers against the live in-flight
-  // registry → fire sequentially so the N-th call sees the (N-1)-th's
-  // registrations. Loop chains are always sequential (each Loop resolves its
-  // key before advancing).
+  // ── Group / All dispatch handlers (Stage C 2026-04-22) ───────────────
+  // Bulk actions dispatch one sorted line using the Pipeline Settings
+  // bundlingSortAxisOrder knob. Each Run dispatch waits until the server has
+  // registered its primary/passengers before the next dispatch computes its
+  // bundle, so cross-group ride-along avoidance has live registry state.
   const { data: bundlingConfig } = useKeyFinderBundlingConfigQuery(category, productId);
   const alwaysSoloRun = bundlingConfig?.alwaysSoloRun ?? true;
+  // Parsed once per bundlingConfig change — Loop chain sort uses this order so
+  // it matches the backend bundler. Falls back to the default axis order when
+  // the endpoint hasn't responded yet.
+  const sortAxisOrder = useMemo(
+    () => parseAxisOrder(bundlingConfig?.sortAxisOrder ?? ''),
+    [bundlingConfig?.sortAxisOrder],
+  );
 
-  const keysInGroup = useCallback((groupName: string) => {
-    const g = grouped.groups.find((gr) => gr.name === groupName);
-    return g ? g.keys.map((k) => k.field_key) : [];
-  }, [grouped.groups]);
-
-  const allKeys = useCallback(() => {
-    return grouped.groups.flatMap((g) => g.keys.map((k) => k.field_key));
-  }, [grouped.groups]);
-
-  // Stage 3 — registration-sequential Run Group under alwaysSoloRun=false.
+  // Stage 3 — registration-sequential bulk Run dispatch.
   // We need the N-th POST's buildPassengers to see the (N-1)-th's primary +
   // passengers in the in-flight registry. Firing with onDispatched captures
   // the real opId as soon as the 202 lands, then awaitPassengersRegistered
@@ -322,28 +322,26 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
     }
   }, [fire, category, productId]);
 
-  const runKeysParallel = useCallback((keys: readonly string[]) => {
-    for (const fk of keys) runKey(fk);
-  }, [runKey]);
+  const isKeyResolved = useCallback((fieldKey: string) => {
+    const entry = groupedRef.current.groups
+      .flatMap((group) => group.keys)
+      .find((key) => key.field_key === fieldKey);
+    return Boolean(entry && (entry.last_status === 'resolved' || entry.published));
+  }, []);
 
-  const fireLoopChainForGroup = useCallback(async (
-    groupName: string,
-    sorted: ReadonlyArray<{ readonly field_key: string }>,
+  const fireLoopChain = useCallback(async (
+    chainId: string,
+    keys: readonly string[],
   ) => {
-    if (sorted.length === 0) return;
-    const keys = sorted.map((k) => k.field_key);
+    if (keys.length === 0) return;
     // Pre-stamp chain so every key renders Queued on first paint
-    setLoopChains((prev) => new Map(prev).set(groupName, { keys, currentIndex: -1 }));
+    setLoopChains((prev) => new Map(prev).set(chainId, { keys, currentIndex: -1 }));
 
     await runLoopChain({
       keys,
       // Re-read through groupedRef so a key resolved mid-chain (e.g. via a
       // prior iteration's passenger) skips its slot instead of re-Looping.
-      isResolved: (fk) => {
-        const group = groupedRef.current.groups.find((g) => g.name === groupName);
-        const entry = group?.keys.find((k) => k.field_key === fk);
-        return Boolean(entry && (entry.last_status === 'resolved' || entry.published));
-      },
+      isResolved: isKeyResolved,
       fireOne: (fk) => new Promise<string>((resolve) => {
         fire(
           `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`,
@@ -353,54 +351,46 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
       }),
       awaitTerminal: awaitOperationTerminal,
       onStep: ({ index }) => {
-        setLoopChains((prev) => new Map(prev).set(groupName, { keys, currentIndex: index }));
+        setLoopChains((prev) => new Map(prev).set(chainId, { keys, currentIndex: index }));
       },
     });
 
-    // Chain complete — remove this group's entry from the map
+    // Chain complete — remove this entry from the map.
     setLoopChains((prev) => {
       const next = new Map(prev);
-      next.delete(groupName);
+      next.delete(chainId);
       return next;
     });
-  }, [fire, category, productId]);
+  }, [fire, category, productId, isKeyResolved]);
 
   const runGroup = useCallback((groupName: string) => {
-    const keys = keysInGroup(groupName);
-    if (alwaysSoloRun) runKeysParallel(keys);
-    else void runKeysSequential(keys);
-  }, [alwaysSoloRun, keysInGroup, runKeysParallel, runKeysSequential]);
+    const keys = buildRunGroupDispatchKeys(grouped.groups, groupName, sortAxisOrder);
+    void runKeysSequential(keys);
+  }, [grouped.groups, sortAxisOrder, runKeysSequential]);
 
   const runAllGroups = useCallback(() => {
-    const keys = allKeys();
-    if (alwaysSoloRun) runKeysParallel(keys);
-    else void runKeysSequential(keys);
-  }, [alwaysSoloRun, allKeys, runKeysParallel, runKeysSequential]);
+    const keys = buildRunAllDispatchKeys(grouped.groups, sortAxisOrder);
+    void runKeysSequential(keys);
+  }, [grouped.groups, sortAxisOrder, runKeysSequential]);
 
   const loopGroup = useCallback((groupName: string) => {
-    if (loopChains.has(groupName)) return; // chain already active for this group
-    const group = grouped.groups.find((g) => g.name === groupName);
-    if (!group) return;
-    const unresolved = group.keys.filter((k) => k.last_status !== 'resolved' && !k.published);
-    const sorted = sortKeysByPriority(unresolved);
-    void fireLoopChainForGroup(groupName, sorted);
-  }, [loopChains, grouped.groups, fireLoopChainForGroup]);
+    if (loopChains.size > 0) return; // one sorted Loop line at a time
+    const keys = buildLoopGroupDispatchKeys(grouped.groups, groupName, sortAxisOrder);
+    void fireLoopChain(groupName, keys);
+  }, [loopChains, grouped.groups, sortAxisOrder, fireLoopChain]);
 
   const loopAllGroups = useCallback(() => {
-    // Fan out — fire a chain for every group that isn't already chaining.
-    // Each group runs its own chain independently; user sees 1 Loop running per
-    // group + the rest of that group's keys rendered as Queued.
-    for (const group of grouped.groups) {
-      if (loopChains.has(group.name)) continue;
-      const unresolved = group.keys.filter((k) => k.last_status !== 'resolved' && !k.published);
-      const sorted = sortKeysByPriority(unresolved);
-      if (sorted.length === 0) continue;
-      void fireLoopChainForGroup(group.name, sorted);
-    }
-  }, [grouped.groups, loopChains, fireLoopChainForGroup]);
+    if (loopChains.size > 0) return; // one sorted Loop line at a time
+    const keys = buildLoopAllDispatchKeys(grouped.groups, sortAxisOrder);
+    void fireLoopChain(GLOBAL_LOOP_CHAIN_ID, keys);
+  }, [grouped.groups, loopChains, sortAxisOrder, fireLoopChain]);
 
   const [collapsed, toggleCollapsed] = usePersistedToggle(`indexing:key:collapsed:${productId}`, true);
   const anyRunning = runningFieldKeys.size > 0;
+  const globalLoopChain = loopChains.get(GLOBAL_LOOP_CHAIN_ID);
+  const productLoopProgress = globalLoopChain
+    ? { current: Math.max(0, globalLoopChain.currentIndex) + 1, total: globalLoopChain.keys.length }
+    : null;
 
   return (
     <div className="sf-surface-panel p-0 flex flex-col" data-panel="key">
@@ -413,7 +403,6 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
         tip="Per-key discovery routed through difficulty tiers. Resolved keys feed Field Studio."
         isRunning={anyRunning}
         modelStrip={<KeyModelStrip />}
-        historySlot={<DiscoveryHistoryButton finderId="keyFinder" productId={productId} category={category} width={ACTION_BUTTON_WIDTH.keyHeader} />}
         actionSlot={
           <>
             <HeaderActionButton
@@ -426,30 +415,42 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
             />
             <HeaderActionButton
               intent="locked"
-              label="Loop all groups"
+              label={productLoopProgress ? `Loop (${productLoopProgress.current}/${productLoopProgress.total})` : 'Loop all groups'}
               onClick={loopAllGroups}
               disabled={!LIVE_MODES.productLoop}
               busy={loopChains.size > 0}
               title={LIVE_MODES.productLoop ? TOOLTIPS.productLoop : DISABLED_REASONS.productLoop}
               width={ACTION_BUTTON_WIDTH.keyHeader}
             />
-            <div style={{ width: 1, height: 16, background: 'var(--sf-token-border, #dee2e6)' }} />
+            <span className="inline-block h-5 w-px mx-0.5 bg-current opacity-20" aria-hidden />
             <PromptDrawerChevron
-              storageKey={`key-finder:destructive-drawer:panel:${productId}`}
-              openWidthClass="w-96"
-              ariaLabel="Destructive actions for every key"
-              closedTitle="Show Unresolve all / Delete all"
-              openedTitle="Hide Unresolve all / Delete all"
-              chevronClass="sf-status-text-danger"
-              actions={[
+              storageKey={`key-finder:panel-drawer:${productId}`}
+              openWidthClass="w-[46rem]"
+              drawerHeight="header"
+              ariaLabel="History + destructive actions for every key"
+              closedTitle="Show Hist / Data for every key"
+              openedTitle="Hide Hist / Data for every key"
+              openTitle="Hist:"
+              labelClass="sf-history-label"
+              primaryCustom={
+                <DiscoveryHistoryButton
+                  finderId="keyFinder"
+                  productId={productId}
+                  category={category}
+                  width={ACTION_BUTTON_WIDTH.keyHeader}
+                />
+              }
+              secondaryTitle="Data:"
+              secondaryLabelClass="sf-delete-label"
+              secondaryActions={[
                 {
-                  label: 'Unresolve all',
-                  onClick: handleUnresolveAll,
+                  label: 'Unpub all',
+                  onClick: handleUnpubAll,
                   disabled: publishedCountAll === 0,
                   intent: publishedCountAll === 0 ? 'locked' : 'delete',
                   width: ACTION_BUTTON_WIDTH.keyHeader,
                   title: publishedCountAll === 0
-                    ? 'Nothing to unresolve — no published keys in view.'
+                    ? 'Nothing to unpublish — no published keys in view.'
                     : `Demote all ${publishedCountAll} published key(s) back to candidate. Reversible.`,
                 },
                 {
@@ -512,6 +513,7 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
                   const groupChain = chain
                     ? { current: Math.max(0, chain.currentIndex) + 1, total: chain.keys.length }
                     : null;
+                  const loopBlockedByChain = loopChains.size > 0 && !chain;
                   return (
                     <KeyGroupSection
                       key={g.name}
@@ -522,15 +524,17 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
                       onRunKey={runKey}
                       onLoopKey={loopKey}
                       onOpenKeyPrompt={openKeyPrompt}
-                      onUnresolveKey={handleUnresolveKey}
+                      onUnpubKey={handleUnpubKey}
                       onDeleteKey={handleDeleteKey}
-                      onUnresolveGroup={handleUnresolveGroup}
+                      onUnpubGroup={handleUnpubGroup}
                       onDeleteGroup={handleDeleteGroup}
                       publishedCount={publishedCountInGroup(g.name)}
                       dataCount={dataCountInGroup(g.name)}
                       onRunGroup={runGroup}
                       onLoopGroup={loopGroup}
                       loopChainProgress={groupChain}
+                      loopBlockedByChain={loopBlockedByChain}
+                      alwaysSoloRun={alwaysSoloRun}
                     />
                   );
                 })}
@@ -549,7 +553,7 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
           onCancel={() => setKeyDeleteTarget(null)}
           isPending={isKeyOpPending}
           moduleLabel="Key Finder"
-          confirmLabel={keyDeleteTarget.kind.startsWith('key-unresolve') ? 'Unresolve' : 'Delete'}
+          confirmLabel={keyDeleteTarget.kind.startsWith('key-unpublish') ? 'Unpub' : 'Delete'}
         />
       )}
 
@@ -558,24 +562,8 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
         onClose={closePrompt}
         query={promptPreviewQuery}
         title={promptState ? `Prompt preview — ${promptState.fieldKey}` : ''}
-        subtitle={
-          promptState?.mode === 'loop'
-            ? 'Compiled prompt the next Loop iteration would dispatch (includes passengers)'
-            : 'Compiled prompt the next Run would dispatch'
-        }
-        storageKeyPrefix={`key-prompt-preview:${category}:${productId}:${promptState?.fieldKey ?? ''}:${promptState?.mode ?? 'run'}`}
-        headerSlot={
-          promptState ? (
-            <TabStrip
-              tabs={[
-                { id: 'run', label: 'Run', description: 'Preview what a focused Run would send (no passengers when alwaysSoloRun is ON).' },
-                { id: 'loop', label: 'Loop', description: 'Preview the bundled prompt a Loop iteration would send.' },
-              ]}
-              activeTab={promptState.mode}
-              onSelect={setPromptMode}
-            />
-          ) : undefined
-        }
+        subtitle="Compiled prompt the next Loop iteration would dispatch (includes passengers). Run dispatches are solo when alwaysSoloRun is ON — preview always shows the full potential bundle."
+        storageKeyPrefix={`key-prompt-preview:${category}:${productId}:${promptState?.fieldKey ?? ''}`}
       />
     </div>
   );

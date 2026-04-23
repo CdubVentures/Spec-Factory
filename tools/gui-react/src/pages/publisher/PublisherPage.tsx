@@ -15,7 +15,6 @@ import type {
   PublisherStats,
   PublisherRepairEntry,
   PublisherSourceEntry,
-  PublisherLlmRepairDecision,
   EvidenceRef,
 } from './types.ts';
 
@@ -136,30 +135,6 @@ function RepairDetail({ repair }: { repair: PublisherRepairEntry }) {
         <span className="px-1.5 py-0.5 rounded-sm text-[9px] font-bold" style={{ background: 'rgb(var(--sf-color-accent-rgb) / 0.12)', color: 'var(--sf-token-accent-strong)' }}>
           {repair.rule}
         </span>
-      </td>
-    </tr>
-  );
-}
-
-function LlmDecisionRow({ decision }: { decision: PublisherLlmRepairDecision }) {
-  const decisionChipClass =
-    decision.decision === 'map_to_existing' ? 'sf-chip-info'
-    : decision.decision === 'keep_new' ? 'sf-chip-success'
-    : decision.decision === 'set_unk' ? 'sf-chip-warning'
-    : 'sf-chip-danger';
-  return (
-    <tr>
-      <td className="px-2 py-1" style={{ fontFamily: 'var(--sf-token-font-family-mono)', fontSize: 11 }}>
-        {formatCellValue(decision.value)}
-      </td>
-      <td className="px-2 py-1">
-        <Chip label={decision.decision} className={decisionChipClass} />
-      </td>
-      <td className="px-2 py-1 sf-status-text-success" style={{ fontFamily: 'var(--sf-token-font-family-mono)', fontSize: 11 }}>
-        {decision.resolved_to != null ? formatCellValue(decision.resolved_to) : '—'}
-      </td>
-      <td className="px-2 py-1 sf-text-muted" style={{ fontSize: 11, whiteSpace: 'normal', maxWidth: 260 }}>
-        {decision.reasoning ?? '—'}
       </td>
     </tr>
   );
@@ -290,7 +265,6 @@ function ExpandedRowContent({ row }: { row: PublisherCandidateRow }) {
   const formatDate = useFormatDateTime();
   const repairs = row.validation_json?.repairs ?? [];
   const rejections = row.validation_json?.rejections ?? [];
-  const llmRepair = row.validation_json?.llmRepair ?? null;
   const sourceType = row.source_type || '';
   const sourceId = row.source_id || '';
 
@@ -380,34 +354,6 @@ function ExpandedRowContent({ row }: { row: PublisherCandidateRow }) {
           {/* Clean pass */}
           {repairs.length === 0 && rejections.length === 0 && (
             <div className="sf-text-subtle" style={{ fontSize: 11 }}>No repairs or rejections — value passed all checks.</div>
-          )}
-
-          {/* LLM Repair */}
-          {llmRepair && llmRepair.decisions && llmRepair.decisions.length > 0 && (
-            <div className="mt-2 rounded p-2 border" style={{ background: 'rgb(var(--sf-color-accent-rgb) / 0.08)', borderColor: 'rgb(var(--sf-color-accent-rgb) / 0.3)' }}>
-              <div className="font-bold uppercase mb-1.5 flex items-center gap-2" style={{ fontSize: 10, letterSpacing: '0.04em', color: 'var(--sf-token-accent-strong)' }}>
-                LLM Repair
-                <Chip label={llmRepair.status ?? '—'} className={llmRepair.status === 'repaired' ? 'sf-chip-success' : 'sf-chip-warning'} />
-                {llmRepair.promptId && (
-                  <span className="sf-text-subtle" style={{ fontFamily: 'var(--sf-token-font-family-mono)', fontSize: 9, fontWeight: 400, textTransform: 'none' }}>
-                    prompt: {llmRepair.promptId}
-                  </span>
-                )}
-              </div>
-              <table className="w-full" style={{ borderCollapse: 'collapse', fontSize: 11 }}>
-                <thead>
-                  <tr style={detailHeadRowStyle}>
-                    <th className={detailThCls} style={detailThStyle}>Value</th>
-                    <th className={detailThCls} style={detailThStyle}>Decision</th>
-                    <th className={detailThCls} style={detailThStyle}>Resolved To</th>
-                    <th className={detailThCls} style={detailThStyle}>Reasoning</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {llmRepair.decisions.map((d, i) => <LlmDecisionRow key={i} decision={d} />)}
-                </tbody>
-              </table>
-            </div>
           )}
         </div>
 

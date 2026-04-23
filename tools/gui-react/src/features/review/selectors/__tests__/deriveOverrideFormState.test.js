@@ -80,3 +80,88 @@ test('variant-dependent without variants (edge case) → mode=variant with empty
   assert.equal(result.mode, 'variant');
   assert.equal(result.variantOptions.length, 0);
 });
+
+// ── resolveSelectedVariantId ────────────────────────────────────
+// Persisted selection must survive tab-away / remount, but fall back
+// gracefully when the stored id is no longer in the current options.
+
+test('resolveSelectedVariantId: mode=scalar returns empty string', async () => {
+  const { resolveSelectedVariantId } = await load();
+  assert.equal(
+    resolveSelectedVariantId({
+      mode: 'scalar',
+      variantOptions: [{ id: 'v_black', label: 'Black' }],
+      storedVariantId: 'v_black',
+    }),
+    '',
+  );
+});
+
+test('resolveSelectedVariantId: mode=suppressed returns empty string', async () => {
+  const { resolveSelectedVariantId } = await load();
+  assert.equal(
+    resolveSelectedVariantId({
+      mode: 'suppressed',
+      variantOptions: [],
+      storedVariantId: 'v_black',
+    }),
+    '',
+  );
+});
+
+test('resolveSelectedVariantId: no options returns empty string', async () => {
+  const { resolveSelectedVariantId } = await load();
+  assert.equal(
+    resolveSelectedVariantId({
+      mode: 'variant',
+      variantOptions: [],
+      storedVariantId: 'v_black',
+    }),
+    '',
+  );
+});
+
+test('resolveSelectedVariantId: stored id present in options → returns stored id', async () => {
+  const { resolveSelectedVariantId } = await load();
+  assert.equal(
+    resolveSelectedVariantId({
+      mode: 'variant',
+      variantOptions: [
+        { id: 'v_black', label: 'Black' },
+        { id: 'v_white', label: 'White' },
+      ],
+      storedVariantId: 'v_white',
+    }),
+    'v_white',
+  );
+});
+
+test('resolveSelectedVariantId: stored id absent from options → falls back to first option', async () => {
+  const { resolveSelectedVariantId } = await load();
+  assert.equal(
+    resolveSelectedVariantId({
+      mode: 'variant',
+      variantOptions: [
+        { id: 'v_black', label: 'Black' },
+        { id: 'v_white', label: 'White' },
+      ],
+      storedVariantId: 'v_purged',
+    }),
+    'v_black',
+  );
+});
+
+test('resolveSelectedVariantId: empty stored id → falls back to first option', async () => {
+  const { resolveSelectedVariantId } = await load();
+  assert.equal(
+    resolveSelectedVariantId({
+      mode: 'variant',
+      variantOptions: [
+        { id: 'v_black', label: 'Black' },
+        { id: 'v_white', label: 'White' },
+      ],
+      storedVariantId: '',
+    }),
+    'v_black',
+  );
+});

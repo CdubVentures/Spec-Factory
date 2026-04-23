@@ -31,6 +31,40 @@ test('studio rule commands apply boolean type coupling and edited marker', async
   assert.equal(rule._edited, true);
 });
 
+test('studio rule commands keep boolean fields closed yes_no after enum and shape edits', async () => {
+  const { applyStudioRuleCommand, createSetFieldValueCommand } =
+    await loadRuleCommands();
+  const rule = {
+    contract: { type: 'boolean', shape: 'scalar' },
+    enum: { policy: 'closed', source: 'yes_no' },
+    enum_policy: 'closed',
+    enum_source: 'yes_no',
+  };
+
+  applyStudioRuleCommand({
+    rule,
+    key: 'discontinued',
+    command: createSetFieldValueCommand('enum.policy', 'open_prefer_known'),
+  });
+  applyStudioRuleCommand({
+    rule,
+    key: 'discontinued',
+    command: createSetFieldValueCommand('enum.source', 'data_lists.discontinued'),
+  });
+  applyStudioRuleCommand({
+    rule,
+    key: 'discontinued',
+    command: createSetFieldValueCommand('contract.shape', 'list'),
+  });
+
+  assert.equal(rule.contract?.type, 'boolean');
+  assert.equal(rule.contract?.shape, 'scalar');
+  assert.equal(rule.enum?.policy, 'closed');
+  assert.equal(rule.enum_policy, 'closed');
+  assert.equal(rule.enum?.source, 'yes_no');
+  assert.equal(rule.enum_source, 'yes_no');
+});
+
 test('studio rule commands apply no coupling for string type', async () => {
   const { applyStudioRuleCommand, createSetFieldValueCommand } =
     await loadRuleCommands();

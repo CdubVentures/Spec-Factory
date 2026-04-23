@@ -36,7 +36,9 @@ interface PromptDrawerAction {
 }
 
 interface PromptDrawerChevronProps {
-  readonly actions: ReadonlyArray<PromptDrawerAction>;
+  /** Primary-section action buttons. Optional — omit when the section is
+   *  satisfied by `primaryCustom` alone (e.g. a drop-in DiscoveryHistoryButton). */
+  readonly actions?: ReadonlyArray<PromptDrawerAction>;
   readonly storageKey: string;
   readonly openWidthClass: string;
   readonly closedWidthClass?: string;
@@ -66,6 +68,22 @@ interface PromptDrawerChevronProps {
   readonly tertiaryTitle?: string;
   readonly tertiaryLabelClass?: string;
   readonly tertiaryActions?: ReadonlyArray<PromptDrawerAction>;
+  /** Raw JSX rendered inside a section, appended after that section's
+   *  actions. Use when the section needs a self-contained component
+   *  (e.g. DiscoveryHistoryButton carrying its own counts + click handler)
+   *  rather than a PromptDrawerAction. If you supply only *Custom, the
+   *  section still renders as long as its title or actions are set (or
+   *  the custom node is non-null). */
+  readonly primaryCustom?: ReactNode;
+  readonly secondaryCustom?: ReactNode;
+  readonly tertiaryCustom?: ReactNode;
+  /** Drawer height. 'row' (h-7, default) pairs with RowActionButton siblings
+   *  — used for KeyRow / group-header / variant-row drawers. 'header' (h-8)
+   *  pairs with HeaderActionButton siblings — used for panel-header drawers
+   *  where the drawer contains DiscoveryHistoryButton / PromptPreviewTriggerButton
+   *  at their natural h-8 size. Without this, h-8 buttons inside an h-7
+   *  drawer get clipped by the `overflow-hidden` on the container. */
+  readonly drawerHeight?: 'row' | 'header';
 }
 
 export function PromptDrawerChevron({
@@ -86,12 +104,22 @@ export function PromptDrawerChevron({
   tertiaryTitle,
   tertiaryLabelClass,
   tertiaryActions,
+  primaryCustom,
+  secondaryCustom,
+  tertiaryCustom,
+  drawerHeight = 'row',
 }: PromptDrawerChevronProps) {
   const [open, toggleOpen] = usePersistedToggle(storageKey, false);
+  // WHY: h-7 for row / group scopes (RowActionButton siblings); h-8 for
+  // panel headers that host HeaderActionButton-sized content (h-8 naturally).
+  // Without this, an h-8 DiscoveryHistoryButton dropped inside an h-7
+  // drawer gets clipped by the container's overflow-hidden.
+  const heightCls = drawerHeight === 'header' ? 'h-8' : 'h-7';
+  const chevronSize = drawerHeight === 'header' ? 'h-8 w-8' : 'h-7 w-7';
 
   return (
     <div
-      className={`relative inline-block h-7 overflow-hidden rounded transition-[width] duration-300 ease-out ${open ? openWidthClass : closedWidthClass}`}
+      className={`relative inline-block ${heightCls} overflow-hidden rounded transition-[width] duration-300 ease-out ${open ? openWidthClass : closedWidthClass}`}
       role="group"
       aria-label={ariaLabel}
     >
@@ -104,7 +132,7 @@ export function PromptDrawerChevron({
               {openTitle}
             </span>
           ))}
-          {actions.map((action) => (
+          {actions?.map((action) => (
             <RowActionButton
               key={action.id ?? (typeof action.label === 'string' ? action.label : 'prompt-action')}
               intent={action.intent ?? 'prompt'}
@@ -115,7 +143,8 @@ export function PromptDrawerChevron({
               width={action.width ?? ACTION_BUTTON_WIDTH.standardRow}
             />
           ))}
-          {secondaryActions && secondaryActions.length > 0 && (
+          {primaryCustom}
+          {((secondaryActions && secondaryActions.length > 0) || secondaryCustom) && (
             <>
               <span className="inline-block h-5 w-px mx-1 bg-current opacity-20" aria-hidden />
               {secondaryTitle && (
@@ -123,7 +152,7 @@ export function PromptDrawerChevron({
                   {secondaryTitle}
                 </span>
               )}
-              {secondaryActions.map((action) => (
+              {secondaryActions?.map((action) => (
                 <RowActionButton
                   key={`secondary-${action.id ?? (typeof action.label === 'string' ? action.label : 'action')}`}
                   intent={action.intent ?? 'delete'}
@@ -134,9 +163,10 @@ export function PromptDrawerChevron({
                   width={action.width ?? ACTION_BUTTON_WIDTH.standardRow}
                 />
               ))}
+              {secondaryCustom}
             </>
           )}
-          {tertiaryActions && tertiaryActions.length > 0 && (
+          {((tertiaryActions && tertiaryActions.length > 0) || tertiaryCustom) && (
             <>
               <span className="inline-block h-5 w-px mx-1 bg-current opacity-20" aria-hidden />
               {tertiaryTitle && (
@@ -144,7 +174,7 @@ export function PromptDrawerChevron({
                   {tertiaryTitle}
                 </span>
               )}
-              {tertiaryActions.map((action) => (
+              {tertiaryActions?.map((action) => (
                 <RowActionButton
                   key={`tertiary-${action.id ?? (typeof action.label === 'string' ? action.label : 'action')}`}
                   intent={action.intent ?? 'history'}
@@ -155,13 +185,14 @@ export function PromptDrawerChevron({
                   width={action.width ?? ACTION_BUTTON_WIDTH.standardRow}
                 />
               ))}
+              {tertiaryCustom}
             </>
           )}
         </div>
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); toggleOpen(); }}
-          className={`inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded opacity-60 hover:opacity-100 transition-opacity ${chevronClass ?? 'sf-text-muted'}`}
+          className={`inline-flex ${chevronSize} flex-shrink-0 items-center justify-center rounded opacity-60 hover:opacity-100 transition-opacity ${chevronClass ?? 'sf-text-muted'}`}
           title={open ? (openedTitle ?? 'Hide prompt previews') : (closedTitle ?? 'Show prompt previews')}
           aria-expanded={open}
           aria-controls={`${storageKey}-drawer`}

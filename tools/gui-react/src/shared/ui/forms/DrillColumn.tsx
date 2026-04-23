@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { usePersistedScroll } from '../../../hooks/usePersistedScroll.ts';
 import './DrillColumn.css';
 
 export interface DrillColumnItem {
@@ -24,6 +25,9 @@ export interface DrillColumnProps {
   readonly disabled?: boolean;
   readonly emptyHint?: string;
   readonly totalHeaderCount?: number;
+  /** When provided, the list's scroll position is persisted under this key
+   *  via usePersistedScroll so it survives tab-away / remount. */
+  readonly scrollPersistKey?: string;
 }
 
 function highlight(label: string, matches?: Array<[number, number]>) {
@@ -54,9 +58,15 @@ export function DrillColumn({
   disabled,
   emptyHint,
   totalHeaderCount,
+  scrollPersistKey,
 }: DrillColumnProps) {
-  const listRef = useRef<HTMLUListElement>(null);
+  const listRef = useRef<HTMLUListElement | null>(null);
   const selectedItemRef = useRef<HTMLLIElement>(null);
+  const persistedScrollRef = usePersistedScroll(scrollPersistKey ?? '');
+  const setListRef = useCallback((node: HTMLUListElement | null) => {
+    listRef.current = node;
+    if (scrollPersistKey) persistedScrollRef(node);
+  }, [scrollPersistKey, persistedScrollRef]);
   const initialIndex = useMemo(() => {
     if (!selectedValue) return 0;
     const idx = items.findIndex((i) => i.value === selectedValue);
@@ -129,7 +139,7 @@ export function DrillColumn({
         <span className="sf-drill-count">{showEmpty && disabled ? '—' : headerCount}</span>
       </div>
       <ul
-        ref={listRef}
+        ref={setListRef}
         className="sf-drill-list"
         role="listbox"
         aria-label={label}

@@ -11,6 +11,7 @@ import {
   type Row,
 } from '@tanstack/react-table';
 import { useState, useCallback, useEffect, useMemo, memo, Fragment, type ReactNode } from 'react';
+import { resolvePersistedExpandMap, useTabStore } from '../../../stores/tabStore';
 
 interface DataTableProps<T> {
   data: T[];
@@ -137,7 +138,18 @@ function DataTableInner<T>({
   );
   const [sorting, setSorting] = useState<SortingState>(initialSessionState.sorting);
   const [globalFilter, setGlobalFilter] = useState(initialSessionState.globalFilter);
-  const [expanded, setExpanded] = useState<ExpandedState>({});
+
+  // WHY: Persist expanded-row state to the shared tab store so opening a row
+  // survives tab-away / remount. Keyed as `${persistKey}:expanded` to avoid
+  // colliding with the sorting/globalFilter entry stored at `persistKey`.
+  const expandStorageKey = persistKey && renderExpandedRow
+    ? `${persistKey}:expanded`
+    : null;
+  const [expanded, setExpanded] = useState<ExpandedState>(() => {
+    if (!expandStorageKey) return {};
+    const storedRaw = useTabStore.getState().values[expandStorageKey];
+    return resolvePersistedExpandMap({ storedValue: storedRaw });
+  });
 
   useEffect(() => {
     const next = readDataTableSessionState(persistKey);
@@ -148,6 +160,18 @@ function DataTableInner<T>({
   useEffect(() => {
     writeDataTableSessionState(persistKey, { sorting, globalFilter });
   }, [persistKey, sorting, globalFilter]);
+
+  useEffect(() => {
+    if (!expandStorageKey) return;
+    const storedRaw = useTabStore.getState().values[expandStorageKey];
+    setExpanded(resolvePersistedExpandMap({ storedValue: storedRaw }));
+  }, [expandStorageKey]);
+
+  useEffect(() => {
+    if (!expandStorageKey) return;
+    if (expanded === true) return;
+    useTabStore.getState().set(expandStorageKey, JSON.stringify(expanded));
+  }, [expandStorageKey, expanded]);
 
   const canExpandRow = useCallback(
     (row: Row<T>) => {

@@ -65,6 +65,41 @@ export function isBarDanger(pub: PillLoopProgress['publish'], cb: PillLoopProgre
   return cb.exhausted && !pub.satisfied;
 }
 
+type PillBucket = NonNullable<PillLoopProgress['publish']['buckets']>[number];
+
+export function BucketsRow({ buckets }: { readonly buckets: ReadonlyArray<PillBucket> | null | undefined }) {
+  if (!buckets || buckets.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-0.5 leading-[1.2]">
+      {buckets.map((b) => {
+        if (b.fp === '__more__') {
+          return (
+            <span
+              key={b.fp}
+              className="inline-flex items-center px-1 text-[8px] font-mono rounded-[2px] sf-text-subtle leading-[1.4]"
+              title={b.label}
+            >
+              {b.label}
+            </span>
+          );
+        }
+        const chipClass = b.qualifies ? 'sf-chip-success' : 'sf-chip-neutral';
+        const confSuffix = b.topConf != null ? ` · ${b.topConf}% top` : '';
+        return (
+          <span
+            key={b.fp}
+            className={`inline-flex items-center px-1 text-[8px] font-mono rounded-[2px] border border-current leading-[1.4] ${chipClass}`}
+            title={`${b.label} — ${b.count}/${b.required} qualifying refs${confSuffix}`}
+          >
+            <span className="max-w-[90px] truncate">{b.label}</span>
+            <span className="opacity-70 ml-1">{b.count}/{b.required}</span>
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 export function LoopProgressPill({ lp }: { readonly lp: PillLoopProgress }) {
   const { publish, callBudget, final_status, loop_id, variantLabel } = lp;
   const pctUsed = callBudget.budget > 0
@@ -96,6 +131,12 @@ export function LoopProgressPill({ lp }: { readonly lp: PillLoopProgress }) {
       <span className={`text-[9px] font-mono font-semibold leading-[1.4] ${publish.satisfied ? 'sf-text-success' : (final_status ? 'sf-text-subtle' : 'sf-text-muted')}`}>
         {publishLineIcon(publish, final_status)} {publishLineText(publish, final_status)}
       </span>
+
+      {/* Row 1b: per-bucket chips. One chip per competing value (from the
+          publisher's deterministic evaluator). Green when the bucket qualifies
+          under current thresholds — i.e. the one that will publish. Wraps
+          naturally in the 256px sidebar. */}
+      <BucketsRow buckets={publish.buckets} />
 
       {/* Row 2: callBudget attempts + progress bar. "call N/M" makes the
           current-in-flight iteration explicit; "N left" surfaces the remaining

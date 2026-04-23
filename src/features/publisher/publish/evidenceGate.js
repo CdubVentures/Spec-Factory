@@ -50,11 +50,14 @@ function isSetUnion(fieldRule) {
 }
 
 /**
- * @param {{ specDb: object, productId: string, fieldKey: string, fieldRule: object, variantId?: string|null, threshold: number }} opts
+ * @param {{ specDb: object, productId: string, fieldKey: string, fieldRule: object, variantId?: string|null, threshold: number, requiredOverride?: number }} opts
+ * @param {number} [opts.requiredOverride] - When set and >= 0, replaces `readMinEvidenceRefs(fieldRule)` as the Gate 2 minimum. Used by keyFinder's passenger-exclusion path, which applies stricter thresholds than the publisher's default min_evidence_refs.
  * @returns {{ buckets: Array<{value_fingerprint:string, value:*, memberIds:number[], pooledCount:number, qualifies:boolean}>, publishedValue:* , publishedMemberIds:number[], required:number }}
  */
-export function evaluateFieldBuckets({ specDb, productId, fieldKey, fieldRule, variantId, threshold }) {
-  const required = readMinEvidenceRefs(fieldRule);
+export function evaluateFieldBuckets({ specDb, productId, fieldKey, fieldRule, variantId, threshold, requiredOverride }) {
+  const required = Number.isFinite(requiredOverride) && requiredOverride >= 0
+    ? Math.floor(requiredOverride)
+    : readMinEvidenceRefs(fieldRule);
   if (typeof specDb?.listFieldBuckets !== 'function') {
     return { buckets: [], publishedValue: undefined, publishedMemberIds: [], required };
   }

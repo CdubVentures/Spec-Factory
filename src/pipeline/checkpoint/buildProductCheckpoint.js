@@ -17,6 +17,9 @@ function mapProductSource(src, runId) {
     host: extractHost(src.url),
     content_hash: src.content_hash || null,
     html_file: src.html_file || null,
+    // WHY: Forward crawl4ai artifact filename so product.json sources[] stays
+    // joinable to the per-URL extraction bundle on disk.
+    crawl4ai_file: src.crawl4ai_file || null,
     screenshot_count: Number(src.screenshot_count || 0),
     status,
     first_seen_run_id: String(runId || ''),

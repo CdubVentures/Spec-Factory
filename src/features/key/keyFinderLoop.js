@@ -139,6 +139,10 @@ export async function runKeyFinderLoop(opts) {
   // can read "got 1/2 evidence at 70 conf, need ≥95" between iterations.
   let lastEvidenceCount = 0;
   let lastConfidencePct = null;
+  // Ordered list of competing value buckets from the publisher's evaluator.
+  // Null until the first publishCandidate call seeds it; carries across
+  // iterations so the pre-iteration pill shows the prior iteration's state.
+  let lastBuckets = null;
 
   // 2.5 Re-loop gate (SSOT §6.2): if the primary is already published at loop
   //     entry, cap attempts via reloopRunBudget (default 1). A 0 value becomes
@@ -168,6 +172,7 @@ export async function runKeyFinderLoop(opts) {
             satisfied: true,
             confidence: null,
             threshold: thresholdPct,
+            buckets: null,
           },
           callBudget: { used: 0, budget: 0, exhausted: false },
           final_status: 'skipped_resolved',
@@ -218,6 +223,7 @@ export async function runKeyFinderLoop(opts) {
           satisfied: false,
           confidence: lastConfidencePct,
           threshold: thresholdPct,
+          buckets: lastBuckets,
         },
         callBudget: { used: iter, budget: attempts, exhausted: iter >= attempts },
         final_status: null,
@@ -263,6 +269,8 @@ export async function runKeyFinderLoop(opts) {
 
       lastEvidenceCount = iterEvidence;
       lastConfidencePct = iterConfidencePct;
+      const iterBuckets = Array.isArray(pubGate?.buckets) ? pubGate.buckets : lastBuckets;
+      lastBuckets = iterBuckets;
 
       onLoopProgress?.({
         publish: {
@@ -271,6 +279,7 @@ export async function runKeyFinderLoop(opts) {
           satisfied: iterSatisfied,
           confidence: iterConfidencePct,
           threshold: thresholdPct,
+          buckets: iterBuckets,
         },
         callBudget: {
           used: iter,
@@ -317,6 +326,7 @@ export async function runKeyFinderLoop(opts) {
         satisfied: terminalSatisfied,
         confidence: lastConfidencePct,
         threshold: thresholdPct,
+        buckets: lastBuckets,
       },
       callBudget: {
         used: iterations,

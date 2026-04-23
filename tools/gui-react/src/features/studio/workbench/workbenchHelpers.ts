@@ -101,6 +101,12 @@ export function buildWorkbenchRows(
       ...(msgs?.errors || []),
       ...(msgs?.warnings || []),
     ];
+    const contractType = strN(r, 'contract.type', strN(r, 'data_type', 'string'));
+    const isBoolean = contractType === 'boolean';
+    const contractShape = isBoolean ? 'scalar' : strN(r, 'contract.shape', 'scalar');
+    const enumPolicy = isBoolean ? 'closed' : strN(r, 'enum.policy', strN(r, 'enum_policy', 'open'));
+    const enumSource = isBoolean ? 'yes_no' : strN(r, 'enum.source', strN(r, 'enum_source'));
+    const knownValuesForField = kv[key] || (isBoolean ? kv.yes_no : undefined) || [];
 
     return {
       key,
@@ -111,12 +117,12 @@ export function buildWorkbenchRows(
       difficulty: strN(r, 'priority.difficulty', strN(r, 'difficulty', 'easy')),
       effort: numN(r, 'priority.effort', numN(r, 'effort', 3)),
 
-      contractType: strN(r, 'contract.type', 'string'),
-      contractShape: strN(r, 'contract.shape', 'scalar'),
+      contractType,
+      contractShape,
       contractUnit: strN(r, 'contract.unit'),
-      enumPolicy: strN(r, 'enum.policy', strN(r, 'enum_policy', 'open')),
-      enumSource: strN(r, 'enum.source', strN(r, 'enum_source')),
-      knownValuesCount: (kv[key] || []).length,
+      enumPolicy,
+      enumSource,
+      knownValuesCount: knownValuesForField.length,
 
       minEvidenceRefs: numN(
         r,
@@ -136,10 +142,10 @@ export function buildWorkbenchRows(
       componentType: strN(r, 'component.type'),
 
       uiInputControl: deriveInputControl({
-        type: strN(r, 'contract.type') || null,
-        shape: strN(r, 'contract.shape') || null,
-        enumSource: strN(r, 'enum.source') || null,
-        enumPolicy: strN(r, 'enum.policy') || null,
+        type: contractType || null,
+        shape: contractShape || null,
+        enumSource: enumSource || null,
+        enumPolicy: enumPolicy || null,
         componentSource: strN(r, 'component.source') || null,
       }),
       uiOrder: numN(r, 'ui.order', 0),

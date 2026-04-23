@@ -22,6 +22,7 @@ const SETTINGS_BASE = Object.freeze({
   bundlingEnabled: true,
   groupBundlingOnly: true,
   bundlingPassengerCost: { easy: 1, medium: 2, hard: 4, very_hard: 8 },
+  bundlingPassengerVariantCostPerExtra: 0,
   bundlingPoolPerPrimary: { easy: 100, medium: 100, hard: 100, very_hard: 100 },
   passengerDifficultyPolicy: 'less_or_equal',
   // Caps default to "effectively uncapped for these tests" — specific cap tests
@@ -43,18 +44,45 @@ function rule(overrides = {}) {
   };
 }
 
+/**
+ * Test specDb mock aligned with the publisher's deterministic bucket evaluator
+ * (evaluateFieldBuckets), since buildPassengers now routes exclusion through
+ * isConcreteEvidence → evaluateFieldBuckets instead of the single-row shortcut.
+ *
+ * Shorthand: `topCandidatesByFieldKey[fk] = { confidence, evidence_count }`
+ * is translated into a single-bucket shape — one bucket with top_confidence =
+ * confidence and a pooled-count stub that returns evidence_count for any
+ * threshold query. That mirrors the prior test contract one-to-one.
+ */
 function makeSpecDb({
   resolvedFieldKeys = new Set(),
   topCandidatesByFieldKey = {},
 } = {}) {
-  const topCalls = [];
+  const bucketCalls = [];
+  const pooledCalls = [];
   return {
     getResolvedFieldCandidate: (_pid, fk) => (resolvedFieldKeys.has(fk) ? { value: 'X', confidence: 95 } : null),
-    getTopFieldCandidate: (_pid, fk) => {
-      topCalls.push(fk);
-      return topCandidatesByFieldKey[fk] || null;
+    // Kept for summary's display-only tooltip data; not used by the exclusion path.
+    getTopFieldCandidate: (_pid, fk) => topCandidatesByFieldKey[fk] || null,
+    listFieldBuckets: ({ fieldKey }) => {
+      bucketCalls.push(fieldKey);
+      const top = topCandidatesByFieldKey[fieldKey];
+      if (!top) return [];
+      return [{
+        value_fingerprint: `fp_${fieldKey}`,
+        top_confidence: Number(top.confidence) || 0,
+        member_count: Number(top.evidence_count) || 0,
+        member_ids: [1],
+        value: 'X',
+      }];
     },
-    _topCalls: topCalls,
+    countPooledQualifyingEvidenceByFingerprint: ({ fieldKey }) => {
+      pooledCalls.push(fieldKey);
+      const top = topCandidatesByFieldKey[fieldKey];
+      return Number(top?.evidence_count) || 0;
+    },
+    _bucketCalls: bucketCalls,
+    _pooledCalls: pooledCalls,
   };
 }
 
@@ -67,7 +95,7 @@ describe('buildPassengers — threshold exclusion', () => {
   };
   const primary = { fieldKey: 'polling_rate', fieldRule: ENGINE_RULES.polling_rate };
 
-  it('both knobs at 0 (default) → no getTopFieldCandidate calls made, all peers eligible', () => {
+  it('both knobs at 0 (default) → no bucket-evaluator calls made, all peers eligible', () => {
     const specDb = makeSpecDb();
     const passengers = buildPassengers({
       primary,
@@ -76,7 +104,7 @@ describe('buildPassengers — threshold exclusion', () => {
       productId: 'p1',
       settings: { ...SETTINGS_BASE, passengerExcludeAtConfidence: 0, passengerExcludeMinEvidence: 0 },
     });
-    assert.equal(specDb._topCalls.length, 0, 'threshold query should not fire when knobs are disabled');
+    assert.equal(specDb._bucketCalls.length, 0, 'threshold query should not fire when knobs are disabled');
     assert.ok(passengers.length >= 3, 'dpi+buttons+tracking all eligible by default');
   });
 
@@ -89,7 +117,7 @@ describe('buildPassengers — threshold exclusion', () => {
       productId: 'p1',
       settings: { ...SETTINGS_BASE, passengerExcludeAtConfidence: 80, passengerExcludeMinEvidence: 0 },
     });
-    assert.equal(specDb._topCalls.length, 0);
+    assert.equal(specDb._bucketCalls.length, 0);
     assert.ok(passengers.length >= 3);
   });
 
@@ -102,7 +130,7 @@ describe('buildPassengers — threshold exclusion', () => {
       productId: 'p1',
       settings: { ...SETTINGS_BASE, passengerExcludeAtConfidence: 0, passengerExcludeMinEvidence: 2 },
     });
-    assert.equal(specDb._topCalls.length, 0);
+    assert.equal(specDb._bucketCalls.length, 0);
     assert.ok(passengers.length >= 3);
   });
 
@@ -161,9 +189,9 @@ describe('buildPassengers — threshold exclusion', () => {
     assert.ok(keys.includes('dpi'));
   });
 
-  it('peer with no candidate at all (getTopFieldCandidate returns null) → kept', () => {
+  it('peer with no candidate at all (empty bucket list) → kept', () => {
     const specDb = makeSpecDb({
-      topCandidatesByFieldKey: {}, // all peers return null
+      topCandidatesByFieldKey: {}, // all peers return empty buckets
     });
     const passengers = buildPassengers({
       primary,
@@ -172,16 +200,19 @@ describe('buildPassengers — threshold exclusion', () => {
       productId: 'p1',
       settings: { ...SETTINGS_BASE, passengerExcludeAtConfidence: 85, passengerExcludeMinEvidence: 2 },
     });
-    assert.ok(passengers.length >= 3, 'null top-candidate means nothing to exclude');
+    assert.ok(passengers.length >= 3, 'no buckets means nothing to exclude');
   });
 
-  it('published-resolved peers still dropped regardless of threshold knobs (union behavior)', () => {
-    // dpi is published-resolved AND happens to have low confidence/evidence —
-    // it should still be dropped by the existing published-resolved filter.
+  it('concrete gate ACTIVE + published-but-below-bar peer → KEEPS bundling (replace-semantics)', () => {
+    // Contract 2026-04-23: when the concrete knobs are > 0, the concrete bar
+    // REPLACES the legacy "all published peers dropped" rule. A peer that is
+    // published at low confidence (below the concrete bar) stays in the
+    // passenger pool so bundling accumulates more evidence toward concrete.
+    // Per user spec: "Below either threshold, peers keep retrying."
     const specDb = makeSpecDb({
       resolvedFieldKeys: new Set(['dpi']),
       topCandidatesByFieldKey: {
-        dpi: { confidence: 10, evidence_count: 0 }, // below thresholds but already published
+        dpi: { confidence: 10, evidence_count: 0 }, // published but below 85/2 concrete bar
       },
     });
     const passengers = buildPassengers({
@@ -192,15 +223,33 @@ describe('buildPassengers — threshold exclusion', () => {
       settings: { ...SETTINGS_BASE, passengerExcludeAtConfidence: 85, passengerExcludeMinEvidence: 2 },
     });
     const keys = passengers.map((p) => p.fieldKey);
-    assert.ok(!keys.includes('dpi'), 'published-resolved peer dropped via existing filter');
+    assert.ok(keys.includes('dpi'), 'published but below concrete bar keeps riding to accumulate evidence');
   });
 
-  it('gracefully handles specDb without getTopFieldCandidate method (legacy hook)', () => {
-    // Older specDb stubs may not expose getTopFieldCandidate yet. The builder
-    // should skip threshold exclusion silently rather than throwing.
+  it('concrete gate DISABLED (both knobs 0) → published peer unconditionally dropped (legacy)', () => {
+    // When the gate is off, every published peer is excluded regardless of
+    // bucket state. This is the fall-back path for installs that haven't
+    // set the concrete knobs yet.
+    const specDb = makeSpecDb({
+      resolvedFieldKeys: new Set(['dpi']),
+    });
+    const passengers = buildPassengers({
+      primary,
+      engineRules: ENGINE_RULES,
+      specDb,
+      productId: 'p1',
+      settings: { ...SETTINGS_BASE, passengerExcludeAtConfidence: 0, passengerExcludeMinEvidence: 0 },
+    });
+    const keys = passengers.map((p) => p.fieldKey);
+    assert.ok(!keys.includes('dpi'), 'published peer dropped under legacy gate');
+  });
+
+  it('gracefully handles specDb without listFieldBuckets method (legacy stub)', () => {
+    // Older specDb stubs may not expose the bucket evaluator's contract yet.
+    // The builder should skip threshold exclusion silently rather than throwing.
     const specDb = {
       getResolvedFieldCandidate: () => null,
-      // no getTopFieldCandidate
+      // no listFieldBuckets / countPooledQualifyingEvidenceByFingerprint
     };
     const passengers = buildPassengers({
       primary,
@@ -397,6 +446,30 @@ describe('buildPassengers — concurrent-ride caps', () => {
       'peers from different groups round-robin together: low-rides first regardless of group');
   });
 
+  it('cross-group packing avoids already-riding peers when idle peers can fill the pool', () => {
+    registryRegister('p1', 'active_mandatory', 'passenger');
+    const crossGroupRules = {
+      primary_y: rule({ difficulty: 'hard', group: 'group_y', required_level: 'mandatory' }),
+      active_mandatory: rule({ difficulty: 'easy', group: 'group_x', required_level: 'mandatory' }),
+      idle_a: rule({ difficulty: 'easy', group: 'group_y', required_level: 'non_mandatory' }),
+      idle_b: rule({ difficulty: 'easy', group: 'group_y', required_level: 'non_mandatory' }),
+    };
+    const specDb = makeSpecDb();
+    const passengers = buildPassengers({
+      primary: { fieldKey: 'primary_y', fieldRule: crossGroupRules.primary_y },
+      engineRules: crossGroupRules,
+      specDb,
+      productId: 'p1',
+      settings: {
+        ...SETTINGS_BASE,
+        groupBundlingOnly: false,
+        bundlingPoolPerPrimary: { easy: 2, medium: 2, hard: 2, very_hard: 2 },
+        bundlingOverlapCapEasy: 2,
+      },
+    });
+    assert.deepEqual(passengers.map((p) => p.fieldKey), ['idle_a', 'idle_b']);
+  });
+
   it('round-robin distributes across 5 same-tier hard peers over successive primary fires', () => {
     // Simulates the user's scenario: 5 hard peers, repeated primary fires each
     // pick ONE hard passenger (pool=2, cost 4 for hard — only room for one).
@@ -438,5 +511,32 @@ describe('buildPassengers — concurrent-ride caps', () => {
       'sensor_latency_wireless',
       'shift_latency',
     ], 'rides distribute across all 5 hard peers in one full cycle');
+  });
+});
+
+describe('buildPassengers - variant-aware passenger cost', () => {
+  it('passes variantCount through to the packer so larger families pack fewer passengers', () => {
+    const specDb = makeSpecDb();
+    const passengers = buildPassengers({
+      primary: { fieldKey: 'polling_rate', fieldRule: rule({ difficulty: 'hard', required_level: 'mandatory' }) },
+      engineRules: {
+        polling_rate: rule({ difficulty: 'hard', required_level: 'mandatory' }),
+        dpi: rule({ difficulty: 'easy' }),
+        buttons: rule({ difficulty: 'easy' }),
+      },
+      specDb,
+      productId: 'p1',
+      settings: {
+        ...SETTINGS_BASE,
+        bundlingPoolPerPrimary: { easy: 2, medium: 2, hard: 2, very_hard: 2 },
+        bundlingPassengerVariantCostPerExtra: 0.25,
+      },
+      variantCount: 4,
+    });
+    assert.deepEqual(
+      passengers.map((p) => p.fieldKey),
+      ['buttons'],
+      'family size 4 makes each easy passenger cost 1.75, so pool 2 fits one passenger',
+    );
   });
 });

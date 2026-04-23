@@ -2,7 +2,7 @@ import { useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../../api/client.ts';
 import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
-import { usePersistedNullableTab, usePersistedTab } from '../../../../stores/tabStore.ts';
+import { usePersistedNullableTab, usePersistedTab, useTabStore } from '../../../../stores/tabStore.ts';
 import { useRuntimeSettingsReader } from '../../../pipeline-settings/index.ts';
 import type { RuntimeOpsWorkerRow, PrefetchTabKey, PreFetchPhasesResponse, PrefetchLiveSettings, FetchPhasesResponse, ExtractionPhasesResponse } from '../../types.ts';
 import { getRefetchInterval } from '../../helpers.ts';
@@ -66,8 +66,10 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
   );
 
   // ── Stage tab state (scoped to active group) ──────────────────────
+  const stageTabKeyFor = (groupId: StageGroupId) =>
+    `runtimeOps:workers:stageTab:${category}:${groupId}`;
   const [stageTab, setStageTab] = usePersistedNullableTab<string>(
-    `runtimeOps:workers:stageTab:${category}:${activeGroup}`,
+    stageTabKeyFor(activeGroup),
     null,
     { validValues: activeGroupDef.keys },
   );
@@ -178,9 +180,16 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
 
   // WHY: Each row gets a handler that switches activeGroup before setting the tab,
   // so clicking a tab in a different row deselects the previous row's tab.
+  // When switching groups, the `setStageTab` closure still references the
+  // PREVIOUS group's storage key (the hook re-keys on the next render). Writing
+  // the tab through that stale closure lands it under the wrong group, so the
+  // new row appears inactive and the user has to click a second time. Bypass
+  // the closure and write straight to the destination group's key.
   const handleGroupTabSelect = (groupId: StageGroupId) => (tab: string | null) => {
     if (tab !== null && groupId !== activeGroup) {
       setActiveGroup(groupId);
+      useTabStore.getState().set(stageTabKeyFor(groupId), tab);
+      return;
     }
     handleSelectStageTab(tab);
   };

@@ -9,7 +9,8 @@
  * `usePersistedToggle`.
  */
 
-import { memo, useState } from 'react';
+import { memo } from 'react';
+import { usePersistedExpandMap } from '../../../stores/tabStore.ts';
 import { FinderSectionCard } from '../../../shared/ui/finder/FinderSectionCard.tsx';
 import { FinderRunHistoryRow } from '../../../shared/ui/finder/FinderRunHistoryRow.tsx';
 import { FinderRunPromptDetails } from '../../../shared/ui/finder/FinderRunPromptDetails.tsx';
@@ -57,9 +58,11 @@ export const KeyRunHistorySection = memo(function KeyRunHistorySection({
   const deleteAll = useDeleteAllKeyFinderRunsMutation(category, productId);
   const isPending = deleteRun.isPending || deleteAll.isPending;
 
-  const [expandedRuns, setExpandedRuns] = useState<Record<string, boolean>>({});
+  const [expandedRuns, toggleExpandedRun] = usePersistedExpandMap(
+    `keyFinder:history:runs:${productId}`,
+  );
   const toggleRun = (runNumber: number) => {
-    setExpandedRuns((prev) => ({ ...prev, [runNumber]: !prev[runNumber] }));
+    toggleExpandedRun(String(runNumber));
   };
 
   const handleDeleteRun = (runNumber: number, fieldKey: string) => {

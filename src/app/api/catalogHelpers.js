@@ -12,12 +12,22 @@ function assertObject(name, value) {
 
 // WHY: SQL-first catalog builder. Reads directly from specDb (products table) for the GUI dropdown.
 
-async function buildCatalogFromSql({ specDb, storage, cleanVariant, category }) {
+function readFieldKeyOrderCount(specDb, category) {
+  const row = specDb.getFieldKeyOrder?.(category);
+  if (!row) return 0;
+  try {
+    const parsed = JSON.parse(row.order_json || '[]');
+    return Array.isArray(parsed) ? parsed.length : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function buildCatalogFromSql({ specDb, cleanVariant, category }) {
   if (!specDb) return [];
 
   const allProducts = specDb.getAllProducts() || [];
-  const fieldOrder = specDb.getFieldKeyOrder?.(category) || [];
-  const totalFieldCount = Array.isArray(fieldOrder) ? fieldOrder.length : 0;
+  const totalFieldCount = readFieldKeyOrderCount(specDb, category);
 
   const seen = new Map();
 
@@ -30,19 +40,12 @@ async function buildCatalogFromSql({ specDb, storage, cleanVariant, category }) 
     if (!brand || !base_model) continue;
     if (seen.has(pid)) continue;
 
-    const hasFinal = await storage.objectExists(`final/${category}/${pid}/normalized.json`).catch(() => false);
-
-    // WHY: Enrich from field_candidates to show real confidence/coverage in the overview.
     const candidates = specDb.getAllFieldCandidatesByProduct?.(pid) || [];
     const resolvedCandidates = candidates.filter(c => String(c.status || '').trim() === 'resolved');
     const fieldKeysWithData = new Set(resolvedCandidates.map(c => String(c.field_key || '').trim()).filter(Boolean));
-    const totalConfidence = resolvedCandidates.length > 0
+    const avgConfidence = resolvedCandidates.length > 0
       ? resolvedCandidates.reduce((s, c) => s + (Number(c.confidence) || 0), 0) / resolvedCandidates.length / 100
       : 0;
-    const lastUpdated = candidates.reduce((latest, c) => {
-      const ts = c.updated_at || '';
-      return ts > latest ? ts : latest;
-    }, '');
 
     seen.set(pid, {
       productId: pid,
@@ -54,14 +57,10 @@ async function buildCatalogFromSql({ specDb, storage, cleanVariant, category }) 
       base_model,
       variant,
       status: row.status || 'active',
-      hasFinal,
-      validated: resolvedCandidates.length > 0,
-      confidence: totalConfidence,
+      confidence: avgConfidence,
       coverage: totalFieldCount > 0 ? fieldKeysWithData.size / totalFieldCount : 0,
       fieldsFilled: fieldKeysWithData.size,
       fieldsTotal: totalFieldCount,
-      lastRun: lastUpdated,
-      inActive: true,
     });
   }
 
@@ -75,19 +74,15 @@ async function buildCatalogFromSql({ specDb, storage, cleanVariant, category }) 
 }
 
 export function createCatalogBuilder({
-  config,
-  storage,
   getSpecDb,
   cleanVariant,
 } = {}) {
-  assertObject('config', config);
-  assertObject('storage', storage);
   assertFunction('getSpecDb', getSpecDb);
   assertFunction('cleanVariant', cleanVariant);
 
   return async function buildCatalog(category) {
     const specDb = getSpecDb(category);
-    return buildCatalogFromSql({ specDb, storage, cleanVariant, category });
+    return buildCatalogFromSql({ specDb, cleanVariant, category });
   };
 }
 

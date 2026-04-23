@@ -45,7 +45,9 @@ import {
   mergeFieldOverride,
   defaultParseRules,
   buildFieldRuleDraft,
-  buildStudioFieldRule
+  buildStudioFieldRule,
+  BOOLEAN_ENUM_VALUES,
+  createBooleanEnumSource
 } from './compileFieldRuleBuilder.js';
 import {
   buildParseTemplateCatalog,
@@ -70,6 +72,41 @@ import { loadCompileContext } from './compileContextLoader.js';
 // Re-export loadFieldStudioMap and saveFieldStudioMap for backward compatibility
 export { loadFieldStudioMap, saveFieldStudioMap };
 
+function enforceBooleanEnumContract(rule, enumLists = {}) {
+  const typeCandidates = [
+    rule?.contract?.type,
+    rule?.type,
+    rule?.data_type,
+  ].map((value) => normalizeToken(value)).filter(Boolean);
+  if (!typeCandidates.includes('boolean')) return;
+  enumLists.yes_no = stableSortStrings([
+    ...toArray(enumLists.yes_no),
+    ...BOOLEAN_ENUM_VALUES
+  ]);
+  rule.type = 'boolean';
+  rule.shape = 'scalar';
+  rule.value_form = 'scalar';
+  rule.unit = '';
+  rule.round = 'none';
+  rule.contract = {
+    ...(isObject(rule.contract) ? rule.contract : {}),
+    type: 'boolean',
+    shape: 'scalar'
+  };
+  delete rule.contract.unit;
+  delete rule.contract.range;
+  delete rule.contract.rounding;
+  delete rule.contract.list_rules;
+  rule.enum_policy = 'closed';
+  rule.enum_source = createBooleanEnumSource();
+  rule.vocab = {
+    ...(rule.vocab || {}),
+    mode: 'closed',
+    allow_new: false,
+    known_values: [...BOOLEAN_ENUM_VALUES]
+  };
+  rule.new_value_policy = null;
+}
 
 export async function compileCategoryFieldStudio({
   category,
@@ -170,6 +207,7 @@ export async function compileCategoryFieldStudio({
       if (passthroughCanonical && passthroughCanonical !== outputField && passthroughCanonical !== field) {
         keyMigrations[outputField] = passthroughCanonical;
       }
+      enforceBooleanEnumContract(passthrough, enumLists);
       enforceExpectationPriority({
         key: outputField,
         rule: passthrough,
@@ -319,25 +357,7 @@ export async function compileCategoryFieldStudio({
       };
       merged.new_value_policy = null;
     }
-    if (merged.type === 'boolean' && !toArray(enumLists[field]).length && !toArray(enumLists.yes_no).length) {
-      enumLists.yes_no = ['yes', 'no'];
-    }
-    if (merged.type === 'boolean'
-      && (merged.enum_policy === 'closed' || merged.enum_policy === 'closed_with_curation')
-      && (!isObject(merged.enum_source) || !normalizeText(merged.enum_source.ref))) {
-      merged.enum_source = {
-        type: 'known_values',
-        ref: enumLists[field]?.length ? field : 'yes_no'
-      };
-      if (!toArray(merged.vocab?.known_values).length) {
-        merged.vocab = {
-          ...(merged.vocab || {}),
-          known_values: enumLists[field]?.length
-            ? stableSortStrings(enumLists[field])
-            : ['yes', 'no']
-        };
-      }
-    }
+    enforceBooleanEnumContract(merged, enumLists);
     // WHY: latency_list_modes_ms template retired. Latency fields split into scalar keys in Phase 3.
     if (!isObject(merged.ui)) {
       merged.ui = {};
@@ -549,4 +569,3 @@ export async function compileCategoryFieldStudio({
     control_plane_version: controlPlaneSnapshot
   };
 }
-

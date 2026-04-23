@@ -468,12 +468,88 @@ function buildGroupsSection(reportData) {
   return { id: 'groups', title: 'Part 6 — Field groups', blocks };
 }
 
+function formatAuditValue(value) {
+  if (value === null || value === undefined || value === '') return '(unset)';
+  if (Array.isArray(value)) return value.length === 0 ? '[]' : value.map((v) => `\`${v}\``).join(', ');
+  if (typeof value === 'object') return `\`${JSON.stringify(value)}\``;
+  return `\`${String(value)}\``;
+}
+
+function buildAuthoringChecklistBlocks(key) {
+  const priorityCurrent = [
+    `priority.required_level=${formatAuditValue(key.priority.required_level)}`,
+    `priority.availability=${formatAuditValue(key.priority.availability)}`,
+    `priority.difficulty=${formatAuditValue(key.priority.difficulty)}`,
+  ].join(' | ');
+  const contractCurrent = [
+    `contract.type=${formatAuditValue(key.contract.type)}`,
+    `contract.shape=${formatAuditValue(key.contract.shape)}`,
+    `contract.unit=${formatAuditValue(key.contract.unit)}`,
+    `contract.rounding=${formatAuditValue(key.contract.rounding)}`,
+    `contract.list_rules=${formatAuditValue(key.contract.list_rules)}`,
+    `contract.range=${formatAuditValue(key.contract.range)}`,
+  ].join(' | ');
+  const enumCurrent = [
+    `enum.policy=${formatAuditValue(key.enum.policy)}`,
+    `enum.values=${key.enum.values.length}`,
+    `filter_ui=${formatAuditValue(key.enum.filterUi)}`,
+  ].join(' | ');
+  const evidenceCurrent = [
+    `evidence.min_evidence_refs=${formatAuditValue(key.evidence.min_evidence_refs)}`,
+    `evidence.tier_preference=${formatAuditValue(key.evidence.tier_preference)}`,
+  ].join(' | ');
+
+  return [
+    { kind: 'subheading', level: 4, text: 'Full field contract authoring order' },
+    {
+      kind: 'paragraph',
+      text: 'Validate the whole field contract before editing guidance. Guidance last: write `ai_assist.reasoning_note` only after scheduling, value shape, enum/filter behavior, evidence/source rules, and example coverage are correct.',
+    },
+    {
+      kind: 'table',
+      headers: ['Order', 'Facet', 'Current value', 'Validation question'],
+      rows: [
+        ['1', 'Scheduling priority', priorityCurrent, 'Does requiredness match publish expectations, does availability match real product coverage, and does difficulty route to the right LLM tier?'],
+        ['2', 'Value contract', contractCurrent, 'Does the emitted JSON primitive/list shape match how the value is stored, validated, compared, and filtered?'],
+        ['3', 'Enum and filter surface', enumCurrent, 'Is the enum closed when finite, patterned when open, and small enough for the consumer filter surface?'],
+        ['4', 'Evidence and sources', evidenceCurrent, 'Can the configured source tiers and evidence count actually prove this value without guessing?'],
+        ['5', 'Example bank', '5-10 category-local examples', 'Do examples cover happy path, edge, unknown, conflict, and filter-risk cases before the prompt text is trusted?'],
+        ['6', 'Guidance last', formatAuditValue(key.ai_assist?.reasoning_note), 'Now write paste-ready guidance that fills only the remaining extraction judgment gap.'],
+      ],
+    },
+  ];
+}
+
+function buildExampleBankRecipeBlocks(key) {
+  return [
+    { kind: 'subheading', level: 4, text: 'Example bank recipe' },
+    {
+      kind: 'paragraph',
+      text: `Build a 5-10 product example bank for \`${key.fieldKey}\` before finalizing the rule. Prefer hand-entered benchmark data when available, then product JSON/candidates, seed products, component DB rows, and source research. For brand-new categories, use representative market products to create the first calibration set. Use examples to author the contract and guidance; do not paste benchmark answers into the live prompt.`,
+    },
+    {
+      kind: 'table',
+      headers: ['Bucket', 'Count', 'What it proves'],
+      rows: [
+        ['Common happy path', '2-3', 'Normal category products where the value is present and easy to source.'],
+        ['Edge / rare value', '1-2', 'Boundary values, rare enum values, unusual units, unusually long lists, or uncommon component variants.'],
+        ['Unknown / absent evidence', '1', 'A product where honest `unk` is the correct outcome because sources do not prove the field.'],
+        ['Conflict / ambiguity', '1', 'Two credible sources disagree, labels are reused, or the field is often confused with a sibling key.'],
+        ['Filter-risk', '1-2', 'Values that would create new enum chips, range extremes, pattern outliers, or consumer-facing clutter.'],
+        ['Benchmark carry-forward', 'as available', 'Use benchmark cells as calibration for this key, then apply the same recipe to every category.'],
+      ],
+    },
+  ];
+}
+
 function buildPerKeyBlocks(key, adapterPreview) {
   const priority = `${key.priority.required_level} · ${key.priority.availability} · ${key.priority.difficulty}`;
   const tier = adapterPreview.tierBundle;
   const headerParagraph = `**Group:** ${key.group} · **Priority (required · availability · difficulty):** ${priority} · **Resolved tier:** ${tier.name} → model \`${tier.model || '(inherit)'}\`${tier.useReasoning ? ' · reasoning on' : ''}${tier.webSearch ? ' · web search' : ''}`;
 
   const blocks = [{ kind: 'paragraph', text: headerParagraph }];
+  blocks.push(...buildAuthoringChecklistBlocks(key));
+  blocks.push(...buildExampleBankRecipeBlocks(key));
 
   // Contract — always present.
   blocks.push({ kind: 'subheading', level: 4, text: 'Contract' });

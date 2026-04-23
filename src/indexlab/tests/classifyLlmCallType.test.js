@@ -26,10 +26,6 @@ describe('classifyLlmCallType', () => {
     // domain classifier
     ['domain_safety_classification', 'domain_classifier'],
 
-    // validation
-    ['validate', 'validation'],
-    ['validate_candidates', 'validation'],
-
     // verification
     ['verify_extract', 'verification'],
 

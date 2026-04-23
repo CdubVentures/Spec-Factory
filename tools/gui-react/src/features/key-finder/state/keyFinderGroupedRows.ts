@@ -86,17 +86,55 @@ function matchesFilters(
 
 /* ── Priority sort for Loop chains ──────────────────────────────── */
 
-// Mirrors keyBundler.js:99-112 — mandatory before non-mandatory, always before
-// sometimes before rare, easy before very_hard, then field_key alphabetical.
-// The Loop Group / Loop All chain picks its next primary off this order so
-// easy+always+mandatory unresolved keys get their Loops fired first.
+// Mirrors the backend helper `src/features/key/keyBundlerSortAxes.js`. Both
+// sides use the same 3-axis contract (difficulty, required_level, availability)
+// under a configurable precedence from the `bundlingSortAxisOrder` knob.
+// Within-axis rank is fixed (easy<medium<hard<very_hard, mandatory<non_mandatory,
+// always<sometimes<rare). `field_key` is the final deterministic tiebreaker.
+// The Loop Group / Loop All chain picks its next primary off this order.
+export const DEFAULT_AXIS_ORDER: readonly string[] = Object.freeze(['difficulty', 'required_level', 'availability']);
+const KNOWN_AXES: ReadonlySet<string> = new Set(DEFAULT_AXIS_ORDER);
+
 const REQUIRED_RANK: Readonly<Record<string, number>> = { mandatory: 0, non_mandatory: 1 };
 const AVAILABILITY_RANK: Readonly<Record<string, number>> = { always: 0, sometimes: 1, rare: 2 };
 const DIFFICULTY_RANK: Readonly<Record<string, number>> = { easy: 0, medium: 1, hard: 2, very_hard: 3 };
 
-function rankOr(table: Readonly<Record<string, number>>, key: string, fallback: number): number {
-  const r = table[key];
-  return typeof r === 'number' ? r : fallback;
+const AXIS_RANK_TABLE: Readonly<Record<string, { table: Readonly<Record<string, number>>; fallback: number }>> = {
+  required_level: { table: REQUIRED_RANK, fallback: REQUIRED_RANK.non_mandatory + 1 },
+  availability: { table: AVAILABILITY_RANK, fallback: AVAILABILITY_RANK.rare + 1 },
+  difficulty: { table: DIFFICULTY_RANK, fallback: DIFFICULTY_RANK.very_hard + 1 },
+};
+
+function axisRank(axis: string, row: PrioritySortable): number {
+  const spec = AXIS_RANK_TABLE[axis];
+  if (!spec) return 0;
+  const v = (row as unknown as Record<string, string>)[axis] ?? '';
+  const r = spec.table[v];
+  return typeof r === 'number' ? r : spec.fallback;
+}
+
+/**
+ * Normalize a user-provided CSV axis order to a total ordering over all 3
+ * known axes. Preserves user-supplied order, drops unknowns, dedupes on first
+ * occurrence, and appends any missing axes in DEFAULT_AXIS_ORDER.
+ */
+export function parseAxisOrder(csv: string | null | undefined): readonly string[] {
+  const raw = String(csv ?? '').trim();
+  if (!raw) return [...DEFAULT_AXIS_ORDER];
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const token of raw.split(',')) {
+    const axis = token.trim();
+    if (KNOWN_AXES.has(axis) && !seen.has(axis)) {
+      seen.add(axis);
+      result.push(axis);
+    }
+  }
+  if (result.length === 0) return [...DEFAULT_AXIS_ORDER];
+  for (const axis of DEFAULT_AXIS_ORDER) {
+    if (!seen.has(axis)) result.push(axis);
+  }
+  return result;
 }
 
 export interface PrioritySortable {
@@ -106,17 +144,17 @@ export interface PrioritySortable {
   readonly difficulty: string;
 }
 
-export function sortKeysByPriority<T extends PrioritySortable>(rows: ReadonlyArray<T>): ReadonlyArray<T> {
+export function sortKeysByPriority<T extends PrioritySortable>(
+  rows: ReadonlyArray<T>,
+  axisOrder?: readonly string[],
+): ReadonlyArray<T> {
+  const axes = axisOrder && axisOrder.length > 0 ? axisOrder : DEFAULT_AXIS_ORDER;
   return [...rows].sort((a, b) => {
-    const aReq = rankOr(REQUIRED_RANK, a.required_level, REQUIRED_RANK.non_mandatory + 1);
-    const bReq = rankOr(REQUIRED_RANK, b.required_level, REQUIRED_RANK.non_mandatory + 1);
-    if (aReq !== bReq) return aReq - bReq;
-    const aAvail = rankOr(AVAILABILITY_RANK, a.availability, AVAILABILITY_RANK.rare + 1);
-    const bAvail = rankOr(AVAILABILITY_RANK, b.availability, AVAILABILITY_RANK.rare + 1);
-    if (aAvail !== bAvail) return aAvail - bAvail;
-    const aDiff = rankOr(DIFFICULTY_RANK, a.difficulty, DIFFICULTY_RANK.very_hard + 1);
-    const bDiff = rankOr(DIFFICULTY_RANK, b.difficulty, DIFFICULTY_RANK.very_hard + 1);
-    if (aDiff !== bDiff) return aDiff - bDiff;
+    for (const axis of axes) {
+      const aR = axisRank(axis, a);
+      const bR = axisRank(axis, b);
+      if (aR !== bR) return aR - bR;
+    }
     if (a.field_key < b.field_key) return -1;
     if (a.field_key > b.field_key) return 1;
     return 0;
@@ -197,6 +235,9 @@ export function selectKeyFinderGroupedRows({
       last_web_search: s?.last_web_search ?? null,
       candidate_count: s?.candidate_count ?? 0,
       published: s?.published ?? false,
+      concrete_evidence: s?.concrete_evidence ?? false,
+      top_confidence: s?.top_confidence ?? null,
+      top_evidence_count: s?.top_evidence_count ?? null,
       run_count: s?.run_count ?? 0,
       running,
       opMode: effectiveOpMode,

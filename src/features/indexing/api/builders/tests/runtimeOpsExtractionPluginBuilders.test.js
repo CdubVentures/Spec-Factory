@@ -162,3 +162,36 @@ test('unknown plugin spreads its result without code changes (O(1))', () => {
   assert.equal(result.pdf_extract.entries[0].pages, 5);
   assert.equal(result.pdf_extract.entries[0].tables, 3);
 });
+
+// ── 12. Regression: artifacts_persisted emitted BEFORE plugin_completed ────
+// Transform-phase plugins (crawl4ai) persist inside onExtract and emit the
+// persisted event before the runner emits completed. The builder must still
+// join filenames onto the matching entry regardless of event order.
+
+test('attaches filenames when artifacts_persisted fires BEFORE plugin_completed', () => {
+  const events = [
+    makeEvent('extraction_artifacts_persisted', {
+      plugin: 'crawl4ai', url: 'https://x.com/p', worker_id: 'fetch-1',
+      filenames: ['abc123.json'], file_sizes: [4096],
+    }),
+    makeExtractionEvent('crawl4ai', 'https://x.com/p', 'fetch-1', { status: 'ok' }),
+  ];
+  const result = buildExtractionPluginPhases(events);
+  const entry = result.crawl4ai.entries[0];
+  assert.deepStrictEqual(entry.filenames, ['abc123.json']);
+  assert.deepStrictEqual(entry.file_sizes, [4096]);
+});
+
+test('attaches filenames when artifacts_persisted fires AFTER plugin_completed (screenshot path)', () => {
+  const events = [
+    makeExtractionEvent('screenshot', 'https://x.com/p', 'fetch-1', { screenshot_count: 2 }),
+    makeEvent('extraction_artifacts_persisted', {
+      plugin: 'screenshot', url: 'https://x.com/p', worker_id: 'fetch-1',
+      filenames: ['s1.jpg', 's2.jpg'], file_sizes: [1000, 2000],
+    }),
+  ];
+  const result = buildExtractionPluginPhases(events);
+  const entry = result.screenshot.entries[0];
+  assert.deepStrictEqual(entry.filenames, ['s1.jpg', 's2.jpg']);
+  assert.deepStrictEqual(entry.file_sizes, [1000, 2000]);
+});

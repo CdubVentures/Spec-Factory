@@ -33,6 +33,7 @@ export function EnumConfigurator({
   const currentSource = strN(rule, 'enum.source', strN(rule, 'enum_source'));
   const currentPolicy = strN(rule, 'enum.policy', strN(rule, 'enum_policy', 'open'));
   const isBoolean = contractType === 'boolean';
+  const effectivePolicy = isBoolean ? 'closed' : currentPolicy;
 
   const fieldKnownValues = knownValues[fieldKey] || [];
 
@@ -51,7 +52,7 @@ export function EnumConfigurator({
       <div className="space-y-3">
         <div className="flex items-center gap-2 px-3 py-2 rounded sf-surface-alt sf-border-soft border text-[11px] sf-text-subtle">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-          <span>EG-managed enum. Policy: <strong>{currentPolicy}</strong> · {fieldKnownValues.length} registered values</span>
+          <span>EG-managed enum. Policy: <strong>{effectivePolicy}</strong> · {fieldKnownValues.length} registered values</span>
         </div>
         <div>
           <div className={`${labelCls} flex items-center`}>
@@ -96,8 +97,9 @@ export function EnumConfigurator({
             </div>
             <select
               className={`${selectCls} w-full`}
-              value={currentPolicy}
+              value={effectivePolicy}
               onChange={(e) => onUpdate('enum.policy', e.target.value)}
+              disabled={isBoolean}
             >
               <option value="open">open</option>
               <option value="closed">closed</option>
@@ -142,7 +144,7 @@ export function EnumConfigurator({
           <div className="text-xs sf-text-subtle italic mt-2">No values in this enum list.</div>
         ) : null}
 
-        {(currentPolicy === 'open' || currentPolicy === 'open_prefer_known') && fieldKnownValues.length > 0 ? (
+        {!isBoolean && (effectivePolicy === 'open' || effectivePolicy === 'open_prefer_known') && fieldKnownValues.length > 0 ? (
           <p className="text-xs sf-text-subtle italic mt-2">
             New values may be added during pipeline runs.
           </p>

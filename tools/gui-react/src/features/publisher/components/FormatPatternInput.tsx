@@ -1,12 +1,8 @@
 // WHY: owned by publisher because the backend publisher pipeline consumes
-// this value at runtime:
-//   - `src/features/publisher/validation/checks/checkFormat.js` applies it
-//     as a custom regex during Step 6 (Format Check) of deterministic validation.
-//   - `src/features/publisher/repair-adapter/promptBuilder.js` injects it into
-//     P1/P2/P4 LLM repair prompts as formatGuidance when unknown enum values
-//     need canonical normalization.
-// Studio consumes this component via the publisher feature's public API so the
-// runtime consumer and the config UI stay colocated and can't drift again.
+// this value at runtime: `src/features/publisher/validation/checks/checkFormat.js`
+// applies it as a custom regex during Step 6 (Format Check) of deterministic
+// validation. Studio consumes this component via the publisher feature's public
+// API so the runtime consumer and the config UI stay colocated and can't drift.
 
 import type { ReactNode } from 'react';
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
@@ -32,8 +28,7 @@ const INPUT_CLS = 'sf-input w-full rounded border px-2 py-1.5 sf-text-label';
 const HINT_CLS = 'text-[10px] sf-text-subtle mt-1';
 
 const TIP_TEXT =
-  'Regex or template injected into the publisher repair prompt as formatGuidance '
-  + '(P1/P2/P4). Also applied as a custom regex during validation Step 6 (Format Check). '
+  'Regex or template applied as a custom format check during validation Step 6. '
   + 'Use XXXX for numeric tokens and YYYY for text tokens.';
 
 export function FormatPatternInput({
@@ -65,7 +60,7 @@ export function FormatPatternInput({
         placeholder={placeholder}
       />
       <div className={HINT_CLS}>
-        Consumed by publisher repair prompts. Not used for parse-time input matching.
+        Consumed by the validation format check. Not used for parse-time input matching.
       </div>
     </div>
   );

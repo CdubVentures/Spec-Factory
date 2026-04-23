@@ -2,7 +2,7 @@
  * keyFinder route — per-key Unresolve + Delete contract.
  *
  * Two new endpoints exposed by the KeyRow actions column:
- *   POST   /key-finder/:category/:productId/keys/:fieldKey/unresolve
+ *   POST   /key-finder/:category/:productId/keys/:fieldKey/unpublish
  *   DELETE /key-finder/:category/:productId/keys/:fieldKey
  *
  * Unresolve = demote resolved→candidate + clear selected.keys[fk]. Candidates,
@@ -192,7 +192,7 @@ function makeCtx({ specDb } = {}) {
 
 // ── Tests ────────────────────────────────────────────────────────────
 
-describe('POST /key-finder/:cat/:pid/keys/:fk/unresolve', () => {
+describe('POST /key-finder/:cat/:pid/keys/:fk/unpublish', () => {
   beforeEach(() => {
     keyFinderRegistry._resetForTest();
     cleanupTmp();
@@ -215,7 +215,7 @@ describe('POST /key-finder/:cat/:pid/keys/:fk/unresolve', () => {
     const handler = registerKeyFinderRoutes(ctx);
 
     await handler(
-      ['key-finder', 'mouse', pid, 'keys', 'polling_rate', 'unresolve'],
+      ['key-finder', 'mouse', pid, 'keys', 'polling_rate', 'unpublish'],
       null,
       'POST',
       { body: {} },
@@ -225,7 +225,7 @@ describe('POST /key-finder/:cat/:pid/keys/:fk/unresolve', () => {
     // Response
     const ok = responses.find((r) => r.status === 200);
     assert.ok(ok, `expected 200, got ${JSON.stringify(responses)}`);
-    assert.equal(ok.body.status, 'unresolved');
+    assert.equal(ok.body.status, 'unpublished');
     assert.equal(ok.body.field_key, 'polling_rate');
 
     // DB side: demote was called
@@ -239,8 +239,8 @@ describe('POST /key-finder/:cat/:pid/keys/:fk/unresolve', () => {
     assert.ok(doc.runs[0].response.results.polling_rate, 'run response results preserved');
 
     // Event emitted
-    const evt = broadcasts.find((b) => b.data?.event === 'key-finder-unresolved');
-    assert.ok(evt, `expected key-finder-unresolved broadcast; got ${JSON.stringify(broadcasts.map((b) => b.data?.event))}`);
+    const evt = broadcasts.find((b) => b.data?.event === 'key-finder-unpublished');
+    assert.ok(evt, `expected key-finder-unpublished broadcast; got ${JSON.stringify(broadcasts.map((b) => b.data?.event))}`);
     assert.equal(evt.data.meta.field_key, 'polling_rate');
     assert.equal(evt.data.meta.productId, pid);
   });
@@ -254,7 +254,7 @@ describe('POST /key-finder/:cat/:pid/keys/:fk/unresolve', () => {
     const handler = registerKeyFinderRoutes(ctx);
 
     await handler(
-      ['key-finder', 'mouse', pid, 'keys', 'polling_rate', 'unresolve'],
+      ['key-finder', 'mouse', pid, 'keys', 'polling_rate', 'unpublish'],
       null,
       'POST',
       { body: {} },
@@ -263,7 +263,7 @@ describe('POST /key-finder/:cat/:pid/keys/:fk/unresolve', () => {
 
     const ok = responses.find((r) => r.status === 200);
     assert.ok(ok, `expected 200 on no-op, got ${JSON.stringify(responses)}`);
-    assert.equal(ok.body.status, 'unresolved');
+    assert.equal(ok.body.status, 'unpublished');
   });
 
   it('busy: in-flight primary → 409 key_busy (no mutation)', async () => {
@@ -277,7 +277,7 @@ describe('POST /key-finder/:cat/:pid/keys/:fk/unresolve', () => {
     const handler = registerKeyFinderRoutes(ctx);
 
     await handler(
-      ['key-finder', 'mouse', pid, 'keys', 'polling_rate', 'unresolve'],
+      ['key-finder', 'mouse', pid, 'keys', 'polling_rate', 'unpublish'],
       null,
       'POST',
       { body: {} },
@@ -307,7 +307,7 @@ describe('POST /key-finder/:cat/:pid/keys/:fk/unresolve', () => {
     const handler = registerKeyFinderRoutes(ctx);
 
     await handler(
-      ['key-finder', 'mouse', pid, 'keys', 'sensor_model', 'unresolve'],
+      ['key-finder', 'mouse', pid, 'keys', 'sensor_model', 'unpublish'],
       null,
       'POST',
       { body: {} },
@@ -337,7 +337,7 @@ describe('POST /key-finder/:cat/:pid/keys/:fk/unresolve', () => {
     const handler = registerKeyFinderRoutes(ctx);
 
     await handler(
-      ['key-finder', 'mouse', pid, 'keys', 'polling_rate', 'unresolve'],
+      ['key-finder', 'mouse', pid, 'keys', 'polling_rate', 'unpublish'],
       null,
       'POST',
       { body: {} },

@@ -1,11 +1,13 @@
 /**
- * HTML renderer for the category audit report. Walks the shared
- * ReportStructure and produces a self-contained HTML document — no external
- * assets, dark-theme styling mirrored from docs/audits/keys/mouse-keys-matrix.html
- * for visual continuity with the earlier manual audits.
+ * HTML renderer for audit reports.
  *
- * Single export:
- *   - renderHtml(reportData) → string
+ * Two entry points:
+ *   - renderHtml(reportData) → string         — category-level audit report wrapper.
+ *   - renderHtmlFromStructure(structure, { documentTitle, subtitleHtml }) → string
+ *     pure structure consumer, used by per-key doc builder.
+ *
+ * Dark-theme styling mirrored from docs/audits/keys/mouse-keys-matrix.html for
+ * visual continuity with the earlier manual audits.
  */
 
 import { buildReportStructure } from './reportStructure.js';
@@ -51,8 +53,8 @@ const CSS = `
   details { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 0; margin: 8px 0; }
   details > summary { padding: 10px 14px; cursor: pointer; font-weight: 600; font-size: 13px; color: var(--ink); list-style: none; user-select: none; }
   details > summary::marker, details > summary::-webkit-details-marker { display: none; }
-  details > summary::before { content: "▸ "; color: var(--accent); }
-  details[open] > summary::before { content: "▾ "; }
+  details > summary::before { content: "\u25B8 "; color: var(--accent); }
+  details[open] > summary::before { content: "\u25BE "; }
   details > div.details-body { padding: 0 14px 12px; border-top: 1px solid var(--line); }
   .note { padding: 10px 14px; border-radius: 6px; margin: 8px 0; border-left: 3px solid var(--accent); background: rgba(121,184,255,0.05); font-size: 12.5px; }
   .note.info { border-left-color: var(--accent); background: rgba(121,184,255,0.06); }
@@ -62,7 +64,7 @@ const CSS = `
   strong { color: #ffd98a; }
 `;
 
-function escapeHtml(s) {
+export function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
@@ -114,13 +116,29 @@ function renderToc(sections) {
   return `<nav class="toc">${topLevel.map((s) => `<a href="#${escapeHtml(s.id)}">${renderInline(s.title)}</a>`).join('')}</nav>`;
 }
 
-export function renderHtml(reportData) {
-  const structure = buildReportStructure(reportData);
+/**
+ * Pure structure consumer. Emits a self-contained HTML document from a
+ * prebuilt { sections, meta } structure.
+ *
+ * @param {object} structure         — { sections, meta } from a structure builder
+ * @param {object} opts
+ * @param {string} opts.documentTitle — <title> + fallback h1
+ * @param {string} opts.subtitleHtml  — prerendered subtitle HTML (may include tags)
+ */
+export function renderHtmlFromStructure(structure, { documentTitle, subtitleHtml }) {
   const [headerSection, ...body] = structure.sections;
-  const headerHtml = `<header><h1>${renderInline(headerSection.title)}</h1><div class="sub">Category audit report · Consumer: <code>key_finder</code> · Generated ${escapeHtml(structure.meta.generatedAt)}</div></header>`;
+  const headerHtml = `<header><h1>${renderInline(headerSection.title)}</h1><div class="sub">${subtitleHtml}</div></header>`;
   const tocHtml = renderToc(body);
   const bodyHtml = `<main>${[headerSection.blocks.map(renderBlock).join('\n'), ...body.map(renderSection)].join('\n')}</main>`;
   return `<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><title>Key Finder Audit — ${escapeHtml(structure.meta.category)}</title><style>${CSS}</style></head>
+<html lang="en"><head><meta charset="utf-8"><title>${escapeHtml(documentTitle)}</title><style>${CSS}</style></head>
 <body>${headerHtml}${tocHtml}${bodyHtml}</body></html>`;
+}
+
+export function renderHtml(reportData) {
+  const structure = buildReportStructure(reportData);
+  return renderHtmlFromStructure(structure, {
+    documentTitle: `Key Finder Audit \u2014 ${structure.meta.category}`,
+    subtitleHtml: `Category audit report \u00B7 Consumer: <code>key_finder</code> \u00B7 Generated ${escapeHtml(structure.meta.generatedAt)}`,
+  });
 }

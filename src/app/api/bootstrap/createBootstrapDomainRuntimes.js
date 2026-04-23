@@ -8,13 +8,11 @@ import {
 import { safeReadJson, listFiles } from '../../../shared/fileHelpers.js';
 
 export function createBootstrapDomainRuntimes({
-  config, HELPER_ROOT, storage, getSpecDb, cleanVariant,
+  HELPER_ROOT, getSpecDb, cleanVariant,
 }) {
 
-  // ── Catalog builder (SQL-first: reads from specDb products + queue tables) ──
+  // ── Catalog builder (SQL-first: reads from specDb products + field_candidates) ──
   const buildCatalog = createCatalogBuilder({
-    config,
-    storage,
     getSpecDb,
     cleanVariant,
   });

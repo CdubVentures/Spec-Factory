@@ -1,7 +1,7 @@
 /**
  * Key Finder — prompt preview compiler.
  *
- * Compiles the exact prompt the next Run would dispatch for a single
+ * Compiles the exact prompt the current preview settings would dispatch for a single
  * (product, field_key) pair, without invoking the LLM, registering an
  * operation, or persisting anything. Mirrors skuFinderPreviewPrompt.js
  * but scopes on field_key (keyFinder is product-scoped, not per-variant).
@@ -54,6 +54,11 @@ function readBoolKnob(finderStore, key, defaultTrue = true) {
   return raw === 'true';
 }
 
+function readFloatKnob(raw, fallback) {
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 // Mirrors runKeyFinder step 2 (keyFinder.js:160-178) — kept inline rather
 // than extracted so drift becomes obvious if one side changes and the other
 // doesn't. Both call sites feed the same settings shape to buildPassengers
@@ -75,8 +80,12 @@ function readSettings(specDb) {
     bundlingOverlapCapHard: parseInt(readKnob(finderStore, 'bundlingOverlapCapHard') || '6', 10),
     bundlingOverlapCapVeryHard: parseInt(readKnob(finderStore, 'bundlingOverlapCapVeryHard') || '0', 10),
     bundlingPassengerCost: parseJsonSetting(readKnob(finderStore, 'bundlingPassengerCost'), { easy: 1, medium: 2, hard: 4, very_hard: 8 }),
+    bundlingPassengerVariantCostPerExtra: readFloatKnob(readKnob(finderStore, 'bundlingPassengerVariantCostPerExtra'), 0.25),
     bundlingPoolPerPrimary: parseJsonSetting(readKnob(finderStore, 'bundlingPoolPerPrimary'), { easy: 6, medium: 4, hard: 2, very_hard: 1 }),
     passengerDifficultyPolicy: readKnob(finderStore, 'passengerDifficultyPolicy') || 'less_or_equal',
+    passengerExcludeAtConfidence: parseInt(readKnob(finderStore, 'passengerExcludeAtConfidence') || '95', 10),
+    passengerExcludeMinEvidence: parseInt(readKnob(finderStore, 'passengerExcludeMinEvidence') || '3', 10),
+    bundlingSortAxisOrder: readKnob(finderStore, 'bundlingSortAxisOrder') || '',
   };
 }
 
@@ -118,22 +127,24 @@ export async function compileKeyFinderPreviewPrompt(ctx) {
 
   const settings = readSettings(specDb);
   const mode = body?.mode === 'loop' ? 'loop' : 'run';
-
-  // Mirror runKeyFinder's alwaysSoloRun gate — preview must reflect what a
-  // live call of this mode would actually pack, or the byte-for-byte drift
-  // guard fails and the Bundled column lies to the user.
-  const passengers = (settings.alwaysSoloRun && mode === 'run')
-    ? []
-    : buildPassengers({
-      primary: { fieldKey, fieldRule },
-      engineRules: engine.rules,
-      specDb,
-      productId: product.product_id,
-      settings,
-    });
-
   const activeVariants = specDb?.variants?.listActive?.(product.product_id) || [];
   const variantCount = activeVariants.length > 0 ? activeVariants.length : 1;
+
+  // Preview is always Loop-shape — it shows the compiled prompt the next
+  // Loop iteration would dispatch. Run dispatches may still be solo under
+  // alwaysSoloRun=true, but the preview is the "full potential bundle" view
+  // so users can always see the passenger list being offered. Contract:
+  // preview ignores alwaysSoloRun; only buildPassengers' own gates (bundling
+  // enabled, exclude knobs, registry caps, difficulty policy) affect the
+  // packed list.
+  const passengers = buildPassengers({
+    primary: { fieldKey, fieldRule },
+    engineRules: engine.rules,
+    specDb,
+    productId: product.product_id,
+    settings,
+    variantCount,
+  });
 
   const previousDoc = readKeyFinder({ productId: product.product_id, productRoot });
   const previousRuns = Array.isArray(previousDoc?.runs) ? previousDoc.runs : [];
@@ -259,6 +270,7 @@ export async function compileKeyFinderPreviewPrompt(ctx) {
         policy: settings.passengerDifficultyPolicy,
         pool_per_primary: settings.bundlingPoolPerPrimary,
         passenger_cost: settings.bundlingPassengerCost,
+        passenger_variant_cost_per_extra: settings.bundlingPassengerVariantCostPerExtra,
       },
       passenger_field_keys: passengerKeys,
     },

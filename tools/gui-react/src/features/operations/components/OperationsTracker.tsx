@@ -6,6 +6,7 @@ import { useOpVariantAtomsMap } from '../state/useOpVariantAtomsMap.ts';
 import { sortOperations, readSortMode, writeSortMode, SORT_MODES, type OpSortMode } from '../state/opSort.ts';
 import { ColorSwatch, useFinderColorHexMap } from '../../../shared/ui/finder';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
+import { usePersistedNullableTab } from '../../../stores/tabStore.ts';
 import { api } from '../../../api/client.ts';
 import {
   MODULE_STYLES,
@@ -257,7 +258,10 @@ function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
 export function OperationsTracker() {
   const operations = useOperationsStore((s) => s.operations);
   const [isOpen, toggleOpen] = usePersistedToggle('sidebar:ops-tracker', true);
-  const [selectedOpId, setSelectedOpId] = useState<string | null>(null);
+  const [selectedOpId, setSelectedOpId] = usePersistedNullableTab<string>(
+    'sidebar:ops-tracker:selectedOp',
+    null,
+  );
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [sortMode, setSortMode] = useState<OpSortMode>(readSortMode);

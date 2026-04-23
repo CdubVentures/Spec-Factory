@@ -6,7 +6,7 @@ Phase modules for server bootstrap. Each phase initializes one layer of the DI c
 
 - `createBootstrapEnvironment.js` → `createBootstrapEnvironment({ projectRoot })` — config, paths, storage
 - `createBootstrapSessionLayer.js` → `createBootstrapSessionLayer({ config, HELPER_ROOT, storage })` — session cache, SpecDb
-- `createBootstrapDomainRuntimes.js` → `createBootstrapDomainRuntimes({ config, HELPER_ROOT, storage, getSpecDb, cleanVariant, catalogKey })` — review + catalog runtimes
+- `createBootstrapDomainRuntimes.js` → `createBootstrapDomainRuntimes({ HELPER_ROOT, getSpecDb, cleanVariant })` — review + catalog runtimes
 
 ## Dependencies
 

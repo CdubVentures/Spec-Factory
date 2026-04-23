@@ -38,7 +38,6 @@ export async function submitCandidate({
   category, productId, fieldKey,
   value, confidence, sourceMeta,
   fieldRules, knownValues, componentDb, specDb, productRoot,
-  repairHistory,
   metadata,
   appDb,
   config,
@@ -57,7 +56,7 @@ export async function submitCandidate({
       status: 'rejected',
       candidateId: null,
       value,
-      validationResult: { valid: false, value, confidence: 0, repairs: [], rejections: [{ reason_code: 'missing_identity', detail: { productId, fieldKey } }], unknownReason: null, repairPrompt: null },
+      validationResult: { valid: false, value, confidence: 0, repairs: [], rejections: [{ reason_code: 'missing_identity', detail: { productId, fieldKey } }] },
     };
   }
 
@@ -68,7 +67,7 @@ export async function submitCandidate({
       status: 'rejected',
       candidateId: null,
       value,
-      validationResult: { valid: false, value, confidence: 0, repairs: [], rejections: [{ reason_code: 'no_field_rule', detail: { fieldKey } }], unknownReason: null, repairPrompt: null },
+      validationResult: { valid: false, value, confidence: 0, repairs: [], rejections: [{ reason_code: 'no_field_rule', detail: { fieldKey } }] },
     };
   }
 
@@ -97,16 +96,6 @@ export async function submitCandidate({
     return r.before !== r.after;
   });
   const validationRecord = { valid: true, repairs: actualRepairs, rejections: validationResult.rejections };
-
-  // WHY: If the source ran LLM repair before submitting, preserve the full repair context
-  // so the publisher GUI can show prompt ID, decisions, and reasoning.
-  if (repairHistory) {
-    validationRecord.llmRepair = {
-      promptId: repairHistory.promptId ?? null,
-      status: repairHistory.status ?? null,
-      decisions: repairHistory.decisions ?? null,
-    };
-  }
 
   // --- Source identity ---
   const sourceId = buildSourceId(sourceMeta, productId);
@@ -218,7 +207,7 @@ export async function submitCandidate({
       });
       if (pooledCount >= required) {
         purgeInconsistentCandidate({
-          specDb, productId, fieldKey, candidateId, sourceId, sourceType, productRoot,
+          specDb, productId, fieldKey, candidateId, sourceId, sourceType, productRoot, config,
         });
         return {
           status: 'rejected_inconsistent',

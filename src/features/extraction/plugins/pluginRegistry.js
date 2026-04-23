@@ -4,9 +4,11 @@
 // concurrent (true/false). Defaults: phase='capture', concurrent=false.
 
 import { screenshotExtractionPlugin } from './screenshot/screenshotPlugin.js';
+import { crawl4aiPlugin } from './crawl4ai/crawl4aiPlugin.js';
 
 export const EXTRACTION_PLUGIN_REGISTRY = Object.freeze({
   screenshot: screenshotExtractionPlugin,
+  crawl4ai: crawl4aiPlugin,
 });
 
 export function resolveExtractionPlugins(names, { logger } = {}) {

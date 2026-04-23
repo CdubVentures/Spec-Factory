@@ -15,6 +15,16 @@ Spec Factory is a local-first operator workbench for product-spec indexing, revi
 5. [docs/03-architecture/system-map.md](./docs/03-architecture/system-map.md)
 6. [docs/06-references/api-surface.md](./docs/06-references/api-surface.md)
 
+## Optional: Crawl4AI Python sidecar
+
+The extraction pipeline includes an optional Python sidecar (`pipeline-extraction-sidecar/`) that runs `crawl4ai` to turn rendered HTML into clean markdown + spec tables + lists. Install is optional — without Python the sidecar is skipped and screenshots + video + HTML capture continue unchanged.
+
+```
+pip install -r pipeline-extraction-sidecar/pipeline_extraction_sidecar/requirements.txt
+```
+
+We intentionally skip `playwright install` — crawl4ai receives pre-rendered HTML from the Node Playwright fleet. Install is ~50MB, not 400MB. See `pipeline-extraction-sidecar/pipeline_extraction_sidecar/README.md` for the stdio JSON protocol and fallback behavior.
+
 ## Live Entrypoints
 
 | Surface | Path | Notes |

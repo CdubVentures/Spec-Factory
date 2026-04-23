@@ -19,8 +19,8 @@ function mockSpecDb() {
   };
 }
 
-function makeRule(policy = 'open_prefer_known') {
-  return { enum: { policy } };
+function makeRule(policy = 'open_prefer_known', extra = {}) {
+  return { enum: { policy }, ...extra };
 }
 
 describe('persistDiscoveredValue — skips', () => {
@@ -64,6 +64,17 @@ describe('persistDiscoveredValue — skips', () => {
   it('skips when fieldRule is null', () => {
     const db = mockSpecDb();
     persistDiscoveredValue({ specDb: db, fieldKey: 'sensor_brand', value: 'pixart', fieldRule: null });
+    assert.equal(db.calls.upsertListValue.length, 0);
+  });
+
+  it('skips boolean fields even if stale policy says open_prefer_known', () => {
+    const db = mockSpecDb();
+    persistDiscoveredValue({
+      specDb: db,
+      fieldKey: 'discontinued',
+      value: 'no',
+      fieldRule: makeRule('open_prefer_known', { contract: { type: 'boolean', shape: 'scalar' } }),
+    });
     assert.equal(db.calls.upsertListValue.length, 0);
   });
 });

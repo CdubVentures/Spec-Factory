@@ -342,10 +342,6 @@ describe('validateField — edge cases', () => {
     assert.equal(r.confidence, 1.0);
   });
 
-  it('repairPrompt is null when no unknowns', () => {
-    const r = validateField({ fieldKey: 'x', value: 'hello', fieldRule: rule() });
-    assert.equal(r.repairPrompt, null);
-  });
 });
 
 // ============================================================

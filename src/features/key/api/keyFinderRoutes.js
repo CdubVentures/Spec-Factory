@@ -35,6 +35,9 @@ import { isReservedFieldKey, getReservedFieldKeys } from '../../../core/finder/f
 import { calcKeyBudget, readFloatKnob } from '../keyBudgetCalc.js';
 import * as keyFinderRegistry from '../../../core/operations/keyFinderRegistry.js';
 import { buildPassengers } from '../keyPassengerBuilder.js';
+import { isConcreteEvidence } from '../keyConcreteEvidence.js';
+import { calcPassengerCost } from '../keyBundler.js';
+import { parseAxisOrder } from '../keyBundlerSortAxes.js';
 import { runKeyFinder } from '../keyFinder.js';
 import { runKeyFinderLoop } from '../keyFinderLoop.js';
 import { compileKeyFinderPreviewPrompt } from '../keyFinderPreviewPrompt.js';
@@ -45,6 +48,7 @@ import {
   unselectKeyFinderField,
   scrubFieldFromKeyFinder,
 } from '../keyStore.js';
+import { wipePublisherStateForUnpub } from '../../publisher/publish/wipePublisherStateForUnpub.js';
 
 const ROUTE_PREFIX = 'key-finder';
 const MODULE_TYPE = 'kf';
@@ -172,8 +176,12 @@ function readBundlingSettings(specDb) {
     alwaysSoloRun: boolKnob('alwaysSoloRun', true),
     groupBundlingOnly: boolKnob('groupBundlingOnly', true),
     bundlingPassengerCost: parseJsonSetting(readKnobString(store, 'bundlingPassengerCost'), { easy: 1, medium: 2, hard: 4, very_hard: 8 }),
+    bundlingPassengerVariantCostPerExtra: readFloatKnob(readKnobString(store, 'bundlingPassengerVariantCostPerExtra'), 0.25),
     bundlingPoolPerPrimary: parseJsonSetting(readKnobString(store, 'bundlingPoolPerPrimary'), { easy: 6, medium: 4, hard: 2, very_hard: 1 }),
     passengerDifficultyPolicy: readKnobString(store, 'passengerDifficultyPolicy') || 'less_or_equal',
+    passengerExcludeAtConfidence: parseInt(readKnobString(store, 'passengerExcludeAtConfidence') || '95', 10),
+    passengerExcludeMinEvidence: parseInt(readKnobString(store, 'passengerExcludeMinEvidence') || '3', 10),
+    bundlingSortAxisOrder: readKnobString(store, 'bundlingSortAxisOrder') || '',
     budgetVariantPointsPerExtra: readFloatKnob(readKnobString(store, 'budgetVariantPointsPerExtra'), 0.25),
     bundlingOverlapCapEasy: parseInt(readKnobString(store, 'bundlingOverlapCapEasy') || '2', 10),
     bundlingOverlapCapMedium: parseInt(readKnobString(store, 'bundlingOverlapCapMedium') || '4', 10),
@@ -237,10 +245,15 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
       specDb,
       productId,
       settings: bundlingSettings,
+      variantCount,
     });
     const preview = passengers.map((p) => ({
       field_key: p.fieldKey,
-      cost: Number(bundlingSettings.bundlingPassengerCost?.[p.fieldRule.difficulty]) || 0,
+      cost: calcPassengerCost({
+        difficulty: p.fieldRule.difficulty,
+        settings: bundlingSettings,
+        variantCount,
+      }),
     }));
     const totalCost = preview.reduce((sum, e) => sum + e.cost, 0);
     return { preview, pool, totalCost };
@@ -267,6 +280,13 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
       else if (published) lastStatus = 'resolved';
       else if (confidence !== null && threshold > 0 && confidence < threshold) lastStatus = 'below_threshold';
       else lastStatus = 'unresolved';
+    } else if (published) {
+      // Key is published via the candidate cascade (was a passenger on another
+      // key's primary run — no own primary run record exists). Without this,
+      // the UI shows status='—' and the user thinks the key is unresolved
+      // even though getResolvedFieldCandidate returns truthy and the passenger
+      // pool correctly excludes it.
+      lastStatus = 'resolved';
     }
 
     const candidateRows = specDb?.getFieldCandidatesByProductAndField?.(productId, fk) || [];
@@ -276,6 +296,39 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
     const { attempts: budget, rawBudget: raw_budget } = budgetResult;
     const { preview, pool, totalCost } = computeBundlePreview(fk, rule);
     const inFlight = keyFinderRegistry.count(productId, fk);
+
+    // Concrete-evidence gate: shares the exact same check buildPassengers
+    // uses for exclusion, so the UI checkmark and runtime packing stay
+    // in lockstep. Display-only top_confidence / top_evidence_count feed
+    // the tooltip; they are NOT used for gating.
+    const concrete_evidence = rule
+      ? isConcreteEvidence({
+        specDb, productId, fieldKey: fk, fieldRule: rule,
+        excludeConf: bundlingSettings.passengerExcludeAtConfidence,
+        excludeEvd: bundlingSettings.passengerExcludeMinEvidence,
+      })
+      : false;
+    const topCandidate = typeof specDb?.getTopFieldCandidate === 'function'
+      ? specDb.getTopFieldCandidate(productId, fk)
+      : null;
+    const top_confidence = topCandidate && Number.isFinite(Number(topCandidate.confidence))
+      ? Number(topCandidate.confidence) : null;
+    const top_evidence_count = topCandidate && Number.isFinite(Number(topCandidate.evidence_count))
+      ? Number(topCandidate.evidence_count) : null;
+
+    // When the key is resolved via passenger cascade (no own primary run),
+    // derive display values from the top candidate so the Value + Conf columns
+    // don't show em-dash on a resolved key. Lists come out as JSON strings from
+    // SQL — try to parse them so the renderer shows the array, not a literal.
+    let derivedLastValue = null;
+    if (!run && published && topCandidate?.value !== undefined && topCandidate.value !== null) {
+      const raw = topCandidate.value;
+      if (typeof raw === 'string' && raw.length > 0 && (raw[0] === '[' || raw[0] === '{' || raw === 'true' || raw === 'false' || raw === 'null' || !Number.isNaN(Number(raw)))) {
+        try { derivedLastValue = JSON.parse(raw); } catch { derivedLastValue = raw; }
+      } else {
+        derivedLastValue = raw;
+      }
+    }
 
     return {
       field_key: fk,
@@ -293,9 +346,13 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
       last_run_number: run ? (run.run_number || null) : null,
       last_ran_at: run ? (run.ran_at || run.started_at || '') : null,
       last_status: lastStatus,
-      last_value: run ? (perKey.value !== undefined ? perKey.value : null) : null,
-      last_confidence: confidence,
-      last_model: run ? (run.model || '') : null,
+      last_value: run
+        ? (perKey.value !== undefined ? perKey.value : null)
+        : derivedLastValue,
+      last_confidence: run
+        ? confidence
+        : (published && top_confidence !== null ? top_confidence : null),
+      last_model: run ? (run.model || '') : (published && topCandidate?.model ? String(topCandidate.model) : null),
       // WHY: Last Model column needs the same badge set (LAB/API + thinking +
       // webSearch + effort + FB) that Run History already renders via
       // FinderRunModelBadge. Without these the column is a bare string with
@@ -307,6 +364,9 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
       last_web_search: run ? Boolean(run.web_search) : null,
       candidate_count: candidateRows.length,
       published,
+      concrete_evidence,
+      top_confidence,
+      top_evidence_count,
       run_count: runCountByKey.get(fk) || 0,
       in_flight_as_primary: inFlight.asPrimary > 0,
       in_flight_as_passenger_count: inFlight.asPassenger,
@@ -380,8 +440,8 @@ export function registerKeyFinderRoutes(ctx) {
 
     // ── GET /key-finder/:category/:productId/bundling-config — live settings
     // snapshot. Panel uses this to render the BundlingStatusStrip at the top
-    // (enabled / scope / policy / pool / cost). Passenger cost is RAW (no
-    // variant scaling). Invalidates via the 'settings' domain template.
+    // (enabled / scope / policy / pool / cost + family-size surcharge).
+    // Invalidates via the 'settings' domain template.
     if (method === 'GET' && category && productId && parts[3] === 'bundling-config' && !parts[4]) {
       const specDb = getSpecDb(category);
       if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
@@ -393,6 +453,7 @@ export function registerKeyFinderRoutes(ctx) {
         passengerDifficultyPolicy: s.passengerDifficultyPolicy,
         poolPerPrimary: s.bundlingPoolPerPrimary,
         passengerCost: s.bundlingPassengerCost,
+        passengerVariantCostPerExtra: s.bundlingPassengerVariantCostPerExtra,
         variantCount: resolveVariantCount(specDb, productId),
         overlapCaps: {
           easy: s.bundlingOverlapCapEasy,
@@ -400,6 +461,8 @@ export function registerKeyFinderRoutes(ctx) {
           hard: s.bundlingOverlapCapHard,
           very_hard: s.bundlingOverlapCapVeryHard,
         },
+        // Canonicalized CSV — frontend renders it directly without re-parsing.
+        sortAxisOrder: parseAxisOrder(s.bundlingSortAxisOrder).join(','),
       });
     }
 
@@ -494,10 +557,14 @@ export function registerKeyFinderRoutes(ctx) {
       }
     }
 
-    // ── POST /key-finder/:cat/:pid/keys/:fk/unresolve ─────────────
-    // Demote resolved→candidate in DB + clear doc.selected.keys[fk] in JSON.
-    // Keeps candidate pool, runs, and discovery history intact. Reversible.
-    if (method === 'POST' && category && productId && parts[3] === 'keys' && parts[4] && parts[5] === 'unresolve') {
+    // ── POST /key-finder/:cat/:pid/keys/:fk/unpublish ─────────────
+    // Demote resolved→candidate + clear doc.selected.keys[fk] in JSON + wipe
+    // every publisher-stamped signal on the demoted row (confidence → 0,
+    // evidence rows deleted) so the panel stops rendering it as "high-
+    // confidence resolved". The candidate row itself survives — its LLM-
+    // submitted value stays for re-evaluation by a future Run. Runs +
+    // discovery history are untouched.
+    if (method === 'POST' && category && productId && parts[3] === 'keys' && parts[4] && parts[5] === 'unpublish') {
       const specDb = getSpecDb(category);
       if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
       const fieldKey = parts[4];
@@ -511,15 +578,18 @@ export function registerKeyFinderRoutes(ctx) {
       if (typeof specDb.demoteResolvedCandidates === 'function') {
         specDb.demoteResolvedCandidates(productId, fieldKey);
       }
+      // Wipe publisher state (confidence + evidence) for the just-demoted
+      // row. Must run AFTER the demote; see wipePublisherStateForUnpub.js.
+      wipePublisherStateForUnpub({ specDb, productId, fieldKey });
       unselectKeyFinderField({ productId, productRoot: resolveProductRoot(config), fieldKey });
       emitDataChange({
         broadcastWs,
-        event: `${ROUTE_PREFIX}-unresolved`,
+        event: `${ROUTE_PREFIX}-unpublished`,
         category,
         entities: { productIds: [productId] },
         meta: { productId, field_key: fieldKey },
       });
-      return jsonRes(res, 200, { status: 'unresolved', field_key: fieldKey });
+      return jsonRes(res, 200, { status: 'unpublished', field_key: fieldKey });
     }
 
     // ── DELETE /key-finder/:cat/:pid/keys/:fk ─────────────────────

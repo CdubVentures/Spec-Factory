@@ -18,10 +18,20 @@ type PillPublish = {
 type PillCallBudget = { used: number; budget: number; exhausted: boolean };
 type FinalStatus = 'published' | 'definitive_unk' | 'budget_exhausted' | 'skipped_resolved' | 'aborted' | null;
 
+type PillBucket = {
+  fp: string;
+  label: string;
+  count: number;
+  required: number;
+  qualifies: boolean;
+  topConf: number | null;
+};
+
 let publishLineIcon: (pub: PillPublish, final: FinalStatus) => string;
 let publishLineText: (pub: PillPublish, final: FinalStatus) => string;
 let statusChipClass: (status: NonNullable<FinalStatus>) => string;
 let isBarDanger: (pub: PillPublish, cb: PillCallBudget) => boolean;
+let BucketsRow: (props: { buckets: ReadonlyArray<PillBucket> | null | undefined }) => unknown;
 
 before(async () => {
   const mod = await loadBundledModule(
@@ -37,8 +47,14 @@ before(async () => {
       },
     },
   );
-  ({ publishLineIcon, publishLineText, statusChipClass, isBarDanger } = mod);
+  ({ publishLineIcon, publishLineText, statusChipClass, isBarDanger, BucketsRow } = mod);
 });
+
+function flattenChildren(node: unknown): unknown[] {
+  if (node === null || node === undefined || node === false) return [];
+  if (Array.isArray(node)) return node.flatMap(flattenChildren);
+  return [node];
+}
 
 const notSatisfied: PillPublish = {
   evidenceCount: 0, evidenceTarget: 1, satisfied: false, confidence: null, threshold: 95,
@@ -148,5 +164,54 @@ describe('isBarDanger', () => {
 
   it('returns false when budget=0 (skip path — never "dangerous")', () => {
     assert.equal(isBarDanger(notSatisfied, { used: 0, budget: 0, exhausted: false }), false);
+  });
+});
+
+describe('BucketsRow', () => {
+  it('returns null when buckets is null/undefined/empty', () => {
+    assert.equal(BucketsRow({ buckets: null }), null);
+    assert.equal(BucketsRow({ buckets: undefined }), null);
+    assert.equal(BucketsRow({ buckets: [] }), null);
+  });
+
+  it('renders one chip per bucket with count/required and qualify class', () => {
+    const node = BucketsRow({ buckets: [
+      { fp: 'paw3395', label: 'PAW3395', count: 2, required: 2, qualifies: true, topConf: 94 },
+      { fp: 'hero', label: 'HERO', count: 1, required: 2, qualifies: false, topConf: 70 },
+    ]}) as { type: string; props: { children?: unknown } };
+
+    const chips = flattenChildren(node.props.children) as Array<{ props: { className?: string; title?: string; children?: unknown } }>;
+    assert.equal(chips.length, 2);
+
+    assert.match(String(chips[0].props.className), /sf-chip-success/);
+    assert.match(String(chips[0].props.title), /PAW3395/);
+    assert.match(String(chips[0].props.title), /2\/2 qualifying refs/);
+    assert.match(String(chips[0].props.title), /94%/);
+
+    assert.match(String(chips[1].props.className), /sf-chip-neutral/);
+    assert.match(String(chips[1].props.title), /HERO/);
+    assert.match(String(chips[1].props.title), /1\/2 qualifying refs/);
+  });
+
+  it('renders overflow chip distinctly without count/required', () => {
+    const node = BucketsRow({ buckets: [
+      { fp: 'a', label: 'A', count: 0, required: 1, qualifies: false, topConf: null },
+      { fp: '__more__', label: '+3 more', count: 0, required: 0, qualifies: false, topConf: null },
+    ]}) as { type: string; props: { children?: unknown } };
+    const chips = flattenChildren(node.props.children) as Array<{ props: { className?: string } }>;
+    assert.equal(chips.length, 2);
+    const overflowClass = String(chips[1].props.className);
+    assert.match(overflowClass, /sf-text-subtle/);
+    assert.doesNotMatch(overflowClass, /sf-chip-success/);
+    assert.doesNotMatch(overflowClass, /sf-chip-neutral/);
+  });
+
+  it('omits "top%" from tooltip when topConf is null', () => {
+    const node = BucketsRow({ buckets: [
+      { fp: 'x', label: 'X', count: 0, required: 2, qualifies: false, topConf: null },
+    ]}) as { type: string; props: { children?: unknown } };
+    const chips = flattenChildren(node.props.children) as Array<{ props: { title?: string } }>;
+    assert.equal(chips.length, 1);
+    assert.doesNotMatch(String(chips[0].props.title), /top/);
   });
 });

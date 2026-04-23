@@ -15,6 +15,7 @@ import path from 'node:path';
 import { loadFieldRules } from '../../../field-rules/loader.js';
 import { resolveGlobalPrompt } from '../../../core/llm/prompts/globalPromptRegistry.js';
 import { generateCategoryAuditReport } from '../reportBuilder.js';
+import { generatePerKeyDocs } from '../perKeyDocBuilder.js';
 
 const RESOLVED_GLOBAL_FRAGMENT_KEYS = [
   'identityIntro',
@@ -129,6 +130,54 @@ export function registerCategoryAuditRoutes(ctx) {
         }
         throw err;
       }
+    }
+
+    if (parts[1] && parts[2] === 'generate-per-key-docs' && method === 'POST') {
+      const category = parts[1];
+      let body = {};
+      try {
+        body = (await readJsonBody(req)) || {};
+      } catch {
+        jsonRes(res, 400, { error: 'invalid_json_body' });
+        return true;
+      }
+
+      let loadedRules;
+      try {
+        loadedRules = await loadFieldRules(category, { config });
+      } catch (err) {
+        const msg = String(err?.message || err);
+        if (msg.startsWith('missing_field_rules') || msg.includes('category')) {
+          return jsonRes(res, 400, { error: 'unknown_category', category, details: msg });
+        }
+        throw err;
+      }
+
+      const fieldGroupsPath = path.join(helperRoot, category, '_generated', 'field_groups.json');
+      const fieldGroups = (await readJsonIfExists(fieldGroupsPath)) || { group_index: {} };
+      const compileReportPath = path.join(helperRoot, category, '_generated', '_compile_report.json');
+      const compileSummary = await readJsonIfExists(compileReportPath);
+
+      const globalFragments = resolveAllFragments();
+      const tierBundles = parseTierBundles(config?.keyFinderTierSettingsJson);
+
+      const result = await generatePerKeyDocs({
+        category,
+        loadedRules,
+        fieldGroups,
+        globalFragments,
+        tierBundles,
+        compileSummary,
+        outputRoot,
+        templateOverride: body?.templateOverride || '',
+      });
+      return jsonRes(res, 200, {
+        category,
+        basePath: result.basePath,
+        counts: result.counts,
+        reservedKeysPath: result.reservedKeysPath,
+        generatedAt: result.generatedAt,
+      });
     }
 
     return false;

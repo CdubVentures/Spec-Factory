@@ -8,5 +8,6 @@
  */
 
 export { generateCategoryAuditReport } from './reportBuilder.js';
+export { generatePerKeyDocs } from './perKeyDocBuilder.js';
 export { extractReportData } from './reportData.js';
 export { registerCategoryAuditRoutes } from './api/categoryAuditRoutes.js';

@@ -10,7 +10,7 @@ import {
   useBillingByCategoryQuery,
 } from '../../features/billing/billingQueries.ts';
 import type { BillingFilterState } from '../../features/billing/billingTypes.ts';
-import { computeFilterChipCounts } from '../../features/billing/billingTransforms.ts';
+import { computeFilterChipCounts, resolveBillingFilterState } from '../../features/billing/billingTransforms.ts';
 import { BillingHeroBand } from '../../features/billing/components/BillingHeroBand.tsx';
 import { BillingFilterBar } from '../../features/billing/components/BillingFilterBar.tsx';
 import { DailyCostChart } from '../../features/billing/components/DailyCostChart.tsx';
@@ -66,19 +66,12 @@ export function BillingPage() {
   const [access, setAccess] = usePersistedTab<string>('billing:filter:access', '');
   const [page, setPage] = usePersistedNumber('billing:page', 0);
 
-  const filters = useMemo<BillingFilterState>(
+  const persistedFilters = useMemo<BillingFilterState>(
     () => ({ category, reason, model, access }),
     [category, reason, model, access],
   );
 
   const noFilters = useMemo<BillingFilterState>(() => ({ category: '', reason: '', model: '', access: '' }), []);
-
-  const summary = useBillingSummaryQuery(filters);
-  const priorSummary = useBillingPriorSummaryQuery(filters);
-  const daily = useBillingDailyQuery(filters);
-  const byModel = useBillingByModelQuery(filters);
-  const byReason = useBillingByReasonQuery(filters);
-  const byCategory = useBillingByCategoryQuery(filters);
 
   // WHY: Unfiltered aggregations drive BOTH chip stability AND chip counts.
   const allModels = useBillingByModelQuery(noFilters);
@@ -88,10 +81,25 @@ export function BillingPage() {
     () => (allModels.data?.models ?? []).map((m) => m.key),
     [allModels.data],
   );
+  const reasonKeys = useMemo(
+    () => (allReasons.data?.reasons ?? []).map((r) => r.key),
+    [allReasons.data],
+  );
+  const filters = useMemo<BillingFilterState>(
+    () => resolveBillingFilterState(persistedFilters, { categories, models: modelKeys, reasons: reasonKeys }),
+    [persistedFilters, categories, modelKeys, reasonKeys],
+  );
   const chipCounts = useMemo(
     () => computeFilterChipCounts(allModels.data, allReasons.data, allCategories.data),
     [allModels.data, allReasons.data, allCategories.data],
   );
+
+  const summary = useBillingSummaryQuery(filters);
+  const priorSummary = useBillingPriorSummaryQuery(filters);
+  const daily = useBillingDailyQuery(filters);
+  const byModel = useBillingByModelQuery(filters);
+  const byReason = useBillingByReasonQuery(filters);
+  const byCategory = useBillingByCategoryQuery(filters);
 
   const totalCost = summary.data?.totals?.cost_usd ?? 0;
   const totalTokens = (summary.data?.totals?.prompt_tokens ?? 0) + (summary.data?.totals?.completion_tokens ?? 0);

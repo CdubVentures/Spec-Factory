@@ -70,6 +70,7 @@ const BUNDLING_ON = {
   bundlingPassengerCost: JSON.stringify({ easy: 1, medium: 2, hard: 4, very_hard: 8 }),
   bundlingPoolPerPrimary: JSON.stringify({ easy: 6, medium: 4, hard: 2, very_hard: 1 }),
   passengerDifficultyPolicy: 'less_or_equal',
+  bundlingPassengerVariantCostPerExtra: '0.25',
   urlHistoryEnabled: 'true',
   queryHistoryEnabled: 'true',
   componentInjectionEnabled: 'true',
@@ -92,19 +93,36 @@ function makeFinderStoreStub(settings) {
   };
 }
 
-function makeSpecDbStub({ finderStore, resolvedSet = new Set() } = {}) {
+function makeSpecDbStub({ finderStore, resolvedSet = new Set(), bucketsByFieldKey = {}, activeVariants } = {}) {
+  const variants = activeVariants || [{ variant_id: 'v0', variant_key: 'default', variant_label: 'Default', variant_type: 'base' }];
   return {
     category: 'mouse',
     getFinderStore: (id) => (id === 'keyFinder' ? finderStore : null),
     getCompiledRules: () => COMPILED,
     getProduct: () => ({ product_id: PRODUCT.product_id, category: 'mouse', brand: PRODUCT.brand, model: PRODUCT.model, base_model: PRODUCT.base_model }),
     variants: {
-      listActive: () => [{ variant_id: 'v0', variant_key: 'default', variant_label: 'Default', variant_type: 'base' }],
-      listByProduct: () => [{ variant_id: 'v0', variant_key: 'default', variant_label: 'Default', variant_type: 'base' }],
+      listActive: () => variants,
+      listByProduct: () => variants,
     },
     getFieldCandidatesByProductAndField: () => [],
     getResolvedFieldCandidate: (_pid, fk) => (resolvedSet.has(fk) ? { value: 'X', confidence: 95 } : null),
     getItemComponentLinks: () => [],
+    // Bucket evaluator contract — drives isConcreteEvidence.
+    listFieldBuckets: ({ fieldKey }) => {
+      const b = bucketsByFieldKey[fieldKey];
+      if (!b) return [];
+      return [{
+        value_fingerprint: `fp_${fieldKey}`,
+        top_confidence: Number(b.top_confidence) || 0,
+        member_count: Number(b.pooled_count) || 0,
+        member_ids: [1],
+        value: 'X',
+      }];
+    },
+    countPooledQualifyingEvidenceByFingerprint: ({ fieldKey }) => {
+      const b = bucketsByFieldKey[fieldKey];
+      return Number(b?.pooled_count) || 0;
+    },
   };
 }
 
@@ -113,12 +131,12 @@ const PRODUCT_ROOT = path.join(TMP, 'products');
 
 function cleanupTmp() { try { fs.rmSync(TMP, { recursive: true, force: true }); } catch { /* */ } }
 
-function setup(productId, { settings = BUNDLING_ON, resolvedSet = new Set() } = {}) {
+function setup(productId, { settings = BUNDLING_ON, resolvedSet = new Set(), bucketsByFieldKey = {}, activeVariants } = {}) {
   const dir = path.join(PRODUCT_ROOT, productId);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'product.json'), JSON.stringify({ product_id: productId, category: 'mouse', candidates: {}, fields: {} }));
   const finderStore = makeFinderStoreStub(settings);
-  const specDb = makeSpecDbStub({ finderStore, resolvedSet });
+  const specDb = makeSpecDbStub({ finderStore, resolvedSet, bucketsByFieldKey, activeVariants });
   return { specDb };
 }
 
@@ -200,12 +218,13 @@ test('drift guard: preview passenger_field_keys match buildPassengers directly (
     },
   });
 
-  // Preview with mode='loop' so alwaysSoloRun gate is bypassed, matching
-  // the direct buildPassengers call which ignores alwaysSoloRun.
+  // Preview is always Loop-shape — always builds passengers regardless of
+  // body.mode or settings.alwaysSoloRun. Direct buildPassengers call above
+  // is the ground truth; preview must match it byte-for-byte.
   const env = await compileKeyFinderPreviewPrompt({
     product: { ...PRODUCT, product_id: 'kfp-drift' },
     specDb, appDb: null, config: {}, productRoot: PRODUCT_ROOT,
-    body: { field_key: 'polling_rate', mode: 'loop' },
+    body: { field_key: 'polling_rate' },
   });
 
   const directKeys = directPassengers.map((p) => p.fieldKey);
@@ -216,10 +235,14 @@ test('drift guard: preview passenger_field_keys match buildPassengers directly (
   );
 });
 
-test('drift guard: preview systemPrompt matches live runner byte-for-byte', async (t) => {
+test('drift guard: preview systemPrompt matches live Loop runner byte-for-byte', async (t) => {
   t.after(cleanupTmp);
   const { specDb } = setup('kfp-byte');
 
+  // Preview is always Loop-shape — compare against a Loop-mode runKeyFinder
+  // dispatch (which always packs passengers). A live Run dispatch under
+  // alwaysSoloRun=true is intentionally solo; Run vs preview divergence is
+  // the product contract (preview shows the "full potential bundle").
   const preview = await compileKeyFinderPreviewPrompt({
     product: { ...PRODUCT, product_id: 'kfp-byte' },
     specDb, appDb: null, config: {}, productRoot: PRODUCT_ROOT,
@@ -232,6 +255,7 @@ test('drift guard: preview systemPrompt matches live runner byte-for-byte', asyn
     product: { ...PRODUCT, product_id: 'kfp-byte' },
     fieldKey: 'polling_rate',
     category: 'mouse',
+    mode: 'loop',
     specDb, appDb: null, config: {},
     productRoot: PRODUCT_ROOT,
     policy: POLICY,
@@ -272,15 +296,15 @@ test('drift guard: preview systemPrompt matches live runner byte-for-byte', asyn
   assert.deepEqual(preview.inputs_resolved.passenger_field_keys, runnerPassengerKeys);
 });
 
-test('bundling ON: systemPrompt contains ADDITIONAL_FIELD_KEYS section when passengers present (Loop mode)', async (t) => {
+test('bundling ON: systemPrompt contains ADDITIONAL_FIELD_KEYS section when passengers present', async (t) => {
   t.after(cleanupTmp);
   const { specDb } = setup('kfp-adl-on');
 
-  // mode='loop' bypasses the alwaysSoloRun gate so passengers pack into preview.
+  // Preview is always Loop-shape; mode param is informational only.
   const env = await compileKeyFinderPreviewPrompt({
     product: { ...PRODUCT, product_id: 'kfp-adl-on' },
     specDb, appDb: null, config: {}, productRoot: PRODUCT_ROOT,
-    body: { field_key: 'polling_rate', mode: 'loop' },
+    body: { field_key: 'polling_rate' },
   });
 
   assert.ok(env.inputs_resolved.passenger_field_keys.length > 0, 'fixture must produce passengers');
@@ -292,6 +316,23 @@ test('bundling ON: systemPrompt contains ADDITIONAL_FIELD_KEYS section when pass
       `expected passenger field_key "${pfk}" to appear in system prompt`,
     );
   }
+});
+
+test('always Loop-shape: preview packs passengers even with mode=run + alwaysSoloRun=true', async (t) => {
+  t.after(cleanupTmp);
+  // BUNDLING_ON omits alwaysSoloRun → defaults to true (same as real settings).
+  const { specDb } = setup('kfp-always-loop');
+
+  const env = await compileKeyFinderPreviewPrompt({
+    product: { ...PRODUCT, product_id: 'kfp-always-loop' },
+    specDb, appDb: null, config: {}, productRoot: PRODUCT_ROOT,
+    body: { field_key: 'polling_rate', mode: 'run' },
+  });
+
+  assert.ok(
+    env.inputs_resolved.passenger_field_keys.length > 0,
+    'preview must always show Loop-shape — passengers build regardless of body.mode or alwaysSoloRun',
+  );
 });
 
 test('bundling OFF: passenger_field_keys is [] and userMessage has passenger_count:0', async (t) => {
@@ -308,6 +349,33 @@ test('bundling OFF: passenger_field_keys is [] and userMessage has passenger_cou
   assert.equal(env.inputs_resolved.bundling.enabled, false);
   const userJson = JSON.parse(env.prompts[0].user);
   assert.equal(userJson.passenger_count, 0);
+});
+
+test('preview inputs resolve passenger variant surcharge from current settings and family size', async (t) => {
+  t.after(cleanupTmp);
+  const { specDb } = setup('kfp-variant-cost', {
+    settings: {
+      ...BUNDLING_ON,
+      bundlingPassengerVariantCostPerExtra: '0.25',
+      bundlingPoolPerPrimary: JSON.stringify({ easy: 2, medium: 2, hard: 2, very_hard: 2 }),
+    },
+    activeVariants: [
+      { variant_id: 'v1' },
+      { variant_id: 'v2' },
+      { variant_id: 'v3' },
+      { variant_id: 'v4' },
+    ],
+  });
+
+  const env = await compileKeyFinderPreviewPrompt({
+    product: { ...PRODUCT, product_id: 'kfp-variant-cost' },
+    specDb, appDb: null, config: {}, productRoot: PRODUCT_ROOT,
+    body: { field_key: 'polling_rate' },
+  });
+
+  assert.equal(env.inputs_resolved.variant_count, 4);
+  assert.equal(env.inputs_resolved.bundling.passenger_variant_cost_per_extra, 0.25);
+  assert.deepEqual(env.inputs_resolved.passenger_field_keys, ['dpi']);
 });
 
 test('notes include bundling state', async (t) => {
@@ -389,4 +457,34 @@ test('registry parity: peer at cap excluded from preview', async (t) => {
     !env.inputs_resolved.passenger_field_keys.includes('dpi'),
     'dpi at cap is skipped in preview',
   );
+});
+
+// ─── passengerExclude* knobs wired from settings → preview ────────────
+// Preview compiler reads the two exclude knobs and routes buildPassengers
+// through the publisher's bucket evaluator at stricter thresholds. A peer
+// whose bucket qualifies under 95/3 drops out of the preview's passenger
+// list; the live run would make the same decision.
+test('preview honors passengerExclude* via bucket evaluator', async (t) => {
+  t.after(cleanupTmp);
+  const { specDb } = setup('kfp-concrete', {
+    settings: {
+      ...BUNDLING_ON,
+      passengerExcludeAtConfidence: '95',
+      passengerExcludeMinEvidence: '3',
+    },
+    bucketsByFieldKey: {
+      dpi: { top_confidence: 98, pooled_count: 4 }, // concrete — excluded
+      buttons: { top_confidence: 80, pooled_count: 5 }, // below 95 — still packed
+    },
+  });
+
+  const env = await compileKeyFinderPreviewPrompt({
+    product: { ...PRODUCT, product_id: 'kfp-concrete' },
+    specDb, appDb: null, config: {}, productRoot: PRODUCT_ROOT,
+    body: { field_key: 'polling_rate', mode: 'loop' },
+  });
+
+  const passengers = env.inputs_resolved.passenger_field_keys;
+  assert.ok(!passengers.includes('dpi'), 'dpi excluded: qualifies under 95/3 in the bucket evaluator');
+  assert.ok(passengers.includes('buttons'), 'buttons packed: below 95 confidence in the bucket');
 });

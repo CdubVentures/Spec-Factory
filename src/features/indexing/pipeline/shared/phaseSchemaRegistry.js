@@ -8,8 +8,6 @@ import { queryEnhancerResponseZodSchema, buildEnhancerSystemPrompt } from '../se
 import { brandResolverLlmResponseSchema, BRAND_RESOLVER_SYSTEM_PROMPT } from '../brandResolver/brandResolverLlmAdapter.js';
 import { serpSelectorOutputSchema } from '../resultProcessing/serpSelector.js';
 import { SERP_SELECT_URLS_SYSTEM_PROMPT } from '../resultProcessing/serpSelectorLlmAdapter.js';
-import { REPAIR_SYSTEM_PROMPT, HALLUCINATION_PATTERNS } from '../../../publisher/repair-adapter/promptBuilder.js';
-import { repairResponseJsonSchema } from '../../../publisher/repair-adapter/repairResponseSchema.js';
 import { FINDER_PHASE_SCHEMAS, FINDER_SCALAR_DEFAULT_TEMPLATES } from './phaseSchemaRegistry.generated.js';
 import { buildScalarFinderPromptTemplates } from '../../../../core/finder/scalarFinderPromptContract.js';
 import { buildKeyFinderPromptTemplates } from '../../../key/keyFinderPromptContract.js';
@@ -64,19 +62,6 @@ const NON_FINDER_PHASES = Object.freeze({
       { field: 'product', description: '{ brand, model } — the exact product to match URLs against' },
       { field: 'candidates[]', description: 'Candidate URLs with id, url, title, snippet from SERP results' },
       { field: 'max_keep', description: 'e.g. 8 — maximum URLs the LLM may return' },
-    ] }],
-  },
-  'validate': {
-    system_prompt: REPAIR_SYSTEM_PROMPT + '\n\n' + HALLUCINATION_PATTERNS,
-    response_schema: repairResponseJsonSchema,
-    prompt_templates: [{ promptKey: 'system', label: 'System Prompt (Repair + Hallucination Patterns)', storageScope: 'global', defaultTemplate: REPAIR_SYSTEM_PROMPT + '\n\n' + HALLUCINATION_PATTERNS, variables: [], userMessageInfo: [
-      { field: 'field_contract', description: 'Per-key contract block — e.g. "FIELD CONTRACT for \'weight\':\\n  Type: number | Shape: scalar | Unit: g\\n  Range: 1 to 5000 g\\n  Rounding: 1 decimals"' },
-      { field: 'rejected_value', description: 'e.g. "twenty grams" or ["pink", "sparkle-unicorn"] — the value that failed validation' },
-      { field: 'rejection_code', description: 'P1 (closed enum), P2 (open enum), P3 (wrong type), P4 (format mismatch), P6 (cross-field), P7 (out of range)' },
-      { field: 'known_values[]', description: 'e.g. ["black", "white", "red", "light-blue"] — registered values for enum fields' },
-      { field: 'enum_policy', description: '"closed" (must map to existing) or "open_prefer_known" (can confirm genuinely new values)' },
-      { field: 'format_hint', description: 'e.g. "kebab-case" — expected format pattern when applicable' },
-      { field: 'P6: constraints', description: 'Cross-field failures — e.g. "wireless_battery: conditional — wireless mouse must have battery_hours"' },
     ] }],
   },
 });

@@ -536,12 +536,13 @@ export function KeyNavigatorTab({
               {(() => {
                 const contractType = strN(currentRule, "contract.type");
                 const contractShape = strN(currentRule, "contract.shape", "scalar");
-                const es = strN(
+                const isBoolean = contractType === "boolean";
+                const es = isBoolean ? "yes_no" : strN(
                   currentRule,
                   "enum.source",
                   strN(currentRule, "enum_source"),
                 );
-                const ep = strN(
+                const ep = isBoolean ? "closed" : strN(
                   currentRule,
                   "enum.policy",
                   strN(currentRule, "enum_policy", "open"),
@@ -550,7 +551,6 @@ export function KeyNavigatorTab({
                 const chipCls =
                   "px-2 py-0.5 text-[11px] rounded-full font-medium";
                 const isComponent = !!ct;
-                const isBoolean = contractType === "boolean";
                 const isNumeric = ["number", "integer", "range", "mixed_number_range"].includes(contractType);
                 return (
                   <div className="flex flex-wrap items-center gap-2 px-3 py-2 rounded border sf-border-default sf-bg-surface-soft sf-dk-surface-800a50 text-xs">

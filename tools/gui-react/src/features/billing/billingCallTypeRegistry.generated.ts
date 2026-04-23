@@ -18,8 +18,6 @@ export const BILLING_CALL_TYPE_REGISTRY: readonly BillingCallTypeEntry[] = Objec
   { reason: 'search_planner_enhance', label: 'Search Planner', color: 'var(--sf-billing-pipeline-3, #4c6ef5)', group: 'Pipeline' },
   { reason: 'brand_resolution', label: 'Brand', color: 'var(--sf-billing-pipeline-2, #5c7cfa)', group: 'Pipeline' },
   { reason: 'serp_url_selector', label: 'SERP Selector', color: 'var(--sf-billing-pipeline-4, #4263eb)', group: 'Pipeline' },
-  { reason: 'validate', label: 'Validate', color: 'var(--sf-billing-val-1, #38d9a9)', group: 'Validation' },
-  { reason: 'field_repair', label: 'Repair', color: 'var(--sf-billing-val-3, #12b886)', group: 'Validation' },
   { reason: 'color_edition_finding', label: 'CEF', color: 'var(--sf-billing-color-1, #da77f2)', group: 'Color Edition' },
   { reason: 'variant_identity_check', label: 'Variant ID', color: 'var(--sf-billing-color-2, #be4bdb)', group: 'Color Edition' },
   { reason: 'product_image_finding', label: 'Image Finder', color: 'var(--sf-billing-image-1, #ff922b)', group: 'Product Image' },

@@ -262,6 +262,54 @@ describe('WsManager idle watchdog', () => {
     mgr.close();
   });
 
+  it('subscribe() stores only the latest call (single-slot contract — callers must NOT narrow an app-level subscription)', () => {
+    const mgr = new WsManager({
+      url: 'ws://fake/ws',
+      idleTimeoutMs: 0,
+      webSocketClass: FakeWebSocket as unknown as typeof WebSocket,
+      reloadFn: () => {},
+    });
+    mgr.connect();
+    const ws = FakeWebSocket.instances[0];
+    ws.fireOpen();
+
+    mgr.subscribe(['events', 'operations', 'data-change'] as Parameters<WsManager['subscribe']>[0], 'mouse');
+    const framesAfterFirst = ws.sent.length;
+    mgr.subscribe(['indexlab-event'] as Parameters<WsManager['subscribe']>[0], 'mouse');
+
+    const lastFrame = JSON.parse(ws.sent[ws.sent.length - 1]);
+    strictEqual(
+      Array.isArray(lastFrame.subscribe) && lastFrame.subscribe.length === 1 && lastFrame.subscribe[0] === 'indexlab-event',
+      true,
+      'second subscribe() overwrites the first — this is the single-slot contract',
+    );
+    strictEqual(ws.sent.length > framesAfterFirst, true, 'second subscribe sends a fresh frame');
+    mgr.close();
+  });
+
+  it('onMessage handlers stack and receive the same broadcast (no re-subscribe needed)', () => {
+    const mgr = new WsManager({
+      url: 'ws://fake/ws',
+      idleTimeoutMs: 0,
+      webSocketClass: FakeWebSocket as unknown as typeof WebSocket,
+      reloadFn: () => {},
+    });
+    mgr.connect();
+    const ws = FakeWebSocket.instances[0];
+    ws.fireOpen();
+
+    let hitsA = 0;
+    let hitsB = 0;
+    mgr.onMessage(() => { hitsA += 1; });
+    mgr.onMessage(() => { hitsB += 1; });
+
+    ws.fireMessage({ channel: 'indexlab-event', data: {} });
+
+    strictEqual(hitsA, 1, 'handler A received the broadcast');
+    strictEqual(hitsB, 1, 'handler B received the same broadcast');
+    mgr.close();
+  });
+
   it('reconnect re-applies existing subscription so the new socket picks up filters', async () => {
     const mgr = new WsManager({
       url: 'ws://fake/ws',

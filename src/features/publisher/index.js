@@ -28,10 +28,6 @@ export { PHASE_REGISTRY } from './validation/phaseRegistry.js';
 export { validateField } from './validation/validateField.js';
 export { validateRecord } from './validation/validateRecord.js';
 
-// Phase 9: repair-adapter (LLM repair orchestration)
-export { repairField, repairCrossField } from './repair-adapter/repairField.js';
-export { createRepairCallLlm } from './repairLlmAdapter.js';
-
 // Phase 10: discovery enum support (self-tightening vocabulary)
 export { mergeDiscoveredEnums } from './validation/mergeDiscoveredEnums.js';
 export { buildDiscoveredEnumMap } from './buildDiscoveredEnumMap.js';

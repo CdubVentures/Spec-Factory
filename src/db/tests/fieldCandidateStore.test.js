@@ -476,35 +476,6 @@ describe('fieldCandidateStore', () => {
     assert.ok(rows.every(r => r.value === '58'));
   });
 
-  it('validation_json with llmRepair roundtrips through insert', () => {
-    db.insertFieldCandidate({
-      productId: 'mouse-llm', fieldKey: 'sensor',
-      sourceId: 'test-mouse-llm-1', sourceType: 'test',
-      value: 'pixart-3395', confidence: 90, model: '',
-      validationJson: {
-        valid: true,
-        repairs: [{ step: 'normalize', before: 'PixArt 3395', after: 'pixart-3395', rule: 'normalize_chain' }],
-        rejections: [],
-        llmRepair: {
-          promptId: 'P2',
-          status: 'repaired',
-          decisions: [
-            { value: 'PixArt 3395', decision: 'map_to_existing', resolved_to: 'pixart-3395', reasoning: 'Matches known PAW3395 variant' },
-          ],
-        },
-      },
-      metadataJson: {},
-    });
-
-    const row = db.getFieldCandidateBySourceId('mouse-llm', 'sensor', 'test-mouse-llm-1');
-    assert.ok(row);
-    assert.ok(row.validation_json.llmRepair);
-    assert.equal(row.validation_json.llmRepair.promptId, 'P2');
-    assert.equal(row.validation_json.llmRepair.status, 'repaired');
-    assert.equal(row.validation_json.llmRepair.decisions.length, 1);
-    assert.equal(row.validation_json.llmRepair.decisions[0].decision, 'map_to_existing');
-  });
-
   // ── countBySourceId (cross-field count for cascade gate) ──────────
 
   it('countFieldCandidatesBySourceId returns 0 for unknown product/source', () => {

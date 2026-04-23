@@ -289,8 +289,8 @@ export function ContractTab({
         const type = strN(rule, 'contract.data_type', strN(rule, 'data_type', 'string'));
         const shape = strN(rule, 'contract.shape', strN(rule, 'shape', 'scalar'));
         const unit = strN(rule, 'contract.unit', strN(rule, 'unit'));
-        const enumPolicy = strN(rule, 'enum.policy', strN(rule, 'enum_policy', 'open'));
-        const enumSource = strN(rule, 'enum.source', strN(rule, 'enum_source'));
+        const enumPolicy = contractType === 'boolean' ? 'closed' : strN(rule, 'enum.policy', strN(rule, 'enum_policy', 'open'));
+        const enumSource = contractType === 'boolean' ? 'yes_no' : strN(rule, 'enum.source', strN(rule, 'enum_source'));
         const minRefs = numN(
           rule,
           'evidence.min_evidence_refs',

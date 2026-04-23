@@ -267,6 +267,23 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
   );
   const runHistoryRuns = useMemo(() => sortRunsNewestFirst<GenericScalarRun>(effectiveResult), [effectiveResult]);
 
+  // Per-variant URL/QU counts for the in-drawer Hist button label. Groups
+  // the finder's runs by scope='variant' (matches the drawer's own grouping)
+  // so the counts shown on each row exactly equal what the drawer will
+  // render when opened for that variant. Declared here (not inline later)
+  // so the Del enable-state can reuse `has(variantId)` to mean "this variant
+  // has at least one run" — which is what the user cares about: runs are
+  // data that Del should wipe, even when the latest candidate got rejected
+  // and `row.candidate` is undefined.
+  const histCountsByVariant = useMemo(() => {
+    const grouped = groupHistory(runHistoryRuns as readonly FinderRun[], 'variant');
+    const map = new Map<string, { urls: number; queries: number }>();
+    for (const [vid, bucket] of grouped.byVariant.entries()) {
+      map.set(vid, { urls: bucket.urls.size, queries: bucket.queries.size });
+    }
+    return map;
+  }, [runHistoryRuns]);
+
   // Panel-level UnPub All / Del All targets. Fans out per-variant mutations
   // through the existing unpublishVariantMut / deleteVariantMut — each call
   // cleans all four storage layers (field_candidates + product.json +
@@ -276,9 +293,14 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
     () => variantRows.filter((r) => r.variant_id && Boolean(r.candidate?.value)).map((r) => r.variant_id as string),
     [variantRows],
   );
+  // "Any data" = latest candidate OR any run in history. A variant with only
+  // rejected-candidate runs still has data worth wiping (its discovery_log
+  // keeps the Hist (Nqu)(Nurl) counter alive until we delete the runs).
   const variantIdsWithAnyData = useMemo(
-    () => variantRows.filter((r) => r.variant_id && Boolean(r.candidate)).map((r) => r.variant_id as string),
-    [variantRows],
+    () => variantRows
+      .filter((r) => r.variant_id && (Boolean(r.candidate) || histCountsByVariant.has(r.variant_id)))
+      .map((r) => r.variant_id as string),
+    [variantRows, histCountsByVariant],
   );
 
   const handleConfirmDelete = useCallback(() => {
@@ -362,19 +384,6 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
     openHistoryForVariant({ finderId, productId, category, variantIdFilter: variantId });
   }, [openHistoryForVariant, finderId, productId, category]);
 
-  // Per-variant URL/QU counts for the in-drawer Hist button label. Groups
-  // the finder's runs by scope='variant' (matches the drawer's own grouping)
-  // so the counts shown on each row exactly equal what the drawer will
-  // render when opened for that variant.
-  const histCountsByVariant = useMemo(() => {
-    const grouped = groupHistory(runHistoryRuns as readonly FinderRun[], 'variant');
-    const map = new Map<string, { urls: number; queries: number }>();
-    for (const [vid, bucket] of grouped.byVariant.entries()) {
-      map.set(vid, { urls: bucket.urls.size, queries: bucket.queries.size });
-    }
-    return map;
-  }, [runHistoryRuns]);
-
   const handleUnpubAllVariants = useCallback(() => {
     if (variantIdsWithPublishedValue.length === 0) return;
     setDeleteTarget({
@@ -417,10 +426,6 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
             effortLevel={effortLevel}
           />
         }
-        historySlot={<DiscoveryHistoryButton finderId={finderId} productId={productId} category={category} width={ACTION_BUTTON_WIDTH.standardHeader} />}
-        promptSlot={previewFinder ? (
-          <PromptPreviewTriggerButton onClick={() => setHeaderPromptModalOpen(true)} disabled={!productId} width={ACTION_BUTTON_WIDTH.standardHeader} />
-        ) : undefined}
         actionSlot={
           <>
             <HeaderActionButton
@@ -437,15 +442,35 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
               busy={variantRows.length > 0 && variantRows.every((r) => loopingVariantKeys.has(r.variant_key))}
               width={ACTION_BUTTON_WIDTH.standardHeader}
             />
-            <div style={{ width: 1, height: 16, background: 'var(--sf-token-border, #dee2e6)' }} />
+            <span className="inline-block h-5 w-px mx-0.5 bg-current opacity-20" aria-hidden />
             <PromptDrawerChevron
-              storageKey={`indexing:${moduleType}:destructive-drawer:panel:${productId}`}
-              openWidthClass="w-[22rem]"
-              ariaLabel={`Destructive actions for every ${moduleLabel} variant`}
-              closedTitle={`Show UnPub all / Del all for ${moduleLabel}`}
-              openedTitle={`Hide UnPub all / Del all for ${moduleLabel}`}
-              chevronClass="sf-status-text-danger"
-              actions={[
+              storageKey={`indexing:${moduleType}:panel-drawer:${productId}`}
+              openWidthClass="w-[56rem]"
+              drawerHeight="header"
+              ariaLabel={`Prompt + history + data actions for every ${moduleLabel} variant`}
+              closedTitle={`Show Prompt / Hist / Data for ${moduleLabel}`}
+              openedTitle={`Hide Prompt / Hist / Data for ${moduleLabel}`}
+              openTitle={previewFinder ? 'Prompts:' : undefined}
+              primaryCustom={previewFinder ? (
+                <PromptPreviewTriggerButton
+                  onClick={() => setHeaderPromptModalOpen(true)}
+                  disabled={!productId}
+                  width={ACTION_BUTTON_WIDTH.standardHeader}
+                />
+              ) : undefined}
+              secondaryTitle="Hist:"
+              secondaryLabelClass="sf-history-label"
+              secondaryCustom={
+                <DiscoveryHistoryButton
+                  finderId={finderId}
+                  productId={productId}
+                  category={category}
+                  width={ACTION_BUTTON_WIDTH.standardHeader}
+                />
+              }
+              tertiaryTitle="Data:"
+              tertiaryLabelClass="sf-delete-label"
+              tertiaryActions={[
                 {
                   id: 'unpub-all',
                   label: 'UnPub all',
@@ -512,6 +537,10 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
                 const isLooping = loopingVariantKeys.has(row.variant_key);
                 const valueDisplay = fmt(c?.value || '');
                 const hasValue = Boolean(c?.value);
+                // Del should wipe everything associated with this variant,
+                // including runs whose latest candidate has been rejected
+                // (so row.candidate is undefined but Hist counts are live).
+                const variantHasRuns = Boolean(row.variant_id) && histCountsByVariant.has(row.variant_id as string);
                 return (
                   <FinderVariantRow
                     key={row.variant_key}
@@ -623,13 +652,13 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
                                         label: row.variant_label,
                                       });
                                     },
-                                    disabled: !row.variant_id || (!hasValue && !c) || isAnyDeletePending,
-                                    intent: row.variant_id && (hasValue || Boolean(c)) && !isAnyDeletePending ? 'delete' : 'locked',
+                                    disabled: !row.variant_id || (!hasValue && !c && !variantHasRuns) || isAnyDeletePending,
+                                    intent: row.variant_id && (hasValue || Boolean(c) || variantHasRuns) && !isAnyDeletePending ? 'delete' : 'locked',
                                     title: !row.variant_id
                                       ? 'Scalar (product-level) variants cannot be deleted per-variant.'
-                                      : (!hasValue && !c)
+                                      : (!hasValue && !c && !variantHasRuns)
                                         ? `Nothing to delete — no ${valueKey} data for this variant.`
-                                        : `Delete — wipe every ${valueKey} candidate and published value for this variant. Not reversible.`,
+                                        : `Delete — wipe every ${valueKey} candidate, published value, and run history for this variant. Not reversible.`,
                                   },
                                 ]}
                               />

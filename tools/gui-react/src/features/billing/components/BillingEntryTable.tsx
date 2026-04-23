@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { usePersistedNumber } from '../../../stores/tabStore.ts';
 import type { ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '../../../shared/ui/data-display/DataTable.tsx';
@@ -6,11 +6,12 @@ import { SkeletonBlock } from '../../../shared/ui/feedback/SkeletonBlock.tsx';
 import { usd, compactNumber } from '../../../utils/formatting.ts';
 import { useFormatDateTime } from '../../../utils/dateTime.ts';
 import { resolveBillingCallType } from '../billingCallTypeRegistry.generated.ts';
-import { chartColor, computeTokenSegments } from '../billingTransforms.ts';
+import { chartColor, computeTokenSegments, resolveBillingPageIndex } from '../billingTransforms.ts';
 import { useBillingEntriesQuery } from '../billingQueries.ts';
 import type { BillingEntry, BillingFilterState } from '../billingTypes.ts';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
+const DEFAULT_PAGE_SIZE = 20;
 
 interface BillingEntryTableProps {
   filters: BillingFilterState;
@@ -21,6 +22,12 @@ interface BillingEntryTableProps {
 function formatTokens(value: number): string {
   if (!value) return '\u2014';
   return value.toLocaleString();
+}
+
+function resolvePageSize(value: number): number {
+  return PAGE_SIZE_OPTIONS.includes(value as (typeof PAGE_SIZE_OPTIONS)[number])
+    ? value
+    : DEFAULT_PAGE_SIZE;
 }
 
 function formatDuration(ms: number): string {
@@ -81,7 +88,8 @@ function costBucket(cost: number): '' | 'mid' | 'high' {
 }
 
 export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryTableProps) {
-  const [pageSize, setPageSize] = usePersistedNumber('billing:pageSize', 20);
+  const [storedPageSize, setPageSize] = usePersistedNumber('billing:pageSize', DEFAULT_PAGE_SIZE);
+  const pageSize = resolvePageSize(storedPageSize);
   const formatDateTime = useFormatDateTime();
   const { data, isLoading, isPlaceholderData } = useBillingEntriesQuery({
     limit: pageSize,
@@ -238,10 +246,17 @@ export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryT
   ], [formatDateTime]);
 
   const totalEntries = data?.total ?? 0;
+  const resolvedPage = resolveBillingPageIndex({ page, pageSize, totalEntries });
   const totalPages = Math.max(1, Math.ceil(totalEntries / pageSize));
   const entries = data?.entries ?? [];
-  const initialLoad = isLoading && entries.length === 0;
+  const waitingForPageClamp = Boolean(data) && resolvedPage !== page;
+  const initialLoad = (isLoading || waitingForPageClamp) && entries.length === 0;
   const staleClass = isPlaceholderData ? ' sf-stale-refetch' : '';
+
+  useEffect(() => {
+    if (!data || resolvedPage === page) return;
+    onPageChange(resolvedPage);
+  }, [data, onPageChange, page, resolvedPage]);
 
   return (
     <div className="sf-surface-card rounded-lg overflow-hidden flex flex-col sf-billing-min-table">
@@ -284,27 +299,27 @@ export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryT
       <div className="px-4 py-2 flex items-center justify-between text-[11px] sf-text-muted border-t sf-border-default">
         <span>
           {totalEntries > 0
-            ? `Showing ${page * pageSize + 1}\u2013${Math.min((page + 1) * pageSize, totalEntries)} of ${compactNumber(totalEntries)} entries`
+            ? `Showing ${resolvedPage * pageSize + 1}\u2013${Math.min((resolvedPage + 1) * pageSize, totalEntries)} of ${compactNumber(totalEntries)} entries`
             : 'No entries'}
         </span>
         <div className="flex gap-0.5">
-          <button className="sf-pager-btn" disabled={page === 0} onClick={() => onPageChange(page - 1)}>
+          <button className="sf-pager-btn" disabled={resolvedPage === 0} onClick={() => onPageChange(resolvedPage - 1)}>
             &larr; Prev
           </button>
           {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-            const p = page < 3 ? i : page - 2 + i;
+            const p = resolvedPage < 3 ? i : resolvedPage - 2 + i;
             if (p >= totalPages) return null;
             return (
               <button
                 key={p}
-                className={p === page ? 'sf-pager-btn sf-pager-btn-active' : 'sf-pager-btn'}
+                className={p === resolvedPage ? 'sf-pager-btn sf-pager-btn-active' : 'sf-pager-btn'}
                 onClick={() => onPageChange(p)}
               >
                 {p + 1}
               </button>
             );
           })}
-          {totalPages > 5 && page < totalPages - 3 && (
+          {totalPages > 5 && resolvedPage < totalPages - 3 && (
             <>
               <span className="px-1">...</span>
               <button className="sf-pager-btn" onClick={() => onPageChange(totalPages - 1)}>
@@ -312,7 +327,7 @@ export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryT
               </button>
             </>
           )}
-          <button className="sf-pager-btn" disabled={page >= totalPages - 1} onClick={() => onPageChange(page + 1)}>
+          <button className="sf-pager-btn" disabled={resolvedPage >= totalPages - 1} onClick={() => onPageChange(resolvedPage + 1)}>
             Next &rarr;
           </button>
         </div>

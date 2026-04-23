@@ -40,7 +40,10 @@ export interface ArtifactPanelConfig {
   countField: string;
   countLabel: string;
   locationPrefix: string;
-  previewType: 'image' | 'video';
+  // WHY: 'image' + 'video' render inline previews in a modal. 'download' skips
+  // the modal — each filename icon opens the asset URL in a new tab (useful
+  // for JSON / markdown bundles where a preview thumbnail makes no sense).
+  previewType: 'image' | 'video' | 'download';
   assetUrl: (runId: string, entry: ArtifactRecord, filename: string) => string;
   extraHeroStats?: (records: ArtifactRecord[]) => ReactNode;
   extraHeroBand?: (records: ArtifactRecord[]) => ReactNode;
@@ -99,7 +102,13 @@ export function ExtractionArtifactPanel({ config, data, persistScope, runId }: E
 
   const handlePreview = useCallback((entry: ArtifactRecord, filename: string) => {
     if (!runId) return;
-    setPreviewSrc(config.assetUrl(runId, entry, filename));
+    const url = config.assetUrl(runId, entry, filename);
+    if (config.previewType === 'download') {
+      // Open in new tab — browsers render JSON natively, download .gz.
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    setPreviewSrc(url);
   }, [runId, config]);
 
   // WHY: locationPrefix already carries the correct disk folder name (e.g. 'screenshots/').
@@ -283,10 +292,10 @@ export function ExtractionArtifactPanel({ config, data, persistScope, runId }: E
                               key={fi}
                               type="button"
                               onClick={(e) => { e.stopPropagation(); handlePreview(entry, fn); }}
-                              title={fn}
+                              title={config.previewType === 'download' ? `Open ${fn} in new tab` : fn}
                               className="px-1 py-0.5 rounded sf-text-caption sf-icon-button hover:sf-primary-button transition-colors"
                             >
-                              &#x1F50D;
+                              {config.previewType === 'download' ? '\u2B73' : '\u{1F50D}'}
                             </button>
                           ))
                         ) : (

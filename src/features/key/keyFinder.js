@@ -169,8 +169,12 @@ export async function runKeyFinder(opts) {
     alwaysSoloRun: readBoolKnob(finderStore, 'alwaysSoloRun', true),
     groupBundlingOnly: readBoolKnob(finderStore, 'groupBundlingOnly', true),
     bundlingPassengerCost: parseJsonSetting(readKnob(finderStore, 'bundlingPassengerCost'), { easy: 1, medium: 2, hard: 4, very_hard: 8 }),
+    bundlingPassengerVariantCostPerExtra: readFloatKnob(readKnob(finderStore, 'bundlingPassengerVariantCostPerExtra'), 0.25),
     bundlingPoolPerPrimary: parseJsonSetting(readKnob(finderStore, 'bundlingPoolPerPrimary'), { easy: 6, medium: 4, hard: 2, very_hard: 1 }),
     passengerDifficultyPolicy: readKnob(finderStore, 'passengerDifficultyPolicy') || 'less_or_equal',
+    passengerExcludeAtConfidence: parseInt(readKnob(finderStore, 'passengerExcludeAtConfidence') || '95', 10),
+    passengerExcludeMinEvidence: parseInt(readKnob(finderStore, 'passengerExcludeMinEvidence') || '3', 10),
+    bundlingSortAxisOrder: readKnob(finderStore, 'bundlingSortAxisOrder') || '',
     bundlingOverlapCapEasy: parseInt(readKnob(finderStore, 'bundlingOverlapCapEasy') || '2', 10),
     bundlingOverlapCapMedium: parseInt(readKnob(finderStore, 'bundlingOverlapCapMedium') || '4', 10),
     bundlingOverlapCapHard: parseInt(readKnob(finderStore, 'bundlingOverlapCapHard') || '6', 10),
@@ -232,6 +236,7 @@ export async function runKeyFinder(opts) {
       specDb,
       productId: product.product_id,
       settings,
+      variantCount,
     });
   for (const p of passengers) {
     keyFinderRegistry.register(product.product_id, p.fieldKey, 'passenger');
@@ -625,6 +630,7 @@ export async function runKeyFinder(opts) {
       threshold: typeof publishResult.threshold === 'number' ? publishResult.threshold : null,
       required: typeof publishResult.required === 'number' ? publishResult.required : null,
       actual: typeof publishResult.actual === 'number' ? publishResult.actual : null,
+      buckets: Array.isArray(publishResult.buckets) ? publishResult.buckets : null,
     } : null,
     passenger_candidates: passengerCandidates,
     ...(publisherError ? { publisher_error: publisherError } : {}),

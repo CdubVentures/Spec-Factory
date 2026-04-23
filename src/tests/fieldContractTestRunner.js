@@ -1,15 +1,13 @@
 /**
  * fieldContractTestRunner.js — Per-key field contract audit runner.
  *
- * Runs validateField + buildRepairPrompt for every field key against
- * derived bad/good values. No products, no sources, no consensus — just
- * the validator and prompt builder per field key.
+ * Runs validateField for every field key against derived bad/good values.
+ * No products, no sources, no consensus — just the validator per field key.
  *
  * O(1) scaling: adding a field key = zero code changes here.
  */
 
 import { validateField } from '../features/publisher/validation/validateField.js';
-import { buildRepairPrompt } from '../features/publisher/repair-adapter/promptBuilder.js';
 import { PHASE_REGISTRY } from '../features/publisher/validation/phaseRegistry.js';
 import { shouldBlockUnkPublish } from '../features/publisher/validation/shouldBlockUnkPublish.js';
 import { deriveTestValues } from './deriveFailureValues.js';
@@ -74,20 +72,6 @@ export function runFieldContractTests({ fieldRules, knownValues, componentDbs, c
       );
       const pass = !badResult.valid && hasExpectedRejection;
 
-      // Build prompt for the rejection (if applicable)
-      let prompt = null;
-      if (!badResult.valid) {
-        const promptResult = buildRepairPrompt({
-          rejections: badResult.rejections,
-          value: reject.value,
-          fieldKey,
-          fieldRule,
-          knownValues: kv,
-          componentDb: compDb,
-        });
-        prompt = promptResult;
-      }
-
       checks.push({
         type: 'reject',
         pass,
@@ -100,7 +84,6 @@ export function runFieldContractTests({ fieldRules, knownValues, componentDbs, c
           : badResult.valid
             ? `expected rejection ${reject.expectedCode} but value passed`
             : `expected ${reject.expectedCode}, got ${badResult.rejections.map(r => r.reason_code).join(', ')}`,
-        prompt,
         validatorOutput: {
           valid: badResult.valid,
           value: badResult.value,
@@ -191,10 +174,10 @@ function extractAllKnobs(fieldRule, knownValues, componentDb) {
 
   // contract.* — step numbers match phaseRegistry order (0-10)
   if (c.shape) knobs.push({ knob: 'contract.shape', value: c.shape, step: 1, action: 'reject', code: 'wrong_shape' });
-  if (c.type) knobs.push({ knob: 'contract.type', value: c.type, step: 3, action: 'reject+llm', code: 'wrong_type', prompt: 'P3' });
-  if (c.unit && c.unit !== 'none') knobs.push({ knob: 'contract.unit', value: c.unit, step: 2, action: 'reject+llm', code: 'wrong_unit', prompt: 'unit_conversion' });
+  if (c.type) knobs.push({ knob: 'contract.type', value: c.type, step: 3, action: 'reject', code: 'wrong_type' });
+  if (c.unit && c.unit !== 'none') knobs.push({ knob: 'contract.unit', value: c.unit, step: 2, action: 'reject', code: 'wrong_unit' });
   if (c.range?.min != null || c.range?.max != null) {
-    knobs.push({ knob: 'contract.range', value: `${c.range.min ?? '—'} to ${c.range.max ?? '—'}`, step: 9, action: 'reject+llm', code: 'out_of_range', prompt: 'P7' });
+    knobs.push({ knob: 'contract.range', value: `${c.range.min ?? '—'} to ${c.range.max ?? '—'}`, step: 9, action: 'reject', code: 'out_of_range' });
   }
   if (c.rounding?.decimals != null) {
     knobs.push({ knob: 'contract.rounding', value: `${c.rounding.decimals} decimals (${c.rounding.mode || 'nearest'})`, step: 7, action: 'deterministic', code: null });
@@ -210,14 +193,14 @@ function extractAllKnobs(fieldRule, knownValues, componentDb) {
   const enumPolicy = knownValues?.policy || e.policy;
   if (enumPolicy) {
     if (enumPolicy === 'closed') {
-      knobs.push({ knob: 'enum.policy', value: 'closed', step: 8, action: 'reject+llm', code: 'enum_value_not_allowed', prompt: 'P1' });
+      knobs.push({ knob: 'enum.policy', value: 'closed', step: 8, action: 'reject', code: 'enum_value_not_allowed' });
     } else if (enumPolicy === 'open_prefer_known') {
-      knobs.push({ knob: 'enum.policy', value: 'open_prefer_known', step: 8, action: 'reject+llm', code: 'unknown_enum_prefer_known', prompt: 'P2' });
+      knobs.push({ knob: 'enum.policy', value: 'open_prefer_known', step: 8, action: 'soft_reject', code: 'unknown_enum_prefer_known' });
     } else {
       knobs.push({ knob: 'enum.policy', value: enumPolicy, step: 8, action: 'info', code: null });
     }
   }
-  if (e.match?.format_hint) knobs.push({ knob: 'enum.match.format_hint', value: e.match.format_hint, step: 5, action: 'reject+llm', code: 'format_mismatch', prompt: 'P4' });
+  if (e.match?.format_hint) knobs.push({ knob: 'enum.match.format_hint', value: e.match.format_hint, step: 5, action: 'reject', code: 'format_mismatch' });
   if (knownValues?.values?.length > 0) {
     knobs.push({ knob: 'enum.known_values', value: `${knownValues.values.length} values`, step: 8, action: 'info', code: null });
   }

@@ -3,6 +3,7 @@ import { reorderFieldOrder } from './keyUtils.ts';
 import {
   applyStudioRuleCommand,
   createSetFieldValueCommand,
+  enforceStudioRuleInvariants,
 } from '../rules/ruleCommands.ts';
 import { EG_PRESET_KEYS } from './egPresetsClient.ts';
 import type { FieldRule } from '../../../types/studio.ts';
@@ -32,6 +33,22 @@ function syncGroupsFromOrder(fieldOrder: string[], rules: RuleMap): RuleMap {
     }
   }
   return changed ? updated : rules;
+}
+
+function cloneRulesForEditing(rules: RuleMap): RuleMap {
+  const cleaned: RuleMap = JSON.parse(JSON.stringify(rules));
+  for (const key of Object.keys(cleaned)) {
+    delete cleaned[key]._edited;
+    enforceStudioRuleInvariants(cleaned[key] as Record<string, unknown>);
+  }
+  return cleaned;
+}
+
+function ruleForEditing(rule: FieldRule, edited = true): FieldRule {
+  const next = { ...rule } as Record<string, unknown>;
+  enforceStudioRuleInvariants(next);
+  if (edited) next._edited = true;
+  return next as FieldRule;
 }
 
 interface FieldRulesState {
@@ -86,10 +103,7 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
   registeredColors: [],
 
   hydrate: (rules, fieldOrder, egLockedKeys, egEditablePaths, egToggles, registeredColors) => {
-    const cleaned: RuleMap = JSON.parse(JSON.stringify(rules));
-    for (const key of Object.keys(cleaned)) {
-      delete cleaned[key]._edited;
-    }
+    const cleaned = cloneRulesForEditing(rules);
     set({
       editedRules: cleaned,
       editedFieldOrder: [...fieldOrder],
@@ -104,10 +118,7 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
   },
 
   rehydrate: (rules, fieldOrder, egLockedKeys, egEditablePaths, egToggles, registeredColors) => {
-    const cleaned: RuleMap = JSON.parse(JSON.stringify(rules));
-    for (const key of Object.keys(cleaned)) {
-      delete cleaned[key]._edited;
-    }
+    const cleaned = cloneRulesForEditing(rules);
     set({
       editedRules: cleaned,
       editedFieldOrder: [...fieldOrder],
@@ -206,6 +217,7 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
             (merged[section] as Record<string, unknown>)[property] = val;
           }
         }
+        enforceStudioRuleInvariants(merged);
         merged._edited = true;
         next[key] = merged;
       } else {
@@ -233,7 +245,7 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
       } else {
         nextOrder.push(key);
       }
-      const nextRules = { ...state.editedRules, [key]: { ...rule, _edited: true } };
+      const nextRules = { ...state.editedRules, [key]: ruleForEditing(rule) };
       return {
         editedFieldOrder: nextOrder,
         editedRules: syncGroupsFromOrder(nextOrder, nextRules),
@@ -294,7 +306,7 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
       const nextRules = { ...state.editedRules };
       for (const { key, rule } of entries) {
         nextOrder.push(key);
-        nextRules[key] = { ...rule, _edited: true };
+        nextRules[key] = ruleForEditing(rule);
       }
       return { editedFieldOrder: nextOrder, editedRules: syncGroupsFromOrder(nextOrder, nextRules) };
     });

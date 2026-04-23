@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified publisher feature as both a validation pipeline boundary and the read-only `/publisher` audit surface exposed to operators.
 > **Prerequisites:** [../03-architecture/data-model.md](../03-architecture/data-model.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md), [unit-registry.md](./unit-registry.md)
-> **Last validated:** 2026-04-18
+> **Last validated:** 2026-04-22 (deterministic publish + Gate 1 inconsistency purge + bucket pills)
 
 ## Entry Points
 
@@ -71,15 +71,24 @@
 | `field_candidates` row | publisher pipeline writes or updates a candidate | API and GUI audit surface show new value, repair history, and status |
 | `list_values` discovered enum rows | `persistDiscoveredValue()` accepts a new enum value | future publisher validation and test-mode audits can see the discovered value |
 | GUI table filters | operator changes date/status/field/product filters | table view changes client-side; no backend mutation occurs |
-| `publishConfidenceThreshold` setting | user updates it in Publisher → Evaluation settings | `configRuntimeSettingsHandler` auto-fires `reconcileThreshold()` per category (no manual Reconcile button required), flipping `field_candidates.status`, rewriting `product.json.fields[]`, and rebuilding `linked_candidates[]` for every product. Per-category `publisher-reconcile` WS events invalidate downstream GUI queries (review grid cells, drawer candidate lists). |
+| `publishConfidenceThreshold` setting | user updates it in Publisher → Candidate Validation settings | `configRuntimeSettingsHandler` auto-fires `reconcileThreshold()` per category (no manual Reconcile button required). Reconcile routes every field through the same `evaluateFieldBuckets` used at publish time — flipping `field_candidates.status`, rewriting `product.json.fields[]` / `variant_fields[vid][fk]`, and rebuilding `linked_candidates[]` per the post-evaluation bucket membership. Per-category `publisher-reconcile` WS events invalidate downstream GUI queries (review grid cells, drawer candidate lists). |
 
-## Single confidence threshold
+## Single confidence threshold + deterministic bucket evaluator
 
 `publishConfidenceThreshold` (from `src/shared/settingsRegistry.js`, 0–1 float, default 0.7) is the single source of truth for confidence gating across **every** finder. Per-finder local `minConfidence` gates are forbidden — finders submit every candidate with a real value + evidence, and the publisher decides whether to resolve.
 
-At the data layer, each finder derives the candidate's `confidence` from `max(evidence_refs.confidence)` so the publisher's gate reflects honest per-source strength rather than a hardcoded claim (CEF used to submit `100` unconditionally; RDF used to submit the LLM's overall self-rating). The review drawer also reads this — both the row-header % and the per-source chip are derived from the same `evidence_refs` data, gated by the same threshold.
+Publish decisions are **fully deterministic**: `src/features/publisher/publish/evidenceGate.js` exports `evaluateFieldBuckets()`, a pure function that groups `field_candidates` rows by `value_fingerprint` (scalar equality, or list set-equality — order-independent, case-insensitive, NFC-normalized). Each bucket runs two gates keyed off the same threshold:
 
-The publisher writes `linked_candidates[]` into `product.json.fields[fk]` (and `product.json.variant_fields[vid][fk]` for variant-scoped publishes) — the audit set of every value-matching, above-threshold candidate at publish time. The review drawer does **not** consume that JSON; it derives the equivalent set by filtering `candidates` where `status === 'resolved'` so a single SpecDb query powers both views.
+- **Gate 1** — bucket `top_confidence / 100 ≥ publishConfidenceThreshold`. At least one member must self-declare above the bar. Buckets of all-low-confidence guesses never publish.
+- **Gate 2** — `COUNT(DISTINCT refs WHERE ref.confidence / 100 ≥ publishConfidenceThreshold) ≥ fieldRule.evidence.min_evidence_refs`. Evidence pools across every row sharing the fingerprint, so three submissions each with one ref yield a pool of three. NULL ref confidence counts as qualifying (legacy tolerance). The retired `evidence_kind = 'identity_only'` exclusion no longer applies — all 10 `evidence_kind` values are UI metadata only.
+
+For `set_union` list fields, the published value is the **union of every qualifying bucket's items**; sub-threshold buckets are excluded from the union and the resolve cascade.
+
+Candidate-level `confidence` remains the LLM's self-rating (stored raw, 0–100, in `field_candidates.confidence`). It drives Gate 1 (via `MAX(confidence)` per bucket). A submission whose LLM confidence is below threshold BUT whose bucket already has enough qualifying evidence to publish triggers the **Gate 1 inconsistency purge** at submit time — the row + evidence are hard-deleted, and if the candidate came from a primary finder run, that run's JSON entry + `discovery_log.urls_checked` + `queries_run` + SQL runs row are also wiped (4-layer cascade via `purgeInconsistentCandidate.js`).
+
+The publisher writes `linked_candidates[]` into `product.json.fields[fk]` (and `product.json.variant_fields[vid][fk]` for variant-scoped publishes) — the audit set of every candidate whose fingerprint matches the published value after evaluation. The review drawer does **not** consume that JSON; it derives the equivalent set by filtering `candidates` where `status === 'resolved'` so a single SpecDb query powers both views.
+
+Loop progress pills (`LoopProgressPill.tsx`) now render one chip per competing value bucket from `evaluateFieldBuckets` output — green when the bucket qualifies (will publish), neutral otherwise. The green chip turning on during iteration N is the visible form of the deterministic publish decision; the loop terminates on the same event.
 
 ## `/publisher/:category/published/:productId` — published-state read
 

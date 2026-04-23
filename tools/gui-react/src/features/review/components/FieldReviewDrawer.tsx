@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
+import { usePersistedTab } from '../../../stores/tabStore.ts';
 import { useScrollStore, resolveScrollPosition } from '../../../stores/scrollStore.ts';
 import { pct } from '../../../utils/formatting.ts';
 import { confidenceColorClass, trafficColor, trafficTextColor, sourceBadgeClass, SOURCE_BADGE_FALLBACK } from '../../../utils/colors.ts';
@@ -34,7 +35,7 @@ import {
   type EvidenceSource,
 } from '../selectors/publishedSourceSelectors.ts';
 import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
-import { deriveOverrideFormState, VARIANT_GENERATOR_FIELD_KEYS } from '../selectors/overrideFormState.ts';
+import { deriveOverrideFormState, resolveSelectedVariantId, VARIANT_GENERATOR_FIELD_KEYS } from '../selectors/overrideFormState.ts';
 
 // WHY: Gate the per-source display list on the same publisher threshold that
 // decides candidate publishing. A candidate can be resolved (i.e. its overall
@@ -873,20 +874,19 @@ function OverrideAndClearSection({
     [fieldKey, variantDependent, moduleClass, variantInputs],
   );
 
-  const [selectedVariantId, setSelectedVariantId] = useState<string>(
-    formState.variantOptions[0]?.id ?? '',
+  const [storedVariantId, setStoredVariantId] = usePersistedTab<string>(
+    `review:overrideVariant:${fieldKey}`,
+    '',
   );
-
-  useEffect(() => {
-    if (formState.mode !== 'variant') return;
-    if (formState.variantOptions.length === 0) {
-      if (selectedVariantId !== '') setSelectedVariantId('');
-      return;
-    }
-    if (!formState.variantOptions.some((opt) => opt.id === selectedVariantId)) {
-      setSelectedVariantId(formState.variantOptions[0].id);
-    }
-  }, [formState.mode, formState.variantOptions, selectedVariantId]);
+  const selectedVariantId = useMemo(
+    () => resolveSelectedVariantId({
+      mode: formState.mode,
+      variantOptions: formState.variantOptions,
+      storedVariantId,
+    }),
+    [formState.mode, formState.variantOptions, storedVariantId],
+  );
+  const setSelectedVariantId = setStoredVariantId;
 
   if (formState.mode === 'suppressed') return null;
 

@@ -33,7 +33,7 @@ export const CATALOG_PRODUCT_KEYS = Object.freeze(CATALOG_PRODUCT_SHAPE.map(s =>
 // ── Catalog Row (enriched summary from buildCatalog in catalogHelpers.js) ──
 // WHY: buildCatalog returns a DIFFERENT shape than the CRUD endpoint.
 // It shares identity fields with CatalogProduct but drops added_at/added_by
-// and adds pipeline summary fields (hasFinal, confidence, coverage, etc.).
+// and adds per-product resolved-key summary (confidence, coverage, fields).
 
 export const CATALOG_ROW_SHAPE = Object.freeze([
   { key: 'productId', coerce: 'string' },
@@ -45,14 +45,10 @@ export const CATALOG_ROW_SHAPE = Object.freeze([
   { key: 'base_model', coerce: 'string' },
   { key: 'variant', coerce: 'string' },
   { key: 'status', coerce: 'string' },
-  { key: 'hasFinal', coerce: 'bool' },
-  { key: 'validated', coerce: 'bool' },
   { key: 'confidence', coerce: 'float' },
   { key: 'coverage', coerce: 'float' },
   { key: 'fieldsFilled', coerce: 'int' },
   { key: 'fieldsTotal', coerce: 'int' },
-  { key: 'lastRun', coerce: 'string' },
-  { key: 'inActive', coerce: 'bool' },
 ]);
 export const CATALOG_ROW_KEYS = Object.freeze(CATALOG_ROW_SHAPE.map(s => s.key));
 

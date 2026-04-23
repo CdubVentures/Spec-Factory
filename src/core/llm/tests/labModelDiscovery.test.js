@@ -18,7 +18,7 @@ describe('transformLabRegistryToModels', () => {
     efforts: ['low', 'medium', 'high', 'xhigh'],
     costInputPer1M: 2.5,
     costOutputPer1M: 15.0,
-    costCachedPer1M: 1.25,
+    costCachedPer1M: 0.25,
     capabilities: { chat: true, extraction: true, json_mode: true, web_search: true },
   };
 
@@ -64,7 +64,7 @@ describe('transformLabRegistryToModels', () => {
     const m = result[0];
     assert.equal(m.costInputPer1M, 2.5);
     assert.equal(m.costOutputPer1M, 15.0);
-    assert.equal(m.costCachedPer1M, 1.25);
+    assert.equal(m.costCachedPer1M, 0.25);
   });
 
   test('token limits map 1:1', () => {

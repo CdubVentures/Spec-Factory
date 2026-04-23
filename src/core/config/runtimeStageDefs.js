@@ -23,7 +23,51 @@ export const FETCH_STAGE_DEFS = Object.freeze([
   { key: 'css_override',  label: 'CSS Override',   tip: 'Force display:block on hidden elements for full capture (brute-force fallback).', tone: 'info' },
 ]);
 
+// WHY: settingsSection is the Pipeline Settings GUI projection for this plugin.
+// After Phase 1a refactor, SettingsCategoryRegistry auto-derives its extraction
+// sections from here — one entry per extraction stage def with a settingsSection.
+// iconPath is an optional single-path SVG 'd' attribute; when null, CategoryPanel
+// falls back to its hardcoded iconPaths map (preserves legacy multi-element icons
+// for screenshots + video which can't codegen-round-trip). customComponent names
+// a lazy-loaded overlay panel (e.g. 'VideoRecording' for the ffmpeg-aware panel).
 export const EXTRACTION_STAGE_DEFS = Object.freeze([
-  { key: 'screenshot', label: 'Screenshots', tip: 'Full-page and targeted selector screenshots captured from each URL.', tone: 'info' },
-  { key: 'video', label: 'Videos', tip: 'WebM video recordings captured from each fetch worker during page interaction.', tone: 'info' },
+  {
+    key: 'screenshot',
+    label: 'Screenshots',
+    tip: 'Full-page and targeted selector screenshots captured from each URL.',
+    tone: 'info',
+    settingsSection: {
+      id: 'screenshots',
+      label: 'Screenshots',
+      tip: 'Page capture format, quality, selectors, and size limits',
+      iconPath: null,
+      customComponent: null,
+    },
+  },
+  {
+    key: 'video',
+    label: 'Videos',
+    tip: 'WebM video recordings captured from each fetch worker during page interaction.',
+    tone: 'info',
+    settingsSection: {
+      id: 'video',
+      label: 'Video Recording',
+      tip: 'Video capture resolution and recording settings',
+      iconPath: null,
+      customComponent: 'VideoRecording',
+    },
+  },
+  {
+    key: 'crawl4ai',
+    label: 'Crawl4AI',
+    tip: 'Markdown + tables + lists extracted from each URL via Python sidecar.',
+    tone: 'accent',
+    settingsSection: {
+      id: 'crawl4ai',
+      label: 'Crawl4AI',
+      tip: 'Python-sidecar markdown + table + list extraction per URL',
+      iconPath: 'M4 6h16M4 12h12M4 18h8M20 9l-4 4-2-2',
+      customComponent: null,
+    },
+  },
 ]);

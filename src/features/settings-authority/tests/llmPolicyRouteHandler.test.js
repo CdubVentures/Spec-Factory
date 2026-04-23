@@ -15,8 +15,8 @@ function makeProviderRegistryJson() {
       apiKey: '',
       enabled: true,
       models: [
-        { id: 'gemini-flash', modelId: 'gemini-2.5-flash', role: 'primary', costInputPer1M: 0.15, costOutputPer1M: 0.6, costCachedPer1M: 0.0375 },
-        { id: 'gemini-pro', modelId: 'gemini-2.5-pro', role: 'reasoning', costInputPer1M: 1.25, costOutputPer1M: 10, costCachedPer1M: 0.31 },
+        { id: 'gemini-flash', modelId: 'gemini-2.5-flash', role: 'primary', costInputPer1M: 0.3, costOutputPer1M: 2.5, costCachedPer1M: 0.03 },
+        { id: 'gemini-pro', modelId: 'gemini-2.5-pro', role: 'reasoning', costInputPer1M: 1.25, costOutputPer1M: 10, costCachedPer1M: 0.125 },
       ],
     },
     {

@@ -14,6 +14,7 @@
 
 import { memo, useCallback, useMemo } from 'react';
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
+import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import {
   FilterBar,
   SearchBox,
@@ -117,6 +118,10 @@ export const KeyFinderToolbar = memo(function KeyFinderToolbar({
 }: KeyFinderToolbarProps) {
   const counts = useMemo(() => countsFromGroups(grouped), [grouped]);
   const activePreset = useMemo(() => matchingPreset(filters), [filters]);
+  const [filtersOpen, toggleFiltersOpen] = usePersistedToggle(
+    'keyFinder:toolbar:filtersOpen',
+    false,
+  );
 
   const handleSearch = useCallback((next: string) => onFilterChange('search', next), [onFilterChange]);
   const handlePreset = useCallback((presetId: string) => {
@@ -176,43 +181,38 @@ export const KeyFinderToolbar = memo(function KeyFinderToolbar({
 
   return (
     <FilterBar>
-      {/* Band 1 — search + meter + tools */}
-      <FilterBar.Band
-        trail={
-          <>
-            {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={onResetFilters}
-                className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11.5px] font-semibold rounded border sf-chip-warning hover:opacity-90"
-                title="Reset search and all axis filters"
-              >
-                <RefreshIcon className="w-3 h-3" />
-                Clear filters · {activeCount}
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={onExpandAllGroups}
-              className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11.5px] font-semibold rounded border sf-border-soft sf-surface hover:sf-surface-alt"
-              title="Expand every group"
-            >
-              <ExpandIcon className="w-3 h-3 sf-text-muted" />
-              Expand all
-            </button>
-            <button
-              type="button"
-              onClick={onCollapseAllGroups}
-              className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11.5px] font-semibold rounded border sf-border-soft sf-surface hover:sf-surface-alt"
-              title="Collapse every group"
-            >
-              <CollapseIcon className="w-3 h-3 sf-text-muted" />
-              Collapse all
-            </button>
-            <Tip text={infoText} />
-          </>
-        }
-      >
+      {/* Header row — filters toggle (far left) · search · meter · tools (right).
+          Uses a flex layout (not FilterBar.Band's grid-with-rail) so the
+          Filters toggle sits flush-left instead of starting at the 96px rail
+          column. Matches the compact tab-strip control cluster aesthetic. */}
+      <div className="flex items-center gap-2 px-3 py-1.5 border-b sf-border-soft flex-wrap">
+        <button
+          type="button"
+          onClick={toggleFiltersOpen}
+          aria-expanded={filtersOpen}
+          className={`inline-flex items-center gap-1.5 h-7 px-2.5 text-[11.5px] font-semibold rounded border hover:sf-surface-alt ${
+            filtersOpen || activeCount > 0
+              ? 'sf-chip-accent'
+              : 'sf-border-soft sf-surface'
+          }`}
+          title={filtersOpen ? 'Hide filters' : 'Show filters'}
+        >
+          <span
+            aria-hidden="true"
+            className="inline-block"
+            style={{
+              fontSize: '9px',
+              transform: filtersOpen ? 'rotate(90deg)' : 'none',
+              transition: 'transform 0.15s',
+            }}
+          >
+            {'\u25B6'}
+          </span>
+          Filters{activeCount > 0 ? ` · ${activeCount}` : ''}
+        </button>
+
+        <span aria-hidden="true" className="h-5 w-px sf-border-soft bg-current opacity-20" />
+
         <SearchBox
           value={filters.search}
           onChange={handleSearch}
@@ -220,60 +220,97 @@ export const KeyFinderToolbar = memo(function KeyFinderToolbar({
           ariaLabel="Search keys or groups"
         />
         <ResultMeter shown={eligible} total={base} />
-      </FilterBar.Band>
 
-      {/* Band 2 — quick presets */}
-      <FilterBar.Band rail="Quick">
-        {KEY_FINDER_PRESETS.map((p) => (
-          <PresetChip
-            key={p.id}
-            label={p.label}
-            count={presetCount(p.id, base, counts)}
-            tone={presetToneToChipTone(p.tone)}
-            active={activePreset === p.id}
-            running={p.id === 'running'}
-            empty={p.id !== 'all' && presetCount(p.id, base, counts) === 0}
-            quietActive={p.id === 'all'}
-            onClick={() => handlePreset(p.id)}
-          />
-        ))}
-      </FilterBar.Band>
+        <div className="flex-1 min-w-[8px]" />
 
-      {/* Band 3 — Difficulty · Availability */}
-      <FilterBar.Band rail="Difficulty" surface="soft">
-        <ChipSegmentedGroup
-          options={difficultyOptions}
-          value={filters.difficulty}
-          onChange={setDifficulty}
-          ariaLabel="Filter by difficulty"
-        />
-      </FilterBar.Band>
-      <FilterBar.Band rail="Availability" surface="soft">
-        <ChipSegmentedGroup
-          options={availabilityOptions}
-          value={filters.availability}
-          onChange={setAvailability}
-          ariaLabel="Filter by availability"
-        />
-      </FilterBar.Band>
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={onResetFilters}
+            className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11.5px] font-semibold rounded border sf-chip-warning hover:opacity-90"
+            title="Reset search and all axis filters"
+          >
+            <RefreshIcon className="w-3 h-3" />
+            Clear · {activeCount}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onExpandAllGroups}
+          className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11.5px] font-semibold rounded border sf-border-soft sf-surface hover:sf-surface-alt"
+          title="Expand every group"
+        >
+          <ExpandIcon className="w-3 h-3 sf-text-muted" />
+          Expand all
+        </button>
+        <button
+          type="button"
+          onClick={onCollapseAllGroups}
+          className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11.5px] font-semibold rounded border sf-border-soft sf-surface hover:sf-surface-alt"
+          title="Collapse every group"
+        >
+          <CollapseIcon className="w-3 h-3 sf-text-muted" />
+          Collapse all
+        </button>
+        <Tip text={infoText} />
+      </div>
 
-      {/* Band 4 — Required · Status */}
-      <FilterBar.Band rail="Required" surface="soft">
-        <ChipSegmentedGroup
-          options={requiredOptions}
-          value={filters.required}
-          onChange={setRequired}
-          ariaLabel="Filter by required level"
-        />
-      </FilterBar.Band>
-      <FilterBar.Band rail="Status" surface="soft">
-        <ChipSegmentedGroup
-          options={statusOptions}
-          value={filters.status}
-          onChange={setStatus}
-          ariaLabel="Filter by status"
-        />
-      </FilterBar.Band>
+      {filtersOpen && (
+        <>
+          {/* Band 2 — quick presets */}
+          <FilterBar.Band rail="Quick">
+            {KEY_FINDER_PRESETS.map((p) => (
+              <PresetChip
+                key={p.id}
+                label={p.label}
+                count={presetCount(p.id, base, counts)}
+                tone={presetToneToChipTone(p.tone)}
+                active={activePreset === p.id}
+                running={p.id === 'running'}
+                empty={p.id !== 'all' && presetCount(p.id, base, counts) === 0}
+                quietActive={p.id === 'all'}
+                onClick={() => handlePreset(p.id)}
+              />
+            ))}
+          </FilterBar.Band>
+
+          {/* Band 3 — Difficulty · Availability */}
+          <FilterBar.Band rail="Difficulty" surface="soft">
+            <ChipSegmentedGroup
+              options={difficultyOptions}
+              value={filters.difficulty}
+              onChange={setDifficulty}
+              ariaLabel="Filter by difficulty"
+            />
+          </FilterBar.Band>
+          <FilterBar.Band rail="Availability" surface="soft">
+            <ChipSegmentedGroup
+              options={availabilityOptions}
+              value={filters.availability}
+              onChange={setAvailability}
+              ariaLabel="Filter by availability"
+            />
+          </FilterBar.Band>
+
+          {/* Band 4 — Required · Status */}
+          <FilterBar.Band rail="Required" surface="soft">
+            <ChipSegmentedGroup
+              options={requiredOptions}
+              value={filters.required}
+              onChange={setRequired}
+              ariaLabel="Filter by required level"
+            />
+          </FilterBar.Band>
+          <FilterBar.Band rail="Status" surface="soft">
+            <ChipSegmentedGroup
+              options={statusOptions}
+              value={filters.status}
+              onChange={setStatus}
+              ariaLabel="Filter by status"
+            />
+          </FilterBar.Band>
+        </>
+      )}
     </FilterBar>
   );
 });

@@ -12,7 +12,7 @@ export { PHASE_REGISTRY } from './phaseRegistry.js';
 
 ### `validateField({ fieldKey, value, fieldRule, knownValues?, componentDb? })`
 
-Returns `{ valid, value, confidence, repairs[], rejections[], unknownReason, repairPrompt }`.
+Returns `{ valid, value, unit, confidence, repairs[], rejections[] }`. `repairs[]` is the deterministic transform log (absence, unit, type_coerce, normalize, list_rules, rounding, enum_alias); `rejections[]` lists hard + soft failures by `reason_code`.
 
 ### `validateRecord({ fields, fieldRules, knownValues?, consistencyMode? })`
 

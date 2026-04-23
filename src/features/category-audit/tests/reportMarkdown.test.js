@@ -96,6 +96,20 @@ test('renderMarkdown emits per-key section with code-block prompt previews', () 
   assert.ok(md.includes('Return contract:'));
 });
 
+test('renderMarkdown tells auditors to validate the full field contract before writing guidance', () => {
+  const md = renderMarkdown(fixtureReportData());
+  assert.ok(md.includes('Full field contract authoring order'));
+  assert.ok(md.includes('priority.required_level'));
+  assert.ok(md.includes('priority.availability'));
+  assert.ok(md.includes('priority.difficulty'));
+  assert.ok(md.includes('contract.type'));
+  assert.ok(md.includes('contract.shape'));
+  assert.match(md, /guidance last/i);
+  assert.ok(md.includes('Example bank recipe'));
+  assert.ok(md.includes('5-10'));
+  assert.ok(md.includes('filter-risk'));
+});
+
 test('renderMarkdown collapses excess blank lines', () => {
   const md = renderMarkdown(fixtureReportData());
   assert.ok(!/\n{3,}/.test(md), 'no 3-blank-line runs');

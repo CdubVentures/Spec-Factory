@@ -100,18 +100,24 @@ async function runPhase(plugins, ctx, logger, { forceConcurrent = false } = {}) 
   return results;
 }
 
-export function createExtractionRunner({ plugins = [], logger } = {}) {
+// WHY: ctxExtensions lets runProduct inject per-run dependencies (e.g. the
+// crawl4ai sidecar client, extractionsDir) into every phase's ctx without
+// threading them through crawlSession's runTransforms signature. The
+// caller-supplied ctx still wins on key collision so plugins get fresh per-URL
+// data. Added in Phase 1b of the A1 extraction layer.
+export function createExtractionRunner({ plugins = [], logger, ctxExtensions = {} } = {}) {
   const capturePlugins = plugins.filter((p) => (p.phase || 'capture') === 'capture');
   const transformPlugins = plugins.filter((p) => p.phase === 'transform');
+  const baseExt = (ctxExtensions && typeof ctxExtensions === 'object') ? ctxExtensions : {};
 
   async function runCaptures(ctx) {
-    return runPhase(capturePlugins, ctx, logger);
+    return runPhase(capturePlugins, { ...baseExt, ...ctx }, logger);
   }
 
   // WHY: Transform phase always runs concurrently — no page, no shared state.
   // The forceConcurrent flag overrides individual plugin concurrent settings.
   async function runTransforms(ctx) {
-    return runPhase(transformPlugins, ctx, logger, { forceConcurrent: true });
+    return runPhase(transformPlugins, { ...baseExt, ...ctx }, logger, { forceConcurrent: true });
   }
 
   // WHY: Backward compat — existing callers use runExtractions.

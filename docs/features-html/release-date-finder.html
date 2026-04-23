@@ -130,7 +130,7 @@
       <span class="flow-arrow">&rarr;</span>
       <div class="flow-box flow-accent">Run per Variant<br><small>LLM + evidence</small></div>
       <span class="flow-arrow">&rarr;</span>
-      <div class="flow-box flow-teal">Validate<br><small>confidence + evidence gate</small></div>
+      <div class="flow-box flow-teal">Validate<br><small>bucket Gate 1 + pooled Gate 2</small></div>
       <span class="flow-arrow">&rarr;</span>
       <div class="flow-box flow-pass">Publish<br><small>field_candidates (variant-scoped)</small></div>
     </div>
@@ -185,7 +185,7 @@
       <span class="flow-arrow">&rarr;</span>
       <div class="flow-box flow-repair">LLM + Zod parse<br><small>releaseDateSchema.js</small></div>
       <span class="flow-arrow">&rarr;</span>
-      <div class="flow-box flow-accent">Confidence Gate<br><small>minConfidence, evidence&nbsp;&ge;&nbsp;1</small></div>
+      <div class="flow-box flow-accent">Publisher Gate<br><small>publishConfidenceThreshold +<br>pooled min_evidence_refs</small></div>
       <span class="flow-arrow">&rarr;</span>
       <div class="flow-box flow-pass">submitCandidate()<br><small>variant_id-scoped</small></div>
       <span class="flow-arrow">&rarr;</span>
@@ -201,7 +201,7 @@
       <dt>Endpoint (Run, one variant)</dt><dd>Same URL with <code>{ "variant_key": "color:black" }</code> &mdash; single variant, single call.</dd>
       <dt>Endpoint (Loop)</dt><dd><code>POST /api/release-date-finder/:category/:productId/loop</code> &mdash; body empty fires one loop per variant; with <code>{ "variant_key": "..." }</code> loops that variant only. Orchestrator: <code>runReleaseDateFinderLoop()</code>, registered op carries <code>subType: 'loop'</code>.</dd>
       <dt>Schema</dt><dd><code>src/features/release-date/releaseDateSchema.js</code> &mdash; Zod: <code>release_date</code> string, <code>confidence</code> 0&ndash;100, <code>unknown_reason</code>, <code>evidence_refs[]</code> via shared <code>evidenceRefsSchema</code> from <code>src/core/finder/evidencePromptFragment.js</code> (universal <code>{url, tier, confidence}</code> shape), <code>discovery_log</code>. Legacy keys (<code>source_url</code>, <code>source_page</code>, <code>source_type</code>, <code>excerpt</code>) were retired in the universal-evidence convergence.</dd>
-      <dt>Confidence gate</dt><dd>Below-threshold candidates are persisted with <code>below_confidence: true</code> but <em>not</em> submitted to the publisher. Run still counts.</dd>
+      <dt>Publisher gate</dt><dd>RDF has no local confidence gate — every real candidate with evidence is submitted to <code>submitCandidate()</code>. The publisher's deterministic <code>evaluateFieldBuckets</code> owns the decision: bucket top_confidence &ge; <code>publishConfidenceThreshold</code> AND pooled qualifying refs &ge; <code>fieldRule.evidence.min_evidence_refs</code>. A submission with LLM conf below threshold but bucket-publishable evidence triggers Gate 1 inconsistency purge (candidate + evidence + run + discovery_log hard-deleted — see <a href="publisher-pipeline.html">Publisher Pipeline</a> &sect; 2 + &sect; 4 cascade).</dd>
       <dt>Unknown path</dt><dd>LLM returns empty <code>release_date</code> + <code>unknown_reason</code>. Run persists, no publisher submit.</dd>
       <dt>Publisher error path</dt><dd>If <code>submitCandidate()</code> throws, the error lands on <code>candidate.publisher_error</code>. The run itself still persists &mdash; the publisher is advisory, not a hard dependency.</dd>
       <dt>Published SSOT</dt><dd><code>product.json.variant_fields[vid].release_date</code> &mdash; written by publisher path ③ (variant-scoped). The feature&rsquo;s own <code>release_date_finder</code> SQL table is a UI-speed cache, not authoritative. See <a href="publisher-pipeline.html#">Publisher Pipeline &sect; 3b</a>.</dd>
@@ -209,12 +209,14 @@
 
     <div class="callout callout-ok" style="margin-top:12px;">
       <strong>Loop mode satisfaction predicate</strong>
-      <p style="margin:4px 0 0; font-size:13px;"><code>runReleaseDateFinderLoop</code> retries each variant up to <code>perVariantAttemptBudget</code> attempts and stops early when <strong>either</strong>:</p>
+      <p style="margin:4px 0 0; font-size:13px;"><code>runReleaseDateFinderLoop</code> retries each variant up to <code>perVariantAttemptBudget</code> attempts and stops early when <strong>any</strong> of:</p>
       <ul style="margin:4px 0 0 16px; font-size:13px;">
-        <li><code>submitCandidate()</code> was reached (any status other than <code>'skipped'</code>) &mdash; the candidate made it past the local confidence + evidence gate. Publisher-side rejection won&rsquo;t improve with another LLM call on the same evidence.</li>
-        <li>LLM returned <code>release_date = 'unk'</code> <strong>with</strong> an <code>unknown_reason</code> &mdash; a definitive "no release date exists" answer. Retrying won&rsquo;t conjure a date that doesn&rsquo;t exist.</li>
+        <li><code>publishResult.status === 'published'</code> &mdash; the publisher's deterministic evaluator resolved a bucket. Another LLM call can't beat a published value.</li>
+        <li>LLM returned <code>release_date = 'unk'</code> <strong>with</strong> an <code>unknown_reason</code> &mdash; a definitive "no release date exists" answer.</li>
+        <li><code>submitCandidate()</code> returned <code>status === 'rejected_inconsistent'</code> &mdash; Gate 1 inconsistency purge fired (LLM conf below threshold while bucket would have published). Retrying wastes budget against an unreliable model that already contradicted itself.</li>
       </ul>
-      <p style="margin:6px 0 0; font-size:13px;">It retries on: LLM failure, below-confidence result, missing evidence, empty/transient response. Loop mode re-reads <code>previousRuns</code> fresh before each attempt so retries see the URLs/queries emitted by prior attempts (single-shot <code>runReleaseDateFinder</code> keeps a frozen snapshot &mdash; behavior preserved).</p>
+      <p style="margin:6px 0 0; font-size:13px;">It retries on: LLM failure, <code>below_evidence_refs</code>, empty/transient response. Loop mode re-reads <code>previousRuns</code> fresh before each attempt so retries see the URLs/queries emitted by prior attempts (single-shot <code>runReleaseDateFinder</code> keeps a frozen snapshot &mdash; behavior preserved).</p>
+      <p style="margin:6px 0 0; font-size:13px;">Each <code>onLoopProgress</code> pill carries <code>publish.buckets[]</code> — one chip per competing value with <code>{count}/{required}</code> pooled qualifying refs. The chip turns green the moment a bucket qualifies, which is the same moment the loop exits.</p>
     </div>
   </div>
 </div>
@@ -278,11 +280,12 @@ for (const v of targets) {
       </tbody>
     </table>
     <div class="callout callout-info" style="margin-top:8px;">
-      <strong>Publisher threshold (dual gate)</strong>
-      Every publish path runs both gates:
+      <strong>Publisher threshold (deterministic bucket evaluator)</strong>
+      <code>publishCandidate</code> routes every submission through <code>evaluateFieldBuckets</code> (pure function): candidates are grouped into buckets by <code>value_fingerprint</code> (scalar equality; RDF per-variant values rarely collide but the infrastructure is the same across keyFinder/SKU/list fields). Each bucket runs two gates:
       <ul style="margin:4px 0 0 16px; font-size:13px;">
-        <li>Confidence: candidate <code>confidence &ge; publishConfidenceThreshold</code></li>
-        <li>Evidence: distinct evidence URLs &ge; <code>fieldRule.evidence.min_evidence_refs</code> (default <code>1</code> for release_date) &mdash; checked via <code>specDb.countFieldCandidateEvidenceByCandidateId</code> against the relational <code>field_candidate_evidence</code> projection</li>
+        <li><strong>Gate 1</strong>: bucket <code>top_confidence / 100 &ge; publishConfidenceThreshold</code> — at least one member must self-declare above threshold. A bucket of all-low-confidence guesses never publishes.</li>
+        <li><strong>Gate 2</strong>: <code>count(DISTINCT refs where ref.confidence / 100 &ge; publishConfidenceThreshold) &ge; fieldRule.evidence.min_evidence_refs</code> — pooled across every row sharing the fingerprint. NULL ref confidence counts as qualifying (legacy tolerance). Same threshold drives both gates.
+        </li>
       </ul>
       Failure status: <code>below_threshold</code> or <code>below_evidence_refs</code> &mdash; persisted to <code>metadata_json.publish_result</code>. RDF dual-writes one source under variant + scalar; the variant-aware lookup (<code>getFieldCandidateBySourceIdAndVariant</code>) ensures each row's evidence projects against its own <code>candidate_id</code>.
     </div>
@@ -323,10 +326,12 @@ for (const v of targets) {
   settingsSchema: [
     { key: 'discoveryPromptTemplate', type: 'string', default: '', allowEmpty: true, hidden: true },
     { key: 'perVariantAttemptBudget', type: 'int', default: 3, min: 1, max: 5 },
-    { key: 'minConfidence',           type: 'int', default: 70, min: 0, max: 100 },
+    { key: 'reRunBudget',             type: 'int', default: 1, min: 0, max: 5 },
     { key: 'urlHistoryEnabled',       type: 'bool', default: false },
     { key: 'queryHistoryEnabled',     type: 'bool', default: false },
   ],
+  // WHY: `minConfidence` was retired — the publisher's `publishConfidenceThreshold`
+  // is the single confidence gate (see docs/07-patterns/anti-patterns.md).
   promptBuilderExport: 'buildReleaseDateFinderPrompt',
   responseSchemaExport: 'releaseDateFinderResponseSchema',
   // panelFeaturePath/panelExport derived from id via deriveFinderPaths(id) (Phase 6)
@@ -353,8 +358,9 @@ for (const v of targets) {
     <table>
       <thead><tr><th>Setting</th><th>Default</th><th>Controls</th></tr></thead>
       <tbody>
-        <tr><td><code>perVariantAttemptBudget</code></td><td><strong>3</strong></td><td>Max LLM calls per variant in <em>Loop</em> mode (1&ndash;5). <code>1</code> = single shot (Loop becomes equivalent to Run). Higher values retry on low confidence / missing evidence / LLM failure until the candidate reaches the publisher gate or returns definitive unknown. <strong>Does not apply to plain Run / Run All</strong> &mdash; those are always single-shot.</td></tr>
-        <tr><td><code>minConfidence</code></td><td>70</td><td>Confidence gate for publisher submission. Below &rarr; candidate persists locally only with <code>below_confidence: true</code>; Loop will retry.</td></tr>
+        <tr><td><code>perVariantAttemptBudget</code></td><td><strong>3</strong></td><td>Max LLM calls per variant in <em>Loop</em> mode (1&ndash;5). <code>1</code> = single shot (Loop becomes equivalent to Run). Higher values retry on <code>below_evidence_refs</code> / LLM failure until the publisher's deterministic evaluator publishes a bucket, the LLM returns a definitive unknown, or Gate 1 inconsistency purge fires. <strong>Does not apply to plain Run / Run All</strong> &mdash; those are always single-shot.</td></tr>
+        <tr><td><code>reRunBudget</code></td><td>1</td><td>Extra LLM calls per variant when Loop fires on a variant whose <code>release_date</code> is already published. <code>0</code> = skip resolved variants entirely. <code>1+</code> = allow N more attempts to refine the date with new evidence. Ignored on the first Loop.</td></tr>
+        <tr><td><code>publishConfidenceThreshold</code> <span class="tag tag-accent">global</span></td><td>0.7</td><td>Single confidence gate for every finder. Drives Gate 1 (bucket top_confidence) AND Gate 2 (per-ref qualifying filter). Changed in Pipeline Settings &rarr; Candidate Validation &rarr; Publisher; change triggers reconcile across every category's resolved candidates.</td></tr>
         <tr><td><code>discoveryPromptTemplate</code></td><td>&ldquo;&rdquo; (uses default)</td><td>Optional per-category prompt override. Hidden in the Module Settings panel (edited in LLM Config).</td></tr>
         <tr><td><code>urlHistoryEnabled</code></td><td><code>false</code></td><td>Inject prior run URLs into the prompt (variant-scoped). In Loop mode this refreshes per attempt so retries don&rsquo;t re-crawl.</td></tr>
         <tr><td><code>queryHistoryEnabled</code></td><td><code>false</code></td><td>Inject prior search queries into the prompt (variant-scoped, per attempt in Loop mode).</td></tr>

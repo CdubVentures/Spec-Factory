@@ -31,6 +31,14 @@ export function buildExtractionPluginPhases(events) {
   const groups = {};
   const workerLabels = buildWorkerDisplayLabelMap(events);
 
+  // WHY: Two-pass — extraction_artifacts_persisted can fire BEFORE its
+  // matching extraction_plugin_completed (transform-phase plugins like
+  // crawl4ai emit the persisted event inside onExtract before the runner
+  // has wrapped the plugin's return into a completed event). Processing
+  // in order would lose the filename/size join. Collect completed events
+  // first (builds the entry index), then apply persisted events in pass 2.
+  const persistedEvents = [];
+
   for (const event of events) {
     const type = eventType(event);
 
@@ -45,27 +53,28 @@ export function buildExtractionPluginPhases(events) {
 
       groups[pluginName].entries.push(buildEntry(p, event.ts, workerLabels));
       groups[pluginName].total += 1;
+    } else if (type === 'extraction_artifacts_persisted') {
+      persistedEvents.push(event);
     }
+  }
 
-    // WHY: Merge artifact filenames emitted after persistence into matching entries.
-    // extraction_artifacts_persisted carries { plugin, url, worker_id, filenames }.
-    if (type === 'extraction_artifacts_persisted') {
-      const p = payloadOf(event);
-      const pluginName = String(p.plugin || '').trim();
-      const url = String(p.url || '');
-      const workerId = String(p.worker_id || '');
-      const filenames = Array.isArray(p.filenames) ? p.filenames : [];
+  // Pass 2: attach artifact filenames to their matching entries.
+  // extraction_artifacts_persisted carries { plugin, url, worker_id, filenames, file_sizes }.
+  for (const event of persistedEvents) {
+    const p = payloadOf(event);
+    const pluginName = String(p.plugin || '').trim();
+    const url = String(p.url || '');
+    const workerId = String(p.worker_id || '');
+    const filenames = Array.isArray(p.filenames) ? p.filenames : [];
+    const fileSizes = Array.isArray(p.file_sizes) ? p.file_sizes : [];
 
-      const fileSizes = Array.isArray(p.file_sizes) ? p.file_sizes : [];
-
-      if (pluginName && groups[pluginName] && filenames.length > 0) {
-        const entry = groups[pluginName].entries.find(
-          (e) => e.url === url && e.worker_id === workerId,
-        );
-        if (entry) {
-          entry.filenames = filenames;
-          if (fileSizes.length > 0) entry.file_sizes = fileSizes;
-        }
+    if (pluginName && groups[pluginName] && filenames.length > 0) {
+      const entry = groups[pluginName].entries.find(
+        (e) => e.url === url && e.worker_id === workerId,
+      );
+      if (entry) {
+        entry.filenames = filenames;
+        if (fileSizes.length > 0) entry.file_sizes = fileSizes;
       }
     }
   }

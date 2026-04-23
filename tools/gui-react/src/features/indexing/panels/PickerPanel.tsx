@@ -162,6 +162,7 @@ export function PickerPanel({
                   disabled={busy}
                   emptyHint={searchQuery ? 'no brands match' : 'no brands'}
                   totalHeaderCount={filtered.brandList.length}
+                  scrollPersistKey="picker:drill:brand"
                 />
                 <DrillColumn
                   step={2}
@@ -173,6 +174,7 @@ export function PickerPanel({
                   disabled={busy || !singleBrand}
                   emptyHint={!singleBrand ? 'pick a brand first' : 'no models match'}
                   totalHeaderCount={filtered.modelList.length}
+                  scrollPersistKey="picker:drill:model"
                 />
                 <DrillColumn
                   step={3}
@@ -184,6 +186,7 @@ export function PickerPanel({
                   disabled={busy || !singleModel}
                   emptyHint={!singleModel ? 'pick a model first' : 'no variants match'}
                   totalHeaderCount={filtered.variantList.length}
+                  scrollPersistKey="picker:drill:variant"
                 />
               </div>
 

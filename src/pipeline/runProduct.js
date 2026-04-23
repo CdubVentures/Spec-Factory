@@ -44,7 +44,7 @@ import { normalizeFieldList } from '../utils/fieldKeys.js';
 // --- new crawl pipeline ---
 import { resolveAdapter } from '../features/crawl/adapters/adapterRegistry.js';
 import { resolveAllPlugins } from '../features/crawl/plugins/pluginRegistry.js';
-import { resolveAllExtractionPlugins, createExtractionRunner, persistScreenshotArtifacts, persistVideoArtifact, persistHtmlArtifact } from '../features/extraction/index.js';
+import { resolveAllExtractionPlugins, createExtractionRunner, persistScreenshotArtifacts, persistVideoArtifact, persistHtmlArtifact, createCrawl4aiClient } from '../features/extraction/index.js';
 
 const RUN_DEDUPE_MODE = 'serp_url+content_hash';
 
@@ -172,14 +172,33 @@ export async function runProduct({
   // the time the crawl phase begins. Discovery/search takes 10-30s so
   // the warm-up is completely free (overlapped).
   const plugins = resolveAllPlugins();
-  const extractionRunner = createExtractionRunner({
-    plugins: resolveAllExtractionPlugins(),
-    logger,
-  });
   const adapter = resolveAdapter('crawlee');
   const screenshotDir = path.join(runDir, 'screenshots');
   const videoDir = path.join(runDir, 'video');
   const htmlDir = path.join(runDir, 'html');
+  const extractionsDir = path.join(runDir, 'extractions');
+
+  // WHY: Crawl4AI Python sidecar — one long-running subprocess per run.
+  // The runner injects `crawl4aiClient` + `extractionsDir` into every
+  // transform-phase ctx via ctxExtensions so the plugin can dispatch
+  // requests without threading them through crawlSession's signature.
+  // Lazy spawn: the sidecar only starts on the first extract() call, so
+  // runs with crawl4aiEnabled=false never pay the Python boot cost.
+  const crawl4aiClient = createCrawl4aiClient({
+    pythonBin: config?.crawl4aiPythonBin || 'python',
+    timeoutMs: Number(config?.crawl4aiTimeoutMs) || 8000,
+    maxConcurrent: Number(config?.crawl4aiMaxConcurrent) || 4,
+    logger,
+    onSidecarEvent: (event, payload) => {
+      logger?.info?.(event, { ...payload, plugin: 'crawl4ai' });
+    },
+  });
+
+  const extractionRunner = createExtractionRunner({
+    plugins: resolveAllExtractionPlugins(),
+    logger,
+    ctxExtensions: { crawl4aiClient, extractionsDir, logger },
+  });
   const session = adapter.create({
     settings: { ...config, runId },
     plugins,
@@ -318,6 +337,7 @@ export async function runProduct({
 
     return { crawlResults, runId, category, productId, fetchPlanStats, startMs, job };
   } finally {
+    try { crawl4aiClient.stop(); } catch { /* best-effort shutdown */ }
     await session.shutdown();
   }
 }

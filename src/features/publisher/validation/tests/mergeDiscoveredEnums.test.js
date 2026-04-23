@@ -70,6 +70,22 @@ describe('mergeDiscoveredEnums — discovered only (no compiled entry)', () => {
     assert.ok(result.enums.grip);
     assert.deepStrictEqual(result.enums.grip.values, ['claw', 'palm']);
   });
+
+  it('forces boolean fields to closed yes/no and ignores discovered drift', () => {
+    const compiled = makeCompiled({});
+    const discovered = { discontinued: ['no', 'maybe'] };
+    const result = mergeDiscoveredEnums(compiled, discovered, makeFieldRules({
+      discontinued: {
+        contract: { type: 'boolean', shape: 'scalar' },
+        enum: { policy: 'open_prefer_known', source: 'data_lists.discontinued' },
+      },
+    }));
+
+    assert.deepStrictEqual(result.enums.discontinued, {
+      policy: 'closed',
+      values: ['yes', 'no'],
+    });
+  });
 });
 
 describe('mergeDiscoveredEnums — both compiled and discovered', () => {

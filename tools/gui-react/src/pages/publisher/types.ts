@@ -22,24 +22,10 @@ export interface PublisherRejectionEntry {
   detail?: Record<string, unknown>;
 }
 
-export interface PublisherLlmRepairDecision {
-  value: string;
-  decision: 'map_to_existing' | 'keep_new' | 'set_unk' | 'reject';
-  resolved_to?: string | null;
-  reasoning?: string;
-}
-
-export interface PublisherLlmRepair {
-  promptId: string | null;
-  status: string | null;
-  decisions: PublisherLlmRepairDecision[] | null;
-}
-
 export interface PublisherValidationJson {
   valid?: boolean;
   repairs: PublisherRepairEntry[];
   rejections: PublisherRejectionEntry[];
-  llmRepair?: PublisherLlmRepair;
 }
 
 export interface PublisherPublishResult {

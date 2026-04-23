@@ -1,0 +1,358 @@
+# Category Audit Report Generator — Handoff
+
+**Date:** 2026-04-23
+**Status:** Shipped + validated via two LLM audit runs. GUI button reverted by user (out of scope); feature accessible via backend route + script.
+**Test count:** 55/55 in-feature · 70/70 keyFinder safety-net (byte-parity) · no downstream regressions
+**Latest output:** `.workspace/reports/<category>-key-finder-audit.{html,md}` — mouse 3,700 lines, keyboard 6,250 lines, monitor 6,372 lines
+
+If you're picking this up cold, read this doc top-to-bottom once. Everything you need is linked from here.
+
+---
+
+## 1. What this is
+
+A generator that produces per-category audit reports (paired HTML + Markdown) describing **every input the keyFinder pipeline consumes for every field** in a category — contract shape, enum, aliases, search hints, cross-field constraints, component relations, extraction guidance, resolved global fragments, tier bundles.
+
+The report's job: **be a self-contained handoff document** an auditor (human or LLM) reads to produce a change-report of what to edit in Field Studio. The generator is the brief, the auditor's output is the deliverable.
+
+The report has been proven to work end-to-end: two independent LLM runs consumed a generated brief and produced change-reports (see `.workspace/reports/audits/mouse_*.md`) that match the quality bar of the hand-authored originals in `docs/audits/keys/*.md`, with full 80-of-80 field coverage versus the originals' partial coverage.
+
+---
+
+## 2. The loop (how auditing works with this tool)
+
+```
+┌─ Field rules live at category_authority/<cat>/_generated/
+│
+├─ generateCategoryAuditReport()  ── reads rules + knownValues + component_db
+│                                     + field_groups + global fragments + tier bundles
+│                                   emits .workspace/reports/<cat>-key-finder-audit.{html,md}
+│
+├─ Handoff .md to reviewer (human or LLM with web search)
+│
+├─ Reviewer produces a Change Report matching the shape in Auditor task §Part 1
+│                                   (Verdict, Coverage, Audit standard, References spot-checked,
+│                                    Highest-risk corrections, Field-by-field patches,
+│                                    Enum cleanup, Component DB additions, Group audit, Flags)
+│
+├─ Human owner applies agreed-upon changes in Field Studio
+│
+├─ Recompile category rules (existing studio route: POST /studio/:category/compile)
+│
+└─ Regenerate the audit report → diff against prior run → loop
+```
+
+Rolling filenames mean each regeneration OVERWRITES the prior pair. Git is the audit trail.
+
+---
+
+## 3. Architecture
+
+### Feature folder
+
+```
+src/features/category-audit/
+├── index.js                    Public API
+├── reportBuilder.js            Orchestrator: extract → render → write
+├── reportData.js               Pure extractor: raw rules → ReportData
+├── patternDetector.js          Enum signature grouping + suspicious-value detection
+├── reportStructure.js          Shared structural blocks consumed by both renderers
+├── reportHtml.js               HTML renderer (dark theme, TOC, collapsible details)
+├── reportMarkdown.js           MD renderer — same content, plain skin
+├── teaching.js                 Static prose for Part 1 (14 sections) + auditor task + audit standard
+├── adapters/
+│   └── keyFinderAdapter.js     renderKeyFinderPreview() — uses fieldRuleRenderers
+├── api/
+│   └── categoryAuditRoutes.js  POST /category-audit/:category/generate-report
+├── tests/                      7 test files, 55 tests
+└── README.md                   Domain contract
+```
+
+### Phase 0 — preparatory refactor (ALREADY DONE, don't re-do)
+
+Five pure field-rule → prompt-text renderers were extracted out of `src/features/key/keyLlmAdapter.js` into `src/core/llm/prompts/fieldRuleRenderers.js`:
+
+- `buildPrimaryKeyHeaderBlock`
+- `buildFieldGuidanceBlock`
+- `buildFieldContractBlock`
+- `buildSearchHintsBlock`
+- `buildCrossFieldConstraintsBlock`
+- plus helpers `joinList`, `resolveDisplayName`
+
+This lets category-audit reuse them without crossing feature boundaries (CLAUDE.md: features may only import core/ + shared/). A future indexing-audit adapter would import the same renderers.
+
+`keyFinderPreviewPrompt.test.js` is the byte-parity safety net — if you ever touch those renderers, run `node --test src/features/key/tests/keyLlmAdapter.test.js src/features/key/tests/keyFinderPreviewPrompt.test.js` first and after.
+
+### Public API
+
+```js
+import {
+  generateCategoryAuditReport,   // orchestrator
+  extractReportData,              // pure extractor (for tests / alternate renderers)
+  registerCategoryAuditRoutes,    // HTTP surface
+} from 'src/features/category-audit/index.js';
+
+// Synchronous file I/O + rendering, no LLM, no network
+await generateCategoryAuditReport({
+  category: 'mouse',
+  consumer: 'key_finder',            // enum today; 'indexing' when adapter added
+  loadedRules,                        // from loadFieldRules(category)
+  fieldGroups,                        // JSON.parse(field_groups.json)
+  globalFragments,                    // { identityIntro, evidenceContract, ... } resolved strings
+  tierBundles,                        // parsed keyFinderTierSettingsJson
+  compileSummary,                     // optional _compile_report.json subset
+  outputRoot,                         // .workspace/reports
+  now,                                // injectable Date for tests
+}) => { htmlPath, mdPath, generatedAt, stats }
+```
+
+### Consumer adapter pattern
+
+`adapters/keyFinderAdapter.js` knows how to render per-key preview text for the keyFinder consumer. When indexing-audit arrives, add `adapters/indexingAdapter.js` with the same `renderPromptPreview(rule, fieldKey, opts) → preview` shape and register it in `reportBuilder.js`'s `SUPPORTED_CONSUMERS` set. Zero refactor of extractors or renderers.
+
+---
+
+## 4. How to regenerate reports (exact commands)
+
+### From the command line
+
+```bash
+cd "C:/Users/Chris/Desktop/Spec Factory"
+node --input-type=module -e "
+import { loadFieldRules } from './src/field-rules/loader.js';
+import { resolveGlobalPrompt } from './src/core/llm/prompts/globalPromptRegistry.js';
+import { generateCategoryAuditReport } from './src/features/category-audit/index.js';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+const reportsDir = path.resolve('.workspace', 'reports');
+const FRAGMENTS = ['identityIntro','identityWarningEasy','identityWarningMedium','identityWarningHard','siblingsExclusion','evidenceContract','evidenceVerification','evidenceKindGuidance','valueConfidenceRubric','scalarSourceTierStrategy','scalarSourceGuidanceCloser','unkPolicy','discoveryHistoryBlock','discoveryLogShape'];
+const globalFragments = {};
+for (const k of FRAGMENTS) { try { globalFragments[k] = resolveGlobalPrompt(k); } catch { globalFragments[k] = ''; } }
+const tierBundles = { easy: { model: 'claude-haiku-4-5' }, medium: { model: 'claude-sonnet-4-6', thinking: true, thinkingEffort: 'low', webSearch: true }, hard: { model: 'claude-sonnet-4-6', useReasoning: true, thinking: true, thinkingEffort: 'high', webSearch: true }, very_hard: { model: 'claude-opus-4-7', useReasoning: true, thinking: true, webSearch: true }, fallback: { model: 'claude-sonnet-4-6' } };
+for (const cat of ['mouse', 'keyboard', 'monitor']) {
+  const loaded = await loadFieldRules(cat);
+  const fieldGroups = JSON.parse(await fs.readFile(path.join('category_authority', cat, '_generated', 'field_groups.json'), 'utf8'));
+  let compileSummary = null; try { compileSummary = JSON.parse(await fs.readFile(path.join('category_authority', cat, '_generated', '_compile_report.json'), 'utf8')); } catch {}
+  await generateCategoryAuditReport({ category: cat, consumer: 'key_finder', loadedRules: loaded, fieldGroups, globalFragments, tierBundles, compileSummary, outputRoot: reportsDir });
+}
+console.log('done');
+"
+```
+
+### From the HTTP route
+
+```
+POST /api/v1/category-audit/:category/generate-report
+Body: { "consumer": "key_finder" }
+Response: { htmlPath, mdPath, generatedAt, stats }
+```
+
+**Important — the route is NOT currently wired into `guiServerRuntime.js`.** The user reverted the GUI button + route registration intentionally (see §8 "Deferred / open items"). If you want to re-enable, add:
+
+1. Import: `import { registerCategoryAuditRoutes } from '../../features/category-audit/index.js';`
+2. Context entry: `categoryAuditRouteContext: { jsonRes, readJsonBody, config }` in the `routeCtx` object
+3. Registration: `{ key: 'categoryAudit', registrar: registerCategoryAuditRoutes }` in `routeDefinitions` next to `studio`
+
+The route handler itself returns `false` for unmatched paths (the dispatcher contract is `result !== false` = handled). An earlier bug that returned `null` short-circuited downstream routes → do NOT reintroduce `null` returns.
+
+---
+
+## 5. Report structure (what the auditor actually reads)
+
+Section order, top to bottom:
+
+1. **Header** — category name + generated timestamp + stats line
+2. **Auditor task (read this first)** — `AUDITOR_TASK_BODY` in `teaching.js`. Tells the reviewer what to produce, names the return-format template exactly (mirrors the keyboard-audit shape: Verdict / Coverage / Audit standard / References spot-checked / Highest-risk corrections / Field-by-field patches / Enum cleanup / Component DB additions / Group audit / Flags).
+3. **Audit standard (the bar you apply)** — `AUDIT_STANDARD_BODY` in `teaching.js`. The explicit evaluation criteria: Visual-answerable tier A/B/C framework, enum discipline with value-count thresholds, guidance discipline, contract discipline, evidence discipline, component discipline.
+4. **Summary** — metrics table + top-10 highest-risk enums + category-level unreachable-constraints flag (only appears if constraints exist).
+5. **Part 1 — How the keyFinder pipeline works** — 14 teaching sub-sections (purpose, template skeleton, field rule anatomy, contract value, filter UI, enum policies, tier routing, **field groups**, bundling, cross-field constraints, component relations, evidence, reserved keys, what `reasoning_note` is FOR/NOT FOR).
+6. **Part 2 — Generic category prompt (compiled)** — template text with every category-level slot resolved to final wording. Runtime slots shown as labeled placeholders.
+7. **Part 3 — Tier bundles** — easy/medium/hard/very_hard/fallback → model/reasoning/thinking/webSearch.
+8. **Part 4 — Enum inventory** — every enum: policy, value count, filter-UI rendering, detected signature, full value list, suspicious values.
+9. **Part 5 — Component DB inventory** — per component type: entities + properties + which fields are identities / subfields.
+10. **Part 6 — Field groups** — overview table + per-group collapsible detail (members with contract/priority/enum/component summary, cross-group constraint couplings, 5 audit prompts per group).
+11. **Part 7 — Per-key detail** — one block per `field_key` in group order. Only shows sub-sections that have content (contract + guidance heading always; enum/aliases/hints/constraints/component only if present). Alias-mismatch warning is NOT repeated per key — hoisted to the Summary.
+
+---
+
+## 6. Current state — what's shipped
+
+- **Phase 0 refactor:** complete. 70/70 keyFinder safety-net tests green post-extraction (byte-parity preserved).
+- **Phase 1 feature:** complete. 55/55 in-feature tests. All 10 source modules + 7 test files + README shipped.
+- **Phase 2 route:** complete code-wise, **reverted in guiServerRuntime.js by the user**. Route handler still exists at `src/features/category-audit/api/categoryAuditRoutes.js` — just not registered. Can be used via direct import (script path above).
+- **Phase 3 GUI button:** **reverted in full by the user**. `CompileReportsTab.tsx`, `studioPagePanelContracts.ts`, `studioPagePanelProps.ts`, and the contracts-test fixture were all rolled back to pre-category-audit state. Don't try to re-wire without confirmation.
+- **Phase 4 smoke:** full backend suite ran twice (both exit 0). Three categories generate cleanly.
+
+Reports currently exist at:
+- `.workspace/reports/mouse-key-finder-audit.{html,md}` — 80 keys, 10 groups
+- `.workspace/reports/keyboard-key-finder-audit.{html,md}` — 103 keys, 12 groups
+- `.workspace/reports/monitor-key-finder-audit.{html,md}` — 113 keys, 10 groups
+
+Validated LLM-produced change reports:
+- `.workspace/reports/audits/mouse_key_finder_audit_change_report.md` — 80/80 fields, 1,497 lines, from one LLM run
+- `.workspace/reports/audits/mouse-key-finder-audit-change-report.md` — 80/80 fields, 1,409 lines, independent run
+- Both converge on the same highest-risk findings — format is reproducible.
+
+---
+
+## 7. Findings the first LLM audit surfaced (real bugs to fix)
+
+These are validated by **two independent LLM runs**. Not speculation — both reports caught the same items. Listed in rough priority order:
+
+### A. `constraints` / `cross_field_constraints` alias mismatch
+
+Compiled rules store `constraints` as a string DSL (e.g. `"sensor_date <= release_date"`). The renderer at `src/core/llm/prompts/fieldRuleRenderers.js:buildCrossFieldConstraintsBlock` reads `fieldRule?.cross_field_constraints` and expects an object shape (`{ op, target }`). Result: **cross-field constraints never reach any live keyFinder prompt**. Fix: either update the compiler to emit `cross_field_constraints` in the object shape alongside `constraints`, or make the renderer parse `constraints` string DSL at render time.
+
+Concrete affected fields: `sensor_date` (mouse) has `constraints: ["sensor_date <= release_date"]` — currently unreachable. The Summary section of every regenerated report now lists affected keys so you can verify fix scope.
+
+### B. Global fragments not rendering into Part 2
+
+Both LLM reviewers flagged: "the compiled prompt shows `SOURCE_TIER_STRATEGY` and `VALUE_CONFIDENCE_GUIDANCE` as not configured even though the registry summary has text." Investigate `reportStructure.js:buildGenericPromptSection` — the camelize mapping or the resolve-fragment call may be dropping those two keys. Probably a simple key-mapping issue, but both reviewers caught it independently so it's real.
+
+### C. Enum pollution in `mouse` category
+
+Multiple confirmed:
+- `switch_type` contains `eqwe`, `yay`, unknown sentinels, mixed switch identities + mechanism classes → split into a closed mechanism enum (`mechanical | optical | optical-mechanical | inductive`) and keep model identities in `switch`.
+- `connectivity` has `1`, `2.5`, `n/a`, `unk`, and three duplicate 2.4 GHz spellings → normalize.
+- `coating` has `A`, `help` → clean to a small canonical finish vocabulary.
+- `feet_material` has `l` → clean.
+- `colors` is a 77-value closed enum owned by CEF. Either remove from keyFinder scope or split into CEF-managed base-color taxonomy.
+
+### D. Component DB pollution
+
+- `encoder_steps` contains a `hellow` string value. Should be numeric. Fix in the component_db/encoders.json source or in the compile step.
+- Sensor + switch databases need current 2026 entries (Razer Focus Pro 50K Gen-3, Logitech HITS, Gen-4 optical).
+
+### E. Type-contract mismatches
+
+- `rgb`, `thumb_rest`, `flawless_sensor` are typed as strings but behave as booleans → change contract.type to boolean, drop the enum.
+- `sensor_date` is a string with rounding → should be a date type.
+
+### F. Empty `reasoning_note` across the board
+
+100% of all 80 mouse keys, 103 keyboard keys, 113 monitor keys have empty `ai_assist.reasoning_note`. The audit cycle is exactly designed to fill these in — the LLM change reports propose paste-ready text. Apply those in Field Studio.
+
+---
+
+## 8. Deferred / open items (explicit non-goals this session)
+
+1. **GUI button in Compile & Reports tab.** Reverted by user. Don't re-add without asking — the user may want it in a different UI location (Field Studio Key Navigator sticky header was also considered). `CompileReportsTab.tsx`, `studioPagePanelContracts.ts`, `studioPagePanelProps.ts`, and the related test fixture are all back to pre-feature state.
+2. **Route registration in `guiServerRuntime.js`.** Reverted. The route registrar exists but isn't wired. Re-wiring is a 3-line edit (§4 above).
+3. **Per-key "Consumer output shape" block in Part 7** (Option D from earlier). Would pull from production `mouse_data.json` in the EG-HBS repo to show what an extracted value actually renders as on the consumer site. Decided out of scope — Hub is downstream of the contract; auditors shape the contract, not retrofit from Hub state.
+4. **Indexing pipeline adapter.** Architecture supports it (see `adapters/` + `SUPPORTED_CONSUMERS` in `reportBuilder.js`). Not implemented — wait until the indexing pipeline itself has stable per-key prompt generation worth auditing.
+5. **`mouse_spec_guidelines.txt` cross-reference.** Originally considered referencing the hand-authored EG-HBS guidelines doc. User confirmed those won't exist going forward — removed from plan.
+
+---
+
+## 9. Design decisions + rationale
+
+- **Feature-first feature folder (`src/features/category-audit/`).** Not under `src/features/key/` because the audit is category-scoped, cross-cutting, and will serve multiple consumers (keyFinder today, indexing tomorrow). Not under `src/features/studio/` because the audit is a read-only view, not a field-rule editor.
+- **Preparatory refactor of 5 renderers into `src/core/llm/prompts/fieldRuleRenderers.js`.** Chosen over re-exporting from `src/features/key/index.js` because CLAUDE.md prohibits features importing other features' internals. The 5 renderers take a `fieldRule` and return a string block — pure core/llm/prompts concern, not keyFinder-specific.
+- **Adapter pattern for consumers.** Each prompt consumer (keyFinder today, indexing later) registers an adapter exposing `renderPromptPreview(rule, fieldKey, opts)`. Adding a consumer is one file, not a refactor.
+- **Rolling filenames, not timestamped.** Single pair per category — git is the audit trail. Avoids unbounded `.workspace/reports/` growth.
+- **Two renderers (HTML + MD) walk a shared structure.** `reportStructure.js` produces `Block[]`; HTML and MD renderers each walk it. Adding a new section = edit one file; both output formats pick it up. No duplication.
+- **Teaching prose in `teaching.js` as string constants.** Not hand-maintained HTML fragments. The MD renderer outputs markdown; the HTML renderer converts with a tiny inline markdown-to-HTML function (no dependency).
+- **Tier A/B/C visual framework in the audit standard.** Explicit distinction between direct-visual fields (one-sentence guidance is enough), subtle-visual fields (where `reasoning_note` earns its keep — threshold rules, unk conditions), and non-visual fields (don't mention views). Added after the user pointed out not all visual fields are equally easy.
+- **Enum discipline leads the auditor task.** User emphasized enum + filter-UI as the single biggest lever — every non-numeric value becomes a filter chip. Value-count thresholds (≤10 healthy → 30+ broken) are empirical, stated once in Part 1.6, referenced from the auditor task + audit standard.
+- **Web search is explicit permission.** Reviewers have live internet. Told to use it for enum calibration against real products, terminology validation, claim spot-checking. "References spot-checked" section in the return-format template captures the evidence footprint.
+- **Skip empty sub-blocks in Part 7.** Earlier versions padded every key with 7 sub-sections full of `(empty)` / `(none)` placeholders. Cut 25–35% of report volume without losing signal. Contract + Extraction-guidance headings still always print so unauthored cells remain visible.
+- **Hoist alias-mismatch warning to Summary.** Earlier versions repeated it on every key block (80+ copies per report). Now appears exactly once with the full list of affected fields.
+
+---
+
+## 10. File map
+
+| Path | Purpose |
+|---|---|
+| `src/core/llm/prompts/fieldRuleRenderers.js` | 5 pure field-rule → prompt-text renderers (NEW in Phase 0, shared with keyFinder) |
+| `src/features/key/keyLlmAdapter.js` | MODIFIED — now imports the 5 renderers from fieldRuleRenderers |
+| `src/features/category-audit/index.js` | Public API barrel |
+| `src/features/category-audit/reportBuilder.js` | Orchestrator — load, extract, render, write |
+| `src/features/category-audit/reportData.js` | Pure extractors: rules/known-values/component-db → normalized ReportData |
+| `src/features/category-audit/patternDetector.js` | `analyzeEnum()` + `resolveFilterUi()` — signature grouping, suspicious-value detection |
+| `src/features/category-audit/reportStructure.js` | Shared blocks the two renderers walk |
+| `src/features/category-audit/reportHtml.js` | HTML renderer — dark theme, TOC, collapsible details, XSS-safe |
+| `src/features/category-audit/reportMarkdown.js` | Markdown renderer |
+| `src/features/category-audit/teaching.js` | Part 1 prose (14 sections) + auditor task + audit standard |
+| `src/features/category-audit/adapters/keyFinderAdapter.js` | `renderKeyFinderPreview()` per-key block builder |
+| `src/features/category-audit/api/categoryAuditRoutes.js` | POST /category-audit/:category/generate-report handler |
+| `src/features/category-audit/tests/*.test.js` | 7 test files, 55 assertions total |
+| `src/features/category-audit/README.md` | Domain contract per CLAUDE.md rules |
+| `.workspace/reports/<cat>-key-finder-audit.{html,md}` | Generated output (rolling, not git-tracked) |
+| `.workspace/reports/audits/mouse_*.md` | LLM-produced change reports (proof the loop works) |
+| `docs/audits/keys/*.md` | Hand-authored original audits — quality benchmarks for the LLM output |
+
+---
+
+## 11. Extending the tool
+
+### Add a new teaching section
+
+1. Write the body as a string constant in `teaching.js`.
+2. Push onto the array in `composeTeachingSections()`.
+3. Regenerate — both HTML and MD pick it up automatically.
+
+### Add a new consumer adapter (e.g. indexing)
+
+1. Create `adapters/indexingAdapter.js` exporting `renderIndexingPreview(rule, fieldKey, opts) → preview`.
+2. Add `'indexing'` to `SUPPORTED_CONSUMERS` in `reportBuilder.js`.
+3. Dispatch to the correct adapter based on `consumer` arg in `buildPerKeySections` (current code hardcodes keyFinder — needs a small switch).
+4. Filename convention: `<category>-<consumer>-audit.{html,md}` already in place.
+
+### Add a new structural block type
+
+Edit `reportStructure.js`'s Block union, then handle it in both `reportHtml.js:renderBlock()` and `reportMarkdown.js:renderBlock()`. Existing block kinds: `paragraph`, `bulletList`, `table`, `codeBlock`, `details`, `subheading`, `note`.
+
+### Add a new pattern detector heuristic
+
+Edit `patternDetector.js`. `analyzeEnum()` returns the analysis object that both Part 4 and per-key Part 7 consume. Don't add contract-type-specific logic here — the `filterUi` dispatch is already clean.
+
+---
+
+## 12. Tests
+
+```bash
+# Feature tests
+node --test src/features/category-audit/tests/*.test.js
+
+# Phase 0 safety net (run before any edit to fieldRuleRenderers.js)
+node --test src/features/key/tests/keyLlmAdapter.test.js src/features/key/tests/keyFinderPreviewPrompt.test.js
+
+# Downstream
+node --test src/features/key/tests/*.test.js src/core/llm/prompts/tests/*.test.js
+node --test src/features/indexing/pipeline/shared/tests/*.test.js src/engine/tests/*.test.js
+node --test src/field-rules/tests/*.test.js src/features/studio/api/tests/*.test.js
+```
+
+Last verified: 2026-04-22. All green.
+
+---
+
+## 13. References
+
+- **Original hand-authored audits (quality benchmarks):**
+  - `docs/audits/keys/mouse_extraction_guidance_audit.md`
+  - `docs/audits/keys/keyboard_extraction_guidance_audit.md`
+  - `docs/audits/keys/monitor_extraction_guidance_audit.md`
+- **LLM-produced change reports (proof of loop):** `.workspace/reports/audits/mouse_*.md`
+- **keyFinder context:** `src/features/key/README.md`
+- **Prompt fragments domain:** `src/core/llm/prompts/README.md`
+- **Field rules loader:** `src/field-rules/loader.js` → `loadFieldRules(category, opts)`
+- **Global prompt registry:** `src/core/llm/prompts/globalPromptRegistry.js` → `resolveGlobalPrompt(key)` + `GLOBAL_PROMPT_KEYS`
+- **Tier bundles:** `settingsRegistry.keyFinderTierSettingsJson` (string-form JSON; parse at consumer)
+- **Compiler output path convention:** `category_authority/<category>/_generated/{field_rules.json, known_values.json, field_groups.json, component_db/*.json, _compile_report.json}`
+- **Planning artifact from initial design session:** `C:\Users\Chris\.claude\plans\refactored-roaming-hearth.md`
+
+---
+
+## 14. Known issues / tech debt (explicit)
+
+1. **`constraints` / `cross_field_constraints` alias mismatch.** §7.A above. Highest-priority bug the audit surfaced. Not in scope for the audit feature itself to fix.
+2. **Global fragment render gap.** §7.B. Investigate `reportStructure.js:buildGenericPromptSection`'s camelize + fragment lookup.
+3. **`encoder_steps: "hellow"`.** §7.D. Fix in source component DB or the compile step.
+4. **GUI button wiring reverted.** §8.1. If the user asks to re-enable, follow §4 HTTP instructions and ensure the handler returns `false` on unmatched paths.
+5. **Compile-time fragment resolution uses `camelize()`** in `reportStructure.js`. Fragile — consider a mapping table so `{{PRIMARY_FIELD_KEY}}` → no lookup (runtime slot), `{{EVIDENCE_CONTRACT}}` → `evidenceContract`, etc. Currently derives the key name by lowercasing + removing underscores, which quietly fails for slots whose fragment name doesn't follow that convention.
+
+---
+
+**End of handoff.** If you're still uncertain after reading this, open the sibling `src/features/category-audit/README.md` (domain contract) and one of the `.workspace/reports/audits/mouse_*.md` files (sample LLM output). Those two plus this doc are the complete picture.

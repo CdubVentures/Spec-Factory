@@ -7,7 +7,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { selectKeyFinderGroupedRows, sortKeysByPriority } from '../keyFinderGroupedRows.ts';
+import { selectKeyFinderGroupedRows, sortKeysByPriority, parseAxisOrder } from '../keyFinderGroupedRows.ts';
 import { DEFAULT_FILTERS } from '../../types.ts';
 import type { ReviewLayoutRow } from '../../../../types/review.ts';
 import type { KeyFinderSummaryRow } from '../../types.ts';
@@ -389,7 +389,11 @@ describe('chainQueuedKeys — Loop queued synthesis', () => {
   });
 });
 
-describe('sortKeysByPriority — Loop chain ordering', () => {
+describe('sortKeysByPriority — Loop chain ordering (legacy axis order)', () => {
+  // These tests pin the pre-configurable-sort behavior (required_level first).
+  // They pass the axis order explicitly so the default-order shift doesn't
+  // change the existing expectations.
+  const LEGACY = ['required_level', 'availability', 'difficulty'] as const;
   const row = (
     field_key: string,
     required_level: string,
@@ -401,7 +405,7 @@ describe('sortKeysByPriority — Loop chain ordering', () => {
     const result = sortKeysByPriority([
       row('b', 'non_mandatory', 'always', 'easy'),
       row('a', 'mandatory', 'always', 'easy'),
-    ]);
+    ], LEGACY);
     assert.deepEqual(result.map((r) => r.field_key), ['a', 'b']);
   });
 
@@ -410,7 +414,7 @@ describe('sortKeysByPriority — Loop chain ordering', () => {
       row('c', 'mandatory', 'rare', 'easy'),
       row('a', 'mandatory', 'always', 'easy'),
       row('b', 'mandatory', 'sometimes', 'easy'),
-    ]);
+    ], LEGACY);
     assert.deepEqual(result.map((r) => r.field_key), ['a', 'b', 'c']);
   });
 
@@ -420,7 +424,7 @@ describe('sortKeysByPriority — Loop chain ordering', () => {
       row('a', 'mandatory', 'always', 'easy'),
       row('c', 'mandatory', 'always', 'hard'),
       row('b', 'mandatory', 'always', 'medium'),
-    ]);
+    ], LEGACY);
     assert.deepEqual(result.map((r) => r.field_key), ['a', 'b', 'c', 'd']);
   });
 
@@ -429,24 +433,22 @@ describe('sortKeysByPriority — Loop chain ordering', () => {
       row('zebra', 'mandatory', 'always', 'easy'),
       row('alpha', 'mandatory', 'always', 'easy'),
       row('mango', 'mandatory', 'always', 'easy'),
-    ]);
+    ], LEGACY);
     assert.deepEqual(result.map((r) => r.field_key), ['alpha', 'mango', 'zebra']);
   });
 
   it('full 4-axis precedence: required_level > availability > difficulty > field_key', () => {
-    // Mixed set — mandatory-rare-easy should beat non_mandatory-always-easy
-    // because required_level is the most significant axis.
     const result = sortKeysByPriority([
       row('non_mand_always_easy', 'non_mandatory', 'always', 'easy'),
       row('mand_rare_easy', 'mandatory', 'rare', 'easy'),
       row('mand_always_hard', 'mandatory', 'always', 'hard'),
       row('mand_always_easy', 'mandatory', 'always', 'easy'),
-    ]);
+    ], LEGACY);
     assert.deepEqual(result.map((r) => r.field_key), [
-      'mand_always_easy',   // mand + always + easy
-      'mand_always_hard',   // mand + always + hard
-      'mand_rare_easy',     // mand + rare + easy
-      'non_mand_always_easy', // non-mand last regardless of other axes
+      'mand_always_easy',
+      'mand_always_hard',
+      'mand_rare_easy',
+      'non_mand_always_easy',
     ]);
   });
 
@@ -456,16 +458,107 @@ describe('sortKeysByPriority — Loop chain ordering', () => {
       row('a', 'mandatory', 'always', 'easy'),
     ];
     const snapshot = input.map((r) => r.field_key);
-    sortKeysByPriority(input);
+    sortKeysByPriority(input, LEGACY);
     assert.deepEqual(input.map((r) => r.field_key), snapshot, 'input order preserved');
   });
 
   it('unknown axis values fall to the back (defensive)', () => {
-    // Unknown required_level rank → highest fallback
     const result = sortKeysByPriority([
       row('unknown', 'bogus', 'always', 'easy'),
       row('mand', 'mandatory', 'always', 'easy'),
-    ]);
+    ], LEGACY);
     assert.deepEqual(result.map((r) => r.field_key), ['mand', 'unknown']);
+  });
+});
+
+describe('sortKeysByPriority — default axis order (difficulty → required → availability)', () => {
+  const row = (
+    field_key: string,
+    required_level: string,
+    availability: string,
+    difficulty: string,
+  ) => ({ field_key, required_level, availability, difficulty });
+
+  it('no-arg call defaults to new precedence: easy wins over mandatory-hard', () => {
+    const result = sortKeysByPriority([
+      row('mand_hard', 'mandatory', 'always', 'hard'),
+      row('opt_easy', 'non_mandatory', 'always', 'easy'),
+    ]);
+    assert.deepEqual(result.map((r) => r.field_key), ['opt_easy', 'mand_hard']);
+  });
+
+  it('within same difficulty, mandatory still beats non_mandatory', () => {
+    const result = sortKeysByPriority([
+      row('opt_easy', 'non_mandatory', 'always', 'easy'),
+      row('mand_easy', 'mandatory', 'always', 'easy'),
+    ]);
+    assert.deepEqual(result.map((r) => r.field_key), ['mand_easy', 'opt_easy']);
+  });
+
+  it('within same difficulty + required, always beats rare', () => {
+    const result = sortKeysByPriority([
+      row('rare_e', 'mandatory', 'rare', 'easy'),
+      row('always_e', 'mandatory', 'always', 'easy'),
+    ]);
+    assert.deepEqual(result.map((r) => r.field_key), ['always_e', 'rare_e']);
+  });
+
+  it('full 4-axis precedence under default order', () => {
+    const result = sortKeysByPriority([
+      row('mand_rare_easy', 'mandatory', 'rare', 'easy'),
+      row('opt_always_easy', 'non_mandatory', 'always', 'easy'),
+      row('mand_always_hard', 'mandatory', 'always', 'hard'),
+      row('opt_rare_very_hard', 'non_mandatory', 'rare', 'very_hard'),
+    ]);
+    // difficulty primary: easy < hard < very_hard
+    // within easy: mand < opt (required_level tiebreaker)
+    assert.deepEqual(result.map((r) => r.field_key), [
+      'mand_rare_easy',
+      'opt_always_easy',
+      'mand_always_hard',
+      'opt_rare_very_hard',
+    ]);
+  });
+
+  it('partial axis array — missing axis appended from default', () => {
+    // Only 2 of 3 axes supplied. `availability` missing → appended last from
+    // DEFAULT_AXIS_ORDER so the sort is still total.
+    const result = sortKeysByPriority([
+      row('rare_mand_e', 'mandatory', 'rare', 'easy'),
+      row('always_opt_e', 'non_mandatory', 'always', 'easy'),
+    ], ['difficulty', 'required_level']);
+    // Same difficulty (easy); within easy, mand beats opt regardless of
+    // availability (availability is only a tiebreaker if req_level is equal).
+    assert.deepEqual(result.map((r) => r.field_key), ['rare_mand_e', 'always_opt_e']);
+  });
+
+  it('empty axis array → default order', () => {
+    const result = sortKeysByPriority([
+      row('mand_hard', 'mandatory', 'always', 'hard'),
+      row('opt_easy', 'non_mandatory', 'always', 'easy'),
+    ], []);
+    assert.deepEqual(result.map((r) => r.field_key), ['opt_easy', 'mand_hard']);
+  });
+});
+
+describe('parseAxisOrder', () => {
+  it('empty string → default order', () => {
+    const got = parseAxisOrder('');
+    assert.deepEqual([...got], ['difficulty', 'required_level', 'availability']);
+  });
+
+  it('full CSV preserves user order', () => {
+    const got = parseAxisOrder('availability,difficulty,required_level');
+    assert.deepEqual([...got], ['availability', 'difficulty', 'required_level']);
+  });
+
+  it('partial CSV appends missing axes from default', () => {
+    const got = parseAxisOrder('availability');
+    assert.deepEqual([...got], ['availability', 'difficulty', 'required_level']);
+  });
+
+  it('drops unknown axes + appends missing', () => {
+    const got = parseAxisOrder('difficulty,bogus,availability');
+    assert.deepEqual([...got], ['difficulty', 'availability', 'required_level']);
   });
 });

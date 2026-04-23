@@ -7,6 +7,24 @@
  * @param {Record<string, object>} fieldRules — to read enum.policy for fields with no compiled entry
  * @returns {{ enums: Record<string, { policy: string, values: string[] }>, [key: string]: * }}
  */
+
+const BOOLEAN_ENUM_VALUES = ['yes', 'no'];
+
+function normalizeToken(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function isBooleanFieldRule(rule = {}) {
+  return normalizeToken(rule?.contract?.type || rule?.type || rule?.data_type) === 'boolean';
+}
+
+function booleanEnumEntry() {
+  return {
+    policy: 'closed',
+    values: [...BOOLEAN_ENUM_VALUES],
+  };
+}
+
 export function mergeDiscoveredEnums(compiledKnownValues, discoveredByField, fieldRules) {
   const compiled = compiledKnownValues || {};
   const discovered = discoveredByField || {};
@@ -15,11 +33,20 @@ export function mergeDiscoveredEnums(compiledKnownValues, discoveredByField, fie
   // WHY: shallow-clone enums so we never mutate the caller's object
   const merged = {};
   for (const [key, entry] of Object.entries(compiled.enums || {})) {
+    if (key === 'yes_no' || isBooleanFieldRule(rules[key])) {
+      merged[key] = booleanEnumEntry();
+      continue;
+    }
     merged[key] = { policy: entry.policy, values: [...entry.values] };
   }
 
   for (const [fieldKey, values] of Object.entries(discovered)) {
     if (!Array.isArray(values) || values.length === 0) continue;
+
+    if (isBooleanFieldRule(rules[fieldKey])) {
+      merged[fieldKey] = booleanEnumEntry();
+      continue;
+    }
 
     if (merged[fieldKey]) {
       // WHY: dedup by lowercase to avoid "PTFE" + "ptfe" appearing twice

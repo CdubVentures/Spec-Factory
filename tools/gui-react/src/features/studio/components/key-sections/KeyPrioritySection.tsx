@@ -182,12 +182,17 @@ function ExtractionGuidanceSubsection({
     "contract.unit",
     strN(currentRule, "unit"),
   );
-  const enumPolicy = strN(
+  const contractType2 = strN(
+    currentRule,
+    "contract.type",
+    strN(currentRule, "data_type", "string"),
+  );
+  const enumPolicy = contractType2 === "boolean" ? "closed" : strN(
     currentRule,
     "enum.policy",
     strN(currentRule, "enum_policy", "open"),
   );
-  const enumSource = strN(
+  const enumSource = contractType2 === "boolean" ? "yes_no" : strN(
     currentRule,
     "enum.source",
     strN(currentRule, "enum_source"),
@@ -200,11 +205,6 @@ function ExtractionGuidanceSubsection({
       "min_evidence_refs",
       STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.fallback,
     ),
-  );
-  const contractType2 = strN(
-    currentRule,
-    "contract.type",
-    strN(currentRule, "data_type", "string"),
   );
   const componentType = strN(
     currentRule,

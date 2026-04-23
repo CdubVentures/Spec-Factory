@@ -8,7 +8,6 @@ export type LlmPhaseId =
   | 'search-planner'
   | 'brand-resolver'
   | 'serp-selector'
-  | 'validate'
   | 'global-prompts'
   | 'color-finder'
   | 'image-finder'
@@ -21,7 +20,6 @@ export type LlmPhaseGroup =
   | 'global'
   | 'writer'
   | 'indexing'
-  | 'publish'
   | 'discovery';
 
 export interface LlmPhaseDefinition {

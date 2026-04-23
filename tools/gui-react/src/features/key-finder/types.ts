@@ -41,7 +41,7 @@ export interface KeyFinderSummaryRow {
    *  alongside the pool ("{used}/{pool}") so users can confirm the pack fits. */
   readonly bundle_total_cost: number;
   /** Passengers that WOULD bundle with this row if run now. Each entry carries
-   *  the per-passenger cost (from `bundlingPassengerCost[difficulty]`) so the
+   *  the effective per-passenger cost after the family-size surcharge so the
    *  UI can render "{field_key} (cost)" and the user can eyeball-sum against
    *  the primary's pool. Empty when bundlingEnabled=false or no eligible peers. */
   readonly bundle_preview: ReadonlyArray<{ readonly field_key: string; readonly cost: number }>;
@@ -63,6 +63,19 @@ export interface KeyFinderSummaryRow {
   readonly last_web_search: boolean | null;
   readonly candidate_count: number;
   readonly published: boolean;
+  /** True when the key's top-value bucket publishes under the stricter
+   *  passenger-exclude thresholds (default 95 conf / 3 evidence refs). Same
+   *  deterministic gate the publisher uses, just tighter. When true, the key
+   *  stops being bundled as a passenger on peer primaries — users still Run /
+   *  Loop it directly. Distinct from `published`: a key can be `published` at
+   *  51 confidence with 1 evidence ref, but not `concrete_evidence`. */
+  readonly concrete_evidence: boolean;
+  /** Top candidate's confidence (0-100) for the Concrete column's tooltip.
+   *  Display-only — does NOT drive the gate. Null when no candidates exist. */
+  readonly top_confidence: number | null;
+  /** Top candidate's evidence_count for the Concrete column's tooltip.
+   *  Display-only — does NOT drive the gate. Null when no candidates exist. */
+  readonly top_evidence_count: number | null;
   readonly run_count: number;
 }
 
@@ -160,6 +173,12 @@ export interface KeyEntry {
   readonly last_web_search: boolean | null;
   readonly candidate_count: number;
   readonly published: boolean;
+  /** See KeyFinderSummaryRow.concrete_evidence. */
+  readonly concrete_evidence: boolean;
+  /** See KeyFinderSummaryRow.top_confidence. */
+  readonly top_confidence: number | null;
+  /** See KeyFinderSummaryRow.top_evidence_count. */
+  readonly top_evidence_count: number | null;
   readonly run_count: number;
   /** True when ANY op (Run or Loop) is active (running or queued) for this key. */
   readonly running: boolean;
@@ -256,11 +275,11 @@ export const TOOLTIPS = Object.freeze({
   keyRun: 'Focused key run — one LLM call for this key only. Click multiple times to queue additional runs (the server serializes them per-key). Honors the alwaysSoloRun contract: never bundles passengers when that knob is on.',
   keyLoop: 'Budget-bounded retry loop. Each iteration packs passengers live, subject to per-tier caps and hard-block on busy primaries.',
   keyRiding: 'Already riding as a passenger in another call — firing Loop now would add a dedicated primary attempt for this key.',
-  keyPrompt: 'Preview the exact LLM prompt this key would send right now (registry-aware).',
-  keyUnresolve: 'Unresolve — demote the published value back to a candidate. Runs, candidates, and discovery history stay intact; a future Run can re-resolve. Reversible.',
+  keyPrompt: 'Loop prompt preview only — updates live as the snapshot changes.',
+  keyUnpub: 'Unpub — demote the published value back to a candidate and wipe the publisher-stamped confidence + evidence rows. Runs and discovery history stay; a future Run can re-resolve. Reversible.',
   keyDelete: 'Delete — wipe every trace for this key: published value, confidence, candidates, evidence, URL/query history, and every run where this key was the primary. Fresh slate. Not reversible.',
-  groupRun: 'Fire a focused Run on every key in this group. Parallel when alwaysSoloRun is on; sequential otherwise (recalc between).',
-  groupLoop: 'Loop each unresolved key in this group one at a time. Each Loop exits on published or budget exhausted.',
-  productRun: 'Fire a focused Run on every key across every group. Expensive — N LLM calls for a product with N keys.',
-  productLoop: 'Loop every group in sequence. Long-running; can take many minutes.',
+  groupRun: 'Run every key in this group as one sorted line using the Key Finder sort-axis setting. Each dispatch recalculates passengers before the next key starts.',
+  groupLoop: 'Loop unresolved keys in this group as one sorted line using the Key Finder sort-axis setting. Each Loop exits on published or budget exhausted.',
+  productRun: 'Run every key across all groups as one global sorted line using the Key Finder sort-axis setting.',
+  productLoop: 'Loop unresolved keys across all groups as one global sorted line. Prevents concurrent group loops from choosing overlapping passengers.',
 });

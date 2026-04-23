@@ -11,6 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { evaluateFieldBuckets } from './evidenceGate.js';
+import { projectBucketsForProgress } from '../../../core/finder/bucketProgressProjection.js';
 
 function safeReadJson(filePath) {
   try { return JSON.parse(fs.readFileSync(filePath, 'utf8')); }
@@ -105,12 +106,13 @@ export function publishCandidate({
   if (evalResult.publishedValue === undefined) {
     const triggerBucket = evalResult.buckets.find(b => b.memberIds.includes(candidateRow?.id));
     const actual = triggerBucket?.pooledCount ?? 0;
+    const buckets = projectBucketsForProgress(evalResult.buckets, { required: evalResult.required });
     persistPublishResult(specDb, productId, fieldKey, serializeValue(value), {
       status: 'below_evidence_refs',
       required: evalResult.required,
       actual,
     });
-    return { status: 'below_evidence_refs', required: evalResult.required, actual };
+    return { status: 'below_evidence_refs', required: evalResult.required, actual, buckets };
   }
 
   // --- Product.json read ---
@@ -163,7 +165,17 @@ export function publishCandidate({
   productJson.updated_at = now;
   fs.writeFileSync(productPath, JSON.stringify(productJson, null, 2));
 
-  return { status: 'published', value: publishedValue, candidateId: candidateRow?.id ?? null };
+  const buckets = projectBucketsForProgress(evalResult.buckets, { required: evalResult.required });
+  const triggerBucket = evalResult.buckets.find(b => b.memberIds.includes(candidateRow?.id));
+  const triggerCount = triggerBucket?.pooledCount ?? 0;
+  return {
+    status: 'published',
+    value: publishedValue,
+    candidateId: candidateRow?.id ?? null,
+    required: evalResult.required,
+    actual: triggerCount,
+    buckets,
+  };
 }
 
 /**
@@ -196,12 +208,13 @@ function publishVariantScopedCandidate({
   if (evalResult.publishedValue === undefined) {
     const triggerBucket = evalResult.buckets.find(b => b.memberIds.includes(candidateRow?.id));
     const actual = triggerBucket?.pooledCount ?? 0;
+    const buckets = projectBucketsForProgress(evalResult.buckets, { required: evalResult.required });
     persistPublishResult(specDb, productId, fieldKey, serializeValue(value), {
       status: 'below_evidence_refs',
       required: evalResult.required,
       actual,
     }, variantId);
-    return { status: 'below_evidence_refs', required: evalResult.required, actual };
+    return { status: 'below_evidence_refs', required: evalResult.required, actual, buckets };
   }
 
   const productDir = path.join(productRoot, productId);
@@ -252,7 +265,18 @@ function publishVariantScopedCandidate({
   productJson.updated_at = now;
   fs.writeFileSync(productPath, JSON.stringify(productJson, null, 2));
 
-  return { status: 'published', value: publishedValue, candidateId: candidateRow?.id ?? null, variantId };
+  const buckets = projectBucketsForProgress(evalResult.buckets, { required: evalResult.required });
+  const triggerBucket = evalResult.buckets.find(b => b.memberIds.includes(candidateRow?.id));
+  const triggerCount = triggerBucket?.pooledCount ?? 0;
+  return {
+    status: 'published',
+    value: publishedValue,
+    candidateId: candidateRow?.id ?? null,
+    variantId,
+    required: evalResult.required,
+    actual: triggerCount,
+    buckets,
+  };
 }
 
 // WHY: Persist the publish decision in the candidate's metadata_json so the

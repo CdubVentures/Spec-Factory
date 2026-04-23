@@ -37,8 +37,12 @@ export interface BundlingConfig {
   readonly passengerDifficultyPolicy: string;
   readonly poolPerPrimary: Record<string, number>;
   readonly passengerCost: Record<string, number>;
+  readonly passengerVariantCostPerExtra: number;
   readonly variantCount: number;
   readonly overlapCaps: Record<string, number>;
+  // Canonicalized CSV from the backend (parseAxisOrder'd server-side). Frontend
+  // can split + pass directly to sortKeysByPriority without re-canonicalizing.
+  readonly sortAxisOrder: string;
 }
 
 export function useKeyFinderBundlingConfigQuery(category: string, productId: string) {
@@ -111,18 +115,18 @@ export function useDeleteAllKeyFinderRunsMutation(category: string, productId: s
 // discovery history — while leaving run record shells as audit trail. Both
 // return 409 key_busy when an op is in flight for (pid, fieldKey).
 
-interface UnresolveResponse { readonly status: 'unresolved'; readonly field_key: string }
+interface UnpubResponse { readonly status: 'unpublished'; readonly field_key: string }
 interface DeleteFieldResponse { readonly status: 'deleted'; readonly field_key: string }
 
-export function useUnresolveKeyMutation(category: string, productId: string) {
+export function useUnpublishKeyMutation(category: string, productId: string) {
   const queryClient = useQueryClient();
   const invalidate = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['key-finder', category, productId] });
   }, [queryClient, category, productId]);
 
-  return useMutation<UnresolveResponse, Error, { readonly fieldKey: string }>({
-    mutationFn: ({ fieldKey }) => api.post<UnresolveResponse>(
-      `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/keys/${encodeURIComponent(fieldKey)}/unresolve`,
+  return useMutation<UnpubResponse, Error, { readonly fieldKey: string }>({
+    mutationFn: ({ fieldKey }) => api.post<UnpubResponse>(
+      `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/keys/${encodeURIComponent(fieldKey)}/unpublish`,
       {},
     ),
     onSuccess: invalidate,
@@ -142,5 +146,4 @@ export function useDeleteKeyMutation(category: string, productId: string) {
     onSuccess: invalidate,
   });
 }
-
 

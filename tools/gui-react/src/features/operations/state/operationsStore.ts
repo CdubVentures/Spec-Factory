@@ -53,6 +53,20 @@ export interface PillLoopProgress {
     readonly satisfied: boolean;
     readonly confidence: number | null;
     readonly threshold: number | null;
+    /**
+     * Per-candidate bucket chips for the sidebar pill — one entry per
+     * competing value in the publisher's deterministic evaluator. Carries
+     * across iterations so the sidebar always shows the latest known state.
+     * Null when the loop hasn't seen a publishCandidate return yet.
+     */
+    readonly buckets?: ReadonlyArray<{
+      readonly fp: string;
+      readonly label: string;
+      readonly count: number;
+      readonly required: number;
+      readonly qualifies: boolean;
+      readonly topConf: number | null;
+    }> | null;
   };
   readonly callBudget: {
     readonly used: number;

@@ -59,3 +59,20 @@ export function deriveOverrideFormState(
   }
   return { mode: 'scalar', variantOptions: [] };
 }
+
+// WHY: The drawer variant dropdown must survive tab-away / remount. The
+// persisted id may be stale (catalog reshuffled, variant removed) so resolve
+// against the current option list and fall back to the first option.
+export function resolveSelectedVariantId(input: {
+  mode: OverrideFormMode;
+  variantOptions: VariantOption[];
+  storedVariantId: string;
+}): string {
+  if (input.mode !== 'variant') return '';
+  if (input.variantOptions.length === 0) return '';
+  if (input.storedVariantId) {
+    const match = input.variantOptions.find((opt) => opt.id === input.storedVariantId);
+    if (match) return match.id;
+  }
+  return input.variantOptions[0].id;
+}

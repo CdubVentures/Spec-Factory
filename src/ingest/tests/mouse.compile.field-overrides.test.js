@@ -99,6 +99,62 @@ test('compileCategoryFieldStudio hard-fails invalid override contract', async ()
   }
 });
 
+test('compileCategoryFieldStudio forces boolean fields to closed yes_no even when overrides ask for open discovery', async () => {
+  const workspace = await createMouseCompileWorkspace({
+    tempPrefix: 'spec-harvester-category-compile-boolean-enum-',
+  });
+  const { helperRoot, fieldStudioSourcePath, fieldStudioMap, generatedRoot, cleanup } = workspace;
+  fieldStudioMap.field_overrides = {
+    side_buttons: {
+      type: 'string',
+      data_type: 'string',
+      shape: 'list',
+      contract: { type: 'boolean', shape: 'list' },
+      enum_policy: 'open_prefer_known',
+      enum_source: { type: 'known_values', ref: 'side_buttons' },
+      enum: { policy: 'open_prefer_known', source: 'data_lists.side_buttons' },
+      new_value_policy: {
+        accept_if_evidence: true,
+        mark_needs_curation: true,
+      },
+      vocab: {
+        mode: 'open_prefer_known',
+        allow_new: true,
+        known_values: ['no'],
+      },
+    },
+  };
+
+  try {
+    await saveFieldStudioMap({
+      category: 'mouse',
+      fieldStudioMap,
+      config: { categoryAuthorityRoot: helperRoot },
+    });
+
+    const result = await compileCategoryFieldStudio({
+      category: 'mouse',
+      fieldStudioSourcePath,
+      config: { categoryAuthorityRoot: helperRoot },
+    });
+    assert.equal(result.compiled, true, JSON.stringify(result.errors || []));
+
+    const fieldRules = JSON.parse(await fs.readFile(path.join(generatedRoot, 'field_rules.json'), 'utf8'));
+    const knownValues = JSON.parse(await fs.readFile(path.join(generatedRoot, 'known_values.json'), 'utf8'));
+    const rule = fieldRules.fields.side_buttons;
+
+    assert.equal(rule.contract.type, 'boolean');
+    assert.equal(rule.contract.shape, 'scalar');
+    assert.equal(rule.enum.policy, 'closed');
+    assert.equal(rule.enum.source, 'yes_no');
+    assert.equal(rule.enum.new_value_policy, undefined);
+    assert.deepEqual(knownValues.enums.yes_no.values, ['no', 'yes']);
+    assert.equal(knownValues.enums.yes_no.policy, 'closed');
+  } finally {
+    await cleanup();
+  }
+});
+
 test('compileCategoryFieldStudio applies field_studio_map field_overrides for latency/force fields', async () => {
   const workspace = await createMouseCompileWorkspace({
     tempPrefix: 'spec-harvester-category-compile-overrides-',
@@ -170,4 +226,3 @@ test('compileCategoryFieldStudio applies field_studio_map field_overrides for la
     await cleanup();
   }
 });
-

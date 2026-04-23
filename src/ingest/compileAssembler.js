@@ -208,6 +208,11 @@ export function assembleCompileOutput({
 
   // WHY: Write enums form with per-field policy so the seed chain reads
   // the correct enum_policy per field (e.g., 'closed' for colors).
+  const policyForKnownValueRef = (fieldKey) => (
+    fieldKey === 'yes_no'
+      ? 'closed'
+      : (fieldsRuntime[fieldKey]?.enum_policy || 'open')
+  );
   const knownValuesArtifact = {
     version: 1,
     category,
@@ -216,7 +221,7 @@ export function assembleCompileOutput({
       Object.entries(knownValues).map(([fieldKey, values]) => [
         fieldKey,
         {
-          policy: fieldsRuntime[fieldKey]?.enum_policy || 'open',
+          policy: policyForKnownValueRef(fieldKey),
           values: sortDeep(values),
         },
       ])

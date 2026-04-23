@@ -107,6 +107,26 @@ function applyTypeCoupling(rule: Record<string, unknown>, value: unknown): void 
   }
 }
 
+function getEffectiveRuleType(rule: Record<string, unknown>): FieldType | '' {
+  const candidates = [
+    getN(rule, 'contract.type'),
+    rule.type,
+    rule.data_type,
+  ].map((value) => String(value || '').trim()).filter(Boolean);
+  if (candidates.includes('boolean')) return 'boolean';
+  return (candidates[0] || '') as FieldType | '';
+}
+
+export function enforceStudioRuleInvariants(rule: Record<string, unknown>): void {
+  const type = getEffectiveRuleType(rule);
+  if (!type) return;
+  if (type === 'boolean') {
+    setNestedRuleValue(rule, 'contract.type', 'boolean');
+    applyLegacyAliasCoupling(rule, 'contract.type', 'boolean');
+  }
+  applyTypeCoupling(rule, type);
+}
+
 // WHY: AI assist mode/budget knobs retired. Auto-note generation removed.
 // Users set extraction guidance manually via ai_assist.reasoning_note.
 function applyPrioritySignalCoupling(_rule: Record<string, unknown>): void {
@@ -163,6 +183,8 @@ export function applyStudioRuleCommand({
   const postEnumPolicy = getN(rule, 'enum.policy');
   if (postEnumSource !== undefined) rule.enum_source = postEnumSource;
   if (postEnumPolicy !== undefined) rule.enum_policy = postEnumPolicy;
+
+  enforceStudioRuleInvariants(rule);
 
   rule._edited = true;
 }

@@ -14,6 +14,71 @@ import type {
   TokenSegments,
 } from './billingTypes.ts';
 
+const BILLING_ACCESS_FILTERS = new Set(['', 'lab', 'api']);
+
+function finiteInteger(value: number): number | null {
+  if (!Number.isFinite(value)) return null;
+  return Math.trunc(value);
+}
+
+function isAvailable(value: string, options: readonly string[] | undefined): boolean {
+  if (!value) return true;
+  return Boolean(options?.includes(value));
+}
+
+export function resolveBillingFilterState(
+  filters: {
+    category?: string;
+    reason?: string;
+    model?: string;
+    access?: string;
+  },
+  options: {
+    categories?: readonly string[];
+    models?: readonly string[];
+    reasons?: readonly string[];
+  } = {},
+): {
+  category: string;
+  reason: string;
+  model: string;
+  access: string;
+} {
+  const categories = options.categories ?? [];
+  const models = options.models ?? [];
+  const reasons = options.reasons ?? BILLING_CALL_TYPE_REGISTRY.map((entry) => entry.reason);
+  const category = String(filters.category || '');
+  const reason = String(filters.reason || '');
+  const model = String(filters.model || '');
+  const access = String(filters.access || '');
+
+  return {
+    category: isAvailable(category, categories) ? category : '',
+    reason: isAvailable(reason, reasons) ? reason : '',
+    model: isAvailable(model, models) ? model : '',
+    access: BILLING_ACCESS_FILTERS.has(access) ? access : '',
+  };
+}
+
+export function resolveBillingPageIndex({
+  page,
+  pageSize,
+  totalEntries,
+}: {
+  page: number;
+  pageSize: number;
+  totalEntries: number;
+}): number {
+  const normalizedPage = finiteInteger(page);
+  const normalizedPageSize = finiteInteger(pageSize);
+  const normalizedTotal = finiteInteger(totalEntries);
+  if (normalizedPage == null || normalizedPage < 0) return 0;
+  if (normalizedPageSize == null || normalizedPageSize <= 0) return 0;
+  if (normalizedTotal == null || normalizedTotal <= 0) return 0;
+  const maxPage = Math.max(0, Math.ceil(normalizedTotal / normalizedPageSize) - 1);
+  return Math.min(normalizedPage, maxPage);
+}
+
 /**
  * Pivot flat `[{day, reason, cost_usd}]` into `[{day, reason1: cost, reason2: cost, ...}]`
  * for recharts stacked BarChart.

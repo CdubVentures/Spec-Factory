@@ -1,6 +1,16 @@
 // WHY: Single source of truth for pipeline settings categories and sub-tabs.
 // Adding a new category or section = one entry here. O(1) scaling.
 // Pattern mirrors PREFETCH_STAGE_REGISTRY.
+//
+// Extraction-category sections are DERIVED from EXTRACTION_SECTION_META
+// (codegen'd from src/core/config/runtimeStageDefs.js). Adding a new
+// extraction plugin does NOT touch this file — add to runtimeStageDefs.js
+// and the section auto-surfaces here.
+
+import {
+  EXTRACTION_SECTION_META,
+  EXTRACTION_SECTION_ORDER,
+} from '../../runtime-ops/panels/extraction/extractionStageKeys.generated.ts';
 
 // WHY: LLM/extraction settings are owned by the LLM Config page (dedicated rich UI).
 // Pipeline Settings covers global, planner, fetcher, extraction (screenshots), and validation.
@@ -14,7 +24,22 @@ export interface SettingsSectionDef {
   readonly customComponent?: string;
   /** Fetch plugin lifecycle phase — drives the badge icon next to the label */
   readonly phase?: 'pre-load' | 'suite' | 'scroll';
+  /** Optional inline SVG path (d attribute) — overrides CategoryPanel iconPaths table */
+  readonly iconPath?: string;
 }
+
+// Derived from EXTRACTION_SECTION_META + EXTRACTION_SECTION_ORDER.
+// null → undefined normalization keeps optional-field semantics consistent
+// with hand-written section defs elsewhere in this file.
+const EXTRACTION_SECTIONS: readonly SettingsSectionDef[] = Object.freeze(
+  EXTRACTION_SECTION_ORDER.map((id): SettingsSectionDef => {
+    const m = EXTRACTION_SECTION_META[id];
+    const def: SettingsSectionDef = { id: m.sectionId, label: m.label, tip: m.tip };
+    if (m.customComponent) (def as { customComponent?: string }).customComponent = m.customComponent;
+    if (m.iconPath) (def as { iconPath?: string }).iconPath = m.iconPath;
+    return def;
+  }),
+);
 
 export interface SettingsCategoryDef {
   readonly id: SettingsCategoryId;
@@ -88,10 +113,7 @@ export const SETTINGS_CATEGORY_REGISTRY: readonly SettingsCategoryDef[] = Object
     id: 'extraction',
     label: 'Runtime Extraction',
     subtitle: 'Screenshots, video recording, and page capture',
-    sections: Object.freeze([
-      { id: 'screenshots', label: 'Screenshots', tip: 'Page capture format, quality, selectors, and size limits' },
-      { id: 'video', label: 'Video Recording', tip: 'Video capture resolution and recording settings', customComponent: 'VideoRecording' },
-    ]),
+    sections: EXTRACTION_SECTIONS,
   },
   // WHY: LLM/extraction settings are managed by the dedicated LLM Config page
   // (tools/gui-react/src/features/llm-config/). Not duplicated here.

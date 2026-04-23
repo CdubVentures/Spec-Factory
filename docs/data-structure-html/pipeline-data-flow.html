@@ -953,27 +953,36 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
     </summary>
     <div class="phase-body">
       <div class="phase-section">
-        <div class="phase-section-label label-info">Pure helper</div>
+        <div class="phase-section-label label-info">Deterministic evaluator</div>
         <ul class="op-list">
-          <li><code>src/features/publisher/publish/evidenceGate.js</code> &mdash; <code>checkEvidenceGate({ specDb, candidateId, fieldRule })</code></li>
-          <li>Reads <code>fieldRule.evidence.min_evidence_refs</code> (no-op when 0 or unset)</li>
-          <li>Counts via <code>specDb.countFieldCandidateEvidenceByCandidateId(candidateId)</code> &mdash; <code>SELECT COUNT(DISTINCT url) FROM field_candidate_evidence WHERE candidate_id = ?</code> (duplicate URLs do not inflate)</li>
-          <li>Returns <code>{ ok, required, actual }</code></li>
+          <li><code>src/features/publisher/publish/evidenceGate.js</code> &mdash; <code>evaluateFieldBuckets({ specDb, productId, fieldKey, fieldRule, variantId, threshold, requiredOverride? })</code></li>
+          <li>Groups every <code>field_candidates</code> row for the field into buckets keyed on <code>value_fingerprint</code> (scalar equality; list set-equality — order-independent, case-insensitive, NFC-normalized).</li>
+          <li><strong>Gate 1</strong>: bucket <code>top_confidence / 100 &ge; threshold</code> (<code>publishConfidenceThreshold</code>). A bucket of all-low-confidence guesses never publishes.</li>
+          <li><strong>Gate 2</strong>: <code>countPooledQualifyingEvidenceByFingerprint</code> — <code>SELECT COUNT(DISTINCT url) FROM field_candidate_evidence fce JOIN field_candidates fc ... WHERE fc.value_fingerprint = ? AND fce.confidence IS NULL OR fce.confidence / 100 &ge; ?</code>. Evidence pools across every row sharing the fingerprint. NULL ref confidence qualifies (legacy tolerance). The retired <code>evidence_kind = 'identity_only'</code> exclusion no longer applies.</li>
+          <li>Returns <code>{ buckets, publishedValue, publishedMemberIds, required }</code>. <code>publishedValue</code> is the top qualifying bucket (scalar / winner_only) or the union of all qualifying buckets (set_union). <code>checkEvidenceGate({candidateId})</code> is a back-compat shim routing through the evaluator for a single candidate's bucket.</li>
         </ul>
       </div>
       <div class="phase-section">
         <div class="phase-section-label label-sql">Wired into 3 publish paths</div>
         <ul class="op-list sql">
-          <li><code>publish/publishCandidate.js</code> &mdash; scalar + variant-scoped branches; runs after the confidence gate, before product.json write. Failure returns <code>{ status: 'below_evidence_refs', required, actual }</code> and persists the decision into the candidate's <code>metadata_json.publish_result</code>. No JSON write.</li>
-          <li><code>publish/reconcileThreshold.js</code> (loosening) &mdash; best-candidate selection filters by both gates.</li>
-          <li><code>publish/republishField.js</code> (post-delete recompute) &mdash; <code>aboveThreshold</code> filtered by both gates; unpublishes if none survives.</li>
+          <li><code>publish/publishCandidate.js</code> &mdash; scalar + variant-scoped branches; runs after the incoming-candidate confidence gate, before product.json write. Failure returns <code>{ status: 'below_evidence_refs', required, actual, buckets }</code> (buckets surface to loop pills for the operations sidebar) and persists the decision into the candidate's <code>metadata_json.publish_result</code>.</li>
+          <li><code>publish/reconcileThreshold.js</code> &mdash; both tightening and loosening route through <code>evaluateFieldBuckets</code> so semantics cannot drift.</li>
+          <li><code>publish/republishField.js</code> (post-delete recompute) &mdash; same evaluator; unpublishes if no bucket qualifies.</li>
         </ul>
       </div>
       <div class="phase-section">
         <div class="phase-section-label label-info">Counting rule</div>
         <ul class="op-list">
-          <li>Per-candidate, distinct URLs. Each submission's evidence stands or falls on its own.</li>
-          <li>Set-union list fields: each contributing candidate must independently pass the gate to merge into the published value (enforced by republishField/reconcile filter).</li>
+          <li>Per-bucket pooled <code>COUNT(DISTINCT url)</code>. Three submissions agreeing on "PAW3395" each with one ref = a pool of three. Shared URLs across rows count once.</li>
+          <li>Set-union list fields: published value is the UNION of all qualifying buckets' items. Sub-threshold buckets are excluded from both the union and the resolve cascade — their members stay <code>status = 'candidate'</code>.</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-info">Gate 1 inconsistency purge (submit-time hard-reject)</div>
+        <ul class="op-list">
+          <li><code>src/features/publisher/publish/purgeInconsistentCandidate.js</code> &mdash; fires in <code>submitCandidate</code> when <code>normalizeConfidence(confidence) &lt; publishConfidenceThreshold</code> AND the candidate's bucket <code>pooledCount &ge; min_evidence_refs</code>.</li>
+          <li>4-layer cascade: (1) delete <code>field_candidates</code> row + FK-cascade evidence; (2) <code>republishField</code> re-evaluates <code>product.json.fields[fk]</code> / <code>variant_fields[vid][fk]</code> for the purged candidate's variantId, demoting if the bucket no longer qualifies; (3) scrub the source finder's primary run (keyFinder only when <code>primary_field_key === fieldKey</code>; RDF/SKU always — one field per variant run) — deletes JSON <code>runs[]</code> entry + <code>discovery_log.urls_checked</code> + <code>queries_run</code>; (4) <code>sqlStore.removeRun</code> + re-upsert summary.</li>
+          <li>Rationale: a model that self-rates low while emitting strong evidence is unreliable — throw out its trail so a re-run starts with a clean URL/query slate.</li>
         </ul>
       </div>
       <div class="phase-section">

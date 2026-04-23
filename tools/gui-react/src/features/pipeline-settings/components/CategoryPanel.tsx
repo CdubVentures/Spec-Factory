@@ -25,7 +25,11 @@ export interface CategoryPanelProps {
 }
 
 // WHY: SVG icon per section — one icon per settings section.
-function SectionIcon({ sectionId, active }: { sectionId: string; active: boolean }) {
+// Section defs may carry an inline iconPath string (O(1) for new plugins
+// declaring a single-path icon via runtimeStageDefs). Otherwise the legacy
+// iconPaths record renders (preserves the existing multi-element SVGs that
+// can't round-trip through codegen).
+function SectionIcon({ sectionId, iconPath, active }: { sectionId: string; iconPath?: string; active: boolean }) {
   const toneClass = active ? 'sf-callout sf-callout-info' : 'sf-callout sf-callout-neutral';
 
   const iconPaths: Record<string, React.ReactNode> = {
@@ -72,7 +76,7 @@ function SectionIcon({ sectionId, active }: { sectionId: string; active: boolean
         strokeLinejoin="round"
         aria-hidden="true"
       >
-        {iconPaths[sectionId] ?? <circle cx="12" cy="12" r="3" />}
+        {iconPath ? <path d={iconPath} /> : (iconPaths[sectionId] ?? <circle cx="12" cy="12" r="3" />)}
       </svg>
     </span>
   );
@@ -94,7 +98,7 @@ function SectionNavButton({
       className={`group w-full min-h-[74px] sf-nav-item px-2.5 py-2.5 text-left ${active ? 'sf-nav-item-active' : ''}`}
     >
       <div className="flex items-start gap-2">
-        <SectionIcon sectionId={section.id} active={active} />
+        <SectionIcon sectionId={section.id} iconPath={section.iconPath} active={active} />
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="sf-text-label font-semibold leading-5 flex items-center gap-1.5">
@@ -188,7 +192,7 @@ export function CategoryPanel({
             <header className="rounded sf-surface-elevated px-3 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-2">
-                  <SectionIcon sectionId={activeSectionDef.id} active />
+                  <SectionIcon sectionId={activeSectionDef.id} iconPath={activeSectionDef.iconPath} active />
                   <div>
                     <h3 className="text-base font-semibold" style={{ color: 'var(--sf-text)' }}>
                       {activeSectionDef.label}

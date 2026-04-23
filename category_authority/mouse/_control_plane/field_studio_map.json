@@ -3076,10 +3076,10 @@
       "enum": {
         "match": {},
         "new_value_policy": {},
-        "policy": null,
+        "policy": "closed",
         "source": null
       },
-      "enum_policy": null,
+      "enum_policy": "closed",
       "enum_source": null,
       "evidence": {
         "min_evidence_refs": 1,

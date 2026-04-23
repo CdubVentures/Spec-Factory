@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
 import { useUiStore } from '../../../stores/uiStore.ts';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
-import { usePersistedTab } from '../../../stores/tabStore.ts';
+import { usePersistedJson, usePersistedTab } from '../../../stores/tabStore.ts';
 import { DataTable } from '../../../shared/ui/data-display/DataTable.tsx';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import BulkPasteGrid, { type BulkGridRow } from '../../../shared/ui/forms/BulkPasteGrid.tsx';
@@ -66,7 +66,14 @@ export function ProductManager() {
   const [affectedFilesOpen, toggleAffectedFiles] = usePersistedToggle('catalog:products:affectedFiles', false);
   const [bulkRunDetailsOpen, toggleBulkRunDetails] = usePersistedToggle('catalog:products:bulkRunDetails', false);
   const [bulkBrand, setBulkBrand] = usePersistedTab<string>(`catalog:products:bulkBrand:${category}`, '');
-  const [bulkGridRows, setBulkGridRows] = useState<BulkGridRow[]>([]);
+  // WHY: Persist the bulk paste draft so pasted rows survive tab-away while
+  // bulkOpen (which IS persisted) keeps the modal showing — otherwise the
+  // modal reopens empty and the user loses their paste.
+  const [bulkGridRows, setBulkGridRows] = usePersistedJson<BulkGridRow[]>(
+    `catalog:products:bulkGridRows:${category}`,
+    [],
+    (parsed): parsed is BulkGridRow[] => Array.isArray(parsed),
+  );
   const [bulkResult, setBulkResult] = useState<BulkImportResult | null>(null);
   const hydratedEditPidRef = useRef('');
 

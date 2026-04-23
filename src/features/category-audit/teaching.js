@@ -59,6 +59,9 @@ You are auditing every field in this category's keyFinder pipeline. Your deliver
 #### \`<field_key>\` — <Keep | Minor revise | Major revise | Schema decision>
 
 - **Type / shape:** <type> · <scalar|list>
+- **Priority / scheduling:** <required_level / availability / difficulty changes, or "none">
+- **Full contract:** <changes to required_level/availability/difficulty/type/shape/unit/rounding/list_rules/range/variance_policy/evidence, or "none">
+- **Example bank:** <5-10 products or product classes used to calibrate this key; include happy path / edge / unknown / conflict / filter-risk coverage>
 - **- Current guidance**
   > <verbatim current \`reasoning_note\`, or "(empty)">
 - **+ Proposed guidance**
@@ -102,9 +105,10 @@ You are auditing every field in this category's keyFinder pipeline. Your deliver
 1. **Enum discipline is the single biggest lever.** Every non-numeric enum value becomes a filter chip on the consumer site — so value count and pattern consistency directly drive usability. Lead with this in your Highest-risk block.
 2. **Pattern before policy.** An enum with a dominant structural signature (≥70% of values conform, per Part 4) is usable even at 20+ values. Freeform enums fail at much lower counts.
 3. **Target value counts (Part 1.6):** ≤10 healthy, 11–15 fine, 16–20 tolerable, 21–30 filter fatigue, 30+ broken. Call out where each enum sits now vs where it should sit.
-4. **Extraction guidance (\`reasoning_note\`) is the single editable slot per key.** Keep it to Part 1.14's "FOR" scope — visual cues, semantic disambiguation, field-specific gotchas, rebrand rules, "don't confuse with X" anchors. Do NOT duplicate anything already rendered by the template slots in Part 2. If existing guidance duplicates slot content, propose shortening.
-5. **Contract changes with consequences stated.** When you propose changing \`type\`/\`shape\`/\`unit\`/\`rounding\`/\`list_rules\`/\`range\`/\`variance_policy\`, explain the extraction + filter-UI consequence (Part 1.4–1.5 language).
-6. **Cross-field constraints alias mismatch (one-time flag, not per key).** The keyFinder renderer currently reads \`cross_field_constraints\` but compiled rules store \`constraints\` — flag this at the category level once in your "Flags" section with the list of fields that have unreachable constraints. Do NOT repeat on every field.
+4. **Guidance is last.** Confirm \`priority.required_level\`, \`priority.availability\`, \`priority.difficulty\`, \`contract.type\`, \`contract.shape\`, enum/filter behavior, evidence requirements, and example coverage before writing \`reasoning_note\`. The prompt can only execute perfectly after the field contract is correct.
+5. **Contract changes with consequences stated.** When you propose changing \`required_level\`/\`availability\`/\`difficulty\`/\`type\`/\`shape\`/\`unit\`/\`rounding\`/\`list_rules\`/\`range\`/\`variance_policy\`/\`evidence\`, explain the extraction + filter-UI + routing consequence (Part 1.4–1.5 language).
+6. **Extraction guidance (\`reasoning_note\`) is the final editable slot per key.** Keep it to Part 1.14's "FOR" scope — visual cues, semantic disambiguation, field-specific gotchas, rebrand rules, "don't confuse with X" anchors. Do NOT duplicate anything already rendered by the template slots in Part 2. If existing guidance duplicates slot content, propose shortening.
+7. **Cross-field constraints alias mismatch (one-time flag, not per key).** The keyFinder renderer currently reads \`cross_field_constraints\` but compiled rules store \`constraints\` — flag this at the category level once in your "Flags" section with the list of fields that have unreachable constraints. Do NOT repeat on every field.
 
 **Out of scope — surface, don't decide:**
 
@@ -124,6 +128,10 @@ You are auditing every field in this category's keyFinder pipeline. Your deliver
 
 const AUDIT_STANDARD_BODY = `
 This is the bar you apply when judging every cell in Part 7. Read it, then read Part 7. If a rule doesn't clear these bars, propose a change.
+
+**Full field contract authoring order:** validate \`priority.required_level\`, \`priority.availability\`, \`priority.difficulty\`, \`contract.type\`, \`contract.shape\`, \`unit\`, \`rounding\`, \`list_rules\`, \`range\`, enum/filter behavior, evidence/source requirements, and a 5-10 product example bank before writing guidance. Guidance last. The \`reasoning_note\` should express only the remaining extraction judgment the structured contract cannot express.
+
+**Example-bank discipline:** every key needs calibration examples before the prompt is trusted: common happy path, edge/rare value, unknown/absent evidence, conflict/ambiguity, and filter-risk cases. Use hand benchmark data when available; for brand-new categories, create the first bank from representative market products and carry the recipe forward.
 
 **Visual-answerable fields — a spectrum, not a binary. Guidance pays off most in the middle.**
 

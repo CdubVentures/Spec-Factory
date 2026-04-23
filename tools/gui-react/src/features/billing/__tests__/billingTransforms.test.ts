@@ -9,6 +9,8 @@ import {
   computePeriodDeltas,
   computeFilterChipCounts,
   computeTokenSegments,
+  resolveBillingFilterState,
+  resolveBillingPageIndex,
 } from '../billingTransforms.ts';
 
 // ── pivotDailyByReason ──────────────────────────────────────────
@@ -323,5 +325,71 @@ describe('computeTokenSegments', () => {
     ok(Math.abs(s.cachedPct - (1000 / 2500) * 100) < 0.01, `cachedPct: ${s.cachedPct}`);
     const sum = s.promptPct + s.usagePct + s.completionPct + s.cachedPct;
     ok(Math.abs(sum - 100) < 0.01, `sum ${sum} !~ 100`);
+  });
+});
+
+// Billing persisted-state guards
+
+describe('resolveBillingFilterState', () => {
+  it('keeps filters that are available in the current billing option sets', () => {
+    const result = resolveBillingFilterState(
+      {
+        category: 'mouse',
+        reason: 'writer_formatting',
+        model: 'lab-openai:gpt-5.4-mini',
+        access: 'lab',
+      },
+      {
+        categories: ['mouse', 'keyboard'],
+        models: ['lab-openai:gpt-5.4-mini'],
+        reasons: ['writer_formatting'],
+      },
+    );
+
+    deepStrictEqual(result, {
+      category: 'mouse',
+      reason: 'writer_formatting',
+      model: 'lab-openai:gpt-5.4-mini',
+      access: 'lab',
+    });
+  });
+
+  it('clears stale persisted filters that cannot match current billing rows', () => {
+    const result = resolveBillingFilterState(
+      {
+        category: 'audit_m75_live_01',
+        reason: 'validate',
+        model: 'retired-provider:retired-model',
+        access: 'retired-access',
+      },
+      {
+        categories: ['mouse', 'keyboard'],
+        models: ['lab-openai:gpt-5.4-mini'],
+        reasons: ['writer_formatting'],
+      },
+    );
+
+    deepStrictEqual(result, {
+      category: '',
+      reason: '',
+      model: '',
+      access: '',
+    });
+  });
+});
+
+describe('resolveBillingPageIndex', () => {
+  it('keeps an in-range page index', () => {
+    strictEqual(resolveBillingPageIndex({ page: 2, pageSize: 20, totalEntries: 100 }), 2);
+  });
+
+  it('clamps stale persisted page indexes to the last available page', () => {
+    strictEqual(resolveBillingPageIndex({ page: 200000, pageSize: 20, totalEntries: 1354 }), 67);
+  });
+
+  it('resets empty or invalid pagination state to the first page', () => {
+    strictEqual(resolveBillingPageIndex({ page: 4, pageSize: 20, totalEntries: 0 }), 0);
+    strictEqual(resolveBillingPageIndex({ page: Number.NaN, pageSize: 20, totalEntries: 100 }), 0);
+    strictEqual(resolveBillingPageIndex({ page: 4, pageSize: 0, totalEntries: 100 }), 0);
   });
 });

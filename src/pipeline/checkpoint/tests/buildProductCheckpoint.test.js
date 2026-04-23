@@ -111,6 +111,18 @@ describe('buildProductCheckpoint — sources', () => {
     assert.equal(cp.sources[0].tier, null);
     assert.equal(cp.sources[0].providers, null);
   });
+
+  test('A1 — mapProductSource forwards crawl4ai_file when present', () => {
+    const sources = [{ url: 'https://rtings.com/x', status: 200, content_hash: 'h1', crawl4ai_file: 'abc123abc123.json' }];
+    const cp = buildProductCheckpoint({ identity: {}, category: 'mouse', productId: 'test', runId: 'run-001', sources });
+    assert.equal(cp.sources[0].crawl4ai_file, 'abc123abc123.json');
+  });
+
+  test('A1 — mapProductSource defaults crawl4ai_file to null when missing', () => {
+    const sources = [{ url: 'https://rtings.com/x', status: 200, content_hash: 'h1' }];
+    const cp = buildProductCheckpoint({ identity: {}, category: 'mouse', productId: 'test', runId: 'run-001', sources });
+    assert.equal(cp.sources[0].crawl4ai_file, null);
+  });
 });
 
 describe('buildProductCheckpoint — query_cooldowns', () => {

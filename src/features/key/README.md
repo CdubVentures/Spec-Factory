@@ -27,7 +27,7 @@ Exports from `src/features/key/index.js`:
   - `GET /key-finder/:category/:productId?field_key=X&scope=key|group|product` → scoped detail (legacy; partial consumers)
   - `DELETE /key-finder/:category/:productId/runs/:runNumber?field_key=X` → single-run delete (cascades primary + all passengers)
   - `DELETE /key-finder/:category/:productId` → delete-all
-- `buildPassengers({ primary, engineRules, specDb, productId, settings })` — shared packer-wrapper used by BOTH `runKeyFinder` and `keyFinderPreviewPrompt.compileKeyFinderPreviewPrompt` so preview and live run resolve passengers identically.
+- `buildPassengers({ primary, engineRules, specDb, productId, settings, variantCount? })` — shared packer-wrapper used by BOTH `runKeyFinder` and `keyFinderPreviewPrompt.compileKeyFinderPreviewPrompt` so preview and live run resolve passengers identically.
 - `packBundle(...)` — 6-step deterministic packer (eligibility → sort → greedy under `bundlingPoolPerPrimary[primaryDifficulty]`).
 - `compileKeyFinderPreviewPrompt(ctx)` — read-only prompt compiler returning the shared `PromptPreviewResponse` envelope.
 - `readKeyFinder` / `writeKeyFinder` / `mergeKeyFinderDiscovery` / `deleteKeyFinderRun` / `deleteKeyFinderRuns` / `deleteKeyFinderAll` / `rebuildKeyFinderFromJson` — JSON store + SQL rebuild.
@@ -49,7 +49,7 @@ Contract specifics:
 
 - **Product-scoped, never per-variant**: `runKeyFinder` fires exactly one LLM call per invocation. `submitCandidate` uses `variantId: null`.
 - **Reserved-keys denylist enforced**: Keys owned by another finder (CEF `colors`/`editions`, RDF `release_date`, SKF `sku`) throw before any LLM call. `eg_defaults` keys land in the same set via `EG_LOCKED_KEYS`. Derived from `FINDER_MODULES`.
-- **Bundling contract (Phase 4.5, locked 2026-04-21)**: Primary owns the budget; passengers ride free. Passenger cost is **raw** (`bundlingPassengerCost[peer.difficulty]` — NOT scaled by variant count). Greedy-pack under `bundlingPoolPerPrimary[primary.difficulty]`. 4 policy enums: `less_or_equal` / `same_only` / `any_but_very_hard` / `any_but_hard_very_hard`. SSOT §6.1 of per-key-finder-roadmap.html.
+- **Bundling contract (Phase 4.5, locked 2026-04-21)**: Primary owns the budget; passengers ride free. Effective passenger cost is `bundlingPassengerCost[peer.difficulty] + ((variantCount - 1) * bundlingPassengerVariantCostPerExtra)`. Greedy-pack under `bundlingPoolPerPrimary[primary.difficulty]`. 4 policy enums: `less_or_equal` / `same_only` / `any_but_very_hard` / `any_but_hard_very_hard`. SSOT §6.1 of per-key-finder-roadmap.html.
 - **Preview–runner parity**: `buildPassengers` is the ONLY passenger resolver both paths call. Drift is guarded by a byte-for-byte systemPrompt match test in `keyFinderPreviewPrompt.test.js`.
 - **Run record must echo `primary_field_key`**: Every persisted run carries `response.primary_field_key === fieldKey` AND `response.results[primary_field_key]`. Discovery history drawer groups runs by this key.
 - **Passenger attribution**: `run.selected.keys[fk].rode_with` is `null` for primary, `primaryFieldKey` for each passenger. Load-bearing for (a) delete-run cascade expanding `fieldKeys` from `run.selected.keys` and (b) Phase 5 Group Loop skip logic.
@@ -61,11 +61,11 @@ Contract specifics:
 
 ## Settings (per-category, stored in `{category}/key_finder_settings.json`)
 
-Registered in `FINDER_MODULES[keyFinder].settingsSchema`. 16 knobs + 1 preview widget:
+Registered in `FINDER_MODULES[keyFinder].settingsSchema`:
 
 - **Prompt** (hidden): `discoveryPromptTemplate` — per-category template override, edited in LLM Config → Key Finder.
 - **Budget scoring**: `budgetRequiredPoints`, `budgetAvailabilityPoints`, `budgetDifficultyPoints`, `budgetVariantPointsPerExtra`, `budgetFloor`. Consumed by `calcKeyBudget`. Run mode ignores attempt count; Phase 3b Loop will use it.
-- **Bundling** (Run / Loop / Smart Loop all honor when `bundlingEnabled=true`): `bundlingEnabled`, `groupBundlingOnly`, `bundlingPassengerCost` (raw per difficulty), `bundlingPoolPerPrimary`, `passengerDifficultyPolicy`.
+- **Bundling** (Run / Loop / Smart Loop all honor when `bundlingEnabled=true`): `bundlingEnabled`, `groupBundlingOnly`, `bundlingPassengerCost`, `bundlingPassengerVariantCostPerExtra`, `bundlingPoolPerPrimary`, `passengerDifficultyPolicy`.
 - **Context injection**: `componentInjectionEnabled`, `knownFieldsInjectionEnabled`, `searchHintsInjectionEnabled` — three independent gates on primary/passenger prompt slots.
 - **Discovery history**: `urlHistoryEnabled`, `queryHistoryEnabled` — per-primary-key scope. Discovery History drawer (Phase 6) groups by `primary_field_key` (read-only display; Stage A retired per-entry Hide suppression — these two knobs are the only controls).
 

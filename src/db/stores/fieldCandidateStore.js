@@ -300,6 +300,17 @@ export function createFieldCandidateStore({ db, category, stmts }) {
     ).run(category, String(productId || ''), String(fieldKey || ''), String(variantId || ''));
   }
 
+  // WHY: UnPub action — zero the row's confidence so the panel no longer
+  // renders the "resolved"-looking confidence pill on a demoted candidate.
+  // The row itself survives (preserves the LLM's value for re-run / review),
+  // but every publisher-stamped scoring signal gets wiped. Evidence rows
+  // are deleted separately by the caller via deleteFieldCandidateEvidenceByCandidateId.
+  function resetConfidence(id) {
+    db.prepare(
+      `UPDATE field_candidates SET confidence = 0, updated_at = datetime('now') WHERE id = ?`,
+    ).run(id);
+  }
+
   // WHY: Variant deletion needs to update candidate values (splice items from
   // JSON arrays) without changing source_id or other columns.
   function updateValue(productId, fieldKey, sourceId, newValue) {
@@ -311,6 +322,6 @@ export function createFieldCandidateStore({ db, category, stmts }) {
 
   return {
     upsert, get, getByProductAndField, getAllByProduct, deleteByProduct, deleteByProductAndField, deleteByProductFieldValue, getPaginated, count, stats, markResolved, demoteResolved, getResolved, getTopCandidate, getDistinctProducts,
-    insert, getBySourceId, getBySourceIdAndVariant, deleteBySourceId, deleteBySourceType, getByValue, markResolvedByValue, countBySourceId, updateValue, deleteByVariantId, deleteByProductFieldVariant,
+    insert, getBySourceId, getBySourceIdAndVariant, deleteBySourceId, deleteBySourceType, getByValue, markResolvedByValue, countBySourceId, updateValue, deleteByVariantId, deleteByProductFieldVariant, resetConfidence,
   };
 }

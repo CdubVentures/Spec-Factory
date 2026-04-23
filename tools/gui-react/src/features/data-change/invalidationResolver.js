@@ -34,7 +34,7 @@ const DOMAIN_QUERY_TEMPLATES = Object.freeze({
     // WHY: resolving a peer field shifts the keyFinder passenger set — any
     // open PromptPreviewModal must refetch so the compiled prompt reflects
     // the new resolved-field state (passengers drop out once their peer
-    // resolves above publish threshold).
+    // resolves). staleTime=0 handles open/close; this covers while-open.
     ['prompt-preview', 'key', CATEGORY_TOKEN],
   ]),
   labels: Object.freeze([
@@ -133,8 +133,8 @@ const DOMAIN_QUERY_TEMPLATES = Object.freeze({
     // query tree so the Bundled column refreshes reactively.
     ['key-finder', CATEGORY_TOKEN],
     // Bundling knob changes also alter the compiled prompt (passenger list,
-    // ADDITIONAL_* sections). Refetch any open prompt preview so the modal
-    // reflects the new settings without a close/reopen cycle.
+    // sort order, ADDITIONAL_* sections). Refetch any open PromptPreviewModal
+    // so it live-updates without a close/reopen cycle.
     ['prompt-preview', 'key', CATEGORY_TOKEN],
   ]),
   storage: Object.freeze([
@@ -218,6 +218,7 @@ export const DATA_CHANGE_EVENT_DOMAIN_FALLBACK = Object.freeze({
   'review-manual-override': ['review', 'product'],
   'review-clear-published': ['review', 'product'],
   'review-variant-field-deleted': ['review', 'product'],
+  'key-finder-unpublished': ['key-finder', 'review', 'product'],
   'candidate-deleted': ['review', 'product'],
   'key-review-confirm': ['review', 'product'],
   'key-review-accept': ['review', 'product'],

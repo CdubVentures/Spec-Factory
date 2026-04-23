@@ -388,11 +388,11 @@ test('resolvePhaseModel falls back to global llmModelPlan when no phase override
 
 test('resolvePhaseModel falls back to global reasoning model when phase reasoning model is empty', () => {
   const config = phaseConfig({
-    _resolvedValidateBaseModel: 'validate-base',
-    _resolvedValidateReasoningModel: '',
-    _resolvedValidateUseReasoning: true,
+    _resolvedBrandResolverBaseModel: 'brand-resolver-base',
+    _resolvedBrandResolverReasoningModel: '',
+    _resolvedBrandResolverUseReasoning: true,
   });
-  const result = resolvePhaseModel(config, 'validate');
+  const result = resolvePhaseModel(config, 'brandResolver');
   assert.equal(result, 'global-reasoning');
 });
 
@@ -409,7 +409,7 @@ test('resolvePhaseModel returns registry default when config is empty and phase 
 });
 
 test('resolvePhaseModel works for all known phases', () => {
-  const phases = ['needset', 'searchPlanner', 'brandResolver', 'serpSelector', 'domainClassifier', 'validate'];
+  const phases = ['needset', 'searchPlanner', 'brandResolver', 'serpSelector', 'domainClassifier'];
   for (const phase of phases) {
     const cap = phase.charAt(0).toUpperCase() + phase.slice(1);
     const config = phaseConfig({
@@ -477,9 +477,9 @@ test('resolvePhaseReasoning returns false when phase config disables reasoning',
 test('resolvePhaseReasoning falls back to llmPlanUseReasoning when phase key missing', () => {
   const config = phaseConfig({
     llmPlanUseReasoning: true,
-    // _resolvedValidateUseReasoning intentionally missing
+    // _resolvedBrandResolverUseReasoning intentionally missing
   });
-  assert.equal(resolvePhaseReasoning(config, 'validate'), true);
+  assert.equal(resolvePhaseReasoning(config, 'brandResolver'), true);
 });
 
 test('resolvePhaseReasoning ignores legacy llmReasoningMode — panel SSOT only', () => {
@@ -487,7 +487,7 @@ test('resolvePhaseReasoning ignores legacy llmReasoningMode — panel SSOT only'
     llmReasoningMode: true,
     // llmPlanUseReasoning not set — should default to false, NOT fall through to llmReasoningMode
   };
-  assert.equal(resolvePhaseReasoning(config, 'validate'), false);
+  assert.equal(resolvePhaseReasoning(config, 'brandResolver'), false);
 });
 
 test('resolvePhaseReasoning returns false when no reasoning config at all', () => {
@@ -499,7 +499,7 @@ test('resolvePhaseReasoning returns false for empty phase with no global toggle'
 });
 
 test('resolvePhaseReasoning works for all known phases', () => {
-  const phases = ['needset', 'searchPlanner', 'brandResolver', 'serpSelector', 'validate'];
+  const phases = ['needset', 'searchPlanner', 'brandResolver', 'serpSelector'];
   for (const phase of phases) {
     const cap = phase.charAt(0).toUpperCase() + phase.slice(1);
     const config = phaseConfig({

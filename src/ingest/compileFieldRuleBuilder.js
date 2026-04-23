@@ -139,6 +139,15 @@ export function sourceRefToString(source = null) {
   return `${sourceType}.${sourceRef}`;
 }
 
+export const BOOLEAN_ENUM_VALUES = Object.freeze(['yes', 'no']);
+
+export function createBooleanEnumSource() {
+  return {
+    type: 'known_values',
+    ref: 'yes_no'
+  };
+}
+
 export function roundTokenToContract(roundToken = '') {
   const token = normalizeToken(roundToken);
   if (token === 'int') {
@@ -424,7 +433,9 @@ export function buildFieldRuleDraft({
     type: inferred.type,
     shape: inferred.shape
   });
-  const enumPolicy = enumValues.length > 0 ? 'open_prefer_known' : 'open';
+  const isBoolean = inferred.type === 'boolean';
+  const enumPolicy = isBoolean ? 'closed' : (enumValues.length > 0 ? 'open_prefer_known' : 'open');
+  const enumKnownValues = isBoolean ? [...BOOLEAN_ENUM_VALUES] : enumValues;
   const parseRules = defaultParseRules(inferred.type, inferred.shape, { unit, componentType });
   const valueForm = normalizeValueForm('', inferred.shape);
 
@@ -472,16 +483,19 @@ export function buildFieldRuleDraft({
     availability,
     difficulty,
     enum_policy: enumPolicy,
+    ...(isBoolean ? { enum_source: createBooleanEnumSource() } : {}),
     parse_rules: parseRules,
     array_handling: 'none',
-    new_value_policy: {
-      accept_if_evidence: true,
-      mark_needs_curation: true
-    },
+    new_value_policy: isBoolean
+      ? null
+      : {
+        accept_if_evidence: true,
+        mark_needs_curation: true
+      },
     vocab: {
       mode: enumPolicy,
       allow_new: enumPolicy !== 'closed',
-      known_values: enumValues
+      known_values: enumKnownValues
     },
     evidence: {
       min_evidence_refs: requiredLevel === 'mandatory' ? 2 : 1,
@@ -517,14 +531,34 @@ export function buildStudioFieldRule({
   const availability = normalizeToken(rule.availability || priorityBlock.availability || 'sometimes');
   const difficulty = normalizeToken(rule.difficulty || priorityBlock.difficulty || 'medium');
   const enumBlock = isObject(rule.enum) ? rule.enum : {};
-  const source = parseEnumSource(rule.enum_source || enumBlock.source, key);
+  // WHY: contract.type/data_type are the authority. Boolean contracts are always
+  // closed yes/no, even if a stale map or override still carries open enum data.
+  const typeCandidates = [
+    rule.contract?.type,
+    rule.type,
+    rule.data_type,
+  ].map((value) => normalizeToken(value)).filter(Boolean);
+  const contractType = typeCandidates.includes('boolean')
+    ? 'boolean'
+    : (typeCandidates[0] || 'string');
+  const shapeCandidates = [
+    rule.contract?.shape,
+    rule.shape,
+    rule.output_shape,
+  ].map((value) => normalizeToken(value)).filter(Boolean);
+  const contractShape = contractType === 'boolean'
+    ? 'scalar'
+    : (shapeCandidates[0] || 'scalar');
+  const source = contractType === 'boolean'
+    ? createBooleanEnumSource()
+    : parseEnumSource(rule.enum_source || enumBlock.source, key);
   const sourceRef = sourceRefToString(source);
-  const policy = normalizeToken(rule.enum_policy || enumBlock.policy || 'open_prefer_known');
+  const policy = contractType === 'boolean'
+    ? 'closed'
+    : normalizeToken(rule.enum_policy || enumBlock.policy || 'open_prefer_known');
   // WHY: parse_template eliminated. contractType drives all behavior.
-  // WHY: Fallback chain handles both merge-path objects (rule.type/shape) and
-  // studio-output passthrough objects (rule.data_type/output_shape/contract.*).
-  const contractType = normalizeToken(rule.type || rule.data_type || rule.contract?.type || 'string');
-  const contractShape = normalizeToken(rule.shape || rule.output_shape || rule.contract?.shape || 'scalar');
+  // WHY: Fallback chain handles both merge-path objects and studio-output
+  // passthrough objects while giving contract.type/data_type authority.
   const valueForm = sampleValueFormFromInternal(rule.value_form, contractShape);
   const ui = isObject(rule.ui) ? rule.ui : {};
   const vocab = isObject(rule.vocab) ? rule.vocab : {};
@@ -537,6 +571,14 @@ export function buildStudioFieldRule({
   delete nestedContract.unknown_reason_required;
   nestedContract.type = normalizeToken(nestedContract.type || contractType || 'string') || 'string';
   nestedContract.shape = normalizeToken(nestedContract.shape || contractShape || 'scalar') || 'scalar';
+  if (contractType === 'boolean') {
+    nestedContract.type = 'boolean';
+    nestedContract.shape = 'scalar';
+    delete nestedContract.unit;
+    delete nestedContract.range;
+    delete nestedContract.rounding;
+    delete nestedContract.list_rules;
+  }
   if (contractType === 'date') {
     nestedContract.format = 'date';
   } else if (contractType === 'url') {
