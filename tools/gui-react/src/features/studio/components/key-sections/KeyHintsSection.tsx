@@ -27,7 +27,7 @@ export function KeyHintsSection({
   return (
     <>
       <Section
-        title="Extraction Hints & Aliases"
+        title="Tooltip / Guidance"
         persistKey={`studio:keyNavigator:section:uiDisplay:${category}`}
         titleTooltip={STUDIO_TIPS.key_section_ui}
       >
@@ -56,6 +56,13 @@ export function KeyHintsSection({
             placeholder="Define how this field should be interpreted..."
           />
         </div>
+      </Section>
+
+      <Section
+        title="Search Hints & Aliases"
+        persistKey={`studio:keyNavigator:section:searchHints:${category}`}
+        titleTooltip={STUDIO_TIPS.key_section_search}
+      >
         <div>
           <div className={`${labelCls} flex items-center`}>
             <span>
@@ -74,16 +81,9 @@ export function KeyHintsSection({
           <TagPicker
             values={arrN(currentRule, "aliases")}
             onChange={(v) => updateField(selectedKey, "aliases", v)}
-            placeholder="alternative names for this key"
+            placeholder="source phrases and alternate field names"
           />
         </div>
-      </Section>
-
-      <Section
-        title="Search Hints"
-        persistKey={`studio:keyNavigator:section:searchHints:${category}`}
-        titleTooltip={STUDIO_TIPS.key_section_search}
-      >
         <div className="grid grid-cols-2 gap-3">
           <div>
             <div className={`${labelCls} flex items-center`}>

@@ -53,7 +53,7 @@ describe('ensureValueInOptions contracts', () => {
 describe('resolveOptionByValue contracts', () => {
   const options: DropdownModelOption[] = [
     { value: 'default-gemini:gemini-2.5-flash', label: 'gemini-2.5-flash', providerId: 'default-gemini' },
-    { value: 'default-deepseek:deepseek-chat', label: 'deepseek-chat', providerId: 'default-deepseek' },
+    { value: 'default-deepseek:deepseek-v4-flash', label: 'deepseek-v4-flash', providerId: 'default-deepseek' },
   ];
 
   it('returns undefined for empty value', () => {

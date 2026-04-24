@@ -133,6 +133,7 @@ export function buildWorkbenchRows(
 
       aiReasoningNote: strN(r, 'ai_assist.reasoning_note'),
 
+      aliasesCount: arrN(r, 'aliases').length,
       queryTermsCount: arrN(r, 'search_hints.query_terms').length,
       domainHintsCount: arrN(r, 'search_hints.domain_hints').length,
       contentTypesCount: arrN(r, 'search_hints.content_types').length,

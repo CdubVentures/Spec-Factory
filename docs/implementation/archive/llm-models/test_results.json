@@ -553,29 +553,6 @@
       }
     },
     {
-      "model": "claude-opus-4-1",
-      "base": {
-        "ok": false,
-        "time": 4.1,
-        "error": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"duration_ms\":373,\"duration_api_ms\":0,\"num_turns\":1,\"result\":\"Faile"
-      },
-      "thinking": {
-        "ok": false,
-        "time": 4.3,
-        "error": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"duration_ms\":374,\"duration_api_ms\":0,\"num_turns\":1,\"result\":\"Faile"
-      },
-      "web": {
-        "ok": false,
-        "time": 4.3,
-        "error": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"duration_ms\":889,\"duration_api_ms\":0,\"num_turns\":1,\"result\":\"Faile"
-      },
-      "json": {
-        "ok": false,
-        "time": 5.1,
-        "error": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"duration_ms\":334,\"duration_api_ms\":0,\"num_turns\":1,\"result\":\"Faile"
-      }
-    },
-    {
       "model": "claude-opus-4-6",
       "base": {
         "ok": false,

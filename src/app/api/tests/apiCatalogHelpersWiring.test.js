@@ -65,6 +65,13 @@ test('catalog builder returns the enriched row shape for a seeded product', asyn
       pifVariants: [],
       skuVariants: [],
       rdfVariants: [],
+      keyTierProgress: [
+        { tier: 'easy',      total: 0, resolved: 0, perfect: 0 },
+        { tier: 'medium',    total: 0, resolved: 0, perfect: 0 },
+        { tier: 'hard',      total: 0, resolved: 0, perfect: 0 },
+        { tier: 'very_hard', total: 0, resolved: 0, perfect: 0 },
+        { tier: 'mandatory', total: 0, resolved: 0, perfect: 0 },
+      ],
     },
   ]);
 });

@@ -27,6 +27,7 @@ export interface WorkbenchRow {
   aiReasoningNote: string;
 
   // Search
+  aliasesCount: number;
   queryTermsCount: number;
   domainHintsCount: number;
   contentTypesCount: number;

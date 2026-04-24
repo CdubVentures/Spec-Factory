@@ -56,6 +56,7 @@ const FIELD_PATH_ALIAS_DELETE_MAP = {
   'component.match.flag_review_score': [['component', 'match', 'flag_review_score']],
   'component.match.property_weight': [['component', 'match', 'property_weight']],
   aliases: [['aliases']],
+  'ai_assist.variant_inventory_usage': [['ai_assist', 'variant_inventory_usage']],
   'ui.tooltip_md': [['ui', 'tooltip_md']]
 };
 

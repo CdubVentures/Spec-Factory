@@ -53,8 +53,8 @@ const DEFAULTS: LlmProviderEntry[] = [
     baseUrl: 'https://api.deepseek.com',
 
     models: [
-      makeModel('default-deepseek-chat', 'deepseek-chat', 'primary'),
-      makeModel('default-deepseek-reasoner', 'deepseek-reasoner', 'reasoning'),
+      makeModel('default-deepseek-v4-flash', 'deepseek-v4-flash', 'primary'),
+      makeModel('default-deepseek-v4-pro', 'deepseek-v4-pro', 'reasoning'),
     ],
   }),
   makeProvider({
@@ -138,10 +138,10 @@ describe('mergeDefaultsIntoRegistry', () => {
     strictEqual(result[4].models[0].modelId, 'custom-model');
   });
 
-  it('deepseek-reasoner role preserved after merge', () => {
+  it('deepseek-v4-pro role preserved after merge', () => {
     const result = mergeDefaultsIntoRegistry([], DEFAULTS);
     const deepseek = result.find((p) => p.id === 'default-deepseek');
-    const reasoner = deepseek?.models.find((m) => m.modelId === 'deepseek-reasoner');
+    const reasoner = deepseek?.models.find((m) => m.modelId === 'deepseek-v4-pro');
     strictEqual(reasoner?.role, 'reasoning');
   });
 
@@ -180,15 +180,15 @@ describe('mergeDefaultsIntoRegistry', () => {
       apiKey: 'sk-ds',
   
       models: [
-        { ...makeModel('default-deepseek-chat', 'deepseek-chat', 'fast'), costInputPer1M: 0.5 },
-        makeModel('default-deepseek-reasoner', 'deepseek-reasoner', 'reasoning'),
+        { ...makeModel('default-deepseek-v4-flash', 'deepseek-v4-flash', 'fast'), costInputPer1M: 0.5 },
+        makeModel('default-deepseek-v4-pro', 'deepseek-v4-pro', 'reasoning'),
       ],
     });
     const result = mergeDefaultsIntoRegistry([userDeepSeek], DEFAULTS);
     const ds = result.find((p) => p.id === 'default-deepseek');
 
     strictEqual(ds?.apiKey, 'sk-ds');
-    const chat = ds?.models.find((m) => m.modelId === 'deepseek-chat');
+    const chat = ds?.models.find((m) => m.modelId === 'deepseek-v4-flash');
     strictEqual(chat?.role, 'fast'); // user changed role
     strictEqual(chat?.costInputPer1M, 0.5); // user changed cost
   });
@@ -408,8 +408,8 @@ describe('isDefaultModel', () => {
     strictEqual(isDefaultModel('default-gemini-flash-lite'), true);
   });
 
-  it('returns true for default-deepseek-reasoner', () => {
-    strictEqual(isDefaultModel('default-deepseek-reasoner'), true);
+  it('returns true for default-deepseek-v4-pro', () => {
+    strictEqual(isDefaultModel('default-deepseek-v4-pro'), true);
   });
 
   it('returns true for default-openai-gpt-4-1', () => {

@@ -73,3 +73,14 @@
   min-width: 34px;
   text-align: center;
 }
+
+/* PIF variant popover — 2×2 action grid (Run View / Run Hero / Run Loop / Evaluate). */
+.sf-pif-popover-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+}
+.sf-pif-popover-actions > button {
+  width: 100%;
+}

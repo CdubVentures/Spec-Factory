@@ -5,7 +5,10 @@
  *   buildComponentRelationIndex
  *   resolveProductComponentInventory
  *   resolveKeyComponentRelation
- *   readKnownFieldsByProduct
+ *   readProductScopedFactsByProduct
+ *   resolveVariantInventory
+ *   buildFieldIdentityUsage
+ *   resolveKeyFinderRuntimeContext
  */
 
 import test from 'node:test';
@@ -15,6 +18,10 @@ import {
   resolveProductComponentInventory,
   resolveKeyComponentRelation,
   readKnownFieldsByProduct,
+  readProductScopedFactsByProduct,
+  resolveVariantInventory,
+  buildFieldIdentityUsage,
+  resolveKeyFinderRuntimeContext,
 } from '../productResolvedStateReader.js';
 
 // ── Fixtures ────────────────────────────────────────────────────────────
@@ -42,6 +49,10 @@ function scalarRule(key) {
   return { field_key: key, component: null, contract: { type: 'string', shape: 'scalar' } };
 }
 
+function variantRule(key) {
+  return { ...scalarRule(key), variant_dependent: true };
+}
+
 const RULES = {
   sensor: parentRule('sensor', ['sensor_type', 'sensor_date']),
   sensor_type: subfieldRule('sensor_type'),
@@ -54,6 +65,8 @@ const RULES = {
   material: parentRule('material', []), // parent with no declared property_keys
   weight_g: scalarRule('weight_g'),
   release_date: scalarRule('release_date'),
+  sku: scalarRule('sku'),
+  variant_price: variantRule('variant_price'),
   polling_rate: scalarRule('polling_rate'),
 };
 
@@ -277,4 +290,217 @@ test('knownFields: null-valued resolved reads skipped (null is not "resolved")',
     specDb, productId: 'p1', compiledRulesFields: RULES, excludeFieldKeys: new Set(),
   });
   assert.deepEqual(out, {});
+});
+
+// -- readProductScopedFactsByProduct ---------------------------------------
+
+test('productScopedFacts: excludes reserved identity keys and variant-dependent fields', () => {
+  const calls = [];
+  const specDb = {
+    getFieldCandidatesByProductAndField: (_pid, fk, variantId) => {
+      calls.push({ fk, variantId });
+      const rows = {
+        weight_g: [{ field_key: 'weight_g', value: 63, status: 'resolved', confidence: 90, variant_id: null }],
+        release_date: [{ field_key: 'release_date', value: '2025-11-11', status: 'resolved', confidence: 99, variant_id: 'v_bo7' }],
+        sku: [{ field_key: 'sku', value: 'CH-931DB1M-NA', status: 'resolved', confidence: 99, variant_id: 'v_bo7' }],
+        variant_price: [{ field_key: 'variant_price', value: '$179', status: 'resolved', confidence: 91, variant_id: 'v_bo7' }],
+      };
+      return (rows[fk] || []).filter((row) => (row.variant_id ?? null) === (variantId ?? null));
+    },
+    getResolvedFieldCandidate: () => {
+      throw new Error('product-scoped reader must not use variant-blind resolved lookup when scoped rows are available');
+    },
+  };
+
+  const out = readProductScopedFactsByProduct({
+    specDb,
+    productId: 'p1',
+    compiledRulesFields: RULES,
+    excludeFieldKeys: new Set(['polling_rate']),
+  });
+
+  assert.deepEqual(out, { weight_g: 63 });
+  assert.equal(calls.some((call) => call.fk === 'release_date'), false, 'reserved RDF key must not be queried');
+  assert.equal(calls.some((call) => call.fk === 'sku'), false, 'reserved SKF key must not be queried');
+  assert.equal(calls.some((call) => call.fk === 'variant_price'), false, 'variant-dependent field must not be queried');
+});
+
+test('productScopedFacts: falls back to legacy resolved lookup only when scoped candidate API is absent', () => {
+  const specDb = makeSpecDbStub({ resolved: { weight_g: 63, polling_rate: 4000 } });
+  const out = readProductScopedFactsByProduct({
+    specDb,
+    productId: 'p1',
+    compiledRulesFields: RULES,
+    excludeFieldKeys: new Set(['polling_rate']),
+  });
+
+  assert.deepEqual(out, { weight_g: 63 });
+});
+
+// -- resolveVariantInventory ------------------------------------------------
+
+test('variantInventory: active SQL variants join resolved SKU and release_date by variant_id', () => {
+  const specDb = {
+    variants: {
+      listActive: () => [
+        {
+          variant_id: 'v_black',
+          variant_key: 'color:black',
+          variant_type: 'color',
+          variant_label: 'black',
+          color_atoms: ['black'],
+        },
+        {
+          variant_id: 'v_bo7',
+          variant_key: 'edition:call-of-duty-black-ops-7-edition',
+          variant_type: 'edition',
+          variant_label: 'Call of Duty: Black Ops 7 Edition',
+          color_atoms: ['black', 'white', 'dark-blue', 'orange'],
+        },
+      ],
+    },
+    getFieldCandidatesByProductAndField: (_pid, fieldKey, variantId) => {
+      const rows = {
+        sku: [
+          { field_key: 'sku', value: 'BLACK-SHOULD-NOT-LEAK', status: 'resolved', confidence: 99, variant_id: 'v_black' },
+          { field_key: 'sku', value: 'CH-931DB1M-NA', status: 'resolved', confidence: 96, variant_id: 'v_bo7' },
+        ],
+        release_date: [
+          { field_key: 'release_date', value: '2025-11-11', status: 'resolved', confidence: 95, variant_id: 'v_bo7' },
+        ],
+      };
+      return (rows[fieldKey] || []).filter((row) => row.variant_id === variantId);
+    },
+    listPifVariantProgressByProduct: () => [
+      { variant_id: 'v_bo7', hero_filled: 1, hero_target: 3, priority_filled: 2, priority_total: 4 },
+    ],
+  };
+
+  const inventory = resolveVariantInventory({
+    specDb,
+    productId: 'p1',
+    fieldRule: scalarRule('design'),
+  });
+
+  assert.equal(inventory.length, 2);
+  assert.deepEqual(inventory[0], {
+    variant_id: 'v_black',
+    variant_key: 'color:black',
+    label: 'black',
+    type: 'color',
+    color_atoms: ['black'],
+    sku: 'BLACK-SHOULD-NOT-LEAK',
+    release_date: '',
+    image_status: '',
+  });
+  assert.deepEqual(inventory[1], {
+    variant_id: 'v_bo7',
+    variant_key: 'edition:call-of-duty-black-ops-7-edition',
+    label: 'Call of Duty: Black Ops 7 Edition',
+    type: 'edition',
+    color_atoms: ['black', 'white', 'dark-blue', 'orange'],
+    sku: 'CH-931DB1M-NA',
+    release_date: '2025-11-11',
+    image_status: 'hero 1/3; priority 2/4',
+  });
+});
+
+test('variantInventory: omitted for a single non-discriminating default variant with no joined facts', () => {
+  const specDb = {
+    variants: {
+      listActive: () => [{ variant_id: 'v0', variant_key: 'default', variant_type: 'base', variant_label: 'Default', color_atoms: [] }],
+    },
+    getFieldCandidatesByProductAndField: () => [],
+    listPifVariantProgressByProduct: () => [],
+  };
+
+  const inventory = resolveVariantInventory({ specDb, productId: 'p1', fieldRule: scalarRule('polling_rate') });
+
+  assert.deepEqual(inventory, []);
+});
+
+test('variantInventory: field-rule mode off suppresses inventory even when active variants exist', () => {
+  const specDb = {
+    variants: {
+      listActive: () => [{ variant_id: 'v_black', variant_key: 'color:black', variant_type: 'color', variant_label: 'black', color_atoms: ['black'] }],
+    },
+    getFieldCandidatesByProductAndField: () => [],
+  };
+
+  const inventory = resolveVariantInventory({
+    specDb,
+    productId: 'p1',
+    fieldRule: {
+      ...scalarRule('polling_rate'),
+      ai_assist: { variant_inventory_usage: { mode: 'off' } },
+    },
+  });
+
+  assert.deepEqual(inventory, []);
+});
+
+// -- buildFieldIdentityUsage ------------------------------------------------
+
+test('fieldIdentityUsage: visual_design profile separates base design from edition artwork', () => {
+  const usage = buildFieldIdentityUsage({
+    fieldKey: 'design',
+    fieldRule: {
+      ...scalarRule('design'),
+      ai_assist: { variant_inventory_usage: { profile: 'visual_design' } },
+    },
+  });
+
+  assert.match(usage, /When researching `design`:/);
+  assert.match(usage, /shared physical\/industrial design/i);
+  assert.match(usage, /edition artwork, colorway, franchise branding/i);
+  assert.match(usage, /Never output colors, editions, sku, or release_date/i);
+});
+
+test('fieldIdentityUsage: append and override modes compose deterministic defaults', () => {
+  const appended = buildFieldIdentityUsage({
+    fieldKey: 'polling_rate',
+    fieldRule: {
+      ...scalarRule('polling_rate'),
+      ai_assist: { variant_inventory_usage: { mode: 'append', text: 'Prefer manufacturer spec tables.' } },
+    },
+  });
+  const overridden = buildFieldIdentityUsage({
+    fieldKey: 'polling_rate',
+    fieldRule: {
+      ...scalarRule('polling_rate'),
+      ai_assist: { variant_inventory_usage: { mode: 'override', text: 'Only use explicit polling-rate rows.' } },
+    },
+  });
+
+  assert.match(appended, /Use VARIANT_INVENTORY as a source-identity filter/);
+  assert.match(appended, /Prefer manufacturer spec tables/);
+  assert.equal(overridden, 'When researching `polling_rate`:\nOnly use explicit polling-rate rows.');
+});
+
+test('runtimeContext: returns productScopedFacts, variantInventory, and fieldIdentityUsage together', () => {
+  const specDb = {
+    variants: {
+      listActive: () => [{ variant_id: 'v_white', variant_key: 'color:white', variant_type: 'color', variant_label: 'white', color_atoms: ['white'] }],
+    },
+    getFieldCandidatesByProductAndField: (_pid, fk, variantId) => {
+      if (fk === 'weight_g' && variantId === null) {
+        return [{ field_key: 'weight_g', value: 63, status: 'resolved', confidence: 90, variant_id: null }];
+      }
+      return [];
+    },
+    listPifVariantProgressByProduct: () => [],
+  };
+
+  const ctx = resolveKeyFinderRuntimeContext({
+    specDb,
+    productId: 'p1',
+    compiledRulesFields: RULES,
+    excludeFieldKeys: new Set(['polling_rate']),
+    primaryFieldKey: 'polling_rate',
+    primaryFieldRule: scalarRule('polling_rate'),
+  });
+
+  assert.deepEqual(ctx.productScopedFacts, { weight_g: 63 });
+  assert.equal(ctx.variantInventory.length, 1);
+  assert.match(ctx.fieldIdentityUsage, /When researching `polling_rate`:/);
 });

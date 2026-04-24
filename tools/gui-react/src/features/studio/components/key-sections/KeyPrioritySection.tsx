@@ -27,7 +27,7 @@ export function KeyPrioritySection({
 }: KeyPrioritySectionProps) {
   return (
     <Section
-      title="Priority"
+      title="Extraction Priority & Guidance"
       persistKey={`studio:keyNavigator:section:priority:${category}`}
       titleTooltip={STUDIO_TIPS.key_section_priority}
       disabled={disabled}

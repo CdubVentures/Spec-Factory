@@ -69,10 +69,10 @@ export const PARENT_GROUPS = Object.freeze({
 
 export const CONSUMER_BADGE_REGISTRY = Object.freeze([
 
-  // ═══ Priority & Effort ═══════════════════════════════════════════════
+  // Extraction Priority & Guidance
 
   { path: 'priority.required_level', type: 'string', flatAliases: ['required_level'],
-    section: 'Priority & Effort', key: 'Required Level',
+    section: 'Extraction Priority & Guidance', key: 'Required Level',
     consumers: {
       'idx.needset': { desc: 'Maps to priority bucket (core/secondary/optional). Identity=100pts, critical=80, required=60, expected=30, optional=10 in need_score. Core fields scheduled first.' },
       'llm.budget': { desc: 'Adds mandatory/non_mandatory points to per-key attempt budget. keyBudgetCalc.js:14.' },
@@ -81,7 +81,7 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
     } },
 
   { path: 'priority.availability', type: 'string', flatAliases: ['availability'],
-    section: 'Priority & Effort', key: 'Availability',
+    section: 'Extraction Priority & Guidance', key: 'Availability',
     consumers: {
       'idx.needset': { desc: 'Primary sort key in sorted_unresolved_keys. Common fields searched before rare ones. Budget exhaustion means rare fields never run.' },
       'llm.budget': { desc: 'Adds availability points (always/sometimes/rare) to per-key attempt budget. keyBudgetCalc.js:15.' },
@@ -89,7 +89,7 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
     } },
 
   { path: 'priority.difficulty', type: 'string', flatAliases: ['difficulty'],
-    section: 'Priority & Effort', key: 'Difficulty',
+    section: 'Extraction Priority & Guidance', key: 'Difficulty',
     consumers: {
       'idx.needset': { desc: 'Secondary sort within same bucket. Hard fields sorted after easy. Does not prevent search, just reorders.' },
       'llm.route': { desc: 'Selects which LLM model handles this key via resolvePhaseModelByTier(policy, difficulty) — tier name (easy/medium/hard/very_hard) billing-tags the call. keyFinder.js:152-153, keyFinderPreviewPrompt.js:165.' },
@@ -271,18 +271,24 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
 
   // WHY: parse.template retired — type+shape is the contract. Consumers migrated in Phase 1-2.
 
-  // ═══ AI Assist ═══════════════════════════════════════════════════════
+  // AI Assist
 
   { path: 'ai_assist.reasoning_note', type: 'string', flatAliases: [],
-    section: 'AI Assist', key: 'Extraction Guidance',
+    section: 'Extraction Priority & Guidance', key: 'AI Reasoning Note',
     consumers: {
       'llm.kf': { desc: 'Sent to the per-key finder LLM as extraction guidance. Describes expected format, units, edge cases. keyLlmAdapter.js:112.' },
     } },
 
-  // ═══ Search Hints ════════════════════════════════════════════════════
+  { path: 'ai_assist.variant_inventory_usage', type: 'object', flatAliases: [],
+    section: 'Extraction Priority & Guidance', key: 'Variant Inventory Usage',
+    consumers: {
+      'llm.kf': { desc: 'Controls how Key Finder uses the active CEF variant inventory as per-key evidence-filter guidance. Supports default/append/override/off modes.' },
+    } },
+
+  // Search Hints & Aliases
 
   { path: 'search_hints.query_terms', type: 'filteredArray', flatAliases: [],
-    section: 'Search Hints', key: 'Query Terms',
+    section: 'Search Hints & Aliases', key: 'Query Terms',
     consumers: {
       'idx.needset': { desc: 'Aggregated per bundle, unioned per focus group, sent to LLM planner for search plan generation.' },
       'idx.search': { desc: 'Used directly in fieldSynonyms() for literal query construction and synonym expansion.' },
@@ -290,7 +296,7 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
     } },
 
   { path: 'search_hints.domain_hints', type: 'filteredArray', flatAliases: [],
-    section: 'Search Hints', key: 'Domain Hints',
+    section: 'Search Hints & Aliases', key: 'Domain Hints',
     consumers: {
       'idx.needset': { desc: 'Unioned per group, sent to LLM planner. Boosts matching URLs in result scoring.' },
       'idx.search': { desc: 'At repeat_count>=2 added as literal terms to Tier 3 queries. domain_hint_match reason code.' },
@@ -298,16 +304,16 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
     } },
 
   { path: 'search_hints.content_types', type: 'filteredArray', flatAliases: [],
-    section: 'Search Hints', key: 'Content Types',
+    section: 'Search Hints & Aliases', key: 'Content Types',
     consumers: {
       'idx.needset': { desc: 'Bundle grouping key. Fields with different content types get separate bundles.' },
       'idx.search': { desc: 'At repeat_count>=3 adds content suffixes to queries ("specification", "datasheet pdf").' },
     } },
 
-  // ═══ Extraction Hints & Aliases ══════════════════════════════════════
+  // Search Hints & Aliases
 
   { path: 'aliases', type: 'array', flatAliases: [],
-    section: 'Extraction Hints & Aliases', key: 'Aliases',
+    section: 'Search Hints & Aliases', key: 'Aliases',
     consumers: {
       'idx.needset': { desc: 'Included in buildAllAliases() and shardAliases(). At repeat_count>=1 added to Tier 3 queries via applyAliasEnrichment().' },
       'idx.search': { desc: 'At repeat_count>=1, applyAliasEnrichment() adds all_aliases to Tier 3 query terms. queryBuilder.js:591, 662, 669.' },
@@ -316,7 +322,7 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
     } },
 
   { path: 'ui.tooltip_md', type: 'string', flatAliases: ['tooltip_md'],
-    section: 'Extraction Hints & Aliases', key: 'Tooltip Markdown',
+    section: 'Tooltip / Guidance', key: 'Display Tooltip',
     consumers: {
       'idx.needset': { desc: 'Tooltip metadata included in field assessment output.' },
       'idx.search': { desc: 'extractTooltipTerms() parses markdown for 2+ word phrases (max 4), merged into fieldSynonyms().' },

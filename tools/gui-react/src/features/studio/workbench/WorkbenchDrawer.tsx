@@ -29,7 +29,7 @@ const DRAWER_TABS: { id: DrawerTab; label: string }[] = [
   { id: 'contract', label: 'Contract' },
   { id: 'enum', label: 'Enum' },
   { id: 'evidence', label: 'Evidence' },
-  { id: 'search', label: 'Search' },
+  { id: 'search', label: 'Search & Aliases' },
   { id: 'deps', label: 'Deps' },
   { id: 'preview', label: 'Preview' },
 ];

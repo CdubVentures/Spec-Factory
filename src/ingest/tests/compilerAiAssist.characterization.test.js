@@ -51,9 +51,41 @@ for (const { label, note, expected } of noteCases) {
 
 // ── Output shape has exactly 1 key ───────────────────────────────────
 
-test('output shape has exactly 1 key: reasoning_note', () => {
+test('output shape defaults to reasoning_note only', () => {
   const result = compileAiAssist({});
   assert.deepEqual(Object.keys(result), ['reasoning_note']);
+});
+
+test('variant_inventory_usage preserves normalized hybrid override metadata', () => {
+  const result = compileAiAssist({
+    reasoning_note: 'base note',
+    variant_inventory_usage: {
+      mode: 'append',
+      profile: 'visual_design',
+      text: '  Use only explicit base-shell evidence.  ',
+    },
+  });
+
+  assert.deepEqual(result, {
+    reasoning_note: 'base note',
+    variant_inventory_usage: {
+      mode: 'append',
+      profile: 'visual_design',
+      text: 'Use only explicit base-shell evidence.',
+    },
+  });
+});
+
+test('variant_inventory_usage drops invalid empty metadata', () => {
+  const result = compileAiAssist({
+    variant_inventory_usage: {
+      mode: 'nonsense',
+      profile: 'wat',
+      text: '   ',
+    },
+  });
+
+  assert.deepEqual(result, DEFAULTS);
 });
 
 // ── Retired fields are NOT in output ─────────────────────────────────

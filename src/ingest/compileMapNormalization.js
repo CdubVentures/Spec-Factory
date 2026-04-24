@@ -127,7 +127,11 @@ function stripRetiredEvidenceKnobs(overrides) {
     // WHY: Empty ai_assist blocks (reasoning_note: "") are compiled defaults,
     // not user-authored overrides. Strip them so they don't pollute the
     // source-controlled control-plane map on every save cycle.
-    if (isObject(rest.ai_assist) && !normalizeText(rest.ai_assist.reasoning_note)) {
+    if (
+      isObject(rest.ai_assist)
+      && !normalizeText(rest.ai_assist.reasoning_note)
+      && !isObject(rest.ai_assist.variant_inventory_usage)
+    ) {
       delete rest.ai_assist;
     }
     cleaned[key] = rest;

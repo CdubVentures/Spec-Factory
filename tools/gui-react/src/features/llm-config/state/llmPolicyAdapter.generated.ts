@@ -167,8 +167,8 @@ export function assembleLlmPolicyFromFlat(source: Record<string, unknown>): LlmP
     },
     models: {
       plan: readStr(source, 'llmModelPlan', "gemini-2.5-flash"),
-      reasoning: readStr(source, 'llmModelReasoning', "deepseek-reasoner"),
-      planFallback: readStr(source, 'llmPlanFallbackModel', "deepseek-chat"),
+      reasoning: readStr(source, 'llmModelReasoning', "deepseek-v4-pro"),
+      planFallback: readStr(source, 'llmPlanFallbackModel', "deepseek-v4-flash"),
       reasoningFallback: readStr(source, 'llmReasoningFallbackModel', "gemini-2.5-pro"),
     },
     reasoning: {

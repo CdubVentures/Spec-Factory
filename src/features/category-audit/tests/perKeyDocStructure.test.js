@@ -43,6 +43,8 @@ const BASE_OPTS = {
   generatedAt: '2026-04-23T12:00:00.000Z',
   schemaCatalog: FIELD_RULE_SCHEMA,
   siblingsInGroup: [],
+  allKeyRecords: [],
+  groups: [],
 };
 
 test('returns a structure with { meta, sections }', () => {
@@ -69,12 +71,44 @@ test('sections appear in the expected order', () => {
   const preview = composePerKeyPromptPreview(rule, 'dpi', { category: 'mouse' });
   const structure = buildPerKeyDocStructure(record, { ...BASE_OPTS, preview });
   const ids = structure.sections.map((s) => s.id);
-  // Header is always first. After that: purpose, contract-schema, enum, component, cross-field (optional),
-  // siblings, full-prompt, per-slot.
+  // Header is always first. After that: purpose, search routing, category key map, contract schema,
+  // consumer surface, enum, component, cross-field map, siblings, full-prompt, per-slot.
   assert.equal(ids[0], 'header');
   const after = ids.slice(1);
-  assert.deepEqual(after.filter((x) => ['purpose', 'authoring-checklist', 'contract-schema', 'enum', 'component', 'siblings', 'example-bank', 'full-prompt', 'per-slot'].includes(x)),
-    ['purpose', 'authoring-checklist', 'contract-schema', 'enum', 'component', 'siblings', 'example-bank', 'full-prompt', 'per-slot']);
+  assert.deepEqual(after.filter((x) => ['purpose', 'search-routing', 'authoring-checklist', 'category-key-map', 'contract-schema', 'consumer-surface', 'enum', 'component', 'cross-field', 'siblings', 'example-bank', 'llm-audit-prompt', 'full-prompt', 'per-slot'].includes(x)),
+    ['purpose', 'search-routing', 'authoring-checklist', 'category-key-map', 'contract-schema', 'consumer-surface', 'enum', 'component', 'cross-field', 'siblings', 'example-bank', 'llm-audit-prompt', 'full-prompt', 'per-slot']);
+});
+
+test('search routing section explains requiredness availability difficulty and benchmark depth', () => {
+  const rule = makeRule({
+    priority: { required_level: 'mandatory', availability: 'sometimes', difficulty: 'very_hard' },
+  });
+  const record = makeKeyRecord('sensor', rule);
+  const preview = composePerKeyPromptPreview(rule, 'sensor', {
+    category: 'mouse',
+    tierBundles: {
+      very_hard: {
+        model: 'frontier-model',
+        useReasoning: true,
+        thinking: true,
+        thinkingEffort: 'high',
+        webSearch: true,
+      },
+    },
+  });
+  const structure = buildPerKeyDocStructure(record, { ...BASE_OPTS, preview });
+  const section = structure.sections.find((s) => s.id === 'search-routing');
+  assert.ok(section, 'search-routing section present');
+  const allText = JSON.stringify(section);
+  assert.match(allText, /required_level/);
+  assert.match(allText, /availability/);
+  assert.match(allText, /difficulty/);
+  assert.match(allText, /mandatory/);
+  assert.match(allText, /very_hard/);
+  assert.match(allText, /model\/search strength/i);
+  assert.match(allText, /benchmark/i);
+  assert.match(allText, /mouseData\.xlsm/);
+  assert.match(allText, /C2:BT83/);
 });
 
 test('authoring checklist makes full priority and contract validation explicit', () => {
@@ -94,6 +128,10 @@ test('authoring checklist makes full priority and contract validation explicit',
   assert.match(allText, /priority\.difficulty/);
   assert.match(allText, /contract\.type/);
   assert.match(allText, /contract\.shape/);
+  assert.match(allText, /no contract change/i);
+  assert.match(allText, /Consumer-surface impact/i);
+  assert.match(allText, /Unknown \/ not-applicable/i);
+  assert.match(allText, /Boolean is enough only/i);
   assert.match(allText, /guidance last/i);
 });
 
@@ -113,6 +151,35 @@ test('example-bank recipe is category agnostic and asks for 5-10 examples', () =
   assert.match(allText, /filter-risk/i);
   assert.match(allText, /benchmark/i);
   assert.match(allText, /brand-new categor/i);
+  assert.match(allText, /Live validation rule for this key/i);
+  assert.match(allText, /do not finalize this key/i);
+  assert.match(allText, /memory alone/i);
+  assert.match(allText, /3-5 representative products/i);
+  assert.match(allText, /References spot-checked/i);
+  assert.match(allText, /Use benchmark data only to understand the target answer shape/i);
+});
+
+test('per-key LLM audit prompt requires a Field Studio text file first', () => {
+  const rule = makeRule({
+    enum: { policy: 'open_prefer_known', values: ['standard', 'limited edition'] },
+  });
+  const record = makeKeyRecord('design', rule);
+  const preview = composePerKeyPromptPreview(rule, 'design', { category: 'mouse' });
+  const structure = buildPerKeyDocStructure(record, { ...BASE_OPTS, preview });
+  const section = structure.sections.find((s) => s.id === 'llm-audit-prompt');
+  assert.ok(section, 'llm-audit-prompt section present');
+  const allText = JSON.stringify(section);
+  assert.match(allText, /downloadable text file first/i);
+  assert.match(allText, /mouse-design-field-studio-change\.txt/);
+  assert.match(allText, /Mapping Studio/);
+  assert.match(allText, /Key Navigator/);
+  assert.match(allText, /Live validation/);
+  assert.match(allText, /AI reasoning note/);
+  assert.doesNotMatch(allText, /Tooltip \/ Guidance/);
+  assert.doesNotMatch(allText, /tooltip/i);
+  assert.doesNotMatch(allText, /current runtime behavior, not the target recommendation/i);
+  assert.doesNotMatch(allText, /do not treat that as endorsement/i);
+  assert.doesNotMatch(allText, /Recommend closed when this key/i);
 });
 
 test('contract-schema table has a row for every FIELD_RULE_SCHEMA entry', () => {
@@ -168,6 +235,114 @@ test('component section reflects component.type and renders component-inventory 
   const allText = JSON.stringify(componentSection);
   assert.ok(allText.includes('sensor'), 'sensor mentioned');
   assert.match(allText, /IS the sensor/i);
+});
+
+test('category key map gives each per-key doc all keys for grouping and dependency review', () => {
+  const rule = makeRule({ ui: { label: 'Sensor Date' }, variance_policy: 'authoritative' });
+  const record = makeKeyRecord('sensor_date', rule, {
+    group: 'sensor_performance',
+    variance_policy: 'authoritative',
+  });
+  const allKeyRecords = [
+    record,
+    makeKeyRecord('release_date', makeRule({
+      contract: { type: 'date', shape: 'scalar' },
+      ui: { label: 'Release Date' },
+    }), { group: 'general' }),
+    makeKeyRecord('sensor', makeRule({
+      ui: { label: 'Sensor' },
+    }), { group: 'sensor_performance', component: { type: 'sensor', relation: 'parent', source: 'component_db.sensor' } }),
+  ];
+  const preview = composePerKeyPromptPreview(rule, 'sensor_date', { category: 'mouse' });
+  const structure = buildPerKeyDocStructure(record, {
+    ...BASE_OPTS,
+    preview,
+    allKeyRecords,
+    groups: [
+      { groupKey: 'general', displayName: 'General', fieldKeys: ['release_date'] },
+      { groupKey: 'sensor_performance', displayName: 'Sensor & Performance', fieldKeys: ['sensor', 'sensor_date'] },
+    ],
+  });
+  const section = structure.sections.find((s) => s.id === 'category-key-map');
+  assert.ok(section, 'category-key-map section present');
+  const allText = JSON.stringify(section);
+  assert.match(allText, /all current keys/i);
+  assert.match(allText, /release_date/);
+  assert.match(allText, /sensor_performance/);
+  assert.match(allText, /authoritative/);
+});
+
+test('cross-field map includes constraints from other keys that touch this key', () => {
+  const releaseRule = makeRule({
+    contract: { type: 'date', shape: 'scalar' },
+    ui: { label: 'Release Date' },
+  });
+  const record = makeKeyRecord('release_date', releaseRule, { group: 'general' });
+  const sensorDate = makeKeyRecord('sensor_date', makeRule({
+    constraints: ['sensor_date <= release_date'],
+    ui: { label: 'Sensor Date' },
+  }), {
+    group: 'sensor_performance',
+    constraints: [{ op: 'lte', left: 'sensor_date', right: 'release_date', raw: 'sensor_date <= release_date' }],
+  });
+  const preview = composePerKeyPromptPreview(releaseRule, 'release_date', { category: 'mouse' });
+  const structure = buildPerKeyDocStructure(record, {
+    ...BASE_OPTS,
+    preview,
+    allKeyRecords: [record, sensorDate],
+  });
+  const section = structure.sections.find((s) => s.id === 'cross-field');
+  assert.ok(section, 'cross-field section present even when current key owns no constraints');
+  const allText = JSON.stringify(section);
+  assert.match(allText, /sensor_date <= release_date/);
+  assert.match(allText, /touches this key/i);
+});
+
+test('component section shows all components and relevant component variance details', () => {
+  const rule = makeRule({ ui: { label: 'DPI' } });
+  const record = makeKeyRecord('dpi', rule, {
+    group: 'sensor_performance',
+    component: { type: 'sensor', relation: 'subfield_of', source: 'component_db.sensor' },
+    variance_policy: 'upper_bound',
+  });
+  const preview = composePerKeyPromptPreview(rule, 'dpi', { category: 'mouse' });
+  const structure = buildPerKeyDocStructure(record, {
+    ...BASE_OPTS,
+    preview,
+    componentInventory: [
+      {
+        type: 'sensor',
+        entityCount: 2,
+        entities: [
+          {
+            name: 'PAW3950',
+            maker: 'PixArt',
+            aliases: ['3950'],
+            properties: { dpi: 30000, sensor_date: '2023-01' },
+            constraints: { sensor_date: ['sensor_date <= release_date'] },
+            variance_policies: { dpi: 'upper_bound', sensor_date: 'authoritative' },
+          },
+        ],
+        identityFields: ['sensor'],
+        subfields: ['dpi', 'sensor_date'],
+      },
+      {
+        type: 'switch',
+        entityCount: 1,
+        entities: [],
+        identityFields: ['switch'],
+        subfields: ['switch_type'],
+      },
+    ],
+  });
+  const section = structure.sections.find((s) => s.id === 'component');
+  assert.ok(section, 'component section present');
+  const allText = JSON.stringify(section);
+  assert.match(allText, /All current components/i);
+  assert.match(allText, /switch/);
+  assert.match(allText, /PAW3950/);
+  assert.match(allText, /upper_bound/);
+  assert.match(allText, /sensor_date <= release_date/);
 });
 
 test('full-prompt section contains the systemPrompt as a codeBlock', () => {

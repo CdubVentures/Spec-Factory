@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client.ts';
 import { useUiStore } from '../../stores/uiStore.ts';
@@ -11,9 +11,16 @@ import type { CatalogRow } from '../../types/product.ts';
 import { parseCatalogRows } from '../../features/catalog/api/catalogParsers.ts';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { ColorRegistryEntry } from '../../features/color-edition-finder/types.ts';
-import { FinderRunDiamonds } from './FinderRunDiamonds.tsx';
+import { useRunningProductIds } from '../../features/operations/hooks/useFinderOperations.ts';
+import { CefRunPopover } from './CefRunPopover.tsx';
 import { PifVariantsCell } from './PifVariantsCell.tsx';
 import { ScalarVariantsCell } from './ScalarVariantsCell.tsx';
+import { KeyTierRings } from './KeyTierRings.tsx';
+import {
+  OverviewFilterBar,
+  type OverviewFilterState,
+  type OverviewSortKey,
+} from './OverviewFilterBar.tsx';
 
 // RDF values are ISO dates (e.g. "2024-03-15"); keep YYYY-MM in the label —
 // enough context at a glance, full date in the tooltip.
@@ -26,12 +33,46 @@ function formatRdfLabel(value: string): string {
 // module will let a product advance. Visual today, enforcement later.
 const CEF_REQUIRED_RUNS = 2;
 
-const placeholderCell = () => <span className="sf-text-subtle text-xs italic">—</span>;
+const INITIAL_FILTER_STATE: OverviewFilterState = Object.freeze({
+  search: '',
+  sortBy: 'default' as OverviewSortKey,
+  activeFirst: false,
+});
 
-function buildColumns(hexMap: ReadonlyMap<string, string>): ColumnDef<CatalogRow, unknown>[] {
+function matchesSearch(row: CatalogRow, query: string): boolean {
+  if (!query) return true;
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return (
+    row.brand.toLowerCase().includes(q) ||
+    row.model.toLowerCase().includes(q) ||
+    row.base_model.toLowerCase().includes(q) ||
+    row.variant.toLowerCase().includes(q) ||
+    row.identifier.toLowerCase().includes(q) ||
+    String(row.id).includes(q)
+  );
+}
+
+function compareBySort(a: CatalogRow, b: CatalogRow, sortBy: OverviewSortKey): number {
+  switch (sortBy) {
+    case 'confidence': return (b.confidence - a.confidence) || defaultCompare(a, b);
+    case 'coverage':   return (b.coverage - a.coverage) || defaultCompare(a, b);
+    case 'fields':     return (b.fieldsFilled - a.fieldsFilled) || defaultCompare(a, b);
+    default:           return defaultCompare(a, b);
+  }
+}
+
+function defaultCompare(a: CatalogRow, b: CatalogRow): number {
+  return (
+    a.brand.localeCompare(b.brand) ||
+    a.base_model.localeCompare(b.base_model) ||
+    a.variant.localeCompare(b.variant)
+  );
+}
+
+function buildColumns(hexMap: ReadonlyMap<string, string>, category: string): ColumnDef<CatalogRow, unknown>[] {
   return [
     { accessorKey: 'brand', header: 'Brand', size: 100 },
-    { accessorKey: 'model', header: 'Model', size: 150 },
     { accessorKey: 'base_model', header: 'Base Model', size: 130 },
     {
       accessorKey: 'variant',
@@ -88,58 +129,81 @@ function buildColumns(hexMap: ReadonlyMap<string, string>): ColumnDef<CatalogRow
       size: 70,
     },
     {
-      id: 'finders',
-      header: 'Finders',
-      columns: [
-        {
-          accessorKey: 'cefRunCount',
-          header: 'CEF',
-          size: 130,
-          cell: ({ row }) => (
-            <FinderRunDiamonds
-              filled={row.original.cefRunCount}
-              total={CEF_REQUIRED_RUNS}
-            />
-          ),
-        },
-        {
-          accessorKey: 'pifVariants',
-          header: 'PIF',
-          size: 260,
-          cell: ({ row }) => (
-            <PifVariantsCell
-              variants={row.original.pifVariants}
-              hexMap={hexMap}
-            />
-          ),
-        },
-        {
-          accessorKey: 'skuVariants',
-          header: 'SKU',
-          size: 220,
-          cell: ({ row }) => (
-            <ScalarVariantsCell
-              variants={row.original.skuVariants}
-              hexMap={hexMap}
-              valueLabel="SKU"
-            />
-          ),
-        },
-        {
-          accessorKey: 'rdfVariants',
-          header: 'RDF',
-          size: 200,
-          cell: ({ row }) => (
-            <ScalarVariantsCell
-              variants={row.original.rdfVariants}
-              hexMap={hexMap}
-              valueLabel="Release Date"
-              formatLabel={formatRdfLabel}
-            />
-          ),
-        },
-        { id: 'key', header: 'Keys', size: 70, cell: placeholderCell },
-      ],
+      accessorKey: 'cefRunCount',
+      header: 'CEF',
+      size: 130,
+      cell: ({ row }) => (
+        <CefRunPopover
+          productId={row.original.productId}
+          category={category}
+          filled={row.original.cefRunCount}
+          total={CEF_REQUIRED_RUNS}
+        />
+      ),
+    },
+    {
+      accessorKey: 'pifVariants',
+      header: 'PIF',
+      size: 260,
+      cell: ({ row }) => (
+        <PifVariantsCell
+          productId={row.original.productId}
+          category={category}
+          variants={row.original.pifVariants}
+          hexMap={hexMap}
+        />
+      ),
+    },
+    {
+      accessorKey: 'skuVariants',
+      header: 'SKU',
+      size: 220,
+      cell: ({ row }) => (
+        <ScalarVariantsCell
+          productId={row.original.productId}
+          category={category}
+          variants={row.original.skuVariants}
+          hexMap={hexMap}
+          moduleType="skf"
+          phaseId="skuFinder"
+          title="SKU Finder"
+          labelPrefix="SKU"
+          runUrl={`/sku-finder/${encodeURIComponent(category)}/${encodeURIComponent(row.original.productId)}`}
+          valueLabel="SKU"
+        />
+      ),
+    },
+    {
+      accessorKey: 'rdfVariants',
+      header: 'RDF',
+      size: 200,
+      cell: ({ row }) => (
+        <ScalarVariantsCell
+          productId={row.original.productId}
+          category={category}
+          variants={row.original.rdfVariants}
+          hexMap={hexMap}
+          moduleType="rdf"
+          phaseId="releaseDateFinder"
+          title="Release Date Finder"
+          labelPrefix="RDF"
+          runUrl={`/release-date-finder/${encodeURIComponent(category)}/${encodeURIComponent(row.original.productId)}`}
+          valueLabel="Release Date"
+          formatLabel={formatRdfLabel}
+        />
+      ),
+    },
+    {
+      id: 'key',
+      header: 'Keys',
+      size: 280,
+      cell: ({ row }) => (
+        <KeyTierRings
+          productId={row.original.productId}
+          category={category}
+          tiers={row.original.keyTierProgress}
+        />
+      ),
     },
   ];
 }
@@ -163,7 +227,24 @@ export function OverviewPage() {
     [colorRegistry],
   );
 
-  const columns = useMemo(() => buildColumns(hexMap), [hexMap]);
+  const columns = useMemo(() => buildColumns(hexMap, category), [hexMap, category]);
+
+  const [filterState, setFilterState] = useState<OverviewFilterState>(INITIAL_FILTER_STATE);
+  const runningProductIds = useRunningProductIds(category);
+
+  const visibleRows = useMemo(() => {
+    const filtered = catalog.filter((r) => matchesSearch(r, filterState.search));
+    const { sortBy, activeFirst } = filterState;
+    const sorted = filtered.slice().sort((a, b) => {
+      if (activeFirst) {
+        const aActive = runningProductIds.has(a.productId) ? 1 : 0;
+        const bActive = runningProductIds.has(b.productId) ? 1 : 0;
+        if (aActive !== bActive) return bActive - aActive;
+      }
+      return compareBySort(a, b, sortBy);
+    });
+    return sorted;
+  }, [catalog, filterState, runningProductIds]);
 
   if (isLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
 
@@ -183,11 +264,18 @@ export function OverviewPage() {
         ]}
       />
 
+      <OverviewFilterBar
+        state={filterState}
+        onChange={setFilterState}
+        shown={visibleRows.length}
+        total={catalog.length}
+        runningCount={runningProductIds.size}
+      />
+
       <div className="sf-table-shell">
         <DataTable
-          data={catalog}
+          data={visibleRows}
           columns={columns}
-          searchable
           persistKey={`overview:table:${category}`}
           maxHeight="max-h-[calc(100vh-340px)]"
         />

@@ -1,53 +1,63 @@
 import type { ScalarVariantProgressGen } from '../../types/product.generated.ts';
-import { ColorSwatch } from '../../shared/ui/finder/ColorSwatch.tsx';
-import { ConfidenceDiamond } from './ConfidenceDiamond.tsx';
+import type { LlmOverridePhaseId } from '../../features/llm-config/types/llmPhaseOverrideTypes.generated.ts';
+import { useRunningVariantKeysAny } from '../../features/operations/hooks/useFinderOperations.ts';
+import { ScalarVariantPopover } from './ScalarVariantPopover.tsx';
 import './PifVariantRings.css';
 
 export interface ScalarVariantsCellProps {
+  readonly productId: string;
+  readonly category: string;
   readonly variants: readonly ScalarVariantProgressGen[];
   readonly hexMap: ReadonlyMap<string, string>;
-  /** Label format for the truncated value under each diamond. */
-  readonly formatLabel?: (value: string) => string;
-  /** Tooltip field label — e.g. "SKU" or "Release Date". */
+  /** Module type used by the operations tracker — e.g. 'skf' or 'rdf'. */
+  readonly moduleType: 'skf' | 'rdf';
+  /** LLM phase id for useResolvedFinderModel. */
+  readonly phaseId: LlmOverridePhaseId;
+  /** Full-name title shown in the popover header. */
+  readonly title: string;
+  /** Short prefix shown on the model badge + ARIA label. */
+  readonly labelPrefix: string;
+  /** Base run URL — Loop is derived as `${runUrl}/loop`. */
+  readonly runUrl: string;
+  /** Tooltip field name — e.g. "SKU" or "Release Date". */
   readonly valueLabel: string;
+  /** Optional label formatter for the truncated value under each diamond. */
+  readonly formatLabel?: (value: string) => string;
 }
-
-function truncate(str: string, max = 10): string {
-  if (str.length <= max) return str;
-  return str.slice(0, max - 1) + '\u2026';
-}
-
-const DEFAULT_FORMAT = (v: string) => truncate(v, 10);
 
 /**
- * Overview-table cell for per-variant scalar finders (SKU + RDF).
- * Each variant renders as: color chip on top · confidence diamond · truncated
- * value label. Hover tooltip shows the full value + confidence.
+ * Overview scalar-finder cell (SKU + RDF). Each variant becomes its own
+ * clickable popover trigger with Run / Loop actions scoped to that variant.
  */
 export function ScalarVariantsCell({
-  variants, hexMap, formatLabel = DEFAULT_FORMAT, valueLabel,
+  productId, category, variants, hexMap,
+  moduleType, phaseId, title, labelPrefix, runUrl,
+  valueLabel, formatLabel,
 }: ScalarVariantsCellProps) {
+  // Subscribe once per product — each variant reads its own pulse bool from the shared set.
+  const runningKeys = useRunningVariantKeysAny(moduleType, productId);
   if (!variants.length) {
     return <span className="sf-text-subtle text-xs italic">—</span>;
   }
   return (
     <span className="inline-flex gap-2.5 flex-wrap items-start">
-      {variants.map((v) => {
-        const hexParts = v.color_atoms.map((atom) => hexMap.get(atom) || '').filter(Boolean);
-        const hasValue = v.value && v.confidence > 0;
-        const tooltip = hasValue
-          ? `${v.variant_label || v.variant_key || v.variant_id} \u00b7 ${valueLabel}: ${v.value} \u00b7 conf ${Math.round(v.confidence)}%`
-          : `${v.variant_label || v.variant_key || v.variant_id} \u00b7 ${valueLabel}: (no candidate)`;
-        return (
-          <span key={v.variant_id} className="sf-pif-rings-cluster" title={tooltip}>
-            <ColorSwatch hexParts={hexParts} size="md" />
-            <ConfidenceDiamond confidence={v.confidence} />
-            <span className="sf-pif-rings-label">
-              {hasValue ? formatLabel(v.value) : '\u2014'}
-            </span>
-          </span>
-        );
-      })}
+      {variants.map((v) => (
+        <ScalarVariantPopover
+          key={v.variant_id}
+          productId={productId}
+          category={category}
+          variant={v}
+          hexMap={hexMap}
+          moduleType={moduleType}
+          phaseId={phaseId}
+          title={title}
+          labelPrefix={labelPrefix}
+          runUrl={runUrl}
+          valueLabel={valueLabel}
+          formatLabel={formatLabel}
+          pulsing={runningKeys.has(v.variant_key)}
+        />
+      ))}
     </span>
   );
 }

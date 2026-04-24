@@ -96,7 +96,7 @@ test('IDX tooltips point users to the field studio navigation path', async () =>
   const harness = await createSystemMappingHarness();
   const tooltip = harness.formatConsumerTooltip('search_hints.query_terms', 'indexlab', true);
 
-  assert.match(tooltip, /Key Navigation > Search Hints > Query Terms/);
+  assert.match(tooltip, /Key Navigation > Search Hints & Aliases > Query Terms/);
   assert.match(tooltip, /When enabled:/);
   assert.match(tooltip, /When disabled:/);
 });

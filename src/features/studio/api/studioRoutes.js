@@ -380,6 +380,16 @@ export function registerStudioRoutes(ctx) {
         console.warn('[mirror-write] field_key_order.json write-back failed:', err?.message || err);
       });
       sessionCache.invalidateSessionCache(category);
+      // WHY: Live propagation — any consumer of group/key ordering (Overview
+      // Keys popover, KeyFinder dashboard) must refetch when order changes.
+      emitDataChange({
+        broadcastWs,
+        event: 'field-key-order-saved',
+        category,
+        categories: [category],
+        domains: ['mapping'],
+        meta: { order_length: order.length },
+      });
       return jsonRes(res, 200, { ok: true, category });
     }
 

@@ -294,6 +294,9 @@ export function buildColumns(
       },
     },
 
+    // Aliases count
+    { accessorKey: 'aliasesCount', header: 'Aliases', size: 65 },
+
     // Query terms count
     { accessorKey: 'queryTermsCount', header: 'Q Terms', size: 65 },
 
@@ -392,7 +395,7 @@ const PRESET_COLUMNS: Record<ColumnPreset, string[]> = {
   ],
   search: [
     ...ALWAYS_VISIBLE,
-    'queryTermsCount', 'domainHintsCount', 'contentTypesCount', 'constraintsCount', 'constraintVariables', 'componentType',
+    'aliasesCount', 'queryTermsCount', 'domainHintsCount', 'contentTypesCount', 'constraintsCount', 'constraintVariables', 'componentType',
   ],
   debug: [
     ...ALWAYS_VISIBLE,
@@ -429,6 +432,7 @@ export const ALL_COLUMN_IDS_WITH_LABELS: { id: string; label: string }[] = [
   { id: 'knownValuesCount', label: 'KV Count' },
   { id: 'minEvidenceRefs', label: 'Min Refs' },
   { id: 'tierPreference', label: 'Tiers' },
+  { id: 'aliasesCount', label: 'Aliases' },
   { id: 'queryTermsCount', label: 'Query Terms' },
   { id: 'domainHintsCount', label: 'Domain Hints' },
   { id: 'contentTypesCount', label: 'Content Types' },
@@ -446,7 +450,7 @@ export const PRESET_LABELS: { id: ColumnPreset; label: string }[] = [
   { id: 'parsing', label: 'Parsing' },
   { id: 'enums', label: 'Enums' },
   { id: 'evidence', label: 'Evidence' },
-  { id: 'search', label: 'Search' },
+  { id: 'search', label: 'Search & Aliases' },
   { id: 'debug', label: 'Debug' },
   { id: 'all', label: 'All' },
 ];

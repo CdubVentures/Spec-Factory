@@ -29,3 +29,4 @@ export {
 export { runKeyFinder } from './keyFinder.js';
 export { runKeyFinderLoop } from './keyFinderLoop.js';
 export { registerKeyFinderRoutes } from './api/keyFinderRoutes.js';
+export { isConcreteEvidence } from './keyConcreteEvidence.js';

@@ -7,10 +7,11 @@
  *
  * Each per-key doc shows:
  *   - Purpose
+ *   - Category key map (all fields, groups, component relations, variance)
  *   - Contract schema (every possible parameter + current value)
  *   - Current enum + pattern
- *   - Component relation
- *   - Cross-field constraints (if any)
+ *   - Component relation + inventory context
+ *   - Cross-field constraints (current key + category map)
  *   - Sibling fields in the same group
  *   - Full compiled keyFinder preview prompt (with placeholder product identity)
  *   - Per-slot breakdown
@@ -65,6 +66,16 @@ function buildReservedKeysSummary(reservedEntries, category, generatedAt) {
   ].join('\n');
 }
 
+function resolvePerKeyCategoryPath(outputRoot, category) {
+  const perKeyRoot = path.resolve(outputRoot, 'per-key');
+  const basePath = path.resolve(perKeyRoot, category);
+  const isInsidePerKeyRoot = basePath.startsWith(`${perKeyRoot}${path.sep}`);
+  if (!isInsidePerKeyRoot) {
+    throw new Error(`generatePerKeyDocs: unsafe category output path for ${category}`);
+  }
+  return basePath;
+}
+
 /**
  * @param {object} opts
  * @param {string} opts.category
@@ -106,7 +117,8 @@ export async function generatePerKeyDocs({
   });
 
   const generatedAt = reportData.generatedAt;
-  const basePath = path.join(outputRoot, 'per-key', category);
+  const basePath = resolvePerKeyCategoryPath(outputRoot, category);
+  await fs.rm(basePath, { recursive: true, force: true });
   await fs.mkdir(basePath, { recursive: true });
 
   const byGroup = groupRecordsByGroup(reportData.keys);
@@ -133,6 +145,8 @@ export async function generatePerKeyDocs({
       generatedAt,
       schemaCatalog: FIELD_RULE_SCHEMA,
       siblingsInGroup: byGroup.get(record.group) || [],
+      allKeyRecords: reportData.keys || [],
+      groups: reportData.groups || [],
       componentInventory: reportData.components || [],
       preview,
     });

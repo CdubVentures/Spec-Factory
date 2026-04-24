@@ -15,7 +15,7 @@ test('buildRuntimeIdxTooltip points runtime users back to Field Studio key navig
   });
 
   assert.match(tooltip, /^idx\.search_hints\.query_terms/m);
-  assert.match(tooltip, /This feature is enabled in Key Navigation > Search Hints > Query Terms\./);
+  assert.match(tooltip, /This feature is enabled in Key Navigation > Search Hints & Aliases > Query Terms\./);
   assert.match(tooltip, /When ON:/);
   assert.match(tooltip, /When OFF:/);
   assert.match(tooltip, /Search Profile/);

@@ -79,7 +79,11 @@ GOAL: Extract the PRIMARY KEY value for this product using the FIELD CONTRACT be
 \u2500\u2500 CONTEXT \u2500\u2500
 {{PRODUCT_COMPONENTS}}
 
-{{KNOWN_PRODUCT_FIELDS}}
+{{PRODUCT_SCOPED_FACTS}}
+
+{{VARIANT_INVENTORY}}
+
+{{FIELD_IDENTITY_USAGE}}
 
 {{EVIDENCE_CONTRACT}}
 
@@ -131,17 +135,56 @@ function buildProductComponentsBlock(inventory) {
   return lines.join('\n');
 }
 
-function buildKnownFieldsBlock(knownFields, { knownFieldsInjectionEnabled } = {}) {
+function buildProductScopedFactsBlock(productScopedFacts, { knownFieldsInjectionEnabled } = {}) {
   if (!knownFieldsInjectionEnabled) return '';
-  const entries = Object.entries(knownFields || {})
+  const entries = Object.entries(productScopedFacts || {})
     .filter(([, v]) => v !== undefined && v !== null && v !== '' && !(Array.isArray(v) && v.length === 0));
   if (entries.length === 0) return '';
-  const lines = ['Already-resolved fields on this product:'];
+  const lines = ['Resolved product-scoped facts:'];
+  lines.push('Use these as context only. Do not extract these fields again.');
   for (const [k, v] of entries) {
     const value = Array.isArray(v) ? `[${v.join(', ')}]` : String(v);
     lines.push(`- ${k}: ${value}`);
   }
   return lines.join('\n');
+}
+
+function csv(value) {
+  return Array.isArray(value) ? value.map((v) => String(v)).join(', ') : String(value || '');
+}
+
+function buildVariantInventoryBlock(variantInventory, { product = {}, siblingsExcluded = [] } = {}) {
+  const rows = Array.isArray(variantInventory) ? variantInventory : [];
+  if (rows.length === 0) return '';
+  const brand = String(product?.brand || '').trim();
+  const model = String(product?.model || product?.base_model || '').trim();
+  const baseModel = String(product?.base_model || '').trim();
+  const variant = String(product?.variant || '').trim();
+  const siblings = Array.isArray(siblingsExcluded) ? siblingsExcluded.filter(Boolean) : [];
+  const lines = [
+    'VARIANT_INVENTORY',
+    'Locked identity context from dedicated variant finders. Do not extract, revise, or submit colors, editions, sku, or release_date through Key Finder. Use this only to avoid wrong-product or wrong-variant evidence.',
+    'Blank sku/release_date cells mean not yet discovered, not evidence that no SKU/date exists.',
+    '',
+    `Product: ${[brand, model].filter(Boolean).join(' ')}`.trim(),
+  ].filter(Boolean);
+  if (baseModel) lines.push(`Base model: ${baseModel}`);
+  if (variant) lines.push(`Current product variant: ${variant}`);
+  if (siblings.length > 0) lines.push(`Sibling models to exclude: ${siblings.join(', ')}`);
+  lines.push('');
+  lines.push('| variant_id | variant_key | label | type | color_atoms | sku | release_date | image_status |');
+  lines.push('|---|---|---|---|---|---|---|---|');
+  for (const row of rows) {
+    lines.push(`| ${String(row.variant_id || '')} | ${String(row.variant_key || '')} | ${String(row.label || '')} | ${String(row.type || '')} | ${csv(row.color_atoms)} | ${String(row.sku || '')} | ${String(row.release_date || '')} | ${String(row.image_status || '')} |`);
+  }
+  return lines.join('\n');
+}
+
+function buildFieldIdentityUsageBlock(fieldIdentityUsage, variantInventory) {
+  const rows = Array.isArray(variantInventory) ? variantInventory : [];
+  const text = String(fieldIdentityUsage || '').trim();
+  if (rows.length === 0 || !text) return '';
+  return `FIELD_IDENTITY_USAGE\n${text}`;
 }
 
 /* ── Additional-keys slot builders (split per category) ────────────── */
@@ -221,7 +264,7 @@ function describeValueShape(fieldRule) {
   if ((type === 'boolean' || type === 'bool')) {
     element = 'boolean';
   } else if (enumValues.length > 0 && enumPolicy === 'open_prefer_known') {
-    element = `string (prefer one of [${enumValues.join(' | ')}]; new evidenced values allowed)`;
+    element = `string (prefer one of [${enumValues.join(' | ')}]; unlisted only when direct evidence proves no listed value fits)`;
   } else if (enumValues.length > 0 && enumPolicy !== 'open') {
     element = `one of [${enumValues.join(' | ')}] (policy: ${enumPolicy || 'open'})`;
   } else if (enumValues.length > 0) {
@@ -280,7 +323,9 @@ function buildReturnJsonShape(primaryEntry, passengerEntries) {
  * @param {{fieldKey: string, fieldRule: object}} opts.primary
  * @param {Array<{fieldKey: string, fieldRule: object}>} [opts.passengers]
  * @param {object|null} [opts.knownValues]
- * @param {Record<string, unknown>} [opts.knownFields]
+ * @param {Record<string, unknown>} [opts.productScopedFacts]
+ * @param {Array<object>} [opts.variantInventory]
+ * @param {string} [opts.fieldIdentityUsage]
  * @param {{primary: object|null, passengers: Array<object|null>}} [opts.componentContext] — per-key relation pointers (knob-gated)
  * @param {Array<{parentFieldKey: string, componentType: string, resolvedValue: string, subfields: Array<{field_key: string, value: unknown}>}>} [opts.productComponents] — always-on grouped inventory
  * @param {{componentInjectionEnabled: boolean, knownFieldsInjectionEnabled: boolean, searchHintsInjectionEnabled: boolean}} [opts.injectionKnobs]
@@ -300,6 +345,9 @@ export function buildKeyFinderPrompt({
   passengers = [],
   knownValues = null,
   knownFields = {},
+  productScopedFacts = knownFields,
+  variantInventory = [],
+  fieldIdentityUsage = '',
   componentContext = { primary: null, passengers: [] },
   productComponents = [],
   injectionKnobs = DEFAULT_KNOBS,
@@ -367,7 +415,10 @@ export function buildKeyFinderPrompt({
     ADDITIONAL_COMPONENT_KEYS: buildAdditionalComponentKeysBlock(passengerList, componentContext?.passengers, knobs),
 
     PRODUCT_COMPONENTS: buildProductComponentsBlock(productComponents),
-    KNOWN_PRODUCT_FIELDS: buildKnownFieldsBlock(knownFields, knobs),
+    PRODUCT_SCOPED_FACTS: buildProductScopedFactsBlock(productScopedFacts, knobs),
+    VARIANT_INVENTORY: buildVariantInventoryBlock(variantInventory, { product, siblingsExcluded }),
+    FIELD_IDENTITY_USAGE: buildFieldIdentityUsageBlock(fieldIdentityUsage, variantInventory),
+    KNOWN_PRODUCT_FIELDS: buildProductScopedFactsBlock(productScopedFacts, knobs),
 
     EVIDENCE_CONTRACT: buildEvidencePromptBlock({ minEvidenceRefs, includeEvidenceKind: true }),
     EVIDENCE_VERIFICATION: buildEvidenceVerificationPromptBlock(),

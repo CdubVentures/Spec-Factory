@@ -244,7 +244,7 @@ export function ContractTab({
           </select>
         </div>
       </div>
-      <h4 className={SECTION_HEADING_CLASS}>Priority & Effort</h4>
+      <h4 className={SECTION_HEADING_CLASS}>Extraction Priority & Guidance</h4>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <div className={`${labelCls} flex items-center`}><span>Required Level<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.required_level} /></span><B p="priority.required_level" /></div>
@@ -349,9 +349,9 @@ export function ContractTab({
         );
       })()}
 
-      <h4 className={SECTION_HEADING_CLASS}>Description & Tooltip</h4>
+      <h4 className={SECTION_HEADING_CLASS}>Tooltip / Guidance</h4>
       <div>
-        <div className={`${labelCls} flex items-center`}><span>Tooltip / Guidance<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.tooltip_guidance} /></span><B p="ui.tooltip_md" /></div>
+        <div className={`${labelCls} flex items-center`}><span>Display Tooltip<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.tooltip_guidance} /></span><B p="ui.tooltip_md" /></div>
         <textarea
           className={`${inputCls} w-full`}
           rows={3}

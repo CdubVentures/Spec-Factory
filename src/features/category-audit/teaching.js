@@ -20,13 +20,102 @@ You are auditing every field in this category's keyFinder pipeline. Your deliver
 
 **Read order:** Part 1 (the system) → Part 1a (Audit standard, the bar) → Part 4 (enum inventory — biggest lever) → Part 5 (component DB) → Part 6 (groups) → Part 7 (per-key detail).
 
-**Your response leads with the top 5–10 must-fix items** (the "Highest-risk corrections" block below). Then field-by-field patches. Then category-level asks. Then flags/open questions.
+**Your response leads with a downloadable text file**, then the top 5–10 must-fix items (the "Highest-risk corrections" block below). Then field-by-field patches. Then category-level asks. Then flags/open questions.
+
+**Downloadable text file comes first.** At the very top of your response, provide a downloadable \`.txt\` file named \`<category>-keyfinder-field-studio-changes.txt\` if your interface supports file attachments. If it does not, provide the exact file contents in a fenced \`text\` block before the normal report. Keep this file short, direct, and ordered exactly like Field Studio so the human can apply changes panel by panel.
 
 ---
 
 **Return format (markdown — mirror this shape exactly):**
 
 \`\`\`markdown
+# Downloadable text file
+
+Filename: \`<category>-keyfinder-field-studio-changes.txt\`
+
+\`\`\`text
+# <CATEGORY> KEYFINDER FIELD STUDIO CHANGE FILE
+# Use "No change" when the current value is already correct. Leave blanks only when the target value should be blank.
+# Apply in this order: Mapping Studio first, then Key Navigator.
+# Enum list values are edited in Mapping Studio. Key Navigator Enum Policy only links policy, source, and format.
+
+## <field_key> — <Keep | Minor revise | Major revise | Schema decision>
+
+Mapping Studio:
+
+Component Source Mapping:
+- component source/type: <sensor|switch|encoder|material|other|blank|No change>
+- primary identifier role: <source field / attribute / No change>
+- maker role: <source field / blank / No change>
+- aliases/name variants: <ordered list, blank, or No change>
+- reference URLs/links: <ordered list, blank, or No change>
+- attributes/properties:
+  - field_key: <field key | No change>
+  - variance_policy: <authoritative|upper_bound|lower_bound|range|override_allowed|majority_vote|blank|No change>
+  - component_only: <true|false|No change>
+  - allow product override: <true|false|No change>
+  - tolerance: <number | blank | No change>
+  - property constraints: <ordered list, blank, or No change>
+
+Enum Data Lists:
+- data list field/name: <data list name | blank | No change>
+- normalize: <normalize mode | blank | No change>
+- values operation: <replace list|add values|remove values|rename values|No change>
+- final ordered values: <ordered canonical list, blank, or No change>
+- remove values: <ordered list, or none>
+- rename values: <old -> new list, or none>
+- source phrases/aliases to keep out of chips: <list, or none>
+- AI review priority: <required_level / availability / difficulty, or No change>
+- enum guidance: <short note, or No change>
+
+Key Navigator:
+
+Contract:
+- variant_dependent: <true|false|No change>
+- type: <string|number|integer|boolean|date|No change>
+- shape: <scalar|list|No change>
+- unit: <target value | blank | No change>
+- variance_policy: <authoritative|upper_bound|lower_bound|majority_vote|blank|No change>
+- range.min: <number | blank | No change>
+- range.max: <number | blank | No change>
+- list_rules.dedupe: <true|false|blank|No change>
+- list_rules.sort: <asc|desc|source|blank|No change>
+- list_rules.item_union: <true|false|blank|No change>
+- rounding.decimals: <number | blank | No change>
+- rounding.mode: <nearest|floor|ceil|half_even|blank|No change>
+
+Extraction Priority & Guidance:
+- required_level: <mandatory|non_mandatory|No change>
+- availability: <always|sometimes|rare|No change>
+- difficulty: <easy|medium|hard|very_hard|No change>
+- search/routing reason: <one short reason tied to benchmark-depth extraction and model/search strength>
+- AI reasoning note: <paste-ready ai_assist.reasoning_note, "(empty - keep)", or No change>
+
+Enum Policy:
+- policy: <closed|open_prefer_known|open|blank|No change>
+- source: <data_lists.name|component_db.type|blank|No change>
+- format pattern: <pattern | blank | No change>
+- note: <actual enum list values live in Mapping Studio Enum Data Lists; use No change if already understood>
+
+Components:
+- component.type: <component type | blank | No change>
+- component source cascade: <enum.source/component_db linkage | blank | No change>
+- component mapping note: <property and variance edits belong in Mapping Studio Component Source Mapping, or No change>
+
+Cross-Field Constraints:
+- constraints: <ordered list, blank, or No change>
+
+Evidence:
+- min_evidence_refs: <number | No change>
+- tier_preference: <ordered list | blank | No change>
+
+Search Hints & Aliases:
+- Aliases: <ordered alias list, blank, or No change>
+- Domain Hints: <ordered list, blank, or No change>
+- Content Types: <ordered list, blank, or No change>
+- Query Terms: <ordered list, blank, or No change>
+\`\`\`
+
 # <Category> Key Finder Audit — Change Report
 
 ## Verdict
@@ -60,7 +149,11 @@ You are auditing every field in this category's keyFinder pipeline. Your deliver
 
 - **Type / shape:** <type> · <scalar|list>
 - **Priority / scheduling:** <required_level / availability / difficulty changes, or "none">
+- **Search / routing:** <required_level / availability / difficulty verdict; whether the resolved model/search strength is enough to reproduce benchmark-depth values from public evidence>
 - **Full contract:** <changes to required_level/availability/difficulty/type/shape/unit/rounding/list_rules/range/variance_policy/evidence, or "none">
+- **Contract patch required?:** <yes/no. "No contract change" is valid when the current shape/policy/scheduling/evidence/consumer behavior are already correct.>
+- **Consumer-surface impact:** <filter/list/snapshot/compare/metric/search/SEO/none; say exactly which downstream surfaces this key should power and any display-only or derived-value notes>
+- **Unknown / n/a handling:** <how to distinguish true/false or yes/no, n/a, unk, and blank/omitted for this key>
 - **Example bank:** <5-10 products or product classes used to calibrate this key; include happy path / edge / unknown / conflict / filter-risk coverage>
 - **- Current guidance**
   > <verbatim current \`reasoning_note\`, or "(empty)">
@@ -109,6 +202,9 @@ You are auditing every field in this category's keyFinder pipeline. Your deliver
 5. **Contract changes with consequences stated.** When you propose changing \`required_level\`/\`availability\`/\`difficulty\`/\`type\`/\`shape\`/\`unit\`/\`rounding\`/\`list_rules\`/\`range\`/\`variance_policy\`/\`evidence\`, explain the extraction + filter-UI + routing consequence (Part 1.4–1.5 language).
 6. **Extraction guidance (\`reasoning_note\`) is the final editable slot per key.** Keep it to Part 1.14's "FOR" scope — visual cues, semantic disambiguation, field-specific gotchas, rebrand rules, "don't confuse with X" anchors. Do NOT duplicate anything already rendered by the template slots in Part 2. If existing guidance duplicates slot content, propose shortening.
 7. **Cross-field constraints are live prompt inputs.** Constraints authored as \`constraints\` DSL or structured \`cross_field_constraints\` render into the keyFinder prompt. Audit whether each relationship is correct, whether the target field is the right authority, and whether group membership should change because of the dependency.
+8. **No contract change is a real verdict.** Do not invent schema edits just to leave a mark. If the current contract is correct, say "no contract change" and focus on the actual improvement: guidance, examples, aliases, enum cleanup, search hints, or a clean keep decision.
+9. **Unknown and not-applicable are different.** Boolean is not automatically enough. Use \`unk\` when evidence is missing, \`n/a\` when the question does not apply to the product, and yes/no or true/false only for factual two-state values.
+10. **Search/routing is part of the contract.** \`required_level\`, \`availability\`, and \`difficulty\` decide publish blocking, scheduling, bundling priority, and model/search strength. For mouse audits, use the hand-entered benchmark in \`mouseData.xlsm\` data-entry cells \`C2:BT83\` as the benchmark-depth target; for other categories, use the equivalent benchmark set.
 
 **Out of scope — surface, don't decide:**
 
@@ -129,9 +225,15 @@ You are auditing every field in this category's keyFinder pipeline. Your deliver
 const AUDIT_STANDARD_BODY = `
 This is the bar you apply when judging every cell in Part 7. Read it, then read Part 7. If a rule doesn't clear these bars, propose a change.
 
-**Full field contract authoring order:** validate \`priority.required_level\`, \`priority.availability\`, \`priority.difficulty\`, \`contract.type\`, \`contract.shape\`, \`unit\`, \`rounding\`, \`list_rules\`, \`range\`, enum/filter behavior, evidence/source requirements, and a 5-10 product example bank before writing guidance. Guidance last. The \`reasoning_note\` should express only the remaining extraction judgment the structured contract cannot express.
+**Full field contract authoring order:** validate \`priority.required_level\`, \`priority.availability\`, \`priority.difficulty\`, \`contract.type\`, \`contract.shape\`, \`unit\`, \`rounding\`, \`list_rules\`, \`range\`, enum/filter behavior, consumer-surface impact, unknown/not-applicable states, evidence/source requirements, and a 5-10 product example bank before writing guidance. Guidance last. The \`reasoning_note\` should express only the remaining extraction judgment the structured contract cannot express. "No contract change" is valid when the current contract already supports keyFinder, publisher, Field Studio, and the consumer site.
+
+**Search / routing discipline:** \`required_level\`, \`availability\`, and \`difficulty\` are not labels; they are the extraction strategy. Mandatory means the site should not be considered publish-complete without a proven value or an honest \`unk\` decision. Availability controls whether keyFinder searches this early and often enough. Difficulty controls model/search strength: easy is direct lookup, medium is normalization, hard is conflict/component/source reasoning, and very_hard should use the strongest model/search path. Do not mark a key easy just because the output is short; mark it easy only when a cheaper model can reliably reproduce benchmark-depth values such as mouse \`mouseData.xlsm\` data-entry cells \`C2:BT83\` from public evidence.
 
 **Example-bank discipline:** every key needs calibration examples before the prompt is trusted: common happy path, edge/rare value, unknown/absent evidence, conflict/ambiguity, and filter-risk cases. Use hand benchmark data when available; for brand-new categories, create the first bank from representative market products and carry the recipe forward.
+
+**Consumer-surface impact:** the site can render many shapes, but the audit still has to say what this key is for. For each key, decide whether it should power filters, hub/list columns, product snapshot/spec rows, comparison tables, metric/cards, search/SEO text, or none. Contract shape should support the intended surfaces without forcing the site to infer display semantics.
+
+**Unknown / not-applicable discipline:** Boolean is not automatically enough. Use yes/no or true/false only when the field has two factual states. Use \`n/a\` when the question does not apply to the product, \`unk\` when the evidence does not prove an answer, and blank/omitted only where the pipeline explicitly treats absence as no submitted value.
 
 **Visual-answerable fields — a spectrum, not a binary. Guidance pays off most in the middle.**
 
@@ -166,6 +268,7 @@ Fields decided from product photography fall on a spectrum. Treat each tier diff
 - **Value count is a UX metric.** ≤10 healthy, 11–15 fine, 16–20 tolerable, 21–30 filter fatigue, 30+ broken. Any enum in the 21+ range is a high-priority cleanup target.
 - **Pattern > free-form.** An open enum with ≥70% values matching a common structural signature (\`<N> zone (rgb|led)\`, \`<maker> <model>\`) scales gracefully; a free-form open enum doesn't.
 - **Closed policy when finite.** If the set is small, stable, and every new value should be a human decision, \`policy: closed\` is right.
+- **Canonical values are not aliases.** Enum values are the stored/user-facing options. Source phrases, retailer wording, SKU suffixes, and marketing names belong in aliases or guidance unless the user should actually see them as filter chips.
 - **No garbage values.** Single-character entries, numeric-only strings in categorical enums, typos — flag them every time.
 
 **Guidance (\`ai_assist.reasoning_note\`) discipline:**
@@ -251,7 +354,7 @@ The contract's \`type\` + \`shape\` directly determines how the field renders as
 - **string + list** — multi-select toggle group (multiple chips selectable; product passes filter if any list item matches any selected chip).
 - **number / integer (scalar or list)** — two-handle range slider with min/max computed at load time from the data. Numeric values NEVER become individual toggles, no matter how few unique values exist.
 - **date** — two-handle range slider (MM/YYYY – MM/YYYY format).
-- **boolean** — yes/no checkbox (with an implicit "unk" bucket when the value is unknown).
+- **boolean** — yes/no checkbox only when the key has two factual states. If \`n/a\` is a first-class outcome or \`unk\` must be distinguished from not-applicable in the stored value, use an explicit string enum such as \`yes\` / \`no\` / \`n/a\` / \`unk\` or another contract that preserves those states.
 - **Pattern-valued strings** — rendered verbatim as chip text (e.g. \`"3 zone (rgb)"\` is shown exactly as that string in the filter). No tokenization, no parsing at render time.
 
 **The show-more threshold + filter fatigue numbers (empirical):**
@@ -298,6 +401,13 @@ Every key's \`difficulty\` maps to one of five LLM bundles:
 - **fallback** — used when a tier is partially configured (empty model → inherit whole fallback bundle).
 
 Each bundle carries: \`model\`, \`useReasoning\`, \`reasoningModel\`, \`thinking\`, \`thinkingEffort\`, \`webSearch\`. A key marked \`difficulty: very_hard\` routes to a stronger model with reasoning + thinking + web search; \`easy\` routes to a smaller cheaper model. Part 3 lists the resolved bundles for the current category so auditors know which model each key actually hits.
+
+Audit the priority triple as a search/routing contract:
+- **\`required_level\`** decides publish pressure. \`mandatory\` means a depth-tech site should not treat the product as complete without a proven value or honest \`unk\`; \`non_mandatory\` means useful enrichment that should not block publish.
+- **\`availability\`** decides how early and often a field gets searched. \`always\` belongs on values credible sources usually expose, \`sometimes\` on uneven coverage, and \`rare\` on specialist values.
+- **\`difficulty\`** decides model/search strength. \`easy\` = direct spec/photo lookup; \`medium\` = normalization or light source comparison; \`hard\` = aliases, component context, conflicts, or source credibility; \`very_hard\` = highest-risk fields that need the strongest reasoning/search path.
+
+For benchmarked categories, difficulty must be calibrated against benchmark-depth extraction, not shallow retailer-page availability. For the current mouse benchmark, use \`mouseData.xlsm\` data-entry cells \`C2:BT83\` as the quality target: the contract and guidance should explain how keyFinder can reproduce those values from public evidence without copying benchmark answers into the prompt.
 `.trim();
 
 const GROUPS_BODY = `

@@ -1,0 +1,95 @@
+/* FinderRunPopoverShell — shared anatomy for every Overview finder-run popover.
+   Header · Model · [body] · Actions — tight vertical rhythm, consistent spacing. */
+
+.sf-frp {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 240px;
+}
+
+.sf-frp-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--sf-token-border-soft, var(--sf-token-border, #eef1f5));
+}
+.sf-frp-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: rgb(var(--sf-color-text-primary-rgb));
+}
+.sf-frp-meta {
+  font-family: var(--sf-font-family-mono, 'SFMono-Regular', 'Consolas', monospace);
+  font-size: 11px;
+  font-weight: 600;
+  color: rgb(var(--sf-color-text-subtle-rgb));
+}
+
+.sf-frp-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sf-frp-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(var(--sf-color-text-subtle-rgb));
+}
+.sf-frp-section-body {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sf-frp-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+/* Default run button — filled accent. Kept inside the shell so every finder
+   popover has a consistent primary-action appearance without each cell
+   hand-rolling it. Use `.sf-frp-btn-primary` as the className. */
+.sf-frp-btn-primary,
+.sf-frp-btn-secondary {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+  line-height: 1.2;
+}
+.sf-frp-btn-primary {
+  background: var(--sf-token-accent, #4263eb);
+  color: #fff;
+}
+.sf-frp-btn-primary:hover:not(:disabled) {
+  background: var(--sf-token-accent-strong, #364fc7);
+}
+.sf-frp-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.sf-frp-btn-secondary {
+  background: transparent;
+  border-color: var(--sf-token-border, #e5e9ef);
+  color: rgb(var(--sf-color-text-primary-rgb));
+}
+.sf-frp-btn-secondary:hover:not(:disabled) {
+  background: var(--sf-token-surface-alt, #f4f6f9);
+}
+.sf-frp-btn-secondary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

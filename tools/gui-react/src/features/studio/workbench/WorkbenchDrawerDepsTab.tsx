@@ -1,7 +1,6 @@
 import { useState } from 'react';
 
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
-import { TagPicker } from '../../../shared/ui/forms/TagPicker.tsx';
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
 import {
   parseBoundedFloatInput,
@@ -346,10 +345,6 @@ export function DepsTab({
             </div>
           ) : null}
         </div>
-      </div>
-      <div>
-        <div className={`${labelCls} flex items-center`}><span>Aliases<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.aliases} /></span><B p="aliases" /></div>
-        <TagPicker values={arrN(rule, 'aliases')} onChange={(v) => onUpdate('aliases', v)} placeholder="alternative names for this key" />
       </div>
     </div>
   );

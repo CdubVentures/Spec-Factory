@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory - Key Finder Audit Handoff</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --surface-alt: #f1f3f5;
+    --border: #dee2e6;
+    --border-light: #e9ecef;
+    --text: #212529;
+    --text-muted: #6c757d;
+    --accent: #4263eb;
+    --accent-light: #edf2ff;
+    --green: #2b8a3e;
+    --green-bg: #ebfbee;
+    --red: #c92a2a;
+    --red-bg: #fff5f5;
+    --orange: #e67700;
+    --orange-bg: #fff9db;
+    --purple: #7048e8;
+    --purple-bg: #f3f0ff;
+    --teal: #0c8599;
+    --teal-bg: #e6fcf5;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --mono: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.6; }
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 32px 0; text-align: center; }
+  .header h1 { font-size: 28px; font-weight: 700; }
+  .header p { color: var(--text-muted); font-size: 15px; margin-top: 6px; }
+  .container { max-width: 1120px; margin: 0 auto; padding: 32px 24px; }
+  .section-title { font-size: 20px; font-weight: 700; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); display: flex; align-items: center; gap: 10px; }
+  .section-title .num { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+  .card-header { padding: 14px 20px; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-light); }
+  .card-body { padding: 16px 20px; font-size: 14px; }
+  .card-body p { margin-bottom: 10px; }
+  .card-body p:last-child { margin-bottom: 0; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 840px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+  .callout { border-left: 4px solid; padding: 14px 18px; border-radius: 0 var(--radius) var(--radius) 0; margin: 12px 0; font-size: 13.5px; }
+  .callout-info { border-color: var(--accent); background: var(--accent-light); }
+  .callout-ok { border-color: var(--green); background: var(--green-bg); }
+  .callout-warn { border-color: var(--orange); background: var(--orange-bg); }
+  .callout-danger { border-color: var(--red); background: var(--red-bg); }
+  .callout strong { display: block; margin-bottom: 4px; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .tag-green { background: var(--green-bg); color: var(--green); }
+  .tag-accent { background: var(--accent-light); color: var(--accent); }
+  .tag-purple { background: var(--purple-bg); color: var(--purple); }
+  .tag-teal { background: var(--teal-bg); color: var(--teal); }
+  .tag-orange { background: var(--orange-bg); color: var(--orange); }
+  .tag-red { background: var(--red-bg); color: var(--red); }
+  .flow-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 24px 0; flex-wrap: wrap; }
+  .flow-box { padding: 12px 18px; border-radius: var(--radius); font-weight: 600; font-size: 13px; text-align: center; border: 2px solid; min-width: 132px; }
+  .flow-arrow { font-size: 20px; color: var(--text-muted); }
+  .flow-neutral { background: var(--surface-alt); border-color: var(--border); color: var(--text); }
+  .flow-accent { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .flow-teal { background: var(--teal-bg); border-color: var(--teal); color: var(--teal); }
+  .flow-pass { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+  .flow-repair { background: var(--purple-bg); border-color: var(--purple); color: var(--purple); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: top; }
+  th { background: var(--surface-alt); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
+  tr:last-child td { border-bottom: none; }
+  code { font-family: var(--mono); font-size: 12px; background: var(--surface-alt); padding: 2px 6px; border-radius: 3px; color: var(--accent); }
+  pre { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; font-family: var(--mono); font-size: 12px; line-height: 1.5; overflow-x: auto; color: var(--text); margin-top: 8px; }
+  ul, ol { padding-left: 22px; margin: 8px 0; }
+  li { margin-bottom: 6px; }
+  .detail-grid { display: grid; grid-template-columns: 190px 1fr; gap: 4px 12px; font-size: 13px; background: var(--surface-alt); padding: 12px 14px; border-radius: 6px; margin-top: 8px; }
+  .detail-grid dt { font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+  .detail-grid dd { color: var(--text); }
+  .mini-title { font-size: 15px; font-weight: 700; margin: 18px 0 8px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Key Finder Audit Handoff</h1>
+  <p>How to generate, review, and apply per-key Field Studio guidance so Spec Factory can feed the EG-HBS site with benchmark-grade product data</p>
+</div>
+
+<div class="container">
+
+  <div class="callout callout-ok">
+    <strong>Purpose</strong>
+    This document is the pick-up point for the Key Finder Audit work. A new human or LLM agent should be able to read this page, understand the goal, generate or review the audit reports, produce clean Field Studio change files, and continue the loop without needing the original conversation.
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Current north star</strong>
+    Spec Factory should become the single source of truth for the EG-HBS consumer site. The immediate benchmark is the hand-entered mouse workbook at <code>C:\Users\Chris\Desktop\Spec Factory\.workspace\reports\mouseData.xlsm</code>, sheet/range <code>dataEntry!C2:BT83</code>. Key Finder output should eventually match those cells because the field contracts, enum lists, component mappings, search routing, evidence gates, and per-key guidance are good enough.
+  </div>
+
+  <div class="section-title"><span class="num">1</span> What This Audit Is</div>
+
+  <div class="card">
+    <div class="card-header"><span class="tag tag-accent">Definition</span> Key Finder Audit</div>
+    <div class="card-body">
+      <p>The Key Finder Audit is a generated self-contained review package for a product category. It tells a reviewer everything Key Finder will use for every field: current contract shape, enum policy, known values, component relations, cross-field constraints, evidence rules, aliases, search hints, priority routing, group membership, and the actual prompt preview.</p>
+      <p>The generated report is not the final deliverable. The deliverable is a change report that tells the human exactly what to edit in Field Studio, panel by panel, with paste-ready guidance and enum/component updates.</p>
+      <dl class="detail-grid">
+        <dt>Generator feature</dt>
+        <dd><code>src/features/category-audit/</code></dd>
+        <dt>Category outputs</dt>
+        <dd><code>.workspace/reports/&lt;category&gt;-key-finder-audit.{html,md}</code></dd>
+        <dt>Per-key outputs</dt>
+        <dd><code>.workspace/reports/per-key/&lt;category&gt;/&lt;group&gt;/&lt;field_key&gt;.{html,md}</code></dd>
+        <dt>Human-applied edits</dt>
+        <dd>Field Studio: Mapping Studio first, Key Navigator second</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="flow-row">
+    <div class="flow-box flow-neutral">Field Studio rules</div>
+    <div class="flow-arrow">-&gt;</div>
+    <div class="flow-box flow-accent">Generate audit reports</div>
+    <div class="flow-arrow">-&gt;</div>
+    <div class="flow-box flow-teal">Reviewer or LLM audit</div>
+    <div class="flow-arrow">-&gt;</div>
+    <div class="flow-box flow-repair">Apply change file</div>
+    <div class="flow-arrow">-&gt;</div>
+    <div class="flow-box flow-pass">Compile and benchmark</div>
+  </div>
+
+  <div class="section-title"><span class="num">2</span> Why The EG-HBS Site Matters</div>
+
+  <div class="card">
+    <div class="card-header"><span class="tag tag-teal">Downstream</span> Consumer Surface Contract</div>
+    <div class="card-body">
+      <p>The EG-HBS hub and snapshot pages are the downstream reason this work has to be precise. The site uses category data to power hub filters, list columns, product cards, snapshots, comparison state, metric tooltips, and recommendation links.</p>
+      <p>The current EG-HBS code path centers on <code>window.sharedData</code> from <code>views/hub.handlebars</code>. Important keys include <code>displayData</code>, <code>preRenderedCards</code>, <code>listColumns</code>, <code>listToggles</code>, <code>toggleItems</code>, <code>sliderItems</code>, <code>filterOrder</code>, <code>sortingMap</code>, <code>filteringData</code>, <code>filteringSchema</code>, <code>filteringPacked</code>, <code>statsOptions</code>, <code>egmMetrics</code>, <code>egLStats</code>, and <code>versusList</code>.</p>
+      <table>
+        <thead><tr><th>Site surface</th><th>Why field contracts matter</th><th>Source observed</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Hub filters</td>
+            <td>String/list enum values become toggle chips; numeric/date fields become sliders; bad enum values become bad filter UX.</td>
+            <td><code>views/partials/data-filter-menu.handlebars</code>, <code>public/js/data_filter.js</code></td>
+          </tr>
+          <tr>
+            <td>Hub list view</td>
+            <td>List columns sort and display based on field keys, sort type, date/numeric normalization, and missing-value behavior.</td>
+            <td><code>src/hub/ListView.jsx</code></td>
+          </tr>
+          <tr>
+            <td>Product cards</td>
+            <td>Cards use field values for stats, metrics, carousel/image variants, badges, colors, editions, and snapshot navigation.</td>
+            <td><code>src/hub/Card.jsx</code>, <code>public/js/hbs___hubHelpers.js</code></td>
+          </tr>
+          <tr>
+            <td>Snapshot detail</td>
+            <td>Snapshot pages expose photos, specs, recommended/similar blocks, and comparison navigation. Wrong shape means wrong display semantics.</td>
+            <td><code>routes/hubs/01.snapshot.routes.js</code>, <code>views/snapshots.handlebars</code></td>
+          </tr>
+          <tr>
+            <td>Compare/search/SEO</td>
+            <td>Stable field values allow reliable compare rows, query links, structured recommendations, and category pages without manual cleanup.</td>
+            <td><code>views/hub.handlebars</code>, <code>src/hub/CardView.jsx</code>, <code>public/js/hbs___hubHelpers.js</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="callout callout-warn">
+    <strong>Practical implication</strong>
+    The site can render many shapes, but it cannot infer meaning. If Spec Factory says a field is an open string enum, every accidental value can become a filter chip. If Spec Factory says a field is boolean but the real states are <code>yes</code>, <code>no</code>, <code>n/a</code>, and <code>unk</code>, the site loses information. The audit must decide the correct stored shape before writing better prose.
+  </div>
+
+  <div class="section-title"><span class="num">3</span> Field Studio Edit Order</div>
+
+  <div class="card">
+    <div class="card-header"><span class="tag tag-purple">Order</span> Apply Mapping Studio Before Key Navigator</div>
+    <div class="card-body">
+      <p>The generated change file must mirror the actual Studio workflow. Enum values are in Mapping Studio. Key Navigator's Enum Policy only chooses the policy/source/format for a specific field.</p>
+      <table>
+        <thead><tr><th>Order</th><th>Panel</th><th>What belongs here</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td><strong>Mapping Studio - Component Source Mapping</strong></td>
+            <td>Component source/type, identity role, maker role, aliases/name variants, reference links, property mappings, variance policy, component-only, product override permission, tolerance, and component-level constraints.</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td><strong>Mapping Studio - Enum</strong></td>
+            <td>Data list field/name, normalization, final canonical values, add/remove/rename operations, source phrases that must stay out of chips, and enum-specific guidance.</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td><strong>Key Navigator - Contract</strong></td>
+            <td><code>variant_dependent</code>, type, shape, unit, range min/max, list rules, rounding, and variance policy.</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td><strong>Key Navigator - Extraction Priority &amp; Guidance</strong></td>
+            <td><code>required_level</code>, <code>availability</code>, <code>difficulty</code>, search/routing reason, and paste-ready <code>ai_assist.reasoning_note</code>.</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td><strong>Key Navigator - Enum Policy</strong></td>
+            <td><code>policy</code>, <code>source</code>, and format pattern. Do not put actual enum value edits here.</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td><strong>Key Navigator - Components</strong></td>
+            <td>Per-key component relation such as <code>component.type</code> or component DB cascade. Property/variance edits still belong in Mapping Studio.</td>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td><strong>Key Navigator - Cross-Field Constraints</strong></td>
+            <td>Rules such as <code>sensor_date &lt;= release_date</code>, plus any dependency that affects extraction or validation.</td>
+          </tr>
+          <tr>
+            <td>8</td>
+            <td><strong>Key Navigator - Evidence</strong></td>
+            <td><code>min_evidence_refs</code> and tier preference.</td>
+          </tr>
+          <tr>
+            <td>9</td>
+            <td><strong>Key Navigator - Tooltip / Guidance</strong></td>
+            <td>Display tooltip only. This is UI help, not <code>ai_assist.reasoning_note</code> and not keyFinder extraction guidance.</td>
+          </tr>
+          <tr>
+            <td>10</td>
+            <td><strong>Key Navigator - Search Hints &amp; Aliases</strong></td>
+            <td>Aliases, domain hints, content types, and query terms.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-title"><span class="num">4</span> Per-Key Audit Standard</div>
+
+  <div class="card">
+    <div class="card-header"><span class="tag tag-accent">Rule</span> Guidance Comes Last</div>
+    <div class="card-body">
+      <p>For each key, validate the full field contract before writing guidance. A beautiful <code>reasoning_note</code> cannot fix a wrong type, wrong enum, wrong component mapping, wrong evidence gate, or wrong priority route.</p>
+      <table>
+        <thead><tr><th>Audit item</th><th>Questions to answer</th></tr></thead>
+        <tbody>
+          <tr><td>Consumer surface</td><td>Should this key power filters, hub list columns, product snapshot rows, comparison rows, metric cards, search/SEO, recommendations, or none?</td></tr>
+          <tr><td>Type and shape</td><td>Is it <code>string</code>, <code>number</code>, <code>integer</code>, <code>boolean</code>, or <code>date</code>? Is it <code>scalar</code> or <code>list</code>? Does the site need n/a/unk states?</td></tr>
+          <tr><td>Enum policy</td><td>Is the set finite and filter-facing enough to be closed? Is it open but should prefer known values? Is it truly open?</td></tr>
+          <tr><td>Enum list</td><td>Are canonical values clean, stable, user-facing, and not aliases/source phrases? Are there too many chips?</td></tr>
+          <tr><td>Priority route</td><td>Should it be mandatory? Is availability always/sometimes/rare? Is difficulty calibrated to benchmark-depth extraction?</td></tr>
+          <tr><td>Evidence</td><td>How many evidence refs are needed? Are manufacturer, datasheet, lab, review, retailer tiers ordered correctly?</td></tr>
+          <tr><td>Components</td><td>Is the value owned by the product, a component DB entity, or both with override rules?</td></tr>
+          <tr><td>Constraints</td><td>Does it depend on another field? Example: <code>sensor_date &lt;= release_date</code>.</td></tr>
+          <tr><td>Unknown states</td><td>When should the extractor output <code>unk</code>, <code>n/a</code>, false/no, or blank/omitted?</td></tr>
+          <tr><td>Example bank</td><td>Are there 5-10 calibration products covering common, rare, unknown, conflict, and filter-risk cases?</td></tr>
+          <tr><td>Guidance</td><td>After all above decisions, what final paste-ready instruction helps the LLM make the correct judgment?</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="three-col">
+    <div class="card">
+      <div class="card-header"><span class="tag tag-green">Tier A</span> Direct Visual</div>
+      <div class="card-body">
+        <p>Visible from a single product photo. Guidance should be short and name the view and feature.</p>
+        <p>Examples: honeycomb frame, side button count, obvious RGB lighting, basic left/right shell symmetry.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="tag tag-orange">Tier B</span> Subtle Visual</div>
+      <div class="card-body">
+        <p>Requires judgment and repeatable thresholds. Guidance must teach the decision.</p>
+        <p>Examples: hump position, front flare, grip style, ambidextrous form factor where button layout matters.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="tag tag-purple">Tier C</span> Spec/Source</div>
+      <div class="card-body">
+        <p>Not visual. Do not mention photos. Guidance should focus on source tiering, aliases, conflicts, and component identity.</p>
+        <p>Examples: sensor, MCU, polling rate, sensor date, switch model, firmware feature names.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title"><span class="num">5</span> Enum Discipline</div>
+
+  <div class="card">
+    <div class="card-header"><span class="tag tag-red">High Leverage</span> Every Enum Value Can Become A Filter Chip</div>
+    <div class="card-body">
+      <p>Enums are the highest-risk part of the audit because non-numeric values become site-facing options. A messy enum does not just hurt extraction. It creates a bad hub filter, confusing compare options, and inconsistent data.</p>
+      <table>
+        <thead><tr><th>Enum rule</th><th>Standard</th></tr></thead>
+        <tbody>
+          <tr><td>Canonical values</td><td>Stored/user-facing options only. Do not store aliases, retailer prose, SKU suffixes, marketing phrases, colors, or theme names unless users should filter by that exact chip.</td></tr>
+          <tr><td>Value count</td><td>Up to 10 is healthy, 11-15 fine, 16-20 tolerable, 21-30 filter fatigue, 30+ broken unless values follow a strong pattern.</td></tr>
+          <tr><td>Closed policy</td><td>Use when the set is small, stable, finite, and new values should require a human decision.</td></tr>
+          <tr><td>Open preferred</td><td>Use when canonical values exist but real products may introduce legitimate new values. Example: <code>material</code>.</td></tr>
+          <tr><td>Open policy</td><td>Use only when the field is genuinely freeform and not a fragile filter chip set.</td></tr>
+          <tr><td>Patterns</td><td>If many values share a structural pattern such as <code>&lt;N&gt; zone (rgb)</code>, keep the pattern explicit in guidance and format.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="mini-title">Example: design is edition status, not aesthetics</div>
+      <pre>Recommended design enum:
+- standard
+- collaboration
+- limited edition
+- multiple
+
+Do not store:
+- ergonomic
+- minimalist
+- honeycomb
+- black
+- white
+- rgb
+- anime
+- esports
+
+Reason: those are shape, color, material, lighting, theme, or marketing/aesthetic terms. They do not belong in an edition-status filter.</pre>
+
+      <div class="mini-title">Example: material should be open preferred</div>
+      <pre>Recommended material policy:
+- policy: open_prefer_known
+- source: data_lists.material
+
+Reason: common materials can be known, but real products may introduce legitimate physical materials or coatings that should not be blocked. Finish words like matte, glossy, premium, textured, and grippy are not materials unless the source explicitly names a coating.</pre>
+    </div>
+  </div>
+
+  <div class="section-title"><span class="num">6</span> Components And Cross-Field Constraints</div>
+
+  <div class="card">
+    <div class="card-header"><span class="tag tag-teal">Components</span> Product Value vs Component Property</div>
+    <div class="card-body">
+      <p>Some values are not really product-authored values. They are properties of a component such as a sensor, switch, encoder, display panel, or material. The audit must decide whether a key belongs on the product, the component DB, or both.</p>
+      <table>
+        <thead><tr><th>Component mapping field</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>component source/type</code></td><td>The component database being mapped, such as <code>sensor</code> or <code>switch</code>.</td></tr>
+          <tr><td><code>primary identifier role</code></td><td>The field or attribute that uniquely identifies the component entity.</td></tr>
+          <tr><td><code>field_key</code></td><td>The product field that receives or references the component property.</td></tr>
+          <tr><td><code>variance_policy</code></td><td>Whether the component property is authoritative, range/upper/lower bound, majority vote, or override-allowed.</td></tr>
+          <tr><td><code>component_only</code></td><td>True when the value should live on the component and not be copied as a product guess.</td></tr>
+          <tr><td><code>allow product override</code></td><td>True only when a product-specific implementation can legitimately differ from the component default.</td></tr>
+          <tr><td><code>property constraints</code></td><td>Entity-level constraints that protect impossible values.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-danger">
+        <strong>Sensor date invariant</strong>
+        <code>sensor_date</code> cannot be greater than the mouse <code>release_date</code>. If evidence implies the sensor date is later than the product release date, the extractor should return <code>unk</code> or flag the conflict instead of forcing a value.
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title"><span class="num">7</span> Priority, Availability, Difficulty</div>
+
+  <div class="card">
+    <div class="card-header"><span class="tag tag-purple">Routing</span> These Are Search And Model-Strength Controls</div>
+    <div class="card-body">
+      <p>The priority triple is not just labeling. It changes how Key Finder should allocate search/model effort and how complete a product is allowed to be.</p>
+      <table>
+        <thead><tr><th>Field</th><th>Values</th><th>Audit meaning</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>required_level</code></td>
+            <td><code>mandatory</code>, <code>non_mandatory</code></td>
+            <td>Mandatory means a depth-tech product page should not be considered complete without a proven value or honest <code>unk</code>. Non-mandatory means useful enrichment that should not block publish.</td>
+          </tr>
+          <tr>
+            <td><code>availability</code></td>
+            <td><code>always</code>, <code>sometimes</code>, <code>rare</code></td>
+            <td>How often credible public evidence exists and how early/often Key Finder should look for it.</td>
+          </tr>
+          <tr>
+            <td><code>difficulty</code></td>
+            <td><code>easy</code>, <code>medium</code>, <code>hard</code>, <code>very_hard</code></td>
+            <td>Model/search strength. Easy is direct lookup; medium needs normalization; hard needs source conflict, aliases, components, or judgment; very hard deserves the strongest model/search path.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Do not mark a field easy just because the output is short. Mark it easy only when a cheaper model can reliably reproduce benchmark-depth values from public evidence.</p>
+    </div>
+  </div>
+
+  <div class="section-title"><span class="num">8</span> Benchmark Standard</div>
+
+  <div class="card">
+    <div class="card-header"><span class="tag tag-green">Mouse Benchmark</span> What Good Means</div>
+    <div class="card-body">
+      <p>The mouse benchmark is the hand-entered workbook:</p>
+      <pre>C:\Users\Chris\Desktop\Spec Factory\.workspace\reports\mouseData.xlsm
+Sheet/range: dataEntry!C2:BT83</pre>
+      <p>The long-term scoring question is simple: after Field Studio contracts and Key Finder guidance are corrected, do extracted app values match the hand-entered benchmark cells?</p>
+      <p>For non-mouse categories, the same concept applies. Build a 5-10 product example bank per key first, then create category benchmark rows that represent the depth expected from a site aiming to combine PCPartPicker-style structured specs with lab-review depth.</p>
+      <table>
+        <thead><tr><th>Benchmark layer</th><th>What to measure</th></tr></thead>
+        <tbody>
+          <tr><td>Exact value match</td><td>Does the stored value equal the benchmark value after normalization?</td></tr>
+          <tr><td>Shape match</td><td>Scalar vs list, number/date/string/enum, empty vs <code>unk</code> vs <code>n/a</code>.</td></tr>
+          <tr><td>Enum match</td><td>Canonical chip values only, no aliases or noisy variants.</td></tr>
+          <tr><td>Evidence match</td><td>Accepted values have enough evidence refs and use credible source tiers.</td></tr>
+          <tr><td>Conflict handling</td><td>Conflicting sources produce the right value, <code>unk</code>, or flag, not a silent guess.</td></tr>
+          <tr><td>Consumer rendering</td><td>Value supports the intended hub filter/list/snapshot/compare/metric surface without downstream interpretation hacks.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-title"><span class="num">9</span> How To Generate Reports</div>
+
+  <div class="card">
+    <div class="card-header"><span class="tag tag-accent">Studio</span> Preferred Path</div>
+    <div class="card-body">
+      <ol>
+        <li>Open Studio for the category.</li>
+        <li>Use the Generate Key Finder Audit Reports action.</li>
+        <li>Confirm it generated both the category-level report and per-key docs.</li>
+        <li>Use the Markdown output for LLM review and the HTML output for human browsing.</li>
+      </ol>
+      <pre>.workspace/reports/&lt;category&gt;-key-finder-audit.html
+.workspace/reports/&lt;category&gt;-key-finder-audit.md
+.workspace/reports/per-key/&lt;category&gt;/&lt;group&gt;/&lt;field_key&gt;.html
+.workspace/reports/per-key/&lt;category&gt;/&lt;group&gt;/&lt;field_key&gt;.md</pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="tag tag-teal">API</span> Route Contract</div>
+    <div class="card-body">
+      <pre>POST /api/v1/category-audit/:category/generate-all-reports
+Body: { "consumer": "key_finder" }</pre>
+      <p>The route calls both category report generation and per-key doc generation so they stay in sync. Lower-level routes also exist for category-only or per-key-only generation, but the all-reports route is the normal workflow.</p>
+    </div>
+  </div>
+
+  <div class="section-title"><span class="num">10</span> LLM Review Instructions</div>
+
+  <div class="card">
+    <div class="card-header"><span class="tag tag-purple">Handoff</span> What To Tell The Reviewer</div>
+    <div class="card-body">
+      <p>When handing a generated report to an LLM, require two outputs:</p>
+      <ol>
+        <li>A downloadable text file first, or a fenced <code>text</code> block if file attachments are not supported.</li>
+        <li>A normal audit report with verdict, coverage, highest-risk corrections, per-field patches, enum cleanup, component DB additions, group audit, and open questions.</li>
+      </ol>
+      <p>The downloadable text file should be short and in Field Studio order so the human can apply it panel by panel.</p>
+      <pre># &lt;CATEGORY&gt; KEYFINDER FIELD STUDIO CHANGE FILE
+# Apply in this order: Mapping Studio first, then Key Navigator.
+# Use "No change" when the current value is already correct.
+# Enum list values are edited in Mapping Studio. Key Navigator Enum Policy only links policy, source, and format.
+
+## &lt;field_key&gt; - &lt;Keep | Minor revise | Major revise | Schema decision&gt;
+
+Mapping Studio:
+
+Component Source Mapping:
+- component source/type: &lt;sensor|switch|encoder|material|other|blank|No change&gt;
+- primary identifier role: &lt;source field / attribute / No change&gt;
+- maker role: &lt;source field / blank / No change&gt;
+- aliases/name variants: &lt;ordered list, blank, or No change&gt;
+- reference URLs/links: &lt;ordered list, blank, or No change&gt;
+- attributes/properties:
+  - field_key: &lt;field key | No change&gt;
+  - variance_policy: &lt;authoritative|upper_bound|lower_bound|range|override_allowed|majority_vote|blank|No change&gt;
+  - component_only: &lt;true|false|No change&gt;
+  - allow product override: &lt;true|false|No change&gt;
+  - tolerance: &lt;number | blank | No change&gt;
+  - property constraints: &lt;ordered list, blank, or No change&gt;
+
+Enum Data Lists:
+- data list field/name: &lt;data list name | blank | No change&gt;
+- normalize: &lt;normalize mode | blank | No change&gt;
+- values operation: &lt;replace list|add values|remove values|rename values|No change&gt;
+- final ordered values: &lt;ordered canonical list, blank, or No change&gt;
+- remove values: &lt;ordered list, or none&gt;
+- rename values: &lt;old -&gt; new list, or none&gt;
+- source phrases/aliases to keep out of chips: &lt;list, or none&gt;
+- AI review priority: &lt;required_level / availability / difficulty, or No change&gt;
+- enum guidance: &lt;short note, or No change&gt;
+
+Key Navigator:
+
+Contract:
+- variant_dependent: &lt;true|false|No change&gt;
+- type: &lt;string|number|integer|boolean|date|No change&gt;
+- shape: &lt;scalar|list|No change&gt;
+- unit: &lt;target value | blank | No change&gt;
+- variance_policy: &lt;authoritative|upper_bound|lower_bound|majority_vote|blank|No change&gt;
+- range.min: &lt;number | blank | No change&gt;
+- range.max: &lt;number | blank | No change&gt;
+- list_rules.dedupe: &lt;true|false|blank|No change&gt;
+- list_rules.sort: &lt;asc|desc|source|blank|No change&gt;
+- list_rules.item_union: &lt;true|false|blank|No change&gt;
+- rounding.decimals: &lt;number | blank | No change&gt;
+- rounding.mode: &lt;nearest|floor|ceil|half_even|blank|No change&gt;
+
+Extraction Priority &amp; Guidance:
+- required_level: &lt;mandatory|non_mandatory|No change&gt;
+- availability: &lt;always|sometimes|rare|No change&gt;
+- difficulty: &lt;easy|medium|hard|very_hard|No change&gt;
+- search/routing reason: &lt;one short reason tied to benchmark-depth extraction and model/search strength&gt;
+- AI reasoning note: &lt;paste-ready ai_assist.reasoning_note, "(empty - keep)", or No change&gt;
+
+Enum Policy:
+- policy: &lt;closed|open_prefer_known|open|blank|No change&gt;
+- source: &lt;data_lists.name|component_db.type|blank|No change&gt;
+- format pattern: &lt;pattern | blank | No change&gt;
+- note: &lt;actual enum list values live in Mapping Studio Enum Data Lists; use No change if already understood&gt;
+
+Components:
+- component.type: &lt;component type | blank | No change&gt;
+- component source cascade: &lt;enum.source/component_db linkage | blank | No change&gt;
+- component mapping note: &lt;property and variance edits belong in Mapping Studio Component Source Mapping, or No change&gt;
+
+Cross-Field Constraints:
+- constraints: &lt;ordered list, blank, or No change&gt;
+
+Evidence:
+- min_evidence_refs: &lt;number | No change&gt;
+- tier_preference: &lt;ordered list | blank | No change&gt;
+
+Search Hints &amp; Aliases:
+- Aliases: &lt;ordered alias list, blank, or No change&gt;
+- Domain Hints: &lt;ordered list, blank, or No change&gt;
+- Content Types: &lt;ordered list, blank, or No change&gt;
+- Query Terms: &lt;ordered list, blank, or No change&gt;</pre>
+    </div>
+  </div>
+
+  <div class="section-title"><span class="num">11</span> Grouping Guidance</div>
+
+  <div class="card">
+    <div class="card-header"><span class="tag tag-orange">Navigation</span> Groups Are How Humans Think Through Keys</div>
+    <div class="card-body">
+      <p>Groups are not just cosmetic. The per-key docs show every key, its group, constraints, and components so the reviewer can spot misplaced keys and missing dependencies. Cleaner grouping makes Key Navigator usable and helps category authors find related contract decisions.</p>
+      <table>
+        <thead><tr><th>Grouping pattern</th><th>Example keys</th><th>Reason</th></tr></thead>
+        <tbody>
+          <tr><td>Product identity / lifecycle / availability</td><td><code>sku</code>, <code>colors</code>, <code>editions</code>, <code>release_date</code>, <code>discontinued</code>, <code>price_range</code></td><td>These are purchase/listing/variant lifecycle fields. They should be reviewed together.</td></tr>
+          <tr><td>Design status / edition type</td><td><code>design</code></td><td>Edition status should not be mixed with visual styling or lighting.</td></tr>
+          <tr><td>Lighting / electronics</td><td><code>lighting</code>, <code>rgb</code>, zone counts</td><td>Lighting behavior is not the same as product design/edition status.</td></tr>
+          <tr><td>Sensor/component</td><td><code>sensor</code>, <code>sensor_brand</code>, <code>sensor_date</code>, DPI, IPS, acceleration</td><td>Many values depend on component DB identity and constraints.</td></tr>
+          <tr><td>Shape / ergonomics</td><td>hump, flare, grip, hand orientation, thumb rest</td><td>These are often visual Tier B calls and need repeatable guidance.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-title"><span class="num">12</span> Good vs Bad Guidance</div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-header"><span class="tag tag-red">Bad</span> Vague Or Contract-Duplicating</div>
+      <div class="card-body">
+        <pre>Extract the mouse material accurately.
+Use official sources.
+If unsure, default to no.
+Design means the way the mouse looks.</pre>
+        <p>This does not teach a repeatable judgment. It also weakens the unknown policy and duplicates generic source-tier instructions.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="tag tag-green">Good</span> Paste-Ready And Field-Specific</div>
+      <div class="card-body">
+        <pre>Extract the proven physical shell or contact-surface material. Do not convert finish words such as matte, glossy, textured, soft, grippy, or premium into material values. If the source only describes coating or texture, use rubberized coating or soft-touch coating only when that coating is explicitly named. Return unk when no credible source proves the material.</pre>
+        <p>This tells the LLM what to include, what to exclude, and when to return <code>unk</code>.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title"><span class="num">13</span> File Map</div>
+
+  <div class="card">
+    <div class="card-header"><span class="tag tag-accent">Spec Factory</span> Primary Files</div>
+    <div class="card-body">
+      <table>
+        <thead><tr><th>Path</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>src/features/category-audit/README.md</code></td><td>Domain contract for the category-audit feature.</td></tr>
+          <tr><td><code>src/features/category-audit/reportBuilder.js</code></td><td>Orchestrates extract, render, and write.</td></tr>
+          <tr><td><code>src/features/category-audit/reportData.js</code></td><td>Normalizes rules, enums, components, constraints, groups, fragments, and tier bundles into report data.</td></tr>
+          <tr><td><code>src/features/category-audit/reportMarkdown.js</code></td><td>Markdown renderer for LLM handoff.</td></tr>
+          <tr><td><code>src/features/category-audit/reportHtml.js</code></td><td>HTML renderer for human browsing.</td></tr>
+          <tr><td><code>src/features/category-audit/teaching.js</code></td><td>Static audit instructions, audit standard, routing/benchmark guidance, and downloadable change-file template.</td></tr>
+          <tr><td><code>src/features/category-audit/adapters/keyFinderAdapter.js</code></td><td>Builds Key Finder prompt previews for each key.</td></tr>
+          <tr><td><code>src/features/category-audit/api/categoryAuditRoutes.js</code></td><td>HTTP routes for generating reports.</td></tr>
+          <tr><td><code>src/core/llm/prompts/fieldRuleRenderers.js</code></td><td>Shared pure field-rule renderers used by Key Finder and the audit preview.</td></tr>
+          <tr><td><code>docs/implementation/key-finder-audits/HANDOFF.md</code></td><td>Implementation handoff for the generator itself.</td></tr>
+          <tr><td><code>.workspace/reports/audits/</code></td><td>LLM-produced audit/change reports.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="tag tag-teal">EG-HBS</span> Downstream Site Files Audited Read-Only</div>
+    <div class="card-body">
+      <table>
+        <thead><tr><th>Path</th><th>Why it matters</th></tr></thead>
+        <tbody>
+          <tr><td><code>C:\Users\Chris\Desktop\EG - Convert\EG - HBS\routes\hubs\README.md</code></td><td>Declares hub/snapshot route boundary and <code>window.sharedData</code> contract.</td></tr>
+          <tr><td><code>routes/hubs/02.hubs.routes.js</code></td><td>Category hub route that feeds hub React/runtime state.</td></tr>
+          <tr><td><code>routes/hubs/01.snapshot.routes.js</code></td><td>Snapshot detail route for product pages.</td></tr>
+          <tr><td><code>views/hub.handlebars</code></td><td>Bootstraps hub state: filters, list columns, sort, stats, compare, packed filtering data.</td></tr>
+          <tr><td><code>views/snapshots.handlebars</code></td><td>Snapshot detail page shell and spec/photo sections.</td></tr>
+          <tr><td><code>views/partials/data-filter-menu.handlebars</code></td><td>SSR filter UI; proves why enum values and numeric/date sliders must be clean.</td></tr>
+          <tr><td><code>src/hub/README.md</code></td><td>Hub React runtime contract.</td></tr>
+          <tr><td><code>src/hub/ListView.jsx</code></td><td>List columns, sorting, missing-value behavior, visible columns, and field-level display.</td></tr>
+          <tr><td><code>src/hub/CardView.jsx</code></td><td>Card/grid runtime, filters, layout/snapshot state, and rendered data updates.</td></tr>
+          <tr><td><code>public/js/hbs___hubHelpers.js</code></td><td>Spec/metric rendering helpers, filter links, tooltips, numeric/date placeholder handling.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-title"><span class="num">14</span> Pick-Up Checklist</div>
+
+  <div class="card">
+    <div class="card-header"><span class="tag tag-green">Runbook</span> If You Are The Next Person</div>
+    <div class="card-body">
+      <ol>
+        <li>Read this document once.</li>
+        <li>Open <code>docs/implementation/key-finder-audits/HANDOFF.md</code> if you need implementation details for the generator.</li>
+        <li>Generate all Key Finder Audit reports for the category from Studio.</li>
+        <li>Use the category Markdown report as the LLM handoff. Use the per-key Markdown/HTML docs when reviewing a specific key.</li>
+        <li>Require a downloadable text file first, ordered as Mapping Studio then Key Navigator.</li>
+        <li>Review enum and component changes before guidance. Actual enum value changes go in Mapping Studio Enum Data Lists.</li>
+        <li>Apply approved edits in Field Studio.</li>
+        <li>Compile the category rules.</li>
+        <li>Regenerate the audit report and diff it against the previous run.</li>
+        <li>Run extraction against benchmark products and compare output against the benchmark workbook/range.</li>
+      </ol>
+      <div class="callout callout-ok">
+        <strong>Definition of done for this loop</strong>
+        A category is not "done" because every field has a long guidance note. It is done when the contract shape, enum list, component mapping, priority routing, evidence gate, constraints, grouping, and guidance together let Key Finder reproduce benchmark-depth values with honest <code>unk</code>/<code>n/a</code> handling and clean downstream site rendering.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

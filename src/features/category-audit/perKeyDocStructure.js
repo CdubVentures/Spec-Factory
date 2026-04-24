@@ -79,6 +79,109 @@ function displayValue(value) {
   return `\`${String(value)}\``;
 }
 
+function formatTierBundle(preview) {
+  const bundle = preview?.tierBundle || {};
+  if (!bundle.model) return 'tier unresolved; audit `priority.difficulty` against category tier settings';
+  const reasoning = bundle.useReasoning ? 'reasoning on' : 'reasoning off';
+  const thinking = bundle.thinking ? `thinking on${bundle.thinkingEffort ? ` (${bundle.thinkingEffort})` : ''}` : 'thinking off';
+  const search = bundle.webSearch ? 'web search on' : 'web search off';
+  return `tier \`${bundle.name || 'unknown'}\` -> model \`${bundle.model}\`; ${reasoning}; ${thinking}; ${search}`;
+}
+
+function formatList(values) {
+  return Array.isArray(values) && values.length > 0
+    ? values.map((v) => `\`${v}\``).join(', ')
+    : '-';
+}
+
+function formatComponentRelation(record) {
+  if (!record?.component) return '-';
+  const relation = record.component.relation === 'parent' ? 'identity' : 'subfield';
+  return `${relation}: \`${record.component.type}\``;
+}
+
+function formatConstraintCount(record) {
+  const count = Array.isArray(record?.constraints) ? record.constraints.length : 0;
+  return count > 0 ? String(count) : '-';
+}
+
+function orderKeysByGroups(allKeyRecords, groups) {
+  const byField = new Map((allKeyRecords || []).map((k) => [k.fieldKey, k]));
+  const ordered = [];
+  const seen = new Set();
+  for (const group of groups || []) {
+    for (const fieldKey of group.fieldKeys || []) {
+      const candidate = byField.get(fieldKey);
+      if (!candidate || seen.has(fieldKey)) continue;
+      ordered.push(candidate);
+      seen.add(fieldKey);
+    }
+  }
+  for (const candidate of allKeyRecords || []) {
+    if (seen.has(candidate.fieldKey)) continue;
+    ordered.push(candidate);
+    seen.add(candidate.fieldKey);
+  }
+  return ordered;
+}
+
+function buildCategoryKeyMapSection(record, allKeyRecords, groups) {
+  const records = orderKeysByGroups((allKeyRecords && allKeyRecords.length > 0) ? allKeyRecords : [record], groups);
+  return {
+    id: 'category-key-map',
+    title: `Category key map (${records.length} keys)`,
+    level: 2,
+    blocks: [
+      {
+        kind: 'paragraph',
+        text: `All current keys in this category so the reviewer can audit \`${record.fieldKey}\` against grouping, sibling overlap, component ownership, variance policy, and cross-field dependencies instead of judging it in isolation.`,
+      },
+      {
+        kind: 'table',
+        headers: ['Field key', 'Group', 'Type · Shape', 'Enum', 'Difficulty', 'Component', 'Variance', 'Constraints'],
+        rows: records.map((k) => [
+          `\`${k.fieldKey}\``,
+          `\`${k.group}\``,
+          `${k.contract.type} · ${k.contract.shape}`,
+          k.enum.values.length > 0 ? `${k.enum.values.length} · ${k.enum.policy || 'none'}` : '-',
+          k.priority.difficulty,
+          formatComponentRelation(k),
+          k.variance_policy ? `\`${k.variance_policy}\`` : '-',
+          formatConstraintCount(k),
+        ]),
+      },
+    ],
+  };
+}
+
+function buildSearchRoutingSection(record, preview, category) {
+  const benchmarkText = category === 'mouse'
+    ? 'mouseData.xlsm data-entry benchmark cells C2:BT83'
+    : 'the category benchmark cells when available';
+  return {
+    id: 'search-routing',
+    title: 'Search + routing contract',
+    level: 2,
+    blocks: [
+      {
+        kind: 'paragraph',
+        text: `Audit \`required_level\`, \`availability\`, and \`difficulty\` as extraction/search strategy, not admin labels. These settings decide publish blocking, scheduling order, bundling priority, model/search strength, and whether keyFinder searches deeply enough to match benchmark-depth data like ${benchmarkText}.`,
+      },
+      {
+        kind: 'table',
+        headers: ['Knob', 'Current value', 'Audit question'],
+        rows: [
+          ['`priority.required_level`', displayValue(record.priority.required_level), 'Should this field be mandatory for a publish-grade, depth-tech product page? Mandatory should mean identity, comparison, filtering, benchmark parity, or buyer-relevant technical confidence would be weak without a proven value or honest `unk`.'],
+          ['`priority.availability`', displayValue(record.priority.availability), 'How often should credible public sources expose this value: always, sometimes, or rare? Wrong availability wastes search budget or delays fields that should be searched early.'],
+          ['`priority.difficulty`', displayValue(record.priority.difficulty), 'Can a cheaper model reliably match the benchmark answer, or does this need harder search, source comparison, aliases, component context, reasoning, or a frontier model? Do not mark a field easy just because the answer is short.'],
+          ['Resolved tier bundle', formatTierBundle(preview), 'Does the resolved model/search strength match the extraction risk? Easy should be direct; medium should handle normalization; hard should handle conflict/component context; very_hard should get the strongest reasoning/search.'],
+          ['Benchmark-depth target', benchmarkText, 'Use benchmark data to calibrate the rule and guidance, not as prompt answers. The contract should explain how keyFinder can reproduce those values from public evidence.'],
+        ],
+      },
+    ],
+  };
+}
+
 function buildAuthoringChecklistSection(record) {
   const priorityCurrent = [
     `priority.required_level=${displayValue(record.priority.required_level)}`,
@@ -102,6 +205,20 @@ function buildAuthoringChecklistSection(record) {
     `evidence.min_evidence_refs=${displayValue(record.evidence.min_evidence_refs)}`,
     `evidence.tier_preference=${displayValue(record.evidence.tier_preference)}`,
   ].join(' | ');
+  const consumerCurrent = [
+    'filter',
+    'list',
+    'snapshot/spec',
+    'compare',
+    'metric/card',
+    'search/SEO',
+  ].join(' | ');
+  const unknownCurrent = [
+    '`false`/`no`',
+    '`n/a`',
+    '`unk`',
+    'blank/omitted',
+  ].join(' | ');
 
   return {
     id: 'authoring-checklist',
@@ -110,7 +227,7 @@ function buildAuthoringChecklistSection(record) {
     blocks: [
       {
         kind: 'paragraph',
-        text: 'Validate the whole field contract before editing guidance. Guidance last: only write `ai_assist.reasoning_note` after scheduling, value shape, enum/filter behavior, evidence/source rules, and example coverage are correct.',
+        text: 'Validate the whole field contract before editing guidance. A strong audit can say "no contract change" when shape, enum policy, requiredness, evidence, and consumer behavior are already correct; still leave guidance/examples/aliases/enum cleanup when those are the real improvement. Guidance last: only write `ai_assist.reasoning_note` after scheduling, value shape, enum/filter behavior, consumer-surface intent, unknown/not-applicable states, evidence/source rules, and example coverage are correct.',
       },
       {
         kind: 'table',
@@ -118,10 +235,39 @@ function buildAuthoringChecklistSection(record) {
         rows: [
           ['1', 'Scheduling priority', priorityCurrent, 'Does requiredness match publish expectations, does availability match real product coverage, and does difficulty route to the right LLM tier?'],
           ['2', 'Value contract', contractCurrent, 'Does the emitted JSON primitive/list shape match how the value is stored, validated, compared, and filtered?'],
-          ['3', 'Enum and filter surface', enumCurrent, 'Is the enum closed when finite, patterned when open, and small enough for the consumer filter surface?'],
-          ['4', 'Evidence and sources', evidenceCurrent, 'Can the configured source tiers and evidence count actually prove this value without guessing?'],
-          ['5', 'Example bank', '5-10 category-local examples', 'Do examples cover happy path, edge, unknown, conflict, and filter-risk cases before the prompt text is trusted?'],
-          ['6', 'Guidance last', displayValue(record.ai_assist?.reasoning_note), 'Now write paste-ready guidance that fills only the remaining extraction judgment gap.'],
+          ['3', 'Enum and filter surface', enumCurrent, 'Is the enum closed when finite, patterned when open, ordered consistently, and small enough for the consumer filter surface? Keep aliases/source phrases out of public enum chips unless intentionally public.'],
+          ['4', 'Consumer-surface impact', consumerCurrent, 'Which surfaces should use this key: filter, list column, snapshot/spec row, comparison row, metric/card, search/SEO, or none? Does the shape support each intended surface without forcing the site to guess?'],
+          ['5', 'Unknown / not-applicable states', unknownCurrent, 'Is false/no different from n/a and unk? Boolean is enough only when the field truly has two factual states plus ordinary unknown handling. Use n/a when the question does not apply, and unk when evidence is missing.'],
+          ['6', 'Evidence and sources', evidenceCurrent, 'Can the configured source tiers and evidence count actually prove this value without guessing?'],
+          ['7', 'Example bank', '5-10 category-local examples', 'Do examples cover happy path, edge, unknown, not-applicable, conflict, and filter-risk cases before the prompt text is trusted?'],
+          ['8', 'Guidance last', displayValue(record.ai_assist?.reasoning_note), 'Now write paste-ready guidance that fills only the remaining extraction judgment gap, or write "(empty - keep)" when no guidance is needed.'],
+        ],
+      },
+    ],
+  };
+}
+
+function buildConsumerSurfaceSection(record) {
+  return {
+    id: 'consumer-surface',
+    title: 'Consumer-surface impact',
+    level: 2,
+    blocks: [
+      {
+        kind: 'paragraph',
+        text: `Spec Factory can store many shapes, but \`${record.fieldKey}\` still needs a declared consumer intent. Do not propose a contract edit just to leave a mark: "no contract change" is correct when the current contract already supports the site, Field Studio, publisher, and keyFinder. Use this section to decide whether the value should become a filter, list column, snapshot/spec row, comparison field, metric/card value, search/SEO token, or no consumer surface at all.`,
+      },
+      {
+        kind: 'table',
+        headers: ['Surface', 'Audit question'],
+        rows: [
+          ['Filter', 'Should this be a public filter? If enum-backed, are the canonical values public chips, and are aliases/source phrases kept out of the chip list?'],
+          ['List / hub table', 'Should the value appear in product cards or listing tables? If yes, confirm label, unit, sorting, truncation, and list-vs-scalar display.'],
+          ['Snapshot / spec row', 'Should the value appear as a product detail spec? If yes, confirm grouping, display label, units, and display-only/derived status.'],
+          ['Comparison', 'Should users compare this value across products? If yes, confirm numeric/date/list semantics and whether higher/lower is better.'],
+          ['Metric / card', 'Should the value feed a score, badge, gauge, or summary card? If yes, confirm the source field remains machine-clean and the card derives presentation.'],
+          ['Search / SEO', 'Should the value become searchable or appear in page text? If yes, confirm canonical terms and aliases so source wording does not pollute stored values.'],
+          ['None', 'If no consumer surface should use this key, say so explicitly; the key can still exist for publisher gates, prompt context, or future derivation.'],
         ],
       },
     ],
@@ -212,6 +358,11 @@ function buildExampleBankSection(record, category) {
         text: `For \`${record.fieldKey}\`, build a 5-10 product example bank before finalizing the rule. Use this category's benchmark data when available, then published candidates/product JSON, seed products, known component rows, and source research. For brand-new categories, use representative products from the market to create the first calibration set. Do not paste benchmark answers into the live prompt; use them to author the contract and guidance.`,
       },
       {
+        kind: 'note',
+        tone: 'info',
+        text: `Live validation rule for this key: use model knowledge to form hypotheses, but do not finalize this key's enum values, example bank, technical guidance, component claims, search hints, evidence expectations, or difficulty rating from memory alone. Validate this key against live public sources before proposing changes: check 3-5 representative products for ordinary cases, add 1-2 edge or rare products when the key has special values or filter-risk values, prefer manufacturer pages, official docs, datasheets, standards bodies, and instrumented review labs, and use retailer/spec database/community sources only as fallback or corroboration. Cite the sources checked under "References spot-checked". Use benchmark data only to understand the target answer shape and quality bar; do not copy benchmark answers into the live prompt or treat benchmark data as a substitute for public evidence.`,
+      },
+      {
         kind: 'table',
         headers: ['Bucket', 'Count', 'What it proves'],
         rows: [
@@ -225,6 +376,141 @@ function buildExampleBankSection(record, category) {
       },
     ],
   };
+}
+
+function buildPerKeyLlmAuditPromptSection(record, category) {
+  const fileName = `${category}-${record.fieldKey}-field-studio-change.txt`;
+  return {
+    id: 'llm-audit-prompt',
+    title: 'Copy/paste LLM audit prompt',
+    level: 2,
+    blocks: [
+      {
+        kind: 'paragraph',
+        text: 'Paste this per-key doc into an LLM, then paste the prompt below. The first deliverable must be a Field Studio change file, not only a prose audit.',
+      },
+      {
+        kind: 'codeBlock',
+        lang: 'text',
+        text: `You are auditing one Spec Factory field key: ${category}.${record.fieldKey}.
+
+Use the per-key doc above as the source of truth. Your job is not to extract a product value. Your job is to improve this key's Field Studio contract, enum/list setup, component mapping, search routing, evidence requirements, and guidance so future keyFinder runs extract this key correctly.
+
+Return a downloadable text file first named ${fileName}. If your interface supports file artifacts, create that file, verify it exists, and link it before any prose. If your interface cannot attach files, put the exact file contents in a fenced text block before any commentary. Do not point back to the source brief and do not return only a prose audit.
+
+The text file must be concise and ordered exactly like Field Studio:
+
+# ${category.toUpperCase()} ${record.fieldKey} FIELD STUDIO CHANGE FILE
+
+Mapping Studio:
+
+Component Source Mapping:
+- component source/type: <target or No change>
+- primary identifier role: <target or No change>
+- maker role: <target, blank, or No change>
+- aliases/name variants: <ordered list, blank, or No change>
+- reference URLs/links: <ordered list, blank, or No change>
+- attributes/properties:
+  - field_key: <field key or No change>
+  - variance_policy: <authoritative|upper_bound|lower_bound|range|override_allowed|majority_vote|blank|No change>
+  - component_only: <true|false|No change>
+  - allow product override: <true|false|No change>
+  - tolerance: <number, blank, or No change>
+  - property constraints: <ordered list, blank, or No change>
+
+Enum Data Lists:
+- data list field/name: <data list name, blank, or No change>
+- normalize: <normalize mode, blank, or No change>
+- values operation: <replace list|add values|remove values|rename values|No change>
+- final ordered values: <ordered canonical list, blank, or No change>
+- remove values: <ordered list, or none>
+- rename values: <old -> new list, or none>
+- source phrases/aliases to keep out of chips: <list, or none>
+- AI review priority: <required_level / availability / difficulty, or No change>
+- enum guidance: <short note, or No change>
+
+Key Navigator:
+
+Contract:
+- variant_dependent: <true|false|No change>
+- type: <string|number|integer|boolean|date|url|No change>
+- shape: <scalar|list|No change>
+- unit: <target value, blank, or No change>
+- variance_policy: <authoritative|upper_bound|lower_bound|majority_vote|blank|No change>
+- range.min: <number, blank, or No change>
+- range.max: <number, blank, or No change>
+- list_rules.dedupe: <true|false|blank|No change>
+- list_rules.sort: <none|asc|desc|insert|blank|No change>
+- list_rules.item_union: <true|false|blank|No change>
+- rounding.decimals: <number, blank, or No change>
+- rounding.mode: <nearest|floor|ceil|half_even|blank|No change>
+
+Extraction Priority & Guidance:
+- required_level: <mandatory|non_mandatory|No change>
+- availability: <always|sometimes|rare|No change>
+- difficulty: <easy|medium|hard|very_hard|No change>
+- search/routing reason: <one short reason tied to this key>
+- AI reasoning note: <paste-ready ai_assist.reasoning_note, "(empty - keep)", or No change>
+
+Enum Policy:
+- policy: <closed|open_prefer_known|open|blank|No change>
+- source: <data_lists.name|component_db.type|blank|No change>
+- format pattern: <pattern, blank, or No change>
+- note: <actual enum list values live in Mapping Studio Enum Data Lists>
+
+Components:
+- component.type: <component type, blank, or No change>
+- component source cascade: <enum.source/component_db linkage, blank, or No change>
+- component mapping note: <property and variance edits belong in Mapping Studio Component Source Mapping, or No change>
+
+Cross-Field Constraints:
+- constraints: <ordered list, blank, or No change>
+
+Evidence:
+- min_evidence_refs: <number or No change>
+- tier_preference: <ordered list, blank, or No change>
+
+Search Hints & Aliases:
+- Aliases: <ordered alias list, blank, or No change>
+- Domain Hints: <ordered list, blank, or No change>
+- Content Types: <ordered list, blank, or No change>
+- Query Terms: <ordered list, blank, or No change>
+
+Live validation:
+- sources checked: <3-7 URLs or source names>
+- products checked: <5-10 products/classes>
+- conclusion: <how live evidence changed or confirmed this key's contract/guidance>
+
+After the file, include a short prose audit with: verdict, key risks, references spot-checked, example bank, and any open questions.
+
+Rules:
+- Use model knowledge to form hypotheses, but validate this key with live public sources before finalizing enum values, examples, technical claims, component claims, search hints, evidence expectations, or difficulty.
+- Use benchmark data only to understand target shape and quality. Do not copy benchmark answers into the live prompt or treat benchmarks as public evidence.
+- Keep the answer compact enough to review in one text window.`,
+      },
+    ],
+  };
+}
+
+function formatPropertyPreview(properties) {
+  const entries = Object.entries(properties || {});
+  if (entries.length === 0) return '-';
+  return entries.slice(0, 8).map(([key, value]) => `${key}=${Array.isArray(value) ? value.join('+') : String(value)}`).join(' | ')
+    + (entries.length > 8 ? ' | ...' : '');
+}
+
+function formatPolicyPreview(policies) {
+  const entries = Object.entries(policies || {});
+  if (entries.length === 0) return '-';
+  return entries.slice(0, 8).map(([key, value]) => `${key}=${value}`).join(' | ')
+    + (entries.length > 8 ? ' | ...' : '');
+}
+
+function formatConstraintPreview(constraints) {
+  const entries = Object.entries(constraints || {});
+  if (entries.length === 0) return '-';
+  return entries.slice(0, 8).map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(' | ') : String(value)}`).join(' | ')
+    + (entries.length > 8 ? ' | ...' : '');
 }
 
 function buildComponentSection(record, componentInventory) {
@@ -252,6 +538,48 @@ function buildComponentSection(record, componentInventory) {
     });
   }
 
+  const inventory = componentInventory || [];
+  blocks.push({ kind: 'subheading', level: 4, text: 'All current components' });
+  if (inventory.length === 0) {
+    blocks.push({ kind: 'paragraph', text: '_No component DB inventory was loaded for this category._' });
+  } else {
+    blocks.push({
+      kind: 'table',
+      headers: ['Component', 'Entities', 'Identity fields', 'Subfields', 'Relevant to this key?'],
+      rows: inventory.map((entry) => [
+        `\`${entry.type}\``,
+        String(entry.entityCount),
+        formatList(entry.identityFields),
+        formatList(entry.subfields),
+        c?.type === entry.type ? 'yes' : '-',
+      ]),
+    });
+  }
+
+  const relevant = c ? inventory.find((entry) => entry.type === c.type) : null;
+  if (relevant) {
+    blocks.push({ kind: 'subheading', level: 4, text: `Relevant component detail: ${c.type}` });
+    blocks.push({
+      kind: 'paragraph',
+      text: `Audit component variance here too. Confirm whether \`${record.fieldKey}\` should inherit from \`component_db/${c.type}.json\`, whether the field-level \`variance_policy\` (\`${record.variance_policy || '(unset)'}\`) matches component property policy, and whether component constraints such as \`sensor_date <= release_date\` are present on the right property.`,
+    });
+    blocks.push({
+      kind: 'table',
+      headers: ['Entity', 'Maker', 'Aliases', 'Properties', 'Variance policies', 'Constraints'],
+      rows: relevant.entities.slice(0, 50).map((entity) => [
+        entity.name || '-',
+        entity.maker || '-',
+        formatList(entity.aliases),
+        formatPropertyPreview(entity.properties),
+        formatPolicyPreview(entity.variance_policies),
+        formatConstraintPreview(entity.constraints),
+      ]),
+    });
+    if (relevant.entities.length > 50) {
+      blocks.push({ kind: 'paragraph', text: `(first 50 of ${relevant.entities.length} shown; full list lives in \`component_db/${c.type}.json\`)` });
+    }
+  }
+
   return {
     id: 'component',
     title: 'Component relation',
@@ -260,22 +588,48 @@ function buildComponentSection(record, componentInventory) {
   };
 }
 
-function buildCrossFieldSection(record) {
-  if (!Array.isArray(record.constraints) || record.constraints.length === 0) return null;
+function collectConstraints(allKeyRecords, record) {
+  const records = (allKeyRecords && allKeyRecords.length > 0) ? allKeyRecords : [record];
+  return records.flatMap((key) => (key.constraints || []).map((constraint) => ({
+    owner: key.fieldKey,
+    ownerGroup: key.group,
+    ...constraint,
+  })));
+}
+
+function constraintTouchesField(constraint, fieldKey) {
+  return constraint.left === fieldKey || constraint.right === fieldKey;
+}
+
+function buildCrossFieldSection(record, allKeyRecords) {
+  const constraints = collectConstraints(allKeyRecords, record);
+  const touching = constraints.filter((constraint) => constraintTouchesField(constraint, record.fieldKey));
   return {
     id: 'cross-field',
-    title: 'Cross-field constraints',
+    title: `Cross-field constraints (${constraints.length})`,
     level: 2,
     blocks: [
       {
         kind: 'note',
         tone: 'info',
-        text: 'These constraints render into the live keyFinder prompt via `PRIMARY_CROSS_FIELD_CONSTRAINTS`. Audit whether the relationship is correct, whether the target field is the right authority, and whether the constraint should affect grouping or guidance.',
+        text: 'Constraints render into live keyFinder prompts via `PRIMARY_CROSS_FIELD_CONSTRAINTS`. This map includes every category constraint, and marks which rows touch this key so a dependency authored on a sibling field is still visible here.',
       },
-      {
-        kind: 'bulletList',
-        items: record.constraints.map((c) => `\`${c.raw}\` \u2192 op=\`${c.op}\`, left=\`${c.left}\`, right=\`${c.right}\``),
-      },
+      constraints.length === 0
+        ? { kind: 'paragraph', text: '_No cross-field constraints are configured in this category._' }
+        : {
+          kind: 'table',
+          headers: ['Owner key', 'Owner group', 'Constraint', 'Op', 'Relation to this key'],
+          rows: constraints.map((c) => [
+            `\`${c.owner}\``,
+            `\`${c.ownerGroup || 'ungrouped'}\``,
+            `\`${c.raw}\``,
+            `\`${c.op}\``,
+            constraintTouchesField(c, record.fieldKey) ? 'touches this key' : 'category context',
+          ]),
+        },
+      touching.length === 0
+        ? { kind: 'paragraph', text: `No constraints directly touch \`${record.fieldKey}\`; use the category map above to spot grouping or dependency opportunities.` }
+        : { kind: 'paragraph', text: `${touching.length} constraint(s) touch this key. Confirm direction, target authority, group placement, and whether the relationship belongs in guidance or only in the contract.` },
     ],
   };
 }
@@ -387,19 +741,25 @@ export function buildPerKeyDocStructure(keyRecord, {
   generatedAt,
   schemaCatalog,
   siblingsInGroup = [],
+  allKeyRecords = [],
+  groups = [],
   componentInventory = [],
   preview,
 }) {
   const sections = [
     buildHeaderSection(keyRecord, category, generatedAt, preview),
     buildPurposeSection(keyRecord, preview, category),
+    buildSearchRoutingSection(keyRecord, preview, category),
     buildAuthoringChecklistSection(keyRecord),
+    buildCategoryKeyMapSection(keyRecord, allKeyRecords, groups),
     buildContractSchemaSection(keyRecord, schemaCatalog),
+    buildConsumerSurfaceSection(keyRecord),
     buildEnumSection(keyRecord),
     buildComponentSection(keyRecord, componentInventory),
-    buildCrossFieldSection(keyRecord),
+    buildCrossFieldSection(keyRecord, allKeyRecords),
     buildSiblingsSection(keyRecord, siblingsInGroup),
     buildExampleBankSection(keyRecord, category),
+    buildPerKeyLlmAuditPromptSection(keyRecord, category),
     buildFullPromptSection(preview),
     buildPerSlotSection(preview),
     buildReservedOwnerSection(preview),

@@ -4,6 +4,8 @@ import './ConfidenceDiamond.css';
 export interface FinderRunDiamondsProps {
   readonly filled: number;
   readonly total: number;
+  /** When true, the diamond SVGs pulse (finder op in flight). */
+  readonly pulsing?: boolean;
 }
 
 /**
@@ -17,7 +19,7 @@ export interface FinderRunDiamondsProps {
  * drawn above because CEF is what *discovers* variants; there are no
  * variant colors to show until a CEF run completes.
  */
-export function FinderRunDiamonds({ filled, total }: FinderRunDiamondsProps) {
+export function FinderRunDiamonds({ filled, total, pulsing = false }: FinderRunDiamondsProps) {
   if (total <= 0) {
     return <span className="sf-text-subtle text-xs italic">—</span>;
   }
@@ -28,7 +30,7 @@ export function FinderRunDiamonds({ filled, total }: FinderRunDiamondsProps) {
       ? 'sf-run-diamond-frac-part'
       : 'sf-run-diamond-frac-none';
   return (
-    <span className="sf-run-diamond-strip">
+    <span className={`sf-run-diamond-strip${pulsing ? ' sf-pulsing' : ''}`}>
       {dots.map((d, i) => (
         <svg
           key={i}

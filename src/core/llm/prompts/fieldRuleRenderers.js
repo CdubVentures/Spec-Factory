@@ -145,8 +145,8 @@ export function buildFieldContractBlock(fieldRule) {
   } else if (enumValues.length > 0) {
     const values = enumValues.slice(0, 24).join(' | ');
     if (enumPolicy === 'open_prefer_known') {
-      lines.push(`- Prefer known values (open_prefer_known): ${values}`);
-      lines.push('- New values are allowed only when directly evidenced; prefer canonical known values when they match.');
+      lines.push(`- Preferred canonical values (open_prefer_known): ${values}`);
+      lines.push('- Use a listed value whenever it fits. Emit an unlisted value only when direct evidence proves a real value that none of the listed values can represent; do not create new values from aliases, marketing phrases, formatting variants, or sibling-field wording.');
     } else if (enumPolicy === 'open') {
       lines.push(`- Known examples (open): ${values}`);
       lines.push('- New values are allowed when directly evidenced.');

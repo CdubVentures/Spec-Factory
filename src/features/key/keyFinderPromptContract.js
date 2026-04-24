@@ -38,7 +38,9 @@ export const KEY_FINDER_VARIABLES = Object.freeze([
 
   // Product-level context (deterministic, shared across primary + passengers)
   { name: 'PRODUCT_COMPONENTS', description: 'Grouped inventory of resolved components on this product (identity + product-resolved subfields). Always rendered when any component exists on the product, independent of both injection knobs. The baseline component awareness for the LLM.', required: false, category: 'deterministic' },
-  { name: 'KNOWN_PRODUCT_FIELDS', description: 'Already-published non-component field values on this product, excluding anything already in {{PRODUCT_COMPONENTS}} (dedup) and the current primary + passenger keys. Gated by the Pipeline Settings knob "Known fields".', required: false, category: 'deterministic' },
+  { name: 'PRODUCT_SCOPED_FACTS', description: 'Already-published product-scoped field values only, excluding current primary/passengers, component inventory, CEF/SKU/RDF-owned fields, and variant-dependent fields. Gated by the Pipeline Settings knob "Known fields".', required: false, category: 'deterministic' },
+  { name: 'VARIANT_INVENTORY', description: 'Locked active CEF variant table joined to SKU/RDF/PIF by variant_id. Rendered only when useful variant identity exists. Includes guardrails forbidding Key Finder from extracting colors, editions, sku, or release_date.', required: false, category: 'deterministic' },
+  { name: 'FIELD_IDENTITY_USAGE', description: 'Per-primary-field instructions for how to use {{VARIANT_INVENTORY}} as an evidence filter. Generated from field-rule semantics with optional ai_assist.variant_inventory_usage override/append/off metadata.', required: false, category: 'deterministic' },
 
   // Global fragments
   { name: 'IDENTITY_INTRO', description: 'Opening "IDENTITY: You are looking for the EXACT product..." line with sibling-skip sentence. Edit text via Global Prompts (identityIntro).', required: false, category: 'global-fragment' },

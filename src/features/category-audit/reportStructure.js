@@ -484,6 +484,37 @@ function formatAuditValue(value) {
   return `\`${String(value)}\``;
 }
 
+function formatTierBundleAuditValue(adapterPreview) {
+  const bundle = adapterPreview?.tierBundle || {};
+  if (!bundle.model) return 'tier unresolved; audit `priority.difficulty` against category tier settings';
+  const reasoning = bundle.useReasoning ? 'reasoning on' : 'reasoning off';
+  const thinking = bundle.thinking ? `thinking on${bundle.thinkingEffort ? ` (${bundle.thinkingEffort})` : ''}` : 'thinking off';
+  const search = bundle.webSearch ? 'web search on' : 'web search off';
+  return `tier \`${bundle.name || 'unknown'}\` -> model \`${bundle.model}\`; ${reasoning}; ${thinking}; ${search}`;
+}
+
+function buildSearchRoutingBlocks(key, adapterPreview) {
+  const benchmarkText = 'mouseData.xlsm data-entry benchmark cells C2:BT83 for mouse; equivalent hand-entered benchmark cells for other categories';
+  return [
+    { kind: 'subheading', level: 4, text: 'Search + routing contract' },
+    {
+      kind: 'paragraph',
+      text: `Audit \`required_level\`, \`availability\`, and \`difficulty\` as extraction/search strategy, not admin labels. These settings decide publish blocking, scheduling order, bundling priority, model/search strength, and whether keyFinder searches deeply enough to match benchmark-depth data like ${benchmarkText}.`,
+    },
+    {
+      kind: 'table',
+      headers: ['Knob', 'Current value', 'Audit question'],
+      rows: [
+        ['`priority.required_level`', formatAuditValue(key.priority.required_level), 'Should this field be mandatory for a publish-grade, depth-tech product page? Mandatory should mean identity, comparison, filtering, benchmark parity, or buyer-relevant technical confidence would be weak without a proven value or honest `unk`.'],
+        ['`priority.availability`', formatAuditValue(key.priority.availability), 'How often should credible public sources expose this value: always, sometimes, or rare? Wrong availability wastes search budget or delays fields that should be searched early.'],
+        ['`priority.difficulty`', formatAuditValue(key.priority.difficulty), 'Can a cheaper model reliably match the benchmark answer, or does this need harder search, source comparison, aliases, component context, reasoning, or a frontier model? Do not mark a field easy just because the answer is short.'],
+        ['Resolved tier bundle', formatTierBundleAuditValue(adapterPreview), 'Does the resolved model/search strength match the extraction risk? Easy should be direct; medium should handle normalization; hard should handle conflict/component context; very_hard should get the strongest reasoning/search.'],
+        ['Benchmark-depth target', benchmarkText, 'Use benchmark data to calibrate the rule and guidance, not as prompt answers. The contract should explain how keyFinder can reproduce those values from public evidence.'],
+      ],
+    },
+  ];
+}
+
 function buildAuthoringChecklistBlocks(key) {
   const priorityCurrent = [
     `priority.required_level=${formatAuditValue(key.priority.required_level)}`,
@@ -507,12 +538,26 @@ function buildAuthoringChecklistBlocks(key) {
     `evidence.min_evidence_refs=${formatAuditValue(key.evidence.min_evidence_refs)}`,
     `evidence.tier_preference=${formatAuditValue(key.evidence.tier_preference)}`,
   ].join(' | ');
+  const consumerCurrent = [
+    'filter',
+    'list',
+    'snapshot/spec',
+    'compare',
+    'metric/card',
+    'search/SEO',
+  ].join(' | ');
+  const unknownCurrent = [
+    '`false`/`no`',
+    '`n/a`',
+    '`unk`',
+    'blank/omitted',
+  ].join(' | ');
 
   return [
     { kind: 'subheading', level: 4, text: 'Full field contract authoring order' },
     {
       kind: 'paragraph',
-      text: 'Validate the whole field contract before editing guidance. Guidance last: write `ai_assist.reasoning_note` only after scheduling, value shape, enum/filter behavior, evidence/source rules, and example coverage are correct.',
+      text: 'Validate the whole field contract before editing guidance. A strong audit can say "no contract change" when shape, enum policy, requiredness, evidence, and consumer behavior are already correct; still leave guidance/examples/aliases/enum cleanup when those are the real improvement. Guidance last: write `ai_assist.reasoning_note` only after scheduling, value shape, enum/filter behavior, consumer-surface intent, unknown/not-applicable states, evidence/source rules, and example coverage are correct.',
     },
     {
       kind: 'table',
@@ -520,10 +565,12 @@ function buildAuthoringChecklistBlocks(key) {
       rows: [
         ['1', 'Scheduling priority', priorityCurrent, 'Does requiredness match publish expectations, does availability match real product coverage, and does difficulty route to the right LLM tier?'],
         ['2', 'Value contract', contractCurrent, 'Does the emitted JSON primitive/list shape match how the value is stored, validated, compared, and filtered?'],
-        ['3', 'Enum and filter surface', enumCurrent, 'Is the enum closed when finite, patterned when open, and small enough for the consumer filter surface?'],
-        ['4', 'Evidence and sources', evidenceCurrent, 'Can the configured source tiers and evidence count actually prove this value without guessing?'],
-        ['5', 'Example bank', '5-10 category-local examples', 'Do examples cover happy path, edge, unknown, conflict, and filter-risk cases before the prompt text is trusted?'],
-        ['6', 'Guidance last', formatAuditValue(key.ai_assist?.reasoning_note), 'Now write paste-ready guidance that fills only the remaining extraction judgment gap.'],
+        ['3', 'Enum and filter surface', enumCurrent, 'Is the enum closed when finite, patterned when open, ordered consistently, and small enough for the consumer filter surface? Keep aliases/source phrases out of public enum chips unless intentionally public.'],
+        ['4', 'Consumer-surface impact', consumerCurrent, 'Which surfaces should use this key: filter, list column, snapshot/spec row, comparison row, metric/card, search/SEO, or none? Does the shape support each intended surface without forcing the site to guess?'],
+        ['5', 'Unknown / not-applicable states', unknownCurrent, 'Is false/no different from n/a and unk? Boolean is enough only when the field truly has two factual states plus ordinary unknown handling. Use n/a when the question does not apply, and unk when evidence is missing.'],
+        ['6', 'Evidence and sources', evidenceCurrent, 'Can the configured source tiers and evidence count actually prove this value without guessing?'],
+        ['7', 'Example bank', '5-10 category-local examples', 'Do examples cover happy path, edge, unknown, not-applicable, conflict, and filter-risk cases before the prompt text is trusted?'],
+        ['8', 'Guidance last', formatAuditValue(key.ai_assist?.reasoning_note), 'Now write paste-ready guidance that fills only the remaining extraction judgment gap, or write "(empty - keep)" when no guidance is needed.'],
       ],
     },
   ];
@@ -557,6 +604,7 @@ function buildPerKeyBlocks(key, adapterPreview) {
   const headerParagraph = `**Group:** ${key.group} · **Priority (required · availability · difficulty):** ${priority} · **Resolved tier:** ${tier.name} → model \`${tier.model || '(inherit)'}\`${tier.useReasoning ? ' · reasoning on' : ''}${tier.webSearch ? ' · web search' : ''}`;
 
   const blocks = [{ kind: 'paragraph', text: headerParagraph }];
+  blocks.push(...buildSearchRoutingBlocks(key, adapterPreview));
   blocks.push(...buildAuthoringChecklistBlocks(key));
   blocks.push(...buildExampleBankRecipeBlocks(key));
 

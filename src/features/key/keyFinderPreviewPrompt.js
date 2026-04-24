@@ -23,7 +23,7 @@ import {
   buildComponentRelationIndex,
   resolveProductComponentInventory,
   resolveKeyComponentRelation,
-  readKnownFieldsByProduct,
+  resolveKeyFinderRuntimeContext,
 } from '../../core/finder/productResolvedStateReader.js';
 import { keyFinderResponseSchema } from './keySchema.js';
 import { readKeyFinder } from './keyStore.js';
@@ -201,18 +201,24 @@ export async function compileKeyFinderPreviewPrompt(ctx) {
     }
     : { primary: null, passengers: passengers.map(() => null) };
 
-  let knownFields = {};
-  if (settings.knownFieldsInjectionEnabled) {
-    const exclude = new Set([
-      fieldKey,
-      ...passengers.map((p) => p.fieldKey),
-      ...componentKeysInInventory,
-    ]);
-    knownFields = readKnownFieldsByProduct({
-      specDb, productId: product.product_id,
-      compiledRulesFields: engine.rules, excludeFieldKeys: exclude,
-    });
-  }
+  const exclude = new Set([
+    fieldKey,
+    ...passengers.map((p) => p.fieldKey),
+    ...componentKeysInInventory,
+  ]);
+  const {
+    productScopedFacts,
+    variantInventory,
+    fieldIdentityUsage,
+  } = resolveKeyFinderRuntimeContext({
+    specDb,
+    productId: product.product_id,
+    compiledRulesFields: engine.rules,
+    excludeFieldKeys: exclude,
+    primaryFieldKey: fieldKey,
+    primaryFieldRule: fieldRule,
+    knownFieldsInjectionEnabled: settings.knownFieldsInjectionEnabled,
+  });
 
   const injectionKnobs = {
     componentInjectionEnabled: settings.componentInjectionEnabled,
@@ -224,7 +230,9 @@ export async function compileKeyFinderPreviewPrompt(ctx) {
     primary: { fieldKey, fieldRule },
     passengers,
     knownValues: engine.knownValues ?? null,
-    knownFields,
+    productScopedFacts,
+    variantInventory,
+    fieldIdentityUsage,
     componentContext,
     productComponents,
     injectionKnobs,

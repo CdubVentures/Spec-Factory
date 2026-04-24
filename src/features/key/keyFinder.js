@@ -38,7 +38,7 @@ import {
   buildComponentRelationIndex,
   resolveProductComponentInventory,
   resolveKeyComponentRelation,
-  readKnownFieldsByProduct,
+  resolveKeyFinderRuntimeContext,
 } from '../../core/finder/productResolvedStateReader.js';
 import { resolveKeyFinderFamilySize } from './keyFamilySize.js';
 
@@ -280,22 +280,27 @@ export async function runKeyFinder(opts) {
     }
     : { primary: null, passengers: passengers.map(() => null) };
 
-  let knownFields = {};
-  if (settings.knownFieldsInjectionEnabled) {
-    // WHY: primary + passengers are the current query targets — the LLM is
-    // being asked to resolve them, so they must never appear as "already
-    // known" context. Component-inventory keys are deduped because they're
-    // already emitted in {{PRODUCT_COMPONENTS}}.
-    const exclude = new Set([
-      fieldKey,
-      ...passengers.map((p) => p.fieldKey),
-      ...componentKeysInInventory,
-    ]);
-    knownFields = readKnownFieldsByProduct({
-      specDb, productId: product.product_id,
-      compiledRulesFields: engine.rules, excludeFieldKeys: exclude,
-    });
-  }
+  // WHY: primary + passengers are the current query targets, so they must
+  // never appear as already-known product facts. Component-inventory keys are
+  // deduped because they're already emitted in {{PRODUCT_COMPONENTS}}.
+  const exclude = new Set([
+    fieldKey,
+    ...passengers.map((p) => p.fieldKey),
+    ...componentKeysInInventory,
+  ]);
+  const {
+    productScopedFacts,
+    variantInventory,
+    fieldIdentityUsage,
+  } = resolveKeyFinderRuntimeContext({
+    specDb,
+    productId: product.product_id,
+    compiledRulesFields: engine.rules,
+    excludeFieldKeys: exclude,
+    primaryFieldKey: fieldKey,
+    primaryFieldRule: fieldRule,
+    knownFieldsInjectionEnabled: settings.knownFieldsInjectionEnabled,
+  });
 
   // 7. Build prompt
   const injectionKnobs = {
@@ -308,7 +313,9 @@ export async function runKeyFinder(opts) {
     primary: { fieldKey, fieldRule },
     passengers,
     knownValues: engine.knownValues ?? null,
-    knownFields,
+    productScopedFacts,
+    variantInventory,
+    fieldIdentityUsage,
     componentContext,
     productComponents,
     injectionKnobs,

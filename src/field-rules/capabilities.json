@@ -133,6 +133,11 @@
       "consumer": "src/features/indexing/extraction/extractCandidatesLLM.js:buildPromptFieldContracts (passed as extraction_guidance to LLM)",
       "description": "Per-field extraction guidance injected into LLM prompts. Auto-generated from field properties when not explicitly set."
     },
+    "ai_assist.variant_inventory_usage": {
+      "status": "live",
+      "consumer": "src/core/finder/productResolvedStateReader.js:buildFieldIdentityUsage + src/features/key/keyLlmAdapter.js:FIELD_IDENTITY_USAGE",
+      "description": "Optional per-field control for how Key Finder uses CEF variant inventory as source identity context. Supports default/append/override/off modes and usage profiles."
+    },
     "ui.label": {
       "status": "ui_only",
       "consumer": "React GUI (tools/gui-react/)",

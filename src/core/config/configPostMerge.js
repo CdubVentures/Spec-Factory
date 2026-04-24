@@ -84,8 +84,8 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
     merged.llmModelOutputTokenMap[model] = { defaultOutputTokens, maxOutputTokens };
   };
 
-  upsertTokenProfile('deepseek-chat', { defaultOutputTokens: 2048, maxOutputTokens: 8192 });
-  upsertTokenProfile('deepseek-reasoner', { defaultOutputTokens: 4096, maxOutputTokens: 64000 });
+  upsertTokenProfile('deepseek-v4-flash', { defaultOutputTokens: 2048, maxOutputTokens: 384000 });
+  upsertTokenProfile('deepseek-v4-pro', { defaultOutputTokens: 4096, maxOutputTokens: 384000 });
   upsertTokenProfile('gemini-2.5-flash-lite', { defaultOutputTokens: 4096, maxOutputTokens: 8192 });
   upsertTokenProfile('gemini-2.5-flash', { defaultOutputTokens: 3072, maxOutputTokens: 8192 });
   upsertTokenProfile('gpt-5-low', { defaultOutputTokens: 3072, maxOutputTokens: 16384 });

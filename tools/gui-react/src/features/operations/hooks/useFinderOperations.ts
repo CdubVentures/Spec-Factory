@@ -115,6 +115,78 @@ export function useRunningVariantKeys(type: string, productId: string, subType: 
   );
 }
 
+/**
+ * Any-subtype variant-scope selector. Returns variant_keys with a currently-
+ * running op of any subtype (view/hero/loop/evaluate/run). Used by the Overview
+ * cells to drive the per-variant "pulsing" indicator — we want the cluster to
+ * pulse regardless of which flavor of work is active.
+ */
+export function selectRunningVariantKeysAny(
+  ops: ReadonlyMap<string, Operation>,
+  type: string,
+  productId: string,
+): string {
+  const keys = new Set<string>();
+  for (const op of ops.values()) {
+    if (
+      op.type === type &&
+      op.productId === productId &&
+      op.status === 'running' &&
+      op.variantKey
+    ) {
+      keys.add(op.variantKey);
+    }
+  }
+  return [...keys].sort().join('|');
+}
+
+export function useRunningVariantKeysAny(type: string, productId: string): ReadonlySet<string> {
+  const serialized = useOperationsStore(
+    useCallback(
+      (s: { operations: ReadonlyMap<string, Operation> }) =>
+        selectRunningVariantKeysAny(s.operations, type, productId),
+      [type, productId],
+    ),
+  );
+  return useMemo(
+    () => new Set(serialized ? serialized.split('|') : []),
+    [serialized],
+  );
+}
+
+/**
+ * Category-scoped product-id set: which products have ANY running finder op
+ * (CEF / PIF / SKF / RDF / KF — any type, any subtype). Used by the Overview
+ * filter bar's "Active first" sort to float running rows to the top.
+ */
+export function selectRunningProductIds(
+  ops: ReadonlyMap<string, Operation>,
+  category: string,
+): string {
+  const ids = new Set<string>();
+  for (const op of ops.values()) {
+    if (op.status !== 'running') continue;
+    if (!op.productId) continue;
+    if (category && op.category !== category) continue;
+    ids.add(op.productId);
+  }
+  return [...ids].sort().join('|');
+}
+
+export function useRunningProductIds(category: string): ReadonlySet<string> {
+  const serialized = useOperationsStore(
+    useCallback(
+      (s: { operations: ReadonlyMap<string, Operation> }) =>
+        selectRunningProductIds(s.operations, category),
+      [category],
+    ),
+  );
+  return useMemo(
+    () => new Set(serialized ? serialized.split('|') : []),
+    [serialized],
+  );
+}
+
 /** Per-key scope (keyFinder). Returns the set of field_keys currently running. */
 export function useRunningFieldKeys(type: string, productId: string): ReadonlySet<string> {
   const serialized = useOperationsStore(

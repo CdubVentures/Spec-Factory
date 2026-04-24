@@ -83,6 +83,39 @@ test('renderMarkdown places auditor-task section before summary and includes ret
   const summaryIdx = md.indexOf('## Summary');
   assert.ok(auditorIdx >= 0 && summaryIdx > auditorIdx, 'auditor-task appears before summary');
   assert.ok(md.includes('Return format (markdown'), 'return-format spec included');
+  assert.match(md, /Downloadable text file/i);
+  assert.match(md, /<category>-keyfinder-field-studio-changes\.txt/);
+  assert.match(md, /FIELD STUDIO CHANGE FILE/i);
+  assert.match(md, /Mapping Studio:/);
+  assert.match(md, /Component Source Mapping:/);
+  assert.match(md, /Enum Data Lists:/);
+  assert.match(md, /Key Navigator:/);
+  assert.match(md, /Contract:/);
+  assert.match(md, /variant_dependent:/);
+  assert.match(md, /range\.min:/);
+  assert.match(md, /range\.max:/);
+  assert.match(md, /Enum Policy:/);
+  assert.match(md, /actual enum list values live in Mapping Studio/i);
+  assert.match(md, /Components:/);
+  assert.match(md, /Cross-Field Constraints:/);
+  assert.match(md, /Evidence:/);
+  assert.match(md, /Extraction Priority & Guidance:/);
+  assert.match(md, /AI reasoning note:/);
+  assert.match(md, /Search Hints & Aliases:/);
+  assert.match(md, /Aliases:/);
+  assert.match(md, /No change/);
+  assert.ok(
+    md.indexOf('Component Source Mapping:') < md.indexOf('Enum Data Lists:'),
+    'component source mapping comes before enum data lists',
+  );
+  assert.ok(
+    md.indexOf('Mapping Studio:') < md.indexOf('Key Navigator:'),
+    'Mapping Studio comes before Key Navigator',
+  );
+  assert.ok(
+    md.indexOf('Enum Data Lists:') < md.indexOf('Enum Policy:'),
+    'enum list edits come before Key Navigator enum policy edits',
+  );
   assert.ok(md.includes('Field-by-field patches'), 'per-field patch section included');
   assert.ok(md.includes('Highest-risk corrections'), 'highest-risk lead-in included');
   assert.ok(md.includes('## Audit standard'), 'audit standard section emitted');
@@ -107,8 +140,17 @@ test('renderMarkdown tells auditors to validate the full field contract before w
   assert.ok(md.includes('priority.required_level'));
   assert.ok(md.includes('priority.availability'));
   assert.ok(md.includes('priority.difficulty'));
+  assert.match(md, /Search \/ routing/i);
+  assert.match(md, /model\/search strength/i);
+  assert.match(md, /benchmark-depth/i);
+  assert.match(md, /mouseData\.xlsm/);
+  assert.match(md, /C2:BT83/);
   assert.ok(md.includes('contract.type'));
   assert.ok(md.includes('contract.shape'));
+  assert.match(md, /no contract change/i);
+  assert.match(md, /Consumer-surface impact/i);
+  assert.match(md, /Unknown \/ not-applicable/i);
+  assert.match(md, /Boolean is not automatically enough/i);
   assert.match(md, /guidance last/i);
   assert.ok(md.includes('Example bank recipe'));
   assert.ok(md.includes('5-10'));

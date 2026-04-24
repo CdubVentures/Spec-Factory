@@ -76,8 +76,8 @@ export const STUDIO_TIPS: Record<string, string> = {
   rounding_decimals: 'Decimal places for rounding numeric values. 0 = integer. Only affects number/integer types.',
   rounding_mode: 'nearest: standard rounding, floor: always down, ceil: always up.',
 
-  // Tab 2: Key Navigator - Priority
-  key_section_priority: 'Priority, availability, and difficulty settings drive extraction urgency and scheduling of this field.',
+  // Tab 2: Key Navigator - Extraction Priority & Guidance
+  key_section_priority: 'Extraction priority controls scheduling, routing, and model/search effort. Extraction guidance is the AI reasoning note sent to keyFinder.',
   required_level: 'Field importance. mandatory: essential for publish (identity + critical data). non_mandatory: nice-to-have.',
   availability: 'How often this data exists. always: every product, sometimes: ~half, rare: editorial/niche only.',
   difficulty: 'Extraction difficulty. easy: directly stated, medium: some inference, hard: buried/inconsistent, very_hard: needs multi-source synthesis or physical measurement.',
@@ -96,7 +96,7 @@ export const STUDIO_TIPS: Record<string, string> = {
   tier_preference: 'Source trust ordering. Tier 1 (Manufacturer): OEM specs. Tier 2 (Lab): independent tests. Tier 3 (Retailer): store listings. Tier 4 (Community): forums/reviews. Tier 5 (Aggregator): comparison sites.',
 
   // Tab 2: Key Navigator - UI & Display
-  key_section_ui: 'UI controls determine how the field is displayed and edited in generated product views.',
+  key_section_ui: 'Tooltip guidance is display help for users in generated product views. It is separate from the AI reasoning note.',
   ui_label: 'Human-readable display name shown in UI and reports (e.g. \'Weight\' instead of \'weight_grams\').',
   ui_group: 'Category for organizing fields in the sidebar and reports. Fields with the same group appear together.',
   display_mode: 'When to show this field. all: always, summary: compact views only, detailed: expanded views only.',
@@ -104,11 +104,11 @@ export const STUDIO_TIPS: Record<string, string> = {
   ui_prefix: 'Text before the value (e.g. \'$\' for \'$59.99\').',
   display_decimals: 'Decimal places for display rendering. Does not affect stored precision.',
   ui_order: 'Sort position within its group. Lower = first. Same order = alphabetical.',
-  tooltip_guidance: 'Markdown tooltip shown when users hover this field in the final spec output. Describe meaning and interpretation.',
-  aliases: 'Alternative names for this field key. Used for fuzzy matching across sources with different naming.',
+  tooltip_guidance: 'Markdown tooltip shown to users in the final spec output. UI-only; not the AI reasoning note sent to keyFinder.',
+  aliases: 'Alternative source phrases and field names used for search enrichment and source-text matching. Keep enum values and display tooltip text separate.',
 
-  // Tab 2: Key Navigator - Search Hints
-  key_section_search: 'Search hints bias crawling and extraction by prioritizing domains, content types, and query terms.',
+  // Tab 2: Key Navigator - Search Hints & Aliases
+  key_section_search: 'Search hints and aliases bias crawling and extraction by prioritizing source phrases, domains, content types, and query terms.',
   domain_hints: 'Preferred website domains/types. E.g. \'manufacturer\' for OEM sites, or specific domains like \'rtings.com\'.',
   content_types: 'Content types most likely to have this data. E.g. spec_sheet, datasheet, review, manual, pdf.',
   query_terms: 'Extra search terms for this field. E.g. for polling_rate: \'report rate\', \'USB poll rate\'.',

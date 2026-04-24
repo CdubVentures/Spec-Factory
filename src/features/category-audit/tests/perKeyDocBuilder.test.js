@@ -43,12 +43,77 @@ function loadedRulesFixture() {
   };
 }
 
+function loadedRulesContextFixture() {
+  return {
+    rules: {
+      fields: {
+        sensor: mkRule({
+          field_key: 'sensor',
+          ui: { label: 'Sensor', group: 'sensor_performance' },
+          component: { type: 'sensor', source: 'component_db.sensor' },
+          enum: { policy: 'open_prefer_known', source: 'data_lists.sensor', values: [] },
+          variance_policy: 'authoritative',
+        }),
+        dpi: mkRule({
+          field_key: 'dpi',
+          ui: { label: 'DPI', group: 'sensor_performance' },
+          contract: { type: 'number', shape: 'scalar', unit: 'dpi' },
+          enum: { policy: '', values: [] },
+          variance_policy: 'upper_bound',
+        }),
+        sensor_date: mkRule({
+          field_key: 'sensor_date',
+          ui: { label: 'Sensor Date', group: 'sensor_performance' },
+          contract: { type: 'date', shape: 'scalar' },
+          constraints: ['sensor_date <= release_date'],
+          variance_policy: 'authoritative',
+        }),
+        release_date: mkRule({
+          field_key: 'release_date',
+          ui: { label: 'Release Date', group: 'general' },
+          contract: { type: 'date', shape: 'scalar' },
+          enum: { policy: '', values: [] },
+        }),
+      },
+    },
+    knownValues: { enums: { sensor: { policy: 'open_prefer_known', values: ['PAW3950'] } } },
+    componentDBs: {
+      sensor: {
+        component_type: 'sensor',
+        items: [
+          {
+            name: 'PAW3950',
+            maker: 'PixArt',
+            aliases: ['3950'],
+            properties: { dpi: 30000, sensor_date: '2023-01' },
+            __variance_policies: { dpi: 'upper_bound', sensor_date: 'authoritative' },
+            __constraints: { sensor_date: ['sensor_date <= release_date'] },
+          },
+        ],
+      },
+      switch: {
+        component_type: 'switch',
+        items: [{ name: 'Optical Gen 3', properties: { switch_type: 'optical' } }],
+      },
+    },
+  };
+}
+
 function fieldGroupsFixture() {
   return {
     group_index: {
       sensor_performance: ['dpi', 'ips'],
       ergonomics: ['form_factor'],
       general: ['colors'],
+    },
+  };
+}
+
+function contextFieldGroupsFixture() {
+  return {
+    group_index: {
+      general: ['release_date'],
+      sensor_performance: ['sensor', 'dpi', 'sensor_date'],
     },
   };
 }
@@ -141,6 +206,58 @@ test('rolling overwrite — running twice replaces the prior contents', async ()
   }
 });
 
+test('regeneration removes stale files from old group folders', async () => {
+  const outputRoot = await mkTmpDir();
+  try {
+    await generatePerKeyDocs({
+      category: 'mouse',
+      loadedRules: loadedRulesFixture(),
+      fieldGroups: fieldGroupsFixture(),
+      globalFragments: {},
+      tierBundles: {},
+      outputRoot,
+      now: new Date('2026-04-23T00:00:00Z'),
+    });
+
+    const oldDpiPath = path.join(outputRoot, 'per-key', 'mouse', 'sensor_performance', 'dpi.md');
+    await fs.access(oldDpiPath);
+
+    const movedRules = loadedRulesFixture();
+    movedRules.rules.fields.dpi = {
+      ...movedRules.rules.fields.dpi,
+      ui: { ...movedRules.rules.fields.dpi.ui, group: 'sensor_identity' },
+    };
+
+    const secondResult = await generatePerKeyDocs({
+      category: 'mouse',
+      loadedRules: movedRules,
+      fieldGroups: {
+        group_index: {
+          sensor_identity: ['dpi'],
+          sensor_performance: ['ips'],
+          ergonomics: ['form_factor'],
+          general: ['colors'],
+        },
+      },
+      globalFragments: {},
+      tierBundles: {},
+      outputRoot,
+      now: new Date('2026-04-24T00:00:00Z'),
+    });
+
+    const newDpiPath = secondResult.written.find((e) => e.fieldKey === 'dpi').mdPath;
+    assert.equal(newDpiPath, path.join(outputRoot, 'per-key', 'mouse', 'sensor_identity', 'dpi.md'));
+    await fs.access(newDpiPath);
+    await assert.rejects(
+      () => fs.access(oldDpiPath),
+      /ENOENT/,
+      'old group path is removed so stale per-key docs cannot survive',
+    );
+  } finally {
+    await cleanupDir(outputRoot);
+  }
+});
+
 test('generated file contains the full contract schema table and placeholder prompt', async () => {
   const outputRoot = await mkTmpDir();
   try {
@@ -157,6 +274,37 @@ test('generated file contains the full contract schema table and placeholder pro
     assert.match(dpiHtml, /Contract schema/i);
     assert.match(dpiHtml, /&lt;BRAND&gt;/i); // escaped placeholder in HTML
     assert.match(dpiHtml, /priority\.difficulty/i);
+    assert.match(dpiHtml, /no contract change/i);
+    assert.match(dpiHtml, /Consumer-surface impact/i);
+    assert.match(dpiHtml, /n\/a/i);
+    assert.match(dpiHtml, /Boolean is enough only/i);
+  } finally {
+    await cleanupDir(outputRoot);
+  }
+});
+
+test('generated per-key file includes category key map, constraints, and component variance context', async () => {
+  const outputRoot = await mkTmpDir();
+  try {
+    const result = await generatePerKeyDocs({
+      category: 'mouse',
+      loadedRules: loadedRulesContextFixture(),
+      fieldGroups: contextFieldGroupsFixture(),
+      globalFragments: {},
+      tierBundles: {},
+      outputRoot,
+      now: new Date('2026-04-23T00:00:00Z'),
+    });
+    const dpiEntry = result.written.find((e) => e.fieldKey === 'dpi');
+    assert.ok(dpiEntry, 'dpi entry present');
+    const dpiHtml = await fs.readFile(dpiEntry.htmlPath, 'utf8');
+    assert.match(dpiHtml, /Category key map/i);
+    assert.match(dpiHtml, /release_date/i);
+    assert.match(dpiHtml, /sensor_date &lt;= release_date/i);
+    assert.match(dpiHtml, /All current components/i);
+    assert.match(dpiHtml, /switch/i);
+    assert.match(dpiHtml, /PAW3950/i);
+    assert.match(dpiHtml, /upper_bound/i);
   } finally {
     await cleanupDir(outputRoot);
   }

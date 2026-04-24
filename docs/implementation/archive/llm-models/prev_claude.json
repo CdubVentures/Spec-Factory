@@ -28,42 +28,18 @@
     "base": {
       "ok": false,
       "time": 0.0,
-      "error": "{'allowed_models': ['claude-sonnet-4-5', 'claude-opus-4-1', 'claude-opus-4-6', 'claude-haiku-4-5'], 'code': 'MODEL_NOT_ALLOWED', 'message': \"Model 'cl"
+      "error": "{'allowed_models': ['claude-sonnet-4-5', 'claude-opus-4-6', 'claude-haiku-4-5'], 'code': 'MODEL_NOT_ALLOWED', 'message': \"Model 'cl"
     },
     "thinking": null,
     "web": null,
     "json": null
   },
   {
-    "model": "claude-opus-4-1",
-    "base": {
-      "ok": true,
-      "time": 3.9
-    },
-    "thinking": {
-      "ok": true,
-      "correct": true,
-      "time": 8.2,
-      "content_len": 620
-    },
-    "web": {
-      "ok": true,
-      "has_date": true,
-      "time": 3.8,
-      "content": "Today's date is 2026-03-27."
-    },
-    "json": {
-      "ok": true,
-      "valid_json": true,
-      "time": 3.8
-    }
-  },
-  {
     "model": "claude-opus-4-5",
     "base": {
       "ok": false,
       "time": 0.0,
-      "error": "{'allowed_models': ['claude-sonnet-4-5', 'claude-opus-4-1', 'claude-opus-4-6', 'claude-haiku-4-5'], 'code': 'MODEL_NOT_ALLOWED', 'message': \"Model 'cl"
+      "error": "{'allowed_models': ['claude-sonnet-4-5', 'claude-opus-4-6', 'claude-haiku-4-5'], 'code': 'MODEL_NOT_ALLOWED', 'message': \"Model 'cl"
     },
     "thinking": null,
     "web": null,

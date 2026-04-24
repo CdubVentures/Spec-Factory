@@ -4,6 +4,7 @@ import {
   buildModelCostComparisonBars,
   buildModelCostDashboard,
   filterModelCostRows,
+  formatModelCostRate,
   groupModelCostComparisonBarsByProvider,
   resolveProviderDisplay,
   sortModelCostRows,
@@ -212,6 +213,42 @@ describe('buildModelCostDashboard', () => {
     strictEqual(result.modelRows.some((row) => row.model.trim() === ''), false);
     strictEqual(buildModelCostComparisonBars(result.modelRows, { metric: 'combined_rates' }).some((bar) => bar.model.trim() === ''), false);
   });
+
+  it('canonicalizes Claude lab rows under Anthropic provider family', () => {
+    const response: BillingModelCostsResponse = {
+      ...RESPONSE,
+      totals: { ...RESPONSE.totals, providers: 1, models: 1, used_models: 1, current_cost_usd: 0.11 },
+      providers: [
+        {
+          id: 'lab-claude',
+          label: 'LLM Lab Claude',
+          kind: 'anthropic',
+          model_count: 1,
+          used_model_count: 1,
+          current_cost_usd: 0.11,
+          highest_output_per_1m: 15,
+          models: [
+            {
+              ...RESPONSE.providers[2].models[0],
+              provider: 'lab-claude',
+              provider_label: 'LLM Lab Claude',
+              provider_kind: 'anthropic',
+              access_modes: ['lab'],
+              pricing_source: 'llm_lab',
+              registry_provider_id: 'lab-claude',
+              registry_provider_label: 'LLM Lab Claude',
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = buildModelCostDashboard(response);
+
+    strictEqual(result.providerCards[0].id, 'anthropic:anthropic');
+    strictEqual(result.providerCards[0].label, 'Anthropic');
+    strictEqual(result.modelRows[0].provider_label, 'Anthropic');
+  });
 });
 
 describe('filterModelCostRows', () => {
@@ -241,6 +278,14 @@ describe('filterModelCostRows', () => {
 });
 
 describe('model cost visual comparison helpers', () => {
+  it('formats whole-dollar model rates without stripping significant zeroes', () => {
+    strictEqual(formatModelCostRate(30), '$30');
+    strictEqual(formatModelCostRate(10), '$10');
+    strictEqual(formatModelCostRate(2.5), '$2.5');
+    strictEqual(formatModelCostRate(0.5), '$0.5');
+    strictEqual(formatModelCostRate(0.075), '$0.075');
+  });
+
   it('sorts rows by a selected table metric with stable model fallback', () => {
     const rows = buildModelCostDashboard(RESPONSE).modelRows;
 

@@ -402,7 +402,7 @@ for i, (mid, status) in enumerate(lab_gemini):
     html_parts.append(f'    <tr>{prov}<td class="model-name">{mid}</td><td>{badge("skip","N/A")}</td><td>{badge(True, "Yes")}</td><td>{st}</td></tr>')
 
 # Lab Claude
-lab_claude = ["claude-sonnet-4-5", "claude-opus-4-1", "claude-opus-4-6", "claude-haiku-4-5"]
+lab_claude = ["claude-sonnet-4-5", "claude-opus-4-6", "claude-haiku-4-5"]
 for i, mid in enumerate(lab_claude):
     prov = f'<td rowspan="{len(lab_claude)}">lab-claude<br><small>:5003</small></td>' if i == 0 else ""
     html_parts.append(f'    <tr>{prov}<td class="model-name">{mid}</td><td>{badge(True, "Yes")}</td><td>{badge(True, "Yes")}</td><td>{badge(False)}</td></tr>')

@@ -1,3 +1,6 @@
+import { isReservedFieldKey } from '../../core/finder/finderExclusions.js';
+import { isConcreteEvidence } from '../../features/key/index.js';
+
 function assertFunction(name, value) {
   if (typeof value !== 'function') {
     throw new TypeError(`${name} must be a function`);
@@ -127,12 +130,80 @@ function readPifTargets(specDb, category) {
   };
 }
 
+// KeyFinder tier progress — 5-bucket rollup per product for the Overview "Keys"
+// cell. Buckets: easy/medium/hard/very_hard (from fieldRule.difficulty) +
+// mandatory (overlapping bucket — any key with required_level='mandatory' also
+// counts here, regardless of difficulty). Per bucket we emit:
+//   - total     → capacity (keys assigned to this tier for the category)
+//   - resolved  → outer ring (candidate cascade resolved — has a picked value)
+//   - perfect   → inner ring (concrete-evidence gate passed — "not improvable")
+// Reserved keys (CEF/PIF/RDF/SKF-owned) are excluded: keyFinder never touches
+// them, so they shouldn't count toward keyFinder progress.
+const KEY_TIER_ORDER = Object.freeze(['easy', 'medium', 'hard', 'very_hard', 'mandatory']);
+
+function buildKeyTierProgress(specDb, productId, gateKnobs) {
+  const compiled = specDb?.getCompiledRules?.() || null;
+  const fields = compiled?.fields || {};
+  const tiers = {
+    easy:      { tier: 'easy',      total: 0, resolved: 0, perfect: 0 },
+    medium:    { tier: 'medium',    total: 0, resolved: 0, perfect: 0 },
+    hard:      { tier: 'hard',      total: 0, resolved: 0, perfect: 0 },
+    very_hard: { tier: 'very_hard', total: 0, resolved: 0, perfect: 0 },
+    mandatory: { tier: 'mandatory', total: 0, resolved: 0, perfect: 0 },
+  };
+  const hasResolved = typeof specDb?.getResolvedFieldCandidate === 'function';
+  const gateActive = gateKnobs.excludeConf > 0 && gateKnobs.excludeEvd > 0;
+
+  for (const [fk, rule] of Object.entries(fields)) {
+    if (!rule || isReservedFieldKey(fk)) continue;
+    const difficulty = String(rule.difficulty || 'medium');
+    const bucket = tiers[difficulty];
+    if (!bucket) continue;
+    const isMandatory = String(rule.required_level || '') === 'mandatory';
+
+    const resolved = hasResolved
+      ? Boolean(specDb.getResolvedFieldCandidate(productId, fk))
+      : false;
+    const perfect = gateActive
+      ? isConcreteEvidence({
+        specDb, productId, fieldKey: fk, fieldRule: rule,
+        excludeConf: gateKnobs.excludeConf, excludeEvd: gateKnobs.excludeEvd,
+      })
+      : false;
+
+    bucket.total += 1;
+    if (resolved) bucket.resolved += 1;
+    if (perfect) bucket.perfect += 1;
+
+    if (isMandatory) {
+      tiers.mandatory.total += 1;
+      if (resolved) tiers.mandatory.resolved += 1;
+      if (perfect) tiers.mandatory.perfect += 1;
+    }
+  }
+  return KEY_TIER_ORDER.map((t) => tiers[t]);
+}
+
+// Concrete-gate knob pair — read once per catalog refresh (category-scoped),
+// shared across all products. Mirrors readBundlingSettings in keyFinderRoutes.
+function readKeyFinderGateKnobs(specDb) {
+  const store = specDb?.getFinderStore?.('keyFinder') ?? null;
+  const read = (k, d) => {
+    const v = store?.getSetting?.(k);
+    return (v === undefined || v === null || v === '') ? d : v;
+  };
+  const excludeConf = parseInt(read('passengerExcludeAtConfidence', '95'), 10) || 0;
+  const excludeEvd = parseInt(read('passengerExcludeMinEvidence', '3'), 10) || 0;
+  return { excludeConf, excludeEvd };
+}
+
 function buildCatalogFromSql({ specDb, cleanVariant, category }) {
   if (!specDb) return [];
 
   const allProducts = specDb.getAllProducts() || [];
   const totalFieldCount = readFieldKeyOrderCount(specDb, category);
   const pifTargets = readPifTargets(specDb, category);
+  const keyGateKnobs = readKeyFinderGateKnobs(specDb);
 
   const seen = new Map();
 
@@ -156,6 +227,7 @@ function buildCatalogFromSql({ specDb, cleanVariant, category }) {
     const pifVariants = buildPifVariants(specDb, pid, pifTargets);
     const skuVariants = buildScalarVariants(specDb, pid, 'sku');
     const rdfVariants = buildScalarVariants(specDb, pid, 'release_date');
+    const keyTierProgress = buildKeyTierProgress(specDb, pid, keyGateKnobs);
 
     seen.set(pid, {
       productId: pid,
@@ -175,6 +247,7 @@ function buildCatalogFromSql({ specDb, cleanVariant, category }) {
       pifVariants,
       skuVariants,
       rdfVariants,
+      keyTierProgress,
     });
   }
 

@@ -8,6 +8,7 @@ import {
   buildModelCostComparisonBars,
   buildModelCostDashboard,
   filterModelCostRows,
+  formatModelCostRate,
   groupModelCostComparisonBarsByProvider,
   groupModelCostRowsByProvider,
   sortModelCostRows,
@@ -47,10 +48,6 @@ const COMBINED_SORT_AXES: Array<{ value: CombinedSortAxis; label: string }> = [
   { value: 'output_per_1m', label: 'Output' },
 ];
 
-function formatRate(value: number): string {
-  return `$${value.toFixed(value >= 10 ? 0 : 3).replace(/\.?0+$/, '')}`;
-}
-
 function formatTokens(value: number | null): string {
   if (value == null || value <= 0) return '--';
   return compactNumber(value);
@@ -66,7 +63,7 @@ function SourcePill({ label, href }: { label: string; href: string }) {
 
 function formatComparisonValue(metric: ModelCostComparisonMetric, value: number): string {
   if (metric === 'current_cost_usd') return usd(value, 4);
-  return formatRate(value);
+  return formatModelCostRate(value);
 }
 
 function metricLabel(metric: ModelCostComparisonMetric): string {
@@ -132,21 +129,18 @@ function ModelCostComparisonChart({
     <div className="sf-model-cost-chart-item" key={`${bar.provider}-${bar.model}`}>
       <div className="sf-model-cost-chart-stage">
         {metric === 'combined_rates' ? (
-          <>
-            <span className="sf-model-cost-chart-values is-combined">
-              <span className="is-input">{formatRate(bar.row.input_per_1m)}</span>
-              <span className="is-output">{formatRate(bar.row.output_per_1m)}</span>
+          <span className={`sf-model-cost-chart-combined ${bar.bucketClass}`}>
+            <span className={`sf-model-cost-chart-bar sf-model-cost-chart-mini is-input ${bar.inputBucketClass}`}>
+              <span className="sf-model-cost-chart-bar-value">{formatModelCostRate(bar.row.input_per_1m)}</span>
             </span>
-            <span className={`sf-model-cost-chart-combined ${bar.bucketClass}`}>
-              <span className={`sf-model-cost-chart-bar sf-model-cost-chart-mini is-input ${bar.inputBucketClass}`} />
-              <span className={`sf-model-cost-chart-bar sf-model-cost-chart-mini is-output ${bar.outputBucketClass}`} />
+            <span className={`sf-model-cost-chart-bar sf-model-cost-chart-mini is-output ${bar.outputBucketClass}`}>
+              <span className="sf-model-cost-chart-bar-value">{formatModelCostRate(bar.row.output_per_1m)}</span>
             </span>
-          </>
+          </span>
         ) : (
-          <>
-            <span className="sf-model-cost-chart-values">{formatComparisonValue(metric, bar.value)}</span>
-            <span className={`sf-model-cost-chart-bar ${bar.bucketClass}`} />
-          </>
+          <span className={`sf-model-cost-chart-bar ${bar.bucketClass}`}>
+            <span className="sf-model-cost-chart-bar-value">{formatComparisonValue(metric, bar.value)}</span>
+          </span>
         )}
       </div>
       <div className="sf-model-cost-chart-label">
@@ -278,9 +272,9 @@ function ModelRow({ row }: { row: ModelCostDashboardRow }) {
           </div>
         </div>
       </td>
-      <td className="sf-model-cost-rate">{formatRate(row.input_per_1m)}</td>
-      <td className="sf-model-cost-rate is-output">{formatRate(row.output_per_1m)}</td>
-      <td className="sf-model-cost-rate is-cache">{formatRate(row.cached_input_per_1m)}</td>
+      <td className="sf-model-cost-rate">{formatModelCostRate(row.input_per_1m)}</td>
+      <td className="sf-model-cost-rate is-output">{formatModelCostRate(row.output_per_1m)}</td>
+      <td className="sf-model-cost-rate is-cache">{formatModelCostRate(row.cached_input_per_1m)}</td>
     </tr>
   );
 }
@@ -361,7 +355,7 @@ export function BillingModelCostDialog({
                 </div>
                 <div className="sf-model-cost-kpi">
                   <span>Peak Output</span>
-                  <strong>{formatRate(data?.totals.highest_output_per_1m ?? 0)}</strong>
+                  <strong>{formatModelCostRate(data?.totals.highest_output_per_1m ?? 0)}</strong>
                 </div>
               </div>
             </div>

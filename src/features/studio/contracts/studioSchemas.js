@@ -16,6 +16,18 @@ export const PriorityProfileSchema = z.object({
 
 export const AiAssistConfigSchema = z.object({
   reasoning_note: z.string().optional(),
+  variant_inventory_usage: z.object({
+    mode: z.enum(['default', 'append', 'override', 'off']).optional(),
+    profile: z.enum([
+      'spec_invariant',
+      'visual_design',
+      'physical_measurement',
+      'compatibility',
+      'package_contents',
+      'variant_specific',
+    ]).optional(),
+    text: z.string().optional(),
+  }).optional(),
 });
 
 // ---------------------------------------------------------------------------

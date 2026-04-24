@@ -93,7 +93,7 @@ function makeFinderStoreStub(settings) {
   };
 }
 
-function makeSpecDbStub({ finderStore, resolvedSet = new Set(), bucketsByFieldKey = {}, activeVariants, productRows = [], compiledRules = COMPILED } = {}) {
+function makeSpecDbStub({ finderStore, resolvedSet = new Set(), bucketsByFieldKey = {}, activeVariants, productRows = [], compiledRules = COMPILED, fieldCandidateRows = {}, pifProgressRows = [] } = {}) {
   const variants = activeVariants || [{ variant_id: 'v0', variant_key: 'default', variant_label: 'Default', variant_type: 'base' }];
   return {
     category: 'mouse',
@@ -105,7 +105,12 @@ function makeSpecDbStub({ finderStore, resolvedSet = new Set(), bucketsByFieldKe
       listActive: () => variants,
       listByProduct: () => variants,
     },
-    getFieldCandidatesByProductAndField: () => [],
+    getFieldCandidatesByProductAndField: (_pid, fk, variantId) => {
+      const rows = fieldCandidateRows[fk] || [];
+      if (variantId === undefined) return rows;
+      return rows.filter((row) => (row.variant_id ?? null) === (variantId ?? null));
+    },
+    listPifVariantProgressByProduct: () => pifProgressRows,
     getResolvedFieldCandidate: (_pid, fk) => (resolvedSet.has(fk) ? { value: 'X', confidence: 95 } : null),
     getItemComponentLinks: () => [],
     // Bucket evaluator contract — drives isConcreteEvidence.
@@ -132,12 +137,12 @@ const PRODUCT_ROOT = path.join(TMP, 'products');
 
 function cleanupTmp() { try { fs.rmSync(TMP, { recursive: true, force: true }); } catch { /* */ } }
 
-function setup(productId, { settings = BUNDLING_ON, resolvedSet = new Set(), bucketsByFieldKey = {}, activeVariants, productRows = [], compiledRules = COMPILED } = {}) {
+function setup(productId, { settings = BUNDLING_ON, resolvedSet = new Set(), bucketsByFieldKey = {}, activeVariants, productRows = [], compiledRules = COMPILED, fieldCandidateRows = {}, pifProgressRows = [] } = {}) {
   const dir = path.join(PRODUCT_ROOT, productId);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'product.json'), JSON.stringify({ product_id: productId, category: 'mouse', candidates: {}, fields: {} }));
   const finderStore = makeFinderStoreStub(settings);
-  const specDb = makeSpecDbStub({ finderStore, resolvedSet, bucketsByFieldKey, activeVariants, productRows, compiledRules });
+  const specDb = makeSpecDbStub({ finderStore, resolvedSet, bucketsByFieldKey, activeVariants, productRows, compiledRules, fieldCandidateRows, pifProgressRows });
   return { specDb };
 }
 
@@ -200,7 +205,9 @@ test('prompt preview resolves known_values enum lists for primary and passenger 
   const system = env.prompts[0].system;
   assert.match(system, /Allowed values \(closed\): wired \| wireless \| hybrid/);
   assert.match(system, /Passenger key: connectivity/);
-  assert.match(system, /Prefer known values \(open_prefer_known\): 2\.4GHz Dongle \| Bluetooth/);
+  assert.match(system, /Preferred canonical values \(open_prefer_known\): 2\.4GHz Dongle \| Bluetooth/);
+  assert.match(system, /Emit an unlisted value only when direct evidence proves a real value that none of the listed values can represent/);
+  assert.doesNotMatch(system, /New values are allowed only when directly evidenced/);
 });
 
 test('preview prompt honors passenger_field_keys_snapshot from the UI bundle row', async (t) => {

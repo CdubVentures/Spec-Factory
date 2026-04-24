@@ -18,7 +18,7 @@ export function shortModel(model: string): string {
     return `${variant} ${gm[1]}`;
   }
   if (m.includes('gemini')) return 'Gemini';
-  // DeepSeek: "deepseek-chat" → "DS Chat"
+  // DeepSeek: "deepseek-v4-flash" -> "DS V4 Flash"
   const ds = m.match(/deepseek[- ](\w+)/);
   if (ds) return `DS ${ds[1].charAt(0).toUpperCase() + ds[1].slice(1)}`;
   // GPT: "gpt-5-medium" → "GPT-5 Medium", "gpt-4o-mini" → "GPT-4o Mini"

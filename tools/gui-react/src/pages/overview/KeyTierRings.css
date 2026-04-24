@@ -1,0 +1,80 @@
+/* KeyTierRings — per-tier dual concentric segmented rings (Keys cell).
+   Shares stroke-width + viewBox sizing with PifVariantRings (50×50, stroke 5)
+   so CEF / PIF / Keys read as one family across the Finders column group.
+   Outer ring = resolved count, inner ring = perfect (concrete-gate passed). */
+
+.sf-ktr-strip {
+  display: inline-flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 2px 2px;
+  flex-wrap: nowrap;
+}
+
+.sf-ktr-cluster {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 1px;
+  border-radius: 5px;
+  cursor: default;
+}
+
+.sf-ktr-label {
+  font-family: var(--sf-font-family-mono, 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace);
+  font-size: 10px;
+  font-weight: 700;
+  color: rgb(var(--sf-color-text-subtle-rgb));
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.sf-ktr-mandatory {
+  color: var(--sf-token-accent, #5f3dc4);
+  font-size: 12px;
+}
+
+.sf-ktr-svg {
+  width: 50px;
+  height: 50px;
+  display: block;
+  transform: rotate(-90deg);
+}
+
+.sf-ktr-track {
+  fill: none;
+  stroke: rgba(130, 140, 150, 0.22);
+  stroke-width: 5;
+}
+
+.sf-ktr-fill {
+  fill: none;
+  stroke-width: 5;
+  stroke-linecap: butt;
+  transition: stroke-dasharray 0.35s ease;
+}
+
+/* Outer ring = resolved. Green when done, amber while partial. */
+.sf-ktr-fill-outer.done { stroke: var(--sf-token-state-success-fg); }
+.sf-ktr-fill-outer.part { stroke: var(--sf-token-state-warning-fg); }
+
+/* Inner ring = perfect (concrete-gate passed). Blue accent when done, amber partial. */
+.sf-ktr-fill-inner.done { stroke: var(--sf-token-accent); }
+.sf-ktr-fill-inner.part { stroke: var(--sf-token-state-warning-fg); }
+
+/* Empty tier (no keys in this tier for the category) — mute both rings. */
+.sf-ktr-empty .sf-ktr-track { stroke: rgba(130, 140, 150, 0.12); }
+.sf-ktr-empty .sf-ktr-label { color: rgb(var(--sf-color-text-dim-rgb, var(--sf-color-text-subtle-rgb))); }
+
+.sf-ktr-frac {
+  font-family: var(--sf-font-family-mono, 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: rgb(var(--sf-color-text-subtle-rgb));
+}
+.sf-ktr-frac-resolved { color: var(--sf-token-state-success-fg); }
+.sf-ktr-frac-sep { color: rgb(var(--sf-color-text-dim-rgb, var(--sf-color-text-subtle-rgb))); margin: 0 1px; }
+.sf-ktr-frac-total { color: rgb(var(--sf-color-text-subtle-rgb)); }

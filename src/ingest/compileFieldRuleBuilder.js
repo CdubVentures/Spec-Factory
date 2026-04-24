@@ -25,6 +25,28 @@ import {
 } from './compileFieldInference.js';
 import { normalizeConsumerOverrides } from '../field-rules/consumerGate.js';
 
+const VARIANT_INVENTORY_USAGE_MODES = new Set(['default', 'append', 'override', 'off']);
+const VARIANT_INVENTORY_USAGE_PROFILES = new Set([
+  'spec_invariant',
+  'visual_design',
+  'physical_measurement',
+  'compatibility',
+  'package_contents',
+  'variant_specific',
+]);
+
+function normalizeVariantInventoryUsage(value) {
+  if (!isObject(value)) return null;
+  const mode = normalizeToken(value.mode);
+  const profile = normalizeToken(value.profile);
+  const text = normalizeText(value.text || '');
+  const out = {};
+  if (VARIANT_INVENTORY_USAGE_MODES.has(mode)) out.mode = mode;
+  if (VARIANT_INVENTORY_USAGE_PROFILES.has(profile)) out.profile = profile;
+  if (text) out.text = text;
+  return Object.keys(out).length ? out : null;
+}
+
 export function normalizeValueForm(value, shape = 'scalar') {
   const token = normalizeToken(value);
   const normalizedShape = normalizeToken(shape || 'scalar');
@@ -748,6 +770,10 @@ export function buildStudioFieldRule({
   const nestedAiAssist = {
     reasoning_note: normalizeText(aiAssistInput.reasoning_note || '')
   };
+  const variantInventoryUsage = normalizeVariantInventoryUsage(aiAssistInput.variant_inventory_usage);
+  if (variantInventoryUsage) {
+    nestedAiAssist.variant_inventory_usage = variantInventoryUsage;
+  }
 
   const uiOut = {
     label: normalizeText(ui.label || titleFromKey(key)),

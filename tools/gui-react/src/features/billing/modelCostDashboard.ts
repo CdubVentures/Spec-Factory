@@ -106,6 +106,11 @@ function clampPct(value: number): number {
   return Math.min(100, Math.max(0, value));
 }
 
+export function formatModelCostRate(value: number): string {
+  const fixed = value.toFixed(value >= 10 ? 0 : 3);
+  return `$${fixed.includes('.') ? fixed.replace(/\.?0+$/, '') : fixed}`;
+}
+
 function normalizeProviderToken(provider: string): string {
   return String(provider || '').trim().toLowerCase();
 }
@@ -116,6 +121,16 @@ function normalizeModelKey(model: string): string {
 
 function normalizeProviderLabel(label: string): string {
   return stripLabPrefix(String(label || '').replace(API_LABEL_SUFFIX_RE, '').trim());
+}
+
+function canonicalProviderFamilyLabel(kind: BillingProviderKind, label: string): string {
+  if (kind === 'openai') return 'OpenAI';
+  if (kind === 'anthropic') return 'Anthropic';
+  if (kind === 'google') return 'Google';
+  if (kind === 'deepseek') return 'DeepSeek';
+  if (kind === 'xai') return 'xAI';
+  const normalizedLabel = normalizeProviderLabel(label);
+  return normalizedLabel || label;
 }
 
 function providerGroupId(kind: BillingProviderKind, label: string): string {
@@ -168,7 +183,7 @@ function mergeDuplicateModelRows(rows: readonly BillingModelCostRow[]): ModelCos
     const accessModes = mergeUniqueStrings(groupRows.flatMap((row) => row.access_modes));
     const sourceProviderIds = mergeUniqueStrings(groupRows.map((row) => row.provider));
     const sourceProviderLabels = mergeUniqueStrings(groupRows.map((row) => row.provider_label));
-    const displayLabel = normalizeProviderLabel(canonical.provider_label);
+    const displayLabel = canonicalProviderFamilyLabel(canonical.provider_kind, canonical.provider_label);
     const providerGroupLabel = displayLabel || canonical.provider_label;
     return {
       ...canonical,

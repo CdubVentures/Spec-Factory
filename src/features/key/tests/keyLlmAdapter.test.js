@@ -7,6 +7,7 @@ import {
   KEY_FINDER_SPEC,
   KEY_FINDER_DEFAULT_TEMPLATE,
 } from '../keyLlmAdapter.js';
+import { KEY_FINDER_VARIABLES } from '../keyFinderPromptContract.js';
 
 // ── Fixtures ────────────────────────────────────────────────────────────
 
@@ -109,7 +110,9 @@ test('default template contains every placeholder the builder injects', () => {
     '{{ADDITIONAL_CROSS_FIELD_CONSTRAINTS}}',
     '{{ADDITIONAL_COMPONENT_KEYS}}',
     '{{PRODUCT_COMPONENTS}}',
-    '{{KNOWN_PRODUCT_FIELDS}}',
+    '{{PRODUCT_SCOPED_FACTS}}',
+    '{{VARIANT_INVENTORY}}',
+    '{{FIELD_IDENTITY_USAGE}}',
     '{{EVIDENCE_CONTRACT}}',
     '{{EVIDENCE_VERIFICATION}}',
     '{{SOURCE_TIER_STRATEGY}}',
@@ -122,6 +125,15 @@ test('default template contains every placeholder the builder injects', () => {
   for (const p of placeholders) {
     assert.ok(KEY_FINDER_DEFAULT_TEMPLATE.includes(p), `missing placeholder ${p}`);
   }
+  assert.equal(KEY_FINDER_DEFAULT_TEMPLATE.includes('{{KNOWN_PRODUCT_FIELDS}}'), false);
+});
+
+test('prompt variable contract exposes split product facts and variant inventory slots', () => {
+  const names = new Set(KEY_FINDER_VARIABLES.map((row) => row.name));
+  assert.equal(names.has('KNOWN_PRODUCT_FIELDS'), false);
+  assert.equal(names.has('PRODUCT_SCOPED_FACTS'), true);
+  assert.equal(names.has('VARIANT_INVENTORY'), true);
+  assert.equal(names.has('FIELD_IDENTITY_USAGE'), true);
 });
 
 // ── Identity + product header ───────────────────────────────────────────
@@ -223,8 +235,11 @@ test('PRIMARY_FIELD_CONTRACT renders open_prefer_known as preferred values', () 
     },
   });
 
-  assert.match(out, /Prefer known values \(open_prefer_known\): rgb \| zone rgb/);
-  assert.match(out, /New values are allowed only when directly evidenced/);
+  assert.match(out, /Preferred canonical values \(open_prefer_known\): rgb \| zone rgb/);
+  assert.match(out, /Emit an unlisted value only when direct evidence proves a real value that none of the listed values can represent/);
+  assert.match(out, /do not create new values from aliases, marketing phrases, formatting variants, or sibling-field wording/);
+  assert.match(out, /unlisted only when direct evidence proves no listed value fits/);
+  assert.doesNotMatch(out, /New values are allowed only when directly evidenced/);
   assert.doesNotMatch(out, /Allowed values \(open_prefer_known\)/);
 });
 
@@ -593,7 +608,7 @@ test('knob independence (new shape): both OFF → inventory still renders, per-k
     productComponents: [
       { parentFieldKey: 'sensor', componentType: 'sensor', resolvedValue: 'Hero 25K', subfields: [] },
     ],
-    knownFields: { release_date: '2023-09-15' }, // orchestrator would've suppressed this when knob off; but the adapter still respects the knob directly
+    productScopedFacts: { weight_g: 63 }, // orchestrator would've suppressed this when knob off; but the adapter still respects the knob directly
     componentContext: {
       primary: { type: 'sensor', relation: 'subfield_of', parentFieldKey: 'sensor' },
       passengers: [],
@@ -606,39 +621,100 @@ test('knob independence (new shape): both OFF → inventory still renders, per-k
   });
   assert.match(out, /Hero 25K/, 'inventory unconditional');
   assert.doesNotMatch(out, /belongs to the sensor component/i, 'per-key relation pointer gated by componentInjectionEnabled');
-  assert.doesNotMatch(out, /2023-09-15/, 'known-fields gated by knownFieldsInjectionEnabled');
+  assert.doesNotMatch(out, /weight_g/, 'product-scoped facts gated by knownFieldsInjectionEnabled');
 });
 
 // ── Product-level: known_fields (knob-gated) ────────────────────────────
 
-test('KNOWN_PRODUCT_FIELDS renders when knob ON + values present', () => {
+test('PRODUCT_SCOPED_FACTS renders when knob ON + values present', () => {
   const out = renderPrimary('polling_rate', POLLING_RATE_RULE, {
-    knownFields: { release_date: '2023-09-15', weight_g: 63 },
+    productScopedFacts: { weight_g: 63, sensor_model: 'Focus Pro 30K' },
   });
-  assert.match(out, /release_date/);
-  assert.match(out, /2023-09-15/);
+  assert.match(out, /Resolved product-scoped facts/i);
   assert.match(out, /weight_g/);
   assert.match(out, /63/);
+  assert.match(out, /sensor_model/);
+  assert.match(out, /Focus Pro 30K/);
+  assert.doesNotMatch(out, /Already-resolved fields on this product/i);
 });
 
-test('KNOWN_PRODUCT_FIELDS empty when knownFieldsInjectionEnabled OFF', () => {
+test('PRODUCT_SCOPED_FACTS empty when knownFieldsInjectionEnabled OFF', () => {
   const out = renderPrimary('polling_rate', POLLING_RATE_RULE, {
-    knownFields: { release_date: '2023-09-15' },
+    productScopedFacts: { weight_g: 63 },
     injectionKnobs: { ...ALL_KNOBS_ON, knownFieldsInjectionEnabled: false },
   });
-  assert.doesNotMatch(out, /2023-09-15/);
+  assert.doesNotMatch(out, /weight_g/);
 });
 
-test('KNOWN_PRODUCT_FIELDS empty when no values present', () => {
-  const out = renderPrimary('polling_rate', POLLING_RATE_RULE, { knownFields: {} });
-  assert.doesNotMatch(out, /Already-resolved/);
+test('PRODUCT_SCOPED_FACTS empty when no values present', () => {
+  const out = renderPrimary('polling_rate', POLLING_RATE_RULE, { productScopedFacts: {} });
+  assert.doesNotMatch(out, /Resolved product-scoped facts/);
+});
+
+test('VARIANT_INVENTORY renders locked identity table with product header and guardrails', () => {
+  const out = renderPrimary('polling_rate', POLLING_RATE_RULE, {
+    product: {
+      brand: 'Corsair',
+      model: 'M75 Wireless',
+      base_model: 'M75',
+      variant: 'Wireless',
+    },
+    siblingsExcluded: ['M75 Air Wireless', 'M75'],
+    variantInventory: [
+      {
+        variant_id: 'v_black',
+        variant_key: 'color:black',
+        label: 'black',
+        type: 'color',
+        color_atoms: ['black'],
+        sku: '',
+        release_date: '',
+        image_status: '',
+      },
+      {
+        variant_id: 'v_bo7',
+        variant_key: 'edition:call-of-duty-black-ops-7-edition',
+        label: 'Call of Duty: Black Ops 7 Edition',
+        type: 'edition',
+        color_atoms: ['black', 'white', 'dark-blue', 'orange'],
+        sku: 'CH-931DB1M-NA',
+        release_date: '2025-11-11',
+        image_status: 'hero 1/3; priority 2/4',
+      },
+    ],
+    fieldIdentityUsage: 'When researching `polling_rate`:\n- Use VARIANT_INVENTORY as a source-identity filter.',
+  });
+
+  assert.match(out, /VARIANT_INVENTORY/);
+  assert.match(out, /Do not extract, revise, or submit colors, editions, sku, or release_date through Key Finder/);
+  assert.match(out, /Blank sku\/release_date cells mean not yet discovered/);
+  assert.match(out, /Product: Corsair M75 Wireless/);
+  assert.match(out, /Base model: M75/);
+  assert.match(out, /Current product variant: Wireless/);
+  assert.match(out, /Sibling models to exclude: M75 Air Wireless, M75/);
+  assert.match(out, /v_bo7/);
+  assert.match(out, /CH-931DB1M-NA/);
+  assert.match(out, /2025-11-11/);
+  assert.match(out, /FIELD_IDENTITY_USAGE/);
+  assert.match(out, /When researching `polling_rate`:/);
+});
+
+test('VARIANT_INVENTORY and FIELD_IDENTITY_USAGE omit when no inventory rows exist', () => {
+  const out = renderPrimary('polling_rate', POLLING_RATE_RULE, {
+    variantInventory: [],
+    fieldIdentityUsage: 'When researching `polling_rate`:\n- This should not render without inventory.',
+  });
+
+  assert.doesNotMatch(out, /VARIANT_INVENTORY/);
+  assert.doesNotMatch(out, /FIELD_IDENTITY_USAGE/);
+  assert.doesNotMatch(out, /This should not render without inventory/);
 });
 
 // ── Knob independence ──────────────────────────────────────────────────
 
 test('knob independence: component ON, known OFF → per-key relation pointer renders, known does not', () => {
   const out = renderPrimary('sensor_date', SENSOR_DATE_RULE, {
-    knownFields: { release_date: '2023-09-15' },
+    productScopedFacts: { weight_g: 63 },
     componentContext: {
       primary: { type: 'sensor', relation: 'subfield_of', parentFieldKey: 'sensor' },
       passengers: [],
@@ -646,12 +722,12 @@ test('knob independence: component ON, known OFF → per-key relation pointer re
     injectionKnobs: { componentInjectionEnabled: true, knownFieldsInjectionEnabled: false, searchHintsInjectionEnabled: true },
   });
   assert.match(out, /belongs to the sensor component/i); // relation pointer rendered
-  assert.doesNotMatch(out, /2023-09-15/); // known-fields suppressed
+  assert.doesNotMatch(out, /weight_g/); // product-scoped facts suppressed
 });
 
 test('knob independence: component OFF, known ON → known injects but per-key relation pointer does not', () => {
   const out = renderPrimary('sensor_date', SENSOR_DATE_RULE, {
-    knownFields: { release_date: '2023-09-15' },
+    productScopedFacts: { weight_g: 63 },
     componentContext: {
       primary: { type: 'sensor', relation: 'subfield_of', parentFieldKey: 'sensor' },
       passengers: [],
@@ -659,7 +735,7 @@ test('knob independence: component OFF, known ON → known injects but per-key r
     injectionKnobs: { componentInjectionEnabled: false, knownFieldsInjectionEnabled: true, searchHintsInjectionEnabled: true },
   });
   assert.doesNotMatch(out, /belongs to the sensor component/i);
-  assert.match(out, /2023-09-15/);
+  assert.match(out, /weight_g/);
 });
 
 // ── Template / prompt override precedence ───────────────────────────────

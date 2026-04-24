@@ -68,8 +68,8 @@ describe('uiPhaseIdToOverrideKey', () => {
 describe('resolvePhaseModel — webSearch defaults', () => {
   const globalDraft = {
     llmModelPlan: 'gemini-2.5-flash',
-    llmModelReasoning: 'deepseek-reasoner',
-    llmPlanFallbackModel: 'deepseek-chat',
+    llmModelReasoning: 'deepseek-v4-pro',
+    llmPlanFallbackModel: 'deepseek-v4-flash',
     llmReasoningFallbackModel: 'gemini-2.5-pro',
     llmPlanUseReasoning: false,
     llmMaxOutputTokensPlan: 4096,
@@ -105,8 +105,8 @@ describe('resolvePhaseModel — webSearch defaults', () => {
 describe('resolvePhaseModel — thinking defaults', () => {
   const globalDraft = {
     llmModelPlan: 'gemini-2.5-flash',
-    llmModelReasoning: 'deepseek-reasoner',
-    llmPlanFallbackModel: 'deepseek-chat',
+    llmModelReasoning: 'deepseek-v4-pro',
+    llmPlanFallbackModel: 'deepseek-v4-flash',
     llmReasoningFallbackModel: 'gemini-2.5-pro',
     llmPlanUseReasoning: false,
     llmMaxOutputTokensPlan: 4096,
@@ -142,8 +142,8 @@ describe('resolvePhaseModel — thinking defaults', () => {
 describe('resolvePhaseModel — thinkingEffort defaults', () => {
   const globalDraft = {
     llmModelPlan: 'gemini-2.5-flash',
-    llmModelReasoning: 'deepseek-reasoner',
-    llmPlanFallbackModel: 'deepseek-chat',
+    llmModelReasoning: 'deepseek-v4-pro',
+    llmPlanFallbackModel: 'deepseek-v4-flash',
     llmReasoningFallbackModel: 'gemini-2.5-pro',
     llmPlanUseReasoning: false,
     llmMaxOutputTokensPlan: 4096,
@@ -179,8 +179,8 @@ describe('resolvePhaseModel — thinkingEffort defaults', () => {
 describe('resolvePhaseModel — fallback panel defaults', () => {
   const globalDraft = {
     llmModelPlan: 'gemini-2.5-flash',
-    llmModelReasoning: 'deepseek-reasoner',
-    llmPlanFallbackModel: 'deepseek-chat',
+    llmModelReasoning: 'deepseek-v4-pro',
+    llmPlanFallbackModel: 'deepseek-v4-flash',
     llmReasoningFallbackModel: 'gemini-2.5-pro',
     llmPlanUseReasoning: false,
     llmMaxOutputTokensPlan: 4096,
@@ -192,7 +192,7 @@ describe('resolvePhaseModel — fallback panel defaults', () => {
 
   it('fallbackModel defaults to global llmPlanFallbackModel', () => {
     const result = resolvePhaseModel({}, 'needset', globalDraft);
-    strictEqual(result?.fallbackModel, 'deepseek-chat');
+    strictEqual(result?.fallbackModel, 'deepseek-v4-flash');
   });
 
   it('fallbackReasoningModel defaults to global llmReasoningFallbackModel', () => {
@@ -220,7 +220,7 @@ describe('resolvePhaseModel — fallback panel defaults', () => {
 
   it('effectiveFallbackModel uses fallbackModel when fallbackUseReasoning is false', () => {
     const result = resolvePhaseModel({}, 'needset', globalDraft);
-    strictEqual(result?.effectiveFallbackModel, 'deepseek-chat');
+    strictEqual(result?.effectiveFallbackModel, 'deepseek-v4-flash');
   });
 
   it('effectiveFallbackModel uses fallbackReasoningModel when fallbackUseReasoning is true', () => {
@@ -246,8 +246,8 @@ describe('resolvePhaseModel — fallback panel defaults', () => {
 describe('resolvePhaseModel — disableLimits defaults', () => {
   const globalDraft = {
     llmModelPlan: 'gemini-2.5-flash',
-    llmModelReasoning: 'deepseek-reasoner',
-    llmPlanFallbackModel: 'deepseek-chat',
+    llmModelReasoning: 'deepseek-v4-pro',
+    llmPlanFallbackModel: 'deepseek-v4-flash',
     llmReasoningFallbackModel: 'gemini-2.5-pro',
     llmPlanUseReasoning: false,
     llmMaxOutputTokensPlan: 4096,
@@ -272,8 +272,8 @@ describe('resolvePhaseModel — disableLimits defaults', () => {
 describe('resolvePhaseModel — reasoningBudget defaults', () => {
   const globalDraft = {
     llmModelPlan: 'gemini-2.5-flash',
-    llmModelReasoning: 'deepseek-reasoner',
-    llmPlanFallbackModel: 'deepseek-chat',
+    llmModelReasoning: 'deepseek-v4-pro',
+    llmPlanFallbackModel: 'deepseek-v4-flash',
     llmReasoningFallbackModel: 'gemini-2.5-pro',
     llmPlanUseReasoning: false,
     llmMaxOutputTokensPlan: 4096,
@@ -327,8 +327,8 @@ describe('resolvePhaseModel with unmapped phase', () => {
 describe('resolvePhaseModel — writer phase (global formatter)', () => {
   const globalDraft = {
     llmModelPlan: 'gemini-2.5-flash',
-    llmModelReasoning: 'deepseek-reasoner',
-    llmPlanFallbackModel: 'deepseek-chat',
+    llmModelReasoning: 'deepseek-v4-pro',
+    llmPlanFallbackModel: 'deepseek-v4-flash',
     llmReasoningFallbackModel: 'gemini-2.5-pro',
     llmPlanUseReasoning: false,
     llmMaxOutputTokensPlan: 4096,

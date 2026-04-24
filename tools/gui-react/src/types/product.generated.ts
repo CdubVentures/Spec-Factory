@@ -33,6 +33,13 @@ export interface ScalarVariantProgressGen {
   confidence: number;
 }
 
+export interface KeyTierProgressGen {
+  tier: string;
+  total: number;
+  resolved: number;
+  perfect: number;
+}
+
 export interface CatalogProductGen {
   productId: string;
   id: number;
@@ -66,6 +73,7 @@ export interface CatalogRowGen {
   pifVariants: PifVariantProgressGen[];
   skuVariants: ScalarVariantProgressGen[];
   rdfVariants: ScalarVariantProgressGen[];
+  keyTierProgress: KeyTierProgressGen[];
 }
 
 export interface BrandGen {

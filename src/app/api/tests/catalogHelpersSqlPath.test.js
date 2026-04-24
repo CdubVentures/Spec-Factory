@@ -18,8 +18,13 @@ function createMockSpecDb({
   pifProgressByPid = {},
   variantsByPid = {},
   pifSettings = null,
+  keyFinderSettings = null,
+  compiledFields = null,
+  resolvedByPidField = {},
+  concreteByPidField = {},
 } = {}) {
-  const settings = pifSettings || {};
+  const pif = pifSettings || {};
+  const kfs = keyFinderSettings || {};
   return {
     getAllProducts: () => products,
     getAllFieldCandidatesByProduct: (pid) => candidatesByPid[pid] || [],
@@ -35,8 +40,27 @@ function createMockSpecDb({
       listByProduct: (pid) => variantsByPid[pid] || [],
     },
     getFinderStore: (moduleId) => {
-      if (moduleId !== 'productImageFinder') return null;
-      return { getSetting: (key) => settings[key] ?? null };
+      if (moduleId === 'productImageFinder') return { getSetting: (key) => pif[key] ?? null };
+      if (moduleId === 'keyFinder') return { getSetting: (key) => kfs[key] ?? null };
+      return null;
+    },
+    getCompiledRules: () => (compiledFields ? { fields: compiledFields } : null),
+    getResolvedFieldCandidate: (pid, fk) => Boolean(resolvedByPidField[pid]?.[fk]),
+    // isConcreteEvidence routes through evaluateFieldBuckets → listFieldBuckets.
+    // For test isolation we stub listFieldBuckets to return one "bucket" per fk
+    // with a bucket-value and evidence-count that match the test fixture's
+    // concreteByPidField map. Concrete-gate default: conf≥95, evd≥3.
+    listFieldBuckets: (pid, fk) => {
+      const hit = concreteByPidField[pid]?.[fk];
+      if (!hit) return [];
+      return [{ fingerprint: 'fp', normalized_value: 'v', raw_count: hit.evidenceCount || 0, top_confidence: hit.confidence || 0 }];
+    },
+    countPooledQualifyingEvidenceByFingerprint: (pid, fk, _vid, _fp, minConf) => {
+      const hit = concreteByPidField[pid]?.[fk];
+      if (!hit) return 0;
+      const conf = Number(hit.confidence) || 0;
+      if (conf < Number(minConf || 0) * 100) return 0;
+      return Number(hit.evidenceCount) || 0;
     },
   };
 }
@@ -72,6 +96,13 @@ test('SQL catalog builder: returns CatalogRow[] from SQL products table', async 
     pifVariants: [], // no variants on this product → empty array (different from "variants exist but no PIF run")
     skuVariants: [],
     rdfVariants: [],
+    keyTierProgress: [
+      { tier: 'easy',      total: 0, resolved: 0, perfect: 0 },
+      { tier: 'medium',    total: 0, resolved: 0, perfect: 0 },
+      { tier: 'hard',      total: 0, resolved: 0, perfect: 0 },
+      { tier: 'very_hard', total: 0, resolved: 0, perfect: 0 },
+      { tier: 'mandatory', total: 0, resolved: 0, perfect: 0 },
+    ],
   });
 });
 
@@ -344,6 +375,83 @@ test('SQL catalog builder: cefRunCount reflects listColorEditionFinderRuns lengt
   assert.equal(byPid['mouse-a'].cefRunCount, 0);
   assert.equal(byPid['mouse-b'].cefRunCount, 1);
   assert.equal(byPid['mouse-c'].cefRunCount, 3);
+});
+
+test('SQL catalog builder: keyTierProgress buckets fields by difficulty and counts resolved', async () => {
+  // Concrete gate disabled (excludeConf=0) so perfect stays at 0 — focused test on
+  // bucketing + resolved counting. Concrete-gate integration covered elsewhere.
+  const buildCatalog = createCatalogBuilder({
+    getSpecDb: () => createMockSpecDb({
+      products: [
+        { id: 1, product_id: 'mouse-a', brand: 'Acme', model: 'A', base_model: 'A', variant: '', identifier: '', status: 'active' },
+      ],
+      compiledFields: {
+        dpi_max:         { difficulty: 'easy',      required_level: 'mandatory' },
+        sensor_model:    { difficulty: 'easy',      required_level: 'non_mandatory' },
+        weight_g:        { difficulty: 'medium',    required_level: 'non_mandatory' },
+        polling_rate_hz: { difficulty: 'medium',    required_level: 'mandatory' },
+        lod:             { difficulty: 'hard',      required_level: 'non_mandatory' },
+        lift_off_ms:     { difficulty: 'very_hard', required_level: 'mandatory' },
+      },
+      resolvedByPidField: {
+        'mouse-a': { dpi_max: true, weight_g: true, polling_rate_hz: true },
+      },
+      keyFinderSettings: { passengerExcludeAtConfidence: '0', passengerExcludeMinEvidence: '0' },
+    }),
+    cleanVariant,
+  });
+
+  const rows = await buildCatalog('mouse');
+  const byTier = Object.fromEntries(rows[0].keyTierProgress.map((t) => [t.tier, t]));
+
+  // easy: 2 keys (dpi_max, sensor_model); resolved dpi_max only
+  assert.equal(byTier.easy.total, 2);
+  assert.equal(byTier.easy.resolved, 1);
+  // medium: 2 keys; 2 resolved
+  assert.equal(byTier.medium.total, 2);
+  assert.equal(byTier.medium.resolved, 2);
+  // hard: 1 key; 0 resolved
+  assert.equal(byTier.hard.total, 1);
+  assert.equal(byTier.hard.resolved, 0);
+  // very_hard: 1 key; 0 resolved
+  assert.equal(byTier.very_hard.total, 1);
+  assert.equal(byTier.very_hard.resolved, 0);
+  // mandatory: 3 keys (dpi_max, polling_rate_hz, lift_off_ms); 2 resolved
+  assert.equal(byTier.mandatory.total, 3);
+  assert.equal(byTier.mandatory.resolved, 2);
+
+  // Perfect stays 0 with concrete gate off
+  for (const t of rows[0].keyTierProgress) assert.equal(t.perfect, 0);
+});
+
+test('SQL catalog builder: keyTierProgress excludes reserved field keys (CEF/PIF/RDF/SKF)', async () => {
+  const buildCatalog = createCatalogBuilder({
+    getSpecDb: () => createMockSpecDb({
+      products: [
+        { id: 1, product_id: 'mouse-a', brand: 'Acme', model: 'A', base_model: 'A', variant: '', identifier: '', status: 'active' },
+      ],
+      compiledFields: {
+        colors:         { difficulty: 'medium', required_level: 'mandatory' },   // reserved (CEF)
+        editions:       { difficulty: 'medium', required_level: 'mandatory' },   // reserved (CEF)
+        release_date:   { difficulty: 'hard',   required_level: 'mandatory' },   // reserved (RDF)
+        sku:            { difficulty: 'hard',   required_level: 'mandatory' },   // reserved (SKF)
+        real_key:       { difficulty: 'easy',   required_level: 'non_mandatory' },
+      },
+      resolvedByPidField: {
+        'mouse-a': { real_key: true, colors: true }, // colors resolved but excluded from count
+      },
+    }),
+    cleanVariant,
+  });
+
+  const rows = await buildCatalog('mouse');
+  const byTier = Object.fromEntries(rows[0].keyTierProgress.map((t) => [t.tier, t]));
+  // Only `real_key` should count → easy total=1 resolved=1, others zero
+  assert.equal(byTier.easy.total, 1);
+  assert.equal(byTier.easy.resolved, 1);
+  assert.equal(byTier.medium.total, 0);
+  assert.equal(byTier.hard.total, 0);
+  assert.equal(byTier.mandatory.total, 0);
 });
 
 test('SQL catalog builder: confidence averages resolved candidates scaled 0-100 → 0-1', async () => {

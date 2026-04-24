@@ -47,7 +47,8 @@ test('renderKeyFinderPreview resolves data-list enum values from knownValues', (
     knownValues: { enums: { sensor: { policy: 'open_prefer_known', values: ['PMW3395'] } } },
   });
 
-  assert.ok(out.contract.includes('Prefer known values (open_prefer_known): PMW3395'));
+  assert.ok(out.contract.includes('Preferred canonical values (open_prefer_known): PMW3395'));
+  assert.ok(out.contract.includes('Emit an unlisted value only when direct evidence proves a real value'));
 });
 
 test('renderKeyFinderPreview resolves tier bundle by rule difficulty', () => {

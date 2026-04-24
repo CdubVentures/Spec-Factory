@@ -37,6 +37,17 @@ export const SCALAR_VARIANT_PROGRESS_SHAPE = Object.freeze([
   { key: 'confidence', coerce: 'float' },
 ]);
 
+// KeyFinder per-tier rollup — one row per tier (easy/medium/hard/very_hard/
+// mandatory), where mandatory is an overlapping bucket counting any key with
+// required_level='mandatory'. Drives the 5-cluster dual-ring Keys cell:
+// outer ring = resolved / total · inner ring = perfect / total.
+export const KEY_TIER_PROGRESS_SHAPE = Object.freeze([
+  { key: 'tier', coerce: 'string' },
+  { key: 'total', coerce: 'int' },
+  { key: 'resolved', coerce: 'int' },
+  { key: 'perfect', coerce: 'int' },
+]);
+
 // ── Catalog Product (raw CRUD shape from productCatalog.js) ──
 
 export const CATALOG_PRODUCT_SHAPE = Object.freeze([
@@ -78,6 +89,7 @@ export const CATALOG_ROW_SHAPE = Object.freeze([
   { key: 'pifVariants', coerce: 'array', itemRef: 'PifVariantProgressGen' },
   { key: 'skuVariants', coerce: 'array', itemRef: 'ScalarVariantProgressGen' },
   { key: 'rdfVariants', coerce: 'array', itemRef: 'ScalarVariantProgressGen' },
+  { key: 'keyTierProgress', coerce: 'array', itemRef: 'KeyTierProgressGen' },
 ]);
 export const CATALOG_ROW_KEYS = Object.freeze(CATALOG_ROW_SHAPE.map(s => s.key));
 

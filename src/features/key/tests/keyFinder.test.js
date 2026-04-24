@@ -137,6 +137,8 @@ function makeSpecDbStub({
   category = 'mouse',
   componentLinks = [],
   resolvedFields = {},
+  fieldCandidateRows = {},
+  pifProgressRows = [],
   compiledRules = COMPILED_FIELD_RULES,
 } = {}) {
   return {
@@ -148,7 +150,12 @@ function makeSpecDbStub({
       listActive: () => variants,
       listByProduct: () => variants,
     },
-    getFieldCandidatesByProductAndField: () => [],
+    getFieldCandidatesByProductAndField: (_pid, fk, variantId) => {
+      const rows = fieldCandidateRows[fk] || [];
+      if (variantId === undefined) return rows;
+      return rows.filter((row) => (row.variant_id ?? null) === (variantId ?? null));
+    },
+    listPifVariantProgressByProduct: () => pifProgressRows,
     getItemComponentLinks: () => componentLinks,
     getResolvedFieldCandidate: (_pid, fk) =>
       Object.prototype.hasOwnProperty.call(resolvedFields, fk)
@@ -177,6 +184,8 @@ function setupForProduct(productId, opts = {}) {
     category: 'mouse',
     componentLinks: opts.componentLinks,
     resolvedFields: opts.resolvedFields,
+    fieldCandidateRows: opts.fieldCandidateRows,
+    pifProgressRows: opts.pifProgressRows,
     compiledRules: opts.compiledRules,
   });
   return { fsStub, specDb };
@@ -515,6 +524,10 @@ const RULES_WITH_COMPONENT = {
       evidence: { min_evidence_refs: 1 }, ai_assist: { reasoning_note: '' },
     },
     polling_rate: POLLING_RATE_RULE,
+    weight_g: {
+      ...POLLING_RATE_RULE, field_key: 'weight_g', component: null,
+      contract: { type: 'number', shape: 'scalar', unit: 'g' },
+    },
     release_date: {
       ...POLLING_RATE_RULE, field_key: 'release_date', component: null,
       contract: { type: 'date', shape: 'scalar' },
@@ -614,15 +627,19 @@ test('step 6.7: per-key relation pointer emitted when componentInjectionEnabled=
   assert.equal(primaryRel.relation, 'subfield_of');
 });
 
-test('step 6.7: known-fields dump excludes primary + component-inventory fields', async (t) => {
+test('step 6.7: product-scoped facts exclude primary, component inventory, and reserved variant keys', async (t) => {
   t.after(cleanupTmp);
   const { specDb } = setupForProduct('kf-known-dedup', {
     settings: KNOB_DEFAULTS,
     compiledRules: RULES_WITH_COMPONENT,
     componentLinks: [{ field_key: 'sensor', component_type: 'sensor', component_name: 'Hero 25K' }],
-    // Three resolved fields: sensor_type is in the inventory; polling_rate is primary;
-    // release_date is the only one that should survive into knownFields.
-    resolvedFields: { sensor_type: 'optical', polling_rate: 4000, release_date: '2023-09-15' },
+    resolvedFields: { sensor_type: 'optical' },
+    fieldCandidateRows: {
+      sensor_type: [{ field_key: 'sensor_type', value: 'optical', status: 'resolved', confidence: 90, variant_id: null }],
+      polling_rate: [{ field_key: 'polling_rate', value: 4000, status: 'resolved', confidence: 90, variant_id: null }],
+      release_date: [{ field_key: 'release_date', value: '2023-09-15', status: 'resolved', confidence: 99, variant_id: 'v_bo7' }],
+      weight_g: [{ field_key: 'weight_g', value: 63, status: 'resolved', confidence: 90, variant_id: null }],
+    },
   });
   let capturedDomainArgs = null;
 
@@ -638,13 +655,13 @@ test('step 6.7: known-fields dump excludes primary + component-inventory fields'
     _submitCandidateOverride: async () => ({ status: 'accepted', publishResult: { status: 'published' } }),
   });
 
-  const known = capturedDomainArgs?.knownFields || {};
+  const facts = capturedDomainArgs?.productScopedFacts || {};
   assert.deepEqual(
-    Object.keys(known).sort(),
-    ['release_date'],
-    'known-fields must exclude primary (polling_rate) and inventory member (sensor_type / sensor)',
+    Object.keys(facts).sort(),
+    ['weight_g'],
+    'product-scoped facts must exclude primary, inventory members, and reserved variant-owned keys',
   );
-  assert.equal(known.release_date, '2023-09-15');
+  assert.equal(facts.weight_g, 63);
 });
 
 test('step 6.7: knownFieldsInjectionEnabled=false → knownFields empty regardless of resolved state', async (t) => {
@@ -652,7 +669,9 @@ test('step 6.7: knownFieldsInjectionEnabled=false → knownFields empty regardle
   const { specDb } = setupForProduct('kf-known-off', {
     settings: { ...KNOB_DEFAULTS, knownFieldsInjectionEnabled: 'false' },
     compiledRules: RULES_WITH_COMPONENT,
-    resolvedFields: { release_date: '2023-09-15' },
+    fieldCandidateRows: {
+      weight_g: [{ field_key: 'weight_g', value: 63, status: 'resolved', confidence: 90, variant_id: null }],
+    },
   });
   let capturedDomainArgs = null;
 
@@ -668,7 +687,83 @@ test('step 6.7: knownFieldsInjectionEnabled=false → knownFields empty regardle
     _submitCandidateOverride: async () => ({ status: 'accepted', publishResult: { status: 'published' } }),
   });
 
-  assert.deepEqual(capturedDomainArgs?.knownFields, {});
+  assert.deepEqual(capturedDomainArgs?.productScopedFacts, {});
+});
+
+test('step 6.7: variant inventory joins SKU/RDF by variant_id and adds field identity usage', async (t) => {
+  t.after(cleanupTmp);
+  const { specDb } = setupForProduct('kf-variant-inventory', {
+    settings: KNOB_DEFAULTS,
+    compiledRules: {
+      fields: {
+        ...RULES_WITH_COMPONENT.fields,
+        design: {
+          ...POLLING_RATE_RULE,
+          field_key: 'design',
+          display_name: 'Design',
+          contract: { type: 'string', shape: 'scalar' },
+          ai_assist: { reasoning_note: '', variant_inventory_usage: { profile: 'visual_design' } },
+        },
+      },
+      known_values: {},
+    },
+    variants: [
+      { variant_id: 'v_black', variant_key: 'color:black', variant_label: 'black', variant_type: 'color', color_atoms: ['black'] },
+      { variant_id: 'v_bo7', variant_key: 'edition:bo7', variant_label: 'Call of Duty: Black Ops 7 Edition', variant_type: 'edition', color_atoms: ['black', 'white'] },
+    ],
+    fieldCandidateRows: {
+      sku: [
+        { field_key: 'sku', value: 'BLACK-SKU', status: 'resolved', confidence: 97, variant_id: 'v_black' },
+        { field_key: 'sku', value: 'CH-931DB1M-NA', status: 'resolved', confidence: 96, variant_id: 'v_bo7' },
+      ],
+      release_date: [
+        { field_key: 'release_date', value: '2025-11-11', status: 'resolved', confidence: 95, variant_id: 'v_bo7' },
+      ],
+    },
+    pifProgressRows: [
+      { variant_id: 'v_bo7', hero_filled: 1, hero_target: 3, priority_filled: 2, priority_total: 4 },
+    ],
+  });
+  let capturedDomainArgs = null;
+
+  await runKeyFinder({
+    product: { ...PRODUCT, product_id: 'kf-variant-inventory' },
+    fieldKey: 'design',
+    category: 'mouse',
+    specDb, appDb: null, config: {},
+    broadcastWs: null,
+    productRoot: PRODUCT_ROOT,
+    policy: POLICY,
+    _callLlmOverride: async (domainArgs) => {
+      capturedDomainArgs = domainArgs;
+      return {
+        result: {
+          primary_field_key: 'design',
+          results: {
+            design: {
+              value: 'symmetrical shell',
+              confidence: 88,
+              unknown_reason: '',
+              evidence_refs: [{ url: 'https://corsair.example/m75', tier: 'tier1', confidence: 90, supporting_evidence: 'symmetrical shell', evidence_kind: 'direct_quote' }],
+              discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+            },
+          },
+          discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+        },
+        usage: null,
+      };
+    },
+    _submitCandidateOverride: async () => ({ status: 'accepted', publishResult: { status: 'published' } }),
+  });
+
+  assert.deepEqual(
+    capturedDomainArgs.variantInventory.map((row) => [row.variant_id, row.sku, row.release_date, row.image_status]),
+    [
+      ['v_black', 'BLACK-SKU', '', ''],
+      ['v_bo7', 'CH-931DB1M-NA', '2025-11-11', 'hero 1/3; priority 2/4'],
+    ],
+  );
+  assert.match(capturedDomainArgs.fieldIdentityUsage, /shared physical\/industrial design/i);
 });
 
 test('publisher error is non-fatal — run persists; error surfaced on return', async (t) => {

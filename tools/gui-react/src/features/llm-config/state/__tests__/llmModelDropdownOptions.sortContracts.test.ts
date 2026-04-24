@@ -89,10 +89,10 @@ describe('buildModelDropdownOptions sort and label contracts', () => {
         id: 'p1',
         name: 'DeepSeek',
         models: [
-          { ...makeModel('deepseek-chat', 'primary'), costInputPer1M: 1.25, maxContextTokens: 1048576 },
+          { ...makeModel('deepseek-v4-flash', 'primary'), costInputPer1M: 1.25, maxContextTokens: 1048576 },
         ],
       }),
     ];
-    strictEqual(buildModelDropdownOptions([], registry)[0].label, 'deepseek-chat');
+    strictEqual(buildModelDropdownOptions([], registry)[0].label, 'deepseek-v4-flash');
   });
 });
