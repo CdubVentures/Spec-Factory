@@ -174,6 +174,7 @@ test('per-key LLM audit prompt requires a Field Studio text file first', () => {
   assert.match(allText, /Mapping Studio/);
   assert.match(allText, /Key Navigator/);
   assert.match(allText, /Live validation/);
+  assert.match(allText, /Variant inventory context/);
   assert.match(allText, /AI reasoning note/);
   assert.doesNotMatch(allText, /Tooltip \/ Guidance/);
   assert.doesNotMatch(allText, /tooltip/i);

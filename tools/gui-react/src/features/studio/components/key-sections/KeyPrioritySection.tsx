@@ -1,7 +1,7 @@
 import type { KeySectionBaseProps } from "./keySectionContracts.ts";
 import { Section } from "../Section.tsx";
 import { Tip } from "../../../../shared/ui/feedback/Tip.tsx";
-import { strN, numN } from "../../state/nestedValueHelpers.ts";
+import { getN, strN, numN } from "../../state/nestedValueHelpers.ts";
 import { STUDIO_NUMERIC_KNOB_BOUNDS } from "../../state/studioNumericKnobBounds.ts";
 import {
   selectCls,
@@ -15,6 +15,14 @@ import {
   DIFFICULTY_OPTIONS,
 } from "../../../../registries/fieldRuleTaxonomy.ts";
 
+const TIP_STYLE = { position: "relative" as const, left: "-3px", top: "-4px" };
+
+function readVariantInventoryEnabled(currentRule: Record<string, unknown>): boolean {
+  const enabled = getN(currentRule, "ai_assist.variant_inventory_usage.enabled");
+  if (typeof enabled === "boolean") return enabled;
+  return strN(currentRule, "ai_assist.variant_inventory_usage.mode", "default") !== "off";
+}
+
 export interface KeyPrioritySectionProps extends KeySectionBaseProps {}
 
 export function KeyPrioritySection({
@@ -26,123 +34,118 @@ export function KeyPrioritySection({
   disabled,
 }: KeyPrioritySectionProps) {
   return (
-    <Section
-      title="Extraction Priority & Guidance"
-      persistKey={`studio:keyNavigator:section:priority:${category}`}
-      titleTooltip={STUDIO_TIPS.key_section_priority}
-      disabled={disabled}
-    >
-      <div className="grid grid-cols-3 gap-3">
-        <div>
-          <div className={`${labelCls} flex items-center`}>
-            <span>
-              Required Level
-              <Tip
-                style={{
-                  position: "relative",
-                  left: "-3px",
-                  top: "-4px",
-                }}
-                text={STUDIO_TIPS.required_level}
-              />
-            </span>
-            <B p="priority.required_level" />
-          </div>
-          <select
-            className={`${selectCls} w-full`}
-            value={strN(
-              currentRule,
-              "priority.required_level",
-              strN(currentRule, "required_level", "non_mandatory"),
-            )}
-            onChange={(e) =>
-              updateField(
-                selectedKey,
+    <>
+      <Section
+        title="Priority"
+        persistKey={`studio:keyNavigator:section:priority:${category}`}
+        titleTooltip={STUDIO_TIPS.key_section_priority}
+        disabled={disabled}
+      >
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <div className={`${labelCls} flex items-center`}>
+              <span>
+                Required Level
+                <Tip style={TIP_STYLE} text={STUDIO_TIPS.required_level} />
+              </span>
+              <B p="priority.required_level" />
+            </div>
+            <select
+              className={`${selectCls} w-full`}
+              value={strN(
+                currentRule,
                 "priority.required_level",
-                e.target.value,
-              )
-            }
-          >
-            {REQUIRED_LEVEL_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
-          </select>
-        </div>
-        <div>
-          <div className={`${labelCls} flex items-center`}>
-            <span>
-              Availability
-              <Tip
-                style={{
-                  position: "relative",
-                  left: "-3px",
-                  top: "-4px",
-                }}
-                text={STUDIO_TIPS.availability}
-              />
-            </span>
-            <B p="priority.availability" />
+                strN(currentRule, "required_level", "non_mandatory"),
+              )}
+              onChange={(e) =>
+                updateField(
+                  selectedKey,
+                  "priority.required_level",
+                  e.target.value,
+                )
+              }
+            >
+              {REQUIRED_LEVEL_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
           </div>
-          <select
-            className={`${selectCls} w-full`}
-            value={strN(
-              currentRule,
-              "priority.availability",
-              strN(currentRule, "availability", "sometimes"),
-            )}
-            onChange={(e) =>
-              updateField(
-                selectedKey,
+          <div>
+            <div className={`${labelCls} flex items-center`}>
+              <span>
+                Availability
+                <Tip style={TIP_STYLE} text={STUDIO_TIPS.availability} />
+              </span>
+              <B p="priority.availability" />
+            </div>
+            <select
+              className={`${selectCls} w-full`}
+              value={strN(
+                currentRule,
                 "priority.availability",
-                e.target.value,
-              )
-            }
-          >
-            {AVAILABILITY_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
-          </select>
-        </div>
-        <div>
-          <div className={`${labelCls} flex items-center`}>
-            <span>
-              Difficulty
-              <Tip
-                style={{
-                  position: "relative",
-                  left: "-3px",
-                  top: "-4px",
-                }}
-                text={STUDIO_TIPS.difficulty}
-              />
-            </span>
-            <B p="priority.difficulty" />
+                strN(currentRule, "availability", "sometimes"),
+              )}
+              onChange={(e) =>
+                updateField(
+                  selectedKey,
+                  "priority.availability",
+                  e.target.value,
+                )
+              }
+            >
+              {AVAILABILITY_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
           </div>
-          <select
-            className={`${selectCls} w-full`}
-            value={strN(
-              currentRule,
-              "priority.difficulty",
-              strN(currentRule, "difficulty", "easy"),
-            )}
-            onChange={(e) =>
-              updateField(
-                selectedKey,
+          <div>
+            <div className={`${labelCls} flex items-center`}>
+              <span>
+                Difficulty
+                <Tip style={TIP_STYLE} text={STUDIO_TIPS.difficulty} />
+              </span>
+              <B p="priority.difficulty" />
+            </div>
+            <select
+              className={`${selectCls} w-full`}
+              value={strN(
+                currentRule,
                 "priority.difficulty",
-                e.target.value,
-              )
-            }
-          >
-            {DIFFICULTY_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
-          </select>
+                strN(currentRule, "difficulty", "easy"),
+              )}
+              onChange={(e) =>
+                updateField(
+                  selectedKey,
+                  "priority.difficulty",
+                  e.target.value,
+                )
+              }
+            >
+              {DIFFICULTY_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </div>
         </div>
-      </div>
-      {/* Extraction Guidance */}
-      <ExtractionGuidanceSubsection
-        selectedKey={selectedKey}
-        currentRule={currentRule}
-        updateField={updateField}
-        BadgeRenderer={B}
-        reqLvl={strN(currentRule, "priority.required_level", strN(currentRule, "required_level", "non_mandatory"))}
-        diff={strN(currentRule, "priority.difficulty", strN(currentRule, "difficulty", "easy"))}
-      />
-    </Section>
+      </Section>
+
+      <Section
+        title="Ai Assist"
+        persistKey={`studio:keyNavigator:section:aiAssist:${category}`}
+        titleTooltip={STUDIO_TIPS.key_section_ai_assist}
+        defaultOpen
+        disabled={disabled}
+      >
+        <VariantInventoryUsageSubsection
+          selectedKey={selectedKey}
+          currentRule={currentRule}
+          updateField={updateField}
+          BadgeRenderer={B}
+        />
+        <ExtractionGuidanceSubsection
+          selectedKey={selectedKey}
+          currentRule={currentRule}
+          updateField={updateField}
+          BadgeRenderer={B}
+          reqLvl={strN(currentRule, "priority.required_level", strN(currentRule, "required_level", "non_mandatory"))}
+          diff={strN(currentRule, "priority.difficulty", strN(currentRule, "difficulty", "easy"))}
+        />
+      </Section>
+    </>
   );
 }
 /* ------------------------------------------------------------------ */
@@ -309,21 +312,14 @@ function ExtractionGuidanceSubsection({
   const hasExplicit = explicitNote.length > 0;
 
   return (
-    <div className="mt-2">
+    <div>
       <div className="flex items-center gap-2 mb-1">
         <span
           className={`${labelCls.replace(" mb-1", "")} flex items-center`}
         >
           <span>
             Extraction Guidance (sent to LLM)
-            <Tip
-              style={{
-                position: "relative",
-                left: "-3px",
-                top: "-4px",
-              }}
-              text={STUDIO_TIPS.ai_reasoning_note}
-            />
+            <Tip style={TIP_STYLE} text={STUDIO_TIPS.ai_reasoning_note} />
           </span>
           <B p="ai_assist.reasoning_note" />
         </span>
@@ -339,7 +335,7 @@ function ExtractionGuidanceSubsection({
         value={explicitNote}
         onChange={(e) =>
           updateField(
-            selectedKey!,
+            selectedKey,
             "ai_assist.reasoning_note",
             e.target.value,
           )
@@ -351,7 +347,7 @@ function ExtractionGuidanceSubsection({
           className="text-[10px] sf-link-accent hover:opacity-80 mt-1"
           onClick={() =>
             updateField(
-              selectedKey!,
+              selectedKey,
               "ai_assist.reasoning_note",
               "",
             )
@@ -360,6 +356,47 @@ function ExtractionGuidanceSubsection({
           Clear &amp; revert to auto-generated guidance
         </button>
       )}
+    </div>
+  );
+}
+
+interface VariantInventoryUsageSubsectionProps {
+  selectedKey: string;
+  currentRule: Record<string, unknown>;
+  updateField: (key: string, path: string, value: unknown) => void;
+  BadgeRenderer: KeyPrioritySectionProps["BadgeRenderer"];
+}
+
+function VariantInventoryUsageSubsection({
+  selectedKey,
+  currentRule,
+  updateField,
+  BadgeRenderer: B,
+}: VariantInventoryUsageSubsectionProps) {
+  const inventoryEnabled = readVariantInventoryEnabled(currentRule);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <label className="flex items-center gap-2 text-xs sf-text-default cursor-pointer select-none">
+          <input
+            type="checkbox"
+            aria-label="Use variant inventory context"
+            checked={inventoryEnabled}
+            onChange={(e) =>
+              updateField(
+                selectedKey,
+                "ai_assist.variant_inventory_usage",
+                { enabled: e.target.checked },
+              )
+            }
+            className="rounded sf-border-soft"
+          />
+          <span className="font-medium">Variant Inventory Context</span>
+          <Tip style={TIP_STYLE} text={STUDIO_TIPS.variant_inventory_usage} />
+        </label>
+        <B p="ai_assist.variant_inventory_usage" />
+      </div>
     </div>
   );
 }

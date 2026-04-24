@@ -15,15 +15,7 @@
 
 import { isReservedFieldKey } from './finderExclusions.js';
 
-const VARIANT_USAGE_MODES = new Set(['default', 'append', 'override', 'off']);
-const VARIANT_USAGE_PROFILES = new Set([
-  'spec_invariant',
-  'visual_design',
-  'physical_measurement',
-  'compatibility',
-  'package_contents',
-  'variant_specific',
-]);
+const LEGACY_VARIANT_USAGE_ACTIVE_MODES = new Set(['default', 'append', 'override']);
 
 function isParentRule(rule) {
   return Boolean(rule && rule.component && typeof rule.component === 'object');
@@ -164,20 +156,15 @@ export function readKnownFieldsByProduct({
 
 function normalizeVariantUsageConfig(fieldRule = {}) {
   const raw = fieldRule?.ai_assist?.variant_inventory_usage;
-  const cfg = raw && typeof raw === 'object' ? raw : {};
-  const mode = VARIANT_USAGE_MODES.has(String(cfg.mode || '').trim())
-    ? String(cfg.mode || '').trim()
-    : 'default';
-  const profile = VARIANT_USAGE_PROFILES.has(String(cfg.profile || '').trim())
-    ? String(cfg.profile || '').trim()
-    : '';
-  const text = String(cfg.text || '').trim();
-  return { mode, profile, text };
+  const cfg = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  if (typeof cfg.enabled === 'boolean') return { enabled: cfg.enabled };
+  const legacyMode = String(cfg.mode || '').trim();
+  if (legacyMode === 'off') return { enabled: false };
+  if (LEGACY_VARIANT_USAGE_ACTIVE_MODES.has(legacyMode)) return { enabled: true };
+  return { enabled: true };
 }
 
 function deriveUsageProfile(fieldKey, fieldRule = {}) {
-  const configured = normalizeVariantUsageConfig(fieldRule).profile;
-  if (configured) return configured;
   const key = String(fieldKey || fieldRule?.field_key || '').toLowerCase();
   if (/design|shape|shell|grip|finish|texture|material/.test(key)) return 'visual_design';
   if (/weight|dimension|height|width|length|depth|size/.test(key)) return 'physical_measurement';
@@ -269,7 +256,7 @@ function hasJoinedVariantFact(row = {}) {
  */
 export function resolveVariantInventory({ specDb, productId, fieldRule } = {}) {
   if (!specDb || !productId) return [];
-  if (normalizeVariantUsageConfig(fieldRule).mode === 'off') return [];
+  if (normalizeVariantUsageConfig(fieldRule).enabled === false) return [];
   const variants = typeof specDb.variants?.listActive === 'function'
     ? specDb.variants.listActive(productId)
     : [];
@@ -356,14 +343,8 @@ function defaultIdentityUsageLines({ fieldKey, fieldRule } = {}) {
 
 export function buildFieldIdentityUsage({ fieldKey, fieldRule } = {}) {
   const cfg = normalizeVariantUsageConfig(fieldRule);
-  if (cfg.mode === 'off') return '';
-  const key = String(fieldKey || fieldRule?.field_key || 'this key');
-  if (cfg.mode === 'override') {
-    return cfg.text ? `When researching \`${key}\`:\n${cfg.text}` : '';
-  }
-  const generated = defaultIdentityUsageLines({ fieldKey, fieldRule }).join('\n');
-  if (cfg.mode === 'append' && cfg.text) return `${generated}\n${cfg.text}`;
-  return generated;
+  if (cfg.enabled === false) return '';
+  return defaultIdentityUsageLines({ fieldKey, fieldRule }).join('\n');
 }
 
 export function resolveKeyFinderRuntimeContext({

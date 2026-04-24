@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client.ts';
 import { useUiStore } from '../../stores/uiStore.ts';
-import { MetricRow } from '../../shared/ui/data-display/MetricRow.tsx';
+import { MetricCard } from '../../shared/ui/data-display/MetricCard.tsx';
 import { DataTable } from '../../shared/ui/data-display/DataTable.tsx';
 import { TrafficLight } from '../../shared/ui/feedback/TrafficLight.tsx';
 import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
@@ -21,6 +21,59 @@ import {
   type OverviewFilterState,
   type OverviewSortKey,
 } from './OverviewFilterBar.tsx';
+import { CommandConsole } from './CommandConsole.tsx';
+import {
+  useOverviewSelectionStore,
+  useIsSelected,
+} from './overviewSelectionStore.ts';
+
+function SelectHeaderCell({ category, visibleIds }: { category: string; visibleIds: readonly string[] }) {
+  const selectedSet = useOverviewSelectionStore((s) => s.byCategory[category]);
+  const addMany = useOverviewSelectionStore((s) => s.addMany);
+  const toggle = useOverviewSelectionStore((s) => s.toggle);
+
+  const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedSet?.has(id));
+  const someSelected = !allSelected && visibleIds.some((id) => selectedSet?.has(id));
+
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = someSelected;
+  }, [someSelected]);
+
+  const onToggle = () => {
+    if (allSelected) {
+      for (const id of visibleIds) toggle(category, id);
+    } else {
+      addMany(category, visibleIds);
+    }
+  };
+
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      checked={allSelected}
+      onChange={onToggle}
+      aria-label={allSelected ? 'Deselect all visible' : 'Select all visible'}
+      className="cursor-pointer"
+    />
+  );
+}
+
+function SelectCell({ category, productId }: { category: string; productId: string }) {
+  const isSelected = useIsSelected(category, productId);
+  const toggle = useOverviewSelectionStore((s) => s.toggle);
+  return (
+    <input
+      type="checkbox"
+      checked={isSelected}
+      onChange={() => toggle(category, productId)}
+      onClick={(e) => e.stopPropagation()}
+      aria-label={isSelected ? 'Deselect product' : 'Select product'}
+      className="cursor-pointer"
+    />
+  );
+}
 
 // RDF values are ISO dates (e.g. "2024-03-15"); keep YYYY-MM in the label —
 // enough context at a glance, full date in the tooltip.
@@ -227,8 +280,6 @@ export function OverviewPage() {
     [colorRegistry],
   );
 
-  const columns = useMemo(() => buildColumns(hexMap, category), [hexMap, category]);
-
   const [filterState, setFilterState] = useState<OverviewFilterState>(INITIAL_FILTER_STATE);
   const runningProductIds = useRunningProductIds(category);
 
@@ -246,6 +297,24 @@ export function OverviewPage() {
     return sorted;
   }, [catalog, filterState, runningProductIds]);
 
+  const visibleIds = useMemo<readonly string[]>(
+    () => visibleRows.map((r) => r.productId),
+    [visibleRows],
+  );
+
+  const columns = useMemo<ColumnDef<CatalogRow, unknown>[]>(
+    () => [
+      {
+        id: 'select',
+        size: 36,
+        header: () => <SelectHeaderCell category={category} visibleIds={visibleIds} />,
+        cell: ({ row }) => <SelectCell category={category} productId={row.original.productId} />,
+      },
+      ...buildColumns(hexMap, category),
+    ],
+    [hexMap, category, visibleIds],
+  );
+
   if (isLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
 
   const avgConf = catalog.length > 0
@@ -256,13 +325,14 @@ export function OverviewPage() {
 
   return (
     <div className="space-y-6 sf-text-primary">
-      <MetricRow
-        metrics={[
-          { label: 'Products', value: catalog.length },
-          { label: 'Avg Confidence', value: pct(avgConf) },
-          { label: 'Keys Resolved', value: `${keysResolved}/${keysTotal}` },
-        ]}
-      />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-stretch">
+        <div className="grid grid-cols-3 gap-3">
+          <MetricCard label="Products" value={catalog.length} />
+          <MetricCard label="Avg Confidence" value={pct(avgConf)} />
+          <MetricCard label="Keys Resolved" value={`${keysResolved}/${keysTotal}`} />
+        </div>
+        <CommandConsole category={category} allRows={catalog} />
+      </div>
 
       <OverviewFilterBar
         state={filterState}

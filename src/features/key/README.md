@@ -42,6 +42,7 @@ Contract specifics:
 
 Prompt contract note:
 - `buildKeyFinderPrompt(...)` receives `knownValues` from `FieldRulesEngine`; `enum.source: data_lists.*` values are rendered for the primary and every passenger before live Run or Prompt Preview dispatch.
+- Runtime context is split: `PRODUCT_SCOPED_FACTS` contains only product-scoped resolved fields, while `VARIANT_INVENTORY` is an active CEF variant table joined to SKU/RDF/PIF by `variant_id`. `FIELD_IDENTITY_USAGE` gives the primary key's instructions for using that table as an evidence filter.
 
 ## Dependencies
 
@@ -69,7 +70,7 @@ Registered in `FINDER_MODULES[keyFinder].settingsSchema`:
 - **Prompt** (hidden): `discoveryPromptTemplate` — per-category template override, edited in LLM Config → Key Finder.
 - **Budget scoring**: `budgetRequiredPoints`, `budgetAvailabilityPoints`, `budgetDifficultyPoints`, `budgetVariantPointsPerExtra`, `budgetFloor`. Consumed by `calcKeyBudget`. Run mode ignores attempt count; Phase 3b Loop will use it.
 - **Bundling** (Run / Loop / Smart Loop all honor when `bundlingEnabled=true`): `bundlingEnabled`, `groupBundlingOnly`, `bundlingPassengerCost`, `bundlingPassengerVariantCostPerExtra`, `bundlingPoolPerPrimary`, `passengerDifficultyPolicy`.
-- **Context injection**: `componentInjectionEnabled`, `knownFieldsInjectionEnabled`, `searchHintsInjectionEnabled` — three independent gates on primary/passenger prompt slots.
+- **Context injection**: `componentInjectionEnabled`, `knownFieldsInjectionEnabled`, `searchHintsInjectionEnabled` — component relation, product-scoped fact, and search-hint gates. Variant inventory is identity context and renders only when active/useful variants exist.
 - **Discovery history**: `urlHistoryEnabled`, `queryHistoryEnabled` — per-primary-key scope. Discovery History drawer (Phase 6) groups by `primary_field_key` (read-only display; Stage A retired per-entry Hide suppression — these two knobs are the only controls).
 
 LLM tier bundles live separately in `settingsRegistry.keyFinderTierSettingsJson` (one JSON blob keyed by `easy`/`medium`/`hard`/`very_hard`/`fallback`).

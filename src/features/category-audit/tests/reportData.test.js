@@ -17,7 +17,7 @@ function fixtureLoadedRules() {
           search_hints: { domain_hints: ['sensor.fyi'], query_terms: ['sensor'], content_types: [], preferred_tiers: [] },
           constraints: [],
           component: { type: 'sensor', source: 'component_db.sensor' },
-          ai_assist: { reasoning_note: 'Chip/model only.' },
+          ai_assist: { reasoning_note: 'Chip/model only.', variant_inventory_usage: { enabled: false } },
           evidence: { min_evidence_refs: 1, tier_preference: ['tier1'] },
           variance_policy: 'authoritative',
           group: 'sensor_performance',
@@ -126,6 +126,15 @@ test('extractReportData normalizes priority triple on every key', () => {
   const data = callExtract();
   const sensor = data.keys.find((k) => k.fieldKey === 'sensor');
   assert.deepEqual(sensor.priority, { required_level: 'mandatory', availability: 'always', difficulty: 'hard' });
+});
+
+test('extractReportData carries variant inventory usage as one enabled flag', () => {
+  const data = callExtract();
+  const sensor = data.keys.find((k) => k.fieldKey === 'sensor');
+  assert.deepEqual(sensor.ai_assist, {
+    reasoning_note: 'Chip/model only.',
+    variant_inventory_usage: { enabled: false },
+  });
 });
 
 test('extractReportData resolves enum values from known_values when rule has source only', () => {

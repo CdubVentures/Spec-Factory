@@ -32,6 +32,13 @@ function extractPresence(rule, ...accessors) {
   return accessors.some((accessor) => accessor(rule) !== undefined);
 }
 
+function extractObject(rule, ...accessors) {
+  return accessors.some((accessor) => {
+    const value = accessor(rule);
+    return isObject(value) && Object.keys(value).length > 0;
+  });
+}
+
 // ── Extractor factory ────────────────────────────────────────────────
 
 function buildAccessorsForPath(path) {
@@ -48,6 +55,7 @@ export function buildExtractor(entry) {
   if (entry.type === 'array') return (r) => extractArray(r, primary);
   if (entry.type === 'filteredArray') return (r) => extractArrayFiltered(r, primary);
   if (entry.type === 'presence') return (r) => extractPresence(r, ...all);
+  if (entry.type === 'object') return (r) => extractObject(r, ...all);
   return () => false;
 }
 

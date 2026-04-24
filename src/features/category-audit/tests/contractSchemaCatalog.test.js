@@ -58,6 +58,7 @@ test('critical paths are present (anchor test — locks the minimum surface)', (
     'enum.values',
     'aliases',
     'ai_assist.reasoning_note',
+    'ai_assist.variant_inventory_usage.enabled',
     'search_hints.domain_hints',
     'search_hints.query_terms',
     'constraints',
@@ -105,7 +106,7 @@ test('describeCurrent renders representative values', () => {
     contract: { type: 'number' },
     enum: { values: ['tier1', 'tier2'] },
     aliases: [],
-    ai_assist: { reasoning_note: '' },
+    ai_assist: { reasoning_note: '', variant_inventory_usage: { enabled: false } },
     search_hints: { domain_hints: ['logitech.com'] },
   };
   const byPath = (p) => FIELD_RULE_SCHEMA.find((e) => e.path === p);
@@ -114,6 +115,7 @@ test('describeCurrent renders representative values', () => {
   assert.equal(describeCurrent(byPath('enum.values'), rule), '2 values: tier1, tier2');
   assert.equal(describeCurrent(byPath('aliases'), rule), '(unset)');
   assert.equal(describeCurrent(byPath('ai_assist.reasoning_note'), rule), '(unset)');
+  assert.equal(describeCurrent(byPath('ai_assist.variant_inventory_usage.enabled'), rule), 'false');
   assert.equal(describeCurrent(byPath('search_hints.domain_hints'), rule), '1 value: logitech.com');
 });
 

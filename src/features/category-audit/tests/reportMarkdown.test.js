@@ -100,6 +100,7 @@ test('renderMarkdown places auditor-task section before summary and includes ret
   assert.match(md, /Cross-Field Constraints:/);
   assert.match(md, /Evidence:/);
   assert.match(md, /Extraction Priority & Guidance:/);
+  assert.match(md, /Variant inventory context:/);
   assert.match(md, /AI reasoning note:/);
   assert.match(md, /Search Hints & Aliases:/);
   assert.match(md, /Aliases:/);

@@ -167,6 +167,12 @@ export const FIELD_RULE_SCHEMA = Object.freeze([
     doc: 'The ONE editable extraction-guidance slot. Visual cues, semantic disambiguation, gotchas. Do NOT duplicate anything the generic template already renders (enum list, source tiers, unk policy, evidence contract).',
   },
   {
+    path: 'ai_assist.variant_inventory_usage.enabled',
+    label: 'Variant inventory context',
+    kind: 'boolean',
+    doc: 'Single on/off Key Finder checkbox. When enabled, the prompt may receive VARIANT_INVENTORY plus deterministic evidence-filter guidance; field-specific variant interpretation belongs in ai_assist.reasoning_note.',
+  },
+  {
     path: 'search_hints.domain_hints',
     label: 'Preferred source domains',
     kind: 'string-list',

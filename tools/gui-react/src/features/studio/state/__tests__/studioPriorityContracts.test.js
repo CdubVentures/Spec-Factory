@@ -131,10 +131,10 @@ test('studio priority derives component-source and list priority from ranked mat
   );
 });
 
-test('normalizeAiAssistConfig returns only reasoning_note after knob retirement', async () => {
+test('normalizeAiAssistConfig keeps reasoning_note plus variant inventory enabled flag', async () => {
   const { normalizeAiAssistConfig } = await loadStudioPriority();
 
-  // Retired fields are ignored; only reasoning_note survives
+  // Retired fields are ignored; legacy variant inventory usage metadata becomes a single checkbox flag.
   assert.deepEqual(
     normalizeAiAssistConfig({
       mode: ' Planner ',
@@ -142,8 +142,18 @@ test('normalizeAiAssistConfig returns only reasoning_note after knob retirement'
       max_calls: 50,
       max_tokens: 42,
       reasoning_note: 5,
+      variant_inventory_usage: {
+        mode: 'append',
+        profile: 'visual_design',
+        text: '  Prefer base shell evidence.  ',
+      },
     }),
-    { reasoning_note: '5' },
+    {
+      reasoning_note: '5',
+      variant_inventory_usage: {
+        enabled: true,
+      },
+    },
   );
 
   assert.deepEqual(
@@ -162,6 +172,36 @@ test('normalizeAiAssistConfig boundary characterization', async () => {
     { label: 'reasoning_note: string', input: { reasoning_note: 'test' }, expected: { reasoning_note: 'test' } },
     { label: 'reasoning_note: number coercion', input: { reasoning_note: 42 }, expected: { reasoning_note: '42' } },
     { label: 'retired fields ignored', input: { mode: 'judge', max_calls: 5, reasoning_note: 'keep' }, expected: { reasoning_note: 'keep' } },
+    {
+      label: 'variant_inventory_usage explicit enabled false preserved',
+      input: { variant_inventory_usage: { enabled: false, mode: 'append', text: ' Ignore me. ' } },
+      expected: { reasoning_note: '', variant_inventory_usage: { enabled: false } },
+    },
+    {
+      label: 'variant_inventory_usage explicit enabled true preserved',
+      input: { variant_inventory_usage: { enabled: true } },
+      expected: { reasoning_note: '', variant_inventory_usage: { enabled: true } },
+    },
+    {
+      label: 'variant_inventory_usage legacy off mode maps disabled',
+      input: { variant_inventory_usage: { mode: 'off', profile: 'visual_design', text: ' Ignore me. ' } },
+      expected: { reasoning_note: '', variant_inventory_usage: { enabled: false } },
+    },
+    {
+      label: 'variant_inventory_usage legacy active mode maps enabled',
+      input: { variant_inventory_usage: { mode: 'override', profile: 'visual_design', text: ' Ignore me. ' } },
+      expected: { reasoning_note: '', variant_inventory_usage: { enabled: true } },
+    },
+    {
+      label: 'variant_inventory_usage invalid empty metadata ignored',
+      input: { variant_inventory_usage: { mode: 'bad', profile: 'bad', text: '   ' } },
+      expected: { reasoning_note: '' },
+    },
+    {
+      label: 'variant_inventory_usage text-only metadata ignored',
+      input: { variant_inventory_usage: { text: ' Prefer official table. ' } },
+      expected: { reasoning_note: '' },
+    },
   ];
 
   for (const { label, input, expected } of cases) {

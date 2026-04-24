@@ -18,6 +18,7 @@ const CONSTRAINT_OPS = [
   { re: /^(.+?)\s*==\s*(.+)$/, op: 'eq' },
   { re: /^(.+?)\s*=\s*(.+)$/, op: 'eq' },
 ];
+const LEGACY_VARIANT_INVENTORY_ACTIVE_MODES = new Set(['default', 'append', 'override']);
 
 /** "sensor_date <= release_date" → { op: 'lte', left, right, raw } */
 export function parseConstraintExpression(raw) {
@@ -126,6 +127,23 @@ function normalizeEvidence(rule) {
   };
 }
 
+function normalizeVariantInventoryUsage(rule) {
+  const raw = rule?.ai_assist?.variant_inventory_usage;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  if (typeof raw.enabled === 'boolean') return { enabled: raw.enabled };
+  const legacyMode = String(raw.mode || '').trim();
+  if (legacyMode === 'off') return { enabled: false };
+  if (LEGACY_VARIANT_INVENTORY_ACTIVE_MODES.has(legacyMode)) return { enabled: true };
+  return null;
+}
+
+function normalizeAiAssist(rule) {
+  const out = { reasoning_note: String(rule?.ai_assist?.reasoning_note || '') };
+  const variantInventoryUsage = normalizeVariantInventoryUsage(rule);
+  if (variantInventoryUsage) out.variant_inventory_usage = variantInventoryUsage;
+  return out;
+}
+
 function buildKeyRecord(fieldKey, rule, enumsIndex, componentRelations) {
   const priority = normalizePriority(rule);
   const contract = normalizeContract(rule);
@@ -144,7 +162,7 @@ function buildKeyRecord(fieldKey, rule, enumsIndex, componentRelations) {
     search_hints: normalizeSearchHints(rule),
     constraints: normalizeConstraints(rule),
     component: normalizeComponent(rule, componentRelations),
-    ai_assist: { reasoning_note: String(rule?.ai_assist?.reasoning_note || '') },
+    ai_assist: normalizeAiAssist(rule),
     evidence: normalizeEvidence(rule),
     variance_policy: String(rule?.variance_policy || ''),
     rawRule: rule,

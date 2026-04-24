@@ -92,6 +92,30 @@ function buildCommonStubs() {
           isError: false,
         }));
       }
+
+      export function useMutation(options = {}) {
+        return {
+          mutate: (variables) => {
+            if (typeof options.mutationFn === 'function') void options.mutationFn(variables);
+          },
+          mutateAsync: async (variables) => (
+            typeof options.mutationFn === 'function' ? options.mutationFn(variables) : undefined
+          ),
+          isPending: false,
+          isError: false,
+        };
+      }
+
+      export function useQueryClient() {
+        return {
+          invalidateQueries: async () => undefined,
+          cancelQueries: async () => undefined,
+          setQueryData: () => undefined,
+          getQueryData: () => undefined,
+        };
+      }
+
+      export const keepPreviousData = Symbol.for('keepPreviousData');
     `,
     '../../api/client.ts': `
       export const api = {

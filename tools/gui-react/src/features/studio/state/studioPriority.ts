@@ -13,6 +13,18 @@ import {
   DIFFICULTY_RANK,
 } from "../../../registries/fieldRuleTaxonomy.ts";
 
+type VariantInventoryUsageConfig = { enabled: boolean };
+type NormalizedAiAssistConfig = Omit<AiAssistConfig, "variant_inventory_usage"> & {
+  reasoning_note: string;
+  variant_inventory_usage?: VariantInventoryUsageConfig;
+};
+
+const LEGACY_VARIANT_INVENTORY_ACTIVE_MODES = new Set([
+  "default",
+  "append",
+  "override",
+]);
+
 export const DEFAULT_PRIORITY_PROFILE: Required<PriorityProfile> = {
   required_level: "non_mandatory",
   availability: "sometimes",
@@ -173,12 +185,30 @@ export function deriveListPriority(
 
 export function normalizeAiAssistConfig(
   value: unknown,
-): Required<AiAssistConfig> {
+): NormalizedAiAssistConfig {
   const input =
     value && typeof value === "object"
       ? (value as Record<string, unknown>)
       : {};
-  return {
+  const normalized: NormalizedAiAssistConfig = {
     reasoning_note: String(input.reasoning_note || ""),
   };
+  const variantUsage =
+    input.variant_inventory_usage &&
+    typeof input.variant_inventory_usage === "object"
+      ? (input.variant_inventory_usage as Record<string, unknown>)
+      : {};
+  if (typeof variantUsage.enabled === "boolean") {
+    normalized.variant_inventory_usage = { enabled: variantUsage.enabled };
+    return normalized;
+  }
+  const legacyMode = String(variantUsage.mode || "").trim();
+  if (legacyMode === "off") {
+    normalized.variant_inventory_usage = { enabled: false };
+    return normalized;
+  }
+  if (LEGACY_VARIANT_INVENTORY_ACTIVE_MODES.has(legacyMode)) {
+    normalized.variant_inventory_usage = { enabled: true };
+  }
+  return normalized;
 }

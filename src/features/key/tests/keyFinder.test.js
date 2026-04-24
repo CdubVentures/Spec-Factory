@@ -664,7 +664,7 @@ test('step 6.7: product-scoped facts exclude primary, component inventory, and r
   assert.equal(facts.weight_g, 63);
 });
 
-test('step 6.7: knownFieldsInjectionEnabled=false → knownFields empty regardless of resolved state', async (t) => {
+test('step 6.7: knownFieldsInjectionEnabled=false -> productScopedFacts empty regardless of resolved state', async (t) => {
   t.after(cleanupTmp);
   const { specDb } = setupForProduct('kf-known-off', {
     settings: { ...KNOB_DEFAULTS, knownFieldsInjectionEnabled: 'false' },
@@ -702,7 +702,7 @@ test('step 6.7: variant inventory joins SKU/RDF by variant_id and adds field ide
           field_key: 'design',
           display_name: 'Design',
           contract: { type: 'string', shape: 'scalar' },
-          ai_assist: { reasoning_note: '', variant_inventory_usage: { profile: 'visual_design' } },
+          ai_assist: { reasoning_note: '', variant_inventory_usage: { enabled: true } },
         },
       },
       known_values: {},

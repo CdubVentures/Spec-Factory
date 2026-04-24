@@ -6,7 +6,7 @@ export interface ConsumerDesc {
 
 export interface ConsumerBadgeEntry {
   path: string;
-  type: 'string' | 'array' | 'filteredArray' | 'presence';
+  type: 'string' | 'array' | 'filteredArray' | 'presence' | 'object';
   flatAliases?: string[];
   section?: string;
   key?: string;

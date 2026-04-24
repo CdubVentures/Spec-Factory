@@ -1,5 +1,6 @@
 // WHY: Characterization test — locks down buildStudioFieldRule ai_assist block.
-// After ai_assist knob retirement, the compiled block contains only { reasoning_note }.
+// The only retained Key Finder assist knobs are reasoning_note and the
+// variant-inventory on/off flag.
 // See: docs/implementation/field-rules-studio/ai-assist-knob-retirement-roadmap.md
 
 import test from 'node:test';
@@ -56,10 +57,11 @@ test('output shape defaults to reasoning_note only', () => {
   assert.deepEqual(Object.keys(result), ['reasoning_note']);
 });
 
-test('variant_inventory_usage preserves normalized hybrid override metadata', () => {
+test('variant_inventory_usage preserves explicit enabled boolean only', () => {
   const result = compileAiAssist({
     reasoning_note: 'base note',
     variant_inventory_usage: {
+      enabled: false,
       mode: 'append',
       profile: 'visual_design',
       text: '  Use only explicit base-shell evidence.  ',
@@ -69,9 +71,41 @@ test('variant_inventory_usage preserves normalized hybrid override metadata', ()
   assert.deepEqual(result, {
     reasoning_note: 'base note',
     variant_inventory_usage: {
+      enabled: false,
+    },
+  });
+});
+
+test('variant_inventory_usage maps legacy off mode to disabled', () => {
+  const result = compileAiAssist({
+    variant_inventory_usage: {
+      mode: 'off',
+      profile: 'visual_design',
+      text: 'Legacy text is no longer a separate knob.',
+    },
+  });
+
+  assert.deepEqual(result, {
+    reasoning_note: '',
+    variant_inventory_usage: {
+      enabled: false,
+    },
+  });
+});
+
+test('variant_inventory_usage maps legacy active modes to enabled', () => {
+  const result = compileAiAssist({
+    variant_inventory_usage: {
       mode: 'append',
       profile: 'visual_design',
-      text: 'Use only explicit base-shell evidence.',
+      text: 'Legacy text is no longer a separate knob.',
+    },
+  });
+
+  assert.deepEqual(result, {
+    reasoning_note: '',
+    variant_inventory_usage: {
+      enabled: true,
     },
   });
 });

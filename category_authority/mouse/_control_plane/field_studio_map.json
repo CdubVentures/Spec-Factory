@@ -1063,13 +1063,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": "known_values.yes_no"
+        "source": "yes_no"
       },
       "enum_policy": "closed",
-      "enum_source": {
-        "ref": "yes_no",
-        "type": "known_values"
-      },
+      "enum_source": "yes_no",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -1183,7 +1180,7 @@
         "tooltip_md": "Define 'Adjustable Scroll Wheel' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "value_form": "single",
+      "value_form": "scalar",
       "value_form_sample": "scalar"
     },
     "adjustable_weight": {
@@ -1205,13 +1202,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": "known_values.yes_no"
+        "source": "yes_no"
       },
       "enum_policy": "closed",
-      "enum_source": {
-        "ref": "yes_no",
-        "type": "known_values"
-      },
+      "enum_source": "yes_no",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -1328,7 +1322,7 @@
         "tooltip_md": "Define 'Adjustable Weight' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "value_form": "single",
+      "value_form": "scalar",
       "value_form_sample": "scalar"
     },
     "battery_hours": {
@@ -1476,13 +1470,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": "known_values.yes_no"
+        "source": "yes_no"
       },
       "enum_policy": "closed",
-      "enum_source": {
-        "ref": "yes_no",
-        "type": "known_values"
-      },
+      "enum_source": "yes_no",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -1599,7 +1590,7 @@
         "tooltip_md": "Define 'Bluetooth' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "value_form": "single",
+      "value_form": "scalar",
       "value_form_sample": "scalar"
     },
     "cable_type": {
@@ -3145,6 +3136,12 @@
       "value_form_sample": "list"
     },
     "design": {
+      "ai_assist": {
+        "reasoning_note": "",
+        "variant_inventory_usage": {
+          "mode": "default"
+        }
+      },
       "aliases": [],
       "availability": "always",
       "canonical_key": "design",
@@ -3291,10 +3288,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": null
+        "source": "yes_no"
       },
       "enum_policy": "closed",
-      "enum_source": null,
+      "enum_source": "yes_no",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -3401,7 +3398,7 @@
         "tooltip_md": "Define 'Discontinued' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "value_form": "single",
+      "value_form": "scalar",
       "value_form_sample": "scalar"
     },
     "dpi": {
@@ -4044,9 +4041,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": null
+        "source": "yes_no"
       },
       "enum_policy": "closed",
+      "enum_source": "yes_no",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -4164,7 +4162,7 @@
         "tooltip_md": "Define 'Flawless Sensor' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "value_form": "single",
+      "value_form": "scalar",
       "value_form_sample": "scalar",
       "variance_policy": "authoritative"
     },
@@ -4691,13 +4689,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": "known_values.yes_no"
+        "source": "yes_no"
       },
       "enum_policy": "closed",
-      "enum_source": {
-        "ref": "yes_no",
-        "type": "known_values"
-      },
+      "enum_source": "yes_no",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -4812,7 +4807,7 @@
         "tooltip_md": "Define 'Hardware Acceleration' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "value_form": "single",
+      "value_form": "scalar",
       "value_form_sample": "scalar"
     },
     "height": {
@@ -4957,13 +4952,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": "known_values.yes_no"
+        "source": "yes_no"
       },
       "enum_policy": "closed",
-      "enum_source": {
-        "ref": "yes_no",
-        "type": "known_values"
-      },
+      "enum_source": "yes_no",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -5079,7 +5071,7 @@
         "tooltip_md": "Define 'Honeycomb Frame' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "value_form": "single",
+      "value_form": "scalar",
       "value_form_sample": "scalar"
     },
     "hot_swappable": {
@@ -5101,13 +5093,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": "known_values.yes_no"
+        "source": "yes_no"
       },
       "enum_policy": "closed",
-      "enum_source": {
-        "ref": "yes_no",
-        "type": "known_values"
-      },
+      "enum_source": "yes_no",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -5223,7 +5212,7 @@
         "tooltip_md": "Define 'Hot Swappable' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "value_form": "single",
+      "value_form": "scalar",
       "value_form_sample": "scalar"
     },
     "hump": {
@@ -6464,13 +6453,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": "known_values.yes_no"
+        "source": "yes_no"
       },
       "enum_policy": "closed",
-      "enum_source": {
-        "ref": "yes_no",
-        "type": "known_values"
-      },
+      "enum_source": "yes_no",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -6585,7 +6571,7 @@
         "tooltip_md": "Define 'Motion Sync' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "value_form": "single",
+      "value_form": "scalar",
       "value_form_sample": "scalar"
     },
     "mouse_side_connector": {
@@ -6720,13 +6706,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": "known_values.yes_no"
+        "source": "yes_no"
       },
       "enum_policy": "closed",
-      "enum_source": {
-        "ref": "yes_no",
-        "type": "known_values"
-      },
+      "enum_source": "yes_no",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -6841,7 +6824,7 @@
         "tooltip_md": "Define 'NVIDIA Reflex' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "value_form": "single",
+      "value_form": "scalar",
       "value_form_sample": "scalar"
     },
     "onboard_memory": {
@@ -6863,13 +6846,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": "known_values.yes_no"
+        "source": "yes_no"
       },
       "enum_policy": "closed",
-      "enum_source": {
-        "ref": "yes_no",
-        "type": "known_values"
-      },
+      "enum_source": "yes_no",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -6985,7 +6965,7 @@
         "tooltip_md": "Define 'Onboard Memory' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "value_form": "single",
+      "value_form": "scalar",
       "value_form_sample": "scalar"
     },
     "onboard_memory_value": {
@@ -7117,13 +7097,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": "known_values.yes_no"
+        "source": "yes_no"
       },
       "enum_policy": "closed",
-      "enum_source": {
-        "ref": "yes_no",
-        "type": "known_values"
-      },
+      "enum_source": "yes_no",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -7238,7 +7215,7 @@
         "tooltip_md": "Define 'Paracord' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "value_form": "single",
+      "value_form": "scalar",
       "value_form_sample": "scalar"
     },
     "polling_rate": {
@@ -7521,13 +7498,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": "known_values.yes_no"
+        "source": "yes_no"
       },
       "enum_policy": "closed",
-      "enum_source": {
-        "ref": "yes_no",
-        "type": "known_values"
-      },
+      "enum_source": "yes_no",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -7642,7 +7616,7 @@
         "tooltip_md": "Define 'Profile Switching' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "value_form": "single",
+      "value_form": "scalar",
       "value_form_sample": "scalar"
     },
     "programmable_buttons": {
@@ -7841,9 +7815,10 @@
         },
         "new_value_policy": {},
         "policy": "closed",
-        "source": null
+        "source": "yes_no"
       },
       "enum_policy": "closed",
+      "enum_source": "yes_no",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -7961,7 +7936,7 @@
         "tooltip_md": "Define 'RGB' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "value_form": "single",
+      "value_form": "scalar",
       "value_form_sample": "scalar"
     },
     "sensor": {
@@ -9401,13 +9376,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": "known_values.yes_no"
+        "source": "yes_no"
       },
       "enum_policy": "closed",
-      "enum_source": {
-        "ref": "yes_no",
-        "type": "known_values"
-      },
+      "enum_source": "yes_no",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -9523,7 +9495,7 @@
         "tooltip_md": "Define 'Silent Clicks' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "value_form": "single",
+      "value_form": "scalar",
       "value_form_sample": "scalar"
     },
     "sku": {
@@ -9604,13 +9576,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": "known_values.yes_no"
+        "source": "yes_no"
       },
       "enum_policy": "closed",
-      "enum_source": {
-        "ref": "yes_no",
-        "type": "known_values"
-      },
+      "enum_source": "yes_no",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -9726,7 +9695,7 @@
         "tooltip_md": "Define 'Smoothing' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "value_form": "single",
+      "value_form": "scalar",
       "value_form_sample": "scalar"
     },
     "switch": {
@@ -10204,9 +10173,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": null
+        "source": "yes_no"
       },
       "enum_policy": "closed",
+      "enum_source": "yes_no",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -10322,7 +10292,7 @@
         "tooltip_md": "Define 'Thumb Rest' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "value_form": "single",
+      "value_form": "scalar",
       "value_form_sample": "scalar"
     },
     "tilt_scroll_wheel": {
@@ -10344,13 +10314,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": "known_values.yes_no"
+        "source": "yes_no"
       },
       "enum_policy": "closed",
-      "enum_source": {
-        "ref": "yes_no",
-        "type": "known_values"
-      },
+      "enum_source": "yes_no",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -10466,7 +10433,7 @@
         "tooltip_md": "Define 'Tilt Scroll Wheel' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "value_form": "single",
+      "value_form": "scalar",
       "value_form_sample": "scalar"
     },
     "weight": {
@@ -10736,13 +10703,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": "known_values.yes_no"
+        "source": "yes_no"
       },
       "enum_policy": "closed",
-      "enum_source": {
-        "ref": "yes_no",
-        "type": "known_values"
-      },
+      "enum_source": "yes_no",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -10859,7 +10823,7 @@
         "tooltip_md": "Define 'Wireless Charging' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "value_form": "single",
+      "value_form": "scalar",
       "value_form_sample": "scalar"
     }
   },

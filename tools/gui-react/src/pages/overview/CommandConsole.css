@@ -1,0 +1,192 @@
+/* Command Console — compact horizontal panel matching MetricCard height.
+   Three-row grid: selection+smart / bulk buttons / pipeline. */
+
+.sf-cc-panel {
+  background: var(--sf-token-surface, #fff);
+  border: 1px solid var(--sf-token-border, #e5e9ef);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 6px;
+  min-width: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  font-size: 11px;
+}
+
+/* ── Row 1: selection + smart-select on a single line ─────────────── */
+.sf-cc-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sf-cc-selection {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: rgb(var(--sf-color-text-primary-rgb));
+}
+
+.sf-cc-selection-count-zero {
+  color: rgb(var(--sf-color-text-subtle-rgb));
+  font-weight: 500;
+}
+
+.sf-cc-smart {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sf-cc-group-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(var(--sf-color-text-subtle-rgb));
+  padding: 0 2px;
+  white-space: nowrap;
+}
+
+/* ── Row 2: bulk finder buttons in compact grouped pills ──────────── */
+.sf-cc-bulk-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.sf-cc-bulk-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.sf-cc-bulk-group-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(var(--sf-color-text-subtle-rgb));
+  padding-right: 2px;
+}
+
+/* ── Row 3: pipeline controls + progress ──────────────────────────── */
+.sf-cc-pipeline-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sf-cc-pipeline-controls {
+  display: inline-flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.sf-cc-pipeline-status {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 10.5px;
+  color: rgb(var(--sf-color-text-primary-rgb));
+  line-height: 1.35;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sf-cc-pipeline-idle-hint {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 10px;
+  color: rgb(var(--sf-color-text-subtle-rgb));
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sf-cc-progress-track {
+  flex: 1 1 80px;
+  min-width: 60px;
+  height: 4px;
+  background: var(--sf-token-border-soft, var(--sf-token-border, #eef1f5));
+  border-radius: 2px;
+  overflow: hidden;
+}
+.sf-cc-progress-fill {
+  height: 100%;
+  background: var(--sf-token-accent, #4263eb);
+  transition: width 200ms ease;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────── */
+.sf-cc-btn {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  line-height: 1.25;
+  white-space: nowrap;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.sf-cc-btn-primary {
+  background: var(--sf-token-accent, #4263eb);
+  color: #fff;
+  border-color: var(--sf-token-accent, #4263eb);
+}
+.sf-cc-btn-primary:hover:not(:disabled) {
+  background: var(--sf-token-accent-strong, #364fc7);
+  border-color: var(--sf-token-accent-strong, #364fc7);
+}
+
+.sf-cc-btn-secondary {
+  background: transparent;
+  border-color: var(--sf-token-border, #e5e9ef);
+  color: rgb(var(--sf-color-text-primary-rgb));
+}
+.sf-cc-btn-secondary:hover:not(:disabled) {
+  border-color: var(--sf-token-accent, #4263eb);
+  color: var(--sf-token-accent, #4263eb);
+}
+
+.sf-cc-btn-danger {
+  background: transparent;
+  border-color: var(--sf-token-state-danger-fg, #c92a2a);
+  color: var(--sf-token-state-danger-fg, #c92a2a);
+}
+.sf-cc-btn-danger:hover:not(:disabled) {
+  background: var(--sf-token-state-danger-fg, #c92a2a);
+  color: #fff;
+}
+
+.sf-cc-btn-ghost {
+  background: transparent;
+  border: none;
+  padding: 2px 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: rgb(var(--sf-color-text-subtle-rgb));
+  cursor: pointer;
+  border-radius: 3px;
+}
+.sf-cc-btn-ghost:hover:not(:disabled) {
+  color: var(--sf-token-accent, #4263eb);
+}
+
+.sf-cc-btn:disabled,
+.sf-cc-btn-ghost:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

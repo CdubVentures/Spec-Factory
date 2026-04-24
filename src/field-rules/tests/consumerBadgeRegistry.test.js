@@ -13,7 +13,7 @@ import {
 } from '../consumerBadgeRegistry.js';
 
 const VALID_PARENT_PREFIXES = new Set(Object.keys(PARENT_GROUPS));
-const VALID_TYPES = new Set(['string', 'array', 'filteredArray', 'presence']);
+const VALID_TYPES = new Set(['string', 'array', 'filteredArray', 'presence', 'object']);
 
 // WHY: sub-consumer key must match parent.name pattern
 const CONSUMER_KEY_RE = /^(idx|eng|rev|flag|seed|comp|val|pub|llm)\.\w+$/;
@@ -185,6 +185,16 @@ describe('buildExtractor', () => {
     assert.equal(extractor({ contract: { range: { min: 0 } } }), true);
     assert.equal(extractor({ contract: { range: { min: null } } }), true);
     assert.equal(extractor({ contract: { range: {} } }), false);
+    assert.equal(extractor({}), false);
+  });
+
+  it('object type detects non-empty objects', () => {
+    const entry = { path: 'ai_assist.variant_inventory_usage', type: 'object', flatAliases: [] };
+    const extractor = buildExtractor(entry);
+    assert.equal(extractor({ ai_assist: { variant_inventory_usage: { enabled: true } } }), true);
+    assert.equal(extractor({ ai_assist: { variant_inventory_usage: { enabled: false } } }), true);
+    assert.equal(extractor({ ai_assist: { variant_inventory_usage: {} } }), false);
+    assert.equal(extractor({ ai_assist: { variant_inventory_usage: [] } }), false);
     assert.equal(extractor({}), false);
   });
 });

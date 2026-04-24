@@ -419,7 +419,27 @@ test('variantInventory: omitted for a single non-discriminating default variant 
   assert.deepEqual(inventory, []);
 });
 
-test('variantInventory: field-rule mode off suppresses inventory even when active variants exist', () => {
+test('variantInventory: field-rule disabled flag suppresses inventory even when active variants exist', () => {
+  const specDb = {
+    variants: {
+      listActive: () => [{ variant_id: 'v_black', variant_key: 'color:black', variant_type: 'color', variant_label: 'black', color_atoms: ['black'] }],
+    },
+    getFieldCandidatesByProductAndField: () => [],
+  };
+
+  const inventory = resolveVariantInventory({
+    specDb,
+    productId: 'p1',
+    fieldRule: {
+      ...scalarRule('polling_rate'),
+      ai_assist: { variant_inventory_usage: { enabled: false } },
+    },
+  });
+
+  assert.deepEqual(inventory, []);
+});
+
+test('variantInventory: legacy off mode still suppresses inventory', () => {
   const specDb = {
     variants: {
       listActive: () => [{ variant_id: 'v_black', variant_key: 'color:black', variant_type: 'color', variant_label: 'black', color_atoms: ['black'] }],
@@ -441,13 +461,10 @@ test('variantInventory: field-rule mode off suppresses inventory even when activ
 
 // -- buildFieldIdentityUsage ------------------------------------------------
 
-test('fieldIdentityUsage: visual_design profile separates base design from edition artwork', () => {
+test('fieldIdentityUsage: design key separates base design from edition artwork without profile knob', () => {
   const usage = buildFieldIdentityUsage({
     fieldKey: 'design',
-    fieldRule: {
-      ...scalarRule('design'),
-      ai_assist: { variant_inventory_usage: { profile: 'visual_design' } },
-    },
+    fieldRule: scalarRule('design'),
   });
 
   assert.match(usage, /When researching `design`:/);
@@ -456,25 +473,36 @@ test('fieldIdentityUsage: visual_design profile separates base design from editi
   assert.match(usage, /Never output colors, editions, sku, or release_date/i);
 });
 
-test('fieldIdentityUsage: append and override modes compose deterministic defaults', () => {
-  const appended = buildFieldIdentityUsage({
+test('fieldIdentityUsage: disabled variant inventory flag omits usage guidance', () => {
+  const usage = buildFieldIdentityUsage({
     fieldKey: 'polling_rate',
     fieldRule: {
       ...scalarRule('polling_rate'),
-      ai_assist: { variant_inventory_usage: { mode: 'append', text: 'Prefer manufacturer spec tables.' } },
-    },
-  });
-  const overridden = buildFieldIdentityUsage({
-    fieldKey: 'polling_rate',
-    fieldRule: {
-      ...scalarRule('polling_rate'),
-      ai_assist: { variant_inventory_usage: { mode: 'override', text: 'Only use explicit polling-rate rows.' } },
+      ai_assist: { variant_inventory_usage: { enabled: false } },
     },
   });
 
-  assert.match(appended, /Use VARIANT_INVENTORY as a source-identity filter/);
-  assert.match(appended, /Prefer manufacturer spec tables/);
-  assert.equal(overridden, 'When researching `polling_rate`:\nOnly use explicit polling-rate rows.');
+  assert.equal(usage, '');
+});
+
+test('fieldIdentityUsage: legacy text/profile metadata is ignored because guidance belongs in reasoning_note', () => {
+  const usage = buildFieldIdentityUsage({
+    fieldKey: 'polling_rate',
+    fieldRule: {
+      ...scalarRule('polling_rate'),
+      ai_assist: {
+        variant_inventory_usage: {
+          mode: 'override',
+          profile: 'visual_design',
+          text: 'Only use explicit polling-rate rows.',
+        },
+      },
+    },
+  });
+
+  assert.match(usage, /Use VARIANT_INVENTORY as a source-identity filter/);
+  assert.doesNotMatch(usage, /Only use explicit polling-rate rows/);
+  assert.doesNotMatch(usage, /shared physical\/industrial design/i);
 });
 
 test('runtimeContext: returns productScopedFacts, variantInventory, and fieldIdentityUsage together', () => {

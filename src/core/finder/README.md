@@ -98,6 +98,10 @@ Generic infrastructure for LLM-driven finder modules. Any module that discovers 
 - `buildOrchestratorProduct({ productId, category, productRow })` — canonical `product` object for every finder orchestrator; always includes `base_model` so the ambiguity resolver can group sibling models
 - `buildFinderLlmCaller({ _callLlmOverride, wrappedOnModelResolved, createCallLlm, llmDeps })` — returns callLlm function
 
+### `productResolvedStateReader.js` — SQL-only prompt context readers
+- `resolveProductComponentInventory(...)` / `resolveKeyComponentRelation(...)` — Key Finder component inventory + per-key relation pointer.
+- `resolveKeyFinderRuntimeContext(...)` — returns `{ productScopedFacts, variantInventory, fieldIdentityUsage }`; product facts read only NULL-variant resolved rows and variant inventory joins active CEF variants to SKU/RDF/PIF by `variant_id`.
+
 ## Dependencies
 
 - **Allowed**: `src/core/config/` (runtimeArtifactRoots), `src/core/events/` (dataChangeContract), `src/core/operations/` (operationsRegistry), `src/core/llm/` (streamBatcher, `prompts/` for universal fragments — `buildEvidencePromptBlock` / `buildEvidenceVerificationPromptBlock` / `buildValueConfidencePromptBlock` / `buildPreviousDiscoveryBlock` all resolve their template text from `src/core/llm/prompts/globalPromptRegistry.js`)

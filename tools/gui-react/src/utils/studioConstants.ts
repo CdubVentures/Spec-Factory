@@ -76,8 +76,8 @@ export const STUDIO_TIPS: Record<string, string> = {
   rounding_decimals: 'Decimal places for rounding numeric values. 0 = integer. Only affects number/integer types.',
   rounding_mode: 'nearest: standard rounding, floor: always down, ceil: always up.',
 
-  // Tab 2: Key Navigator - Extraction Priority & Guidance
-  key_section_priority: 'Extraction priority controls scheduling, routing, and model/search effort. Extraction guidance is the AI reasoning note sent to keyFinder.',
+  // Tab 2: Key Navigator - Priority
+  key_section_priority: 'Extraction priority controls scheduling, routing, and model/search effort.',
   required_level: 'Field importance. mandatory: essential for publish (identity + critical data). non_mandatory: nice-to-have.',
   availability: 'How often this data exists. always: every product, sometimes: ~half, rare: editorial/niche only.',
   difficulty: 'Extraction difficulty. easy: directly stated, medium: some inference, hard: buried/inconsistent, very_hard: needs multi-source synthesis or physical measurement.',
@@ -126,7 +126,8 @@ export const STUDIO_TIPS: Record<string, string> = {
   comp_allow_new: 'If enabled, the pipeline can suggest new components not in the database when no fuzzy match meets the flag_review_score threshold. Suggestions are flagged for review. If disabled, unmatched values are rejected.',
   comp_require_identity_evidence: 'If enabled, component identity matching requires supporting evidence from at least one source. Prevents phantom component assignments from noisy extraction.',
 
-  // Tab 2: Key Navigator - Extraction Guidance
+  // Tab 2: Key Navigator - Ai Assist
+  key_section_ai_assist: 'AI Assist controls field-specific prompt guidance and variant inventory usage for keyFinder.',
   ai_reasoning_note: 'Extraction guidance injected directly into the LLM prompt for this field. The AI reads this note when deciding how to extract the value.\n\n'
     + 'When empty, guidance is auto-generated from field properties (data type, difficulty, evidence requirements, enum policy, component type).\n\n'
     + 'Examples:\n'
@@ -134,6 +135,7 @@ export const STUDIO_TIPS: Record<string, string> = {
     + '• "This is a calculated field: polling rate = 1000/response_time_ms"\n'
     + '• "Multiple conflicting values are common — prefer tier 1 manufacturer specs over reviews"\n\n'
     + 'Write a custom note to override the auto-generated guidance.',
+  variant_inventory_usage: 'When enabled, keyFinder receives the current variant inventory for this product and field-specific instructions for using that context.',
 
   // Tab 3: Field Rules Workbench
   field_contract_table: 'Read-only overview of all field contracts. Edit fields in the Key Navigator tab.',

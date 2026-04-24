@@ -257,7 +257,7 @@ export async function runKeyFinder(opts) {
   // 6.7 Context injection upstreams
   //  - PRODUCT_COMPONENTS inventory is unconditional (not gated by either knob).
   //  - Per-key relation pointer is gated by componentInjectionEnabled.
-  //  - knownFields dump is gated by knownFieldsInjectionEnabled; the exclude
+  //  - product-scoped facts are gated by knownFieldsInjectionEnabled; the exclude
   //    set dedups against the primary + passengers (current query targets)
   //    AND against every field_key rendered in the inventory.
   const componentRelationIndex = buildComponentRelationIndex(engine.rules);
