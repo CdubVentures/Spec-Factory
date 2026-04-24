@@ -23,7 +23,7 @@ Exports from `src/features/key/index.js`:
   - `POST /key-finder/:category/:productId/preview-prompt` body `{ field_key, passenger_field_keys_snapshot? }` → Phase 5 compiled prompt preview (no LLM, no persistence). When present, the passenger snapshot is authoritative for preview parity with the visible Next bundle row.
   - `GET /key-finder/:category` → list summaries
   - `GET /key-finder/:category/:productId/bundling-config` → live settings snapshot for the BundlingStatusStrip
-  - `GET /key-finder/:category/:productId/summary` → per-key rollup rows including `bundle_preview`
+  - `GET /key-finder/:category/:productId/summary` → per-key rollup rows including `bundle_preview` and stripped-unknown audit fields (`last_status: "unk"`, `last_unknown_reason`)
   - `GET /key-finder/:category/:productId?field_key=X&scope=key|group|product` → scoped detail (legacy; partial consumers)
   - `DELETE /key-finder/:category/:productId/runs/:runNumber?field_key=X` → single-run delete (cascades primary + all passengers)
   - `DELETE /key-finder/:category/:productId` → delete-all
@@ -43,10 +43,12 @@ Contract specifics:
 Prompt contract note:
 - `buildKeyFinderPrompt(...)` receives `knownValues` from `FieldRulesEngine`; `enum.source: data_lists.*` values are rendered for the primary and every passenger before live Run or Prompt Preview dispatch.
 - Runtime context is split: `PRODUCT_SCOPED_FACTS` contains only product-scoped resolved fields, while `VARIANT_INVENTORY` is an active CEF variant table joined to SKU/RDF/PIF by `variant_id`. `FIELD_IDENTITY_USAGE` gives the primary key's instructions for using that table as an evidence filter.
+- When `fieldRule.ai_assist.pif_priority_images.enabled` is true, live Run and Prompt Preview resolve PIF default/base priority-view images through the product-image public API. `PIF_PRIORITY_IMAGES` renders in CONTEXT after variant identity context and before evidence/source rules. The LLM call receives 512px PNG base64 thumbnails; prompt preview renders available images at the bottom with normal preview URLs. Missing/unconvertible images inject unavailable guidance.
+- `VALUE_NORMALIZATION` is a global prompt fragment that tells Key Finder to return canonical table values and complete list sets instead of source prose.
 
 ## Dependencies
 
-- **Allowed**: `src/core/finder/` (JSON/SQL stores, route handler helpers, discovery-log accumulator, reserved-keys denylist), `src/core/llm/` (tier router, LLM deps, zodToLlmSchema, stream batcher, prompt fragments), `src/core/events/dataChangeContract.js`, `src/core/operations/` (operation lifecycle + fireAndForget), `src/engine/fieldRulesEngine.js`, `src/features/publisher/candidate-gate/submitCandidate.js`, `src/features/indexing/orchestration/shared/identityHelpers.js`, `src/billing/costLedger.js`.
+- **Allowed**: `src/core/finder/` (JSON/SQL stores, route handler helpers, discovery-log accumulator, reserved-keys denylist), `src/core/llm/` (tier router, LLM deps, zodToLlmSchema, stream batcher, prompt fragments), `src/core/events/dataChangeContract.js`, `src/core/operations/` (operation lifecycle + fireAndForget), `src/engine/fieldRulesEngine.js`, `src/features/publisher/candidate-gate/submitCandidate.js`, `src/features/indexing/orchestration/shared/identityHelpers.js`, `src/features/product-image/index.js` (PIF priority image context), `src/billing/costLedger.js`.
 - **Forbidden**: Other finder feature internals (CEF / PIF / RDF / SKU). Import only via their public APIs.
 
 ## Domain Invariants
@@ -59,7 +61,7 @@ Prompt contract note:
 - **Passenger attribution**: `run.selected.keys[fk].rode_with` is `null` for primary, `primaryFieldKey` for each passenger. Load-bearing for (a) delete-run cascade expanding `fieldKeys` from `run.selected.keys` and (b) Phase 5 Group Loop skip logic.
 - **History broadening**: `filterRunsByFieldKey` matches runs where the key appears as primary OR in `response.results`. `accumulateDiscoveryLog.runMatcher` mirrors this so passenger-resolved keys see the primary's URLs/queries as their own (passengers inherit the primary's search session by contract).
 - **Tier routing is whole-bundle**: `resolvePhaseModelByTier` returns `{ model, useReasoning, reasoningModel, thinking, thinkingEffort, webSearch }`. Empty `tier.model` inherits the fallback bundle.
-- **Honest "unk" is a real answer**: `submitCandidate` skipped when `value === 'unk'` or no evidence refs; the run still persists.
+- **Honest "unk" is a protocol signal, not field data**: the LLM may emit `value === 'unk'` with `unknown_reason`; `submitCandidate` is skipped, persisted run/summary/detail values normalize to `null`, and status/unknown_reason carry the diagnostic.
 - **Publisher failures never abort the run**: errors land on `publisher_error` (primary) or `passenger_candidates[i].publisher_error`; run record writes either way.
 - **Dual-state CQRS**: JSON (`.workspace/products/{pid}/key_finder.json`) is durable memory. SQL `key_finder` + `key_finder_runs` are projections. Both rebuildable from JSON via `rebuildKeyFinderFromJson`.
 

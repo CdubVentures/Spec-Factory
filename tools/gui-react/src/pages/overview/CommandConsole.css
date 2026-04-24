@@ -1,145 +1,316 @@
-/* Command Console — compact horizontal panel matching MetricCard height.
-   Three-row grid: selection+smart / bulk buttons / pipeline. */
+/* Command Console — compact 3-row panel matching MetricCard height.
+
+   Alignment rules:
+   - Every row uses align-items: center.
+   - Every interactive button is 22px tall, 10.5px font, 7px horizontal padding.
+     Min-width 52px so "Run" / "Loop" / "Eval" buttons align across chips.
+   - Chip heads use a 22px fixed icon slot so labels align vertically.
+   - Eyebrow / section labels are 9px uppercase, flush-baseline with rows.
+*/
+
+:root {
+  --sf-cc-row-gap: 8px;
+  --sf-cc-btn-height: 22px;
+  --sf-cc-btn-min-width: 52px;
+  --sf-cc-icon-slot: 22px;
+}
 
 .sf-cc-panel {
   background: var(--sf-token-surface, #fff);
   border: 1px solid var(--sf-token-border, #e5e9ef);
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 10px 14px;
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 6px;
+  grid-template-rows: auto auto auto;
+  gap: var(--sf-cc-row-gap);
   min-width: 0;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  font-size: 11px;
-}
-
-/* ── Row 1: selection + smart-select on a single line ─────────────── */
-.sf-cc-top-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.sf-cc-selection {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
   color: rgb(var(--sf-color-text-primary-rgb));
 }
 
-.sf-cc-selection-count-zero {
+/* ── Row 1 — selection badge + smart-select pills ─────────────────── */
+.sf-cc-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: var(--sf-cc-btn-height);
+}
+
+.sf-cc-selection-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px 0 4px;
+  height: var(--sf-cc-btn-height);
+  border-radius: 999px;
+  background: var(--sf-token-surface-alt, #f4f6f9);
+  border: 1px solid var(--sf-token-border-soft, var(--sf-token-border, #eef1f5));
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.sf-cc-selection-badge.is-empty {
   color: rgb(var(--sf-color-text-subtle-rgb));
   font-weight: 500;
+}
+
+.sf-cc-selection-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--sf-token-accent, #4263eb);
+  color: #fff;
+  font-weight: 700;
+  font-size: 10.5px;
+  line-height: 1;
+}
+
+.sf-cc-selection-badge.is-empty .sf-cc-selection-count {
+  background: var(--sf-token-border, #e5e9ef);
+  color: rgb(var(--sf-color-text-subtle-rgb));
+}
+
+.sf-cc-selection-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sf-cc-btn-clear {
+  background: transparent;
+  border-color: var(--sf-token-state-danger-fg, #c92a2a);
+  color: var(--sf-token-state-danger-fg, #c92a2a);
+  padding: 0 10px;
+}
+.sf-cc-btn-clear:hover:not(:disabled) {
+  background: var(--sf-token-state-danger-fg, #c92a2a);
+  color: #fff;
+}
+.sf-cc-btn-clear:disabled {
+  border-color: var(--sf-token-border, #e5e9ef);
+  color: rgb(var(--sf-color-text-subtle-rgb));
 }
 
 .sf-cc-smart {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
+}
+
+.sf-cc-eyebrow {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgb(var(--sf-color-text-subtle-rgb));
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* ── Row 2 — finder chips ─────────────────────────────────────────── */
+.sf-cc-chips-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-wrap: wrap;
+  min-height: var(--sf-cc-btn-height);
+}
+
+.sf-cc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  height: var(--sf-cc-btn-height);
+}
+
+.sf-cc-chip:first-child { padding-left: 0; }
+.sf-cc-chip:last-child { padding-right: 0; }
+
+.sf-cc-chip + .sf-cc-chip {
+  border-left: 1px solid var(--sf-token-border-soft, var(--sf-token-border, #eef1f5));
+}
+
+.sf-cc-chip-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.sf-cc-chip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sf-cc-icon-slot);
+  height: var(--sf-cc-icon-slot);
+  line-height: 0;
+  flex-shrink: 0;
+}
+
+.sf-cc-chip-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgb(var(--sf-color-text-primary-rgb));
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.sf-cc-chip-cef .sf-cc-chip-icon { color: var(--sf-token-accent-strong, var(--sf-token-accent, #4263eb)); }
+.sf-cc-chip-pif .sf-cc-chip-icon { color: var(--sf-token-state-success-fg, #2b8a3e); }
+.sf-cc-chip-rdf .sf-cc-chip-icon { color: var(--sf-token-state-warning-fg, #e67700); }
+.sf-cc-chip-sku .sf-cc-chip-icon { color: #9e5fe0; }
+.sf-cc-chip-kf  .sf-cc-chip-icon { color: var(--sf-token-accent, #4263eb); }
+
+.sf-cc-chip-actions {
+  display: inline-flex;
+  align-items: center;
   gap: 4px;
 }
 
-.sf-cc-group-label {
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgb(var(--sf-color-text-subtle-rgb));
-  padding: 0 2px;
-  white-space: nowrap;
-}
-
-/* ── Row 2: bulk finder buttons in compact grouped pills ──────────── */
-.sf-cc-bulk-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 10px;
-}
-
-.sf-cc-bulk-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-}
-
-.sf-cc-bulk-group-label {
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgb(var(--sf-color-text-subtle-rgb));
-  padding-right: 2px;
-}
-
-/* ── Row 3: pipeline controls + progress ──────────────────────────── */
+/* ── Row 3 — pipeline stepper + run/stop ──────────────────────────── */
 .sf-cc-pipeline-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 10px;
+  min-height: var(--sf-cc-btn-height);
+}
+
+.sf-cc-pipeline-mid {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
 }
 
 .sf-cc-pipeline-controls {
   display: inline-flex;
+  align-items: center;
   gap: 4px;
   flex-shrink: 0;
 }
 
-.sf-cc-pipeline-status {
-  flex: 1 1 auto;
+/* ── Stepper ──────────────────────────────────────────────────────── */
+.sf-cc-stepper {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
   min-width: 0;
-  font-size: 10.5px;
-  color: rgb(var(--sf-color-text-primary-rgb));
-  line-height: 1.35;
+  align-items: stretch;
+}
+
+.sf-cc-stepper-seg {
+  position: relative;
+  min-width: 0;
+  cursor: help;
+}
+
+.sf-cc-stepper-bar {
+  height: 20px;
+  border-radius: 4px;
+  background: var(--sf-token-border, #e5e9ef);
+  overflow: hidden;
+  position: relative;
+}
+
+.sf-cc-stepper-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--sf-token-accent, #4263eb);
+  transition: width 220ms ease;
+}
+
+.sf-cc-stepper-seg-done .sf-cc-stepper-bar-fill {
+  background: var(--sf-token-state-success-fg, #2b8a3e);
+}
+.sf-cc-stepper-seg-active .sf-cc-stepper-bar {
+  background: color-mix(in srgb, var(--sf-token-accent, #4263eb) 22%, transparent);
+}
+.sf-cc-stepper-seg-active .sf-cc-stepper-bar-fill {
+  background: var(--sf-token-accent, #4263eb);
+  animation: sf-cc-pulse 1.4s ease-in-out infinite;
+}
+.sf-cc-stepper-seg-error .sf-cc-stepper-bar-fill {
+  background: var(--sf-token-state-danger-fg, #c92a2a);
+}
+.sf-cc-stepper-seg-cancelled .sf-cc-stepper-bar-fill {
+  background: rgb(var(--sf-color-text-subtle-rgb));
+}
+
+/* Label sits INSIDE the bar, centered over the fill+track overlap.
+   Default (idle/pending): dark text over light grey track.
+   Filled states (active/done/error/cancelled): white text with soft
+   dark shadow so it stays legible where the fill paints under it. */
+.sf-cc-stepper-label {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: rgb(var(--sf-color-text-primary-rgb));
+  pointer-events: none;
+  padding: 0 3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.sf-cc-pipeline-idle-hint {
-  flex: 1 1 auto;
-  min-width: 0;
+.sf-cc-stepper-seg-active .sf-cc-stepper-label,
+.sf-cc-stepper-seg-done .sf-cc-stepper-label,
+.sf-cc-stepper-seg-error .sf-cc-stepper-label,
+.sf-cc-stepper-seg-cancelled .sf-cc-stepper-label {
+  color: #fff;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.45), 0 0 1px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes sf-cc-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.sf-cc-pipeline-status {
   font-size: 10px;
   color: rgb(var(--sf-color-text-subtle-rgb));
-  line-height: 1.35;
+  line-height: 1;
+  text-align: right;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.sf-cc-progress-track {
-  flex: 1 1 80px;
-  min-width: 60px;
-  height: 4px;
-  background: var(--sf-token-border-soft, var(--sf-token-border, #eef1f5));
-  border-radius: 2px;
-  overflow: hidden;
-}
-.sf-cc-progress-fill {
-  height: 100%;
-  background: var(--sf-token-accent, #4263eb);
-  transition: width 200ms ease;
-}
-
-/* ── Buttons ──────────────────────────────────────────────────────── */
+/* ── Buttons — one consistent spec for every action ───────────────── */
 .sf-cc-btn {
+  height: var(--sf-cc-btn-height);
+  min-width: var(--sf-cc-btn-min-width);
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   font-size: 10.5px;
   font-weight: 600;
-  padding: 3px 8px;
   border-radius: 4px;
   border: 1px solid transparent;
   cursor: pointer;
-  line-height: 1.25;
+  line-height: 1;
   white-space: nowrap;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease, transform 80ms ease;
+  box-sizing: border-box;
 }
+.sf-cc-btn:active:not(:disabled) { transform: translateY(1px); }
 
 .sf-cc-btn-primary {
   background: var(--sf-token-accent, #4263eb);
@@ -152,11 +323,12 @@
 }
 
 .sf-cc-btn-secondary {
-  background: transparent;
+  background: var(--sf-token-surface-alt, #f4f6f9);
   border-color: var(--sf-token-border, #e5e9ef);
   color: rgb(var(--sf-color-text-primary-rgb));
 }
 .sf-cc-btn-secondary:hover:not(:disabled) {
+  background: var(--sf-token-surface, #fff);
   border-color: var(--sf-token-accent, #4263eb);
   color: var(--sf-token-accent, #4263eb);
 }
@@ -171,22 +343,17 @@
   color: #fff;
 }
 
-.sf-cc-btn-ghost {
-  background: transparent;
-  border: none;
-  padding: 2px 6px;
-  font-size: 10.5px;
-  font-weight: 600;
-  color: rgb(var(--sf-color-text-subtle-rgb));
-  cursor: pointer;
-  border-radius: 3px;
-}
-.sf-cc-btn-ghost:hover:not(:disabled) {
-  color: var(--sf-token-accent, #4263eb);
+.sf-cc-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
-.sf-cc-btn:disabled,
-.sf-cc-btn-ghost:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
+/* Leading icon on primary pipeline button. */
+.sf-cc-btn-glyph {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }

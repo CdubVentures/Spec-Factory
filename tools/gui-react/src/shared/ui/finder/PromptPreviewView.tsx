@@ -24,6 +24,7 @@ export function PromptPreviewView({ prompt, storageKeyPrefix }: PromptPreviewVie
   const { model, notes, schema } = prompt;
   const schemaSerialized = serializeSchema(schema);
   const hasNotes = notes.length > 0;
+  const images = prompt.images ?? [];
 
   return (
     <div className="flex flex-col gap-2">
@@ -53,6 +54,29 @@ export function PromptPreviewView({ prompt, storageKeyPrefix }: PromptPreviewVie
           <ul className="px-5 pb-3 text-[11px] sf-text-muted list-disc space-y-1">
             {notes.map((note, i) => <li key={i}>{note}</li>)}
           </ul>
+        </ToggleSection>
+      ) : null}
+
+      {images.length > 0 ? (
+        <ToggleSection storageKey={`${storageKeyPrefix}:images`} label="Prompt Images" defaultOpen>
+          <div className="px-3 pb-3 grid grid-cols-2 gap-2">
+            {images.map((image, i) => {
+              const alt = image.caption || image.label || image.url || `Prompt image ${i + 1}`;
+              return (
+                <figure key={`${image.url}-${i}`} className="sf-surface-panel border sf-border-soft rounded-md overflow-hidden">
+                  <img
+                    src={image.url}
+                    alt={alt}
+                    className="w-full aspect-square object-contain sf-bg-surface-soft"
+                    loading="lazy"
+                  />
+                  <figcaption className="px-2 py-1 text-[10px] sf-text-muted truncate">
+                    {image.label || image.caption || image.url}
+                  </figcaption>
+                </figure>
+              );
+            })}
+          </div>
         </ToggleSection>
       ) : null}
     </div>
@@ -95,4 +119,3 @@ function ToggleSection({ storageKey, label, children, defaultOpen = false, copyT
     </div>
   );
 }
-

@@ -111,7 +111,7 @@ export const FIELD_RULE_SCHEMA = Object.freeze([
     kind: 'enum',
     options: ['none', 'asc', 'desc', 'insert'],
     appliesWhen: { 'contract.shape': 'list' },
-    doc: 'Stable list order. Use desc for numeric lists where highest-first is the consumer convention (e.g. polling_rate).',
+    doc: 'Stable list order. Use desc for numeric lists where highest-first is the consumer convention.',
   },
   {
     path: 'contract.range.min',
@@ -125,7 +125,7 @@ export const FIELD_RULE_SCHEMA = Object.freeze([
     label: 'Range max',
     kind: 'number-nullable',
     appliesWhen: { 'contract.type': ['number', 'integer', 'float'] },
-    doc: 'Numeric upper bound. Stops the LLM from emitting dpi=1,000,000 and similar hallucinations.',
+    doc: 'Numeric upper bound. Stops the LLM from emitting impossible out-of-range values.',
   },
   {
     path: 'enum.policy',
@@ -151,7 +151,7 @@ export const FIELD_RULE_SCHEMA = Object.freeze([
     path: 'aliases',
     label: 'Aliases',
     kind: 'string-list',
-    doc: 'Source-text synonyms the LLM normalizes to the canonical value before emitting (e.g. "pixart pmw 3950" \u2192 "pmw3950").',
+    doc: 'Source-text synonyms the LLM normalizes to the canonical value before emitting.',
   },
   {
     path: 'variance_policy',
@@ -170,7 +170,13 @@ export const FIELD_RULE_SCHEMA = Object.freeze([
     path: 'ai_assist.variant_inventory_usage.enabled',
     label: 'Variant inventory context',
     kind: 'boolean',
-    doc: 'Single on/off Key Finder checkbox. When enabled, the prompt may receive VARIANT_INVENTORY plus deterministic evidence-filter guidance; field-specific variant interpretation belongs in ai_assist.reasoning_note.',
+    doc: 'Single on/off Key Finder checkbox. Enable only when edition/SKU/release/colorway/PIF identity facts add evidence-filter value for this key without ambiguity. Field-specific union/exact/base/default interpretation belongs in ai_assist.reasoning_note.',
+  },
+  {
+    path: 'ai_assist.pif_priority_images.enabled',
+    label: 'PIF Priority Images',
+    kind: 'boolean',
+    doc: 'Single on/off Key Finder checkbox. Enable only for visually answerable keys where default/base PIF priority-view images help. Default/base images are supporting context only; edition-specific interpretation belongs in ai_assist.reasoning_note.',
   },
   {
     path: 'search_hints.domain_hints',
@@ -188,26 +194,26 @@ export const FIELD_RULE_SCHEMA = Object.freeze([
     path: 'constraints',
     label: 'Cross-field constraints',
     kind: 'constraint-list',
-    doc: 'DSL: "<field> <op> <target>" where op \u2208 {lte, lt, gte, gt, eq}. Example: "sensor_date <= release_date". Rendered into the live keyFinder prompt after normalization alongside structured cross_field_constraints.',
+    doc: 'DSL: "<field> <op> <target>" where op \u2208 {lte, lt, gte, gt, eq}. Rendered into the live Key Finder prompt after normalization alongside structured cross_field_constraints.',
   },
   {
     path: 'component.type',
     label: 'Component type',
     kind: 'component-ref',
-    doc: 'When this field IS the identity of a component database (e.g. "sensor", "switch", "encoder"). Blank for standalone fields or for subfields (subfield relation comes from the component_db properties list).',
+    doc: 'When this field IS the identity of a component database. Blank for standalone fields or for subfields (subfield relation comes from the component database properties list).',
   },
   {
     path: 'evidence.min_evidence_refs',
     label: 'Min evidence refs',
     kind: 'integer',
-    doc: 'Minimum independent supporting evidence URLs to accept a value. Identity-anchoring fields (sensor, switch, form_factor) should be \u22652.',
+    doc: 'Minimum independent supporting evidence URLs to accept a value. Identity-anchoring fields should usually require at least 2 independent sources.',
   },
   {
     path: 'evidence.tier_preference',
     label: 'Evidence tier preference',
     kind: 'ordered-list',
     options: ['tier1', 'tier2', 'tier3'],
-    doc: 'Ordered list from most authoritative to least. Default order is tier1 \u2192 tier2 \u2192 tier3; override per field when a lower-tier source is preferred (e.g. instrumented review labs over first-party for polling_rate).',
+    doc: 'Ordered list from most authoritative to least. Default order is tier1 \u2192 tier2 \u2192 tier3; override per field when a lower-tier source is more trustworthy for that measurement.',
   },
   {
     path: 'group',
@@ -324,7 +330,7 @@ export function describePossibleValues(entry) {
     case 'constraint-list':
       return 'list of DSL strings: `<field> <lte|lt|gte|gt|eq> <target>`';
     case 'component-ref':
-      return 'component type name from `component_db/` (e.g. `sensor`, `switch`, `encoder`)';
+      return 'component type name from the component database registry';
     case 'group-ref':
       return 'group key from `field_groups.json`';
     case 'prose':

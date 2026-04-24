@@ -93,6 +93,7 @@ async function loadKeyPrioritySection() {
             difficulty: 'difficulty',
             ai_reasoning_note: 'reasoning note',
             variant_inventory_usage: 'variant inventory',
+            pif_priority_images: 'pif priority images',
           };
         `,
         '../../../../registries/fieldRuleTaxonomy.ts': `
@@ -126,6 +127,9 @@ function createProps(overrides = {}) {
           variant_inventory_usage: {
             enabled: true,
           },
+          pif_priority_images: {
+            enabled: false,
+          },
         },
         ...overrides.currentRule,
       },
@@ -157,9 +161,10 @@ test('KeyPrioritySection separates Priority from Ai Assist', async () => {
   assert.equal(textContent(sections[0]).includes('Extraction Guidance'), false);
   assert.ok(textContent(sections[1]).includes('Extraction Guidance'));
   assert.ok(textContent(sections[1]).includes('Variant Inventory Context'));
+  assert.ok(textContent(sections[1]).includes('PIF Priority Images'));
 });
 
-test('KeyPrioritySection wires simple variant inventory usage controls to ai_assist paths', async () => {
+test('KeyPrioritySection wires simple AI Assist injection controls to ai_assist paths', async () => {
   const { KeyPrioritySection } = await loadKeyPrioritySection();
   const { props, updates } = createProps();
   const tree = renderNode(KeyPrioritySection(props));
@@ -198,13 +203,32 @@ test('KeyPrioritySection wires simple variant inventory usage controls to ai_ass
     1,
   );
 
+  const pifImagesToggle = collectNodes(
+    tree,
+    (node) => node.props?.['aria-label'] === 'Use PIF priority images',
+  )[0];
+  assert.equal(pifImagesToggle.props.checked, false);
+  assert.equal(
+    collectNodes(
+      tree,
+      (node) => node.type === 'Badge' && node.props?.p === 'ai_assist.pif_priority_images',
+    ).length,
+    1,
+  );
+
   enabledToggle.props.onChange({ target: { checked: false } });
+  pifImagesToggle.props.onChange({ target: { checked: true } });
 
   assert.deepEqual(updates, [
     {
       key: 'design',
       path: 'ai_assist.variant_inventory_usage',
       value: { enabled: false },
+    },
+    {
+      key: 'design',
+      path: 'ai_assist.pif_priority_images',
+      value: { enabled: true },
     },
   ]);
 });

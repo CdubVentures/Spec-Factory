@@ -112,6 +112,13 @@ describe('buildSkuFinderPrompt', () => {
     assert.ok(prompt.includes('supporting_evidence'), 'supporting_evidence rules must be present');
   });
 
+  it('compiled prompt includes the shared stripped-unk sentinel boundary', () => {
+    const prompt = buildSkuFinderPrompt({ product, variantLabel: 'Black' });
+    assert.match(prompt, /protocol sentinel/i);
+    assert.match(prompt, /not (?:a )?product value/i);
+    assert.match(prompt, /strip/i);
+  });
+
   // ── SKF-specific domain contract ──────────────────────────────────
 
   it('default template defines MPN and distinguishes it from related identifiers', () => {

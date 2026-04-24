@@ -147,10 +147,17 @@ test('normalizeAiAssistConfig keeps reasoning_note plus variant inventory enable
         profile: 'visual_design',
         text: '  Prefer base shell evidence.  ',
       },
+      pif_priority_images: {
+        enabled: true,
+        text: '  ignored  ',
+      },
     }),
     {
       reasoning_note: '5',
       variant_inventory_usage: {
+        enabled: true,
+      },
+      pif_priority_images: {
         enabled: true,
       },
     },
@@ -200,6 +207,21 @@ test('normalizeAiAssistConfig boundary characterization', async () => {
     {
       label: 'variant_inventory_usage text-only metadata ignored',
       input: { variant_inventory_usage: { text: ' Prefer official table. ' } },
+      expected: { reasoning_note: '' },
+    },
+    {
+      label: 'pif_priority_images explicit enabled true preserved',
+      input: { pif_priority_images: { enabled: true, text: ' Ignore me. ' } },
+      expected: { reasoning_note: '', pif_priority_images: { enabled: true } },
+    },
+    {
+      label: 'pif_priority_images direct boolean false preserved',
+      input: { pif_priority_images: false },
+      expected: { reasoning_note: '', pif_priority_images: { enabled: false } },
+    },
+    {
+      label: 'pif_priority_images invalid metadata ignored',
+      input: { pif_priority_images: { text: ' No second guidance box. ' } },
       expected: { reasoning_note: '' },
     },
   ];

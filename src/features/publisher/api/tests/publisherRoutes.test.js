@@ -138,6 +138,60 @@ describe('publisher routes', () => {
     assert.deepEqual(rtRow.evidence, []);
   });
 
+  it('GET /publisher/:category/candidates includes stripped-unk audit rows from finder history', async () => {
+    const pid = 'rt-stripped-unk';
+    const store = specDb.getFinderStore('keyFinder');
+    store.upsert({
+      category: 'mouse',
+      product_id: pid,
+      last_run_id: 7,
+      latest_ran_at: '2026-04-24T10:00:00.000Z',
+      run_count: 1,
+    });
+    store.insertRun({
+      category: 'mouse',
+      product_id: pid,
+      run_number: 7,
+      ran_at: '2026-04-24T10:00:00.000Z',
+      model: 'gpt-5.4',
+      selected: { keys: { sensor_model: { value: null, unknown_reason: 'not disclosed' } } },
+      prompt: { system: 's', user: 'u' },
+      response: {
+        primary_field_key: 'sensor_model',
+        results: {
+          sensor_model: {
+            value: 'unk',
+            confidence: 0,
+            unknown_reason: 'not disclosed',
+            evidence_refs: [],
+          },
+        },
+        discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+      },
+    });
+
+    const { ctx, responses } = makeCtx(specDb);
+    const handler = registerPublisherRoutes(ctx);
+    await handler(
+      ['publisher', 'mouse', 'candidates'],
+      new URLSearchParams('page=1&limit=50'),
+      'GET', {}, {},
+    );
+
+    assert.equal(responses[0].status, 200);
+    const auditRow = responses[0].body.rows.find(r => r.product_id === pid && r.field_key === 'sensor_model');
+    assert.ok(auditRow, 'stripped unk run should be visible in publisher audit table');
+    assert.equal(auditRow.row_kind, 'stripped_unknown');
+    assert.equal(auditRow.unknown_stripped, true);
+    assert.equal(auditRow.unknown_reason, 'not disclosed');
+    assert.equal(auditRow.value, null);
+    assert.equal(auditRow.status, 'stripped');
+    assert.equal(auditRow.source_type, 'key_finder');
+    assert.equal(auditRow.run_number, 7);
+    assert.equal(auditRow.evidence_accepted_count, 0);
+    assert.equal(auditRow.evidence_rejected_count, 0);
+  });
+
   // --- GET /publisher/:category/stats ---
 
   it('GET /publisher/:category/stats returns stats object', async () => {

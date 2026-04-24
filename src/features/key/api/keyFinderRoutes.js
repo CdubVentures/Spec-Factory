@@ -195,6 +195,44 @@ function resolveFamilySize(specDb, productId) {
   return resolveKeyFinderFamilySize({ specDb, productId });
 }
 
+function normalizeUnknownValueForOutput(value, unknownReason = '') {
+  if (value === 'unk') return null;
+  if (String(unknownReason || '').trim()) return null;
+  return value;
+}
+
+function normalizeUnknownPerKeyForOutput(perKey) {
+  if (!perKey || typeof perKey !== 'object') return perKey;
+  return {
+    ...perKey,
+    value: normalizeUnknownValueForOutput(perKey.value, perKey.unknown_reason),
+  };
+}
+
+function normalizeUnknownKeyMapForOutput(keyMap) {
+  if (!keyMap || typeof keyMap !== 'object') return keyMap;
+  return Object.fromEntries(
+    Object.entries(keyMap).map(([fk, perKey]) => [fk, normalizeUnknownPerKeyForOutput(perKey)]),
+  );
+}
+
+function normalizeUnknownRunForOutput(run) {
+  if (!run || typeof run !== 'object') return run;
+  return {
+    ...run,
+    selected: run.selected && typeof run.selected === 'object'
+      ? { ...run.selected, keys: normalizeUnknownKeyMapForOutput(run.selected.keys) }
+      : run.selected,
+    response: run.response && typeof run.response === 'object'
+      ? { ...run.response, results: normalizeUnknownKeyMapForOutput(run.response.results) }
+      : run.response,
+  };
+}
+
+function normalizeUnknownSelectedForOutput(selected) {
+  return normalizeUnknownPerKeyForOutput(selected);
+}
+
 // WHY: Rollup from JSON + compiled rules — one row per eligible key (not just
 // keys that have runs). Axes come from compiled rules so the panel can render
 // difficulty/availability/required tags without a second round-trip. Budget is
@@ -347,7 +385,10 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
       last_ran_at: run ? (run.ran_at || run.started_at || '') : null,
       last_status: lastStatus,
       last_value: run
-        ? (perKey.value !== undefined ? perKey.value : null)
+        ? normalizeUnknownValueForOutput(
+          perKey.value !== undefined ? perKey.value : null,
+          unknownReason,
+        )
         : derivedLastValue,
       last_confidence: run
         ? confidence
@@ -509,6 +550,7 @@ export function registerKeyFinderRoutes(ctx) {
       } else {
         runs = filterRunsByFieldKey(doc.runs, fieldKey);
       }
+      runs = runs.map((run) => normalizeUnknownRunForOutput(run));
 
       const candidates = [];
       if (scope !== 'group' && scope !== 'product' && fieldKey && specDb.getFieldCandidatesByProductAndField) {
@@ -521,7 +563,11 @@ export function registerKeyFinderRoutes(ctx) {
         scope,
         field_key: scope === 'key' ? (fieldKey || null) : null,
         group: scope === 'group' ? (groupName || null) : null,
-        selected: (scope === 'key' && fieldKey) ? selectedForField(doc, fieldKey) : doc.selected,
+        selected: (scope === 'key' && fieldKey)
+          ? normalizeUnknownSelectedForOutput(selectedForField(doc, fieldKey))
+          : (doc.selected && typeof doc.selected === 'object'
+            ? { ...doc.selected, keys: normalizeUnknownKeyMapForOutput(doc.selected.keys) }
+            : doc.selected),
         runs,
         candidates,
       });

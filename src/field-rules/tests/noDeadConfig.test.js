@@ -123,6 +123,7 @@ test('live AI assist knobs remain registered with consumer metadata', async () =
   const expectedLiveAiKnobs = [
     'ai_assist.reasoning_note',
     'ai_assist.variant_inventory_usage',
+    'ai_assist.pif_priority_images',
   ];
 
   for (const knob of expectedLiveAiKnobs) {

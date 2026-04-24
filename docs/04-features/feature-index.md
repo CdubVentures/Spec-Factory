@@ -10,6 +10,7 @@
 |---------|-------------|----------|-----------|
 | Category Authority | Exposes authority freshness and category control-plane state that drives compile/sync visibility. | [category-authority.md](./category-authority.md) | `src/features/category-authority/api/dataAuthorityRoutes.js`, `tools/gui-react/src/hooks/authoritySnapshotHelpers.js` |
 | Catalog and Product Selection | Manages categories, products, brands, queue seeding, and product identity surfaces. | [catalog-and-product-selection.md](./catalog-and-product-selection.md) | `src/features/catalog/api/catalogRoutes.js`, `src/features/catalog/api/brandRoutes.js`, `tools/gui-react/src/features/catalog/components/CatalogPage.tsx` |
+| Overview Command Console | Bulk-action surface on the Overview page: row selection, per-finder fan-out, smart-select, Score Card column, and the full-pipeline orchestrator. | [overview-command-console.md](./overview-command-console.md) | `tools/gui-react/src/pages/overview/OverviewPage.tsx`, `tools/gui-react/src/pages/overview/CommandConsole.tsx`, `tools/gui-react/src/pages/overview/SelectionStrip.tsx`, `tools/gui-react/src/pages/overview/usePipelineController.ts` |
 | Color Registry | Manages the global AppDb-backed color registry and product-scoped color-edition discovery flows. | [color-registry.md](./color-registry.md) | `src/features/color-registry/api/colorRoutes.js`, `src/features/color-edition/api/colorEditionFinderRoutes.js`, `tools/gui-react/src/features/color-registry/components/ColorRegistryPage.tsx` |
 | Unit Registry | Manages canonical units, synonyms, and conversions used by publisher unit validation. | [unit-registry.md](./unit-registry.md) | `src/features/unit-registry/api/unitRegistryRoutes.js`, `src/field-rules/unitRegistry.js`, `tools/gui-react/src/pages/unit-registry/UnitRegistryPage.tsx` |
 | Field Rules Studio | Authors and validates field studio maps, known values, component DB views, and compile actions. | [field-rules-studio.md](./field-rules-studio.md) | `src/features/studio/api/studioRoutes.js`, `tools/gui-react/src/features/studio/components/StudioPage.tsx` |
@@ -36,7 +37,7 @@ These directories exist under `src/features/` but are not first-class operator d
 ## Coverage Notes
 
 - `src/features/` currently contains 14 top-level feature directories.
-- This folder now documents 14 first-class operator features.
+- This folder now documents 15 first-class operator features (14 backend-rooted plus the GUI-only Overview Command Console at `tools/gui-react/src/pages/overview/`).
 - There is no verified standalone auth feature. Auth/session behavior is absent from the current runtime.
 - `pageRegistry.ts` is the tabbed GUI feature map; `/test-mode` is the only first-class route mounted outside that registry.
 

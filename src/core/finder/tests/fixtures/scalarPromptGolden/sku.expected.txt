@@ -121,7 +121,7 @@ suffixes, or paraphrased values. If your evidence does not literally state a
 part number for this specific variant, return "unk" with a clear unknown_reason.
 
 Honest "unk" policy:
-When evidence cannot defend the value under the tier/confidence rules above, return "unk" (as a literal string) and supply a specific unknown_reason explaining what you searched, where, and why the value couldn't be confirmed. An honest "unk" with a clear reason is strictly better than a low-confidence guess — it keeps the publisher gate clean, and the unknown_reason is a useful diagnostic for future runs. Prefer "unk" over: paraphrased partial values, guessed placeholder characters, format-normalized approximations, or copying a sibling product's value.
+When evidence cannot defend the value under the tier/confidence rules above, return "unk" (as a literal string) and supply a specific unknown_reason explaining what you searched, where, and why the value couldn't be confirmed. Treat "unk" as a protocol sentinel, not a product value: downstream systems strip it from value fields and keep only status plus unknown_reason for audit. Do not use blank, "-", "n/a", "unknown", or other placeholder text as the value; use exactly "unk" with unknown_reason when no defensible value exists. An honest "unk" with a clear reason is strictly better than a low-confidence guess — it keeps the publisher gate clean, and the unknown_reason is a useful diagnostic for future runs. Prefer "unk" over: paraphrased partial values, guessed placeholder characters, format-normalized approximations, or copying a sibling product's value.
 
 Return JSON:
 - "sku": "<exact MPN string>" | "unk"

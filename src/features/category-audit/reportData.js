@@ -20,7 +20,7 @@ const CONSTRAINT_OPS = [
 ];
 const LEGACY_VARIANT_INVENTORY_ACTIVE_MODES = new Set(['default', 'append', 'override']);
 
-/** "sensor_date <= release_date" → { op: 'lte', left, right, raw } */
+/** "<field> <= <other_field>" -> { op: 'lte', left, right, raw } */
 export function parseConstraintExpression(raw) {
   const s = String(raw || '').trim();
   if (!s) return null;
@@ -137,10 +137,18 @@ function normalizeVariantInventoryUsage(rule) {
   return null;
 }
 
+function normalizeSimpleEnabledToggle(value) {
+  if (typeof value === 'boolean') return { enabled: value };
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  return typeof value.enabled === 'boolean' ? { enabled: value.enabled } : null;
+}
+
 function normalizeAiAssist(rule) {
   const out = { reasoning_note: String(rule?.ai_assist?.reasoning_note || '') };
   const variantInventoryUsage = normalizeVariantInventoryUsage(rule);
   if (variantInventoryUsage) out.variant_inventory_usage = variantInventoryUsage;
+  const pifPriorityImages = normalizeSimpleEnabledToggle(rule?.ai_assist?.pif_priority_images);
+  if (pifPriorityImages) out.pif_priority_images = pifPriorityImages;
   return out;
 }
 

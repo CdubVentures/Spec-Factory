@@ -36,6 +36,12 @@ function normalizeVariantInventoryUsage(value) {
   return null;
 }
 
+function normalizeSimpleEnabledToggle(value) {
+  if (typeof value === 'boolean') return { enabled: value };
+  if (!isObject(value)) return null;
+  return typeof value.enabled === 'boolean' ? { enabled: value.enabled } : null;
+}
+
 export function normalizeValueForm(value, shape = 'scalar') {
   const token = normalizeToken(value);
   const normalizedShape = normalizeToken(shape || 'scalar');
@@ -762,6 +768,10 @@ export function buildStudioFieldRule({
   const variantInventoryUsage = normalizeVariantInventoryUsage(aiAssistInput.variant_inventory_usage);
   if (variantInventoryUsage) {
     nestedAiAssist.variant_inventory_usage = variantInventoryUsage;
+  }
+  const pifPriorityImages = normalizeSimpleEnabledToggle(aiAssistInput.pif_priority_images);
+  if (pifPriorityImages) {
+    nestedAiAssist.pif_priority_images = pifPriorityImages;
   }
 
   const uiOut = {

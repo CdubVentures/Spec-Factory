@@ -107,8 +107,15 @@ test('search routing section explains requiredness availability difficulty and b
   assert.match(allText, /very_hard/);
   assert.match(allText, /model\/search strength/i);
   assert.match(allText, /benchmark/i);
-  assert.match(allText, /mouseData\.xlsm/);
-  assert.match(allText, /C2:BT83/);
+  assert.match(allText, /category benchmark\/example set/i);
+  assert.doesNotMatch(allText, /mouseData\.xlsm/i);
+  assert.doesNotMatch(allText, /C2:BT83/i);
+  assert.match(allText, /public\/spec\/visual\/identity evidence/i);
+  assert.match(allText, /not restricted to lab-only measurements/i);
+  assert.match(allText, /after variant inventory, PIF images, aliases, and source hints/i);
+  assert.match(allText, /Very_hard is reserved/i);
+  assert.match(allText, /proprietary internal component identities/i);
+  assert.match(allText, /lab-only metrics/i);
 });
 
 test('authoring checklist makes full priority and contract validation explicit', () => {
@@ -131,7 +138,11 @@ test('authoring checklist makes full priority and contract validation explicit',
   assert.match(allText, /no contract change/i);
   assert.match(allText, /Consumer-surface impact/i);
   assert.match(allText, /Unknown \/ not-applicable/i);
-  assert.match(allText, /Boolean is enough only/i);
+  assert.match(allText, /Use boolean only for true two-state facts/i);
+  assert.match(allText, /Never add `unk` to enum values/i);
+  assert.match(allText, /no submitted value/i);
+  assert.match(allText, /battery_hours/i);
+  assert.doesNotMatch(allText, /yes\/no\/n\/a\/unk are real stored states/i);
   assert.match(allText, /guidance last/i);
 });
 
@@ -175,6 +186,7 @@ test('per-key LLM audit prompt requires a Field Studio text file first', () => {
   assert.match(allText, /Key Navigator/);
   assert.match(allText, /Live validation/);
   assert.match(allText, /Variant inventory context/);
+  assert.match(allText, /PIF Priority Images/);
   assert.match(allText, /AI reasoning note/);
   assert.doesNotMatch(allText, /Tooltip \/ Guidance/);
   assert.doesNotMatch(allText, /tooltip/i);

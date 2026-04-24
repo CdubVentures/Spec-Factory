@@ -283,6 +283,15 @@ src/
   - Preferred: `src/features/<feature>/tests/` (unit + feature tests)
   - Allowed: root `test/` only for integration / E2E / smoke (not a junk drawer)
 
+### GUI build proof in Codex Windows sandbox
+
+- `npm run gui:build` may fail inside the Codex Windows sandbox with `spawn EPERM` before app code is transformed because Vite starts child processes for config/path handling (`esbuild`, `net use`).
+- Treat that exact failure as an environment limitation, not a product regression, when these pass:
+  - `npm test`
+  - `cd tools/gui-react && npm exec -- tsc -b`
+- Full Vite build proof still matters for release/phase completion; run `npm run gui:build` from a normal developer PowerShell outside the Codex sandbox when sandbox child-process spawning is blocked.
+- Do not patch `node_modules`, weaken Vite config, or add alternate build tooling solely to satisfy this sandbox unless the human explicitly asks for a sandbox-only build path.
+
 ---
 
 ## Code style & file discipline

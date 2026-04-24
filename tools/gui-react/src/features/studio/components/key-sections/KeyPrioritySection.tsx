@@ -1,7 +1,7 @@
 import type { KeySectionBaseProps } from "./keySectionContracts.ts";
 import { Section } from "../Section.tsx";
 import { Tip } from "../../../../shared/ui/feedback/Tip.tsx";
-import { getN, strN, numN } from "../../state/nestedValueHelpers.ts";
+import { strN, numN } from "../../state/nestedValueHelpers.ts";
 import { STUDIO_NUMERIC_KNOB_BOUNDS } from "../../state/studioNumericKnobBounds.ts";
 import {
   selectCls,
@@ -14,14 +14,9 @@ import {
   AVAILABILITY_OPTIONS,
   DIFFICULTY_OPTIONS,
 } from "../../../../registries/fieldRuleTaxonomy.ts";
+import { AiAssistToggleSubsection } from "./AiAssistToggleSubsection.tsx";
 
 const TIP_STYLE = { position: "relative" as const, left: "-3px", top: "-4px" };
-
-function readVariantInventoryEnabled(currentRule: Record<string, unknown>): boolean {
-  const enabled = getN(currentRule, "ai_assist.variant_inventory_usage.enabled");
-  if (typeof enabled === "boolean") return enabled;
-  return strN(currentRule, "ai_assist.variant_inventory_usage.mode", "default") !== "off";
-}
 
 export interface KeyPrioritySectionProps extends KeySectionBaseProps {}
 
@@ -130,11 +125,27 @@ export function KeyPrioritySection({
         defaultOpen
         disabled={disabled}
       >
-        <VariantInventoryUsageSubsection
+        <AiAssistToggleSubsection
           selectedKey={selectedKey}
           currentRule={currentRule}
           updateField={updateField}
           BadgeRenderer={B}
+          path="ai_assist.variant_inventory_usage"
+          label="Variant Inventory Context"
+          ariaLabel="Use variant inventory context"
+          tooltipKey="variant_inventory_usage"
+          disabled={disabled}
+        />
+        <AiAssistToggleSubsection
+          selectedKey={selectedKey}
+          currentRule={currentRule}
+          updateField={updateField}
+          BadgeRenderer={B}
+          path="ai_assist.pif_priority_images"
+          label="PIF Priority Images"
+          ariaLabel="Use PIF priority images"
+          tooltipKey="pif_priority_images"
+          disabled={disabled}
         />
         <ExtractionGuidanceSubsection
           selectedKey={selectedKey}
@@ -360,43 +371,3 @@ function ExtractionGuidanceSubsection({
   );
 }
 
-interface VariantInventoryUsageSubsectionProps {
-  selectedKey: string;
-  currentRule: Record<string, unknown>;
-  updateField: (key: string, path: string, value: unknown) => void;
-  BadgeRenderer: KeyPrioritySectionProps["BadgeRenderer"];
-}
-
-function VariantInventoryUsageSubsection({
-  selectedKey,
-  currentRule,
-  updateField,
-  BadgeRenderer: B,
-}: VariantInventoryUsageSubsectionProps) {
-  const inventoryEnabled = readVariantInventoryEnabled(currentRule);
-
-  return (
-    <div>
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <label className="flex items-center gap-2 text-xs sf-text-default cursor-pointer select-none">
-          <input
-            type="checkbox"
-            aria-label="Use variant inventory context"
-            checked={inventoryEnabled}
-            onChange={(e) =>
-              updateField(
-                selectedKey,
-                "ai_assist.variant_inventory_usage",
-                { enabled: e.target.checked },
-              )
-            }
-            className="rounded sf-border-soft"
-          />
-          <span className="font-medium">Variant Inventory Context</span>
-          <Tip style={TIP_STYLE} text={STUDIO_TIPS.variant_inventory_usage} />
-        </label>
-        <B p="ai_assist.variant_inventory_usage" />
-      </div>
-    </div>
-  );
-}

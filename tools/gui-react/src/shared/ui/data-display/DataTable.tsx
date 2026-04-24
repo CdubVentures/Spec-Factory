@@ -213,6 +213,12 @@ function DataTableInner<T>({
       )}
       <div className={`sf-table-shell sf-primitive-table-shell overflow-auto ${maxHeight}`}>
         <table className="min-w-full text-sm" style={{ tableLayout: 'fixed' }}>
+          <colgroup>
+            {table.getVisibleFlatColumns().map((col) => {
+              const w = col.columnDef.size;
+              return <col key={col.id} style={w ? { width: w } : undefined} />;
+            })}
+          </colgroup>
           <thead className="sf-table-head sticky top-0">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>

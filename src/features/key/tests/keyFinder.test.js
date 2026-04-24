@@ -463,6 +463,11 @@ test('honest "unk" — submitCandidate NOT called; run still persists', async (t
   const doc = readKeyFinder({ productId, productRoot: PRODUCT_ROOT });
   assert.equal(doc.runs.length, 1);
   assert.equal(doc.runs[0].response.primary_field_key, 'sensor_model');
+  assert.equal(doc.runs[0].response.results.sensor_model.value, null, '"unk" is normalized out before JSON persistence');
+  assert.equal(doc.runs[0].selected.keys.sensor_model.value, null, '"unk" is not stored as selected field data');
+  assert.equal(fsStub.runs[0].response.results.sensor_model.value, null, '"unk" is normalized out before SQL run persistence');
+  assert.equal(fsStub.runs[0].selected.keys.sensor_model.value, null, '"unk" is not stored as SQL selected field data');
+  assert.equal(result.unknown_reason, 'Manufacturer page does not disclose the sensor IC');
 });
 
 test('run record round-trips — response.primary_field_key echoed; SQL insertRun called with matching payload', async (t) => {

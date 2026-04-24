@@ -12,11 +12,13 @@ import {
   DIFFICULTY_OPTIONS,
   DIFFICULTY_RANK,
 } from "../../../registries/fieldRuleTaxonomy.ts";
+import { getN, strN } from "./nestedValueHelpers.ts";
 
 type VariantInventoryUsageConfig = { enabled: boolean };
 type NormalizedAiAssistConfig = Omit<AiAssistConfig, "variant_inventory_usage"> & {
   reasoning_note: string;
   variant_inventory_usage?: VariantInventoryUsageConfig;
+  pif_priority_images?: VariantInventoryUsageConfig;
 };
 
 const LEGACY_VARIANT_INVENTORY_ACTIVE_MODES = new Set([
@@ -24,6 +26,33 @@ const LEGACY_VARIANT_INVENTORY_ACTIVE_MODES = new Set([
   "append",
   "override",
 ]);
+
+// WHY: variant_inventory_usage retains a legacy {mode} shape on some persisted
+// rules; pif_priority_images is new and only ever uses {enabled}.
+const LEGACY_MODE_FALLBACK_PATHS = new Set(["ai_assist.variant_inventory_usage"]);
+
+function normalizeSimpleEnabledToggle(value: unknown): VariantInventoryUsageConfig | null {
+  if (typeof value === "boolean") return { enabled: value };
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const input = value as Record<string, unknown>;
+  return typeof input.enabled === "boolean" ? { enabled: input.enabled } : null;
+}
+
+export function readAiAssistToggleEnabled(
+  rule: Record<string, unknown> | null | undefined,
+  path: string,
+): boolean {
+  const ruleObj = rule || {};
+  const subEnabled = getN(ruleObj, `${path}.enabled`);
+  if (typeof subEnabled === "boolean") return subEnabled;
+  const directValue = getN(ruleObj, path);
+  if (typeof directValue === "boolean") return directValue;
+  if (LEGACY_MODE_FALLBACK_PATHS.has(path)) {
+    const mode = strN(ruleObj, `${path}.mode`, "default");
+    return mode !== "off";
+  }
+  return false;
+}
 
 export const DEFAULT_PRIORITY_PROFILE: Required<PriorityProfile> = {
   required_level: "non_mandatory",
@@ -198,17 +227,21 @@ export function normalizeAiAssistConfig(
     typeof input.variant_inventory_usage === "object"
       ? (input.variant_inventory_usage as Record<string, unknown>)
       : {};
-  if (typeof variantUsage.enabled === "boolean") {
-    normalized.variant_inventory_usage = { enabled: variantUsage.enabled };
-    return normalized;
+  const normalizedVariantUsage = normalizeSimpleEnabledToggle(variantUsage);
+  if (normalizedVariantUsage) {
+    normalized.variant_inventory_usage = normalizedVariantUsage;
+  } else {
+    const legacyMode = String(variantUsage.mode || "").trim();
+    if (legacyMode === "off") {
+      normalized.variant_inventory_usage = { enabled: false };
+    }
+    if (LEGACY_VARIANT_INVENTORY_ACTIVE_MODES.has(legacyMode)) {
+      normalized.variant_inventory_usage = { enabled: true };
+    }
   }
-  const legacyMode = String(variantUsage.mode || "").trim();
-  if (legacyMode === "off") {
-    normalized.variant_inventory_usage = { enabled: false };
-    return normalized;
-  }
-  if (LEGACY_VARIANT_INVENTORY_ACTIVE_MODES.has(legacyMode)) {
-    normalized.variant_inventory_usage = { enabled: true };
+  const pifPriorityImages = normalizeSimpleEnabledToggle(input.pif_priority_images);
+  if (pifPriorityImages) {
+    normalized.pif_priority_images = pifPriorityImages;
   }
   return normalized;
 }

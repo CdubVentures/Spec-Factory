@@ -17,7 +17,7 @@ export async function createEngineFixtureRoot() {
     category: 'mouse',
     fields: {
       weight: {
-        required_level: 'required',
+        required_level: 'mandatory',
         difficulty: 'easy',
         availability: 'always',
         contract: {
@@ -28,7 +28,7 @@ export async function createEngineFixtureRoot() {
         }
       },
       connection: {
-        required_level: 'required',
+        required_level: 'mandatory',
         difficulty: 'easy',
         availability: 'always',
         enum_policy: 'closed',
@@ -38,7 +38,7 @@ export async function createEngineFixtureRoot() {
         }
       },
       dpi: {
-        required_level: 'expected',
+        required_level: 'non_mandatory',
         difficulty: 'easy',
         availability: 'always',
         contract: {
@@ -47,7 +47,7 @@ export async function createEngineFixtureRoot() {
         }
       },
       coating: {
-        required_level: 'optional',
+        required_level: 'non_mandatory',
         difficulty: 'medium',
         availability: 'sometimes',
         enum_policy: 'open',
@@ -144,7 +144,7 @@ export async function createEvidenceFixtureRoot() {
     category: 'mouse',
     fields: {
       weight: {
-        required_level: 'required',
+        required_level: 'mandatory',
         difficulty: 'easy',
         availability: 'always',
         contract: {
@@ -155,7 +155,7 @@ export async function createEvidenceFixtureRoot() {
         }
       },
       connection: {
-        required_level: 'required',
+        required_level: 'mandatory',
         difficulty: 'easy',
         availability: 'always',
         enum_policy: 'closed',
@@ -165,7 +165,7 @@ export async function createEvidenceFixtureRoot() {
         }
       },
       sensor: {
-        required_level: 'critical',
+        required_level: 'mandatory',
         difficulty: 'easy',
         availability: 'always',
         contract: {
@@ -274,7 +274,7 @@ export async function createMinRefsFixtureRoot() {
     category: 'mouse',
     fields: {
       weight: {
-        required_level: 'required',
+        required_level: 'mandatory',
         difficulty: 'easy',
         availability: 'always',
         evidence: {
@@ -289,7 +289,7 @@ export async function createMinRefsFixtureRoot() {
         }
       },
       connection: {
-        required_level: 'required',
+        required_level: 'mandatory',
         difficulty: 'easy',
         availability: 'always',
         evidence: {
@@ -303,7 +303,7 @@ export async function createMinRefsFixtureRoot() {
         }
       },
       dpi: {
-        required_level: 'expected',
+        required_level: 'non_mandatory',
         difficulty: 'easy',
         availability: 'always',
         evidence: {
@@ -317,7 +317,7 @@ export async function createMinRefsFixtureRoot() {
         }
       },
       coating: {
-        required_level: 'optional',
+        required_level: 'non_mandatory',
         difficulty: 'medium',
         availability: 'sometimes',
         evidence: {

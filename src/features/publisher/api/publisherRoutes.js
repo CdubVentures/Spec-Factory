@@ -27,6 +27,157 @@ function decodeFieldValue(fieldKey, rawValue) {
   } catch { return rawValue; }
 }
 
+function safeJsonParse(str, fallback) {
+  if (!str || typeof str !== 'string') return fallback;
+  try { return JSON.parse(str); } catch { return fallback; }
+}
+
+function isUnknownScalarValue(value, unknownReason) {
+  if (String(unknownReason || '').trim()) return true;
+  return typeof value === 'string' && value.trim().toLowerCase() === 'unk';
+}
+
+function makeStrippedUnknownRow({
+  id,
+  category,
+  productId,
+  fieldKey,
+  sourceType,
+  runNumber,
+  ranAt,
+  llmModel,
+  unknownReason,
+  confidence,
+  brand,
+  model,
+  variant,
+  detail = {},
+}) {
+  return {
+    id,
+    row_kind: 'stripped_unknown',
+    unknown_stripped: true,
+    unknown_reason: String(unknownReason || '').trim(),
+    run_number: runNumber,
+    category,
+    product_id: productId,
+    field_key: fieldKey,
+    value: null,
+    confidence: Number.isFinite(Number(confidence)) ? Number(confidence) : 0,
+    source_id: `${sourceType}-${productId}-${runNumber}-stripped-unk-${fieldKey}`,
+    source_type: sourceType,
+    llm_model: llmModel || '',
+    validation_json: {
+      valid: false,
+      repairs: [],
+      rejections: [{ reason_code: 'stripped_unknown', detail: { unknown_reason: String(unknownReason || '').trim(), ...detail } }],
+    },
+    metadata_json: {
+      source: sourceType,
+      row_kind: 'stripped_unknown',
+      unknown_reason: String(unknownReason || '').trim(),
+      run_number: runNumber,
+      publish_result: { status: 'skipped', reason: 'stripped_unknown' },
+      ...detail,
+    },
+    status: 'stripped',
+    submitted_at: ranAt || '',
+    updated_at: ranAt || '',
+    brand: brand || '',
+    model: model || '',
+    variant: variant || '',
+    evidence: [],
+    evidence_accepted_count: 0,
+    evidence_rejected_count: 0,
+  };
+}
+
+function listStrippedUnknownRows({ specDb, category, limit = 200 }) {
+  if (!specDb?.db?.prepare) return [];
+  const rows = [];
+  let nextId = -1;
+
+  const keyRuns = specDb.db.prepare(`
+    SELECT r.product_id, r.run_number, r.ran_at, r.model AS llm_model, r.response_json,
+           p.brand, p.model AS product_model, p.variant
+    FROM key_finder_runs r
+    LEFT JOIN products p ON r.product_id = p.product_id AND r.category = p.category
+    WHERE r.category = ?
+    ORDER BY r.ran_at DESC
+    LIMIT ?
+  `).all(category, limit);
+
+  for (const run of keyRuns) {
+    const response = safeJsonParse(run.response_json, {});
+    const results = response?.results && typeof response.results === 'object' ? response.results : {};
+    for (const [fieldKey, result] of Object.entries(results)) {
+      const reason = String(result?.unknown_reason || '').trim();
+      if (!isUnknownScalarValue(result?.value, reason)) continue;
+      rows.push(makeStrippedUnknownRow({
+        id: nextId--,
+        category,
+        productId: run.product_id,
+        fieldKey,
+        sourceType: 'key_finder',
+        runNumber: run.run_number,
+        ranAt: run.ran_at,
+        llmModel: run.llm_model,
+        unknownReason: reason,
+        confidence: result?.confidence,
+        brand: run.brand,
+        model: run.product_model,
+        variant: run.variant,
+        detail: { primary_field_key: response?.primary_field_key || null },
+      }));
+    }
+  }
+
+  const scalarFinders = [
+    { table: 'release_date_finder_runs', sourceType: 'release_date_finder', fieldKey: 'release_date', valueKey: 'release_date' },
+    { table: 'sku_finder_runs', sourceType: 'sku_finder', fieldKey: 'sku', valueKey: 'sku' },
+  ];
+
+  for (const finder of scalarFinders) {
+    const finderRuns = specDb.db.prepare(`
+      SELECT r.product_id, r.run_number, r.ran_at, r.model AS llm_model, r.response_json,
+             p.brand, p.model AS product_model, p.variant
+      FROM ${finder.table} r
+      LEFT JOIN products p ON r.product_id = p.product_id AND r.category = p.category
+      WHERE r.category = ?
+      ORDER BY r.ran_at DESC
+      LIMIT ?
+    `).all(category, limit);
+
+    for (const run of finderRuns) {
+      const response = safeJsonParse(run.response_json, {});
+      const reason = String(response?.unknown_reason || '').trim();
+      if (!isUnknownScalarValue(response?.[finder.valueKey], reason)) continue;
+      rows.push(makeStrippedUnknownRow({
+        id: nextId--,
+        category,
+        productId: run.product_id,
+        fieldKey: finder.fieldKey,
+        sourceType: finder.sourceType,
+        runNumber: run.run_number,
+        ranAt: run.ran_at,
+        llmModel: run.llm_model,
+        unknownReason: reason,
+        confidence: response?.confidence,
+        brand: run.brand,
+        model: run.product_model,
+        variant: response?.variant_label || run.variant,
+        detail: {
+          variant_id: response?.variant_id || null,
+          variant_key: response?.variant_key || null,
+          variant_label: response?.variant_label || null,
+        },
+      }));
+    }
+  }
+
+  return rows.sort((a, b) => String(b.submitted_at || '').localeCompare(String(a.submitted_at || '')));
+}
+
 export function registerPublisherRoutes(ctx) {
   const { jsonRes, readJsonBody, getSpecDb, broadcastWs, config, productRoot } = ctx;
 
@@ -67,10 +218,20 @@ export function registerPublisherRoutes(ctx) {
           evidence_rejected_count: split.rejected,
         };
       });
+      const allStrippedUnknownRows = listStrippedUnknownRows({ specDb, category });
+      const strippedUnknownRows = page === 1 ? allStrippedUnknownRows : [];
+      const combinedRows = [...rowsWithEvidence, ...strippedUnknownRows]
+        .sort((a, b) => String(b.submitted_at || '').localeCompare(String(a.submitted_at || '')));
       const total = specDb.countFieldCandidates();
       const stats = specDb.getFieldCandidatesStats();
 
-      jsonRes(res, 200, { rows: rowsWithEvidence, total, page, limit, stats });
+      jsonRes(res, 200, {
+        rows: combinedRows,
+        total: total + allStrippedUnknownRows.length,
+        page,
+        limit,
+        stats: { ...stats, total: stats.total + allStrippedUnknownRows.length, unknown_stripped: allStrippedUnknownRows.length },
+      });
       return true;
     }
 

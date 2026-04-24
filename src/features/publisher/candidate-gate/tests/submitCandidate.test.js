@@ -179,6 +179,27 @@ describe('submitCandidate', async () => {
     assert.ok(!pj.candidates || !pj.candidates.weight);
   });
 
+  it('rejects absence values and writes nothing', async () => {
+    ensureProductJson('mouse-absence');
+    const result = await submitCandidate({
+      ...baseDeps(specDb),
+      productId: 'mouse-absence',
+      fieldKey: 'weight',
+      value: 'unk',
+      confidence: 90,
+      sourceMeta: { artifact: 'absence', run_id: 'run-absence' },
+    });
+
+    assert.equal(result.status, 'rejected');
+    assert.equal(result.candidateId, null);
+    assert.equal(result.value, null);
+    assert.ok(result.validationResult.rejections.some((r) => r.reason_code === 'absent_candidate_value'));
+    assert.equal(specDb.getFieldCandidatesByProductAndField('mouse-absence', 'weight').length, 0);
+
+    const pj = readProductJson('mouse-absence');
+    assert.equal(pj.candidates, undefined);
+  });
+
   // --- 4. Rejection: no field rule ---
   it('rejects when field rule is missing', async () => {
     ensureProductJson('mouse-norule');

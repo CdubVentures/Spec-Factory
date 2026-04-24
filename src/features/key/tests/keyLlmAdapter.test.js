@@ -113,6 +113,8 @@ test('default template contains every placeholder the builder injects', () => {
     '{{PRODUCT_SCOPED_FACTS}}',
     '{{VARIANT_INVENTORY}}',
     '{{FIELD_IDENTITY_USAGE}}',
+    '{{PIF_PRIORITY_IMAGES}}',
+    '{{VALUE_NORMALIZATION}}',
     '{{EVIDENCE_CONTRACT}}',
     '{{EVIDENCE_VERIFICATION}}',
     '{{SOURCE_TIER_STRATEGY}}',
@@ -128,12 +130,23 @@ test('default template contains every placeholder the builder injects', () => {
   assert.equal(KEY_FINDER_DEFAULT_TEMPLATE.includes('{{KNOWN_PRODUCT_FIELDS}}'), false);
 });
 
-test('prompt variable contract exposes split product facts and variant inventory slots', () => {
+test('VALUE_NORMALIZATION sits after visual context and before evidence rules', () => {
+  const pifIdx = KEY_FINDER_DEFAULT_TEMPLATE.indexOf('{{PIF_PRIORITY_IMAGES}}');
+  const normalizationIdx = KEY_FINDER_DEFAULT_TEMPLATE.indexOf('{{VALUE_NORMALIZATION}}');
+  const evidenceIdx = KEY_FINDER_DEFAULT_TEMPLATE.indexOf('{{EVIDENCE_CONTRACT}}');
+  assert.ok(pifIdx >= 0, 'PIF_PRIORITY_IMAGES placeholder present');
+  assert.ok(normalizationIdx > pifIdx, 'VALUE_NORMALIZATION follows PIF_PRIORITY_IMAGES');
+  assert.ok(evidenceIdx > normalizationIdx, 'EVIDENCE_CONTRACT follows VALUE_NORMALIZATION');
+});
+
+test('prompt variable contract exposes split product facts, variant inventory, and PIF image slots', () => {
   const names = new Set(KEY_FINDER_VARIABLES.map((row) => row.name));
   assert.equal(names.has('KNOWN_PRODUCT_FIELDS'), false);
   assert.equal(names.has('PRODUCT_SCOPED_FACTS'), true);
   assert.equal(names.has('VARIANT_INVENTORY'), true);
   assert.equal(names.has('FIELD_IDENTITY_USAGE'), true);
+  assert.equal(names.has('PIF_PRIORITY_IMAGES'), true);
+  assert.equal(names.has('VALUE_NORMALIZATION'), true);
 });
 
 // ── Identity + product header ───────────────────────────────────────────
@@ -399,6 +412,28 @@ test('ADDITIONAL_FIELD_CONTRACT renders each passenger contract with its type + 
   });
   assert.match(out, /Hz/);
   assert.match(out, /report rate/); // alias present in passenger contract
+});
+
+test('ADDITIONAL_FIELD_CONTRACT renders passenger evidence target without authorizing passenger searches', () => {
+  const out = buildKeyFinderPrompt({
+    product: PRODUCT,
+    primary: { fieldKey: 'sensor_date', fieldRule: SENSOR_DATE_RULE },
+    passengers: [{
+      fieldKey: 'polling_rate',
+      fieldRule: {
+        ...POLLING_RATE_RULE,
+        evidence: { min_evidence_refs: 2 },
+      },
+    }],
+    category: 'mouse',
+    variantCount: 1,
+    injectionKnobs: ALL_KNOBS_ON,
+  });
+
+  assert.match(out, /Evidence target: 2 source refs/i);
+  assert.match(out, /Do not run passenger-specific searches/i);
+  assert.match(out, /primary key evidence target/i);
+  assert.match(out, /do not suppress a found passenger value/i);
 });
 
 test('ADDITIONAL_FIELD_CONTRACT resolves passenger data-list enum values from known_values', () => {
@@ -710,6 +745,69 @@ test('VARIANT_INVENTORY and FIELD_IDENTITY_USAGE omit when no inventory rows exi
   assert.doesNotMatch(out, /This should not render without inventory/);
 });
 
+test('PIF_PRIORITY_IMAGES renders attached-image guardrails when enabled images exist', () => {
+  const out = renderPrimary('design', {
+    field_key: 'design',
+    contract: { type: 'string', shape: 'list' },
+    ai_assist: {
+      reasoning_note: 'Use visual context only when it directly supports the field.',
+      pif_priority_images: { enabled: true },
+    },
+  }, {
+    pifPriorityImageContext: {
+      enabled: true,
+      status: 'available',
+      variant: {
+        variant_id: 'v_black',
+        variant_key: 'color:black',
+        label: 'Black',
+        basis: 'CEF default_color',
+      },
+      priorityViews: ['top', 'left', 'bottom'],
+      images: [
+        {
+          view: 'top',
+          filename: 'top-black.png',
+          source: 'eval',
+          original_url: 'https://example.com/top.png',
+          eval_reasoning: 'Clear default shell top view.',
+        },
+      ],
+    },
+  });
+
+  assert.match(out, /PIF_PRIORITY_IMAGES/);
+  assert.match(out, /default\/base variant images are attached/i);
+  assert.match(out, /not exhaustive product proof/i);
+  assert.match(out, /absence of a visible trait/i);
+  assert.match(out, /Priority views from PIF viewConfig: top, left, bottom/);
+  assert.match(out, /Variant: Black \(color:black\)/);
+  assert.match(out, /top-black\.png/);
+  assert.match(out, /Clear default shell top view/);
+});
+
+test('PIF_PRIORITY_IMAGES renders unavailable guidance when enabled but no images exist', () => {
+  const out = renderPrimary('design', {
+    field_key: 'design',
+    contract: { type: 'string', shape: 'list' },
+    ai_assist: { pif_priority_images: { enabled: true } },
+  }, {
+    pifPriorityImageContext: {
+      enabled: true,
+      status: 'no_images',
+      priorityViews: ['top', 'left'],
+      message: 'No PIF-evaluated priority images are available for the default/base variant.',
+      images: [],
+    },
+  });
+
+  assert.match(out, /PIF_PRIORITY_IMAGES/);
+  assert.match(out, /enabled for this key, but no PIF-evaluated priority images are available/i);
+  assert.match(out, /Priority views requested from PIF viewConfig: top, left/);
+  assert.match(out, /Do not infer visual traits from missing PIF images/i);
+  assert.doesNotMatch(out, /Attached images:/);
+});
+
 // ── Knob independence ──────────────────────────────────────────────────
 
 test('knob independence: component ON, known OFF → per-key relation pointer renders, known does not', () => {
@@ -790,6 +888,23 @@ test('RETURN_JSON_SHAPE emits per-key value shape (array for list, number+unit f
   assert.doesNotMatch(out, /Per-key value shapes/);
 });
 
+test('RETURN_JSON_SHAPE keeps discovery_log at the run envelope only', () => {
+  const out = buildKeyFinderPrompt({
+    product: PRODUCT,
+    primary: { fieldKey: 'polling_rate', fieldRule: POLLING_RATE_RULE },
+    passengers: [{ fieldKey: 'dpi', fieldRule: POLLING_RATE_RULE }],
+    category: 'mouse',
+    variantCount: 1,
+    injectionKnobs: ALL_KNOBS_ON,
+  });
+
+  const discoveryLogMentions = out.match(/"discovery_log"/g) || [];
+  assert.equal(discoveryLogMentions.length, 1, 'only the envelope-level discovery_log should be requested');
+  const passengerBlock = out.match(/"dpi": \{[\s\S]*?\n    \}/)?.[0] || '';
+  assert.doesNotMatch(passengerBlock, /"discovery_log"/);
+  assert.match(out, /Passenger evidence must come from the primary search session/i);
+});
+
 // \u2500\u2500 Universal source-tier strategy + closer (global fragments) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
 test('SOURCE_TIER_STRATEGY renders universal tier-strategy block from global fragment', () => {
@@ -799,6 +914,19 @@ test('SOURCE_TIER_STRATEGY renders universal tier-strategy block from global fra
   assert.match(out, /INDEPENDENT CORROBORATION/);
   assert.match(out, /RETAILER LISTINGS/);
   assert.match(out, /COMMUNITY \/ AGGREGATORS/);
+});
+
+test('VALUE_NORMALIZATION renders canonical table guidance without unk/n/a policy', () => {
+  const out = renderPrimary('polling_rate', POLLING_RATE_RULE);
+  assert.match(out, /VALUE NORMALIZATION:/);
+  assert.match(out, /canonical table value/i);
+  assert.match(out, /complete set of values/i);
+  const section = out.slice(
+    out.indexOf('VALUE NORMALIZATION:'),
+    out.indexOf('Evidence requirements'),
+  );
+  assert.doesNotMatch(section, /\bunk\b/i);
+  assert.doesNotMatch(section, /\bn\/a\b/i);
 });
 
 test('SCALAR_SOURCE_GUIDANCE_CLOSER renders closer line from global fragment', () => {
@@ -1009,6 +1137,37 @@ test('tier bundle with empty model AND empty reasoningModel emits no modelOverri
   assert.equal(captured[0].modelOverride ?? '', '');
   assert.equal(captured[0].capabilityOverride?.thinking, true);
   assert.equal(captured[0].capabilityOverride?.thinkingEffort, 'high');
+});
+
+test('createKeyFinderCallLlm attaches PIF priority image files to the user message when present', async () => {
+  const { callLlm, captured } = captureCallLlmArgs('medium');
+  await callLlm({
+    product: PRODUCT,
+    primary: { fieldKey: 'design', fieldRule: { field_key: 'design', contract: { type: 'string' } } },
+    passengers: [],
+    pifPriorityImageContext: {
+      images: [
+        {
+          view: 'top',
+          filename: 'top-black.png',
+          llm_file_uri: 'C:/images/top-black.png',
+          mime_type: 'image/png',
+          caption: 'top view: top-black.png',
+        },
+      ],
+    },
+  });
+
+  assert.equal(typeof captured[0].user, 'object');
+  assert.match(captured[0].user.text, /"primary_field_key":"design"/);
+  assert.deepEqual(captured[0].user.images, [
+    {
+      id: 'pif-priority:top:top-black.png',
+      file_uri: 'C:/images/top-black.png',
+      mime_type: 'image/png',
+      caption: 'top view: top-black.png',
+    },
+  ]);
 });
 
 test('legacy string-form tier emits NO capabilityOverride (phase-level reads stay authoritative)', async () => {

@@ -16,6 +16,8 @@ if /I "%ACTION%"=="reload" goto :action_reload
 if /I "%ACTION%"=="refresh" goto :action_refresh
 if /I "%ACTION%"=="rebuild-frontend" goto :action_rebuild_frontend
 if /I "%ACTION%"=="rebuild-restart" goto :action_rebuild_restart
+if /I "%ACTION%"=="gui-dev" goto :action_gui_dev
+if /I "%ACTION%"=="gui-check" goto :action_gui_check
 if /I "%ACTION%"=="build-gui" goto :action_build_gui
 if /I "%ACTION%"=="build-exe" goto :action_build_exe
 if /I "%ACTION%"=="build-launcher" goto :action_build_launcher
@@ -51,6 +53,10 @@ echo   --- Hot Rebuild (safe while server is running) ---
 echo   [4] Rebuild Frontend        (vite build only, skip native)
 echo   [5] Rebuild + Restart API   (vite build + restart server)
 echo.
+echo   --- Live Dev (no rebuild loop) ---
+echo   [14] GUI Dev Server         (Vite HMR on http://127.0.0.1:5183)
+echo   [15] GUI Type Check         (tsc -b only, sandbox-safe)
+echo.
 echo   --- Build ---
 echo   [6] Build GUI               (rebuild native + vite build)
 echo   [7] Build GUI (Quick)       (build + sync gui-dist for exe)
@@ -81,6 +87,8 @@ if /I "!CHOICE!"=="10" goto :action_build_launcher
 if /I "!CHOICE!"=="11" goto :action_kill
 if /I "!CHOICE!"=="12" goto :action_status
 if /I "!CHOICE!"=="13" goto :action_cleanup
+if /I "!CHOICE!"=="14" goto :action_gui_dev
+if /I "!CHOICE!"=="15" goto :action_gui_check
 if /I "!CHOICE!"=="H" goto :show_help
 if /I "!CHOICE!"=="Q" goto :done_quiet
 if /I "!CHOICE!"=="q" goto :done_quiet
@@ -248,6 +256,44 @@ echo.
 echo   ============================================
 echo     Rebuild + Restart complete!  http://localhost:8788
 echo   ============================================
+goto :done
+
+:: ── GUI Dev Server (HMR, no rebuild loop) ────────────────────────────
+:action_gui_dev
+call :check_node
+if %ERRORLEVEL% NEQ 0 goto :done
+echo.
+echo   ============================================
+echo     GUI Dev Server (Vite HMR)
+echo   ============================================
+echo.
+echo   URL:         http://127.0.0.1:5183
+echo   API proxy:   /api and /ws  -^>  http://127.0.0.1:8788
+echo.
+echo   Backend must be running on 8788 (use [1] Start Server first if needed).
+echo   A new window will open with Vite dev logs. Close it or Ctrl+C to stop.
+echo   Edit any file under tools\gui-react\src and the browser reloads instantly.
+echo.
+start "Spec Factory GUI Dev (HMR)" /D "%ROOT%" cmd /k "npm run gui:dev"
+timeout /t 3 /nobreak >nul
+start "" "http://127.0.0.1:5183"
+goto :done
+
+:: ── GUI Type Check (sandbox-safe: no vite / esbuild spawn) ───────────
+:action_gui_check
+call :check_node
+if %ERRORLEVEL% NEQ 0 goto :done
+echo.
+echo   Running tsc -b in tools\gui-react (no vite, no esbuild)...
+echo.
+call npm run gui:check
+if %ERRORLEVEL% NEQ 0 (
+  echo.
+  echo   [ERROR] Type check failed.
+  goto :done
+)
+echo.
+echo   Type check passed.
 goto :done
 
 :: ── Build GUI ─────────────────────────────────────────────────────────
@@ -585,6 +631,8 @@ echo     reload             Kill all + rebuild GUI + restart server
 echo     refresh            Refresh browser at localhost:8788
 echo     rebuild-frontend   Vite build only (safe while server running)
 echo     rebuild-restart    Vite build + restart API server
+echo     gui-dev            Vite dev server (HMR) at http://127.0.0.1:5183
+echo     gui-check          TypeScript check only (no vite/esbuild spawn)
 echo     build-gui          Build GUI (--quick to also sync gui-dist)
 echo     build-exe          Build SpecFactory.exe (--quick for GUI only)
 echo     build-launcher     Build Launcher EXE

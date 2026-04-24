@@ -187,6 +187,55 @@ export function useRunningProductIds(category: string): ReadonlySet<string> {
   );
 }
 
+/**
+ * Per-product map of currently-running module types within a category. Drives
+ * the Overview selection strip's per-badge module indicators.
+ *
+ * Format: `pid:cef,pif|pid2:kf` — sorted, pipe-delimited so Zustand's Object.is
+ * skips re-renders when nothing changed.
+ */
+export function selectRunningModulesByProduct(
+  ops: ReadonlyMap<string, Operation>,
+  category: string,
+): string {
+  const byPid = new Map<string, Set<string>>();
+  for (const op of ops.values()) {
+    if (op.status !== 'running') continue;
+    if (!op.productId) continue;
+    if (category && op.category !== category) continue;
+    let set = byPid.get(op.productId);
+    if (!set) { set = new Set(); byPid.set(op.productId, set); }
+    set.add(op.type);
+  }
+  return [...byPid.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([pid, mods]) => `${pid}:${[...mods].sort().join(',')}`)
+    .join('|');
+}
+
+export function useRunningModulesByProduct(category: string): ReadonlyMap<string, ReadonlySet<string>> {
+  const serialized = useOperationsStore(
+    useCallback(
+      (s: { operations: ReadonlyMap<string, Operation> }) =>
+        selectRunningModulesByProduct(s.operations, category),
+      [category],
+    ),
+  );
+  return useMemo(() => {
+    const map = new Map<string, ReadonlySet<string>>();
+    if (!serialized) return map;
+    for (const token of serialized.split('|')) {
+      if (!token) continue;
+      const colonIdx = token.indexOf(':');
+      if (colonIdx <= 0) continue;
+      const pid = token.slice(0, colonIdx);
+      const mods = token.slice(colonIdx + 1).split(',').filter(Boolean);
+      if (mods.length > 0) map.set(pid, new Set(mods));
+    }
+    return map;
+  }, [serialized]);
+}
+
 /** Per-key scope (keyFinder). Returns the set of field_keys currently running. */
 export function useRunningFieldKeys(type: string, productId: string): ReadonlySet<string> {
   const serialized = useOperationsStore(

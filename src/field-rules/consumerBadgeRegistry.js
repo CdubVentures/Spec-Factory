@@ -290,7 +290,13 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
   { path: 'ai_assist.variant_inventory_usage', type: 'object', flatAliases: [],
     section: 'Extraction Priority & Guidance', key: 'Variant Inventory Usage',
     consumers: {
-      'llm.kf': { desc: 'Controls how Key Finder uses the active CEF variant inventory as per-key evidence-filter guidance. Supports default/append/override/off modes.' },
+      'llm.kf': { desc: 'Single on/off checkbox. Enable only when edition/SKU/release/colorway/PIF identity facts add evidence-filter value without ambiguity; field-specific interpretation belongs in ai_assist.reasoning_note.' },
+    } },
+
+  { path: 'ai_assist.pif_priority_images', type: 'object', flatAliases: [],
+    section: 'Extraction Priority & Guidance', key: 'PIF Priority Images',
+    consumers: {
+      'llm.kf': { desc: 'Single on/off checkbox. Enable only when default/base PIF priority-view images add visual evidence value. Missing images are not negative evidence; edition/list interpretation belongs in ai_assist.reasoning_note.' },
     } },
 
   // Search Hints & Aliases

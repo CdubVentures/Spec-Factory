@@ -725,7 +725,7 @@
     },
     {
       "ai_assist": {
-        "reasoning_note": ""
+        "reasoning_note": "Treat this as a closed design/edition taxonomy, not a free-text aesthetic description. Keep source phrases such as special edition, signature edition, creator edition, artist edition, anniversary edition, team edition, player edition, co-branded, collab, exclusive design, exclusive drop, limited release, limited run, one-time-only release, serialized, collector item, colorway, aesthetic, shape, and ergonomic design out of public chips unless they map to one of the canonical values."
       },
       "delimiter": "",
       "field": "design",
@@ -733,8 +733,8 @@
       "manual_values": [
         "standard",
         "limited edition",
-        "multiple",
-        "collaboration"
+        "collaboration",
+        "multiple"
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
@@ -3137,18 +3137,44 @@
     },
     "design": {
       "ai_assist": {
-        "reasoning_note": "",
+        "pif_priority_images": {
+          "enabled": true
+        },
+        "reasoning_note": "Classify the product's public visual/edition design, not ergonomic shape, color list, lighting, or material. Return `standard` for the ordinary/base retail design when no co-branded, limited-release, or multiple distinct artwork/edition designs apply. Return `collaboration` only for a co-branded/licensed/person/team/artist/creator edition or product name/source phrase such as `X x Y`, `Faker Edition`, `Sentinels Edition`, or `Aim Lab Edition` that gives the mouse a distinct design identity; do NOT treat generic phrases like `designed/developed in collaboration with pros`, `pro-tested`, or `feedback from esports athletes` as collaboration. Return `limited edition` when an official or credible source says limited edition/release/run, exclusive drop, serialized quantity, collector item, one-time-only release, or limited-time colorway for the exact variant. Return `multiple` only when the exact product record/series is intentionally sold with multiple distinct design/edition/artwork options; do not use it for ordinary color choices, RGB effects, or sibling models. If an exact variant is identified, classify that variant only; do not union sibling/base/special-edition values. A limited collaboration can return both `limited edition` and `collaboration`; dedupe and keep canonical values only. Use visual/PIF images as supporting evidence for co-branding, artwork, or standard appearance; missing images are not negative evidence.",
         "variant_inventory_usage": {
           "mode": "default"
         }
       },
-      "aliases": [],
+      "aliases": [
+        "collaboration",
+        "collab",
+        "co-branded",
+        "partnered with",
+        "X x Y",
+        "team edition",
+        "player edition",
+        "creator edition",
+        "artist edition",
+        "signature edition",
+        "anniversary edition",
+        "special edition",
+        "limited edition",
+        "limited release",
+        "limited run",
+        "exclusive drop",
+        "one-time-only release",
+        "serialized",
+        "collector item",
+        "limited-time colorway"
+      ],
       "availability": "always",
       "canonical_key": "design",
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
+        "list_rules": {
+          "item_union": false
+        },
         "shape": "list",
         "type": "string",
         "unit": null
@@ -3158,14 +3184,11 @@
       "display_name": "Design",
       "enum": {
         "match": {},
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open_prefer_known",
+        "new_value_policy": {},
+        "policy": "closed",
         "source": "data_lists.design"
       },
-      "enum_policy": "open_prefer_known",
+      "enum_policy": "closed",
       "enum_source": "data_lists.design",
       "evidence": {
         "min_evidence_refs": 1,
@@ -3192,10 +3215,7 @@
       "group": "Appearance",
       "key": "design",
       "min_evidence_refs": 1,
-      "new_value_policy": {
-        "accept_if_evidence": true,
-        "mark_needs_curation": true
-      },
+      "new_value_policy": {},
       "output_shape": "list",
       "parse": {
         "delimiters": [
@@ -3228,18 +3248,30 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "review"
+          "official product page",
+          "official store page",
+          "official news/press release",
+          "product image/render",
+          "authorized retailer product listing",
+          "professional review/spec database fallback"
         ],
-        "domain_hints": [
-          "eloshapes.com",
-          "rtings.com",
-          "mousespecs.org"
-        ],
+        "domain_hints": [],
         "query_terms": [
-          "design",
-          "aesthetics",
-          "build design",
-          "look"
+          "edition",
+          "limited edition",
+          "limited release",
+          "collaboration",
+          "collab",
+          "co-branded",
+          "signature edition",
+          "team edition",
+          "player edition",
+          "creator edition",
+          "artist edition",
+          "anniversary edition",
+          "exclusive drop",
+          "limited run",
+          "colorway"
         ]
       },
       "selection_policy": {},
@@ -3263,7 +3295,8 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "value_form": "set",
-      "value_form_sample": "list"
+      "value_form_sample": "list",
+      "variant_dependent": true
     },
     "discontinued": {
       "aliases": [],

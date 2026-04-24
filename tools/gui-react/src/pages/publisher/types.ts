@@ -52,6 +52,10 @@ export interface EvidenceRef {
 
 export interface PublisherCandidateRow {
   id: number;
+  row_kind?: 'candidate' | 'stripped_unknown';
+  unknown_stripped?: boolean;
+  unknown_reason?: string | null;
+  run_number?: number | null;
   category: string;
   product_id: string;
   field_key: string;
@@ -62,7 +66,7 @@ export interface PublisherCandidateRow {
   llm_model: string;
   validation_json: PublisherValidationJson;
   metadata_json: PublisherMetadataJson;
-  status: 'candidate' | 'resolved';
+  status: 'candidate' | 'resolved' | 'stripped';
   submitted_at: string;
   updated_at: string;
   brand?: string;
@@ -79,6 +83,7 @@ export interface PublisherStats {
   pending: number;
   repaired: number;
   products: number;
+  unknown_stripped?: number;
 }
 
 export interface PublisherCandidatesResponse {

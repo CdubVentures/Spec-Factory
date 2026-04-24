@@ -16,6 +16,7 @@ import { resolveIdentityAmbiguitySnapshot } from '../indexing/orchestration/shar
 import { resolvePhaseModelByTier } from '../../core/llm/client/routing.js';
 import { zodToLlmSchema } from '../../core/llm/zodToLlmSchema.js';
 import { FieldRulesEngine } from '../../engine/fieldRulesEngine.js';
+import { resolveKeyFinderPifPriorityImageContext } from '../product-image/index.js';
 
 import { buildKeyFinderPrompt } from './keyLlmAdapter.js';
 import { buildPassengers } from './keyPassengerBuilder.js';
@@ -219,6 +220,12 @@ export async function compileKeyFinderPreviewPrompt(ctx) {
     primaryFieldRule: fieldRule,
     knownFieldsInjectionEnabled: settings.knownFieldsInjectionEnabled,
   });
+  const pifPriorityImageContext = await resolveKeyFinderPifPriorityImageContext({
+    specDb,
+    product,
+    productRoot,
+    fieldRule,
+  });
 
   const injectionKnobs = {
     componentInjectionEnabled: settings.componentInjectionEnabled,
@@ -233,6 +240,7 @@ export async function compileKeyFinderPreviewPrompt(ctx) {
     productScopedFacts,
     variantInventory,
     fieldIdentityUsage,
+    pifPriorityImageContext,
     componentContext,
     productComponents,
     injectionKnobs,
@@ -286,6 +294,15 @@ export async function compileKeyFinderPreviewPrompt(ctx) {
       schema: zodToLlmSchema(keyFinderResponseSchema),
       model: modelInfo,
       notes,
+      images: (pifPriorityImageContext.images || []).map((image) => ({
+        url: image.preview_url,
+        label: `${image.view} view`,
+        caption: image.caption,
+        filename: image.filename,
+        view: image.view,
+        source: image.source,
+        thumb_base64_size: image.bytes,
+      })),
     }],
     inputs_resolved: {
       field_key: fieldKey,

@@ -16,12 +16,14 @@ import { CefRunPopover } from './CefRunPopover.tsx';
 import { PifVariantsCell } from './PifVariantsCell.tsx';
 import { ScalarVariantsCell } from './ScalarVariantsCell.tsx';
 import { KeyTierRings } from './KeyTierRings.tsx';
+import { ScoreCardCell } from './ScoreCardCell.tsx';
 import {
   OverviewFilterBar,
   type OverviewFilterState,
   type OverviewSortKey,
 } from './OverviewFilterBar.tsx';
 import { CommandConsole } from './CommandConsole.tsx';
+import { SelectionStrip } from './SelectionStrip.tsx';
 import {
   useOverviewSelectionStore,
   useIsSelected,
@@ -123,68 +125,62 @@ function defaultCompare(a: CatalogRow, b: CatalogRow): number {
   );
 }
 
+function metricTrafficColor(ratio: number): 'green' | 'yellow' | 'red' | 'gray' {
+  if (!Number.isFinite(ratio) || ratio <= 0) return 'gray';
+  if (ratio >= 0.85) return 'green';
+  if (ratio >= 0.6) return 'yellow';
+  return 'red';
+}
+
+function MetricWithDot({ value, text }: { value: number; text: string }) {
+  return (
+    <span className="flex items-center gap-1">
+      <TrafficLight color={metricTrafficColor(value)} />
+      {text}
+    </span>
+  );
+}
+
 function buildColumns(hexMap: ReadonlyMap<string, string>, category: string): ColumnDef<CatalogRow, unknown>[] {
   return [
-    { accessorKey: 'brand', header: 'Brand', size: 100 },
-    { accessorKey: 'base_model', header: 'Base Model', size: 130 },
     {
-      accessorKey: 'variant',
-      header: 'Variant',
+      accessorKey: 'brand',
+      header: 'Brand',
+      size: 120,
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return v ? <span className="text-xs">{v}</span> : <span className="sf-text-subtle text-xs italic">—</span>;
       },
-      size: 100,
     },
     {
-      accessorKey: 'id',
-      header: 'ID#',
-      size: 55,
-      cell: ({ getValue }) => {
-        const v = getValue() as number;
-        return v ? <span className="font-mono text-xs">{v}</span> : null;
-      },
-    },
-    {
-      accessorKey: 'identifier',
-      header: 'Identifier',
-      size: 90,
+      accessorKey: 'base_model',
+      header: 'Base Model',
+      size: 180,
       cell: ({ getValue }) => {
         const v = getValue() as string;
-        return v ? <span className="font-mono text-xs" title={v}>{v.length > 6 ? v.slice(0, 6) + '...' : v}</span> : null;
+        return v ? <span className="text-xs">{v}</span> : <span className="sf-text-subtle text-xs italic">—</span>;
       },
     },
     {
-      accessorKey: 'confidence',
-      header: 'Conf',
+      accessorKey: 'variant',
+      header: 'Variant',
+      size: 180,
       cell: ({ getValue }) => {
-        const v = getValue() as number;
-        const color = v >= 0.85 ? 'green' : v >= 0.6 ? 'yellow' : v > 0 ? 'red' : 'gray';
-        return (
-          <span className="flex items-center gap-1">
-            <TrafficLight color={color} />
-            {pct(v)}
-          </span>
-        );
+        const v = getValue() as string;
+        return v ? <span className="text-xs">{v}</span> : <span className="sf-text-subtle text-xs italic">—</span>;
       },
-      size: 80,
     },
     {
-      accessorKey: 'coverage',
-      header: 'Coverage',
-      cell: ({ getValue }) => pct(getValue() as number),
-      size: 80,
-    },
-    {
-      accessorKey: 'fieldsFilled',
-      header: 'Fields',
-      cell: ({ row }) => `${row.original.fieldsFilled}/${row.original.fieldsTotal}`,
-      size: 70,
+      id: 'gap',
+      size: 40,
+      enableSorting: false,
+      header: () => null,
+      cell: () => null,
     },
     {
       accessorKey: 'cefRunCount',
       header: 'CEF',
-      size: 130,
+      size: 110,
       cell: ({ row }) => (
         <CefRunPopover
           productId={row.original.productId}
@@ -197,7 +193,7 @@ function buildColumns(hexMap: ReadonlyMap<string, string>, category: string): Co
     {
       accessorKey: 'pifVariants',
       header: 'PIF',
-      size: 260,
+      size: 414,
       cell: ({ row }) => (
         <PifVariantsCell
           productId={row.original.productId}
@@ -210,7 +206,7 @@ function buildColumns(hexMap: ReadonlyMap<string, string>, category: string): Co
     {
       accessorKey: 'skuVariants',
       header: 'SKU',
-      size: 220,
+      size: 376,
       cell: ({ row }) => (
         <ScalarVariantsCell
           productId={row.original.productId}
@@ -229,7 +225,7 @@ function buildColumns(hexMap: ReadonlyMap<string, string>, category: string): Co
     {
       accessorKey: 'rdfVariants',
       header: 'RDF',
-      size: 200,
+      size: 376,
       cell: ({ row }) => (
         <ScalarVariantsCell
           productId={row.original.productId}
@@ -257,6 +253,41 @@ function buildColumns(hexMap: ReadonlyMap<string, string>, category: string): Co
           tiers={row.original.keyTierProgress}
         />
       ),
+    },
+    {
+      id: 'scoreCard',
+      header: 'Score',
+      size: 70,
+      cell: ({ row }) => <ScoreCardCell row={row.original} />,
+    },
+    {
+      accessorKey: 'coverage',
+      header: 'Coverage',
+      cell: ({ getValue }) => {
+        const v = getValue() as number;
+        return <MetricWithDot value={v} text={pct(v)} />;
+      },
+      size: 95,
+    },
+    {
+      accessorKey: 'confidence',
+      header: 'Conf',
+      cell: ({ getValue }) => {
+        const v = getValue() as number;
+        return <MetricWithDot value={v} text={pct(v)} />;
+      },
+      size: 95,
+    },
+    {
+      accessorKey: 'fieldsFilled',
+      header: 'Fields',
+      cell: ({ row }) => {
+        const filled = row.original.fieldsFilled;
+        const total = row.original.fieldsTotal;
+        const ratio = total > 0 ? filled / total : 0;
+        return <MetricWithDot value={ratio} text={`${filled}/${total}`} />;
+      },
+      size: 95,
     },
   ];
 }
@@ -306,9 +337,17 @@ export function OverviewPage() {
     () => [
       {
         id: 'select',
-        size: 36,
-        header: () => <SelectHeaderCell category={category} visibleIds={visibleIds} />,
-        cell: ({ row }) => <SelectCell category={category} productId={row.original.productId} />,
+        size: 48,
+        header: () => (
+          <div className="flex w-full items-center justify-center">
+            <SelectHeaderCell category={category} visibleIds={visibleIds} />
+          </div>
+        ),
+        cell: ({ row }) => (
+          <div className="flex w-full items-center justify-center">
+            <SelectCell category={category} productId={row.original.productId} />
+          </div>
+        ),
       },
       ...buildColumns(hexMap, category),
     ],
@@ -333,6 +372,8 @@ export function OverviewPage() {
         </div>
         <CommandConsole category={category} allRows={catalog} />
       </div>
+
+      <SelectionStrip category={category} allRows={catalog} />
 
       <OverviewFilterBar
         state={filterState}

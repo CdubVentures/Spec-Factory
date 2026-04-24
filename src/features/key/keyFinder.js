@@ -24,6 +24,7 @@ import { resolveIdentityAmbiguitySnapshot } from '../indexing/orchestration/shar
 import { submitCandidate as defaultSubmitCandidate } from '../publisher/index.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 import { FieldRulesEngine } from '../../engine/fieldRulesEngine.js';
+import { resolveKeyFinderPifPriorityImageContext } from '../product-image/index.js';
 
 import { keyFinderResponseSchema } from './keySchema.js';
 import { readKeyFinder, mergeKeyFinderDiscovery } from './keyStore.js';
@@ -67,6 +68,28 @@ function readBoolKnob(finderStore, key, defaultTrue = true) {
   const raw = readKnob(finderStore, key);
   if (raw === '') return defaultTrue;
   return raw === 'true';
+}
+
+function normalizeUnknownPerKeyResultForStorage(perKey) {
+  if (!perKey || typeof perKey !== 'object') return { value: null };
+  if (perKey.value !== 'unk') return perKey;
+  return { ...perKey, value: null };
+}
+
+function normalizeUnknownResultsForStorage(results) {
+  return Object.fromEntries(
+    Object.entries(results || {}).map(([fk, perKey]) => [
+      fk,
+      normalizeUnknownPerKeyResultForStorage(perKey),
+    ]),
+  );
+}
+
+function normalizeUnknownResponseForStorage(response) {
+  return {
+    ...response,
+    results: normalizeUnknownResultsForStorage(response?.results),
+  };
 }
 
 async function resolveIdentityForPrompt({ config, product, specDb, logger }) {
@@ -301,6 +324,12 @@ export async function runKeyFinder(opts) {
     primaryFieldRule: fieldRule,
     knownFieldsInjectionEnabled: settings.knownFieldsInjectionEnabled,
   });
+  const pifPriorityImageContext = await resolveKeyFinderPifPriorityImageContext({
+    specDb,
+    product,
+    productRoot,
+    fieldRule,
+  });
 
   // 7. Build prompt
   const injectionKnobs = {
@@ -316,6 +345,7 @@ export async function runKeyFinder(opts) {
     productScopedFacts,
     variantInventory,
     fieldIdentityUsage,
+    pifPriorityImageContext,
     componentContext,
     productComponents,
     injectionKnobs,
@@ -543,18 +573,19 @@ export async function runKeyFinder(opts) {
   // primary's fieldKey for each passenger). Load-bearing for the delete cascade
   // and Phase 5 Group Loop skip logic.
   const selectedKeys = {
-    [fieldKey]: { ...(perKey || { value: 'unk' }), rode_with: null },
+    [fieldKey]: { ...normalizeUnknownPerKeyResultForStorage(perKey), rode_with: null },
   };
   for (const p of passengers) {
     const pResult = parsed.results?.[p.fieldKey];
     if (pResult) {
-      selectedKeys[p.fieldKey] = { ...pResult, rode_with: fieldKey };
+      selectedKeys[p.fieldKey] = { ...normalizeUnknownPerKeyResultForStorage(pResult), rode_with: fieldKey };
     }
   }
 
   // WHY: When called inside a Loop, stamp loop_id onto response so every run
   //   of a single loop call can be grouped (matches RDF's variantFieldLoop pattern).
-  const persistedResponse = loop_id ? { ...parsed, loop_id } : parsed;
+  const storageResponse = normalizeUnknownResponseForStorage(parsed);
+  const persistedResponse = loop_id ? { ...storageResponse, loop_id } : storageResponse;
   const merged = mergeKeyFinderDiscovery({
     productId: product.product_id,
     productRoot: resolvedProductRoot,

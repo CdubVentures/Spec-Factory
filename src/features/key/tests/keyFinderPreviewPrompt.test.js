@@ -93,12 +93,28 @@ function makeFinderStoreStub(settings) {
   };
 }
 
-function makeSpecDbStub({ finderStore, resolvedSet = new Set(), bucketsByFieldKey = {}, activeVariants, productRows = [], compiledRules = COMPILED, fieldCandidateRows = {}, pifProgressRows = [] } = {}) {
+function makeSpecDbStub({
+  finderStore,
+  productImageFinderStore = null,
+  resolvedSet = new Set(),
+  bucketsByFieldKey = {},
+  activeVariants,
+  productRows = [],
+  compiledRules = COMPILED,
+  fieldCandidateRows = {},
+  pifProgressRows = [],
+  colorEditionRow = { default_color: '' },
+} = {}) {
   const variants = activeVariants || [{ variant_id: 'v0', variant_key: 'default', variant_label: 'Default', variant_type: 'base' }];
   return {
     category: 'mouse',
-    getFinderStore: (id) => (id === 'keyFinder' ? finderStore : null),
+    getFinderStore: (id) => {
+      if (id === 'keyFinder') return finderStore;
+      if (id === 'productImageFinder') return productImageFinderStore;
+      return null;
+    },
     getCompiledRules: () => compiledRules,
+    getColorEditionFinder: () => colorEditionRow,
     getProduct: () => ({ product_id: PRODUCT.product_id, category: 'mouse', brand: PRODUCT.brand, model: PRODUCT.model, base_model: PRODUCT.base_model }),
     getAllProducts: () => productRows,
     variants: {
@@ -134,15 +150,65 @@ function makeSpecDbStub({ finderStore, resolvedSet = new Set(), bucketsByFieldKe
 
 const TMP = path.join(os.tmpdir(), `kfp-test-${Date.now()}`);
 const PRODUCT_ROOT = path.join(TMP, 'products');
+const ONE_PIXEL_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
+  'base64',
+);
 
 function cleanupTmp() { try { fs.rmSync(TMP, { recursive: true, force: true }); } catch { /* */ } }
 
-function setup(productId, { settings = BUNDLING_ON, resolvedSet = new Set(), bucketsByFieldKey = {}, activeVariants, productRows = [], compiledRules = COMPILED, fieldCandidateRows = {}, pifProgressRows = [] } = {}) {
+function writePifImageFixture(productId, { images }) {
+  const productDir = path.join(PRODUCT_ROOT, productId);
+  const imagesDir = path.join(productDir, 'images');
+  fs.mkdirSync(imagesDir, { recursive: true });
+  for (const img of images) {
+    if (img.filename) {
+      fs.writeFileSync(path.join(imagesDir, img.filename), ONE_PIXEL_PNG);
+    }
+  }
+  fs.writeFileSync(
+    path.join(productDir, 'product_images.json'),
+    JSON.stringify({
+      product_id: productId,
+      category: 'mouse',
+      selected: { images },
+      runs: [],
+      carousel_slots: {},
+    }, null, 2),
+  );
+}
+
+function setup(productId, {
+  settings = BUNDLING_ON,
+  pifSettings = {},
+  resolvedSet = new Set(),
+  bucketsByFieldKey = {},
+  activeVariants,
+  productRows = [],
+  compiledRules = COMPILED,
+  fieldCandidateRows = {},
+  pifProgressRows = [],
+  colorEditionRow = { default_color: '' },
+} = {}) {
   const dir = path.join(PRODUCT_ROOT, productId);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'product.json'), JSON.stringify({ product_id: productId, category: 'mouse', candidates: {}, fields: {} }));
   const finderStore = makeFinderStoreStub(settings);
-  const specDb = makeSpecDbStub({ finderStore, resolvedSet, bucketsByFieldKey, activeVariants, productRows, compiledRules, fieldCandidateRows, pifProgressRows });
+  const productImageFinderStore = {
+    getSetting: (k) => (k in pifSettings ? String(pifSettings[k]) : ''),
+  };
+  const specDb = makeSpecDbStub({
+    finderStore,
+    productImageFinderStore,
+    resolvedSet,
+    bucketsByFieldKey,
+    activeVariants,
+    productRows,
+    compiledRules,
+    fieldCandidateRows,
+    pifProgressRows,
+    colorEditionRow,
+  });
   return { specDb };
 }
 
@@ -166,6 +232,113 @@ test('happy path: valid field_key returns envelope with compiled prompt', async 
   const userJson = JSON.parse(env.prompts[0].user);
   assert.equal(userJson.primary_field_key, 'polling_rate');
   assert.equal(typeof userJson.passenger_count, 'number');
+});
+
+test('prompt preview includes PIF priority image context and sidecar images when key knob is enabled', async (t) => {
+  t.after(cleanupTmp);
+  const productId = 'kfp-pif-images';
+  const compiledRules = {
+    fields: {
+      design: rule({
+        group: 'appearance',
+        difficulty: 'medium',
+        contract: { type: 'string', shape: 'list' },
+        ai_assist: {
+          reasoning_note: 'Use visual context only when it directly supports this key.',
+          pif_priority_images: { enabled: true },
+        },
+      }),
+    },
+    known_values: {},
+  };
+  writePifImageFixture(productId, {
+    images: [
+      {
+        filename: 'top-black.png',
+        view: 'top',
+        variant_id: 'v_black',
+        variant_key: 'color:black',
+        variant_label: 'Black',
+        variant_type: 'color',
+        eval_best: true,
+        eval_reasoning: 'Clear top shell view.',
+        bytes: 111,
+      },
+      {
+        filename: 'bottom-black.png',
+        view: 'bottom',
+        variant_id: 'v_black',
+        variant_key: 'color:black',
+        variant_label: 'Black',
+        variant_type: 'color',
+        eval_best: true,
+      },
+    ],
+  });
+  const { specDb } = setup(productId, {
+    compiledRules,
+    activeVariants: [
+      { variant_id: 'v_black', variant_key: 'color:black', variant_label: 'Black', variant_type: 'color', color_atoms: ['black'] },
+    ],
+    colorEditionRow: { default_color: 'black' },
+    pifSettings: {
+      viewConfig: JSON.stringify([
+        { key: 'top', priority: true, description: 'Top' },
+        { key: 'bottom', priority: false, description: 'Bottom' },
+      ]),
+    },
+  });
+
+  const env = await compileKeyFinderPreviewPrompt({
+    product: { ...PRODUCT, product_id: productId },
+    specDb, appDb: null, config: {}, productRoot: PRODUCT_ROOT,
+    body: { field_key: 'design' },
+  });
+
+  const prompt = env.prompts[0];
+  assert.match(prompt.system, /PIF_PRIORITY_IMAGES/);
+  assert.match(prompt.system, /default\/base variant images are attached/i);
+  assert.match(prompt.system, /Priority views from PIF viewConfig: top/);
+  assert.match(prompt.system, /top-black\.png/);
+  assert.equal(prompt.images?.length, 1);
+  assert.equal(prompt.images?.[0]?.url, '/api/v1/product-image-finder/mouse/kfp-pif-images/images/top-black.png?v=111');
+});
+
+test('prompt preview changes PIF image injection text when enabled but no images exist', async (t) => {
+  t.after(cleanupTmp);
+  const productId = 'kfp-pif-missing';
+  const compiledRules = {
+    fields: {
+      design: rule({
+        group: 'appearance',
+        contract: { type: 'string', shape: 'list' },
+        ai_assist: { pif_priority_images: { enabled: true } },
+      }),
+    },
+    known_values: {},
+  };
+  const { specDb } = setup(productId, {
+    compiledRules,
+    activeVariants: [
+      { variant_id: 'v_black', variant_key: 'color:black', variant_label: 'Black', variant_type: 'color', color_atoms: ['black'] },
+    ],
+    colorEditionRow: { default_color: 'black' },
+    pifSettings: {
+      viewConfig: JSON.stringify([{ key: 'top', priority: true, description: 'Top' }]),
+    },
+  });
+
+  const env = await compileKeyFinderPreviewPrompt({
+    product: { ...PRODUCT, product_id: productId },
+    specDb, appDb: null, config: {}, productRoot: PRODUCT_ROOT,
+    body: { field_key: 'design' },
+  });
+
+  const prompt = env.prompts[0];
+  assert.match(prompt.system, /PIF_PRIORITY_IMAGES/);
+  assert.match(prompt.system, /enabled for this key, but no PIF-evaluated priority images are available/i);
+  assert.match(prompt.system, /Do not infer visual traits from missing PIF images/i);
+  assert.equal(prompt.images?.length || 0, 0);
 });
 
 test('prompt preview resolves known_values enum lists for primary and passenger keys', async (t) => {

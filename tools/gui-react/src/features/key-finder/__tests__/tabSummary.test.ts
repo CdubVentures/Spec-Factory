@@ -17,6 +17,8 @@ function row(overrides: Partial<KeyFinderSummaryRow> = {}): KeyFinderSummaryRow 
     in_flight_as_primary: false,
     in_flight_as_passenger_count: 0,
     bundle_preview: [],
+    bundle_pool: 0,
+    bundle_total_cost: 0,
     last_run_number: null,
     last_ran_at: null,
     last_status: 'never_ran',
@@ -30,6 +32,9 @@ function row(overrides: Partial<KeyFinderSummaryRow> = {}): KeyFinderSummaryRow 
     last_web_search: null,
     candidate_count: 0,
     published: false,
+    concrete_evidence: false,
+    top_confidence: null,
+    top_evidence_count: null,
     run_count: 0,
     ...overrides,
   } as KeyFinderSummaryRow;

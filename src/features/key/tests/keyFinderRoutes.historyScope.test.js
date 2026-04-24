@@ -50,7 +50,7 @@ function makeSpecDbStub({ hasRules = true } = {}) {
   };
 }
 
-function seedRun(productRoot, pid, fk, runNumber) {
+function seedRun(productRoot, pid, fk, runNumber, perKey = { value: 'v', confidence: 80, unknown_reason: '', evidence_refs: [], discovery_log: { urls_checked: [], queries_run: [], notes: [] } }) {
   mergeKeyFinderDiscovery({
     productId: pid,
     productRoot,
@@ -58,11 +58,11 @@ function seedRun(productRoot, pid, fk, runNumber) {
     run: {
       started_at: `2024-03-15T10:0${runNumber}:00Z`, duration_ms: 1000, model: 'gpt-5.4-mini',
       fallback_used: false, thinking: true, web_search: true, effort_level: 'xhigh', access_mode: 'api',
-      selected: { keys: {} },
+      selected: { keys: { [fk]: perKey } },
       prompt: { system: 's', user: 'u' },
       response: {
         primary_field_key: fk,
-        results: { [fk]: { value: 'v', confidence: 80, unknown_reason: '', evidence_refs: [], discovery_log: { urls_checked: [], queries_run: [], notes: [] } } },
+        results: { [fk]: perKey },
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
       },
     },
@@ -137,6 +137,33 @@ describe('GET /key-finder/:category/:productId with scope param', () => {
 
     assert.equal(responses[0].status, 200);
     assert.equal(responses[0].body.runs.length, 2);
+  });
+
+  it('normalizes legacy run-history "unk" values to null before response', async (t) => {
+    t.after(cleanupTmp);
+    const pid = 'legacy-unk-prod';
+    fs.mkdirSync(path.join(PRODUCT_ROOT, pid), { recursive: true });
+
+    seedRun(PRODUCT_ROOT, pid, 'sensor_model', 1, {
+      value: 'unk',
+      confidence: 0,
+      unknown_reason: 'not disclosed',
+      evidence_refs: [],
+      discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+    });
+
+    const specDb = makeSpecDbStub();
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    const params = new URLSearchParams({ scope: 'key', field_key: 'sensor_model' });
+    await handler(['key-finder', 'mouse', pid], params, 'GET', {}, {});
+
+    assert.equal(responses[0].status, 200);
+    const run = responses[0].body.runs[0];
+    assert.equal(run.response.results.sensor_model.value, null);
+    assert.equal(run.selected.keys.sensor_model.value, null);
+    assert.equal(run.response.results.sensor_model.unknown_reason, 'not disclosed');
   });
 
   it('scope=group with missing compiled rules returns 404 rules_not_compiled', async (t) => {

@@ -12,7 +12,7 @@ const MIN_PER_KEY = {
   discovery_log: { urls_checked: [], queries_run: [], notes: [] },
 };
 
-test('perKeyShape accepts valid scalar response (0-100 int confidence, extended evidence, array notes)', () => {
+test('perKeyShape accepts valid scalar response and strips legacy per-key discovery_log', () => {
   const schema = perKeyShape('value');
   const parsed = schema.parse({
     value: 'PixArt PAW3395',
@@ -36,6 +36,7 @@ test('perKeyShape accepts valid scalar response (0-100 int confidence, extended 
   assert.equal(parsed.value, 'PixArt PAW3395');
   assert.equal(parsed.confidence, 92);
   assert.equal(parsed.evidence_refs[0].evidence_kind, 'direct_quote');
+  assert.equal(Object.prototype.hasOwnProperty.call(parsed, 'discovery_log'), false);
 });
 
 test('perKeyShape rejects float confidence (must be int 0-100)', () => {
@@ -57,10 +58,10 @@ test('perKeyShape rejects evidence_refs with old {url, snippet} shape (missing t
   }));
 });
 
-test('perKeyShape rejects notes as string (must be array)', () => {
-  const schema = perKeyShape('value');
-  assert.throws(() => schema.parse({
-    ...MIN_PER_KEY,
+test('keyFinderResponseSchema rejects envelope discovery_log notes as string (must be array)', () => {
+  assert.throws(() => keyFinderResponseSchema.parse({
+    primary_field_key: 'polling_rate',
+    results: { polling_rate: MIN_PER_KEY },
     discovery_log: { urls_checked: [], queries_run: [], notes: 'not an array' },
   }));
 });
@@ -102,7 +103,7 @@ test('perKeyShape defaults fill in for missing optional fields', () => {
   assert.equal(parsed.confidence, 0);
   assert.equal(parsed.unknown_reason, '');
   assert.deepEqual(parsed.evidence_refs, []);
-  assert.deepEqual(parsed.discovery_log.notes, []);
+  assert.equal(Object.prototype.hasOwnProperty.call(parsed, 'discovery_log'), false);
 });
 
 test('perKeyShape accepts native JSON types per contract (number, boolean, array, string, "unk")', () => {
@@ -137,6 +138,26 @@ test('keyFinderResponseSchema accepts bundled envelope with multiple keys', () =
   }));
   assert.equal(parsed.primary_field_key, 'sensor_model');
   assert.equal(Object.keys(parsed.results).length, 3);
+});
+
+test('keyFinderResponseSchema strips per-key discovery logs and preserves only envelope discovery_log', () => {
+  const parsed = keyFinderResponseSchema.parse(validMultiKey('polling_rate', {
+    dpi: {
+      value: 30000,
+      confidence: 80,
+      unknown_reason: '',
+      evidence_refs: [],
+      discovery_log: {
+        urls_checked: ['https://passenger.example/dpi'],
+        queries_run: ['passenger dpi query'],
+        notes: ['should not persist on a passenger key'],
+      },
+    },
+  }));
+
+  assert.deepEqual(parsed.discovery_log, { urls_checked: [], queries_run: [], notes: [] });
+  assert.equal(Object.prototype.hasOwnProperty.call(parsed.results.polling_rate, 'discovery_log'), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(parsed.results.dpi, 'discovery_log'), false);
 });
 
 test('keyFinderResponseSchema rejects envelope where primary_field_key is missing from results', () => {

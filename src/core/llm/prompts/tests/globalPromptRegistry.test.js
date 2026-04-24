@@ -32,6 +32,7 @@ describe('GLOBAL_PROMPTS registry', () => {
     'variantScalarSourceGuidance',
     'variantScalarDisambiguation',
     'scalarSourceTierStrategy',
+    'keyFinderValueNormalization',
     'unkPolicy',
     'scalarReturnJsonTail',
     'siblingVariantsExclusion',
@@ -88,6 +89,24 @@ describe('GLOBAL_PROMPTS registry', () => {
     ]) {
       assert.ok(tpl.includes(kind), `template must list kind "${kind}"`);
     }
+  });
+
+  it('keyFinderValueNormalization teaches canonical table values without unk/n/a policy', () => {
+    const tpl = GLOBAL_PROMPTS.keyFinderValueNormalization.defaultTemplate;
+    assert.match(tpl, /^VALUE NORMALIZATION:/);
+    assert.match(tpl, /canonical table value/i);
+    assert.match(tpl, /complete set of values/i);
+    assert.doesNotMatch(tpl, /\bunk\b/i);
+    assert.doesNotMatch(tpl, /\bn\/a\b/i);
+  });
+
+  it('unkPolicy defines unk as a stripped protocol sentinel, not product data', () => {
+    const tpl = GLOBAL_PROMPTS.unkPolicy.defaultTemplate;
+    assert.match(tpl, /protocol sentinel/i);
+    assert.match(tpl, /not (?:a )?product value/i);
+    assert.match(tpl, /strip/i);
+    assert.match(tpl, /unknown_reason/i);
+    assert.match(tpl, /blank|n\/a|placeholder/i);
   });
 
   it('variables declared per entry match {{VAR}} placeholders in defaultTemplate', () => {

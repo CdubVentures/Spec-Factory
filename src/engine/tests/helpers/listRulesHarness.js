@@ -61,7 +61,7 @@ export async function createListRulesHarness() {
     tempPrefix: 'list-rules-',
     fields: {
       colors: {
-        required_level: 'expected',
+        required_level: 'non_mandatory',
         difficulty: 'easy',
         availability: 'always',
         contract: {
@@ -72,7 +72,7 @@ export async function createListRulesHarness() {
         evidence: { required: false }
       },
       features: {
-        required_level: 'expected',
+        required_level: 'non_mandatory',
         difficulty: 'easy',
         availability: 'always',
         contract: {
@@ -83,7 +83,7 @@ export async function createListRulesHarness() {
         evidence: { required: false }
       },
       sizes: {
-        required_level: 'expected',
+        required_level: 'non_mandatory',
         difficulty: 'easy',
         availability: 'always',
         contract: {
@@ -94,7 +94,7 @@ export async function createListRulesHarness() {
         evidence: { required: false }
       },
       tags: {
-        required_level: 'optional',
+        required_level: 'non_mandatory',
         difficulty: 'easy',
         availability: 'always',
         contract: {
@@ -105,7 +105,7 @@ export async function createListRulesHarness() {
         evidence: { required: false }
       },
       weight: {
-        required_level: 'required',
+        required_level: 'mandatory',
         difficulty: 'easy',
         availability: 'always',
         contract: {
@@ -132,7 +132,7 @@ export async function createListRulesNoLimitsHarness() {
     tempPrefix: 'list-rules-nolimits-',
     fields: {
       colors: {
-        required_level: 'expected',
+        required_level: 'non_mandatory',
         difficulty: 'easy',
         availability: 'always',
         contract: {
@@ -143,7 +143,7 @@ export async function createListRulesNoLimitsHarness() {
         evidence: { required: false }
       },
       features: {
-        required_level: 'expected',
+        required_level: 'non_mandatory',
         difficulty: 'easy',
         availability: 'always',
         contract: {
@@ -154,7 +154,7 @@ export async function createListRulesNoLimitsHarness() {
         evidence: { required: false }
       },
       sizes: {
-        required_level: 'expected',
+        required_level: 'non_mandatory',
         difficulty: 'easy',
         availability: 'always',
         contract: {
@@ -165,7 +165,7 @@ export async function createListRulesNoLimitsHarness() {
         evidence: { required: false }
       },
       tags: {
-        required_level: 'optional',
+        required_level: 'non_mandatory',
         difficulty: 'easy',
         availability: 'always',
         contract: {
@@ -176,7 +176,7 @@ export async function createListRulesNoLimitsHarness() {
         evidence: { required: false }
       },
       weight: {
-        required_level: 'required',
+        required_level: 'mandatory',
         difficulty: 'easy',
         availability: 'always',
         contract: {
@@ -203,7 +203,7 @@ export async function createListRulesNoConfigHarness() {
     tempPrefix: 'list-rules-noconfig-',
     fields: {
       labels: {
-        required_level: 'optional',
+        required_level: 'non_mandatory',
         difficulty: 'easy',
         availability: 'always',
         contract: {

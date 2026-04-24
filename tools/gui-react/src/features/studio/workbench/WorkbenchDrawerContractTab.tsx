@@ -25,6 +25,13 @@ import {
 } from '../components/studioConstants.ts';
 import { useUnitRegistryQuery } from '../../../pages/unit-registry/unitRegistryQueries.ts';
 import type { BadgeSlot } from './WorkbenchDrawerSimpleTabs.tsx';
+import {
+  REQUIRED_LEVEL_OPTIONS,
+  AVAILABILITY_OPTIONS,
+  DIFFICULTY_OPTIONS,
+} from '../../../registries/fieldRuleTaxonomy.ts';
+import { VALID_TYPES, VALID_SHAPES } from '../state/typeShapeRegistry.ts';
+import { AiAssistToggleSubsection } from '../components/key-sections/AiAssistToggleSubsection.tsx';
 
 const TEXT_GRAY_400 = 'sf-text-subtle';
 const TEXT_GRAY_500 = 'sf-text-subtle';
@@ -121,22 +128,13 @@ export function ContractTab({
         <div>
           <div className={`${labelCls} flex items-center`}><span>Data Type<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.data_type} /></span><B p="contract.type" /></div>
           <select className={`${selectCls} w-full`} value={strN(rule, 'contract.type', 'string')} onChange={(e) => onUpdate('contract.type', e.target.value)} disabled={disabled}>
-            <option value="string">string</option>
-            <option value="number">number</option>
-            <option value="integer">integer</option>
-            <option value="boolean">boolean</option>
-            <option value="date">date</option>
-            <option value="url">url</option>
-            <option value="enum">enum</option>
+            {VALID_TYPES.map((v) => <option key={v} value={v}>{v}</option>)}
           </select>
         </div>
         <div>
           <div className={`${labelCls} flex items-center`}><span>Shape<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.shape} /></span><B p="contract.shape" /></div>
           <select className={`${selectCls} w-full`} value={strN(rule, 'contract.shape', 'scalar')} onChange={(e) => onUpdate('contract.shape', e.target.value)} disabled={disabled}>
-            <option value="scalar">scalar</option>
-            <option value="list">list</option>
-            <option value="structured">structured</option>
-            <option value="key_value">key_value</option>
+            {VALID_SHAPES.map((v) => <option key={v} value={v}>{v}</option>)}
           </select>
         </div>
       </div>
@@ -248,24 +246,14 @@ export function ContractTab({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <div className={`${labelCls} flex items-center`}><span>Required Level<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.required_level} /></span><B p="priority.required_level" /></div>
-          <select className={`${selectCls} w-full`} value={strN(rule, 'priority.required_level', strN(rule, 'required_level', 'expected'))} onChange={(e) => onUpdate('priority.required_level', e.target.value)} disabled={disabled}>
-            <option value="identity">identity</option>
-            <option value="required">required</option>
-            <option value="critical">critical</option>
-            <option value="expected">expected</option>
-            <option value="optional">optional</option>
-            <option value="editorial">editorial</option>
-            <option value="commerce">commerce</option>
+          <select className={`${selectCls} w-full`} value={strN(rule, 'priority.required_level', strN(rule, 'required_level', 'non_mandatory'))} onChange={(e) => onUpdate('priority.required_level', e.target.value)} disabled={disabled}>
+            {REQUIRED_LEVEL_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
           </select>
         </div>
         <div>
           <div className={`${labelCls} flex items-center`}><span>Availability<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.availability} /></span><B p="priority.availability" /></div>
-          <select className={`${selectCls} w-full`} value={strN(rule, 'priority.availability', strN(rule, 'availability', 'expected'))} onChange={(e) => onUpdate('priority.availability', e.target.value)} disabled={disabled}>
-            <option value="always">always</option>
-            <option value="expected">expected</option>
-            <option value="sometimes">sometimes</option>
-            <option value="rare">rare</option>
-            <option value="editorial_only">editorial_only</option>
+          <select className={`${selectCls} w-full`} value={strN(rule, 'priority.availability', strN(rule, 'availability', 'sometimes'))} onChange={(e) => onUpdate('priority.availability', e.target.value)} disabled={disabled}>
+            {AVAILABILITY_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
           </select>
         </div>
       </div>
@@ -273,10 +261,7 @@ export function ContractTab({
         <div>
           <div className={`${labelCls} flex items-center`}><span>Difficulty<Tip style={{ position: 'relative', left: '-3px', top: '-4px' }} text={STUDIO_TIPS.difficulty} /></span><B p="priority.difficulty" /></div>
           <select className={`${selectCls} w-full`} value={strN(rule, 'priority.difficulty', strN(rule, 'difficulty', 'easy'))} onChange={(e) => onUpdate('priority.difficulty', e.target.value)} disabled={disabled}>
-            <option value="easy">easy</option>
-            <option value="medium">medium</option>
-            <option value="hard">hard</option>
-            <option value="very_hard">very_hard</option>
+            {DIFFICULTY_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
           </select>
         </div>
       </div>
@@ -348,6 +333,29 @@ export function ContractTab({
           </div>
         );
       })()}
+
+      <AiAssistToggleSubsection
+        selectedKey={fieldKey}
+        currentRule={rule}
+        updateField={(_key, path, value) => onUpdate(path, value)}
+        BadgeRenderer={B}
+        path="ai_assist.variant_inventory_usage"
+        label="Variant Inventory Context"
+        ariaLabel="Use variant inventory context"
+        tooltipKey="variant_inventory_usage"
+        disabled={disabled}
+      />
+      <AiAssistToggleSubsection
+        selectedKey={fieldKey}
+        currentRule={rule}
+        updateField={(_key, path, value) => onUpdate(path, value)}
+        BadgeRenderer={B}
+        path="ai_assist.pif_priority_images"
+        label="PIF Priority Images"
+        ariaLabel="Use PIF priority images"
+        tooltipKey="pif_priority_images"
+        disabled={disabled}
+      />
 
       <h4 className={SECTION_HEADING_CLASS}>Tooltip / Guidance</h4>
       <div>

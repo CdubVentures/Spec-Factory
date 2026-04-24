@@ -36,9 +36,10 @@ export interface PriorityProfile {
 export interface AiAssistConfig {
   reasoning_note?: string;
   variant_inventory_usage?: {
-    mode?: 'default' | 'append' | 'override' | 'off';
-    profile?: 'spec_invariant' | 'visual_design' | 'physical_measurement' | 'compatibility' | 'package_contents' | 'variant_specific';
-    text?: string;
+    enabled?: boolean;
+  };
+  pif_priority_images?: {
+    enabled?: boolean;
   };
 }
 

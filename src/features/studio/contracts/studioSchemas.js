@@ -19,6 +19,9 @@ export const AiAssistConfigSchema = z.object({
   variant_inventory_usage: z.object({
     enabled: z.boolean().optional(),
   }).optional(),
+  pif_priority_images: z.object({
+    enabled: z.boolean().optional(),
+  }).optional(),
 });
 
 // ---------------------------------------------------------------------------

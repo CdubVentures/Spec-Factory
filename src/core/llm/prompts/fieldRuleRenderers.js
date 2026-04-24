@@ -127,10 +127,15 @@ export function buildFieldContractBlock(fieldRule) {
   const enumValues = Array.isArray(fieldRule?.enum?.values) ? fieldRule.enum.values : [];
   const aliases = Array.isArray(fieldRule?.aliases) ? fieldRule.aliases.filter(Boolean) : [];
   const variancePolicy = String(fieldRule?.variance_policy || '').trim();
+  const minEvidenceRefs = Number(fieldRule?.evidence?.min_evidence_refs);
 
   const lines = ['Return contract:'];
   lines.push(`- Type: ${type}${shape === 'list' ? ' (list / array)' : ' (scalar)'}`);
   if (unit) lines.push(`- Unit: ${unit} (include the numeric value only; unit is known from context)`);
+  if (Number.isFinite(minEvidenceRefs) && minEvidenceRefs > 0) {
+    const refs = Math.floor(minEvidenceRefs);
+    lines.push(`- Evidence target: ${refs} source ref${refs === 1 ? '' : 's'} for publisher gate`);
+  }
   if (rounding && Number.isFinite(rounding.decimals)) {
     lines.push(`- Rounding: ${rounding.decimals} decimal(s), mode=${rounding.mode || 'nearest'}`);
   }

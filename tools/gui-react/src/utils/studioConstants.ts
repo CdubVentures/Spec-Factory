@@ -127,7 +127,7 @@ export const STUDIO_TIPS: Record<string, string> = {
   comp_require_identity_evidence: 'If enabled, component identity matching requires supporting evidence from at least one source. Prevents phantom component assignments from noisy extraction.',
 
   // Tab 2: Key Navigator - Ai Assist
-  key_section_ai_assist: 'AI Assist controls field-specific prompt guidance and variant inventory usage for keyFinder.',
+  key_section_ai_assist: 'AI Assist controls field-specific prompt guidance and whether keyFinder receives variant inventory context.',
   ai_reasoning_note: 'Extraction guidance injected directly into the LLM prompt for this field. The AI reads this note when deciding how to extract the value.\n\n'
     + 'When empty, guidance is auto-generated from field properties (data type, difficulty, evidence requirements, enum policy, component type).\n\n'
     + 'Examples:\n'
@@ -135,7 +135,8 @@ export const STUDIO_TIPS: Record<string, string> = {
     + '• "This is a calculated field: polling rate = 1000/response_time_ms"\n'
     + '• "Multiple conflicting values are common — prefer tier 1 manufacturer specs over reviews"\n\n'
     + 'Write a custom note to override the auto-generated guidance.',
-  variant_inventory_usage: 'When enabled, keyFinder receives the current variant inventory for this product and field-specific instructions for using that context.',
+  variant_inventory_usage: 'Enable only when edition, SKU, release, colorway, or PIF identity facts help keyFinder filter evidence for this key without ambiguity. Most model-level keys are invariant across variants. Put union/exact/base/default interpretation rules in AI reasoning note.',
+  pif_priority_images: 'Enable only when default/base PIF priority-view images add visual evidence value for this key. Missing images are not negative evidence. Put edition-specific yes/no or list interpretation rules in AI reasoning note.',
 
   // Tab 3: Field Rules Workbench
   field_contract_table: 'Read-only overview of all field contracts. Edit fields in the Key Navigator tab.',

@@ -104,6 +104,13 @@ describe('buildReleaseDateFinderPrompt', () => {
     assert.ok(prompt.toLowerCase().includes('confidence'));
   });
 
+  it('compiled prompt includes the shared stripped-unk sentinel boundary', () => {
+    const prompt = buildReleaseDateFinderPrompt({ product, variantLabel: 'Black' });
+    assert.match(prompt, /protocol sentinel/i);
+    assert.match(prompt, /not (?:a )?product value/i);
+    assert.match(prompt, /strip/i);
+  });
+
   it('default template names accepted date formats', () => {
     assert.ok(RDF_DEFAULT_TEMPLATE.includes('YYYY-MM-DD'));
     assert.ok(RDF_DEFAULT_TEMPLATE.includes('YYYY-MM'));
@@ -257,4 +264,3 @@ describe('buildReleaseDateFinderPrompt', () => {
       'must allow low-tier sources for YYYY-level corroboration');
   });
 });
-

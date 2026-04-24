@@ -54,6 +54,9 @@ function repairCount(row: PublisherCandidateRow): number {
 }
 
 function publishStatusLabel(row: PublisherCandidateRow): { label: string; cls: string; tip: string } {
+  if (row.unknown_stripped) {
+    return { label: 'skip', cls: 'sf-chip-neutral', tip: 'Finder returned unk; no candidate was published.' };
+  }
   if (row.status === 'resolved') {
     return { label: '\u2713', cls: 'sf-chip-success', tip: 'Published' };
   }
@@ -77,6 +80,18 @@ function publishStatusLabel(row: PublisherCandidateRow): { label: string; cls: s
     return { label: 'skip', cls: 'sf-chip-neutral', tip: pr.reason || 'Publish skipped' };
   }
   return { label: pr.status, cls: 'sf-chip-neutral', tip: pr.status };
+}
+
+function unknownStatusLabel(row: PublisherCandidateRow): { label: string; cls: string; tip: string } {
+  if (!row.unknown_stripped) {
+    return { label: '', cls: 'sf-chip-neutral', tip: 'Candidate value was not stripped as unk.' };
+  }
+  const reason = row.unknown_reason ? ` Reason: ${row.unknown_reason}` : '';
+  return {
+    label: '\u2713',
+    cls: 'sf-chip-warning',
+    tip: `Finder returned unk; value was stripped and left blank.${reason}`,
+  };
 }
 
 // ── Stat card ────────────────────────────────────────────────────────
@@ -443,10 +458,10 @@ function ExpandedRowContent({ row }: { row: PublisherCandidateRow }) {
 // ── Page-level filter state ──────────────────────────────────────────
 
 type DateRange = '24h' | '7d' | '30d' | 'all';
-type StatusFilter = 'all' | 'candidate' | 'resolved';
+type StatusFilter = 'all' | 'candidate' | 'resolved' | 'stripped';
 
 const DATE_RANGES: DateRange[] = ['24h', '7d', '30d', 'all'];
-const STATUS_FILTERS: StatusFilter[] = ['all', 'candidate', 'resolved'];
+const STATUS_FILTERS: StatusFilter[] = ['all', 'candidate', 'resolved', 'stripped'];
 
 // ── Main page ────────────────────────────────────────────────────────
 
@@ -470,7 +485,7 @@ export function PublisherPage() {
     refetchInterval: 10_000,
   });
 
-  const stats: PublisherStats = data?.stats ?? { total: 0, resolved: 0, pending: 0, repaired: 0, products: 0 };
+  const stats: PublisherStats = data?.stats ?? { total: 0, resolved: 0, pending: 0, repaired: 0, products: 0, unknown_stripped: 0 };
 
   // Client-side filtering
   const filteredRows = useMemo(() => {
@@ -599,10 +614,25 @@ export function PublisherPage() {
       accessorKey: 'status',
       header: 'Status',
       cell: ({ getValue }) => {
-        const s = getValue() as string;
-        return <Chip label={s} className={s === 'resolved' ? 'sf-chip-info' : 'sf-chip-success'} />;
+        const s = getValue() as PublisherCandidateRow['status'];
+        const cls = s === 'resolved'
+          ? 'sf-chip-info'
+          : s === 'stripped'
+            ? 'sf-chip-warning'
+            : 'sf-chip-success';
+        return <Chip label={s} className={cls} />;
       },
       size: 82,
+    },
+    {
+      id: 'unknown_stripped',
+      header: 'Unk',
+      cell: ({ row }) => {
+        if (!row.original.unknown_stripped) return null;
+        const us = unknownStatusLabel(row.original);
+        return <span title={us.tip}><Chip label={us.label} className={us.cls} /></span>;
+      },
+      size: 56,
     },
     {
       id: 'published',
@@ -640,7 +670,7 @@ export function PublisherPage() {
       header: 'Source',
       cell: ({ getValue }) => {
         const st = (getValue() as string) || '';
-        return <Chip label={st || '—'} className={st === 'cef' ? 'sf-chip-accent' : st === 'manual_override' ? 'sf-chip-warn' : 'sf-chip-info'} />;
+        return <Chip label={st || '—'} className={st === 'cef' || st === 'key_finder' ? 'sf-chip-accent' : st === 'manual_override' ? 'sf-chip-warn' : 'sf-chip-info'} />;
       },
       size: 76,
     },
@@ -709,11 +739,12 @@ export function PublisherPage() {
       </div>
 
       {/* Stats bar */}
-      <div className="grid grid-cols-5 gap-3">
-        <StatCard label="Total Candidates" value={stats.total} />
+      <div className="grid grid-cols-6 gap-3">
+        <StatCard label="Total Audit Rows" value={stats.total} />
         <StatCard label="Resolved" value={stats.resolved} colorClass="sf-status-text-success" />
         <StatCard label="Pending" value={stats.pending} colorClass="sf-status-text-warning" />
         <StatCard label="Repairs Applied" value={stats.repaired} colorClass="sf-status-text-info" />
+        <StatCard label="Stripped Unk" value={stats.unknown_stripped ?? 0} colorClass="sf-status-text-warning" />
         <StatCard label="Products" value={stats.products} colorClass="sf-text-muted" />
       </div>
 
@@ -785,7 +816,7 @@ export function PublisherPage() {
       {!isLoading && (data?.total ?? 0) > 0 && (
         <div className="flex items-center justify-between sf-surface-panel rounded border sf-border-default px-4 py-2.5">
           <span className="sf-text-subtle" style={{ fontSize: 11 }}>
-            Showing <strong className="sf-text-primary">{((page - 1) * limit) + 1}–{Math.min(page * limit, data?.total ?? 0)}</strong> of <strong className="sf-text-primary">{(data?.total ?? 0).toLocaleString()}</strong> candidates
+            Showing <strong className="sf-text-primary">{((page - 1) * limit) + 1}–{Math.min(page * limit, data?.total ?? 0)}</strong> of <strong className="sf-text-primary">{(data?.total ?? 0).toLocaleString()}</strong> audit rows
           </span>
           <div className="flex items-center gap-1">
             <button

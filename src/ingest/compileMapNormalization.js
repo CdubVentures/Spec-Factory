@@ -20,6 +20,7 @@ import { EG_LOCKED_KEYS as EG_LOCKED_KEYS_LIST } from '../features/studio/contra
 // WHY: Variant-generator keys must always promote to product fields even if
 // authors mistakenly mark them component_only.
 const EG_LOCKED_KEYS = new Set(EG_LOCKED_KEYS_LIST);
+const LEGACY_VARIANT_INVENTORY_ACTIVE_MODES = new Set(['default', 'append', 'override']);
 
 // WHY: Walk normalized component_sources, return Set of keys flagged
 // component_only — except EG-locked keys which override the flag.
@@ -114,6 +115,20 @@ function normalizeSheetRoleRow(row = {}) {
 // so control-plane maps don't perpetuate stale keys through save cycles.
 // Also strip empty ai_assist blocks that leak from compiled defaults via the
 // frontend auto-save round-trip (compiled rules → GET → auto-save → PUT → JSON).
+function hasAuthoredVariantInventoryUsage(aiAssist) {
+  const raw = aiAssist?.variant_inventory_usage;
+  if (!isObject(raw)) return false;
+  if (typeof raw.enabled === 'boolean') return true;
+  const legacyMode = normalizeToken(raw.mode);
+  return legacyMode === 'off' || LEGACY_VARIANT_INVENTORY_ACTIVE_MODES.has(legacyMode);
+}
+
+function hasAuthoredPifPriorityImages(aiAssist) {
+  const raw = aiAssist?.pif_priority_images;
+  if (typeof raw === 'boolean') return true;
+  return isObject(raw) && typeof raw.enabled === 'boolean';
+}
+
 function stripRetiredEvidenceKnobs(overrides) {
   if (!isObject(overrides)) return overrides;
   const cleaned = {};
@@ -130,7 +145,8 @@ function stripRetiredEvidenceKnobs(overrides) {
     if (
       isObject(rest.ai_assist)
       && !normalizeText(rest.ai_assist.reasoning_note)
-      && !isObject(rest.ai_assist.variant_inventory_usage)
+      && !hasAuthoredVariantInventoryUsage(rest.ai_assist)
+      && !hasAuthoredPifPriorityImages(rest.ai_assist)
     ) {
       delete rest.ai_assist;
     }

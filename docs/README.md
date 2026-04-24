@@ -56,6 +56,7 @@ Spec Factory is a local-first product-spec indexing, review, authority-authoring
 - [Feature Index](./04-features/feature-index.md) - complete lookup table of first-class features and key files.
 - [Category Authority](./04-features/category-authority.md) - category control-plane freshness and sync surfaces.
 - [Catalog and Product Selection](./04-features/catalog-and-product-selection.md) - category/product browsing and mutation flows.
+- [Overview Command Console](./04-features/overview-command-console.md) - bulk per-finder dispatch, smart-select, Score Card, and full-pipeline orchestrator on the `/` route.
 - [Color Registry](./04-features/color-registry.md) - global color registry and product-scoped color-edition discovery.
 - [Unit Registry](./04-features/unit-registry.md) - global managed units, synonyms, and conversion rules.
 - [Field Rules Studio](./04-features/field-rules-studio.md) - studio map, known-values, and compile/validate flows.

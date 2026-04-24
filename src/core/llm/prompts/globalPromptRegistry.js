@@ -236,13 +236,25 @@ If the manufacturer product page shows multiple colors/editions:
 {{BASE_WARNING_CLOSER}}`,
   },
 
+  keyFinderValueNormalization: {
+    label: 'Key Finder value normalization',
+    description: 'Universal Key Finder guidance for returning canonical table values instead of source prose. Keeps product-field extraction aligned with hand-authored benchmark sheets without adding field-specific examples.',
+    appliesTo: ['scalar'],
+    variables: [],
+    defaultTemplate: `VALUE NORMALIZATION:
+Return the canonical table value requested by the field contract, not source prose.
+If the contract provides allowed or preferred values, map source wording to the matching canonical value when the meaning is exact.
+For list fields, return the complete set of values that applies to the exact product, not only the maximum, first, default, highest, or most marketed value.
+Do not copy sibling-model values unless the source explicitly says the value applies to the exact requested product.`,
+  },
+
   unkPolicy: {
     label: 'Scalar finder — honest "unk" policy',
     description: 'Universal "honest unk beats low-confidence guess" policy for scalar finders (keyFinder, RDF, SKU). Pairs with evidence/confidence rubrics — keeps publisher gate clean and produces useful unknown_reason diagnostics.',
     appliesTo: ['rdf', 'scalar'],
     variables: [],
     defaultTemplate: `Honest "unk" policy:
-When evidence cannot defend the value under the tier/confidence rules above, return "unk" (as a literal string) and supply a specific unknown_reason explaining what you searched, where, and why the value couldn't be confirmed. An honest "unk" with a clear reason is strictly better than a low-confidence guess \u2014 it keeps the publisher gate clean, and the unknown_reason is a useful diagnostic for future runs. Prefer "unk" over: paraphrased partial values, guessed placeholder characters, format-normalized approximations, or copying a sibling product's value.`,
+When evidence cannot defend the value under the tier/confidence rules above, return "unk" (as a literal string) and supply a specific unknown_reason explaining what you searched, where, and why the value couldn't be confirmed. Treat "unk" as a protocol sentinel, not a product value: downstream systems strip it from value fields and keep only status plus unknown_reason for audit. Do not use blank, "-", "n/a", "unknown", or other placeholder text as the value; use exactly "unk" with unknown_reason when no defensible value exists. An honest "unk" with a clear reason is strictly better than a low-confidence guess \u2014 it keeps the publisher gate clean, and the unknown_reason is a useful diagnostic for future runs. Prefer "unk" over: paraphrased partial values, guessed placeholder characters, format-normalized approximations, or copying a sibling product's value.`,
   },
 
   scalarSourceTierStrategy: {

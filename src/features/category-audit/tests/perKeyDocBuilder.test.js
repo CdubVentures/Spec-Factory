@@ -277,7 +277,9 @@ test('generated file contains the full contract schema table and placeholder pro
     assert.match(dpiHtml, /no contract change/i);
     assert.match(dpiHtml, /Consumer-surface impact/i);
     assert.match(dpiHtml, /n\/a/i);
-    assert.match(dpiHtml, /Boolean is enough only/i);
+    assert.match(dpiHtml, /Use boolean only for true two-state facts/i);
+    assert.match(dpiHtml, /Never add/i);
+    assert.match(dpiHtml, /enum values/i);
   } finally {
     await cleanupDir(outputRoot);
   }

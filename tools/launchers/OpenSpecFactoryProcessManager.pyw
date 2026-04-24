@@ -224,7 +224,7 @@ class ProcessManagerApp:
         # ── Quick Actions bar ──────────────────────────────────────────
         actions_bar = ttk.Frame(shell, style='Root.TFrame')
         actions_bar.grid(row=1, column=0, columnspan=2, sticky='ew', pady=(14, 0))
-        for col in range(9):
+        for col in range(11):
             actions_bar.columnconfigure(col, weight=1)
 
         self.btn_start = ttk.Button(
@@ -267,10 +267,20 @@ class ProcessManagerApp:
         )
         self.btn_refresh.grid(row=0, column=7, sticky='ew', padx=(0, 6))
 
+        self.btn_gui_dev = ttk.Button(
+            actions_bar, text='GUI Dev (HMR)', command=self._on_gui_dev, style='QuickAction.TButton',
+        )
+        self.btn_gui_dev.grid(row=0, column=8, sticky='ew', padx=(0, 6))
+
+        self.btn_gui_check = ttk.Button(
+            actions_bar, text='GUI Check', command=self._on_gui_check, style='QuickAction.TButton',
+        )
+        self.btn_gui_check.grid(row=0, column=9, sticky='ew', padx=(0, 6))
+
         self.btn_kill_all = ttk.Button(
             actions_bar, text='Kill All', command=self._on_kill_all, style='Destructive.QuickAction.TButton',
         )
-        self.btn_kill_all.grid(row=0, column=8, sticky='ew')
+        self.btn_kill_all.grid(row=0, column=10, sticky='ew')
 
         # ── Stats row ──────────────────────────────────────────────────
         stats_row = ttk.Frame(shell, style='Root.TFrame')
@@ -417,6 +427,8 @@ class ProcessManagerApp:
         _ToolTip(self.btn_schema_reference, 'Regenerate docs/data-structure/schema-reference.html from the live schema')
         _ToolTip(self.btn_browser, 'Open the Spec Factory GUI in your default browser')
         _ToolTip(self.btn_refresh, 'Re-scan running processes and refresh the table')
+        _ToolTip(self.btn_gui_dev, 'Launch Vite dev server with HMR on http://127.0.0.1:5183 (backend stays on 8788). Edit .tsx files and the browser reloads instantly — no rebuild.')
+        _ToolTip(self.btn_gui_check, 'TypeScript-only check (tsc -b). No vite or esbuild spawn — safe for sandboxed agents.')
         _ToolTip(self.btn_kill_all, 'Terminate all killable Spec Factory processes')
         _ToolTip(self.kill_button, 'Kill the selected process')
         _ToolTip(self.restart_button, 'Restart the selected process')
@@ -548,6 +560,8 @@ class ProcessManagerApp:
         self.btn_build_exe.configure(state=disabled)
         self.btn_cleanup.configure(state=disabled)
         self.btn_schema_reference.configure(state=disabled)
+        self.btn_gui_dev.configure(state=disabled)
+        self.btn_gui_check.configure(state=disabled)
         self.btn_browser.configure(state=browser_state)
         self.btn_kill_all.configure(state=kill_all_state)
         self.kill_button.configure(state=kill_state)
@@ -925,6 +939,37 @@ class ProcessManagerApp:
         self._run_streaming(
             'Build Schema Reference',
             ['node', str(SCHEMA_REFERENCE_SCRIPT_PATH)],
+        )
+
+    def _on_gui_dev(self) -> None:
+        # WHY: Vite dev server runs indefinitely, so we detach it into its own
+        # console instead of streaming into the in-app log. User closes the
+        # console window to stop. Proxy /api and /ws -> :8788 (must be running).
+        if self.busy:
+            return
+        try:
+            subprocess.Popen(
+                'start "Spec Factory GUI Dev (HMR)" cmd /k npm run gui:dev',
+                cwd=ROOT,
+                shell=True,
+            )
+        except OSError as error:
+            self._log_error('GUI Dev', error)
+            return
+        self._append_log(
+            '\n--- GUI Dev Server launched in a new window ---\n'
+            'URL:        http://127.0.0.1:5183 (Vite HMR)\n'
+            'API proxy:  /api and /ws -> http://127.0.0.1:8788\n'
+            'Backend must be running on 8788. Close the dev window to stop.\n',
+            'info',
+        )
+        self._set_status('GUI Dev Server launched in a new window.', '#8ee39d')
+        self.root.after(3000, lambda: webbrowser.open('http://127.0.0.1:5183'))
+
+    def _on_gui_check(self) -> None:
+        self._run_streaming(
+            'GUI Type Check',
+            ['npm', 'run', 'gui:check'],
         )
 
     # ── Process management ─────────────────────────────────────────────

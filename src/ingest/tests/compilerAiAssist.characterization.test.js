@@ -1,6 +1,6 @@
 // WHY: Characterization test — locks down buildStudioFieldRule ai_assist block.
-// The only retained Key Finder assist knobs are reasoning_note and the
-// variant-inventory on/off flag.
+// The only retained Key Finder assist knobs are reasoning_note plus the simple
+// on/off context injection flags.
 // See: docs/implementation/field-rules-studio/ai-assist-knob-retirement-roadmap.md
 
 import test from 'node:test';
@@ -115,6 +115,48 @@ test('variant_inventory_usage drops invalid empty metadata', () => {
     variant_inventory_usage: {
       mode: 'nonsense',
       profile: 'wat',
+      text: '   ',
+    },
+  });
+
+  assert.deepEqual(result, DEFAULTS);
+});
+
+test('pif_priority_images preserves explicit enabled boolean only', () => {
+  const result = compileAiAssist({
+    reasoning_note: 'base note',
+    pif_priority_images: {
+      enabled: true,
+      mode: 'visual_design',
+      text: 'Legacy-style text must not become a second guidance box.',
+    },
+  });
+
+  assert.deepEqual(result, {
+    reasoning_note: 'base note',
+    pif_priority_images: {
+      enabled: true,
+    },
+  });
+});
+
+test('pif_priority_images accepts direct boolean authoring as the simple knob', () => {
+  const result = compileAiAssist({
+    pif_priority_images: false,
+  });
+
+  assert.deepEqual(result, {
+    reasoning_note: '',
+    pif_priority_images: {
+      enabled: false,
+    },
+  });
+});
+
+test('pif_priority_images drops invalid metadata', () => {
+  const result = compileAiAssist({
+    pif_priority_images: {
+      mode: 'visual_design',
       text: '   ',
     },
   });

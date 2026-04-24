@@ -18,6 +18,7 @@
     "smoke:local": "node src/app/cli/smokeLocal.js",
     "gui:api": "node src/app/api/guiServer.js --port 8788 --local",
     "gui:dev": "cd tools/gui-react && npm run dev",
+    "gui:check": "cd tools/gui-react && node node_modules/typescript/bin/tsc -b",
     "gui:build": "cd tools/gui-react && npm run build",
     "gui:start": "npm run gui:build && npm run gui:api",
     "gui:exe": "node tools/build-exe.mjs",

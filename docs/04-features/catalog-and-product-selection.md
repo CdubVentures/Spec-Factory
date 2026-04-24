@@ -100,5 +100,6 @@ sequenceDiagram
 
 ## Related Documents
 
+- [Overview Command Console](./overview-command-console.md) - bulk-action surface layered over the catalog table at `/`.
 - [Review Workbench](./review-workbench.md) - Review payloads only serve catalog-backed or SpecDb-backed products.
 - [Storage and Run Data](./storage-and-run-data.md) - Product detail pages read latest run artifacts from output storage.

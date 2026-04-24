@@ -19,6 +19,11 @@ export interface PromptPreviewPrompt {
   readonly notes: readonly string[];
   readonly images?: readonly {
     readonly url: string;
+    readonly label?: string;
+    readonly caption?: string;
+    readonly filename?: string;
+    readonly view?: string;
+    readonly source?: string;
     readonly thumb_base64_size?: number;
   }[];
 }

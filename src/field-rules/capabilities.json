@@ -136,7 +136,12 @@
     "ai_assist.variant_inventory_usage": {
       "status": "live",
       "consumer": "src/core/finder/productResolvedStateReader.js:buildFieldIdentityUsage + src/features/key/keyLlmAdapter.js:FIELD_IDENTITY_USAGE",
-      "description": "Optional per-field control for how Key Finder uses CEF variant inventory as source identity context. Supports default/append/override/off modes and usage profiles."
+      "description": "Single on/off control for whether Key Finder may inject CEF variant inventory as source identity context. Enable only when edition/SKU/release/colorway/PIF facts add evidence-filter value without ambiguity; field-specific interpretation belongs in ai_assist.reasoning_note."
+    },
+    "ai_assist.pif_priority_images": {
+      "status": "live",
+      "consumer": "src/features/product-image/keyFinderPifPriorityImages.js:resolveKeyFinderPifPriorityImageContext + src/features/key/keyLlmAdapter.js:PIF_PRIORITY_IMAGES",
+      "description": "Single on/off control for whether Key Finder may attach PIF-evaluated default/base priority-view images. Enable only when those images add visual evidence value; missing images are not negative evidence and field-specific edition/list interpretation belongs in ai_assist.reasoning_note."
     },
     "ui.label": {
       "status": "ui_only",

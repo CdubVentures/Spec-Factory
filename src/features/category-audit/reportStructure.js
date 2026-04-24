@@ -21,8 +21,9 @@ import { composeTeachingSections, composeAuditorTask, composeAuditStandard } fro
 import { KEY_FINDER_DEFAULT_TEMPLATE } from '../key/keyLlmAdapter.js';
 
 const RUNTIME_SLOT_NAMES = new Set([
-  'BRAND', 'MODEL', 'VARIANT_SUFFIX', 'VARIANT_COUNT',
-  'IDENTITY_WARNING', 'PRODUCT_COMPONENTS', 'KNOWN_PRODUCT_FIELDS', 'PREVIOUS_DISCOVERY',
+  'BRAND', 'MODEL', 'CATEGORY', 'VARIANT_SUFFIX', 'VARIANT_COUNT', 'FAMILY_SIZE',
+  'IDENTITY_WARNING', 'PRODUCT_COMPONENTS', 'PRODUCT_SCOPED_FACTS', 'VARIANT_INVENTORY',
+  'FIELD_IDENTITY_USAGE', 'PREVIOUS_DISCOVERY',
   'PRIMARY_FIELD_KEY', 'PRIMARY_FIELD_GUIDANCE', 'PRIMARY_FIELD_CONTRACT',
   'PRIMARY_SEARCH_HINTS', 'PRIMARY_CROSS_FIELD_CONSTRAINTS', 'PRIMARY_COMPONENT_KEYS',
   'ADDITIONAL_FIELD_KEYS', 'ADDITIONAL_FIELD_GUIDANCE', 'ADDITIONAL_FIELD_CONTRACT',
@@ -266,7 +267,7 @@ function buildComponentInventorySection(reportData) {
   const blocks = [
     {
       kind: 'paragraph',
-      text: 'Component databases back fields whose value IS a component identity (e.g. `sensor`, `switch`, `encoder`) and carry per-entity property rows that populate subfield values at runtime.',
+      text: 'Component databases back fields whose value IS a component identity and carry per-entity property rows that populate subfield values at runtime.',
     },
   ];
 
@@ -422,7 +423,7 @@ function buildPerGroupDetailBlocks(group, keyIndex, keyToGroup) {
       'Is every member field a good fit for this group? Which should move, to which group?',
       'Is any field conspicuously missing from this group? (check adjacent groups for mis-homed neighbors)',
       'Does the group name accurately describe the set? If not, propose a rename.',
-      'Is the difficulty mix coherent (identity anchors should be mostly hard / very_hard)?',
+      'Is the difficulty mix coherent for the evidence actually required by this group?',
       'Should this group split (too large / contains two clusters) or merge with a neighbor (reviewers always look at them together)?',
     ],
   });
@@ -494,21 +495,21 @@ function formatTierBundleAuditValue(adapterPreview) {
 }
 
 function buildSearchRoutingBlocks(key, adapterPreview) {
-  const benchmarkText = 'mouseData.xlsm data-entry benchmark cells C2:BT83 for mouse; equivalent hand-entered benchmark cells for other categories';
+  const benchmarkText = 'the category benchmark/example set when available';
   return [
     { kind: 'subheading', level: 4, text: 'Search + routing contract' },
     {
       kind: 'paragraph',
-      text: `Audit \`required_level\`, \`availability\`, and \`difficulty\` as extraction/search strategy, not admin labels. These settings decide publish blocking, scheduling order, bundling priority, model/search strength, and whether keyFinder searches deeply enough to match benchmark-depth data like ${benchmarkText}.`,
+      text: `Audit \`required_level\`, \`availability\`, and \`difficulty\` as extraction/search strategy, not admin labels. Requiredness decides whether the site should try to publish the field for most products because it is distinguishable from public/spec/visual/identity evidence and belongs in benchmark-depth coverage; it is not restricted to lab-only measurements. Difficulty decides model/search strength after variant inventory, PIF images, aliases, and source hints are available.`,
     },
     {
       kind: 'table',
       headers: ['Knob', 'Current value', 'Audit question'],
       rows: [
-        ['`priority.required_level`', formatAuditValue(key.priority.required_level), 'Should this field be mandatory for a publish-grade, depth-tech product page? Mandatory should mean identity, comparison, filtering, benchmark parity, or buyer-relevant technical confidence would be weak without a proven value or honest `unk`.'],
+        ['`priority.required_level`', formatAuditValue(key.priority.required_level), 'Should this field be mandatory for a publish-grade, depth-tech product page? Mandatory should mean the value is buyer/site/benchmark useful and usually distinguishable from public/spec/visual/identity evidence: visible, identifiable from variant identity, listed in specs/docs, or generally exposed by credible sources. Missing proof still becomes unknown status with no submitted value.'],
         ['`priority.availability`', formatAuditValue(key.priority.availability), 'How often should credible public sources expose this value: always, sometimes, or rare? Wrong availability wastes search budget or delays fields that should be searched early.'],
-        ['`priority.difficulty`', formatAuditValue(key.priority.difficulty), 'Can a cheaper model reliably match the benchmark answer, or does this need harder search, source comparison, aliases, component context, reasoning, or a frontier model? Do not mark a field easy just because the answer is short.'],
-        ['Resolved tier bundle', formatTierBundleAuditValue(adapterPreview), 'Does the resolved model/search strength match the extraction risk? Easy should be direct; medium should handle normalization; hard should handle conflict/component context; very_hard should get the strongest reasoning/search.'],
+        ['`priority.difficulty`', formatAuditValue(key.priority.difficulty), 'Can the configured context make this direct? Easy should cover direct spec/photo/PIF/variant lookup or straightforward canonical mapping; medium should cover normalization or light source comparison; hard should cover technical component reasoning, meaningful conflicts, aliases that change meaning, or source credibility calls. Very_hard is reserved for hidden/lab-grade fields such as proprietary internal component identities, instrumented latency/accuracy measurements, unresolved datasheet links, or lab-only metrics.'],
+        ['Resolved tier bundle', formatTierBundleAuditValue(adapterPreview), 'Does the resolved model/search strength match the remaining extraction effort after variant inventory, PIF images, aliases, and source hints?'],
         ['Benchmark-depth target', benchmarkText, 'Use benchmark data to calibrate the rule and guidance, not as prompt answers. The contract should explain how keyFinder can reproduce those values from public evidence.'],
       ],
     },
@@ -548,10 +549,18 @@ function buildAuthoringChecklistBlocks(key) {
   ].join(' | ');
   const unknownCurrent = [
     '`false`/`no`',
-    '`n/a`',
-    '`unk`',
+    '`n/a` as intentional data',
+    'unknown status / no submitted value',
     'blank/omitted',
   ].join(' | ');
+  const variantInventoryUsage = key.ai_assist?.variant_inventory_usage;
+  const variantInventoryCurrent = typeof variantInventoryUsage?.enabled === 'boolean'
+    ? (variantInventoryUsage.enabled ? 'enabled' : 'disabled')
+    : 'No explicit setting';
+  const pifPriorityImages = key.ai_assist?.pif_priority_images;
+  const pifPriorityImagesCurrent = typeof pifPriorityImages?.enabled === 'boolean'
+    ? (pifPriorityImages.enabled ? 'enabled' : 'disabled')
+    : 'No explicit setting';
 
   return [
     { kind: 'subheading', level: 4, text: 'Full field contract authoring order' },
@@ -567,10 +576,12 @@ function buildAuthoringChecklistBlocks(key) {
         ['2', 'Value contract', contractCurrent, 'Does the emitted JSON primitive/list shape match how the value is stored, validated, compared, and filtered?'],
         ['3', 'Enum and filter surface', enumCurrent, 'Is the enum closed when finite, patterned when open, ordered consistently, and small enough for the consumer filter surface? Keep aliases/source phrases out of public enum chips unless intentionally public.'],
         ['4', 'Consumer-surface impact', consumerCurrent, 'Which surfaces should use this key: filter, list column, snapshot/spec row, comparison row, metric/card, search/SEO, or none? Does the shape support each intended surface without forcing the site to guess?'],
-        ['5', 'Unknown / not-applicable states', unknownCurrent, 'Is false/no different from n/a and unk? Boolean is enough only when the field truly has two factual states plus ordinary unknown handling. Use n/a when the question does not apply, and unk when evidence is missing.'],
+        ['5', 'Unknown / not-applicable states', unknownCurrent, 'Is false/no different from not-applicable and missing evidence? Use boolean only for true two-state facts. Never add `unk` to enum values or data lists; it is an LLM sentinel that should become status/unknown_reason with no submitted value. Use `n/a` only when not-applicable is intentionally stored or public; otherwise prefer blank/omitted as no submitted value. For measured conditional fields like battery_hours, keep the value numeric when hours are proven and leave no submitted value when not applicable or unproven.'],
         ['6', 'Evidence and sources', evidenceCurrent, 'Can the configured source tiers and evidence count actually prove this value without guessing?'],
         ['7', 'Example bank', '5-10 category-local examples', 'Do examples cover happy path, edge, unknown, not-applicable, conflict, and filter-risk cases before the prompt text is trusted?'],
-        ['8', 'Guidance last', formatAuditValue(key.ai_assist?.reasoning_note), 'Now write paste-ready guidance that fills only the remaining extraction judgment gap, or write "(empty - keep)" when no guidance is needed.'],
+        ['8', 'Variant inventory context', variantInventoryCurrent, 'Enable only when edition/SKU/release/colorway/PIF identity helps reject wrong-variant evidence without ambiguity. Most invariant model-level keys should not need it. List or variant-varying keys need a union vs exact/base/default rule in reasoning_note.'],
+        ['9', 'PIF Priority Images', pifPriorityImagesCurrent, 'Enable only when default/base priority-view images help a visual key. Missing/unattachable images are not negative evidence. Edition-specific yes/no or list behavior belongs in reasoning_note.'],
+        ['10', 'Guidance last', formatAuditValue(key.ai_assist?.reasoning_note), 'Now write paste-ready guidance that fills only the remaining extraction judgment gap, or write "(empty - keep)" when no guidance is needed.'],
       ],
     },
   ];

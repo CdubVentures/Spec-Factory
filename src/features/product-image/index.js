@@ -3,3 +3,4 @@ export { backfillPifVariantIds, collectOrphanedPifKeys } from './backfillPifVari
 export { matchVariant } from './variantMatch.js';
 export { rebuildProductImageFinderFromJson } from './productImageStore.js';
 export { rebuildPifVariantProgressFromJson } from './pifVariantProgressRebuild.js';
+export { resolveKeyFinderPifPriorityImageContext } from './keyFinderPifPriorityImages.js';

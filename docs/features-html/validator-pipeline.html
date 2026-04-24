@@ -200,8 +200,8 @@
 <table>
 <thead><tr><th>Knob</th><th></th><th>Phase</th><th>Notes</th></tr></thead>
 <tbody>
-  <tr><td><code>priority.required_level</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 10</td><td>Consumed by <code>shouldBlockUnkPublish()</code>. Returns true when <code>identity</code> or <code>required</code>.</td></tr>
-  <tr><td><code>priority.availability / difficulty / effort</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>Scheduling/scoring. Not a validation concern.</td></tr>
+  <tr><td><code>priority.required_level</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 10</td><td>Consumed by <code>shouldBlockUnkPublish()</code>. Returns true when <code>mandatory</code>.</td></tr>
+  <tr><td><code>priority.availability / difficulty</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>Scheduling/scoring. Not a validation concern.</td></tr>
 </tbody>
 </table>
 </div>
@@ -411,7 +411,7 @@
       <dl class="detail-grid">
         <dt>Phase ID</dt><dd><code>publish_gate</code></dd>
         <dt>Reads</dt><dd><code>priority.required_level</code> (via <code>shouldBlockUnkPublish()</code>)</dd>
-        <dt>Behavior</dt><dd>If value === <code>null</code> and <code>required_level</code> is <code>identity</code> or <code>required</code> &rarr; <code>unk_blocks_publish</code> rejection</dd>
+        <dt>Behavior</dt><dd>If value === <code>null</code> and <code>required_level</code> is <code>mandatory</code> &rarr; <code>unk_blocks_publish</code> rejection</dd>
       </dl>
     </div>
   </div>

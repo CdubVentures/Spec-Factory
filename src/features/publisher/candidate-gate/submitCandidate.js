@@ -30,6 +30,27 @@ function serializeValue(value) {
   return String(value);
 }
 
+function isAbsentCandidateValue(value) {
+  if (value === null || value === undefined) return true;
+  return Array.isArray(value) && value.length === 0;
+}
+
+function rejectAbsentCandidate({ value, validationResult }) {
+  return {
+    status: 'rejected',
+    candidateId: null,
+    value,
+    validationResult: {
+      ...validationResult,
+      valid: false,
+      rejections: [
+        ...validationResult.rejections,
+        { reason_code: 'absent_candidate_value', detail: { value } },
+      ],
+    },
+  };
+}
+
 /**
  * @param {{ category: string, productId: string, fieldKey: string, value: *, confidence: number, sourceMeta: object, fieldRules: object, knownValues: object|null, componentDb: object|null, specDb: object, productRoot: string, config?: object }} opts
  * @returns {{ status: 'accepted'|'rejected', candidateId: number|null, value: *, validationResult: object, publishResult?: object }}
@@ -74,6 +95,10 @@ export async function submitCandidate({
   // --- Validate ---
   const perFieldKnown = knownValues?.[fieldKey] || null;
   const validationResult = validateField({ fieldKey, value, fieldRule, knownValues: perFieldKnown, componentDb, appDb });
+
+  if (isAbsentCandidateValue(validationResult.value)) {
+    return rejectAbsentCandidate({ value: validationResult.value, validationResult });
+  }
 
   // WHY: open_prefer_known unknowns are soft rejections — the value is valid but not
   // in the known list. The candidate gate accepts these (that's the point of the policy).

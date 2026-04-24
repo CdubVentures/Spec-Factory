@@ -87,14 +87,11 @@ export function WorkbenchDrawer({
   const reqLevel = strN(
     rule,
     'priority.required_level',
-    strN(rule, 'required_level', 'expected'),
+    strN(rule, 'required_level', 'non_mandatory'),
   );
   const reqColors: Record<string, string> = {
-    identity: 'sf-llm-soft-badge',
-    required: 'sf-chip-danger',
-    critical: 'sf-chip-danger',
-    expected: 'sf-chip-info',
-    optional: 'sf-chip-neutral',
+    mandatory: 'sf-chip-danger',
+    non_mandatory: 'sf-chip-neutral',
   };
 
   return (
@@ -131,7 +128,7 @@ export function WorkbenchDrawer({
           <h3 className="text-sm font-semibold">{humanizeField(fieldKey)}</h3>
           <div className="flex items-center gap-2 mt-0.5">
             <span className={FIELD_KEY_BADGE_CLASS}>{fieldKey}</span>
-            <span className={`px-1.5 py-0.5 text-[10px] rounded font-medium ${reqColors[reqLevel] || reqColors.optional}`}>
+            <span className={`px-1.5 py-0.5 text-[10px] rounded font-medium ${reqColors[reqLevel] || reqColors.non_mandatory}`}>
               {reqLevel}
             </span>
           </div>

@@ -18,7 +18,7 @@
 
 | Path | Component/Page | Guard | Loader | Layout | Purpose |
 |------|---------------|-------|--------|--------|---------|
-| `/` | `OverviewPage` | none | lazy import from `tools/gui-react/src/pages/overview/OverviewPage.tsx`; page-local queries | `AppShell` | high-level overview of catalog and runtime state |
+| `/` | `OverviewPage` | none | lazy import from `tools/gui-react/src/pages/overview/OverviewPage.tsx`; page-local queries | `AppShell` | catalog table with per-row finder progress (CEF/PIF/RDF/SKU/Keys/Score) plus the Command Console for bulk fan-out, smart-select, and the full-pipeline orchestrator (see [overview-command-console.md](../04-features/overview-command-console.md)) |
 | `/categories` | `CategoryManager` | none | lazy import from `tools/gui-react/src/features/catalog/components/CategoryManager.tsx`; feature-local queries/mutations | `AppShell` | category creation and selection |
 | `/brands` | `BrandManager` | none | lazy import from `tools/gui-react/src/features/studio/components/BrandManager.tsx`; brand management hooks | `AppShell` | global brand registry management |
 | `/colors` | `ColorRegistryPage` | none | lazy import from `tools/gui-react/src/features/color-registry/components/ColorRegistryPage.tsx`; color registry hooks | `AppShell` | global color registry management |

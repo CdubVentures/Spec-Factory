@@ -85,6 +85,10 @@ GOAL: Extract the PRIMARY KEY value for this product using the FIELD CONTRACT be
 
 {{FIELD_IDENTITY_USAGE}}
 
+{{PIF_PRIORITY_IMAGES}}
+
+{{VALUE_NORMALIZATION}}
+
 {{EVIDENCE_CONTRACT}}
 
 {{EVIDENCE_VERIFICATION}}
@@ -187,6 +191,78 @@ function buildFieldIdentityUsageBlock(fieldIdentityUsage, variantInventory) {
   return `FIELD_IDENTITY_USAGE\n${text}`;
 }
 
+function isPifPriorityImagesEnabled(fieldRule = {}, context = {}) {
+  const raw = fieldRule?.ai_assist?.pif_priority_images;
+  if (raw === true || raw === false) return raw;
+  if (raw && typeof raw === 'object' && !Array.isArray(raw) && typeof raw.enabled === 'boolean') return raw.enabled;
+  return context?.enabled === true;
+}
+
+function buildPifPriorityImagesBlock(context = {}, fieldRule = {}) {
+  if (!isPifPriorityImagesEnabled(fieldRule, context)) return '';
+  const priorityViews = Array.isArray(context.priorityViews)
+    ? context.priorityViews.map((view) => String(view).trim()).filter(Boolean)
+    : [];
+  const images = Array.isArray(context.images) ? context.images : [];
+  const variant = context.variant && typeof context.variant === 'object' ? context.variant : {};
+  const lines = [
+    'PIF_PRIORITY_IMAGES',
+    'PIF default/base variant images are attached for visual support. Use them as supporting context only; they are not exhaustive product proof.',
+    'Absence of a visible trait in these images is not proof the trait is absent. Prefer explicit source evidence when the field is not directly visible.',
+  ];
+
+  if (priorityViews.length > 0) {
+    const label = images.length > 0 ? 'Priority views from PIF viewConfig' : 'Priority views requested from PIF viewConfig';
+    lines.push(`${label}: ${priorityViews.join(', ')}`);
+  }
+
+  const variantLabel = String(variant.label || variant.variant_label || '').trim();
+  const variantKey = String(variant.variant_key || '').trim();
+  if (variantLabel || variantKey) {
+    lines.push(`Variant: ${variantLabel || variantKey}${variantKey ? ` (${variantKey})` : ''}`);
+  }
+
+  if (images.length === 0) {
+    const message = String(context.message || '').trim()
+      || 'No PIF-evaluated priority images are available for the default/base variant.';
+    lines.push(`PIF priority images are enabled for this key, but no PIF-evaluated priority images are available. ${message}`);
+    lines.push('Do not infer visual traits from missing PIF images.');
+    return lines.join('\n');
+  }
+
+  lines.push('Attached images:');
+  for (const image of images) {
+    if (!image || typeof image !== 'object') continue;
+    const view = String(image.view || '').trim();
+    const filename = String(image.filename || '').trim();
+    const url = String(image.original_url || image.url || '').trim();
+    const reasoning = String(image.eval_reasoning || image.reasoning || '').trim();
+    const head = [view, filename].filter(Boolean).join(': ');
+    lines.push(`- ${head || 'image'}${url ? ` (${url})` : ''}`);
+    if (reasoning) lines.push(`  PIF note: ${reasoning}`);
+  }
+  return lines.join('\n');
+}
+
+function buildPifPriorityImageUserImages(context = {}) {
+  const images = Array.isArray(context.images) ? context.images : [];
+  return images
+    .map((image, index) => {
+      if (!image || typeof image !== 'object') return null;
+      const fileUri = String(image.llm_file_uri || image.file_uri || '').trim();
+      if (!fileUri) return null;
+      const view = String(image.view || 'image').trim() || 'image';
+      const filename = String(image.filename || `image-${index + 1}`).trim();
+      return {
+        id: `pif-priority:${view}:${filename}`,
+        file_uri: fileUri,
+        mime_type: String(image.mime_type || 'image/png').trim() || 'image/png',
+        caption: String(image.caption || [view, filename].filter(Boolean).join(': ')).trim(),
+      };
+    })
+    .filter(Boolean);
+}
+
 /* ── Additional-keys slot builders (split per category) ────────────── */
 
 function buildAdditionalFieldKeysBlock(passengers) {
@@ -217,7 +293,11 @@ function buildAdditionalFieldContractBlock(passengers) {
   for (const p of passengers) {
     const contract = buildFieldContractBlock(p.fieldRule);
     if (!contract) continue;
-    sections.push(`Passenger key: ${p.fieldKey}\n${contract}`);
+    sections.push([
+      `Passenger key: ${p.fieldKey}`,
+      contract,
+      'Passenger evidence must come from the primary search session. Do not run passenger-specific searches to satisfy the evidence target; return passenger evidence only when it was found while researching the primary key.',
+    ].join('\n'));
   }
   if (sections.length === 0) return '';
   return `Additional key contracts:\n${sections.join('\n\n')}`;
@@ -250,6 +330,12 @@ function buildAdditionalComponentKeysBlock(passengers, componentEntries, knobs =
 }
 
 /* ── Return JSON shape ─────────────────────────────────────────────── */
+
+function buildKeyFinderEvidencePromptBlock({ minEvidenceRefs, hasPassengers }) {
+  const base = buildEvidencePromptBlock({ minEvidenceRefs, includeEvidenceKind: true });
+  if (!hasPassengers) return base;
+  return `${base}\n\nKey-finder passenger evidence scope:\n- The minimum above is the primary key evidence target for this search session.\n- Passenger Evidence target lines are publisher context only; do not run passenger-specific searches to reach them.\n- Do not suppress a found passenger value solely because the primary session found fewer refs than the passenger target; return the passenger value with the evidence found in the primary session.`;
+}
 
 // WHY: per-key value shape drives the LLM's native JSON emission. A number
 // field gets a bare number, a list gets an array, enums get a literal allowed
@@ -298,15 +384,16 @@ function buildReturnJsonShape(primaryEntry, passengerEntries) {
   lines.push(`      "value": <${describeValueShape(primaryEntry.fieldRule)}> | "unk",`);
   lines.push(`      "confidence": 0-100,`);
   lines.push(`      "unknown_reason": "..." (required when value is "unk"; empty string otherwise),`);
-  lines.push(`      "evidence_refs": [{ "url", "tier", "confidence": 0-100, "supporting_evidence", "evidence_kind" }],`);
-  lines.push(`      "discovery_log": { "urls_checked": [...], "queries_run": [...], "notes": [...] }`);
+  lines.push(`      "evidence_refs": [{ "url", "tier", "confidence": 0-100, "supporting_evidence", "evidence_kind" }]`);
   lines.push(`    }${passengerKeys.length ? ',' : ''}`);
   for (let i = 0; i < passengerEntries.length; i++) {
     const p = passengerEntries[i];
     const last = i === passengerEntries.length - 1;
     lines.push(`    "${p.fieldKey}": {`);
-    lines.push(`      "value": <${describeValueShape(p.fieldRule)}> | "unk",  // same per-key shape as above`);
-    lines.push(`      "confidence": 0-100, "unknown_reason": "...", "evidence_refs": [...], "discovery_log": {...}`);
+    lines.push(`      "value": <${describeValueShape(p.fieldRule)}> | "unk",`);
+    lines.push(`      "confidence": 0-100,`);
+    lines.push(`      "unknown_reason": "..." (required when value is "unk"; empty string otherwise),`);
+    lines.push(`      "evidence_refs": [{ "url", "tier", "confidence": 0-100, "supporting_evidence", "evidence_kind" }]`);
     lines.push(`    }${last ? '' : ','}`);
   }
   lines.push(`  },`);
@@ -326,6 +413,7 @@ function buildReturnJsonShape(primaryEntry, passengerEntries) {
  * @param {Record<string, unknown>} [opts.productScopedFacts]
  * @param {Array<object>} [opts.variantInventory]
  * @param {string} [opts.fieldIdentityUsage]
+ * @param {object} [opts.pifPriorityImageContext]
  * @param {{primary: object|null, passengers: Array<object|null>}} [opts.componentContext] — per-key relation pointers (knob-gated)
  * @param {Array<{parentFieldKey: string, componentType: string, resolvedValue: string, subfields: Array<{field_key: string, value: unknown}>}>} [opts.productComponents] — always-on grouped inventory
  * @param {{componentInjectionEnabled: boolean, knownFieldsInjectionEnabled: boolean, searchHintsInjectionEnabled: boolean}} [opts.injectionKnobs]
@@ -348,6 +436,7 @@ export function buildKeyFinderPrompt({
   productScopedFacts = knownFields,
   variantInventory = [],
   fieldIdentityUsage = '',
+  pifPriorityImageContext = {},
   componentContext = { primary: null, passengers: [] },
   productComponents = [],
   injectionKnobs = DEFAULT_KNOBS,
@@ -418,9 +507,14 @@ export function buildKeyFinderPrompt({
     PRODUCT_SCOPED_FACTS: buildProductScopedFactsBlock(productScopedFacts, knobs),
     VARIANT_INVENTORY: buildVariantInventoryBlock(variantInventory, { product, siblingsExcluded }),
     FIELD_IDENTITY_USAGE: buildFieldIdentityUsageBlock(fieldIdentityUsage, variantInventory),
+    PIF_PRIORITY_IMAGES: buildPifPriorityImagesBlock(pifPriorityImageContext, primaryRule),
     KNOWN_PRODUCT_FIELDS: buildProductScopedFactsBlock(productScopedFacts, knobs),
+    VALUE_NORMALIZATION: resolveGlobalPrompt('keyFinderValueNormalization'),
 
-    EVIDENCE_CONTRACT: buildEvidencePromptBlock({ minEvidenceRefs, includeEvidenceKind: true }),
+    EVIDENCE_CONTRACT: buildKeyFinderEvidencePromptBlock({
+      minEvidenceRefs,
+      hasPassengers: passengerList.length > 0,
+    }),
     EVIDENCE_VERIFICATION: buildEvidenceVerificationPromptBlock(),
     SOURCE_TIER_STRATEGY: resolveGlobalPrompt('scalarSourceTierStrategy'),
     SCALAR_SOURCE_GUIDANCE_CLOSER: resolveGlobalPrompt('scalarSourceGuidanceCloser'),
@@ -496,14 +590,16 @@ export function createKeyFinderCallLlm(deps, tierOrBundle = 'medium') {
   }
 
   return createPhaseCallLlm(deps, spec, (domainArgs) => {
+    const userText = JSON.stringify({
+      brand: domainArgs.product?.brand || '',
+      model: domainArgs.product?.model || domainArgs.product?.base_model || '',
+      primary_field_key: domainArgs.primary?.fieldKey || '',
+      passenger_count: Array.isArray(domainArgs.passengers) ? domainArgs.passengers.length : 0,
+      family_size: domainArgs.familySize || 1,
+    });
+    const userImages = buildPifPriorityImageUserImages(domainArgs.pifPriorityImageContext);
     const mapped = {
-      user: JSON.stringify({
-        brand: domainArgs.product?.brand || '',
-        model: domainArgs.product?.model || domainArgs.product?.base_model || '',
-        primary_field_key: domainArgs.primary?.fieldKey || '',
-        passenger_count: Array.isArray(domainArgs.passengers) ? domainArgs.passengers.length : 0,
-        family_size: domainArgs.familySize || 1,
-      }),
+      user: userImages.length > 0 ? { text: userText, images: userImages } : userText,
     };
     if (modelOverride) mapped.modelOverride = modelOverride;
     if (capabilityOverride) mapped.capabilityOverride = capabilityOverride;

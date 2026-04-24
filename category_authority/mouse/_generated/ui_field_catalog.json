@@ -56,7 +56,28 @@
       "unit": ""
     },
     {
-      "aliases": [],
+      "aliases": [
+        "anniversary edition",
+        "artist edition",
+        "co-branded",
+        "collab",
+        "collaboration",
+        "collector item",
+        "creator edition",
+        "exclusive drop",
+        "limited edition",
+        "limited release",
+        "limited run",
+        "limited-time colorway",
+        "one-time-only release",
+        "partnered with",
+        "player edition",
+        "serialized",
+        "signature edition",
+        "special edition",
+        "team edition",
+        "X x Y"
+      ],
       "array_handling": "none",
       "availability": "always",
       "canonical_key": "design",
@@ -2233,6 +2254,6 @@
       "unit": ""
     }
   ],
-  "generated_at": "2026-04-24T20:18:57.547Z",
+  "generated_at": "2026-04-24T23:03:54.895Z",
   "version": 1
 }

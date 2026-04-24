@@ -2,9 +2,9 @@
  * Key Finder — Zod response schemas.
  *
  * Multi-key envelope: one LLM call may return a primary key plus zero or more
- * passenger keys (bundling). Each per-key shape is built from the shared
- * `createScalarFinderSchema` factory so evidence_refs / confidence / unknown_reason
- * stay byte-identical to RDF / SKU conventions.
+ * passenger keys (bundling). Per-key results share the scalar-finder value /
+ * evidence / confidence fields, but discovery_log is envelope-level only:
+ * passengers inherit the primary search session and must not own query history.
  *
  * Exports:
  *   - perKeyShape(valueKey)       — factory for a single field's response shape
@@ -23,7 +23,7 @@ export function perKeyShape(valueKey) {
     valueKey,
     valueType: 'string',
     includeEvidenceKind: true,
-  });
+  }).omit({ discovery_log: true });
   return base.extend({ [valueKey]: z.unknown() });
 }
 

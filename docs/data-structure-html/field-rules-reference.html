@@ -156,7 +156,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <div class="fchips"><span class="chip idx">IDX.NEEDSET</span><span class="chip val">VAL.PUBLISH_GATE</span><span class="chip llm">LLM.BUDGET</span><span class="chip llm">LLM.BUNDLE</span></div>
   </summary>
   <div class="fbody">
-    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip idx">IDX.NEEDSET</span></div><div class="desc">Maps to priority bucket (core/secondary/optional). Identity=100pts, critical=80, required=60, expected=30, optional=10 in need_score. Core fields scheduled first.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip idx">IDX.NEEDSET</span></div><div class="desc">Maps to priority bucket via <code>mapRequiredLevelToBucket</code>: <code>mandatory</code> &rarr; core, <code>non_mandatory</code> &rarr; optional. Core fields scheduled first.</div></div>
     <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip val">VAL.PUBLISH_GATE</span></div><div class="desc">At publish time, the unk-block gate rejects "unk" values for mandatory/identity fields so missing critical data never reaches published state. <code>shouldBlockUnkPublish.js:10</code>, <code>phaseRegistry.js:174-181</code>.</div></div>
     <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.BUDGET</span></div><div class="desc">Adds mandatory/non_mandatory points to per-key attempt budget. <code>keyBudgetCalc.js:14</code>.</div></div>
     <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.BUNDLE</span></div><div class="desc">Passenger eligibility filter — bundler requires a valid required_level (mandatory|non_mandatory) or the peer is dropped. <code>keyBundler.js:86-87</code>.</div></div>
@@ -210,7 +210,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <div class="fchips"><span class="chip eng">ENG.VALIDATE</span><span class="chip val">VAL.TYPE</span><span class="chip rev">REV.GRID</span><span class="chip llm">LLM.KF</span></div>
   </summary>
   <div class="fbody">
-    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.VALIDATE</span></div><div class="desc">Validates candidate values match the expected data type (string, number, integer, boolean).</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.VALIDATE</span></div><div class="desc">Validates candidate values match the expected data type. SSOT: <code>VALID_TYPES</code> in <code>src/field-rules/typeCoercionRegistry.js</code> &mdash; <code>string</code>, <code>number</code>, <code>integer</code>, <code>boolean</code>, <code>date</code>, <code>url</code>, <code>range</code>, <code>mixed_number_range</code>.</div></div>
     <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip val">VAL.TYPE</span></div><div class="desc">Type Check. Verifies and coerces value type. Safe coercion only (e.g., "42" to 42).</div></div>
     <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip rev">REV.GRID</span></div><div class="desc">Flows through <code>normalizeFieldContract()</code> into the review grid layout metadata. <code>reviewGridHelpers.js:127</code>.</div></div>
     <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.KF</span></div><div class="desc">Injected into return-contract block as the "Type:" line in the per-key finder prompt. <code>keyLlmAdapter.js:118</code>.</div></div>
@@ -223,7 +223,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <div class="fchips"><span class="chip eng">ENG.VALIDATE</span><span class="chip val">VAL.SHAPE</span><span class="chip seed">SEED.SCHEMA</span><span class="chip rev">REV.GRID</span><span class="chip llm">LLM.KF</span></div>
   </summary>
   <div class="fbody">
-    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.VALIDATE</span></div><div class="desc">Validates output shape (scalar, list, object) matches declaration.</div></div>
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip eng">ENG.VALIDATE</span></div><div class="desc">Validates output shape against <code>VALID_SHAPES</code> in <code>src/field-rules/typeCoercionRegistry.js</code> &mdash; <code>scalar</code> or <code>list</code>.</div></div>
     <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip val">VAL.SHAPE</span></div><div class="desc">Shape Check. Validates value matches expected shape. Short-circuits pipeline on failure.</div></div>
     <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip seed">SEED.SCHEMA</span></div><div class="desc">Sets <code>is_list_field</code> on the seeded fieldMeta, which drives item_list_links seeding for list-shaped fields. <code>seed.js:473</code>.</div></div>
     <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip rev">REV.GRID</span></div><div class="desc">Flows through <code>normalizeFieldContract()</code> into the review grid layout metadata. <code>reviewGridHelpers.js:128</code>.</div></div>
@@ -446,8 +446,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 
 <!-- ══════════════════════ AI Assist ══════════════════════ -->
 <div class="section">
-  <div class="section-head"><h2>AI Assist</h2><span class="count">1 path</span></div>
-  <p class="section-desc">Per-field extraction guidance authored in Field Studio. Injected into the per-key finder LLM prompt to steer the model on format, units, and edge cases specific to this field.</p>
+  <div class="section-head"><h2>AI Assist</h2><span class="count">3 paths</span></div>
+  <p class="section-desc">Per-field Key Finder assistance authored in Field Studio. Guidance text teaches field-specific judgment; the simple checkboxes control deterministic context injections.</p>
 
   <details class="fcard"><summary>
     <div class="fcard-head-left"><span class="fpath">ai_assist.reasoning_note</span><span class="flabel">Extraction Guidance</span><span class="ftype">string</span></div>
@@ -455,6 +455,24 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   </summary>
   <div class="fbody">
     <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.KF</span></div><div class="desc">Sent to the per-key finder LLM as extraction guidance. Describes expected format, units, edge cases. <code>keyLlmAdapter.js:112</code>.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">ai_assist.variant_inventory_usage</span><span class="flabel">Variant Inventory Usage</span><span class="ftype">object</span></div>
+    <div class="fchips"><span class="chip llm">LLM.KF</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.KF</span></div><div class="desc">Single on/off checkbox. When enabled, Key Finder may inject <code>VARIANT_INVENTORY</code> plus deterministic evidence-filter guidance; field-specific variant interpretation belongs in <code>ai_assist.reasoning_note</code>.</div></div>
+  </div>
+  </details>
+
+  <details class="fcard"><summary>
+    <div class="fcard-head-left"><span class="fpath">ai_assist.pif_priority_images</span><span class="flabel">PIF Priority Images</span><span class="ftype">object</span></div>
+    <div class="fchips"><span class="chip llm">LLM.KF</span></div>
+  </summary>
+  <div class="fbody">
+    <div class="consumer-row"><div class="consumer-chip-cell"><span class="chip llm">LLM.KF</span></div><div class="desc">Single on/off checkbox. When enabled, Key Finder may attach PIF-evaluated default/base priority-view images as 512px PNG base64 thumbnails and inject <code>PIF_PRIORITY_IMAGES</code> guidance. Prompt preview shows available images at the bottom using normal preview URLs; field-specific visual interpretation belongs in <code>ai_assist.reasoning_note</code>.</div></div>
   </div>
   </details>
 </div>
@@ -832,8 +850,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
       </tr>
       <tr>
         <td><span class="chip llm">LLM.KF</span></td>
-        <td class="count-cell">18</td>
-        <td class="paths"><code>contract.type</code><code>contract.shape</code><code>contract.unit</code><code>contract.list_rules</code><code>contract.rounding.decimals</code><code>contract.rounding.mode</code><code>enum.policy</code><code>enum.values</code><code>evidence.min_evidence_refs</code><code>ai_assist.reasoning_note</code><code>search_hints.query_terms</code><code>search_hints.domain_hints</code><code>aliases</code><code>ui.label</code><code>constraints</code><code>variance_policy</code><code>component.type</code><code>component.match.property_keys</code></td>
+        <td class="count-cell">20</td>
+        <td class="paths"><code>contract.type</code><code>contract.shape</code><code>contract.unit</code><code>contract.list_rules</code><code>contract.rounding.decimals</code><code>contract.rounding.mode</code><code>enum.policy</code><code>enum.values</code><code>evidence.min_evidence_refs</code><code>ai_assist.reasoning_note</code><code>ai_assist.variant_inventory_usage</code><code>ai_assist.pif_priority_images</code><code>search_hints.query_terms</code><code>search_hints.domain_hints</code><code>aliases</code><code>ui.label</code><code>constraints</code><code>variance_policy</code><code>component.type</code><code>component.match.property_keys</code></td>
       </tr>
       <tr>
         <td><span class="chip llm">LLM.ROUTE</span></td>

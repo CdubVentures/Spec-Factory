@@ -18,7 +18,7 @@ const SLOT_DESCRIPTIONS = Object.freeze([
   { slot: 'PRIMARY_FIELD_CONTRACT', previewKey: 'contract', note: 'Type, shape, unit, rounding, list rules, enum values + policy, variance policy, aliases. Everything the LLM needs to emit a well-typed value.' },
   { slot: 'PRIMARY_SEARCH_HINTS', previewKey: 'searchHints', note: 'Preferred domain_hints + query_terms. Empty when unauthored or knob off.' },
   { slot: 'PRIMARY_CROSS_FIELD_CONSTRAINTS', previewKey: 'crossField', note: 'Cross-field relational constraints (lte/gte/eq/requires_*), normalized from `constraints` DSL and structured `cross_field_constraints`.' },
-  { slot: 'PRIMARY_COMPONENT_KEYS', previewKey: 'componentRel', note: 'Relation pointer — "This key IS the sensor component identity" or "belongs to the sensor component on this product".' },
+  { slot: 'PRIMARY_COMPONENT_KEYS', previewKey: 'componentRel', note: 'Relation pointer: this key is a component identity or belongs to a resolved component on this product.' },
 ]);
 
 function buildHeaderSection(record, category, generatedAt, preview) {
@@ -155,9 +155,7 @@ function buildCategoryKeyMapSection(record, allKeyRecords, groups) {
 }
 
 function buildSearchRoutingSection(record, preview, category) {
-  const benchmarkText = category === 'mouse'
-    ? 'mouseData.xlsm data-entry benchmark cells C2:BT83'
-    : 'the category benchmark cells when available';
+  const benchmarkText = 'the category benchmark/example set when available';
   return {
     id: 'search-routing',
     title: 'Search + routing contract',
@@ -165,16 +163,16 @@ function buildSearchRoutingSection(record, preview, category) {
     blocks: [
       {
         kind: 'paragraph',
-        text: `Audit \`required_level\`, \`availability\`, and \`difficulty\` as extraction/search strategy, not admin labels. These settings decide publish blocking, scheduling order, bundling priority, model/search strength, and whether keyFinder searches deeply enough to match benchmark-depth data like ${benchmarkText}.`,
+        text: `Audit \`required_level\`, \`availability\`, and \`difficulty\` as extraction/search strategy, not admin labels. Requiredness decides whether the site should try to publish the field for most products because it is distinguishable from public/spec/visual/identity evidence and belongs in benchmark-depth coverage; it is not restricted to lab-only measurements. Difficulty decides model/search strength after variant inventory, PIF images, aliases, and source hints are available.`,
       },
       {
         kind: 'table',
         headers: ['Knob', 'Current value', 'Audit question'],
         rows: [
-          ['`priority.required_level`', displayValue(record.priority.required_level), 'Should this field be mandatory for a publish-grade, depth-tech product page? Mandatory should mean identity, comparison, filtering, benchmark parity, or buyer-relevant technical confidence would be weak without a proven value or honest `unk`.'],
+          ['`priority.required_level`', displayValue(record.priority.required_level), 'Should this field be mandatory for a publish-grade, depth-tech product page? Mandatory should mean the value is buyer/site/benchmark useful and usually distinguishable from public/spec/visual/identity evidence: visible, identifiable from variant identity, listed in specs/docs, or generally exposed by credible sources. Missing proof still becomes unknown status with no submitted value.'],
           ['`priority.availability`', displayValue(record.priority.availability), 'How often should credible public sources expose this value: always, sometimes, or rare? Wrong availability wastes search budget or delays fields that should be searched early.'],
-          ['`priority.difficulty`', displayValue(record.priority.difficulty), 'Can a cheaper model reliably match the benchmark answer, or does this need harder search, source comparison, aliases, component context, reasoning, or a frontier model? Do not mark a field easy just because the answer is short.'],
-          ['Resolved tier bundle', formatTierBundle(preview), 'Does the resolved model/search strength match the extraction risk? Easy should be direct; medium should handle normalization; hard should handle conflict/component context; very_hard should get the strongest reasoning/search.'],
+          ['`priority.difficulty`', displayValue(record.priority.difficulty), 'Can the configured context make this direct? Easy should cover direct spec/photo/PIF/variant lookup or straightforward canonical mapping; medium should cover normalization or light source comparison; hard should cover technical component reasoning, meaningful conflicts, aliases that change meaning, or source credibility calls. Very_hard is reserved for hidden/lab-grade fields such as proprietary internal component identities, instrumented latency/accuracy measurements, unresolved datasheet links, or lab-only metrics.'],
+          ['Resolved tier bundle', formatTierBundle(preview), 'Does the resolved model/search strength match the remaining extraction effort after variant inventory, PIF images, aliases, and source hints?'],
           ['Benchmark-depth target', benchmarkText, 'Use benchmark data to calibrate the rule and guidance, not as prompt answers. The contract should explain how keyFinder can reproduce those values from public evidence.'],
         ],
       },
@@ -215,10 +213,18 @@ function buildAuthoringChecklistSection(record) {
   ].join(' | ');
   const unknownCurrent = [
     '`false`/`no`',
-    '`n/a`',
-    '`unk`',
+    '`n/a` as intentional data',
+    'unknown status / no submitted value',
     'blank/omitted',
   ].join(' | ');
+  const variantInventoryUsage = record.ai_assist?.variant_inventory_usage;
+  const variantInventoryCurrent = typeof variantInventoryUsage?.enabled === 'boolean'
+    ? (variantInventoryUsage.enabled ? 'enabled' : 'disabled')
+    : 'No explicit setting';
+  const pifPriorityImages = record.ai_assist?.pif_priority_images;
+  const pifPriorityImagesCurrent = typeof pifPriorityImages?.enabled === 'boolean'
+    ? (pifPriorityImages.enabled ? 'enabled' : 'disabled')
+    : 'No explicit setting';
 
   return {
     id: 'authoring-checklist',
@@ -237,10 +243,12 @@ function buildAuthoringChecklistSection(record) {
           ['2', 'Value contract', contractCurrent, 'Does the emitted JSON primitive/list shape match how the value is stored, validated, compared, and filtered?'],
           ['3', 'Enum and filter surface', enumCurrent, 'Is the enum closed when finite, patterned when open, ordered consistently, and small enough for the consumer filter surface? Keep aliases/source phrases out of public enum chips unless intentionally public.'],
           ['4', 'Consumer-surface impact', consumerCurrent, 'Which surfaces should use this key: filter, list column, snapshot/spec row, comparison row, metric/card, search/SEO, or none? Does the shape support each intended surface without forcing the site to guess?'],
-          ['5', 'Unknown / not-applicable states', unknownCurrent, 'Is false/no different from n/a and unk? Boolean is enough only when the field truly has two factual states plus ordinary unknown handling. Use n/a when the question does not apply, and unk when evidence is missing.'],
+          ['5', 'Unknown / not-applicable states', unknownCurrent, 'Is false/no different from not-applicable and missing evidence? Use boolean only for true two-state facts. Never add `unk` to enum values or data lists; it is an LLM sentinel that should become status/unknown_reason with no submitted value. Use `n/a` only when not-applicable is intentionally stored or public; otherwise prefer blank/omitted as no submitted value. For measured conditional fields like battery_hours, keep the value numeric when hours are proven and leave no submitted value when not applicable or unproven.'],
           ['6', 'Evidence and sources', evidenceCurrent, 'Can the configured source tiers and evidence count actually prove this value without guessing?'],
           ['7', 'Example bank', '5-10 category-local examples', 'Do examples cover happy path, edge, unknown, not-applicable, conflict, and filter-risk cases before the prompt text is trusted?'],
-          ['8', 'Guidance last', displayValue(record.ai_assist?.reasoning_note), 'Now write paste-ready guidance that fills only the remaining extraction judgment gap, or write "(empty - keep)" when no guidance is needed.'],
+          ['8', 'Variant inventory context', variantInventoryCurrent, 'Enable only when edition/SKU/release/colorway/PIF identity helps reject wrong-variant evidence without ambiguity. Most invariant model-level keys should not need it. List or variant-varying keys need a union vs exact/base/default rule in reasoning_note.'],
+          ['9', 'PIF Priority Images', pifPriorityImagesCurrent, 'Enable only when default/base priority-view images help a visual key. Missing/unattachable images are not negative evidence. Edition-specific yes/no or list behavior belongs in reasoning_note.'],
+          ['10', 'Guidance last', displayValue(record.ai_assist?.reasoning_note), 'Now write paste-ready guidance that fills only the remaining extraction judgment gap, or write "(empty - keep)" when no guidance is needed.'],
         ],
       },
     ],
@@ -450,6 +458,8 @@ Extraction Priority & Guidance:
 - availability: <always|sometimes|rare|No change>
 - difficulty: <easy|medium|hard|very_hard|No change>
 - search/routing reason: <one short reason tied to this key>
+- Variant inventory context: <enabled|disabled|No change> (enable only when variant identity adds evidence-filter value without ambiguity)
+- PIF Priority Images: <enabled|disabled|No change> (enable only when default/base priority-view images add visual evidence value)
 - AI reasoning note: <paste-ready ai_assist.reasoning_note, "(empty - keep)", or No change>
 
 Enum Policy:
@@ -522,7 +532,7 @@ function buildComponentSection(record, componentInventory) {
   } else if (c.relation === 'parent') {
     blocks.push({
       kind: 'paragraph',
-      text: `**IS the ${c.type} component identity.** The value of this field IS the canonical component name (e.g. \`PMW3950\` for a sensor). When resolved on a product, the component\u2019s subfield values flow through \`PRODUCT_COMPONENTS\` on every future prompt.`,
+      text: `**IS the ${c.type} component identity.** The value of this field IS the canonical component name for this category. When resolved on a product, the component\u2019s subfield values flow through \`PRODUCT_COMPONENTS\` on every future prompt.`,
     });
     const invEntry = (componentInventory || []).find((i) => i.type === c.type);
     if (invEntry) {
@@ -561,7 +571,7 @@ function buildComponentSection(record, componentInventory) {
     blocks.push({ kind: 'subheading', level: 4, text: `Relevant component detail: ${c.type}` });
     blocks.push({
       kind: 'paragraph',
-      text: `Audit component variance here too. Confirm whether \`${record.fieldKey}\` should inherit from \`component_db/${c.type}.json\`, whether the field-level \`variance_policy\` (\`${record.variance_policy || '(unset)'}\`) matches component property policy, and whether component constraints such as \`sensor_date <= release_date\` are present on the right property.`,
+      text: `Audit component variance here too. Confirm whether \`${record.fieldKey}\` should inherit from the \`${c.type}\` component database, whether the field-level \`variance_policy\` (\`${record.variance_policy || '(unset)'}\`) matches component property policy, and whether component constraints are present on the right property.`,
     });
     blocks.push({
       kind: 'table',
@@ -674,7 +684,7 @@ function buildFullPromptSection(preview) {
     blocks: [
       {
         kind: 'paragraph',
-        text: 'The exact text keyFinder would send for this key. Product identity is a placeholder (`<BRAND>` / `<MODEL>`) so the shape is visible without a real product. Runtime slots like `PRODUCT_COMPONENTS` and `KNOWN_PRODUCT_FIELDS` render empty when the placeholder has no resolved context.',
+        text: 'The exact text keyFinder would send for this key. Product identity is a placeholder (`<BRAND>` / `<MODEL>`) so the shape is visible without a real product. Runtime slots like `PRODUCT_COMPONENTS`, `PRODUCT_SCOPED_FACTS`, and `VARIANT_INVENTORY` render empty when the placeholder has no resolved context.',
       },
       { kind: 'codeBlock', lang: 'text', text: preview.systemPrompt },
     ],

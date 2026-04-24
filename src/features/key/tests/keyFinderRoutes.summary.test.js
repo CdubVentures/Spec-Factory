@@ -330,7 +330,8 @@ describe('GET /key-finder/:category/:productId/summary', () => {
     assert.equal(byKey.polling_rate.last_confidence, 92);
     assert.equal(byKey.polling_rate.candidate_count, 2);
     assert.equal(byKey.sensor_model.run_count, 1);
-    assert.equal(byKey.sensor_model.last_value, 'unk');
+    assert.equal(byKey.sensor_model.last_value, null, 'summary must not expose "unk" as a value');
+    assert.equal(byKey.sensor_model.last_status, 'unk');
     assert.equal(byKey.acceleration.run_count, 0);
     assert.equal(byKey.acceleration.last_run_number, null);
 

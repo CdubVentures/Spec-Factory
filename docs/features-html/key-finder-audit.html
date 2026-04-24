@@ -97,7 +97,7 @@
 
   <div class="callout callout-info">
     <strong>Current north star</strong>
-    Spec Factory should become the single source of truth for the EG-HBS consumer site. The immediate benchmark is the hand-entered mouse workbook at <code>C:\Users\Chris\Desktop\Spec Factory\.workspace\reports\mouseData.xlsm</code>, sheet/range <code>dataEntry!C2:BT83</code>. Key Finder output should eventually match those cells because the field contracts, enum lists, component mappings, search routing, evidence gates, and per-key guidance are good enough.
+    Spec Factory should become the single source of truth for the EG-HBS consumer site. Each category needs a benchmark/example set that represents the depth expected from publish-grade product pages. Key Finder output should eventually match that target because the field contracts, enum lists, component mappings, search routing, evidence gates, and per-key guidance are good enough.
   </div>
 
   <div class="section-title"><span class="num">1</span> What This Audit Is</div>
@@ -174,7 +174,7 @@
 
   <div class="callout callout-warn">
     <strong>Practical implication</strong>
-    The site can render many shapes, but it cannot infer meaning. If Spec Factory says a field is an open string enum, every accidental value can become a filter chip. If Spec Factory says a field is boolean but the real states are <code>yes</code>, <code>no</code>, <code>n/a</code>, and <code>unk</code>, the site loses information. The audit must decide the correct stored shape before writing better prose.
+    The site can render many shapes, but it cannot infer meaning. If Spec Factory says a field is an open string enum, every accidental value can become a filter chip. Never add <code>unk</code> to enum values or data lists; it is an LLM sentinel that should become status/unknown_reason with no submitted value. Use <code>n/a</code> as data only when not-applicable is intentionally stored or public. Applicability is not the same as value: <code>battery_hours</code> should be numeric when hours are proven and blank/omitted when not applicable or unproven, unless the category explicitly wants a public <code>n/a</code> state. The audit must decide the correct stored shape before writing better prose.
   </div>
 
   <div class="section-title"><span class="num">3</span> Field Studio Edit Order</div>
@@ -204,7 +204,7 @@
           <tr>
             <td>4</td>
             <td><strong>Key Navigator - Extraction Priority &amp; Guidance</strong></td>
-            <td><code>required_level</code>, <code>availability</code>, <code>difficulty</code>, search/routing reason, and paste-ready <code>ai_assist.reasoning_note</code>.</td>
+            <td><code>required_level</code>, <code>availability</code>, <code>difficulty</code>, search/routing reason, paste-ready <code>ai_assist.reasoning_note</code>, and the one on/off Variant Inventory Context / PIF Priority Images checkboxes.</td>
           </tr>
           <tr>
             <td>5</td>
@@ -219,7 +219,7 @@
           <tr>
             <td>7</td>
             <td><strong>Key Navigator - Cross-Field Constraints</strong></td>
-            <td>Rules such as <code>sensor_date &lt;= release_date</code>, plus any dependency that affects extraction or validation.</td>
+            <td>Relational rules between fields, plus any dependency that affects extraction or validation.</td>
           </tr>
           <tr>
             <td>8</td>
@@ -257,8 +257,10 @@
           <tr><td>Priority route</td><td>Should it be mandatory? Is availability always/sometimes/rare? Is difficulty calibrated to benchmark-depth extraction?</td></tr>
           <tr><td>Evidence</td><td>How many evidence refs are needed? Are manufacturer, datasheet, lab, review, retailer tiers ordered correctly?</td></tr>
           <tr><td>Components</td><td>Is the value owned by the product, a component DB entity, or both with override rules?</td></tr>
-          <tr><td>Constraints</td><td>Does it depend on another field? Example: <code>sensor_date &lt;= release_date</code>.</td></tr>
-          <tr><td>Unknown states</td><td>When should the extractor output <code>unk</code>, <code>n/a</code>, false/no, or blank/omitted?</td></tr>
+          <tr><td>Constraints</td><td>Does it depend on another field? Are the relationship and target field correct?</td></tr>
+          <tr><td>Variant inventory context</td><td>Should Key Finder receive the active CEF variant table as an evidence filter for this key? Enable only when variant identity facts such as edition, SKU, release date, colorway, or PIF image status add value without ambiguity.</td></tr>
+          <tr><td>PIF priority images</td><td>Should Key Finder receive default/base PIF priority-view images for this key? Enable only for visual keys where those views add value; missing/unattachable images are not negative evidence.</td></tr>
+          <tr><td>Unknown states</td><td>When should the extractor produce no submitted value plus unknown_reason, intentional <code>n/a</code> data, false/no, or blank/omitted?</td></tr>
           <tr><td>Example bank</td><td>Are there 5-10 calibration products covering common, rare, unknown, conflict, and filter-risk cases?</td></tr>
           <tr><td>Guidance</td><td>After all above decisions, what final paste-ready instruction helps the LLM make the correct judgment?</td></tr>
         </tbody>
@@ -271,21 +273,21 @@
       <div class="card-header"><span class="tag tag-green">Tier A</span> Direct Visual</div>
       <div class="card-body">
         <p>Visible from a single product photo. Guidance should be short and name the view and feature.</p>
-        <p>Examples: honeycomb frame, side button count, obvious RGB lighting, basic left/right shell symmetry.</p>
+        <p>Examples: visible openings, visible controls, visible zones, basic left/right or front/back symmetry.</p>
       </div>
     </div>
     <div class="card">
       <div class="card-header"><span class="tag tag-orange">Tier B</span> Subtle Visual</div>
       <div class="card-body">
         <p>Requires judgment and repeatable thresholds. Guidance must teach the decision.</p>
-        <p>Examples: hump position, front flare, grip style, ambidextrous form factor where button layout matters.</p>
+        <p>Examples: proportional location, subtle contour/taper, intended-use/fit class, or symmetry where control layout matters.</p>
       </div>
     </div>
     <div class="card">
       <div class="card-header"><span class="tag tag-purple">Tier C</span> Spec/Source</div>
       <div class="card-body">
         <p>Not visual. Do not mention photos. Guidance should focus on source tiering, aliases, conflicts, and component identity.</p>
-        <p>Examples: sensor, MCU, polling rate, sensor date, switch model, firmware feature names.</p>
+        <p>Examples: component model, supported rates, release dates, internal controllers, firmware/support feature names, and lab-measured metrics.</p>
       </div>
     </div>
   </div>
@@ -318,7 +320,7 @@
 Do not store:
 - ergonomic
 - minimalist
-- honeycomb
+- raw visual adjectives
 - black
 - white
 - rgb
@@ -341,7 +343,7 @@ Reason: common materials can be known, but real products may introduce legitimat
   <div class="card">
     <div class="card-header"><span class="tag tag-teal">Components</span> Product Value vs Component Property</div>
     <div class="card-body">
-      <p>Some values are not really product-authored values. They are properties of a component such as a sensor, switch, encoder, display panel, or material. The audit must decide whether a key belongs on the product, the component DB, or both.</p>
+      <p>Some values are not really product-authored values. They are properties of a component or sub-entity. The audit must decide whether a key belongs on the product, the component DB, or both.</p>
       <table>
         <thead><tr><th>Component mapping field</th><th>Meaning</th></tr></thead>
         <tbody>
@@ -356,8 +358,8 @@ Reason: common materials can be known, but real products may introduce legitimat
       </table>
 
       <div class="callout callout-danger">
-        <strong>Sensor date invariant</strong>
-        <code>sensor_date</code> cannot be greater than the mouse <code>release_date</code>. If evidence implies the sensor date is later than the product release date, the extractor should return <code>unk</code> or flag the conflict instead of forcing a value.
+        <strong>Cross-field invariant</strong>
+        Component or feature dates cannot contradict the product timeline. If credible evidence implies an impossible relationship, the extractor should return no submitted value with unknown_reason or flag the conflict instead of forcing a value.
       </div>
     </div>
   </div>
@@ -367,14 +369,14 @@ Reason: common materials can be known, but real products may introduce legitimat
   <div class="card">
     <div class="card-header"><span class="tag tag-purple">Routing</span> These Are Search And Model-Strength Controls</div>
     <div class="card-body">
-      <p>The priority triple is not just labeling. It changes how Key Finder should allocate search/model effort and how complete a product is allowed to be.</p>
+      <p>The priority triple is not just labeling. Requiredness decides whether the site should try to publish a field for most products. Difficulty decides the remaining model/search effort after variant inventory, PIF images, aliases, and source hints are available.</p>
       <table>
         <thead><tr><th>Field</th><th>Values</th><th>Audit meaning</th></tr></thead>
         <tbody>
           <tr>
             <td><code>required_level</code></td>
             <td><code>mandatory</code>, <code>non_mandatory</code></td>
-            <td>Mandatory means a depth-tech product page should not be considered complete without a proven value or honest <code>unk</code>. Non-mandatory means useful enrichment that should not block publish.</td>
+            <td>Mandatory means the value is buyer/site/benchmark useful and usually distinguishable from public/spec/visual/identity evidence: visible, identifiable from variant identity, listed in specs/docs, or generally exposed by credible sources. It is not restricted to lab-only measurements. Missing proof still becomes explicit unknown status with no submitted value. Non-mandatory means useful enrichment that should not block publish.</td>
           </tr>
           <tr>
             <td><code>availability</code></td>
@@ -384,39 +386,78 @@ Reason: common materials can be known, but real products may introduce legitimat
           <tr>
             <td><code>difficulty</code></td>
             <td><code>easy</code>, <code>medium</code>, <code>hard</code>, <code>very_hard</code></td>
-            <td>Model/search strength. Easy is direct lookup; medium needs normalization; hard needs source conflict, aliases, components, or judgment; very hard deserves the strongest model/search path.</td>
+            <td>Model/search strength after context is injected. Easy is direct spec/photo/PIF/variant lookup or straightforward canonical mapping. Medium needs normalization or light source comparison. Hard needs technical component reasoning, meaningful conflict handling, aliases that change meaning, or source credibility calls. Very_hard is reserved for hidden/lab-grade fields such as proprietary internal component identities, instrumented latency/accuracy measurements, unresolved datasheet links, or lab-only metrics.</td>
           </tr>
         </tbody>
       </table>
-      <p>Do not mark a field easy just because the output is short. Mark it easy only when a cheaper model can reliably reproduce benchmark-depth values from public evidence.</p>
+      <p>Do not mark a key hard just because the wording is subtle. If the answer is generally available and the injected variant/PIF context makes the value direct, easy or medium is the right route.</p>
     </div>
   </div>
 
-  <div class="section-title"><span class="num">8</span> Benchmark Standard</div>
+  <div class="section-title"><span class="num">8</span> Variant Inventory Context</div>
 
   <div class="card">
-    <div class="card-header"><span class="tag tag-green">Mouse Benchmark</span> What Good Means</div>
+    <div class="card-header"><span class="tag tag-teal">One Checkbox</span> Evidence Filter, Not A Second Guidance Field</div>
     <div class="card-body">
-      <p>The mouse benchmark is the hand-entered workbook:</p>
-      <pre>C:\Users\Chris\Desktop\Spec Factory\.workspace\reports\mouseData.xlsm
-Sheet/range: dataEntry!C2:BT83</pre>
-      <p>The long-term scoring question is simple: after Field Studio contracts and Key Finder guidance are corrected, do extracted app values match the hand-entered benchmark cells?</p>
-      <p>For non-mouse categories, the same concept applies. Build a 5-10 product example bank per key first, then create category benchmark rows that represent the depth expected from a site aiming to combine PCPartPicker-style structured specs with lab-review depth.</p>
+      <p>Variant Inventory Context is a single Key Navigator checkbox. When enabled, Key Finder may receive the active CEF variant table joined to SKU/RDF/PIF identity facts so it can reject wrong-color, wrong-edition, wrong-SKU, wrong-release, or sibling-variant evidence. When disabled, none of that variant table context is injected for the key.</p>
+      <p>Enable it only when those variant identity facts add evidence-filter value without making the answer more ambiguous. Most model-level keys are the same across every variant in a family and should not need the table. List-valued or genuinely variant-varying keys need an explicit rule: product-wide union, exact-variant answer, base/default variant answer, or no submitted value with unknown_reason when sources do not separate variants.</p>
+      <p>Keep this separate from <code>ai_assist.reasoning_note</code>. The checkbox controls whether the variant table is injected. The reasoning note teaches field-specific judgment. For example, a <code>design</code> reasoning note may say to treat colorways, collaboration graphics, and edition artwork as non-design changes unless the physical shell, layout, construction, or included hardware differs.</p>
+      <table>
+        <thead><tr><th>Question</th><th>Use</th></tr></thead>
+        <tbody>
+          <tr><td>Should the LLM see edition/SKU/release/colorway identity facts?</td><td>Set Variant Inventory Context to enabled only when they help filter evidence for this key.</td></tr>
+          <tr><td>How should this key interpret variant evidence?</td><td>Write that in <code>ai_assist.reasoning_note</code>.</td></tr>
+          <tr><td>Should the reviewer author custom variant-table prose?</td><td>No. The generated prompt provides deterministic table-usage guidance when the checkbox is enabled.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-title"><span class="num">9</span> PIF Priority Images</div>
+
+  <div class="card">
+    <div class="card-header"><span class="tag tag-teal">One Checkbox</span> Default/Base Visual Support</div>
+    <div class="card-body">
+      <p>PIF Priority Images is a single Key Navigator checkbox. When enabled, Key Finder uses the category's existing PIF priority-view settings and already-evaluated default/base variant images. It does not add modes, profiles, or a second guidance box.</p>
+      <p>Enable it only for visually answerable keys where default/base priority views help. Do not enable it for non-visual spec-sheet fields.</p>
+      <p>The images are supporting context only. If images are missing or cannot be attached, the prompt should say that explicitly. Absence of a visible trait in default/base images is not proof the trait is absent, especially for edition-specific visual changes.</p>
+      <p>Key Finder remains product-scoped. For yes/no fields, the reviewer must decide in <code>ai_assist.reasoning_note</code> whether one official edition with the visible trait makes the product-level answer yes. For list-like visual fields, guidance may need to say to include the distinct variant/design forms found. Colors usually should not change the answer; editions might when they change shell, layout, material, included hardware, or another visible product fact.</p>
+      <table>
+        <thead><tr><th>Surface</th><th>Behavior</th></tr></thead>
+        <tbody>
+          <tr><td>Field Studio badge</td><td>The checkbox path <code>ai_assist.pif_priority_images</code> has an <code>LLM.KF</code> badge because Key Finder reads it.</td></tr>
+          <tr><td>Prompt location</td><td><code>PIF_PRIORITY_IMAGES</code> renders inside the Key Finder <code>CONTEXT</code> section after <code>VARIANT_INVENTORY</code> / <code>FIELD_IDENTITY_USAGE</code> and before evidence/source rules.</td></tr>
+          <tr><td>Prompt label</td><td>The block identifies these as PIF default/base variant images, lists the configured priority views, selected variant, image filenames, source URLs when known, and PIF eval notes.</td></tr>
+          <tr><td>LLM attachment</td><td>Available images are converted to 512px PNG base64 data-URI thumbnails before the LLM call, matching the PIF eval image payload style.</td></tr>
+          <tr><td>Prompt preview</td><td>The preview modal shows available images at the bottom in <strong>Prompt Images</strong> using normal preview URLs. The base64 payload is for the LLM call path, not the browser preview.</td></tr>
+          <tr><td>Missing images</td><td>If no priority image exists, the file is missing, or conversion fails, no image is attached and the prompt injects explicit unavailable-image guidance.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-title"><span class="num">10</span> Benchmark Standard</div>
+
+  <div class="card">
+    <div class="card-header"><span class="tag tag-green">Benchmark</span> What Good Means</div>
+    <div class="card-body">
+      <p>The long-term scoring question is simple: after Field Studio contracts and Key Finder guidance are corrected, do extracted app values match the category benchmark/example set?</p>
+      <p>The audit scripts must stay category-generic. For every category, build a 5-10 product example bank first, then create category benchmark rows that represent the depth expected from a site aiming to combine structured specs with review-depth evidence.</p>
       <table>
         <thead><tr><th>Benchmark layer</th><th>What to measure</th></tr></thead>
         <tbody>
           <tr><td>Exact value match</td><td>Does the stored value equal the benchmark value after normalization?</td></tr>
-          <tr><td>Shape match</td><td>Scalar vs list, number/date/string/enum, empty vs <code>unk</code> vs <code>n/a</code>.</td></tr>
+          <tr><td>Shape match</td><td>Scalar vs list, number/date/string/enum, blank/no submitted value vs intentional <code>n/a</code> data vs unknown_reason diagnostics.</td></tr>
           <tr><td>Enum match</td><td>Canonical chip values only, no aliases or noisy variants.</td></tr>
           <tr><td>Evidence match</td><td>Accepted values have enough evidence refs and use credible source tiers.</td></tr>
-          <tr><td>Conflict handling</td><td>Conflicting sources produce the right value, <code>unk</code>, or flag, not a silent guess.</td></tr>
+          <tr><td>Conflict handling</td><td>Conflicting sources produce the right accepted value, no submitted value with unknown_reason, or a flag, not a silent guess.</td></tr>
           <tr><td>Consumer rendering</td><td>Value supports the intended hub filter/list/snapshot/compare/metric surface without downstream interpretation hacks.</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <div class="section-title"><span class="num">9</span> How To Generate Reports</div>
+  <div class="section-title"><span class="num">11</span> How To Generate Reports</div>
 
   <div class="card">
     <div class="card-header"><span class="tag tag-accent">Studio</span> Preferred Path</div>
@@ -443,7 +484,7 @@ Body: { "consumer": "key_finder" }</pre>
     </div>
   </div>
 
-  <div class="section-title"><span class="num">10</span> LLM Review Instructions</div>
+  <div class="section-title"><span class="num">12</span> LLM Review Instructions</div>
 
   <div class="card">
     <div class="card-header"><span class="tag tag-purple">Handoff</span> What To Tell The Reviewer</div>
@@ -510,6 +551,8 @@ Extraction Priority &amp; Guidance:
 - difficulty: &lt;easy|medium|hard|very_hard|No change&gt;
 - search/routing reason: &lt;one short reason tied to benchmark-depth extraction and model/search strength&gt;
 - AI reasoning note: &lt;paste-ready ai_assist.reasoning_note, "(empty - keep)", or No change&gt;
+- Variant inventory context: &lt;enabled|disabled|No change&gt; (enable only when variant identity adds evidence-filter value without ambiguity)
+- PIF Priority Images: &lt;enabled|disabled|No change&gt; (enable only when default/base priority-view images add visual evidence value; preview shows images at bottom when attachable)
 
 Enum Policy:
 - policy: &lt;closed|open_prefer_known|open|blank|No change&gt;
@@ -537,7 +580,7 @@ Search Hints &amp; Aliases:
     </div>
   </div>
 
-  <div class="section-title"><span class="num">11</span> Grouping Guidance</div>
+  <div class="section-title"><span class="num">13</span> Grouping Guidance</div>
 
   <div class="card">
     <div class="card-header"><span class="tag tag-orange">Navigation</span> Groups Are How Humans Think Through Keys</div>
@@ -549,23 +592,23 @@ Search Hints &amp; Aliases:
           <tr><td>Product identity / lifecycle / availability</td><td><code>sku</code>, <code>colors</code>, <code>editions</code>, <code>release_date</code>, <code>discontinued</code>, <code>price_range</code></td><td>These are purchase/listing/variant lifecycle fields. They should be reviewed together.</td></tr>
           <tr><td>Design status / edition type</td><td><code>design</code></td><td>Edition status should not be mixed with visual styling or lighting.</td></tr>
           <tr><td>Lighting / electronics</td><td><code>lighting</code>, <code>rgb</code>, zone counts</td><td>Lighting behavior is not the same as product design/edition status.</td></tr>
-          <tr><td>Sensor/component</td><td><code>sensor</code>, <code>sensor_brand</code>, <code>sensor_date</code>, DPI, IPS, acceleration</td><td>Many values depend on component DB identity and constraints.</td></tr>
-          <tr><td>Shape / ergonomics</td><td>hump, flare, grip, hand orientation, thumb rest</td><td>These are often visual Tier B calls and need repeatable guidance.</td></tr>
+          <tr><td>Component identity/property</td><td>Component model, maker, release date, maximum rating, supported rates</td><td>Many values depend on component DB identity and constraints.</td></tr>
+          <tr><td>Subtle visual traits</td><td>Proportional location, contour/taper, intended-use class, orientation</td><td>These are often visual Tier B calls and need repeatable guidance.</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <div class="section-title"><span class="num">12</span> Good vs Bad Guidance</div>
+  <div class="section-title"><span class="num">14</span> Good vs Bad Guidance</div>
 
   <div class="two-col">
     <div class="card">
       <div class="card-header"><span class="tag tag-red">Bad</span> Vague Or Contract-Duplicating</div>
       <div class="card-body">
-        <pre>Extract the mouse material accurately.
+        <pre>Extract the product material accurately.
 Use official sources.
 If unsure, default to no.
-Design means the way the mouse looks.</pre>
+Design means the way the product looks.</pre>
         <p>This does not teach a repeatable judgment. It also weakens the unknown policy and duplicates generic source-tier instructions.</p>
       </div>
     </div>
@@ -578,7 +621,7 @@ Design means the way the mouse looks.</pre>
     </div>
   </div>
 
-  <div class="section-title"><span class="num">13</span> File Map</div>
+  <div class="section-title"><span class="num">15</span> File Map</div>
 
   <div class="card">
     <div class="card-header"><span class="tag tag-accent">Spec Factory</span> Primary Files</div>
@@ -623,7 +666,7 @@ Design means the way the mouse looks.</pre>
     </div>
   </div>
 
-  <div class="section-title"><span class="num">14</span> Pick-Up Checklist</div>
+  <div class="section-title"><span class="num">16</span> Pick-Up Checklist</div>
 
   <div class="card">
     <div class="card-header"><span class="tag tag-green">Runbook</span> If You Are The Next Person</div>
@@ -642,7 +685,7 @@ Design means the way the mouse looks.</pre>
       </ol>
       <div class="callout callout-ok">
         <strong>Definition of done for this loop</strong>
-        A category is not "done" because every field has a long guidance note. It is done when the contract shape, enum list, component mapping, priority routing, evidence gate, constraints, grouping, and guidance together let Key Finder reproduce benchmark-depth values with honest <code>unk</code>/<code>n/a</code> handling and clean downstream site rendering.
+        A category is not "done" because every field has a long guidance note. It is done when the contract shape, enum list, component mapping, priority routing, evidence gate, constraints, grouping, and guidance together let Key Finder reproduce benchmark-depth values with honest unknown_reason handling, intentional <code>n/a</code> only where public, and clean downstream site rendering.
       </div>
     </div>
   </div>

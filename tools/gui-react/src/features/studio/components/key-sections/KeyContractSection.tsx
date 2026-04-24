@@ -11,6 +11,7 @@ import {
 import { STUDIO_NUMERIC_KNOB_BOUNDS } from "../../state/studioNumericKnobBounds.ts";
 import { isStudioContractFieldDeferredLocked } from "../../state/studioBehaviorContracts.ts";
 import { isFieldAvailable } from "../../state/fieldCascadeRegistry.ts";
+import { VALID_TYPES, VALID_SHAPES } from "../../state/typeShapeRegistry.ts";
 import {
   selectCls,
   inputCls,
@@ -118,14 +119,7 @@ export function KeyContractSection({
               value={strN(currentRule, "contract.type", "string")}
               onChange={(e) => updateField(selectedKey, "contract.type", e.target.value)}
             >
-              <option value="string">string</option>
-              <option value="number">number</option>
-              <option value="integer">integer</option>
-              <option value="boolean">boolean</option>
-              <option value="date">date</option>
-              <option value="url">url</option>
-              <option value="range">range</option>
-              <option value="mixed_number_range">mixed_number_range</option>
+              {VALID_TYPES.map((v) => <option key={v} value={v}>{v}</option>)}
             </select>
           </div>
           <div>
@@ -138,8 +132,7 @@ export function KeyContractSection({
               value={strN(currentRule, "contract.shape", "scalar")}
               onChange={(e) => updateField(selectedKey, "contract.shape", e.target.value)}
             >
-              <option value="scalar">scalar</option>
-              <option value="list">list</option>
+              {VALID_SHAPES.map((v) => <option key={v} value={v}>{v}</option>)}
             </select>
           </div>
         </div>
