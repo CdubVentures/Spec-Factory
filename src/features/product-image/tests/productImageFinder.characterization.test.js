@@ -18,7 +18,11 @@ import os from 'node:os';
 import http from 'node:http';
 import sharp from 'sharp';
 import { SpecDb } from '../../../db/specDb.js';
-import { readImageDimensions, buildVariantList, runProductImageFinder } from '../productImageFinder.js';
+import {
+  readImageDimensions,
+  buildVariantList,
+  runProductImageFinder as runProductImageFinderBase,
+} from '../productImageFinder.js';
 
 /* ── Helpers ──────────────────────────────────────────────────────── */
 
@@ -27,6 +31,8 @@ const DB_DIR = path.join(TMP_ROOT, '_db');
 const DB_PATH = path.join(DB_DIR, 'spec.sqlite');
 const PRODUCT_ROOT = path.join(TMP_ROOT, 'products');
 const IMAGES_DIR = path.join(TMP_ROOT, 'test-images');
+
+const runProductImageFinder = (opts) => runProductImageFinderBase({ _staggerMsOverride: 0, ...opts });
 
 function cleanup(dir) {
   try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* */ }

@@ -66,6 +66,11 @@ export function createVariantScalarFieldProducer(cfg) {
     defaultStaggerMs = 1000,
   } = cfg;
 
+  function resolveStaggerMs(opts) {
+    const override = Number(opts?._staggerMsOverride);
+    return Number.isFinite(override) && override >= 0 ? override : defaultStaggerMs;
+  }
+
   async function setupRun({
     product, appDb, specDb, config = {}, logger = null,
     productRoot, variantKey = null, _callLlmOverride = null,
@@ -398,6 +403,7 @@ export function createVariantScalarFieldProducer(cfg) {
 
   async function runOnce(opts) {
     const { onStageAdvance = null, onVariantProgress = null, variantKey = null, logger = null } = opts;
+    const staggerMs = resolveStaggerMs(opts);
     const setup = await setupRun(opts);
     if (setup.earlyReject) return setup.earlyReject;
     const { ctx, _mt } = setup;
@@ -408,7 +414,7 @@ export function createVariantScalarFieldProducer(cfg) {
 
     const { rejected, rejections, perVariantResults, variants } = await runPerVariant({
       specDb: ctx.specDb, product: ctx.product, variantKey,
-      staggerMs: defaultStaggerMs,
+      staggerMs,
       onStageAdvance, onVariantProgress, logger,
       produceForVariant,
     });
@@ -434,6 +440,7 @@ export function createVariantScalarFieldProducer(cfg) {
       onStageAdvance = null, onVariantProgress = null, onLoopProgress = null,
       variantKey = null, logger = null,
     } = opts;
+    const staggerMs = resolveStaggerMs(opts);
     const setup = await setupRun(opts);
     if (setup.earlyReject) return setup.earlyReject;
     const { ctx, _mt, finderStore } = setup;
@@ -478,7 +485,7 @@ export function createVariantScalarFieldProducer(cfg) {
       product: ctx.product,
       variantKey,
       resolveBudget,
-      staggerMs: defaultStaggerMs,
+      staggerMs,
       onStageAdvance, onVariantProgress, onLoopProgress,
       evidenceTarget,
       thresholdPct,

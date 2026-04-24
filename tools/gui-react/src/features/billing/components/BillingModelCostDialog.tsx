@@ -8,10 +8,13 @@ import {
   buildModelCostComparisonBars,
   buildModelCostDashboard,
   filterModelCostRows,
+  groupModelCostComparisonBarsByProvider,
+  groupModelCostRowsByProvider,
   sortModelCostRows,
   type ModelCostComparisonBar,
   type ModelCostComparisonMetric,
   type ModelCostDashboardRow,
+  type ModelCostSortDirection,
   type ModelCostSortKey,
   type ModelCostSortState,
 } from '../modelCostDashboard.ts';
@@ -36,6 +39,14 @@ const COMPARISON_TABS: Array<{ metric: ModelCostComparisonMetric; label: string 
   { metric: 'current_cost_usd', label: 'Spend' },
 ];
 
+type CombinedSortAxis = 'combined_rates' | 'input_per_1m' | 'output_per_1m';
+
+const COMBINED_SORT_AXES: Array<{ value: CombinedSortAxis; label: string }> = [
+  { value: 'combined_rates', label: 'Combined' },
+  { value: 'input_per_1m', label: 'Input' },
+  { value: 'output_per_1m', label: 'Output' },
+];
+
 function formatRate(value: number): string {
   return `$${value.toFixed(value >= 10 ? 0 : 3).replace(/\.?0+$/, '')}`;
 }
@@ -43,13 +54,6 @@ function formatRate(value: number): string {
 function formatTokens(value: number | null): string {
   if (value == null || value <= 0) return '--';
   return compactNumber(value);
-}
-
-function sourceLabel(row: ModelCostDashboardRow): string {
-  if (row.pricing_source === 'llm_lab') return row.registry_provider_label || 'LLM Lab';
-  if (row.pricing_source === 'provider_registry') return row.registry_provider_label || 'Provider registry';
-  if (row.pricing_source === 'usage') return 'Usage only';
-  return 'Provider registry';
 }
 
 function SourcePill({ label, href }: { label: string; href: string }) {
@@ -87,16 +91,17 @@ function SortHeader({
   onSort: (key: ModelCostSortKey) => void;
 }) {
   const active = activeSort.key === sortKey;
-  const direction = activeSort.direction === 'asc' ? 'up' : 'down';
+  const glyph = active ? (activeSort.direction === 'asc' ? '\u2191' : '\u2193') : '\u2195';
   return (
     <button
       type="button"
       className={`sf-model-cost-sort-button${active ? ' is-active' : ''}`}
       onClick={() => onSort(sortKey)}
       aria-label={`Sort model costs by ${label}`}
+      aria-sort={active ? (activeSort.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
     >
       <span>{label}</span>
-      <span aria-hidden="true">{active ? direction : 'sort'}</span>
+      <span aria-hidden="true" className="sf-model-cost-sort-indicator">{glyph}</span>
     </button>
   );
 }
@@ -104,11 +109,54 @@ function SortHeader({
 function ModelCostComparisonChart({
   bars,
   metric,
+  sortAxis,
+  sortDirection,
+  onSortAxisChange,
+  onSortDirectionToggle,
+  groupByProvider,
 }: {
   bars: ModelCostComparisonBar[];
   metric: ModelCostComparisonMetric;
+  sortAxis: CombinedSortAxis;
+  sortDirection: ModelCostSortDirection;
+  onSortAxisChange: (axis: CombinedSortAxis) => void;
+  onSortDirectionToggle: () => void;
+  groupByProvider: boolean;
 }) {
   const hasValues = bars.some((bar) => bar.value > 0);
+  const showSortControl = metric === 'combined_rates';
+  const directionGlyph = sortDirection === 'asc' ? '\u2191' : '\u2193';
+  const directionLabel = sortDirection === 'asc' ? 'Low to high' : 'High to low';
+  const groupedBars = groupByProvider ? groupModelCostComparisonBarsByProvider(bars) : [];
+  const renderBar = (bar: ModelCostComparisonBar) => (
+    <div className="sf-model-cost-chart-item" key={`${bar.provider}-${bar.model}`}>
+      <div className="sf-model-cost-chart-stage">
+        {metric === 'combined_rates' ? (
+          <>
+            <span className="sf-model-cost-chart-values is-combined">
+              <span className="is-input">{formatRate(bar.row.input_per_1m)}</span>
+              <span className="is-output">{formatRate(bar.row.output_per_1m)}</span>
+            </span>
+            <span className={`sf-model-cost-chart-combined ${bar.bucketClass}`}>
+              <span className={`sf-model-cost-chart-bar sf-model-cost-chart-mini is-input ${bar.inputBucketClass}`} />
+              <span className={`sf-model-cost-chart-bar sf-model-cost-chart-mini is-output ${bar.outputBucketClass}`} />
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="sf-model-cost-chart-values">{formatComparisonValue(metric, bar.value)}</span>
+            <span className={`sf-model-cost-chart-bar ${bar.bucketClass}`} />
+          </>
+        )}
+      </div>
+      <div className="sf-model-cost-chart-label">
+        <span className="sf-model-cost-chart-logo">
+          <LlmProviderIcon provider={bar.providerKind} size={14} />
+        </span>
+        <span className="sf-model-cost-chart-model-name">{bar.model}</span>
+      </div>
+    </div>
+  );
   return (
     <div className="sf-model-cost-chart-panel">
       <div className="sf-model-cost-chart-head">
@@ -116,40 +164,55 @@ function ModelCostComparisonChart({
           <span className="sf-model-cost-eyebrow">Visual comparison</span>
           <strong>{metricLabel(metric)} cost ranking</strong>
         </div>
-        <span>{bars.length} models</span>
+        <div className="sf-model-cost-chart-head-right">
+          {showSortControl ? (
+            <div className="sf-model-cost-chart-sort" role="group" aria-label="Sort combined bars by axis">
+              <span className="sf-model-cost-chart-sort-label">Sort by</span>
+              <div className="sf-model-cost-tabs sf-model-cost-axis-tabs">
+                {COMBINED_SORT_AXES.map((axis) => (
+                  <button
+                    key={axis.value}
+                    type="button"
+                    className={sortAxis === axis.value ? 'is-active' : ''}
+                    onClick={() => onSortAxisChange(axis.value)}
+                  >
+                    {axis.label}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="sf-model-cost-chart-direction"
+                onClick={onSortDirectionToggle}
+                aria-label={`Toggle sort direction (currently ${directionLabel})`}
+                title={directionLabel}
+              >
+                <span aria-hidden="true">{directionGlyph}</span>
+              </button>
+            </div>
+          ) : null}
+          <span className="sf-model-cost-chart-count">{bars.length} models</span>
+        </div>
       </div>
       {hasValues ? (
         <div className="sf-model-cost-chart" aria-label={`${metricLabel(metric)} cost comparison`}>
           <div className="sf-model-cost-chart-grid" aria-hidden="true" />
-          {bars.map((bar) => (
-            <div className="sf-model-cost-chart-item" key={`${bar.provider}-${bar.model}`}>
-              <div className="sf-model-cost-chart-stage">
-                {metric === 'combined_rates' ? (
-                  <>
-                    <span className="sf-model-cost-chart-values is-combined">
-                      <span className="is-input">{formatRate(bar.row.input_per_1m)}</span>
-                      <span className="is-output">{formatRate(bar.row.output_per_1m)}</span>
-                    </span>
-                    <span className={`sf-model-cost-chart-combined ${bar.bucketClass}`}>
-                      <span className={`sf-model-cost-chart-bar sf-model-cost-chart-mini is-input ${bar.inputBucketClass}`} />
-                      <span className={`sf-model-cost-chart-bar sf-model-cost-chart-mini is-output ${bar.outputBucketClass}`} />
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span className="sf-model-cost-chart-values">{formatComparisonValue(metric, bar.value)}</span>
-                    <span className={`sf-model-cost-chart-bar ${bar.bucketClass}`} />
-                  </>
-                )}
+          {groupByProvider
+            ? groupedBars.map((group) => (
+              <div className="sf-model-cost-chart-group" key={group.id}>
+                <div className="sf-model-cost-chart-group-head">
+                  <span className="sf-model-cost-provider-logo is-small">
+                    <LlmProviderIcon provider={group.kind} size={14} />
+                  </span>
+                  <strong>{group.label}</strong>
+                  <span className="sf-model-cost-chart-group-count">{group.bars.length}</span>
+                </div>
+                <div className="sf-model-cost-chart-group-body">
+                  {group.bars.map((bar) => renderBar(bar))}
+                </div>
               </div>
-              <div className="sf-model-cost-chart-label">
-                <span className="sf-model-cost-chart-logo">
-                  <LlmProviderIcon provider={bar.providerKind} size={14} />
-                </span>
-                <span>{bar.model}</span>
-              </div>
-            </div>
-          ))}
+            ))
+            : bars.map((bar) => renderBar(bar))}
         </div>
       ) : (
         <div className="sf-model-cost-empty">No non-zero values for this comparison.</div>
@@ -182,7 +245,7 @@ function ProviderCard({
           <span>{usd(provider.current_cost_usd, 2)}</span>
         </span>
         <span className="sf-model-cost-provider-meta">
-          {provider.model_count} models / {provider.used_model_count} used
+          <span>{provider.model_count} models / {provider.used_model_count} used</span>
         </span>
         <span className="sf-model-cost-provider-stat">
           <span>{provider.spendSharePct.toFixed(0)}% of view spend</span>
@@ -193,7 +256,6 @@ function ProviderCard({
 }
 
 function ModelRow({ row }: { row: ModelCostDashboardRow }) {
-  const source = sourceLabel(row);
   const limits = [
     row.max_context_tokens ? `Context ${formatTokens(row.max_context_tokens)}` : '',
     row.max_output_tokens ? `Max output ${formatTokens(row.max_output_tokens)}` : '',
@@ -210,14 +272,7 @@ function ModelRow({ row }: { row: ModelCostDashboardRow }) {
           </span>
           <div className="sf-model-cost-model-name">
             <strong>{row.model}</strong>
-            <span>
-              {row.provider_label} / {row.role}
-              {row.access_modes.includes('lab') ? ' / Lab' : ''}
-            </span>
-            <span className="sf-model-cost-source-badges">
-              <b>{source}</b>
-              {row.access_modes.includes('lab') && row.pricing_source !== 'llm_lab' ? <b>LLM Lab access</b> : null}
-            </span>
+            <span>{row.provider_label} / {row.role}</span>
             {limits ? <span className="sf-model-cost-model-meta">{limits}</span> : null}
             {usage ? <span className="sf-model-cost-model-usage">{usage}</span> : null}
           </div>
@@ -239,7 +294,10 @@ export function BillingModelCostDialog({
 }: BillingModelCostDialogProps) {
   const [providerFilter, setProviderFilter] = useState(FILTER_ALL);
   const [usedOnly, setUsedOnly] = useState(false);
+  const [groupByProvider, setGroupByProvider] = useState(false);
   const [comparisonMetric, setComparisonMetric] = useState<ModelCostComparisonMetric>('combined_rates');
+  const [combinedSortAxis, setCombinedSortAxis] = useState<CombinedSortAxis>('combined_rates');
+  const [combinedSortDirection, setCombinedSortDirection] = useState<ModelCostSortDirection>('desc');
   const [sort, setSort] = useState<ModelCostSortState>(DEFAULT_SORT);
   const dashboard = useMemo(() => buildModelCostDashboard(data), [data]);
   const rows = useMemo(
@@ -248,11 +306,22 @@ export function BillingModelCostDialog({
   );
   const sortedRows = useMemo(() => sortModelCostRows(rows, sort), [rows, sort]);
   const comparisonBars = useMemo(
-    () => buildModelCostComparisonBars(rows, { metric: comparisonMetric, limit: 28 }),
-    [comparisonMetric, rows],
+    () => buildModelCostComparisonBars(rows, {
+      metric: comparisonMetric,
+      limit: 28,
+      sortBy: comparisonMetric === 'combined_rates' ? combinedSortAxis : comparisonMetric,
+      direction: comparisonMetric === 'combined_rates' ? combinedSortDirection : 'desc',
+    }),
+    [comparisonMetric, combinedSortAxis, combinedSortDirection, rows],
   );
+  const groupedRows = useMemo(() => {
+    if (!groupByProvider) return null;
+    return groupModelCostRowsByProvider(sortedRows);
+  }, [groupByProvider, sortedRows]);
   const staleClass = isStale ? ' sf-stale-refetch' : '';
   const handleSort = (key: ModelCostSortKey) => setSort((current) => nextSortState(current, key));
+  const handleChartDirectionToggle = () =>
+    setCombinedSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'));
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -332,21 +401,31 @@ export function BillingModelCostDialog({
                 </div>
 
                 <div className="sf-model-cost-toolbar">
-                  <div className="sf-model-cost-tabs">
-                    <button
-                      type="button"
-                      className={!usedOnly ? 'is-active' : ''}
-                      onClick={() => setUsedOnly(false)}
-                    >
-                      All models
-                    </button>
-                    <button
-                      type="button"
-                      className={usedOnly ? 'is-active' : ''}
-                      onClick={() => setUsedOnly(true)}
-                    >
-                      Used in view
-                    </button>
+                  <div className="sf-model-cost-toolbar-left">
+                    <div className="sf-model-cost-tabs" role="group" aria-label="Usage scope">
+                      <button
+                        type="button"
+                        className={!usedOnly ? 'is-active' : ''}
+                        onClick={() => setUsedOnly(false)}
+                      >
+                        All models
+                      </button>
+                      <button
+                        type="button"
+                        className={usedOnly ? 'is-active' : ''}
+                        onClick={() => setUsedOnly(true)}
+                      >
+                        Used in view
+                      </button>
+                    </div>
+                    <label className="sf-model-cost-group-toggle">
+                      <input
+                        type="checkbox"
+                        checked={groupByProvider}
+                        onChange={(event) => setGroupByProvider(event.target.checked)}
+                      />
+                      <span>Group by provider</span>
+                    </label>
                   </div>
                   <div className="sf-model-cost-tabs sf-model-cost-metric-tabs" aria-label="Cost comparison metric">
                     {COMPARISON_TABS.map((tab) => (
@@ -367,7 +446,15 @@ export function BillingModelCostDialog({
                   </div>
                 </div>
 
-                <ModelCostComparisonChart bars={comparisonBars} metric={comparisonMetric} />
+                <ModelCostComparisonChart
+                  bars={comparisonBars}
+                  metric={comparisonMetric}
+                  sortAxis={combinedSortAxis}
+                  sortDirection={combinedSortDirection}
+                  onSortAxisChange={setCombinedSortAxis}
+                  onSortDirectionToggle={handleChartDirectionToggle}
+                  groupByProvider={groupByProvider}
+                />
 
                 <div className="sf-model-cost-table-wrap">
                   <table className="sf-model-cost-table">
@@ -393,9 +480,28 @@ export function BillingModelCostDialog({
                         </th>
                       </tr>
                     </thead>
-                    <tbody>
-                      {sortedRows.map((row) => <ModelRow key={`${row.provider}-${row.model}`} row={row} />)}
-                    </tbody>
+                    {groupedRows ? (
+                      groupedRows.map((group) => (
+                        <tbody key={group.id} className="sf-model-cost-group">
+                          <tr className="sf-model-cost-group-head">
+                            <td colSpan={4}>
+                              <span className="sf-model-cost-provider-logo is-small">
+                                <LlmProviderIcon provider={group.kind} size={14} />
+                              </span>
+                              <strong>{group.label}</strong>
+                              <span>{group.rows.length} models</span>
+                            </td>
+                          </tr>
+                          {group.rows.map((row) => (
+                            <ModelRow key={`${row.provider}-${row.model}`} row={row} />
+                          ))}
+                        </tbody>
+                      ))
+                    ) : (
+                      <tbody>
+                        {sortedRows.map((row) => <ModelRow key={`${row.provider}-${row.model}`} row={row} />)}
+                      </tbody>
+                    )}
                   </table>
                   {rows.length === 0 ? (
                     <div className="sf-model-cost-empty">No models match the current cost filters.</div>

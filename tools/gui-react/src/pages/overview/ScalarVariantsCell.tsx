@@ -28,7 +28,7 @@ export function ScalarVariantsCell({
   variants, hexMap, formatLabel = DEFAULT_FORMAT, valueLabel,
 }: ScalarVariantsCellProps) {
   if (!variants.length) {
-    return <span className="sf-text-subtle text-xs italic">\u2014</span>;
+    return <span className="sf-text-subtle text-xs italic">—</span>;
   }
   return (
     <span className="inline-flex gap-2.5 flex-wrap items-start">

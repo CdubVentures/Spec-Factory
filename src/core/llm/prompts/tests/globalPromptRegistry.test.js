@@ -4,7 +4,7 @@
  * The registry is the single source of truth for universal prompt fragments.
  * Adding a new global prompt means editing exactly one file: globalPromptRegistry.js.
  */
-import { describe, it, beforeEach } from 'node:test';
+import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   GLOBAL_PROMPT_KEYS,
@@ -12,6 +12,8 @@ import {
   resolveGlobalPrompt,
 } from '../globalPromptRegistry.js';
 import { setGlobalPromptsSnapshot } from '../globalPromptStore.js';
+
+afterEach(() => setGlobalPromptsSnapshot({}));
 
 describe('GLOBAL_PROMPTS registry', () => {
   const EXPECTED_KEYS = [

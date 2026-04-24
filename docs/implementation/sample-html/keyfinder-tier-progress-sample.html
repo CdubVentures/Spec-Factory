@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KeyFinder Tier Progress — Sample</title>
+<style>
+  :root {
+    --bg: #f4f6f9; --surface: #fff; --surface-alt: #f1f3f5; --surface-soft: #fafbfc;
+    --border: #e5e9ef; --border-light: #eef1f5;
+    --text: #1f2328; --text-muted: #5f6672; --text-dim: #7c8390; --text-faint: #a9afb9;
+
+    --accent: #4263eb; --accent-bg: #edf2ff; --accent-border: #bac8ff;
+    --green-strong: #2b8a3e; --green-soft: #40c057; --green-bg: #ebfbee;
+    --amber-strong: #e67700; --amber-soft: #fab005; --amber-bg: #fff4e6;
+    --red-strong:   #c92a2a; --red-soft:   #f03e3e; --red-bg:   #fff5f5;
+    --gray-strong:  #495057; --gray-soft:  #868e96; --gray-bg:  #f1f3f5;
+    --purple-strong:#5f3dc4; --purple-soft:#7950f2;
+
+    /* tier hues — progression easy→very_hard, mandatory star */
+    --tier-easy:      #51cf66;   /* green */
+    --tier-medium:    #fab005;   /* amber */
+    --tier-hard:      #fd7e14;   /* orange */
+    --tier-very-hard: #e03131;   /* red */
+    --tier-mandatory: #5f3dc4;   /* purple */
+
+    --track: #e5e9ef;
+    --above:  #2b8a3e;           /* "above app standard" — deep green */
+    --total:  #4263eb;           /* "total progress" — accent blue */
+
+    --mono: 'SF Mono','Cascadia Code','Fira Code',Consolas,monospace;
+    --font: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    --radius: 8px;
+    --shadow-sm: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:var(--font); color:var(--text); background:var(--bg); line-height:1.55; -webkit-font-smoothing:antialiased; padding: 0 0 80px; }
+
+  .page-header { background: linear-gradient(135deg, #3b4cca 0%, #4263eb 45%, #5f3dc4 100%); color:#fff; padding: 32px 0 26px; text-align:center; box-shadow: 0 4px 14px rgba(0,0,0,.10); }
+  .page-header h1 { font-size: 22px; font-weight: 700; }
+  .page-header p { font-size: 13.5px; opacity: .92; margin-top: 5px; }
+  .page-header .pill { display: inline-block; background: rgba(255,255,255,.2); padding: 3px 10px; border-radius: 99px; font-size: 11.5px; font-weight: 600; margin-top: 8px; }
+
+  .container { max-width: 1240px; margin: 28px auto 0; padding: 0 24px; }
+
+  .section { margin-bottom: 36px; }
+  .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); margin-bottom: 12px; }
+  .section-subtitle { font-size: 12.5px; color: var(--text-dim); margin-top: -6px; margin-bottom: 12px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 22px 24px; }
+  .card + .card { margin-top: 14px; }
+
+  .variant-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .variant-sub { font-size: 11.5px; color: var(--text-dim); margin-bottom: 18px; letter-spacing: .02em; }
+
+  .row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; padding: 8px 4px; border-top: 1px dashed var(--border-light); }
+  .row:first-of-type { border-top: none; padding-top: 0; }
+  .row-label {
+    min-width: 140px;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    font-weight: 600;
+    padding-top: 14px;
+  }
+  .row-label small { display: block; font-weight: 500; color: var(--text-faint); letter-spacing: .01em; }
+
+  .product-mock {
+    background: var(--surface-soft);
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    padding: 10px 14px;
+    min-width: 320px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .product-mock strong { color: var(--text); font-weight: 600; }
+
+  /* ══════════════════════════════════════════════════════════════════
+     V1 — dual concentric tier rings (mini PIF style)
+  ══════════════════════════════════════════════════════════════════ */
+  .v1-strip { display: inline-flex; gap: 8px; align-items: flex-start; padding: 4px 2px; }
+  .v1-cluster {
+    display: inline-flex; flex-direction: column; align-items: center;
+    gap: 3px;
+    padding: 2px 1px;
+    border-radius: 5px;
+  }
+  .v1-cluster:hover { background: var(--surface-soft); }
+  .v1-tier-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+  .v1-tier-label.mandatory { color: var(--tier-mandatory); }
+
+  .v1-ring-svg { width: 36px; height: 36px; display: block; }
+  .v1-ring-svg circle { fill: none; }
+  .v1-ring-track { stroke: var(--track); stroke-width: 4; }
+  .v1-ring-outer { stroke: var(--total); stroke-width: 4; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; }
+  .v1-ring-inner { stroke: var(--above); stroke-width: 4; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; }
+
+  .v1-frac {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: -.02em;
+  }
+  .v1-frac .above { color: var(--above); }
+  .v1-frac .sep   { color: var(--text-faint); margin: 0 1px; }
+  .v1-frac .total { color: var(--total); }
+
+  .v1-legend {
+    display: flex; gap: 16px; font-size: 11px; color: var(--text-dim); margin-top: 8px;
+    align-items: center;
+  }
+  .v1-legend-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+
+  /* ══════════════════════════════════════════════════════════════════
+     V2 — tier column with dual micro-bars (stacked)
+  ══════════════════════════════════════════════════════════════════ */
+  .v2-strip { display: inline-flex; gap: 10px; padding: 4px 2px; }
+  .v2-cluster {
+    display: inline-flex; flex-direction: column; align-items: stretch;
+    gap: 3px;
+    padding: 3px 4px;
+    border-radius: 5px;
+    min-width: 42px;
+  }
+  .v2-cluster:hover { background: var(--surface-soft); }
+  .v2-tier-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-align: center;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .v2-tier-label.mandatory { color: var(--tier-mandatory); }
+
+  .v2-bar {
+    height: 7px;
+    background: var(--track);
+    border-radius: 3px;
+    position: relative;
+    overflow: hidden;
+  }
+  .v2-bar-fill {
+    position: absolute; left: 0; top: 0; height: 100%; border-radius: 3px;
+  }
+  .v2-bar-fill.total { background: var(--total); }
+  .v2-bar-fill.above { background: var(--above); }
+
+  .v2-frac {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: -.02em;
+    margin-top: 3px;
+  }
+  .v2-frac .above { color: var(--above); }
+  .v2-frac .total { color: var(--total); }
+
+  /* ══════════════════════════════════════════════════════════════════
+     V3 — dual-diamond tier cluster (riffs on SKU/RDF/CEF rhombus family)
+  ══════════════════════════════════════════════════════════════════ */
+  .v3-strip { display: inline-flex; gap: 10px; align-items: flex-start; padding: 4px 2px; }
+  .v3-cluster {
+    display: inline-flex; flex-direction: column; align-items: center;
+    gap: 2px;
+    padding: 2px 1px;
+    border-radius: 5px;
+  }
+  .v3-cluster:hover { background: var(--surface-soft); }
+  .v3-tier-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+  .v3-tier-label.mandatory { color: var(--tier-mandatory); }
+
+  .v3-dia-pair { display: flex; flex-direction: column; align-items: center; gap: -2px; }
+  .v3-dia { width: 28px; height: 28px; display: block; }
+  .v3-dia-track polygon { fill: var(--track); stroke: var(--track); }
+
+  .v3-dia-total polygon { fill: var(--total); stroke: var(--total); }
+  .v3-dia-above polygon { fill: var(--above); stroke: var(--above); }
+
+  .v3-dia-partial-total polygon { fill: color-mix(in srgb, var(--total) 35%, var(--track)); stroke: var(--total); stroke-width: 1; }
+  .v3-dia-partial-above polygon { fill: color-mix(in srgb, var(--above) 35%, var(--track)); stroke: var(--above); stroke-width: 1; }
+
+  .v3-dia-empty polygon {
+    fill: transparent;
+    stroke: rgba(130, 140, 150, 0.55);
+    stroke-width: 1;
+    stroke-dasharray: 3 2;
+  }
+
+  .v3-frac {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-top: 3px;
+    letter-spacing: -.02em;
+  }
+  .v3-frac .above { color: var(--above); }
+  .v3-frac .sep   { color: var(--text-faint); margin: 0 1px; }
+  .v3-frac .total { color: var(--total); }
+
+  /* legend */
+  .legend-row { display: flex; gap: 22px; align-items: center; margin-top: 14px; padding: 10px 12px; background: var(--surface-soft); border: 1px dashed var(--border); border-radius: 6px; }
+  .legend-row .item { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-muted); }
+  .legend-row .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
+
+  .footer-note { font-size: 11.5px; color: var(--text-dim); margin-top: 18px; padding: 12px 14px; background: var(--accent-bg); border-left: 3px solid var(--accent); border-radius: 4px; }
+  .footer-note strong { color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>KeyFinder — Tier Progress Indicator</h1>
+  <p>Per-product keyFinder progress across 5 tiers: <b>easy · medium · hard · very_hard · mandatory</b></p>
+  <span class="pill">Two-metric display: <b>total progress</b> &nbsp;·&nbsp; <b>above app standard</b></span>
+</div>
+
+<div class="container">
+
+  <!-- ── Intro legend ───────────────────────────────────────────── -->
+  <div class="section">
+    <div class="legend-row">
+      <div class="item"><span class="sw" style="background: var(--total);"></span> <b>Total</b> — keys with any candidate (attempted)</div>
+      <div class="item"><span class="sw" style="background: var(--above);"></span> <b>Above standard</b> — keys resolved at/above the published gate</div>
+      <div class="item"><span class="sw" style="background: var(--track);"></span> <b>Track</b> — tier capacity (total keys of that tier for the product)</div>
+    </div>
+  </div>
+
+  <!-- ═════════════════════════════════════════════════════════════
+       V1 — Dual concentric rings per tier
+  ═════════════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">V1 — Dual concentric rings per tier</div>
+    <div class="section-subtitle">Outer blue arc = total progress · inner green arc = above standard. Compact, echoes the PIF 3-ring family.</div>
+
+    <div class="card">
+      <div class="row">
+        <div class="row-label">Product A<small>mostly done</small></div>
+        <div class="product-mock"><strong>Alias DRL</strong> · early 2024</div>
+        <div class="v1-strip" title="per-tier: total attempted · above-standard">
+
+          <!-- EASY: 6/6 total, 6/6 above  →  full both -->
+          <span class="v1-cluster" title="Easy · total 6/6 · above 6/6">
+            <span class="v1-tier-label">E</span>
+            <svg class="v1-ring-svg" viewBox="0 0 40 40" aria-hidden>
+              <circle class="v1-ring-track" cx="20" cy="20" r="15"/>
+              <circle class="v1-ring-outer" cx="20" cy="20" r="15"
+                stroke-dasharray="94.25 0"/>
+              <circle class="v1-ring-inner" cx="20" cy="20" r="10"
+                stroke-dasharray="62.83 0"/>
+            </svg>
+            <span class="v1-frac"><span class="above">6</span><span class="sep">/</span><span class="total">6</span></span>
+          </span>
+
+          <!-- MEDIUM: 9/10 total, 7/10 above -->
+          <span class="v1-cluster" title="Medium · total 9/10 · above 7/10">
+            <span class="v1-tier-label">M</span>
+            <svg class="v1-ring-svg" viewBox="0 0 40 40" aria-hidden>
+              <circle class="v1-ring-track" cx="20" cy="20" r="15"/>
+              <circle class="v1-ring-outer" cx="20" cy="20" r="15"
+                stroke-dasharray="84.82 9.43"/>
+              <circle class="v1-ring-inner" cx="20" cy="20" r="10"
+                stroke-dasharray="43.98 18.85"/>
+            </svg>
+            <span class="v1-frac"><span class="above">7</span><span class="sep">/</span><span class="total">10</span></span>
+          </span>
+
+          <!-- HARD: 6/8 total, 3/8 above -->
+          <span class="v1-cluster" title="Hard · total 6/8 · above 3/8">
+            <span class="v1-tier-label">H</span>
+            <svg class="v1-ring-svg" viewBox="0 0 40 40" aria-hidden>
+              <circle class="v1-ring-track" cx="20" cy="20" r="15"/>
+              <circle class="v1-ring-outer" cx="20" cy="20" r="15"
+                stroke-dasharray="70.69 23.56"/>
+              <circle class="v1-ring-inner" cx="20" cy="20" r="10"
+                stroke-dasharray="23.56 39.27"/>
+            </svg>
+            <span class="v1-frac"><span class="above">3</span><span class="sep">/</span><span class="total">8</span></span>
+          </span>
+
+          <!-- VERY HARD: 2/5 total, 1/5 above -->
+          <span class="v1-cluster" title="Very Hard · total 2/5 · above 1/5">
+            <span class="v1-tier-label">VH</span>
+            <svg class="v1-ring-svg" viewBox="0 0 40 40" aria-hidden>
+              <circle class="v1-ring-track" cx="20" cy="20" r="15"/>
+              <circle class="v1-ring-outer" cx="20" cy="20" r="15"
+                stroke-dasharray="37.70 56.55"/>
+              <circle class="v1-ring-inner" cx="20" cy="20" r="10"
+                stroke-dasharray="12.57 50.27"/>
+            </svg>
+            <span class="v1-frac"><span class="above">1</span><span class="sep">/</span><span class="total">5</span></span>
+          </span>
+
+          <!-- MANDATORY: 7/8 total, 6/8 above (has star) -->
+          <span class="v1-cluster" title="Mandatory · total 7/8 · above 6/8">
+            <span class="v1-tier-label mandatory">★</span>
+            <svg class="v1-ring-svg" viewBox="0 0 40 40" aria-hidden>
+              <circle class="v1-ring-track" cx="20" cy="20" r="15"/>
+              <circle class="v1-ring-outer" cx="20" cy="20" r="15"
+                stroke-dasharray="82.47 11.78"/>
+              <circle class="v1-ring-inner" cx="20" cy="20" r="10"
+                stroke-dasharray="47.12 15.71"/>
+            </svg>
+            <span class="v1-frac"><span class="above">6</span><span class="sep">/</span><span class="total">8</span></span>
+          </span>
+
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="row-label">Product B<small>mid run</small></div>
+        <div class="product-mock"><strong>Knight Blue</strong> · late 2023</div>
+        <div class="v1-strip">
+
+          <span class="v1-cluster" title="Easy · total 4/6 · above 2/6">
+            <span class="v1-tier-label">E</span>
+            <svg class="v1-ring-svg" viewBox="0 0 40 40" aria-hidden>
+              <circle class="v1-ring-track" cx="20" cy="20" r="15"/>
+              <circle class="v1-ring-outer" cx="20" cy="20" r="15" stroke-dasharray="62.83 31.42"/>
+              <circle class="v1-ring-inner" cx="20" cy="20" r="10" stroke-dasharray="20.94 41.89"/>
+            </svg>
+            <span class="v1-frac"><span class="above">2</span><span class="sep">/</span><span class="total">6</span></span>
+          </span>
+
+          <span class="v1-cluster" title="Medium · total 3/10 · above 1/10">
+            <span class="v1-tier-label">M</span>
+            <svg class="v1-ring-svg" viewBox="0 0 40 40" aria-hidden>
+              <circle class="v1-ring-track" cx="20" cy="20" r="15"/>
+              <circle class="v1-ring-outer" cx="20" cy="20" r="15" stroke-dasharray="28.27 65.97"/>
+              <circle class="v1-ring-inner" cx="20" cy="20" r="10" stroke-dasharray="6.28 56.55"/>
+            </svg>
+            <span class="v1-frac"><span class="above">1</span><span class="sep">/</span><span class="total">10</span></span>
+          </span>
+
+          <span class="v1-cluster" title="Hard · total 0/8 · above 0/8">
+            <span class="v1-tier-label">H</span>
+            <svg class="v1-ring-svg" viewBox="0 0 40 40" aria-hidden>
+              <circle class="v1-ring-track" cx="20" cy="20" r="15"/>
+              <circle class="v1-ring-outer" cx="20" cy="20" r="15" stroke-dasharray="0 94.25"/>
+              <circle class="v1-ring-inner" cx="20" cy="20" r="10" stroke-dasharray="0 62.83"/>
+            </svg>
+            <span class="v1-frac"><span class="above">0</span><span class="sep">/</span><span class="total">8</span></span>
+          </span>
+
+          <span class="v1-cluster" title="Very Hard · total 0/5 · above 0/5">
+            <span class="v1-tier-label">VH</span>
+            <svg class="v1-ring-svg" viewBox="0 0 40 40" aria-hidden>
+              <circle class="v1-ring-track" cx="20" cy="20" r="15"/>
+              <circle class="v1-ring-outer" cx="20" cy="20" r="15" stroke-dasharray="0 94.25"/>
+              <circle class="v1-ring-inner" cx="20" cy="20" r="10" stroke-dasharray="0 62.83"/>
+            </svg>
+            <span class="v1-frac"><span class="above">0</span><span class="sep">/</span><span class="total">5</span></span>
+          </span>
+
+          <span class="v1-cluster" title="Mandatory · total 2/8 · above 1/8">
+            <span class="v1-tier-label mandatory">★</span>
+            <svg class="v1-ring-svg" viewBox="0 0 40 40" aria-hidden>
+              <circle class="v1-ring-track" cx="20" cy="20" r="15"/>
+              <circle class="v1-ring-outer" cx="20" cy="20" r="15" stroke-dasharray="23.56 70.69"/>
+              <circle class="v1-ring-inner" cx="20" cy="20" r="10" stroke-dasharray="7.85 54.98"/>
+            </svg>
+            <span class="v1-frac"><span class="above">1</span><span class="sep">/</span><span class="total">8</span></span>
+          </span>
+
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="row-label">Product C<small>fresh, no run yet</small></div>
+        <div class="product-mock"><strong>Limited Red</strong> · no runs</div>
+        <div class="v1-strip">
+
+          <span class="v1-cluster" title="Easy · 0/6">
+            <span class="v1-tier-label">E</span>
+            <svg class="v1-ring-svg" viewBox="0 0 40 40" aria-hidden>
+              <circle class="v1-ring-track" cx="20" cy="20" r="15"/>
+            </svg>
+            <span class="v1-frac"><span class="above">0</span><span class="sep">/</span><span class="total">6</span></span>
+          </span>
+          <span class="v1-cluster" title="Medium · 0/10">
+            <span class="v1-tier-label">M</span>
+            <svg class="v1-ring-svg" viewBox="0 0 40 40" aria-hidden><circle class="v1-ring-track" cx="20" cy="20" r="15"/></svg>
+            <span class="v1-frac"><span class="above">0</span><span class="sep">/</span><span class="total">10</span></span>
+          </span>
+          <span class="v1-cluster" title="Hard · 0/8">
+            <span class="v1-tier-label">H</span>
+            <svg class="v1-ring-svg" viewBox="0 0 40 40" aria-hidden><circle class="v1-ring-track" cx="20" cy="20" r="15"/></svg>
+            <span class="v1-frac"><span class="above">0</span><span class="sep">/</span><span class="total">8</span></span>
+          </span>
+          <span class="v1-cluster" title="Very Hard · 0/5">
+            <span class="v1-tier-label">VH</span>
+            <svg class="v1-ring-svg" viewBox="0 0 40 40" aria-hidden><circle class="v1-ring-track" cx="20" cy="20" r="15"/></svg>
+            <span class="v1-frac"><span class="above">0</span><span class="sep">/</span><span class="total">5</span></span>
+          </span>
+          <span class="v1-cluster" title="Mandatory · 0/8">
+            <span class="v1-tier-label mandatory">★</span>
+            <svg class="v1-ring-svg" viewBox="0 0 40 40" aria-hidden><circle class="v1-ring-track" cx="20" cy="20" r="15"/></svg>
+            <span class="v1-frac"><span class="above">0</span><span class="sep">/</span><span class="total">8</span></span>
+          </span>
+
+        </div>
+      </div>
+
+      <div class="footer-note">
+        <strong>Reads as:</strong> five rhythmic rings left to right — hardest tier on the right (minus mandatory star).
+        Outer ring drains first (attempted), inner ring lags (resolved to standard). Tooltip gives full counts.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════════════════════════════════════════════════════════
+       V2 — Dual micro-bars per tier
+  ═════════════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">V2 — Dual micro-bars per tier (stacked)</div>
+    <div class="section-subtitle">Tier label on top, two 7px bars underneath (total blue / above green), fraction at bottom.</div>
+
+    <div class="card">
+      <div class="row">
+        <div class="row-label">Product A<small>mostly done</small></div>
+        <div class="product-mock"><strong>Alias DRL</strong> · early 2024</div>
+        <div class="v2-strip">
+
+          <span class="v2-cluster" title="Easy · total 6/6 · above 6/6">
+            <span class="v2-tier-label">E</span>
+            <span class="v2-bar"><span class="v2-bar-fill total" style="width:100%"></span></span>
+            <span class="v2-bar"><span class="v2-bar-fill above" style="width:100%"></span></span>
+            <span class="v2-frac"><span class="total">6/6</span><span class="above">6</span></span>
+          </span>
+
+          <span class="v2-cluster" title="Medium · total 9/10 · above 7/10">
+            <span class="v2-tier-label">M</span>
+            <span class="v2-bar"><span class="v2-bar-fill total" style="width:90%"></span></span>
+            <span class="v2-bar"><span class="v2-bar-fill above" style="width:70%"></span></span>
+            <span class="v2-frac"><span class="total">9/10</span><span class="above">7</span></span>
+          </span>
+
+          <span class="v2-cluster" title="Hard · total 6/8 · above 3/8">
+            <span class="v2-tier-label">H</span>
+            <span class="v2-bar"><span class="v2-bar-fill total" style="width:75%"></span></span>
+            <span class="v2-bar"><span class="v2-bar-fill above" style="width:37.5%"></span></span>
+            <span class="v2-frac"><span class="total">6/8</span><span class="above">3</span></span>
+          </span>
+
+          <span class="v2-cluster" title="Very Hard · total 2/5 · above 1/5">
+            <span class="v2-tier-label">VH</span>
+            <span class="v2-bar"><span class="v2-bar-fill total" style="width:40%"></span></span>
+            <span class="v2-bar"><span class="v2-bar-fill above" style="width:20%"></span></span>
+            <span class="v2-frac"><span class="total">2/5</span><span class="above">1</span></span>
+          </span>
+
+          <span class="v2-cluster" title="Mandatory · total 7/8 · above 6/8">
+            <span class="v2-tier-label mandatory">★</span>
+            <span class="v2-bar"><span class="v2-bar-fill total" style="width:87.5%"></span></span>
+            <span class="v2-bar"><span class="v2-bar-fill above" style="width:75%"></span></span>
+            <span class="v2-frac"><span class="total">7/8</span><span class="above">6</span></span>
+          </span>
+
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="row-label">Product B<small>mid run</small></div>
+        <div class="product-mock"><strong>Knight Blue</strong> · late 2023</div>
+        <div class="v2-strip">
+          <span class="v2-cluster">
+            <span class="v2-tier-label">E</span>
+            <span class="v2-bar"><span class="v2-bar-fill total" style="width:66%"></span></span>
+            <span class="v2-bar"><span class="v2-bar-fill above" style="width:33%"></span></span>
+            <span class="v2-frac"><span class="total">4/6</span><span class="above">2</span></span>
+          </span>
+          <span class="v2-cluster">
+            <span class="v2-tier-label">M</span>
+            <span class="v2-bar"><span class="v2-bar-fill total" style="width:30%"></span></span>
+            <span class="v2-bar"><span class="v2-bar-fill above" style="width:10%"></span></span>
+            <span class="v2-frac"><span class="total">3/10</span><span class="above">1</span></span>
+          </span>
+          <span class="v2-cluster">
+            <span class="v2-tier-label">H</span>
+            <span class="v2-bar"><span class="v2-bar-fill total" style="width:0%"></span></span>
+            <span class="v2-bar"><span class="v2-bar-fill above" style="width:0%"></span></span>
+            <span class="v2-frac"><span class="total">0/8</span><span class="above">0</span></span>
+          </span>
+          <span class="v2-cluster">
+            <span class="v2-tier-label">VH</span>
+            <span class="v2-bar"><span class="v2-bar-fill total" style="width:0%"></span></span>
+            <span class="v2-bar"><span class="v2-bar-fill above" style="width:0%"></span></span>
+            <span class="v2-frac"><span class="total">0/5</span><span class="above">0</span></span>
+          </span>
+          <span class="v2-cluster">
+            <span class="v2-tier-label mandatory">★</span>
+            <span class="v2-bar"><span class="v2-bar-fill total" style="width:25%"></span></span>
+            <span class="v2-bar"><span class="v2-bar-fill above" style="width:12.5%"></span></span>
+            <span class="v2-frac"><span class="total">2/8</span><span class="above">1</span></span>
+          </span>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="row-label">Product C<small>no runs</small></div>
+        <div class="product-mock"><strong>Limited Red</strong> · no runs</div>
+        <div class="v2-strip">
+          <span class="v2-cluster"><span class="v2-tier-label">E</span><span class="v2-bar"></span><span class="v2-bar"></span><span class="v2-frac"><span class="total">0/6</span><span class="above">0</span></span></span>
+          <span class="v2-cluster"><span class="v2-tier-label">M</span><span class="v2-bar"></span><span class="v2-bar"></span><span class="v2-frac"><span class="total">0/10</span><span class="above">0</span></span></span>
+          <span class="v2-cluster"><span class="v2-tier-label">H</span><span class="v2-bar"></span><span class="v2-bar"></span><span class="v2-frac"><span class="total">0/8</span><span class="above">0</span></span></span>
+          <span class="v2-cluster"><span class="v2-tier-label">VH</span><span class="v2-bar"></span><span class="v2-bar"></span><span class="v2-frac"><span class="total">0/5</span><span class="above">0</span></span></span>
+          <span class="v2-cluster"><span class="v2-tier-label mandatory">★</span><span class="v2-bar"></span><span class="v2-bar"></span><span class="v2-frac"><span class="total">0/8</span><span class="above">0</span></span></span>
+        </div>
+      </div>
+
+      <div class="footer-note">
+        <strong>Reads as:</strong> compact 5-column micro-bar strip — ratios visible at a glance.
+        Narrower than V1, higher density per cell. Weakness: the two bars can read as "one thing" unless legends are nearby.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════════════════════════════════════════════════════════
+       V3 — Dual diamond per tier (rhombus family)
+  ═════════════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">V3 — Dual-diamond per tier (matches CEF/SKU/RDF rhombus family)</div>
+    <div class="section-subtitle">Two stacked 28×28 rhombi per tier — top = total progress, bottom = above-standard. Fill intensity = ratio (empty · partial · full).</div>
+
+    <div class="card">
+      <div class="row">
+        <div class="row-label">Product A<small>mostly done</small></div>
+        <div class="product-mock"><strong>Alias DRL</strong> · early 2024</div>
+        <div class="v3-strip">
+
+          <!-- EASY: 6/6 total, 6/6 above → both FULL -->
+          <span class="v3-cluster" title="Easy · total 6/6 · above 6/6">
+            <span class="v3-tier-label">E</span>
+            <span class="v3-dia-pair">
+              <svg class="v3-dia v3-dia-total" viewBox="0 0 40 40" aria-hidden><polygon points="20,2 38,20 20,38 2,20"/></svg>
+              <svg class="v3-dia v3-dia-above" viewBox="0 0 40 40" aria-hidden><polygon points="20,2 38,20 20,38 2,20"/></svg>
+            </span>
+            <span class="v3-frac"><span class="above">6</span><span class="sep">/</span><span class="total">6</span></span>
+          </span>
+
+          <!-- MEDIUM: 9/10 total, 7/10 above → total FULL, above PARTIAL -->
+          <span class="v3-cluster" title="Medium · total 9/10 · above 7/10">
+            <span class="v3-tier-label">M</span>
+            <span class="v3-dia-pair">
+              <svg class="v3-dia v3-dia-total" viewBox="0 0 40 40" aria-hidden><polygon points="20,2 38,20 20,38 2,20"/></svg>
+              <svg class="v3-dia v3-dia-partial-above" viewBox="0 0 40 40" aria-hidden><polygon points="20,2 38,20 20,38 2,20"/></svg>
+            </span>
+            <span class="v3-frac"><span class="above">7</span><span class="sep">/</span><span class="total">10</span></span>
+          </span>
+
+          <!-- HARD: 6/8 total (partial), 3/8 above (partial) -->
+          <span class="v3-cluster" title="Hard · total 6/8 · above 3/8">
+            <span class="v3-tier-label">H</span>
+            <span class="v3-dia-pair">
+              <svg class="v3-dia v3-dia-partial-total" viewBox="0 0 40 40" aria-hidden><polygon points="20,2 38,20 20,38 2,20"/></svg>
+              <svg class="v3-dia v3-dia-partial-above" viewBox="0 0 40 40" aria-hidden><polygon points="20,2 38,20 20,38 2,20"/></svg>
+            </span>
+            <span class="v3-frac"><span class="above">3</span><span class="sep">/</span><span class="total">8</span></span>
+          </span>
+
+          <!-- VERY HARD: 2/5 total partial, 1/5 above partial -->
+          <span class="v3-cluster" title="Very Hard · total 2/5 · above 1/5">
+            <span class="v3-tier-label">VH</span>
+            <span class="v3-dia-pair">
+              <svg class="v3-dia v3-dia-partial-total" viewBox="0 0 40 40" aria-hidden><polygon points="20,2 38,20 20,38 2,20"/></svg>
+              <svg class="v3-dia v3-dia-partial-above" viewBox="0 0 40 40" aria-hidden><polygon points="20,2 38,20 20,38 2,20"/></svg>
+            </span>
+            <span class="v3-frac"><span class="above">1</span><span class="sep">/</span><span class="total">5</span></span>
+          </span>
+
+          <!-- MANDATORY: 7/8 total, 6/8 above -->
+          <span class="v3-cluster" title="Mandatory · total 7/8 · above 6/8">
+            <span class="v3-tier-label mandatory">★</span>
+            <span class="v3-dia-pair">
+              <svg class="v3-dia v3-dia-partial-total" viewBox="0 0 40 40" aria-hidden><polygon points="20,2 38,20 20,38 2,20"/></svg>
+              <svg class="v3-dia v3-dia-partial-above" viewBox="0 0 40 40" aria-hidden><polygon points="20,2 38,20 20,38 2,20"/></svg>
+            </span>
+            <span class="v3-frac"><span class="above">6</span><span class="sep">/</span><span class="total">8</span></span>
+          </span>
+
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="row-label">Product B<small>mid run</small></div>
+        <div class="product-mock"><strong>Knight Blue</strong> · late 2023</div>
+        <div class="v3-strip">
+          <span class="v3-cluster">
+            <span class="v3-tier-label">E</span>
+            <span class="v3-dia-pair">
+              <svg class="v3-dia v3-dia-partial-total" viewBox="0 0 40 40"><polygon points="20,2 38,20 20,38 2,20"/></svg>
+              <svg class="v3-dia v3-dia-partial-above" viewBox="0 0 40 40"><polygon points="20,2 38,20 20,38 2,20"/></svg>
+            </span>
+            <span class="v3-frac"><span class="above">2</span><span class="sep">/</span><span class="total">6</span></span>
+          </span>
+          <span class="v3-cluster">
+            <span class="v3-tier-label">M</span>
+            <span class="v3-dia-pair">
+              <svg class="v3-dia v3-dia-partial-total" viewBox="0 0 40 40"><polygon points="20,2 38,20 20,38 2,20"/></svg>
+              <svg class="v3-dia v3-dia-partial-above" viewBox="0 0 40 40"><polygon points="20,2 38,20 20,38 2,20"/></svg>
+            </span>
+            <span class="v3-frac"><span class="above">1</span><span class="sep">/</span><span class="total">10</span></span>
+          </span>
+          <span class="v3-cluster">
+            <span class="v3-tier-label">H</span>
+            <span class="v3-dia-pair">
+              <svg class="v3-dia v3-dia-empty" viewBox="0 0 40 40"><polygon points="20,2 38,20 20,38 2,20"/></svg>
+              <svg class="v3-dia v3-dia-empty" viewBox="0 0 40 40"><polygon points="20,2 38,20 20,38 2,20"/></svg>
+            </span>
+            <span class="v3-frac"><span class="above">0</span><span class="sep">/</span><span class="total">8</span></span>
+          </span>
+          <span class="v3-cluster">
+            <span class="v3-tier-label">VH</span>
+            <span class="v3-dia-pair">
+              <svg class="v3-dia v3-dia-empty" viewBox="0 0 40 40"><polygon points="20,2 38,20 20,38 2,20"/></svg>
+              <svg class="v3-dia v3-dia-empty" viewBox="0 0 40 40"><polygon points="20,2 38,20 20,38 2,20"/></svg>
+            </span>
+            <span class="v3-frac"><span class="above">0</span><span class="sep">/</span><span class="total">5</span></span>
+          </span>
+          <span class="v3-cluster">
+            <span class="v3-tier-label mandatory">★</span>
+            <span class="v3-dia-pair">
+              <svg class="v3-dia v3-dia-partial-total" viewBox="0 0 40 40"><polygon points="20,2 38,20 20,38 2,20"/></svg>
+              <svg class="v3-dia v3-dia-partial-above" viewBox="0 0 40 40"><polygon points="20,2 38,20 20,38 2,20"/></svg>
+            </span>
+            <span class="v3-frac"><span class="above">1</span><span class="sep">/</span><span class="total">8</span></span>
+          </span>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="row-label">Product C<small>no runs</small></div>
+        <div class="product-mock"><strong>Limited Red</strong> · no runs</div>
+        <div class="v3-strip">
+          <span class="v3-cluster"><span class="v3-tier-label">E</span><span class="v3-dia-pair">
+            <svg class="v3-dia v3-dia-empty" viewBox="0 0 40 40"><polygon points="20,2 38,20 20,38 2,20"/></svg>
+            <svg class="v3-dia v3-dia-empty" viewBox="0 0 40 40"><polygon points="20,2 38,20 20,38 2,20"/></svg>
+          </span><span class="v3-frac"><span class="above">0</span><span class="sep">/</span><span class="total">6</span></span></span>
+          <span class="v3-cluster"><span class="v3-tier-label">M</span><span class="v3-dia-pair">
+            <svg class="v3-dia v3-dia-empty" viewBox="0 0 40 40"><polygon points="20,2 38,20 20,38 2,20"/></svg>
+            <svg class="v3-dia v3-dia-empty" viewBox="0 0 40 40"><polygon points="20,2 38,20 20,38 2,20"/></svg>
+          </span><span class="v3-frac"><span class="above">0</span><span class="sep">/</span><span class="total">10</span></span></span>
+          <span class="v3-cluster"><span class="v3-tier-label">H</span><span class="v3-dia-pair">
+            <svg class="v3-dia v3-dia-empty" viewBox="0 0 40 40"><polygon points="20,2 38,20 20,38 2,20"/></svg>
+            <svg class="v3-dia v3-dia-empty" viewBox="0 0 40 40"><polygon points="20,2 38,20 20,38 2,20"/></svg>
+          </span><span class="v3-frac"><span class="above">0</span><span class="sep">/</span><span class="total">8</span></span></span>
+          <span class="v3-cluster"><span class="v3-tier-label">VH</span><span class="v3-dia-pair">
+            <svg class="v3-dia v3-dia-empty" viewBox="0 0 40 40"><polygon points="20,2 38,20 20,38 2,20"/></svg>
+            <svg class="v3-dia v3-dia-empty" viewBox="0 0 40 40"><polygon points="20,2 38,20 20,38 2,20"/></svg>
+          </span><span class="v3-frac"><span class="above">0</span><span class="sep">/</span><span class="total">5</span></span></span>
+          <span class="v3-cluster"><span class="v3-tier-label mandatory">★</span><span class="v3-dia-pair">
+            <svg class="v3-dia v3-dia-empty" viewBox="0 0 40 40"><polygon points="20,2 38,20 20,38 2,20"/></svg>
+            <svg class="v3-dia v3-dia-empty" viewBox="0 0 40 40"><polygon points="20,2 38,20 20,38 2,20"/></svg>
+          </span><span class="v3-frac"><span class="above">0</span><span class="sep">/</span><span class="total">8</span></span></span>
+        </div>
+      </div>
+
+      <div class="footer-note">
+        <strong>Reads as:</strong> strongest visual tie to the existing CEF / SKU / RDF rhombus family in the Finders group.
+        Two stacked diamonds per tier with partial/full/empty states. Downside: less granular than V1/V2 — ratios look binary unless partial shading is carefully tuned.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════════════════════════════════════════════════════════
+       Comparison summary
+  ═════════════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">Tradeoff summary</div>
+    <div class="card" style="padding: 16px 22px;">
+      <table style="width:100%; border-collapse: collapse; font-size: 12.5px;">
+        <thead>
+          <tr style="text-align:left; border-bottom: 1px solid var(--border);">
+            <th style="padding: 8px 10px; font-weight:700; color: var(--text-muted);">Option</th>
+            <th style="padding: 8px 10px; font-weight:700; color: var(--text-muted);">Horizontal footprint</th>
+            <th style="padding: 8px 10px; font-weight:700; color: var(--text-muted);">Info density</th>
+            <th style="padding: 8px 10px; font-weight:700; color: var(--text-muted);">Reads partial cleanly?</th>
+            <th style="padding: 8px 10px; font-weight:700; color: var(--text-muted);">Fits Finders family</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom: 1px dashed var(--border-light);">
+            <td style="padding: 8px 10px; font-weight:600;">V1 — dual rings</td>
+            <td style="padding: 8px 10px; color: var(--text-muted);">~210 px (5 × 42)</td>
+            <td style="padding: 8px 10px; color: var(--text-muted);">high</td>
+            <td style="padding: 8px 10px; color: var(--green-strong); font-weight:600;">✓ (arc length)</td>
+            <td style="padding: 8px 10px; color: var(--text-muted);">distinct (new shape)</td>
+          </tr>
+          <tr style="border-bottom: 1px dashed var(--border-light);">
+            <td style="padding: 8px 10px; font-weight:600;">V2 — micro-bars</td>
+            <td style="padding: 8px 10px; color: var(--text-muted);">~250 px (5 × 50)</td>
+            <td style="padding: 8px 10px; color: var(--text-muted);">highest</td>
+            <td style="padding: 8px 10px; color: var(--green-strong); font-weight:600;">✓ (% width)</td>
+            <td style="padding: 8px 10px; color: var(--text-muted);">distinct (no diamond)</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 10px; font-weight:600;">V3 — dual diamonds</td>
+            <td style="padding: 8px 10px; color: var(--text-muted);">~180 px (5 × 36)</td>
+            <td style="padding: 8px 10px; color: var(--text-muted);">medium</td>
+            <td style="padding: 8px 10px; color: var(--amber-strong); font-weight:600;">~ (shade only)</td>
+            <td style="padding: 8px 10px; color: var(--green-strong); font-weight:600;">✓ matches CEF/SKU/RDF</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

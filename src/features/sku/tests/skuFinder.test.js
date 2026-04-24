@@ -7,20 +7,22 @@
  *   - happy path: LLM returns MPN → candidate submitted to publisher
  *   - edge: no CEF variants → graceful rejection, no submits
  *
- * Uses `mock.method(globalThis, 'setTimeout', (cb, _ms) => origSetTimeout(cb, 0))`
- * to skip the production 1000ms stagger between variants — matches RDF's pattern.
+ * Uses the private `_staggerMsOverride` seam to skip production's 1000ms
+ * stagger between variants while preserving async orchestration behavior.
  */
 
-import { describe, it, before, after, mock } from 'node:test';
+import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { runSkuFinder } from '../skuFinder.js';
+import { runSkuFinder as runSkuFinderBase } from '../skuFinder.js';
 import { readSkus } from '../skuStore.js';
 
 const TMP = path.join(os.tmpdir(), `skf-orch-test-${Date.now()}`);
 const PRODUCT_ROOT = path.join(TMP, 'products');
+
+const runSkuFinder = (opts) => runSkuFinderBase({ _staggerMsOverride: 0, ...opts });
 
 function cleanup(dir) {
   try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* */ }
@@ -115,21 +117,12 @@ const PRODUCT = {
   variant: 'wired',
 };
 
-const origSetTimeout = globalThis.setTimeout;
-function installImmediateStaggerMock() {
-  return mock.method(globalThis, 'setTimeout', (cb, _ms) => origSetTimeout(cb, 0));
-}
-
 describe('runSkuFinder — smoke', () => {
-  let staggerMock;
-
   before(() => {
     fs.mkdirSync(PRODUCT_ROOT, { recursive: true });
-    staggerMock = installImmediateStaggerMock();
   });
 
   after(() => {
-    staggerMock?.mock?.restore?.();
     cleanup(TMP);
   });
 

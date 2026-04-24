@@ -6,17 +6,21 @@
  * state through BOTH paths and asserts byte-equality for system + user.
  */
 
-import { describe, it, before, after, mock } from 'node:test';
+import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { runReleaseDateFinder } from '../releaseDateFinder.js';
+import { runReleaseDateFinder as runReleaseDateFinderBase } from '../releaseDateFinder.js';
 import { compileReleaseDateFinderPreviewPrompt } from '../releaseDateFinderPreviewPrompt.js';
 import { readReleaseDates } from '../releaseDateStore.js';
 
 const TMP = path.join(os.tmpdir(), `rdf-preview-test-${Date.now()}`);
 const PRODUCT_ROOT = path.join(TMP, 'products');
+
+const TEST_CONFIG = { evidenceVerificationEnabled: false };
+
+const runReleaseDateFinder = (opts) => runReleaseDateFinderBase({ _staggerMsOverride: 0, ...opts });
 
 const COMPILED_FIELD_RULES = {
   fields: {
@@ -104,19 +108,11 @@ function makeStubSpecDb({ finderStore, variants = VARIANTS } = {}) {
   };
 }
 
-const origSetTimeout = globalThis.setTimeout;
-function installImmediateStaggerMock() {
-  return mock.method(globalThis, 'setTimeout', (cb, _ms) => origSetTimeout(cb, 0));
-}
-
 describe('RDF prompt preview — parity with real-run snapshot', () => {
-  let staggerMock;
   before(() => {
     fs.mkdirSync(PRODUCT_ROOT, { recursive: true });
-    staggerMock = installImmediateStaggerMock();
   });
   after(() => {
-    staggerMock?.mock?.restore?.();
     try { fs.rmSync(TMP, { recursive: true, force: true }); } catch { /* */ }
   });
 
@@ -128,7 +124,7 @@ describe('RDF prompt preview — parity with real-run snapshot', () => {
 
     const preview = await compileReleaseDateFinderPreviewPrompt({
       product: { ...PRODUCT, product_id: pid },
-      appDb: null, specDb, config: {}, productRoot: PRODUCT_ROOT,
+      appDb: null, specDb, config: TEST_CONFIG, productRoot: PRODUCT_ROOT,
       body: { variant_key: 'color:black' },
     });
 
@@ -140,7 +136,7 @@ describe('RDF prompt preview — parity with real-run snapshot', () => {
     const captured = [];
     await runReleaseDateFinder({
       product: { ...PRODUCT, product_id: pid },
-      appDb: null, specDb, config: {}, productRoot: PRODUCT_ROOT,
+      appDb: null, specDb, config: TEST_CONFIG, productRoot: PRODUCT_ROOT,
       variantKey: 'color:black',
       onLlmCallComplete: (info) => { captured.push(info); },
       _callLlmOverride: async () => ({

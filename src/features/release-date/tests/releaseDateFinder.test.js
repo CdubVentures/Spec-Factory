@@ -10,17 +10,23 @@
  *   - no_cef_data / unknown_variant rejections
  */
 
-import { describe, it, before, after, mock } from 'node:test';
+import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { runReleaseDateFinder, runReleaseDateFinderLoop } from '../releaseDateFinder.js';
+import {
+  runReleaseDateFinder as runReleaseDateFinderBase,
+  runReleaseDateFinderLoop as runReleaseDateFinderLoopBase,
+} from '../releaseDateFinder.js';
 import { readReleaseDates } from '../releaseDateStore.js';
 
 const TMP = path.join(os.tmpdir(), `rdf-orch-test-${Date.now()}`);
 const PRODUCT_ROOT = path.join(TMP, 'products');
 const CATEGORY_ROOT = path.join(TMP, 'category_authority');
+
+const runReleaseDateFinder = (opts) => runReleaseDateFinderBase({ _staggerMsOverride: 0, ...opts });
+const runReleaseDateFinderLoop = (opts) => runReleaseDateFinderLoopBase({ _staggerMsOverride: 0, ...opts });
 
 function cleanup(dir) {
   try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* */ }
@@ -167,24 +173,12 @@ const PRODUCT = {
   variant: 'wireless',
 };
 
-// WHY: RDF's per-variant runner uses a 1000ms stagger in production to space LLM
-// bursts. Every test stubs the LLM, so the stagger is dead wait. Zero-out setTimeout
-// delays only for the duration of these tests — `origSetTimeout(cb, 0)` preserves
-// async ordering (microtask gap) without burning wall-clock.
-const origSetTimeout = globalThis.setTimeout;
-function installImmediateStaggerMock() {
-  return mock.method(globalThis, 'setTimeout', (cb, _ms) => origSetTimeout(cb, 0));
-}
-
 describe('runReleaseDateFinder', () => {
-  let staggerMock;
   before(() => {
     fs.mkdirSync(PRODUCT_ROOT, { recursive: true });
-    staggerMock = installImmediateStaggerMock();
   });
 
   after(() => {
-    staggerMock?.mock?.restore?.();
     cleanup(TMP);
   });
 
@@ -450,13 +444,10 @@ describe('runReleaseDateFinder', () => {
  * definitive unknown. Satisfaction predicate lives inside runReleaseDateFinderLoop.
  */
 describe('runReleaseDateFinderLoop', () => {
-  let staggerMock;
   before(() => {
     fs.mkdirSync(PRODUCT_ROOT, { recursive: true });
-    staggerMock = installImmediateStaggerMock();
   });
   after(() => {
-    staggerMock?.mock?.restore?.();
     cleanup(TMP);
   });
 

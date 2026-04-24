@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, after } from 'node:test';
+import { describe, it, beforeEach, afterEach, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -17,6 +17,8 @@ import {
 
 const TMP_DIRS = [];
 const origCwd = process.cwd();
+
+afterEach(() => setGlobalPromptsSnapshot({}));
 
 async function makeTmpWorkspace() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'gp-handler-'));

@@ -19,12 +19,18 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { runReleaseDateFinder, runReleaseDateFinderLoop } from '../releaseDateFinder.js';
+import {
+  runReleaseDateFinder as runReleaseDateFinderBase,
+  runReleaseDateFinderLoop as runReleaseDateFinderLoopBase,
+} from '../releaseDateFinder.js';
 import { readReleaseDates } from '../releaseDateStore.js';
 
 const TMP = path.join(os.tmpdir(), `rdf-char-test-${Date.now()}`);
 const PRODUCT_ROOT = path.join(TMP, 'products');
 const CATEGORY_ROOT = path.join(TMP, 'category_authority');
+
+const runReleaseDateFinder = (opts) => runReleaseDateFinderBase({ _staggerMsOverride: 0, ...opts });
+const runReleaseDateFinderLoop = (opts) => runReleaseDateFinderLoopBase({ _staggerMsOverride: 0, ...opts });
 
 function cleanup(dir) {
   try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* */ }

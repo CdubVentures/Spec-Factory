@@ -568,6 +568,7 @@ export async function runProductImageFinder({
   mode = 'view',
   _callLlmOverride = null,
   _modelDirOverride = null,
+  _staggerMsOverride = null,
   onStageAdvance = null,
   onModelResolved = null,
   onStreamChunk = null,
@@ -699,7 +700,8 @@ export async function runProductImageFinder({
   if (rmbgConcurrency > 0) setInferenceConcurrency(rmbgConcurrency);
 
   const ranAt = new Date().toISOString();
-  const STAGGER_MS = 1000;
+  const staggerOverride = Number(_staggerMsOverride);
+  const STAGGER_MS = Number.isFinite(staggerOverride) && staggerOverride >= 0 ? staggerOverride : 1000;
 
   // Per-variant body: discovery + carousel strategy + LLM call + download/RMBG + persist.
   // Called by runPerVariant for each variant; return value is aggregated below.

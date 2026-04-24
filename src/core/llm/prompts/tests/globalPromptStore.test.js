@@ -2,7 +2,7 @@
  * Contract tests for the global prompt store — in-memory snapshot +
  * disk round-trip.
  */
-import { describe, it, beforeEach, after } from 'node:test';
+import { describe, it, beforeEach, afterEach, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -16,6 +16,8 @@ import {
 } from '../globalPromptStore.js';
 
 const TMP_DIRS = [];
+
+afterEach(() => setGlobalPromptsSnapshot({}));
 
 async function makeTmpRoot() {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'gp-store-'));

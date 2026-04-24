@@ -3,17 +3,21 @@
  * Mirrors releaseDateFinderPreviewPrompt.test.js with sku-specific fixtures.
  */
 
-import { describe, it, before, after, mock } from 'node:test';
+import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { runSkuFinder } from '../skuFinder.js';
+import { runSkuFinder as runSkuFinderBase } from '../skuFinder.js';
 import { compileSkuFinderPreviewPrompt } from '../skuFinderPreviewPrompt.js';
 import { readSkus } from '../skuStore.js';
 
 const TMP = path.join(os.tmpdir(), `sku-preview-test-${Date.now()}`);
 const PRODUCT_ROOT = path.join(TMP, 'products');
+
+const TEST_CONFIG = { evidenceVerificationEnabled: false };
+
+const runSkuFinder = (opts) => runSkuFinderBase({ _staggerMsOverride: 0, ...opts });
 
 const COMPILED_FIELD_RULES = {
   fields: {
@@ -101,19 +105,11 @@ function makeStubSpecDb({ finderStore, variants = VARIANTS } = {}) {
   };
 }
 
-const origSetTimeout = globalThis.setTimeout;
-function installImmediateStaggerMock() {
-  return mock.method(globalThis, 'setTimeout', (cb, _ms) => origSetTimeout(cb, 0));
-}
-
 describe('SKU prompt preview — parity with real-run snapshot', () => {
-  let staggerMock;
   before(() => {
     fs.mkdirSync(PRODUCT_ROOT, { recursive: true });
-    staggerMock = installImmediateStaggerMock();
   });
   after(() => {
-    staggerMock?.mock?.restore?.();
     try { fs.rmSync(TMP, { recursive: true, force: true }); } catch { /* */ }
   });
 
@@ -125,7 +121,7 @@ describe('SKU prompt preview — parity with real-run snapshot', () => {
 
     const preview = await compileSkuFinderPreviewPrompt({
       product: { ...PRODUCT, product_id: pid },
-      appDb: null, specDb, config: {}, productRoot: PRODUCT_ROOT,
+      appDb: null, specDb, config: TEST_CONFIG, productRoot: PRODUCT_ROOT,
       body: { variant_key: 'color:black' },
     });
 
@@ -137,7 +133,7 @@ describe('SKU prompt preview — parity with real-run snapshot', () => {
     const captured = [];
     await runSkuFinder({
       product: { ...PRODUCT, product_id: pid },
-      appDb: null, specDb, config: {}, productRoot: PRODUCT_ROOT,
+      appDb: null, specDb, config: TEST_CONFIG, productRoot: PRODUCT_ROOT,
       variantKey: 'color:black',
       onLlmCallComplete: (info) => { captured.push(info); },
       _callLlmOverride: async () => ({

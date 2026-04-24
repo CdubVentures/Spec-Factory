@@ -4,12 +4,14 @@
  * These are the single source of truth for prompt text shared by CEF, PIF,
  * RDF. Any future finder should consume these builders — do not re-inline.
  */
-import { describe, it, beforeEach } from 'node:test';
+import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildIdentityWarning, buildSiblingsLine } from '../identityContext.js';
 import { setGlobalPromptsSnapshot } from '../globalPromptStore.js';
 
 const FIELD_NOUNS = ['colors or editions', 'product images', 'release dates'];
+
+afterEach(() => setGlobalPromptsSnapshot({}));
 
 describe('buildIdentityWarning — tier behavior', () => {
   beforeEach(() => setGlobalPromptsSnapshot({}));

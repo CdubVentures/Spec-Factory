@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import { builtinModules, createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { transform } from 'sucrase';
 
 const require = createRequire(import.meta.url);
@@ -15,6 +15,8 @@ const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'];
 const ASSET_EXTENSIONS = ['.css', '.scss', '.sass', '.less', '.svg', '.png', '.jpg', '.jpeg', '.webp'];
 const IMPORT_SPECIFIER_RE = /(?:\bimport\s+(?:[^'"]*?\s+from\s*)?|\bexport\s+[^'"]*?\s+from\s*|\bimport\s*\()\s*(['"])([^'"]+)\1/g;
 const BUNDLED_MODULE_CACHE_VERSION = '2026-03-24-01';
+const HELPER_DIR = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(HELPER_DIR, '../../../..');
 const BUNDLED_MODULE_CACHE_ROOT = path.join(
   os.tmpdir(),
   'spec-factory-load-bundled-module-cache',
@@ -429,6 +431,16 @@ function getBundleCachePaths(cacheKey) {
   };
 }
 
+function resolveEntryPath(entryRelativePath) {
+  const rawPath = String(entryRelativePath || '');
+  if (path.isAbsolute(rawPath)) return rawPath;
+
+  const cwdPath = path.resolve(rawPath);
+  if (fs.existsSync(cwdPath)) return cwdPath;
+
+  return path.resolve(REPO_ROOT, rawPath);
+}
+
 function buildDependencySignature(filePath) {
   const stat = fs.statSync(filePath);
   return {
@@ -535,7 +547,7 @@ async function buildBundledGraph(entryPath, stubs = {}) {
     }
 
     function moduleOutputPath(absPath) {
-      const relativePath = path.relative(process.cwd(), absPath);
+      const relativePath = path.relative(REPO_ROOT, absPath);
       const normalized = relativePath && !relativePath.startsWith('..')
         ? relativePath
         : path.basename(absPath);
@@ -728,7 +740,7 @@ export async function loadBundledModule(entryRelativePath, {
   stubs = {},
   prefix = 'bundled-module-',
 } = {}) {
-  const entryPath = path.resolve(entryRelativePath);
+  const entryPath = resolveEntryPath(entryRelativePath);
   const cachedGraph = await buildBundledGraph(entryPath, stubs);
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
   const bundleDir = path.join(tmpDir, 'bundle');
