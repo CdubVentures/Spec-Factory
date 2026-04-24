@@ -21,14 +21,14 @@ function makeCatalogRow(overrides: Partial<CatalogRow> = {}): CatalogRow {
     base_model: 'XM1',
     variant: 'RGB',
     status: 'active',
-    hasFinal: false,
-    validated: false,
     confidence: 0,
     coverage: 0,
     fieldsFilled: 0,
     fieldsTotal: 0,
-    lastRun: '',
-    inActive: false,
+    cefRunCount: 0,
+    pifVariants: [],
+    skuVariants: [],
+    rdfVariants: [],
     ...overrides,
   };
 }

@@ -60,7 +60,7 @@ export function TestModePage() {
         <div>
           <h1 className="text-lg font-bold sf-text-primary tracking-tight">Field Contract Audit</h1>
           <p className="text-xs sf-text-muted">
-            Per-key validation proof — every field, every failure point, every prompt. Category: <span className="font-mono font-semibold">{category || 'none'}</span>
+            Per-key validation proof — every field, every failure point, every deterministic transform. Category: <span className="font-mono font-semibold">{category || 'none'}</span>
             {runAt && <span className="sf-text-subtle ml-2">(cached: {runAt})</span>}
           </p>
         </div>

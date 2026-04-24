@@ -1,7 +1,282 @@
 {
   "category": "mouse",
-  "generated_at": "2026-04-22T18:06:46.570Z",
+  "generated_at": "2026-04-24T02:32:59.027Z",
   "rules": [
+    {
+      "check": {
+        "max": 120,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "acceleration must stay within configured plausible range",
+      "rule_id": "acceleration_plausibility",
+      "trigger_field": "acceleration"
+    },
+    {
+      "check": {
+        "max": 500,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "battery_hours must stay within configured plausible range",
+      "rule_id": "battery_hours_plausibility",
+      "trigger_field": "battery_hours"
+    },
+    {
+      "check": {
+        "max": 150,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "click_force must stay within configured plausible range",
+      "rule_id": "click_force_plausibility",
+      "trigger_field": "click_force"
+    },
+    {
+      "check": {
+        "max": 150,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "click_latency must stay within configured plausible range",
+      "rule_id": "click_latency_plausibility",
+      "trigger_field": "click_latency"
+    },
+    {
+      "check": {
+        "max": 150,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "click_latency_bluetooth must stay within configured plausible range",
+      "rule_id": "click_latency_bluetooth_plausibility",
+      "trigger_field": "click_latency_bluetooth"
+    },
+    {
+      "check": {
+        "max": 150,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "click_latency_wired must stay within configured plausible range",
+      "rule_id": "click_latency_wired_plausibility",
+      "trigger_field": "click_latency_wired"
+    },
+    {
+      "check": {
+        "max": 150,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "click_latency_wireless must stay within configured plausible range",
+      "rule_id": "click_latency_wireless_plausibility",
+      "trigger_field": "click_latency_wireless"
+    },
+    {
+      "check": {
+        "max": 30,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "debounce must stay within configured plausible range",
+      "rule_id": "debounce_plausibility",
+      "trigger_field": "debounce"
+    },
+    {
+      "check": {
+        "max": 60000,
+        "min": 100,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "dpi must stay within configured plausible range",
+      "rule_id": "dpi_plausibility",
+      "trigger_field": "dpi"
+    },
+    {
+      "check": {
+        "max": 80,
+        "min": 15,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "height must stay within configured plausible range",
+      "rule_id": "height_plausibility",
+      "trigger_field": "height"
+    },
+    {
+      "check": {
+        "max": 1200,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "ips must stay within configured plausible range",
+      "rule_id": "ips_plausibility",
+      "trigger_field": "ips"
+    },
+    {
+      "check": {
+        "max": 5,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "lift must stay within configured plausible range",
+      "rule_id": "lift_plausibility",
+      "trigger_field": "lift"
+    },
+    {
+      "check": {
+        "max": 180,
+        "min": 50,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "lngth must stay within configured plausible range",
+      "rule_id": "lngth_plausibility",
+      "trigger_field": "lngth"
+    },
+    {
+      "check": {
+        "max": 8,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "middle_buttons must stay within configured plausible range",
+      "rule_id": "middle_buttons_plausibility",
+      "trigger_field": "middle_buttons"
+    },
+    {
+      "check": {
+        "max": 10,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "onboard_memory_value must stay within configured plausible range",
+      "rule_id": "onboard_memory_value_plausibility",
+      "trigger_field": "onboard_memory_value"
+    },
+    {
+      "check": {
+        "max": 16000,
+        "min": 125,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "polling_rate must stay within configured plausible range",
+      "rule_id": "polling_rate_plausibility",
+      "trigger_field": "polling_rate"
+    },
+    {
+      "check": {
+        "max": 30,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "programmable_buttons must stay within configured plausible range",
+      "rule_id": "programmable_buttons_plausibility",
+      "trigger_field": "programmable_buttons"
+    },
+    {
+      "check": {
+        "max": 150,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "sensor_latency must stay within configured plausible range",
+      "rule_id": "sensor_latency_plausibility",
+      "trigger_field": "sensor_latency"
+    },
+    {
+      "check": {
+        "max": 150,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "sensor_latency_bluetooth must stay within configured plausible range",
+      "rule_id": "sensor_latency_bluetooth_plausibility",
+      "trigger_field": "sensor_latency_bluetooth"
+    },
+    {
+      "check": {
+        "max": 150,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "sensor_latency_wired must stay within configured plausible range",
+      "rule_id": "sensor_latency_wired_plausibility",
+      "trigger_field": "sensor_latency_wired"
+    },
+    {
+      "check": {
+        "max": 150,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "sensor_latency_wireless must stay within configured plausible range",
+      "rule_id": "sensor_latency_wireless_plausibility",
+      "trigger_field": "sensor_latency_wireless"
+    },
+    {
+      "check": {
+        "max": 100,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "shift_latency must stay within configured plausible range",
+      "rule_id": "shift_latency_plausibility",
+      "trigger_field": "shift_latency"
+    },
+    {
+      "check": {
+        "max": 12,
+        "min": 0,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "side_buttons must stay within configured plausible range",
+      "rule_id": "side_buttons_plausibility",
+      "trigger_field": "side_buttons"
+    },
+    {
+      "check": {
+        "max": 300,
+        "min": 20,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "weight must stay within configured plausible range",
+      "rule_id": "weight_plausibility",
+      "trigger_field": "weight"
+    },
+    {
+      "check": {
+        "max": 120,
+        "min": 30,
+        "on_fail": "reject_candidate",
+        "type": "range"
+      },
+      "description": "width must stay within configured plausible range",
+      "rule_id": "width_plausibility",
+      "trigger_field": "width"
+    },
     {
       "condition": "connection IN ['wireless','hybrid','bluetooth']",
       "description": "Wireless products should provide battery_hours",

@@ -730,7 +730,7 @@ describe('packBundle — step 6 (greedy pack + variant cost)', () => {
     assert.equal(result.totalCost, 1);
   });
 
-  it('applies fractional passenger surcharge for each extra family variant', () => {
+  it('applies fractional passenger surcharge for each extra product-family member', () => {
     // easy pool=6, base easy cost=1, family size 4 with +0.25 per extra
     // → cost 1.75 each, so only 3 easy peers fit.
     const candidates = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map((k) =>

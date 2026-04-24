@@ -1,8 +1,12 @@
 import test, { describe } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import {
   transformLabRegistryToModels,
   mergeLabModelsIntoRegistry,
+  syncLabRegistryIntoConfig,
 } from '../labModelDiscovery.js';
 
 // ---------------------------------------------------------------------------
@@ -65,6 +69,27 @@ describe('transformLabRegistryToModels', () => {
     assert.equal(m.costInputPer1M, 2.5);
     assert.equal(m.costOutputPer1M, 15.0);
     assert.equal(m.costCachedPer1M, 0.25);
+  });
+
+  test('LLM Lab provider registry shape maps provider-specific models and prices', () => {
+    const result = transformLabRegistryToModels({
+      providers: {
+        openai: {
+          models: [{
+            ...BASE_MODEL,
+            id: 'gpt-5.5',
+            costInputPer1M: 5,
+            costOutputPer1M: 30,
+            costCachedPer1M: 0.5,
+          }],
+        },
+      },
+    }, 'oai', 'lab-openai');
+    const m = result[0];
+    assert.equal(m.modelId, 'gpt-5.5');
+    assert.equal(m.costInputPer1M, 5);
+    assert.equal(m.costOutputPer1M, 30);
+    assert.equal(m.costCachedPer1M, 0.5);
   });
 
   test('token limits map 1:1', () => {
@@ -149,5 +174,59 @@ describe('mergeLabModelsIntoRegistry', () => {
 
   test('invalid JSON passthrough', () => {
     assert.equal(mergeLabModelsIntoRegistry('not-json', SYNCED), 'not-json');
+  });
+});
+
+describe('syncLabRegistryIntoConfig', () => {
+  test('refreshes stale Lab provider models from the local LLM Lab registry file', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'spec-factory-lab-registry-'));
+    const registryPath = path.join(dir, 'model_registry.json');
+    fs.writeFileSync(registryPath, JSON.stringify({
+      providers: {
+        openai: {
+          models: [{
+            id: 'gpt-5.5',
+            maxContextTokens: 1050000,
+            maxOutputTokens: 128000,
+            efforts: ['low', 'medium', 'high', 'xhigh'],
+            costInputPer1M: 5,
+            costOutputPer1M: 30,
+            costCachedPer1M: 0.5,
+            capabilities: { web_search: true },
+          }],
+        },
+      },
+    }));
+    const config = {
+      llmProviderRegistryJson: JSON.stringify([{
+        id: 'lab-openai',
+        name: 'LLM Lab OpenAI',
+        type: 'openai-compatible',
+        baseUrl: 'http://localhost:5001/v1',
+        apiKey: 'session',
+        accessMode: 'lab',
+        models: [{
+          id: 'lab-oai-gpt55',
+          modelId: 'gpt-5.5',
+          costInputPer1M: 5,
+          costOutputPer1M: 3,
+          costCachedPer1M: 0.5,
+        }],
+      }]),
+    };
+
+    await syncLabRegistryIntoConfig(config, {
+      labRegistryPath: registryPath,
+      fetchRegistry: async () => {
+        throw new Error('fetch should not be used when the local Lab registry has the provider');
+      },
+    });
+
+    const providers = JSON.parse(config.llmProviderRegistryJson);
+    const openai = providers.find((provider) => provider.id === 'lab-openai');
+    assert.equal(openai.models.length, 1);
+    assert.equal(openai.models[0].modelId, 'gpt-5.5');
+    assert.equal(openai.models[0].costOutputPer1M, 30);
+    assert.equal(openai.models[0].webSearch, true);
   });
 });

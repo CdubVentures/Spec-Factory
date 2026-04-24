@@ -36,8 +36,11 @@ function buildCommonStubs() {
       export function useMemo(factory) {
         return factory();
       }
+      export function useCallback(fn) {
+        return fn;
+      }
       export function useState(init) {
-        return [typeof init === 'function' ? init() : init, () => {}];
+        return [typeof init === 'function' ? init() : init, (next) => globalThis.__queryHarness.stateSetters.push(next)];
       }
     `,
     'react/jsx-runtime': `
@@ -100,6 +103,20 @@ function buildCommonStubs() {
         return selector(globalThis.__queryHarness.uiState);
       }
     `,
+    '../../stores/tabStore.ts': `
+      export function usePersistedTab(key, fallback) {
+        const value = Object.prototype.hasOwnProperty.call(globalThis.__queryHarness.persisted, key)
+          ? globalThis.__queryHarness.persisted[key]
+          : fallback;
+        return [value, (next) => globalThis.__queryHarness.persistedWrites.push({ key, next })];
+      }
+      export function usePersistedNumber(key, fallback) {
+        const value = Object.prototype.hasOwnProperty.call(globalThis.__queryHarness.persisted, key)
+          ? globalThis.__queryHarness.persisted[key]
+          : fallback;
+        return [value, (next) => globalThis.__queryHarness.persistedWrites.push({ key, next })];
+      }
+    `,
     '../../shared/ui/data-display/MetricRow.tsx': componentStub.replace(/__stub__/g, 'MetricRow'),
     '../../shared/ui/data-display/MetricCard.tsx': componentStub.replace(/__stub__/g, 'MetricCard'),
     '../../shared/ui/data-display/DataTable.tsx': componentStub.replace(/__stub__/g, 'DataTable'),
@@ -158,6 +175,9 @@ function buildCommonStubs() {
       export function useBillingEntriesQuery() {
         return useQuery({ queryKey: ['billing', 'entries', {}], queryFn: async () => ({}), refetchInterval: BILLING_REFETCH });
       }
+      export function useBillingModelCostsQuery(filters, open) {
+        return useQuery({ queryKey: ['billing', 'model-costs', filters], queryFn: async () => ({}), refetchInterval: BILLING_REFETCH, enabled: open });
+      }
     `,
     '../../features/billing/billingTypes.ts': `
       export {};
@@ -188,6 +208,7 @@ function buildCommonStubs() {
     '../../features/billing/components/PromptCachePanel.tsx': componentStub.replace(/__stub__/g, 'PromptCachePanel'),
     '../../features/billing/components/HorizontalBarSection.tsx': componentStub.replace(/__stub__/g, 'HorizontalBarSection'),
     '../../features/billing/components/BillingEntryTable.tsx': componentStub.replace(/__stub__/g, 'BillingEntryTable'),
+    '../../features/billing/components/BillingModelCostDialog.tsx': componentStub.replace(/__stub__/g, 'BillingModelCostDialog'),
   };
 }
 
@@ -207,6 +228,9 @@ function loadGuiModule(entryRelativePath) {
 test('BillingPage calls 6 global billing query hooks with 30s refresh', async () => {
   globalThis.__queryHarness = {
     calls: [],
+    persisted: {},
+    persistedWrites: [],
+    stateSetters: [],
     uiState: { category: 'mouse', categories: ['mouse', 'keyboard'] },
   };
 
@@ -221,7 +245,7 @@ test('BillingPage calls 6 global billing query hooks with 30s refresh', async ()
 
   assert.ok(billingCalls.length >= 5, `expected at least 5 billing queries, got ${billingCalls.length}`);
 
-  const expectedKeys = ['summary', 'daily', 'by-model', 'by-reason', 'by-category'];
+  const expectedKeys = ['summary', 'daily', 'by-model', 'by-reason', 'by-category', 'model-costs'];
   for (const key of expectedKeys) {
     const found = billingCalls.find(
       (c) => Array.isArray(c.queryKey) && c.queryKey[1] === key,
@@ -231,9 +255,63 @@ test('BillingPage calls 6 global billing query hooks with 30s refresh', async ()
   }
 });
 
+function findAll(element, predicate) {
+  const results = [];
+  function visit(node) {
+    if (Array.isArray(node)) {
+      for (const child of node) visit(child);
+      return;
+    }
+    if (node == null || typeof node !== 'object') return;
+    if (predicate(node)) results.push(node);
+    visit(node.props?.children);
+  }
+  visit(element);
+  return results;
+}
+
+test('BillingPage exposes clear-view and model-cost popup actions', async () => {
+  globalThis.__queryHarness = {
+    calls: [],
+    persisted: {
+      'billing:filter:category': 'mouse',
+      'billing:filter:reason': 'extract',
+      'billing:filter:model': 'gpt-5.5',
+      'billing:filter:access': 'lab',
+      'billing:page': 3,
+    },
+    persistedWrites: [],
+    stateSetters: [],
+    uiState: { category: 'mouse', categories: ['mouse', 'keyboard'] },
+  };
+
+  const module = await loadGuiModule('tools/gui-react/src/pages/billing/BillingPage.tsx');
+  const Page = module.BillingPage;
+  const tree = renderElement(Page());
+
+  const clearButton = findAll(tree, (node) => node.type === 'button' && node.props?.['aria-label'] === 'Clear billing view')[0];
+  assert.ok(clearButton, 'expected clear billing view button');
+  clearButton.props.onClick();
+  assert.deepStrictEqual(globalThis.__queryHarness.persistedWrites, [
+    { key: 'billing:filter:category', next: '' },
+    { key: 'billing:filter:reason', next: '' },
+    { key: 'billing:filter:model', next: '' },
+    { key: 'billing:filter:access', next: '' },
+    { key: 'billing:page', next: 0 },
+  ]);
+
+  const costButton = findAll(tree, (node) => node.type === 'button' && node.props?.['aria-label'] === 'Open model cost catalog')[0];
+  assert.ok(costButton, 'expected model cost catalog button');
+  costButton.props.onClick();
+  assert.equal(globalThis.__queryHarness.stateSetters.includes(true), true);
+});
+
 test('OverviewPage billing query uses 30s cadence (not 10s catalog cadence)', async () => {
   globalThis.__queryHarness = {
     calls: [],
+    persisted: {},
+    persistedWrites: [],
+    stateSetters: [],
     uiState: { category: 'mouse' },
   };
 

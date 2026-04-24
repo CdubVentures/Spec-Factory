@@ -1,7 +1,7 @@
 {
   "category": "mouse",
   "component_type": "sensor",
-  "generated_at": "2026-04-23T22:28:20.449Z",
+  "generated_at": "2026-04-24T02:32:59.027Z",
   "items": [
     {
       "__constraints": {
@@ -48,7 +48,7 @@
       "properties": {
         "acceleration": 88,
         "dpi": 44000,
-        "flawless_sensor": "yes",
+        "flawless_sensor": true,
         "ips": 888,
         "sensor_date": "2024-09-01",
         "sensor_type": "optical"
@@ -264,7 +264,7 @@
       "maker": "turtle-beach",
       "name": "Owl-Eye 30K",
       "properties": {
-        "acceleration": "30",
+        "acceleration": 30,
         "dpi": 30000,
         "ips": 750,
         "sensor_type": "optical"
@@ -536,7 +536,7 @@
       "properties": {
         "acceleration": 50,
         "dpi": 36000,
-        "flawless_sensor": "yes",
+        "flawless_sensor": true,
         "ips": 650,
         "sensor_date": "2022-01-01",
         "sensor_type": "optical"
@@ -1034,7 +1034,7 @@
       "properties": {
         "acceleration": 50,
         "dpi": 19000,
-        "flawless_sensor": "yes",
+        "flawless_sensor": true,
         "ips": 400,
         "sensor_date": "2020-08-01",
         "sensor_type": "optical"
@@ -1363,7 +1363,7 @@
       "properties": {
         "acceleration": 35,
         "dpi": 12000,
-        "flawless_sensor": "yes",
+        "flawless_sensor": true,
         "ips": 300,
         "sensor_date": "2022-11-01",
         "sensor_type": "optical"
@@ -1597,7 +1597,6 @@
       "maker": "avago",
       "name": "ADNS-3310",
       "properties": {
-        "acceleration": "-",
         "dpi": 7000,
         "ips": 215,
         "sensor_type": "optical"
@@ -2155,9 +2154,7 @@
       "maker": "avago",
       "name": "SDNS3988",
       "properties": {
-        "acceleration": "-",
         "dpi": 12000,
-        "ips": "-",
         "sensor_type": "optical"
       }
     },
@@ -2177,7 +2174,6 @@
       "properties": {
         "acceleration": 30,
         "dpi": 8200,
-        "ips": "-",
         "sensor_type": "laser"
       }
     },
@@ -2195,9 +2191,7 @@
       "maker": "PixArt",
       "name": "1855",
       "properties": {
-        "acceleration": "-",
         "dpi": 8000,
-        "ips": "-",
         "sensor_type": "optical"
       }
     },
@@ -2218,9 +2212,7 @@
       "maker": "logitech",
       "name": "Advanced Optical Tracking",
       "properties": {
-        "acceleration": "-",
         "dpi": 4000,
-        "ips": "-",
         "sensor_type": "optical"
       }
     },
@@ -2238,9 +2230,7 @@
       "maker": "avago",
       "name": "A3305",
       "properties": {
-        "acceleration": "-",
         "dpi": 3200,
-        "ips": "-",
         "sensor_type": "optical"
       }
     },
@@ -2258,9 +2248,7 @@
       "maker": "avago",
       "name": "A3055",
       "properties": {
-        "acceleration": "-",
         "dpi": 2500,
-        "ips": "-",
         "sensor_type": "optical"
       }
     },
@@ -2278,9 +2266,6 @@
       "maker": "logitech",
       "name": "Darkfield",
       "properties": {
-        "acceleration": "-",
-        "dpi": "-",
-        "ips": "-",
         "sensor_type": "laser"
       }
     },
@@ -2298,9 +2283,6 @@
       "maker": "logitech",
       "name": "VB010411",
       "properties": {
-        "acceleration": "-",
-        "dpi": "-",
-        "ips": "-",
         "sensor_type": "optical"
       }
     },
@@ -2322,9 +2304,6 @@
       "maker": "PixArt",
       "name": "PAW3808(EK)",
       "properties": {
-        "acceleration": "-",
-        "dpi": "-",
-        "ips": "-",
         "sensor_type": "optical"
       }
     },
@@ -2506,7 +2485,7 @@
       "properties": {
         "acceleration": 40,
         "dpi": 16000,
-        "flawless_sensor": "yes",
+        "flawless_sensor": true,
         "ips": 400,
         "sensor_date": "2018-10-01",
         "sensor_type": "optical"

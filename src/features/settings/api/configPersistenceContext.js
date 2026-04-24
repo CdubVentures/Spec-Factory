@@ -11,6 +11,15 @@ import {
   recordSettingsWriteOutcome,
 } from '../../../core/events/settingsPersistenceCounters.js';
 
+function isNonEmptyRegistryJson(value) {
+  if (typeof value !== 'string') return false;
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) && parsed.length > 0;
+  } catch {
+    return false;
+  }
+}
 
 export function createConfigPersistenceContext({
   config,
@@ -90,10 +99,13 @@ export function createConfigPersistenceContext({
       if (
         emptyRegistryGuard
         && guardedPatch.llmProviderRegistryJson === '[]'
-        && typeof config.llmProviderRegistryJson === 'string'
-        && config.llmProviderRegistryJson.length > 2
       ) {
-        guardedPatch.llmProviderRegistryJson = config.llmProviderRegistryJson;
+        const persistedRegistry = userSettingsState?.runtime?.llmProviderRegistryJson;
+        if (isNonEmptyRegistryJson(persistedRegistry)) {
+          guardedPatch.llmProviderRegistryJson = persistedRegistry;
+        } else if (isNonEmptyRegistryJson(config.llmProviderRegistryJson)) {
+          guardedPatch.llmProviderRegistryJson = config.llmProviderRegistryJson;
+        }
       }
 
       // WHY: Preserve the default provider registry when SQL still contains a

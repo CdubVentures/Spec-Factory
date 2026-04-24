@@ -80,10 +80,10 @@ describe('resolveBillingCallType', () => {
     strictEqual(vid.label, 'Variant ID');
   });
 
-  it('resolves newly-covered finders (writer, RDF, validate)', () => {
+  it('resolves active generated finder reasons', () => {
     strictEqual(resolveBillingCallType('writer_formatting').group, 'Writer');
     strictEqual(resolveBillingCallType('release_date_finding').group, 'Release Date');
-    strictEqual(resolveBillingCallType('validate').group, 'Validation');
+    strictEqual(resolveBillingCallType('key_finding_easy').group, 'Key Finder');
   });
 
   it('returns fallback for unknown reasons', () => {

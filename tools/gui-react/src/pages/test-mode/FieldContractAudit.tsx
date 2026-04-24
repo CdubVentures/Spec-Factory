@@ -151,8 +151,7 @@ function FieldRow({ field, phaseByStep }: { field: FieldAuditResult; phaseByStep
 
 const ACTION_CLS: Record<string, string> = {
   'reject': 'sf-chip-danger',
-  'reject+llm': 'sf-chip-warning',
-  'llm_repair': 'sf-chip-warning',
+  'soft_reject': 'sf-chip-warning',
   'deterministic': 'sf-chip-success',
   'dispatch': 'sf-chip-info',
   'pass-through': 'sf-chip-success',
@@ -161,8 +160,7 @@ const ACTION_CLS: Record<string, string> = {
 
 const ACTION_LABEL: Record<string, string> = {
   'reject': 'Reject',
-  'reject+llm': 'LLM Repair',
-  'llm_repair': 'LLM Repair',
+  'soft_reject': 'Soft Reject',
   'deterministic': 'Deterministic',
   'dispatch': 'Dispatch',
   'pass-through': 'Pass-through',
@@ -188,7 +186,6 @@ function KnobCheckRow({ knob, check, phase }: { knob: FieldKnob; check: AuditChe
         <td className="py-1.5 px-2">
           <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold ${ACTION_CLS[knob.action] ?? 'sf-chip-neutral'}`}>
             {ACTION_LABEL[knob.action] ?? knob.action}
-            {knob.prompt ? ` (${knob.prompt})` : ''}
           </span>
         </td>
         {/* Test input */}
@@ -221,34 +218,18 @@ function KnobCheckRow({ knob, check, phase }: { knob: FieldKnob; check: AuditChe
           }
         </td>
       </tr>
-      {/* Expandable: validator trace + repair prompt */}
-      {hasTest && (check.validatorOutput || check.prompt) && (
+      {/* Expandable: validator trace */}
+      {hasTest && check.validatorOutput && (
         <tr>
           <td colSpan={8} className="px-2 pb-0.5">
-            {/* Validator trace */}
-            {check.validatorOutput && (
-              <details>
-                <summary className="text-[9px] sf-text-subtle cursor-pointer font-semibold select-none py-0.5 hover:sf-status-text-info">
-                  Validator trace ({check.validatorOutput.repairs.length} repairs, {check.validatorOutput.rejections.length} rejections)
-                </summary>
-                <div className="sf-surface-elevated border sf-border-default rounded-md px-3 py-2 mt-1 mb-1">
-                  <ValidatorTrace output={check.validatorOutput} />
-                </div>
-              </details>
-            )}
-            {/* Repair prompt — shown for reject checks that trigger LLM repair */}
-            {check.prompt && (
-              <details>
-                <summary className="text-[9px] cursor-pointer font-semibold select-none py-0.5 hover:sf-status-text-info sf-status-text-warning">
-                  LLM Repair Prompt: {check.prompt.promptId}
-                </summary>
-                <div className="sf-surface-elevated border sf-border-default rounded-md px-3 py-2 mt-1 mb-1">
-                  <pre className="text-[10px] font-mono leading-relaxed sf-text-muted whitespace-pre-wrap max-h-64 overflow-y-auto">
-                    {`SYSTEM:\n${check.prompt.system}\n\nUSER:\n${check.prompt.user}`}
-                  </pre>
-                </div>
-              </details>
-            )}
+            <details>
+              <summary className="text-[9px] sf-text-subtle cursor-pointer font-semibold select-none py-0.5 hover:sf-status-text-info">
+                Validator trace ({check.validatorOutput.repairs.length} repairs, {check.validatorOutput.rejections.length} rejections)
+              </summary>
+              <div className="sf-surface-elevated border sf-border-default rounded-md px-3 py-2 mt-1 mb-1">
+                <ValidatorTrace output={check.validatorOutput} />
+              </div>
+            </details>
           </td>
         </tr>
       )}

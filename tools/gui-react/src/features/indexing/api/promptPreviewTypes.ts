@@ -40,4 +40,5 @@ export interface PromptPreviewRequestBody {
   readonly mode?: string;
   readonly view?: string;
   readonly field_key?: string;
+  readonly passenger_field_keys_snapshot?: readonly string[];
 }

@@ -50,7 +50,7 @@ function generatePhaseTypes() {
   lines.push(`  label: string;`);
   lines.push(`  subtitle: string;`);
   lines.push(`  tip: string;`);
-  lines.push(`  roles: ReadonlyArray<'plan' | 'triage' | 'reasoning' | 'validate' | 'write'>;`);
+  lines.push(`  roles: ReadonlyArray<'plan' | 'triage' | 'reasoning' | 'write'>;`);
   lines.push(`  sharedWith?: ReadonlyArray<LlmPhaseId>;`);
   lines.push(`  group: LlmPhaseGroup;`);
   lines.push(`}\n`);
@@ -84,7 +84,6 @@ function generatePhaseRegistry() {
   lines.push(`  global: 'Global',`);
   lines.push(`  writer: 'Writer',`);
   lines.push(`  indexing: 'Indexing Pipeline',`);
-  lines.push(`  publish: 'Publish Pipeline',`);
   lines.push(`  discovery: 'Discovery',`);
   lines.push(`};\n`);
 

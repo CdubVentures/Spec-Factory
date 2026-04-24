@@ -1,7 +1,7 @@
 // Per-key budget calculator — pure function.
 // Computes attempt budget per key from 4 axes: required_level, availability,
-// difficulty, variant count. The three integer axes floor via axisPoints;
-// variantPointsPerExtra is float so variant count accrues fractionally. The
+// difficulty, product-family size. The three integer axes floor via axisPoints;
+// variantPointsPerExtra is float so family size accrues fractionally. The
 // raw fractional budget is returned so the frontend can display "9.75" while
 // the loop spends ceil(9.75) = 10 attempts.
 
@@ -23,12 +23,13 @@ export function readFloatKnob(raw, fallback = 0) {
   return Number.isFinite(n) && n >= 0 ? n : fallback;
 }
 
-export function calcKeyBudget({ fieldRule = {}, variantCount = 1, settings = {} } = {}) {
+export function calcKeyBudget({ fieldRule = {}, familySize = undefined, variantCount = undefined, settings = {} } = {}) {
   const required = axisPoints(settings.budgetRequiredPoints, fieldRule.required_level);
   const availability = axisPoints(settings.budgetAvailabilityPoints, fieldRule.availability);
   const difficulty = axisPoints(settings.budgetDifficultyPoints, fieldRule.difficulty);
   const perExtra = readFloatKnob(settings.budgetVariantPointsPerExtra, 0);
-  const extras = Math.max(0, Number(variantCount) - 1);
+  const resolvedFamilySize = familySize ?? variantCount ?? 1;
+  const extras = Math.max(0, Number(resolvedFamilySize) - 1);
   const variant = extras * perExtra;
   const floor = Math.max(1, axisPoints({ v: settings.budgetFloor }, 'v') || 1);
   const rawBudget = required + availability + difficulty + variant;

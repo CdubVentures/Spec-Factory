@@ -23,11 +23,116 @@ function readFieldKeyOrderCount(specDb, category) {
   }
 }
 
+// Joins pif_variant_progress rows with variants metadata for the Overview cell.
+// Every active variant produces a row — if no progress is recorded yet, the
+// row carries zero filled counts with targets from the PIF settings, so empty
+// rings still render (user confirmed 2026-04-23: "show empty rings if
+// variant exists").
+function buildPifVariants(specDb, productId, pifTargets) {
+  const variants = specDb.variants?.listByProduct?.(productId) || [];
+  if (variants.length === 0) return [];
+  const progressRows = specDb.listPifVariantProgressByProduct?.(productId) || [];
+  const progressById = new Map();
+  for (const p of progressRows) progressById.set(p.variant_id, p);
+
+  return variants.map((v) => {
+    const p = progressById.get(v.variant_id);
+    return {
+      variant_id: v.variant_id,
+      variant_key: v.variant_key || '',
+      variant_label: String(v.variant_label || ''),
+      color_atoms: Array.isArray(v.color_atoms) ? v.color_atoms : [],
+      priority_filled: Number(p?.priority_filled) || 0,
+      priority_total: Number(p?.priority_total) || pifTargets.priorityTotal,
+      loop_filled: Number(p?.loop_filled) || 0,
+      loop_total: Number(p?.loop_total) || pifTargets.loopTotal,
+      hero_filled: Number(p?.hero_filled) || 0,
+      hero_target: Number(p?.hero_target) || pifTargets.heroTarget,
+    };
+  });
+}
+
+// Per-variant snapshot of a scalar field's top candidate. SKU + RDF share
+// this shape — they're both variant-scoped scalars. Returns one row per
+// active variant, with empty value + 0 confidence when no candidate exists
+// (so empty-diamond cells render for every known variant).
+function buildScalarVariants(specDb, productId, fieldKey) {
+  const variants = specDb.variants?.listByProduct?.(productId) || [];
+  if (variants.length === 0) return [];
+
+  return variants.map((v) => {
+    const candidates = specDb.getFieldCandidatesByProductAndField?.(productId, fieldKey, v.variant_id) || [];
+    // Pick highest-confidence candidate for this variant. Tie-break: resolved
+    // status wins (it's the authoritative value the publisher picked).
+    let top = null;
+    for (const c of candidates) {
+      if (!top) { top = c; continue; }
+      const topConf = Number(top.confidence) || 0;
+      const cConf = Number(c.confidence) || 0;
+      if (cConf > topConf) { top = c; continue; }
+      if (cConf === topConf && String(c.status) === 'resolved' && String(top.status) !== 'resolved') {
+        top = c;
+      }
+    }
+    return {
+      variant_id: v.variant_id,
+      variant_key: v.variant_key || '',
+      variant_label: String(v.variant_label || ''),
+      color_atoms: Array.isArray(v.color_atoms) ? v.color_atoms : [],
+      value: String(top?.value ?? ''),
+      confidence: Number(top?.confidence) || 0,
+    };
+  });
+}
+
+// Live read of the PIF settings that drive ring totals. Called once per
+// catalog refresh, shared across all products (category-scoped).
+function readPifTargets(specDb, category) {
+  const finderStore = specDb.getFinderStore?.('productImageFinder');
+  if (!finderStore?.getSetting) {
+    return { priorityTotal: 0, loopTotal: 0, heroTarget: 0 };
+  }
+  const heroEnabledRaw = finderStore.getSetting('heroEnabled');
+  const heroEnabled = String(heroEnabledRaw ?? 'true') !== 'false';
+  const heroCount = parseInt(finderStore.getSetting('heroCount') || '3', 10) || 3;
+
+  // Defaults are resolved in the runner via resolveViewConfig / resolveViewBudget.
+  // Here we parse the JSON blobs directly — catalog builder only needs counts,
+  // not the full descriptors, so we avoid importing from src/features/ into
+  // src/app/ and keep module boundaries clean.
+  const viewConfigRaw = finderStore.getSetting('viewConfig') || '';
+  const viewBudgetRaw = finderStore.getSetting('viewBudget') || '';
+
+  let priorityKeys = [];
+  try {
+    const parsed = JSON.parse(viewConfigRaw);
+    if (Array.isArray(parsed)) {
+      priorityKeys = parsed.filter((v) => v && v.priority === true).map((v) => v.key).filter(Boolean);
+    }
+  } catch { /* fall through */ }
+
+  let loopKeys = [];
+  try {
+    const parsed = JSON.parse(viewBudgetRaw);
+    if (Array.isArray(parsed)) loopKeys = parsed.filter(Boolean);
+  } catch { /* fall through */ }
+
+  const prioritySet = new Set(priorityKeys);
+  const loopExtras = loopKeys.filter((k) => !prioritySet.has(k));
+
+  return {
+    priorityTotal: priorityKeys.length,
+    loopTotal: loopExtras.length,
+    heroTarget: heroEnabled ? heroCount : 0,
+  };
+}
+
 function buildCatalogFromSql({ specDb, cleanVariant, category }) {
   if (!specDb) return [];
 
   const allProducts = specDb.getAllProducts() || [];
   const totalFieldCount = readFieldKeyOrderCount(specDb, category);
+  const pifTargets = readPifTargets(specDb, category);
 
   const seen = new Map();
 
@@ -47,6 +152,11 @@ function buildCatalogFromSql({ specDb, cleanVariant, category }) {
       ? resolvedCandidates.reduce((s, c) => s + (Number(c.confidence) || 0), 0) / resolvedCandidates.length / 100
       : 0;
 
+    const cefRuns = specDb.listColorEditionFinderRuns?.(pid) || [];
+    const pifVariants = buildPifVariants(specDb, pid, pifTargets);
+    const skuVariants = buildScalarVariants(specDb, pid, 'sku');
+    const rdfVariants = buildScalarVariants(specDb, pid, 'release_date');
+
     seen.set(pid, {
       productId: pid,
       id: row.id || 0,
@@ -61,6 +171,10 @@ function buildCatalogFromSql({ specDb, cleanVariant, category }) {
       coverage: totalFieldCount > 0 ? fieldKeysWithData.size / totalFieldCount : 0,
       fieldsFilled: fieldKeysWithData.size,
       fieldsTotal: totalFieldCount,
+      cefRunCount: cefRuns.length,
+      pifVariants,
+      skuVariants,
+      rdfVariants,
     });
   }
 

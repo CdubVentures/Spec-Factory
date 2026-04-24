@@ -20,14 +20,14 @@ Exports from `src/features/key/index.js`:
 - `runKeyFinder({ product, fieldKey, category, specDb, appDb?, config?, policy?, broadcastWs?, signal?, logger?, productRoot? })` — orchestrator. One LLM call per `(product, fieldKey)`. Resolves passengers via `buildPassengers` when bundling is enabled, loops `submitCandidate` across primary + each passenger. Returns `{ status, run_number, field_key, tier, candidate?, passenger_candidates, publisher_error?, unknown_reason? }`.
 - `registerKeyFinderRoutes(ctx)` — custom route handler registrar. URLs:
   - `POST /key-finder/:category/:productId` body `{ field_key, mode? = 'run' }` → fireAndForget Run. Rejects `mode === 'loop'` with 400.
-  - `POST /key-finder/:category/:productId/preview-prompt` body `{ field_key }` → Phase 5 compiled prompt preview (no LLM, no persistence)
+  - `POST /key-finder/:category/:productId/preview-prompt` body `{ field_key, passenger_field_keys_snapshot? }` → Phase 5 compiled prompt preview (no LLM, no persistence). When present, the passenger snapshot is authoritative for preview parity with the visible Next bundle row.
   - `GET /key-finder/:category` → list summaries
   - `GET /key-finder/:category/:productId/bundling-config` → live settings snapshot for the BundlingStatusStrip
   - `GET /key-finder/:category/:productId/summary` → per-key rollup rows including `bundle_preview`
   - `GET /key-finder/:category/:productId?field_key=X&scope=key|group|product` → scoped detail (legacy; partial consumers)
   - `DELETE /key-finder/:category/:productId/runs/:runNumber?field_key=X` → single-run delete (cascades primary + all passengers)
   - `DELETE /key-finder/:category/:productId` → delete-all
-- `buildPassengers({ primary, engineRules, specDb, productId, settings, variantCount? })` — shared packer-wrapper used by BOTH `runKeyFinder` and `keyFinderPreviewPrompt.compileKeyFinderPreviewPrompt` so preview and live run resolve passengers identically.
+- `buildPassengers({ primary, engineRules, specDb, productId, settings, familySize? })` — shared packer-wrapper used by BOTH `runKeyFinder` and `keyFinderPreviewPrompt.compileKeyFinderPreviewPrompt` so preview and live run resolve passengers identically.
 - `packBundle(...)` — 6-step deterministic packer (eligibility → sort → greedy under `bundlingPoolPerPrimary[primaryDifficulty]`).
 - `compileKeyFinderPreviewPrompt(ctx)` — read-only prompt compiler returning the shared `PromptPreviewResponse` envelope.
 - `readKeyFinder` / `writeKeyFinder` / `mergeKeyFinderDiscovery` / `deleteKeyFinderRun` / `deleteKeyFinderRuns` / `deleteKeyFinderAll` / `rebuildKeyFinderFromJson` — JSON store + SQL rebuild.
@@ -40,6 +40,9 @@ Contract specifics:
 - Reserved-key rejection throws BEFORE any LLM call or store write.
 - Passengers never enter the candidate pool themselves — `buildPassengers` filters reserved keys and variant-dependent keys up front.
 
+Prompt contract note:
+- `buildKeyFinderPrompt(...)` receives `knownValues` from `FieldRulesEngine`; `enum.source: data_lists.*` values are rendered for the primary and every passenger before live Run or Prompt Preview dispatch.
+
 ## Dependencies
 
 - **Allowed**: `src/core/finder/` (JSON/SQL stores, route handler helpers, discovery-log accumulator, reserved-keys denylist), `src/core/llm/` (tier router, LLM deps, zodToLlmSchema, stream batcher, prompt fragments), `src/core/events/dataChangeContract.js`, `src/core/operations/` (operation lifecycle + fireAndForget), `src/engine/fieldRulesEngine.js`, `src/features/publisher/candidate-gate/submitCandidate.js`, `src/features/indexing/orchestration/shared/identityHelpers.js`, `src/billing/costLedger.js`.
@@ -49,8 +52,8 @@ Contract specifics:
 
 - **Product-scoped, never per-variant**: `runKeyFinder` fires exactly one LLM call per invocation. `submitCandidate` uses `variantId: null`.
 - **Reserved-keys denylist enforced**: Keys owned by another finder (CEF `colors`/`editions`, RDF `release_date`, SKF `sku`) throw before any LLM call. `eg_defaults` keys land in the same set via `EG_LOCKED_KEYS`. Derived from `FINDER_MODULES`.
-- **Bundling contract (Phase 4.5, locked 2026-04-21)**: Primary owns the budget; passengers ride free. Effective passenger cost is `bundlingPassengerCost[peer.difficulty] + ((variantCount - 1) * bundlingPassengerVariantCostPerExtra)`. Greedy-pack under `bundlingPoolPerPrimary[primary.difficulty]`. 4 policy enums: `less_or_equal` / `same_only` / `any_but_very_hard` / `any_but_hard_very_hard`. SSOT §6.1 of per-key-finder-roadmap.html.
-- **Preview–runner parity**: `buildPassengers` is the ONLY passenger resolver both paths call. Drift is guarded by a byte-for-byte systemPrompt match test in `keyFinderPreviewPrompt.test.js`.
+- **Bundling contract (Phase 4.5, locked 2026-04-21)**: Primary owns the budget; passengers ride free. Effective passenger cost is `bundlingPassengerCost[peer.difficulty] + ((familySize - 1) * bundlingPassengerVariantCostPerExtra)`, where family size is the product count sharing `brand + base_model` (not CEF color/edition variants). Greedy-pack under `bundlingPoolPerPrimary[primary.difficulty]`. 4 policy enums: `less_or_equal` / `same_only` / `any_but_very_hard` / `any_but_hard_very_hard`. SSOT §6.1 of per-key-finder-roadmap.html.
+- **Preview–runner parity**: `buildPassengers` is the ONLY live passenger resolver both paths call. Prompt Preview may receive the UI's visible `passenger_field_keys_snapshot`; when present, that snapshot is authoritative so the modal mirrors the current Next bundle row. Drift is guarded by `keyFinderPreviewPrompt.test.js`.
 - **Run record must echo `primary_field_key`**: Every persisted run carries `response.primary_field_key === fieldKey` AND `response.results[primary_field_key]`. Discovery history drawer groups runs by this key.
 - **Passenger attribution**: `run.selected.keys[fk].rode_with` is `null` for primary, `primaryFieldKey` for each passenger. Load-bearing for (a) delete-run cascade expanding `fieldKeys` from `run.selected.keys` and (b) Phase 5 Group Loop skip logic.
 - **History broadening**: `filterRunsByFieldKey` matches runs where the key appears as primary OR in `response.results`. `accumulateDiscoveryLog.runMatcher` mirrors this so passenger-resolved keys see the primary's URLs/queries as their own (passengers inherit the primary's search session by contract).

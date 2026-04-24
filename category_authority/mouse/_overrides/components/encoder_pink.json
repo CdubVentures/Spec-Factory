@@ -2,7 +2,7 @@
   "componentType": "encoder",
   "name": "Pink",
   "properties": {
-    "encoder_steps": "59"
+    "encoder_steps": 24
   },
   "updated_at": "2026-02-16T22:22:32.923Z",
   "timestamps": {

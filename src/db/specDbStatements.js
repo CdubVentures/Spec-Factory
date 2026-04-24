@@ -668,5 +668,42 @@ export function prepareStatements(db) {
     _deleteVariantsByProduct: db.prepare(
       'DELETE FROM variants WHERE category = ? AND product_id = ?'
     ),
+
+    // ── PIF variant progress ────────────────────────────────────
+    _upsertPifVariantProgress: db.prepare(`
+      INSERT INTO pif_variant_progress (
+        category, product_id, variant_id, variant_key,
+        priority_filled, priority_total, loop_filled, loop_total,
+        hero_filled, hero_target, updated_at
+      ) VALUES (
+        @category, @product_id, @variant_id, @variant_key,
+        @priority_filled, @priority_total, @loop_filled, @loop_total,
+        @hero_filled, @hero_target, datetime('now')
+      )
+      ON CONFLICT(category, product_id, variant_id) DO UPDATE SET
+        variant_key = excluded.variant_key,
+        priority_filled = excluded.priority_filled,
+        priority_total = excluded.priority_total,
+        loop_filled = excluded.loop_filled,
+        loop_total = excluded.loop_total,
+        hero_filled = excluded.hero_filled,
+        hero_target = excluded.hero_target,
+        updated_at = excluded.updated_at
+    `),
+    _listPifVariantProgressByProduct: db.prepare(
+      `SELECT variant_id, variant_key,
+              priority_filled, priority_total,
+              loop_filled, loop_total,
+              hero_filled, hero_target, updated_at
+         FROM pif_variant_progress
+        WHERE category = ? AND product_id = ?
+        ORDER BY variant_key`
+    ),
+    _deletePifVariantProgressByProduct: db.prepare(
+      'DELETE FROM pif_variant_progress WHERE category = ? AND product_id = ?'
+    ),
+    _deletePifVariantProgressByVariant: db.prepare(
+      'DELETE FROM pif_variant_progress WHERE category = ? AND product_id = ? AND variant_id = ?'
+    ),
   };
 }

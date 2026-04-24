@@ -21,11 +21,11 @@ export interface KeyFinderSummaryRow {
   readonly availability: string;
   readonly required_level: string;
   readonly variant_dependent: boolean;
-  /** calcKeyBudget(fieldRule, variantCount, settings).attempts — what Loop mode would spend. */
+  /** calcKeyBudget(fieldRule, familySize, settings).attempts — what Loop mode would spend. */
   readonly budget: number | null;
   /** Fractional raw budget (before ceil). attempts = ceil(raw_budget) so this value
    *  is what the UI displays in the Re-Run column. With default perExtra=0.25, a
-   *  5-variant mandatory-rare-very_hard key would show 9.5 here, budget=10. */
+   *  5-product-family mandatory-rare-very_hard key would show 9.5 here, budget=10. */
   readonly raw_budget: number | null;
   /** True when this key is currently running as a primary in some in-flight call.
    *  Used by the frontend to show a "busy primary" visual state on the Loop button. */

@@ -58,7 +58,7 @@ Alongside `[STATE: ...]`, every response that proposes code changes MUST declare
 - `[CLASS: BEHAVIORAL]` — new/changed domain logic, state transitions, parsers, contracts, error handling, a11y semantics, persisted settings, cross-theme invariants. **Full TDD required** per Contract-first Macro-TDD.
 - `[CLASS: STRUCTURAL]` — refactor, extract, move, rename. **No new tests required**, existing suite MUST stay green. If coverage is missing on the thing being moved, switch to `[CLASS: CHARACTERIZATION]` first.
 - `[CLASS: COSMETIC]` — CSS tokens, spacing, color, typography, copy edits, markup reshuffles preserving a11y, theme remaps with no behavior change. **No unit tests required.** Proof = light-theme checkpoint + smoke run.
-- `[CLASS: CONFIG]` — env vars, knobs, `.env.example` changes, dependency bumps with no behavioral branching. **No unit tests required.** Proof = boot + smoke.
+- `[CLASS: CONFIG]` — env vars, knobs, `.env.example` changes, dependency bumps with no behavioral branching, and user-owned data/settings/database edits through existing editable surfaces. **No unit tests required.** Proof = boot + smoke or existing validation/inspection.
 - `[CLASS: RETIREMENT]` — removing a setting, flag, field, or helper. Follows the existing Retirement / knob-removal testing rule. No repo-wide string-search tests.
 - `[CLASS: SPIKE]` — exploratory, thrown-away work in `.tmp/`. No tests, no merge. Must end with either deletion or a follow-up `[CLASS: BEHAVIORAL]` redo.
 
@@ -68,6 +68,20 @@ Alongside `[STATE: ...]`, every response that proposes code changes MUST declare
 - If unsure, default to `[CLASS: BEHAVIORAL]`.
 - **Automatic upgrade clause:** COSMETIC, CONFIG, or RETIREMENT changes that introduce ANY new conditional, computed value, or branching are automatically BEHAVIORAL. No exceptions.
 - No file edits / commands / commit steps without declaring CLASS first.
+
+---
+### User-owned data / DB settings exception
+
+When the human asks to edit existing user-owned data, records, settings, options, configuration values, lists, contracts, or database entries, classify the work as `[CLASS: CONFIG]`.
+
+For these edits:
+- Make the requested data/config/database edits directly.
+- Do not write, modify, or remove automated tests unless the human explicitly asks for tests.
+- Do not upgrade to `[CLASS: BEHAVIORAL]` only because the edited data changes downstream behavior, generated output, prompts, reports, UI display, validation results, or rebuild results.
+- Verification should use existing commands or direct inspection only.
+- Keep the change scoped to the requested data/config/database source.
+
+This exception does not apply when the request requires changing application source code, schemas, migrations, compiler logic, validation logic, prompt-rendering logic, or public APIs. Those changes follow the normal change-class rules.
 
 ---
 ### Test budget heuristic (adaptive decision)

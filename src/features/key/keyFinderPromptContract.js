@@ -19,7 +19,7 @@ export const KEY_FINDER_VARIABLES = Object.freeze([
   { name: 'MODEL', description: 'e.g. "G502 X Plus"', required: true, category: 'deterministic' },
   { name: 'VARIANT_SUFFIX', description: 'e.g. " (variant: black)" \u2014 empty when no variant', required: false, category: 'deterministic' },
   { name: 'CATEGORY', description: 'e.g. "mouse"', required: false, category: 'deterministic' },
-  { name: 'VARIANT_COUNT', description: 'Total variant count for this product (e.g. "4")', required: false, category: 'deterministic' },
+  { name: 'FAMILY_SIZE', description: 'Product-family size sharing brand + base_model (e.g. "3")', required: false, category: 'deterministic' },
 
   // Primary key (deterministic, field-rule driven)
   { name: 'PRIMARY_FIELD_KEY', description: 'The primary field_key being extracted (with display_name). Required \u2014 every keyFinder call has exactly one primary.', required: true, category: 'deterministic' },
@@ -60,7 +60,7 @@ export const KEY_FINDER_USER_MESSAGE_INFO = Object.freeze([
   { field: 'model', description: 'e.g. "G502 X Plus"' },
   { field: 'primary_field_key', description: 'The field_key this call targets as primary' },
   { field: 'passenger_count', description: 'Number of passenger keys bundled into this call (0 when solo)' },
-  { field: 'variant_count', description: 'Total variant count for this product' },
+  { field: 'family_size', description: 'Product-family size sharing brand + base_model' },
 ]);
 
 /**

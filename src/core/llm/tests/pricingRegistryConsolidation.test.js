@@ -65,7 +65,7 @@ test('resolvePricingForModel: registry model returns registry costs', () => {
   assert.equal(result.cached_input_per_1m, 0.04);
 });
 
-test('resolvePricingForModel: non-registry model falls back to pricingMap', () => {
+test('resolvePricingForModel: non-registry model ignores pricing maps and returns zero costs', () => {
   const cfg = cfgWithRegistry([flashProvider()], {
     llmModelPricingMap: {
       'custom-model': {
@@ -74,17 +74,17 @@ test('resolvePricingForModel: non-registry model falls back to pricingMap', () =
     },
   });
   const result = resolvePricingForModel(cfg, 'custom-model');
-  assert.equal(result.input_per_1m, 2.0);
-  assert.equal(result.output_per_1m, 8.0);
-  assert.equal(result.cached_input_per_1m, 0.5);
+  assert.equal(result.input_per_1m, 0);
+  assert.equal(result.output_per_1m, 0);
+  assert.equal(result.cached_input_per_1m, 0);
 });
 
-test('resolvePricingForModel: unknown model with no registry returns flat defaults', () => {
+test('resolvePricingForModel: unknown model with no registry entry returns zero costs', () => {
   const cfg = cfgWithRegistry([flashProvider()]);
   const result = resolvePricingForModel(cfg, 'unknown-model-xyz');
-  assert.equal(result.input_per_1m, 1.25);
-  assert.equal(result.output_per_1m, 10);
-  assert.equal(result.cached_input_per_1m, 0.125);
+  assert.equal(result.input_per_1m, 0);
+  assert.equal(result.output_per_1m, 0);
+  assert.equal(result.cached_input_per_1m, 0);
 });
 
 // ---------------------------------------------------------------------------

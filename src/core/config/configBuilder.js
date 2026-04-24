@@ -3,17 +3,11 @@
 // buildRawConfig returns the raw cfg object + explicitEnvKeys before post-merge normalization.
 
 import { providerFromModelToken } from '../llm/providerMeta.js';
-import {
-  buildDefaultModelPricingMap,
-  LLM_PRICING_AS_OF,
-  LLM_PRICING_SOURCES,
-  mergeModelPricingMaps
-} from '../../billing/modelPricingCatalog.js';
+import { LLM_PRICING_AS_OF, LLM_PRICING_SOURCES } from '../../billing/pricingMetadata.js';
 import {
   runtimeSettingDefault,
   normalizeSearchProfileCapMap,
   normalizeRetrievalInternalsMap,
-  normalizeModelPricingMap,
   normalizePricingSources,
   normalizeModelOutputTokenMap,
   DEFAULT_USER_AGENT
@@ -152,10 +146,7 @@ export function buildRawConfig({ manifestApplicator }) {
     llmProviderRegistryJson: runtimeSettingDefault('llmProviderRegistryJson'),
     llmPlanFallbackModel: process.env.LLM_PLAN_FALLBACK_MODEL || '',
     llmModelCatalog: process.env.LLM_MODEL_CATALOG || '',
-    llmModelPricingMap: mergeModelPricingMaps(
-      buildDefaultModelPricingMap(),
-      normalizeModelPricingMap(parseJsonEnv('LLM_MODEL_PRICING_JSON', {}))
-    ),
+    llmModelPricingMap: {},
     llmPricingAsOf: String(process.env.LLM_PRICING_AS_OF || LLM_PRICING_AS_OF),
     llmPricingSources: normalizePricingSources(parseJsonEnv('LLM_PRICING_SOURCES_JSON', LLM_PRICING_SOURCES)),
     llmTimeoutMs: timeoutMs,

@@ -19,6 +19,7 @@ const TMP_ROOT = path.join('.tmp', '_test_cef_preview_prompt');
 const DB_DIR = path.join(TMP_ROOT, '_db');
 const DB_PATH = path.join(DB_DIR, 'spec.sqlite');
 const PRODUCT_ROOT = path.join(TMP_ROOT, 'products');
+const TEST_CONFIG = { evidenceVerificationEnabled: false };
 
 const COLORS_RULE = {
   contract: { shape: 'list', type: 'string', list_rules: { dedupe: true, item_union: 'set_union', sort: 'none' } },
@@ -69,8 +70,16 @@ const PRODUCT = { product_id: 'mouse-target', category: 'mouse', brand: 'Corsair
 
 describe('CEF prompt preview — parity with real-run snapshot', () => {
   let specDb;
+  let originalFetch;
+  let networkFetchCalls;
 
   before(() => {
+    originalFetch = globalThis.fetch;
+    networkFetchCalls = [];
+    globalThis.fetch = async (url) => {
+      networkFetchCalls.push(String(url || ''));
+      throw new Error('colorEditionPreviewPrompt.test must not perform real network fetches');
+    };
     fs.rmSync(TMP_ROOT, { recursive: true, force: true });
     fs.mkdirSync(DB_DIR, { recursive: true });
     specDb = new SpecDb({ dbPath: DB_PATH, category: 'mouse' });
@@ -80,14 +89,23 @@ describe('CEF prompt preview — parity with real-run snapshot', () => {
   });
 
   after(() => {
-    specDb.close();
-    fs.rmSync(TMP_ROOT, { recursive: true, force: true });
+    if (originalFetch === undefined) {
+      delete globalThis.fetch;
+    } else {
+      globalThis.fetch = originalFetch;
+    }
+    try {
+      specDb.close();
+      fs.rmSync(TMP_ROOT, { recursive: true, force: true });
+    } finally {
+      assert.deepEqual(networkFetchCalls, [], 'offline CEF preview tests must not perform URL verification fetches');
+    }
   });
 
   it('preview system + user match the captured real-run snapshot byte-for-byte', async () => {
     // Preview first (no side effects)
     const preview = await compileColorEditionPreviewPrompt({
-      product: PRODUCT, appDb, specDb, config: {}, productRoot: PRODUCT_ROOT,
+      product: PRODUCT, appDb, specDb, config: TEST_CONFIG, productRoot: PRODUCT_ROOT,
     });
     assert.equal(preview.finder, 'cef');
     assert.equal(preview.mode, 'run');
@@ -96,7 +114,7 @@ describe('CEF prompt preview — parity with real-run snapshot', () => {
     // Real run next — capture the snapshot via onLlmCallComplete
     const capturedCalls = [];
     await runColorEditionFinder({
-      product: PRODUCT, appDb, specDb, config: {}, productRoot: PRODUCT_ROOT,
+      product: PRODUCT, appDb, specDb, config: TEST_CONFIG, productRoot: PRODUCT_ROOT,
       onLlmCallComplete: (call) => capturedCalls.push(call),
       _callLlmOverride: async () => ({ result: LLM_RESPONSE, usage: null }),
     });
@@ -126,7 +144,7 @@ describe('CEF prompt preview — parity with real-run snapshot', () => {
       const jsonBefore = fs.existsSync(path.join(cleanRoot, 'mouse-target', 'color_edition.json'));
 
       await compileColorEditionPreviewPrompt({
-        product: PRODUCT, appDb, specDb: cleanDb, config: {}, productRoot: cleanRoot,
+        product: PRODUCT, appDb, specDb: cleanDb, config: TEST_CONFIG, productRoot: cleanRoot,
       });
 
       const cefRowAfter = cleanDb.getFinderStore('colorEditionFinder').get('mouse-target');
@@ -150,21 +168,21 @@ describe('CEF prompt preview — parity with real-run snapshot', () => {
 
       const previewStrictOff = await compileColorEditionPreviewPrompt({
         product: PRODUCT, appDb, specDb: isoDb,
-        config: { _resolvedColorFinderJsonStrict: false },
+        config: { ...TEST_CONFIG, _resolvedColorFinderJsonStrict: false },
         productRoot: PRODUCT_ROOT,
       });
       assert.equal(previewStrictOff.prompts[0].model.json_strict, false);
 
       const previewStrictOn = await compileColorEditionPreviewPrompt({
         product: PRODUCT, appDb, specDb: isoDb,
-        config: { _resolvedColorFinderJsonStrict: true },
+        config: { ...TEST_CONFIG, _resolvedColorFinderJsonStrict: true },
         productRoot: PRODUCT_ROOT,
       });
       assert.equal(previewStrictOn.prompts[0].model.json_strict, true);
 
       // Default (omitted) → true
       const previewDefault = await compileColorEditionPreviewPrompt({
-        product: PRODUCT, appDb, specDb: isoDb, config: {}, productRoot: PRODUCT_ROOT,
+        product: PRODUCT, appDb, specDb: isoDb, config: TEST_CONFIG, productRoot: PRODUCT_ROOT,
       });
       assert.equal(previewDefault.prompts[0].model.json_strict, true);
     } finally {

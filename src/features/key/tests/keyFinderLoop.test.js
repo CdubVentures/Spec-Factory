@@ -57,7 +57,7 @@ const KNOBS = {
   budgetFloor: '3',
 };
 
-function makeSpecDb({ settings = KNOBS, variantCount = 1, resolvedPrimary = false } = {}) {
+function makeSpecDb({ settings = KNOBS, variantCount = 1, resolvedPrimary = false, productRows = [] } = {}) {
   const vs = Array.from({ length: variantCount }, (_, i) => ({
     variant_id: `v${i}`, variant_key: `variant-${i}`, variant_label: `Variant ${i}`, variant_type: 'color',
   }));
@@ -67,6 +67,8 @@ function makeSpecDb({ settings = KNOBS, variantCount = 1, resolvedPrimary = fals
       getSetting: (k) => (k in settings ? String(settings[k]) : ''),
     } : null),
     getCompiledRules: () => COMPILED_FIELD_RULES,
+    getProduct: (pid) => productRows.find((row) => row.product_id === pid) || null,
+    getAllProducts: () => productRows,
     variants: { listActive: () => vs, listByProduct: () => vs },
     getResolvedFieldCandidate: () => (resolvedPrimary ? { value: 'pre-resolved', confidence: 95 } : null),
   };
@@ -124,6 +126,36 @@ test('budget honored: loop exhausts after N calls when nothing resolves', async 
   assert.equal(runOverride.callCount(), 5);
   assert.ok(result.loop_id.startsWith('loop-'));
   assert.deepEqual(result.runs, [1, 2, 3, 4, 5]);
+});
+
+test('loop budget uses product family size instead of CEF variant rows', async () => {
+  const specDb = makeSpecDb({
+    variantCount: 9,
+    productRows: [
+      { product_id: PRODUCT.product_id, brand: PRODUCT.brand, base_model: PRODUCT.base_model, model: PRODUCT.model, variant: PRODUCT.variant },
+      { product_id: 'loop-family-base', brand: PRODUCT.brand, base_model: PRODUCT.base_model, model: `${PRODUCT.base_model} Base`, variant: '' },
+      { product_id: 'loop-family-alt', brand: PRODUCT.brand, base_model: PRODUCT.base_model, model: `${PRODUCT.base_model} Alt`, variant: 'Alt' },
+    ],
+  });
+  const runOverride = makeRunOverride([
+    { status: 'accepted', candidate: { value: 4000, confidence: 50 } },
+    { status: 'accepted', candidate: { value: 4000, confidence: 55 } },
+    { status: 'accepted', candidate: { value: 4000, confidence: 60 } },
+    { status: 'accepted', candidate: { value: 4000, confidence: 65 } },
+    { status: 'accepted', candidate: { value: 4000, confidence: 70 } },
+    { status: 'accepted', candidate: { value: 4000, confidence: 75 } },
+    { status: 'accepted', candidate: { value: 4000, confidence: 80 } },
+  ]);
+
+  const result = await runKeyFinderLoop({
+    product: PRODUCT, fieldKey: 'polling_rate', category: 'mouse',
+    specDb, policy: POLICY,
+    _runKeyFinderOverride: runOverride,
+  });
+
+  assert.equal(result.iterations, 7);
+  assert.equal(result.final_status, 'budget_exhausted');
+  assert.equal(runOverride.callCount(), 7);
 });
 
 test('exits on publish at iteration 2', async () => {

@@ -19,6 +19,8 @@ import {
   recordSettingsWriteOutcome,
 } from '../../core/events/settingsPersistenceCounters.js';
 import { resolvePhaseOverrides } from '../../core/config/configPostMerge.js';
+import { runtimeSettingDefault } from '../../core/config/configNormalizers.js';
+import { mergeDefaultApiModelsIntoRegistry } from '../../core/llm/providerRegistryDefaults.js';
 import { buildRegistryLookup } from '../../core/llm/routeResolver.js';
 
 const RUNTIME_KEYS_TO_PERSIST = new Set(RUNTIME_SETTINGS_KEYS);
@@ -685,6 +687,10 @@ const PHASE_RESOLUTION_INPUTS = [
 
 function rebuildDerivedConfigState(config, appliedKeys) {
   if (Object.hasOwn(appliedKeys, 'llmProviderRegistryJson')) {
+    config.llmProviderRegistryJson = mergeDefaultApiModelsIntoRegistry(
+      config.llmProviderRegistryJson,
+      runtimeSettingDefault('llmProviderRegistryJson')
+    );
     config._registryLookup = buildRegistryLookup(config.llmProviderRegistryJson);
   }
   if (PHASE_RESOLUTION_INPUTS.some((key) => Object.hasOwn(appliedKeys, key))) {

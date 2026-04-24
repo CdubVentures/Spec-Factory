@@ -28,6 +28,7 @@ import { generateLoopId } from '../../core/finder/loopIdGenerator.js';
 import { isReservedFieldKey } from '../../core/finder/finderExclusions.js';
 import { FieldRulesEngine } from '../../engine/fieldRulesEngine.js';
 import { calcKeyBudget, readFloatKnob } from './keyBudgetCalc.js';
+import { resolveKeyFinderFamilySize } from './keyFamilySize.js';
 import { runKeyFinder as defaultRunKeyFinder } from './keyFinder.js';
 
 const VALID_TIERS = new Set(['easy', 'medium', 'hard', 'very_hard']);
@@ -117,9 +118,8 @@ export async function runKeyFinderLoop(opts) {
   // 2. Budget calc — ONCE per loop
   const finderStore = specDb.getFinderStore?.('keyFinder') ?? null;
   const budgetSettings = loadBudgetSettings(finderStore);
-  const activeVariants = specDb?.variants?.listActive?.(product.product_id) || [];
-  const variantCount = activeVariants.length > 0 ? activeVariants.length : 1;
-  let { attempts } = calcKeyBudget({ fieldRule, variantCount, settings: budgetSettings });
+  const familySize = resolveKeyFinderFamilySize({ product, specDb, productId: product.product_id });
+  let { attempts } = calcKeyBudget({ fieldRule, familySize, settings: budgetSettings });
 
   // 2.1 Publish-gate snapshot for the pill — read once at loop entry so the
   // sidebar can show "0/N evidence @ ≥T conf" before any iteration runs. The

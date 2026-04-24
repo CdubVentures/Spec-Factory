@@ -4,6 +4,12 @@
  *   POST /category-audit/:category/generate-report
  *     body: { consumer?: 'key_finder' }
  *     → 200 { htmlPath, mdPath, generatedAt, stats }
+ *   POST /category-audit/:category/generate-per-key-docs
+ *     body: { templateOverride?: string }
+ *     → 200 { basePath, counts, reservedKeysPath, generatedAt }
+ *   POST /category-audit/:category/generate-all-reports
+ *     body: { consumer?: 'key_finder', templateOverride?: string }
+ *     → 200 { categoryReport, perKeyDocs }
  *     → 400 on unknown category / consumer / bad body
  *
  * Synchronous — pure file I/O + rendering, no LLM calls, no network.
@@ -178,6 +184,82 @@ export function registerCategoryAuditRoutes(ctx) {
         reservedKeysPath: result.reservedKeysPath,
         generatedAt: result.generatedAt,
       });
+    }
+
+    if (parts[1] && parts[2] === 'generate-all-reports' && method === 'POST') {
+      const category = parts[1];
+      let body = {};
+      try {
+        body = (await readJsonBody(req)) || {};
+      } catch {
+        jsonRes(res, 400, { error: 'invalid_json_body' });
+        return true;
+      }
+      const consumer = body.consumer || 'key_finder';
+
+      let loadedRules;
+      try {
+        loadedRules = await loadFieldRules(category, { config });
+      } catch (err) {
+        const msg = String(err?.message || err);
+        if (msg.startsWith('missing_field_rules') || msg.includes('category')) {
+          return jsonRes(res, 400, { error: 'unknown_category', category, details: msg });
+        }
+        throw err;
+      }
+
+      const fieldGroupsPath = path.join(helperRoot, category, '_generated', 'field_groups.json');
+      const fieldGroups = (await readJsonIfExists(fieldGroupsPath)) || { group_index: {} };
+      const compileReportPath = path.join(helperRoot, category, '_generated', '_compile_report.json');
+      const compileSummary = await readJsonIfExists(compileReportPath);
+      const globalFragments = resolveAllFragments();
+      const tierBundles = parseTierBundles(config?.keyFinderTierSettingsJson);
+
+      try {
+        const categoryReport = await generateCategoryAuditReport({
+          category,
+          consumer,
+          loadedRules,
+          fieldGroups,
+          globalFragments,
+          tierBundles,
+          compileSummary,
+          outputRoot,
+        });
+        const perKeyDocs = await generatePerKeyDocs({
+          category,
+          loadedRules,
+          fieldGroups,
+          globalFragments,
+          tierBundles,
+          compileSummary,
+          outputRoot,
+          templateOverride: body?.templateOverride || '',
+        });
+        return jsonRes(res, 200, {
+          category,
+          consumer,
+          generatedAt: categoryReport.generatedAt,
+          categoryReport: {
+            htmlPath: categoryReport.htmlPath,
+            mdPath: categoryReport.mdPath,
+            generatedAt: categoryReport.generatedAt,
+            stats: categoryReport.stats,
+          },
+          perKeyDocs: {
+            basePath: perKeyDocs.basePath,
+            counts: perKeyDocs.counts,
+            reservedKeysPath: perKeyDocs.reservedKeysPath,
+            generatedAt: perKeyDocs.generatedAt,
+          },
+        });
+      } catch (err) {
+        const msg = String(err?.message || err);
+        if (msg.includes('unknown consumer')) {
+          return jsonRes(res, 400, { error: 'unknown_consumer', consumer });
+        }
+        throw err;
+      }
     }
 
     return false;

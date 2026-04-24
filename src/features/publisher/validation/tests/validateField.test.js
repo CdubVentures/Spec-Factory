@@ -232,7 +232,7 @@ describe('validateField — open_prefer_known (alias resolution)', () => {
     assert.equal(r.value, '3 Zone (RGB)');
   });
 
-  it('no match → accept + flag for LLM', () => {
+  it('no match → accept + flag unknown', () => {
     const r = validateField({
       fieldKey: 'lighting',
       value: '5 Zone (RGB)',

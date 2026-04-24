@@ -106,6 +106,12 @@ export const MIGRATIONS = [
   // backfillValueFingerprints(). Empty string on unpopulated rows is safe —
   // backfill rewrites them on next boot.
   `ALTER TABLE field_candidates ADD COLUMN value_fingerprint TEXT DEFAULT ''`,
+  // WHY: pif_variant_progress got loop_filled/loop_total to track the
+  // Loop-Run-only extras (views in viewBudget that are NOT priority). New
+  // schema for fresh DBs; existing DBs need the ALTER. Default 0 on legacy
+  // rows — next PIF run populates.
+  `ALTER TABLE pif_variant_progress ADD COLUMN loop_filled INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE pif_variant_progress ADD COLUMN loop_total INTEGER NOT NULL DEFAULT 0`,
 ];
 
 export const SECONDARY_INDEXES = `

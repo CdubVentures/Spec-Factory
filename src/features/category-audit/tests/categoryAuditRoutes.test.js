@@ -183,6 +183,84 @@ test('POST /category-audit/:category/generate-per-key-docs writes the per-key tr
   }
 });
 
+test('POST /category-audit/:category/generate-all-reports writes category and per-key reports', async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'category-audit-routes-'));
+  const categoryAuthorityRoot = path.join(tmp, 'category_authority');
+  const reportsRoot = path.join(tmp, 'reports');
+  try {
+    await setupFixtureCategory(path.join(categoryAuthorityRoot, 'mouse'));
+    const { ctx, captured } = mockCtx({ reportsRoot, categoryAuthorityRoot });
+    const handler = registerCategoryAuditRoutes(ctx);
+    await handler(['category-audit', 'mouse', 'generate-all-reports'], null, 'POST', { body: { consumer: 'key_finder' } }, {});
+    assert.equal(captured.status, 200);
+    assert.equal(captured.body.category, 'mouse');
+    assert.ok(captured.body.categoryReport.htmlPath.endsWith('mouse-key-finder-audit.html'));
+    assert.ok(captured.body.categoryReport.mdPath.endsWith('mouse-key-finder-audit.md'));
+    assert.ok(captured.body.perKeyDocs.basePath.endsWith(path.join('per-key', 'mouse')));
+    assert.ok(captured.body.perKeyDocs.counts.written >= 1);
+
+    const categoryMd = await fs.readFile(captured.body.categoryReport.mdPath, 'utf8');
+    const sensorMd = await fs.readFile(path.join(captured.body.perKeyDocs.basePath, 'general', 'sensor.md'), 'utf8');
+    assert.ok(categoryMd.includes('Full field contract authoring order'));
+    assert.ok(sensorMd.includes('Full field contract authoring order'));
+  } finally {
+    await fs.rm(tmp, { recursive: true, force: true });
+  }
+});
+
+test('POST generate-all-reports with missing category returns 400 unknown_category', async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'category-audit-routes-'));
+  try {
+    const { ctx, captured } = mockCtx({ reportsRoot: path.join(tmp, 'reports'), categoryAuthorityRoot: path.join(tmp, 'category_authority') });
+    const handler = registerCategoryAuditRoutes(ctx);
+    await handler(['category-audit', 'nonexistent', 'generate-all-reports'], null, 'POST', { body: {} }, {});
+    assert.equal(captured.status, 400);
+    assert.equal(captured.body.error, 'unknown_category');
+  } finally {
+    await fs.rm(tmp, { recursive: true, force: true });
+  }
+});
+
+test('POST generate-all-reports with unknown consumer returns 400 unknown_consumer', async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'category-audit-routes-'));
+  const categoryAuthorityRoot = path.join(tmp, 'category_authority');
+  try {
+    await setupFixtureCategory(path.join(categoryAuthorityRoot, 'mouse'));
+    const { ctx, captured } = mockCtx({ reportsRoot: path.join(tmp, 'reports'), categoryAuthorityRoot });
+    const handler = registerCategoryAuditRoutes(ctx);
+    await handler(['category-audit', 'mouse', 'generate-all-reports'], null, 'POST', { body: { consumer: 'indexing' } }, {});
+    assert.equal(captured.status, 400);
+    assert.equal(captured.body.error, 'unknown_consumer');
+  } finally {
+    await fs.rm(tmp, { recursive: true, force: true });
+  }
+});
+
+test('POST generate-all-reports with invalid JSON body returns 400 invalid_json_body', async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'category-audit-routes-'));
+  try {
+    const { ctx, captured } = mockCtx({ reportsRoot: path.join(tmp, 'reports'), categoryAuthorityRoot: path.join(tmp, 'category_authority') });
+    ctx.readJsonBody = async () => { throw new Error('bad json'); };
+    const handler = registerCategoryAuditRoutes(ctx);
+    await handler(['category-audit', 'mouse', 'generate-all-reports'], null, 'POST', {}, {});
+    assert.equal(captured.status, 400);
+    assert.equal(captured.body.error, 'invalid_json_body');
+  } finally {
+    await fs.rm(tmp, { recursive: true, force: true });
+  }
+});
+
+test('generate-all-reports returns false for non-POST', async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'category-audit-routes-'));
+  try {
+    const { ctx } = mockCtx({ reportsRoot: path.join(tmp, 'reports'), categoryAuthorityRoot: path.join(tmp, 'category_authority') });
+    const handler = registerCategoryAuditRoutes(ctx);
+    assert.equal(await handler(['category-audit', 'mouse', 'generate-all-reports'], null, 'GET', {}, {}), false);
+  } finally {
+    await fs.rm(tmp, { recursive: true, force: true });
+  }
+});
+
 test('POST generate-per-key-docs with unknown category returns 400', async () => {
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'category-audit-routes-'));
   try {

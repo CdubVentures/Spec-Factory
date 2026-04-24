@@ -18,7 +18,7 @@ function makeRule({ policy, strategy } = {}) {
   };
 }
 
-// ── closed — flag unknowns for LLM repair ──────────────────────────────────
+// ── closed — reject unknowns deterministically ─────────────────────────────
 
 describe('characterization: closed policy through full pipeline', () => {
   const known = { policy: 'closed', values: ['black', 'white', 'red'] };
@@ -39,7 +39,7 @@ describe('characterization: closed policy through full pipeline', () => {
     assert.ok(r.repairs.some(rep => rep.step === 'normalize'));
   });
 
-  it('unknown value → invalid, flagged for LLM repair', () => {
+  it('unknown value → invalid with deterministic rejection', () => {
     const r = validateField({ fieldKey: 'color', value: 'teal', fieldRule: rule, knownValues: known });
     assert.equal(r.valid, false);
     assert.ok(r.rejections.some(rej => rej.reason_code === 'enum_value_not_allowed'));

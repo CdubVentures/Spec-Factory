@@ -32,6 +32,11 @@ test('every entry has the required shape', () => {
   }
 });
 
+test('schema catalog does not describe supported constraints as unreachable', () => {
+  const combinedDocs = FIELD_RULE_SCHEMA.map((entry) => entry.doc).join('\n');
+  assert.doesNotMatch(combinedDocs, /KNOWN BUG|alias mismatch|unreachable/i);
+});
+
 test('paths are unique', () => {
   const seen = new Set();
   for (const entry of FIELD_RULE_SCHEMA) {

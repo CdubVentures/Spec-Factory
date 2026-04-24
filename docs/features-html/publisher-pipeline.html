@@ -196,14 +196,12 @@
 <pre>{
   status: 'accepted' | 'rejected' | 'rejected_inconsistent',
   candidateId: number | null,
-  value: any,                        // Repaired/coerced value
+  value: any,                        // Normalized/coerced value
   validationResult: {
     valid: boolean,
     value: any,
     repairs: [{ step, before, after, rule }],
-    rejections: [{ reason_code, detail }],
-    unknownReason?: string,
-    repairPrompt?: object
+    rejections: [{ reason_code, detail }]
   },
 
   // Only present when status === 'rejected_inconsistent' (Gate 1 inconsistency purge):
@@ -511,7 +509,7 @@ CREATE INDEX idx_fc_fingerprint
         <dt>source_id</dt><dd>Deterministic per extraction: <code>{moduleType}-{productId}-{runNumber}</code>. Immutable.</dd>
         <dt>value_fingerprint</dt><dd>Derived from <code>value</code> via <code>src/db/valueFingerprint.js</code>. Scalar: NFC + lowercase + trim. List: sort-unique of normalized items joined by <code>\u0001</code>. Set-equality for lists &mdash; <code>['x','y']</code> and <code>['y','X']</code> pool together. Written at every <code>insertFieldCandidate</code> / <code>upsertFieldCandidate</code>; backfilled for pre-upgrade rows by <code>backfillValueFingerprints(db)</code>. Drives <code>evaluateFieldBuckets</code>.</dd>
         <dt>variant_id</dt><dd><code>NULL</code> for product-scalar fields (CEF colors/editions, pipeline weight, etc.). <code>v_&lt;hex&gt;</code> for variant-scoped fields (RDF release_date, per-variant SKU/price). UNIQUE constraint uses the generated <code>variant_id_key</code> (COALESCE) so the same <code>source_id</code> can coexist with distinct variants.</dd>
-        <dt>validation_json</dt><dd><code>{ valid, repairs[], rejections[], llmRepair?: {} }</code></dd>
+        <dt>validation_json</dt><dd><code>{ valid, repairs[], rejections[] }</code></dd>
         <dt>metadata_json</dt><dd><code>{ publish_result, variant_key, variant_label, variant_type, evidence_sources, ...llm_meta }</code></dd>
       </dl>
     </div>
@@ -739,7 +737,6 @@ CREATE INDEX idx_fc_fingerprint
         <dl class="detail-grid" style="grid-template-columns:1fr;">
           <dt>Repairs Applied</dt><dd>Table: Step, Before, &rarr;, After, Rule</dd>
           <dt>Rejections</dt><dd>Table: Reason Code, Severity, Detail</dd>
-          <dt>LLM Repair</dt><dd>If present: table with Value, Decision, Resolved To, Reasoning</dd>
           <dt>Full Value</dt><dd>Monospace pre-block, JSON-formatted</dd>
         </dl>
       </div>
@@ -766,9 +763,7 @@ CREATE INDEX idx_fc_fingerprint
         <tr><td><code>PublisherSourceEntry</code></td><td><code>confidence</code>, <code>run_id?</code>, <code>submitted_at?</code>, <code>model?</code>, <code>artifact?</code>, <code>url?</code>, <code>source?</code>, <code>overridden_by?</code>, <code>reason?</code></td></tr>
         <tr><td><code>PublisherRepairEntry</code></td><td><code>step</code>, <code>before</code>, <code>after</code>, <code>rule</code></td></tr>
         <tr><td><code>PublisherRejectionEntry</code></td><td><code>reason_code</code>, <code>detail</code></td></tr>
-        <tr><td><code>PublisherLlmRepairDecision</code></td><td><code>value</code>, <code>decision</code> (<code>map_to_existing</code> | <code>keep_new</code> | <code>set_unk</code> | <code>reject</code>), <code>resolved_to?</code>, <code>reasoning?</code></td></tr>
-        <tr><td><code>PublisherLlmRepair</code></td><td><code>promptId</code>, <code>status</code>, <code>decisions[]</code></td></tr>
-        <tr><td><code>PublisherValidationJson</code></td><td><code>valid?</code>, <code>repairs[]</code>, <code>rejections[]</code>, <code>llmRepair?</code></td></tr>
+        <tr><td><code>PublisherValidationJson</code></td><td><code>valid?</code>, <code>repairs[]</code>, <code>rejections[]</code></td></tr>
         <tr><td><code>PublisherPublishResult</code></td><td><code>status</code> (<code>published</code> | <code>below_threshold</code> | <code>below_evidence_refs</code> | <code>manual_override_locked</code> | <code>skipped</code>), <code>confidence?</code>, <code>threshold?</code>, <code>required?</code>, <code>actual?</code> (bucket's pooled qualifying count), <code>reason?</code>, <code>published_at?</code></td></tr>
         <tr><td><code>PublisherSubmitResult</code></td><td><code>status</code> (<code>accepted</code> | <code>rejected</code> | <code>rejected_inconsistent</code>), <code>candidateId</code>, <code>value</code>, <code>validationResult</code>, <code>publishResult?</code>. On <code>rejected_inconsistent</code>: also carries <code>reason</code>, <code>confidence</code>, <code>threshold</code>, <code>pooledEvidence</code>, <code>requiredEvidence</code>.</td></tr>
         <tr><td><code>PublisherMetadataJson</code></td><td><code>source?</code>, <code>method?</code>, <code>publish_result?</code></td></tr>
@@ -874,7 +869,6 @@ CREATE INDEX idx_fc_fingerprint
         <tr><td><code>candidateReseed.js</code></td><td><code>rebuildFieldCandidatesFromJson()</code></td><td>Reseed candidates from JSON</td></tr>
         <tr><td><code>buildDiscoveredEnumMap.js</code></td><td><code>buildDiscoveredEnumMap()</code></td><td>Build discovered enum map from DB</td></tr>
         <tr><td><code>persistDiscoveredValues.js</code></td><td><code>persistDiscoveredValue()</code></td><td>Persist new enum values post-validation</td></tr>
-        <tr><td><code>repairLlmAdapter.js</code></td><td><code>createRepairCallLlm()</code></td><td>LLM infrastructure wiring</td></tr>
         <tr><td><code>api/publisherRoutes.js</code></td><td><code>registerPublisherRoutes()</code></td><td>5 HTTP route handlers</td></tr>
         <tr><td><code>api/publisherRouteContext.js</code></td><td><code>createPublisherRouteContext()</code></td><td>Route context factory</td></tr>
       </tbody>

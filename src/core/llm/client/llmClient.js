@@ -583,6 +583,7 @@ export async function callLlmProvider({
   const isLab = accessMode === 'lab';
   const inferredName = providerFromModelToken(model) || providerClient.name;
   const providerLabel = isLab ? `lab-${inferredName}` : inferredName;
+  const usageProvider = String(route._registryEntry?.providerId || providerLabel || '').trim();
   const health = providerHealth || _providerHealth;
   // WHY: Registry-routed calls pass the provider TYPE ("openai-compatible"), not
   // the provider NAME ("deepseek"), so the legacy `inferredProvider === 'deepseek'`
@@ -637,7 +638,7 @@ export async function callLlmProvider({
   const callContext = Object.freeze({
     reason,
     route_role: routeRole,
-    provider: providerLabel,
+    provider: usageProvider,
     access_mode: isLab ? 'lab' : 'api',
     model,
     base_url: baseUrlNormalized,
@@ -746,7 +747,8 @@ export async function callLlmProvider({
     const cost = computeLlmCostUsd({
       usage: normalizedUsage,
       rates: costRates || {},
-      model: responseModel || model
+      model: responseModel || model,
+      provider: usageProvider
     });
 
     const usageSummary = {
@@ -761,7 +763,7 @@ export async function callLlmProvider({
     }
 
     await onUsage({
-      provider: providerLabel,
+      provider: usageProvider,
       model: responseModel || model,
       prompt_tokens: normalizedUsage.promptTokens,
       completion_tokens: normalizedUsage.completionTokens,

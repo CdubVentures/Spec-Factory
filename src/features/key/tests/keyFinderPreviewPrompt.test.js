@@ -93,13 +93,14 @@ function makeFinderStoreStub(settings) {
   };
 }
 
-function makeSpecDbStub({ finderStore, resolvedSet = new Set(), bucketsByFieldKey = {}, activeVariants } = {}) {
+function makeSpecDbStub({ finderStore, resolvedSet = new Set(), bucketsByFieldKey = {}, activeVariants, productRows = [], compiledRules = COMPILED } = {}) {
   const variants = activeVariants || [{ variant_id: 'v0', variant_key: 'default', variant_label: 'Default', variant_type: 'base' }];
   return {
     category: 'mouse',
     getFinderStore: (id) => (id === 'keyFinder' ? finderStore : null),
-    getCompiledRules: () => COMPILED,
+    getCompiledRules: () => compiledRules,
     getProduct: () => ({ product_id: PRODUCT.product_id, category: 'mouse', brand: PRODUCT.brand, model: PRODUCT.model, base_model: PRODUCT.base_model }),
+    getAllProducts: () => productRows,
     variants: {
       listActive: () => variants,
       listByProduct: () => variants,
@@ -131,12 +132,12 @@ const PRODUCT_ROOT = path.join(TMP, 'products');
 
 function cleanupTmp() { try { fs.rmSync(TMP, { recursive: true, force: true }); } catch { /* */ } }
 
-function setup(productId, { settings = BUNDLING_ON, resolvedSet = new Set(), bucketsByFieldKey = {}, activeVariants } = {}) {
+function setup(productId, { settings = BUNDLING_ON, resolvedSet = new Set(), bucketsByFieldKey = {}, activeVariants, productRows = [], compiledRules = COMPILED } = {}) {
   const dir = path.join(PRODUCT_ROOT, productId);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'product.json'), JSON.stringify({ product_id: productId, category: 'mouse', candidates: {}, fields: {} }));
   const finderStore = makeFinderStoreStub(settings);
-  const specDb = makeSpecDbStub({ finderStore, resolvedSet, bucketsByFieldKey, activeVariants });
+  const specDb = makeSpecDbStub({ finderStore, resolvedSet, bucketsByFieldKey, activeVariants, productRows, compiledRules });
   return { specDb };
 }
 
@@ -160,6 +161,85 @@ test('happy path: valid field_key returns envelope with compiled prompt', async 
   const userJson = JSON.parse(env.prompts[0].user);
   assert.equal(userJson.primary_field_key, 'polling_rate');
   assert.equal(typeof userJson.passenger_count, 'number');
+});
+
+test('prompt preview resolves known_values enum lists for primary and passenger keys', async (t) => {
+  t.after(cleanupTmp);
+  const compiledRules = {
+    fields: {
+      connection: rule({
+        group: 'connectivity',
+        difficulty: 'medium',
+        required_level: 'mandatory',
+        contract: { type: 'string', shape: 'scalar' },
+        enum: { policy: 'closed', source: 'data_lists.connection' },
+      }),
+      connectivity: rule({
+        group: 'connectivity',
+        difficulty: 'easy',
+        required_level: 'mandatory',
+        contract: { type: 'string', shape: 'list' },
+        enum: { policy: 'open_prefer_known', source: 'data_lists.connectivity' },
+      }),
+    },
+    known_values: {
+      enums: {
+        connection: { policy: 'closed', values: ['wired', 'wireless', 'hybrid'] },
+        connectivity: { policy: 'open_prefer_known', values: ['2.4GHz Dongle', 'Bluetooth'] },
+      },
+    },
+  };
+  const { specDb } = setup('kfp-known-enums', { compiledRules });
+
+  const env = await compileKeyFinderPreviewPrompt({
+    product: { ...PRODUCT, product_id: 'kfp-known-enums' },
+    specDb, appDb: null, config: {}, productRoot: PRODUCT_ROOT,
+    body: { field_key: 'connection' },
+  });
+
+  const system = env.prompts[0].system;
+  assert.match(system, /Allowed values \(closed\): wired \| wireless \| hybrid/);
+  assert.match(system, /Passenger key: connectivity/);
+  assert.match(system, /Prefer known values \(open_prefer_known\): 2\.4GHz Dongle \| Bluetooth/);
+});
+
+test('preview prompt honors passenger_field_keys_snapshot from the UI bundle row', async (t) => {
+  t.after(cleanupTmp);
+  const { specDb } = setup('kfp-snapshot');
+
+  const env = await compileKeyFinderPreviewPrompt({
+    product: { ...PRODUCT, product_id: 'kfp-snapshot' },
+    specDb, appDb: null, config: {}, productRoot: PRODUCT_ROOT,
+    body: {
+      field_key: 'polling_rate',
+      mode: 'loop',
+      passenger_field_keys_snapshot: ['buttons'],
+    },
+  });
+
+  assert.deepEqual(env.inputs_resolved.passenger_field_keys, ['buttons']);
+  assert.equal(env.inputs_resolved.passenger_snapshot_source, 'ui_snapshot');
+  assert.match(env.prompts[0].system, /Passenger key: buttons/);
+  assert.doesNotMatch(env.prompts[0].system, /Passenger key: dpi/);
+});
+
+test('preview prompt honors an empty passenger_field_keys_snapshot as solo', async (t) => {
+  t.after(cleanupTmp);
+  const { specDb } = setup('kfp-empty-snapshot');
+
+  const env = await compileKeyFinderPreviewPrompt({
+    product: { ...PRODUCT, product_id: 'kfp-empty-snapshot' },
+    specDb, appDb: null, config: {}, productRoot: PRODUCT_ROOT,
+    body: {
+      field_key: 'polling_rate',
+      mode: 'loop',
+      passenger_field_keys_snapshot: [],
+    },
+  });
+
+  assert.deepEqual(env.inputs_resolved.passenger_field_keys, []);
+  assert.equal(env.inputs_resolved.passenger_snapshot_source, 'ui_snapshot');
+  assert.doesNotMatch(env.prompts[0].system, /Passenger key:/);
 });
 
 test('missing field_key → 400', async (t) => {
@@ -357,13 +437,13 @@ test('preview inputs resolve passenger variant surcharge from current settings a
     settings: {
       ...BUNDLING_ON,
       bundlingPassengerVariantCostPerExtra: '0.25',
-      bundlingPoolPerPrimary: JSON.stringify({ easy: 2, medium: 2, hard: 2, very_hard: 2 }),
+      bundlingPoolPerPrimary: JSON.stringify({ easy: 3, medium: 3, hard: 3, very_hard: 3 }),
     },
-    activeVariants: [
-      { variant_id: 'v1' },
-      { variant_id: 'v2' },
-      { variant_id: 'v3' },
-      { variant_id: 'v4' },
+    activeVariants: Array.from({ length: 9 }, (_, i) => ({ variant_id: `cef-${i}` })),
+    productRows: [
+      { product_id: 'kfp-variant-cost', brand: PRODUCT.brand, base_model: PRODUCT.base_model, model: PRODUCT.model, variant: PRODUCT.variant },
+      { product_id: 'kfp-family-base', brand: PRODUCT.brand, base_model: PRODUCT.base_model, model: `${PRODUCT.base_model} Base`, variant: '' },
+      { product_id: 'kfp-family-alt', brand: PRODUCT.brand, base_model: PRODUCT.base_model, model: `${PRODUCT.base_model} Alt`, variant: 'Alt' },
     ],
   });
 
@@ -373,9 +453,14 @@ test('preview inputs resolve passenger variant surcharge from current settings a
     body: { field_key: 'polling_rate' },
   });
 
-  assert.equal(env.inputs_resolved.variant_count, 4);
+  assert.equal(env.inputs_resolved.family_size, 3);
+  assert.equal('variant_count' in env.inputs_resolved, false);
   assert.equal(env.inputs_resolved.bundling.passenger_variant_cost_per_extra, 0.25);
-  assert.deepEqual(env.inputs_resolved.passenger_field_keys, ['dpi']);
+  assert.deepEqual(env.inputs_resolved.passenger_field_keys, ['dpi', 'buttons']);
+
+  const userMessage = JSON.parse(env.prompts[0].user);
+  assert.equal(userMessage.family_size, 3);
+  assert.equal('variant_count' in userMessage, false);
 });
 
 test('notes include bundling state', async (t) => {

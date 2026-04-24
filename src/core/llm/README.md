@@ -1,11 +1,12 @@
 ## Purpose
 
-Own repo-wide infrastructure for LLM provider/client/prompt plumbing: model resolution, pricing catalogs, provider metadata, policy schemas, and route-level helpers for LLM configuration surfaces.
+Own repo-wide infrastructure for LLM provider/client/prompt plumbing: model resolution, provider metadata, policy schemas, and route-level helpers for LLM configuration surfaces.
 
 ## Public API (The Contract)
 
 - `routeResolver.js` -- `resolveModelFromRegistry`, `resolveModelCosts`, `resolveModelTokenProfile`
 - `providerMeta.js` -- `providerFromModelToken`, provider metadata lookups
+- `providerRegistryDefaults.js` -- `mergeDefaultApiModelsIntoRegistry` for backfilling default API model entries without touching Lab providers
 - `llmModelValidation.js` -- model token validation
 - `llmPolicySchema.js` -- LLM policy schema definitions
 - `llmRouteHelpers.js` -- `llmProviderFromModel`, `resolveLlmRoleDefaults`, `resolveLlmKnobDefaults`, `resolvePricingForModel`, `resolveTokenProfileForModel`, `collectLlmModels`, `deriveTrafficLightCounts`
@@ -25,5 +26,5 @@ Own repo-wide infrastructure for LLM provider/client/prompt plumbing: model reso
 ## Domain Invariants
 
 - Model resolution is registry-first, prefix-fallback second.
-- Pricing data must come from `src/billing/modelPricingCatalog.js` -- never hardcoded.
+- Pricing and token limits must come from provider registry model entries; no separate model pricing catalog is active.
 - Provider detection uses `providerMeta.js` as SSOT.

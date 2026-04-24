@@ -123,7 +123,7 @@ test('resolveLlmFallbackRoute returns the fallback even when it matches primary 
     enabled: true,
     models: [
       { id: 'ds-chat', modelId: 'deepseek-chat', role: 'primary',
-        costInputPer1M: 0.27, costOutputPer1M: 1.10, costCachedPer1M: 0.07,
+        costInputPer1M: 0.28, costOutputPer1M: 0.42, costCachedPer1M: 0.028,
         maxContextTokens: 65536, maxOutputTokens: 8192 },
     ],
   };
@@ -246,7 +246,7 @@ test('modelOverride for registry model re-resolves from registry', () => {
     enabled: true,
     models: [
       { id: 'ds-chat', modelId: 'deepseek-chat', role: 'primary',
-        costInputPer1M: 0.27, costOutputPer1M: 1.10, costCachedPer1M: 0.07,
+        costInputPer1M: 0.28, costOutputPer1M: 0.42, costCachedPer1M: 0.028,
         maxContextTokens: 65536, maxOutputTokens: 8192 },
     ],
   };

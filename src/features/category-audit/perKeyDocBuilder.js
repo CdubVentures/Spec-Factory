@@ -125,6 +125,7 @@ export async function generatePerKeyDocs({
       tierBundles,
       templateOverride,
       componentRelation: record.component || null,
+      knownValues: loadedRules?.knownValues || null,
     });
 
     const structure = buildPerKeyDocStructure(record, {

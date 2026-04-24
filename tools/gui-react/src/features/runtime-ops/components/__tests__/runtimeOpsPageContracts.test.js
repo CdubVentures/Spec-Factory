@@ -115,6 +115,11 @@ async function loadRuntimeOpsPageModule() {
           return false;
         }
       `,
+      './PipelineStepperBar': `
+        export function PipelineStepperBar() {
+          return null;
+        }
+      `,
       '../panels/overview/MetricsRail': `
         export function MetricsRail() {
           return null;

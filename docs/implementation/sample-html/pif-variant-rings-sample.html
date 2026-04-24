@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PIF Variant Rings — Sample v2</title>
+<style>
+  :root {
+    --bg: #f4f6f9; --surface: #fff; --surface-alt: #f1f3f5; --surface-soft: #fafbfc;
+    --border: #e5e9ef; --border-light: #eef1f5;
+    --text: #1f2328; --text-muted: #5f6672; --text-dim: #7c8390; --text-faint: #a9afb9;
+
+    --accent: #4263eb; --accent-bg: #edf2ff; --accent-border: #bac8ff;
+    --green:  #2b8a3e;
+    --orange: #e67700;
+    --red:    #c92a2a;
+
+    /* ring-specific tokens:
+       outer  = Priority Views (Single Run)  → green when complete
+       middle = Hero slots                   → orange when complete
+       inner  = Loop Run extras              → accent/blue when complete */
+    --ring-track:    rgba(130, 140, 150, 0.22);
+    --ring-priority: var(--green);
+    --ring-hero:     var(--orange);
+    --ring-loop:     var(--accent);
+    --ring-part:     #f59f00;
+
+    /* ring geometry — fat rings + clean segment gaps */
+    --ring-stroke: 5;
+    --ring-gap-px: 3.5;
+
+    --mono: 'SF Mono','Cascadia Code','Fira Code',Consolas,monospace;
+    --font: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    --radius: 8px;
+    --shadow-sm: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:var(--font); color:var(--text); background:var(--bg); line-height:1.55; -webkit-font-smoothing:antialiased; padding: 0 0 80px; }
+
+  .page-header { background: linear-gradient(135deg, #3b4cca 0%, #4263eb 45%, #5f3dc4 100%); color:#fff; padding: 32px 0 26px; text-align:center; box-shadow: 0 4px 14px rgba(0,0,0,.10); }
+  .page-header h1 { font-size: 22px; font-weight: 700; }
+  .page-header p { font-size: 13.5px; opacity: .92; margin-top: 5px; }
+  .page-header .pill { display: inline-block; background: rgba(255,255,255,.2); padding: 3px 10px; border-radius: 99px; font-size: 11.5px; font-weight: 600; margin-top: 8px; }
+
+  .container { max-width: 1200px; margin: 28px auto 0; padding: 0 24px; }
+
+  .section { margin-bottom: 36px; }
+  .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); margin-bottom: 12px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 22px 24px; }
+  .card + .card { margin-top: 14px; }
+
+  /* ── ring primitive ─────────────────────────────────────────── */
+  .ring-cluster {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 2px 6px;
+    border-radius: 6px;
+    cursor: default;
+  }
+  .ring-cluster:hover { background: var(--surface-soft); }
+
+  .color-chip {
+    width: 18px; height: 18px;
+    border-radius: 3px;
+    border: 1px solid rgba(0,0,0,.12);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
+  }
+
+  .ring-stack {
+    position: relative;
+    width: 50px;
+    height: 50px;
+  }
+
+  .ring-svg {
+    width: 50px; height: 50px;
+    transform: rotate(-90deg);
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+  .ring-track-circle { fill: none; stroke: var(--ring-track); stroke-width: 5; }
+  .ring-fill-circle {
+    fill: none;
+    stroke-width: 5;
+    stroke-linecap: butt;
+    transition: stroke-dasharray .35s ease;
+  }
+  .ring-outer  .ring-fill-circle { stroke: var(--ring-priority); }
+  .ring-middle .ring-fill-circle { stroke: var(--ring-hero); }
+  .ring-inner  .ring-fill-circle { stroke: var(--ring-loop); }
+
+  .ring-outer.part  .ring-fill-circle,
+  .ring-middle.part .ring-fill-circle,
+  .ring-inner.part  .ring-fill-circle {
+    stroke: var(--ring-part);
+  }
+
+  .ring-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    min-width: 34px;
+    text-align: center;
+  }
+
+  /* ── variant strip (product row mock) ─────────────────────── */
+  .variant-strip {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  /* ── product row demo ─────────────────────────────────────── */
+  .product-row {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 20px;
+    align-items: center;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .product-row:last-child { border-bottom: none; }
+  .product-ident { display: flex; flex-direction: column; gap: 2px; }
+  .product-brand { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+  .product-model { font-size: 13.5px; font-weight: 600; color: var(--text); }
+
+  .state-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 14px;
+  }
+  .state-tile {
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 10px 12px;
+    text-align: center;
+  }
+  .state-title { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-top: 10px; text-transform: uppercase; letter-spacing: .05em; }
+  .state-desc  { font-size: 11.5px; color: var(--text-dim); margin-top: 3px; line-height: 1.35; }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    padding: 14px 18px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 12.5px;
+  }
+  .legend-item { display: inline-flex; align-items: center; gap: 8px; }
+  .legend-swatch {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2.5px solid currentColor;
+  }
+  .legend-swatch.filled { background: currentColor; }
+  .legend-swatch.priority { color: var(--ring-priority); }
+  .legend-swatch.hero     { color: var(--ring-hero); }
+  .legend-swatch.loop     { color: var(--ring-loop); }
+  .legend-swatch.part     { color: var(--ring-part); }
+
+  .note {
+    margin-top: 10px;
+    padding: 10px 14px;
+    background: var(--accent-bg);
+    border: 1px solid var(--accent-border);
+    border-radius: 6px;
+    font-size: 12.5px;
+    color: #2b3aa8;
+  }
+
+  .caption {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  code.inline { font-family: var(--mono); font-size: 12px; background: var(--surface-alt); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>PIF Variant Rings — Visual Sample · v2</h1>
+  <p>Three fat segmented rings per variant. No bonus — segment dividers carry the count.</p>
+  <span class="pill">Revised · stroke 5px · clean dividers</span>
+</div>
+
+<div class="container">
+
+  <!-- ── Legend ───────────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-title">Legend</div>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-swatch filled priority"></span><strong>Outer</strong> — Priority Views (Single Run)</span>
+      <span class="legend-item"><span class="legend-swatch filled hero"></span><strong>Middle</strong> — Hero slots</span>
+      <span class="legend-item"><span class="legend-swatch filled loop"></span><strong>Inner</strong> — Loop Run extras (viewBudget minus priority)</span>
+      <span class="legend-item"><span class="legend-swatch part filled"></span>Amber = partial / in-progress</span>
+    </div>
+    <div class="note">
+      Each ring is <strong>segmented</strong>: divided into N arcs where N = that ring's target. With <code class="inline">stroke-width: 5</code> and <code class="inline">~3.5px gaps</code>, the count is readable at a glance — no external label needed. Inner ring also gets dividers when its target &gt; 1.
+    </div>
+  </div>
+
+  <!-- ── States row ────────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-title">States — mouse targets (4 priority · 3 hero · 4 loop extras)</div>
+    <div class="card">
+      <div class="caption">Dividers show the count; no text fraction needed inside the ring.</div>
+      <div class="state-grid">
+        <div class="state-tile">
+          <div class="ring-cluster">
+            <span class="color-chip" style="background: #2b6cb0;"></span>
+            <span class="ring-stack" id="state-empty"></span>
+            <span class="ring-label">0 / 4</span>
+          </div>
+          <div class="state-title">Empty</div>
+          <div class="state-desc">Tracks visible, no segments filled.</div>
+        </div>
+
+        <div class="state-tile">
+          <div class="ring-cluster">
+            <span class="color-chip" style="background: #f0f3f7; border-color:#ccc;"></span>
+            <span class="ring-stack" id="state-1of3"></span>
+            <span class="ring-label">1 / 4</span>
+          </div>
+          <div class="state-title">1 priority</div>
+          <div class="state-desc">1 of 3 outer segments amber. Middle follows.</div>
+        </div>
+
+        <div class="state-tile">
+          <div class="ring-cluster">
+            <span class="color-chip" style="background: #2f3437;"></span>
+            <span class="ring-stack" id="state-2plushero"></span>
+            <span class="ring-label">3 / 4</span>
+          </div>
+          <div class="state-title">2 priority + hero</div>
+          <div class="state-desc">2/3 priority done, hero done → inner full orange.</div>
+        </div>
+
+        <div class="state-tile">
+          <div class="ring-cluster">
+            <span class="color-chip" style="background: linear-gradient(135deg,#dc3545 50%,#000 50%);"></span>
+            <span class="ring-stack" id="state-prio-done"></span>
+            <span class="ring-label">3 / 4</span>
+          </div>
+          <div class="state-title">Priority complete</div>
+          <div class="state-desc">Outer full green. Hero pending.</div>
+        </div>
+
+        <div class="state-tile">
+          <div class="ring-cluster">
+            <span class="color-chip" style="background: #7048e8;"></span>
+            <span class="ring-stack" id="state-done"></span>
+            <span class="ring-label">4 / 4</span>
+          </div>
+          <div class="state-title">Fully done</div>
+          <div class="state-desc">All three rings solid.</div>
+        </div>
+
+        <div class="state-tile">
+          <div class="ring-cluster">
+            <span class="color-chip" style="background: #f59f00;"></span>
+            <span class="ring-stack" id="state-partial"></span>
+            <span class="ring-label">2 / 4</span>
+          </div>
+          <div class="state-title">Partial middle</div>
+          <div class="state-desc">Shows partial-middle amber vs priority amber.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Multi-hero example — inner ring dividers ──────────── -->
+  <div class="section">
+    <div class="section-title">Inner-ring dividers — hero target > 1</div>
+    <div class="card">
+      <div class="caption">When the hero target is &gt; 1, the inner ring also shows segment dividers. Same rule as outer.</div>
+      <div class="state-grid">
+        <div class="state-tile">
+          <div class="ring-cluster">
+            <span class="color-chip" style="background: #000;"></span>
+            <span class="ring-stack" id="state-hero3-empty"></span>
+            <span class="ring-label">0 / 6</span>
+          </div>
+          <div class="state-title">Hero 0/3</div>
+          <div class="state-desc">3 priority + 3 hero target. Inner has 3 segments.</div>
+        </div>
+
+        <div class="state-tile">
+          <div class="ring-cluster">
+            <span class="color-chip" style="background: #fff; border-color:#999;"></span>
+            <span class="ring-stack" id="state-hero3-part"></span>
+            <span class="ring-label">4 / 6</span>
+          </div>
+          <div class="state-title">Hero 1/3</div>
+          <div class="state-desc">3 priority done, 1 of 3 hero done. Inner shows 1 segment amber.</div>
+        </div>
+
+        <div class="state-tile">
+          <div class="ring-cluster">
+            <span class="color-chip" style="background: linear-gradient(135deg,#2b6cb0 50%,#fff 50%);"></span>
+            <span class="ring-stack" id="state-hero3-full"></span>
+            <span class="ring-label">6 / 6</span>
+          </div>
+          <div class="state-title">Hero 3/3</div>
+          <div class="state-desc">All heros captured. All rings solid.</div>
+        </div>
+
+        <div class="state-tile">
+          <div class="ring-cluster">
+            <span class="color-chip" style="background: #dc3545;"></span>
+            <span class="ring-stack" id="state-prio5-hero2"></span>
+            <span class="ring-label">5 / 7</span>
+          </div>
+          <div class="state-title">5 priority · 2 hero</div>
+          <div class="state-desc">Works at any segment count. 5 outer, 2 inner.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Realistic row ─────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-title">Product row — Overview table</div>
+    <div class="card">
+      <div class="caption">How the cell looks in the Overview panel. Variants wrap on overflow.</div>
+
+      <div class="product-row">
+        <div class="product-ident">
+          <span class="product-brand">Logitech</span>
+          <span class="product-model">MX Master 3S</span>
+        </div>
+        <div class="variant-strip" id="row-mx-master"></div>
+      </div>
+
+      <div class="product-row">
+        <div class="product-ident">
+          <span class="product-brand">Razer</span>
+          <span class="product-model">DeathAdder V3 Pro</span>
+        </div>
+        <div class="variant-strip" id="row-da-v3"></div>
+      </div>
+
+      <div class="product-row">
+        <div class="product-ident">
+          <span class="product-brand">Finalmouse</span>
+          <span class="product-model">ULX</span>
+        </div>
+        <div class="variant-strip" id="row-ulx"></div>
+      </div>
+
+      <div class="product-row">
+        <div class="product-ident">
+          <span class="product-brand">Endgame Gear</span>
+          <span class="product-model">OP1 8k (8 variants)</span>
+        </div>
+        <div class="variant-strip" id="row-op1"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Size spec ─────────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-title">Size + geometry</div>
+    <div class="card" style="display:flex; gap:40px; align-items:flex-start; flex-wrap:wrap;">
+      <div>
+        <div class="caption">Ring SVG: <code class="inline">50×50</code> viewBox. Stroke <code class="inline">5px</code>. Radii <code class="inline">21 / 14 / 7</code>.</div>
+        <div class="ring-cluster">
+          <span class="color-chip" style="background: #ff6b6b;"></span>
+          <span class="ring-stack" id="spec-ring"></span>
+          <span class="ring-label">3 / 4</span>
+        </div>
+      </div>
+      <div style="flex:1; min-width: 300px;">
+        <p style="font-size: 13px; color: var(--text); margin-bottom: 8px;"><strong>Per-ring contract</strong></p>
+        <ul style="font-size: 12.5px; line-height: 1.8; color: var(--text-muted); padding-left: 20px;">
+          <li><strong>Outer r=21</strong> — Priority Views (Single Run) = <code class="inline">viewConfig</code> entries with <code class="inline">priority:true</code></li>
+          <li><strong>Middle r=14</strong> — Hero Slots = <code class="inline">heroCount</code> when <code class="inline">heroEnabled</code></li>
+          <li><strong>Inner r=7</strong> — Loop Run extras = <code class="inline">viewBudget</code> views NOT in priority</li>
+          <li>Ring goes <strong>amber</strong> while partial, <strong>green/orange/blue</strong> when each ring's full target is met</li>
+          <li>Color chip: <code class="inline">18×18</code> rounded square above; gradient supports multi-atom colors</li>
+          <li>Fraction label <code class="inline">X/Y</code> under = sum across all 3 rings (hover tooltip breaks it down)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/**
+ * Triple-ring SVG renderer — segmented, fat (stroke 5), no bonus.
+ * viewBox 50×50, radii 21/14/7, gap between segments ≈ 3.5px.
+ */
+(function () {
+  const STROKE = 5;
+  const GAP_PX = 3.5;
+
+  function buildRingSvg({ priority, hero, loop }) {
+    const svgNs = 'http://www.w3.org/2000/svg';
+    const frag = document.createDocumentFragment();
+
+    const rings = [
+      { r: 21, cls: 'ring-outer',  filled: priority.filled, target: priority.target },
+      { r: 14, cls: 'ring-middle', filled: hero.filled,     target: hero.target     },
+      { r: 7,  cls: 'ring-inner',  filled: loop.filled,     target: loop.target     },
+    ];
+
+    for (const ring of rings) {
+      const svg = document.createElementNS(svgNs, 'svg');
+      svg.setAttribute('viewBox', '0 0 50 50');
+      const partial = ring.filled > 0 && ring.filled < ring.target;
+      svg.setAttribute('class', `ring-svg ${ring.cls}${partial ? ' part' : ''}`);
+
+      const circumference = 2 * Math.PI * ring.r;
+      const n = Math.max(1, ring.target);
+      const gap = n > 1 ? GAP_PX : 0;
+      const segLen = (circumference - gap * n) / n;
+
+      // Track: draw segmented dim outline so dividers are visible even when empty.
+      if (n > 1) {
+        const track = document.createElementNS(svgNs, 'circle');
+        track.setAttribute('class', 'ring-track-circle');
+        track.setAttribute('cx', '25'); track.setAttribute('cy', '25');
+        track.setAttribute('r', String(ring.r));
+        track.setAttribute('stroke-dasharray', `${segLen} ${gap}`);
+        svg.appendChild(track);
+      } else {
+        const track = document.createElementNS(svgNs, 'circle');
+        track.setAttribute('class', 'ring-track-circle');
+        track.setAttribute('cx', '25'); track.setAttribute('cy', '25');
+        track.setAttribute('r', String(ring.r));
+        svg.appendChild(track);
+      }
+
+      // Fill: first `filled` segments drawn in colour; rest remain on the track.
+      if (ring.filled > 0) {
+        const fill = document.createElementNS(svgNs, 'circle');
+        fill.setAttribute('class', 'ring-fill-circle');
+        fill.setAttribute('cx', '25'); fill.setAttribute('cy', '25');
+        fill.setAttribute('r', String(ring.r));
+
+        if (n === 1) {
+          // Single segment: ring closes fully, no dasharray needed.
+          fill.setAttribute('stroke-dasharray', `${circumference} 0`);
+        } else {
+          // First `filled` segments visible, rest hidden via final long gap.
+          const visibleSegment = segLen;
+          const hiddenTail = circumference - (ring.filled * (segLen + gap)) + gap;
+          // Dasharray alternates (visible, gap) × filled then (0, hiddenTail)
+          const parts = [];
+          for (let i = 0; i < ring.filled; i++) {
+            parts.push(visibleSegment, gap);
+          }
+          // Remove the trailing gap after the last visible segment, replace with big hidden gap
+          parts[parts.length - 1] = hiddenTail;
+          fill.setAttribute('stroke-dasharray', parts.join(' '));
+        }
+        svg.appendChild(fill);
+      }
+
+      frag.appendChild(svg);
+    }
+    return frag;
+  }
+
+  function mount(id, spec) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = '';
+    el.appendChild(buildRingSvg(spec));
+  }
+
+  // ── State demo — mouse config: priority 4 · hero 3 · loop extras 4 (user-confirmed) ──
+  mount('state-empty',     { priority: { filled: 0, target: 4 }, hero: { filled: 0, target: 3 }, loop: { filled: 0, target: 4 } });
+  mount('state-1of3',      { priority: { filled: 1, target: 4 }, hero: { filled: 0, target: 3 }, loop: { filled: 0, target: 4 } });
+  mount('state-2plushero', { priority: { filled: 2, target: 4 }, hero: { filled: 1, target: 3 }, loop: { filled: 0, target: 4 } });
+  mount('state-prio-done', { priority: { filled: 4, target: 4 }, hero: { filled: 0, target: 3 }, loop: { filled: 0, target: 4 } });
+  mount('state-done',      { priority: { filled: 4, target: 4 }, hero: { filled: 3, target: 3 }, loop: { filled: 4, target: 4 } });
+  mount('state-partial',   { priority: { filled: 2, target: 4 }, hero: { filled: 1, target: 3 }, loop: { filled: 2, target: 4 } });
+
+  // ── Inner-ring dividers demo — loop target variations ──
+  mount('state-hero3-empty', { priority: { filled: 0, target: 4 }, hero: { filled: 0, target: 3 }, loop: { filled: 0, target: 6 } });
+  mount('state-hero3-part',  { priority: { filled: 4, target: 4 }, hero: { filled: 1, target: 3 }, loop: { filled: 3, target: 6 } });
+  mount('state-hero3-full',  { priority: { filled: 4, target: 4 }, hero: { filled: 3, target: 3 }, loop: { filled: 6, target: 6 } });
+  mount('state-prio5-hero2', { priority: { filled: 3, target: 5 }, hero: { filled: 1, target: 2 }, loop: { filled: 2, target: 7 } });
+
+  // ── Spec ring ──────────────────────────────────────────
+  mount('spec-ring', { priority: { filled: 4, target: 4 }, hero: { filled: 0, target: 3 }, loop: { filled: 0, target: 4 } });
+
+  // ── Product rows ───────────────────────────────────────
+  function buildVariantCluster({ label, color, priority, hero, loop }) {
+    const wrap = document.createElement('span');
+    wrap.className = 'ring-cluster';
+    const total = priority.filled + hero.filled + loop.filled;
+    const totalTarget = priority.target + hero.target + loop.target;
+    wrap.title = `${label} — Priority ${priority.filled}/${priority.target} · Hero ${hero.filled}/${hero.target} · Loop extras ${loop.filled}/${loop.target}`;
+
+    const chip = document.createElement('span');
+    chip.className = 'color-chip';
+    chip.style.background = color;
+    wrap.appendChild(chip);
+
+    const stack = document.createElement('span');
+    stack.className = 'ring-stack';
+    stack.appendChild(buildRingSvg({ priority, hero, loop }));
+    wrap.appendChild(stack);
+
+    const frac = document.createElement('span');
+    frac.className = 'ring-label';
+    frac.textContent = `${total} / ${totalTarget}`;
+    wrap.appendChild(frac);
+
+    return wrap;
+  }
+
+  function renderRow(id, variants) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = '';
+    for (const v of variants) {
+      el.appendChild(buildVariantCluster(v));
+    }
+  }
+
+  // Mouse config: priority 4 · hero 3 · loop extras 4 = 11 image slots per variant
+  renderRow('row-mx-master', [
+    { label: 'Graphite',  color: '#2f3437', priority: { filled: 4, target: 4 }, hero: { filled: 3, target: 3 }, loop: { filled: 4, target: 4 } },
+    { label: 'Pale Gray', color: '#d8d8d6', priority: { filled: 3, target: 4 }, hero: { filled: 2, target: 3 }, loop: { filled: 1, target: 4 } },
+  ]);
+
+  renderRow('row-da-v3', [
+    { label: 'Black', color: '#000', priority: { filled: 4, target: 4 }, hero: { filled: 3, target: 3 }, loop: { filled: 4, target: 4 } },
+    { label: 'White', color: '#fff', priority: { filled: 3, target: 4 }, hero: { filled: 2, target: 3 }, loop: { filled: 0, target: 4 } },
+    { label: 'Faker', color: 'linear-gradient(135deg, #ffcc00 50%, #000 50%)', priority: { filled: 1, target: 4 }, hero: { filled: 0, target: 3 }, loop: { filled: 0, target: 4 } },
+  ]);
+
+  renderRow('row-ulx', [
+    { label: 'Phantom',    color: 'linear-gradient(135deg, #2b6cb0 50%, #000 50%)', priority: { filled: 0, target: 4 }, hero: { filled: 0, target: 3 }, loop: { filled: 0, target: 4 } },
+    { label: 'Starlight',  color: '#f5f5dc', priority: { filled: 0, target: 4 }, hero: { filled: 0, target: 3 }, loop: { filled: 0, target: 4 } },
+  ]);
+
+  renderRow('row-op1', [
+    { label: 'Black',       color: '#000', priority: { filled: 4, target: 4 }, hero: { filled: 3, target: 3 }, loop: { filled: 4, target: 4 } },
+    { label: 'White',       color: '#fff', priority: { filled: 4, target: 4 }, hero: { filled: 1, target: 3 }, loop: { filled: 2, target: 4 } },
+    { label: 'Dark Frost',  color: '#6b7a8f', priority: { filled: 3, target: 4 }, hero: { filled: 2, target: 3 }, loop: { filled: 1, target: 4 } },
+    { label: 'Purple',      color: '#7048e8', priority: { filled: 2, target: 4 }, hero: { filled: 0, target: 3 }, loop: { filled: 0, target: 4 } },
+    { label: 'Red',         color: '#dc3545', priority: { filled: 1, target: 4 }, hero: { filled: 0, target: 3 }, loop: { filled: 0, target: 4 } },
+    { label: 'Yellow',      color: '#fab005', priority: { filled: 0, target: 4 }, hero: { filled: 0, target: 3 }, loop: { filled: 0, target: 4 } },
+    { label: 'Teal',        color: '#0c8599', priority: { filled: 0, target: 4 }, hero: { filled: 0, target: 3 }, loop: { filled: 0, target: 4 } },
+    { label: 'Split',       color: 'linear-gradient(135deg, #dc3545 50%, #000 50%)', priority: { filled: 4, target: 4 }, hero: { filled: 3, target: 3 }, loop: { filled: 3, target: 4 } },
+  ]);
+})();
+</script>
+</body>
+</html>

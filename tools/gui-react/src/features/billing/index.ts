@@ -25,7 +25,22 @@ export {
   useBillingByReasonQuery,
   useBillingByCategoryQuery,
   useBillingEntriesQuery,
+  useBillingModelCostsQuery,
 } from './billingQueries.ts';
+
+export {
+  buildModelCostDashboard,
+  filterModelCostRows,
+  resolveProviderDisplay,
+} from './modelCostDashboard.ts';
+
+export type {
+  ModelCostDashboard,
+  ModelCostDashboardRow,
+  ModelCostProviderCard,
+  ModelCostFilterState,
+  ProviderDisplay,
+} from './modelCostDashboard.ts';
 
 export type {
   BillingSummaryResponse,
@@ -45,4 +60,10 @@ export type {
   FilterChipCounts,
   TokenSegments,
   TrendDirection,
+  BillingProviderKind,
+  BillingModelPricingSource,
+  BillingModelCostUsage,
+  BillingModelCostRow,
+  BillingModelCostProvider,
+  BillingModelCostsResponse,
 } from './billingTypes.ts';

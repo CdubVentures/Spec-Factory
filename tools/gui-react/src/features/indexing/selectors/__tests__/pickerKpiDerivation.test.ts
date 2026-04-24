@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import { strictEqual, deepStrictEqual } from 'node:assert';
-import { derivePickerKpis, formatRelativeTime } from '../pickerKpiDerivation.ts';
+import { derivePickerKpis } from '../pickerKpiDerivation.ts';
 import type { CatalogRow } from '../../../../types/product.ts';
 
 function makeRow(overrides: Partial<CatalogRow> = {}): CatalogRow {
@@ -13,14 +13,14 @@ function makeRow(overrides: Partial<CatalogRow> = {}): CatalogRow {
     base_model: 'Viper V2 Pro',
     variant: 'White',
     status: 'active',
-    hasFinal: true,
-    validated: true,
     confidence: 0.87,
     coverage: 0.73,
     fieldsFilled: 38,
     fieldsTotal: 52,
-    lastRun: '2026-04-21T10:00:00Z',
-    inActive: false,
+    cefRunCount: 0,
+    pifVariants: [],
+    skuVariants: [],
+    rdfVariants: [],
     ...overrides,
   };
 }
@@ -30,10 +30,10 @@ describe('derivePickerKpis', () => {
     deepStrictEqual(derivePickerKpis(null), []);
   });
 
-  it('returns four tiles in fixed order', () => {
+  it('returns three tiles in fixed order', () => {
     const tiles = derivePickerKpis(makeRow());
-    strictEqual(tiles.length, 4);
-    deepStrictEqual(tiles.map((t) => t.key), ['confidence', 'coverage', 'fields', 'lastRun']);
+    strictEqual(tiles.length, 3);
+    deepStrictEqual(tiles.map((t) => t.key), ['confidence', 'coverage', 'fields']);
   });
 
   it('confidence tile reflects passing value', () => {
@@ -78,49 +78,9 @@ describe('derivePickerKpis', () => {
     strictEqual(tile.barTone, 'neutral');
   });
 
-  it('lastRun tile shows date prefix when present', () => {
-    const nowMs = Date.parse('2026-04-21T12:00:00Z');
-    const tiles = derivePickerKpis(makeRow({ lastRun: '2026-04-21T10:00:00Z' }), nowMs);
-    const tile = tiles.find((t) => t.key === 'lastRun')!;
-    strictEqual(tile.value, '2026-04-21');
-    strictEqual(tile.sub, '2h ago');
-  });
-
-  it('lastRun tile shows "never" when missing', () => {
-    const tiles = derivePickerKpis(makeRow({ lastRun: '' }));
-    const tile = tiles.find((t) => t.key === 'lastRun')!;
-    strictEqual(tile.value, 'never');
-    strictEqual(tile.sub, 'never run');
-  });
-
   it('clamps bar percentages to [0, 100]', () => {
     const tiles = derivePickerKpis(makeRow({ confidence: 1.5, coverage: -0.2 }));
     strictEqual(tiles.find((t) => t.key === 'confidence')!.barPct, 100);
     strictEqual(tiles.find((t) => t.key === 'coverage')!.barPct, 0);
-  });
-});
-
-describe('formatRelativeTime', () => {
-  const now = Date.parse('2026-04-21T12:00:00Z');
-
-  it('returns "never run" on empty or invalid input', () => {
-    strictEqual(formatRelativeTime('', now), 'never run');
-    strictEqual(formatRelativeTime('not-a-date', now), 'never run');
-  });
-
-  it('returns "just now" for < 1 minute', () => {
-    strictEqual(formatRelativeTime('2026-04-21T11:59:30Z', now), 'just now');
-  });
-
-  it('returns minutes for < 1 hour', () => {
-    strictEqual(formatRelativeTime('2026-04-21T11:45:00Z', now), '15m ago');
-  });
-
-  it('returns hours for < 1 day', () => {
-    strictEqual(formatRelativeTime('2026-04-21T10:00:00Z', now), '2h ago');
-  });
-
-  it('returns days for >= 1 day', () => {
-    strictEqual(formatRelativeTime('2026-04-18T12:00:00Z', now), '3d ago');
   });
 });

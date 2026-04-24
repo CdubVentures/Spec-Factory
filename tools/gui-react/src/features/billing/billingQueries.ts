@@ -7,6 +7,7 @@ import type {
   BillingByReasonResponse,
   BillingByCategoryResponse,
   BillingEntriesResponse,
+  BillingModelCostsResponse,
   BillingFilterState,
 } from './billingTypes.ts';
 
@@ -116,5 +117,15 @@ export function useBillingEntriesQuery(opts: EntriesQueryOpts) {
     queryFn: () => api.get<BillingEntriesResponse>(`/billing/global/entries?${params.toString()}`),
     refetchInterval: BILLING_REFETCH,
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useBillingModelCostsQuery(filters: BillingFilterState, open: boolean) {
+  return useQuery<BillingModelCostsResponse>({
+    queryKey: ['billing', 'model-costs', filters],
+    queryFn: () => api.get<BillingModelCostsResponse>(withFilters('/billing/global/model-costs', filters)),
+    refetchInterval: BILLING_REFETCH,
+    placeholderData: keepPreviousData,
+    enabled: open,
   });
 }

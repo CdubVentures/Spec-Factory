@@ -9,10 +9,10 @@
 | Surface | Path | Role |
 |--------|------|------|
 | Publisher page | `tools/gui-react/src/pages/publisher/PublisherPage.tsx` | renders `/#/publisher`, polls publisher candidate rows, and exposes expanded validation/source detail |
-| Publisher types | `tools/gui-react/src/pages/publisher/types.ts` | TypeScript payload contracts for candidate rows, stats, repairs, and LLM repair decisions |
+| Publisher types | `tools/gui-react/src/pages/publisher/types.ts` | TypeScript payload contracts for candidate rows, stats, and transform-log repairs |
 | Publisher routes | `src/features/publisher/api/publisherRoutes.js` | serves `/publisher/:category/candidates` and `/publisher/:category/stats` |
 | Route bootstrap | `src/app/api/guiServerRuntime.js`, `src/features/publisher/api/publisherRouteContext.js` | injects `getSpecDb` and `jsonRes` into the route family |
-| Pipeline public API | `src/features/publisher/index.js` | exports validation checks, phase registry, repair adapter, candidate submission, and discovered-enum helpers |
+| Pipeline public API | `src/features/publisher/index.js` | exports validation checks, phase registry, candidate submission, and discovered-enum helpers |
 | Candidate SQL projection | `src/db/stores/fieldCandidateStore.js` | hydrates and paginates `field_candidates` rows used by the page |
 
 ## Dependencies
@@ -37,9 +37,8 @@
    - aggregate stats via `specDb.getFieldCandidatesStats()`
 5. `src/db/stores/fieldCandidateStore.js` hydrates JSON columns into typed structures before the API returns `{ rows, total, page, limit, stats }`.
 6. `PublisherPage.tsx` applies client-side filters for date range, status, field, and product text, then renders a table with expandable rows for:
-   - repairs
+   - repairs (deterministic transform log)
    - rejections
-   - LLM repair decisions
    - source history
    - candidate metadata
 7. The page refetches every 10 seconds to stay aligned with new pipeline output.
@@ -47,7 +46,7 @@
 ### Upstream Candidate Production
 
 1. The pipeline validates values through publisher checks exposed from `src/features/publisher/index.js`.
-2. Successful or repaired values are written into SpecDb through `fieldCandidateStore.upsert(...)`.
+2. Values that pass (or whose transform-log repairs land them within contract) are written into SpecDb through `fieldCandidateStore.upsert(...)`.
 3. For enum fields with `open_prefer_known`, `persistDiscoveredValue()` may upsert new `list_values` rows and mark them `needsReview`.
 4. Unit-bearing values pass through `checkUnit()`, which resolves against the Unit Registry before persistence.
 
@@ -68,7 +67,7 @@
 
 | Surface | Trigger | Result |
 |---------|---------|--------|
-| `field_candidates` row | publisher pipeline writes or updates a candidate | API and GUI audit surface show new value, repair history, and status |
+| `field_candidates` row | publisher pipeline writes or updates a candidate | API and GUI audit surface show new value, transform-log repairs, and status |
 | `list_values` discovered enum rows | `persistDiscoveredValue()` accepts a new enum value | future publisher validation and test-mode audits can see the discovered value |
 | GUI table filters | operator changes date/status/field/product filters | table view changes client-side; no backend mutation occurs |
 | `publishConfidenceThreshold` setting | user updates it in Publisher → Candidate Validation settings | `configRuntimeSettingsHandler` auto-fires `reconcileThreshold()` per category (no manual Reconcile button required). Reconcile routes every field through the same `evaluateFieldBuckets` used at publish time — flipping `field_candidates.status`, rewriting `product.json.fields[]` / `variant_fields[vid][fk]`, and rebuilding `linked_candidates[]` per the post-evaluation bucket membership. Per-category `publisher-reconcile` WS events invalidate downstream GUI queries (review grid cells, drawer candidate lists). |

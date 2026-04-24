@@ -232,7 +232,7 @@ describe('fmtCompact', () => {
 // ── New: FILTER_GROUPS ───────────────────────────────────────────────────────
 
 describe('FILTER_GROUPS', () => {
-  it('has 2 groups (LLM Calls + Publish)', () => assert.equal(FILTER_GROUPS.length, 2));
+  it('has one active LLM Calls group', () => assert.equal(FILTER_GROUPS.length, 1));
 
   it('covers all CALL_TYPE_ORDER entries', () => {
     const allTypes = FILTER_GROUPS.flatMap((g) => g.types);

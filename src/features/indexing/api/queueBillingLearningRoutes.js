@@ -1,3 +1,35 @@
+import { buildBillingModelCostCatalog } from './builders/billingModelCostCatalogBuilder.js';
+import { syncLabRegistryIntoConfig } from '../../../core/llm/labModelDiscovery.js';
+import { mergeDefaultApiModelsIntoRegistry } from '../../../core/llm/providerRegistryDefaults.js';
+import { buildRegistryLookup } from '../../../core/llm/routeResolver.js';
+import { runtimeSettingDefault } from '../../../core/config/configNormalizers.js';
+
+function parseProviderRegistry(registryJson) {
+  try {
+    const parsed = JSON.parse(registryJson);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function existingProviderDefaultsJson(registryJson) {
+  const existingIds = new Set(parseProviderRegistry(registryJson).map((provider) => String(provider?.id || '').trim()));
+  const defaults = parseProviderRegistry(runtimeSettingDefault('llmProviderRegistryJson'))
+    .filter((provider) => existingIds.has(String(provider?.id || '').trim()));
+  return JSON.stringify(defaults);
+}
+
+function refreshDefaultApiModelsIntoConfig(config) {
+  const mergedRegistryJson = mergeDefaultApiModelsIntoRegistry(
+    config.llmProviderRegistryJson,
+    existingProviderDefaultsJson(config.llmProviderRegistryJson),
+  );
+  if (mergedRegistryJson === config.llmProviderRegistryJson) return;
+  config.llmProviderRegistryJson = mergedRegistryJson;
+  config._registryLookup = buildRegistryLookup(config.llmProviderRegistryJson);
+}
+
 export function registerQueueBillingLearningRoutes(ctx) {
   const {
     jsonRes,
@@ -11,6 +43,7 @@ export function registerQueueBillingLearningRoutes(ctx) {
     safeReadJson,
     safeStat,
     listFiles,
+    syncLabRegistryIntoConfig: syncLabRegistryIntoConfigFn = syncLabRegistryIntoConfig,
   } = ctx;
 
   function objToSortedArray(obj) {
@@ -74,6 +107,16 @@ export function registerQueueBillingLearningRoutes(ctx) {
         const offset = toInt(params.get('offset'), 0);
         const data = appDb.getGlobalEntries({ limit, offset, ...billingFilters });
         return jsonRes(res, 200, { ...data, limit, offset });
+      }
+
+      if (parts[2] === 'model-costs') {
+        const month = String(params.get('month') || '').trim() || new Date().toISOString().slice(0, 7);
+        try {
+          refreshDefaultApiModelsIntoConfig(config);
+          await syncLabRegistryIntoConfigFn(config);
+        } catch { /* non-fatal: use current provider registry projection */ }
+        const rollup = appDb.getBillingRollup(month, category, billingFilters);
+        return jsonRes(res, 200, buildBillingModelCostCatalog({ config, rollup, month }));
       }
     }
 

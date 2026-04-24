@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKU / RDF Confidence Diamond — Sample</title>
+<style>
+  :root {
+    --bg: #f4f6f9; --surface: #fff; --surface-alt: #f1f3f5; --surface-soft: #fafbfc;
+    --border: #e5e9ef; --border-light: #eef1f5;
+    --text: #1f2328; --text-muted: #5f6672; --text-dim: #7c8390; --text-faint: #a9afb9;
+
+    --accent: #4263eb; --accent-bg: #edf2ff; --accent-border: #bac8ff;
+    --green-strong: #2b8a3e; --green-soft: #40c057; --green-bg: #ebfbee;
+    --amber-strong: #e67700; --amber-soft: #fab005; --amber-bg: #fff4e6;
+    --red-strong:   #c92a2a; --red-soft:   #f03e3e; --red-bg:   #fff5f5;
+    --gray-strong:  #495057; --gray-soft:  #868e96; --gray-bg:  #f1f3f5;
+
+    --mono: 'SF Mono','Cascadia Code','Fira Code',Consolas,monospace;
+    --font: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    --radius: 8px;
+    --shadow-sm: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:var(--font); color:var(--text); background:var(--bg); line-height:1.55; -webkit-font-smoothing:antialiased; padding: 0 0 80px; }
+
+  .page-header { background: linear-gradient(135deg, #3b4cca 0%, #4263eb 45%, #5f3dc4 100%); color:#fff; padding: 32px 0 26px; text-align:center; box-shadow: 0 4px 14px rgba(0,0,0,.10); }
+  .page-header h1 { font-size: 22px; font-weight: 700; }
+  .page-header p { font-size: 13.5px; opacity: .92; margin-top: 5px; }
+  .page-header .pill { display: inline-block; background: rgba(255,255,255,.2); padding: 3px 10px; border-radius: 99px; font-size: 11.5px; font-weight: 600; margin-top: 8px; }
+
+  .container { max-width: 1200px; margin: 28px auto 0; padding: 0 24px; }
+
+  .section { margin-bottom: 36px; }
+  .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); margin-bottom: 12px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 22px 24px; }
+  .card + .card { margin-top: 14px; }
+
+  /* ── shared cluster layout ─────────────────────────────── */
+  .cluster {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 2px 6px;
+    border-radius: 6px;
+    cursor: default;
+  }
+  .cluster:hover { background: var(--surface-soft); }
+
+  .color-chip {
+    width: 18px; height: 18px;
+    border-radius: 3px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  }
+
+  /* ── V1: Solid diamond ─────────────────────────────────── */
+  .diamond-svg { width: 40px; height: 40px; display: block; }
+  .diamond-v1 polygon { stroke-width: 1.5; }
+  .diamond-text {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 800;
+    fill: #fff;
+    dominant-baseline: central;
+    text-anchor: middle;
+    letter-spacing: -0.03em;
+  }
+  .diamond-text.dash {
+    font-size: 18px;
+    fill: var(--text-dim);
+    font-weight: 600;
+  }
+
+  /* confidence-tier tones — shared by all variants */
+  .t-good   polygon { fill: var(--green-strong);  stroke: var(--green-strong); }
+  .t-warn   polygon { fill: var(--amber-strong);  stroke: var(--amber-strong); }
+  .t-danger polygon { fill: var(--red-strong);    stroke: var(--red-strong); }
+  .t-empty  polygon { fill: transparent;          stroke: var(--gray-soft); stroke-dasharray: 3 2; }
+  .t-empty .diamond-text { fill: var(--text-dim); }
+
+  /* ── V2: Outlined diamond with subtle tinted fill ──────── */
+  .diamond-v2 polygon { stroke-width: 2.5; }
+  .t-good.v2    polygon { fill: var(--green-bg);  stroke: var(--green-strong); }
+  .t-warn.v2    polygon { fill: var(--amber-bg);  stroke: var(--amber-strong); }
+  .t-danger.v2  polygon { fill: var(--red-bg);    stroke: var(--red-strong); }
+  .t-empty.v2   polygon { fill: transparent;      stroke: var(--gray-soft); stroke-dasharray: 3 2; }
+  .diamond-v2 .diamond-text { fill: var(--text); }
+  .t-good.v2   .diamond-text { fill: var(--green-strong); }
+  .t-warn.v2   .diamond-text { fill: var(--amber-strong); }
+  .t-danger.v2 .diamond-text { fill: var(--red-strong); }
+
+  /* ── V3: Filled diamond with status pip ────────────────── */
+  .diamond-v3 polygon.bg   { fill: var(--surface-alt); stroke: var(--border); stroke-width: 1; }
+  .diamond-v3 polygon.fill { stroke-width: 0; }
+  .diamond-v3 .diamond-text { fill: #fff; }
+  .t-good.v3   polygon.fill { fill: var(--green-strong); }
+  .t-warn.v3   polygon.fill { fill: var(--amber-strong); }
+  .t-danger.v3 polygon.fill { fill: var(--red-strong); }
+  .t-empty.v3  polygon.fill { fill: transparent; }
+  .t-empty.v3  .diamond-text { fill: var(--text-dim); }
+
+  .cluster-label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--text-dim);
+    letter-spacing: -0.01em;
+    min-width: 36px;
+    text-align: center;
+    max-width: 80px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  /* ── state grid ────────────────────────────────────────── */
+  .state-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 14px;
+  }
+  .state-tile {
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 10px 12px;
+    text-align: center;
+  }
+  .state-title { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-top: 10px; text-transform: uppercase; letter-spacing: .05em; }
+  .state-desc  { font-size: 11.5px; color: var(--text-dim); margin-top: 3px; line-height: 1.35; }
+
+  /* ── legend ────────────────────────────────────────────── */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    padding: 14px 18px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 12.5px;
+  }
+  .legend-item { display: inline-flex; align-items: center; gap: 8px; }
+  .legend-swatch {
+    width: 14px; height: 14px;
+    transform: rotate(45deg);
+    border: 2px solid currentColor;
+    background: currentColor;
+  }
+  .legend-item.good   { color: var(--green-strong); }
+  .legend-item.warn   { color: var(--amber-strong); }
+  .legend-item.danger { color: var(--red-strong); }
+  .legend-item.empty  { color: var(--gray-soft); }
+
+  /* ── product row ────────────────────────────────────────── */
+  .variant-strip {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .product-row {
+    display: grid;
+    grid-template-columns: 170px 1fr;
+    gap: 20px;
+    align-items: center;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .product-row:last-child { border-bottom: none; }
+  .product-ident { display: flex; flex-direction: column; gap: 2px; }
+  .product-brand { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+  .product-model { font-size: 13.5px; font-weight: 600; color: var(--text); }
+
+  .variant-caption {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    background: var(--surface-alt);
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  .caption { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+  code.inline { font-family: var(--mono); font-size: 12px; background: var(--surface-alt); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+
+  /* Side-by-side compare */
+  .compare-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .compare-col {
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 12px 14px;
+    text-align: center;
+  }
+  .compare-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--accent); margin-bottom: 10px;
+  }
+  .compare-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 8px; }
+  .compare-row-strip { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+  .choose-note {
+    margin-top: 10px;
+    padding: 10px 14px;
+    background: var(--accent-bg);
+    border: 1px solid var(--accent-border);
+    border-radius: 6px;
+    font-size: 12.5px;
+    color: #2b3aa8;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>SKU / RDF — Confidence Diamond</h1>
+  <p>Per-variant cell: color chip on top, diamond below. Diamond color = confidence tier · number inside = confidence %.</p>
+  <span class="pill">3 design variants · pick one for shipping</span>
+</div>
+
+<div class="container">
+
+  <!-- ── Legend ───────────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-title">Confidence tiers (shared across all variants)</div>
+    <div class="legend">
+      <span class="legend-item good"><span class="legend-swatch"></span>≥ 85 — good</span>
+      <span class="legend-item warn"><span class="legend-swatch"></span>60 – 84 — warn</span>
+      <span class="legend-item danger"><span class="legend-swatch"></span>1 – 59 — weak</span>
+      <span class="legend-item empty"><span class="legend-swatch" style="background:transparent; border-style:dashed;"></span>no candidate yet</span>
+    </div>
+    <div class="choose-note">
+      Thresholds match keyFinder's <code class="inline">ConfidenceRing</code> tones. Empty state uses a dashed outline so you can tell "unset" from "low confidence" at a glance.
+    </div>
+  </div>
+
+  <!-- ── Side-by-side comparison ─────────────────────────── -->
+  <div class="section">
+    <div class="section-title">Variant comparison — same confidence (87), same color chip</div>
+    <div class="card">
+      <div class="caption">Three visual treatments. Pick one and I'll wire it.</div>
+      <div class="compare-row">
+        <div class="compare-col">
+          <div class="compare-title">V1 — Solid filled</div>
+          <div class="compare-row-strip" id="cmp-v1"></div>
+          <div class="compare-sub">Boldest read — solid color, white number. Best contrast but heavy at scale.</div>
+        </div>
+        <div class="compare-col">
+          <div class="compare-title">V2 — Outlined, tinted</div>
+          <div class="compare-row-strip" id="cmp-v2"></div>
+          <div class="compare-sub">Softer — tinted fill with colored stroke + colored text. Easier on busy rows.</div>
+        </div>
+        <div class="compare-col">
+          <div class="compare-title">V3 — Inset fill</div>
+          <div class="compare-row-strip" id="cmp-v3"></div>
+          <div class="compare-sub">Background diamond + smaller inner fill. Shows a "frame" even for empty states.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── State tiles × 3 variants ─────────────────────────── -->
+  <div class="section">
+    <div class="section-title">V1 · Solid filled — all states</div>
+    <div class="card">
+      <div class="state-grid" id="states-v1"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">V2 · Outlined tinted — all states</div>
+    <div class="card">
+      <div class="state-grid" id="states-v2"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">V3 · Inset fill — all states</div>
+    <div class="card">
+      <div class="state-grid" id="states-v3"></div>
+    </div>
+  </div>
+
+  <!-- ── Product rows — SKU + RDF demo using the chosen variant ─ -->
+  <div class="section">
+    <div class="section-title">Product rows — V1 applied (mouse 4-variant config)</div>
+    <div class="card">
+      <div class="caption">Same data used for SKU and RDF cells — identical visual pattern, different tooltip value.</div>
+      <div class="product-row">
+        <div class="product-ident">
+          <span class="product-brand">Razer</span>
+          <span class="product-model">DeathAdder V3 Pro</span>
+        </div>
+        <div>
+          <div class="variant-caption">SKU</div>
+          <div class="variant-strip" id="row-da-sku"></div>
+          <div class="variant-caption" style="margin-top:10px;">Release Date</div>
+          <div class="variant-strip" id="row-da-rdf"></div>
+        </div>
+      </div>
+
+      <div class="product-row">
+        <div class="product-ident">
+          <span class="product-brand">Logitech</span>
+          <span class="product-model">MX Master 3S</span>
+        </div>
+        <div>
+          <div class="variant-caption">SKU</div>
+          <div class="variant-strip" id="row-mx-sku"></div>
+          <div class="variant-caption" style="margin-top:10px;">Release Date</div>
+          <div class="variant-strip" id="row-mx-rdf"></div>
+        </div>
+      </div>
+
+      <div class="product-row">
+        <div class="product-ident">
+          <span class="product-brand">Endgame Gear</span>
+          <span class="product-model">OP1 8k</span>
+        </div>
+        <div>
+          <div class="variant-caption">SKU</div>
+          <div class="variant-strip" id="row-op1-sku"></div>
+          <div class="variant-caption" style="margin-top:10px;">Release Date</div>
+          <div class="variant-strip" id="row-op1-rdf"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Spec ─────────────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-title">Size + spec</div>
+    <div class="card" style="display:flex; gap:40px; align-items:flex-start; flex-wrap:wrap;">
+      <div>
+        <div class="caption">Default size: <code class="inline">40×40</code> SVG viewBox, rendered at <code class="inline">36–40px</code>.</div>
+        <div style="display:flex; gap: 14px;">
+          <div class="cluster">
+            <span class="color-chip" style="background: #000;"></span>
+            <svg class="diamond-svg diamond-v1 t-good" viewBox="0 0 40 40">
+              <polygon points="20,2 38,20 20,38 2,20" />
+              <text class="diamond-text" x="20" y="20">92</text>
+            </svg>
+            <span class="cluster-label">910-006...</span>
+          </div>
+        </div>
+      </div>
+      <div style="flex:1; min-width: 300px;">
+        <p style="font-size: 13px; color: var(--text); margin-bottom: 8px;"><strong>Cell contract</strong></p>
+        <ul style="font-size: 12.5px; line-height: 1.8; color: var(--text-muted); padding-left: 20px;">
+          <li><strong>Color chip</strong>: same <code class="inline">ColorSwatch</code> as PIF cell (18×18)</li>
+          <li><strong>Diamond</strong>: <code class="inline">polygon points=20,2 38,20 20,38 2,20</code> — rhombus SVG</li>
+          <li><strong>Fill color</strong>: tier from <code class="inline">confidence</code> (0–100): ≥85 green · ≥60 amber · &gt;0 red · =0 gray (dashed)</li>
+          <li><strong>Number</strong>: <code class="inline">Math.round(confidence)</code> — 0 to 100, centered, white (V1) or colored (V2)</li>
+          <li><strong>Label</strong>: truncated value below — SKU MPN like <code class="inline">910-006...</code> or ISO date like <code class="inline">2024-03</code> (or hide and show only on hover)</li>
+          <li><strong>Tooltip</strong>: <code class="inline">{variantLabel} · {fullValue} · conf {conf}%</code></li>
+          <li><strong>Multiple variants</strong>: wrap horizontally like PIF cell</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Show/hide label option ────────────────────────────── -->
+  <div class="section">
+    <div class="section-title">Open question — show value label or hide?</div>
+    <div class="card">
+      <div class="compare-row">
+        <div class="compare-col">
+          <div class="compare-title">With value label</div>
+          <div class="compare-row-strip" id="cmp-with-label"></div>
+          <div class="compare-sub">More context per row, less dense.</div>
+        </div>
+        <div class="compare-col">
+          <div class="compare-title">Diamond only</div>
+          <div class="compare-row-strip" id="cmp-no-label"></div>
+          <div class="compare-sub">Tighter — relies on tooltip for the value.</div>
+        </div>
+        <div class="compare-col">
+          <div class="compare-title">Mini value icon</div>
+          <div class="compare-row-strip" id="cmp-icon-label"></div>
+          <div class="compare-sub">Tiny glyph under the diamond (✓ if value exists, dash if empty) + tooltip.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  // ── Confidence → tier ───────────────────────────────────
+  function tier(conf) {
+    if (!Number.isFinite(conf) || conf <= 0) return 'empty';
+    if (conf >= 85) return 'good';
+    if (conf >= 60) return 'warn';
+    return 'danger';
+  }
+
+  // ── Diamond builders (each variant shares same geometry) ──
+  function diamond(variant, conf, cls = '') {
+    const t = tier(conf);
+    const text = t === 'empty' ? '—' : String(Math.round(conf));
+    const textCls = t === 'empty' ? 'dash' : '';
+    if (variant === 'v3') {
+      return `<svg class="diamond-svg diamond-${variant} t-${t} v3" viewBox="0 0 40 40">
+        <polygon class="bg"   points="20,2 38,20 20,38 2,20" />
+        <polygon class="fill" points="20,6 34,20 20,34 6,20" />
+        <text class="diamond-text ${textCls}" x="20" y="20">${text}</text>
+      </svg>`;
+    }
+    return `<svg class="diamond-svg diamond-${variant} t-${t} ${cls}" viewBox="0 0 40 40">
+      <polygon points="20,2 38,20 20,38 2,20" />
+      <text class="diamond-text ${textCls}" x="20" y="20">${text}</text>
+    </svg>`;
+  }
+
+  function cluster({ variant, color, conf, label }) {
+    const labelHtml = label === undefined
+      ? ''
+      : `<span class="cluster-label">${label ?? ''}</span>`;
+    return `<span class="cluster">
+      <span class="color-chip" style="background: ${color};"></span>
+      ${diamond(variant, conf, variant)}
+      ${labelHtml}
+    </span>`;
+  }
+
+  // ── Comparison row (same data, 3 variants) ──────────────
+  const cmpData = { color: '#000', conf: 87, label: '910-006...' };
+  document.getElementById('cmp-v1').innerHTML = cluster({ ...cmpData, variant: 'v1' });
+  document.getElementById('cmp-v2').innerHTML = cluster({ ...cmpData, variant: 'v2' });
+  document.getElementById('cmp-v3').innerHTML = cluster({ ...cmpData, variant: 'v3' });
+
+  // ── All states per variant ──────────────────────────────
+  const states = [
+    { title: 'Empty',        desc: 'No candidate yet',     conf: 0,  color: '#2b6cb0', label: '' },
+    { title: 'Weak',         desc: 'Conf 42 — low',        conf: 42, color: '#f5f5dc', label: '910-AB...' },
+    { title: 'Warn',         desc: 'Conf 72 — needs boost',conf: 72, color: '#2f3437', label: '910-XY...' },
+    { title: 'Good',         desc: 'Conf 87 — shipable',   conf: 87, color: '#dc3545', label: '910-06...' },
+    { title: 'Very good',    desc: 'Conf 96 — locked',     conf: 96, color: '#7048e8', label: '910-12...' },
+    { title: 'Complete',     desc: 'Conf 100 — max',       conf: 100,color: '#fab005', label: '910-99...' },
+  ];
+
+  function renderStates(id, variant) {
+    const root = document.getElementById(id);
+    if (!root) return;
+    root.innerHTML = states.map(s => `
+      <div class="state-tile">
+        ${cluster({ variant, color: s.color, conf: s.conf, label: s.label })}
+        <div class="state-title">${s.title}</div>
+        <div class="state-desc">${s.desc}</div>
+      </div>
+    `).join('');
+  }
+  renderStates('states-v1', 'v1');
+  renderStates('states-v2', 'v2');
+  renderStates('states-v3', 'v3');
+
+  // ── Product rows — V1 applied ───────────────────────────
+  function renderStrip(id, variants) {
+    const root = document.getElementById(id);
+    if (!root) return;
+    root.innerHTML = variants.map(v => cluster({ ...v, variant: 'v1' })).join('');
+  }
+
+  // Razer DeathAdder V3 Pro: 3 variants (Black, White, Faker)
+  renderStrip('row-da-sku', [
+    { color: '#000', conf: 96, label: 'RZ01-04630100' },
+    { color: '#fff', conf: 92, label: 'RZ01-04630200' },
+    { color: 'linear-gradient(135deg,#ffcc00 50%,#000 50%)', conf: 74, label: 'RZ01-04630300' },
+  ]);
+  renderStrip('row-da-rdf', [
+    { color: '#000', conf: 98, label: '2022-08' },
+    { color: '#fff', conf: 94, label: '2022-08' },
+    { color: 'linear-gradient(135deg,#ffcc00 50%,#000 50%)', conf: 63, label: '2023-07' },
+  ]);
+
+  // Logitech MX Master 3S: 2 variants (Graphite, Pale Gray)
+  renderStrip('row-mx-sku', [
+    { color: '#2f3437', conf: 99, label: '910-006558' },
+    { color: '#d8d8d6', conf: 99, label: '910-006559' },
+  ]);
+  renderStrip('row-mx-rdf', [
+    { color: '#2f3437', conf: 98, label: '2022-05' },
+    { color: '#d8d8d6', conf: 98, label: '2022-05' },
+  ]);
+
+  // Endgame Gear OP1 8k: 8 variants — mix of completion levels
+  renderStrip('row-op1-sku', [
+    { color: '#000',    conf: 94, label: 'EGG-OP1-BLK' },
+    { color: '#fff',    conf: 88, label: 'EGG-OP1-WHT' },
+    { color: '#6b7a8f', conf: 72, label: 'EGG-OP1-DF'  },
+    { color: '#7048e8', conf: 55, label: 'EGG-OP1-PR'  },
+    { color: '#dc3545', conf: 42, label: 'EGG-OP1-RED' },
+    { color: '#fab005', conf: 0,  label: '' },
+    { color: '#0c8599', conf: 0,  label: '' },
+    { color: 'linear-gradient(135deg,#dc3545 50%,#000 50%)', conf: 91, label: 'EGG-OP1-SPL' },
+  ]);
+  renderStrip('row-op1-rdf', [
+    { color: '#000',    conf: 91, label: '2024-03' },
+    { color: '#fff',    conf: 88, label: '2024-03' },
+    { color: '#6b7a8f', conf: 66, label: '2024-05' },
+    { color: '#7048e8', conf: 50, label: '2024-06' },
+    { color: '#dc3545', conf: 38, label: '2024' },
+    { color: '#fab005', conf: 0,  label: '' },
+    { color: '#0c8599', conf: 0,  label: '' },
+    { color: 'linear-gradient(135deg,#dc3545 50%,#000 50%)', conf: 85, label: '2024-07' },
+  ]);
+
+  // ── Label options ──────────────────────────────────────
+  const labelData = { color: '#000', conf: 87 };
+  document.getElementById('cmp-with-label').innerHTML = [
+    cluster({ ...labelData, variant: 'v1', label: '910-006558' }),
+    cluster({ ...labelData, variant: 'v1', label: '910-006559', color: '#d8d8d6' }),
+  ].join('');
+  document.getElementById('cmp-no-label').innerHTML = [
+    cluster({ ...labelData, variant: 'v1' }),
+    cluster({ ...labelData, variant: 'v1', color: '#d8d8d6' }),
+  ].join('');
+  document.getElementById('cmp-icon-label').innerHTML = [
+    cluster({ ...labelData, variant: 'v1', label: '✓' }),
+    cluster({ ...labelData, variant: 'v1', color: '#d8d8d6', label: '✓' }),
+  ].join('');
+})();
+</script>
+</body>
+</html>

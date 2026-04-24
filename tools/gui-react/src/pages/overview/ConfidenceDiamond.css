@@ -1,0 +1,58 @@
+/* ConfidenceDiamond — solid-filled diamond with confidence number inside.
+   V1 variant from docs/implementation/sample-html/sku-rdf-confidence-diamond-sample.html.
+   Shared between SKU + RDF Overview cells. */
+
+.sf-conf-diamond {
+  width: 36px;
+  height: 36px;
+  display: block;
+}
+
+.sf-conf-diamond polygon {
+  stroke-width: 1.5;
+}
+
+.sf-conf-diamond-text {
+  font-family: var(--sf-font-family-mono, 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace);
+  font-size: 13px;
+  font-weight: 800;
+  fill: #fff;
+  dominant-baseline: central;
+  text-anchor: middle;
+  letter-spacing: -0.03em;
+}
+
+/* Confidence tiers — threshold match keyFinder ConfidenceRing */
+.sf-conf-diamond-good   polygon { fill: var(--sf-token-state-success-fg); stroke: var(--sf-token-state-success-fg); }
+.sf-conf-diamond-warn   polygon { fill: var(--sf-token-state-warning-fg); stroke: var(--sf-token-state-warning-fg); }
+.sf-conf-diamond-danger polygon { fill: var(--sf-token-state-error-fg, var(--sf-token-state-danger-fg)); stroke: var(--sf-token-state-error-fg, var(--sf-token-state-danger-fg)); }
+
+/* Empty state — dashed outline, muted dash glyph */
+.sf-conf-diamond-empty polygon {
+  fill: transparent;
+  stroke: rgba(130, 140, 150, 0.55);
+  stroke-dasharray: 3 2;
+}
+.sf-conf-diamond-empty .sf-conf-diamond-text {
+  fill: rgb(var(--sf-color-text-subtle-rgb));
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* CEF run-count variant — same rhombus shape, binary filled/empty state.
+   No number inside (run count is shown as N filled diamonds, not a value). */
+.sf-run-diamond-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.sf-run-diamond-frac {
+  font-family: var(--sf-font-family-mono, 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-left: 4px;
+}
+.sf-run-diamond-frac-done { color: var(--sf-token-state-success-fg); }
+.sf-run-diamond-frac-part { color: var(--sf-token-state-warning-fg); }
+.sf-run-diamond-frac-none { color: rgb(var(--sf-color-text-dim-rgb, var(--sf-color-text-subtle-rgb))); }

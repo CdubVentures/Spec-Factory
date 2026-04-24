@@ -4,12 +4,13 @@ import http from 'node:http';
 
 const PORT = 8788;
 const BASE = `http://localhost:${PORT}`;
+const RUN_LIVE_GUI_TESTS = process.env.SPEC_FACTORY_LIVE_GUI_TESTS === '1';
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function fetchJson(urlPath, { timeout = 15000, retries = 4, retryDelayMs = 500 } = {}) {
+async function fetchJson(urlPath, { timeout = 3000, retries = 1, retryDelayMs = 100 } = {}) {
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     const result = await new Promise((resolve) => {
       const url = `${BASE}${urlPath}`;
@@ -38,8 +39,12 @@ async function fetchJson(urlPath, { timeout = 15000, retries = 4, retryDelayMs =
 }
 
 function isServerUp() {
+  if (!RUN_LIVE_GUI_TESTS) {
+    return Promise.resolve(false);
+  }
+
   return new Promise((resolve, reject) => {
-    const req = http.get(`${BASE}/api/v1/indexlab/runs`, { timeout: 2000 }, (res) => {
+    const req = http.get(`${BASE}/api/v1/indexlab/runs`, { timeout: 1000 }, (res) => {
       let body = '';
       res.on('data', (c) => { body += c; });
       res.on('end', () => {
@@ -97,7 +102,7 @@ describe('GUI IndexLab Endpoints (integration)', async () => {
 
   it('skips all tests when server is not running', { skip: false }, () => {
     if (!serverUp) {
-      assert.ok(true, 'GUI server not running on port 8788 — skipping integration tests');
+      assert.ok(true, 'Live GUI integration tests are opt-in via SPEC_FACTORY_LIVE_GUI_TESTS=1');
     }
   });
 
@@ -145,7 +150,7 @@ describe('GUI IndexLab Endpoints (integration)', async () => {
 
     it('returns 404 for non-existent run', async () => {
       if (!serverUp) return;
-      const { status } = await fetchJson('/api/v1/indexlab/run/nonexistent-run-id', { timeout: 15000 });
+      const { status } = await fetchJson('/api/v1/indexlab/run/nonexistent-run-id');
       assert.equal(status, 404);
     });
   });

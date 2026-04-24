@@ -39,6 +39,5 @@ export const LLM_PHASE_GROUP_LABELS: Record<string, string> = {
   global: 'Global',
   writer: 'Writer',
   indexing: 'Indexing Pipeline',
-  publish: 'Publish Pipeline',
   discovery: 'Discovery',
 };

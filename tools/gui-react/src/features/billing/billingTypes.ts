@@ -88,6 +88,63 @@ export interface BillingEntriesResponse {
   offset: number;
 }
 
+export type BillingProviderKind = 'openai' | 'anthropic' | 'google' | 'deepseek' | 'xai' | 'generic';
+export type BillingModelPricingSource = 'llm_lab' | 'provider_registry' | 'usage';
+
+export interface BillingModelCostUsage {
+  calls: number;
+  cost_usd: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  cached_prompt_tokens: number;
+  sent_tokens: number;
+}
+
+export interface BillingModelCostRow {
+  model: string;
+  provider: string;
+  provider_label: string;
+  provider_kind: BillingProviderKind;
+  role: string;
+  access_modes: string[];
+  pricing_source: BillingModelPricingSource;
+  registry_provider_id: string | null;
+  registry_provider_label: string | null;
+  input_per_1m: number;
+  output_per_1m: number;
+  cached_input_per_1m: number;
+  max_context_tokens: number | null;
+  max_output_tokens: number | null;
+  current: BillingModelCostUsage;
+}
+
+export interface BillingModelCostProvider {
+  id: string;
+  label: string;
+  kind: BillingProviderKind;
+  model_count: number;
+  used_model_count: number;
+  current_cost_usd: number;
+  highest_output_per_1m: number;
+  models: BillingModelCostRow[];
+}
+
+export interface BillingModelCostsResponse {
+  month: string;
+  pricing_meta: {
+    as_of: string | null;
+    sources: Record<string, string>;
+  };
+  totals: {
+    providers: number;
+    models: number;
+    used_models: number;
+    current_cost_usd: number;
+    highest_output_per_1m: number;
+  };
+  providers: BillingModelCostProvider[];
+}
+
 // ── Derived types for charts ──
 
 export interface PivotedDailyRow {

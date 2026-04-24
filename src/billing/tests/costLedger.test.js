@@ -8,7 +8,7 @@ import {
   buildBillingReport,
   readBillingSnapshot
 } from '../costLedger.js';
-import { computeLlmCostUsd, normalizeUsage } from '../costRates.js';
+import { computeLlmCostUsd, normalizeCostRates, normalizeUsage } from '../costRates.js';
 
 function round8(value) {
   return Number.parseFloat(Number(value || 0).toFixed(8));
@@ -71,6 +71,27 @@ function makeTmpConfig() {
   return { config: { specDbDir: tmpDir }, tmpDir };
 }
 
+function makeDeepseekCostRates() {
+  return normalizeCostRates({
+    llmProviderRegistryJson: JSON.stringify([
+      {
+        id: 'default-deepseek',
+        name: 'DeepSeek',
+        type: 'openai-compatible',
+        models: [
+          {
+            id: 'default-deepseek-reasoner',
+            modelId: 'deepseek-reasoner',
+            costInputPer1M: 0.28,
+            costOutputPer1M: 0.42,
+            costCachedPer1M: 0.028,
+          },
+        ],
+      },
+    ]),
+  });
+}
+
 test('cost ledger appends entries via SQL and rolls up month totals', async () => {
   const appDb = makeMockAppDb();
   const { config, tmpDir } = makeTmpConfig();
@@ -78,14 +99,19 @@ test('cost ledger appends entries via SQL and rolls up month totals', async () =
   try {
     const usage1 = normalizeUsage({ prompt_tokens: 1200, completion_tokens: 400 });
     const usage2 = normalizeUsage({ prompt_tokens: 1000, completion_tokens: 300 });
+    const rates = makeDeepseekCostRates();
 
     const cost1 = computeLlmCostUsd({
       usage: usage1,
-      rates: { llmCostInputPer1M: 0.28, llmCostOutputPer1M: 0.42 }
+      rates,
+      provider: 'default-deepseek',
+      model: 'deepseek-reasoner',
     }).costUsd;
     const cost2 = computeLlmCostUsd({
       usage: usage2,
-      rates: { llmCostInputPer1M: 0.28, llmCostOutputPer1M: 0.42 }
+      rates,
+      provider: 'default-deepseek',
+      model: 'deepseek-reasoner',
     }).costUsd;
 
     await appendCostLedgerEntry({

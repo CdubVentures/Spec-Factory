@@ -36,6 +36,7 @@ import { FINDER_GLOBAL_SETTINGS_DDL } from './appDbSchema.js';
 import { createFieldCandidateStore } from './stores/fieldCandidateStore.js';
 import { createFieldCandidateEvidenceStore } from './stores/fieldCandidateEvidenceStore.js';
 import { createVariantStore } from './stores/variantStore.js';
+import { createPifVariantProgressStore } from './stores/pifVariantProgressStore.js';
 
 export class SpecDb {
   constructor({ dbPath, category, globalDb }) {
@@ -210,9 +211,25 @@ export class SpecDb {
         _deleteVariantsByProduct: this._deleteVariantsByProduct,
       },
     });
+    this._pifVariantProgressStore = createPifVariantProgressStore({
+      category: this.category,
+      stmts: {
+        _upsertPifVariantProgress: this._upsertPifVariantProgress,
+        _listPifVariantProgressByProduct: this._listPifVariantProgressByProduct,
+        _deletePifVariantProgressByProduct: this._deletePifVariantProgressByProduct,
+        _deletePifVariantProgressByVariant: this._deletePifVariantProgressByVariant,
+      },
+    });
   }
 
   get variants() { return this._variantStore; }
+
+  // --- PIF variant progress (materialized carousel progress per variant) ---
+
+  upsertPifVariantProgress(row) { this._pifVariantProgressStore.upsert(row); }
+  listPifVariantProgressByProduct(pid) { return this._pifVariantProgressStore.listByProduct(pid); }
+  deletePifVariantProgressByProduct(pid) { this._pifVariantProgressStore.removeByProduct(pid); }
+  deletePifVariantProgressByVariant(pid, vid) { this._pifVariantProgressStore.removeByVariant(pid, vid); }
 
   assertStrictIdentitySlotIntegrity() {
     _assertIntegrity(this.db);

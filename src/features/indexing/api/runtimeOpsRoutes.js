@@ -31,6 +31,7 @@ import {
 } from './builders/runtimeOpsScreenshotAssetHelpers.js';
 import { resolveVideoFilePath } from './runtimeOpsVideoHelpers.js';
 import { defaultIndexLabRoot } from '../../../core/config/runtimeArtifactRoots.js';
+import { normalizeCostRates } from '../../../billing/costRates.js';
 
 function isRunStillActive(processStatus, runId = '') {
   if (typeof processStatus !== 'function') return false;
@@ -437,7 +438,7 @@ export function registerRuntimeOpsRoutes(ctx) {
     }
 
     if (subPath === 'llm-dashboard' && !parts[5]) {
-      const dashboard = buildLlmCallsDashboard(events);
+      const dashboard = buildLlmCallsDashboard(events, { costRates: normalizeCostRates(config) });
       return jsonRes(res, 200, { run_id: runId, ...dashboard });
     }
 

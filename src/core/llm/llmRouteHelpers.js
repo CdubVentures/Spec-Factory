@@ -1,7 +1,6 @@
-import { normalizeModelToken, toInt, toFloat, hasKnownValue, parseCsvTokens } from '../../shared/valueNormalizers.js';
+import { normalizeModelToken, toInt, hasKnownValue, parseCsvTokens } from '../../shared/valueNormalizers.js';
 import { resolveModelFromRegistry, resolveModelCosts, resolveModelTokenProfile } from './routeResolver.js';
 import { providerFromModelToken } from './providerMeta.js';
-import { buildDefaultModelPricingMap } from '../../billing/modelPricingCatalog.js';
 
 export function llmProviderFromModel(model, registryLookup) {
   // Registry-first: if registry knows this model, use its providerType
@@ -56,49 +55,20 @@ export function resolveLlmKnobDefaults(cfg = {}) {
 
 export function resolvePricingForModel(cfg, model) {
   const modelToken = normalizeModelToken(model);
-  const defaultRates = {
-    input_per_1m: toFloat(cfg?.llmCostInputPer1M, 1.25),
-    output_per_1m: toFloat(cfg?.llmCostOutputPer1M, 10),
-    cached_input_per_1m: toFloat(cfg?.llmCostCachedInputPer1M, 0.125)
-  };
+  const defaultRates = { input_per_1m: 0, output_per_1m: 0, cached_input_per_1m: 0 };
   if (!modelToken) {
     return defaultRates;
   }
-  // Registry-first: try registry costs before pricingMap/flat keys
   if (cfg?._registryLookup) {
-    const registryCosts = resolveModelCosts(cfg._registryLookup, modelToken);
-    if (registryCosts && (registryCosts.inputPer1M > 0 || registryCosts.outputPer1M > 0)) {
+    const registryRoute = resolveModelFromRegistry(cfg._registryLookup, modelToken);
+    if (registryRoute) {
+      const registryCosts = resolveModelCosts(cfg._registryLookup, modelToken);
       return {
         input_per_1m: registryCosts.inputPer1M,
         output_per_1m: registryCosts.outputPer1M,
         cached_input_per_1m: registryCosts.cachedInputPer1M || 0,
       };
     }
-  }
-  const pricingMap = (cfg?.llmModelPricingMap && typeof cfg.llmModelPricingMap === 'object')
-    ? cfg.llmModelPricingMap
-    : {};
-  let selected = null;
-  let selectedKey = '';
-  for (const [rawModel, rawRates] of Object.entries(pricingMap)) {
-    const key = normalizeModelToken(rawModel);
-    if (!key || !rawRates || typeof rawRates !== 'object') continue;
-    const isMatch = modelToken === key || modelToken.startsWith(key) || key.startsWith(modelToken);
-    if (!isMatch) continue;
-    if (!selected || key.length > selectedKey.length) {
-      selected = rawRates;
-      selectedKey = key;
-    }
-  }
-  if (selected) {
-    return {
-      input_per_1m: toFloat(selected.inputPer1M ?? selected.input_per_1m ?? selected.input, defaultRates.input_per_1m),
-      output_per_1m: toFloat(selected.outputPer1M ?? selected.output_per_1m ?? selected.output, defaultRates.output_per_1m),
-      cached_input_per_1m: toFloat(
-        selected.cachedInputPer1M ?? selected.cached_input_per_1m ?? selected.cached_input ?? selected.cached,
-        defaultRates.cached_input_per_1m
-      )
-    };
   }
   return defaultRates;
 }
@@ -154,15 +124,18 @@ export function resolveTokenProfileForModel(cfg, model) {
 }
 
 export function collectLlmModels(cfg = {}) {
-  // WHY: Include actively configured models + all canonical catalog models.
-  const candidates = [
-    cfg.llmModelPlan,
-    cfg.llmModelReasoning,
-    cfg.llmPlanFallbackModel,
-    cfg.llmReasoningFallbackModel,
-    ...parseCsvTokens(cfg.llmModelCatalog || ''),
-    ...Object.keys(buildDefaultModelPricingMap()),
-  ];
+  const registryModels = cfg?._registryLookup?.modelIndex instanceof Map
+    ? [...cfg._registryLookup.modelIndex.keys()]
+    : [];
+  const candidates = registryModels.length > 0
+    ? registryModels
+    : [
+        cfg.llmModelPlan,
+        cfg.llmModelReasoning,
+        cfg.llmPlanFallbackModel,
+        cfg.llmReasoningFallbackModel,
+        ...parseCsvTokens(cfg.llmModelCatalog || ''),
+      ];
   const seen = new Set();
   const rows = [];
   for (const model of candidates) {

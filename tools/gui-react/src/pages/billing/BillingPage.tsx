@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState } from 'react';
 import { useUiStore } from '../../stores/uiStore.ts';
 import { usePersistedTab, usePersistedNumber } from '../../stores/tabStore.ts';
 import {
@@ -8,6 +8,7 @@ import {
   useBillingByModelQuery,
   useBillingByReasonQuery,
   useBillingByCategoryQuery,
+  useBillingModelCostsQuery,
 } from '../../features/billing/billingQueries.ts';
 import type { BillingFilterState } from '../../features/billing/billingTypes.ts';
 import { computeFilterChipCounts, resolveBillingFilterState } from '../../features/billing/billingTransforms.ts';
@@ -20,6 +21,7 @@ import { PromptCachePanel } from '../../features/billing/components/PromptCacheP
 import { HorizontalBarSection } from '../../features/billing/components/HorizontalBarSection.tsx';
 import type { ProviderTag } from '../../features/billing/components/HorizontalBarSection.tsx';
 import { BillingEntryTable } from '../../features/billing/components/BillingEntryTable.tsx';
+import { BillingModelCostDialog } from '../../features/billing/components/BillingModelCostDialog.tsx';
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -65,6 +67,7 @@ export function BillingPage() {
   const [model, setModel] = usePersistedTab<string>('billing:filter:model', '');
   const [access, setAccess] = usePersistedTab<string>('billing:filter:access', '');
   const [page, setPage] = usePersistedNumber('billing:page', 0);
+  const [modelCostsOpen, setModelCostsOpen] = useState(false);
 
   const persistedFilters = useMemo<BillingFilterState>(
     () => ({ category, reason, model, access }),
@@ -100,6 +103,7 @@ export function BillingPage() {
   const byModel = useBillingByModelQuery(filters);
   const byReason = useBillingByReasonQuery(filters);
   const byCategory = useBillingByCategoryQuery(filters);
+  const modelCosts = useBillingModelCostsQuery(filters, modelCostsOpen);
 
   const totalCost = summary.data?.totals?.cost_usd ?? 0;
   const totalTokens = (summary.data?.totals?.prompt_tokens ?? 0) + (summary.data?.totals?.completion_tokens ?? 0);
@@ -115,6 +119,10 @@ export function BillingPage() {
     setAccess(next.access);
     setPage(0);
   }, [setCategory, setReason, setModel, setAccess, setPage]);
+
+  const clearView = useCallback(() => {
+    handleFilterChange(noFilters);
+  }, [handleFilterChange, noFilters]);
 
   const categoryCallout = byCategory.data?.categories?.length ? (
     <div className="sf-bar-callout">
@@ -147,6 +155,32 @@ export function BillingPage() {
         isLoading={summary.isLoading}
         isStale={summary.isPlaceholderData}
       />
+
+      <div className="sf-billing-action-strip">
+        <div className="sf-billing-action-copy">
+          <span className="sf-billing-action-eyebrow">View controls</span>
+          <strong>Billing lens</strong>
+          <span>Reset filters or inspect the live model cost catalog.</span>
+        </div>
+        <div className="sf-billing-action-buttons">
+          <button
+            type="button"
+            className="sf-billing-clear-button"
+            onClick={clearView}
+            aria-label="Clear billing view"
+          >
+            Clear View
+          </button>
+          <button
+            type="button"
+            className="sf-billing-cost-button"
+            onClick={() => setModelCostsOpen(true)}
+            aria-label="Open model cost catalog"
+          >
+            Model Costs
+          </button>
+        </div>
+      </div>
 
       {/* Filter bar */}
       <BillingFilterBar
@@ -237,6 +271,14 @@ export function BillingPage() {
 
       {/* Call log */}
       <BillingEntryTable filters={filters} page={page} onPageChange={setPage} />
+
+      <BillingModelCostDialog
+        open={modelCostsOpen}
+        onOpenChange={setModelCostsOpen}
+        data={modelCosts.data}
+        isLoading={modelCosts.isLoading}
+        isStale={modelCosts.isPlaceholderData}
+      />
     </div>
   );
 }

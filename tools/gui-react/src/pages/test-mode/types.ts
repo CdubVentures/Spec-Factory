@@ -7,14 +7,6 @@ export interface ValidatorOutput {
   rejections: Array<{ reason_code: string; detail: Record<string, unknown> }>;
 }
 
-export interface AuditPrompt {
-  promptId: string;
-  system: string;
-  user: string;
-  jsonSchema: Record<string, unknown>;
-  params: Record<string, unknown>;
-}
-
 export interface AuditCheck {
   type: 'good' | 'reject' | 'repair';
   pass: boolean;
@@ -23,7 +15,6 @@ export interface AuditCheck {
   description?: string;
   expectedCode?: string;
   actualCodes?: string[];
-  prompt?: AuditPrompt | null;
   knob?: string;
   expectedRepair?: unknown;
   actualValue?: unknown;
@@ -34,9 +25,8 @@ export interface FieldKnob {
   knob: string;
   value: string;
   step: number;
-  action: 'reject' | 'reject+llm' | 'deterministic' | 'dispatch' | 'pass-through' | 'info' | 'llm_repair';
+  action: 'reject' | 'soft_reject' | 'deterministic' | 'dispatch' | 'pass-through' | 'info';
   code: string | null;
-  prompt?: string;
 }
 
 export interface FieldAuditResult {

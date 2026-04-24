@@ -20,7 +20,6 @@ const PHASE_ICON_PATHS: Record<string, ReactNode> = {
   'brand-resolver': <><path d="M4 6h16M4 12h10M4 18h14" /><circle cx="18" cy="12" r="3" /></>,
   'search-planner': <><circle cx="11" cy="11" r="7" /><path d="M16 16l5 5" /></>,
   'serp-selector': <><path d="M3 6h18M3 12h12M3 18h8" /><path d="M19 10l2 2-2 2" /></>,
-  validate: <><path d="M9 12l2 2 4-4" /><circle cx="12" cy="12" r="9" /></>,
   'color-finder': <><circle cx="12" cy="12" r="4" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12" /></>,
 };
 
@@ -29,7 +28,7 @@ const DEFAULT_PHASE_ICON: ReactNode = <circle cx="12" cy="12" r="8" />;
 /* ── SVG group badges — small pill overlays in top-right of each sidebar button ── */
 
 // WHY: Badge colors match the group's semantic intent:
-// indexing = blue (pipeline flow), publish = green (validation/approval), discovery = purple (exploration)
+// indexing = blue (pipeline flow), discovery = purple (exploration)
 const GROUP_BADGE_CONFIG: Record<string, { color: string; bg: string; icon: ReactNode; label: string }> = {
   indexing: {
     color: 'rgb(59, 130, 246)',
@@ -38,16 +37,6 @@ const GROUP_BADGE_CONFIG: Record<string, { color: string; bg: string; icon: Reac
     icon: (
       <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M2 6h3M7 6h3M5 4l2 2-2 2" />
-      </svg>
-    ),
-  },
-  publish: {
-    color: 'rgb(34, 197, 94)',
-    bg: 'rgb(34, 197, 94, 0.12)',
-    label: 'Publish',
-    icon: (
-      <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M3 6.5l2 2 4-4" />
       </svg>
     ),
   },

@@ -55,7 +55,7 @@ function makeMockAppDb(entries = []) {
   };
 }
 
-function makeCtx(appDb, config = {}) {
+function makeCtx(appDb, config = {}, overrides = {}) {
   return {
     jsonRes: (_res, status, data) => ({ status, data }),
     toInt: (v, d) => { const n = Number.parseInt(String(v), 10); return Number.isFinite(n) ? n : d; },
@@ -68,6 +68,7 @@ function makeCtx(appDb, config = {}) {
     safeReadJson: async () => null,
     safeStat: async () => null,
     listFiles: async () => [],
+    ...overrides,
   };
 }
 
@@ -125,7 +126,7 @@ describe('billing global routes', () => {
     assert.equal(typeof result.data.offset, 'number');
   });
 
-  it('GET /billing/global/model-costs returns provider-grouped current price catalog with filtered usage', async () => {
+  it('GET /billing/global/model-costs returns each registry provider without collapsing LLM Lab into API rows', async () => {
     const costEntries = [
       { ts: '2026-04-10T12:00:00Z', month: '2026-04', day: '2026-04-10', provider: 'openai', model: 'gpt-5.5', category: 'mouse', reason: 'extract', cost_usd: 0.12, prompt_tokens: 1000, completion_tokens: 250, cached_prompt_tokens: 100, sent_tokens: 800 },
       { ts: '2026-04-10T12:10:00Z', month: '2026-04', day: '2026-04-10', provider: 'lab-openai', model: 'gpt-5.5', category: 'mouse', reason: 'extract', cost_usd: 0.08, prompt_tokens: 700, completion_tokens: 120, cached_prompt_tokens: 80, sent_tokens: 600 },
@@ -134,11 +135,6 @@ describe('billing global routes', () => {
     const costConfig = {
       llmPricingAsOf: '2026-04-23',
       llmPricingSources: { openai: 'https://openai.com/api/pricing/' },
-      llmModelPricingMap: {
-        'gpt-5.5': { inputPer1M: 5, outputPer1M: 30, cachedInputPer1M: 0.5 },
-        'claude-sonnet-4-6': { inputPer1M: 3, outputPer1M: 15, cachedInputPer1M: 0.3 },
-        'gemini-2.5-flash': { inputPer1M: 0.3, outputPer1M: 2.5, cachedInputPer1M: 0.03 },
-      },
       llmProviderRegistryJson: JSON.stringify([
         {
           id: 'lab-openai',
@@ -152,9 +148,55 @@ describe('billing global routes', () => {
               role: 'reasoning',
               maxContextTokens: 1000000,
               maxOutputTokens: 128000,
+              costInputPer1M: 6,
+              costOutputPer1M: 36,
+              costCachedPer1M: 0.6,
+            },
+            {
+              id: 'lab-oai-gpt54-mini',
+              modelId: 'gpt-5.4-mini',
+              role: 'reasoning',
+              maxContextTokens: 400000,
+              maxOutputTokens: 128000,
+              costInputPer1M: 0.75,
+              costOutputPer1M: 4.5,
+              costCachedPer1M: 0.075,
+            },
+          ],
+        },
+        {
+          id: 'default-openai',
+          name: 'OpenAI API',
+          type: 'openai',
+          accessMode: 'api',
+          models: [
+            {
+              id: 'api-oai-gpt55',
+              modelId: 'gpt-5.5',
+              role: 'reasoning',
+              maxContextTokens: 1000000,
+              maxOutputTokens: 128000,
               costInputPer1M: 5,
               costOutputPer1M: 30,
               costCachedPer1M: 0.5,
+            },
+          ],
+        },
+        {
+          id: 'default-anthropic',
+          name: 'Anthropic',
+          type: 'anthropic',
+          accessMode: 'api',
+          models: [
+            {
+              id: 'anthropic-sonnet46',
+              modelId: 'claude-sonnet-4-6',
+              role: 'reasoning',
+              maxContextTokens: 1000000,
+              maxOutputTokens: 64000,
+              costInputPer1M: 3,
+              costOutputPer1M: 15,
+              costCachedPer1M: 0.3,
             },
           ],
         },
@@ -166,22 +208,162 @@ describe('billing global routes', () => {
 
     assert.equal(result.status, 200);
     assert.equal(result.data.pricing_meta.as_of, '2026-04-23');
+    assert.ok(result.data.totals.models >= 4);
     assert.equal(result.data.totals.current_cost_usd, 0.2);
-    assert.equal(result.data.totals.used_models, 1);
-    const openai = result.data.providers.find((p) => p.id === 'openai');
-    assert.ok(openai);
-    assert.equal(openai.label, 'OpenAI');
-    assert.equal(openai.current_cost_usd, 0.2);
-    const gpt55 = openai.models.find((m) => m.model === 'gpt-5.5');
-    assert.ok(gpt55);
-    assert.equal(gpt55.output_per_1m, 30);
-    assert.equal(gpt55.current.calls, 2);
-    assert.equal(gpt55.current.cost_usd, 0.2);
-    assert.equal(gpt55.max_context_tokens, 1000000);
-    assert.equal(gpt55.access_modes.includes('lab'), true);
-    const anthropic = result.data.providers.find((p) => p.id === 'anthropic');
+    assert.equal(result.data.totals.used_models, 2);
+
+    const labOpenai = result.data.providers.find((p) => p.id === 'lab-openai');
+    assert.ok(labOpenai);
+    assert.equal(labOpenai.label, 'LLM Lab OpenAI');
+    assert.equal(labOpenai.kind, 'openai');
+    assert.equal(labOpenai.current_cost_usd, 0.08);
+    assert.deepEqual(labOpenai.models.map((m) => m.model).sort(), ['gpt-5.4-mini', 'gpt-5.5']);
+    const labGpt55 = labOpenai.models.find((m) => m.model === 'gpt-5.5');
+    assert.ok(labGpt55);
+    assert.equal(labGpt55.provider, 'lab-openai');
+    assert.equal(labGpt55.provider_label, 'LLM Lab OpenAI');
+    assert.equal(labGpt55.input_per_1m, 6);
+    assert.equal(labGpt55.output_per_1m, 36);
+    assert.equal(labGpt55.cached_input_per_1m, 0.6);
+    assert.equal(labGpt55.pricing_source, 'llm_lab');
+    assert.equal(labGpt55.registry_provider_id, 'lab-openai');
+    assert.equal(labGpt55.registry_provider_label, 'LLM Lab OpenAI');
+    assert.equal(labGpt55.current.calls, 1);
+    assert.equal(labGpt55.current.cost_usd, 0.08);
+    assert.equal(labGpt55.max_context_tokens, 1000000);
+    assert.equal(labGpt55.access_modes.includes('lab'), true);
+
+    const apiOpenai = result.data.providers.find((p) => p.id === 'default-openai');
+    assert.ok(apiOpenai);
+    assert.equal(apiOpenai.label, 'OpenAI API');
+    assert.equal(apiOpenai.kind, 'openai');
+    assert.equal(apiOpenai.current_cost_usd, 0.12);
+    const apiGpt55 = apiOpenai.models.find((m) => m.model === 'gpt-5.5');
+    assert.ok(apiGpt55);
+    assert.equal(apiGpt55.provider, 'default-openai');
+    assert.equal(apiGpt55.pricing_source, 'provider_registry');
+    assert.equal(apiGpt55.current.calls, 1);
+    assert.equal(apiGpt55.current.cost_usd, 0.12);
+
+    const anthropic = result.data.providers.find((p) => p.id === 'default-anthropic');
     assert.ok(anthropic);
     assert.equal(anthropic.current_cost_usd, 0);
+  });
+
+  it('GET /billing/global/model-costs ignores pricing-map-only models outside the provider registry', async () => {
+    const config = {
+      llmModelPricingMap: {
+        'gpt-5.5': { inputPer1M: 5, outputPer1M: 30, cachedInputPer1M: 0.5 },
+      },
+      llmProviderRegistryJson: JSON.stringify([
+        {
+          id: 'lab-openai',
+          name: 'LLM Lab OpenAI',
+          type: 'openai-compatible',
+          accessMode: 'lab',
+          models: [
+            {
+              id: 'lab-oai-gpt54',
+              modelId: 'gpt-5.4',
+              role: 'reasoning',
+              costInputPer1M: 2.5,
+              costOutputPer1M: 15,
+              costCachedPer1M: 0.25,
+            },
+          ],
+        },
+      ]),
+    };
+    const route = registerQueueBillingLearningRoutes(makeCtx(makeMockAppDb([]), config));
+
+    const result = await route(['billing', 'global', 'model-costs'], new URLSearchParams(), 'GET', {}, {});
+
+    assert.equal(result.status, 200);
+    const labOpenai = result.data.providers.find((p) => p.id === 'lab-openai');
+    assert.ok(labOpenai);
+    assert.equal(labOpenai.models.some((m) => m.model === 'gpt-5.5'), false);
+  });
+
+  it('GET /billing/global/model-costs syncs LLM Lab registry before building the catalog', async () => {
+    const config = {
+      llmProviderRegistryJson: JSON.stringify([
+        {
+          id: 'lab-openai',
+          name: 'LLM Lab OpenAI',
+          type: 'openai-compatible',
+          baseUrl: 'http://localhost:5001/v1',
+          accessMode: 'lab',
+          models: [],
+        },
+      ]),
+    };
+    const route = registerQueueBillingLearningRoutes(makeCtx(makeMockAppDb([]), config, {
+      syncLabRegistryIntoConfig: async (targetConfig) => {
+        targetConfig.llmProviderRegistryJson = JSON.stringify([
+          {
+            id: 'lab-openai',
+            name: 'LLM Lab OpenAI',
+            type: 'openai-compatible',
+            accessMode: 'lab',
+            models: [
+              {
+                id: 'lab-oai-gpt55',
+                modelId: 'gpt-5.5',
+                role: 'reasoning',
+                costInputPer1M: 5,
+                costOutputPer1M: 30,
+                costCachedPer1M: 0.5,
+              },
+            ],
+          },
+        ]);
+      },
+    }));
+
+    const result = await route(['billing', 'global', 'model-costs'], new URLSearchParams(), 'GET', {}, {});
+
+    assert.equal(result.status, 200);
+    const labOpenai = result.data.providers.find((p) => p.id === 'lab-openai');
+    assert.ok(labOpenai);
+    const gpt55 = labOpenai.models.find((m) => m.model === 'gpt-5.5');
+    assert.ok(gpt55);
+    assert.equal(gpt55.input_per_1m, 5);
+    assert.equal(gpt55.output_per_1m, 30);
+    assert.equal(gpt55.cached_input_per_1m, 0.5);
+    assert.equal(gpt55.pricing_source, 'llm_lab');
+    assert.equal(gpt55.registry_provider_id, 'lab-openai');
+  });
+
+  it('GET /billing/global/model-costs prunes stale default API rows before building the catalog', async () => {
+    const config = {
+      llmProviderRegistryJson: JSON.stringify([
+        {
+          id: 'default-openai',
+          name: 'OpenAI API',
+          type: 'openai-compatible',
+          accessMode: 'api',
+          models: [
+            {
+              id: 'default-openai-gpt-5-2-pro',
+              modelId: 'gpt-5.2-pro',
+              role: 'reasoning',
+              costInputPer1M: 21,
+              costOutputPer1M: 168,
+              costCachedPer1M: 2.1,
+            },
+          ],
+        },
+      ]),
+    };
+    const route = registerQueueBillingLearningRoutes(makeCtx(makeMockAppDb([]), config));
+
+    const result = await route(['billing', 'global', 'model-costs'], new URLSearchParams(), 'GET', {}, {});
+
+    assert.equal(result.status, 200);
+    const openai = result.data.providers.find((p) => p.id === 'default-openai');
+    assert.ok(openai);
+    assert.equal(openai.models.some((model) => model.model === 'gpt-5.2-pro'), false);
+    assert.ok(openai.models.find((model) => model.model === 'gpt-5.5'));
   });
 
   it('non-matching route returns false', async () => {

@@ -6,6 +6,7 @@ This feature is the control plane for need-driven discovery and deterministic in
 - `src/features/indexing/index.js`: re-exports the orchestration contract and `getIndexingFeatureInfo()`.
 - `src/features/indexing/orchestration/index.js`: canonical cross-boundary orchestration exports for bootstrap, discovery seeding, execution phases, quality gates, and finalization lifecycles.
 - `src/features/indexing/api/{indexlabRoutes,queueBillingLearningRoutes,runtimeOpsRoutes,sourceStrategyRoutes}.js`: HTTP route registrars for indexing-owned API surfaces.
+- `GET /billing/global/model-costs`: returns the registry-owned model cost catalog; provider IDs are registry provider IDs, and `provider_kind` is the normalized display/logo kind.
 - `GET /indexlab/runs`: returns category-scoped run summaries with persisted picker metadata (`picker_label`, `storage_origin`, `storage_state`) for GUI run selection.
 - `src/features/indexing/{discovery,learning,search}/index.js`: feature-owned subcontracts used inside indexing and by approved callers that need those focused seams.
 

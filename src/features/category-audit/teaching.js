@@ -3,7 +3,7 @@
  * to end, so an auditor reading the report understands the full context before
  * they evaluate per-key data blocks.
  *
- * Each section is { id, title, body, tables? } where:
+ * Each section is { id, title, body, tables } where:
  *   - id:     DOM-safe anchor
  *   - title:  heading text
  *   - body:   markdown-ish string (paragraphs, "- " bullets, `code`)
@@ -108,7 +108,7 @@ You are auditing every field in this category's keyFinder pipeline. Your deliver
 4. **Guidance is last.** Confirm \`priority.required_level\`, \`priority.availability\`, \`priority.difficulty\`, \`contract.type\`, \`contract.shape\`, enum/filter behavior, evidence requirements, and example coverage before writing \`reasoning_note\`. The prompt can only execute perfectly after the field contract is correct.
 5. **Contract changes with consequences stated.** When you propose changing \`required_level\`/\`availability\`/\`difficulty\`/\`type\`/\`shape\`/\`unit\`/\`rounding\`/\`list_rules\`/\`range\`/\`variance_policy\`/\`evidence\`, explain the extraction + filter-UI + routing consequence (Part 1.4–1.5 language).
 6. **Extraction guidance (\`reasoning_note\`) is the final editable slot per key.** Keep it to Part 1.14's "FOR" scope — visual cues, semantic disambiguation, field-specific gotchas, rebrand rules, "don't confuse with X" anchors. Do NOT duplicate anything already rendered by the template slots in Part 2. If existing guidance duplicates slot content, propose shortening.
-7. **Cross-field constraints alias mismatch (one-time flag, not per key).** The keyFinder renderer currently reads \`cross_field_constraints\` but compiled rules store \`constraints\` — flag this at the category level once in your "Flags" section with the list of fields that have unreachable constraints. Do NOT repeat on every field.
+7. **Cross-field constraints are live prompt inputs.** Constraints authored as \`constraints\` DSL or structured \`cross_field_constraints\` render into the keyFinder prompt. Audit whether each relationship is correct, whether the target field is the right authority, and whether group membership should change because of the dependency.
 
 **Out of scope — surface, don't decide:**
 
@@ -138,11 +138,11 @@ This is the bar you apply when judging every cell in Part 7. Read it, then read 
 Fields decided from product photography fall on a spectrum. Treat each tier differently when authoring \`+ Proposed guidance\`:
 
 **Tier A — direct visual.** Decidable from a single photo in seconds; the answer is a literal visible feature. Guidance is short: name the view + the feature.
-- \`honeycomb_frame\` — top-down shell: holes visible? yes/no.
+- \`honeycomb_frame\` — top-down shell: holes visible yes/no.
 - \`lighting\` zone count — lit-mode marketing photo: count independently-controllable zones.
 - \`shape\` (symmetrical / asymmetrical) — top-down silhouette: mirror along the centerline or not.
 - \`side_buttons\` count — left-profile: count buttons on the thumb side.
-- \`thumb_rest\` — side profile: is there a dedicated shelf extending below the main shell, or is the grip face continuous with the shell?
+- \`thumb_rest\` — side profile: is there a dedicated shelf extending below the main shell, or is the grip face continuous with the shell
 
 **Tier B — subtle visual. Judgment call that NEEDS real guidance.** This is where \`reasoning_note\` earns its keep. The reviewer's job is to write guidance that teaches how to make the subtle call — not just "look at the profile view." Describe the feature precisely, give thresholds or relative measurements, name reference products as calibration anchors when stable, and say when to \`unk\` rather than guess.
 
@@ -354,7 +354,7 @@ Cross-field constraints relate one field's value to another on the same product.
 - \`requires_when_value\` — "required when \`target\` = \"value\""
 - \`requires_one_of\` — "requires one of: [targets…]"
 
-**Known alias mismatch (audit signal):** the compiled rule stores constraints under \`constraints\` as string-DSL entries (e.g. \`"sensor_date <= release_date"\`). The keyFinder renderer reads \`cross_field_constraints\` (object shape). As a result, the cross-field block in live prompts is currently always empty even when constraints are defined. The per-key block in Part 7 shows both — what's defined in the rule AND what the renderer emits — so the auditor can see the gap.
+Compiled rules may store constraints as \`constraints\` string-DSL entries (e.g. \`"sensor_date <= release_date"\`) or as structured \`cross_field_constraints\` objects. The keyFinder renderer normalizes both forms into the same live prompt block. The auditor's job is to verify the relationship is correct and useful, not to re-report renderer plumbing.
 `.trim();
 
 const COMPONENT_RELATIONS_BODY = `

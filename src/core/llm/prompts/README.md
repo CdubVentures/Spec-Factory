@@ -24,6 +24,10 @@ Universal prompt fragments shared across finders (CEF, PIF, RDF, and future) and
   - `buildCrossFieldConstraintsBlock(fieldRule) → string` — human-readable rendering of `cross_field_constraints` (`lte`, `lt`, `gte`, `gt`, `eq`, `requires_when_value`, `requires_one_of`).
   - `joinList(list, max?)` / `resolveDisplayName(fieldKey, fieldRule)` — small shared helpers.
 
+Prompt renderer notes:
+- `resolvePromptFieldRule(fieldRule, { knownValues?, fieldKey? })` enriches sourced enum contracts (`data_lists.*`) with compiled `knownValues.enums` before rendering.
+- `buildCrossFieldConstraintsBlock(fieldRule)` renders both `cross_field_constraints` and compiled `constraints` DSL strings such as `sensor_date <= release_date`.
+
 ## Dependencies
 
 Allowed: `src/core/llm/resolvePromptTemplate.js`, `src/core/config/runtimeArtifactRoots.js`, `node:fs`, `node:path`. Forbidden: anything from `src/features/`, anything from `src/core/finder/` (fragments flow the other way — finder fragments import from here, not vice versa).

@@ -2,7 +2,7 @@
   "componentType": "encoder",
   "name": "Unspecified",
   "properties": {
-    "encoder_steps": "30"
+    "encoder_steps": 24
   },
   "updated_at": "2026-02-16T08:33:34.715Z"
 }

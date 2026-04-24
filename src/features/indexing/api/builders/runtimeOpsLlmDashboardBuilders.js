@@ -1,11 +1,7 @@
 import { parseTsMs } from './runtimeOpsEventPrimitives.js';
 import { buildRuntimeOpsWorkers } from './runtimeOpsWorkerPoolBuilders.js';
-import { buildDefaultModelPricingMap } from '../../../../billing/modelPricingCatalog.js';
 import { estimateTokensFromText, computeLlmCostUsd, normalizeUsage } from '../../../../billing/costRates.js';
 
-// WHY: SSOT pricing from modelPricingCatalog — used as fallback when provider
-// doesn't report usage. Built once at module scope.
-const FALLBACK_PRICING = { llmModelPricingMap: buildDefaultModelPricingMap() };
 
 export function buildLlmCallsDashboard(events, options) {
   // WHY: Accept pre-built workers to avoid redundant 484-line rebuild.
@@ -33,7 +29,12 @@ export function buildLlmCallsDashboard(events, options) {
       completionTok = estimateTokensFromText(w.response_preview || '');
       if (promptTok > 0 || completionTok > 0) {
         const usage = normalizeUsage({ prompt_tokens: promptTok, completion_tokens: completionTok });
-        cost = computeLlmCostUsd({ usage, rates: FALLBACK_PRICING, model: w.model || '' }).costUsd;
+        cost = computeLlmCostUsd({
+          usage,
+          rates: options?.costRates || {},
+          model: w.model || '',
+          provider: w.provider || '',
+        }).costUsd;
         estimated = true;
       }
     }

@@ -30,6 +30,12 @@ const RUNTIME_SLOT_NAMES = new Set([
   'RETURN_JSON_SHAPE',
 ]);
 
+const GLOBAL_FRAGMENT_SLOT_KEYS = Object.freeze({
+  SOURCE_TIER_STRATEGY: 'scalarSourceTierStrategy',
+  SCALAR_SOURCE_GUIDANCE_CLOSER: 'scalarSourceGuidanceCloser',
+  VALUE_CONFIDENCE_GUIDANCE: 'valueConfidenceRubric',
+});
+
 function buildHeaderBlocks(reportData) {
   const { category, generatedAt, stats } = reportData;
   return [
@@ -91,17 +97,17 @@ function buildSummarySection(reportData) {
     });
   }
 
-  // Unreachable cross-field constraints — category-level flag so the
-  // alias-mismatch warning lives exactly once in the report.
-  const keysWithUnreachableConstraints = (reportData.keys || [])
+  // Cross-field constraints are visible at the category level so auditors can
+  // judge relationship correctness before walking the per-key detail.
+  const keysWithConstraints = (reportData.keys || [])
     .filter((k) => Array.isArray(k.constraints) && k.constraints.length > 0)
     .map((k) => k.fieldKey);
-  if (keysWithUnreachableConstraints.length > 0) {
-    blocks.push({ kind: 'subheading', level: 3, text: 'Unreachable cross-field constraints (category-level flag)' });
+  if (keysWithConstraints.length > 0) {
+    blocks.push({ kind: 'subheading', level: 3, text: 'Cross-field constraints present' });
     blocks.push({
       kind: 'note',
-      tone: 'warn',
-      text: `The keyFinder renderer reads \`cross_field_constraints\` (object shape), but compiled rules store \`constraints\` (string DSL). As a result, the following ${keysWithUnreachableConstraints.length} field(s) have constraints defined in the rule that are not reaching the LLM: ${keysWithUnreachableConstraints.map((fk) => `\`${fk}\``).join(', ')}. Include this in your Flags section; do NOT repeat per key.`,
+      tone: 'info',
+      text: `The following ${keysWithConstraints.length} field(s) define cross-field constraints that render into live keyFinder prompts after normalization from \`constraints\` DSL or structured \`cross_field_constraints\`: ${keysWithConstraints.map((fk) => `\`${fk}\``).join(', ')}. Audit whether each relationship is correct and whether any grouped fields should move closer to their dependency.`,
     });
   }
 
@@ -124,7 +130,7 @@ function buildGenericPromptSection(reportData) {
   const resolvedTemplate = KEY_FINDER_DEFAULT_TEMPLATE
     .replace(/\{\{([A-Z_]+)\}\}/g, (match, name) => {
       if (RUNTIME_SLOT_NAMES.has(name)) return `<${name} — injected at call time; see Part 7 for per-key text>`;
-      const key = camelize(name);
+      const key = GLOBAL_FRAGMENT_SLOT_KEYS[name] || camelize(name);
       return fragments[key] || `<${name} — fragment not configured>`;
     });
 
@@ -368,11 +374,14 @@ function buildPerGroupDetailBlocks(group, keyIndex, keyToGroup) {
   const key = group.fieldKeys.map((fk) => keyIndex[fk]).filter(Boolean);
   const stats = summarizeGroupMembership(group, keyIndex);
   const couplings = findCrossGroupCouplings(group, keyIndex, keyToGroup);
+  const otherDifficultyText = stats.difficultyCounts.other
+    ? ` · other ${stats.difficultyCounts.other}`
+    : '';
 
   const blocks = [];
   blocks.push({
     kind: 'paragraph',
-    text: `**Members:** ${group.fieldKeys.length} keys · **Mandatory:** ${stats.mandatory} · **Difficulty mix:** easy ${stats.difficultyCounts.easy} · medium ${stats.difficultyCounts.medium} · hard ${stats.difficultyCounts.hard} · very_hard ${stats.difficultyCounts.very_hard}${stats.difficultyCounts.other ? ` · other ${stats.difficultyCounts.other}` : ''}`,
+    text: `**Members:** ${group.fieldKeys.length} keys · **Mandatory:** ${stats.mandatory} · **Difficulty mix:** easy ${stats.difficultyCounts.easy} · medium ${stats.difficultyCounts.medium} · hard ${stats.difficultyCounts.hard} · very_hard ${stats.difficultyCounts.very_hard}${otherDifficultyText}`,
   });
   blocks.push({
     kind: 'paragraph',
@@ -645,6 +654,7 @@ function buildPerKeySections(reportData) {
         tierBundles: reportData.tierBundles,
         searchHintsEnabled: true,
         componentInjectionEnabled: true,
+        knownValues: reportData.knownValues || null,
       });
       return {
         id: `key-${fk}`,

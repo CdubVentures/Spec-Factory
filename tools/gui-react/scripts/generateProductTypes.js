@@ -7,6 +7,8 @@
 
 import {
   BRAND_RENAME_HISTORY_ENTRY_SHAPE,
+  PIF_VARIANT_PROGRESS_SHAPE,
+  SCALAR_VARIANT_PROGRESS_SHAPE,
   CATALOG_PRODUCT_SHAPE,
   CATALOG_ROW_SHAPE,
   BRAND_SHAPE,
@@ -19,6 +21,8 @@ import {
 
 const SHAPE_REGISTRY = [
   { shape: BRAND_RENAME_HISTORY_ENTRY_SHAPE, iface: 'BrandRenameHistoryEntryGen' },
+  { shape: PIF_VARIANT_PROGRESS_SHAPE, iface: 'PifVariantProgressGen' },
+  { shape: SCALAR_VARIANT_PROGRESS_SHAPE, iface: 'ScalarVariantProgressGen' },
   { shape: CATALOG_PRODUCT_SHAPE, iface: 'CatalogProductGen' },
   { shape: CATALOG_ROW_SHAPE, iface: 'CatalogRowGen' },
   { shape: BRAND_SHAPE, iface: 'BrandGen' },

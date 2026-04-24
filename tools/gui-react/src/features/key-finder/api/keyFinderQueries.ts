@@ -38,7 +38,8 @@ export interface BundlingConfig {
   readonly poolPerPrimary: Record<string, number>;
   readonly passengerCost: Record<string, number>;
   readonly passengerVariantCostPerExtra: number;
-  readonly variantCount: number;
+  /** Product-family size used by backend budget/passenger surcharge math. */
+  readonly familySize: number;
   readonly overlapCaps: Record<string, number>;
   // Canonicalized CSV from the backend (parseAxisOrder'd server-side). Frontend
   // can split + pass directly to sortKeysByPriority without re-canonicalizing.
@@ -146,4 +147,3 @@ export function useDeleteKeyMutation(category: string, productId: string) {
     onSuccess: invalidate,
   });
 }
-

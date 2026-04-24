@@ -12,10 +12,22 @@ import { btnPrimary, sectionCls } from '../../../shared/ui/buttonClasses.ts';
 interface KeyFinderAuditResult {
   category: string;
   consumer: string;
-  htmlPath: string;
-  mdPath: string;
   generatedAt: string;
-  stats: Record<string, unknown>;
+  categoryReport: {
+    htmlPath: string;
+    mdPath: string;
+    generatedAt: string;
+    stats: Record<string, unknown>;
+  };
+  perKeyDocs: {
+    basePath: string;
+    counts: {
+      written: number;
+      skipped: number;
+    };
+    reservedKeysPath: string;
+    generatedAt: string;
+  };
 }
 
 export function CompileReportsTab({
@@ -86,7 +98,7 @@ export function CompileReportsTab({
     setAuditError(null);
     try {
       const result = await api.post<KeyFinderAuditResult>(
-        `/category-audit/${encodeURIComponent(category)}/generate-report`,
+        `/category-audit/${encodeURIComponent(category)}/generate-all-reports`,
         { consumer: 'key_finder' },
       );
       setAuditResult(result);
@@ -133,9 +145,9 @@ export function CompileReportsTab({
           onClick={handleGenerateKeyFinderAudit}
           disabled={auditPending}
           className={`${btnPrimary} h-10 min-h-10 w-56 inline-flex items-center justify-center whitespace-nowrap shrink-0`}
-          title="Generate the paired HTML + Markdown key-finder audit report for this category at .workspace/reports/."
+          title="Generate the category audit plus all per-key HTML and Markdown key-finder docs at .workspace/reports/."
         >
-          {auditPending ? "Generating..." : "Generate Key Finder Audit"}
+          {auditPending ? "Generating..." : "Generate Key Finder Audit Reports"}
         </button>
         <span
           className={`h-10 min-h-10 w-52 inline-flex items-center justify-center rounded border px-3 text-sm font-medium truncate shrink-0 ${compileBadgeClass}`}
@@ -174,11 +186,14 @@ export function CompileReportsTab({
 
       {auditResult ? (
         <div className={`${sectionCls} sf-border-ok-soft`}>
-          <h4 className="text-sm font-semibold mb-2">Key Finder Audit generated</h4>
+          <h4 className="text-sm font-semibold mb-2">Key Finder Audit reports generated</h4>
           <div className="text-xs sf-text-muted space-y-1">
             <div>Generated: <span className="font-mono">{auditResult.generatedAt}</span></div>
-            <div>HTML: <span className="font-mono break-all">{auditResult.htmlPath}</span></div>
-            <div>Markdown: <span className="font-mono break-all">{auditResult.mdPath}</span></div>
+            <div>HTML: <span className="font-mono break-all">{auditResult.categoryReport.htmlPath}</span></div>
+            <div>Markdown: <span className="font-mono break-all">{auditResult.categoryReport.mdPath}</span></div>
+            <div>Per-key docs: <span className="font-mono break-all">{auditResult.perKeyDocs.basePath}</span></div>
+            <div>Per-key written: <span className="font-mono">{auditResult.perKeyDocs.counts.written}</span> · reserved/skipped: <span className="font-mono">{auditResult.perKeyDocs.counts.skipped}</span></div>
+            <div>Reserved summary: <span className="font-mono break-all">{auditResult.perKeyDocs.reservedKeysPath}</span></div>
           </div>
         </div>
       ) : null}

@@ -149,13 +149,14 @@ function makeFinderStoreStub(settings) {
   };
 }
 
-function makeSpecDbStub({ finderStore, resolvedSet = new Set(), bucketsByFieldKey = {}, activeVariants } = {}) {
+function makeSpecDbStub({ finderStore, resolvedSet = new Set(), bucketsByFieldKey = {}, activeVariants, productRows = [] } = {}) {
   const variants = activeVariants || [{ variant_id: 'v0', variant_key: 'default', variant_label: 'Default', variant_type: 'base' }];
   return {
     category: 'mouse',
     getFinderStore: (id) => (id === 'keyFinder' ? finderStore : null),
     getCompiledRules: () => BUNDLE_RULES,
-    getProduct: () => null,
+    getProduct: (pid) => productRows.find((row) => row.product_id === pid) || null,
+    getAllProducts: () => productRows,
     variants: {
       listActive: () => variants,
       listByProduct: () => variants,
@@ -193,12 +194,12 @@ function cleanupTmp() {
   try { fs.rmSync(TMP, { recursive: true, force: true }); } catch { /* */ }
 }
 
-function setupForProduct(productId, { settings = BUNDLING_ON_KNOBS, resolvedSet = new Set(), bucketsByFieldKey = {}, activeVariants } = {}) {
+function setupForProduct(productId, { settings = BUNDLING_ON_KNOBS, resolvedSet = new Set(), bucketsByFieldKey = {}, activeVariants, productRows = [] } = {}) {
   const dir = path.join(PRODUCT_ROOT, productId);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'product.json'), JSON.stringify({ product_id: productId, category: 'mouse', candidates: {}, fields: {} }));
   const fsStub = makeFinderStoreStub(settings);
-  const specDb = makeSpecDbStub({ finderStore: fsStub.store, resolvedSet, bucketsByFieldKey, activeVariants });
+  const specDb = makeSpecDbStub({ finderStore: fsStub.store, resolvedSet, bucketsByFieldKey, activeVariants, productRows });
   return { fsStub, specDb };
 }
 
@@ -280,13 +281,13 @@ test('live bundling applies passenger variant surcharge from family size', async
     settings: {
       ...BUNDLING_ON_KNOBS,
       bundlingPassengerVariantCostPerExtra: '0.25',
-      bundlingPoolPerPrimary: JSON.stringify({ easy: 2, medium: 2, hard: 2, very_hard: 2 }),
+      bundlingPoolPerPrimary: JSON.stringify({ easy: 3, medium: 3, hard: 3, very_hard: 3 }),
     },
-    activeVariants: [
-      { variant_id: 'v1' },
-      { variant_id: 'v2' },
-      { variant_id: 'v3' },
-      { variant_id: 'v4' },
+    activeVariants: Array.from({ length: 9 }, (_, i) => ({ variant_id: `cef-${i}` })),
+    productRows: [
+      { product_id: 'kfb-variant-cost', brand: PRODUCT.brand, base_model: PRODUCT.base_model, model: PRODUCT.model, variant: PRODUCT.variant },
+      { product_id: 'kfb-family-base', brand: PRODUCT.brand, base_model: PRODUCT.base_model, model: `${PRODUCT.base_model} Base`, variant: '' },
+      { product_id: 'kfb-family-alt', brand: PRODUCT.brand, base_model: PRODUCT.base_model, model: `${PRODUCT.base_model} Alt`, variant: 'Alt' },
     ],
   });
   let capturedDomainArgs = null;
@@ -308,8 +309,8 @@ test('live bundling applies passenger variant surcharge from family size', async
 
   assert.deepEqual(
     capturedDomainArgs.passengers.map((p) => p.fieldKey),
-    ['dpi'],
-    'family size 4 makes each easy passenger cost 1.75, so pool 2 fits only one live passenger',
+    ['dpi', 'buttons'],
+    'family size 3 makes each easy passenger cost 1.5, so pool 3 fits two live passengers',
   );
 });
 

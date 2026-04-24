@@ -13,6 +13,7 @@
  */
 
 import {
+  resolvePromptFieldRule,
   buildPrimaryKeyHeaderBlock,
   buildFieldGuidanceBlock,
   buildFieldContractBlock,
@@ -58,6 +59,7 @@ function buildComponentRelBlock(fieldRule, componentInjectionEnabled) {
  * @param {object} opts.tierBundles              keyFinderTierSettingsJson parsed
  * @param {boolean} [opts.searchHintsEnabled]    default true (live knob default)
  * @param {boolean} [opts.componentInjectionEnabled] default true
+ * @param {object|null} [opts.knownValues]
  * @returns {{
  *   header: string,
  *   guidance: string,
@@ -72,15 +74,17 @@ export function renderKeyFinderPreview(fieldRule, fieldKey, {
   tierBundles = {},
   searchHintsEnabled = true,
   componentInjectionEnabled = true,
+  knownValues = null,
 } = {}) {
-  const difficulty = String(fieldRule?.priority?.difficulty || fieldRule?.difficulty || 'medium').toLowerCase();
+  const promptRule = resolvePromptFieldRule(fieldRule, { knownValues, fieldKey });
+  const difficulty = String(promptRule?.priority?.difficulty || promptRule?.difficulty || 'medium').toLowerCase();
   return {
-    header: buildPrimaryKeyHeaderBlock(fieldKey, fieldRule),
-    guidance: buildFieldGuidanceBlock(fieldRule),
-    contract: buildFieldContractBlock(fieldRule),
-    searchHints: buildSearchHintsBlock(fieldRule, { searchHintsInjectionEnabled: searchHintsEnabled }),
-    crossField: buildCrossFieldConstraintsBlock(fieldRule),
-    componentRel: buildComponentRelBlock(fieldRule, componentInjectionEnabled),
+    header: buildPrimaryKeyHeaderBlock(fieldKey, promptRule),
+    guidance: buildFieldGuidanceBlock(promptRule),
+    contract: buildFieldContractBlock(promptRule),
+    searchHints: buildSearchHintsBlock(promptRule, { searchHintsInjectionEnabled: searchHintsEnabled }),
+    crossField: buildCrossFieldConstraintsBlock(promptRule),
+    componentRel: buildComponentRelBlock(promptRule, componentInjectionEnabled),
     tierBundle: resolveTierBundle(tierBundles, difficulty),
   };
 }

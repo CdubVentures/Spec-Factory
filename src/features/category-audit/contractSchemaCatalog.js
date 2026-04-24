@@ -182,7 +182,7 @@ export const FIELD_RULE_SCHEMA = Object.freeze([
     path: 'constraints',
     label: 'Cross-field constraints',
     kind: 'constraint-list',
-    doc: 'DSL: "<field> <op> <target>" where op \u2208 {lte, lt, gte, gt, eq}. Example: "sensor_date <= release_date". KNOWN BUG: renderer reads cross_field_constraints; compiled rules store constraints (alias mismatch; unreachable until fixed).',
+    doc: 'DSL: "<field> <op> <target>" where op \u2208 {lte, lt, gte, gt, eq}. Example: "sensor_date <= release_date". Rendered into the live keyFinder prompt after normalization alongside structured cross_field_constraints.',
   },
   {
     path: 'component.type',

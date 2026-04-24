@@ -13,10 +13,10 @@ describe('checkEnum — no enum constraint (passthrough)', () => {
     assert.equal(r.pass, true);
   });
 
-  it('open policy → all pass, no LLM', () => {
+  it('open policy → all pass, no review', () => {
     const r = checkEnum('anything', 'open', ['a', 'b']);
     assert.equal(r.pass, true);
-    assert.equal(r.needsLlm, false);
+    assert.equal(r.needsReview, false);
   });
 });
 
@@ -41,11 +41,11 @@ describe('checkEnum — closed scalar', () => {
     assert.deepStrictEqual(r.unknown, []);
   });
 
-  it('not in set → reject + needsLlm', () => {
+  it('not in set → reject + needs review', () => {
     const r = checkEnum('midnight-blue', 'closed', known);
     assert.equal(r.pass, false);
     assert.deepStrictEqual(r.unknown, ['midnight-blue']);
-    assert.equal(r.needsLlm, true);
+    assert.equal(r.needsReview, true);
   });
 });
 
@@ -56,14 +56,14 @@ describe('checkEnum — open_prefer_known scalar', () => {
     const r = checkEnum('wired', 'open_prefer_known', known);
     assert.equal(r.pass, true);
     assert.deepStrictEqual(r.unknown, []);
-    assert.equal(r.needsLlm, false);
+    assert.equal(r.needsReview, false);
   });
 
-  it('unknown value → pass but flagged, needsLlm', () => {
+  it('unknown value → pass but flagged, needs review', () => {
     const r = checkEnum('usb-c', 'open_prefer_known', known);
     assert.equal(r.pass, true);
     assert.deepStrictEqual(r.unknown, ['usb-c']);
-    assert.equal(r.needsLlm, true);
+    assert.equal(r.needsReview, true);
   });
 });
 
@@ -82,7 +82,7 @@ describe('checkEnum — list enum check (array values)', () => {
     assert.equal(r.pass, false);
     assert.deepStrictEqual(r.known, ['black']);
     assert.deepStrictEqual(r.unknown, ['pink']);
-    assert.equal(r.needsLlm, true);
+    assert.equal(r.needsReview, true);
   });
 
   it('unknown in open_prefer_known → pass but flagged', () => {
@@ -90,7 +90,7 @@ describe('checkEnum — list enum check (array values)', () => {
     assert.equal(r.pass, true);
     assert.deepStrictEqual(r.known, ['wired']);
     assert.deepStrictEqual(r.unknown, ['usb-c']);
-    assert.equal(r.needsLlm, true);
+    assert.equal(r.needsReview, true);
   });
 
   it('open list → all pass', () => {
@@ -114,7 +114,7 @@ describe('checkEnum — multi-color atoms (+ split)', () => {
     const r = checkEnum('black+pink', 'closed', known);
     assert.equal(r.pass, false);
     assert.deepStrictEqual(r.unknown, ['pink']);
-    assert.equal(r.needsLlm, true);
+    assert.equal(r.needsReview, true);
   });
 });
 
@@ -142,10 +142,10 @@ describe('checkEnum — open_prefer_known policy (alias resolution, case-insensi
     assert.equal(r.repaired, 'Cherry MX Brown');
   });
 
-  it('no match → accept + flag for LLM', () => {
+  it('no match → accept + flag unknown', () => {
     const r = checkEnum('Gateron Red', 'open_prefer_known', known);
     assert.equal(r.pass, true);
-    assert.equal(r.needsLlm, true);
+    assert.equal(r.needsReview, true);
     assert.deepStrictEqual(r.unknown, ['Gateron Red']);
   });
 });
@@ -174,7 +174,7 @@ describe('checkEnum — open_prefer_known (normalized matching: hyphens/undersco
   it('completely wrong value → accept + flag', () => {
     const r = checkEnum('5 Zone (RGB)', 'open_prefer_known', known);
     assert.equal(r.pass, true);
-    assert.equal(r.needsLlm, true);
+    assert.equal(r.needsReview, true);
     assert.deepStrictEqual(r.unknown, ['5 Zone (RGB)']);
   });
 });
@@ -191,7 +191,7 @@ describe('checkEnum — open_prefer_known with + atoms', () => {
   it('one atom unknown → accept + flag', () => {
     const r = checkEnum('Black+Pink', 'open_prefer_known', known);
     assert.equal(r.pass, true);
-    assert.equal(r.needsLlm, true);
+    assert.equal(r.needsReview, true);
     assert.deepStrictEqual(r.unknown, ['Pink']);
   });
 });
@@ -208,7 +208,7 @@ describe('checkEnum — open_prefer_known with list arrays', () => {
   it('array with one miss → accept + flag', () => {
     const r = checkEnum(['cherry mx red', 'gateron red'], 'open_prefer_known', known);
     assert.equal(r.pass, true);
-    assert.equal(r.needsLlm, true);
+    assert.equal(r.needsReview, true);
     assert.deepStrictEqual(r.unknown, ['gateron red']);
   });
 });

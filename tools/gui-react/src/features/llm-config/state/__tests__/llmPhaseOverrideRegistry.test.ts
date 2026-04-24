@@ -8,8 +8,8 @@ import {
 import { resolvePhaseModel } from '../llmPhaseOverridesBridge.generated.ts';
 
 describe('PHASE_OVERRIDE_REGISTRY', () => {
-  it('has exactly 11 entries', () => {
-    strictEqual(PHASE_OVERRIDE_REGISTRY.length, 11);
+  it('has exactly 10 entries', () => {
+    strictEqual(PHASE_OVERRIDE_REGISTRY.length, 10);
   });
 
   it('every entry has uiPhaseId, overrideKey, and globalModel', () => {
@@ -35,7 +35,6 @@ describe('PHASE_OVERRIDE_REGISTRY', () => {
       'search-planner',
       'serp-selector',
       'sku-finder',
-      'validate',
     ]);
   });
 });
@@ -61,8 +60,8 @@ describe('uiPhaseIdToOverrideKey', () => {
     strictEqual(uiPhaseIdToOverrideKey('global'), undefined);
   });
 
-  it('returns override key for validate', () => {
-    strictEqual(uiPhaseIdToOverrideKey('validate'), 'validate');
+  it('returns undefined for retired validate phase', () => {
+    strictEqual(uiPhaseIdToOverrideKey('validate' as never), undefined);
   });
 });
 

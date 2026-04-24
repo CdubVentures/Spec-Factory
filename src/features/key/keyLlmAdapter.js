@@ -27,6 +27,7 @@ import { buildValueConfidencePromptBlock } from '../../core/finder/valueConfiden
 import { buildIdentityWarning } from '../../core/llm/prompts/identityContext.js';
 import {
   resolveDisplayName,
+  resolvePromptFieldRule,
   buildPrimaryKeyHeaderBlock,
   buildFieldGuidanceBlock,
   buildFieldContractBlock,
@@ -217,8 +218,14 @@ function describeValueShape(fieldRule) {
   const enumPolicy = String(fieldRule?.enum?.policy || '').trim();
   const enumValues = Array.isArray(fieldRule?.enum?.values) ? fieldRule.enum.values.slice(0, 24) : [];
   let element;
-  if (enumValues.length > 0) {
+  if ((type === 'boolean' || type === 'bool')) {
+    element = 'boolean';
+  } else if (enumValues.length > 0 && enumPolicy === 'open_prefer_known') {
+    element = `string (prefer one of [${enumValues.join(' | ')}]; new evidenced values allowed)`;
+  } else if (enumValues.length > 0 && enumPolicy !== 'open') {
     element = `one of [${enumValues.join(' | ')}] (policy: ${enumPolicy || 'open'})`;
+  } else if (enumValues.length > 0) {
+    element = `string (known examples: ${enumValues.join(' | ')})`;
   } else {
     switch (type) {
       case 'number':
@@ -226,10 +233,6 @@ function describeValueShape(fieldRule) {
       case 'integer':
       case 'float':
         element = unit ? `number (${unit})` : 'number';
-        break;
-      case 'boolean':
-      case 'bool':
-        element = 'boolean';
         break;
       case 'date':
         element = 'date string (match declared format)';
@@ -276,12 +279,13 @@ function buildReturnJsonShape(primaryEntry, passengerEntries) {
  * @param {object} opts.product                         — { brand, model, base_model, variant? }
  * @param {{fieldKey: string, fieldRule: object}} opts.primary
  * @param {Array<{fieldKey: string, fieldRule: object}>} [opts.passengers]
+ * @param {object|null} [opts.knownValues]
  * @param {Record<string, unknown>} [opts.knownFields]
  * @param {{primary: object|null, passengers: Array<object|null>}} [opts.componentContext] — per-key relation pointers (knob-gated)
  * @param {Array<{parentFieldKey: string, componentType: string, resolvedValue: string, subfields: Array<{field_key: string, value: unknown}>}>} [opts.productComponents] — always-on grouped inventory
  * @param {{componentInjectionEnabled: boolean, knownFieldsInjectionEnabled: boolean, searchHintsInjectionEnabled: boolean}} [opts.injectionKnobs]
  * @param {string} [opts.category]
- * @param {number} [opts.variantCount]
+ * @param {number} [opts.familySize]
  * @param {number} [opts.familyModelCount]
  * @param {string[]} [opts.siblingsExcluded]
  * @param {string} [opts.ambiguityLevel]
@@ -294,12 +298,13 @@ export function buildKeyFinderPrompt({
   product = {},
   primary = { fieldKey: '', fieldRule: {} },
   passengers = [],
+  knownValues = null,
   knownFields = {},
   componentContext = { primary: null, passengers: [] },
   productComponents = [],
   injectionKnobs = DEFAULT_KNOBS,
   category = '',
-  variantCount = 1,
+  familySize = 1,
   familyModelCount = 1,
   siblingsExcluded = [],
   ambiguityLevel = 'easy',
@@ -313,8 +318,13 @@ export function buildKeyFinderPrompt({
   const variant = String(product?.variant || '').trim();
   const variantSuffix = variant ? ` (variant: ${variant})` : '';
   const primaryFieldKey = primary?.fieldKey || '';
-  const primaryRule = primary?.fieldRule || {};
-  const passengerList = Array.isArray(passengers) ? passengers : [];
+  const primaryRule = resolvePromptFieldRule(primary?.fieldRule || {}, { knownValues, fieldKey: primaryFieldKey });
+  const passengerList = Array.isArray(passengers)
+    ? passengers.map((p) => ({
+      ...p,
+      fieldRule: resolvePromptFieldRule(p?.fieldRule || {}, { knownValues, fieldKey: p?.fieldKey || '' }),
+    }))
+    : [];
 
   const identityWarning = buildIdentityWarning({
     familyModelCount,
@@ -336,7 +346,7 @@ export function buildKeyFinderPrompt({
     MODEL: model,
     VARIANT_SUFFIX: variantSuffix,
     CATEGORY: category,
-    VARIANT_COUNT: String(variantCount),
+    FAMILY_SIZE: String(familySize),
 
     IDENTITY_INTRO: resolvePromptTemplate(resolveGlobalPrompt('identityIntro'), {
       BRAND: brand, MODEL: model, VARIANT_SUFFIX: variantSuffix,
@@ -441,7 +451,7 @@ export function createKeyFinderCallLlm(deps, tierOrBundle = 'medium') {
         model: domainArgs.product?.model || domainArgs.product?.base_model || '',
         primary_field_key: domainArgs.primary?.fieldKey || '',
         passenger_count: Array.isArray(domainArgs.passengers) ? domainArgs.passengers.length : 0,
-        variant_count: domainArgs.variantCount || 1,
+        family_size: domainArgs.familySize || 1,
       }),
     };
     if (modelOverride) mapped.modelOverride = modelOverride;

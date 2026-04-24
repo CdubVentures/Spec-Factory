@@ -202,6 +202,19 @@ test('per-slot section renders one sub-block per runtime slot', () => {
   assert.ok(hasReturnShape, 'return-shape slot rendered');
 });
 
+test('cross-field section reflects current renderer support for constraints DSL', () => {
+  const rule = makeRule({ constraints: ['sensor_date <= release_date'] });
+  const record = makeKeyRecord('sensor_date', rule, {
+    constraints: [{ op: 'lte', left: 'sensor_date', right: 'release_date', raw: 'sensor_date <= release_date' }],
+  });
+  const preview = composePerKeyPromptPreview(rule, 'sensor_date', { category: 'mouse' });
+  const structure = buildPerKeyDocStructure(record, { ...BASE_OPTS, preview });
+  const allText = JSON.stringify(structure);
+
+  assert.match(allText, /sensor_date <= release_date/);
+  assert.doesNotMatch(allText, /KNOWN BUG|alias mismatch|NOT currently reaching/i);
+});
+
 test('siblings section lists other keys in the same group', () => {
   const rule = makeRule();
   const record = makeKeyRecord('dpi', rule);

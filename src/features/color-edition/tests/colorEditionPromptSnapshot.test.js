@@ -26,6 +26,7 @@ const TMP_ROOT = path.join('.tmp', '_test_cef_prompt_snapshot');
 const DB_DIR = path.join(TMP_ROOT, '_db');
 const DB_PATH = path.join(DB_DIR, 'spec.sqlite');
 const PRODUCT_ROOT = path.join(TMP_ROOT, 'products');
+const TEST_CONFIG = { evidenceVerificationEnabled: false };
 
 const COLORS_RULE = {
   contract: { shape: 'list', type: 'string', list_rules: { dedupe: true, item_union: 'set_union', sort: 'none' } },
@@ -73,8 +74,16 @@ const LLM_RESPONSE = {
 
 describe('CEF prompt snapshot — family context propagation', () => {
   let specDb;
+  let originalFetch;
+  let networkFetchCalls;
 
   before(() => {
+    originalFetch = globalThis.fetch;
+    networkFetchCalls = [];
+    globalThis.fetch = async (url) => {
+      networkFetchCalls.push(String(url || ''));
+      throw new Error('colorEditionPromptSnapshot.test must not perform real network fetches');
+    };
     fs.rmSync(TMP_ROOT, { recursive: true, force: true });
     fs.mkdirSync(DB_DIR, { recursive: true });
     specDb = new SpecDb({ dbPath: DB_PATH, category: 'mouse' });
@@ -83,8 +92,17 @@ describe('CEF prompt snapshot — family context propagation', () => {
   });
 
   after(() => {
-    specDb.close();
-    fs.rmSync(TMP_ROOT, { recursive: true, force: true });
+    if (originalFetch === undefined) {
+      delete globalThis.fetch;
+    } else {
+      globalThis.fetch = originalFetch;
+    }
+    try {
+      specDb.close();
+      fs.rmSync(TMP_ROOT, { recursive: true, force: true });
+    } finally {
+      assert.deepEqual(networkFetchCalls, [], 'offline CEF prompt snapshot tests must not perform URL verification fetches');
+    }
   });
 
   it('onLlmCallComplete prompt snapshot contains CAUTION + sibling exclusion when family=3', async () => {
@@ -94,7 +112,7 @@ describe('CEF prompt snapshot — family context propagation', () => {
     const capturedCalls = [];
     await runColorEditionFinder({
       product: { product_id: pid, category: 'mouse', brand: 'Corsair', base_model: 'M75', model: 'M75 Air Wireless', variant: 'Air Wireless' },
-      appDb, specDb, config: {}, productRoot: PRODUCT_ROOT,
+      appDb, specDb, config: TEST_CONFIG, productRoot: PRODUCT_ROOT,
       onLlmCallComplete: (call) => capturedCalls.push(call),
       _callLlmOverride: async () => ({ result: LLM_RESPONSE, usage: null }),
     });

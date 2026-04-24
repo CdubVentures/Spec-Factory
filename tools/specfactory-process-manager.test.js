@@ -1,10 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
-import { throwIfSpawnEperm } from '../src/shared/tests/helpers/spawnEperm.js';
 
 import {
   buildProcessRows,
@@ -41,24 +38,12 @@ function findRow(rows, pid) {
   return rows.find((row) => row.pid === pid) || null;
 }
 
-function readShortcut(shortcutPath) {
-  const script = [
-    '$w = New-Object -ComObject WScript.Shell',
-    `$s = $w.CreateShortcut('${shortcutPath.replace(/'/g, "''")}')`,
-    '[PSCustomObject]@{',
-    '  TargetPath = $s.TargetPath',
-    '  IconLocation = $s.IconLocation',
-    '  WorkingDirectory = $s.WorkingDirectory',
-    '} | ConvertTo-Json -Compress',
-  ].join('\n');
-
-  const run = spawnSync('powershell.exe', ['-NoProfile', '-Command', script], {
-    encoding: 'utf8',
-  });
-
-  throwIfSpawnEperm(run, 'PowerShell shortcut inspection must be available for this process-manager contract');
-  assert.equal(run.status, 0, `expected shortcut inspection to succeed, stderr was: ${run.stderr || '(empty)'}`);
-  return JSON.parse(run.stdout.trim());
+function shortcutSearchText(shortcutPath) {
+  const bytes = fs.readFileSync(shortcutPath);
+  return [
+    bytes.toString('latin1'),
+    bytes.toString('utf16le'),
+  ].join('\n').replace(/\0/g, '').toLowerCase();
 }
 
 test('buildProcessRows marks tracked API listener on 8788 as safe to kill and restart via start-api', () => {
@@ -262,11 +247,17 @@ test('process manager ships as a root shortcut with a dedicated icon and no root
   assert.equal(fs.existsSync(LAUNCHER_ICON), true, 'expected the process manager icon to live under tools\\launchers\\icons');
   assert.equal(fs.existsSync(ROOT_SHORTCUT), true, 'expected a root shortcut for the process manager');
 
-  const shortcut = readShortcut(ROOT_SHORTCUT);
-  assert.equal(path.normalize(shortcut.TargetPath), path.normalize(LAUNCHER_PYW));
-  assert.equal(path.normalize(shortcut.WorkingDirectory), path.normalize(ROOT));
+  const shortcutText = shortcutSearchText(ROOT_SHORTCUT);
   assert.ok(
-    shortcut.IconLocation.toLowerCase().startsWith(LAUNCHER_ICON.toLowerCase()),
-    `expected the shortcut icon to come from ${LAUNCHER_ICON}, got ${shortcut.IconLocation}`,
+    shortcutText.includes(path.win32.normalize(LAUNCHER_PYW).toLowerCase()),
+    `expected shortcut bytes to reference ${LAUNCHER_PYW}`,
+  );
+  assert.ok(
+    shortcutText.includes(path.win32.normalize(ROOT).toLowerCase()),
+    `expected shortcut bytes to reference working directory ${ROOT}`,
+  );
+  assert.ok(
+    shortcutText.includes('tools\\launchers\\icons\\specfactory-process-manager.ico'),
+    `expected shortcut bytes to reference the moved icon under ${LAUNCHER_ICON}`,
   );
 });

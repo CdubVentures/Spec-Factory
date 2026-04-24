@@ -1,11 +1,13 @@
 import { execFile } from 'node:child_process';
 import { readdirSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 const REBUILD_TIMEOUT_MS = 60_000;
 const PROBE_TIMEOUT_MS = 10_000;
+const require = createRequire(import.meta.url);
 
 // ── Node diagnostics ──
 
@@ -38,15 +40,37 @@ export function getCategoryList(root) {
 function spawnProbe(execPath, cwd) {
   return new Promise((resolve) => {
     const script = "try { require('better-sqlite3'); process.exit(0) } catch(e) { console.error(e.message); process.exit(1) }";
-    execFile(execPath, ['-e', script], { cwd, timeout: PROBE_TIMEOUT_MS }, (error, _stdout, stderr) => {
-      const output = (stderr || '').trim();
-      if (!error) {
-        resolve({ ok: true, output });
-        return;
-      }
-      resolve({ ok: false, output, code: error.code });
-    });
+    try {
+      execFile(execPath, ['-e', script], { cwd, timeout: PROBE_TIMEOUT_MS }, (error, _stdout, stderr) => {
+        const output = (stderr || '').trim();
+        if (!error) {
+          resolve({ ok: true, output });
+          return;
+        }
+        resolve({ ok: false, output, code: error.code });
+      });
+    } catch (error) {
+      resolve({
+        ok: false,
+        output: error?.message || String(error),
+        code: error?.code,
+        spawnUnavailable: error?.code === 'EPERM',
+      });
+    }
   });
+}
+
+function probeInProcess() {
+  try {
+    require('better-sqlite3');
+    return { ok: true, output: '' };
+  } catch (error) {
+    return {
+      ok: false,
+      output: error?.message || String(error),
+      code: error?.code,
+    };
+  }
 }
 
 function classifyError(output) {
@@ -59,19 +83,32 @@ function classifyError(output) {
 function spawnRebuild(root) {
   return new Promise((resolve) => {
     const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-    execFile(npmCmd, ['rebuild', 'better-sqlite3'], { cwd: root, timeout: REBUILD_TIMEOUT_MS }, (error, stdout, stderr) => {
-      resolve({
-        ok: !error,
-        stdout: (stdout || '').trim(),
-        stderr: (stderr || '').trim(),
+    try {
+      execFile(npmCmd, ['rebuild', 'better-sqlite3'], { cwd: root, timeout: REBUILD_TIMEOUT_MS }, (error, stdout, stderr) => {
+        resolve({
+          ok: !error,
+          stdout: (stdout || '').trim(),
+          stderr: (stderr || error?.message || '').trim(),
+        });
       });
-    });
+    } catch (error) {
+      resolve({
+        ok: false,
+        stdout: '',
+        stderr: error?.message || String(error),
+      });
+    }
   });
 }
 
 // ── Main preflight ──
 
-export async function runNativeModulePreflight({ root }) {
+export async function runNativeModulePreflight({
+  root,
+  probeFn = spawnProbe,
+  fallbackProbeFn = probeInProcess,
+  rebuildFn = spawnRebuild,
+} = {}) {
   const diag = getNodeDiagnostics();
   const base = {
     nodeVersion: diag.version,
@@ -79,7 +116,8 @@ export async function runNativeModulePreflight({ root }) {
     moduleVersion: diag.moduleVersion,
   };
 
-  const firstProbe = await spawnProbe(diag.execPath, root);
+  const spawnedProbe = await probeFn(diag.execPath, root);
+  const firstProbe = spawnedProbe.spawnUnavailable ? await fallbackProbeFn({ root }) : spawnedProbe;
   if (firstProbe.ok) {
     return {
       ...base,
@@ -104,7 +142,7 @@ export async function runNativeModulePreflight({ root }) {
   }
 
   // Mismatch detected — attempt auto-rebuild
-  const rebuild = await spawnRebuild(root);
+  const rebuild = await rebuildFn(root);
   if (!rebuild.ok) {
     return {
       ...base,
@@ -117,7 +155,8 @@ export async function runNativeModulePreflight({ root }) {
   }
 
   // Re-probe after rebuild
-  const secondProbe = await spawnProbe(diag.execPath, root);
+  const secondSpawnedProbe = await probeFn(diag.execPath, root);
+  const secondProbe = secondSpawnedProbe.spawnUnavailable ? await fallbackProbeFn({ root }) : secondSpawnedProbe;
   if (secondProbe.ok) {
     return {
       ...base,

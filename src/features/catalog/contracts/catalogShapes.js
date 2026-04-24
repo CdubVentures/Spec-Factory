@@ -12,6 +12,31 @@ export const BRAND_RENAME_HISTORY_ENTRY_SHAPE = Object.freeze([
   { key: 'renamed_at', coerce: 'string' },
 ]);
 
+export const PIF_VARIANT_PROGRESS_SHAPE = Object.freeze([
+  { key: 'variant_id', coerce: 'string' },
+  { key: 'variant_key', coerce: 'string' },
+  { key: 'variant_label', coerce: 'string' },
+  { key: 'color_atoms', coerce: 'array', itemType: 'string' },
+  { key: 'priority_filled', coerce: 'int' },
+  { key: 'priority_total', coerce: 'int' },
+  { key: 'loop_filled', coerce: 'int' },
+  { key: 'loop_total', coerce: 'int' },
+  { key: 'hero_filled', coerce: 'int' },
+  { key: 'hero_target', coerce: 'int' },
+]);
+
+// Per-variant scalar-finder snapshot: SKU finder + RDF use the same shape
+// (one value + one confidence per variant). Drives the confidence-diamond
+// Overview cells. Empty string value + 0 confidence = "no candidate yet".
+export const SCALAR_VARIANT_PROGRESS_SHAPE = Object.freeze([
+  { key: 'variant_id', coerce: 'string' },
+  { key: 'variant_key', coerce: 'string' },
+  { key: 'variant_label', coerce: 'string' },
+  { key: 'color_atoms', coerce: 'array', itemType: 'string' },
+  { key: 'value', coerce: 'string' },
+  { key: 'confidence', coerce: 'float' },
+]);
+
 // ── Catalog Product (raw CRUD shape from productCatalog.js) ──
 
 export const CATALOG_PRODUCT_SHAPE = Object.freeze([
@@ -49,6 +74,10 @@ export const CATALOG_ROW_SHAPE = Object.freeze([
   { key: 'coverage', coerce: 'float' },
   { key: 'fieldsFilled', coerce: 'int' },
   { key: 'fieldsTotal', coerce: 'int' },
+  { key: 'cefRunCount', coerce: 'int' },
+  { key: 'pifVariants', coerce: 'array', itemRef: 'PifVariantProgressGen' },
+  { key: 'skuVariants', coerce: 'array', itemRef: 'ScalarVariantProgressGen' },
+  { key: 'rdfVariants', coerce: 'array', itemRef: 'ScalarVariantProgressGen' },
 ]);
 export const CATALOG_ROW_KEYS = Object.freeze(CATALOG_ROW_SHAPE.map(s => s.key));
 

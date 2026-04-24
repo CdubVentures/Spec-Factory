@@ -10,28 +10,28 @@ const COLOR_KNOWN = ['black', 'white', 'red'];
 const SWITCH_KNOWN = ['Cherry MX Red', 'Cherry MX Brown', 'Cherry MX Blue'];
 const LIGHTING_KNOWN = ['3 Zone (RGB)', '4 Zone (RGB)', 'None'];
 
-// ── closed — flag unknowns for LLM repair ──────────────────────────────────
+// ── closed — reject unknowns deterministically ─────────────────────────────
 
-describe('characterization: closed policy — flag unknowns for LLM repair', () => {
+describe('characterization: closed policy — reject unknowns deterministically', () => {
   it('exact match → pass', () => {
     const r = checkEnum('black', 'closed', COLOR_KNOWN, 'exact');
     assert.equal(r.pass, true);
     assert.deepStrictEqual(r.unknown, []);
-    assert.equal(r.needsLlm, false);
+    assert.equal(r.needsReview, false);
   });
 
-  it('case mismatch → flag for LLM', () => {
+  it('case mismatch → flag unknown', () => {
     const r = checkEnum('Black', 'closed', COLOR_KNOWN, 'exact');
     assert.equal(r.pass, false);
     assert.deepStrictEqual(r.unknown, ['Black']);
-    assert.equal(r.needsLlm, true);
+    assert.equal(r.needsReview, true);
   });
 
-  it('unknown value → flag for LLM', () => {
+  it('unknown value → flag unknown', () => {
     const r = checkEnum('teal', 'closed', COLOR_KNOWN, 'exact');
     assert.equal(r.pass, false);
     assert.deepStrictEqual(r.unknown, ['teal']);
-    assert.equal(r.needsLlm, true);
+    assert.equal(r.needsReview, true);
   });
 
   it('plus-atom both known → pass', () => {
@@ -40,17 +40,17 @@ describe('characterization: closed policy — flag unknowns for LLM repair', () 
     assert.deepStrictEqual(r.unknown, []);
   });
 
-  it('plus-atom unknown atom → flag for LLM', () => {
+  it('plus-atom unknown atom → flag unknown', () => {
     const r = checkEnum('black+pink', 'closed', COLOR_KNOWN, 'exact');
     assert.equal(r.pass, false);
     assert.deepStrictEqual(r.unknown, ['pink']);
-    assert.equal(r.needsLlm, true);
+    assert.equal(r.needsReview, true);
   });
 
   it('null (absence) always passes', () => {
     const r = checkEnum(null, 'closed', COLOR_KNOWN, 'exact');
     assert.equal(r.pass, true);
-    assert.equal(r.needsLlm, false);
+    assert.equal(r.needsReview, false);
   });
 });
 
@@ -61,7 +61,7 @@ describe('characterization: open_prefer_known policy — alias resolution, accep
     const r = checkEnum('Cherry MX Red', 'open_prefer_known', SWITCH_KNOWN, 'alias');
     assert.equal(r.pass, true);
     assert.deepStrictEqual(r.unknown, []);
-    assert.equal(r.needsLlm, false);
+    assert.equal(r.needsReview, false);
     assert.equal(r.repaired, undefined);
   });
 
@@ -69,7 +69,7 @@ describe('characterization: open_prefer_known policy — alias resolution, accep
     const r = checkEnum('cherry mx red', 'open_prefer_known', SWITCH_KNOWN, 'alias');
     assert.equal(r.pass, true);
     assert.deepStrictEqual(r.unknown, []);
-    assert.equal(r.needsLlm, false);
+    assert.equal(r.needsReview, false);
     assert.equal(r.repaired, 'Cherry MX Red');
   });
 
@@ -83,14 +83,14 @@ describe('characterization: open_prefer_known policy — alias resolution, accep
     const r = checkEnum('3-zone-(rgb)', 'open_prefer_known', LIGHTING_KNOWN, 'alias');
     assert.equal(r.pass, true);
     assert.equal(r.repaired, '3 Zone (RGB)');
-    assert.equal(r.needsLlm, false);
+    assert.equal(r.needsReview, false);
   });
 
-  it('truly unknown value → accept + flag for LLM', () => {
+  it('truly unknown value → accept + flag unknown', () => {
     const r = checkEnum('Gateron Red', 'open_prefer_known', SWITCH_KNOWN, 'alias');
     assert.equal(r.pass, true);
     assert.deepStrictEqual(r.unknown, ['Gateron Red']);
-    assert.equal(r.needsLlm, true);
+    assert.equal(r.needsReview, true);
     assert.equal(r.repaired, undefined);
   });
 
@@ -98,14 +98,14 @@ describe('characterization: open_prefer_known policy — alias resolution, accep
     const r = checkEnum('Black+White', 'open_prefer_known', COLOR_KNOWN, 'alias');
     assert.equal(r.pass, true);
     assert.equal(r.repaired, 'black+white');
-    assert.equal(r.needsLlm, false);
+    assert.equal(r.needsReview, false);
   });
 
   it('plus-atom one unknown → accept + flag', () => {
     const r = checkEnum('black+pink', 'open_prefer_known', COLOR_KNOWN, 'alias');
     assert.equal(r.pass, true);
     assert.deepStrictEqual(r.unknown, ['pink']);
-    assert.equal(r.needsLlm, true);
+    assert.equal(r.needsReview, true);
   });
 });
 
@@ -116,21 +116,21 @@ describe('characterization: open policy — accept everything', () => {
     const r = checkEnum('black', 'open', COLOR_KNOWN, 'alias');
     assert.equal(r.pass, true);
     assert.deepStrictEqual(r.unknown, []);
-    assert.equal(r.needsLlm, false);
+    assert.equal(r.needsReview, false);
   });
 
   it('unknown value → pass', () => {
     const r = checkEnum('anything-goes', 'open', COLOR_KNOWN, 'alias');
     assert.equal(r.pass, true);
     assert.deepStrictEqual(r.unknown, []);
-    assert.equal(r.needsLlm, false);
+    assert.equal(r.needsReview, false);
   });
 
   it('case mismatch → pass (no repair needed)', () => {
     const r = checkEnum('Black', 'open', COLOR_KNOWN, 'alias');
     assert.equal(r.pass, true);
     assert.deepStrictEqual(r.unknown, []);
-    assert.equal(r.needsLlm, false);
+    assert.equal(r.needsReview, false);
   });
 
   // WHY: 7 anomaly fields have open+exact — proves strategy is irrelevant for open.
@@ -139,13 +139,13 @@ describe('characterization: open policy — accept everything', () => {
     const rAlias = checkEnum('anything-goes', 'open', COLOR_KNOWN, 'alias');
     assert.equal(rExact.pass, rAlias.pass);
     assert.deepStrictEqual(rExact.unknown, rAlias.unknown);
-    assert.equal(rExact.needsLlm, rAlias.needsLlm);
+    assert.equal(rExact.needsReview, rAlias.needsReview);
   });
 
   it('case mismatch with exact strategy → still passes', () => {
     const r = checkEnum('Black', 'open', COLOR_KNOWN, 'exact');
     assert.equal(r.pass, true);
     assert.deepStrictEqual(r.unknown, []);
-    assert.equal(r.needsLlm, false);
+    assert.equal(r.needsReview, false);
   });
 });

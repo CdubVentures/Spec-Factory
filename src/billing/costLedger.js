@@ -205,22 +205,7 @@ function pushModelDetails(lines, config = {}) {
     ['Base URL', config.llmBaseUrl || config.openaiBaseUrl || ''],
   ];
 
-  const pricing = [
-    [
-      'Pricing Default (1M input cache miss)',
-      safeNumber(config.llmCostInputPer1M, 0) > 0 ? `$${safeNumber(config.llmCostInputPer1M, 0)}` : ''
-    ],
-    [
-      'Pricing Default (1M input cache hit)',
-      safeNumber(config.llmCostCachedInputPer1M, 0) > 0 ? `$${safeNumber(config.llmCostCachedInputPer1M, 0)}` : '$0'
-    ],
-    [
-      'Pricing Default (1M output)',
-      safeNumber(config.llmCostOutputPer1M, 0) > 0 ? `$${safeNumber(config.llmCostOutputPer1M, 0)}` : ''
-    ],
-  ];
-
-  const rows = [...details, ...pricing].filter(([, value]) => String(value || '').trim() !== '');
+  const rows = details.filter(([, value]) => String(value || '').trim() !== '');
   if (!rows.length) {
     return;
   }

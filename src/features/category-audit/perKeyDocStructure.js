@@ -17,7 +17,7 @@ const SLOT_DESCRIPTIONS = Object.freeze([
   { slot: 'PRIMARY_FIELD_GUIDANCE', previewKey: 'guidance', note: '`ai_assist.reasoning_note` prose. Empty when unauthored.' },
   { slot: 'PRIMARY_FIELD_CONTRACT', previewKey: 'contract', note: 'Type, shape, unit, rounding, list rules, enum values + policy, variance policy, aliases. Everything the LLM needs to emit a well-typed value.' },
   { slot: 'PRIMARY_SEARCH_HINTS', previewKey: 'searchHints', note: 'Preferred domain_hints + query_terms. Empty when unauthored or knob off.' },
-  { slot: 'PRIMARY_CROSS_FIELD_CONSTRAINTS', previewKey: 'crossField', note: 'Cross-field relational constraints (lte/gte/eq/requires_*). KNOWN BUG: reads `cross_field_constraints`, compiled rules store `constraints` (alias mismatch).' },
+  { slot: 'PRIMARY_CROSS_FIELD_CONSTRAINTS', previewKey: 'crossField', note: 'Cross-field relational constraints (lte/gte/eq/requires_*), normalized from `constraints` DSL and structured `cross_field_constraints`.' },
   { slot: 'PRIMARY_COMPONENT_KEYS', previewKey: 'componentRel', note: 'Relation pointer — "This key IS the sensor component identity" or "belongs to the sensor component on this product".' },
 ]);
 
@@ -269,8 +269,8 @@ function buildCrossFieldSection(record) {
     blocks: [
       {
         kind: 'note',
-        tone: 'warn',
-        text: 'KNOWN BUG: the keyFinder prompt renderer reads `cross_field_constraints` (object shape) but compiled rules store `constraints` (string DSL). Until the alias is reconciled, the values listed below are NOT currently reaching the LLM \u2014 they remain authored on the rule, but the prompt block is empty.',
+        tone: 'info',
+        text: 'These constraints render into the live keyFinder prompt via `PRIMARY_CROSS_FIELD_CONSTRAINTS`. Audit whether the relationship is correct, whether the target field is the right authority, and whether the constraint should affect grouping or guidance.',
       },
       {
         kind: 'bulletList',

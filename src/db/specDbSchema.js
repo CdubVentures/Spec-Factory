@@ -504,6 +504,28 @@ CREATE TABLE IF NOT EXISTS variants (
 
 CREATE INDEX IF NOT EXISTS idx_variants_product
   ON variants(category, product_id);
+
+-- PIF variant carousel progress (runtime projection; rebuildable from product_images.json)
+-- WHY: The Overview catalog panel needs per-variant PIF progress at O(1) read speed
+-- across 359+ products. evaluateCarousel() is expensive per product; this table is
+-- written incrementally by the PIF run/loop/delete handlers and rebuilt from the
+-- per-product product_images.json on deleted-DB recovery.
+CREATE TABLE IF NOT EXISTS pif_variant_progress (
+  category          TEXT NOT NULL,
+  product_id        TEXT NOT NULL,
+  variant_id        TEXT NOT NULL,
+  variant_key       TEXT NOT NULL DEFAULT '',
+  priority_filled   INTEGER NOT NULL DEFAULT 0,
+  priority_total    INTEGER NOT NULL DEFAULT 0,
+  loop_filled       INTEGER NOT NULL DEFAULT 0,
+  loop_total        INTEGER NOT NULL DEFAULT 0,
+  hero_filled       INTEGER NOT NULL DEFAULT 0,
+  hero_target       INTEGER NOT NULL DEFAULT 0,
+  updated_at        TEXT DEFAULT (datetime('now')),
+  PRIMARY KEY (category, product_id, variant_id)
+);
+CREATE INDEX IF NOT EXISTS idx_pvp_product
+  ON pif_variant_progress(category, product_id);
 `;
 
 // WHY: Per-table boolean key lists — SSOT for which columns are boolean.

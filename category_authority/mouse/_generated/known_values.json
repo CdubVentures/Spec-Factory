@@ -1,11 +1,18 @@
 {
   "category": "mouse",
   "enums": {
+    "cable_type": {
+      "policy": "open_prefer_known",
+      "values": [
+        "braided",
+        "paracord",
+        "rubber",
+        "ultraweave"
+      ]
+    },
     "coating": {
       "policy": "open_prefer_known",
       "values": [
-        "A",
-        "help",
         "matte",
         "rubber grips"
       ]
@@ -92,10 +99,16 @@
         "yellow"
       ]
     },
-    "connection": {
+    "computer_side_connector": {
       "policy": "open_prefer_known",
       "values": [
-        "bluetooth",
+        "USB-A",
+        "USB-C"
+      ]
+    },
+    "connection": {
+      "policy": "closed",
+      "values": [
         "hybrid",
         "wired",
         "wireless"
@@ -104,33 +117,33 @@
     "connectivity": {
       "policy": "open_prefer_known",
       "values": [
-        "1",
         "2.4GHz Dongle",
         "2.4GHz RF Dongle",
         "2.4GHz WIFI Dongle",
-        "2.5",
-        "n/a",
-        "unk"
+        "n/a"
       ]
     },
     "design": {
       "policy": "open_prefer_known",
-      "values": []
+      "values": [
+        "collaboration",
+        "limited edition",
+        "multiple",
+        "standard"
+      ]
     },
     "feet_material": {
-      "policy": "open_prefer_known",
+      "policy": "closed",
       "values": [
         "Glass",
-        "l",
         "PTFE",
         "PTFE (95%)",
         "PTFE (Black-Dyed)",
-        "PTFE (Teflon)",
         "PTFE (Virgin-Grade)"
       ]
     },
     "form_factor": {
-      "policy": "open_prefer_known",
+      "policy": "closed",
       "values": [
         "ambidextrous",
         "left",
@@ -138,21 +151,46 @@
       ]
     },
     "front_flare": {
-      "policy": "open_prefer_known",
+      "policy": "closed",
       "values": [
         "flat",
         "inward",
         "outward"
       ]
     },
-    "hump": {
+    "grip": {
       "policy": "open_prefer_known",
+      "values": [
+        "claw",
+        "fingertip",
+        "palm"
+      ]
+    },
+    "hand_size": {
+      "policy": "open_prefer_known",
+      "values": [
+        "large",
+        "medium",
+        "small"
+      ]
+    },
+    "hump": {
+      "policy": "closed",
       "values": [
         "back - front",
         "back - rear",
         "back mid",
         "front",
         "middle"
+      ]
+    },
+    "lift_settings": {
+      "policy": "open_prefer_known",
+      "values": [
+        "adjustable",
+        "fixed high",
+        "fixed low",
+        "surface-tuned"
       ]
     },
     "lighting": {
@@ -177,6 +215,22 @@
         "none"
       ]
     },
+    "material": {
+      "policy": "open_prefer_known",
+      "values": [
+        "abs plastic",
+        "aluminum",
+        "bio-based nylon",
+        "carbon fiber",
+        "composite",
+        "magnesium alloy",
+        "metal",
+        "pbt plastic",
+        "plastic",
+        "polycarbonate",
+        "rubber"
+      ]
+    },
     "mcu": {
       "policy": "open_prefer_known",
       "values": [
@@ -187,24 +241,28 @@
         "Nuvoton M484SIDAE",
         "NXP LPC11U68",
         "NXP LPC54605J512",
-        "STM32",
         "STM32F072CBU6",
         "STM32L412C8U6",
-        "Ti CC2462R",
-        "unk",
-        "unspecified"
+        "TI CC2462R"
+      ]
+    },
+    "mouse_side_connector": {
+      "policy": "open_prefer_known",
+      "values": [
+        "Micro-B",
+        "n/a",
+        "USB-C"
       ]
     },
     "sensor_type": {
-      "policy": "open_prefer_known",
+      "policy": "closed",
       "values": [
         "laser",
-        "optical",
-        "unk"
+        "optical"
       ]
     },
     "shape": {
-      "policy": "open_prefer_known",
+      "policy": "closed",
       "values": [
         "asymmetrical",
         "ergonomic",
@@ -212,45 +270,22 @@
       ]
     },
     "switch_type": {
-      "policy": "open_prefer_known",
+      "policy": "closed",
       "values": [
-        "Black Shell Blue Dot",
-        "Corsair Quickstrike",
-        "D2FC-F-7N (20M)",
-        "eqwe",
-        "Haptic Inductive Trigger System (HITS)",
-        "Kailh GM 4.0",
-        "LK Optical V2",
-        "Logitech LIGHTFORCE (Omron (70M) - D2FP-FH1)",
+        "inductive",
         "mechanical",
-        "Omron",
-        "Omron D2FC-7N",
-        "Omron D2FC-7N (60M)",
-        "Omron D2FC-F-K",
-        "Omron D2FC-F-K (50M)",
-        "Omron D2FP-FN2",
         "optical",
-        "optical / mechanical",
-        "optical-mechanical",
-        "ROG 70M",
-        "ROG Micro Switch II",
-        "ROG Micro Switches",
-        "ROG Optical Micro Switches",
-        "Transparent Crystal Shell White Dot",
-        "TTC Optical Microswitch",
-        "unk",
-        "unspecified",
-        "yay"
+        "optical / mechanical"
       ]
     },
     "yes_no": {
-      "policy": "open",
+      "policy": "closed",
       "values": [
-        "yes",
-        "no"
+        "no",
+        "yes"
       ]
     }
   },
-  "generated_at": "2026-04-23T22:28:20.449Z",
+  "generated_at": "2026-04-24T02:32:59.027Z",
   "version": 1
 }

@@ -128,3 +128,21 @@ test('renderMarkdown collapses excess blank lines', () => {
   const md = renderMarkdown(fixtureReportData());
   assert.ok(!/\n{3,}/.test(md), 'no 3-blank-line runs');
 });
+
+test('renderMarkdown does not describe constraints DSL as unreachable', () => {
+  const data = fixtureReportData();
+  data.keys[0] = {
+    ...data.keys[0],
+    fieldKey: 'sensor_date',
+    constraints: [{ op: 'lte', left: 'sensor_date', right: 'release_date', raw: 'sensor_date <= release_date' }],
+    rawRule: {
+      ...data.keys[0].rawRule,
+      constraints: ['sensor_date <= release_date'],
+    },
+  };
+  data.groups[0] = { ...data.groups[0], fieldKeys: ['sensor_date'] };
+
+  const md = renderMarkdown(data);
+  assert.ok(md.includes('sensor_date <= release_date'), 'authored constraint still rendered');
+  assert.doesNotMatch(md, /KNOWN BUG|alias mismatch|unreachable/i);
+});

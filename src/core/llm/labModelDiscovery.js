@@ -1,10 +1,13 @@
 // WHY: Fetch-at-boot registry sync — pulls fresh model lists from running
 // LLM Lab instances and merges into the provider registry. Adding a model
 // to LLM Lab makes it immediately available in Spec Factory.
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { extractEffortFromModelName } from '../../shared/effortFromModelName.js';
 import { buildRegistryLookup } from './routeResolver.js';
 
 const LAB_FETCH_TIMEOUT_MS = 2000;
+const DEFAULT_LAB_REGISTRY_PATH = path.resolve(process.cwd(), '..', 'LLM Lab', 'app', 'models', 'model_registry.json');
 
 const LAB_PROVIDER_PREFIX = {
   'lab-openai': 'oai',
@@ -12,10 +15,45 @@ const LAB_PROVIDER_PREFIX = {
   'lab-claude': 'claude',
 };
 
+const LAB_PROVIDER_REGISTRY_KEY = {
+  'lab-openai': 'openai',
+  'lab-gemini': 'gemini',
+  'lab-claude': 'claude',
+};
+
+const LAB_PROVIDER_KEY_FROM_PREFIX = {
+  oai: 'openai',
+  gemini: 'gemini',
+  claude: 'claude',
+};
+
+function providerRegistryKey(providerPrefix, providerId) {
+  return LAB_PROVIDER_REGISTRY_KEY[providerId] || LAB_PROVIDER_KEY_FROM_PREFIX[providerPrefix] || providerPrefix;
+}
+
+function selectLabRegistryModels(labRegistry, providerPrefix, providerId) {
+  if (Array.isArray(labRegistry?.models)) return labRegistry.models;
+  const registryKey = providerRegistryKey(providerPrefix, providerId);
+  const providerModels = labRegistry?.providers?.[registryKey]?.models;
+  return Array.isArray(providerModels) ? providerModels : [];
+}
+
+async function readLocalLabRegistry(labRegistryPath, logger) {
+  try {
+    const content = await fs.readFile(labRegistryPath, 'utf8');
+    return JSON.parse(content);
+  } catch (err) {
+    if (err?.code !== 'ENOENT') {
+      logger?.warn?.('lab_registry_file_read_failed', { path: labRegistryPath, message: err.message });
+    }
+    return null;
+  }
+}
+
 /** Transform a Lab registry response into Spec Factory LlmProviderModel entries. */
-export function transformLabRegistryToModels(labRegistry, providerPrefix) {
-  const models = labRegistry?.models;
-  if (!Array.isArray(models) || models.length === 0) return [];
+export function transformLabRegistryToModels(labRegistry, providerPrefix, providerId) {
+  const models = selectLabRegistryModels(labRegistry, providerPrefix, providerId);
+  if (models.length === 0) return [];
   return models.map((m) => {
     const modelId = String(m.id || '');
     const efforts = Array.isArray(m.efforts) ? m.efforts : [];
@@ -61,7 +99,11 @@ export function mergeLabModelsIntoRegistry(registryJson, syncedProviders) {
 }
 
 /** Fetch Lab registries and merge into config (non-blocking, call with .catch). */
-export async function syncLabRegistryIntoConfig(config, { logger } = {}) {
+export async function syncLabRegistryIntoConfig(config, {
+  logger,
+  labRegistryPath = DEFAULT_LAB_REGISTRY_PATH,
+  fetchRegistry = fetch,
+} = {}) {
   let registry;
   try { registry = JSON.parse(config.llmProviderRegistryJson); } catch { return; }
   if (!Array.isArray(registry)) return;
@@ -69,14 +111,21 @@ export async function syncLabRegistryIntoConfig(config, { logger } = {}) {
   if (!labProviders.length) return;
 
   const syncedProviders = new Map();
-  const fetches = labProviders.map(async (prov) => {
+  const localLabRegistry = await readLocalLabRegistry(labRegistryPath, logger);
+  for (const prov of labProviders) {
+    const prefix = LAB_PROVIDER_PREFIX[prov.id] || prov.id.replace('lab-', '');
+    const models = transformLabRegistryToModels(localLabRegistry, prefix, prov.id);
+    if (models.length > 0) syncedProviders.set(prov.id, models);
+  }
+
+  const fetches = labProviders.filter((prov) => !syncedProviders.has(prov.id)).map(async (prov) => {
     try {
       const url = `${prov.baseUrl.replace(/\/+$/, '')}/model-registry`;
-      const res = await fetch(url, { signal: AbortSignal.timeout(LAB_FETCH_TIMEOUT_MS) });
+      const res = await fetchRegistry(url, { signal: AbortSignal.timeout(LAB_FETCH_TIMEOUT_MS) });
       if (!res.ok) return;
       const data = await res.json();
       const prefix = LAB_PROVIDER_PREFIX[prov.id] || prov.id.replace('lab-', '');
-      const models = transformLabRegistryToModels(data, prefix);
+      const models = transformLabRegistryToModels(data, prefix, prov.id);
       if (models.length > 0) syncedProviders.set(prov.id, models);
     } catch (err) {
       logger?.warn?.('lab_registry_sync_failed', { provider: prov.id, message: err.message });

@@ -25,6 +25,17 @@ async function makeTmpWorkspace() {
   return root;
 }
 
+async function withTmpWorkspace(callback) {
+  const root = await makeTmpWorkspace();
+  const previousCwd = process.cwd();
+  process.chdir(root);
+  try {
+    return await callback(root);
+  } finally {
+    process.chdir(previousCwd);
+  }
+}
+
 after(async () => {
   process.chdir(origCwd);
   for (const dir of TMP_DIRS) {
@@ -102,78 +113,78 @@ describe('PUT /llm-policy/global-prompts', () => {
   beforeEach(() => setGlobalPromptsSnapshot({}));
 
   it('persists valid patch and returns updated snapshot', async () => {
-    const root = await makeTmpWorkspace();
-    process.chdir(root);
-    const { put, broadcasts } = buildHandler();
-    const res = await put({ identityWarningMedium: 'new-med', siblingsExclusion: 'new-sib' });
-    assert.equal(res.status, 200);
-    assert.equal(res.body.prompts.identityWarningMedium.override, 'new-med');
-    assert.equal(res.body.prompts.siblingsExclusion.override, 'new-sib');
-    const disk = JSON.parse(await fs.readFile(
-      path.join(root, '.workspace', 'global', GLOBAL_PROMPTS_FILENAME),
-      'utf8',
-    ));
-    assert.deepEqual(disk, { identityWarningMedium: 'new-med', siblingsExclusion: 'new-sib' });
-    assert.ok(broadcasts.length > 0);
-    assert.equal(broadcasts[0].payload.event, 'user-settings-updated');
-    assert.equal(broadcasts[0].payload.meta?.source, 'global-prompts');
+    await withTmpWorkspace(async (root) => {
+      const { put, broadcasts } = buildHandler();
+      const res = await put({ identityWarningMedium: 'new-med', siblingsExclusion: 'new-sib' });
+      assert.equal(res.status, 200);
+      assert.equal(res.body.prompts.identityWarningMedium.override, 'new-med');
+      assert.equal(res.body.prompts.siblingsExclusion.override, 'new-sib');
+      const disk = JSON.parse(await fs.readFile(
+        path.join(root, '.workspace', 'global', GLOBAL_PROMPTS_FILENAME),
+        'utf8',
+      ));
+      assert.deepEqual(disk, { identityWarningMedium: 'new-med', siblingsExclusion: 'new-sib' });
+      assert.ok(broadcasts.length > 0);
+      assert.equal(broadcasts[0].payload.event, 'user-settings-updated');
+      assert.equal(broadcasts[0].payload.meta?.source, 'global-prompts');
+    });
   });
 
   it('422s on unknown key', async () => {
-    const root = await makeTmpWorkspace();
-    process.chdir(root);
-    const { put } = buildHandler();
-    const res = await put({ notARealKey: 'value' });
-    assert.equal(res.status, 422);
-    assert.equal(res.body.ok, false);
-    assert.equal(res.body.error, 'invalid_global_prompts_patch');
+    await withTmpWorkspace(async () => {
+      const { put } = buildHandler();
+      const res = await put({ notARealKey: 'value' });
+      assert.equal(res.status, 422);
+      assert.equal(res.body.ok, false);
+      assert.equal(res.body.error, 'invalid_global_prompts_patch');
+    });
   });
 
   it('422s on non-string value (array)', async () => {
-    const root = await makeTmpWorkspace();
-    process.chdir(root);
-    const { put } = buildHandler();
-    const res = await put({ identityWarningMedium: ['not', 'a', 'string'] });
-    assert.equal(res.status, 422);
+    await withTmpWorkspace(async () => {
+      const { put } = buildHandler();
+      const res = await put({ identityWarningMedium: ['not', 'a', 'string'] });
+      assert.equal(res.status, 422);
+    });
   });
 
   it('accepts null value (removes key)', async () => {
-    const root = await makeTmpWorkspace();
-    process.chdir(root);
-    const { put } = buildHandler();
-    await put({ identityWarningMedium: 'med-1' });
-    const res = await put({ identityWarningMedium: null });
-    assert.equal(res.status, 200);
-    assert.equal(res.body.prompts.identityWarningMedium.override, '');
-    const disk = JSON.parse(await fs.readFile(
-      path.join(root, '.workspace', 'global', GLOBAL_PROMPTS_FILENAME),
-      'utf8',
-    ));
-    assert.deepEqual(disk, {});
+    await withTmpWorkspace(async (root) => {
+      const { put } = buildHandler();
+      await put({ identityWarningMedium: 'med-1' });
+      const res = await put({ identityWarningMedium: null });
+      assert.equal(res.status, 200);
+      assert.equal(res.body.prompts.identityWarningMedium.override, '');
+      const disk = JSON.parse(await fs.readFile(
+        path.join(root, '.workspace', 'global', GLOBAL_PROMPTS_FILENAME),
+        'utf8',
+      ));
+      assert.deepEqual(disk, {});
+    });
   });
 
   it('merges patch on top of existing disk state', async () => {
-    const root = await makeTmpWorkspace();
-    process.chdir(root);
-    const { put } = buildHandler();
-    await put({ identityWarningMedium: 'med' });
-    await put({ identityWarningHard: 'hard' });
-    const disk = JSON.parse(await fs.readFile(
-      path.join(root, '.workspace', 'global', GLOBAL_PROMPTS_FILENAME),
-      'utf8',
-    ));
-    assert.deepEqual(disk, { identityWarningMedium: 'med', identityWarningHard: 'hard' });
+    await withTmpWorkspace(async (root) => {
+      const { put } = buildHandler();
+      await put({ identityWarningMedium: 'med' });
+      await put({ identityWarningHard: 'hard' });
+      const disk = JSON.parse(await fs.readFile(
+        path.join(root, '.workspace', 'global', GLOBAL_PROMPTS_FILENAME),
+        'utf8',
+      ));
+      assert.deepEqual(disk, { identityWarningMedium: 'med', identityWarningHard: 'hard' });
+    });
   });
 
   it('round-trip: PUT → loadGlobalPromptsSync → getGlobalPrompts returns persisted value', async () => {
-    const root = await makeTmpWorkspace();
-    process.chdir(root);
-    const { put } = buildHandler();
-    await put({ evidenceContract: 'custom-evidence' });
-    setGlobalPromptsSnapshot({});
-    loadGlobalPromptsSync();
-    const { get } = buildHandler();
-    const res = await get();
-    assert.equal(res.body.prompts.evidenceContract.override, 'custom-evidence');
+    await withTmpWorkspace(async () => {
+      const { put } = buildHandler();
+      await put({ evidenceContract: 'custom-evidence' });
+      setGlobalPromptsSnapshot({});
+      loadGlobalPromptsSync();
+      const { get } = buildHandler();
+      const res = await get();
+      assert.equal(res.body.prompts.evidenceContract.override, 'custom-evidence');
+    });
   });
 });

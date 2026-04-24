@@ -33,7 +33,7 @@ function capForTier(settings, tier) {
   return raw;
 }
 
-export function buildPassengers({ primary, engineRules, specDb, productId, settings, variantCount = 1 }) {
+export function buildPassengers({ primary, engineRules, specDb, productId, settings, familySize = undefined, variantCount = undefined }) {
   if (!settings?.bundlingEnabled) return [];
   const primaryGroup = primary?.fieldRule?.group || '';
   if (!primaryGroup && settings.groupBundlingOnly) return [];
@@ -108,7 +108,7 @@ export function buildPassengers({ primary, engineRules, specDb, productId, setti
     candidates: peerCandidates,
     resolvedFieldKeys,
     settings,
-    variantCount,
+    familySize: familySize ?? variantCount ?? 1,
   });
   return passengers;
 }

@@ -9,7 +9,6 @@ import { enqueueLabCall } from '../labQueue.js';
 const ROLE_KEYS = {
   plan: { model: 'llmModelPlan', fallbackModel: 'llmPlanFallbackModel' },
   triage: { model: 'llmModelPlan', fallbackModel: 'llmPlanFallbackModel' },
-  validate: { model: 'llmModelPlan', fallbackModel: 'llmPlanFallbackModel' },
   write: { model: 'llmModelPlan', fallbackModel: 'llmPlanFallbackModel' },
 };
 
@@ -273,7 +272,7 @@ function reasonTokenGroup(reason = '') {
   return 'default';
 }
 
-// WHY: extract/validate/write all alias to the plan model (configPostMerge).
+// WHY: extract/write both alias to the plan model (configPostMerge).
 // registryEntry is optional; when present its maxOutputTokens acts as a hard ceiling.
 // Fallback uses the same phase cap as primary — no separate fallback budget.
 export function roleTokenCap(config = {}, role = 'extract', reason = '', registryEntry) {
@@ -284,7 +283,7 @@ export function roleTokenCap(config = {}, role = 'extract', reason = '', registr
   } else if (role === 'plan' && group === 'reasoning') {
     cap = configInt(config, 'llmMaxOutputTokensReasoning');
   } else {
-    // plan, extract, validate, write, and any unknown role — all use plan default path
+    // plan, extract, write, and any unknown role — all use plan default path
     cap = configInt(config, 'llmMaxOutputTokensPlan');
   }
 

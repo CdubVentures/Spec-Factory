@@ -1,6 +1,7 @@
 import { scanAndSeedCheckpoints } from '../../pipeline/checkpoint/scanAndSeedCheckpoints.js';
 import { rebuildColorEditionFinderFromJson } from '../../features/color-edition/index.js';
 import { rebuildProductImageFinderFromJson } from '../../features/product-image/index.js';
+import { rebuildPifVariantProgressFromJson } from '../../features/product-image/pifVariantProgressRebuild.js';
 import { rebuildReleaseDateFinderFromJson } from '../../features/release-date/releaseDateStore.js';
 import { rebuildSkuFinderFromJson } from '../../features/sku/skuStore.js';
 import { rebuildKeyFinderFromJson } from '../../features/key/keyStore.js';
@@ -57,6 +58,7 @@ export function createSpecDbRuntime({
     scanAndSeedCheckpoints,
     rebuildColorEditionFinderFromJson,
     rebuildProductImageFinderFromJson,
+    rebuildPifVariantProgressFromJson,
     rebuildReleaseDateFinderFromJson,
     rebuildSkuFinderFromJson,
     rebuildKeyFinderFromJson,

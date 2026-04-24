@@ -90,7 +90,7 @@ function renderPrimary(fieldKey, fieldRule, overrides = {}) {
 // ── Template placeholder surface area ───────────────────────────────────
 
 test('default template contains every placeholder the builder injects', () => {
-  // CATEGORY + VARIANT_COUNT are optional placeholders (available in the
+  // CATEGORY + FAMILY_SIZE are optional placeholders (available in the
   // variable contract for authors who want to use them in per-category
   // overrides) but not present in the default template by design \u2014 redundant
   // with IDENTITY_INTRO which already carries product identity.
@@ -191,6 +191,63 @@ test('PRIMARY_FIELD_CONTRACT includes enum allowed values when populated', () =>
   assert.match(out, /closed/);
 });
 
+test('PRIMARY_FIELD_CONTRACT resolves data-list enum values from known_values', () => {
+  const rule = {
+    ...POLLING_RATE_RULE,
+    field_key: 'connection',
+    enum: { policy: 'closed', source: 'data_lists.connection' },
+  };
+  const out = renderPrimary('connection', rule, {
+    knownValues: {
+      enums: {
+        connection: { policy: 'closed', values: ['wired', 'wireless', 'hybrid'] },
+      },
+    },
+  });
+
+  assert.match(out, /Allowed values \(closed\): wired \| wireless \| hybrid/);
+  assert.doesNotMatch(out, /no fixed list/);
+});
+
+test('PRIMARY_FIELD_CONTRACT renders open_prefer_known as preferred values', () => {
+  const rule = {
+    ...POLLING_RATE_RULE,
+    field_key: 'lighting',
+    enum: { policy: 'open_prefer_known', source: 'data_lists.lighting' },
+  };
+  const out = renderPrimary('lighting', rule, {
+    knownValues: {
+      enums: {
+        lighting: { policy: 'open_prefer_known', values: ['rgb', 'zone rgb'] },
+      },
+    },
+  });
+
+  assert.match(out, /Prefer known values \(open_prefer_known\): rgb \| zone rgb/);
+  assert.match(out, /New values are allowed only when directly evidenced/);
+  assert.doesNotMatch(out, /Allowed values \(open_prefer_known\)/);
+});
+
+test('PRIMARY_FIELD_CONTRACT does not render yes_no enum policy for boolean fields', () => {
+  const rule = {
+    ...POLLING_RATE_RULE,
+    field_key: 'rgb',
+    contract: { type: 'boolean', shape: 'scalar' },
+    enum: { policy: 'closed', source: 'yes_no' },
+  };
+  const out = renderPrimary('rgb', rule, {
+    knownValues: {
+      enums: {
+        yes_no: { policy: 'closed', values: ['yes', 'no'] },
+      },
+    },
+  });
+
+  assert.match(out, /Type: boolean/);
+  assert.doesNotMatch(out, /Allowed values/);
+  assert.doesNotMatch(out, /Enum policy/);
+});
+
 // ── Primary: search_hints (respects knob) ───────────────────────────────
 
 test('PRIMARY_SEARCH_HINTS renders domain_hints + query_terms when knob ON', () => {
@@ -217,6 +274,18 @@ test('PRIMARY_CROSS_FIELD_CONSTRAINTS renders from fieldRule.cross_field_constra
   const out = renderPrimary('sensor_date', SENSOR_DATE_RULE);
   assert.match(out, /release_date/);
   assert.match(out, /lte|less than or equal|≤/);
+});
+
+test('PRIMARY_CROSS_FIELD_CONSTRAINTS renders from fieldRule.constraints DSL', () => {
+  const rule = {
+    ...SENSOR_DATE_RULE,
+    cross_field_constraints: [],
+    constraints: ['sensor_date <= release_date'],
+  };
+  const out = renderPrimary('sensor_date', rule);
+
+  assert.match(out, /release_date/);
+  assert.match(out, /≤/);
 });
 
 test('PRIMARY_CROSS_FIELD_CONSTRAINTS empty when absent/[]', () => {
@@ -317,6 +386,31 @@ test('ADDITIONAL_FIELD_CONTRACT renders each passenger contract with its type + 
   assert.match(out, /report rate/); // alias present in passenger contract
 });
 
+test('ADDITIONAL_FIELD_CONTRACT resolves passenger data-list enum values from known_values', () => {
+  const passengerRule = {
+    ...POLLING_RATE_RULE,
+    field_key: 'sensor_type',
+    contract: { type: 'string', shape: 'scalar' },
+    enum: { policy: 'closed', source: 'data_lists.sensor_type' },
+  };
+  const out = buildKeyFinderPrompt({
+    product: PRODUCT,
+    primary: { fieldKey: 'sensor_date', fieldRule: SENSOR_DATE_RULE },
+    passengers: [{ fieldKey: 'sensor_type', fieldRule: passengerRule }],
+    knownValues: {
+      enums: {
+        sensor_type: { policy: 'closed', values: ['optical', 'laser'] },
+      },
+    },
+    category: 'mouse',
+    variantCount: 1,
+    injectionKnobs: ALL_KNOBS_ON,
+  });
+
+  assert.match(out, /Passenger key: sensor_type/);
+  assert.match(out, /Allowed values \(closed\): optical \| laser/);
+});
+
 // ── Additional keys: cross-field constraints (per-passenger) ────────────
 
 test('ADDITIONAL_CROSS_FIELD_CONSTRAINTS renders per-passenger constraints', () => {
@@ -336,6 +430,24 @@ test('ADDITIONAL_CROSS_FIELD_CONSTRAINTS renders per-passenger constraints', () 
   });
   assert.match(out, /connectivity/);
   assert.match(out, /wireless/);
+});
+
+test('ADDITIONAL_CROSS_FIELD_CONSTRAINTS renders passenger constraints DSL', () => {
+  const passengerWithConstraint = {
+    ...CLICK_LATENCY_RULE,
+    constraints: ['click_latency_ms <= polling_rate'],
+  };
+  const out = buildKeyFinderPrompt({
+    product: PRODUCT,
+    primary: { fieldKey: 'sensor_date', fieldRule: SENSOR_DATE_RULE },
+    passengers: [{ fieldKey: 'click_latency_ms', fieldRule: passengerWithConstraint }],
+    category: 'mouse',
+    variantCount: 1,
+    injectionKnobs: ALL_KNOBS_ON,
+  });
+
+  assert.match(out, /polling_rate/);
+  assert.match(out, /≤/);
 });
 
 // ── Additional keys: component context (knob-gated) ─────────────────────

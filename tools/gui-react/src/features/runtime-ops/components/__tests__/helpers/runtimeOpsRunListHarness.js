@@ -162,6 +162,9 @@ export async function createRuntimeOpsRunListHarness({
             return globalThis.__runtimeOpsRunQueryHarness.activeScope;
           }
         `,
+        './PipelineStepperBar': `
+          export function PipelineStepperBar() { return null; }
+        `,
         '../panels/overview/MetricsRail': `
           export function MetricsRail() { return null; }
         `,

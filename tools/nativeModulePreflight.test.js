@@ -84,6 +84,29 @@ describe('runNativeModulePreflight', () => {
     assert.equal(result.rebuildAttempted, false);
     assert.equal(result.rebuildSucceeded, null);
   });
+
+  it('falls back to an in-process probe when child-process spawning is unavailable', async () => {
+    let rebuildCalls = 0;
+    const result = await runNativeModulePreflight({
+      root: ROOT,
+      probeFn: async () => ({
+        ok: false,
+        output: 'spawn EPERM',
+        code: 'EPERM',
+        spawnUnavailable: true,
+      }),
+      fallbackProbeFn: async () => ({ ok: true, output: '' }),
+      rebuildFn: async () => {
+        rebuildCalls += 1;
+        return { ok: false, stdout: '', stderr: 'should not rebuild' };
+      },
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.status, 'loaded');
+    assert.equal(result.rebuildAttempted, false);
+    assert.equal(rebuildCalls, 0);
+  });
 });
 
 describe('getCategoryList', () => {

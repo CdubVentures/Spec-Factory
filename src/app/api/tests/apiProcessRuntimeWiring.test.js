@@ -15,6 +15,7 @@ function createHarness(options = {}) {
   const children = [];
   const execCalls = [];
   const projectRoot = path.resolve(String(options.projectRoot || '.'));
+  const processRef = options.processRef || process;
 
   const runtime = createProcessRuntime({
     resolveProjectPath: (value) => path.resolve(projectRoot, String(value || '.')),
@@ -29,7 +30,9 @@ function createHarness(options = {}) {
       spawnCalls.push({ command, args, options: spawnOptions });
       const child = options.spawn
         ? options.spawn(command, args, spawnOptions)
-        : createFakeChild(4200 + spawnCalls.length);
+        : command === processRef.execPath
+          ? createFakeChild(4200 + spawnCalls.length)
+          : createCommandChild();
       children.push(child);
       return child;
     },
@@ -56,7 +59,7 @@ function createHarness(options = {}) {
     outputRoot: path.resolve('out'),
     outputPrefix: 'specs/outputs',
     logger: { error: () => {} },
-    processRef: options.processRef || process,
+    processRef,
     setTimeoutFn: options.setTimeoutFn,
     clearTimeoutFn: options.clearTimeoutFn,
   });

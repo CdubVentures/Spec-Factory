@@ -9,6 +9,33 @@ function normalizeModel(value) {
   return String(value || '').trim().toLowerCase();
 }
 
+function splitModelKey(value = '') {
+  const raw = String(value || '').trim();
+  const idx = raw.indexOf(':');
+  if (idx <= 0) return { provider: '', model: raw };
+  return { provider: raw.slice(0, idx), model: raw.slice(idx + 1) };
+}
+
+function normalizeProvider(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function inferProviderKind(provider = {}, model = '') {
+  const token = String(provider?.id || provider?.type || provider?.name || '').trim().toLowerCase();
+  if (token.includes('openai') || token === 'oai') return 'openai';
+  if (token.includes('anthropic') || token.includes('claude')) return 'anthropic';
+  if (token.includes('gemini') || token.includes('google')) return 'gemini';
+  if (token.includes('deepseek')) return 'deepseek';
+  if (token.includes('xai') || token.includes('grok')) return 'xai';
+  const modelToken = normalizeModel(model);
+  if (modelToken.startsWith('gpt-') || modelToken.startsWith('o')) return 'openai';
+  if (modelToken.startsWith('claude-')) return 'anthropic';
+  if (modelToken.startsWith('gemini-')) return 'gemini';
+  if (modelToken.startsWith('deepseek-')) return 'deepseek';
+  if (modelToken.startsWith('grok-')) return 'xai';
+  return '';
+}
+
 function normalizePricingEntry(entry = {}) {
   if (!entry || typeof entry !== 'object') return null;
   const inputPer1M = toFloat(entry.inputPer1M ?? entry.input_per_1m ?? entry.input, NaN);
@@ -27,80 +54,110 @@ function normalizePricingEntry(entry = {}) {
   };
 }
 
-function resolveModelPricingMap(rates = {}) {
-  const map = rates.llmModelPricingMap || rates.modelPricing || {};
-  if (!map || typeof map !== 'object') return {};
-  const output = {};
-  for (const [rawModel, rawEntry] of Object.entries(map)) {
-    const model = String(rawModel || '').trim();
-    if (!model) continue;
-    const normalizedEntry = normalizePricingEntry(rawEntry);
-    if (!normalizedEntry) continue;
-    output[model] = normalizedEntry;
+function parseProviderRegistry(registryJson) {
+  if (Array.isArray(registryJson)) return registryJson;
+  if (typeof registryJson !== 'string' || !registryJson.trim()) return [];
+  try {
+    const parsed = JSON.parse(registryJson);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
   }
-  return output;
 }
 
-function resolveModelPricingFromMap(rates = {}, model = '') {
-  const token = normalizeModel(model);
-  if (!token) return null;
-  const map = resolveModelPricingMap(rates);
-  let exact = null;
-  let prefix = null;
-  for (const [rawModel, rawEntry] of Object.entries(map)) {
-    const modelToken = normalizeModel(rawModel);
-    if (!modelToken) continue;
-    if (token === modelToken) {
-      exact = rawEntry;
-      break;
-    }
-    if (token.startsWith(modelToken) || modelToken.startsWith(token)) {
-      if (!prefix || modelToken.length > normalizeModel(prefix._model || '').length) {
-        prefix = { ...rawEntry, _model: rawModel };
+function buildRegistryPricingMap(registryJson) {
+  const output = {};
+  for (const provider of parseProviderRegistry(registryJson)) {
+    const providerId = normalizeProvider(provider?.id);
+    if (!providerId) continue;
+    const models = Array.isArray(provider?.models) ? provider.models : [];
+    for (const modelEntry of models) {
+      const model = normalizeModel(modelEntry?.modelId || modelEntry?.id);
+      if (!model) continue;
+      const normalizedEntry = normalizePricingEntry({
+        inputPer1M: modelEntry?.costInputPer1M,
+        outputPer1M: modelEntry?.costOutputPer1M,
+        cachedInputPer1M: modelEntry?.costCachedPer1M,
+      });
+      if (!normalizedEntry) continue;
+      output[`${providerId}:${model}`] = normalizedEntry;
+      const providerKind = inferProviderKind(provider, model);
+      if (providerKind && !output[`${providerKind}:${model}`]) {
+        output[`${providerKind}:${model}`] = normalizedEntry;
+      }
+      if (!output[model]) {
+        output[model] = normalizedEntry;
       }
     }
   }
-  if (exact) return exact;
-  if (prefix) {
-    const { _model, ...rest } = prefix;
-    return rest;
-  }
-  return null;
+  return output;
 }
 
-function resolveModelSpecificRates(rates = {}, model = '') {
+function resolveModelPricingFromRegistry(rates = {}, model = '', provider = '') {
+  const split = splitModelKey(model);
+  const token = normalizeModel(split.model);
+  const providerToken = normalizeProvider(provider || split.provider);
+  if (!token) return null;
+  const map = rates.registryModelPricing || {};
+  if (!map || typeof map !== 'object') return null;
+  const providerMatch = providerToken ? map[`${providerToken}:${token}`] : null;
+  if (providerMatch) return providerMatch;
+  return map[token] || null;
+}
+
+function hasRegistryPricing(rates = {}) {
+  return Boolean(
+    rates.registryModelPricing
+    && typeof rates.registryModelPricing === 'object'
+    && Object.keys(rates.registryModelPricing).length > 0
+  );
+}
+
+function zeroRates() {
+  return {
+    inputPer1M: 0,
+    outputPer1M: 0,
+    cachedInputPer1M: 0,
+  };
+}
+
+function directRates(rates = {}) {
+  if (
+    rates.inputPer1M == null
+    && rates.outputPer1M == null
+    && rates.cachedInputPer1M == null
+    && rates.llmCostInputPer1M == null
+    && rates.llmCostOutputPer1M == null
+    && rates.llmCostCachedInputPer1M == null
+  ) {
+    return zeroRates();
+  }
+  return {
+    inputPer1M: rates.inputPer1M != null ? toFloat(rates.inputPer1M, 0) : configFloat(rates, 'llmCostInputPer1M'),
+    outputPer1M: rates.outputPer1M != null ? toFloat(rates.outputPer1M, 0) : configFloat(rates, 'llmCostOutputPer1M'),
+    cachedInputPer1M: rates.cachedInputPer1M != null ? toFloat(rates.cachedInputPer1M, 0) : configFloat(rates, 'llmCostCachedInputPer1M')
+  };
+}
+
+function resolveModelSpecificRates(rates = {}, model = '', provider = '') {
   const token = normalizeModel(model);
-  // WHY: inputPer1M alias is a non-registry passthrough from costRates objects
-  const output = {
-    inputPer1M: rates.inputPer1M != null ? toFloat(rates.inputPer1M, 1.25) : configFloat(rates, 'llmCostInputPer1M'),
-    outputPer1M: rates.outputPer1M != null ? toFloat(rates.outputPer1M, 10) : configFloat(rates, 'llmCostOutputPer1M'),
-    cachedInputPer1M: rates.cachedInputPer1M != null ? toFloat(rates.cachedInputPer1M, 0.125) : configFloat(rates, 'llmCostCachedInputPer1M')
-  };
+  if (!token) return zeroRates();
 
-  const applyIfValid = (value, setter) => {
-    const num = toFloat(value, -1);
-    if (num >= 0) {
-      setter(num);
-    }
-  };
-
-  const fromMap = resolveModelPricingFromMap(rates, model);
-  if (fromMap) {
-    output.inputPer1M = toFloat(fromMap.inputPer1M, output.inputPer1M);
-    output.outputPer1M = toFloat(fromMap.outputPer1M, output.outputPer1M);
-    output.cachedInputPer1M = toFloat(fromMap.cachedInputPer1M, output.cachedInputPer1M);
-    return output;
+  const registryRates = resolveModelPricingFromRegistry(rates, model, provider);
+  if (registryRates) {
+    return registryRates;
   }
 
-  return output;
+  if (hasRegistryPricing(rates)) return zeroRates();
+  return directRates(rates);
 }
 
 export function normalizeCostRates(config = {}) {
   return {
-    llmCostInputPer1M: config.inputPer1M != null ? toFloat(config.inputPer1M, 1.25) : configFloat(config, 'llmCostInputPer1M'),
-    llmCostOutputPer1M: config.outputPer1M != null ? toFloat(config.outputPer1M, 10) : configFloat(config, 'llmCostOutputPer1M'),
-    llmCostCachedInputPer1M: config.cachedInputPer1M != null ? toFloat(config.cachedInputPer1M, 0.125) : configFloat(config, 'llmCostCachedInputPer1M'),
-    llmModelPricingMap: resolveModelPricingMap(config)
+    registryModelPricing: buildRegistryPricingMap(config.llmProviderRegistryJson),
+    llmCostInputPer1M: config.inputPer1M != null ? toFloat(config.inputPer1M, 0) : configFloat(config, 'llmCostInputPer1M'),
+    llmCostOutputPer1M: config.outputPer1M != null ? toFloat(config.outputPer1M, 0) : configFloat(config, 'llmCostOutputPer1M'),
+    llmCostCachedInputPer1M: config.cachedInputPer1M != null ? toFloat(config.cachedInputPer1M, 0) : configFloat(config, 'llmCostCachedInputPer1M'),
   };
 }
 
@@ -182,8 +239,8 @@ export function normalizeUsage(usage = {}, fallback = {}) {
   };
 }
 
-export function computeLlmCostUsd({ usage = {}, rates = {}, model = '' }) {
-  const normalizedRates = resolveModelSpecificRates(rates, model);
+export function computeLlmCostUsd({ usage = {}, rates = {}, model = '', provider = '' }) {
+  const normalizedRates = resolveModelSpecificRates(rates, model, provider);
   const inputTokens = Math.max(0, usage.promptTokens || 0);
   const outputTokens = Math.max(0, usage.completionTokens || 0);
   const cachedInputTokens = Math.max(0, usage.cachedPromptTokens || 0);

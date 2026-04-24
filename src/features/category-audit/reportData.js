@@ -304,6 +304,7 @@ export function extractReportData({
     keys: keyRecords,
     enums,
     components,
+    knownValues: loadedRules?.knownValues || { enums: knownValuesEnums },
     globalFragments: globalFragments || {},
     tierBundles: tierBundles || {},
     compileSummary,

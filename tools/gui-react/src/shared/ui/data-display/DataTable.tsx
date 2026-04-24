@@ -217,17 +217,21 @@ function DataTableInner<T>({
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
                 {hg.headers.map((header) => {
+                  if (header.isPlaceholder) return null;
                   const colSize = header.column.columnDef.size;
+                  const isGroupHeader = header.subHeaders.length > 0;
+                  const sortHandler = isGroupHeader ? undefined : header.column.getToggleSortingHandler();
                   return (
                     <th
                       key={header.id}
-                      className="sf-table-head-cell cursor-pointer select-none"
-                      style={colSize ? { width: colSize, minWidth: colSize } : undefined}
-                      onClick={header.column.getToggleSortingHandler()}
+                      colSpan={header.colSpan > 1 ? header.colSpan : undefined}
+                      className={`sf-table-head-cell ${isGroupHeader ? 'text-center' : 'cursor-pointer select-none'}`}
+                      style={!isGroupHeader && colSize ? { width: colSize, minWidth: colSize } : undefined}
+                      onClick={sortHandler}
                     >
-                      <div className="flex items-center gap-1">
+                      <div className={`flex items-center gap-1 ${isGroupHeader ? 'justify-center' : ''}`}>
                         {flexRender(header.column.columnDef.header, header.getContext())}
-                        {{ asc: ' \u25B2', desc: ' \u25BC' }[header.column.getIsSorted() as string] ?? ''}
+                        {!isGroupHeader && ({ asc: ' \u25B2', desc: ' \u25BC' }[header.column.getIsSorted() as string] ?? '')}
                       </div>
                     </th>
                   );

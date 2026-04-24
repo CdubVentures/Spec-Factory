@@ -9,6 +9,7 @@
  *
  * Exports:
  *   - buildPrimaryKeyHeaderBlock(fieldKey, fieldRule)
+ *   - resolvePromptFieldRule(fieldRule, { knownValues, fieldKey })
  *   - buildFieldGuidanceBlock(fieldRule)
  *   - buildFieldContractBlock(fieldRule)
  *   - buildSearchHintsBlock(fieldRule, { searchHintsInjectionEnabled })
@@ -24,6 +25,82 @@ export function joinList(list, max = 16) {
 
 export function resolveDisplayName(fieldKey, fieldRule) {
   return String(fieldRule?.ui?.label || fieldRule?.display_name || fieldKey || '').trim();
+}
+
+function isObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function uniqueStrings(list) {
+  const seen = new Set();
+  const out = [];
+  for (const entry of list || []) {
+    const value = String(entry || '').trim();
+    if (!value || seen.has(value)) continue;
+    seen.add(value);
+    out.push(value);
+  }
+  return out;
+}
+
+function sourceToEnumKey(source) {
+  const raw = String(source || '').trim();
+  if (!raw) return '';
+  return raw.startsWith('data_lists.') ? raw.slice('data_lists.'.length) : raw;
+}
+
+function resolveKnownEnum(fieldRule, { knownValues = null, fieldKey = '' } = {}) {
+  const ruleEnum = isObject(fieldRule?.enum) ? fieldRule.enum : {};
+  const inlineValues = Array.isArray(ruleEnum.values) ? uniqueStrings(ruleEnum.values) : [];
+  if (inlineValues.length > 0) {
+    return {
+      policy: String(ruleEnum.policy || '').trim(),
+      source: String(ruleEnum.source || '').trim(),
+      values: inlineValues,
+    };
+  }
+
+  const enums = isObject(knownValues?.enums) ? knownValues.enums : {};
+  const candidates = uniqueStrings([
+    sourceToEnumKey(ruleEnum.source),
+    fieldRule?.field_key,
+    fieldKey,
+  ]);
+  for (const key of candidates) {
+    const known = enums[key];
+    if (!isObject(known)) continue;
+    return {
+      policy: String(ruleEnum.policy || known.policy || '').trim(),
+      source: String(ruleEnum.source || '').trim(),
+      values: Array.isArray(known.values) ? uniqueStrings(known.values) : [],
+    };
+  }
+
+  return {
+    policy: String(ruleEnum.policy || '').trim(),
+    source: String(ruleEnum.source || '').trim(),
+    values: [],
+  };
+}
+
+export function resolvePromptFieldRule(fieldRule, { knownValues = null, fieldKey = '' } = {}) {
+  if (!isObject(fieldRule)) return {};
+  const resolvedEnum = resolveKnownEnum(fieldRule, { knownValues, fieldKey });
+  const next = {
+    ...fieldRule,
+    field_key: fieldRule.field_key || fieldKey,
+  };
+  if (resolvedEnum.policy || resolvedEnum.source || resolvedEnum.values.length > 0) {
+    next.enum = {
+      ...(isObject(fieldRule.enum) ? fieldRule.enum : {}),
+      policy: resolvedEnum.policy,
+      source: resolvedEnum.source,
+    };
+    if (resolvedEnum.values.length > 0) {
+      next.enum.values = resolvedEnum.values;
+    }
+  }
+  return next;
 }
 
 export function buildPrimaryKeyHeaderBlock(fieldKey, fieldRule) {
@@ -63,8 +140,19 @@ export function buildFieldContractBlock(fieldRule) {
     if (listRules.sort && listRules.sort !== 'none') ruleParts.push(`sort=${listRules.sort}`);
     if (ruleParts.length) lines.push(`- List rules: ${ruleParts.join(', ')}`);
   }
-  if (enumValues.length > 0) {
-    lines.push(`- Allowed values (policy: ${enumPolicy || 'open'}): ${enumValues.slice(0, 24).join(' | ')}`);
+  if (type === 'boolean' || type === 'bool') {
+    // Boolean fields are already constrained by type; yes/no enum lists add noise.
+  } else if (enumValues.length > 0) {
+    const values = enumValues.slice(0, 24).join(' | ');
+    if (enumPolicy === 'open_prefer_known') {
+      lines.push(`- Prefer known values (open_prefer_known): ${values}`);
+      lines.push('- New values are allowed only when directly evidenced; prefer canonical known values when they match.');
+    } else if (enumPolicy === 'open') {
+      lines.push(`- Known examples (open): ${values}`);
+      lines.push('- New values are allowed when directly evidenced.');
+    } else {
+      lines.push(`- Allowed values (${enumPolicy || 'closed'}): ${values}`);
+    }
   } else if (enumPolicy) {
     lines.push(`- Enum policy: ${enumPolicy} (no fixed list \u2014 use an authoritative value)`);
   }
@@ -92,9 +180,49 @@ export function buildSearchHintsBlock(fieldRule, { searchHintsInjectionEnabled }
   return lines.join('\n');
 }
 
+function parseConstraintExpression(raw) {
+  const text = String(raw || '').trim();
+  if (!text) return null;
+  const match = text.match(/^([A-Za-z0-9_.-]+)\s*(<=|>=|==|=|<|>)\s*([A-Za-z0-9_.-]+)$/);
+  if (!match) return { raw: text };
+  const [, left, operator, right] = match;
+  const opMap = {
+    '<=': 'lte',
+    '<': 'lt',
+    '>=': 'gte',
+    '>': 'gt',
+    '=': 'eq',
+    '==': 'eq',
+  };
+  return { op: opMap[operator] || '', left, target: right };
+}
+
+function collectConstraints(fieldRule) {
+  const structured = Array.isArray(fieldRule?.cross_field_constraints)
+    ? fieldRule.cross_field_constraints
+    : [];
+  const legacy = Array.isArray(fieldRule?.constraints)
+    ? fieldRule.constraints
+    : [];
+  const out = [];
+  for (const c of structured) {
+    if (c && typeof c === 'object') out.push(c);
+  }
+  for (const c of legacy) {
+    if (typeof c === 'string') {
+      const parsed = parseConstraintExpression(c);
+      if (parsed) out.push(parsed);
+    } else if (c && typeof c === 'object') {
+      out.push(c);
+    }
+  }
+  return out;
+}
+
 function renderConstraintLine(c) {
   if (!c || typeof c !== 'object') return '';
-  const target = String(c.target || '').trim();
+  if (c.raw) return String(c.raw || '').trim();
+  const target = String(c.target || c.right || '').trim();
   switch (c.op) {
     case 'lte': return target ? `must be \u2264 \`${target}\`` : '';
     case 'lt': return target ? `must be < \`${target}\`` : '';
@@ -115,14 +243,16 @@ function renderConstraintLine(c) {
 }
 
 export function buildCrossFieldConstraintsBlock(fieldRule) {
-  const constraints = Array.isArray(fieldRule?.cross_field_constraints)
-    ? fieldRule.cross_field_constraints
-    : [];
+  const constraints = collectConstraints(fieldRule);
   if (constraints.length === 0) return '';
   const lines = ['Cross-field constraints:'];
+  const seen = new Set();
   for (const c of constraints) {
     const rendered = renderConstraintLine(c);
-    if (rendered) lines.push(`- ${rendered}`);
+    if (rendered && !seen.has(rendered)) {
+      seen.add(rendered);
+      lines.push(`- ${rendered}`);
+    }
   }
   if (lines.length === 1) return '';
   return lines.join('\n');

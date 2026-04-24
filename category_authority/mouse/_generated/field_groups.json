@@ -1,8 +1,21 @@
 {
   "category": "mouse",
-  "generated_at": "2026-04-22T18:06:46.570Z",
+  "generated_at": "2026-04-24T02:32:59.027Z",
   "group_index": {
-    "buttons_features": [
+    "appearance": [
+      "design",
+      "lighting",
+      "rgb"
+    ],
+    "build_materials": [
+      "adjustable_weight",
+      "coating",
+      "feet_material",
+      "honeycomb_frame",
+      "material",
+      "weight"
+    ],
+    "buttons_wheel": [
       "adjustable_scroll_wheel",
       "middle_buttons",
       "onboard_memory",
@@ -12,7 +25,16 @@
       "side_buttons",
       "tilt_scroll_wheel"
     ],
-    "connectivity": [
+    "click_feel_latency": [
+      "click_force",
+      "click_latency",
+      "click_latency_bluetooth",
+      "click_latency_wired",
+      "click_latency_wireless",
+      "debounce",
+      "silent_clicks"
+    ],
+    "connectivity_power": [
       "battery_hours",
       "bluetooth",
       "cable_type",
@@ -23,80 +45,62 @@
       "paracord",
       "wireless_charging"
     ],
-    "construction": [
-      "adjustable_weight",
-      "coating",
-      "feet_material",
-      "honeycomb_frame",
-      "material",
-      "weight"
-    ],
-    "dimensions": [
-      "height",
-      "lngth",
-      "width"
-    ],
-    "electronics": [
+    "encoder_mcu": [
+      "encoder",
+      "encoder_brand",
+      "encoder_link",
       "mcu",
       "mcu_link"
     ],
-    "encoder": [
-      "encoder",
-      "encoder_brand",
-      "encoder_link"
-    ],
-    "ergonomics": [
-      "form_factor",
-      "front_flare",
-      "grip",
-      "hand_size",
-      "hump",
-      "shape",
-      "thumb_rest"
-    ],
-    "general": [
+    "product_variants": [
       "colors",
-      "design",
       "discontinued",
       "editions",
-      "lighting",
       "price_range",
       "release_date",
-      "rgb",
       "sku"
+    ],
+    "sensor_identity": [
+      "flawless_sensor",
+      "sensor",
+      "sensor_brand",
+      "sensor_date",
+      "sensor_link",
+      "sensor_type"
     ],
     "sensor_performance": [
       "acceleration",
       "dpi",
-      "flawless_sensor",
-      "hardware_acceleration",
       "ips",
       "lift",
       "lift_settings",
+      "polling_rate"
+    ],
+    "sensor_processing_latency": [
+      "hardware_acceleration",
       "motion_sync",
       "nvidia_reflex",
-      "polling_rate",
-      "sensor",
-      "sensor_brand",
-      "sensor_date",
       "sensor_latency",
       "sensor_latency_bluetooth",
       "sensor_latency_wired",
       "sensor_latency_wireless",
-      "sensor_link",
-      "sensor_type",
       "shift_latency",
       "smoothing"
     ],
-    "switches": [
-      "click_force",
-      "click_latency",
-      "click_latency_bluetooth",
-      "click_latency_wired",
-      "click_latency_wireless",
-      "debounce",
+    "shape_ergonomics": [
+      "form_factor",
+      "front_flare",
+      "grip",
+      "hand_size",
+      "height",
+      "hump",
+      "lngth",
+      "shape",
+      "thumb_rest",
+      "width"
+    ],
+    "switch_identity": [
       "hot_swappable",
-      "silent_clicks",
       "switch",
       "switch_brand",
       "switch_type",
@@ -105,8 +109,31 @@
   },
   "groups": [
     {
+      "count": 3,
+      "display_name": "Appearance",
+      "field_keys": [
+        "design",
+        "lighting",
+        "rgb"
+      ],
+      "group_key": "appearance"
+    },
+    {
+      "count": 6,
+      "display_name": "Build & Materials",
+      "field_keys": [
+        "adjustable_weight",
+        "coating",
+        "feet_material",
+        "honeycomb_frame",
+        "material",
+        "weight"
+      ],
+      "group_key": "build_materials"
+    },
+    {
       "count": 8,
-      "display_name": "Buttons & Features",
+      "display_name": "Buttons & Wheel",
       "field_keys": [
         "adjustable_scroll_wheel",
         "middle_buttons",
@@ -117,11 +144,25 @@
         "side_buttons",
         "tilt_scroll_wheel"
       ],
-      "group_key": "buttons_features"
+      "group_key": "buttons_wheel"
+    },
+    {
+      "count": 7,
+      "display_name": "Click Feel & Latency",
+      "field_keys": [
+        "click_force",
+        "click_latency",
+        "click_latency_bluetooth",
+        "click_latency_wired",
+        "click_latency_wireless",
+        "debounce",
+        "silent_clicks"
+      ],
+      "group_key": "click_feel_latency"
     },
     {
       "count": 9,
-      "display_name": "Connectivity",
+      "display_name": "Connectivity & Power",
       "field_keys": [
         "battery_hours",
         "bluetooth",
@@ -133,126 +174,103 @@
         "paracord",
         "wireless_charging"
       ],
-      "group_key": "connectivity"
+      "group_key": "connectivity_power"
     },
     {
-      "count": 6,
-      "display_name": "Construction",
-      "field_keys": [
-        "adjustable_weight",
-        "coating",
-        "feet_material",
-        "honeycomb_frame",
-        "material",
-        "weight"
-      ],
-      "group_key": "construction"
-    },
-    {
-      "count": 3,
-      "display_name": "Dimensions",
-      "field_keys": [
-        "height",
-        "lngth",
-        "width"
-      ],
-      "group_key": "dimensions"
-    },
-    {
-      "count": 2,
-      "display_name": "Electronics",
-      "field_keys": [
-        "mcu",
-        "mcu_link"
-      ],
-      "group_key": "electronics"
-    },
-    {
-      "count": 3,
-      "display_name": "Encoder",
+      "count": 5,
+      "display_name": "Encoder & MCU",
       "field_keys": [
         "encoder",
         "encoder_brand",
-        "encoder_link"
+        "encoder_link",
+        "mcu",
+        "mcu_link"
       ],
-      "group_key": "encoder"
+      "group_key": "encoder_mcu"
     },
     {
-      "count": 7,
-      "display_name": "Ergonomics",
+      "count": 6,
+      "display_name": "Product & Variants",
+      "field_keys": [
+        "colors",
+        "discontinued",
+        "editions",
+        "price_range",
+        "release_date",
+        "sku"
+      ],
+      "group_key": "product_variants"
+    },
+    {
+      "count": 6,
+      "display_name": "Sensor Identity",
+      "field_keys": [
+        "flawless_sensor",
+        "sensor",
+        "sensor_brand",
+        "sensor_date",
+        "sensor_link",
+        "sensor_type"
+      ],
+      "group_key": "sensor_identity"
+    },
+    {
+      "count": 6,
+      "display_name": "Sensor Performance",
+      "field_keys": [
+        "acceleration",
+        "dpi",
+        "ips",
+        "lift",
+        "lift_settings",
+        "polling_rate"
+      ],
+      "group_key": "sensor_performance"
+    },
+    {
+      "count": 9,
+      "display_name": "Sensor Processing & Latency",
+      "field_keys": [
+        "hardware_acceleration",
+        "motion_sync",
+        "nvidia_reflex",
+        "sensor_latency",
+        "sensor_latency_bluetooth",
+        "sensor_latency_wired",
+        "sensor_latency_wireless",
+        "shift_latency",
+        "smoothing"
+      ],
+      "group_key": "sensor_processing_latency"
+    },
+    {
+      "count": 10,
+      "display_name": "Shape & Ergonomics",
       "field_keys": [
         "form_factor",
         "front_flare",
         "grip",
         "hand_size",
+        "height",
         "hump",
+        "lngth",
         "shape",
-        "thumb_rest"
+        "thumb_rest",
+        "width"
       ],
-      "group_key": "ergonomics"
+      "group_key": "shape_ergonomics"
     },
     {
-      "count": 9,
-      "display_name": "general",
+      "count": 5,
+      "display_name": "Switch Identity",
       "field_keys": [
-        "colors",
-        "design",
-        "discontinued",
-        "editions",
-        "lighting",
-        "price_range",
-        "release_date",
-        "rgb",
-        "sku"
-      ],
-      "group_key": "general"
-    },
-    {
-      "count": 21,
-      "display_name": "Sensor & Performance",
-      "field_keys": [
-        "acceleration",
-        "dpi",
-        "flawless_sensor",
-        "hardware_acceleration",
-        "ips",
-        "lift",
-        "lift_settings",
-        "motion_sync",
-        "nvidia_reflex",
-        "polling_rate",
-        "sensor",
-        "sensor_brand",
-        "sensor_date",
-        "sensor_latency",
-        "sensor_latency_bluetooth",
-        "sensor_latency_wired",
-        "sensor_latency_wireless",
-        "sensor_link",
-        "sensor_type",
-        "shift_latency",
-        "smoothing"
-      ],
-      "group_key": "sensor_performance"
-    },
-    {
-      "count": 12,
-      "display_name": "Switches",
-      "field_keys": [
-        "click_force",
-        "click_latency",
-        "click_latency_bluetooth",
-        "click_latency_wired",
-        "click_latency_wireless",
-        "debounce",
         "hot_swappable",
-        "silent_clicks",
         "switch",
         "switch_brand",
         "switch_type",
         "switches_link"
       ],
-      "group_key": "switches"
+      "group_key": "switch_identity"
     }
   ],
   "version": 1

@@ -13,14 +13,14 @@ function row(): CatalogRow {
     base_model: 'M',
     variant: '',
     status: 'active',
-    hasFinal: false,
-    validated: false,
     confidence: 0,
     coverage: 0,
     fieldsFilled: 0,
     fieldsTotal: 0,
-    lastRun: '',
-    inActive: false,
+    cefRunCount: 0,
+    pifVariants: [],
+    skuVariants: [],
+    rdfVariants: [],
   };
 }
 

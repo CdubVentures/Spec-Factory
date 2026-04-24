@@ -39,6 +39,17 @@ test('renderKeyFinderPreview returns all preview blocks', () => {
   assert.equal(out.componentRel, 'This key IS the sensor component identity.');
 });
 
+test('renderKeyFinderPreview resolves data-list enum values from knownValues', () => {
+  const out = renderKeyFinderPreview(baseRule({
+    enum: { policy: 'open_prefer_known', source: 'data_lists.sensor', values: [] },
+  }), 'sensor', {
+    tierBundles: TIER_BUNDLES,
+    knownValues: { enums: { sensor: { policy: 'open_prefer_known', values: ['PMW3395'] } } },
+  });
+
+  assert.ok(out.contract.includes('Prefer known values (open_prefer_known): PMW3395'));
+});
+
 test('renderKeyFinderPreview resolves tier bundle by rule difficulty', () => {
   const hard = renderKeyFinderPreview(baseRule({ priority: { difficulty: 'hard' } }), 'sensor', { tierBundles: TIER_BUNDLES });
   assert.equal(hard.tierBundle.name, 'hard');
@@ -79,12 +90,10 @@ test('renderKeyFinderPreview returns empty guidance when reasoning_note is blank
   assert.equal(out.guidance, '');
 });
 
-test('renderKeyFinderPreview returns empty crossField when cross_field_constraints is absent', () => {
-  // Explicitly pass a rule with only compiled-shape `constraints` (not cross_field_constraints).
-  // This mirrors the current keyFinder behavior: alias mismatch means nothing renders.
+test('renderKeyFinderPreview renders constraints DSL when cross_field_constraints is absent', () => {
   const rule = baseRule();
   delete rule.cross_field_constraints;
   rule.constraints = ['sensor_date <= release_date'];
   const out = renderKeyFinderPreview(rule, 'sensor', { tierBundles: TIER_BUNDLES });
-  assert.equal(out.crossField, '', 'faithful to production: alias mismatch leaves cross-field block empty');
+  assert.ok(out.crossField.includes('release_date'));
 });

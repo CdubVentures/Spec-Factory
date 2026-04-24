@@ -30,6 +30,7 @@ const TMP_ROOT = path.join('.tmp', '_test_cef_per_variant_evidence');
 const DB_DIR = path.join(TMP_ROOT, '_db');
 const DB_PATH = path.join(DB_DIR, 'spec.sqlite');
 const PRODUCT_ROOT = path.join(TMP_ROOT, 'products');
+const TEST_CONFIG = { evidenceVerificationEnabled: false };
 
 const REAL_COLORS_FIELD_RULE = {
   contract: {
@@ -93,8 +94,16 @@ const PRODUCT = {
 
 describe('CEF per-variant evidence (MACRO-RED)', () => {
   let specDb;
+  let originalFetch;
+  let networkFetchCalls;
 
   before(() => {
+    originalFetch = globalThis.fetch;
+    networkFetchCalls = [];
+    globalThis.fetch = async (url) => {
+      networkFetchCalls.push(String(url || ''));
+      throw new Error('colorEditionPerVariantEvidence.test must not perform real network fetches');
+    };
     fs.rmSync(TMP_ROOT, { recursive: true, force: true });
     fs.mkdirSync(DB_DIR, { recursive: true });
     specDb = new SpecDb({ dbPath: DB_PATH, category: 'mouse' });
@@ -102,8 +111,17 @@ describe('CEF per-variant evidence (MACRO-RED)', () => {
   });
 
   after(() => {
-    specDb.close();
-    fs.rmSync(TMP_ROOT, { recursive: true, force: true });
+    if (originalFetch === undefined) {
+      delete globalThis.fetch;
+    } else {
+      globalThis.fetch = originalFetch;
+    }
+    try {
+      specDb.close();
+      fs.rmSync(TMP_ROOT, { recursive: true, force: true });
+    } finally {
+      assert.deepEqual(networkFetchCalls, [], 'offline CEF evidence tests must not perform URL verification fetches');
+    }
   });
 
   it('discovery writes one field_candidates row per color with its own evidence', async () => {
@@ -114,7 +132,7 @@ describe('CEF per-variant evidence (MACRO-RED)', () => {
       product: { ...PRODUCT, product_id: pid },
       appDb: makeAppDbStub(),
       specDb,
-      config: {},
+      config: TEST_CONFIG,
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
         colors: [
@@ -177,7 +195,7 @@ describe('CEF per-variant evidence (MACRO-RED)', () => {
       product: { ...PRODUCT, product_id: pid },
       appDb: makeAppDbStub(),
       specDb,
-      config: {},
+      config: TEST_CONFIG,
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
         colors: [
@@ -230,7 +248,7 @@ describe('CEF per-variant evidence (MACRO-RED)', () => {
       product: { ...PRODUCT, product_id: pid },
       appDb: makeAppDbStub(),
       specDb,
-      config: {},
+      config: TEST_CONFIG,
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
         colors: [
@@ -249,7 +267,7 @@ describe('CEF per-variant evidence (MACRO-RED)', () => {
       product: { ...PRODUCT, product_id: pid },
       appDb: makeAppDbStub(),
       specDb,
-      config: {},
+      config: TEST_CONFIG,
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
         colors: [
@@ -302,7 +320,7 @@ describe('CEF per-variant evidence (MACRO-RED)', () => {
       product: { ...PRODUCT, product_id: pid },
       appDb: makeAppDbStub(),
       specDb,
-      config: {},
+      config: TEST_CONFIG,
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
         colors: [
@@ -354,7 +372,7 @@ describe('CEF per-variant evidence (MACRO-RED)', () => {
       product: { ...PRODUCT, product_id: pid },
       appDb: makeAppDbStub(),
       specDb,
-      config: {},
+      config: TEST_CONFIG,
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
         colors: [
@@ -384,7 +402,7 @@ describe('CEF per-variant evidence (MACRO-RED)', () => {
       product: { ...PRODUCT, product_id: pid },
       appDb: makeAppDbStub(),
       specDb,
-      config: {},
+      config: TEST_CONFIG,
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
         colors: [
@@ -416,7 +434,7 @@ describe('CEF per-variant evidence (MACRO-RED)', () => {
       product: { ...PRODUCT, product_id: pid },
       appDb: makeAppDbStub(),
       specDb,
-      config: {},
+      config: TEST_CONFIG,
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
         colors: [

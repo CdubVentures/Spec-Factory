@@ -2,7 +2,7 @@
   "componentType": "encoder",
   "name": "Blue Encoder",
   "properties": {
-    "encoder_steps": "hellow"
+    "encoder_steps": 24
   },
   "updated_at": "2026-02-16T09:41:14.372Z"
 }

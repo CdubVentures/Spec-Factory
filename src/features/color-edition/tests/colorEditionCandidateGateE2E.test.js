@@ -16,6 +16,7 @@ const TMP_ROOT = path.join('.tmp', '_test_cef_gate_e2e');
 const DB_DIR = path.join(TMP_ROOT, '_db');
 const DB_PATH = path.join(DB_DIR, 'spec.sqlite');
 const PRODUCT_ROOT = path.join(TMP_ROOT, 'products');
+const TEST_CONFIG = { evidenceVerificationEnabled: false };
 
 // Real field rules for colors — from category_authority/mouse/_generated/field_rules.json
 const REAL_COLORS_FIELD_RULE = {
@@ -105,16 +106,33 @@ const PRODUCT = {
 
 describe('CEF → candidate gate E2E (real field rules)', () => {
   let specDb;
+  let originalFetch;
+  let networkFetchCalls;
 
   before(() => {
+    originalFetch = globalThis.fetch;
+    networkFetchCalls = [];
+    globalThis.fetch = async (url) => {
+      networkFetchCalls.push(String(url || ''));
+      throw new Error('colorEditionCandidateGateE2E.test must not perform real network fetches');
+    };
     fs.mkdirSync(DB_DIR, { recursive: true });
     specDb = new SpecDb({ dbPath: DB_PATH, category: 'mouse' });
     seedCompiledRules(specDb);
   });
 
   after(() => {
-    specDb.close();
-    fs.rmSync(TMP_ROOT, { recursive: true, force: true });
+    if (originalFetch === undefined) {
+      delete globalThis.fetch;
+    } else {
+      globalThis.fetch = originalFetch;
+    }
+    try {
+      specDb.close();
+      fs.rmSync(TMP_ROOT, { recursive: true, force: true });
+    } finally {
+      assert.deepEqual(networkFetchCalls, [], 'offline CEF gate E2E must not perform URL verification fetches');
+    }
   });
 
   it('realistic CEF output → accepted → per-variant rows written to DB + JSON', async () => {
@@ -126,7 +144,7 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
       product: { ...PRODUCT, product_id: pid },
       appDb: makeAppDbStub(),
       specDb,
-      config: { llmModelPlan: 'gemini-2.5-flash' },
+      config: { ...TEST_CONFIG, llmModelPlan: 'gemini-2.5-flash' },
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
         colors: [
@@ -196,7 +214,7 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
       product: { ...PRODUCT, product_id: pid },
       appDb: makeAppDbStub(),
       specDb,
-      config: { llmModelPlan: 'gemini-2.5-flash' },
+      config: { ...TEST_CONFIG, llmModelPlan: 'gemini-2.5-flash' },
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
         colors: [
@@ -233,7 +251,7 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
       product: { ...PRODUCT, product_id: pid },
       appDb: makeAppDbStub(),
       specDb,
-      config: {},
+      config: TEST_CONFIG,
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
         colors: [
@@ -268,7 +286,7 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
       product: { ...PRODUCT, product_id: pid },
       appDb: makeAppDbStub(),
       specDb,
-      config: {},
+      config: TEST_CONFIG,
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
         colors: [
@@ -293,7 +311,7 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
       product: { ...PRODUCT, product_id: pid },
       appDb: makeAppDbStub(),
       specDb,
-      config: {},
+      config: TEST_CONFIG,
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
         colors: [
@@ -334,7 +352,7 @@ describe('CEF → candidate gate E2E (real field rules)', () => {
       product: { ...PRODUCT, product_id: pid },
       appDb: makeAppDbStub(),
       specDb,
-      config: {},
+      config: TEST_CONFIG,
       productRoot: PRODUCT_ROOT,
       _callLlmOverride: makeLlmStub({
         colors: [

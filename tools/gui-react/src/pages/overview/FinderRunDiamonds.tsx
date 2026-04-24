@@ -1,0 +1,47 @@
+import { buildSlotDots } from '../../shared/ui/finder/slotDotsHelpers.ts';
+import './ConfidenceDiamond.css';
+
+export interface FinderRunDiamondsProps {
+  readonly filled: number;
+  readonly total: number;
+}
+
+/**
+ * Run-count indicator for finders that track "mandatory run" completion
+ * at the product level (e.g. CEF needs 2 runs before advancing). Renders
+ * N rhombus diamonds side-by-side using the same SVG shape as
+ * `ConfidenceDiamond` so the Overview Finders column reads as one family.
+ *
+ * Unlike the confidence diamond, this one is binary per diamond — filled
+ * green when that run is done, dashed outline when not. No color chip is
+ * drawn above because CEF is what *discovers* variants; there are no
+ * variant colors to show until a CEF run completes.
+ */
+export function FinderRunDiamonds({ filled, total }: FinderRunDiamondsProps) {
+  if (total <= 0) {
+    return <span className="sf-text-subtle text-xs italic">—</span>;
+  }
+  const dots = buildSlotDots(filled, total);
+  const fracClass = filled >= total
+    ? 'sf-run-diamond-frac-done'
+    : filled > 0
+      ? 'sf-run-diamond-frac-part'
+      : 'sf-run-diamond-frac-none';
+  return (
+    <span className="sf-run-diamond-strip">
+      {dots.map((d, i) => (
+        <svg
+          key={i}
+          className={`sf-conf-diamond sf-conf-diamond-${d.filled ? 'good' : 'empty'}`}
+          viewBox="0 0 40 40"
+          aria-hidden
+        >
+          <polygon points="20,2 38,20 20,38 2,20" />
+        </svg>
+      ))}
+      <span className={`sf-run-diamond-frac ${fracClass}`}>
+        {filled}/{total}
+      </span>
+    </span>
+  );
+}

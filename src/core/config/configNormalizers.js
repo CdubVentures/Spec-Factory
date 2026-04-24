@@ -3,7 +3,7 @@
 
 import { clampIntFromMap, clampFloatFromMap, toTokenInt } from './envParsers.js';
 import { SETTINGS_DEFAULTS } from '../../shared/settingsDefaults.js';
-import { LLM_PRICING_SOURCES } from '../../billing/modelPricingCatalog.js';
+import { LLM_PRICING_SOURCES } from '../../billing/pricingMetadata.js';
 
 // ---------------------------------------------------------------------------
 // Settings defaults accessors

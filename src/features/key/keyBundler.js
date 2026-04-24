@@ -35,15 +35,16 @@ function toNumberOrZero(raw) {
   return Number.isFinite(n) && n >= 0 ? n : 0;
 }
 
-function normalizeVariantCount(raw) {
+function normalizeFamilySize(raw) {
   const n = Number(raw);
   return Number.isFinite(n) && n > 1 ? Math.floor(n) : 1;
 }
 
-export function calcPassengerCost({ difficulty, settings, variantCount = 1 } = {}) {
+export function calcPassengerCost({ difficulty, settings, familySize = undefined, variantCount = undefined } = {}) {
   const base = toNumberOrZero(settings?.bundlingPassengerCost?.[difficulty]);
   const perExtraVariant = toNumberOrZero(settings?.bundlingPassengerVariantCostPerExtra);
-  const extraVariants = Math.max(0, normalizeVariantCount(variantCount) - 1);
+  const resolvedFamilySize = familySize ?? variantCount ?? 1;
+  const extraVariants = Math.max(0, normalizeFamilySize(resolvedFamilySize) - 1);
   return Number((base + (extraVariants * perExtraVariant)).toFixed(6));
 }
 
@@ -68,7 +69,7 @@ function matchesPolicy(policy, primaryDifficulty, peerDifficulty) {
  * Pack a bundle for one primary key.
  *
  * Passenger cost starts from bundlingPassengerCost[difficulty] and adds the
- * configured family-size surcharge for each variant beyond the first. The
+ * configured family-size surcharge for each product-family member beyond the first. The
  * primary pool stays raw; larger families therefore pack fewer passengers.
  *
  * @param {object} args
@@ -83,7 +84,8 @@ export function packBundle({
   candidates,
   resolvedFieldKeys,
   settings,
-  variantCount = 1,
+  familySize = undefined,
+  variantCount = undefined,
 } = {}) {
   const primaryRule = primary?.fieldRule || {};
   const pool = toIntOrZero(settings?.bundlingPoolPerPrimary?.[primaryRule.difficulty]);
@@ -130,7 +132,8 @@ export function packBundle({
   ridingEligible.sort(comparator);
 
   // Step 6 - greedy-pack under the primary's point pool. Passenger cost is
-  // variant-aware while the primary pool remains the configured raw pool.
+  // family-size aware while the primary pool remains the configured raw pool.
+  const resolvedFamilySize = familySize ?? variantCount ?? 1;
   const passengers = [];
   const breakdown = [];
   let totalCost = 0;
@@ -140,7 +143,7 @@ export function packBundle({
       const cost = calcPassengerCost({
         difficulty: c.fieldRule.difficulty,
         settings,
-        variantCount,
+        familySize: resolvedFamilySize,
       });
       if (totalCost + cost > pool) continue;
       passengers.push({ fieldKey: c.fieldKey, fieldRule: c.fieldRule });

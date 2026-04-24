@@ -20,9 +20,9 @@ test('resolveModelCosts returns registry-backed costs for known and composite mo
     cachedInputPer1M: 0.04,
   });
   assert.deepEqual(resolveModelCosts(lookup, 'default-deepseek:deepseek-chat'), {
-    inputPer1M: 0.27,
-    outputPer1M: 1.1,
-    cachedInputPer1M: 0.07,
+    inputPer1M: 0.28,
+    outputPer1M: 0.42,
+    cachedInputPer1M: 0.028,
   });
 });
 

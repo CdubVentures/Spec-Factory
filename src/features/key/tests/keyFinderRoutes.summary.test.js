@@ -76,6 +76,7 @@ function makeSpecDbStub({
   topCandidatesByFieldKey = {},
   bucketsByFieldKey = {},
   activeVariants = [],
+  productRows = [],
 } = {}) {
   const finderStore = {
     getSetting: (k) => (k in finderSettings ? String(finderSettings[k]) : ''),
@@ -87,7 +88,8 @@ function makeSpecDbStub({
       return Array.from({ length: n }, (_, i) => ({ id: `${fk}-${i}` }));
     },
     getResolvedFieldCandidate: (_pid, fk) => (publishedKeys.has(fk) ? { field_key: fk, value: 'published', confidence: 99 } : null),
-    getProduct: () => null,
+    getProduct: (pid) => productRows.find((row) => row.product_id === pid) || null,
+    getAllProducts: () => productRows,
     variants: {
       listActive: () => activeVariants,
     },
@@ -475,10 +477,11 @@ describe('GET /key-finder/:category/:productId/summary', () => {
     t.after(cleanupTmp);
     fs.mkdirSync(path.join(PRODUCT_ROOT, 'bp-variant-prod'), { recursive: true });
     const specDb = makeSpecDbStub({
-      activeVariants: [
-        { variant_id: 'v1' },
-        { variant_id: 'v2' },
-        { variant_id: 'v3' },
+      activeVariants: Array.from({ length: 9 }, (_, i) => ({ variant_id: `cef-${i}` })),
+      productRows: [
+        { product_id: 'bp-variant-prod', brand: 'Corsair', base_model: 'M75', model: 'M75 Wireless', variant: 'Wireless' },
+        { product_id: 'm75-base', brand: 'Corsair', base_model: 'M75', model: 'M75', variant: '' },
+        { product_id: 'm75-air', brand: 'Corsair', base_model: 'M75', model: 'M75 Air Wireless', variant: 'Air Wireless' },
       ],
       finderSettings: {
         bundlingEnabled: 'true',
@@ -530,9 +533,15 @@ describe('GET /key-finder/:category/:productId/summary', () => {
     assert.deepEqual(byKey.sensor_model.bundle_preview, []);
   });
 
-  it('GET /key-finder/:cat/:pid/bundling-config returns knobs + pool + cost + variantCount', async (t) => {
+  it('GET /key-finder/:cat/:pid/bundling-config returns knobs + pool + cost + familySize', async (t) => {
     t.after(cleanupTmp);
     const specDb = makeSpecDbStub({
+      activeVariants: Array.from({ length: 9 }, (_, i) => ({ variant_id: `cef-${i}` })),
+      productRows: [
+        { product_id: 'pid-x', brand: 'Corsair', base_model: 'M75', model: 'M75 Wireless', variant: 'Wireless' },
+        { product_id: 'm75-base', brand: 'Corsair', base_model: 'M75', model: 'M75', variant: '' },
+        { product_id: 'm75-air', brand: 'Corsair', base_model: 'M75', model: 'M75 Air Wireless', variant: 'Air Wireless' },
+      ],
       finderSettings: {
         bundlingEnabled: 'true',
         groupBundlingOnly: 'false',
@@ -554,7 +563,8 @@ describe('GET /key-finder/:category/:productId/summary', () => {
     assert.deepEqual(body.poolPerPrimary, { easy: 6, medium: 4, hard: 2, very_hard: 1 });
     assert.deepEqual(body.passengerCost, { easy: 1, medium: 2, hard: 4, very_hard: 8 });
     assert.equal(body.passengerVariantCostPerExtra, 0.25);
-    assert.equal(body.variantCount, 1, 'stub specDb has no variants → defaults to 1');
+    assert.equal(body.familySize, 3, 'uses product family size, not CEF color/edition variant rows');
+    assert.equal('variantCount' in body, false, 'bundling-config must not expose the old variantCount name');
   });
 
   it('GET /key-finder/:cat/:pid/bundling-config returns defaults when settings unset', async (t) => {

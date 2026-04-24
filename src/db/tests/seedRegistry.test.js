@@ -36,6 +36,7 @@ function makeStubReseedDeps() {
       scanAndSeedCheckpoints: stub('scanAndSeedCheckpoints'),
       rebuildColorEditionFinderFromJson: stub('rebuildColorEditionFinderFromJson'),
       rebuildProductImageFinderFromJson: stub('rebuildProductImageFinderFromJson'),
+      rebuildPifVariantProgressFromJson: stub('rebuildPifVariantProgressFromJson'),
       reseedFieldKeyOrderFromJson: stub('reseedFieldKeyOrderFromJson'),
       reseedFieldStudioMapFromJson: stub('reseedFieldStudioMapFromJson'),
       rebuildFieldCandidatesFromJson: stub('rebuildFieldCandidatesFromJson'),
@@ -244,10 +245,10 @@ describe('buildCategorySurfaces', () => {
 // ── buildReseedSurfaces ─────────────────────────────────────────────────────
 
 describe('buildReseedSurfaces', () => {
-  it('returns exactly 7 entries', () => {
+  it('returns exactly 8 entries', () => {
     const { deps } = makeStubReseedDeps();
     const surfaces = buildReseedSurfaces(deps);
-    assert.equal(surfaces.length, 7);
+    assert.equal(surfaces.length, 8);
   });
 
   it('every entry has scope "reseed", execute (fn), formatLog (fn)', () => {
@@ -260,7 +261,7 @@ describe('buildReseedSurfaces', () => {
     }
   });
 
-  const expectedReseedKeys = ['checkpoint', 'color_edition', 'product_images', 'field_key_order', 'field_studio_map', 'field_candidates', 'published_fields'];
+  const expectedReseedKeys = ['checkpoint', 'color_edition', 'product_images', 'pif_variant_progress', 'field_key_order', 'field_studio_map', 'field_candidates', 'published_fields'];
   it('contains all expected keys', () => {
     const { deps } = makeStubReseedDeps();
     const surfaces = buildReseedSurfaces(deps);

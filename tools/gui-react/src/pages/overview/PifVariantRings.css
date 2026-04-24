@@ -1,0 +1,75 @@
+/* PifVariantRings — concentric segmented rings for per-variant PIF progress.
+   Mirrors the approved visual in docs/implementation/sample-html/pif-variant-rings-sample.html. */
+
+.sf-pif-rings-cluster {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 2px 6px;
+  border-radius: 6px;
+  cursor: default;
+}
+
+.sf-pif-rings-chip {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  display: inline-block;
+}
+
+.sf-pif-rings-stack {
+  position: relative;
+  width: 50px;
+  height: 50px;
+}
+
+.sf-pif-rings-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50px;
+  height: 50px;
+  transform: rotate(-90deg);
+  display: block;
+}
+
+.sf-pif-rings-track {
+  fill: none;
+  stroke: rgba(130, 140, 150, 0.22);
+  stroke-width: 5;
+}
+
+.sf-pif-rings-fill {
+  fill: none;
+  stroke-width: 5;
+  stroke-linecap: butt;
+  transition: stroke-dasharray 0.35s ease;
+}
+
+/* Ring-by-ring tones when complete:
+   outer=priority  → success (green)
+   middle=hero     → warning/amber (matches hero orange)
+   inner=loop      → accent (blue) */
+.sf-pif-rings-outer.done  .sf-pif-rings-fill { stroke: var(--sf-token-state-success-fg); }
+.sf-pif-rings-middle.done .sf-pif-rings-fill { stroke: var(--sf-token-state-warning-fg); }
+.sf-pif-rings-inner.done  .sf-pif-rings-fill { stroke: var(--sf-token-accent); }
+
+/* Amber while any ring is partial — matches the "Improvable" tone elsewhere. */
+.sf-pif-rings-outer.part  .sf-pif-rings-fill,
+.sf-pif-rings-middle.part .sf-pif-rings-fill,
+.sf-pif-rings-inner.part  .sf-pif-rings-fill {
+  stroke: var(--sf-token-state-warning-fg);
+}
+
+.sf-pif-rings-label {
+  font-family: var(--sf-font-family-mono, 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--sf-token-text-primary);
+  min-width: 34px;
+  text-align: center;
+}

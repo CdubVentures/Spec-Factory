@@ -56,6 +56,30 @@ test('systemPrompt contains the rendered field contract', () => {
   assert.ok(res.systemPrompt.includes('grams'), 'systemPrompt mentions aliases');
 });
 
+test('systemPrompt resolves sourced enum values from knownValues', () => {
+  const rule = makeRule({
+    enum: { policy: 'closed', source: 'data_lists.connection', values: [] },
+  });
+  const res = composePerKeyPromptPreview(rule, 'connection', {
+    category: 'mouse',
+    knownValues: { enums: { connection: { policy: 'closed', values: ['wired', 'wireless'] } } },
+  });
+
+  assert.ok(res.systemPrompt.includes('Allowed values (closed): wired | wireless'));
+  assert.ok(res.slotRendering.contract.includes('Allowed values (closed): wired | wireless'));
+});
+
+test('systemPrompt renders constraints DSL in the preview prompt', () => {
+  const rule = makeRule({
+    enum: { policy: '', values: [] },
+    constraints: ['sensor_date <= release_date'],
+  });
+  const res = composePerKeyPromptPreview(rule, 'sensor_date', { category: 'mouse' });
+
+  assert.ok(res.systemPrompt.includes('release_date'));
+  assert.ok(res.slotRendering.crossField.includes('release_date'));
+});
+
 test('component identity renders the PRIMARY_COMPONENT_KEYS pointer', () => {
   const rule = makeRule({ component: { type: 'sensor', source: 'component_db.sensor' } });
   const res = composePerKeyPromptPreview(rule, 'sensor', {

@@ -27,6 +27,7 @@ import {
 } from '../../core/finder/productResolvedStateReader.js';
 import { keyFinderResponseSchema } from './keySchema.js';
 import { readKeyFinder } from './keyStore.js';
+import { resolveKeyFinderFamilySize } from './keyFamilySize.js';
 
 function err(statusCode, message) {
   const e = new Error(message);
@@ -52,6 +53,22 @@ function readBoolKnob(finderStore, key, defaultTrue = true) {
   const raw = readKnob(finderStore, key);
   if (raw === '') return defaultTrue;
   return raw === 'true';
+}
+
+function resolvePassengerSnapshot(body, { engineRules, primaryFieldKey }) {
+  if (!Array.isArray(body?.passenger_field_keys_snapshot)) return null;
+  const seen = new Set();
+  const passengers = [];
+  for (const raw of body.passenger_field_keys_snapshot) {
+    const fieldKey = String(raw || '').trim();
+    if (!fieldKey || fieldKey === primaryFieldKey || seen.has(fieldKey)) continue;
+    if (isReservedFieldKey(fieldKey)) continue;
+    const fieldRule = engineRules?.[fieldKey];
+    if (!fieldRule) continue;
+    seen.add(fieldKey);
+    passengers.push({ fieldKey, fieldRule });
+  }
+  return passengers;
 }
 
 function readFloatKnob(raw, fallback) {
@@ -127,8 +144,7 @@ export async function compileKeyFinderPreviewPrompt(ctx) {
 
   const settings = readSettings(specDb);
   const mode = body?.mode === 'loop' ? 'loop' : 'run';
-  const activeVariants = specDb?.variants?.listActive?.(product.product_id) || [];
-  const variantCount = activeVariants.length > 0 ? activeVariants.length : 1;
+  const familySize = resolveKeyFinderFamilySize({ product, specDb, productId: product.product_id });
 
   // Preview is always Loop-shape — it shows the compiled prompt the next
   // Loop iteration would dispatch. Run dispatches may still be solo under
@@ -137,13 +153,17 @@ export async function compileKeyFinderPreviewPrompt(ctx) {
   // preview ignores alwaysSoloRun; only buildPassengers' own gates (bundling
   // enabled, exclude knobs, registry caps, difficulty policy) affect the
   // packed list.
-  const passengers = buildPassengers({
+  const snapshotPassengers = resolvePassengerSnapshot(body, {
+    engineRules: engine.rules,
+    primaryFieldKey: fieldKey,
+  });
+  const passengers = snapshotPassengers ?? buildPassengers({
     primary: { fieldKey, fieldRule },
     engineRules: engine.rules,
     specDb,
     productId: product.product_id,
     settings,
-    variantCount,
+    familySize,
   });
 
   const previousDoc = readKeyFinder({ productId: product.product_id, productRoot });
@@ -203,12 +223,13 @@ export async function compileKeyFinderPreviewPrompt(ctx) {
     product,
     primary: { fieldKey, fieldRule },
     passengers,
+    knownValues: engine.knownValues ?? null,
     knownFields,
     componentContext,
     productComponents,
     injectionKnobs,
     category: product.category,
-    variantCount,
+    familySize,
     familyModelCount,
     siblingsExcluded,
     ambiguityLevel,
@@ -222,7 +243,7 @@ export async function compileKeyFinderPreviewPrompt(ctx) {
     model: product.model || product.base_model || '',
     primary_field_key: fieldKey,
     passenger_count: passengers.length,
-    variant_count: variantCount,
+    family_size: familySize,
   });
 
   const policy = { keyFinderTiers: config.keyFinderTiers, models: { plan: config.llmModelPlan || '' } };
@@ -261,7 +282,7 @@ export async function compileKeyFinderPreviewPrompt(ctx) {
     inputs_resolved: {
       field_key: fieldKey,
       tier: fieldRule.difficulty || 'medium',
-      variant_count: variantCount,
+      family_size: familySize,
       family_model_count: familyModelCount,
       ambiguity_level: ambiguityLevel,
       bundling: {
@@ -272,6 +293,7 @@ export async function compileKeyFinderPreviewPrompt(ctx) {
         passenger_cost: settings.bundlingPassengerCost,
         passenger_variant_cost_per_extra: settings.bundlingPassengerVariantCostPerExtra,
       },
+      passenger_snapshot_source: snapshotPassengers ? 'ui_snapshot' : 'live_recompute',
       passenger_field_keys: passengerKeys,
     },
     notes: [],

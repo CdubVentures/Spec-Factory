@@ -38,9 +38,9 @@ export const KeyBundlingStrip = memo(function KeyBundlingStrip({ category, produ
   const surcharge = Number.isFinite(cfg.passengerVariantCostPerExtra)
     ? cfg.passengerVariantCostPerExtra
     : 0;
-  const extraVariants = Math.max(0, Math.floor(cfg.variantCount || 1) - 1);
+  const extraFamilyMembers = Math.max(0, Math.floor(cfg.familySize || 1) - 1);
   const effective = (base: number | undefined) => (
-    Number.isFinite(base) ? Number(base) + (extraVariants * surcharge) : undefined
+    Number.isFinite(base) ? Number(base) + (extraFamilyMembers * surcharge) : undefined
   );
 
   return (
@@ -71,7 +71,7 @@ export const KeyBundlingStrip = memo(function KeyBundlingStrip({ category, produ
           </span>
           <span
             className="sf-text-primary font-mono text-[11px]"
-            title={`Passenger cost by difficulty. Effective cost adds ${formatCost(surcharge)} for each family variant beyond the first (${cfg.variantCount} variants):\n  easy: ${formatCost(cost.easy)} -> ${formatCost(effective(cost.easy))}\n  medium: ${formatCost(cost.medium)} -> ${formatCost(effective(cost.medium))}\n  hard: ${formatCost(cost.hard)} -> ${formatCost(effective(cost.hard))}\n  very_hard: ${formatCost(cost.very_hard)} -> ${formatCost(effective(cost.very_hard))}`}
+            title={`Passenger cost by difficulty. Effective cost adds ${formatCost(surcharge)} for each product-family member beyond the first (${cfg.familySize} products in family):\n  easy: ${formatCost(cost.easy)} -> ${formatCost(effective(cost.easy))}\n  medium: ${formatCost(cost.medium)} -> ${formatCost(effective(cost.medium))}\n  hard: ${formatCost(cost.hard)} -> ${formatCost(effective(cost.hard))}\n  very_hard: ${formatCost(cost.very_hard)} -> ${formatCost(effective(cost.very_hard))}`}
           >
             <span className="sf-text-muted font-sans">cost: </span>
             e{formatCost(effective(cost.easy))}/m{formatCost(effective(cost.medium))}/h{formatCost(effective(cost.hard))}/v{formatCost(effective(cost.very_hard))}

@@ -3,7 +3,7 @@ import type { CatalogRow } from '../../../types/product.ts';
 export type KpiBarTone = 'good' | 'warn' | 'weak' | 'neutral';
 
 export interface KpiTileData {
-  key: 'confidence' | 'coverage' | 'fields' | 'lastRun';
+  key: 'confidence' | 'coverage' | 'fields';
   label: string;
   value: string;
   unit?: string;
@@ -16,9 +16,6 @@ const CONFIDENCE_PASS = 0.80;
 const CONFIDENCE_WARN = 0.60;
 const COVERAGE_PASS = 0.80;
 const COVERAGE_WARN = 0.60;
-const MS_PER_MINUTE = 60_000;
-const MS_PER_HOUR = 60 * MS_PER_MINUTE;
-const MS_PER_DAY = 24 * MS_PER_HOUR;
 
 function toneFromRatio(value: number, passAt: number, warnAt: number): KpiBarTone {
   if (!Number.isFinite(value)) return 'neutral';
@@ -34,19 +31,7 @@ function clampPct(value: number): number {
   return value;
 }
 
-export function formatRelativeTime(iso: string, nowMs: number): string {
-  const text = String(iso || '').trim();
-  if (!text) return 'never run';
-  const ts = Date.parse(text);
-  if (!Number.isFinite(ts)) return 'never run';
-  const diff = Math.max(0, nowMs - ts);
-  if (diff < MS_PER_MINUTE) return 'just now';
-  if (diff < MS_PER_HOUR) return `${Math.floor(diff / MS_PER_MINUTE)}m ago`;
-  if (diff < MS_PER_DAY) return `${Math.floor(diff / MS_PER_HOUR)}h ago`;
-  return `${Math.floor(diff / MS_PER_DAY)}d ago`;
-}
-
-export function derivePickerKpis(row: CatalogRow | null, nowMs: number = Date.now()): KpiTileData[] {
+export function derivePickerKpis(row: CatalogRow | null): KpiTileData[] {
   if (!row) return [];
 
   const confidence = Number(row.confidence) || 0;
@@ -92,14 +77,6 @@ export function derivePickerKpis(row: CatalogRow | null, nowMs: number = Date.no
         : fieldsTotal > 0
           ? 'all filled'
           : 'no fields',
-    },
-    {
-      key: 'lastRun',
-      label: 'last run',
-      value: row.lastRun ? row.lastRun.slice(0, 10) : 'never',
-      barPct: 0,
-      barTone: 'neutral',
-      sub: formatRelativeTime(row.lastRun || '', nowMs),
     },
   ];
 

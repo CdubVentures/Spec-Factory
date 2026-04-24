@@ -1,7 +1,7 @@
 {
   "category": "mouse",
   "component_type": "encoder",
-  "generated_at": "2026-04-23T22:28:20.449Z",
+  "generated_at": "2026-04-24T02:32:59.027Z",
   "items": [
     {
       "__overridden": {
@@ -10,7 +10,7 @@
       "maker": "alps",
       "name": "Encoder",
       "properties": {
-        "encoder_steps": "25",
+        "encoder_steps": 24,
         "encoder_type": "mechanical"
       }
     },
@@ -21,7 +21,7 @@
       "maker": "changfeng",
       "name": "Encoder",
       "properties": {
-        "encoder_steps": "25",
+        "encoder_steps": 24,
         "encoder_type": "mechanical"
       }
     },
@@ -56,7 +56,7 @@
       "maker": "f-switch",
       "name": "Encoder",
       "properties": {
-        "encoder_steps": "25",
+        "encoder_steps": 24,
         "encoder_type": "mechanical"
       }
     },
@@ -67,7 +67,7 @@
       "maker": "f-switch",
       "name": "Green",
       "properties": {
-        "encoder_steps": "26",
+        "encoder_steps": 24,
         "encoder_type": "mechanical"
       }
     },
@@ -78,7 +78,7 @@
       "maker": "f-switch",
       "name": "Pink",
       "properties": {
-        "encoder_steps": "59",
+        "encoder_steps": 24,
         "encoder_type": "mechanical"
       }
     },
@@ -97,7 +97,7 @@
       "maker": "fswq",
       "name": "Encoder",
       "properties": {
-        "encoder_steps": "25",
+        "encoder_steps": 24,
         "encoder_type": "mechanical"
       }
     },
@@ -109,7 +109,7 @@
       "maker": "huano",
       "name": "Red",
       "properties": {
-        "encoder_steps": "5",
+        "encoder_steps": 24,
         "encoder_type": "mechanical"
       }
     },
@@ -120,7 +120,7 @@
       "maker": "huano",
       "name": "Unspecified",
       "properties": {
-        "encoder_steps": "30",
+        "encoder_steps": 24,
         "encoder_type": "mechanical"
       }
     },
@@ -143,7 +143,7 @@
       "maker": "kailh",
       "name": "GE 2.0",
       "properties": {
-        "encoder_steps": "24",
+        "encoder_steps": 24,
         "encoder_type": "mechanical"
       }
     },
@@ -158,7 +158,7 @@
       "maker": "kailh",
       "name": "GE 5.0",
       "properties": {
-        "encoder_steps": "25",
+        "encoder_steps": 24,
         "encoder_type": "mechanical"
       }
     },
@@ -170,7 +170,7 @@
       "maker": "kailh",
       "name": "Gray",
       "properties": {
-        "encoder_steps": "24",
+        "encoder_steps": 24,
         "encoder_type": "mechanical"
       }
     },
@@ -181,7 +181,7 @@
       "maker": "kailh",
       "name": "Green",
       "properties": {
-        "encoder_steps": "26",
+        "encoder_steps": 24,
         "encoder_type": "mechanical"
       }
     },
@@ -193,7 +193,7 @@
       "maker": "kailh",
       "name": "Red",
       "properties": {
-        "encoder_steps": "5",
+        "encoder_steps": 24,
         "encoder_type": "mechanical"
       }
     },
@@ -204,7 +204,7 @@
       "maker": "lamzu",
       "name": "Encoder",
       "properties": {
-        "encoder_steps": "25",
+        "encoder_steps": 24,
         "encoder_type": "mechanical"
       }
     },
@@ -234,7 +234,7 @@
       "maker": "pulsar",
       "name": "Blue Encoder",
       "properties": {
-        "encoder_steps": "hellow",
+        "encoder_steps": 24,
         "encoder_type": "mechanical"
       }
     },
@@ -307,7 +307,7 @@
       "maker": "ttc",
       "name": "Green",
       "properties": {
-        "encoder_steps": "26",
+        "encoder_steps": 24,
         "encoder_type": "mechanical"
       }
     },
@@ -319,7 +319,7 @@
       "maker": "ttc",
       "name": "Red",
       "properties": {
-        "encoder_steps": "5",
+        "encoder_steps": 24,
         "encoder_type": "mechanical"
       }
     },
@@ -346,7 +346,7 @@
       "maker": "ttc",
       "name": "Unspecified",
       "properties": {
-        "encoder_steps": "30",
+        "encoder_steps": 24,
         "encoder_type": "mechanical"
       }
     },

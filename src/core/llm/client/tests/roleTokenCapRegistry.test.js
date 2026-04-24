@@ -10,7 +10,7 @@ import { roleTokenCap } from '../routing.js';
 //   Output: integer token cap
 //   Invariant: never exceed registry maxOutputTokens when available
 //   Invariant: llmMaxOutputTokensPlan/Reasoning/Triage remain user-tunable
-//   Invariant: extract/validate/write collapse to the same path as plan default
+//   Invariant: extract/write collapse to the same path as plan default
 //   Invariant: no fallback-specific branch — fallback shares the phase cap via routing
 
 const TABLE = [

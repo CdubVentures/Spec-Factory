@@ -15,7 +15,7 @@ import { createStreamBatcher } from '../../../core/llm/streamBatcher.js';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
 import { readImageDimensions, buildVariantList, imageStem, runProductImageFinder, runCarouselLoop } from '../productImageFinder.js';
 import { evaluateCarousel } from '../carouselStrategy.js';
-import { resolveViewBudget } from '../productImageLlmAdapter.js';
+import { resolveViewBudget, resolveViewConfig } from '../productImageLlmAdapter.js';
 import { resolveViewAttemptBudgets } from '../viewAttemptDefaults.js';
 import {
   readProductImages,
@@ -26,6 +26,81 @@ import {
 import { runEvalView, runEvalHero } from '../carouselBuild.js';
 import { writeCarouselSlot, resolveCarouselSlots, deleteEvalRecord, extractEvalState } from '../imageEvaluator.js';
 import { compilePifPreviewPrompt } from '../productImagePreviewPrompt.js';
+
+/**
+ * Materialize per-variant carousel progress into the pif_variant_progress table.
+ * Called after any PIF run / loop returns so the Overview catalog's per-variant
+ * ring widget reads progress at O(1) instead of recomputing evaluateCarousel()
+ * on every catalog refresh across ~359 products.
+ *
+ * Three buckets tracked per variant:
+ *   priority = Views (Single Run) — viewConfig entries where priority:true
+ *   loop     = Loop Run extras    — viewBudget views NOT in priority
+ *   hero     = Hero Slots         — heroCount when heroEnabled
+ */
+function computePifProgressBuckets({ specDb, category }) {
+  const finderStore = specDb.getFinderStore?.('productImageFinder');
+  const viewConfig = resolveViewConfig(finderStore?.getSetting?.('viewConfig') || '', category);
+  const viewBudget = resolveViewBudget(finderStore?.getSetting?.('viewBudget') || '', category);
+  const priorityKeys = viewConfig.filter((v) => v.priority).map((v) => v.key);
+  const prioritySet = new Set(priorityKeys);
+  const loopExtrasKeys = viewBudget.filter((k) => !prioritySet.has(k));
+  const heroEnabled = String(finderStore?.getSetting?.('heroEnabled') ?? 'true') !== 'false';
+  const heroCount = parseInt(finderStore?.getSetting?.('heroCount') || '3', 10) || 3;
+  const satisfactionThreshold = parseInt(finderStore?.getSetting?.('satisfactionThreshold') || '3', 10) || 3;
+  return { priorityKeys, loopExtrasKeys, heroEnabled, heroCount, satisfactionThreshold };
+}
+
+function evaluateVariantBuckets({ collectedImages, variantKey, variantId, buckets }) {
+  const { priorityKeys, loopExtrasKeys, heroEnabled, heroCount, satisfactionThreshold } = buckets;
+  const priority = evaluateCarousel({
+    collectedImages, viewBudget: priorityKeys, satisfactionThreshold,
+    heroEnabled: false, heroCount: 0, variantKey, variantId,
+  }).carouselProgress;
+  const loop = evaluateCarousel({
+    collectedImages, viewBudget: loopExtrasKeys, satisfactionThreshold,
+    heroEnabled: false, heroCount: 0, variantKey, variantId,
+  }).carouselProgress;
+  const hero = evaluateCarousel({
+    collectedImages, viewBudget: [], satisfactionThreshold,
+    heroEnabled, heroCount, variantKey, variantId,
+  }).carouselProgress;
+  return { priority, loop, hero };
+}
+
+function writePifVariantProgress({ specDb, category, productId, carouselProgressByKey }) {
+  if (!specDb?.upsertPifVariantProgress) return;
+  const variants = specDb.variants?.listActive?.(productId) || [];
+  if (variants.length === 0) return;
+
+  // carouselProgressByKey from the runner is keyed by variant.key and computed
+  // with viewBudget (loop). We re-evaluate per-bucket to isolate priority vs
+  // loop-extras vs hero. Source images come from product_images.json via the
+  // runner; if we don't have that here, fall back to reading the doc.
+  const buckets = computePifProgressBuckets({ specDb, category });
+  const productRoot = defaultProductRoot();
+  const doc = readProductImages({ productId, productRoot });
+  const collectedImages = (doc?.selected?.images || []).map((img) => ({
+    view: img.view, variant_key: img.variant_key, quality_pass: img.quality_pass !== false,
+  }));
+
+  for (const v of variants) {
+    const { priority, loop, hero } = evaluateVariantBuckets({
+      collectedImages, variantKey: v.variant_key, variantId: v.variant_id, buckets,
+    });
+    specDb.upsertPifVariantProgress({
+      productId,
+      variantId: v.variant_id,
+      variantKey: v.variant_key,
+      priorityFilled: Number(priority.viewsFilled) || 0,
+      priorityTotal: buckets.priorityKeys.length,
+      loopFilled: Number(loop.viewsFilled) || 0,
+      loopTotal: buckets.loopExtrasKeys.length,
+      heroFilled: Number(hero.heroCount) || 0,
+      heroTarget: buckets.heroEnabled ? buckets.heroCount : 0,
+    });
+  }
+}
 
 export function registerProductImageFinderRoutes(ctx) {
   const store = (specDb) => specDb.getFinderStore('productImageFinder');
@@ -564,7 +639,8 @@ export function registerProductImageFinderRoutes(ctx) {
             entities: { productIds: [productId] },
             meta: { productId },
           },
-          asyncWork: () => runCarouselLoop({
+          asyncWork: async () => {
+            const result = await runCarouselLoop({
             product: {
               product_id: productId,
               category,
@@ -608,7 +684,10 @@ export function registerProductImageFinderRoutes(ctx) {
                 },
               });
             },
-          }),
+            });
+            writePifVariantProgress({ specDb, category, productId, carouselProgressByKey: result?.carouselProgress });
+            return result;
+          },
           completeOperation,
           failOperation,
           cancelOperation,
@@ -889,7 +968,8 @@ export function registerProductImageFinderRoutes(ctx) {
             entities: { productIds: [productId] },
             meta: { productId },
           },
-          asyncWork: () => runProductImageFinder({
+          asyncWork: async () => {
+            const result = await runProductImageFinder({
             product: {
               product_id: productId,
               category,
@@ -910,7 +990,10 @@ export function registerProductImageFinderRoutes(ctx) {
             onStreamChunk: (delta) => { if (delta.reasoning) batcher.push(delta.reasoning); if (delta.content) batcher.push(delta.content); },
             onQueueWait: (ms) => updateQueueDelay({ id: op.id, queueDelayMs: ms }),
             onLlmCallComplete: (call) => appendLlmCall({ id: op.id, call }),
-          }),
+            });
+            writePifVariantProgress({ specDb, category, productId, carouselProgressByKey: result?.carouselProgress });
+            return result;
+          },
           completeOperation,
           failOperation,
           cancelOperation,
@@ -1002,6 +1085,9 @@ export function registerProductImageFinderRoutes(ctx) {
         }
       }
 
+      // Invalidate materialized per-variant progress — next PIF run recomputes.
+      try { specDb.deletePifVariantProgressByProduct?.(productId); } catch { /* best-effort */ }
+
       emitDataChange({
         broadcastWs,
         event: 'product-image-finder-image-deleted',
@@ -1045,6 +1131,9 @@ export function registerProductImageFinderRoutes(ctx) {
         }
       }
 
+      // Invalidate materialized per-variant progress — next PIF run recomputes.
+      try { getSpecDb(category)?.deletePifVariantProgressByProduct?.(productId); } catch { /* best-effort */ }
+
       // Delegate to generic handler (deletes data from JSON + SQL, sends response)
       return genericHandler(parts, params, method, req, res);
     }
@@ -1059,6 +1148,9 @@ export function registerProductImageFinderRoutes(ctx) {
       // If we delete after, the frontend refetches before cleanup finishes,
       // gets 404, and React Query keeps stale cached data showing ghost images.
       try { fs.rmSync(imagesDir, { recursive: true, force: true }); } catch { /* dir may not exist */ }
+
+      // Invalidate materialized per-variant progress — product is wiped.
+      try { getSpecDb(category)?.deletePifVariantProgressByProduct?.(productId); } catch { /* best-effort */ }
 
       // Delegate to generic handler (deletes data from JSON + SQL, sends response)
       return genericHandler(parts, params, method, req, res);

@@ -31,19 +31,19 @@ function aliasResolve(v, knownValues, lowerMap, normMap) {
  * @param {*} value - Normalized field value (string, string[], or non-string)
  * @param {'closed'|'open_prefer_known'|'open'|null} policy
  * @param {string[]|null} knownValues - from known_values.enums[fieldKey].values
- * @returns {{ pass: boolean, known: string[], unknown: string[], needsLlm: boolean, repaired?: *,  reason?: string }}
+ * @returns {{ pass: boolean, known: string[], unknown: string[], needsReview: boolean, repaired?: *,  reason?: string }}
  */
 export function checkEnum(value, policy, knownValues) {
   if (!policy || !knownValues) {
-    return { pass: true, known: [], unknown: [], needsLlm: false };
+    return { pass: true, known: [], unknown: [], needsReview: false };
   }
 
   if (value === null) {
-    return { pass: true, known: [], unknown: [], needsLlm: false };
+    return { pass: true, known: [], unknown: [], needsReview: false };
   }
 
   if (typeof value !== 'string' && !Array.isArray(value)) {
-    return { pass: true, known: [], unknown: [], needsLlm: false };
+    return { pass: true, known: [], unknown: [], needsReview: false };
   }
 
   const useAlias = policy === 'open_prefer_known';
@@ -130,14 +130,14 @@ export function checkEnum(value, policy, knownValues) {
     }
   }
 
-  const needsLlm = unknown.length > 0 && policy !== 'open';
+  const needsReview = unknown.length > 0 && policy !== 'open';
   const pass = policy === 'closed' ? unknown.length === 0 : true;
 
   const result = {
     pass,
     known,
     unknown,
-    needsLlm,
+    needsReview,
     ...(unknown.length > 0 && !pass ? { reason: `enum_value_not_allowed: ${unknown.join(', ')}` } : {}),
   };
 

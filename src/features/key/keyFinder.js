@@ -40,6 +40,7 @@ import {
   resolveKeyComponentRelation,
   readKnownFieldsByProduct,
 } from '../../core/finder/productResolvedStateReader.js';
+import { resolveKeyFinderFamilySize } from './keyFamilySize.js';
 
 const VALID_TIERS = new Set(['easy', 'medium', 'hard', 'very_hard']);
 
@@ -201,9 +202,8 @@ export async function runKeyFinder(opts) {
     : resolvePhaseModelByTier(policy, fieldRule.difficulty);
   const tierName = normalizeTierName(fieldRule.difficulty);
 
-  // 4. Variant count (for budget + prompt context)
-  const activeVariants = specDb?.variants?.listActive?.(product.product_id) || [];
-  const variantCount = activeVariants.length > 0 ? activeVariants.length : 1;
+  // 4. Family size (for budget + prompt context)
+  const familySize = resolveKeyFinderFamilySize({ product, specDb, productId: product.product_id });
 
   // 5. Previous-run discovery (scoped per-key via runMatcher)
   const previousDoc = readKeyFinder({ productId: product.product_id, productRoot: resolvedProductRoot });
@@ -236,7 +236,7 @@ export async function runKeyFinder(opts) {
       specDb,
       productId: product.product_id,
       settings,
-      variantCount,
+      familySize,
     });
   for (const p of passengers) {
     keyFinderRegistry.register(product.product_id, p.fieldKey, 'passenger');
@@ -307,12 +307,13 @@ export async function runKeyFinder(opts) {
     product,
     primary: { fieldKey, fieldRule },
     passengers,
+    knownValues: engine.knownValues ?? null,
     knownFields,
     componentContext,
     productComponents,
     injectionKnobs,
     category,
-    variantCount,
+    familySize,
     familyModelCount,
     siblingsExcluded,
     ambiguityLevel,
@@ -325,7 +326,7 @@ export async function runKeyFinder(opts) {
     model: product.model || product.base_model || '',
     primary_field_key: fieldKey,
     passenger_count: passengers.length,
-    variant_count: variantCount,
+    family_size: familySize,
   });
 
   // 8. Invoke LLM via the canonical tracking wrapper. withLlmCallTracking owns

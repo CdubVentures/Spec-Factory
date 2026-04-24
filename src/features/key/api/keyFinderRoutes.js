@@ -38,6 +38,7 @@ import { buildPassengers } from '../keyPassengerBuilder.js';
 import { isConcreteEvidence } from '../keyConcreteEvidence.js';
 import { calcPassengerCost } from '../keyBundler.js';
 import { parseAxisOrder } from '../keyBundlerSortAxes.js';
+import { resolveKeyFinderFamilySize } from '../keyFamilySize.js';
 import { runKeyFinder } from '../keyFinder.js';
 import { runKeyFinderLoop } from '../keyFinderLoop.js';
 import { compileKeyFinderPreviewPrompt } from '../keyFinderPreviewPrompt.js';
@@ -190,9 +191,8 @@ function readBundlingSettings(specDb) {
   };
 }
 
-function resolveVariantCount(specDb, productId) {
-  const variants = specDb?.variants?.listActive?.(productId) || [];
-  return variants.length > 0 ? variants.length : 1;
+function resolveFamilySize(specDb, productId) {
+  return resolveKeyFinderFamilySize({ specDb, productId });
 }
 
 // WHY: Rollup from JSON + compiled rules — one row per eligible key (not just
@@ -207,7 +207,7 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
   const runs = Array.isArray(doc?.runs) ? doc.runs : [];
   const budgetSettings = readBudgetSettings(specDb);
   const bundlingSettings = readBundlingSettings(specDb);
-  const variantCount = resolveVariantCount(specDb, productId);
+  const familySize = resolveFamilySize(specDb, productId);
 
   const newestByKey = new Map();
   const runCountByKey = new Map();
@@ -245,14 +245,14 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
       specDb,
       productId,
       settings: bundlingSettings,
-      variantCount,
+      familySize,
     });
     const preview = passengers.map((p) => ({
       field_key: p.fieldKey,
       cost: calcPassengerCost({
         difficulty: p.fieldRule.difficulty,
         settings: bundlingSettings,
-        variantCount,
+        familySize,
       }),
     }));
     const totalCost = preview.reduce((sum, e) => sum + e.cost, 0);
@@ -291,7 +291,7 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
 
     const candidateRows = specDb?.getFieldCandidatesByProductAndField?.(productId, fk) || [];
     const budgetResult = rule
-      ? calcKeyBudget({ fieldRule: rule, variantCount, settings: budgetSettings })
+      ? calcKeyBudget({ fieldRule: rule, familySize, settings: budgetSettings })
       : { attempts: null, rawBudget: null };
     const { attempts: budget, rawBudget: raw_budget } = budgetResult;
     const { preview, pool, totalCost } = computeBundlePreview(fk, rule);
@@ -454,7 +454,7 @@ export function registerKeyFinderRoutes(ctx) {
         poolPerPrimary: s.bundlingPoolPerPrimary,
         passengerCost: s.bundlingPassengerCost,
         passengerVariantCostPerExtra: s.bundlingPassengerVariantCostPerExtra,
-        variantCount: resolveVariantCount(specDb, productId),
+        familySize: resolveFamilySize(specDb, productId),
         overlapCaps: {
           easy: s.bundlingOverlapCapEasy,
           medium: s.bundlingOverlapCapMedium,

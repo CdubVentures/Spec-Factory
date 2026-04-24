@@ -11,6 +11,28 @@ export interface BrandRenameHistoryEntryGen {
   renamed_at: string;
 }
 
+export interface PifVariantProgressGen {
+  variant_id: string;
+  variant_key: string;
+  variant_label: string;
+  color_atoms: string[];
+  priority_filled: number;
+  priority_total: number;
+  loop_filled: number;
+  loop_total: number;
+  hero_filled: number;
+  hero_target: number;
+}
+
+export interface ScalarVariantProgressGen {
+  variant_id: string;
+  variant_key: string;
+  variant_label: string;
+  color_atoms: string[];
+  value: string;
+  confidence: number;
+}
+
 export interface CatalogProductGen {
   productId: string;
   id: number;
@@ -40,6 +62,10 @@ export interface CatalogRowGen {
   coverage: number;
   fieldsFilled: number;
   fieldsTotal: number;
+  cefRunCount: number;
+  pifVariants: PifVariantProgressGen[];
+  skuVariants: ScalarVariantProgressGen[];
+  rdfVariants: ScalarVariantProgressGen[];
 }
 
 export interface BrandGen {

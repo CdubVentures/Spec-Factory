@@ -7,7 +7,7 @@ import { buildRegistryLookup } from '../llm/routeResolver.js';
 import { gateCapabilities, capabilitiesFromLookup } from '../../shared/modelCapabilityGate.js';
 import { LLM_PHASE_DEFS } from './llmPhaseDefs.js';
 import {
-  normalizeModelPricingMap,
+  runtimeSettingDefault,
   normalizePricingSources,
   normalizeModelOutputTokenMap,
   normalizeUserAgent,
@@ -15,12 +15,8 @@ import {
 } from './configNormalizers.js';
 import { toTokenInt, parseTokenPresetList } from './envParsers.js';
 import { applyCanonicalSettingsDefaults } from './settingsClassification.js';
-import {
-  buildDefaultModelPricingMap,
-  LLM_PRICING_AS_OF,
-  LLM_PRICING_SOURCES,
-  mergeModelPricingMaps,
-} from '../../billing/modelPricingCatalog.js';
+import { LLM_PRICING_AS_OF, LLM_PRICING_SOURCES } from '../../billing/pricingMetadata.js';
+import { mergeDefaultApiModelsIntoRegistry } from '../llm/providerRegistryDefaults.js';
 
 // ---------------------------------------------------------------------------
 // Main export
@@ -55,11 +51,13 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
   merged.llmModelReasoning = merged.llmModelReasoning || merged.llmModelPlan;
 
   // --- Pricing map + token normalization ---
-  merged.llmModelPricingMap = normalizeModelPricingMap(
-    mergeModelPricingMaps(buildDefaultModelPricingMap(), merged.llmModelPricingMap || {})
-  );
+  merged.llmModelPricingMap = {};
   merged.llmPricingAsOf = String(merged.llmPricingAsOf || LLM_PRICING_AS_OF);
   merged.llmPricingSources = normalizePricingSources(merged.llmPricingSources || LLM_PRICING_SOURCES);
+  merged.llmProviderRegistryJson = mergeDefaultApiModelsIntoRegistry(
+    merged.llmProviderRegistryJson,
+    runtimeSettingDefault('llmProviderRegistryJson')
+  );
   merged.llmModelOutputTokenMap = normalizeModelOutputTokenMap(merged.llmModelOutputTokenMap || {});
   merged.llmOutputTokenPresets = parseTokenPresetList(
     merged.llmOutputTokenPresets,

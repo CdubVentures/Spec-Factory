@@ -27,7 +27,7 @@ export interface LlmPhaseDefinition {
   label: string;
   subtitle: string;
   tip: string;
-  roles: ReadonlyArray<'plan' | 'triage' | 'reasoning' | 'validate' | 'write'>;
+  roles: ReadonlyArray<'plan' | 'triage' | 'reasoning' | 'write'>;
   sharedWith?: ReadonlyArray<LlmPhaseId>;
   group: LlmPhaseGroup;
 }

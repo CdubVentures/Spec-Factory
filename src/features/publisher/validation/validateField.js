@@ -32,8 +32,7 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
   const listRules = fieldRule?.contract?.list_rules;
   let enumPolicy = knownValues?.policy || fieldRule?.enum?.policy;
   const enumValues = knownValues?.values;
-  // WHY: consistencyMode overrides 'open' → 'open_prefer_known' so unknown values
-  // trigger P2 LLM prompt for vocabulary normalization. No new LLM calls — existing P2 flow.
+  // WHY: consistencyMode treats open enums as reviewable unknowns instead of silent accepts.
   if (consistencyMode && enumPolicy === 'open' && enumValues?.length > 0) enumPolicy = 'open_prefer_known';
   const formatHint = fieldRule?.enum?.match?.format_hint || null;
   const blockPublishWhenUnk = shouldBlockUnkPublish(fieldRule);
@@ -166,8 +165,8 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
     }
     if (!enumResult.pass) {
       rejections.push({ reason_code: 'enum_value_not_allowed', detail: { unknown: enumResult.unknown, policy: enumPolicy } });
-    } else if (enumResult.needsLlm) {
-      // WHY: open_prefer_known unknowns need LLM confirmation via P2 — flag as soft rejection
+    } else if (enumResult.needsReview) {
+      // WHY: open_prefer_known unknowns stay publish-blocking until reviewed or added to known values.
       rejections.push({ reason_code: 'unknown_enum_prefer_known', detail: { unknown: enumResult.unknown, policy: enumPolicy } });
     }
   }

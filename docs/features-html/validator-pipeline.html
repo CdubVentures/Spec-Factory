@@ -68,12 +68,6 @@
   th { background: var(--surface-alt); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
   tr:last-child td { border-bottom: none; }
   td code { font-family: var(--mono); font-size: 12px; background: var(--surface-alt); padding: 2px 6px; border-radius: 3px; color: var(--accent); }
-  .prompt-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; box-shadow: var(--shadow); }
-  .prompt-header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--border-light); font-weight: 600; font-size: 14px; flex-wrap: wrap; }
-  .prompt-id { display: inline-flex; align-items: center; justify-content: center; padding: 3px 10px; border-radius: 4px; font-size: 12px; font-weight: 700; font-family: var(--mono); color: white; background: var(--accent); }
-  .prompt-body { padding: 14px 16px; font-size: 13px; }
-  .prompt-body p { margin-bottom: 8px; }
-  .prompt-trigger { font-size: 12px; color: var(--text-muted); font-family: var(--mono); background: var(--surface-alt); padding: 3px 8px; border-radius: 3px; }
   .flow-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 24px 0; flex-wrap: wrap; }
   .flow-box { padding: 12px 20px; border-radius: var(--radius); font-weight: 600; font-size: 13px; text-align: center; border: 2px solid; min-width: 140px; }
   .flow-arrow { font-size: 20px; color: var(--text-muted); }
@@ -94,7 +88,7 @@
 
 <div class="header">
   <h1>Validator Pipeline Reference</h1>
-  <p>Spec Factory Publish Pipeline &mdash; 11-Step Deterministic Validation + LLM Repair + Discovery Enums</p>
+  <p>Spec Factory Publish Pipeline &mdash; 11-Step Deterministic Validation + Discovery Enums</p>
 </div>
 
 <div class="container">
@@ -117,7 +111,7 @@
   <div style="font-size:12.5px; margin-top:6px;"><strong>Adding a new timezone or date format option:</strong> extend <code>SF_TIMEZONE_OPTIONS</code> / <code>SF_DATE_FORMAT_OPTIONS</code> in <code>tools/gui-react/src/stores/uiStore.ts</code> and the <code>switch</code> in <code>formatDate</code> + <code>formatDateYMD</code>. One-file-rule &mdash; no other changes needed.</div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="section-title"><span class="num">1</span> High-Level Flow</div>
 
 <div class="flow-row">
@@ -130,19 +124,7 @@
 <div class="flow-row">
   <div class="flow-box flow-pass">Yes &rarr; Done (valid)</div>
   <span style="width:40px"></span>
-  <div class="flow-box flow-fail">No &rarr; Repair Adapter (Attempt 2)</div>
-</div>
-<div class="flow-row">
-  <div class="flow-box flow-repair">Build Per-Key LLM Prompt</div>
-  <span class="flow-arrow">&rarr;</span>
-  <div class="flow-box flow-repair">LLM Returns Repair</div>
-  <span class="flow-arrow">&rarr;</span>
-  <div class="flow-box flow-pass">Re-Validate (closed loop)</div>
-</div>
-<div class="flow-row">
-  <div class="flow-box flow-pass">Pass &rarr; Repaired</div>
-  <span style="width:40px"></span>
-  <div class="flow-box flow-fail">Fail &rarr; still_failed / rerun</div>
+  <div class="flow-box flow-fail">No &rarr; Reject candidate / finder retry</div>
 </div>
 
 <p style="margin-top:16px; font-size:14px; color:var(--text-muted);">
@@ -150,7 +132,7 @@
   The only gate is binary re-validation. No confidence tiers.
 </p>
 
-<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="section-title"><span class="num">2</span> Full Compiled Knob Audit</div>
 
 <p style="margin-bottom:16px; font-size:14px; color:var(--text-muted);">
@@ -188,7 +170,7 @@
 <tbody>
   <tr><td><code>parse.template</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 5</td><td>Selects FORMAT_REGISTRY regex for format check.</td></tr>
   <tr><td><code>parse.unit_accepts</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 2</td><td>Alternate unit forms (e.g. "hours" for "h").</td></tr>
-  <tr><td><code>parse.unit_conversions</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 2</td><td>LLM repair metadata. Compound keys (<code>cm_to_mm: 10</code>) as conversion hints. Wrong units are rejected, not auto-converted.</td></tr>
+  <tr><td><code>parse.unit_conversions</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 2</td><td>Deterministic conversion metadata. Compound keys (<code>cm_to_mm: 10</code>) as conversion hints. Unknown units are rejected.</td></tr>
   <tr><td><code>parse.strict_unit_required</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 2</td><td>When true, bare numbers without unit suffix are rejected.</td></tr>
   <tr><td><code>parse.token_map</code></td><td class="audit-pass"><span class="audit-icon">&#10003;</span></td><td>Step 4</td><td>Post-normalization token substitution. Multi-part atoms split by <code>+</code>, each part normalized independently.</td></tr>
   <tr><td><code>parse.delimiters</code></td><td class="audit-na"><span class="audit-icon">&mdash;</span></td><td>&mdash;</td><td>List parsing config. Consumed at extraction/template-dispatch layer before value reaches validator.</td></tr>
@@ -256,7 +238,7 @@
 </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="section-title"><span class="num">3</span> The 11-Step Deterministic Pipeline</div>
 
 <div class="legend">
@@ -291,7 +273,7 @@
       <dl class="detail-grid">
         <dt>Phase ID</dt><dd><code>shape</code></dd>
         <dt>Reads</dt><dd><code>contract.shape</code> &mdash; <code>"scalar"</code> / <code>"list"</code></dd>
-        <dt>Rejection</dt><dd><code>wrong_shape</code> &mdash; excluded from repair prompts (source rerun needed)</dd>
+        <dt>Rejection</dt><dd><code>wrong_shape</code> &mdash; source rerun needed</dd>
       </dl>
     </div>
   </div>
@@ -308,7 +290,7 @@
         <dt>Same unit</dt><dd><code>"42 g"</code> &rarr; <code>42</code> (strip suffix, rule: <code>strip_same_unit</code>)</dd>
         <dt>Accepted alternate</dt><dd><code>"120 hours"</code> for <code>unit=h</code> &rarr; <code>120</code> (rule: <code>unit_accepts</code>)</dd>
         <dt>AppDb conversion</dt><dd>Cross-unit conversion via appDb unit registry (synonym resolution, regex matching for ranges)</dd>
-        <dt>Wrong unit</dt><dd>Unknown suffixes rejected &rarr; LLM repair prompt (unit_conversion)</dd>
+        <dt>Wrong unit</dt><dd>Unknown suffixes rejected with <code>wrong_unit</code></dd>
         <dt>Strict mode</dt><dd><code>"42"</code> with <code>strict_unit_required: true</code> &rarr; <strong>rejected</strong> (missing unit)</dd>
         <dt>Rejection codes</dt><dd><code>wrong_unit</code>, <code>unit_required</code></dd>
       </dl>
@@ -399,7 +381,7 @@
         <dt>Phase ID</dt><dd><code>enum</code></dd>
         <dt>Reads</dt><dd><code>enum.policy</code>, <code>knownValues.values</code></dd>
         <dt>Applicable when</dt><dd><code>rule.enum.policy</code> exists AND <code>knownValuesCount &gt; 0</code></dd>
-        <dt>closed</dt><dd>Exact match (<code>Set.has(v)</code>). Unknown &rarr; reject <code>enum_value_not_allowed</code> &rarr; LLM repair</dd>
+        <dt>closed</dt><dd>Exact match (<code>Set.has(v)</code>). Unknown &rarr; reject <code>enum_value_not_allowed</code></dd>
         <dt>open_prefer_known</dt><dd>Alias resolution (case-insensitive + normalized). Unknown &rarr; soft reject <code>unknown_enum_prefer_known</code></dd>
         <dt>open</dt><dd>All values pass</dd>
         <dt>Alias repair</dt><dd>Case-insensitive or normalized match found &rarr; auto-repair to canonical form (rule: <code>alias_resolve</code>)</dd>
@@ -436,7 +418,7 @@
 
 </div>
 
-<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="section-title"><span class="num">4</span> Input / Output Shapes</div>
 
 <div class="two-col">
@@ -457,151 +439,52 @@
     <div class="card-body">
       <dl class="detail-grid">
         <dt>valid</dt><dd><code>boolean</code> &mdash; true only if rejections[] empty</dd>
-        <dt>value</dt><dd><code>any</code> &mdash; possibly repaired</dd>
+        <dt>value</dt><dd><code>any</code> &mdash; possibly normalized/coerced</dd>
         <dt>confidence</dt><dd><code>number</code></dd>
         <dt>repairs[]</dt><dd><code>[{ step, before, after, rule }]</code></dd>
         <dt>rejections[]</dt><dd><code>[{ reason_code, detail }]</code></dd>
-        <dt>unknownReason</dt><dd><code>string | null</code></dd>
-        <dt>repairPrompt</dt><dd><code>object | null</code></dd>
       </dl>
     </div>
   </div>
 </div>
 
 <div class="card">
-  <div class="card-header">Rejection Codes &rarr; Repair Prompt Mapping</div>
+  <div class="card-header">Rejection Codes</div>
   <div class="card-body">
     <table>
-      <thead><tr><th>Rejection Code</th><th>Phase</th><th>Prompt</th><th>Repairable?</th></tr></thead>
+      <thead><tr><th>Rejection Code</th><th>Phase</th><th>Handling</th></tr></thead>
       <tbody>
-        <tr><td><code>wrong_shape</code></td><td>1</td><td>&mdash;</td><td>No (source rerun)</td></tr>
-        <tr><td><code>wrong_unit</code></td><td>2</td><td><code>UNIT</code></td><td>Yes</td></tr>
-        <tr><td><code>unit_required</code></td><td>2</td><td><code>UNIT</code></td><td>Yes</td></tr>
-        <tr><td><code>wrong_type</code></td><td>3</td><td><code>P3</code></td><td>Yes</td></tr>
-        <tr><td><code>format_mismatch</code></td><td>5</td><td><code>P4</code></td><td>Yes</td></tr>
-        <tr><td><code>enum_value_not_allowed</code></td><td>8</td><td><code>P1</code></td><td>Yes</td></tr>
-        <tr><td><code>unknown_enum_prefer_known</code></td><td>8</td><td><code>P2</code></td><td>Yes</td></tr>
-        <tr><td><code>out_of_range</code></td><td>9</td><td><code>P7</code></td><td>Yes</td></tr>
-        <tr><td><code>unk_blocks_publish</code></td><td>10</td><td>&mdash;</td><td>Source rerun needed</td></tr>
+        <tr><td><code>wrong_shape</code></td><td>1</td><td>Reject candidate; finder may retry.</td></tr>
+        <tr><td><code>wrong_unit</code></td><td>2</td><td>Reject candidate unless the unit registry can deterministically convert it.</td></tr>
+        <tr><td><code>unit_required</code></td><td>2</td><td>Reject candidate.</td></tr>
+        <tr><td><code>wrong_type</code></td><td>3</td><td>Reject candidate.</td></tr>
+        <tr><td><code>format_mismatch</code></td><td>5</td><td>Reject candidate.</td></tr>
+        <tr><td><code>enum_value_not_allowed</code></td><td>8</td><td>Reject candidate.</td></tr>
+        <tr><td><code>unknown_enum_prefer_known</code></td><td>8</td><td>Soft rejection retained for audit; accepted by candidate gate.</td></tr>
+        <tr><td><code>out_of_range</code></td><td>9</td><td>Reject candidate.</td></tr>
+        <tr><td><code>unk_blocks_publish</code></td><td>10</td><td>Reject candidate.</td></tr>
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════════════════ -->
-<div class="section-title"><span class="num">5</span> Repair Adapter (Per-Key LLM Prompts)</div>
-
-<p style="margin-bottom:16px; font-size:14px; color:var(--text-muted);">
-  Every prompt includes the <strong>FIELD CONTRACT block</strong> + the <strong>universal response schema</strong>.
-  No confidence gating &mdash; the 11-step re-validation is the only gate. Binary pass/fail.
-  The <code>PROMPT_REGISTRY</code> dispatches rejection codes to prompt builders via O(1) lookup.
-</p>
-
-<div class="card" style="margin-bottom:16px;">
-  <div class="card-header">Universal Response Schema (all prompts)</div>
-  <div class="card-body">
-<pre style="background:var(--surface-alt); padding:14px; border-radius:6px; font-size:12px; line-height:1.5;">{
-  "status": "repaired" | "rerun_recommended",
-  "reason": string | null,
-  "decisions": [{
-    "value": "the failing value",
-    "decision": "map_to_existing" | "keep_new" | "reject" | "set_unk",
-    "resolved_to": "canonical value" | number | null,
-    "reasoning": "why this decision"
-  }]
-}</pre>
-    <dl class="detail-grid" style="margin-top:8px;">
-      <dt>No confidence field</dt><dd>Removed. Re-validation is the only gate.</dd>
-      <dt>All prompts use this</dt><dd>Every Return: instruction matches this exact schema.</dd>
-      <dt>Zod validated</dt><dd>Response parsed by <code>parseRepairResponse()</code> with Zod schema.</dd>
-    </dl>
-  </div>
-</div>
-
-<div class="card" style="margin-bottom:16px;">
-  <div class="card-header">8 Hallucination Patterns (System Prompt Red Flags)</div>
-  <div class="card-body">
-    <table>
-      <thead><tr><th>#</th><th>Pattern</th></tr></thead>
-      <tbody>
-        <tr><td>1</td><td>Phantom color names (not in registered list)</td></tr>
-        <tr><td>2</td><td>Impossible sensor/switch specs</td></tr>
-        <tr><td>3</td><td>Physics-violating measurements</td></tr>
-        <tr><td>4</td><td>Date anomalies</td></tr>
-        <tr><td>5</td><td>Generic edition names</td></tr>
-        <tr><td>6</td><td>Field value = field name echoing</td></tr>
-        <tr><td>7</td><td>Cross-product contamination</td></tr>
-        <tr><td>8</td><td>Suspiciously perfect round numbers</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<div class="prompt-card">
-  <div class="prompt-header"><span class="prompt-id">P1</span> Enum (Closed) <span class="prompt-trigger">enum_value_not_allowed (closed)</span></div>
-  <div class="prompt-body"><p>Shows: unknown values, full registered list, policy, format_hint. Decisions: <code>map_to_existing</code> or <code>reject</code>. Cannot invent new values.</p></div>
-</div>
-<div class="prompt-card">
-  <div class="prompt-header"><span class="prompt-id">P2</span> Enum (Open Prefer Known) <span class="prompt-trigger">unknown_enum_prefer_known</span></div>
-  <div class="prompt-body"><p>Same as P1 + allows <code>keep_new</code>. Keep-new values added to known set for re-validation.</p></div>
-</div>
-<div class="prompt-card">
-  <div class="prompt-header"><span class="prompt-id">P3</span> Type Coercion <span class="prompt-trigger">wrong_type</span></div>
-  <div class="prompt-body"><p>Full contract context. Extract correct type from malformed value or return <code>"unk"</code>.</p></div>
-</div>
-<div class="prompt-card">
-  <div class="prompt-header"><span class="prompt-id">P4</span> Format Mismatch <span class="prompt-trigger">format_mismatch</span></div>
-  <div class="prompt-body"><p>Shows template + format_hint pattern. Repaired value must match pattern.</p></div>
-</div>
-<div class="prompt-card">
-  <div class="prompt-header"><span class="prompt-id">P7</span> Range Violation <span class="prompt-trigger">out_of_range</span></div>
-  <div class="prompt-body"><p>Shows range, unit, rounding precision. Correct magnitude or reject.</p></div>
-</div>
-<div class="prompt-card">
-  <div class="prompt-header"><span class="prompt-id" style="background:var(--teal);">UNIT</span> Unit Conversion <span class="prompt-trigger">wrong_unit / unit_required</span></div>
-  <div class="prompt-body"><p>Shows conversion factors when available. Fires for wrong unit or bare numbers when strict_unit_required.</p></div>
-</div>
-
-<!-- ════════════════════════════════════════════════════════════════════════ -->
-<div class="section-title"><span class="num">6</span> Re-Validation (The Only Gate)</div>
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<div class="section-title"><span class="num">5</span> Rejection Handling</div>
 
 <div class="card">
-  <div class="card-header">Binary Pass/Fail &mdash; No Confidence Tiers</div>
+  <div class="card-header">Deterministic Failure Path</div>
   <div class="card-body">
     <dl class="detail-grid">
-      <dt>Decision types</dt><dd><code>map_to_existing</code>, <code>keep_new</code>, <code>reject</code>, <code>set_unk</code></dd>
-      <dt>All applied</dt><dd>Every LLM decision is applied unconditionally via <code>applyRepairDecisions()</code>. No skipping, no flagging.</dd>
-      <dt>Re-validation</dt><dd>Repaired value re-runs the <strong>full 11-step pipeline</strong></dd>
-      <dt>Pass</dt><dd><code>status: "repaired"</code> &mdash; value accepted</dd>
-      <dt>Fail</dt><dd><code>status: "still_failed"</code> &mdash; LLM repair was wrong, escalate</dd>
-      <dt>rerun_recommended</dt><dd>LLM can signal early return &mdash; skip re-validation entirely</dd>
-      <dt>keep_new special</dt><dd>Keep-new values temporarily added to known set so enum check passes on re-validation</dd>
+      <dt>Hard rejection</dt><dd>The candidate is rejected and remains unpublished.</dd>
+      <dt>Soft enum rejection</dt><dd><code>unknown_enum_prefer_known</code> is retained in <code>rejections[]</code> for audit while open-prefer-known candidates can still be accepted.</dd>
+      <dt>Retry ownership</dt><dd>Finder loops decide whether to retry. The validator never calls an LLM.</dd>
+      <dt>Transform log</dt><dd><code>repairs[]</code> records deterministic normalization/coercion only.</dd>
     </dl>
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════════════════ -->
-<div class="section-title"><span class="num">7</span> Escalation Chain</div>
-
-<div class="card">
-  <div class="card-body" style="text-align:center; padding:24px;">
-    <div class="flow-row">
-      <div class="flow-box flow-neutral" style="border-width:3px;">Attempt 1<br><small>11-step deterministic</small></div>
-      <span class="flow-arrow">&rarr;</span>
-      <div class="flow-box flow-repair" style="border-width:3px;">Attempt 2<br><small>Repair adapter (LLM)</small></div>
-      <span class="flow-arrow">&rarr;</span>
-      <div class="flow-box flow-fail" style="border-width:3px;">Attempt 3<br><small>Source LLM rerun</small></div>
-    </div>
-    <div style="margin-top:20px; display:flex; gap:24px; justify-content:center; flex-wrap:wrap;">
-      <div style="background:var(--green-bg); padding:12px 20px; border-radius:6px; font-size:13px;"><strong style="color:var(--green);">Attempt 1 Pass</strong><br>Deterministic &mdash; trusted</div>
-      <div style="background:var(--purple-bg); padding:12px 20px; border-radius:6px; font-size:13px;"><strong style="color:var(--purple);">Attempt 2 Pass</strong><br>LLM repair &rarr; re-validated</div>
-      <div style="background:var(--red-bg); padding:12px 20px; border-radius:6px; font-size:13px;"><strong style="color:var(--red);">All Fail</strong><br>Value &rarr; "unk"</div>
-    </div>
-  </div>
-</div>
-
-<!-- ════════════════════════════════════════════════════════════════════════ -->
-<div class="section-title"><span class="num">8</span> Phase Registry (O(1) UI Metadata)</div>
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div class="section-title"><span class="num">6</span> Phase Registry (O(1) UI Metadata)</div>
 
 <div class="card">
   <div class="card-header">PHASE_REGISTRY &mdash; 11 entries with <code>isApplicable()</code> predicates</div>
@@ -629,7 +512,7 @@
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="section-title"><span class="num">9</span> Discovery Enums (Self-Tightening Vocabulary)</div>
 
 <div class="card">
@@ -679,169 +562,53 @@
     <div class="flow-row">
       <div class="flow-box flow-neutral">Product 50<br><small>sensor_brand = "gucci"</small></div>
       <span class="flow-arrow">&rarr;</span>
-      <div class="flow-box flow-fail">Not in vocab<br><small>P2 fires &rarr; LLM rejects</small></div>
+      <div class="flow-box flow-fail">Not in vocab<br><small>Soft rejection recorded</small></div>
     </div>
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════════════════ -->
-<div class="section-title"><span class="num">10</span> Prompt Examples (from source)</div>
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<div class="section-title"><span class="num">8</span> Validator Examples (from source)</div>
 
-<p style="margin-bottom:12px; font-size:14px; color:var(--text-muted);">
-  Every prompt is assembled from 3 layers: <strong>System</strong> (universal rules + 8 hallucination patterns),
-  <strong>Field Contract Block</strong> (all parameters for this field), and <strong>Rejection-Specific User Message</strong>.
-  All prompts use the same response schema.
-</p>
+<p style="margin-bottom:12px; font-size:14px; color:var(--text-muted);">Examples show how deterministic validation phases interpret rules and candidate values.</p>
 
 <div class="card">
-  <div class="card-header" style="background:var(--red-bg);">
-    <span class="prompt-id">P1</span>
-    Example: Closed Enum &mdash; <code>colors</code> field, value <code>"midnight-blue"</code>
-  </div>
+  <div class="card-header" style="background:var(--red-bg);">Closed Enum Rejection</div>
   <div class="card-body">
     <p style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">
-      <strong>Scenario:</strong> LLM extracted <code>"midnight-blue"</code> for a list-shaped color field.
-      Alias matching failed. Enum policy is <code>closed</code> &rarr; rejected.
+      <strong>Scenario:</strong> Value <code>"midnight-blue"</code> is submitted for a closed color vocabulary. Alias matching fails, so the validator rejects with <code>enum_value_not_allowed</code>.
     </p>
-<pre style="background:var(--surface-alt); padding:14px; border-radius:6px; font-size:12px; line-height:1.5; overflow-x:auto; white-space:pre-wrap;">FIELD CONTRACT for 'colors':
-  Type: string | Shape: list | Unit:
-  Enum: closed | 8 known values | Match: alias
-  Template: list_of_tokens_delimited
-
-The field 'colors' has enum policy 'closed' (match: alias).
-The following values are not in the registered vocabulary:
-  Unknown: ["midnight-blue"]
-
-Registered values (8 total):
-  ["black","white","silver","gray","navy","green","pink","two-tone"]
-
-For each unknown value:
-1. MAP_TO_EXISTING: If it's a synonym/variant of a registered value,
-   return the canonical registered name.
-2. REJECT: If it looks hallucinated or nonsensical, reject it.
-   Reason: hallucination_detected | not_a_real_colors
-
-You MUST NOT invent new values for a closed enum.
-Return JSON matching this exact schema:
-{
-  "status": "repaired",
-  "reason": null,
-  "decisions": [{ "value": "&lt;the unknown value&gt;", "decision": "map_to_existing|reject|set_unk", "resolved_to": "&lt;canonical value or null&gt;", "reasoning": "..." }]
-}</pre>
   </div>
 </div>
 
 <div class="card">
-  <div class="card-header" style="background:var(--orange-bg);">
-    <span class="prompt-id">P7</span>
-    Example: Range Violation &mdash; <code>weight</code> field, value <code>5000</code>
-  </div>
+  <div class="card-header" style="background:var(--orange-bg);">Range Rejection</div>
   <div class="card-body">
     <p style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">
-      <strong>Scenario:</strong> LLM extracted <code>5000</code> for weight (g). Range is 5&ndash;500g.
-      Likely hallucinated magnitude or unit confusion.
+      <strong>Scenario:</strong> Value <code>5000</code> is submitted for a weight field constrained to <code>5..500 g</code>. The validator rejects with <code>out_of_range</code>; it never clamps or guesses.
     </p>
-<pre style="background:var(--surface-alt); padding:14px; border-radius:6px; font-size:12px; line-height:1.5; overflow-x:auto; white-space:pre-wrap;">FIELD CONTRACT for 'weight':
-  Type: number | Shape: scalar | Unit: g
-  Range: 5 to 500 g
-  Rounding: 0 decimals (nearest)
-  Template: number_with_unit
-
-The field 'weight' value is outside the expected range:
-  Value: 5000 g
-  Expected range: 5 to 500 g
-Rounding: 0 decimals (nearest). Your value must respect this precision.
-
-This may indicate a hallucinated magnitude, a unit mismatch, or a data entry error.
-
-Decide:
-1. If you can determine the correct value, return it.
-2. If the value is genuinely unknown, return "unk".
-3. If this looks hallucinated, reject it.
-
-Return JSON matching this exact schema:
-{
-  "status": "repaired",
-  "reason": null,
-  "decisions": [{ "value": "&lt;the failing value&gt;", "decision": "map_to_existing", "resolved_to": &lt;corrected number or "unk"&gt;, "reasoning": "..." }]
-}
-Use decision "reject" with resolved_to null if hallucinated.</pre>
   </div>
 </div>
 
 <div class="card">
-  <div class="card-header" style="background:var(--teal-bg);">
-    <span class="prompt-id" style="background:var(--teal);">UNIT</span>
-    Example: Unit Conversion &mdash; <code>weight</code> field, value <code>"2.65 lb"</code>
-  </div>
+  <div class="card-header" style="background:var(--teal-bg);">Unit Conversion</div>
   <div class="card-body">
     <p style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">
-      <strong>Scenario:</strong> LLM extracted <code>"2.65 lb"</code> for a field expecting grams.
-      <code>unit_conversions</code> has no <code>lb</code> factor, so deterministic conversion couldn't fire.
+      <strong>Scenario:</strong> Value <code>"2.65 lb"</code> is submitted for a field expecting grams. If the unit registry contains a deterministic conversion, the validator converts and records a <code>unit</code> repair; otherwise it rejects with <code>wrong_unit</code>.
     </p>
-<pre style="background:var(--surface-alt); padding:14px; border-radius:6px; font-size:12px; line-height:1.5; overflow-x:auto; white-space:pre-wrap;">FIELD CONTRACT for 'weight':
-  Type: number | Shape: scalar | Unit: g
-  Range: 5 to 500 g
-  Rounding: 0 decimals (nearest)
-  Template: number_with_unit
-
-The field 'weight' requires unit 'g' but the value
-was given in 'lb':
-  Value: "2.65 lb"
-  Expected unit: g
-  Detected unit: lb
-
-Convert the value to g and return the numeric result.
-If the value cannot be meaningfully converted, return 'unk'.
-Return JSON matching this exact schema:
-{
-  "status": "repaired",
-  "reason": null,
-  "decisions": [{ "value": "&lt;the original value&gt;", "decision": "map_to_existing", "resolved_to": &lt;converted number or "unk"&gt;, "reasoning": "..." }]
-}</pre>
   </div>
 </div>
 
 <div class="card">
-  <div class="card-header" style="background:var(--accent-light);">
-    <span class="prompt-id">P2</span>
-    Example: Open Prefer Known &mdash; <code>shape</code> field, value <code>"ergonomic-asymmetric"</code>
-  </div>
+  <div class="card-header" style="background:var(--accent-light);">Open Prefer Known</div>
   <div class="card-body">
     <p style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">
-      <strong>Scenario:</strong> LLM extracted <code>"ergonomic-asymmetric"</code>. Policy is <code>open_prefer_known</code>.
-      Alias matching tried case-insensitive + normalized &mdash; no match.
+      <strong>Scenario:</strong> Value <code>"ergonomic-asymmetric"</code> is submitted for an <code>open_prefer_known</code> enum. If no known alias matches, validation records <code>unknown_enum_prefer_known</code>; the candidate gate treats that as a soft rejection for audit rather than a hard publish block.
     </p>
-<pre style="background:var(--surface-alt); padding:14px; border-radius:6px; font-size:12px; line-height:1.5; overflow-x:auto; white-space:pre-wrap;">FIELD CONTRACT for 'shape':
-  Type: string | Shape: scalar
-  Enum: open_prefer_known | 3 known values | Match: alias
-  Template: text_field
-
-The field 'shape' has enum policy 'open_prefer_known' (match: alias).
-The following values are not in the known vocabulary:
-  Unknown: ["ergonomic-asymmetric"]
-
-Known values (3 total):
-  ["ambidextrous","right-handed","left-handed"]
-
-For each unknown value:
-1. MAP_TO_EXISTING: If it's a synonym/variant of a known value,
-   return the canonical known name.
-2. KEEP_NEW: If it's a genuinely valid new value for this field,
-   confirm it. Explain why it's legitimate.
-3. REJECT: If it looks hallucinated, reject it.
-
-Return JSON matching this exact schema:
-{
-  "status": "repaired",
-  "reason": null,
-  "decisions": [{ "value": "&lt;the unknown value&gt;", "decision": "map_to_existing|keep_new|reject|set_unk", "resolved_to": "&lt;canonical value or null&gt;", "reasoning": "..." }]
-}</pre>
   </div>
 </div>
-
 <div class="card">
-  <div class="card-header" style="background:var(--red-bg);">What the Prompts Do NOT Include (Honest Gaps)</div>
+  <div class="card-header" style="background:var(--red-bg);">Validator Scope Boundaries</div>
   <div class="card-body">
     <table>
       <thead><tr><th>Missing</th><th>Why</th><th>Impact</th></tr></thead>
@@ -853,18 +620,18 @@ Return JSON matching this exact schema:
         </tr>
         <tr>
           <td><code>token_map</code> entries</td>
-          <td>Applied deterministically in step 4. LLM doesn't need synonym mappings.</td>
+          <td>Applied deterministically in step 4 before final validation.</td>
           <td>None &mdash; re-validation normalizes.</td>
         </tr>
         <tr>
           <td><code>strict_unit_required</code></td>
-          <td>The unit prompt already tells the LLM to convert to the expected unit.</td>
+          <td>The deterministic unit registry converts only configured unit relationships.</td>
           <td>Low &mdash; re-validation catches bare numbers.</td>
         </tr>
         <tr>
           <td><code>required_level</code></td>
-          <td>If the LLM returns "unk", step 10 rejects it for identity/required fields.</td>
-          <td>None &mdash; prompt says "if unsure, return unk" and re-validation rejects it.</td>
+          <td>If extraction returns "unk", step 10 rejects it for identity/required fields.</td>
+          <td>None &mdash; required-level publish gate rejects absent values deterministically.</td>
         </tr>
         <tr>
           <td>Component resolution</td>
@@ -876,7 +643,7 @@ Return JSON matching this exact schema:
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="section-title"><span class="num">11</span> Source File Map</div>
 
 <div class="card">
@@ -898,19 +665,14 @@ Return JSON matching this exact schema:
         <tr><td><code>validation/checks/checkEnum.js</code></td><td><code>checkEnum()</code></td><td>Step 8: 3-policy enum validation</td></tr>
         <tr><td><code>validation/checks/checkRange.js</code></td><td><code>checkRange()</code></td><td>Step 9: min/max bounds</td></tr>
         <tr><td><code>validation/shouldBlockUnkPublish.js</code></td><td><code>shouldBlockUnkPublish()</code></td><td>Step 10: publish gate predicate</td></tr>
-        <tr><td><code>validation/mergeDiscoveredEnums.js</code></td><td><code>mergeDiscoveredEnums()</code></td><td>Merge compiled + discovered enum values</td></tr>
-        <tr><td><code>repair-adapter/repairField.js</code></td><td><code>repairField()</code>, <code>repairCrossField()</code></td><td>LLM repair orchestrator</td></tr>
-        <tr><td><code>repair-adapter/promptBuilder.js</code></td><td><code>buildRepairPrompt()</code>, <code>buildFieldContractBlock()</code></td><td>Repair prompt generation + PROMPT_REGISTRY</td></tr>
-        <tr><td><code>repair-adapter/repairResponseSchema.js</code></td><td><code>repairResponseJsonSchema</code>, <code>parseRepairResponse()</code>, <code>applyRepairDecisions()</code></td><td>Zod response validation + decision application</td></tr>
-        <tr><td><code>repairLlmAdapter.js</code></td><td><code>createRepairCallLlm()</code></td><td>LLM infrastructure wiring (phase: "validate")</td></tr>
-      </tbody>
+        <tr><td><code>validation/mergeDiscoveredEnums.js</code></td><td><code>mergeDiscoveredEnums()</code></td><td>Merge compiled + discovered enum values</td></tr>      </tbody>
     </table>
   </div>
 </div>
 
 <div style="text-align:center; padding:32px 0; color:var(--text-muted); font-size:13px;">
   Generated from source &mdash; Spec Factory Validator Pipeline<br>
-  11-step deterministic pipeline, 11 phase registry entries, 8 type coercers, 6 repair prompts, 9 rejection codes, 8 hallucination patterns
+  11-step deterministic pipeline, 11 phase registry entries, 8 type coercers, deterministic transform log, 9 rejection codes
 </div>
 
 </div>

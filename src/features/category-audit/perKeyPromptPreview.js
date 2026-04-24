@@ -62,6 +62,7 @@ export function detectReservedKey(fieldKey) {
  * @param {object} [opts.tierBundles]   — parsed keyFinderTierSettingsJson
  * @param {string} [opts.templateOverride]
  * @param {{type: string, relation: 'parent'|'subfield_of'}|null} [opts.componentRelation]
+ * @param {object|null} [opts.knownValues]
  * @returns {{
  *   reserved: boolean,
  *   owner: string,
@@ -76,6 +77,7 @@ export function composePerKeyPromptPreview(fieldRule, fieldKey, {
   tierBundles = {},
   templateOverride = '',
   componentRelation = null,
+  knownValues = null,
 } = {}) {
   const reserved = detectReservedKey(fieldKey);
   if (reserved) {
@@ -93,6 +95,7 @@ export function composePerKeyPromptPreview(fieldRule, fieldKey, {
     tierBundles,
     searchHintsEnabled: true,
     componentInjectionEnabled: true,
+    knownValues,
   });
 
   const componentContext = componentRelation && componentRelation.type
@@ -106,6 +109,7 @@ export function composePerKeyPromptPreview(fieldRule, fieldKey, {
     product: { brand: PLACEHOLDER_PRODUCT.brand, model: PLACEHOLDER_PRODUCT.model, category },
     primary: { fieldKey, fieldRule },
     passengers: [],
+    knownValues,
     knownFields: {},
     componentContext,
     productComponents: [],

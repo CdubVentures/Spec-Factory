@@ -24,15 +24,6 @@
         "primary_identifier": "C",
         "properties": [
           {
-            "column": "D",
-            "constraints": [],
-            "field_key": "flawless_sensor",
-            "key": "flawless_sensor",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
             "column": "E",
             "constraints": [],
             "field_key": "sensor_type",
@@ -67,17 +58,6 @@
             "type": "number",
             "unit": "g",
             "variance_policy": "upper_bound"
-          },
-          {
-            "column": "I",
-            "constraints": [
-              "sensor_date <= release_date"
-            ],
-            "field_key": "sensor_date",
-            "key": "sensor_date",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
           }
         ]
       },
@@ -211,32 +191,6 @@
       "start_row": 2,
       "stop_after_blank_primary": 10,
       "type": "encoder"
-    },
-    {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
-      "auto_derive_aliases": true,
-      "component_type": "material",
-      "first_data_row": 2,
-      "header_row": 1,
-      "mode": "sheet",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
-      "roles": {
-        "aliases": [],
-        "links": [],
-        "maker": "",
-        "primary_identifier": "B",
-        "properties": []
-      },
-      "sheet": "material",
-      "start_row": 2,
-      "stop_after_blank_primary": 10,
-      "type": "material"
     }
   ],
   "data_lists": [
@@ -249,8 +203,8 @@
       "header_row": 0,
       "manual_values": [
         "ambidextrous",
-        "left",
-        "right"
+        "right",
+        "left"
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
@@ -272,9 +226,9 @@
       "field": "shape",
       "header_row": 0,
       "manual_values": [
-        "asymmetrical",
+        "symmetrical",
         "ergonomic",
-        "symmetrical"
+        "asymmetrical"
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
@@ -296,11 +250,11 @@
       "field": "hump",
       "header_row": 0,
       "manual_values": [
+        "middle",
         "back - front",
-        "back - rear",
         "back mid",
         "front",
-        "middle"
+        "back - rear"
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
@@ -322,8 +276,8 @@
       "field": "front_flare",
       "header_row": 0,
       "manual_values": [
-        "flat",
         "inward",
+        "flat",
         "outward"
       ],
       "mode": "scratch",
@@ -346,9 +300,8 @@
       "field": "sensor_type",
       "header_row": 0,
       "manual_values": [
-        "laser",
         "optical",
-        "unk"
+        "laser"
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
@@ -377,12 +330,9 @@
         "Nordic nRF52833",
         "Nordic nRF52840",
         "Nuvoton M484SIDAE",
-        "STM32",
         "STM32F072CBU6",
         "STM32L412C8U6",
-        "Ti CC2462R",
-        "unk",
-        "unspecified"
+        "TI CC2462R"
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
@@ -404,33 +354,10 @@
       "field": "switch_type",
       "header_row": 0,
       "manual_values": [
-        "Black Shell Blue Dot",
-        "Corsair Quickstrike",
-        "D2FC-F-7N (20M)",
-        "Haptic Inductive Trigger System (HITS)",
-        "Kailh GM 4.0",
-        "LK Optical V2",
-        "Logitech LIGHTFORCE (Omron (70M) - D2FP-FH1)",
-        "Omron",
-        "Omron D2FC-7N",
-        "Omron D2FC-7N (60M)",
-        "Omron D2FC-F-K",
-        "Omron D2FC-F-K (50M)",
-        "Omron D2FP-FN2",
-        "ROG 70M",
-        "ROG Micro Switch II",
-        "ROG Micro Switches",
-        "ROG Optical Micro Switches",
-        "TTC Optical Microswitch",
-        "Transparent Crystal Shell White Dot",
-        "eqwe",
         "mechanical",
         "optical",
         "optical / mechanical",
-        "optical-mechanical",
-        "unk",
-        "unspecified",
-        "yay"
+        "inductive"
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
@@ -452,7 +379,6 @@
       "field": "connection",
       "header_row": 0,
       "manual_values": [
-        "bluetooth",
         "hybrid",
         "wired",
         "wireless"
@@ -477,13 +403,10 @@
       "field": "connectivity",
       "header_row": 0,
       "manual_values": [
-        "1",
         "2.4GHz Dongle",
-        "2.4GHz RF Dongle",
         "2.4GHz WIFI Dongle",
-        "2.5",
-        "n/a",
-        "unk"
+        "2.4GHz RF Dongle",
+        "n/a"
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
@@ -563,13 +486,11 @@
       "field": "feet_material",
       "header_row": 0,
       "manual_values": [
-        "Glass",
+        "PTFE (Black-Dyed)",
+        "PTFE (Virgin-Grade)",
         "PTFE",
         "PTFE (95%)",
-        "PTFE (Black-Dyed)",
-        "PTFE (Teflon)",
-        "PTFE (Virgin-Grade)",
-        "l"
+        "Glass"
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
@@ -611,8 +532,6 @@
       "field": "coating",
       "header_row": 0,
       "manual_values": [
-        "A",
-        "help",
         "matte",
         "rubber grips"
       ],
@@ -755,6 +674,208 @@
       "row_start": 2,
       "sheet": "",
       "value_column": ""
+    },
+    {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
+      "delimiter": "",
+      "field": "grip",
+      "header_row": 0,
+      "manual_values": [
+        "palm",
+        "claw",
+        "fingertip"
+      ],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "priority": {
+        "availability": "sometimes",
+        "difficulty": "easy",
+        "required_level": "non_mandatory"
+      },
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
+      "delimiter": "",
+      "field": "hand_size",
+      "header_row": 0,
+      "manual_values": [
+        "small",
+        "medium",
+        "large"
+      ],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "priority": {
+        "availability": "sometimes",
+        "difficulty": "easy",
+        "required_level": "non_mandatory"
+      },
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
+      "delimiter": "",
+      "field": "design",
+      "header_row": 0,
+      "manual_values": [
+        "standard",
+        "limited edition",
+        "multiple",
+        "collaboration"
+      ],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "priority": {
+        "availability": "sometimes",
+        "difficulty": "easy",
+        "required_level": "non_mandatory"
+      },
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
+      "delimiter": "",
+      "field": "cable_type",
+      "header_row": 0,
+      "manual_values": [
+        "braided",
+        "ultraweave",
+        "rubber",
+        "paracord"
+      ],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "priority": {
+        "availability": "sometimes",
+        "difficulty": "easy",
+        "required_level": "non_mandatory"
+      },
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
+      "delimiter": "",
+      "field": "computer_side_connector",
+      "header_row": 0,
+      "manual_values": [
+        "USB-A",
+        "USB-C"
+      ],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "priority": {
+        "availability": "sometimes",
+        "difficulty": "easy",
+        "required_level": "non_mandatory"
+      },
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
+      "delimiter": "",
+      "field": "mouse_side_connector",
+      "header_row": 0,
+      "manual_values": [
+        "Micro-B",
+        "USB-C",
+        "n/a"
+      ],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "priority": {
+        "availability": "sometimes",
+        "difficulty": "easy",
+        "required_level": "non_mandatory"
+      },
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
+      "delimiter": "",
+      "field": "lift_settings",
+      "header_row": 0,
+      "manual_values": [
+        "fixed low",
+        "adjustable",
+        "fixed high",
+        "surface-tuned"
+      ],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "priority": {
+        "availability": "sometimes",
+        "difficulty": "easy",
+        "required_level": "non_mandatory"
+      },
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "ai_assist": {
+        "reasoning_note": ""
+      },
+      "delimiter": "",
+      "field": "material",
+      "header_row": 0,
+      "manual_values": [
+        "plastic",
+        "rubber",
+        "aluminum",
+        "carbon fiber",
+        "bio-based nylon",
+        "metal",
+        "abs plastic",
+        "polycarbonate",
+        "pbt plastic",
+        "magnesium alloy",
+        "composite"
+      ],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "priority": {
+        "availability": "sometimes",
+        "difficulty": "easy",
+        "required_level": "non_mandatory"
+      },
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
     }
   ],
   "eg_toggles": {
@@ -785,16 +906,18 @@
     ]
   },
   "field_groups": [
-    "General",
-    "Sensor & Performance",
-    "Switches",
-    "Buttons & Features",
-    "Encoder",
-    "Connectivity",
-    "Construction",
-    "Ergonomics",
-    "Dimensions",
-    "Electronics"
+    "Product & Variants",
+    "Appearance",
+    "Connectivity & Power",
+    "Build & Materials",
+    "Shape & Ergonomics",
+    "Sensor Identity",
+    "Sensor Performance",
+    "Sensor Processing & Latency",
+    "Switch Identity",
+    "Click Feel & Latency",
+    "Buttons & Wheel",
+    "Encoder & MCU"
   ],
   "field_overrides": {
     "acceleration": {
@@ -808,21 +931,27 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
+        "range": {
+          "max": 120,
+          "min": 0
+        },
         "rounding": {
           "decimals": 0,
           "mode": "nearest"
         },
-        "shape": "list",
-        "type": "mixed_number_range",
+        "shape": "scalar",
+        "type": "number",
         "unit": "g"
       },
-      "data_type": "mixed_number_range",
+      "data_type": "number",
       "difficulty": "easy",
       "display_name": "Max Acceleration",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open",
         "source": null
       },
@@ -850,28 +979,18 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Sensor & Performance",
+      "group": "Sensor Performance",
       "key": "acceleration",
       "min_evidence_refs": 1,
-      "output_shape": "list",
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
+      "output_shape": "scalar",
       "parse": {
-        "delimiters": [
-          ",",
-          "/",
-          "|",
-          ";"
-        ],
-        "range_separators": [],
         "unit": "g"
       },
       "parse_rules": {
-        "delimiters": [
-          ",",
-          "/",
-          "|",
-          ";"
-        ],
-        "separators": [],
         "unit": "g"
       },
       "priority": {
@@ -901,17 +1020,17 @@
         ]
       },
       "selection_policy": {},
-      "shape": "list",
-      "type": "mixed_number_range",
+      "shape": "scalar",
+      "type": "number",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Sensor Performance",
         "guidance_md": null,
         "label": "Max Acceleration",
-        "order": 57,
+        "order": 43,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -973,7 +1092,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Buttons & Wheel",
       "key": "adjustable_scroll_wheel",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -1052,10 +1171,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Buttons & Wheel",
         "guidance_md": null,
         "label": "Adjustable Scroll Wheel",
-        "order": 80,
+        "order": 72,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -1116,7 +1235,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Construction",
+      "group": "Build & Materials",
       "key": "adjustable_weight",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -1197,10 +1316,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Construction",
+        "group": "Build & Materials",
         "guidance_md": null,
         "label": "Adjustable Weight",
-        "order": 26,
+        "order": 23,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -1224,7 +1343,10 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
+        "range": {
+          "max": 500,
+          "min": 0
+        },
         "rounding": {
           "decimals": 0,
           "mode": "nearest"
@@ -1238,7 +1360,10 @@
       "display_name": "Battery Life (Hours)",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open",
         "source": null
       },
@@ -1266,18 +1391,18 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Connectivity",
+      "group": "Connectivity & Power",
       "key": "battery_hours",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
       "parse": {
-        "delimiters": [],
-        "range_separators": [],
         "unit": "h"
       },
       "parse_rules": {
-        "delimiters": [],
-        "separators": [],
         "unit": "h"
       },
       "priority": {
@@ -1315,10 +1440,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Connectivity",
+        "group": "Connectivity & Power",
         "guidance_md": null,
         "label": "Battery Life (Hours)",
-        "order": 25,
+        "order": 14,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -1329,7 +1454,8 @@
       },
       "unit": "h",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "upper_bound"
     },
     "bluetooth": {
       "aliases": [],
@@ -1379,7 +1505,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Connectivity",
+      "group": "Connectivity & Power",
       "key": "bluetooth",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -1461,10 +1587,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Connectivity",
+        "group": "Connectivity & Power",
         "guidance_md": null,
         "label": "Bluetooth",
-        "order": 21,
+        "order": 12,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -1493,11 +1619,15 @@
       "display_name": "Cable Type",
       "enum": {
         "match": {},
-        "new_value_policy": {},
-        "policy": "open",
-        "source": null
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
+        "policy": "open_prefer_known",
+        "source": "data_lists.cable_type"
       },
-      "enum_policy": "open",
+      "enum_policy": "open_prefer_known",
+      "enum_source": "data_lists.cable_type",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -1520,9 +1650,13 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Connectivity",
+      "group": "Connectivity & Power",
       "key": "cable_type",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
@@ -1569,10 +1703,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Connectivity",
+        "group": "Connectivity & Power",
         "guidance_md": null,
         "label": "Cable Type",
-        "order": 22,
+        "order": 15,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -1591,7 +1725,10 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
+        "range": {
+          "max": 150,
+          "min": 0
+        },
         "rounding": {
           "decimals": 0,
           "mode": "nearest"
@@ -1605,7 +1742,10 @@
       "display_name": "Click Force",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open",
         "source": null
       },
@@ -1633,18 +1773,18 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Switches",
+      "group": "Click Feel & Latency",
       "key": "click_force",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
       "parse": {
-        "delimiters": [],
-        "range_separators": [],
         "unit": "gf"
       },
       "parse_rules": {
-        "delimiters": [],
-        "separators": [],
         "unit": "gf"
       },
       "priority": {
@@ -1680,10 +1820,10 @@
         "display_decimals": 1,
         "display_mode": "all",
         "examples": [],
-        "group": "Switches",
+        "group": "Click Feel & Latency",
         "guidance_md": null,
         "label": "Click Force",
-        "order": 72,
+        "order": 61,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -1704,9 +1844,12 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
+        "range": {
+          "max": 150,
+          "min": 0
+        },
         "rounding": {
-          "decimals": 2,
+          "decimals": 1,
           "mode": "nearest"
         },
         "shape": "scalar",
@@ -1718,7 +1861,10 @@
       "display_name": "Click Latency",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open",
         "source": null
       },
@@ -1746,18 +1892,18 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Switches",
+      "group": "Click Feel & Latency",
       "key": "click_latency",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
       "parse": {
-        "delimiters": [],
-        "range_separators": [],
         "unit": "ms"
       },
       "parse_rules": {
-        "delimiters": [],
-        "separators": [],
         "unit": "ms"
       },
       "priority": {
@@ -1766,7 +1912,7 @@
         "required_level": "non_mandatory"
       },
       "required_level": "non_mandatory",
-      "round": "2dp",
+      "round": "none",
       "search_hints": {
         "content_types": [
           "review",
@@ -1787,16 +1933,7 @@
           "click delay ms"
         ]
       },
-      "selection_policy": {
-        "mode_preference": [
-          "wireless",
-          "wired",
-          "bluetooth"
-        ],
-        "rule": "If one measurement remains after selecting the best mode OR all remaining are within tolerance_ms for the same mode, set scalar to median; else unk with conflicting_sources_unresolved.",
-        "source_field": "click_latency_list",
-        "tolerance_ms": 0.25
-      },
+      "selection_policy": {},
       "shape": "scalar",
       "type": "number",
       "ui": {
@@ -1804,16 +1941,16 @@
         "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
-        "group": "Switches",
-        "guidance_md": null,
+        "group": "Click Feel & Latency",
+        "guidance_md": "Click Latency is a single numeric ms field, not a comma-delimited list.\nKeep mode-specific measurements in click_latency_wired, click_latency_wireless, click_latency_bluetooth.\nOnly fill this scalar when a single authoritative value is reported or the source clearly names the primary mode value; otherwise output unk.",
         "label": "Click Latency",
-        "order": 70,
+        "order": 62,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
         "tooltip_key": "click_latency",
-        "tooltip_md": "Define 'Click Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+        "tooltip_md": "Click Latency as one numeric ms value. Mode-specific values belong in the separate wired/wireless/bluetooth fields.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "ms",
@@ -1831,6 +1968,10 @@
       "constraints": [],
       "contract": {
         "list_rules": {},
+        "range": {
+          "max": 150,
+          "min": 0
+        },
         "rounding": {
           "decimals": 2,
           "mode": "nearest"
@@ -1872,7 +2013,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Switches",
+      "group": "Click Feel & Latency",
       "key": "click_latency_bluetooth",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -1920,10 +2061,10 @@
         "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
-        "group": "Switches",
+        "group": "Click Feel & Latency",
         "guidance_md": null,
         "label": "Click Latency (Bluetooth)",
-        "order": 70,
+        "order": 65,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -1947,6 +2088,10 @@
       "constraints": [],
       "contract": {
         "list_rules": {},
+        "range": {
+          "max": 150,
+          "min": 0
+        },
         "rounding": {
           "decimals": 2,
           "mode": "nearest"
@@ -1988,7 +2133,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Switches",
+      "group": "Click Feel & Latency",
       "key": "click_latency_wired",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -2036,10 +2181,10 @@
         "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
-        "group": "Switches",
+        "group": "Click Feel & Latency",
         "guidance_md": null,
         "label": "Click Latency (Wired)",
-        "order": 70,
+        "order": 63,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -2063,6 +2208,10 @@
       "constraints": [],
       "contract": {
         "list_rules": {},
+        "range": {
+          "max": 150,
+          "min": 0
+        },
         "rounding": {
           "decimals": 2,
           "mode": "nearest"
@@ -2104,7 +2253,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Switches",
+      "group": "Click Feel & Latency",
       "key": "click_latency_wireless",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -2152,10 +2301,10 @@
         "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
-        "group": "Switches",
+        "group": "Click Feel & Latency",
         "guidance_md": null,
         "label": "Click Latency (Wireless)",
-        "order": 70,
+        "order": 64,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -2185,11 +2334,15 @@
       "display_name": "Coating",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open_prefer_known",
-        "source": null
+        "source": "data_lists.coating"
       },
       "enum_policy": "open_prefer_known",
+      "enum_source": "data_lists.coating",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -2222,9 +2375,13 @@
           "sheet": "data_lists"
         }
       },
-      "group": "Construction",
+      "group": "Build & Materials",
       "key": "coating",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "list",
       "parse": {
         "delimiters": [
@@ -2282,10 +2439,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Construction",
+        "group": "Build & Materials",
         "guidance_md": null,
         "label": "Coating",
-        "order": 28,
+        "order": 20,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -2323,13 +2480,15 @@
           "tier3"
         ]
       },
+      "group": "Product & Variants",
       "key": "colors",
       "parse": {
         "delimiters": [
           ",",
           "/",
           "|",
-          ";"
+          ";",
+          "+"
         ],
         "token_map": {
           "blue-dark": "dark-blue",
@@ -2351,6 +2510,11 @@
           "red-dark": "dark-red",
           "red-light": "light-red"
         }
+      },
+      "parse_rules": {
+        "delimiters": [
+          "+"
+        ]
       },
       "priority": {
         "availability": "always",
@@ -2375,8 +2539,9 @@
         ]
       },
       "ui": {
-        "group": "general",
+        "group": "Product & Variants",
         "label": "Colors",
+        "order": 2,
         "tooltip_md": "Colorway tokens. Use list<string>. Normalize grey?gray; multi-colorways may use '+'."
       },
       "variant_dependent": false,
@@ -2481,11 +2646,15 @@
       "display_name": "Computer-side Connector",
       "enum": {
         "match": {},
-        "new_value_policy": {},
-        "policy": "open",
-        "source": null
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
+        "policy": "open_prefer_known",
+        "source": "data_lists.computer_side_connector"
       },
-      "enum_policy": "open",
+      "enum_policy": "open_prefer_known",
+      "enum_source": "data_lists.computer_side_connector",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -2508,9 +2677,13 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Connectivity",
+      "group": "Connectivity & Power",
       "key": "computer_side_connector",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
@@ -2556,10 +2729,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Connectivity",
+        "group": "Connectivity & Power",
         "guidance_md": null,
         "label": "Computer-side Connector",
-        "order": 19,
+        "order": 17,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -2628,7 +2801,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "Connectivity",
+      "group": "Connectivity & Power",
       "key": "connection",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -2682,10 +2855,10 @@
         "display_decimals": 1,
         "display_mode": "all",
         "examples": [],
-        "group": "Connectivity",
+        "group": "Connectivity & Power",
         "guidance_md": null,
         "label": "Connection",
-        "order": 17,
+        "order": 10,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -2695,7 +2868,16 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "vocab": {
+        "allow_new": false,
+        "known_values": [
+          "hybrid",
+          "wired",
+          "wireless"
+        ],
+        "mode": "closed"
+      }
     },
     "connectivity": {
       "aliases": [],
@@ -2714,11 +2896,15 @@
       "display_name": "Connectivity",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open_prefer_known",
-        "source": null
+        "source": "data_lists.connectivity"
       },
       "enum_policy": "open_prefer_known",
+      "enum_source": "data_lists.connectivity",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -2751,9 +2937,13 @@
           "sheet": "data_lists"
         }
       },
-      "group": "Connectivity",
+      "group": "Connectivity & Power",
       "key": "connectivity",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "list",
       "parse": {
         "delimiters": [
@@ -2811,10 +3001,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Connectivity",
+        "group": "Connectivity & Power",
         "guidance_md": null,
         "label": "Connectivity",
-        "order": 18,
+        "order": 11,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -2833,12 +3023,19 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
+        "list_rules": {
+          "dedupe": true,
+          "sort": "asc"
+        },
+        "range": {
+          "max": 30,
+          "min": 0
+        },
         "rounding": {
-          "decimals": 2,
+          "decimals": 0,
           "mode": "nearest"
         },
-        "shape": "scalar",
+        "shape": "list",
         "type": "number",
         "unit": "ms"
       },
@@ -2847,7 +3044,10 @@
       "display_name": "Debounce",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open",
         "source": null
       },
@@ -2874,17 +3074,32 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Switches",
+      "group": "Click Feel & Latency",
       "key": "debounce",
       "min_evidence_refs": 1,
-      "output_shape": "scalar",
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
+      "output_shape": "list",
       "parse": {
-        "delimiters": [],
-        "range_separators": [],
+        "allow_ranges": false,
+        "delimiters": [
+          ",",
+          "/",
+          "|",
+          ";"
+        ],
         "unit": "ms"
       },
       "parse_rules": {
-        "delimiters": [],
+        "allow_ranges": false,
+        "delimiters": [
+          ",",
+          "/",
+          "|",
+          ";"
+        ],
         "separators": [],
         "unit": "ms"
       },
@@ -2894,7 +3109,7 @@
         "required_level": "non_mandatory"
       },
       "required_level": "non_mandatory",
-      "round": "2dp",
+      "round": "int",
       "search_hints": {
         "content_types": [
           "review",
@@ -2914,17 +3129,17 @@
         ]
       },
       "selection_policy": {},
-      "shape": "scalar",
+      "shape": "list",
       "type": "number",
       "ui": {
         "array_handling": "none",
         "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
-        "group": "Switches",
+        "group": "Click Feel & Latency",
         "guidance_md": null,
         "label": "Debounce",
-        "order": 69,
+        "order": 66,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -2934,8 +3149,8 @@
         "tooltip_source": null
       },
       "unit": "ms",
-      "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form": "set",
+      "value_form_sample": "list"
     },
     "design": {
       "aliases": [],
@@ -2954,7 +3169,10 @@
       "display_name": "Design",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open_prefer_known",
         "source": "data_lists.design"
       },
@@ -2982,9 +3200,13 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "General",
+      "group": "Appearance",
       "key": "design",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "list",
       "parse": {
         "delimiters": [
@@ -3039,10 +3261,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "General",
+        "group": "Appearance",
         "guidance_md": null,
         "label": "Design",
-        "order": 14,
+        "order": 7,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -3097,7 +3319,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "General",
+      "group": "Product & Variants",
       "key": "discontinued",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -3175,10 +3397,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "General",
+        "group": "Product & Variants",
         "guidance_md": null,
         "label": "Discontinued",
-        "order": 10,
+        "order": 5,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -3202,13 +3424,16 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
+        "range": {
+          "max": 60000,
+          "min": 100
+        },
         "rounding": {
           "decimals": 0,
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "integer",
+        "type": "number",
         "unit": "dpi"
       },
       "data_type": "number",
@@ -3216,7 +3441,10 @@
       "display_name": "Max DPI",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open",
         "source": null
       },
@@ -3244,18 +3472,18 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Sensor & Performance",
+      "group": "Sensor Performance",
       "key": "dpi",
       "min_evidence_refs": 2,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
       "parse": {
-        "delimiters": [],
-        "range_separators": [],
         "unit": "dpi"
       },
       "parse_rules": {
-        "delimiters": [],
-        "separators": [],
         "unit": "dpi"
       },
       "priority": {
@@ -3290,16 +3518,16 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "integer",
+      "type": "number",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Sensor Performance",
         "guidance_md": null,
         "label": "Max DPI",
-        "order": 55,
+        "order": 41,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -3344,6 +3572,7 @@
           "tier3"
         ]
       },
+      "group": "Product & Variants",
       "key": "editions",
       "parse": {
         "delimiters": [
@@ -3367,8 +3596,9 @@
         ]
       },
       "ui": {
-        "group": "general",
+        "group": "Product & Variants",
         "label": "Editions",
+        "order": 3,
         "tooltip_md": "Special/limited editions. Kebab-case slugs (e.g. cyberpunk-2077-edition)."
       },
       "variant_dependent": false
@@ -3413,7 +3643,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Encoder",
+      "group": "Encoder & MCU",
       "key": "encoder",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -3462,10 +3692,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Encoder",
+        "group": "Encoder & MCU",
         "guidance_md": null,
         "label": "Encoder",
-        "order": 73,
+        "order": 76,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -3518,7 +3748,7 @@
         },
         "related_to": "encoder"
       },
-      "group": "Encoder",
+      "group": "Encoder & MCU",
       "key": "encoder_brand",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -3565,10 +3795,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Encoder",
+        "group": "Encoder & MCU",
         "guidance_md": null,
         "label": "Encoder Brand",
-        "order": 74,
+        "order": 77,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -3619,7 +3849,7 @@
         },
         "related_to": "encoder"
       },
-      "group": "Encoder",
+      "group": "Encoder & MCU",
       "key": "encoder_link",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -3661,10 +3891,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Encoder",
+        "group": "Encoder & MCU",
         "guidance_md": null,
         "label": "Encoder Link",
-        "order": 75,
+        "order": 78,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -3695,13 +3925,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": "known_values.feet_material"
+        "source": "data_lists.feet_material"
       },
       "enum_policy": "closed",
-      "enum_source": {
-        "ref": "feet_material",
-        "type": "known_values"
-      },
+      "enum_source": "data_lists.feet_material",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -3735,7 +3962,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "Construction",
+      "group": "Build & Materials",
       "key": "feet_material",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -3784,10 +4011,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Construction",
+        "group": "Build & Materials",
         "guidance_md": null,
         "label": "Feet Material",
-        "order": 27,
+        "order": 21,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -3797,7 +4024,18 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "vocab": {
+        "allow_new": false,
+        "known_values": [
+          "PTFE (Black-Dyed)",
+          "PTFE (Virgin-Grade)",
+          "PTFE",
+          "PTFE (95%)",
+          "Glass"
+        ],
+        "mode": "closed"
+      }
     },
     "flawless_sensor": {
       "aliases": [],
@@ -3806,10 +4044,8 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
         "shape": "scalar",
-        "type": "boolean",
-        "unit": null
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -3818,13 +4054,9 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": "known_values.yes_no"
+        "source": null
       },
       "enum_policy": "closed",
-      "enum_source": {
-        "ref": "yes_no",
-        "type": "known_values"
-      },
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -3847,7 +4079,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Sensor & Performance",
+      "group": "Sensor Identity",
       "key": "flawless_sensor",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -3859,17 +4091,17 @@
           "0",
           "off"
         ],
-        "range_separators": [],
         "true_tokens": [
           "yes",
           "true",
           "1",
           "on"
         ],
-        "unit": null,
         "unknown_tokens": [
           "unk",
           "n/a",
+          "na",
+          "unknown",
           ""
         ]
       },
@@ -3888,10 +4120,11 @@
           "1",
           "on"
         ],
-        "unit": null,
         "unknown_tokens": [
           "unk",
           "n/a",
+          "na",
+          "unknown",
           ""
         ]
       },
@@ -3929,10 +4162,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Sensor Identity",
         "guidance_md": null,
         "label": "Flawless Sensor",
-        "order": 50,
+        "order": 40,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -3941,7 +4174,6 @@
         "tooltip_md": "Define 'Flawless Sensor' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
-      "unit": null,
       "value_form": "single",
       "value_form_sample": "scalar",
       "variance_policy": "authoritative"
@@ -4003,7 +4235,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "Ergonomics",
+      "group": "Shape & Ergonomics",
       "key": "form_factor",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -4054,10 +4286,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Ergonomics",
+        "group": "Shape & Ergonomics",
         "guidance_md": null,
         "label": "Form Factor",
-        "order": 36,
+        "order": 29,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -4067,7 +4299,16 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "vocab": {
+        "allow_new": false,
+        "known_values": [
+          "ambidextrous",
+          "right",
+          "left"
+        ],
+        "mode": "closed"
+      }
     },
     "front_flare": {
       "aliases": [],
@@ -4088,13 +4329,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": "known_values.front_flare"
+        "source": "data_lists.front_flare"
       },
       "enum_policy": "closed",
-      "enum_source": {
-        "ref": "front_flare",
-        "type": "known_values"
-      },
+      "enum_source": "data_lists.front_flare",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -4128,7 +4366,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "Ergonomics",
+      "group": "Shape & Ergonomics",
       "key": "front_flare",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -4173,10 +4411,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Ergonomics",
+        "group": "Shape & Ergonomics",
         "guidance_md": null,
         "label": "Front Flare",
-        "order": 39,
+        "order": 31,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -4186,7 +4424,16 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "vocab": {
+        "allow_new": false,
+        "known_values": [
+          "inward",
+          "flat",
+          "outward"
+        ],
+        "mode": "closed"
+      }
     },
     "grip": {
       "aliases": [],
@@ -4205,11 +4452,15 @@
       "display_name": "Grip",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open_prefer_known",
-        "source": null
+        "source": "data_lists.grip"
       },
       "enum_policy": "open_prefer_known",
+      "enum_source": "data_lists.grip",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -4232,9 +4483,13 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Ergonomics",
+      "group": "Shape & Ergonomics",
       "key": "grip",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "list",
       "parse": {
         "delimiters": [
@@ -4290,10 +4545,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Ergonomics",
+        "group": "Shape & Ergonomics",
         "guidance_md": null,
         "label": "Grip",
-        "order": 41,
+        "order": 33,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -4322,11 +4577,15 @@
       "display_name": "Hand Size",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open_prefer_known",
-        "source": null
+        "source": "data_lists.hand_size"
       },
       "enum_policy": "open_prefer_known",
+      "enum_source": "data_lists.hand_size",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -4349,9 +4608,13 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Ergonomics",
+      "group": "Shape & Ergonomics",
       "key": "hand_size",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "list",
       "parse": {
         "delimiters": [
@@ -4404,10 +4667,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Ergonomics",
+        "group": "Shape & Ergonomics",
         "guidance_md": null,
         "label": "Hand Size",
-        "order": 42,
+        "order": 34,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -4467,7 +4730,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Sensor & Performance",
+      "group": "Sensor Processing & Latency",
       "key": "hardware_acceleration",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -4547,10 +4810,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Sensor Processing & Latency",
         "guidance_md": null,
         "label": "Hardware Acceleration",
-        "order": 61,
+        "order": 53,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -4573,7 +4836,10 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
+        "range": {
+          "max": 80,
+          "min": 15
+        },
         "rounding": {
           "decimals": 1,
           "mode": "nearest"
@@ -4587,7 +4853,10 @@
       "display_name": "Height",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open",
         "source": null
       },
@@ -4615,18 +4884,18 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Dimensions",
+      "group": "Shape & Ergonomics",
       "key": "height",
       "min_evidence_refs": 2,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
       "parse": {
-        "delimiters": [],
-        "range_separators": [],
         "unit": "mm"
       },
       "parse_rules": {
-        "delimiters": [],
-        "separators": [],
         "unit": "mm"
       },
       "priority": {
@@ -4635,7 +4904,7 @@
         "required_level": "mandatory"
       },
       "required_level": "mandatory",
-      "round": "1dp",
+      "round": "none",
       "search_hints": {
         "content_types": [
           "spec_sheet",
@@ -4663,10 +4932,10 @@
         "display_decimals": 1,
         "display_mode": "all",
         "examples": [],
-        "group": "Dimensions",
+        "group": "Shape & Ergonomics",
         "guidance_md": null,
         "label": "Height",
-        "order": 35,
+        "order": 27,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -4727,7 +4996,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Construction",
+      "group": "Build & Materials",
       "key": "honeycomb_frame",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -4808,10 +5077,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Construction",
+        "group": "Build & Materials",
         "guidance_md": null,
         "label": "Honeycomb Frame",
-        "order": 29,
+        "order": 22,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -4871,7 +5140,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Switches",
+      "group": "Switch Identity",
       "key": "hot_swappable",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -4952,10 +5221,10 @@
         "display_decimals": 1,
         "display_mode": "all",
         "examples": [],
-        "group": "Switches",
+        "group": "Switch Identity",
         "guidance_md": null,
         "label": "Hot Swappable",
-        "order": 68,
+        "order": 60,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -4986,13 +5255,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": "known_values.hump"
+        "source": "data_lists.hump"
       },
       "enum_policy": "closed",
-      "enum_source": {
-        "ref": "hump",
-        "type": "known_values"
-      },
+      "enum_source": "data_lists.hump",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -5026,7 +5292,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "Ergonomics",
+      "group": "Shape & Ergonomics",
       "key": "hump",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -5073,10 +5339,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Ergonomics",
+        "group": "Shape & Ergonomics",
         "guidance_md": null,
         "label": "Hump",
-        "order": 38,
+        "order": 30,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -5086,7 +5352,18 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "vocab": {
+        "allow_new": false,
+        "known_values": [
+          "middle",
+          "back - front",
+          "back mid",
+          "front",
+          "back - rear"
+        ],
+        "mode": "closed"
+      }
     },
     "ips": {
       "aliases": [
@@ -5099,13 +5376,16 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
+        "range": {
+          "max": 1200,
+          "min": 0
+        },
         "rounding": {
           "decimals": 0,
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "integer",
+        "type": "number",
         "unit": "ips"
       },
       "data_type": "number",
@@ -5113,7 +5393,10 @@
       "display_name": "Max IPS",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open",
         "source": null
       },
@@ -5140,18 +5423,18 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Sensor & Performance",
+      "group": "Sensor Performance",
       "key": "ips",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
       "parse": {
-        "delimiters": [],
-        "range_separators": [],
         "unit": "ips"
       },
       "parse_rules": {
-        "delimiters": [],
-        "separators": [],
         "unit": "ips"
       },
       "priority": {
@@ -5181,16 +5464,16 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "integer",
+      "type": "number",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Sensor Performance",
         "guidance_md": null,
         "label": "Max IPS",
-        "order": 56,
+        "order": 42,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -5216,17 +5499,27 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
-        "shape": "list",
-        "type": "mixed_number_range",
+        "range": {
+          "max": 5,
+          "min": 0
+        },
+        "rounding": {
+          "decimals": 1,
+          "mode": "nearest"
+        },
+        "shape": "scalar",
+        "type": "number",
         "unit": "mm"
       },
-      "data_type": "mixed_number_range",
+      "data_type": "number",
       "difficulty": "easy",
       "display_name": "Lift-off Distance (LOD)",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open",
         "source": null
       },
@@ -5254,35 +5547,18 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Sensor & Performance",
+      "group": "Sensor Performance",
       "key": "lift",
       "min_evidence_refs": 1,
-      "output_shape": "list",
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
+      "output_shape": "scalar",
       "parse": {
-        "delimiters": [
-          ",",
-          "/",
-          "|",
-          ";"
-        ],
-        "range_separators": [
-          "-",
-          "�",
-          "�"
-        ],
         "unit": "mm"
       },
       "parse_rules": {
-        "delimiters": [
-          ",",
-          "/",
-          "|",
-          ";"
-        ],
-        "separators": [
-          "-",
-          "�"
-        ],
         "unit": "mm"
       },
       "priority": {
@@ -5291,7 +5567,7 @@
         "required_level": "non_mandatory"
       },
       "required_level": "non_mandatory",
-      "round": "none",
+      "round": "1dp",
       "search_hints": {
         "content_types": [
           "review",
@@ -5312,17 +5588,17 @@
         ]
       },
       "selection_policy": {},
-      "shape": "list",
-      "type": "mixed_number_range",
+      "shape": "scalar",
+      "type": "number",
       "ui": {
         "array_handling": "none",
         "display_decimals": 1,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Sensor Performance",
         "guidance_md": null,
         "label": "Lift-off Distance (LOD)",
-        "order": 58,
+        "order": 45,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -5332,8 +5608,8 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "mm",
-      "value_form": "mixed",
-      "value_form_sample": "mixed_values_and_ranges"
+      "value_form": "single",
+      "value_form_sample": "scalar"
     },
     "lift_settings": {
       "aliases": [],
@@ -5352,11 +5628,15 @@
       "display_name": "Lift Settings",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open_prefer_known",
-        "source": null
+        "source": "data_lists.lift_settings"
       },
       "enum_policy": "open_prefer_known",
+      "enum_source": "data_lists.lift_settings",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -5385,9 +5665,13 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Sensor & Performance",
+      "group": "Sensor Performance",
       "key": "lift_settings",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "list",
       "parse": {
         "delimiters": [
@@ -5442,10 +5726,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Sensor Performance",
         "guidance_md": null,
         "label": "Lift Settings",
-        "order": 59,
+        "order": 46,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -5513,7 +5797,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "General",
+      "group": "Appearance",
       "key": "lighting",
       "min_evidence_refs": 1,
       "output_shape": "list",
@@ -5572,10 +5856,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "General",
+        "group": "Appearance",
         "guidance_md": null,
         "label": "Lighting",
-        "order": 15,
+        "order": 8,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -5595,11 +5879,14 @@
         "overall length"
       ],
       "availability": "always",
-      "canonical_key": "length",
+      "canonical_key": "lngth",
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
+        "range": {
+          "max": 180,
+          "min": 50
+        },
         "rounding": {
           "decimals": 1,
           "mode": "nearest"
@@ -5613,7 +5900,10 @@
       "display_name": "Length",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open",
         "source": null
       },
@@ -5641,18 +5931,18 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Dimensions",
+      "group": "Shape & Ergonomics",
       "key": "lngth",
       "min_evidence_refs": 2,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
       "parse": {
-        "delimiters": [],
-        "range_separators": [],
         "unit": "mm"
       },
       "parse_rules": {
-        "delimiters": [],
-        "separators": [],
         "unit": "mm"
       },
       "priority": {
@@ -5661,7 +5951,7 @@
         "required_level": "mandatory"
       },
       "required_level": "mandatory",
-      "round": "1dp",
+      "round": "none",
       "search_hints": {
         "content_types": [
           "spec_sheet",
@@ -5688,10 +5978,10 @@
         "display_decimals": 1,
         "display_mode": "all",
         "examples": [],
-        "group": "Dimensions",
+        "group": "Shape & Ergonomics",
         "guidance_md": null,
         "label": "Length",
-        "order": 33,
+        "order": 25,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -5711,21 +6001,27 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
-        "shape": "scalar",
-        "type": "string",
-        "unit": null
+        "list_rules": {
+          "dedupe": true,
+          "sort": "none"
+        },
+        "shape": "list",
+        "type": "string"
       },
       "data_type": "string",
       "difficulty": "easy",
       "display_name": "Material",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open_prefer_known",
-        "source": null
+        "source": "data_lists.material"
       },
       "enum_policy": "open_prefer_known",
+      "enum_source": "data_lists.material",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -5750,21 +6046,32 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Construction",
+      "group": "Build & Materials",
       "key": "material",
       "min_evidence_refs": 1,
-      "output_shape": "scalar",
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
+      "output_shape": "list",
       "parse": {
-        "component_type": "material",
-        "delimiters": [],
-        "range_separators": [],
-        "unit": null
+        "delimiters": [
+          ",",
+          "/",
+          "|",
+          ";",
+          "+"
+        ]
       },
       "parse_rules": {
-        "component_type": "material",
-        "delimiters": [],
-        "separators": [],
-        "unit": null
+        "delimiters": [
+          ",",
+          "/",
+          "|",
+          ";",
+          "+"
+        ],
+        "separators": []
       },
       "priority": {
         "availability": "always",
@@ -5793,17 +6100,17 @@
         ]
       },
       "selection_policy": {},
-      "shape": "scalar",
+      "shape": "list",
       "type": "string",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Construction",
+        "group": "Build & Materials",
         "guidance_md": null,
         "label": "Material",
-        "order": 32,
+        "order": 19,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -5812,8 +6119,8 @@
         "tooltip_md": "Define 'Material' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form": "set",
+      "value_form_sample": "list"
     },
     "mcu": {
       "aliases": [],
@@ -5832,11 +6139,15 @@
       "display_name": "MCU",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open_prefer_known",
-        "source": null
+        "source": "data_lists.mcu"
       },
       "enum_policy": "open_prefer_known",
+      "enum_source": "data_lists.mcu",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -5870,9 +6181,13 @@
           "sheet": "data_lists"
         }
       },
-      "group": "Electronics",
+      "group": "Encoder & MCU",
       "key": "mcu",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
@@ -5917,10 +6232,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Electronics",
+        "group": "Encoder & MCU",
         "guidance_md": null,
         "label": "MCU",
-        "order": 43,
+        "order": 79,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -5974,7 +6289,7 @@
         },
         "related_to": "mcu"
       },
-      "group": "Electronics",
+      "group": "Encoder & MCU",
       "key": "mcu_link",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -6015,10 +6330,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Electronics",
+        "group": "Encoder & MCU",
         "guidance_md": null,
         "label": "MCU Link",
-        "order": 44,
+        "order": 80,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -6037,7 +6352,10 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
+        "range": {
+          "max": 8,
+          "min": 0
+        },
         "rounding": {
           "decimals": 0,
           "mode": "nearest"
@@ -6050,7 +6368,10 @@
       "display_name": "Middle Buttons",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open",
         "source": null
       },
@@ -6077,19 +6398,16 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Buttons & Wheel",
       "key": "middle_buttons",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
-      "parse": {
-        "delimiters": [],
-        "range_separators": []
-      },
-      "parse_rules": {
-        "delimiters": [],
-        "separators": [],
-        "unit": "none"
-      },
+      "parse": {},
+      "parse_rules": {},
       "priority": {
         "availability": "always",
         "difficulty": "easy",
@@ -6122,10 +6440,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Buttons & Wheel",
         "guidance_md": null,
         "label": "Middle Buttons",
-        "order": 77,
+        "order": 70,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -6185,7 +6503,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Sensor & Performance",
+      "group": "Sensor Processing & Latency",
       "key": "motion_sync",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -6265,10 +6583,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Sensor Processing & Latency",
         "guidance_md": null,
         "label": "Motion Sync",
-        "order": 60,
+        "order": 52,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -6297,11 +6615,15 @@
       "display_name": "Mouse-side Connector",
       "enum": {
         "match": {},
-        "new_value_policy": {},
-        "policy": "open",
-        "source": null
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
+        "policy": "open_prefer_known",
+        "source": "data_lists.mouse_side_connector"
       },
-      "enum_policy": "open",
+      "enum_policy": "open_prefer_known",
+      "enum_source": "data_lists.mouse_side_connector",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -6324,9 +6646,13 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Connectivity",
+      "group": "Connectivity & Power",
       "key": "mouse_side_connector",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
@@ -6370,10 +6696,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Connectivity",
+        "group": "Connectivity & Power",
         "guidance_md": null,
         "label": "Mouse-side Connector",
-        "order": 20,
+        "order": 18,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -6433,7 +6759,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Sensor & Performance",
+      "group": "Sensor Processing & Latency",
       "key": "nvidia_reflex",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -6513,10 +6839,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Sensor Processing & Latency",
         "guidance_md": null,
         "label": "NVIDIA Reflex",
-        "order": 63,
+        "order": 55,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -6576,7 +6902,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Buttons & Wheel",
       "key": "onboard_memory",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -6657,10 +6983,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Buttons & Wheel",
         "guidance_md": null,
         "label": "Onboard Memory",
-        "order": 81,
+        "order": 73,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -6679,7 +7005,10 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
+        "range": {
+          "max": 10,
+          "min": 0
+        },
         "rounding": {
           "decimals": 0,
           "mode": "nearest"
@@ -6692,7 +7021,10 @@
       "display_name": "Onboard Memory (Value)",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open",
         "source": null
       },
@@ -6719,19 +7051,16 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Buttons & Wheel",
       "key": "onboard_memory_value",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
-      "parse": {
-        "delimiters": [],
-        "range_separators": []
-      },
-      "parse_rules": {
-        "delimiters": [],
-        "separators": [],
-        "unit": "none"
-      },
+      "parse": {},
+      "parse_rules": {},
       "priority": {
         "availability": "always",
         "difficulty": "easy",
@@ -6764,10 +7093,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Buttons & Wheel",
         "guidance_md": null,
         "label": "Onboard Memory (Value)",
-        "order": 82,
+        "order": 74,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -6827,7 +7156,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Connectivity",
+      "group": "Connectivity & Power",
       "key": "paracord",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -6907,10 +7236,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Connectivity",
+        "group": "Connectivity & Power",
         "guidance_md": null,
         "label": "Paracord",
-        "order": 23,
+        "order": 16,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -6935,7 +7264,18 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
+        "list_rules": {
+          "dedupe": true,
+          "sort": "desc"
+        },
+        "range": {
+          "max": 16000,
+          "min": 125
+        },
+        "rounding": {
+          "decimals": 0,
+          "mode": "nearest"
+        },
         "shape": "list",
         "type": "number",
         "unit": "Hz"
@@ -6984,7 +7324,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "Sensor & Performance",
+      "group": "Sensor Performance",
       "key": "polling_rate",
       "min_evidence_refs": 2,
       "output_shape": "list",
@@ -7016,7 +7356,7 @@
         "required_level": "mandatory"
       },
       "required_level": "mandatory",
-      "round": "none",
+      "round": "int",
       "search_hints": {
         "content_types": [
           "product_page",
@@ -7048,10 +7388,10 @@
         "display_decimals": 0,
         "display_mode": "high",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Sensor Performance",
         "guidance_md": null,
         "label": "Polling Rate",
-        "order": 54,
+        "order": 44,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -7109,7 +7449,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "General",
+      "group": "Product & Variants",
       "key": "price_range",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -7157,10 +7497,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "General",
+        "group": "Product & Variants",
         "guidance_md": null,
         "label": "Price (MSRP)",
-        "order": 12,
+        "order": 6,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -7220,7 +7560,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Buttons & Wheel",
       "key": "profile_switching",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -7300,10 +7640,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Buttons & Wheel",
         "guidance_md": null,
         "label": "Profile Switching",
-        "order": 83,
+        "order": 75,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -7322,7 +7662,10 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
+        "range": {
+          "max": 30,
+          "min": 0
+        },
         "rounding": {
           "decimals": 0,
           "mode": "nearest"
@@ -7335,7 +7678,10 @@
       "display_name": "Programmable Buttons",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open",
         "source": null
       },
@@ -7362,19 +7708,16 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Buttons & Wheel",
       "key": "programmable_buttons",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
-      "parse": {
-        "delimiters": [],
-        "range_separators": []
-      },
-      "parse_rules": {
-        "delimiters": [],
-        "separators": [],
-        "unit": "none"
-      },
+      "parse": {},
+      "parse_rules": {},
       "priority": {
         "availability": "always",
         "difficulty": "easy",
@@ -7409,10 +7752,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Buttons & Wheel",
         "guidance_md": null,
         "label": "Programmable Buttons",
-        "order": 78,
+        "order": 68,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -7446,6 +7789,7 @@
           "tier3"
         ]
       },
+      "group": "Product & Variants",
       "key": "release_date",
       "parse": {
         "accepted_formats": [
@@ -7483,8 +7827,9 @@
         ]
       },
       "ui": {
-        "group": "general",
+        "group": "Product & Variants",
         "label": "Release Date",
+        "order": 4,
         "tooltip_md": "Define 'Release Date' according to contract. If not provable with evidence, output 'unk' with unknown_reason."
       },
       "variant_dependent": true
@@ -7496,12 +7841,10 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
         "shape": "scalar",
-        "type": "string",
-        "unit": null
+        "type": "boolean"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "RGB",
       "enum": {
@@ -7509,11 +7852,10 @@
           "format_hint": "X zone (rgb), X zone (led)"
         },
         "new_value_policy": {},
-        "policy": "open_prefer_known",
-        "source": "known_values.yes_no"
+        "policy": "closed",
+        "source": null
       },
-      "enum_policy": "open_prefer_known",
-      "enum_source": "known_values.yes_no",
+      "enum_policy": "closed",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -7536,7 +7878,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "General",
+      "group": "Appearance",
       "key": "rgb",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -7548,17 +7890,17 @@
           "0",
           "off"
         ],
-        "range_separators": [],
         "true_tokens": [
           "yes",
           "true",
           "1",
           "on"
         ],
-        "unit": null,
         "unknown_tokens": [
           "unk",
           "n/a",
+          "na",
+          "unknown",
           ""
         ]
       },
@@ -7577,10 +7919,11 @@
           "1",
           "on"
         ],
-        "unit": null,
         "unknown_tokens": [
           "unk",
           "n/a",
+          "na",
+          "unknown",
           ""
         ]
       },
@@ -7612,16 +7955,16 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "General",
+        "group": "Appearance",
         "guidance_md": null,
         "label": "RGB",
-        "order": 16,
+        "order": 9,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -7684,7 +8027,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "Sensor & Performance",
+      "group": "Sensor Identity",
       "key": "sensor",
       "min_evidence_refs": 2,
       "output_shape": "scalar",
@@ -7736,10 +8079,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Sensor Identity",
         "guidance_md": null,
         "label": "Sensor",
-        "order": 45,
+        "order": 35,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -7798,7 +8141,7 @@
         },
         "related_to": "sensor"
       },
-      "group": "Sensor & Performance",
+      "group": "Sensor Identity",
       "key": "sensor_brand",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -7846,10 +8189,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Sensor Identity",
         "guidance_md": null,
         "label": "Sensor Brand",
-        "order": 46,
+        "order": 36,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -7870,11 +8213,6 @@
         "sensor_date <= release_date"
       ],
       "contract": {
-        "list_rules": {},
-        "rounding": {
-          "decimals": 0,
-          "mode": "nearest"
-        },
         "shape": "scalar",
         "type": "date"
       },
@@ -7883,11 +8221,14 @@
       "display_name": "Sensor Date",
       "enum": {
         "match": {},
-        "new_value_policy": {},
-        "policy": "open_prefer_known",
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
+        "policy": "open",
         "source": null
       },
-      "enum_policy": "open_prefer_known",
+      "enum_policy": "open",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -7911,30 +8252,35 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Sensor & Performance",
+      "group": "Sensor Identity",
       "key": "sensor_date",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
       "parse": {
         "accepted_formats": [
-          "YYYY",
+          "YYYY-MM-DD",
           "YYYY-MM",
-          "YYYY-MM-DD"
+          "YYYY",
+          "MMM YYYY",
+          "Month YYYY"
         ],
-        "delimiters": [],
-        "range_separators": [],
         "strict": false
       },
       "parse_rules": {
         "accepted_formats": [
-          "YYYY",
+          "YYYY-MM-DD",
           "YYYY-MM",
-          "YYYY-MM-DD"
+          "YYYY",
+          "MMM YYYY",
+          "Month YYYY"
         ],
         "delimiters": [],
         "separators": [],
-        "strict": false,
-        "unit": "year"
+        "strict": false
       },
       "priority": {
         "availability": "sometimes",
@@ -7942,7 +8288,7 @@
         "required_level": "non_mandatory"
       },
       "required_level": "non_mandatory",
-      "round": "int",
+      "round": "none",
       "search_hints": {
         "content_types": [
           "spec_sheet"
@@ -7954,8 +8300,9 @@
         ],
         "query_terms": [
           "sensor release date",
-          "sensor launch",
-          "sensor generation"
+          "sensor launch date",
+          "sensor announcement date",
+          "sensor generation date"
         ]
       },
       "selection_policy": {},
@@ -7966,16 +8313,16 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
-        "guidance_md": null,
+        "group": "Sensor Identity",
+        "guidance_md": "Extract the sensor component release/launch date, not the mouse product release date.\nNormalize to ISO date. Use YYYY-MM-DD when exact day is known; use the first day of the known month/year when only month or year is available.\nHard constraint: sensor_date must be less than or equal to release_date. If evidence would make sensor_date later than release_date, reject that candidate and output unk with conflict reason instead.",
         "label": "Sensor Date",
-        "order": 47,
+        "order": 38,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
-        "suffix": "year",
+        "suffix": null,
         "tooltip_key": null,
-        "tooltip_md": "Define 'Sensor Date' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+        "tooltip_md": "Sensor release/launch date. Must be <= product release_date; reject later dates as conflicting evidence.",
         "tooltip_source": null
       },
       "value_form": "single",
@@ -7989,9 +8336,12 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
+        "range": {
+          "max": 150,
+          "min": 0
+        },
         "rounding": {
-          "decimals": 2,
+          "decimals": 1,
           "mode": "nearest"
         },
         "shape": "scalar",
@@ -8003,11 +8353,14 @@
       "display_name": "Sensor Latency",
       "enum": {
         "match": {},
-        "new_value_policy": {},
-        "policy": "open_prefer_known",
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
+        "policy": "open",
         "source": null
       },
-      "enum_policy": "open_prefer_known",
+      "enum_policy": "open",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -8031,18 +8384,18 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Sensor & Performance",
+      "group": "Sensor Processing & Latency",
       "key": "sensor_latency",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
       "parse": {
-        "delimiters": [],
-        "range_separators": [],
         "unit": "ms"
       },
       "parse_rules": {
-        "delimiters": [],
-        "separators": [],
         "unit": "ms"
       },
       "priority": {
@@ -8051,7 +8404,7 @@
         "required_level": "non_mandatory"
       },
       "required_level": "non_mandatory",
-      "round": "2dp",
+      "round": "none",
       "search_hints": {
         "content_types": [
           "review",
@@ -8071,16 +8424,7 @@
           "motion-to-screen latency"
         ]
       },
-      "selection_policy": {
-        "mode_preference": [
-          "wireless",
-          "wired",
-          "bluetooth"
-        ],
-        "rule": "If deterministic selection is possible (single mode + within tolerance), set scalar; else unk.",
-        "source_field": "sensor_latency_list",
-        "tolerance_ms": 0.25
-      },
+      "selection_policy": {},
       "shape": "scalar",
       "type": "number",
       "ui": {
@@ -8088,16 +8432,16 @@
         "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
-        "guidance_md": null,
+        "group": "Sensor Processing & Latency",
+        "guidance_md": "Sensor Latency is a single numeric ms field, not a comma-delimited list.\nKeep mode-specific measurements in sensor_latency_wired, sensor_latency_wireless, sensor_latency_bluetooth.\nOnly fill this scalar when a single authoritative value is reported or the source clearly names the primary mode value; otherwise output unk.",
         "label": "Sensor Latency",
-        "order": 51,
+        "order": 47,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": "ms",
         "tooltip_key": "sensor_latency",
-        "tooltip_md": "Define 'Sensor Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+        "tooltip_md": "Sensor Latency as one numeric ms value. Mode-specific values belong in the separate wired/wireless/bluetooth fields.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "ms",
@@ -8115,6 +8459,10 @@
       "constraints": [],
       "contract": {
         "list_rules": {},
+        "range": {
+          "max": 150,
+          "min": 0
+        },
         "rounding": {
           "decimals": 2,
           "mode": "nearest"
@@ -8156,7 +8504,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Sensor & Performance",
+      "group": "Sensor Processing & Latency",
       "key": "sensor_latency_bluetooth",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -8203,10 +8551,10 @@
         "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Sensor Processing & Latency",
         "guidance_md": null,
         "label": "Sensor Latency (Bluetooth)",
-        "order": 51,
+        "order": 50,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -8230,6 +8578,10 @@
       "constraints": [],
       "contract": {
         "list_rules": {},
+        "range": {
+          "max": 150,
+          "min": 0
+        },
         "rounding": {
           "decimals": 2,
           "mode": "nearest"
@@ -8271,7 +8623,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Sensor & Performance",
+      "group": "Sensor Processing & Latency",
       "key": "sensor_latency_wired",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -8318,10 +8670,10 @@
         "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Sensor Processing & Latency",
         "guidance_md": null,
         "label": "Sensor Latency (Wired)",
-        "order": 51,
+        "order": 48,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -8345,6 +8697,10 @@
       "constraints": [],
       "contract": {
         "list_rules": {},
+        "range": {
+          "max": 150,
+          "min": 0
+        },
         "rounding": {
           "decimals": 2,
           "mode": "nearest"
@@ -8386,7 +8742,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Sensor & Performance",
+      "group": "Sensor Processing & Latency",
       "key": "sensor_latency_wireless",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -8433,10 +8789,10 @@
         "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Sensor Processing & Latency",
         "guidance_md": null,
         "label": "Sensor Latency (Wireless)",
-        "order": 51,
+        "order": 49,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -8494,7 +8850,7 @@
         },
         "related_to": "sensor"
       },
-      "group": "Sensor & Performance",
+      "group": "Sensor Identity",
       "key": "sensor_link",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -8538,10 +8894,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Sensor Identity",
         "guidance_md": null,
         "label": "Sensor Link",
-        "order": 48,
+        "order": 39,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -8572,13 +8928,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": "known_values.sensor_type"
+        "source": "data_lists.sensor_type"
       },
       "enum_policy": "closed",
-      "enum_source": {
-        "ref": "sensor_type",
-        "type": "known_values"
-      },
+      "enum_source": "data_lists.sensor_type",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -8612,7 +8965,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "Sensor & Performance",
+      "group": "Sensor Identity",
       "key": "sensor_type",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -8657,10 +9010,10 @@
         "display_decimals": 1,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Sensor Identity",
         "guidance_md": null,
         "label": "Sensor Type",
-        "order": 49,
+        "order": 37,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -8671,7 +9024,15 @@
       },
       "value_form": "single",
       "value_form_sample": "scalar",
-      "variance_policy": "authoritative"
+      "variance_policy": "authoritative",
+      "vocab": {
+        "allow_new": false,
+        "known_values": [
+          "optical",
+          "laser"
+        ],
+        "mode": "closed"
+      }
     },
     "shape": {
       "aliases": [],
@@ -8692,13 +9053,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": "known_values.shape"
+        "source": "data_lists.shape"
       },
       "enum_policy": "closed",
-      "enum_source": {
-        "ref": "shape",
-        "type": "known_values"
-      },
+      "enum_source": "data_lists.shape",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -8732,7 +9090,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "Ergonomics",
+      "group": "Shape & Ergonomics",
       "key": "shape",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -8781,10 +9139,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Ergonomics",
+        "group": "Shape & Ergonomics",
         "guidance_md": null,
         "label": "Shape",
-        "order": 37,
+        "order": 28,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -8794,7 +9152,16 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "vocab": {
+        "allow_new": false,
+        "known_values": [
+          "symmetrical",
+          "ergonomic",
+          "asymmetrical"
+        ],
+        "mode": "closed"
+      }
     },
     "shift_latency": {
       "aliases": [],
@@ -8807,9 +9174,12 @@
       },
       "constraints": [],
       "contract": {
-        "list_rules": {},
+        "range": {
+          "max": 100,
+          "min": 0
+        },
         "rounding": {
-          "decimals": 2,
+          "decimals": 1,
           "mode": "nearest"
         },
         "shape": "scalar",
@@ -8821,12 +9191,14 @@
       "display_name": "DPI Shift Latency",
       "enum": {
         "match": {},
-        "new_value_policy": {},
-        "policy": null,
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
+        "policy": "open",
         "source": null
       },
-      "enum_policy": null,
-      "enum_source": null,
+      "enum_policy": "open",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -8850,18 +9222,18 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Sensor & Performance",
+      "group": "Sensor Processing & Latency",
       "key": "shift_latency",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
       "parse": {
-        "delimiters": [],
-        "range_separators": [],
         "unit": "ms"
       },
       "parse_rules": {
-        "delimiters": [],
-        "separators": [],
         "unit": "ms"
       },
       "priority": {
@@ -8870,7 +9242,7 @@
         "required_level": "non_mandatory"
       },
       "required_level": "non_mandatory",
-      "round": "2dp",
+      "round": "none",
       "search_hints": {
         "content_types": [
           "review",
@@ -8895,10 +9267,10 @@
         "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Sensor Processing & Latency",
         "guidance_md": null,
         "label": "DPI Shift Latency",
-        "order": 53,
+        "order": 51,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -8918,7 +9290,10 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
+        "range": {
+          "max": 12,
+          "min": 0
+        },
         "rounding": {
           "decimals": 0,
           "mode": "nearest"
@@ -8931,7 +9306,10 @@
       "display_name": "Side Buttons",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open",
         "source": null
       },
@@ -8958,19 +9336,16 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Buttons & Wheel",
       "key": "side_buttons",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
-      "parse": {
-        "delimiters": [],
-        "range_separators": []
-      },
-      "parse_rules": {
-        "delimiters": [],
-        "separators": [],
-        "unit": "none"
-      },
+      "parse": {},
+      "parse_rules": {},
       "priority": {
         "availability": "always",
         "difficulty": "easy",
@@ -9004,10 +9379,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Buttons & Wheel",
         "guidance_md": null,
         "label": "Side Buttons",
-        "order": 76,
+        "order": 69,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -9067,7 +9442,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Switches",
+      "group": "Click Feel & Latency",
       "key": "silent_clicks",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -9148,10 +9523,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Switches",
+        "group": "Click Feel & Latency",
         "guidance_md": null,
         "label": "Silent Clicks",
-        "order": 30,
+        "order": 67,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -9185,6 +9560,7 @@
           "tier3"
         ]
       },
+      "group": "Product & Variants",
       "key": "sku",
       "parse": {
         "accepted_formats": [],
@@ -9216,8 +9592,9 @@
         ]
       },
       "ui": {
-        "group": "general",
+        "group": "Product & Variants",
         "label": "SKU",
+        "order": 1,
         "tooltip_md": "Define 'SKU / Part #' according to contract. If not provable with evidence, output 'unk' with unknown_reason."
       },
       "variant_dependent": true
@@ -9270,7 +9647,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Sensor & Performance",
+      "group": "Sensor Processing & Latency",
       "key": "smoothing",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -9351,10 +9728,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Sensor Processing & Latency",
         "guidance_md": null,
         "label": "Smoothing",
-        "order": 62,
+        "order": 54,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -9417,7 +9794,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "Switches",
+      "group": "Switch Identity",
       "key": "switch",
       "min_evidence_refs": 2,
       "output_shape": "scalar",
@@ -9468,10 +9845,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Switches",
+        "group": "Switch Identity",
         "guidance_md": null,
         "label": "Switch",
-        "order": 64,
+        "order": 56,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -9530,7 +9907,7 @@
         },
         "related_to": "switch"
       },
-      "group": "Switches",
+      "group": "Switch Identity",
       "key": "switch_brand",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -9579,16 +9956,117 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Switches",
+        "group": "Switch Identity",
         "guidance_md": null,
         "label": "Switch Brand",
-        "order": 65,
+        "order": 57,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
         "suffix": null,
         "tooltip_key": null,
         "tooltip_md": "Switch manufacturer brand. Prefer component DB when switch identified.",
+        "tooltip_source": null
+      },
+      "value_form": "single",
+      "value_form_sample": "scalar"
+    },
+    "switch_link": {
+      "aliases": [
+        "Switch Link",
+        "switch_link",
+        "switches_link"
+      ],
+      "availability": "sometimes",
+      "canonical_key": "switch_link",
+      "component": null,
+      "constraints": [],
+      "contract": {
+        "list_rules": {},
+        "shape": "scalar",
+        "type": "url",
+        "unit": null
+      },
+      "data_type": "url",
+      "difficulty": "medium",
+      "display_name": "Switch Link",
+      "enum": {
+        "match": {},
+        "new_value_policy": {},
+        "policy": "open_prefer_known",
+        "source": null
+      },
+      "enum_policy": "open_prefer_known",
+      "evidence": {
+        "min_evidence_refs": 1,
+        "tier_preference": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ]
+      },
+      "field_key": "switch_link",
+      "field_studio_hints": {
+        "dataEntry": {
+          "key_cell": "B67",
+          "row": 67,
+          "sample_values": [
+            "https://www.mouser.com/ProductDetail/Omron-Electronics/D2FC-F-7N20M?qs=17ckDYBRdek0%2FvhX1fLcuQ%3D%3D"
+          ],
+          "sheet": "dataEntry"
+        }
+      },
+      "group": "Switch Identity",
+      "key": "switch_link",
+      "output_shape": "scalar",
+      "parse": {
+        "delimiters": [],
+        "range_separators": [],
+        "unit": null
+      },
+      "parse_rules": {
+        "delimiters": [],
+        "separators": [],
+        "unit": null
+      },
+      "priority": {
+        "availability": "sometimes",
+        "difficulty": "medium",
+        "required_level": "non_mandatory"
+      },
+      "required_level": "non_mandatory",
+      "round": "none",
+      "search_hints": {
+        "content_types": [
+          "spec_sheet"
+        ],
+        "domain_hints": [
+          "eloshapes.com",
+          "techpowerup.com"
+        ],
+        "query_terms": [
+          "switch datasheet",
+          "switch specifications"
+        ]
+      },
+      "selection_policy": {},
+      "shape": "scalar",
+      "type": "url",
+      "ui": {
+        "array_handling": "none",
+        "display_decimals": 0,
+        "display_mode": "all",
+        "examples": [],
+        "group": "Switch Identity",
+        "guidance_md": null,
+        "label": "Switch Link",
+        "order": 59,
+        "placeholder": "",
+        "prefix": null,
+        "short_label": null,
+        "suffix": null,
+        "tooltip_key": null,
+        "tooltip_md": "URL for switch datasheet, manufacturer component page, or reliable switch specification source. Output unk when not provable.",
         "tooltip_source": null
       },
       "value_form": "single",
@@ -9613,13 +10091,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "closed",
-        "source": "known_values.switch_type"
+        "source": "data_lists.switch_type"
       },
       "enum_policy": "closed",
-      "enum_source": {
-        "ref": "switch_type",
-        "type": "known_values"
-      },
+      "enum_source": "data_lists.switch_type",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -9654,7 +10129,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "Switches",
+      "group": "Switch Identity",
       "key": "switch_type",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -9700,10 +10175,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Switches",
+        "group": "Switch Identity",
         "guidance_md": null,
         "label": "Switch Type",
-        "order": 66,
+        "order": 58,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -9714,112 +10189,17 @@
       },
       "value_form": "single",
       "value_form_sample": "scalar",
-      "variance_policy": "authoritative"
-    },
-    "switches_link": {
-      "aliases": [
-        "Switch Link",
-        "switch_link",
-        "switches_link"
-      ],
-      "availability": "sometimes",
-      "canonical_key": "switches_link",
-      "component": null,
-      "constraints": [],
-      "contract": {
-        "list_rules": {},
-        "shape": "scalar",
-        "type": "url",
-        "unit": null
-      },
-      "data_type": "url",
-      "difficulty": "medium",
-      "display_name": "Switches LInk",
-      "enum": {
-        "match": {},
-        "new_value_policy": {},
-        "policy": "open_prefer_known",
-        "source": null
-      },
-      "enum_policy": "open_prefer_known",
-      "evidence": {
-        "min_evidence_refs": 1,
-        "tier_preference": [
-          "tier1",
-          "tier2",
-          "tier3"
-        ]
-      },
-      "field_key": "switches_link",
-      "field_studio_hints": {
-        "dataEntry": {
-          "key_cell": null,
-          "row": null,
-          "sample_values": [],
-          "sheet": "dataEntry"
-        },
-        "key_column": "B",
-        "key_row": 67,
-        "key_sheet": "dataEntry",
-        "sample_values": [
-          "https://www.mouser.com/ProductDetail/Omron-Electronics/D2FC-F-7N20M?qs=17ckDYBRdek0%2FvhX1fLcuQ%3D%3D"
-        ]
-      },
-      "group": "Switches",
-      "key": "switches_link",
-      "output_shape": "scalar",
-      "parse": {
-        "delimiters": [],
-        "range_separators": [],
-        "unit": null
-      },
-      "parse_rules": {
-        "delimiters": [],
-        "separators": [],
-        "unit": null
-      },
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
-      "required_level": "non_mandatory",
-      "round": "none",
-      "search_hints": {
-        "content_types": [
-          "spec_sheet"
+      "variance_policy": "authoritative",
+      "vocab": {
+        "allow_new": false,
+        "known_values": [
+          "mechanical",
+          "optical",
+          "optical / mechanical",
+          "inductive"
         ],
-        "domain_hints": [
-          "eloshapes.com",
-          "techpowerup.com"
-        ],
-        "query_terms": [
-          "switch datasheet",
-          "switch specifications"
-        ]
-      },
-      "selection_policy": {},
-      "shape": "scalar",
-      "type": "url",
-      "ui": {
-        "array_handling": "none",
-        "display_decimals": 0,
-        "display_mode": "all",
-        "examples": [],
-        "group": "Switches",
-        "guidance_md": null,
-        "label": "Switches LInk",
-        "order": 999,
-        "placeholder": "",
-        "prefix": null,
-        "short_label": null,
-        "suffix": null,
-        "tooltip_key": null,
-        "tooltip_md": "",
-        "tooltip_source": null
-      },
-      "value_form": "single",
-      "value_form_sample": "scalar"
+        "mode": "closed"
+      }
     },
     "thumb_rest": {
       "aliases": [],
@@ -9828,21 +10208,19 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
         "shape": "scalar",
-        "type": "string",
-        "unit": null
+        "type": "boolean"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "Thumb Rest",
       "enum": {
         "match": {},
         "new_value_policy": {},
-        "policy": "open",
+        "policy": "closed",
         "source": null
       },
-      "enum_policy": "open",
+      "enum_policy": "closed",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -9865,19 +10243,54 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Ergonomics",
+      "group": "Shape & Ergonomics",
       "key": "thumb_rest",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
-        "range_separators": [],
-        "unit": null
+        "false_tokens": [
+          "no",
+          "false",
+          "0",
+          "off"
+        ],
+        "true_tokens": [
+          "yes",
+          "true",
+          "1",
+          "on"
+        ],
+        "unknown_tokens": [
+          "unk",
+          "n/a",
+          "na",
+          "unknown",
+          ""
+        ]
       },
       "parse_rules": {
         "delimiters": [],
+        "false_tokens": [
+          "no",
+          "false",
+          "0",
+          "off"
+        ],
         "separators": [],
-        "unit": null
+        "true_tokens": [
+          "yes",
+          "true",
+          "1",
+          "on"
+        ],
+        "unknown_tokens": [
+          "unk",
+          "n/a",
+          "na",
+          "unknown",
+          ""
+        ]
       },
       "priority": {
         "availability": "always",
@@ -9905,16 +10318,16 @@
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "string",
+      "type": "boolean",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Ergonomics",
+        "group": "Shape & Ergonomics",
         "guidance_md": null,
         "label": "Thumb Rest",
-        "order": 40,
+        "order": 32,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -9974,7 +10387,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Buttons & Wheel",
       "key": "tilt_scroll_wheel",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -10055,10 +10468,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Buttons & Wheel",
         "guidance_md": null,
         "label": "Tilt Scroll Wheel",
-        "order": 79,
+        "order": 71,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -10082,7 +10495,10 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
+        "range": {
+          "max": 300,
+          "min": 20
+        },
         "rounding": {
           "decimals": 1,
           "mode": "nearest"
@@ -10096,7 +10512,10 @@
       "display_name": "Weight",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open",
         "source": null
       },
@@ -10124,18 +10543,18 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Construction",
+      "group": "Build & Materials",
       "key": "weight",
       "min_evidence_refs": 2,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
       "parse": {
-        "delimiters": [],
-        "range_separators": [],
         "unit": "g"
       },
       "parse_rules": {
-        "delimiters": [],
-        "separators": [],
         "unit": "g"
       },
       "priority": {
@@ -10144,7 +10563,7 @@
         "required_level": "mandatory"
       },
       "required_level": "mandatory",
-      "round": "1dp",
+      "round": "none",
       "search_hints": {
         "content_types": [
           "review",
@@ -10174,10 +10593,10 @@
         "display_decimals": 1,
         "display_mode": "all",
         "examples": [],
-        "group": "Construction",
+        "group": "Build & Materials",
         "guidance_md": null,
         "label": "Weight",
-        "order": 31,
+        "order": 24,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -10201,7 +10620,10 @@
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
+        "range": {
+          "max": 120,
+          "min": 30
+        },
         "rounding": {
           "decimals": 1,
           "mode": "nearest"
@@ -10215,7 +10637,10 @@
       "display_name": "Width",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open",
         "source": null
       },
@@ -10243,18 +10668,18 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Dimensions",
+      "group": "Shape & Ergonomics",
       "key": "width",
       "min_evidence_refs": 2,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
       "parse": {
-        "delimiters": [],
-        "range_separators": [],
         "unit": "mm"
       },
       "parse_rules": {
-        "delimiters": [],
-        "separators": [],
         "unit": "mm"
       },
       "priority": {
@@ -10263,7 +10688,7 @@
         "required_level": "mandatory"
       },
       "required_level": "mandatory",
-      "round": "1dp",
+      "round": "none",
       "search_hints": {
         "content_types": [
           "spec_sheet",
@@ -10290,10 +10715,10 @@
         "display_decimals": 1,
         "display_mode": "all",
         "examples": [],
-        "group": "Dimensions",
+        "group": "Shape & Ergonomics",
         "guidance_md": null,
         "label": "Width",
-        "order": 34,
+        "order": 26,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -10354,7 +10779,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Connectivity",
+      "group": "Connectivity & Power",
       "key": "wireless_charging",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -10436,10 +10861,10 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Connectivity",
+        "group": "Connectivity & Power",
         "guidance_md": null,
         "label": "Wireless Charging",
-        "order": 24,
+        "order": 13,
         "placeholder": "",
         "prefix": null,
         "short_label": null,
@@ -10502,84 +10927,84 @@
     "variant_row": 5
   },
   "selected_keys": [
+    "sku",
     "colors",
     "editions",
-    "sku",
     "release_date",
-    "design",
     "discontinued",
     "price_range",
+    "design",
     "lighting",
     "rgb",
-    "sensor",
-    "sensor_brand",
-    "sensor_type",
-    "sensor_link",
-    "sensor_date",
-    "sensor_latency",
-    "flawless_sensor",
-    "dpi",
-    "ips",
-    "acceleration",
-    "hardware_acceleration",
-    "polling_rate",
-    "lift",
-    "lift_settings",
-    "smoothing",
-    "motion_sync",
-    "nvidia_reflex",
-    "shift_latency",
-    "sensor_latency_wired",
-    "sensor_latency_wireless",
-    "sensor_latency_bluetooth",
-    "switch",
-    "switch_brand",
-    "switch_type",
-    "switches_link",
-    "hot_swappable",
-    "click_force",
-    "click_latency",
-    "debounce",
-    "silent_clicks",
-    "click_latency_wired",
-    "click_latency_wireless",
-    "click_latency_bluetooth",
-    "programmable_buttons",
-    "side_buttons",
-    "middle_buttons",
-    "onboard_memory",
-    "onboard_memory_value",
-    "profile_switching",
-    "adjustable_scroll_wheel",
-    "tilt_scroll_wheel",
-    "encoder",
-    "encoder_brand",
-    "encoder_link",
     "connection",
     "connectivity",
     "bluetooth",
     "wireless_charging",
+    "battery_hours",
     "cable_type",
     "paracord",
     "computer_side_connector",
     "mouse_side_connector",
-    "battery_hours",
     "material",
     "coating",
     "feet_material",
     "honeycomb_frame",
     "adjustable_weight",
     "weight",
-    "shape",
-    "form_factor",
-    "grip",
-    "hand_size",
-    "hump",
-    "front_flare",
-    "thumb_rest",
     "lngth",
     "width",
     "height",
+    "shape",
+    "form_factor",
+    "hump",
+    "front_flare",
+    "thumb_rest",
+    "grip",
+    "hand_size",
+    "sensor",
+    "sensor_brand",
+    "sensor_type",
+    "sensor_date",
+    "sensor_link",
+    "flawless_sensor",
+    "dpi",
+    "ips",
+    "acceleration",
+    "polling_rate",
+    "lift",
+    "lift_settings",
+    "sensor_latency",
+    "sensor_latency_wired",
+    "sensor_latency_wireless",
+    "sensor_latency_bluetooth",
+    "shift_latency",
+    "motion_sync",
+    "hardware_acceleration",
+    "smoothing",
+    "nvidia_reflex",
+    "switch",
+    "switch_brand",
+    "switch_type",
+    "switch_link",
+    "hot_swappable",
+    "click_force",
+    "click_latency",
+    "click_latency_wired",
+    "click_latency_wireless",
+    "click_latency_bluetooth",
+    "debounce",
+    "silent_clicks",
+    "programmable_buttons",
+    "side_buttons",
+    "middle_buttons",
+    "tilt_scroll_wheel",
+    "adjustable_scroll_wheel",
+    "onboard_memory",
+    "onboard_memory_value",
+    "profile_switching",
+    "encoder",
+    "encoder_brand",
+    "encoder_link",
     "mcu",
     "mcu_link"
   ],

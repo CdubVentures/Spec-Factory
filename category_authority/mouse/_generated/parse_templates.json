@@ -1,6 +1,6 @@
 {
   "category": "mouse",
-  "generated_at": "2026-04-22T18:06:46.570Z",
+  "generated_at": "2026-04-24T02:32:59.027Z",
   "template_library": {
     "boolean_yes_no_unk": {
       "description": "Parse yes/no/true/false/1/0 tokens. Output boolean or 'unk'.",
@@ -299,7 +299,7 @@
     },
     "flawless_sensor": {
       "patterns": [],
-      "type": "string"
+      "type": "boolean"
     },
     "form_factor": {
       "patterns": [],
@@ -359,7 +359,7 @@
         "lod"
       ],
       "patterns": [],
-      "type": "mixed_number_range"
+      "type": "number"
     },
     "lift_settings": {
       "patterns": [],
@@ -448,7 +448,7 @@
     },
     "rgb": {
       "patterns": [],
-      "type": "string"
+      "type": "boolean"
     },
     "sensor": {
       "patterns": [],
@@ -460,7 +460,7 @@
     },
     "sensor_date": {
       "patterns": [],
-      "type": "string"
+      "type": "date"
     },
     "sensor_latency": {
       "patterns": [],
@@ -545,7 +545,7 @@
     },
     "thumb_rest": {
       "patterns": [],
-      "type": "string"
+      "type": "boolean"
     },
     "tilt_scroll_wheel": {
       "patterns": [],

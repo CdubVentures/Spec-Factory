@@ -239,6 +239,21 @@ export function buildReseedSurfaces(deps) {
           ? `${category}: ${result.seeded} products with ${result.fields_seeded} published fields re-seeded`
           : '',
     },
+    {
+      key: 'pif_variant_progress',
+      label: 'PIF Variant Progress',
+      scope: 'reseed',
+      tables: ['pif_variant_progress'],
+      shouldRun: null,
+      execute: (ctx) => deps.rebuildPifVariantProgressFromJson({
+        specDb: ctx.db,
+        productRoot: ctx.productRoot,
+      }),
+      formatLog: (category, result) =>
+        result.variants_seeded > 0
+          ? `${category}: ${result.variants_seeded} PIF variant progress rows re-seeded`
+          : '',
+    },
   ];
 }
 

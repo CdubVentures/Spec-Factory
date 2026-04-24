@@ -26,6 +26,7 @@ import type { DeleteTarget } from '../../../shared/ui/finder/types.ts';
 import { usePersistedToggle, useCollapseStore } from '../../../stores/collapseStore.ts';
 import type { ReviewLayout } from '../../../types/review.ts';
 import { usePromptPreviewQuery } from '../../indexing/api/promptPreviewQueries.ts';
+import type { PromptPreviewRequestBody } from '../../indexing/api/promptPreviewTypes.ts';
 import {
   useReservedKeysQuery,
   useKeyFinderSummaryQuery,
@@ -35,6 +36,11 @@ import {
 } from '../api/keyFinderQueries.ts';
 import { useKeyFinderFilters } from '../state/keyFinderFilters.ts';
 import { selectKeyFinderGroupedRows, parseAxisOrder } from '../state/keyFinderGroupedRows.ts';
+import {
+  createKeyPromptPreviewState,
+  resolveKeyPromptPassengerSnapshot,
+  type KeyPromptPreviewState,
+} from '../state/keyFinderPromptPreviewSnapshot.ts';
 import { runLoopChain } from '../state/runLoopChain.ts';
 import {
   GLOBAL_LOOP_CHAIN_ID,
@@ -255,16 +261,24 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
   // Loop iteration would dispatch (with passengers). Live Run dispatches may
   // still be solo under alwaysSoloRun=true; the preview intentionally shows
   // the "full potential bundle" so users can always inspect the passenger set.
-  const [promptState, setPromptState] = useState<{ readonly fieldKey: string } | null>(null);
+  const [promptState, setPromptState] = useState<KeyPromptPreviewState | null>(null);
   const openKeyPrompt = useCallback((fieldKey: string) => {
-    setPromptState({ fieldKey });
+    setPromptState(createKeyPromptPreviewState(groupedRef.current.groups, fieldKey));
   }, []);
   const closePrompt = useCallback(() => setPromptState(null), []);
+  const promptPassengerSnapshot = useMemo(() => {
+    return resolveKeyPromptPassengerSnapshot(grouped.groups, promptState);
+  }, [grouped.groups, promptState]);
+  const promptPreviewBody = useMemo<PromptPreviewRequestBody>(() => ({
+    field_key: promptState?.fieldKey ?? '',
+    mode: 'loop',
+    passenger_field_keys_snapshot: promptPassengerSnapshot,
+  }), [promptState?.fieldKey, promptPassengerSnapshot]);
   const promptPreviewQuery = usePromptPreviewQuery(
     'key',
     category,
     productId,
-    { field_key: promptState?.fieldKey ?? '', mode: 'loop' },
+    promptPreviewBody,
     Boolean(promptState),
   );
 

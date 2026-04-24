@@ -386,7 +386,6 @@ export interface IndexingLlmConfigResponse {
     triage?: string;
     reasoning?: string;
     extract?: string;
-    validate?: string;
     write?: string;
   };
   token_defaults?: {
@@ -395,18 +394,15 @@ export interface IndexingLlmConfigResponse {
     triage?: number;
     reasoning?: number;
     extract?: number;
-    validate?: number;
     write?: number;
   };
   fallback_defaults?: {
     enabled?: boolean;
     plan?: string;
     extract?: string;
-    validate?: string;
     write?: string;
     plan_tokens?: number;
     extract_tokens?: number;
-    validate_tokens?: number;
     write_tokens?: number;
   };
   routing_snapshot?: Record<string, {

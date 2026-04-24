@@ -6,9 +6,6 @@ import {
   createCompiledComponentDbPatcher,
 } from '../catalogHelpers.js';
 import {
-  createCatalogProduct,
-  createCatalogInput,
-  createNormalizedIdentity,
   createCompiledComponentRecord,
 } from './helpers/appApiTestBuilders.js';
 
@@ -18,72 +15,34 @@ function cleanVariant(variant) {
   return String(variant).trim();
 }
 
-function normText(value) {
-  return String(value ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
-}
-
-function catalogKey(brand, model, variant) {
-  return `${normText(brand)}|${normText(model)}|${normText(cleanVariant(variant))}`;
-}
-
-function createCatalogStorageFixture() {
-  const seedInput = createCatalogInput();
-  const orphanInput = createCatalogInput({
-    productId: 'mouse-ghost-phantom',
-    active: false,
-    identityLock: {
-      brand: 'Ghost',
-      base_model: 'Phantom',
-      model: 'Phantom',
-      variant: '',
-    },
-  });
-  const latestBase = 'out/mouse/mouse-acme-orbit-x1/latest';
-
-  return {
-    async listInputKeys() {
-      return ['inputs/seed.json', 'inputs/orphan.json'];
-    },
-    async readJsonOrNull(key) {
-      if (key === 'inputs/seed.json') return seedInput;
-      if (key === 'inputs/orphan.json') return orphanInput;
-      if (key === `${latestBase}/summary.json`) return createCatalogSummary();
-      if (key === `${latestBase}/normalized.json`) return createNormalizedIdentity();
-      return null;
-    },
-    resolveOutputKey(category, productId) {
-      return `out/${category}/${productId}/latest`;
-    },
-    async objectExists(key) {
-      return key.includes('mouse-acme-orbit-x1');
-    },
-  };
-}
-
 function createBuildCatalog(overrides = {}) {
-  const catalogProduct = createCatalogProduct();
   return createCatalogBuilder({
-    config: { localMode: true },
-    storage: createCatalogStorageFixture(),
     getSpecDb: () => ({
       id: 'fake-specdb',
       getAllProducts: () => [{
         product_id: 'mouse-acme-orbit-x1',
-        id: catalogProduct.id || 10,
-        identifier: catalogProduct.identifier || '',
-        brand: catalogProduct.brand || 'Acme',
-        base_model: catalogProduct.base_model || '',
-        model: catalogProduct.model || 'Orbit X1',
-        variant: catalogProduct.variant || '',
+        id: 10,
+        identifier: '',
+        brand: 'Acme',
+        base_model: 'Orbit X1',
+        model: 'Orbit X1',
+        variant: '',
         brand_identifier: '',
       }],
+      getAllFieldCandidatesByProduct: () => [],
+      getFieldCandidatesByProductAndField: () => [],
+      getFieldKeyOrder: () => null,
+      listColorEditionFinderRuns: () => [],
+      listPifVariantProgressByProduct: () => [],
+      variants: { listByProduct: () => [] },
+      getFinderStore: () => null,
     }),
     cleanVariant,
     ...overrides,
   });
 }
 
-test('catalog builder merges storage enrichment onto seeded catalog rows and skips orphans', async () => {
+test('catalog builder returns the enriched row shape for a seeded product', async () => {
   const buildCatalog = createBuildCatalog();
 
   const rows = await buildCatalog('mouse');
@@ -98,61 +57,14 @@ test('catalog builder merges storage enrichment onto seeded catalog rows and ski
       base_model: 'Orbit X1',
       variant: '',
       status: 'active',
-      hasFinal: true,
-      validated: false,
       confidence: 0,
       coverage: 0,
       fieldsFilled: 0,
       fieldsTotal: 0,
-      lastRun: '',
-      inActive: true,
-    },
-  ]);
-});
-
-test('catalog builder falls back to pending defaults when no summary exists', async () => {
-  const catalogProduct = createCatalogProduct();
-  const buildCatalog = createBuildCatalog({
-    storage: {
-      async listInputKeys() { return []; },
-      async readJsonOrNull() { return null; },
-      resolveOutputKey(category, productId) { return `out/${category}/${productId}/latest`; },
-      async objectExists() { return false; },
-    },
-    getSpecDb: () => ({
-      getAllProducts: () => [{
-        product_id: 'mouse-acme-orbit-x1',
-        id: catalogProduct.id || 10,
-        identifier: '',
-        brand: 'Acme',
-        base_model: catalogProduct.base_model || 'Orbit X1',
-        model: 'Orbit X1',
-        variant: '',
-        brand_identifier: '',
-      }],
-    }),
-  });
-
-  const rows = await buildCatalog('mouse');
-  assert.deepEqual(rows, [
-    {
-      productId: 'mouse-acme-orbit-x1',
-      id: catalogProduct.id || 10,
-      identifier: '',
-      brand: 'Acme',
-      brand_identifier: '',
-      model: 'Orbit X1',
-      base_model: 'Orbit X1',
-      variant: '',
-      status: 'active',
-      hasFinal: false,
-      validated: false,
-      confidence: 0,
-      coverage: 0,
-      fieldsFilled: 0,
-      fieldsTotal: 0,
-      lastRun: '',
-      inActive: true,
+      cefRunCount: 0,
+      pifVariants: [],
+      skuVariants: [],
+      rdfVariants: [],
     },
   ]);
 });
